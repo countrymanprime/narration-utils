@@ -23,6 +23,7 @@ _SHARED_PYTHON = Path(__file__).resolve().parents[3] / "shared" / "python"
 if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
+from narration_common.config import get_default  # noqa: E402
 from narration_common.docx_chapters import load_docx_paragraphs  # noqa: E402
 from narration_common.logging_utils import log  # noqa: E402
 from narration_common.progress import write_progress  # noqa: E402
@@ -452,7 +453,7 @@ def main() -> None:
     build_parser.add_argument("--docx", required=True)
     build_parser.add_argument("--out", required=True)
     build_parser.add_argument("--progress")
-    build_parser.add_argument("--spacy-model", default="en_core_web_sm")
+    build_parser.add_argument("--spacy-model", default=get_default("ManuscriptGuide", "spacy_model", "en_core_web_sm"))
     build_parser.add_argument("--espeak-library", default="")
     status_parser = command.add_parser("status")
     status_parser.add_argument("--docx", required=True)

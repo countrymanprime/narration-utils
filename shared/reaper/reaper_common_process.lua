@@ -14,10 +14,17 @@ M.quote = quote
 -- hidden rather than shown-then-hidden).
 --
 -- opts:
---   wait - true blocks until the command finishes, and the .vbs deletes
---          itself afterward. false (default) launches detached and leaves
---          the .vbs behind for the async child to keep running under.
---   cwd  - working directory to set before running (optional).
+--   wait         - true blocks until the command finishes, and the .vbs
+--                  deletes itself afterward. false (default) launches
+--                  detached and leaves the .vbs behind for the async child
+--                  to keep running under.
+--   cwd          - working directory to set before running (optional).
+--   show_window  - false (default) launches with show-style 0 (hidden),
+--                  as before. Pass true for a command that shows its own
+--                  GUI window (e.g. a pythonw.exe Tkinter dialog) - style 0
+--                  is meant for suppressing a console, and relying on it
+--                  also being ignored by an unrelated GUI toolkit's own
+--                  window-visibility calls isn't a safe bet to make silently.
 function M.run_hidden(scratch_dir, command, opts)
   opts = opts or {}
   local vbs_path = scratch_dir .. "\\run_" .. tostring(reaper.time_precise()):gsub("[%.]", "") .. ".vbs"
@@ -28,7 +35,8 @@ function M.run_hidden(scratch_dir, command, opts)
     vf:write('shell.CurrentDirectory = "' .. opts.cwd:gsub('"', '""') .. '"\r\n')
   end
   local wait_flag = opts.wait and "True" or "False"
-  vf:write('shell.Run "' .. command:gsub('"', '""') .. '", 0, ' .. wait_flag .. '\r\n')
+  local window_style = opts.show_window and "1" or "0"
+  vf:write('shell.Run "' .. command:gsub('"', '""') .. '", ' .. window_style .. ', ' .. wait_flag .. '\r\n')
   if opts.wait then
     vf:write('CreateObject("Scripting.FileSystemObject").DeleteFile WScript.ScriptFullName, True\r\n')
   end

@@ -11,8 +11,20 @@ input only:
 <project folder>\Manuscript.docx
 ```
 
-Either tool's **Select Manuscript** action may replace that file. This tool never reads or
-writes Transcript Compare's ExtState values or generated files.
+The Narration Utils workspace's **Select manuscript…** button may replace that
+file. This tool never reads or writes Transcript Compare's settings or
+generated files.
+
+## Settings: global vs. this project
+
+Settings other than the Python executable/backend path (spaCy model, eSpeak/Piper paths) are
+layered: a repo-wide default, a per-user **Global Defaults** value, and an optional **This
+Project** override, in that order. Global values live in
+`%APPDATA%\narration-utils\global-settings.json`; a project override lives in
+`<project folder>\narration-utils\settings.json`, alongside (not inside) the per-tool
+`ManuscriptGuide\` output folder. Both are DAW-agnostic plain JSON, not REAPER ExtState, so a
+future Audacity adapter can reuse the same settings store instead of needing its own. Open
+either scope from the workspace's corner **Settings** button.
 
 ## Layout
 
@@ -32,17 +44,16 @@ py -m venv .venv
 .\.venv\Scripts\python.exe -m spacy download en_core_web_sm
 ```
 
-In REAPER, use **Actions → Show action list → New action → Load ReaScript...** to load all
-three files in `daws/reaper/`:
+In REAPER, use **Actions → Show action list → New action → Load ReaScript...** and load just
+one file, `shared/reaper/NarrationUtils_Launcher.lua` — it's the only script either tool needs
+imported into REAPER's Action list. Running it opens the persistent, centered
+**Narration Utils** workspace. Select the manuscript, open either utility, or
+use the corner **Settings** button without leaving that window.
 
-- `ManuscriptGuide_Run.lua`
-- `ManuscriptGuide_Configure.lua`
-- `ManuscriptGuide_SelectManuscript.lua`
-
-Run **Manuscript Guide - Configure** once. The default Python/backend paths are derived from
-the reascript's own location, so they already point at `core/` in your checkout — no matter
-where you cloned the repo. Select a manuscript with either tool's selection action; it is
-copied beside the `.rpp` as `Manuscript.docx`.
+The default Python/backend paths are derived from this checkout's own location,
+so they already point at `core/` — no matter where you cloned the repo. Change
+them in **Settings → Global → Advanced runtime** if needed. Select a manuscript
+from Home; it is copied beside the `.rpp` as `Manuscript.docx`.
 
 ## Use
 

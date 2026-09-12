@@ -27,27 +27,39 @@
 
 local EXT = "TranscriptCompare"
 
-local function shared_reaper_dir()
-  local _, script_path = reaper.get_action_context()
-  local script_dir = script_path:match("^(.*)[\\/]") or "."
-  return script_dir .. "\\..\\..\\..\\..\\shared\\reaper"
+-- NARRATION_UTILS_SCRIPT_PATH is set by NarrationUtils_Launcher.lua before
+-- dofile()-ing this script: reaper.get_action_context() always reports the
+-- currently-running *action*'s path, which is the launcher's own path when
+-- dispatched that way, not this file's - so the launcher hands over this
+-- file's real path explicitly instead.
+local function own_script_path()
+  return NARRATION_UTILS_SCRIPT_PATH or select(2, reaper.get_action_context())
 end
 
-local function core_dir()
-  local _, script_path = reaper.get_action_context()
-  local script_dir = script_path:match("^(.*)[\\/]") or "."
-  return script_dir .. "\\..\\..\\core"
+local function shared_reaper_dir()
+  local script_dir = own_script_path():match("^(.*)[\\/]") or "."
+  return script_dir .. "\\..\\..\\..\\..\\shared\\reaper"
 end
 
 local SHARED = shared_reaper_dir()
 local ok_core, common = pcall(dofile, SHARED .. "\\reaper_common_core.lua")
 local ok_proc, process = pcall(dofile, SHARED .. "\\reaper_common_process.lua")
-if not ok_core or not ok_proc then
+local ok_pycfg, pyconfig = pcall(dofile, SHARED .. "\\reaper_common_pyconfig.lua")
+if not ok_core or not ok_proc or not ok_pycfg then
   reaper.ShowMessageBox(
     "Could not load shared library from:\n" .. SHARED ..
     "\n\nThis package's folder must stay at tools\\transcript-compare\\daws\\reaper\\ relative to shared\\reaper\\ under the repo root.",
     "Transcript Compare", 0)
   return
+end
+
+-- pythonw.exe (the windowless console host) ships alongside python.exe in
+-- every standard Windows CPython install/venv - used for the manuscript
+-- picker so no console flashes while it's open.
+local function pythonw_for(python_exe)
+  local replaced, count = python_exe:gsub("[Pp]ython%.exe$", "pythonw.exe")
+  if count > 0 then return replaced end
+  return python_exe
 end
 
 -- reaper.GetExtState returns a single string, not (ok, value) - the old
@@ -68,10 +80,6 @@ end
 
 local function msg(s)
   reaper.ShowMessageBox(s, "Transcript Compare", 0)
-end
-
-local function copy_file(src, dst)
-  return common.copy_file(src, dst)
 end
 
 local function format_mmss(seconds)
@@ -127,6 +135,19 @@ end
 local scratch_dir = reaper.GetResourcePath() .. "\\TranscriptCompare"
 reaper.RecursiveCreateDirectory(scratch_dir, 0)
 
+-- ---- the current project's folder (hoisted early - settings resolution
+-- below needs it to pick up any project-scoped config override) ----
+-- NOTE: reaper.GetProjectPath() returns the project's *recording path*
+-- (e.g. "...\Project\Audio Files"), not the folder containing the .rpp
+-- file - confirmed live (the manuscript landed in Audio Files instead of
+-- the project root). The actual .rpp folder comes from EnumProjects(-1),
+-- which returns the current project's full save-file path.
+local _, proj_fn = reaper.EnumProjects(-1, "")
+local project_folder = ""
+if proj_fn and proj_fn ~= "" then
+  project_folder = proj_fn:match("^(.*)[\\/][^\\/]-$") or ""
+end
+
 -- Launches cmdline fully detached with NO console window ever appearing -
 -- unlike `start ... /B`, which still needs a console for the cmd.exe
 -- process os.execute() spawns, and with /B specifically keeps the child
@@ -154,15 +175,24 @@ local function open_file_with_default_app(path)
 end
 
 -- ---- resolve settings (with sane fallbacks if Configure was never run) ----
-local CORE = core_dir()
+local CORE = common.core_dir(own_script_path())
 local python_exe = get("python_exe", CORE .. [[\.venv\Scripts\python.exe]])
 local compare_script = get("compare_script", CORE .. [[\compare.py]])
-local model_size = get("model_size", "small") -- overridable per-run from the config screen; never persisted from there
+local pythonw_exe = pythonw_for(python_exe)
+local config_cli_path = SHARED .. "\\..\\python\\config_cli.py"
+local manuscript_cli_path = SHARED .. "\\..\\python\\manuscript_cli.py"
+
+-- python-owned settings (repo default -> global -> project, all resolved by
+-- config_cli.py) - Lua only reads these, never writes them except via
+-- pyconfig.set_global below for the "Save as Default" model override.
+local resolved = pyconfig.query(common, process, python_exe, config_cli_path, scratch_dir, EXT,
+  { "model_size", "color_misread", "color_skipped", "color_extra" }, project_folder)
+local model_size = NARRATION_UTILS_HUB_MODEL_SIZE or resolved.model_size or "small" -- hub overrides are per-run only
 
 local colors = {
-  MISREAD = hex_to_native_color(get("color_misread", "FF4040")),
-  SKIPPED = hex_to_native_color(get("color_skipped", "FFC000")),
-  EXTRA   = hex_to_native_color(get("color_extra", "40A0FF")),
+  MISREAD = hex_to_native_color(resolved.color_misread or "FF4040"),
+  SKIPPED = hex_to_native_color(resolved.color_skipped or "FFC000"),
+  EXTRA   = hex_to_native_color(resolved.color_extra or "40A0FF"),
 }
 
 if not file_exists(python_exe) then
@@ -221,10 +251,10 @@ local track_name = "" -- declared here (not just where it's resolved below)
                        -- closes over this same upvalue instead of a global
 local docx_path = nil -- same reasoning - shown/changeable on the config screen
 local vocab_hints = "" -- ditto - loaded/edited on the config screen
-local chunk_seconds = 0 -- 0 = whole file (today's behavior); reset every run,
+local chunk_seconds = NARRATION_UTILS_HUB_CHUNK_SECONDS or 0 -- 0 = whole file (today's behavior); reset every run,
                          -- never persisted - chunking is a deliberate
                          -- per-run choice, not a sticky default like the model
-local parallel_workers = 0 -- 0 = "Auto"; only meaningful when chunk_seconds > 0
+local parallel_workers = NARRATION_UTILS_HUB_WORKERS or 0 -- 0 = "Auto"; only meaningful when chunk_seconds > 0
 local default_saved_flash_until = 0 -- reaper.time_precise() deadline for the
                                      -- "Saved!" flash after Save as Default
 local hint_extraction = nil -- {out_path, started} while a "Suggest from
@@ -841,40 +871,24 @@ refresh()
 -- ---- resolve the project's manuscript ----
 -- Selected once per project, then copied to <project folder>\Manuscript.docx
 -- so it's reused automatically on later runs without prompting again. Use
--- the config screen's "Change..." button (or the standalone "Transcript
--- Compare - Select Manuscript" action) to change it later.
---
--- NOTE: reaper.GetProjectPath() returns the project's *recording path*
--- (e.g. "...\Project\Audio Files"), not the folder containing the .rpp
--- file - confirmed live (the manuscript landed in Audio Files instead of
--- the project root). The actual .rpp folder comes from EnumProjects(-1),
--- which returns the current project's full save-file path.
-local _, proj_fn = reaper.EnumProjects(-1, "")
-local project_folder = ""
-if proj_fn and proj_fn ~= "" then
-  project_folder = proj_fn:match("^(.*)[\\/][^\\/]-$") or ""
-end
+-- the config screen's "Change..." button (or the shared "Select
+-- Manuscript" launcher entry) to change it later. project_folder was
+-- already resolved above (settings resolution needs it too).
 
 -- Browses for a manuscript and (if the project is saved) copies it to
--- <project folder>\Manuscript.docx; returns the resulting path, or nil if
--- cancelled/failed. Shared by the initial resolution below and the config
--- screen's "Change..." button.
+-- <project folder>\Manuscript.docx via the shared Python picker; returns
+-- the resulting path, or nil if cancelled/failed. Shared by the initial
+-- resolution below and the config screen's "Change..." button.
 local function pick_new_manuscript()
-  local last_docx = get("last_docx_path", "")
-  local ok, picked = reaper.GetUserFileNameForRead(last_docx, "Select the manuscript (.docx)", ".docx")
-  if not ok or picked == "" then return nil end
-  reaper.SetExtState(EXT, "last_docx_path", picked, true)
+  local result = pyconfig.pick_manuscript(common, process, pythonw_exe, manuscript_cli_path, scratch_dir, project_folder)
+  if result == "" or result == "CANCELLED" then return nil end
   if project_folder ~= "" then
     local manuscript_path = project_folder .. "\\Manuscript.docx"
-    if not copy_file(picked, manuscript_path) then
-      append_log("Couldn't copy the manuscript into the project folder: " .. manuscript_path)
-      return nil
-    end
     append_log("Manuscript saved to: " .. manuscript_path)
     return manuscript_path
   else
-    append_log("Using manuscript (project not saved, won't be cached): " .. picked)
-    return picked
+    append_log("Using manuscript (project not saved, won't be cached): " .. result)
+    return result
   end
 end
 
@@ -1474,7 +1488,7 @@ local function tick()
         elseif clicked_worker_chip then
           parallel_workers = (clicked_worker_chip.value == "Auto") and 0 or clicked_worker_chip.value
         elseif hit(hits.save_default_model) then
-          reaper.SetExtState(EXT, "model_size", model_size, true)
+          pyconfig.set_global(common, process, python_exe, config_cli_path, scratch_dir, EXT, "model_size", model_size)
           default_saved_flash_until = reaper.time_precise() + 1.5
           append_log("Saved '" .. model_size .. "' as the default model.")
         elseif hit(hits.cancel_config) then

@@ -28,32 +28,36 @@ actually said.
   screen's **Suggest...** button (see "Handling invented names/words" below) to avoid
   suggesting common words that just happen to be capitalized mid-sentence.
 - `daws/reaper/TranscriptCompare_Run.lua` — the REAPER action you actually run.
-- `daws/reaper/TranscriptCompare_Configure.lua` — settings: where `python.exe` and
-  `compare.py` live, the default Whisper model size, and take-marker colors per discrepancy
-  kind.
-- `daws/reaper/TranscriptCompare_SelectManuscript.lua` — (re)pick the Word manuscript for the
-  current project (the Run action's own config screen - see below - can also do this, so this
-  action is mainly useful outside a run).
+- The Narration Utils workspace owns settings: its corner gear opens
+  **Global**/**This Project** values for the default Whisper model and
+  take-marker colors, plus global-only Python/backend runtime paths.
+- Pick or replace the Word manuscript from the workspace Home page.
 
 ## Install as REAPER actions
 
-In REAPER: **Actions → Show action list → New action → Load ReaScript...** and browse to each
-file under `daws/reaper/` in your checkout — they do **not** need to live inside REAPER's own
-Scripts folder:
+In REAPER: **Actions → Show action list → New action → Load ReaScript...** and load just one
+file, `shared/reaper/NarrationUtils_Launcher.lua` (it does **not** need to live inside REAPER's
+own Scripts folder) — it's the only script either tool needs imported into REAPER's Action
+list. Running it opens the persistent, centered **Narration Utils** workspace.
 
-- `TranscriptCompare_Run.lua`
-- `TranscriptCompare_Configure.lua`
-- `TranscriptCompare_SelectManuscript.lua`
+Optionally assign the launcher a keyboard shortcut or toolbar button from the same action list
+dialog.
 
-Optionally assign each a keyboard shortcut or toolbar button from the same action list dialog.
+Runtime defaults are derived from this checkout's own location, so they already
+point at `core/` no matter where you cloned the repo. Default model size is
+`small`; use workspace Settings to change defaults or choose a one-run model
+in the Transcript Compare page.
 
-The Run script's defaults are derived from the reascript's own location, so they already point
-at `core/`'s venv/script in your checkout and the default marker colors — it works out of the
-box no matter where you cloned the repo. Default model size is `small` (a couple steps up from
-faster-whisper's `base`, meaningfully more accurate for a moderate speed cost). Run
-**Configure** to change any of that (model size, Python/script location, marker colors) -
-`medium` is the next step up if `small` still isn't accurate enough, at a further speed cost
-(especially on CPU).
+### Settings: global vs. this project
+
+Everything set through the workspace other than `python.exe`/`compare.py`'s
+global-only runtime paths (model size, marker colors) is layered: a repo-wide
+default, a per-user **Global** value, and an optional **This Project** override,
+in that order. Global values live in
+`%APPDATA%\narration-utils\global-settings.json`; a project override lives in
+`<project folder>\narration-utils\settings.json`, alongside (not inside) the per-tool
+`TranscriptCompare\` output folder. Both are DAW-agnostic plain JSON, not REAPER ExtState, so a
+future Audacity adapter can reuse the same settings store instead of needing its own.
 
 ## How it's organized
 
@@ -85,8 +89,7 @@ multi-minute wait first.
    processed) while it resolves the manuscript, then shows a **config screen** before anything
    expensive starts:
    - **Manuscript** — the resolved path, with a **Change...** button to pick a
-     different/updated one on the spot (same effect as the standalone Select Manuscript
-     action).
+     different/updated one on the spot (same effect as the launcher's Select Manuscript entry).
    - **Model** — chip buttons for `tiny`/`base`/`small`/`medium`/`large-v3`; hover any chip for
      a tooltip explaining its speed/accuracy/memory tradeoff. Picking one here is a one-time
      override for this run only - it doesn't change the saved default. Click **Save as

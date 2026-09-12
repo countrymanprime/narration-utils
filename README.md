@@ -35,7 +35,9 @@ install path.
 
 ## Supported DAWs
 
-- **Reaper** — supported. Both tools ship a working ReaScript driver under `daws/reaper/`.
+- **Reaper** — supported. Load `shared/reaper/NarrationUtils_Launcher.lua` as
+  the one action; it opens the centered Narration Utils workspace for both
+  utilities and their global/project settings.
 - **Audacity** — planned, not yet implemented. Audacity's scripting model
   (mod-script-pipe, label tracks instead of take markers, no ExtState-equivalent settings
   store) is different enough from Reaper's that it needs its own driver design rather than a

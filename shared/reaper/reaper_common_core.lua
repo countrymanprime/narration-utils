@@ -1,6 +1,6 @@
 -- Shared REAPER-package helpers: ExtState access and basic file/path
--- operations. Used by every *_Run.lua / *_Configure.lua /
--- *_SelectManuscript.lua script in this suite.
+-- operations. Used by every *_Run.lua / *_Configure.lua script and the
+-- shared NarrationUtils_Launcher.lua in this suite.
 
 local M = {}
 
@@ -46,6 +46,28 @@ end
 -- than a fixed choice baked into this shared helper.
 function M.dirname(path, fallback)
   return path:match("^(.*)[\\/][^\\/]-$") or fallback
+end
+
+-- Each tool's `core/` directory, two levels up from its own
+-- daws\reaper\*.lua script. `own_script_path` must be the CALLING script's
+-- own file path, not reaper.get_action_context() taken here - this module
+-- doesn't know whether its caller is running as REAPER's current action
+-- (script_path is its own) or was dispatched via NarrationUtils_Launcher.lua
+-- (script_path would be the launcher's own path instead).
+function M.core_dir(own_script_path)
+  local script_dir = own_script_path:match("^(.*)[\\/]") or "."
+  return script_dir .. "\\..\\..\\core"
+end
+
+-- Splits a comma-separated list from a reaper.GetUserInputs result into its
+-- fields. Plain string parsing, no escaping - fine for the simple
+-- path/name/choice values these dialogs collect.
+function M.parse_csv_list(s)
+  local fields = {}
+  for field in (s .. ","):gmatch("(.-),") do
+    fields[#fields + 1] = field
+  end
+  return fields
 end
 
 return M

@@ -41,6 +41,7 @@ _SHARED_PYTHON = Path(__file__).resolve().parents[3] / "shared" / "python"
 if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
+from narration_common.config import get_default  # noqa: E402
 from narration_common.docx_chapters import load_docx_paragraphs  # noqa: E402
 from narration_common.logging_utils import log, set_log_file  # noqa: E402
 from narration_common.progress import write_progress  # noqa: E402
@@ -1331,7 +1332,7 @@ def main():
     ap.add_argument("--chapter-title", default=None, help="Bypass track-name matching and use this exact chapter title (from a prior NEED_CHAPTER prompt)")
     ap.add_argument("--out", required=False, help="Path to write the tagged results file")
     ap.add_argument("--diff-out", required=False, help="Path to write the unified-diff-formatted manuscript/recorded comparison file")
-    ap.add_argument("--model", default="small", help="Whisper model size (tiny/base/small/medium/large-v3)")
+    ap.add_argument("--model", default=get_default("TranscriptCompare", "model_size", "small"), help="Whisper model size (tiny/base/small/medium/large-v3)")
     ap.add_argument("--language", default=None, help="Force language code, e.g. 'en' (default: auto-detect)")
     ap.add_argument("--min-words", type=int, default=1, help="Minimum word-block length to report as a discrepancy")
     ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"], help="Inference device (default: cpu)")

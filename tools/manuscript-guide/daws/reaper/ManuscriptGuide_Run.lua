@@ -3,22 +3,25 @@
 
 local EXT = "ManuscriptGuide"
 
-local function shared_reaper_dir()
-  local _, script_path = reaper.get_action_context()
-  local script_dir = script_path:match("^(.*)[\\/]") or "."
-  return script_dir .. "\\..\\..\\..\\..\\shared\\reaper"
+-- NARRATION_UTILS_SCRIPT_PATH is set by NarrationUtils_Launcher.lua before
+-- dofile()-ing this script: reaper.get_action_context() always reports the
+-- currently-running *action*'s path, which is the launcher's own path when
+-- dispatched that way, not this file's - so the launcher hands over this
+-- file's real path explicitly instead.
+local function own_script_path()
+  return NARRATION_UTILS_SCRIPT_PATH or select(2, reaper.get_action_context())
 end
 
-local function core_dir()
-  local _, script_path = reaper.get_action_context()
-  local script_dir = script_path:match("^(.*)[\\/]") or "."
-  return script_dir .. "\\..\\..\\core"
+local function shared_reaper_dir()
+  local script_dir = own_script_path():match("^(.*)[\\/]") or "."
+  return script_dir .. "\\..\\..\\..\\..\\shared\\reaper"
 end
 
 local SHARED = shared_reaper_dir()
 local ok_core, common = pcall(dofile, SHARED .. "\\reaper_common_core.lua")
 local ok_proc, process = pcall(dofile, SHARED .. "\\reaper_common_process.lua")
-if not ok_core or not ok_proc then
+local ok_pycfg, pyconfig = pcall(dofile, SHARED .. "\\reaper_common_pyconfig.lua")
+if not ok_core or not ok_proc or not ok_pycfg then
   reaper.ShowMessageBox(
     "Could not load shared library from:\n" .. SHARED ..
     "\n\nThis package's folder must stay at tools\\manuscript-guide\\daws\\reaper\\ relative to shared\\reaper\\ under the repo root.",
@@ -32,31 +35,46 @@ local function read(p) return common.read_file(p) end
 local function msg(v) reaper.ShowMessageBox(v, "Manuscript Guide", 0) end
 local function q(v) return process.quote(v) end
 local function dirname(p) return common.dirname(p, "") end
-local function copy(src, dst) return common.copy_file(src, dst) end
+
+-- pythonw.exe (the windowless console host) ships alongside python.exe in
+-- every standard Windows CPython install/venv - used for the manuscript
+-- picker so no console flashes while it's open.
+local function pythonw_for(python_exe)
+  local replaced, count = python_exe:gsub("[Pp]ython%.exe$", "pythonw.exe")
+  if count > 0 then return replaced end
+  return python_exe
+end
 
 local _, rpp = reaper.EnumProjects(-1, "")
 local root = rpp and dirname(rpp) or ""
 if root == "" then msg("Save this REAPER project first."); return end
-local CORE = core_dir()
+local CORE = common.core_dir(own_script_path())
 local python = get("python_exe", CORE .. [[\.venv\Scripts\python.exe]])
 local backend = get("backend", CORE .. [[\manuscript_guide.py]])
 if not exists(python) or not exists(backend) then msg("Run 'Manuscript Guide - Configure' first."); return end
-local model, espeak = get("spacy_model", "en_core_web_sm"), get("espeak_library", "")
-local piper, voice = get("piper_exe", ""), get("piper_model", "")
+
+local config_cli_path = SHARED .. "\\..\\python\\config_cli.py"
+local manuscript_cli_path = SHARED .. "\\..\\python\\manuscript_cli.py"
 local manuscript, data = root .. "\\Manuscript.docx", root .. "\\ManuscriptGuide"
+reaper.RecursiveCreateDirectory(data, 0)
+
+-- python-owned settings (repo default -> global -> project, resolved by
+-- config_cli.py).
+local resolved = pyconfig.query(common, process, python, config_cli_path, data, EXT,
+  { "spacy_model", "espeak_library", "piper_exe", "piper_model" }, root)
+local model, espeak = resolved.spacy_model or "en_core_web_sm", resolved.espeak_library or ""
+local piper, voice = resolved.piper_exe or "", resolved.piper_model or ""
+
 local guide, index_file, status_file = data .. "\\manuscript_guide.json", data .. "\\index.txt", data .. "\\status.txt"
 local audio = data .. "\\audio"
-reaper.RecursiveCreateDirectory(data, 0); reaper.RecursiveCreateDirectory(audio, 0)
+reaper.RecursiveCreateDirectory(audio, 0)
 
 -- A hidden synchronous launcher avoids leaving a Python console window open.
 local function run(command) return process.run_hidden(data, command, {wait = true}) end
 local function command(args) return q(python) .. " " .. q(backend) .. " " .. args end
 local function select_manuscript()
-  local last=reaper.GetExtState(EXT,"last_docx_path") or ""
-  local picked,path=reaper.GetUserFileNameForRead(last,"Select the shared manuscript (.docx)",".docx")
-  if not picked or path == "" then return false end
-  if not copy(path, manuscript) then msg("Could not copy to:\n" .. manuscript); return false end
-  reaper.SetExtState(EXT,"last_docx_path",path,true); return true
+  local result = pyconfig.pick_manuscript(common, process, pythonw_for(python), manuscript_cli_path, data, root)
+  return result ~= "" and result ~= "CANCELLED"
 end
 if not exists(manuscript) then
   if reaper.ShowMessageBox("No shared Manuscript.docx exists. Select one now?","Manuscript Guide",4) ~= 6 or not select_manuscript() then return end
@@ -98,7 +116,7 @@ local function edit(entity)
   local labels="Name,Category,Say it as,IPA,Description,Personality note,Lock fields (;),extrawidth=280"
   local defaults=table.concat({entity.name:gsub(",",";"),entity.category,entity.say:gsub(",",";"),entity.ipa:gsub(",",";"),entity.description:gsub(",",";"),entity.traits:gsub(",",";"),entity.locks},",")
   local ok,csv=reaper.GetUserInputs("Edit / lock "..entity.name,7,labels,defaults); if not ok then return end
-  local values={}; for value in (csv..","):gmatch("(.-),") do values[#values+1]=value end
+  local values=common.parse_csv_list(csv)
   local locks={}; for value in ((values[7]or"")..";"):gmatch("(.-);") do locks[value:lower()]=true end
   local edits={{"canonical_name",values[1]},{"category",values[2]},{"say_as",values[3]},{"ipa",values[4]},{"description",values[5]},{"personality",values[6]}}
   for _, item in ipairs(edits) do update(entity,item[1],item[2]or"",locks[item[1]:lower()] and "on" or "off") end

@@ -1,0 +1,14 @@
+{
+  "ManuscriptGuide": {
+    "spacy_model": "en_core_web_sm",
+    "espeak_library": "",
+    "piper_exe": "",
+    "piper_model": ""
+  },
+  "TranscriptCompare": {
+    "model_size": "small",
+    "color_misread": "FF4040",
+    "color_skipped": "FFC000",
+    "color_extra": "40A0FF"
+  }
+}

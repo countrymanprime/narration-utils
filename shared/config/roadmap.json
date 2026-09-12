@@ -1,0 +1,40 @@
+{
+  "available": [
+    {
+      "title": "Manuscript Guide",
+      "summary": "Build and review a local narrator reference from a manuscript."
+    },
+    {
+      "title": "Transcript Compare",
+      "summary": "Compare a selected narration track with its manuscript chapter."
+    }
+  ],
+  "milestones": [
+    {
+      "number": 1,
+      "title": "Dashboard foundation",
+      "summary": "Structured findings, REAPER review filters, navigation, looping, and review decisions."
+    },
+    {
+      "number": 2,
+      "title": "Recording and take review",
+      "summary": "Pickup/restart detection, duplicate-read candidates, and evidence-based take comparison."
+    },
+    {
+      "number": 3,
+      "title": "Character continuity",
+      "summary": "A reviewable character bible and narrator-approved voice references."
+    },
+    {
+      "number": 4,
+      "title": "Diagnostics and delivery",
+      "summary": "Editorial and technical findings, reports, and reviewer packages."
+    }
+  ],
+  "deferred": [
+    "Audacity adapters",
+    "macOS and Linux installers/adapters",
+    "Languages beyond US English",
+    "Team collaboration or cloud services"
+  ]
+}

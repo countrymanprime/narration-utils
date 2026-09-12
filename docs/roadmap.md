@@ -1,5 +1,10 @@
 # Product Roadmap
 
+The in-app Narration Utils roadmap reads the matching machine-readable
+[`shared/config/roadmap.json`](../shared/config/roadmap.json) data. Update both
+files together when a milestone changes so the shipped workspace and this
+documentation describe the same product direction.
+
 ## Product boundary
 
 The suite helps a narrator find and review issues faster. It may analyze local manuscripts and audio, create reviewable REAPER markers or alternate takes, and export reports. It does not automatically comp audio, certify acting quality, or require cloud processing.
