@@ -1,0 +1,5 @@
+python-docx>=1.1
+spacy>=3.7
+pronouncing>=0.2
+phonemizer>=3.3
+# Optional: install a local Piper executable/model separately for WAV previews.
