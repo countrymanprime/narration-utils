@@ -47,6 +47,7 @@ The suite helps a narrator find and review issues faster. It may analyze local m
 - macOS/Linux installers and adapters.
 - Languages beyond US English.
 - Team collaboration, cloud analysis, or shared project services.
+- Manuscript Teleprompter: local live microphone listening with karaoke-style manuscript highlighting and reviewable suspected word-level substitutions, skips, or misreads; it never edits text or audio automatically.
 
 ## Dependency rules
 
