@@ -10,9 +10,8 @@ actually said.
 - `core/` — the DAW-agnostic Python backend (`compare.py`), plus `homophones.csv`,
   `common_words.txt`, and `requirements.txt`. No DAW APIs are used here; it's a plain CLI
   invoked by whichever DAW driver below is running it.
-- `daws/reaper/` — the REAPER ReaScript driver (currently the only implemented one). Take
-  markers, tracks/items, and ExtState settings below are REAPER concepts specific to this
-  driver.
+- `daws/reaper/` — reserved for a future dedicated adapter. REAPER integration is currently
+  centralized in `shared/reaper/narration_ui_bridge.lua`.
 - `daws/audacity/` — placeholder for a future Audacity driver.
 
 ## Pieces
@@ -27,10 +26,10 @@ actually said.
 - `core/common_words.txt` — a stoplist of ordinary English words, used only by the config
   screen's **Suggest...** button (see "Handling invented names/words" below) to avoid
   suggesting common words that just happen to be capitalized mid-sentence.
-- `daws/reaper/TranscriptCompare_Run.lua` — the REAPER action you actually run.
-- The Narration Utils workspace owns settings: its corner gear opens
+- The React Narration Utils workspace owns this workflow and settings: its Settings page opens
   **Global**/**This Project** values for the default Whisper model and
-  take-marker colors, plus global-only Python/backend runtime paths.
+  take-marker colors. Python runtimes are fixed local checkout dependencies
+  managed by `scripts\Quickstart.ps1`.
 - Pick or replace the Word manuscript from the workspace Home page.
 
 ## Install as REAPER actions
@@ -43,15 +42,15 @@ list. Running it opens the persistent, centered **Narration Utils** workspace.
 Optionally assign the launcher a keyboard shortcut or toolbar button from the same action list
 dialog.
 
-Runtime defaults are derived from this checkout's own location, so they already
-point at `core/` no matter where you cloned the repo. Default model size is
+Runtime dependencies are derived from this checkout's own location, so they
+always use repo-managed local environments. Default model size is
 `small`; use workspace Settings to change defaults or choose a one-run model
 in the Transcript Compare page.
 
 ### Settings: global vs. this project
 
-Everything set through the workspace other than `python.exe`/`compare.py`'s
-global-only runtime paths (model size, marker colors) is layered: a repo-wide
+Everything set through the workspace (model size and marker colors) is layered:
+a repo-wide
 default, a per-user **Global** value, and an optional **This Project** override,
 in that order. Global values live in
 `%APPDATA%\narration-utils\global-settings.json`; a project override lives in
@@ -77,13 +76,14 @@ multi-minute wait first.
    up automatically, in position order — no need to glue or render first, even if the take is
    split across several items (punch-ins, retakes, etc. all get stitched together for
    transcription).
-2. Run **Transcript Compare - Run** from the action list.
-3. The first time you run it in a project, you'll be asked to pick the Word manuscript
+2. Run **Narration Utils** from the action list, open **Transcript Compare**, and choose
+   **Start comparison**.
+3. The first time you run it in a project, select the Word manuscript from Home.
    (`.docx`). It's then copied to `<project folder>\Manuscript.docx` (next to the `.rpp` file)
    — every run after that reuses it automatically with no prompt. (The project must be saved
    at least once, since the manuscript is stored alongside the project file; for an unsaved
    project it falls back to prompting every run instead.)
-4. A window opens **immediately** (roughly centered on screen) and stays up for the whole run
+4. The same responsive companion window stays open for the whole run
    — it's never closed and replaced by a separate dialog. It shows the track name, item count,
    and exact selected duration (so it's unambiguous that only your selection is being
    processed) while it resolves the manuscript, then shows a **config screen** before anything

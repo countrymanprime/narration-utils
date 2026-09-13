@@ -1,25 +1,25 @@
 # DAW Integration Boundary
 
-**Status: REAPER foundation implemented; unified adapter contract planned.**
+**Status: React workspace and REAPER integration bridge implemented.**
 
 ## REAPER rules
 
-- Keep business logic in Python backends under a tool's `core/` directory. Keep ReaScript UI, project discovery, and marker/take mutations under `daws/reaper/`.
+- Keep business logic and all user-facing UI in Python/React. Keep only project discovery, manifest construction, marker/take mutations, and cursor navigation in REAPER Lua.
 - Continue resolving paths from the script location so checkouts remain relocatable.
-- Use existing shared helpers for ExtState, file work, subprocess launch, and pipe-delimited legacy backend protocols. ExtState itself is now scoped narrowly to the one thing that's genuinely REAPER/bootstrap-specific per tool (where `python.exe`/the backend script live) - every other setting is resolved through the shared, DAW-agnostic Python config layer (see below), reached from Lua via `shared/reaper/reaper_common_pyconfig.lua`.
-- Import only `shared/reaper/NarrationUtils_Launcher.lua` into REAPER's Action list. It starts one centered Python/Tk Narration Utils workspace and a small file-session bridge for REAPER-only operations; users choose tools, manuscripts, and settings inside that workspace instead of a transient launcher menu.
+- The launcher resolves only repo-relative, gitignored local environments. It does not read or write ExtState paths; all user settings are resolved by the shared, DAW-agnostic Python config layer.
+- Import only `shared/reaper/NarrationUtils_Launcher.lua` into REAPER's Action list. It starts the non-blocking React/.NET workspace (`shared/hub`, a compiled Photino.NET host) and its file-session bridge for REAPER-only operations.
 - For new work, carry REAPER project, track, item, and take GUIDs in the shared finding record; use project-time ranges only as fallbacks.
 - All mutation actions must be explicitly triggered by the narrator, wrapped in REAPER undo blocks, and report failures without partially applying unrelated actions.
 
 ## Settings layering
 
-Every setting other than a tool's `python.exe`/backend-script bootstrap path is resolved through a shared, DAW-agnostic Python module (`shared/python/narration_common/config.py`), not REAPER ExtState - so the same storage and resolution logic (and the same settings window) will already work for a future non-REAPER adapter instead of needing its own. Three tiers, most-specific first:
+Every user setting is resolved through the same layered rules against the same on-disk JSON files, not REAPER ExtState - implemented once in Python (`shared/python/narration_common/config.py`, still used by the Manuscript Guide and Transcript Compare tool backends for their own argparse defaults) and ported 1:1 to .NET (`shared/hub/Config.cs`, used by the desktop host/settings window). Three tiers, most-specific first:
 
 1. Project override - `<project folder>/narration-utils/settings.json` (see Project-sidecar rules below).
 2. Per-user global - `%APPDATA%/narration-utils/global-settings.json`.
 3. Repo default - `shared/config/defaults.json`, checked in.
 
-A DAW's scripting side never parses this JSON itself: it shells out to `shared/python/config_cli.py` for a value it needs directly (e.g. REAPER take-marker colors), while the persistent `shared/python/narration_hub.py` owns the user-facing settings view. It otherwise passes `--docx`/config-derived paths to analyzer backends, which are free to resolve their own settings the same way.
+REAPER never parses this JSON. The persistent desktop host (`shared/hub`) owns setting resolution and passes marker colors with the explicit marker-apply command.
 
 ## Project-sidecar rules
 
@@ -30,7 +30,7 @@ A DAW's scripting side never parses this JSON itself: it shells out to `shared/p
 
 ## Audacity boundary
 
-- Audacity is a future adapter, not a Lua port. Its closest finding representation is a UTF-8 label track. Settings no longer need a bespoke dedicated store per DAW: the layered Python config module and settings window above are already DAW-agnostic, so an Audacity adapter reuses them directly rather than porting REAPER's ExtState-based approach.
+- Audacity is a future adapter, not a Lua port. Its closest finding representation is a UTF-8 label track. The layered Python config module and React workspace are DAW-agnostic, so an Audacity adapter reuses them directly.
 - Use its optional `mod-script-pipe` only from a local desktop process and only after the user has enabled it.
 - First adapter scope: import findings as labels, navigate/export reviewed labels, and preserve the DAW-neutral finding data. Take management has no direct Audacity equivalent.
 

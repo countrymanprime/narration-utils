@@ -21,8 +21,8 @@ M.quote = quote
 --   cwd          - working directory to set before running (optional).
 --   show_window  - false (default) launches with show-style 0 (hidden),
 --                  as before. Pass true for a command that shows its own
---                  GUI window (e.g. a pythonw.exe Tkinter dialog) - style 0
---                  is meant for suppressing a console, and relying on it
+--                  GUI window (e.g. the Narration Utils desktop host) - style
+--                  0 is meant for suppressing a console, and relying on it
 --                  also being ignored by an unrelated GUI toolkit's own
 --                  window-visibility calls isn't a safe bet to make silently.
 function M.run_hidden(scratch_dir, command, opts)

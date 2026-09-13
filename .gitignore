@@ -1,4 +1,13 @@
 .venv/
+.runtime/
+.bootstrap/
+.piper/
 __pycache__/
 *.pyc
 .pytest_cache/
+node_modules/
+.vite/
+bin/
+obj/
+shared/hub/publish/
+shared/ui/dist/

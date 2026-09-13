@@ -14,12 +14,13 @@ logic is DAW-agnostic; a thin per-DAW driver wires it into a specific host.
 narration-utils/
   shared/
     python/narration_common/   DAW-agnostic helpers shared by both tools' backends
-    reaper/                    REAPER-specific shared Lua helpers (ExtState, subprocess launch)
+    reaper/                    REAPER launcher and non-UI integration bridge
+    ui/                        React + Tailwind workspace (built static assets)
     audacity/                  placeholder for future Audacity-specific shared helpers
   tools/
     manuscript-guide/
       core/                    DAW-agnostic Python backend, requirements, tests
-      daws/reaper/             REAPER ReaScript driver
+      daws/reaper/             reserved for future REAPER tool-specific adapters
       daws/audacity/           placeholder
     transcript-compare/
       core/                    DAW-agnostic Python backend, requirements
@@ -44,10 +45,40 @@ install path.
   port of the Reaper one. Placeholder folders exist under `daws/audacity/` in each tool and
   under `shared/audacity/`.
 
+## Quickstart
+
+The supported UI is a local React + Tailwind companion window hosted by a
+compiled, self-contained .NET desktop host (`shared/hub`, using Photino.NET).
+From the checkout root, run either:
+
+```powershell
+.\scripts\Quickstart.ps1
+```
+
+or double-click `scripts\Quickstart.cmd`. The script downloads a private Python
+runtime, then creates and maintains two gitignored virtual environments
+(Manuscript Guide and Transcript Compare), installs their dependencies,
+downloads the default spaCy model, installs UI packages, builds the production
+UI bundle, and publishes the desktop host. It also installs the local Piper
+preview runtime and a U.S. English medium voice. Node.js/npm and the .NET SDK
+are the machine-level prerequisites. Python, .NET, Piper, packages, and the
+downloaded bootstrap files remain in gitignored folders in this checkout;
+REAPER does not discover or run a global or VST-folder Python.
+
+If desired, an existing Python interpreter can still be used only to create
+the private environments; it is never retained as a REAPER dependency:
+
+```powershell
+.\scripts\Quickstart.ps1 -BootstrapPython C:\path\to\python.exe
+```
+
+The launcher is intentionally the only REAPER action. It starts the companion
+window; REAPER continues to service only selection, take-marker, and cursor
+requests while the window is open.
+
 ## Shared library
 
-Both tools are independently runnable (own venv, own DAW actions) and each has its own README
-with install/usage details. What they share:
+Both tools retain their own DAW-agnostic Python backends. What they share:
 
 - **`<project folder>\Manuscript.docx`** — the one intentional data contract between the two
   tools. Either tool's "Select Manuscript" action can (re)write it; neither reads the other's
@@ -65,11 +96,6 @@ with install/usage details. What they share:
 
 ## Dependencies
 
-Each tool keeps its own `.venv` and `requirements.txt` under `core/`, since their dependency
+Each tool keeps its own gitignored `.venv` under `core/`, since their dependency
 sets are large and unrelated (spaCy/pronouncing/phonemizer vs. faster-whisper/ctranslate2/av).
-Set up each one from its own `core/` folder:
-
-```bash
-py -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-```
+`scripts\Quickstart.ps1` manages these environments together with the UI host.

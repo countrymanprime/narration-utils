@@ -1,4 +1,4 @@
-"""Small, versioned file bridge between the Tk hub and a DAW adapter.
+"""Small, versioned file bridge between the webview hub and a DAW adapter.
 
 The format intentionally uses one percent-encoded line per command instead
 of JSON.  Python can write it without dependencies and REAPER's Lua adapter

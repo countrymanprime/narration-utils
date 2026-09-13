@@ -9,7 +9,14 @@ PYTHON_ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(PYTHON_ROOT))
 
 from narration_common import config  # noqa: E402
-from narration_common.ui_bridge import BridgeClient, BridgeCommand  # noqa: E402
+from narration_common.ui_bridge import BridgeClient, BridgeCommand, decode_fields  # noqa: E402
+
+# The desktop hub itself (formerly narration_hub.py, a Python/pywebview host)
+# has moved to shared/hub (a compiled .NET/Photino host) - see
+# shared/hub/Config.cs and shared/hub/Bridge.cs for its parity port of the
+# config/ui_bridge modules this file still tests, and shared/hub's own tests
+# for coverage of that host's contract. Only narration_common stays Python,
+# since tools/manuscript-guide and tools/transcript-compare still import it.
 
 
 class UiBridgeTests(unittest.TestCase):
@@ -25,6 +32,15 @@ class UiBridgeTests(unittest.TestCase):
             self.assertEqual("00000000.cmd", first.name)
             self.assertEqual("00000001.cmd", second.name)
             self.assertEqual("first", BridgeCommand.parse(first.read_text(encoding="utf-8")).action)
+
+    def test_bridge_tails_new_adapter_events_once(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            bridge = BridgeClient(temporary)
+            events = Path(temporary) / "events.log"
+            events.write_text("COMPARE_PREPARED|run%7C1|C%3A%5Cmanifest.txt\n", encoding="utf-8")
+            self.assertEqual(["COMPARE_PREPARED|run%7C1|C%3A%5Cmanifest.txt"], bridge.read_events())
+            self.assertEqual(["COMPARE_PREPARED", "run|1", r"C:\manifest.txt"], decode_fields("COMPARE_PREPARED|run%7C1|C%3A%5Cmanifest.txt"))
+            self.assertEqual([], bridge.read_events())
 
 
 class ScopedConfigTests(unittest.TestCase):

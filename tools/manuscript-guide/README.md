@@ -17,8 +17,8 @@ generated files.
 
 ## Settings: global vs. this project
 
-Settings other than the Python executable/backend path (spaCy model, eSpeak/Piper paths) are
-layered: a repo-wide default, a per-user **Global Defaults** value, and an optional **This
+Settings (spaCy model, eSpeak/Piper paths) are layered: a repo-wide default, a per-user
+**Global Defaults** value, and an optional **This
 Project** override, in that order. Global values live in
 `%APPDATA%\narration-utils\global-settings.json`; a project override lives in
 `<project folder>\narration-utils\settings.json`, alongside (not inside) the per-tool
@@ -31,17 +31,18 @@ either scope from the workspace's corner **Settings** button.
 - `core/` — the DAW-agnostic Python backend (`manuscript_guide.py`), its `requirements.txt`,
   and its tests. No DAW APIs are used here; it's a plain CLI invoked by whichever DAW driver
   below is running it.
-- `daws/reaper/` — the REAPER ReaScript driver (currently the only implemented one).
+- `daws/reaper/` — reserved for a future dedicated adapter; current REAPER integration is
+  centralized in `shared/reaper/narration_ui_bridge.lua`.
 - `daws/audacity/` — placeholder for a future Audacity driver.
 
 ## Install (Reaper)
 
-From `core/`, create its own runtime and install dependencies:
+From the repository root, run the shared quickstart script. It creates this
+tool's local `core\.venv`, installs its dependencies, and downloads the default
+spaCy model:
 
 ```powershell
-py -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m spacy download en_core_web_sm
+.\scripts\Quickstart.ps1
 ```
 
 In REAPER, use **Actions → Show action list → New action → Load ReaScript...** and load just
@@ -50,15 +51,14 @@ imported into REAPER's Action list. Running it opens the persistent, centered
 **Narration Utils** workspace. Select the manuscript, open either utility, or
 use the corner **Settings** button without leaving that window.
 
-The default Python/backend paths are derived from this checkout's own location,
-so they already point at `core/` — no matter where you cloned the repo. Change
-them in **Settings → Global → Advanced runtime** if needed. Select a manuscript
-from Home; it is copied beside the `.rpp` as `Manuscript.docx`.
+Python backends run only from repo-managed local environments created by the
+quickstart script, so REAPER never needs to know or configure Python. Select a
+manuscript from Home; it is copied beside the `.rpp` as `Manuscript.docx`.
 
 ## Use
 
-1. Run **Manuscript Guide - Run**. It detects a missing or changed shared manuscript and asks
-   to build/rebuild only its own guide.
+1. Run **Narration Utils**, open **Manuscript Guide**, and choose **Build / refresh** when the
+   shared manuscript is missing or changed.
 2. Search the guide, select an entity, then edit its category, aliases, narrator-friendly
    `Say it as` value, IPA, description, personality note, and locked fields. Locked fields
    survive a rebuild.
