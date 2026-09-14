@@ -4,10 +4,10 @@ import { VIEWPORTS } from './viewports';
 import { settlePage, screenshotDir } from './helpers/settle';
 
 // Screenshots the real app (booted via the `dev:mock` webServer in
-// playwright.config.ts) into the same {page, state, viewport} shape as
-// wireframe.spec.ts. Driven entirely through real UI interaction (clicks,
-// hovers, drag-selection) using accessible-name selectors, since the app has
-// no `data-testid` convention and its state lives in React, not globals.
+// playwright.config.ts) across every {page, state, viewport} in the state
+// catalog. Driven entirely through real UI interaction (clicks, hovers,
+// drag-selection) using accessible-name selectors, since the app has no
+// `data-testid` convention and its state lives in React, not globals.
 type Driver = (page: Page) => Promise<void>;
 
 async function clickVisible(page: Page, role: Parameters<Page['getByRole']>[0], name: string | RegExp): Promise<void> {
@@ -38,9 +38,8 @@ async function clickSettingsCategory(page: Page, name: string): Promise<void> {
 }
 
 // Some states have no known/safe driver yet (e.g. alias-typeahead, forcing
-// the manuscript-not-found banner without a mock-data override seam) or
-// don't exist as a concept in the wireframe. Those are left out here on
-// purpose - the catalog entry is simply skipped for this target.
+// the manuscript-not-found banner without a mock-data override seam). Those
+// are left out here on purpose - the catalog entry is simply skipped.
 const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   home: {
     default: async () => {},
@@ -120,9 +119,9 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.waitForTimeout(800);
     },
     'results-row-expanded': async (page) => {
-      // Waits out the real mock timer (2.6s, same as the wireframe's) rather
-      // than using the mock-only "Skip to results (demo)" shortcut, since
-      // that button doesn't exist in the real (non-mock) app.
+      // Waits out the real mock timer (2.6s) rather than using the mock-only
+      // "Skip to results (demo)" shortcut, since that button doesn't exist
+      // in the real (non-mock) app.
       await goToPage(page, 'Proofing');
       await clickVisible(page, 'button', 'Start comparison');
       await page.waitForTimeout(2_900);
@@ -260,7 +259,7 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
 
 for (const entry of STATE_CATALOG) {
   const driver = APP_DRIVERS[entry.page]?.[entry.state];
-  const title = `${entry.page} / ${entry.state} [app]`;
+  const title = `${entry.page} / ${entry.state}`;
   if (!driver) {
     test.skip(title, async () => {});
     continue;
@@ -272,7 +271,7 @@ for (const entry of STATE_CATALOG) {
       await page.goto('/');
       await settlePage(page);
       await driver(page);
-      await page.screenshot({ path: `${screenshotDir('app', entry.page, entry.state)}/${viewport.name}.png` });
+      await page.screenshot({ path: `${screenshotDir(entry.page, entry.state)}/${viewport.name}.png` });
     }
   });
 }

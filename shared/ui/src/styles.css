@@ -945,7 +945,7 @@ table.proofing-table th {
   }
 }
 
-/* Wireframe shell: scroll remains available to wheel/keyboard users, but the
+/* Scroll remains available to wheel/keyboard users, but the
    reader/application chrome does not reserve or display a native gutter. */
 :root[data-theme='dark'] {
   --bg: #171410;

@@ -73,8 +73,8 @@ public sealed class ManuscriptService
     /// missing or older than the manuscript itself - same "cache analyzer
     /// output, rebuild on demand" pattern GuideService.Build() uses, just
     /// triggered automatically by staleness instead of an explicit button
-    /// (there is no separate "Build" action for the Manuscript page in the
-    /// wireframe; the reader should just always reflect the current .docx).</summary>
+    /// (there is no separate "Build" action for the Manuscript page; the
+    /// reader should just always reflect the current .docx).</summary>
     private TextCache LoadOrRebuildTextCache()
     {
         var manuscript = Manuscript ?? throw new InvalidOperationException("Select a manuscript first.");

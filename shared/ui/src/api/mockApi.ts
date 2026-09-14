@@ -1,5 +1,5 @@
-// Browser/mock API. It deliberately uses the same literal fixture as the
-// supplied wireframe so visual review never silently exercises placeholder
+// Browser/mock API. It deliberately uses the same literal fixture data
+// everywhere so visual review never silently exercises placeholder
 // content instead of the screen we are trying to match.
 import type {
   Bootstrap,
@@ -26,7 +26,7 @@ import {
   WIRE_TRANSCRIPT,
   wireClone,
   wireSettings,
-} from './wireframeFixture';
+} from './mockFixtures';
 import { loadAliceManuscript } from './aliceManuscript';
 
 export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationApi {

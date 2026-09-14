@@ -120,7 +120,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     expect(await screen.findByRole('button', { name: '+ Note' })).toBeTruthy();
   });
 
-  it('keeps the wireframe selection menu for a multi-line selection, but validates when adding a note', async () => {
+  it('keeps the selection menu open for a multi-line selection, but validates when adding a note', async () => {
     const { notify } = renderManuscript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     await waitFor(() => expect(paragraph(0)).toBeTruthy());
@@ -139,7 +139,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     expect(notify).toHaveBeenCalledWith('Select text within a single line to add a note.');
   });
 
-  it('opens an existing note with the wireframe headers and a delete button (not a bookmark toggle)', async () => {
+  it('opens an existing note with the note headers and a delete button (not a bookmark toggle)', async () => {
     const { api } = renderManuscript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     await waitFor(() => expect(document.querySelector('.note-overlay')).toBeTruthy());

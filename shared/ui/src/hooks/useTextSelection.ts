@@ -37,8 +37,7 @@ function offsetsWithinParagraph(range: Range): { paragraphIndex?: number; anchor
   return { paragraphIndex: Number(start.dataset.paragraph), anchorStart, anchorEnd: anchorStart + range.toString().length };
 }
 
-// Mirrors the wireframe's manuscript-selection behavior: selecting text
-// inside the reading pane surfaces a floating "+ Note / + Story Bible"
+// Selecting text inside the reading pane surfaces a floating "+ Note / + Story Bible"
 // toolbar anchored to the selection, instead of a per-paragraph button.
 // Returns `clear()` too, so callers can dismiss the toolbar immediately after
 // acting on a selection rather than waiting for the next mouseup/selection

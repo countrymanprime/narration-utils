@@ -21,6 +21,6 @@ export async function settlePage(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');
 }
 
-export function screenshotDir(target: 'wireframe' | 'app', pageName: string, state: string): string {
-  return `screenshots/${target}/${pageName}/${state}`;
+export function screenshotDir(pageName: string, state: string): string {
+  return `screenshots/app/${pageName}/${state}`;
 }

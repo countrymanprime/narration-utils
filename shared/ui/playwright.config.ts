@@ -1,14 +1,13 @@
 import { defineConfig } from '@playwright/test';
 
-// Screenshot-capture config for the wireframe-vs-app visual parity suite
+// Screenshot-capture config for the app's visual test suite
 // (shared/ui/tests/visual). Not a pixel-diff regression gate - see
-// tests/visual/state-catalog.ts and docs/testing/visual-deviations.md for the full picture.
+// tests/visual/state-catalog.ts for the full picture.
 export default defineConfig({
   testDir: './tests/visual',
   fullyParallel: true,
-  // The app suite hits one shared `dev:mock` server - too much parallelism
-  // causes occasional page.goto timeouts under contention (the wireframe
-  // suite has no such server and isn't affected).
+  // The suite hits one shared `dev:mock` server - too much parallelism
+  // causes occasional page.goto timeouts under contention.
   workers: 4,
   retries: 1,
   reporter: [['list']],

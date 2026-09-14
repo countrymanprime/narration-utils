@@ -12,9 +12,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"tests/**/*.ts\" \"*.{json,ts}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"tests/**/*.ts\" \"*.{json,ts}\"",
-    "screenshots": "playwright test tests/visual",
-    "screenshots:wireframe": "playwright test tests/visual/wireframe.spec.ts",
-    "screenshots:app": "playwright test tests/visual/app.spec.ts"
+    "screenshots": "playwright test tests/visual"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",

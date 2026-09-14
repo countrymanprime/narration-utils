@@ -4,12 +4,11 @@ export interface StateEntry {
   description: string;
 }
 
-// Every {page, state} pair captured by both wireframe.spec.ts and app.spec.ts,
-// at every size in viewports.ts. This is the single naming authority so
-// screenshots/<target>/<page>/<state>/<viewport>.png always pairs up
-// between the wireframe and the app. Each spec file supplies its own driver
-// (how to reach the state) keyed by page+state - see WIREFRAME_DRIVERS in
-// wireframe.spec.ts and APP_DRIVERS in app.spec.ts.
+// Every {page, state} pair captured by app.spec.ts, at every size in
+// viewports.ts. This is the single naming authority for
+// screenshots/app/<page>/<state>/<viewport>.png. app.spec.ts supplies its
+// own driver (how to reach the state) keyed by page+state - see
+// APP_DRIVERS in app.spec.ts.
 export const STATE_CATALOG: StateEntry[] = [
   // Home
   { page: 'home', state: 'default', description: 'Home, manuscript found' },
@@ -20,21 +19,14 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'home',
     state: 'hint-chips',
     description:
-      'Vocabulary hint chips widget (accepted + pending) - lives on Proofing in both wireframe and app, catalogued under "home" for historical reasons',
+      'Vocabulary hint chips widget (accepted + pending) - lives on Proofing, catalogued under "home" for historical reasons',
   },
   { page: 'home', state: 'info-tooltip', description: 'Home, info icon tooltip visible' },
 
   // Manuscript
-  // 2026-09-13: reading-width presets (narrow/comfortable/wide/full) were
-  // replaced with a fixed full-width column + text-size control (an
-  // approved deviation, see docs/testing/visual-deviations.md) - the app side now drives its
-  // text-size options; the wireframe side still shows its original width
-  // presets as the closest analogous state, since that control still exists
-  // there. These are NOT expected to be pixel-equivalent, just close enough
-  // to sanity-check nothing else regressed.
-  { page: 'manuscript', state: 'reader-text-small', description: 'Manuscript, small text size (app) / narrow width (wireframe, deviated)' },
-  { page: 'manuscript', state: 'reader-text-medium', description: 'Manuscript, medium text size (app) / comfortable width (wireframe, deviated)' },
-  { page: 'manuscript', state: 'reader-text-large', description: 'Manuscript, large text size (app) / wide width (wireframe, deviated)' },
+  { page: 'manuscript', state: 'reader-text-small', description: 'Manuscript, small text size' },
+  { page: 'manuscript', state: 'reader-text-medium', description: 'Manuscript, medium text size' },
+  { page: 'manuscript', state: 'reader-text-large', description: 'Manuscript, large text size' },
   { page: 'manuscript', state: 'chapters-overlay-open', description: 'Manuscript, chapters & search overlay open' },
   { page: 'manuscript', state: 'detail-sidebar-note', description: 'Manuscript, detail sidebar open on a note' },
   { page: 'manuscript', state: 'detail-sidebar-entity', description: 'Manuscript, detail sidebar open on an entity' },

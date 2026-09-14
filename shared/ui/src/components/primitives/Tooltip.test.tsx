@@ -7,14 +7,14 @@ afterEach(cleanup);
 
 describe('Tooltip', () => {
   it('renders tooltip text in the fixed portal on keyboard focus', () => {
-    render(<Tooltip text="Helpful wireframe guidance" />);
+    render(<Tooltip text="Helpful tooltip guidance" />);
     fireEvent.focus(screen.getByText('i'));
-    expect(screen.getByRole('tooltip').textContent).toBe('Helpful wireframe guidance');
+    expect(screen.getByRole('tooltip').textContent).toBe('Helpful tooltip guidance');
     expect(screen.getByRole('tooltip').id).toBe('tooltip-layer');
   });
 
   it('hides the tooltip again on blur', () => {
-    render(<Tooltip text="Helpful wireframe guidance" />);
+    render(<Tooltip text="Helpful tooltip guidance" />);
     const trigger = screen.getByText('i');
     fireEvent.focus(trigger);
     fireEvent.blur(trigger);

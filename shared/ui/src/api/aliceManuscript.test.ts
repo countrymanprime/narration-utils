@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseAliceManuscript } from './aliceManuscript';
-import { aliceChapterSeeds } from './wireframeFixture';
+import { aliceChapterSeeds } from './mockFixtures';
 
 const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 

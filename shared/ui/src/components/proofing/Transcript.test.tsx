@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Transcript } from './Transcript';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
-import { WIRE_TRANSCRIPT } from '../../api/wireframeFixture';
+import { WIRE_TRANSCRIPT } from '../../api/mockFixtures';
 
 afterEach(cleanup);
 
