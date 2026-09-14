@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileExport, faLock, faPlus, faRotate, faXmark } from '@fortawesome/free-solid-svg-icons';
 import type { GuideEntity } from '../../types';
@@ -21,16 +22,15 @@ const TAB_PLURAL: Record<string, string> = {
 
 export function Guide({
   notify,
-  focusEntityId,
-  onFocusEntityConsumed,
   goToManuscript,
 }: {
   notify: (text: string) => void;
-  focusEntityId?: string;
-  onFocusEntityConsumed?: () => void;
   goToManuscript: (chapter: string, paragraph: number) => void;
 }) {
   const api = useApi();
+  const location = useLocation();
+  const routerNavigate = useNavigate();
+  const entityId = location.hash ? decodeURIComponent(location.hash.slice(1)) : undefined;
   const [rows, setRows] = useState<GuideEntity[]>([]);
   const [selectedId, setSelectedId] = useState<string>();
   const [query, setQuery] = useState('');
@@ -41,15 +41,15 @@ export function Guide({
     try {
       const next = (await api.guideEntities()) || [];
       setRows(next);
-      setSelectedId((current) => (next.find((row) => row.id === (selectId ?? focusEntityId ?? current)) || next.find((row) => row.category !== 'Draft'))?.id);
-      if (focusEntityId) onFocusEntityConsumed?.();
+      setSelectedId((current) => (next.find((row) => row.id === (selectId ?? current)) || next.find((row) => row.category !== 'Draft'))?.id);
     } catch (error) {
       notify(String(error));
     }
   };
   useEffect(() => {
-    void load();
-  }, []);
+    void load(entityId);
+    if (entityId) routerNavigate('/story-bible', { replace: true });
+  }, [entityId]);
 
   // A Draft entry (a brand new, not-yet-categorized entity) is hidden from
   // every tab/search except while it's the one open in the detail pane - it

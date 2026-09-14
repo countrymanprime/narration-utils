@@ -18,6 +18,7 @@ export function ChapterNav({
   bookmarks,
   searchQuery,
   searchResults,
+  lineNumbers,
   select,
   removeBookmark,
 }: {
@@ -26,10 +27,12 @@ export function ChapterNav({
   bookmarks: ReaderBookmark[];
   searchQuery: string;
   searchResults: SearchHit[];
+  lineNumbers: Map<number, number>;
   select: (id: string, paragraph?: number) => void;
   removeBookmark: (id: string) => void;
 }) {
   const searching = Boolean(searchQuery.trim());
+  const lineNumber = (paragraph?: number) => (paragraph === undefined ? undefined : (lineNumbers.get(paragraph) ?? paragraph));
   const matchesFor = (chapter: ManuscriptChapter) => searchResults.filter((hit) => hit.chapter === chapter.title);
   const visibleChapters = searching ? chapters.filter((chapter) => matchesFor(chapter).length > 0) : chapters;
   return (
@@ -56,12 +59,12 @@ export function ChapterNav({
               ? matchesFor(chapter).map((hit, index) => (
                   <div key={`${hit.paragraph}-${index}`} className="chapter-nav-bookmark-item chapter-nav-search-item">
                     <button
-                      aria-label={`Search result in ${chapter.title}, line ${hit.sourceLine ?? hit.paragraph}`}
+                      aria-label={`Search result in ${chapter.title}, line ${lineNumber(hit.paragraph)}`}
                       onClick={() => select(chapter.id, hit.paragraph)}
                     >
                       <FontAwesomeIcon icon={faMagnifyingGlass} />
                       <span className="truncate">
-                        Line {hit.sourceLine ?? hit.paragraph} · {hit.excerpt}
+                        Line {lineNumber(hit.paragraph)} · {hit.excerpt}
                       </span>
                     </button>
                   </div>
@@ -72,7 +75,7 @@ export function ChapterNav({
                     <div key={item.id} className="chapter-nav-bookmark-item">
                       <button onClick={() => select(chapter.id, item.paragraph)}>
                         <FontAwesomeIcon icon={faBookmark} />
-                        {item.kind === 'note' ? 'Note' : `Line ${item.sourceLine ?? item.paragraph}`}
+                        {item.kind === 'note' ? 'Note' : `Line ${lineNumber(item.paragraph)}`}
                       </button>
                       <button aria-label={`Remove ${item.kind} bookmark`} onClick={() => removeBookmark(item.id)}>
                         ×

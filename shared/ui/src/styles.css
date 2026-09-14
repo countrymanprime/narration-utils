@@ -826,10 +826,9 @@ table.proofing-table th {
   overflow: visible;
   scroll-margin-top: var(--band-h, 4rem);
 }
-/* Pinning is applied via inline style (position:fixed, computed in JS) once
-   the card has scrolled under the band - see the pin effect in
-   Manuscript.tsx. No CSS position:sticky here; see docs/testing/visual-deviations.md. */
 .reader-chapter-header {
+  position: sticky;
+  top: var(--band-h, 4rem);
   z-index: 10;
   display: grid;
   grid-template-columns: 1.4rem minmax(0, 1fr) auto;
@@ -1348,7 +1347,17 @@ table.proofing-table th {
   margin: 0 0 1rem;
   border: 1px solid var(--border);
   background: var(--surface);
+}
+/* Not overflow:hidden on the card itself - that would make the card a
+   sticky-positioning containing block, breaking the chapter header's
+   position:sticky against page scroll. The card's rounded bottom corners
+   are clipped on the body wrapper below instead. */
+.reader-chapter.chapter-card {
+  overflow: visible;
+}
+.reader-chapter .manuscript-reader {
   overflow: hidden;
+  border-radius: 0 0 0.5rem 0.5rem;
 }
 .reader-chapter-header {
   padding: 0.8rem 1.25rem;

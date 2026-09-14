@@ -51,7 +51,7 @@ export function Home({
           </span>
         </div>
         {found ? (
-          <button className="btn btn-ghost text-xs" onClick={() => go('Manuscript')}>
+          <button className="btn btn-ghost text-xs" onClick={() => go('/manuscript')}>
             View manuscript →
           </button>
         ) : (
@@ -68,7 +68,7 @@ export function Home({
       </section>
       <AudiobookEstimatePanel notify={notify} goToManuscript={goToManuscript} />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <button aria-label="Open Proofing" className="panel panel-body text-left transition hover:-translate-y-px" onClick={() => go('Proofing')}>
+        <button aria-label="Open Proofing" className="panel panel-body text-left transition hover:-translate-y-px" onClick={() => go('/proofing')}>
           <div className="mb-1 flex items-center justify-between">
             <span className="section-label">Proofing</span>
             <span className="badge" style={{ background: 'var(--review-soft)', color: 'var(--review)' }}>
@@ -80,7 +80,7 @@ export function Home({
             Track 3 — “Ch.1 take 4” · run today
           </div>
         </button>
-        <button aria-label="Open Story Bible" className="panel panel-body text-left transition hover:-translate-y-px" onClick={() => go('Story Bible')}>
+        <button aria-label="Open Story Bible" className="panel panel-body text-left transition hover:-translate-y-px" onClick={() => go('/story-bible')}>
           <div className="mb-1 flex items-center justify-between">
             <span className="section-label">Story Bible</span>
             <span className="badge" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>

@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faList, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderBookmark, ReaderState, SearchHit } from '../../types';
-import { categoryCssName, STORY_BIBLE_TABS } from '../../state';
+import { categoryCssName, chapterLineNumbers, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { useTextSelection } from '../../hooks/useTextSelection';
 import { Heading } from '../primitives/Heading';
@@ -15,7 +16,6 @@ import { SelectionMenu } from './SelectionMenu';
 import { AddNoteDialog } from './AddNoteDialog';
 import { EntitySummary } from './EntitySummary';
 
-type ReaderIntent = { chapter?: string; paragraph?: number };
 const TEXT_SIZES = ['small', 'medium', 'large'] as const;
 const READER_TEXT_CLASSES = { small: 'text-sm leading-5', medium: 'text-base leading-6', large: 'text-xl leading-7' } as const;
 const LINE_NUMBER_PADDING_CLASSES = { small: '!pt-2', medium: '!pt-2.5', large: '!pt-3' } as const;
@@ -26,15 +26,13 @@ const escapeSelector = (value: string) =>
 export function Manuscript({
   notify,
   focusStoryBibleEntity,
-  intent,
-  consumeIntent,
 }: {
   notify: (text: string) => void;
   focusStoryBibleEntity: (id: string) => void;
-  intent?: ReaderIntent;
-  consumeIntent?: () => void;
 }) {
   const api = useApi();
+  const location = useLocation();
+  const routerNavigate = useNavigate();
   const readerRef = useRef<HTMLDivElement>(null);
   const bandRef = useRef<HTMLDivElement>(null);
   const searchRequest = useRef(0);
@@ -52,6 +50,7 @@ export function Manuscript({
   const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
   const { selection, clear: clearSelection } = useTextSelection(readerRef);
   const active = readerState.activeChapter || chapters[0]?.title;
+  const lineNumbers = useMemo(() => chapterLineNumbers(paragraphs), [paragraphs]);
 
   useEffect(() => {
     const element = bandRef.current;
@@ -119,12 +118,29 @@ export function Manuscript({
     };
     requestAnimationFrame(attempt);
   };
+  // Deep links into a specific paragraph/chapter arrive as a URL anchor -
+  // "#p123" for paragraph 123 (its globally unique index, assigned at
+  // manuscript import - see manuscript_guide.py's export_manuscript), or
+  // "#cChapter Title" to land on a chapter without a specific line. A
+  // paragraph anchor needs `paragraphs` loaded to resolve its chapter, so
+  // this waits (re-running as paragraphs arrives) instead of dropping the
+  // link if it fires before the fetch completes.
   useEffect(() => {
-    if (intent?.paragraph !== undefined) {
-      showChapter(intent.chapter || paragraphs.find((row) => row.index === intent.paragraph)?.chapter || '', intent.paragraph);
-      consumeIntent?.();
+    const hash = location.hash;
+    if (!hash) return;
+    if (hash.startsWith('#p')) {
+      const paragraph = Number(hash.slice(2));
+      if (Number.isNaN(paragraph)) return;
+      const chapter = paragraphs.find((row) => row.index === paragraph)?.chapter;
+      if (!chapter) return;
+      showChapter(chapter, paragraph);
+    } else if (hash.startsWith('#c')) {
+      showChapter(decodeURIComponent(hash.slice(2)));
+    } else {
+      return;
     }
-  }, [intent?.paragraph]);
+    routerNavigate('/manuscript', { replace: true });
+  }, [location.hash, paragraphs]);
   const toggleManualChapter = (chapter: string) => {
     const expanded = new Set(readerState.expandedChapters || []);
     if (expanded.has(chapter)) expanded.delete(chapter);
@@ -369,6 +385,7 @@ export function Manuscript({
                   bookmarks={readerState.bookmarks}
                   searchQuery={searchQuery}
                   searchResults={searchResults}
+                  lineNumbers={lineNumbers}
                   select={(id, paragraph) => {
                     const chapter = chapters.find((item) => item.id === id);
                     if (chapter) {

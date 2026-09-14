@@ -5,6 +5,7 @@ import type {
   Bootstrap,
   ChapterStatus,
   GuideEntity,
+  GuideEvidence,
   HostReady,
   ManuscriptNote,
   NarrationApi,
@@ -45,6 +46,25 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
         .filter((entity) => [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)].some((term) => paragraph.text.includes(term)))
         .map((entity) => entity.id),
     }));
+    // WIRE_ENTITIES' occurrence paragraph numbers are computed against the
+    // small local seed fixture, not the real manuscript text just loaded
+    // above, so they'd point at the wrong line ("go to line" landing
+    // nowhere near the actual occurrence) - recompute them against the
+    // paragraphs that are now actually in the reader.
+    const evidenceFor = (term: string): GuideEvidence[] =>
+      paragraphs
+        .filter((paragraph) => paragraph.text.includes(term))
+        .map((paragraph) => ({ chapter: paragraph.chapter, paragraph: paragraph.index, sourceLine: paragraph.sourceLine, excerpt: paragraph.text }));
+    entities = entities.map((entity) => {
+      const occurrences = evidenceFor(entity.canonical_name);
+      const aliases = entity.aliases.map((alias) => ({ ...alias, occurrences: evidenceFor(alias.text) }));
+      return {
+        ...entity,
+        occurrences,
+        aliases,
+        occurrence_count: occurrences.length + aliases.reduce((total, alias) => total + alias.occurrences.length, 0),
+      };
+    });
   });
   const vocabularyCandidates = Array.from(new Set(entities.flatMap((entity) => [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)])));
   let transcript: TranscriptState = wireClone(WIRE_TRANSCRIPT);
@@ -154,7 +174,10 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     },
     settingsForScope: async (scope) => wireClone(settings[scope]),
     guideBuild: async () => 'Story Bible refreshed — 1 entry needs review.',
-    guideEntities: async () => wireClone(entities),
+    guideEntities: async () => {
+      await manuscriptReady;
+      return wireClone(entities);
+    },
     guideEdit: async (id, values) =>
       updateEntity(id, (entity) => ({
         ...entity,

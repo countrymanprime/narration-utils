@@ -1,10 +1,16 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { createMockApi } from './api/mockApi';
 
+// BrowserRouter reads/writes the real window.location via history.pushState,
+// which jsdom keeps alive across tests in this file - reset it so each test
+// starts at "/".
+beforeEach(() => {
+  window.history.replaceState(null, '', '/');
+});
 afterEach(cleanup);
 
 function renderApp(overrides: Parameters<typeof createMockApi>[0] = {}) {

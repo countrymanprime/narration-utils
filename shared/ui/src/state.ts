@@ -1,4 +1,4 @@
-import type { Discrepancy, GuideEntity, GuideEvidence, TranscriptState } from './types';
+import type { Discrepancy, GuideEntity, GuideEvidence, ManuscriptParagraph, TranscriptState } from './types';
 
 export const isTranscriptActive = (phase: TranscriptState['phase']) => phase === 'preparing' || phase === 'running';
 export const selectDiscrepancy = (rows: Discrepancy[], id?: string): Discrepancy | undefined => rows.find((row) => row.id === id) ?? rows[0];
@@ -86,6 +86,21 @@ export const highlightEntitiesInText = (text: string, entities: { name: string; 
 // Record/edit/proof phases use standard multipliers of that finished length.
 export const WORDS_PER_FINISHED_HOUR = 9300;
 export const estimateFinishedHours = (wordCount: number): number => wordCount / WORDS_PER_FINISHED_HOUR;
+
+// The reader numbers each paragraph 1, 2, 3... within its own chapter (see
+// ParagraphView's chapterParagraphIndex) rather than by its global index or
+// its raw source-document line - anything elsewhere that references "line
+// N" (search results, bookmarks) needs this same number, keyed by global
+// paragraph index, to point at what the reader actually shows.
+export const chapterLineNumbers = (paragraphs: ManuscriptParagraph[]): Map<number, number> => {
+  const map = new Map<number, number>();
+  const counts: Record<string, number> = {};
+  paragraphs.forEach((paragraph) => {
+    counts[paragraph.chapter] = (counts[paragraph.chapter] || 0) + 1;
+    map.set(paragraph.index, counts[paragraph.chapter]);
+  });
+  return map;
+};
 
 export type EntitySort = { key: 'name' | 'occurrences'; dir: 'asc' | 'desc' };
 export const sortEntities = (entities: GuideEntity[], sort: EntitySort): GuideEntity[] => {

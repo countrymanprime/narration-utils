@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Manuscript } from './Manuscript';
 import { ApiProvider } from '../../api/ApiContext';
@@ -12,9 +13,11 @@ function renderManuscript(overrides: Parameters<typeof createMockApi>[0] = {}, f
   const notify = vi.fn();
   render(
     <div className="shell-content">
-      <ApiProvider api={api}>
-        <Manuscript notify={notify} focusStoryBibleEntity={focusStoryBibleEntity} />
-      </ApiProvider>
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <Manuscript notify={notify} focusStoryBibleEntity={focusStoryBibleEntity} />
+        </ApiProvider>
+      </MemoryRouter>
     </div>,
   );
   return { api, focusStoryBibleEntity, notify };
@@ -219,8 +222,8 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     fireEvent.change(input, { target: { value: 'old' } });
     fireEvent.change(input, { target: { value: 'new' } });
 
-    await screen.findByLabelText('Search result in Chapter 2, line 200');
+    await screen.findByLabelText(/Search result in Chapter 2/);
     resolveOld([{ chapter: 'Chapter 1', paragraph: 0, sourceLine: 10, excerpt: 'old result' }]);
-    await waitFor(() => expect(screen.queryByLabelText('Search result in Chapter 1, line 10')).toBeNull());
+    await waitFor(() => expect(screen.queryByLabelText(/Search result in Chapter 1/)).toBeNull());
   });
 });

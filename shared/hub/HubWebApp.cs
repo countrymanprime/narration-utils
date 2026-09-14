@@ -22,9 +22,10 @@ public static class HubWebApp
             }
         });
 
+        Microsoft.Extensions.FileProviders.PhysicalFileProvider? uiProvider = null;
         if (Directory.Exists(uiDistDir))
         {
-            var uiProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uiDistDir);
+            uiProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uiDistDir);
             app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = uiProvider, RequestPath = "" });
             app.UseStaticFiles(new StaticFileOptions { FileProvider = uiProvider, RequestPath = "" });
         }
@@ -37,6 +38,11 @@ public static class HubWebApp
         }
 
         app.MapHubApi(hub);
+
+        // The UI uses client-side (browser) routing, so any request that
+        // doesn't match a static file or an API route is a deep link into
+        // the SPA (e.g. /manuscript/Chapter%201/4) - serve index.html for it.
+        if (uiProvider != null) app.MapFallbackToFile("index.html", new StaticFileOptions { FileProvider = uiProvider });
 
         return app;
     }

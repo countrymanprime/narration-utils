@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import type { Bootstrap } from './types';
 import { useApi } from './api/ApiContext';
 import { AppShell } from './components/layout/AppShell';
@@ -14,18 +15,25 @@ import { TooltipProvider } from './components/primitives/Tooltip';
 import { ErrorBoundary } from './components/primitives/ErrorBoundary';
 
 export function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
+  );
+}
+
+function AppRoutes() {
   const api = useApi();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [data, setData] = useState<Bootstrap>();
-  const [page, setPage] = useState('Home');
   const [notice, setNotice] = useState('');
   const [startup, setStartup] = useState<StartupState>('connecting');
   const [startupError, setStartupError] = useState('');
   const [diagnosticId, setDiagnosticId] = useState('');
   const [retryKey, setRetryKey] = useState(0);
   const [settingsDirty, setSettingsDirty] = useState(false);
-  const [pendingPage, setPendingPage] = useState<string>();
-  const [focusEntityId, setFocusEntityId] = useState<string>();
-  const [manuscriptIntent, setManuscriptIntent] = useState<{ chapter?: string; paragraph?: number }>();
+  const [pendingPath, setPendingPath] = useState<string>();
   const settingsActions = useRef<{ save: () => Promise<void>; discard: () => Promise<void> }>();
 
   // Startup verifies the host and then loads its bootstrap payload.
@@ -114,79 +122,59 @@ export function App() {
       />
     );
 
-  const navigate = (next: string) => {
-    if (next !== page && page === 'Settings' && settingsDirty) {
-      setPendingPage(next);
+  // Deep links are expressed as a URL anchor on the fixed page path, not as
+  // path params - "#p123" points at paragraph 123 (its globally unique
+  // index, assigned when the manuscript is imported), "#cChapter Title" at a
+  // chapter with no specific line, and "#<entityId>" at a Story Bible entry.
+  // See Manuscript.tsx/Guide.tsx for where these are consumed.
+  const goToManuscript = (chapter: string, paragraph?: number) =>
+    guardedNavigate(`/manuscript#${paragraph !== undefined ? `p${paragraph}` : `c${encodeURIComponent(chapter)}`}`);
+  const goToStoryBible = (entityId: string) => guardedNavigate(`/story-bible#${encodeURIComponent(entityId)}`);
+
+  const guardedNavigate = (next: string) => {
+    const nextPath = next.split('#')[0] || '/';
+    if (nextPath !== location.pathname && location.pathname === '/settings' && settingsDirty) {
+      setPendingPath(next);
       return;
     }
-    if (next !== page && page === 'Proofing') void api.transcriptReset().catch(() => {});
-    setPage(next);
+    if (nextPath !== location.pathname && location.pathname === '/proofing') void api.transcriptReset().catch(() => {});
+    navigate(next);
   };
 
   return (
     <div className="h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       <TooltipProvider>
-        <AppShell page={page} navigate={navigate} projectName={data.projectName} daw={data.daw}>
-          <ErrorBoundary key={page}>
-            {page === 'Home' && (
-              <Home
-                data={data}
-                go={navigate}
-                notify={setNotice}
-                goToManuscript={(chapter) => {
-                  setManuscriptIntent({ chapter, paragraph: 0 });
-                  navigate('Manuscript');
-                }}
+        <AppShell pathname={location.pathname} navigate={guardedNavigate} projectName={data.projectName} daw={data.daw}>
+          <ErrorBoundary key={location.pathname.split('/')[1] || 'home'}>
+            <Routes>
+              <Route path="/" element={<Home data={data} go={guardedNavigate} notify={setNotice} goToManuscript={goToManuscript} />} />
+              <Route path="/manuscript" element={<Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} />} />
+              <Route path="/story-bible" element={<Guide notify={setNotice} goToManuscript={goToManuscript} />} />
+              <Route
+                path="/proofing"
+                element={
+                  <Transcript state={data.transcript} notify={setNotice} goHome={() => guardedNavigate('/')} goToManuscript={goToManuscript} />
+                }
               />
-            )}
-            {page === 'Manuscript' && (
-              <Manuscript
-                notify={setNotice}
-                intent={manuscriptIntent}
-                consumeIntent={() => setManuscriptIntent(undefined)}
-                focusStoryBibleEntity={(id) => {
-                  setFocusEntityId(id);
-                  navigate('Story Bible');
-                }}
+              <Route
+                path="/settings"
+                element={
+                  <Settings
+                    data={data}
+                    notify={setNotice}
+                    onDirtyChange={setSettingsDirty}
+                    registerActions={(actions) => {
+                      settingsActions.current = actions;
+                    }}
+                  />
+                }
               />
-            )}
-            {page === 'Story Bible' && (
-              <Guide
-                notify={setNotice}
-                focusEntityId={focusEntityId}
-                onFocusEntityConsumed={() => setFocusEntityId(undefined)}
-                goToManuscript={(chapter, paragraph) => {
-                  setManuscriptIntent({ chapter, paragraph });
-                  navigate('Manuscript');
-                }}
-              />
-            )}
-            {page === 'Proofing' && (
-              <Transcript
-                state={data.transcript}
-                notify={setNotice}
-                goHome={() => navigate('Home')}
-                goToManuscript={(chapter, paragraph) => {
-                  setManuscriptIntent({ chapter, paragraph });
-                  navigate('Manuscript');
-                }}
-              />
-            )}
-            {page === 'Settings' && (
-              <Settings
-                data={data}
-                notify={setNotice}
-                onDirtyChange={setSettingsDirty}
-                registerActions={(actions) => {
-                  settingsActions.current = actions;
-                }}
-              />
-            )}
+            </Routes>
           </ErrorBoundary>
           {notice && <Toast key={notice} text={notice} dismiss={() => setNotice('')} />}
         </AppShell>
       </TooltipProvider>
-      {pendingPage && (
+      {pendingPath && (
         <ConfirmDialog
           title="Unsaved settings"
           body="Save or discard changes before leaving Settings?"
@@ -194,19 +182,19 @@ export function App() {
           confirm={() =>
             void settingsActions.current?.save().then(() => {
               setSettingsDirty(false);
-              setPage(pendingPage);
-              setPendingPage(undefined);
+              navigate(pendingPath);
+              setPendingPath(undefined);
             })
           }
           dangerLabel="Discard & continue"
           danger={() =>
             void settingsActions.current?.discard().then(() => {
               setSettingsDirty(false);
-              setPage(pendingPage);
-              setPendingPage(undefined);
+              navigate(pendingPath);
+              setPendingPath(undefined);
             })
           }
-          cancel={() => setPendingPage(undefined)}
+          cancel={() => setPendingPath(undefined)}
         />
       )}
     </div>

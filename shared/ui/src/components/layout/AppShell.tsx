@@ -4,21 +4,22 @@ import { faBars, faBookOpen, faFileLines, faFolder, faGear, faHouse, faMicrophon
 import { NavButton } from '../primitives/NavButton';
 
 const NAV = [
-  { name: 'Home', icon: faHouse },
-  { name: 'Manuscript', icon: faFileLines },
-  { name: 'Proofing', icon: faWaveSquare },
-  { name: 'Story Bible', icon: faBookOpen },
+  { name: 'Home', path: '/', icon: faHouse },
+  { name: 'Manuscript', path: '/manuscript', icon: faFileLines },
+  { name: 'Proofing', path: '/proofing', icon: faWaveSquare },
+  { name: 'Story Bible', path: '/story-bible', icon: faBookOpen },
 ];
+const isActivePath = (pathname: string, path: string) => (path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`));
 
 export function AppShell({
-  page,
+  pathname,
   navigate,
   projectName,
   daw,
   children,
 }: {
-  page: string;
-  navigate: (page: string) => void;
+  pathname: string;
+  navigate: (path: string) => void;
   projectName: string;
   daw: string;
   children: ReactNode;
@@ -28,6 +29,7 @@ export function AppShell({
     setDrawerOpen(false);
     navigate(next);
   };
+  const settingsActive = isActivePath(pathname, '/settings');
   const navigation = (
     <>
       <div className="brand-block">
@@ -41,13 +43,13 @@ export function AppShell({
       </div>
       <nav className="shell-nav">
         {NAV.map((item) => (
-          <NavButton key={item.name} active={page === item.name} icon={item.icon} onClick={() => go(item.name)}>
+          <NavButton key={item.name} active={isActivePath(pathname, item.path)} icon={item.icon} onClick={() => go(item.path)}>
             {item.name}
           </NavButton>
         ))}
       </nav>
       <div className="shell-settings">
-        <NavButton active={page === 'Settings'} icon={faGear} onClick={() => go('Settings')}>
+        <NavButton active={settingsActive} icon={faGear} onClick={() => go('/settings')}>
           Settings
         </NavButton>
       </div>
@@ -58,12 +60,12 @@ export function AppShell({
       <aside className="desktop-sidebar">{navigation}</aside>
       <aside className="medium-rail" aria-label="Primary navigation">
         {NAV.map((item) => (
-          <NavButton key={item.name} active={page === item.name} icon={item.icon} onClick={() => go(item.name)}>
+          <NavButton key={item.name} active={isActivePath(pathname, item.path)} icon={item.icon} onClick={() => go(item.path)}>
             {item.name}
           </NavButton>
         ))}
         <div className="mt-auto">
-          <NavButton active={page === 'Settings'} icon={faGear} onClick={() => go('Settings')}>
+          <NavButton active={settingsActive} icon={faGear} onClick={() => go('/settings')}>
             Settings
           </NavButton>
         </div>
@@ -93,7 +95,7 @@ export function AppShell({
             {daw}
           </span>
         </header>
-        <div className={`shell-content scroll-chrome-hidden ${page === 'Manuscript' ? 'manuscript-content' : ''}`}>{children}</div>
+        <div className={`shell-content scroll-chrome-hidden ${isActivePath(pathname, '/manuscript') ? 'manuscript-content' : ''}`}>{children}</div>
       </main>
     </div>
   );
