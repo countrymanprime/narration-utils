@@ -24,6 +24,7 @@ This folder records planned work for a local-first audiobook narration toolkit. 
 2. Read the [findings contract](architecture/findings-contract.md) before adding any analyzer or dashboard action.
 3. Use the workflow documents to understand how utilities combine: [manuscript/editorial](workflows/manuscript-and-editorial-review.md), [recording/comping](workflows/recording-and-comping.md), [character continuity](workflows/character-continuity.md), and [technical QC/handoff](workflows/technical-qc-and-handoff.md).
 4. Each planned utility has a dedicated implementation brief in [utilities/](utilities/).
+5. Before adding a local model, executable, or model pack, use the [local dependency evaluation and license plan](research/local-dependency-evaluation.md).
 
 ## Terms
 
