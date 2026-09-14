@@ -184,13 +184,13 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     await waitFor(() => expect(document.querySelector('[data-paragraph="0"]')).toBeTruthy());
   });
 
-  it('uses outline/fill chapter bookmarks and right-gutter paragraph bookmarks', async () => {
+  it('uses outline/fill chapter bookmarks and has no per-paragraph bookmark gutter', async () => {
     renderManuscript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     expect(document.querySelector('.chapter-bookmark-target > .chapter-bookmark .bookmark-outline')).toBeTruthy();
     expect(document.querySelector('.chapter-bookmark-target > .chapter-bookmark .bookmark-fill')).toBeTruthy();
-    expect(document.querySelector('.ms-marker-gutter .paragraph-bookmark')).toBeTruthy();
-    expect(document.querySelector('.ms-gutter .gutter-bookmark')).toBeNull();
+    expect(document.querySelector('.ms-marker-gutter')).toBeNull();
+    expect(document.querySelector('.paragraph-bookmark')).toBeNull();
     expect(document.querySelector('.marker-count')).toBeNull();
   });
 

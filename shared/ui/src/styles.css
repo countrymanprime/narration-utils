@@ -580,11 +580,10 @@
   }
   .ms-line {
     display: grid;
-    grid-template-columns: 2.35rem minmax(0, 1fr) 2.35rem;
+    grid-template-columns: 2.35rem minmax(0, 1fr);
     min-height: 2rem;
   }
-  .ms-gutter,
-  .ms-marker-gutter {
+  .ms-gutter {
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -594,14 +593,8 @@
     font-size: 0.62rem;
     line-height: 1;
     user-select: none;
-  }
-  .ms-gutter {
     border-right: 1px solid var(--border);
     font-family: 'IBM Plex Mono', monospace;
-  }
-  .ms-marker-gutter {
-    justify-content: center;
-    border-left: 1px solid var(--border);
   }
   .ms-content {
     min-width: 0;
@@ -1120,8 +1113,7 @@ table.proofing-table th {
 .chapter-card-header {
   padding: 0.8rem 3.25rem 0.7rem;
 }
-.ms-gutter,
-.ms-marker-gutter {
+.ms-gutter {
   color: var(--line-gutter, var(--text-faint));
 }
 .marker-count.has-markers {
@@ -1544,7 +1536,7 @@ table.proofing-table th {
   opacity: 1;
 }
 .ms-line {
-  grid-template-columns: 3.5rem minmax(0, 1fr) 2.35rem;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
 }
 .ms-gutter {
   align-items: flex-start;
@@ -1580,8 +1572,7 @@ table.proofing-table th {
 .chapter-bookmark .bookmark-outline {
   opacity: 0.48;
 }
-.chapter-bookmark .bookmark-fill,
-.paragraph-bookmark .bookmark-fill {
+.chapter-bookmark .bookmark-fill {
   position: absolute;
   inset: 0;
   opacity: 0;
@@ -1609,38 +1600,6 @@ table.proofing-table th {
 }
 .source-line-number {
   padding-top: 0.1rem;
-}
-.ms-marker-gutter {
-  align-items: flex-start;
-  padding: 0.3rem 0.42rem;
-}
-.paragraph-bookmark {
-  position: relative;
-  display: inline-flex;
-  width: 1.3rem;
-  height: 1.3rem;
-  align-items: center;
-  justify-content: center;
-  color: var(--bookmark);
-  opacity: 0;
-  transition: opacity 0.12s ease;
-}
-.paragraph-bookmark .bookmark-outline {
-  opacity: 0;
-}
-.ms-line:hover .paragraph-bookmark,
-.paragraph-bookmark:focus-visible {
-  opacity: 0.68;
-}
-.ms-line:hover .paragraph-bookmark .bookmark-fill,
-.paragraph-bookmark:focus-visible .bookmark-fill {
-  opacity: 1;
-}
-.paragraph-bookmark.active {
-  opacity: 1;
-}
-.paragraph-bookmark.active .bookmark-fill {
-  opacity: 1;
 }
 .chapter-nav-search-item button:first-child {
   width: 100%;

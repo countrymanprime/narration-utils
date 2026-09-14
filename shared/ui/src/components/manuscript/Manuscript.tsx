@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faList, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
-import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderBookmark, ReaderState, SearchHit } from '../../types';
+import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderState, SearchHit } from '../../types';
 import { categoryCssName, chapterLineNumbers, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { useTextSelection } from '../../hooks/useTextSelection';
@@ -147,16 +147,14 @@ export function Manuscript({
     else expanded.add(chapter);
     void saveState({ ...readerState, activeChapter: chapter, expandedChapters: [...expanded] });
   };
-  const toggleBookmark = async (kind: ReaderBookmark['kind'], chapter: string, paragraph?: ManuscriptParagraph, note?: ManuscriptNote) => {
-    const current = readerState.bookmarks.find(
-      (item) => item.kind === kind && item.chapter === chapter && item.paragraph === paragraph?.index && item.noteId === note?.id,
-    );
+  const toggleChapterBookmark = async (chapter: string) => {
+    const current = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapter === chapter);
     try {
       if (current) {
         await api.readerBookmarkDelete(current.id);
         setReaderState({ ...readerState, bookmarks: readerState.bookmarks.filter((item) => item.id !== current.id) });
       } else {
-        const next = await api.readerBookmarkCreate({ kind, chapter, paragraph: paragraph?.index, sourceLine: paragraph?.sourceLine, noteId: note?.id });
+        const next = await api.readerBookmarkCreate({ kind: 'chapter', chapter });
         setReaderState({ ...readerState, bookmarks: [...readerState.bookmarks, next] });
       }
     } catch (error) {
@@ -283,7 +281,7 @@ export function Manuscript({
             <article key={chapter.id} className={`reader-chapter chapter-card ${expanded ? 'expanded' : 'collapsed'}`} data-chapter={chapter.title}>
               <header className="reader-chapter-header chapter-card-header">
                 <TooltipTarget className="chapter-bookmark-target" text={chapterBookmark ? 'Remove chapter bookmark' : 'Bookmark this chapter'}>
-                  <button className={`chapter-bookmark ${chapterBookmark ? 'active' : ''}`} onClick={() => void toggleBookmark('chapter', chapter.title)}>
+                  <button className={`chapter-bookmark ${chapterBookmark ? 'active' : ''}`} onClick={() => void toggleChapterBookmark(chapter.title)}>
                     <FontAwesomeIcon className="bookmark-outline" icon={faBookmarkRegular} />
                     <FontAwesomeIcon className="bookmark-fill" icon={faBookmarkSolid} />
                   </button>
@@ -306,7 +304,6 @@ export function Manuscript({
                     paragraphs={paragraphs.filter((item) => item.chapter === chapter.title)}
                     entities={entities}
                     notes={notes.filter((item) => item.chapter === chapter.title)}
-                    bookmarks={readerState.bookmarks}
                     textClass={READER_TEXT_CLASSES[textSize]}
                     lineNumberPadding={LINE_NUMBER_PADDING_CLASSES[textSize]}
                     openEntity={(entity) => {
@@ -317,7 +314,6 @@ export function Manuscript({
                       setDetail({ note });
                       setSheet('detail');
                     }}
-                    toggleBookmark={(paragraph) => void toggleBookmark('line', chapter.title, paragraph)}
                   />
                 </div>
               )}
