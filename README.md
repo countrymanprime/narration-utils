@@ -90,12 +90,11 @@ Both tools retain their own DAW-agnostic Python backends. What they share:
 - **`shared/python/narration_common/`** — `docx_chapters.py` (shared docx-opening/paragraph-
   walking primitive), `progress.py` (the `stage|pct|message` progress-file writer,
   retry-hardened against Windows sharing violations), and `logging_utils.py` (stderr[+file]
-  logging). Each backend adds this to `sys.path` relative to its own file, so no shared virtual
-  environment is needed — `narration_common` only touches the stdlib plus `python-docx`, which
-  both venvs already have.
+  logging). Each backend adds this to `sys.path` relative to its own file.
 
 ## Dependencies
 
-Each tool keeps its own gitignored `.venv` under `core/`, since their dependency
-sets are large and unrelated (spaCy/pronouncing/phonemizer vs. faster-whisper/ctranslate2/av).
-`scripts\Quickstart.ps1` manages these environments together with the UI host.
+All first-party Python tools (Manuscript Guide, Transcript Compare, and the shared server/config
+code) share one gitignored virtual environment at the repo root (`.venv/`), built from the
+repo-root `requirements.txt`. `scripts\Quickstart.ps1` manages this environment together with
+the UI host.

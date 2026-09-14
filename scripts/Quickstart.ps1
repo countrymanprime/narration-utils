@@ -1,25 +1,23 @@
 <#
 .SYNOPSIS
-Creates every local runtime Narration Utils needs, builds its React UI, and
-publishes its .NET desktop host.
+Creates every local runtime Narration Utils needs and builds its React UI.
 
 .DESCRIPTION
-Downloads a private Python runtime, creates the Manuscript Guide and Transcript
-Compare tool environments, builds the React UI, and publishes the compiled
-desktop host (shared/hub) that opens it. Machine prerequisites are Node.js/npm
-and the .NET SDK. All Python runtimes, Python packages, virtual environments,
-Node packages, and .NET build output remain inside this checkout and are
-excluded from Git.
+Downloads a private Python runtime, creates one shared Python environment for
+every first-party tool (Manuscript Guide, Transcript Compare, and the shared
+server/config code), and builds the React UI. Machine prerequisite is
+Node.js/npm. All Python runtimes, Python packages, the virtual environment,
+and Node packages remain inside this checkout and are excluded from Git.
 
-Dependency handling (Python venvs, spaCy model, Piper voice, npm packages)
+Dependency handling (the Python venv, spaCy model, Piper voice, npm packages)
 has three modes:
 
-  (default)            Install only what's missing. Existing venvs, an
+  (default)            Install only what's missing. An existing venv, an
                         existing node_modules, an already-downloaded spaCy
                         model or Piper voice are left alone untouched.
   -SkipDependencies     Skip dependency checks entirely, even for missing
                         ones. Only use this if you already know everything
-                        is installed; the build/publish steps still run.
+                        is installed; the build step still runs.
   -UpdateDependencies   Force every dependency to be reinstalled/updated to
                         latest (pip install --upgrade, npm update, spaCy
                         model re-download), even where already installed.
@@ -172,18 +170,24 @@ $dotnet = Get-Command dotnet.exe -ErrorAction SilentlyContinue
 if (-not $dotnet) { throw 'The .NET SDK is required to build the Narration Utils desktop host. Install the .NET SDK, then run this script again.' }
 $dotnetExecutable = [string]$dotnet.Source
 
-$guidePython = Install-Environment (Join-Path $repoRoot 'tools\manuscript-guide\core\.venv') (Join-Path $repoRoot 'tools\manuscript-guide\core\requirements.txt') 'Manuscript Guide'
-$comparePython = Install-Environment (Join-Path $repoRoot 'tools\transcript-compare\core\.venv') (Join-Path $repoRoot 'tools\transcript-compare\core\requirements.txt') 'Transcript Compare'
+$sharedPython = Install-Environment (Join-Path $repoRoot '.venv') (Join-Path $repoRoot 'requirements.txt') 'Narration Utils'
+if ($SkipDependencies) {
+    Write-Host 'Skipping dev-tooling dependency check.'
+} elseif (-not $UpdateDependencies) {
+    Invoke-Checked $sharedPython @('-m', 'pip', 'install', '-r', (Join-Path $repoRoot 'tools\requirements-dev.txt')) | Out-Host
+} else {
+    Invoke-Checked $sharedPython @('-m', 'pip', 'install', '--upgrade', '-r', (Join-Path $repoRoot 'tools\requirements-dev.txt')) | Out-Host
+}
 
 if ($SkipDependencies) {
     Write-Host 'Skipping Piper preview runtime check.'
 } else {
-    Install-PiperAssets $guidePython $UpdateDependencies
+    Install-PiperAssets $sharedPython $UpdateDependencies
 }
 
 $spacyModelInstalled = $false
 if (-not $SkipDependencies) {
-    & $guidePython '-m' 'pip' 'show' 'en_core_web_sm' *> $null
+    & $sharedPython '-m' 'pip' 'show' 'en_core_web_sm' *> $null
     $spacyModelInstalled = ($LASTEXITCODE -eq 0)
 }
 if ($SkipDependencies) {
@@ -192,7 +196,7 @@ if ($SkipDependencies) {
     Write-Host 'spaCy language model already installed; skipping (pass -UpdateDependencies to refresh).'
 } else {
     Write-Host 'Installing the Manuscript Guide spaCy language model...'
-    Invoke-Checked $guidePython @('-m', 'spacy', 'download', 'en_core_web_sm')
+    Invoke-Checked $sharedPython @('-m', 'spacy', 'download', 'en_core_web_sm')
 }
 
 Push-Location (Join-Path $repoRoot 'shared\ui')

@@ -32,11 +32,12 @@ end
 -- binary (see shared/hub) - unlike the Python/pywebview host this replaced,
 -- it needs no separate preflight check and no venv of its own.
 local hub_exe = REPO_ROOT .. "\\shared\\hub\\publish\\NarrationUtilsHub.exe"
+local shared_python = REPO_ROOT .. "\\.venv\\Scripts\\python.exe"
 local manuscript_core = REPO_ROOT .. "\\tools\\manuscript-guide\\core"
 local compare_core = REPO_ROOT .. "\\tools\\transcript-compare\\core"
-local manuscript_python = manuscript_core .. "\\.venv\\Scripts\\python.exe"
+local manuscript_python = shared_python
 local manuscript_backend = manuscript_core .. "\\manuscript_guide.py"
-local compare_python = compare_core .. "\\.venv\\Scripts\\python.exe"
+local compare_python = shared_python
 local compare_backend = compare_core .. "\\compare.py"
 local ui_index = REPO_ROOT .. "\\shared\\ui\\dist\\index.html"
 
@@ -44,8 +45,8 @@ local project_folder, project_name = project_context()
 local session_dir = reaper.GetResourcePath() .. "\\NarrationUtils\\sessions\\hub_" .. tostring(reaper.time_precise()):gsub("[%.]", "")
 reaper.RecursiveCreateDirectory(session_dir .. "\\commands", 0)
 
-if not common.file_exists(hub_exe) or not common.file_exists(manuscript_python)
-  or not common.file_exists(compare_python) or not common.file_exists(ui_index) then
+if not common.file_exists(hub_exe) or not common.file_exists(shared_python)
+  or not common.file_exists(ui_index) then
   local quickstart = REPO_ROOT .. "\\scripts\\Quickstart.cmd"
   local answer = reaper.ShowMessageBox(
     "Narration Utils has not been set up in this checkout yet.\n\n"

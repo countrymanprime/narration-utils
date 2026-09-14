@@ -7,9 +7,9 @@ actually said.
 
 ## Layout
 
-- `core/` — the DAW-agnostic Python backend (`compare.py`), plus `homophones.csv`,
-  `common_words.txt`, and `requirements.txt`. No DAW APIs are used here; it's a plain CLI
-  invoked by whichever DAW driver below is running it.
+- `core/` — the DAW-agnostic Python backend (`compare.py`), plus `homophones.csv` and
+  `common_words.txt`. No DAW APIs are used here; it's a plain CLI invoked by whichever DAW
+  driver below is running it. Its dependencies are declared in the repo-root `requirements.txt`.
 - `daws/reaper/` — reserved for a future dedicated adapter. REAPER integration is currently
   centralized in `shared/reaper/narration_ui_bridge.lua`.
 - `daws/audacity/` — placeholder for a future Audacity driver.
@@ -17,8 +17,8 @@ actually said.
 ## Pieces
 
 - `core/compare.py` — the backend. Runs locally via faster-whisper (no cloud, no API key) +
-  python-docx + a word-level diff. Lives in its own venv at `core/.venv/` so it doesn't depend
-  on REAPER's or the system's Python.
+  python-docx + a word-level diff. Runs under the repo-root shared venv (`.venv/`) so it doesn't
+  depend on REAPER's or the system's Python.
 - `core/homophones.csv` — the built-in homophone list (your/you're, its/it's, etc.)
   `compare.py` loads at startup. Plain text, one group per line, comma-separated - edit it
   directly if you want to add a globally-useful pair (for something manuscript-specific, use

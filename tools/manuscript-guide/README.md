@@ -28,17 +28,17 @@ either scope from the workspace's corner **Settings** button.
 
 ## Layout
 
-- `core/` — the DAW-agnostic Python backend (`manuscript_guide.py`), its `requirements.txt`,
-  and its tests. No DAW APIs are used here; it's a plain CLI invoked by whichever DAW driver
-  below is running it.
+- `core/` — the DAW-agnostic Python backend (`manuscript_guide.py`) and its tests. No DAW APIs
+  are used here; it's a plain CLI invoked by whichever DAW driver below is running it. Its
+  dependencies are declared in the repo-root `requirements.txt`.
 - `daws/reaper/` — reserved for a future dedicated adapter; current REAPER integration is
   centralized in `shared/reaper/narration_ui_bridge.lua`.
 - `daws/audacity/` — placeholder for a future Audacity driver.
 
 ## Install (Reaper)
 
-From the repository root, run the shared quickstart script. It creates this
-tool's local `core\.venv`, installs its dependencies, and downloads the default
+From the repository root, run the shared quickstart script. It creates the
+repo-wide `.venv`, installs every tool's dependencies, and downloads the default
 spaCy model:
 
 ```powershell

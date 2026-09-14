@@ -1,0 +1,13 @@
+# Single, repo-wide Python dependency set for all first-party tools
+# (Manuscript Guide, Transcript Compare, and the shared server). Installed
+# into one venv by scripts/Quickstart.ps1 instead of a venv per tool.
+python-docx==1.2.0
+spacy>=3.7
+pronouncing>=0.2
+phonemizer>=3.3
+piper-tts==1.8.0
+# Optional: install a local Piper executable/model separately for WAV previews.
+faster-whisper==1.2.1
+ctranslate2==4.8.2
+av==18.1.0
+numpy==2.5.3
