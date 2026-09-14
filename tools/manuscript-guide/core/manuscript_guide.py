@@ -485,9 +485,20 @@ def vocabulary_candidates(entities: list[dict[str, Any]]) -> list[str]:
 
 def load_json(path: str) -> dict[str, Any] | None:
     try:
-        return json.loads(Path(path).read_text(encoding="utf-8"))
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
+    # A handful of guide manifests from an earlier schema store a plain alias
+    # name instead of {text, pronunciation, occurrences}; normalize once here
+    # so every downstream reader can assume the current shape.
+    for entity in data.get("entities", []) if isinstance(data, dict) else []:
+        aliases = entity.get("aliases")
+        if isinstance(aliases, list):
+            entity["aliases"] = [
+                alias if isinstance(alias, dict) else {"text": alias, "pronunciation": {}, "occurrences": []}
+                for alias in aliases
+            ]
+    return data
 
 
 def merge_locked(generated: list[dict[str, Any]], old: dict[str, Any] | None) -> list[dict[str, Any]]:

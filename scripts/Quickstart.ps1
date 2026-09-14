@@ -166,9 +166,6 @@ if ([string]::IsNullOrWhiteSpace($bootstrapPythonExecutable)) { throw 'Private P
 $npm = Get-Command npm.cmd -ErrorAction SilentlyContinue
 if (-not $npm) { throw 'Node.js/npm is required to build the Narration Utils UI. Install Node.js LTS, then run this script again.' }
 $npmExecutable = [string]$npm.Source
-$dotnet = Get-Command dotnet.exe -ErrorAction SilentlyContinue
-if (-not $dotnet) { throw 'The .NET SDK is required to build the Narration Utils desktop host. Install the .NET SDK, then run this script again.' }
-$dotnetExecutable = [string]$dotnet.Source
 
 $sharedPython = Install-Environment (Join-Path $repoRoot '.venv') (Join-Path $repoRoot 'requirements.txt') 'Narration Utils'
 if ($SkipDependencies) {
@@ -222,10 +219,6 @@ try {
 } finally {
     Pop-Location
 }
-
-Write-Host 'Publishing the Narration Utils desktop host...'
-& $dotnetExecutable publish (Join-Path $repoRoot 'shared\hub\NarrationUtilsHub.csproj') -c Release
-if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed ($LASTEXITCODE)." }
 
 Write-Host ''
 Write-Host 'Narration Utils is ready.' -ForegroundColor Green

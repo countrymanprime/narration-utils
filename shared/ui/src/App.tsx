@@ -32,6 +32,7 @@ function AppRoutes() {
   const [startupError, setStartupError] = useState('');
   const [diagnosticId, setDiagnosticId] = useState('');
   const [retryKey, setRetryKey] = useState(0);
+  const [serverLost, setServerLost] = useState(false);
   const [settingsDirty, setSettingsDirty] = useState(false);
   const [pendingPath, setPendingPath] = useState<string>();
   const settingsActions = useRef<{ save: () => Promise<void>; discard: () => Promise<void> }>();
@@ -85,6 +86,30 @@ function AppRoutes() {
     return api.subscribeTranscript((transcript) => setData((current) => (current ? { ...current, transcript } : current)));
   }, [data === undefined]);
 
+  // Keeps the Python server (shared/server, no native window of its own) in
+  // sync with this tab: as long as this pings successfully, main.py's idle
+  // watchdog knows someone still has the app open and won't shut down. Runs
+  // unconditionally (not gated on `data`) and independently of which page is
+  // open, and also doubles as the "did the server disappear" check - after a
+  // few consecutive misses, show the same startup screen with a reconnect
+  // option instead of leaving every page silently failing its own fetches.
+  useEffect(() => {
+    let misses = 0;
+    const interval = window.setInterval(() => {
+      void api
+        .ready()
+        .then(() => {
+          misses = 0;
+          setServerLost(false);
+        })
+        .catch(() => {
+          misses += 1;
+          if (misses >= 3) setServerLost(true);
+        });
+    }, 30_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     if (!data) return;
     const cssName: Record<string, string> = {
@@ -108,13 +133,14 @@ function AppRoutes() {
       .catch(() => {});
   }, [data === undefined]);
 
-  if (!data)
+  if (!data || serverLost)
     return (
       <StartupScreen
-        state={startup}
+        state={serverLost ? 'disconnected' : startup}
         error={startupError}
         diagnosticId={diagnosticId}
         retry={() => {
+          setServerLost(false);
           setStartup('connecting');
           setStartupError('');
           setRetryKey((value) => value + 1);

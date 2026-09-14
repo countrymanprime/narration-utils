@@ -47,21 +47,21 @@ install path.
 
 ## Quickstart
 
-The supported UI is a local React + Tailwind companion window hosted by a
-compiled, self-contained .NET desktop host (`shared/hub`, using Photino.NET).
-From the checkout root, run either:
+The supported UI is a local React + Tailwind workspace, opened in the user's
+default browser and served by a Python API host (`shared/server`). From the
+checkout root, run either:
 
 ```powershell
 .\scripts\Quickstart.ps1
 ```
 
 or double-click `scripts\Quickstart.cmd`. The script downloads a private Python
-runtime, then creates and maintains two gitignored virtual environments
-(Manuscript Guide and Transcript Compare), installs their dependencies,
-downloads the default spaCy model, installs UI packages, builds the production
-UI bundle, and publishes the desktop host. It also installs the local Piper
-preview runtime and a U.S. English medium voice. Node.js/npm and the .NET SDK
-are the machine-level prerequisites. Python, .NET, Piper, packages, and the
+runtime, creates and maintains one shared gitignored virtual environment for
+every first-party tool (Manuscript Guide, Transcript Compare, and the shared
+server), installs their dependencies, downloads the default spaCy model,
+installs UI packages, and builds the production UI bundle. It also installs
+the local Piper preview runtime and a U.S. English medium voice. Node.js/npm
+is the machine-level prerequisite. Python, Piper, packages, and the
 downloaded bootstrap files remain in gitignored folders in this checkout;
 REAPER does not discover or run a global or VST-folder Python.
 

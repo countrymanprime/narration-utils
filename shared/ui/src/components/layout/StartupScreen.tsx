@@ -1,7 +1,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleNotch, faRotate } from '@fortawesome/free-solid-svg-icons';
 
-export type StartupState = 'connecting' | 'error' | 'timeout';
+export type StartupState = 'connecting' | 'error' | 'timeout' | 'disconnected';
 
 export function StartupScreen({ state, error, diagnosticId, retry }: { state: StartupState; error: string; diagnosticId: string; retry: () => void }) {
   const waiting = state === 'connecting';
@@ -10,7 +10,9 @@ export function StartupScreen({ state, error, diagnosticId, retry }: { state: St
       ? 'Reading project context from the desktop host…'
       : state === 'timeout'
         ? 'The desktop host did not respond within 10 seconds.'
-        : error;
+        : state === 'disconnected'
+          ? 'Lost connection to the Narration Utils server. It may have been closed or crashed - check that it is still running.'
+          : error;
   return (
     <div className="grid min-h-screen place-items-center p-6">
       <div className="panel max-w-lg p-6 text-center">

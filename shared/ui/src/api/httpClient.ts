@@ -1,5 +1,5 @@
-// Talks to the /api/* REST + SSE surface exposed by shared/hub/Endpoints.cs.
-// Replaces photinoBridge.ts: Photino is now purely a native window pointed at
+// Talks to the /api/* REST + SSE surface exposed by shared/server/app.py.
+// The UI runs in a plain browser tab pointed at that loopback server.
 // Every method maps directly to an API route.
 import type {
   Bootstrap,

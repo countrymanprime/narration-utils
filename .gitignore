@@ -7,9 +7,6 @@ __pycache__/
 .pytest_cache/
 node_modules/
 .vite/
-bin/
-obj/
-shared/hub/publish/
 shared/ui/dist/
 shared/ui/screenshots/
 shared/ui/playwright-report/

@@ -1,6 +1,7 @@
 -- Narration Utils - the sole REAPER action for the suite.
--- Opens the persistent React/.NET workspace. REAPER itself has no workflow
--- UI; the bridge below only services requests from that workspace.
+-- Opens the persistent React/Python workspace in the user's default browser.
+-- REAPER itself has no workflow UI; the bridge below only services requests
+-- from that workspace.
 
 local function script_dir()
   local _, path = reaper.get_action_context()
@@ -28,11 +29,11 @@ end
 
 -- All runtimes are owned by this checkout. The only REAPER configuration is
 -- the launcher action itself; it never reads legacy ExtState paths or any
--- previous install location. The host is a compiled, self-contained .NET
--- binary (see shared/hub) - unlike the Python/pywebview host this replaced,
--- it needs no separate preflight check and no venv of its own.
-local hub_exe = REPO_ROOT .. "\\shared\\hub\\publish\\NarrationUtilsHub.exe"
+-- previous install location. The host is the shared venv's Python running
+-- shared/server (see shared/server/main.py) - it opens the UI in the user's
+-- default browser instead of a native window.
 local shared_python = REPO_ROOT .. "\\.venv\\Scripts\\python.exe"
+local server_main = REPO_ROOT .. "\\shared\\server\\main.py"
 local manuscript_core = REPO_ROOT .. "\\tools\\manuscript-guide\\core"
 local compare_core = REPO_ROOT .. "\\tools\\transcript-compare\\core"
 local manuscript_python = shared_python
@@ -45,20 +46,20 @@ local project_folder, project_name = project_context()
 local session_dir = reaper.GetResourcePath() .. "\\NarrationUtils\\sessions\\hub_" .. tostring(reaper.time_precise()):gsub("[%.]", "")
 reaper.RecursiveCreateDirectory(session_dir .. "\\commands", 0)
 
-if not common.file_exists(hub_exe) or not common.file_exists(shared_python)
+if not common.file_exists(shared_python) or not common.file_exists(server_main)
   or not common.file_exists(ui_index) then
   local quickstart = REPO_ROOT .. "\\scripts\\Quickstart.cmd"
   local answer = reaper.ShowMessageBox(
     "Narration Utils has not been set up in this checkout yet.\n\n"
-      .. "Run scripts\\Quickstart.ps1 now? It builds the desktop host and the two\n"
-      .. "analysis tools, and downloads a couple of small local models - this can\n"
-      .. "take a few minutes the first time, and needs Node.js/npm and the .NET SDK\n"
-      .. "already installed.\n\nDiagnostic session:\n" .. session_dir,
+      .. "Run scripts\\Quickstart.ps1 now? It builds the shared Python environment\n"
+      .. "and downloads a couple of small local models - this can take a few\n"
+      .. "minutes the first time, and needs Node.js/npm already installed.\n\n"
+      .. "Diagnostic session:\n" .. session_dir,
     "Narration Utils setup required", 4)
   if answer == 6 then -- IDYES
     -- Shown, not hidden: this is a multi-minute operation (model downloads,
-    -- a .NET publish, an npm build) the user should be able to watch and,
-    -- if something goes wrong, read the real error from directly.
+    -- an npm build) the user should be able to watch and, if something goes
+    -- wrong, read the real error from directly.
     if process.run_hidden(session_dir, process.quote(quickstart), { wait = false, show_window = true, cwd = REPO_ROOT .. "\\scripts" }) then
       reaper.ShowMessageBox("Setup is running in a console window. Once it finishes, launch Narration Utils again.", "Narration Utils setup", 0)
     else
@@ -69,7 +70,7 @@ if not common.file_exists(hub_exe) or not common.file_exists(shared_python)
 end
 
 local function quote(value) return process.quote(value) end
-local command = quote(hub_exe)
+local command = quote(shared_python) .. " -m shared.server.main"
   .. " --session-dir " .. quote(session_dir)
   .. " --project-folder " .. quote(project_folder)
   .. " --project-name " .. quote(project_name)
@@ -79,14 +80,15 @@ local command = quote(hub_exe)
   .. " --compare-python " .. quote(compare_python)
   .. " --compare-backend " .. quote(compare_backend)
 
-if not process.run_hidden(session_dir, command, { wait = false, show_window = true }) then
+-- Run from REPO_ROOT so "-m shared.server.main" resolves as a package.
+if not process.run_hidden(session_dir, command, { wait = false, show_window = false, cwd = REPO_ROOT }) then
   reaper.ShowMessageBox("Could not open Narration Utils.", "Narration Utils", 0)
   return
 end
 
 -- The host reports startup outcomes as one of two marker files (see
--- shared/hub/Program.cs): "startup.ready" once the desktop-API handshake
--- actually succeeds, or "startup.failure" with a human-readable reason.
+-- shared/server/main.py): "startup.ready" once the API handshake actually
+-- succeeds, or "startup.failure" with a human-readable reason.
 -- Unlike the old preflight/timeout race, this now distinguishes three
 -- outcomes instead of silently going quiet in the ambiguous case: success,
 -- an explicit failure, and "still nothing after the deadline" - which is

@@ -40,7 +40,12 @@ def load_docx_paragraphs(path, detect_outline_headings=False):
         style = (paragraph.style.name or "").lower() if paragraph.style else ""
         is_heading = style.startswith("heading") or style == "title"
         if detect_outline_headings and not is_heading:
-            outline_level = paragraph.paragraph_format.outline_level
+            # ParagraphFormat.outline_level was removed in python-docx 1.2.0;
+            # read the same w:outlineLvl value at the oxml level so this
+            # works across the versions still in use.
+            pPr = paragraph.paragraph_format._element.pPr
+            outline_lvl = pPr.outlineLvl if pPr is not None else None
+            outline_level = outline_lvl.val if outline_lvl is not None else None
             is_heading = outline_level is not None and outline_level < 9
         paragraphs.append({"text": text, "is_heading": is_heading})
     return paragraphs
