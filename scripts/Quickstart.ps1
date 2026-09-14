@@ -10,13 +10,29 @@ desktop host (shared/hub) that opens it. Machine prerequisites are Node.js/npm
 and the .NET SDK. All Python runtimes, Python packages, virtual environments,
 Node packages, and .NET build output remain inside this checkout and are
 excluded from Git.
+
+Dependency handling (Python venvs, spaCy model, Piper voice, npm packages)
+has three modes:
+
+  (default)            Install only what's missing. Existing venvs, an
+                        existing node_modules, an already-downloaded spaCy
+                        model or Piper voice are left alone untouched.
+  -SkipDependencies     Skip dependency checks entirely, even for missing
+                        ones. Only use this if you already know everything
+                        is installed; the build/publish steps still run.
+  -UpdateDependencies   Force every dependency to be reinstalled/updated to
+                        latest (pip install --upgrade, npm update, spaCy
+                        model re-download), even where already installed.
 #>
 [CmdletBinding()]
 param(
-    [switch]$SkipSpacyModel,
+    [switch]$SkipDependencies,
+    [switch]$UpdateDependencies,
     [Alias('BootstrapPython')]
     [string]$BootstrapPythonPath
 )
+
+if ($SkipDependencies -and $UpdateDependencies) { throw '-SkipDependencies and -UpdateDependencies cannot be used together.' }
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
@@ -81,13 +97,27 @@ function Invoke-Checked {
 
 function Install-Environment([string]$EnvironmentPath, [string]$RequirementsPath, [string]$Name) {
     $pythonPath = Join-Path $EnvironmentPath 'Scripts\python.exe'
-    if (-not (Test-Path -LiteralPath $pythonPath)) {
+    $environmentExisted = Test-Path -LiteralPath $pythonPath
+
+    if (-not $environmentExisted) {
+        if ($SkipDependencies) { throw "$Name environment does not exist and -SkipDependencies was passed. Run once without it first." }
         Write-Host "Creating $Name environment..."
         Invoke-Checked -CommandPath $bootstrapPythonExecutable -CommandArguments ($bootstrapPythonArguments + @('-m', 'venv', $EnvironmentPath)) | Out-Host
     }
-    Write-Host "Installing $Name dependencies..."
-    Invoke-Checked $pythonPath @('-m', 'pip', 'install', '--upgrade', 'pip') | Out-Host
-    Invoke-Checked $pythonPath @('-m', 'pip', 'install', '-r', $RequirementsPath) | Out-Host
+
+    if ($SkipDependencies) {
+        Write-Host "Skipping $Name dependency check."
+    } elseif ($environmentExisted -and -not $UpdateDependencies) {
+        Write-Host "$Name dependencies already installed; skipping (pass -UpdateDependencies to refresh)."
+    } elseif ($UpdateDependencies) {
+        Write-Host "Updating $Name dependencies..."
+        Invoke-Checked $pythonPath @('-m', 'pip', 'install', '--upgrade', 'pip') | Out-Host
+        Invoke-Checked $pythonPath @('-m', 'pip', 'install', '--upgrade', '-r', $RequirementsPath) | Out-Host
+    } else {
+        Write-Host "Installing $Name dependencies..."
+        Invoke-Checked $pythonPath @('-m', 'pip', 'install', '--upgrade', 'pip') | Out-Host
+        Invoke-Checked $pythonPath @('-m', 'pip', 'install', '-r', $RequirementsPath) | Out-Host
+    }
     return $pythonPath
 }
 
@@ -112,7 +142,7 @@ function Seed-PiperSettings([string]$PiperExe, [string]$VoiceModel) {
     Move-Item -LiteralPath $temporary -Destination $settingsPath -Force
 }
 
-function Install-PiperAssets([string]$GuidePython) {
+function Install-PiperAssets([string]$GuidePython, [bool]$Force) {
     $piperExe = Join-Path (Split-Path -Parent $GuidePython) 'piper.exe'
     if (-not (Test-Path -LiteralPath $piperExe)) { throw "The local Piper executable was not installed: $piperExe" }
     $piperRoot = Join-Path $repoRoot 'shared\python\.piper'
@@ -120,11 +150,11 @@ function Install-PiperAssets([string]$GuidePython) {
     $modelPath = Join-Path $voicesRoot "$piperVoice.onnx"
     $configPath = "$modelPath.json"
     New-Item -ItemType Directory -Force -Path $voicesRoot | Out-Null
-    if (-not (Test-Path -LiteralPath $modelPath)) {
+    if ($Force -or -not (Test-Path -LiteralPath $modelPath)) {
         Write-Host "Downloading local Piper voice $piperVoice..."
         Invoke-WebRequest -Uri "$piperVoiceBaseUrl/$piperVoice.onnx" -OutFile $modelPath
     }
-    if (-not (Test-Path -LiteralPath $configPath)) {
+    if ($Force -or -not (Test-Path -LiteralPath $configPath)) {
         Invoke-WebRequest -Uri "$piperVoiceBaseUrl/$piperVoice.onnx.json" -OutFile $configPath
     }
     Seed-PiperSettings $piperExe $modelPath
@@ -144,18 +174,45 @@ $dotnetExecutable = [string]$dotnet.Source
 
 $guidePython = Install-Environment (Join-Path $repoRoot 'tools\manuscript-guide\core\.venv') (Join-Path $repoRoot 'tools\manuscript-guide\core\requirements.txt') 'Manuscript Guide'
 $comparePython = Install-Environment (Join-Path $repoRoot 'tools\transcript-compare\core\.venv') (Join-Path $repoRoot 'tools\transcript-compare\core\requirements.txt') 'Transcript Compare'
-Install-PiperAssets $guidePython
 
-if (-not $SkipSpacyModel) {
+if ($SkipDependencies) {
+    Write-Host 'Skipping Piper preview runtime check.'
+} else {
+    Install-PiperAssets $guidePython $UpdateDependencies
+}
+
+$spacyModelInstalled = $false
+if (-not $SkipDependencies) {
+    & $guidePython '-m' 'pip' 'show' 'en_core_web_sm' *> $null
+    $spacyModelInstalled = ($LASTEXITCODE -eq 0)
+}
+if ($SkipDependencies) {
+    Write-Host 'Skipping spaCy language model check.'
+} elseif ($spacyModelInstalled -and -not $UpdateDependencies) {
+    Write-Host 'spaCy language model already installed; skipping (pass -UpdateDependencies to refresh).'
+} else {
     Write-Host 'Installing the Manuscript Guide spaCy language model...'
     Invoke-Checked $guidePython @('-m', 'spacy', 'download', 'en_core_web_sm')
 }
 
 Push-Location (Join-Path $repoRoot 'shared\ui')
 try {
-    Write-Host 'Installing UI dependencies and creating the production bundle...'
-    & $npmExecutable ci
-    if ($LASTEXITCODE -ne 0) { throw "npm ci failed ($LASTEXITCODE)." }
+    $nodeModulesExisted = Test-Path -LiteralPath (Join-Path (Get-Location) 'node_modules')
+    if ($SkipDependencies) {
+        if (-not $nodeModulesExisted) { throw 'shared/ui/node_modules does not exist and -SkipDependencies was passed. Run once without it first.' }
+        Write-Host 'Skipping UI dependency install.'
+    } elseif ($nodeModulesExisted -and -not $UpdateDependencies) {
+        Write-Host 'UI dependencies already installed; skipping (pass -UpdateDependencies to refresh).'
+    } elseif ($UpdateDependencies -and $nodeModulesExisted) {
+        Write-Host 'Updating UI dependencies...'
+        & $npmExecutable update
+        if ($LASTEXITCODE -ne 0) { throw "npm update failed ($LASTEXITCODE)." }
+    } else {
+        Write-Host 'Installing UI dependencies...'
+        & $npmExecutable ci
+        if ($LASTEXITCODE -ne 0) { throw "npm ci failed ($LASTEXITCODE)." }
+    }
+    Write-Host 'Creating the production UI bundle...'
     & $npmExecutable run build
     if ($LASTEXITCODE -ne 0) { throw "npm run build failed ($LASTEXITCODE)." }
 } finally {
