@@ -31,6 +31,7 @@ public static class Endpoints
         api.MapGet("/transcript/last-completed", () => Results.Json(hub.TranscriptLastCompleted()));
         api.MapPost("/transcript/discrepancies/{id}/equivalence", (string id) => Results.Ok(new { message = hub.TranscriptAddEquivalence(id) }));
         api.MapPost("/transcript/discrepancies/{id}/jump", (string id) => { hub.TranscriptJump(id); return Results.Ok(); });
+        api.MapPost("/transcript/markers/export", () => { hub.TranscriptExportMarkers(); return Results.Accepted(); });
         api.MapGet("/transcript/hints/suggestions", () => Results.Ok(new { value = hub.TranscriptSuggestHints() }));
         api.MapGet("/transcript/hints", () => Results.Ok(hub.TranscriptHints()));
         api.MapPut("/transcript/hints", (List<string> accepted) => { hub.TranscriptSaveHints(accepted); return Results.Ok(); });

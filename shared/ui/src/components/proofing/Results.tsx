@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileLines, faHeadphones, faPlus, faRotateLeft } from '@fortawesome/free-solid-svg-icons';
+import { faFileExport, faFileLines, faHeadphones, faPlus, faRotateLeft } from '@fortawesome/free-solid-svg-icons';
 import type { Discrepancy, TranscriptState } from '../../types';
 import { canAddEquivalence } from '../../state';
 import { useApi } from '../../api/ApiContext';
@@ -21,6 +21,7 @@ export function Results({
   notify,
   goToManuscript,
   reset,
+  canExportMarkers,
 }: {
   state: TranscriptState;
   selected?: Discrepancy;
@@ -28,8 +29,12 @@ export function Results({
   notify: (text: string) => void;
   goToManuscript: (row: Discrepancy) => void;
   reset: () => void;
+  canExportMarkers: boolean;
 }) {
   const api = useApi();
+  const pendingMarkers = state.rows.filter((row) => (row.markerState ?? 'pending') === 'pending').length;
+  const exporting = state.markerExport.phase === 'exporting';
+  const markerState = (row: Discrepancy) => row.markerState ?? 'pending';
   return (
     <section className="panel proofing-results">
       <div className="panel-head">
@@ -38,6 +43,31 @@ export function Results({
           <span className="badge" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
             {state.rows.length} found
           </span>
+          <TooltipTarget
+            text={
+              !canExportMarkers
+                ? 'Marker export is available only for results from this active REAPER session'
+                : pendingMarkers === 0
+                  ? 'No new markers are ready to export'
+                  : `Export ${pendingMarkers} new marker${pendingMarkers === 1 ? '' : 's'} to REAPER`
+            }
+          >
+            <button
+              className="btn btn-primary text-xs"
+              disabled={!canExportMarkers || pendingMarkers === 0 || exporting}
+              onClick={async () => {
+                try {
+                  await api.transcriptExportMarkers();
+                  notify(`Exporting ${pendingMarkers} marker${pendingMarkers === 1 ? '' : 's'} to REAPER…`);
+                } catch (error) {
+                  notify(String(error));
+                }
+              }}
+            >
+              <FontAwesomeIcon icon={faFileExport} />
+              {exporting ? 'Exporting…' : `Export ${pendingMarkers} marker${pendingMarkers === 1 ? '' : 's'}`}
+            </button>
+          </TooltipTarget>
           <TooltipTarget text="Return to setup for another comparison">
             <button className="btn btn-ghost text-xs" onClick={reset}>
               <FontAwesomeIcon icon={faRotateLeft} />
@@ -59,6 +89,7 @@ export function Results({
                 <th>Script</th>
                 <th>Heard</th>
                 <th>Time</th>
+                <th>Marker</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -80,6 +111,15 @@ export function Results({
                       </td>
                       <td className="f-mono align-middle text-xs" style={{ color: 'var(--text-faint)' }}>
                         {seconds(row.projectTime)}
+                      </td>
+                      <td className="align-middle text-xs">
+                        {markerState(row) === 'pending' && <span className="marker-state marker-state-pending">Ready to export</span>}
+                        {markerState(row) === 'exported' && <span className="marker-state marker-state-exported">Exported</span>}
+                        {markerState(row) === 'existing' && (
+                          <TooltipTarget text={row.existingMarkerName ? `Existing marker: ${row.existingMarkerName}` : 'A matching marker already exists'}>
+                            <span className="marker-state marker-state-existing">Already marked</span>
+                          </TooltipTarget>
+                        )}
                       </td>
                       <td className="align-middle">
                         <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
@@ -124,6 +164,11 @@ export function Results({
             </tbody>
           </table>
         </div>
+      )}
+      {state.markerExport.phase !== 'idle' && (
+        <p className={`px-3 pb-3 text-xs ${state.markerExport.phase === 'error' ? 'text-red-400' : ''}`} style={{ color: state.markerExport.phase === 'error' ? undefined : 'var(--text-muted)' }}>
+          {state.markerExport.message}
+        </p>
       )}
     </section>
   );

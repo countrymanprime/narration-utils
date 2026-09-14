@@ -36,7 +36,7 @@ export function InlineDiffRow({ row }: { row: Discrepancy }) {
     );
   return (
     <tr style={{ borderTop: '1px solid var(--border)', background: 'var(--surface-2)' }}>
-      <td colSpan={5} className="p-3 text-sm">
+      <td colSpan={6} className="p-3 text-sm">
         <div className="space-y-1.5">
           <div>
             <span className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-faint)' }}>

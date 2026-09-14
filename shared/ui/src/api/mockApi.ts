@@ -300,6 +300,21 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     transcriptLastCompleted: async () => wireClone(lastCompleted),
     transcriptAddEquivalence: async () => 'Added pronunciation equivalence.',
     transcriptJump: async () => {},
+    transcriptExportMarkers: async () => {
+      const exportable = transcript.rows.filter((row) => (row.markerState ?? 'pending') === 'pending');
+      transcript = { ...transcript, markerExport: { phase: 'exporting', message: `Exporting ${exportable.length} marker${exportable.length === 1 ? '' : 's'} to REAPER…`, added: 0, skipped: 0 } };
+      publish();
+      setTimeout(() => {
+        const added = transcript.rows.filter((row) => (row.markerState ?? 'pending') === 'pending').length;
+        transcript = {
+          ...transcript,
+          rows: transcript.rows.map((row) => ((row.markerState ?? 'pending') === 'pending' ? { ...row, markerState: 'exported' } : row)),
+          markerExport: { phase: 'complete', message: `Exported ${added} marker${added === 1 ? '' : 's'}; skipped ${transcript.rows.length - added} existing.`, added, skipped: transcript.rows.length - added },
+        };
+        lastCompleted = wireClone(transcript);
+        publish();
+      }, 250);
+    },
     transcriptSuggestHints: async () =>
       vocabularyCandidates
         .filter((candidate) => !hints.some((accepted) => accepted.localeCompare(candidate, undefined, { sensitivity: 'accent' }) === 0))

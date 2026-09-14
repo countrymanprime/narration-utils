@@ -32,6 +32,12 @@ function normalizeGuideEntity(entity: GuideEntity): GuideEntity {
   };
 }
 
+// Older persisted comparison snapshots predate manual marker export. Keep
+// them reviewable after an upgrade instead of assuming the new state exists.
+function normalizeTranscriptState(state: TranscriptState): TranscriptState {
+  return { ...state, markerExport: state.markerExport ?? { phase: 'idle', message: '', added: 0, skipped: 0 } };
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const response = await fetch(path, {
     method,
@@ -61,8 +67,8 @@ const del = <T>(path: string) => request<T>('DELETE', path);
 
 export const httpClient: NarrationApi = {
   ready: () => get<HostReady>('/api/health'),
-  bootstrap: () => get<Bootstrap>('/api/bootstrap'),
-  poll: () => get<{ revision: number; transcript: TranscriptState }>('/api/transcript/state'),
+  bootstrap: () => get<Bootstrap>('/api/bootstrap').then((value) => ({ ...value, transcript: normalizeTranscriptState(value.transcript) })),
+  poll: () => get<{ revision: number; transcript: TranscriptState }>('/api/transcript/state').then((value) => ({ ...value, transcript: normalizeTranscriptState(value.transcript) })),
   selectManuscript: () => post('/api/manuscript/select-file'),
   saveSettings: (tool, scope, values) => put<Bootstrap>(`/api/settings/${tool}/${scope}`, values),
   settingsForScope: (scope) => get<Record<string, ScopedSettingField[]>>(`/api/settings?scope=${scope}`),
@@ -83,9 +89,10 @@ export const httpClient: NarrationApi = {
   transcriptStart: (options) => post('/api/transcript/start', options),
   transcriptCancel: () => post('/api/transcript/cancel'),
   transcriptReset: () => post('/api/transcript/reset'),
-  transcriptLastCompleted: () => get<TranscriptState | null>('/api/transcript/last-completed').then((value) => value ?? undefined),
+  transcriptLastCompleted: () => get<TranscriptState | null>('/api/transcript/last-completed').then((value) => (value ? normalizeTranscriptState(value) : undefined)),
   transcriptAddEquivalence: (id) => post<{ message: string }>(`/api/transcript/discrepancies/${id}/equivalence`).then((r) => r.message),
   transcriptJump: (id) => post(`/api/transcript/discrepancies/${id}/jump`),
+  transcriptExportMarkers: () => post('/api/transcript/markers/export'),
   transcriptSuggestHints: () => get<{ value: string }>('/api/transcript/hints/suggestions').then((r) => r.value),
   transcriptHints: () => get('/api/transcript/hints'),
   transcriptSaveHints: (accepted) => put('/api/transcript/hints', accepted),
@@ -107,7 +114,7 @@ export const httpClient: NarrationApi = {
     const source = new EventSource('/api/transcript/events');
     source.onmessage = (event) => {
       try {
-        onUpdate(JSON.parse(event.data) as TranscriptState);
+        onUpdate(normalizeTranscriptState(JSON.parse(event.data) as TranscriptState));
       } catch {
         /* malformed frame - ignore */
       }

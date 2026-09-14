@@ -786,6 +786,27 @@ table.proofing-table td,
 table.proofing-table th {
   vertical-align: middle;
 }
+.marker-state {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.18rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.marker-state-pending {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.marker-state-existing {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--warn);
+}
+.marker-state-exported {
+  background: color-mix(in srgb, var(--character) 18%, transparent);
+  color: var(--character);
+}
 .proofing-table .tooltip-target {
   flex: none;
 }

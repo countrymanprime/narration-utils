@@ -356,6 +356,7 @@ export const WIRE_DISCREPANCIES: Discrepancy[] = [
     sourceLine: 15,
     scriptContext: '...a White Rabbit with pink eyes ran close by her...',
     audioContext: '...a wide rabbit with pink eyes ran close by her...',
+    markerState: 'pending',
   },
   {
     id: 'disc-2',
@@ -371,6 +372,8 @@ export const WIRE_DISCREPANCIES: Discrepancy[] = [
     sourceLine: 155,
     scriptContext: '...The Queen of Hearts gave a little scream of laughter...',
     audioContext: '...gave a little scream of laughter...',
+    markerState: 'existing',
+    existingMarkerName: "SKIPPED: 'Queen of Hearts'",
   },
 ];
 export const WIRE_LOGS = [
@@ -391,6 +394,7 @@ export const WIRE_TRANSCRIPT: TranscriptState = {
   diff: '',
   summary: '',
   elapsed: 0,
+  markerExport: { phase: 'idle', message: '', added: 0, skipped: 0 },
 };
 
 const choice = (key: string, label: string, choices: string[], value: string): ScopedSettingField => ({

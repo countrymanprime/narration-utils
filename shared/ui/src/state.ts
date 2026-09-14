@@ -1,6 +1,6 @@
 import type { Discrepancy, GuideEntity, GuideEvidence, ManuscriptParagraph, TranscriptState } from './types';
 
-export const isTranscriptActive = (phase: TranscriptState['phase']) => phase === 'preparing' || phase === 'running';
+export const isTranscriptActive = (phase: TranscriptState['phase']) => phase === 'preparing' || phase === 'running' || phase === 'inspecting';
 export const selectDiscrepancy = (rows: Discrepancy[], id?: string): Discrepancy | undefined => rows.find((row) => row.id === id) ?? rows[0];
 export const canAddEquivalence = (row?: Discrepancy): boolean =>
   Boolean(row && row.kind === 'MISREAD' && row.docText && row.audioText && !row.docText.includes(' ') && !row.audioText.includes(' '));

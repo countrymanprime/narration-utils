@@ -108,36 +108,76 @@ local function prepare_compare(session_dir, runs, run_id)
   event(session_dir, "COMPARE_PREPARED", run_id, manifest_path, docx, track_name, diff_path)
 end
 
-local function existing(take, name, srcpos)
+local function marker_kind(name)
+  local prefix = tostring(name or ""):match("^%s*([%a_]+)%s*:")
+  return prefix and prefix:upper() or ""
+end
+local function existing(take, kind, srcpos)
   local count = reaper.GetNumTakeMarkers(take)
   for index = 0, count - 1 do
     local marker_pos, marker_name = reaper.GetTakeMarker(take, index)
-    if marker_name == name and math.abs(marker_pos - srcpos) <= 0.15 then return true end
+    if marker_kind(marker_name) == tostring(kind or ""):upper() and math.abs(marker_pos - srcpos) <= 0.15 then return marker_name end
   end
-  return false
+  return nil
 end
-local function apply_results(session_dir, runs, run_id, path, misread, skipped, extra)
+local function inspect_results(session_dir, runs, run_id, path)
   local run = runs[run_id]
   if not run then event(session_dir, "ERROR", "Transcript Compare context expired; prepare a new comparison."); return end
   local input = io.open(path, "r")
   if not input then event(session_dir, "ERROR", "Transcript results were not found."); return end
-  local colors = { MISREAD = color(misread), SKIPPED = color(skipped), EXTRA = color(extra) }
-  local summary, added = "", 0
+  local summary, total, duplicates = "", 0, 0
   for line in input:lines() do
     local tag, body = line:match("^([A-Z_]+)|(.*)$")
     if tag == "SUMMARY" then summary = body
     elseif tag == "MARKER" then
       local fields = pipe_fields(body, 10); local item_index, srcpos = tonumber(fields[1]), tonumber(fields[2]); local entry = item_index and run.mapping[item_index]
-      if entry and srcpos and not existing(entry.take, fields[4] or "", srcpos) then
-        reaper.SetTakeMarker(entry.take, -1, fields[4] or "", srcpos, colors[fields[3]] or 0); added = added + 1
+      if entry and srcpos then
         local project_time, row_id = entry.pos + (srcpos - entry.startoffs) / entry.rate, tostring(item_index) .. "@" .. string.format("%.6f", srcpos)
-        run.rows[row_id] = { item = entry.item, project_time = project_time }
-        event(session_dir, "COMPARE_MARKER", run_id, row_id, fields[3] or "", fields[4] or "", fields[5] or "", fields[6] or "", project_time, item_index, fields[7] or "", fields[8] or "0", fields[9] or "", fields[10] or "")
+        local existing_name = existing(entry.take, fields[3], srcpos)
+        local marker_state = existing_name and "existing" or "pending"
+        if existing_name then duplicates = duplicates + 1 end
+        total = total + 1
+        run.rows[row_id] = { item = entry.item, project_time = project_time, state = marker_state }
+        event(session_dir, "COMPARE_MARKER", run_id, row_id, fields[3] or "", fields[4] or "", fields[5] or "", fields[6] or "", project_time, item_index, fields[7] or "", fields[8] or "0", fields[9] or "", fields[10] or "", marker_state, existing_name or "", srcpos)
       end
     end
   end
-  input:close(); reaper.UpdateArrange(); if added > 0 then reaper.Undo_OnStateChange("Transcript Compare: import take markers") end
-  event(session_dir, "COMPARE_APPLIED", run_id, summary ~= "" and summary or (tostring(added) .. " take marker(s) imported."))
+  input:close()
+  event(session_dir, "COMPARE_INSPECTED", run_id, summary ~= "" and summary or (tostring(total) .. " discrepancy(s) found."), total, duplicates)
+end
+
+local function export_results(session_dir, runs, run_id, path, misread, skipped, extra)
+  local run = runs[run_id]
+  if not run then event(session_dir, "ERROR", "Transcript Compare context expired; prepare a new comparison."); return end
+  local input = io.open(path, "r")
+  if not input then event(session_dir, "ERROR", "Transcript results were not found."); return end
+  local colors = { MISREAD = color(misread), SKIPPED = color(skipped), EXTRA = color(extra) }
+  local added, duplicate_count = 0, 0
+  for line in input:lines() do
+    local tag, body = line:match("^([A-Z_]+)|(.*)$")
+    if tag == "MARKER" then
+      local fields = pipe_fields(body, 10); local item_index, srcpos = tonumber(fields[1]), tonumber(fields[2]); local entry = item_index and run.mapping[item_index]
+      local row_id = item_index and srcpos and (tostring(item_index) .. "@" .. string.format("%.6f", srcpos)) or ""
+      local row = run.rows[row_id]
+      if entry and srcpos and row then
+        if row.state == "pending" then
+          local existing_name = existing(entry.take, fields[3], srcpos)
+          if existing_name then
+            row.state = "existing"; duplicate_count = duplicate_count + 1
+            event(session_dir, "COMPARE_EXPORT_MARKER", run_id, row_id, "existing", existing_name)
+          else
+            reaper.SetTakeMarker(entry.take, -1, fields[4] or "", srcpos, colors[fields[3]] or 0)
+            row.state = "exported"; added = added + 1
+            event(session_dir, "COMPARE_EXPORT_MARKER", run_id, row_id, "exported", "")
+          end
+        elseif row.state == "existing" then
+          duplicate_count = duplicate_count + 1
+        end
+      end
+    end
+  end
+  input:close(); reaper.UpdateArrange(); if added > 0 then reaper.Undo_OnStateChange("Transcript Compare: export take markers") end
+  event(session_dir, "COMPARE_EXPORTED", run_id, added, duplicate_count)
 end
 
 function M.run(session_dir)
@@ -148,7 +188,8 @@ function M.run(session_dir)
       local command = split(line, 8)
       if command[1] ~= "1" then event(session_dir, "ERROR", "Unsupported hub protocol")
       elseif command[2] == "prepare_compare" then prepare_compare(session_dir, runs, command[3] or "")
-      elseif command[2] == "apply_compare_results" then apply_results(session_dir, runs, command[3] or "", command[4] or "", command[5] or "FF4040", command[6] or "FFC000", command[7] or "40A0FF")
+      elseif command[2] == "inspect_compare_results" then inspect_results(session_dir, runs, command[3] or "", command[4] or "")
+      elseif command[2] == "export_compare_markers" then export_results(session_dir, runs, command[3] or "", command[4] or "", command[5] or "FF4040", command[6] or "FFC000", command[7] or "40A0FF")
       elseif command[2] == "jump_to_compare_marker" then
         local run, row = runs[command[3] or ""], nil; if run then row = run.rows[command[4] or ""] end
         if row then reaper.SelectAllMediaItems(0, false); reaper.SetMediaItemSelected(row.item, true); reaper.SetEditCurPos(row.project_time, true, false); reaper.UpdateArrange() else event(session_dir, "ERROR", "Marker location is no longer available.") end

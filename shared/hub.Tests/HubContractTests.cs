@@ -43,6 +43,7 @@ public sealed class HubContractTests
             Assert.Equal(Hub.ApiVersion, bootstrap.GetProperty("apiVersion").GetInt32());
             Assert.Equal(new DirectoryInfo(session).Name, bootstrap.GetProperty("diagnosticId").GetString());
             Assert.Equal("REAPER", bootstrap.GetProperty("daw").GetString());
+            Assert.Equal("idle", bootstrap.GetProperty("transcript").GetProperty("markerExport").GetProperty("phase").GetString());
 
             hub.Close();
             var records = File.ReadAllLines(hub.Diagnostics.Path)
@@ -62,6 +63,20 @@ public sealed class HubContractTests
         {
             var response = await client.GetAsync("/api/does-not-exist");
             Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
+        }
+        finally { await app.StopAsync(); if (Directory.Exists(session)) Directory.Delete(session, recursive: true); }
+    }
+
+    [Fact]
+    public async Task MarkerExportRouteIsExposedAndRejectsRunsWithoutLiveResults()
+    {
+        var (_, app, client, session) = await StartAsync();
+        try
+        {
+            var response = await client.PostAsync("/api/transcript/markers/export", null);
+            Assert.Equal(System.Net.HttpStatusCode.InternalServerError, response.StatusCode);
+            var error = await response.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Contains("Run a comparison", error.GetProperty("error").GetString());
         }
         finally { await app.StopAsync(); if (Directory.Exists(session)) Directory.Delete(session, recursive: true); }
     }

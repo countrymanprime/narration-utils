@@ -4,17 +4,17 @@
 
 ## Current capability and problem
 
-The current local Faster-Whisper backend stitches a selected REAPER chapter track, matches it to a Word heading, transcribes it, and creates take markers for misreads, skipped words, and extras. It saves a unified diff and supports custom equivalences, hotwords, chunking, cancellation, and model selection. It finds likely read errors without a cloud service.
+The current local Faster-Whisper backend stitches a selected REAPER chapter track, matches it to a Word heading, and transcribes it for misreads, skipped words, and extras. It saves a unified diff and supports custom equivalences, hotwords, chunking, cancellation, and model selection. It finds likely read errors without a cloud service.
 
 ## Target workflow
 
-Select a chapter track, confirm its manuscript mapping and settings, run comparison, listen to marker locations, then record a review decision for each discrepancy.
+Select a chapter track, confirm its manuscript mapping and settings, run comparison, review each discrepancy and any existing matching markers, then explicitly select **Export markers** to add only new take markers.
 
 ## Inputs and outputs
 
 - Inputs: REAPER item manifest, chapter-track name, `Manuscript.docx`, local model configuration, hotwords, and equivalence lists.
 - Outputs: current marker protocol and diff files; planned structured transcript-discrepancy findings.
-- Narrator actions: select chapter, set recognition controls, add reviewed equivalences, navigate/loop findings, and accept/dismiss/defer them.
+- Narrator actions: select chapter, set recognition controls, add reviewed equivalences, navigate/loop findings, explicitly export new markers, and accept/dismiss/defer them.
 
 ## Planned features
 
@@ -33,7 +33,7 @@ Select a chapter track, confirm its manuscript mapping and settings, run compari
 
 ## Non-goals and review boundary
 
-The transcript is not the authoritative performance record. The utility does not correct text, choose a take, or create markers for unrecorded chapter material.
+The transcript is not the authoritative performance record. The utility does not correct text, choose a take, or create markers for unrecorded chapter material. Analysis never writes markers automatically: it labels a result as already marked when a same-kind prefix occurs on the active take within 0.15 seconds, and the explicit export action skips those rows. It rechecks immediately before adding a marker and reports how many were added or skipped.
 
 ## Acceptance and risks
 

@@ -138,15 +138,15 @@ multi-minute wait first.
    selects that item and moves the edit cursor to it, so you can jump straight to any
    discrepancy. Nothing pops up as a separate dialog; click Close (or the window's own close
    button) when you're done reading it.
-6. **Take markers** appear directly on that track's items (not across the whole project),
+6. The workspace lists each discrepancy and whether a matching take marker already exists. Click **Export markers** when you want to add the new ones. Exported **take markers** appear directly on that track's items (not across the whole project),
    colored by kind:
    - `MISREAD: 'X' as 'Y'` (default red) — manuscript said X, you said Y
    - `SKIPPED: 'X'` — in the doc, not said (default amber)
    - `EXTRA: 'Y'` — said, not in the doc (default blue)
 
-   Re-running on a track that already has markers from a previous run skips any that duplicate
-   one already there (same text, same position within ~0.15s), so repeated runs don't pile up
-   duplicates.
+   A result is shown as already marked when the same active take contains a marker with the same
+   `MISREAD:`, `SKIPPED:`, or `EXTRA:` prefix within ~0.15s. Export rechecks that condition before
+   every add, skips duplicates, and reports the added/skipped counts.
 7. A single **diff file** is saved to
    `<project folder>\TranscriptCompare\diffs\<track name>_<run number>.diff` on every run (in
    real unified-diff syntax - `---`/`+++`/`-`/`+` - so it's readable on its own in any editor

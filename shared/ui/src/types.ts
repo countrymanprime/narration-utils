@@ -43,10 +43,13 @@ export type Discrepancy = {
   sourceLine?: number;
   scriptContext?: string;
   audioContext?: string;
+  markerState?: 'pending' | 'existing' | 'exported';
+  existingMarkerName?: string;
 };
+export type MarkerExport = { phase: 'idle' | 'exporting' | 'complete' | 'error'; message: string; added: number; skipped: number };
 export type TranscriptState = {
   runId?: string;
-  phase: 'idle' | 'preparing' | 'running' | 'need_chapter' | 'success' | 'cancelled' | 'error';
+  phase: 'idle' | 'preparing' | 'running' | 'inspecting' | 'need_chapter' | 'success' | 'cancelled' | 'error';
   percent: number;
   message: string;
   logs: string[];
@@ -55,6 +58,7 @@ export type TranscriptState = {
   diff: string;
   summary: string;
   elapsed: number;
+  markerExport: MarkerExport;
 };
 export type Bootstrap = {
   apiVersion: number;
@@ -127,6 +131,7 @@ export interface NarrationApi {
   transcriptLastCompleted(): Promise<TranscriptState | undefined>;
   transcriptAddEquivalence(id: string): Promise<string>;
   transcriptJump(id: string): Promise<void>;
+  transcriptExportMarkers(): Promise<void>;
   transcriptSuggestHints(): Promise<string>;
   transcriptHints(): Promise<string[]>;
   transcriptSaveHints(accepted: string[]): Promise<void>;

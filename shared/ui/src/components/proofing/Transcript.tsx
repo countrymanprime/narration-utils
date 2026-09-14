@@ -413,6 +413,7 @@ export function Transcript({
             setReviewingLast(false);
             if (!reviewingLast) void api.transcriptReset();
           }}
+          canExportMarkers={!reviewingLast}
           goToManuscript={(row) => goToManuscript(row.chapter || '', row.paragraph || 0)}
         />
       )}

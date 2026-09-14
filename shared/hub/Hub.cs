@@ -34,6 +34,10 @@ public sealed class TranscriptRun
     public List<Dictionary<string, object?>> Rows = new();
     public string Diff = "";
     public string Summary = "";
+    public string MarkerExportPhase = "idle";
+    public string MarkerExportMessage = "";
+    public int MarkerExportAdded;
+    public int MarkerExportSkipped;
     public double Started;
     public string? Manifest;
     public string? Output;
@@ -57,6 +61,13 @@ public sealed class TranscriptRun
         ["rows"] = Rows,
         ["diff"] = Diff,
         ["summary"] = Summary,
+        ["markerExport"] = new Dictionary<string, object?>
+        {
+            ["phase"] = MarkerExportPhase,
+            ["message"] = MarkerExportMessage,
+            ["added"] = MarkerExportAdded,
+            ["skipped"] = MarkerExportSkipped,
+        },
         ["elapsed"] = Started > 0 ? Math.Max(0, MonotonicSeconds() - Started) : 0,
     };
 }
@@ -310,6 +321,31 @@ public sealed class Hub
         }
     }
 
+    /// <summary>Requests the explicit, user-approved marker export for the current live REAPER run.</summary>
+    public void TranscriptExportMarkers()
+    {
+        lock (_lock)
+        {
+            if (_run.Phase != "success" || string.IsNullOrEmpty(_run.RunId) || string.IsNullOrEmpty(_run.Output))
+                throw new InvalidOperationException("Run a comparison in this session before exporting its markers.");
+            if (_run.MarkerExportPhase == "exporting") throw new InvalidOperationException("Marker export is already in progress.");
+            var pending = _run.Rows.Count(row => (string?)row.GetValueOrDefault("markerState") == "pending");
+            if (pending == 0) throw new InvalidOperationException("There are no new markers ready to export.");
+            var colors = new[]
+            {
+                Config.Get("TranscriptCompare", "color_misread", _projectFolder, "FF4040").Value,
+                Config.Get("TranscriptCompare", "color_skipped", _projectFolder, "FFC000").Value,
+                Config.Get("TranscriptCompare", "color_extra", _projectFolder, "40A0FF").Value,
+            };
+            _run.MarkerExportPhase = "exporting";
+            _run.MarkerExportMessage = $"Exporting {pending} marker{(pending == 1 ? "" : "s")} to REAPER…";
+            _run.MarkerExportAdded = 0;
+            _run.MarkerExportSkipped = 0;
+            _bridge.Send("export_compare_markers", new object[] { _run.RunId, _run.Output }.Concat(colors).ToArray());
+        }
+        Changed();
+    }
+
     public string TranscriptAddEquivalence(string rowId)
     {
         Dictionary<string, object?>? row;
@@ -441,40 +477,93 @@ public sealed class Hub
             var (runId, rowId, kind, name, docText, audioText, projectTime, itemIndex) = (rest[0], rest[1], rest[2], rest[3], rest[4], rest[5], rest[6], rest[7]);
             lock (_lock)
             {
-                if (runId == _run.RunId)
+                if (runId == _run.RunId && _run.Phase == "inspecting")
                     _run.Rows.Add(new Dictionary<string, object?>
                     {
                         ["id"] = rowId, ["kind"] = kind, ["name"] = name, ["docText"] = docText, ["audioText"] = audioText,
-                        ["projectTime"] = ParseDoubleOrZero(projectTime), ["itemIndex"] = ParseIntOrZero(itemIndex), ["srcpos"] = 0,
+                        ["projectTime"] = ParseDoubleOrZero(projectTime), ["itemIndex"] = ParseIntOrZero(itemIndex), ["srcpos"] = rest.Count > 14 ? ParseDoubleOrZero(rest[14]) : 0,
                         ["chapter"] = rest.Count > 8 ? rest[8] : "", ["paragraph"] = rest.Count > 9 ? ParseIntOrZero(rest[9]) : 0,
                         ["scriptContext"] = rest.Count > 10 ? rest[10] : docText, ["audioContext"] = rest.Count > 11 ? rest[11] : audioText,
+                        ["markerState"] = rest.Count > 12 ? rest[12] : "pending",
+                        ["existingMarkerName"] = rest.Count > 13 ? rest[13] : "",
                     });
             }
             Changed();
         }
-        else if (tag == "COMPARE_APPLIED" && rest.Count >= 2)
+        else if (tag == "COMPARE_INSPECTED" && rest.Count >= 4)
         {
-            var (runId, summary) = (rest[0], rest[1]);
+            var (runId, summary, _, existing) = (rest[0], rest[1], rest[2], rest[3]);
             lock (_lock)
             {
-                if (runId == _run.RunId)
+                if (runId == _run.RunId && _run.Phase == "inspecting")
                 {
-                    _run.Phase = "success"; _run.Percent = 100; _run.Summary = summary; _run.Message = "Comparison complete.";
-                    _lastCompletedJson = JsonSerializer.Serialize(_run.Snapshot());
-                    if (_projectFolder is { } projectFolder) File.WriteAllText(Path.Combine(projectFolder, ".narration-last-comparison.json"), _lastCompletedJson);
+                    _run.Phase = "success"; _run.Percent = 100;
+                    _run.Summary = int.TryParse(existing, out var existingCount) && existingCount > 0
+                        ? $"{summary} {existingCount} already marked."
+                        : summary;
+                    _run.Message = "Comparison complete — review discrepancies before exporting markers.";
+                    PersistLastComparison();
+                }
+            }
+            Changed();
+        }
+        else if (tag == "COMPARE_EXPORT_MARKER" && rest.Count >= 3)
+        {
+            var (runId, rowId, markerState) = (rest[0], rest[1], rest[2]);
+            lock (_lock)
+            {
+                if (runId == _run.RunId && _run.MarkerExportPhase == "exporting")
+                {
+                    var row = _run.Rows.FirstOrDefault(candidate => (string?)candidate["id"] == rowId);
+                    if (row != null)
+                    {
+                        row["markerState"] = markerState;
+                        row["existingMarkerName"] = rest.Count > 3 ? rest[3] : "";
+                    }
+                }
+            }
+            Changed();
+        }
+        else if (tag == "COMPARE_EXPORTED" && rest.Count >= 3)
+        {
+            var (runId, added, skipped) = (rest[0], ParseIntOrZero(rest[1]), ParseIntOrZero(rest[2]));
+            lock (_lock)
+            {
+                if (runId == _run.RunId && _run.MarkerExportPhase == "exporting")
+                {
+                    _run.MarkerExportPhase = "complete";
+                    _run.MarkerExportAdded = added;
+                    _run.MarkerExportSkipped = skipped;
+                    _run.MarkerExportMessage = $"Exported {added} marker{(added == 1 ? "" : "s")}; skipped {skipped} existing.";
+                    PersistLastComparison();
                 }
             }
             Changed();
         }
         else if (tag == "ERROR")
         {
-            lock (_lock) { _run.Phase = "error"; _run.Message = rest.Count > 0 ? rest[0] : "REAPER integration failed."; }
+            lock (_lock)
+            {
+                var message = rest.Count > 0 ? rest[0] : "REAPER integration failed.";
+                if (_run.MarkerExportPhase == "exporting")
+                {
+                    _run.MarkerExportPhase = "error";
+                    _run.MarkerExportMessage = message;
+                }
+                else { _run.Phase = "error"; _run.Message = message; }
+            }
             Changed();
         }
     }
 
     private static double ParseDoubleOrZero(string value) => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : 0;
     private static int ParseIntOrZero(string value) => int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result) ? result : 0;
+
+    private void PersistLastComparison()
+    {
+        _lastCompletedJson = JsonSerializer.Serialize(_run.Snapshot());
+        if (_projectFolder is { } projectFolder) File.WriteAllText(Path.Combine(projectFolder, ".narration-last-comparison.json"), _lastCompletedJson);
+    }
 
     private void LaunchBackend(string docx, string track)
     {
@@ -555,16 +644,10 @@ public sealed class Hub
             }
             if (process.ExitCode == 2) { lock (_lock) { run.Phase = "cancelled"; run.Message = "Cancelled — no markers were added."; } Changed(); return; }
             if (process.ExitCode != 0) { lock (_lock) { run.Phase = "error"; run.Message = "Transcript backend failed."; } Changed(); return; }
-            var colors = new[]
-            {
-                Config.Get("TranscriptCompare", "color_misread", _projectFolder, "FF4040").Value,
-                Config.Get("TranscriptCompare", "color_skipped", _projectFolder, "FFC000").Value,
-                Config.Get("TranscriptCompare", "color_extra", _projectFolder, "40A0FF").Value,
-            };
-            _bridge.Send("apply_compare_results", new object[] { run.RunId, output }.Concat(colors).ToArray());
+            _bridge.Send("inspect_compare_results", run.RunId, output);
             lock (_lock)
             {
-                run.Message = "Applying take markers in REAPER…"; run.BackendProcess = null;
+                run.Phase = "inspecting"; run.Message = "Checking existing take markers in REAPER…"; run.BackendProcess = null;
                 if (run.DiffPath != null && File.Exists(run.DiffPath)) run.Diff = File.ReadAllText(run.DiffPath);
             }
             Changed();
