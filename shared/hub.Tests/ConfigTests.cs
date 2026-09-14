@@ -6,20 +6,19 @@ namespace NarrationUtilsHub.Tests;
 public sealed class ConfigTests : IDisposable
 {
     private readonly string _tempAppData;
-    private readonly string? _previousAppData;
+    private readonly IDisposable _settingsRoot;
 
     public ConfigTests()
     {
-        _previousAppData = Environment.GetEnvironmentVariable("APPDATA");
         _tempAppData = Path.Combine(Path.GetTempPath(), "narration-utils-config-tests-" + Guid.NewGuid());
         Directory.CreateDirectory(_tempAppData);
-        Environment.SetEnvironmentVariable("APPDATA", _tempAppData);
+        _settingsRoot = Config.UseGlobalSettingsDirectory(_tempAppData);
         Config.RepoRoot = Program.FindRepoRoot();
     }
 
     public void Dispose()
     {
-        Environment.SetEnvironmentVariable("APPDATA", _previousAppData);
+        _settingsRoot.Dispose();
         Directory.Delete(_tempAppData, recursive: true);
     }
 

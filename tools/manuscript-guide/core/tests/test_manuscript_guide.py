@@ -15,16 +15,30 @@ SPEC.loader.exec_module(guide)
 
 class ManuscriptGuideTests(unittest.TestCase):
     def test_locked_edit_survives_rebuild(self):
-        generated = [{
-            "id": "entity-abc", "canonical_name": "Arelian", "category": "Character",
-            "pronunciation": {"say_as": "Arelian"}, "description": {"text": ""},
-            "personality_notes": [], "locked_fields": [],
-        }]
-        previous = {"entities": [{
-            "id": "entity-abc", "canonical_name": "Arelian", "category": "Character",
-            "pronunciation": {"say_as": "ah-RELL-ee-in"}, "description": {"text": ""},
-            "personality_notes": [], "locked_fields": ["pronunciation"],
-        }]}
+        generated = [
+            {
+                "id": "entity-abc",
+                "canonical_name": "Arelian",
+                "category": "Character",
+                "pronunciation": {"say_as": "Arelian"},
+                "description": {"text": ""},
+                "personality_notes": [],
+                "locked": False,
+            }
+        ]
+        previous = {
+            "entities": [
+                {
+                    "id": "entity-abc",
+                    "canonical_name": "Arelian",
+                    "category": "Character",
+                    "pronunciation": {"say_as": "ah-RELL-ee-in"},
+                    "description": {"text": ""},
+                    "personality_notes": [],
+                    "locked": True,
+                }
+            ]
+        }
         merged = guide.merge_locked(generated, previous)
         self.assertEqual("ah-RELL-ee-in", merged[0]["pronunciation"]["say_as"])
 
@@ -52,10 +66,19 @@ class ManuscriptGuideTests(unittest.TestCase):
             manuscript = root / "Manuscript.docx"
             manuscript.write_bytes(b"fixture manuscript")
             guide_file = root / "ManuscriptGuide" / "manuscript_guide.json"
-            guide.write_json(str(guide_file), {
-                "source": {"sha256": guide.document_hash(str(manuscript))},
-                "entities": [{"id": "entity-1", "canonical_name": "Dawnspire", "aliases": ["the Spire"]}],
-            })
+            guide.write_json(
+                str(guide_file),
+                {
+                    "source": {"sha256": guide.document_hash(str(manuscript))},
+                    "entities": [
+                        {
+                            "id": "entity-1",
+                            "canonical_name": "Dawnspire",
+                            "aliases": [{"text": "the Spire", "pronunciation": {}, "occurrences": []}],
+                        }
+                    ],
+                },
+            )
             status_file = root / "ManuscriptGuide" / "status.txt"
             guide.status(argparse.Namespace(docx=str(manuscript), guide=str(guide_file), out=str(status_file)))
             self.assertEqual("STATUS|CURRENT\n", status_file.read_text(encoding="utf-8"))
@@ -75,13 +98,23 @@ class ManuscriptGuideTests(unittest.TestCase):
             document.add_paragraph("Captain Arelian said the Council of Ash would meet in Dawnspire.")
             document.save(manuscript)
             output = root / "ManuscriptGuide" / "manuscript_guide.json"
-            guide.build(argparse.Namespace(
-                docx=str(manuscript), out=str(output), progress=str(root / "ManuscriptGuide" / "progress.txt"),
-                spacy_model="en_core_web_sm", espeak_library="",
-            ))
+            guide.build(
+                argparse.Namespace(
+                    docx=str(manuscript),
+                    out=str(output),
+                    progress=str(root / "ManuscriptGuide" / "progress.txt"),
+                    spacy_model="en_core_web_sm",
+                    espeak_library="",
+                )
+            )
             data = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(guide.document_hash(str(manuscript)), data["source"]["sha256"])
             self.assertTrue(data["entities"])
+            expected_candidates = sorted(
+                {name for entity in data["entities"] for name in [entity["canonical_name"], *(alias["text"] for alias in entity["aliases"])]},
+                key=str.casefold,
+            )
+            self.assertEqual(expected_candidates, data["vocabulary_candidates"])
             self.assertTrue((root / "ManuscriptGuide" / "progress.txt").read_text(encoding="utf-8").startswith("DONE|100"))
 
 

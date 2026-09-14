@@ -89,9 +89,11 @@ def seed_global_if_missing(tool: str, seed: dict) -> None:
     """One-time migration backstop: for each key in `seed`, writes it into
     global settings only if that tool+key isn't already saved there. Safe to
     call on every launch - a no-op once real values exist."""
+
     def mutate(section):
         for key, value in seed.items():
             section.setdefault(key, value)
+
     _update_tool_section(global_settings_path(), tool, mutate)
 
 

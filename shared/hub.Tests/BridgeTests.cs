@@ -1,8 +1,6 @@
 namespace NarrationUtilsHub.Tests;
 
-/// <summary>Mirrors shared/python/tests/test_ui_bridge_and_config.py's
-/// UiBridgeTests - narration_ui_bridge.lua is the one consumer of this
-/// on-disk protocol and isn't changing, so both writers must agree on it.</summary>
+/// <summary>Verifies the on-disk command protocol used by the Lua adapter.</summary>
 public sealed class BridgeTests
 {
     [Fact]

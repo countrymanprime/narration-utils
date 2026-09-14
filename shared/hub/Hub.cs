@@ -1,25 +1,28 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace NarrationUtilsHub;
 
-/// <summary>CLI arguments, mirroring narration_hub.py's argparse surface.</summary>
+/// <summary>Arguments used to configure the desktop hub.</summary>
 public sealed class HubArgs
 {
     public required string SessionDir { get; init; }
     public string ProjectFolder { get; init; } = "";
     public string ProjectName { get; init; } = "";
+    public string Daw { get; init; } = "";
     public string ManuscriptPython { get; init; } = "";
     public string ManuscriptBackend { get; init; } = "";
     public string ComparePython { get; init; } = "";
     public string CompareBackend { get; init; } = "";
     public List<string> Seed { get; init; } = new();
+    public string AudioBaseUrl { get; init; } = "";
 }
 
 public readonly record struct FieldSchema(string Key, string Label, string Kind, string[] Choices);
 
-/// <summary>Mutable run state for one Transcript Compare pass. Ported 1:1 from
-/// narration_hub.py's TranscriptRun dataclass, including its 500-line log cap.</summary>
+/// <summary>Mutable state for one Transcript Compare pass.</summary>
 public sealed class TranscriptRun
 {
     public string Phase = "idle";
@@ -58,57 +61,53 @@ public sealed class TranscriptRun
     };
 }
 
-/// <summary>Port of narration_hub.py's Hub class: owns the transcript-run state
-/// machine, the settings surface, and the file-based bridge loop talking to
-/// shared/reaper/narration_ui_bridge.lua. The window/webview shell (Program.cs)
-/// only ever calls through the thin HostApi wrapper below.</summary>
+/// <summary>Coordinates transcript runs, settings, and the REAPER bridge.</summary>
 public sealed class Hub
 {
+    // Increment when a breaking API response-shape change is released.
     public const int ApiVersion = 1;
-
-    public static readonly string[] PublicApiMethods =
-    {
-        "ready", "bootstrap", "poll", "selectManuscript", "saveSettings",
-        "guideBuild", "guideIndex", "guideEdit", "guideExport", "guidePreview",
-        "transcriptStart", "transcriptCancel", "transcriptAddEquivalence",
-        "transcriptJump", "transcriptSuggestHints", "reportClientDiagnostic",
-    };
 
     private static readonly Dictionary<string, FieldSchema[]> FieldSchemas = new()
     {
+        ["General"] = new[]
+        {
+            new FieldSchema("log_verbosity", "Log verbosity", "choice", new[] { "quiet", "normal", "verbose" }),
+        },
         ["ManuscriptGuide"] = new[]
         {
             new FieldSchema("spacy_model", "spaCy model", "text", Array.Empty<string>()),
             new FieldSchema("espeak_library", "eSpeak NG DLL", "text", Array.Empty<string>()),
-            new FieldSchema("piper_exe", "Piper executable", "text", Array.Empty<string>()),
             new FieldSchema("piper_model", "Piper voice model", "text", Array.Empty<string>()),
         },
         ["TranscriptCompare"] = new[]
         {
-            new FieldSchema("model_size", "Default Whisper model", "choice", new[] { "tiny", "base", "small", "medium", "large-v3" }),
+            new FieldSchema("model_size", "Default Whisper model", "choice", new[] { "tiny", "small", "medium", "large-v3-turbo", "large-v3" }),
+            new FieldSchema("chunk_seconds", "Default chunk length", "choice", new[] { "30", "60", "300", "600" }),
             new FieldSchema("color_misread", "Misread marker color", "color", Array.Empty<string>()),
             new FieldSchema("color_skipped", "Skipped marker color", "color", Array.Empty<string>()),
             new FieldSchema("color_extra", "Extra marker color", "color", Array.Empty<string>()),
         },
     };
 
-    private static readonly Dictionary<string, string> ChunkSeconds = new()
-    {
-        ["30 seconds"] = "30", ["1 minute"] = "60", ["5 minutes"] = "300", ["15 minutes"] = "900", ["1 hour"] = "3600",
-    };
-
     private readonly string? _projectFolder;
     private readonly string _projectName;
+    private readonly string _daw;
     private readonly string _sessionDir;
     private readonly BridgeClient _bridge;
     private readonly string _manuscriptPython;
     private readonly string _manuscriptBackend;
     private readonly string _comparePython;
     private readonly string _compareBackend;
+    // Not known at construction time: the Kestrel host's loopback port is
+    // OS-assigned and only available once it has actually started, which
+    // happens after Hub exists (Endpoints.cs needs a Hub instance to map
+    // against). Program.cs sets this once webApp.StartAsync() returns.
+    public string GuideAudioBaseUrl { get; set; }
     public readonly SessionDiagnostics Diagnostics;
 
     private readonly object _lock = new();
     private TranscriptRun _run = new();
+    private string? _lastCompletedJson;
     private int _revision = 1;
     public volatile bool Closed;
 
@@ -119,10 +118,17 @@ public sealed class Hub
     {
         _projectFolder = string.IsNullOrEmpty(args.ProjectFolder) ? null : args.ProjectFolder;
         _projectName = !string.IsNullOrEmpty(args.ProjectName) ? args.ProjectName : (_projectFolder != null ? new DirectoryInfo(_projectFolder).Name : "Unsaved REAPER project");
+        _daw = string.IsNullOrEmpty(args.Daw) ? "REAPER" : args.Daw;
         _sessionDir = args.SessionDir;
         _bridge = new BridgeClient(_sessionDir);
         _manuscriptPython = args.ManuscriptPython; _manuscriptBackend = args.ManuscriptBackend;
         _comparePython = args.ComparePython; _compareBackend = args.CompareBackend;
+        if (_projectFolder is { } projectFolder)
+        {
+            var lastRunPath = Path.Combine(projectFolder, ".narration-last-comparison.json");
+            if (File.Exists(lastRunPath)) _lastCompletedJson = File.ReadAllText(lastRunPath);
+        }
+        GuideAudioBaseUrl = args.AudioBaseUrl;
         Diagnostics = diagnostics;
         Diagnostics.Event("hub_created", new Dictionary<string, object?> { ["project_folder"] = _projectFolder, ["project_name"] = _projectName });
         var thread = new Thread(BridgeLoop) { IsBackground = true };
@@ -132,7 +138,7 @@ public sealed class Hub
     public Dictionary<string, object?> Ready()
     {
         Diagnostics.Event("api_ready_called");
-        return new Dictionary<string, object?> { ["apiVersion"] = ApiVersion, ["methods"] = PublicApiMethods, ["diagnosticId"] = Diagnostics.Identifier };
+        return new Dictionary<string, object?> { ["apiVersion"] = ApiVersion, ["diagnosticId"] = Diagnostics.Identifier };
     }
 
     public void ReportClientDiagnostic(string kind, string message) =>
@@ -141,16 +147,32 @@ public sealed class Hub
     private void Changed() { lock (_lock) _revision++; }
 
     private GuideService Guide() => new(_projectFolder, _manuscriptPython, _manuscriptBackend);
+    private ManuscriptService Manuscript() => new(_projectFolder, _manuscriptPython, _manuscriptBackend);
 
-    private Dictionary<string, object?> Settings()
+    /// <summary>Returns raw and effective settings for one scope.</summary>
+    public Dictionary<string, object?> SettingsForScope(string scope)
     {
+        if (scope != "global" && scope != "project") throw new ArgumentException("Unsupported settings scope");
         var result = new Dictionary<string, object?>();
         foreach (var (tool, fields) in FieldSchemas)
         {
             var list = new List<Dictionary<string, object?>>();
             foreach (var field in fields)
             {
-                var (value, source) = Config.Get(tool, field.Key, _projectFolder, "");
+                string value; bool isSet;
+                if (scope == "project")
+                {
+                    var project = Config.LoadProjectSettings(_projectFolder, tool);
+                    isSet = project.TryGetPropertyValue(field.Key, out var raw);
+                    value = isSet ? (raw?.GetValue<string>() ?? "") : "";
+                }
+                else
+                {
+                    var global = Config.LoadGlobalSettings(tool);
+                    isSet = global.TryGetPropertyValue(field.Key, out var raw);
+                    value = isSet ? (raw?.GetValue<string>() ?? "") : Config.GetDefault(tool, field.Key, "");
+                }
+                var (effectiveValue, effectiveSource) = Config.Get(tool, field.Key, _projectFolder, "");
                 list.Add(new Dictionary<string, object?>
                 {
                     ["key"] = field.Key,
@@ -158,8 +180,9 @@ public sealed class Hub
                     ["kind"] = field.Kind,
                     ["choices"] = field.Choices,
                     ["value"] = value,
-                    ["source"] = source,
-                    ["projectOverride"] = _projectFolder != null && Config.IsProjectOverride(_projectFolder, tool, field.Key),
+                    ["isSet"] = isSet,
+                    ["effectiveValue"] = effectiveValue,
+                    ["effectiveSource"] = effectiveSource,
                 });
             }
             result[tool] = list;
@@ -169,8 +192,6 @@ public sealed class Hub
 
     public Dictionary<string, object?> Bootstrap()
     {
-        var roadmapPath = Path.Combine(Config.RepoRoot, "shared", "config", "roadmap.json");
-        var roadmap = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(roadmapPath));
         var manuscriptPath = Path.Combine(_projectFolder ?? "", "Manuscript.docx");
         var manuscript = _projectFolder != null && File.Exists(manuscriptPath) ? manuscriptPath : "";
         Dictionary<string, object?> transcript;
@@ -182,14 +203,13 @@ public sealed class Hub
             ["diagnosticId"] = Diagnostics.Identifier,
             ["projectFolder"] = _projectFolder ?? "",
             ["projectName"] = _projectName,
+            ["daw"] = _daw,
             ["manuscriptPath"] = manuscript,
             ["runtime"] = new Dictionary<string, object?>
             {
                 ["ManuscriptGuide"] = new Dictionary<string, object?> { ["python_exe"] = _manuscriptPython, ["backend"] = _manuscriptBackend },
                 ["TranscriptCompare"] = new Dictionary<string, object?> { ["python_exe"] = _comparePython, ["compare_script"] = _compareBackend },
             },
-            ["settings"] = Settings(),
-            ["roadmap"] = roadmap,
             ["transcript"] = transcript,
         };
     }
@@ -202,7 +222,7 @@ public sealed class Hub
     public Dictionary<string, object?> SelectManuscript()
     {
         if (string.IsNullOrEmpty(_projectFolder)) throw new InvalidOperationException("Save the REAPER project before selecting its manuscript.");
-        var selected = ShowOpenDocxDialog?.Invoke();
+        var selected = ShowOpenDocxDialog != null ? StaDialog.Run(ShowOpenDocxDialog) : null;
         if (string.IsNullOrEmpty(selected)) return new Dictionary<string, object?> { ["path"] = "" };
         var destination = Path.Combine(_projectFolder, "Manuscript.docx");
         File.Copy(selected, destination, overwrite: true);
@@ -242,7 +262,14 @@ public sealed class Hub
             var hintsPath = Path.Combine(_projectFolder, "TranscriptCompare", "vocabulary_hints.txt");
             Directory.CreateDirectory(Path.GetDirectoryName(hintsPath)!);
             File.WriteAllText(hintsPath, (options.GetValueOrDefault("hints", "")).Trim());
-            _run = new TranscriptRun { Phase = "preparing", RunId = runId, Message = "Preparing the selected REAPER audio…", Started = TranscriptRun.MonotonicSeconds(), PendingOptions = new Dictionary<string, string>(options) };
+            _run = new TranscriptRun
+            {
+                Phase = "preparing",
+                RunId = runId,
+                Message = "Preparing the selected REAPER audio…",
+                Started = TranscriptRun.MonotonicSeconds(),
+                PendingOptions = new Dictionary<string, string>(options),
+            };
             _bridge.Send("prepare_compare", runId);
         }
         Changed();
@@ -257,6 +284,21 @@ public sealed class Hub
             _run.Message = "Cancellation requested…";
         }
         Changed();
+    }
+
+    public void TranscriptReset()
+    {
+        lock (_lock)
+        {
+            if (_run.Phase is "preparing" or "running") throw new InvalidOperationException("Cancel the active comparison before starting a new one.");
+            _run = new TranscriptRun();
+        }
+        Changed();
+    }
+
+    public JsonNode? TranscriptLastCompleted()
+    {
+        lock (_lock) return string.IsNullOrWhiteSpace(_lastCompletedJson) ? null : JsonNode.Parse(_lastCompletedJson);
     }
 
     public void TranscriptJump(string rowId)
@@ -284,21 +326,77 @@ public sealed class Hub
 
     public string TranscriptSuggestHints()
     {
-        var manuscript = _projectFolder != null ? Path.Combine(_projectFolder, "Manuscript.docx") : null;
-        if (manuscript is null || !File.Exists(manuscript)) throw new InvalidOperationException("Select a manuscript first.");
-        var outPath = Path.Combine(_sessionDir, $"hints_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1000}.txt");
-        var result = WindowsProcess.Run(_comparePython, new[] { _compareBackend, "--docx", manuscript, "--extract-hints", "--hints-out", outPath });
-        var content = (File.Exists(outPath) ? File.ReadAllText(outPath) : "").Trim();
-        if (result.ExitCode != 0 || !content.StartsWith("OK|", StringComparison.Ordinal))
-            throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.StdErr) ? "Could not extract vocabulary hints." : result.StdErr.Trim());
-        return content[(content.IndexOf('|') + 1)..];
+        var accepted = TranscriptHints();
+        return string.Join(", ", Guide().VocabularyCandidates()
+            .Where(candidate => !accepted.Contains(candidate, StringComparer.OrdinalIgnoreCase)));
+    }
+
+    /// <summary>Per-project vocab-hints sidecar, kept separate from the
+    /// overwritten-every-run vocabulary_hints.txt the compare backend reads:
+    /// this is the accepted-hints list the Proofing screen shows as chips
+    /// across sessions, so "Suggest from manuscript" doesn't have to be
+    /// re-run and re-accepted from scratch every time.</summary>
+    private string VocabHintsPath() => Path.Combine(_projectFolder!, "TranscriptCompare", "vocab_hints.json");
+
+    public List<string> TranscriptHints()
+    {
+        if (_projectFolder is null || !File.Exists(VocabHintsPath())) return new List<string>();
+        try { return System.Text.Json.JsonSerializer.Deserialize<List<string>>(File.ReadAllText(VocabHintsPath())) ?? new(); }
+        catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException) { return new List<string>(); }
+    }
+
+    public void TranscriptSaveHints(List<string> accepted)
+    {
+        if (_projectFolder is null) throw new InvalidOperationException("Select a manuscript first.");
+        var path = VocabHintsPath();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var cleaned = accepted.Select(h => h.Trim()).Where(h => h.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(h => h, StringComparer.OrdinalIgnoreCase).ToList();
+        File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(cleaned));
     }
 
     public string GuideBuild() => Guide().Build();
-    public List<Dictionary<string, string>> GuideIndex() => Guide().Index();
-    public void GuideEdit(string entityId, Dictionary<string, string> values, List<string> locks) => Guide().Edit(entityId, values, locks.Select(l => l.ToLowerInvariant()).ToHashSet());
+    public System.Text.Json.Nodes.JsonArray GuideEntities() => Guide().Entities();
+    public void GuideEdit(string entityId, Dictionary<string, string> values) => Guide().Edit(entityId, values);
+    public void GuideSetLocked(string entityId, bool locked) => Guide().SetLocked(entityId, locked);
+    public void GuideRescan(string entityId) => Guide().Rescan(entityId);
+    public string GuideCreate(string name, string category, List<string> aliases) => Guide().Create(name, category, aliases);
+    public void GuideMerge(string sourceId, string targetId) => Guide().Merge(sourceId, targetId);
+    public void GuideDelete(string entityId) => Guide().Delete(entityId);
+    public void GuideRelate(string entityId, string otherId, string label) => Guide().Relate(entityId, otherId, label);
+    public void GuideUnrelate(string entityId, string otherId, string label) => Guide().Unrelate(entityId, otherId, label);
     public string GuideExport() => Guide().ExportHotwords();
-    public string GuidePreview(string entityId) => Guide().Preview(entityId);
+
+    /// <summary>Renders an entity preview clip and returns a playable URL.</summary>
+    /// <remarks>Uses a file URL when no project-scoped audio server is running.</remarks>
+    public string GuidePreview(string entityId, int? aliasIndex = null)
+    {
+        var path = Guide().Preview(entityId, aliasIndex);
+        if (string.IsNullOrEmpty(GuideAudioBaseUrl)) return "file:///" + path.Replace('\\', '/');
+        return GuideAudioBaseUrl + Uri.EscapeDataString(Path.GetFileName(path));
+    }
+
+    public List<ManuscriptChapter> ManuscriptChapters() => Manuscript().Chapters();
+    public ManuscriptReader ManuscriptReader() => Manuscript().Reader();
+    public ReaderState ManuscriptReaderState() => Manuscript().GetReaderState();
+    public ReaderState ManuscriptReaderStateSave(string? activeChapter, int? activeSourceLine, List<string>? expandedChapters = null) =>
+        Manuscript().SaveReaderState(activeChapter, activeSourceLine, expandedChapters);
+
+    public ReaderBookmark ManuscriptBookmarkCreate(string kind, string chapter, int? paragraph, int? sourceLine, string? noteId) =>
+        Manuscript().CreateBookmark(kind, chapter, paragraph, sourceLine, noteId);
+    public void ManuscriptBookmarkDelete(string id) => Manuscript().DeleteBookmark(id);
+    public List<ManuscriptParagraph> ManuscriptParagraphs(string chapter) => Manuscript().Paragraphs(chapter);
+    public List<SearchHit> ManuscriptSearch(string query) => Manuscript().Search(query);
+    public ManuscriptChapter ManuscriptSetChapterStatus(string chapter, string status) => Manuscript().SetChapterStatus(chapter, status);
+    public List<ManuscriptNote> ManuscriptNoteList(string? chapter) => Manuscript().NoteList(chapter);
+    public ManuscriptNote ManuscriptNoteCreate(
+        string chapter,
+        int paragraph,
+        string text,
+        int? anchorStart = null,
+        int? anchorEnd = null,
+        string? anchorText = null) =>
+        Manuscript().NoteCreate(chapter, paragraph, text, anchorStart, anchorEnd, anchorText);
+    public void ManuscriptNoteDelete(string id) => Manuscript().NoteDelete(id);
 
     private void AppendLog(string line)
     {
@@ -348,6 +446,8 @@ public sealed class Hub
                     {
                         ["id"] = rowId, ["kind"] = kind, ["name"] = name, ["docText"] = docText, ["audioText"] = audioText,
                         ["projectTime"] = ParseDoubleOrZero(projectTime), ["itemIndex"] = ParseIntOrZero(itemIndex), ["srcpos"] = 0,
+                        ["chapter"] = rest.Count > 8 ? rest[8] : "", ["paragraph"] = rest.Count > 9 ? ParseIntOrZero(rest[9]) : 0,
+                        ["scriptContext"] = rest.Count > 10 ? rest[10] : docText, ["audioContext"] = rest.Count > 11 ? rest[11] : audioText,
                     });
             }
             Changed();
@@ -355,7 +455,15 @@ public sealed class Hub
         else if (tag == "COMPARE_APPLIED" && rest.Count >= 2)
         {
             var (runId, summary) = (rest[0], rest[1]);
-            lock (_lock) { if (runId == _run.RunId) { _run.Phase = "success"; _run.Percent = 100; _run.Summary = summary; _run.Message = "Comparison complete."; } }
+            lock (_lock)
+            {
+                if (runId == _run.RunId)
+                {
+                    _run.Phase = "success"; _run.Percent = 100; _run.Summary = summary; _run.Message = "Comparison complete.";
+                    _lastCompletedJson = JsonSerializer.Serialize(_run.Snapshot());
+                    if (_projectFolder is { } projectFolder) File.WriteAllText(Path.Combine(projectFolder, ".narration-last-comparison.json"), _lastCompletedJson);
+                }
+            }
             Changed();
         }
         else if (tag == "ERROR")
@@ -385,9 +493,9 @@ public sealed class Hub
                 "--progress", run.Progress, "--log", run.LogPath,
             };
             if (options.TryGetValue("chapterTitle", out var chapterTitle) && !string.IsNullOrEmpty(chapterTitle)) { args.Add("--chapter-title"); args.Add(chapterTitle); }
-            if (options.TryGetValue("chunk", out var chunk) && ChunkSeconds.TryGetValue(chunk, out var seconds))
+            if (options.TryGetValue("chunk", out var chunkSeconds) && int.TryParse(chunkSeconds, out _))
             {
-                args.Add("--chunk-seconds"); args.Add(seconds);
+                args.Add("--chunk-seconds"); args.Add(chunkSeconds);
                 args.Add("--parallel-workers"); args.Add(options.GetValueOrDefault("workers") == "Auto" ? "0" : (options.GetValueOrDefault("workers", "0")));
             }
             run.Phase = "running"; run.Message = "Launching transcript backend…";

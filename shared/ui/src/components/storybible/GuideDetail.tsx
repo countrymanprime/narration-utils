@@ -1,0 +1,591 @@
+import { useEffect, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faChevronDown,
+  faCodeMerge,
+  faFileLines,
+  faFloppyDisk,
+  faLock,
+  faLockOpen,
+  faPlus,
+  faRotate,
+  faTrash,
+  faWaveSquare,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons';
+import type { GuideEntity } from '../../types';
+import { allEvidence, categoryCssName, categoryLabel, categoryValue, CREATABLE_CATEGORIES, findAliasMatches, highlightTerms } from '../../state';
+import { useApi } from '../../api/ApiContext';
+import { Field } from '../primitives/Field';
+import { ConfirmDialog } from '../primitives/ConfirmDialog';
+import { TooltipTarget } from '../primitives/Tooltip';
+
+export function GuideDetail({
+  entity,
+  entities,
+  reload,
+  notify,
+  select,
+  goToManuscript,
+}: {
+  entity?: GuideEntity;
+  entities: GuideEntity[];
+  reload: (selectId?: string) => Promise<void>;
+  notify: (text: string) => void;
+  select: (id: string) => void;
+  goToManuscript: (chapter: string, paragraph: number) => void;
+}) {
+  const api = useApi();
+  const [draft, setDraft] = useState({ name: '', description: '', personality: '', context: '' });
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+  const [aliasQuery, setAliasQuery] = useState('');
+  const [aliasSelectedId, setAliasSelectedId] = useState<string>();
+  const [aliasActiveIndex, setAliasActiveIndex] = useState(0);
+  const [relationOtherId, setRelationOtherId] = useState('');
+  const [relationLabel, setRelationLabel] = useState('');
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [confirmation, setConfirmation] = useState<'delete' | 'merge'>();
+
+  useEffect(() => {
+    setPreviewUrl('');
+    setCategoryMenuOpen(false);
+    setAliasQuery('');
+    setAliasSelectedId(undefined);
+    setAliasActiveIndex(0);
+    if (entity)
+      setDraft({
+        name: entity.canonical_name,
+        description: entity.description.text,
+        personality: entity.personality_notes.map((note) => note.text).join(' '),
+        context: entity.context || '',
+      });
+  }, [entity?.id]);
+
+  if (!entity) return <section className="panel panel-body">No matching entities. Build the guide to discover names and terms.</section>;
+  const locked = entity.locked;
+  const otherEntities = entities.filter((row) => row.id !== entity.id && row.category !== 'Draft');
+  const aliasMatches = aliasSelectedId ? [] : findAliasMatches(entities, aliasQuery, entity.id);
+  const selectedAliasMatch = aliasSelectedId ? entities.find((row) => row.id === aliasSelectedId) : undefined;
+  const evidence = allEvidence(entity);
+  const highlightNames = [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)];
+
+  const save = async (values: Record<string, string>, message: string) => {
+    try {
+      await api.guideEdit(entity.id, values);
+      notify(message);
+      await reload(entity.id);
+    } catch (error) {
+      notify(String(error));
+    }
+  };
+  const setAliasTexts = (aliases: string[]) => save({ aliases: aliases.join(';') }, 'Aliases updated.');
+  const clearAliasMatch = () => {
+    setAliasQuery('');
+    setAliasSelectedId(undefined);
+    setAliasActiveIndex(0);
+  };
+  const addAliasFromQuery = () => {
+    const value = aliasQuery.trim();
+    if (!value) return;
+    clearAliasMatch();
+    void setAliasTexts([...entity.aliases.map((alias) => alias.text), value]);
+  };
+  const rescanOccurrences = async () => {
+    try {
+      await api.guideRescan(entity.id);
+      notify('Occurrences rescanned.');
+      await reload(entity.id);
+    } catch (error) {
+      notify(String(error));
+    }
+  };
+  const onAliasKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      clearAliasMatch();
+      return;
+    }
+    if (!aliasSelectedId && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+      if (!aliasMatches.length) return;
+      event.preventDefault();
+      setAliasActiveIndex((current) => (current + (event.key === 'ArrowDown' ? 1 : -1) + aliasMatches.length) % aliasMatches.length);
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (!aliasSelectedId && aliasMatches.length > 0) setAliasSelectedId(aliasMatches[aliasActiveIndex].id);
+      else if (!aliasSelectedId) addAliasFromQuery();
+    }
+  };
+
+  return (
+    <section className={`panel guide-detail-card ${locked ? 'is-locked' : ''}`}>
+      <div className="panel-head guide-detail-head flex-wrap">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className={`cat-dot type-${categoryCssName(entity.category)}`} />
+          <h2 className="truncate font-semibold">{entity.canonical_name || 'New entity'}</h2>
+          <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+            <div style={{ position: 'relative' }}>
+              <button type="button" className={`badge badge-${entity.category}`} onClick={() => setCategoryMenuOpen((value) => !value)}>
+                {categoryLabel(entity.category)} <FontAwesomeIcon icon={faChevronDown} />
+              </button>
+              {categoryMenuOpen && (
+                <div className="category-menu" role="menu">
+                  {CREATABLE_CATEGORIES.map((label) => (
+                    <button
+                      key={label}
+                      role="menuitem"
+                      onClick={() => {
+                        setCategoryMenuOpen(false);
+                        void save({ category: categoryValue(label) }, `Category changed to ${label}.`);
+                      }}
+                    >
+                      <span className={`cat-dot type-${categoryValue(label)}`} />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="f-mono mr-1 text-xs" style={{ color: 'var(--text-faint)' }}>
+            {entity.occurrence_count} occurrences
+          </span>
+          <TooltipTarget text={locked ? 'Unlock entry' : 'Lock entry'}>
+            <button
+              aria-label={locked ? 'Unlock entry' : 'Lock entry'}
+              className="icon-btn"
+              onClick={async () => {
+                try {
+                  await api.guideSetLocked(entity.id, !locked);
+                  notify(locked ? 'Entry unlocked.' : 'Entry locked.');
+                  await reload(entity.id);
+                } catch (error) {
+                  notify(String(error));
+                }
+              }}
+            >
+              <FontAwesomeIcon icon={locked ? faLock : faLockOpen} />
+            </button>
+          </TooltipTarget>
+          <TooltipTarget text="Save changes to this entry">
+            <button
+              aria-label="Save changes to this entry"
+              className="icon-btn"
+              onClick={() =>
+                void save(
+                  {
+                    canonical_name: draft.name.trim() || entity.canonical_name,
+                    description: draft.description,
+                    personality: draft.personality,
+                    context: draft.context,
+                  },
+                  'Entry saved.',
+                )
+              }
+            >
+              <FontAwesomeIcon icon={faFloppyDisk} />
+            </button>
+          </TooltipTarget>
+          {!locked && (
+            <TooltipTarget text="Delete entity">
+              <button aria-label="Delete entity" className="icon-btn" onClick={() => setConfirmation('delete')}>
+                <FontAwesomeIcon icon={faTrash} />
+              </button>
+            </TooltipTarget>
+          )}
+        </div>
+      </div>
+      <div className="panel-body guide-detail-scroll space-y-4">
+        {locked && (
+          <p className="rounded px-3 py-1.5 text-xs" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+            <FontAwesomeIcon icon={faLock} className="mr-1.5" />
+            Locked entries cannot be deleted or used as merge sources.
+          </p>
+        )}
+        {entity.category === 'Draft' && (
+          <p className="rounded px-3 py-1.5 text-xs" style={{ background: 'var(--accent-soft)', color: 'var(--accent-strong)' }}>
+            Choose a category above to finish setting up this entry.
+          </p>
+        )}
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <div className="label mb-1.5">Name</div>
+            <input className="input" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+          </div>
+          <div>
+            <div className="label mb-1.5">
+              Pronunciation{' '}
+              <TooltipTarget text="Generated pronunciation; the waveform button plays an audio preview.">
+                <span className="tip-icon">i</span>
+              </TooltipTarget>
+            </div>
+            <div style={{ position: 'relative', width: '100%' }}>
+              <div className="form-control form-control--readonly f-mono" style={{ paddingRight: '2.75rem' }}>
+                {entity.pronunciation.ipa || 'Not generated'}
+              </div>
+              <TooltipTarget text="Play provider-generated pronunciation" style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}>
+                <button
+                  aria-label="Play preview"
+                  className="icon-btn"
+                  onClick={async () => {
+                    try {
+                      setPreviewUrl(await api.guidePreview(entity.id));
+                    } catch (error) {
+                      notify(String(error));
+                    }
+                  }}
+                >
+                  <FontAwesomeIcon icon={faWaveSquare} />
+                </button>
+              </TooltipTarget>
+            </div>
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-faint)' }}>
+              Source: {entity.pronunciation.source} · Confidence: {entity.pronunciation.confidence}
+            </p>
+            {previewUrl && <audio className="mt-2 w-full" controls autoPlay src={previewUrl} />}
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <div className="label mb-1.5">Aliases</div>
+          <table className="dtable">
+            <thead>
+              <tr>
+                <th>Alias</th>
+                <th style={{ minWidth: '9rem' }}>Pronunciation</th>
+                <th>Occurrences</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {entity.aliases.map((alias, index) => (
+                <tr key={alias.text}>
+                  <td className="align-middle f-mono text-sm">{alias.text}</td>
+                  <td className="align-middle">
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <div className="form-control form-control--readonly f-mono text-xs" style={{ paddingRight: '2.75rem' }}>
+                        {alias.pronunciation.ipa || 'Not generated'}
+                      </div>
+                      <TooltipTarget
+                        text="Play this alias pronunciation"
+                        style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}
+                      >
+                        <button
+                          aria-label="Play alias pronunciation"
+                          className="icon-btn"
+                          onClick={async () => {
+                            try {
+                              setPreviewUrl(await api.guidePreview(entity.id, index));
+                            } catch (error) {
+                              notify(String(error));
+                            }
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faWaveSquare} />
+                        </button>
+                      </TooltipTarget>
+                    </div>
+                  </td>
+                  <td className="align-middle f-mono">{alias.occurrences.length}</td>
+                  <td className="align-middle text-right">
+                    <button
+                      className="icon-btn"
+                      aria-label={`Remove alias ${alias.text}`}
+                      onClick={() => void setAliasTexts(entity.aliases.filter((other) => other.text !== alias.text).map((other) => other.text))}
+                    >
+                      <FontAwesomeIcon icon={faXmark} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-3">
+            <input
+              className="input"
+              role="combobox"
+              aria-expanded={aliasMatches.length > 0}
+              value={aliasQuery}
+              onChange={(event) => {
+                setAliasQuery(event.target.value);
+                setAliasSelectedId(undefined);
+                setAliasActiveIndex(0);
+              }}
+              onKeyDown={onAliasKeyDown}
+              placeholder="Add an alias or find a matching entry…"
+            />
+            {selectedAliasMatch ? (
+              <div className="alias-match-actions">
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  Selected match: <strong>{selectedAliasMatch.canonical_name}</strong>
+                  {selectedAliasMatch.locked ? ' · locked' : ''}
+                </span>
+                <button className="btn btn-ghost text-xs" onClick={() => select(selectedAliasMatch.id)}>
+                  Review entry
+                </button>
+                {selectedAliasMatch.locked ? (
+                  <TooltipTarget text="Locked entries cannot be merged because the source would be deleted.">
+                    <button className="btn btn-primary text-xs" disabled>
+                      Merge into current entry
+                    </button>
+                  </TooltipTarget>
+                ) : (
+                  <button className="btn btn-primary text-xs" onClick={() => setConfirmation('merge')}>
+                    <FontAwesomeIcon icon={faCodeMerge} />
+                    Merge into current entry
+                  </button>
+                )}
+                <button className="btn btn-ghost text-xs" onClick={clearAliasMatch}>
+                  Clear selection
+                </button>
+              </div>
+            ) : aliasQuery ? (
+              <div className="alias-match-menu" role="listbox" aria-label="Matching Story Bible entries">
+                {aliasMatches.length > 0 ? (
+                  aliasMatches.map((match, index) => (
+                    <button
+                      key={match.id}
+                      type="button"
+                      role="option"
+                      aria-selected={index === aliasActiveIndex}
+                      className={`alias-match-option ${index === aliasActiveIndex ? 'active' : ''}`}
+                      onClick={() => setAliasSelectedId(match.id)}
+                    >
+                      <span className={`cat-dot type-${match.category}`} />
+                      <span className="min-w-0 flex-1">
+                        <strong className="text-sm">{match.canonical_name}</strong>
+                        <span className="block text-xs" style={{ color: 'var(--text-faint)' }}>
+                          {categoryLabel(match.category)} · {match.occurrence_count} occurrence{match.occurrence_count === 1 ? '' : 's'}
+                        </span>
+                      </span>
+                      <FontAwesomeIcon icon={match.locked ? faLock : faLockOpen} />
+                    </button>
+                  ))
+                ) : (
+                  <div className="p-3 text-sm" style={{ color: 'var(--text-faint)' }}>
+                    No matching Story Bible entries.
+                  </div>
+                )}
+                <div className="alias-match-actions justify-between" style={{ padding: '.5rem' }}>
+                  <TooltipTarget text="Add alias">
+                    <button aria-label="Add alias" className="icon-btn" onClick={addAliasFromQuery}>
+                      <FontAwesomeIcon icon={faPlus} />
+                    </button>
+                  </TooltipTarget>
+                  <TooltipTarget text="Rescan occurrences for this entry">
+                    <button aria-label="Rescan occurrences" className="icon-btn" onClick={() => void rescanOccurrences()}>
+                      <FontAwesomeIcon icon={faRotate} />
+                    </button>
+                  </TooltipTarget>
+                </div>
+              </div>
+            ) : (
+              <div className="alias-match-actions justify-between">
+                <TooltipTarget text="Add alias">
+                  <button aria-label="Add alias" className="icon-btn" onClick={addAliasFromQuery}>
+                    <FontAwesomeIcon icon={faPlus} />
+                  </button>
+                </TooltipTarget>
+                <TooltipTarget text="Rescan occurrences for this entry">
+                  <button aria-label="Rescan occurrences" className="icon-btn" onClick={() => void rescanOccurrences()}>
+                    <FontAwesomeIcon icon={faRotate} />
+                  </button>
+                </TooltipTarget>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Field label="Description" textarea value={draft.description} onChange={(value) => setDraft({ ...draft, description: value })} />
+
+        {entity.category === 'Character' && (
+          <>
+            <Field label="Personality notes" textarea value={draft.personality} onChange={(value) => setDraft({ ...draft, personality: value })} />
+            <div className="mt-5">
+              <div className="label mb-1.5">Voice samples</div>
+              <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
+                No samples yet.
+              </p>
+              <button className="btn btn-ghost mt-1.5 text-xs" onClick={() => notify('Voice-sample picker is a future integration.')}>
+                + Add sample
+              </button>
+            </div>
+          </>
+        )}
+        {entity.category === 'Place' && (
+          <Field label="Location context" textarea value={draft.context} onChange={(value) => setDraft({ ...draft, context: value })} />
+        )}
+        {entity.category === 'Event' && <Field label="Timeline context" value={draft.context} onChange={(value) => setDraft({ ...draft, context: value })} />}
+        {entity.category === 'Item' && (
+          <Field label="Item context" textarea value={draft.context} onChange={(value) => setDraft({ ...draft, context: value })} />
+        )}
+        {entity.category === 'Lore' && (
+          <Field label="Lore context" textarea value={draft.context} onChange={(value) => setDraft({ ...draft, context: value })} />
+        )}
+
+        <div className="mt-5 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
+          <div className="label mb-2">Relationships</div>
+          <table className="dtable">
+            <thead>
+              <tr>
+                <th>Relationship</th>
+                <th>Entry</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {entity.relationships.map((rel) => (
+                <tr key={`${rel.id}-${rel.label}`}>
+                  <td>{rel.label}</td>
+                  <td>{rel.name}</td>
+                  <td className="text-right">
+                    <button
+                      className="icon-btn"
+                      aria-label="Remove relationship"
+                      onClick={async () => {
+                        try {
+                          await api.guideUnrelate(entity.id, rel.id, rel.label);
+                          await reload(entity.id);
+                        } catch (error) {
+                          notify(String(error));
+                        }
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faXmark} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {entity.relationships.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="text-sm" style={{ color: 'var(--text-faint)' }}>
+                    No related entries yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <div className="mt-3 grid gap-3" style={{ gridTemplateColumns: '1fr 1fr auto' }}>
+            <input
+              className="input"
+              value={relationLabel}
+              onChange={(event) => setRelationLabel(event.target.value)}
+              placeholder="Relationship, e.g. located in"
+            />
+            <select className="input" value={relationOtherId} onChange={(event) => setRelationOtherId(event.target.value)}>
+              <option value="">Choose entry…</option>
+              {otherEntities.map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.canonical_name}
+                </option>
+              ))}
+            </select>
+            <button
+              className="btn btn-ghost text-xs"
+              onClick={async () => {
+                if (!relationOtherId || !relationLabel.trim()) return;
+                try {
+                  await api.guideRelate(entity.id, relationOtherId, relationLabel.trim());
+                  setRelationOtherId('');
+                  setRelationLabel('');
+                  await reload(entity.id);
+                } catch (error) {
+                  notify(String(error));
+                }
+              }}
+            >
+              <FontAwesomeIcon icon={faPlus} /> Add
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
+          <div className="label mb-1.5">
+            Evidence{' '}
+            <span className="f-mono text-xs" style={{ color: 'var(--text-faint)' }}>
+              ({evidence.length} shown)
+            </span>
+          </div>
+          {evidence.length === 0 ? (
+            <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
+              No occurrences found yet.
+            </p>
+          ) : (
+            evidence.map((item, index) => (
+              <div key={index} className="flex items-center justify-between gap-3 border-b py-3 last:border-0" style={{ borderColor: 'var(--border)' }}>
+                <div className="min-w-0 flex-1">
+                  <span className="f-mono text-xs" style={{ color: 'var(--text-faint)' }}>
+                    {item.chapter}
+                    {item.alias ? (
+                      <>
+                        {' '}
+                        · <span className="alias-term">alias: {item.alias}</span>
+                      </>
+                    ) : null}
+                  </span>
+                  <p className="mt-1 break-words text-sm">
+                    {highlightTerms(item.excerpt, highlightNames).map((segment, i) =>
+                      segment.match ? (
+                        <mark key={i} className={`ms-highlight hl-${entity.category}`}>
+                          {segment.text}
+                        </mark>
+                      ) : (
+                        <span key={i}>{segment.text}</span>
+                      ),
+                    )}
+                  </p>
+                </div>
+                <TooltipTarget text="Open this evidence in Manuscript">
+                  <button className="btn btn-ghost flex-none text-xs" onClick={() => goToManuscript(item.chapter, item.paragraph)}>
+                    <FontAwesomeIcon icon={faFileLines} />
+                    Go to line
+                  </button>
+                </TooltipTarget>
+              </div>
+            ))
+          )}
+        </div>
+        {confirmation === 'delete' && (
+          <ConfirmDialog
+            title="Delete entry"
+            body={`Delete “${entity.canonical_name}” and its aliases, evidence, and relationships? This cannot be undone.`}
+            confirmLabel="Delete entry"
+            confirm={() => {
+              setConfirmation(undefined);
+              void api
+                .guideDelete(entity.id)
+                .then(() => {
+                  notify('Entity deleted.');
+                  return reload();
+                })
+                .catch((error) => notify(String(error)));
+            }}
+            cancel={() => setConfirmation(undefined)}
+          />
+        )}
+        {confirmation === 'merge' && selectedAliasMatch && (
+          <ConfirmDialog
+            title="Merge entries"
+            body={`Merge “${selectedAliasMatch.canonical_name}” into “${entity.canonical_name}”? The source entry will be deleted.`}
+            confirmLabel="Merge & delete source"
+            confirm={() => {
+              setConfirmation(undefined);
+              void api
+                .guideMerge(selectedAliasMatch.id, entity.id)
+                .then(() => {
+                  clearAliasMatch();
+                  notify(`Merged ${selectedAliasMatch.canonical_name} into ${entity.canonical_name}.`);
+                  return reload(entity.id);
+                })
+                .catch((error) => notify(String(error)));
+            }}
+            cancel={() => setConfirmation(undefined)}
+          />
+        )}
+      </div>
+    </section>
+  );
+}

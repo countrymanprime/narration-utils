@@ -11,13 +11,6 @@ sys.path.insert(0, str(PYTHON_ROOT))
 from narration_common import config  # noqa: E402
 from narration_common.ui_bridge import BridgeClient, BridgeCommand, decode_fields  # noqa: E402
 
-# The desktop hub itself (formerly narration_hub.py, a Python/pywebview host)
-# has moved to shared/hub (a compiled .NET/Photino host) - see
-# shared/hub/Config.cs and shared/hub/Bridge.cs for its parity port of the
-# config/ui_bridge modules this file still tests, and shared/hub's own tests
-# for coverage of that host's contract. Only narration_common stays Python,
-# since tools/manuscript-guide and tools/transcript-compare still import it.
-
 
 class UiBridgeTests(unittest.TestCase):
     def test_command_round_trip_preserves_delimiters_and_unicode(self):

@@ -24,4 +24,26 @@
     <PackageReference Include="Photino.NET" Version="4.0.16" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Kestrel + Minimal API host for the /api/* surface and static file
+         serving, replacing the old WebMessageReceived RPC channel and the
+         hand-rolled LocalStaticServer. WinExe output is unaffected - this is
+         just a FrameworkReference, not the Sdk.Web project template. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Microsoft.NET.Sdk.Web supplies these as implicit global usings; a
+         plain Microsoft.NET.Sdk project with only a FrameworkReference does
+         not, so they're listed explicitly instead of switching SDKs (which
+         would also change the default OutputType/behavior). -->
+    <Using Include="Microsoft.AspNetCore.Builder" />
+    <Using Include="Microsoft.AspNetCore.Hosting" />
+    <Using Include="Microsoft.AspNetCore.Http" />
+    <Using Include="Microsoft.AspNetCore.Routing" />
+    <Using Include="Microsoft.Extensions.Hosting" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
 </Project>

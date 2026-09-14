@@ -2,25 +2,14 @@ using System.Text;
 
 namespace NarrationUtilsHub;
 
-/// <summary>
-/// Small, versioned file bridge between this hub and shared/reaper/narration_ui_bridge.lua,
-/// ported 1:1 from shared/python/narration_common/ui_bridge.py. The Lua adapter
-/// is the one consumer of this on-disk format and is NOT changing, so this
-/// port must match the Python writer byte-for-byte: one percent-encoded line
-/// per command, numbered ".cmd" files written atomically, "events.log" tailed
-/// by byte offset.
-/// </summary>
+/// <summary>Versioned file bridge between the hub and the REAPER adapter.</summary>
+/// <remarks>Commands are percent-encoded, atomically written numbered files; events are tailed by byte offset.</remarks>
 public static class BridgeProtocol
 {
     public const int ProtocolVersion = 1;
 
-    /// <summary>
-    /// The Lua adapter reads command files with io.open(path, "r") and expects the
-    /// first byte to be the literal digit '1' (the protocol version). Encoding.UTF8
-    /// emits a BOM preamble on write, which corrupts that first field and makes the
-    /// adapter reject every command with "Unsupported hub protocol" - use this
-    /// BOM-less encoding instead.
-    /// </summary>
+    /// <summary>BOM-less UTF-8 encoding for command files.</summary>
+    /// <remarks>The adapter expects the protocol-version digit as the first byte.</remarks>
     public static readonly Encoding FileEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
     public static string EncodeFields(params object?[] fields) =>

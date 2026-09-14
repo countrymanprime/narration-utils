@@ -42,7 +42,7 @@ if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
 from narration_common.config import get_default  # noqa: E402
-from narration_common.docx_chapters import load_docx_paragraphs  # noqa: E402
+from narration_common.docx_chapters import NON_CHAPTER_HEADINGS, load_docx_paragraphs  # noqa: E402
 from narration_common.logging_utils import log, set_log_file  # noqa: E402
 from narration_common.progress import write_progress  # noqa: E402
 
@@ -57,13 +57,38 @@ PAUSE_GAP_SECONDS = 0.6
 EXCERPT_TAIL_BUFFER_SENTENCES = 2
 
 NUMBER_WORDS = {
-    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
-    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
-    "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
-    "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
-    "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50,
-    "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90,
-    "hundred": 100, "thousand": 1000, "million": 1000000, "billion": 1000000000,
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+    "twenty": 20,
+    "thirty": 30,
+    "forty": 40,
+    "fifty": 50,
+    "sixty": 60,
+    "seventy": 70,
+    "eighty": 80,
+    "ninety": 90,
+    "hundred": 100,
+    "thousand": 1000,
+    "million": 1000000,
+    "billion": 1000000000,
 }
 
 
@@ -80,6 +105,7 @@ class NeedsChapterSelection(Exception):
     """Raised when the track name didn't confidently match any chapter
     heading - not a failure, just a request for the caller to ask the user
     to pick one of `candidates` and re-invoke with --chapter-title."""
+
     def __init__(self, candidates):
         super().__init__("Needs an explicit chapter selection")
         self.candidates = candidates
@@ -92,11 +118,20 @@ def check_cancelled(progress_path):
         raise Cancelled()
 
 
-_QUOTE_NORMALIZE_TABLE = str.maketrans({
-    "‘": "'", "’": "'", "‛": "'", "ʼ": "'",
-    "`": "'", "´": "'",
-    "“": '"', "”": '"', "„": '"', "‟": '"',
-})
+_QUOTE_NORMALIZE_TABLE = str.maketrans(
+    {
+        "‘": "'",
+        "’": "'",
+        "‛": "'",
+        "ʼ": "'",
+        "`": "'",
+        "´": "'",
+        "“": '"',
+        "”": '"',
+        "„": '"',
+        "‟": '"',
+    }
+)
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -328,12 +363,14 @@ def read_segments(manifest_path):
             if not line:
                 continue
             item_index, source_file, start_offset, length = line.split("|")
-            segments.append({
-                "item_index": int(item_index),
-                "source_file": source_file,
-                "start_offset": float(start_offset),
-                "length": float(length),
-            })
+            segments.append(
+                {
+                    "item_index": int(item_index),
+                    "source_file": source_file,
+                    "start_offset": float(start_offset),
+                    "length": float(length),
+                }
+            )
     segments.sort(key=lambda s: s["item_index"])
     return segments
 
@@ -406,12 +443,8 @@ def build_concatenated_audio(segments, progress_path=None):
     n = len(segments)
     for i, seg in enumerate(segments):
         check_cancelled(progress_path)
-        write_progress(
-            progress_path, "DECODE", 2 + int(13 * i / max(1, n)),
-            f"Decoding item {i + 1}/{n}"
-        )
-        log(f"Decoding item {seg['item_index']}: {seg['source_file']} "
-            f"[{seg['start_offset']:.2f}s, {seg['length']:.2f}s]")
+        write_progress(progress_path, "DECODE", 2 + int(13 * i / max(1, n)), f"Decoding item {i + 1}/{n}")
+        log(f"Decoding item {seg['item_index']}: {seg['source_file']} " f"[{seg['start_offset']:.2f}s, {seg['length']:.2f}s]")
         audio = decode_segment(seg["source_file"], seg["start_offset"], seg["length"])
         pieces.append(audio)
         seg = dict(seg)
@@ -446,14 +479,12 @@ def transcribe(audio_array, model_size, language, device="cpu", progress_path=No
 
     total_duration = len(audio_array) / SAMPLE_RATE
 
-    write_progress(progress_path, "LOAD", 15,
-                    f"Loading Whisper model '{model_size}' (first use may download it)...")
+    write_progress(progress_path, "LOAD", 15, f"Loading Whisper model '{model_size}' (first use may download it)...")
     log(f"Loading Whisper model '{model_size}' on {device} (first run downloads it once)...")
     compute_type = "int8" if device == "cpu" else "float16"
     model = WhisperModel(model_size, device=device, compute_type=compute_type)
 
-    write_progress(progress_path, "TRANSCRIBE", 18,
-                    f"Transcribing... 00:00 / {format_time(total_duration)}")
+    write_progress(progress_path, "TRANSCRIBE", 18, f"Transcribing... 00:00 / {format_time(total_duration)}")
     if hotwords:
         log(f"Using vocabulary hints: {hotwords}")
     log("Transcribing audio (this can take a while for long tracks)...")
@@ -474,10 +505,7 @@ def transcribe(audio_array, model_size, language, device="cpu", progress_path=No
                 words.append((w.word.strip(), w.start, w.end))
 
         frac = min(1.0, seg.end / total_duration) if total_duration > 0 else 1.0
-        write_progress(
-            progress_path, "TRANSCRIBE", 18 + int(72 * frac),
-            f"Transcribing... {format_time(seg.end)} / {format_time(total_duration)}"
-        )
+        write_progress(progress_path, "TRANSCRIBE", 18 + int(72 * frac), f"Transcribing... {format_time(seg.end)} / {format_time(total_duration)}")
 
     log(f"Detected language: {info.language} (p={info.language_probability:.2f})")
     if return_info:
@@ -491,7 +519,12 @@ def transcribe(audio_array, model_size, language, device="cpu", progress_path=No
 # further to 1 on CUDA, where concurrent worker processes would contend
 # for the same GPU/VRAM instead of just CPU cores.
 MAX_WORKERS_BY_MODEL = {
-    "tiny": 8, "base": 6, "small": 4, "medium": 2, "large-v3": 1,
+    "tiny": 8,
+    "base": 6,
+    "small": 4,
+    "medium": 2,
+    "large-v3-turbo": 2,
+    "large-v3": 1,
 }
 
 # Consecutive chunks overlap by this many seconds so a word/sentence cut
@@ -562,8 +595,7 @@ def _chunk_worker_entry(chunk_audio_path, model_size, language, device, hotwords
         os._exit(0)
 
 
-def transcribe_chunked(full_audio, model_size, language, device, progress_path, hotwords,
-                        chunk_seconds, parallel_workers, work_dir):
+def transcribe_chunked(full_audio, model_size, language, device, progress_path, hotwords, chunk_seconds, parallel_workers, work_dir):
     """Chunked/optionally-parallel counterpart to transcribe(): splits
     full_audio into chunk_seconds-length, slightly overlapping windows,
     transcribes each independently (in parallel worker processes beyond
@@ -581,16 +613,17 @@ def transcribe_chunked(full_audio, model_size, language, device, progress_path, 
     for i, start in enumerate(starts):
         ov_start = max(0, start - overlap_samples) if i > 0 else start
         end = min(n, start + chunk_samples + overlap_samples)
-        chunks.append({
-            "index": i,
-            "start_sample": ov_start,
-            "end_sample": end,
-            "offset_seconds": ov_start / SAMPLE_RATE,
-            "duration": (end - ov_start) / SAMPLE_RATE,
-        })
+        chunks.append(
+            {
+                "index": i,
+                "start_sample": ov_start,
+                "end_sample": end,
+                "offset_seconds": ov_start / SAMPLE_RATE,
+                "duration": (end - ov_start) / SAMPLE_RATE,
+            }
+        )
     n_chunks = len(chunks)
-    log(f"Chunked transcription: {n_chunks} chunk(s) of ~{chunk_seconds}s "
-        f"(with {CHUNK_OVERLAP_SECONDS}s overlap between neighbors)")
+    log(f"Chunked transcription: {n_chunks} chunk(s) of ~{chunk_seconds}s " f"(with {CHUNK_OVERLAP_SECONDS}s overlap between neighbors)")
 
     max_by_model = MAX_WORKERS_BY_MODEL.get(model_size, 2)
     if device == "cuda":
@@ -610,7 +643,7 @@ def transcribe_chunked(full_audio, model_size, language, device, progress_path, 
 
     for c in chunks:
         audio_path, _, _ = chunk_paths(c["index"])
-        np.save(audio_path, full_audio[c["start_sample"]:c["end_sample"]])
+        np.save(audio_path, full_audio[c["start_sample"] : c["end_sample"]])
 
     # Chunk 0 runs synchronously in this (parent) process, before any
     # workers are spawned - this both caches the model download once
@@ -622,8 +655,7 @@ def transcribe_chunked(full_audio, model_size, language, device, progress_path, 
     write_progress(progress_path, "TRANSCRIBE", 18, f"Transcribing chunk 1/{n_chunks}...")
     _, _, first_out_path = chunk_paths(0)
     first_words, first_info = transcribe(
-        full_audio[chunks[0]["start_sample"]:chunks[0]["end_sample"]],
-        model_size, language, device, None, hotwords, return_info=True
+        full_audio[chunks[0]["start_sample"] : chunks[0]["end_sample"]], model_size, language, device, None, hotwords, return_info=True
     )
     with open(first_out_path, "w", encoding="utf-8") as f:
         json.dump(first_words, f)
@@ -669,8 +701,7 @@ def transcribe_chunked(full_audio, model_size, language, device, progress_path, 
                     chunk_progress[idx] = pct
 
         done_count = n_chunks - len(pending) - len(running)
-        write_progress(progress_path, "TRANSCRIBE", aggregate_percent(),
-                        f"Transcribing... {done_count}/{n_chunks} chunk(s) done")
+        write_progress(progress_path, "TRANSCRIBE", aggregate_percent(), f"Transcribing... {done_count}/{n_chunks} chunk(s) done")
         time.sleep(0.5)
 
     # Reassembly: read every chunk's words back in index order, add each
@@ -733,6 +764,8 @@ def load_docx_chapters(docx_path):
     for item in load_docx_paragraphs(docx_path):
         text = item["text"]
         if item["is_heading"]:
+            if text.strip().lower() in NON_CHAPTER_HEADINGS:
+                continue
             if current is not None and current["paragraphs"]:
                 chapters.append(current)
             current = {"title": text, "paragraphs": []}
@@ -743,10 +776,7 @@ def load_docx_chapters(docx_path):
         chapters.append(current)
 
     if not chapters:
-        raise ValueError(
-            "No chapter headings detected in the Word document. "
-            "Make sure chapter titles use one of Word's built-in Heading styles."
-        )
+        raise ValueError("No chapter headings detected in the Word document. " "Make sure chapter titles use one of Word's built-in Heading styles.")
 
     return chapters
 
@@ -769,9 +799,9 @@ def extract_hints(docx_path, hints_out_path):
     """
     chapters = load_docx_chapters(docx_path)
 
-    counts = {}      # lowercase key -> total occurrences
+    counts = {}  # lowercase key -> total occurrences
     suspicious = {}  # lowercase key -> times capitalized, not sentence-initial
-    display = {}     # lowercase key -> a representative original-case spelling
+    display = {}  # lowercase key -> a representative original-case spelling
 
     for chapter in chapters:
         for para in chapter["paragraphs"]:
@@ -800,6 +830,10 @@ def extract_hints(docx_path, hints_out_path):
         print(line)
 
 
+def clean_marker_field(value):
+    return value[:200].replace("|", "/")
+
+
 def display_title(title):
     """Headings can contain a manual line break embedding a subtitle (e.g.
     "CHAPTER ONE\\nBad Ideas Look Great in Neon", confirmed live) - join
@@ -807,7 +841,7 @@ def display_title(title):
     error/log messages and markdown headings alike."""
     if not title:
         return title
-    lines = [l.strip() for l in title.splitlines() if l.strip()]
+    lines = [line.strip() for line in title.splitlines() if line.strip()]
     return ": ".join(lines)
 
 
@@ -828,7 +862,7 @@ def _contains_token_run(haystack, needle):
     n = len(needle)
     if n == 0 or n > len(haystack):
         return False
-    return any(haystack[i:i + n] == needle for i in range(len(haystack) - n + 1))
+    return any(haystack[i : i + n] == needle for i in range(len(haystack) - n + 1))
 
 
 def find_chapter_by_track_name(chapters, track_name):
@@ -853,8 +887,7 @@ def find_chapter_by_track_name(chapters, track_name):
     # real "Chapter 1: The Beginning" on pure ratio alone even though it
     # shares no actual content with the track name.
     substring_matches = [
-        chapter for chapter, toks in chapter_tokens_list
-        if toks[:len(target_tokens)] == target_tokens or _contains_token_run(toks, target_tokens)
+        chapter for chapter, toks in chapter_tokens_list if toks[: len(target_tokens)] == target_tokens or _contains_token_run(toks, target_tokens)
     ]
     if len(substring_matches) == 1:
         return substring_matches[0], 0.95, candidate_titles
@@ -875,14 +908,18 @@ def find_chapter_by_track_name(chapters, track_name):
             best = chapter
 
     if best is None or best_score < 0.75:
-        log(f"No chapter heading matched track name '{track_name}' well enough "
+        log(
+            f"No chapter heading matched track name '{track_name}' well enough "
             f"(best guess '{display_title(best['title']) if best else '?'}' scored {best_score:.2f}). "
-            f"Detected headings:\n{titles}\nAsking for an explicit chapter selection.")
+            f"Detected headings:\n{titles}\nAsking for an explicit chapter selection."
+        )
         return None, 0.0, candidate_titles
 
-    log(f"WARNING: no exact/prefix heading match for track '{track_name}' - "
+    log(
+        f"WARNING: no exact/prefix heading match for track '{track_name}' - "
         f"using closest fuzzy match '{display_title(best['title'])}' (score={best_score:.2f}). "
-        f"Detected headings:\n{titles}")
+        f"Detected headings:\n{titles}"
+    )
     return best, best_score, candidate_titles
 
 
@@ -967,9 +1004,6 @@ def diff_and_build_markers(chapter_tokens, chapter_unit_idx, chapter_raw_words, 
         orig_idx = index_map[filtered_idx]
         return transcript_words[orig_idx][1]
 
-    def clean(s):
-        return s[:200].replace("|", "/")
-
     for tag, i1, i2, j1, j2 in opcodes:
         if tag == "equal":
             continue
@@ -1000,7 +1034,18 @@ def diff_and_build_markers(chapter_tokens, chapter_unit_idx, chapter_raw_words, 
         else:
             continue
 
-        markers.append((t, kind, clean(name), clean(doc_snip), clean(audio_snip)))
+        source_token = i1 if i1 < len(chapter_norm) else max(0, i1 - 1)
+        source_original = chapter_index_map[source_token] if chapter_index_map else 0
+        markers.append(
+            (
+                t,
+                kind,
+                clean_marker_field(name),
+                clean_marker_field(doc_snip),
+                clean_marker_field(audio_snip),
+                chapter_unit_idx[source_original] if source_original < len(chapter_unit_idx) else 0,
+            )
+        )
 
     markers.sort(key=lambda m: m[0])
 
@@ -1018,8 +1063,11 @@ def diff_and_build_markers(chapter_tokens, chapter_unit_idx, chapter_raw_words, 
     # exact alignment instead of guessing sentence boundaries independently.
     chapter_norm_unit_idx = [chapter_unit_idx[orig_i] for orig_i in chapter_index_map]
     alignment = {
-        "opcodes": opcodes, "unit_idx": chapter_norm_unit_idx, "index_map": index_map,
-        "chapter_index_map": chapter_index_map, "chapter_raw_words": chapter_raw_words,
+        "opcodes": opcodes,
+        "unit_idx": chapter_norm_unit_idx,
+        "index_map": index_map,
+        "chapter_index_map": chapter_index_map,
+        "chapter_raw_words": chapter_raw_words,
     }
 
     return markers, covered_range, alignment
@@ -1163,9 +1211,14 @@ def write_unified_diff(chapter, transcript_words, diff_path, covered_range, sent
 
     if covered_range is not None:
         unit_info = build_unit_audio_info(
-            alignment["unit_idx"], alignment["opcodes"], alignment["index_map"],
-            alignment["chapter_index_map"], alignment["chapter_raw_words"],
-            transcript_words, first_u, last_u,
+            alignment["unit_idx"],
+            alignment["opcodes"],
+            alignment["index_map"],
+            alignment["chapter_index_map"],
+            alignment["chapter_raw_words"],
+            transcript_words,
+            first_u,
+            last_u,
         )
     else:
         # Degenerate fallback - alignment found nothing at all, so there's
@@ -1268,13 +1321,10 @@ def run(args):
     if args.chunk_seconds and args.chunk_seconds > 0:
         chunk_work_dir = os.path.splitext(args.out)[0] + "_chunks"
         transcript_words = transcribe_chunked(
-            full_audio, args.model, args.language, args.device, progress_path, hotwords,
-            args.chunk_seconds, args.parallel_workers, chunk_work_dir
+            full_audio, args.model, args.language, args.device, progress_path, hotwords, args.chunk_seconds, args.parallel_workers, chunk_work_dir
         )
     else:
-        transcript_words = transcribe(
-            full_audio, args.model, args.language, args.device, progress_path, hotwords
-        )
+        transcript_words = transcribe(full_audio, args.model, args.language, args.device, progress_path, hotwords)
 
     check_cancelled(progress_path)
 
@@ -1306,19 +1356,20 @@ def run(args):
 
     diff_path = write_unified_diff(chapter, transcript_words, args.diff_out, covered_range, sentence_units, alignment)
 
-    summary = (
-        f"MATCH: '{display_title(chapter['title'])}' (score {score:.2f}) - "
-        f"{len(markers)} discrepancy marker(s)"
-    )
+    summary = f"MATCH: '{display_title(chapter['title'])}' (score {score:.2f}) - " f"{len(markers)} discrepancy marker(s)"
 
     check_cancelled(progress_path)
     write_progress(progress_path, "WRITE", 99, "Writing results...")
     with open(args.out, "w", newline="", encoding="utf-8") as f:
         f.write(f"SUMMARY|{summary}\n")
         f.write(f"DIFF|{diff_path}\n")
-        for t, kind, name, doc_text, audio_text in markers:
+        for t, kind, name, doc_text, audio_text, unit_index in markers:
             item_index, srcpos = locate_in_segments(t, segments)
-            f.write(f"MARKER|{item_index}|{srcpos:.3f}|{kind}|{name}|{doc_text}|{audio_text}\n")
+            paragraph = sentence_units[unit_index][1] if 0 <= unit_index < len(sentence_units) else 0
+            script_context = clean_marker_field(sentence_units[unit_index][0] if 0 <= unit_index < len(sentence_units) else doc_text)
+            f.write(
+                f"MARKER|{item_index}|{srcpos:.3f}|{kind}|{name}|{doc_text}|{audio_text}|{clean_marker_field(chapter['title'])}|{paragraph}|{script_context}|{audio_text}\n"
+            )
 
     log(f"Wrote {len(markers)} marker row(s) to {args.out}")
     write_progress(progress_path, "DONE", 100, "Finished")
@@ -1332,15 +1383,24 @@ def main():
     ap.add_argument("--chapter-title", default=None, help="Bypass track-name matching and use this exact chapter title (from a prior NEED_CHAPTER prompt)")
     ap.add_argument("--out", required=False, help="Path to write the tagged results file")
     ap.add_argument("--diff-out", required=False, help="Path to write the unified-diff-formatted manuscript/recorded comparison file")
-    ap.add_argument("--model", default=get_default("TranscriptCompare", "model_size", "small"), help="Whisper model size (tiny/base/small/medium/large-v3)")
+    ap.add_argument(
+        "--model", default=get_default("TranscriptCompare", "model_size", "small"), help="Whisper model size (tiny/base/small/medium/large-v3-turbo/large-v3)"
+    )
     ap.add_argument("--language", default=None, help="Force language code, e.g. 'en' (default: auto-detect)")
     ap.add_argument("--min-words", type=int, default=1, help="Minimum word-block length to report as a discrepancy")
     ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"], help="Inference device (default: cpu)")
     ap.add_argument("--progress", default=None, help="Path to write live progress updates to (optional)")
     ap.add_argument("--log", default=None, help="Path to also mirror log output to (optional)")
-    ap.add_argument("--chunk-seconds", type=int, default=0, help="Transcribe in fixed-length chunks of this many seconds instead of the whole file at once (0 = whole file, default)")
+    ap.add_argument(
+        "--chunk-seconds",
+        type=int,
+        default=0,
+        help="Transcribe in fixed-length chunks of this many seconds instead of the whole file at once (0 = whole file, default)",
+    )
     ap.add_argument("--parallel-workers", type=int, default=0, help="Max chunk workers to run at once when chunked (0 = auto, based on model size)")
-    ap.add_argument("--extract-hints", action="store_true", help="Instead of transcribing, scan --docx for candidate vocabulary-hint terms and write them to --hints-out")
+    ap.add_argument(
+        "--extract-hints", action="store_true", help="Instead of transcribing, scan --docx for candidate vocabulary-hint terms and write them to --hints-out"
+    )
     ap.add_argument("--hints-out", default=None, help="Path to write suggested hint terms to (used with --extract-hints)")
     args = ap.parse_args()
 
@@ -1364,10 +1424,16 @@ def main():
             os._exit(1)
         os._exit(0)
 
-    missing = [name for name, val in (
-        ("--manifest", args.manifest), ("--track-name", args.track_name),
-        ("--out", args.out), ("--diff-out", args.diff_out),
-    ) if not val]
+    missing = [
+        name
+        for name, val in (
+            ("--manifest", args.manifest),
+            ("--track-name", args.track_name),
+            ("--out", args.out),
+            ("--diff-out", args.diff_out),
+        )
+        if not val
+    ]
     if missing:
         ap.error(", ".join(missing) + " required unless --extract-hints is given")
 

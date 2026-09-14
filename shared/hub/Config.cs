@@ -3,20 +3,11 @@ using System.Text.Json.Nodes;
 
 namespace NarrationUtilsHub;
 
-/// <summary>
-/// Layered settings, ported 1:1 from shared/python/narration_common/config.py.
-/// Both implementations read/write the SAME JSON files (repo defaults, the
-/// per-user global-settings.json, per-project settings.json) - the Python
-/// version stays canonical for the two tool backends (Manuscript Guide,
-/// Transcript Compare), which keep resolving their own argparse defaults
-/// through it independently of whatever this hub passes on the command line.
-/// Any behavioral drift here (scope precedence, null-vs-missing-key, atomic
-/// writes) is a real cross-language bug risk - keep this file's semantics in
-/// lockstep with config.py rather than "close enough".
-/// </summary>
+/// <summary>Reads and writes layered repository, global, and project settings.</summary>
 public static class Config
 {
     private static JsonObject? _repoDefaultsCache;
+    private static readonly AsyncLocal<string?> GlobalSettingsRootOverride = new();
 
     /// <summary>Set once at startup to the repo checkout root (parent of "shared").</summary>
     public static string RepoRoot { get; set; } = AppContext.BaseDirectory;
@@ -36,9 +27,7 @@ public static class Config
         }
     }
 
-    // json.dumps(..., sort_keys=True) sorts every nested object's keys
-    // alphabetically; JsonObject does not do this on its own, so writes must
-    // sort explicitly to keep output byte-comparable with the Python writer.
+    // Stable key order keeps settings diffs readable and deterministic.
     private static JsonNode? SortedDeep(JsonNode? node)
     {
         if (node is JsonObject obj)
@@ -67,9 +56,7 @@ public static class Config
         File.Move(tempPath, path, overwrite: true);
     }
 
-    // Whole-file read-modify-write, touching only `tool`'s section, so a
-    // write from one tool can never clobber another tool's section already
-    // saved in the same shared file.
+    // Preserve other tools' sections during a read-modify-write update.
     private static void UpdateToolSection(string path, string tool, Action<JsonObject> mutate)
     {
         var data = ReadJsonFile(path);
@@ -79,7 +66,7 @@ public static class Config
         WriteJsonFile(path, data);
     }
 
-    /// <summary>shared/config/defaults.json[tool], memoized. {} if missing/malformed.</summary>
+    /// <summary>Gets cached repository defaults for one tool.</summary>
     public static JsonObject LoadRepoDefaults(string tool)
     {
         _repoDefaultsCache ??= ReadJsonFile(RepoDefaultsPath());
@@ -94,9 +81,23 @@ public static class Config
 
     public static string GlobalSettingsPath()
     {
-        var appdata = Environment.GetEnvironmentVariable("APPDATA");
+        var appdata = GlobalSettingsRootOverride.Value ?? Environment.GetEnvironmentVariable("APPDATA");
         var baseDir = !string.IsNullOrEmpty(appdata) ? appdata : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData", "Roaming");
         return Path.Combine(baseDir, "narration-utils", "global-settings.json");
+    }
+
+    /// <summary>Temporarily directs global-settings reads and writes to <paramref name="directory"/>.</summary>
+    /// <remarks>The override is async-context-local so parallel tests can provide independent settings roots.</remarks>
+    public static IDisposable UseGlobalSettingsDirectory(string directory)
+    {
+        var previous = GlobalSettingsRootOverride.Value;
+        GlobalSettingsRootOverride.Value = directory;
+        return new RestoreGlobalSettingsRoot(previous);
+    }
+
+    private sealed class RestoreGlobalSettingsRoot(string? previous) : IDisposable
+    {
+        public void Dispose() => GlobalSettingsRootOverride.Value = previous;
     }
 
     public static JsonObject LoadGlobalSettings(string tool) => (ReadJsonFile(GlobalSettingsPath())[tool] as JsonObject) ?? new JsonObject();
@@ -104,9 +105,7 @@ public static class Config
     public static void SaveGlobalSetting(string tool, string key, string? value) =>
         UpdateToolSection(GlobalSettingsPath(), tool, section => section[key] = value);
 
-    /// <summary>One-time migration backstop: for each key in `seed`, writes it into
-    /// global settings only if that tool+key isn't already saved there. Safe to
-    /// call on every launch - a no-op once real values exist.</summary>
+    /// <summary>Seeds missing global settings without replacing saved values.</summary>
     public static void SeedGlobalIfMissing(string tool, IReadOnlyDictionary<string, string> seed) =>
         UpdateToolSection(GlobalSettingsPath(), tool, section =>
         {
@@ -129,12 +128,8 @@ public static class Config
         UpdateToolSection(path, tool, section => section[key] = value);
     }
 
-    /// <summary>Atomically applies a group of settings for one tool and scope.
-    /// `null` removes a project override; this is intentionally distinct from
-    /// an empty string, which is a valid explicit global value. Mirrors
-    /// config.py's save_scope_settings exactly, including the (slightly odd
-    /// but load-bearing) fact that a null value in GLOBAL scope is written
-    /// as a literal JSON null rather than treated as a removal.</summary>
+    /// <summary>Atomically saves a group of settings for one tool and scope.</summary>
+    /// <remarks>A null project value removes its override; a null global value is stored explicitly.</remarks>
     public static void SaveScopeSettings(string tool, IReadOnlyDictionary<string, string?> values, string? projectFolder = null)
     {
         var path = !string.IsNullOrEmpty(projectFolder) ? ProjectSettingsPath(projectFolder)! : GlobalSettingsPath();
@@ -158,10 +153,8 @@ public static class Config
     public static bool IsProjectOverride(string? projectFolder, string tool, string key) =>
         LoadProjectSettings(projectFolder, tool).ContainsKey(key);
 
-    /// <summary>Full layered lookup. Returns (value, scope) where scope is one of
-    /// "project", "global", "repo_default", "hardcoded" - callers that show
-    /// provenance (the Settings screen) use it to mark a value as inherited
-    /// vs. overridden.</summary>
+    /// <summary>Resolves a setting and identifies the supplying scope.</summary>
+    /// <returns>The value and one of <c>project</c>, <c>global</c>, <c>repo_default</c>, or <c>hardcoded</c>.</returns>
     public static (string Value, string Scope) Get(string tool, string key, string? projectFolder, string hardcodedDefault)
     {
         if (!string.IsNullOrEmpty(projectFolder))

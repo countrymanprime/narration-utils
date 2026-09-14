@@ -5,4 +5,10 @@ export default defineConfig({
   plugins: [react()],
   base: './',
   build: { outDir: 'dist', emptyOutDir: true },
+  test: {
+    // tests/visual/**/*.spec.ts are Playwright specs (run via `npm run
+    // screenshots`), not Vitest tests - Vitest's default include pattern
+    // matches *.spec.ts too, so it must be excluded explicitly.
+    exclude: ['node_modules/**', 'tests/visual/**'],
+  },
 });

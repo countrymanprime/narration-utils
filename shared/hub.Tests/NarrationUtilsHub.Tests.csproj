@@ -15,7 +15,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Needed to build/start a real HubWebApp instance and drive it with
+         HttpClient in HubApiTests.cs - see hub's own csproj comment. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="Microsoft.AspNetCore.Builder" />
+    <Using Include="Microsoft.AspNetCore.Hosting" />
   </ItemGroup>
 
   <ItemGroup>

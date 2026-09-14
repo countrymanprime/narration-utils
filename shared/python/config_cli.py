@@ -8,7 +8,6 @@ DAW's scripting language to capture subprocess stdout.
 """
 
 import argparse
-import sys
 from pathlib import Path
 
 from narration_common import config

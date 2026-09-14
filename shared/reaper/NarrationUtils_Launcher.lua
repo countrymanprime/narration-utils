@@ -21,7 +21,9 @@ local REPO_ROOT = SHARED .. "\\..\\.."
 local function project_context()
   local _, rpp = reaper.EnumProjects(-1, "")
   if not rpp or rpp == "" then return "", "Unsaved REAPER project" end
-  return rpp:match("^(.*)[\\/][^\\/]-$") or "", rpp:match("[^\\/]+$") or "REAPER project"
+  local name = rpp:match("[^\\/]+$") or "REAPER project"
+  name = name:match("^(.*)%.[^.]+$") or name
+  return rpp:match("^(.*)[\\/][^\\/]-$") or "", name
 end
 
 -- All runtimes are owned by this checkout. The only REAPER configuration is
@@ -70,6 +72,7 @@ local command = quote(hub_exe)
   .. " --session-dir " .. quote(session_dir)
   .. " --project-folder " .. quote(project_folder)
   .. " --project-name " .. quote(project_name)
+  .. " --daw " .. quote("REAPER")
   .. " --manuscript-python " .. quote(manuscript_python)
   .. " --manuscript-backend " .. quote(manuscript_backend)
   .. " --compare-python " .. quote(compare_python)

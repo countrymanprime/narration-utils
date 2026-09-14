@@ -127,12 +127,12 @@ local function apply_results(session_dir, runs, run_id, path, misread, skipped, 
     local tag, body = line:match("^([A-Z_]+)|(.*)$")
     if tag == "SUMMARY" then summary = body
     elseif tag == "MARKER" then
-      local fields = pipe_fields(body, 6); local item_index, srcpos = tonumber(fields[1]), tonumber(fields[2]); local entry = item_index and run.mapping[item_index]
+      local fields = pipe_fields(body, 10); local item_index, srcpos = tonumber(fields[1]), tonumber(fields[2]); local entry = item_index and run.mapping[item_index]
       if entry and srcpos and not existing(entry.take, fields[4] or "", srcpos) then
         reaper.SetTakeMarker(entry.take, -1, fields[4] or "", srcpos, colors[fields[3]] or 0); added = added + 1
         local project_time, row_id = entry.pos + (srcpos - entry.startoffs) / entry.rate, tostring(item_index) .. "@" .. string.format("%.6f", srcpos)
         run.rows[row_id] = { item = entry.item, project_time = project_time }
-        event(session_dir, "COMPARE_MARKER", run_id, row_id, fields[3] or "", fields[4] or "", fields[5] or "", fields[6] or "", project_time, item_index)
+        event(session_dir, "COMPARE_MARKER", run_id, row_id, fields[3] or "", fields[4] or "", fields[5] or "", fields[6] or "", project_time, item_index, fields[7] or "", fields[8] or "0", fields[9] or "", fields[10] or "")
       end
     end
   end

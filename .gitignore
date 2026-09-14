@@ -11,3 +11,7 @@ bin/
 obj/
 shared/hub/publish/
 shared/ui/dist/
+shared/ui/screenshots/
+shared/ui/playwright-report/
+shared/ui/test-results/
+logs/

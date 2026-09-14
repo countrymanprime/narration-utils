@@ -2,14 +2,7 @@ using System.Diagnostics;
 
 namespace NarrationUtilsHub;
 
-/// <summary>
-/// Every launch of the Manuscript Guide / Transcript Compare tool venvs'
-/// python.exe goes through here. This is the direct fix for the original
-/// complaint: narration_hub.py shelled out to python.exe (not pythonw.exe)
-/// via plain subprocess.run/Popen with no CREATE_NO_WINDOW, so a console
-/// flashed on screen for every guide/transcript action. CreateNoWindow=true
-/// here is the .NET equivalent, applied uniformly instead of patched on.
-/// </summary>
+/// <summary>Starts Python subprocesses without creating a console window.</summary>
 public static class WindowsProcess
 {
     private static ProcessStartInfo HiddenStartInfo(string fileName, IEnumerable<string> arguments, string? workingDirectory = null)
@@ -27,10 +20,8 @@ public static class WindowsProcess
         return info;
     }
 
-    /// <summary>Blocking run with captured output - mirrors subprocess.run(..., capture_output=True).
-    /// Reads both streams concurrently before WaitForExit to avoid the classic
-    /// deadlock where a child fills one pipe's buffer while the parent blocks
-    /// reading the other.</summary>
+    /// <summary>Runs a process and captures standard output and error.</summary>
+    /// <remarks>Both streams are read concurrently to avoid pipe-buffer deadlock.</remarks>
     public static (int ExitCode, string StdOut, string StdErr) Run(string fileName, IEnumerable<string> arguments, string? workingDirectory = null)
     {
         using var process = Process.Start(HiddenStartInfo(fileName, arguments, workingDirectory))!;
@@ -41,10 +32,8 @@ public static class WindowsProcess
         return (process.ExitCode, stdOutTask.Result, stdErrTask.Result);
     }
 
-    /// <summary>Detached, long-running child whose own output is discarded - mirrors
-    /// subprocess.Popen(..., stdout=DEVNULL, stderr=DEVNULL). Output is drained
-    /// asynchronously (not left unread) so a chatty child (e.g. tqdm progress on
-    /// stderr during a long Whisper transcription) can't deadlock on a full pipe.</summary>
+    /// <summary>Starts a detached process and drains its output.</summary>
+    /// <remarks>Draining both streams prevents pipe-buffer deadlock.</remarks>
     public static Process StartDetachedSilently(string fileName, IEnumerable<string> arguments, string? workingDirectory = null)
     {
         var process = new Process { StartInfo = HiddenStartInfo(fileName, arguments, workingDirectory), EnableRaisingEvents = true };

@@ -2,9 +2,7 @@ using System.Text.Json;
 
 namespace NarrationUtilsHub;
 
-/// <summary>Append-only startup and runtime evidence, ported from narration_hub.py's
-/// SessionDiagnostics. Same shape (JSON-lines to host.log) as the Python host wrote,
-/// so existing tooling/expectations around reading host.log don't need to change.</summary>
+/// <summary>Writes append-only startup and runtime diagnostics to JSON Lines.</summary>
 public sealed class SessionDiagnostics
 {
     private readonly object _lock = new();
