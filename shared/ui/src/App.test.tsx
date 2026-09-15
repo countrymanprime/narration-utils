@@ -46,6 +46,26 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect((await screen.findAllByText('Alice')).length).toBeGreaterThan(0);
   });
 
+  it('wires every primary page through the application router', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Manuscript' })[0]);
+    await screen.findByRole('heading', { name: 'Manuscript' });
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Proofing' })[0]);
+    await screen.findByRole('heading', { name: 'Proofing' });
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Story Bible' })[0]);
+    await screen.findByRole('heading', { name: 'Story Bible' });
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Home' })[0]);
+    await screen.findByRole('heading', { name: 'Welcome back' });
+  });
+
   it('Story Bible has no stale detection notice, and entry actions render as icon-only buttons on one row', async () => {
     renderApp();
     await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
@@ -80,5 +100,68 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeTruthy());
     expect(saveSettings).toHaveBeenCalledWith('General', 'global', expect.objectContaining({ log_verbosity: 'verbose' }));
+  });
+
+  it('keeps fast manuscript-import activity visible and refreshes the Home state without a browser reload', async () => {
+    const source = createMockApi();
+    let imported = false;
+    const importedChapters = [{ id: 'c-1', title: 'Chapter 1', index: 0, wordCount: 1234, status: 'not_started' as const }];
+    const bootstrap = vi.fn(async () => {
+      const data = await source.bootstrap();
+      return { ...data, manuscript: imported ? data.manuscript : null };
+    });
+    const api = createMockApi({
+      bootstrap,
+      manuscriptChapters: async () => (imported ? importedChapters : []),
+      manuscriptImportCommit: async () => {
+        imported = true;
+        return {
+          id: 'mock-import',
+          kind: 'manuscript_import',
+          phase: 'success',
+          percent: 100,
+          elapsed: 1,
+          message: 'Manuscript import complete.',
+          logs: [
+            'Selected Alice.docx.',
+            'Parsing and validating the manuscript…',
+            'Import preview is ready.',
+            'Writing the project-owned manuscript…',
+            'Manuscript import complete.',
+          ],
+          result: { id: 'alice', format: 'docx', sourceName: 'Alice.docx', importedAt: '2026-01-01T00:00:00Z' },
+        };
+      },
+    });
+    render(
+      <ApiProvider api={api}>
+        <App />
+      </ApiProvider>,
+    );
+
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    expect(screen.getByText(/No imported manuscript/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import manuscript…' }));
+    await screen.findByRole('dialog', { name: 'Import Alice.docx' });
+    expect(screen.getByText('Preview activity')).toBeTruthy();
+    expect(document.querySelector('.progressbar')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    const activity = await screen.findByRole('dialog', { name: 'Import manuscript' });
+    expect(activity.querySelector('.progressbar')).toBeTruthy();
+    expect(await screen.findByText('Writing the project-owned manuscript…')).toBeTruthy();
+    expect((await screen.findAllByText('Manuscript import complete.')).length).toBeGreaterThanOrEqual(2);
+    await waitFor(() => expect(bootstrap.mock.calls.length).toBeGreaterThanOrEqual(2));
+    expect(screen.getByText(/Manuscript found/)).toBeTruthy();
+    expect(await screen.findByText('1,234 words · 1 chapters · ~150 words/min narrated')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog', { name: 'Import manuscript' })).toBeNull();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Story Bible' })[0]);
+    await screen.findByRole('heading', { name: 'Story Bible' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Home' })[0]);
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    expect(screen.getByText(/Manuscript found/)).toBeTruthy();
   });
 });

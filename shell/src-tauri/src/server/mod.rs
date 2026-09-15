@@ -265,8 +265,10 @@ impl AppState {
         let project = self.config.project_folder.as_deref().ok_or_else(|| ApiError::bad_request("Save the REAPER project before selecting its manuscript."))?;
         let fingerprint = manuscript_canonical::fingerprint(source).map_err(ApiError::bad_request)?;
         let mut job = WorkJob::import(source.to_string_lossy().to_string(), fingerprint, manuscript_canonical::exists(project));
+        job.add_log(&format!("Selected {}.", source.file_name().and_then(|name| name.to_str()).unwrap_or("manuscript")));
+        job.add_log("Parsing and validating the manuscript…");
         match manuscript_canonical::prepare_import(source, heading_level).and_then(|draft| manuscript_canonical::preview(&draft).map(|preview|(draft,preview))) {
-            Ok((draft,preview)) => { job.phase="ready".into();job.message="Import preview is ready.".into();job.percent=100;job.draft=Some(draft);job.preview=Some(preview); }
+            Ok((draft,preview)) => { job.phase="ready".into();job.message="Import preview is ready.".into();job.percent=100;job.draft=Some(draft);job.preview=Some(preview);job.add_log("Import preview is ready."); }
             Err(error) => { job.phase="error".into();job.error=error.clone();job.message=format!("Import preview failed: {error}"); }
         }
         let snapshot=job.snapshot(); *self.import_job.lock().expect("import job mutex")=Some(job); Ok(snapshot)
@@ -295,11 +297,12 @@ impl AppState {
             job.error="The selected manuscript changed after preview. Choose it again to import the current version.".into();
             return Err(ApiError::bad_request(job.error.clone()));
         }
+        job.phase="committing".into(); job.percent=12; job.message="Writing the project-owned manuscript…".into(); job.add_log("Writing the project-owned manuscript…");
         let data=manuscript_canonical::commit_import(project,&source,job.draft.as_ref().expect("ready job has draft")).map_err(ApiError::bad_request)?;
         if job.requires_reset {
             manuscript_canonical::reset_derivatives(project).map_err(ApiError::bad_request)?;
         }
-        job.phase="success".into();job.percent=100;job.message="Manuscript import complete.".into();
+        job.phase="success".into();job.percent=100;job.message="Manuscript import complete.".into();job.add_log("Manuscript import complete.");
         job.result=Some(json!({"id":data["documentId"],"format":data["importer"]["format"],"sourceName":data["source"]["fileName"],"importedAt":data["importedAt"]}));
         self.changed();
         Ok(job.snapshot())

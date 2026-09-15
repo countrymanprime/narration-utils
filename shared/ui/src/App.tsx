@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import type { Bootstrap } from './types';
 import { useApi } from './api/ApiContext';
@@ -36,6 +36,16 @@ function AppRoutes() {
   const [settingsDirty, setSettingsDirty] = useState(false);
   const [pendingPath, setPendingPath] = useState<string>();
   const settingsActions = useRef<{ save: () => Promise<void>; discard: () => Promise<void> }>();
+
+  // Importing changes data that is deliberately held at the application
+  // boundary (the active manuscript affects several pages).  Refresh this
+  // payload in place instead of reloading the browser, which could interrupt
+  // the completion dialog before its activity log is visible.
+  const refreshBootstrap = useCallback(async () => {
+    const next = await api.bootstrap();
+    setDiagnosticId(next.diagnosticId);
+    setData(next);
+  }, [api]);
 
   // Startup verifies the host and then loads its bootstrap payload.
   useEffect(() => {
@@ -76,7 +86,7 @@ function AppRoutes() {
       window.removeEventListener('error', clientError);
       window.removeEventListener('unhandledrejection', rejection);
     };
-  }, [retryKey]);
+  }, [retryKey, api]);
 
   // Live transcript-run progress arrives over SSE instead of a 350ms client
   // poll loop - see api/httpClient.ts's subscribeTranscript / Endpoints.cs's
@@ -173,14 +183,15 @@ function AppRoutes() {
         <AppShell pathname={location.pathname} navigate={guardedNavigate} projectName={data.projectName} daw={data.daw}>
           <ErrorBoundary key={location.pathname.split('/')[1] || 'home'}>
             <Routes>
-              <Route path="/" element={<Home data={data} go={guardedNavigate} notify={setNotice} goToManuscript={goToManuscript} />} />
+              <Route
+                path="/"
+                element={<Home data={data} go={guardedNavigate} notify={setNotice} goToManuscript={goToManuscript} refreshBootstrap={refreshBootstrap} />}
+              />
               <Route path="/manuscript" element={<Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} />} />
               <Route path="/story-bible" element={<Guide notify={setNotice} goToManuscript={goToManuscript} />} />
               <Route
                 path="/proofing"
-                element={
-                  <Transcript state={data.transcript} notify={setNotice} goHome={() => guardedNavigate('/')} goToManuscript={goToManuscript} />
-                }
+                element={<Transcript state={data.transcript} notify={setNotice} goHome={() => guardedNavigate('/')} goToManuscript={goToManuscript} />}
               />
               <Route
                 path="/settings"

@@ -32,7 +32,18 @@ export function rollupChapterStatuses(chapters: ManuscriptChapter[]): Record<Cha
   }, empty);
 }
 
-export function AudiobookEstimatePanel({ notify, goToManuscript }: { notify: (text: string) => void; goToManuscript: (chapter: string) => void }) {
+export function AudiobookEstimatePanel({
+  notify,
+  goToManuscript,
+  refreshKey,
+}: {
+  notify: (text: string) => void;
+  goToManuscript: (chapter: string) => void;
+  // The owning Home page changes this after a manuscript import/replacement.
+  // Chapter estimates are derived from a separate request, so they cannot
+  // rely on the Bootstrap payload alone to invalidate their cached rows.
+  refreshKey?: string;
+}) {
   const api = useApi();
   const [chapters, setChapters] = useState<ManuscriptChapter[]>();
   const [breakdownOpen, setBreakdownOpen] = useState(false);
@@ -45,7 +56,7 @@ export function AudiobookEstimatePanel({ notify, goToManuscript }: { notify: (te
         setChapters([]);
       }
     })();
-  }, []);
+  }, [api, refreshKey]);
 
   if (!chapters) return null;
   if (chapters.length === 0) return <Panel>No manuscript chapters found yet. Select a manuscript from Home to see an audiobook estimate.</Panel>;

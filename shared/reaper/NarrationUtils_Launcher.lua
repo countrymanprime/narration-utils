@@ -47,12 +47,13 @@ local compare_python = shared_python
 local compare_backend = compare_core .. "\\compare.py"
 local ui_index = REPO_ROOT .. "\\shared\\ui\\dist\\index.html"
 
--- Prefer a release build of the shell; fall back to a debug build so
--- `cargo tauri dev`-produced binaries work without a separate release step
--- during development. Neither path is installed/versioned yet - see the
--- open "distribution path" question in the shell's migration plan.
-local shell_release = REPO_ROOT .. "\\shell\\src-tauri\\target\\release\\narration-utils-shell.exe"
-local shell_debug = REPO_ROOT .. "\\shell\\src-tauri\\target\\debug\\narration-utils-shell.exe"
+-- Cargo now builds this crate as part of the repository workspace, so both
+-- `cargo tauri build` (from shell/) and `cargo build --workspace` write to
+-- the workspace target directory. Do not fall back to shell/src-tauri/target:
+-- it can hold a stale pre-cutover executable that still tries to start the
+-- retired Python shared.server backend.
+local shell_release = REPO_ROOT .. "\\target\\release\\narration-utils-shell.exe"
+local shell_debug = REPO_ROOT .. "\\target\\debug\\narration-utils-shell.exe"
 local shell_exe = common.file_exists(shell_release) and shell_release or shell_debug
 
 local project_folder, project_name = project_context()
