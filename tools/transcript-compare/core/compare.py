@@ -993,7 +993,12 @@ def diff_and_build_markers(chapter_tokens, chapter_unit_idx, chapter_raw_words, 
                 aligned_start = i1
             aligned_end = i2
 
-    markers = []  # (concat_time, kind, name)
+    # (concat_time, kind, name, doc snippet, audio snippet, sentence unit,
+    #  normalized document/audio bounds).  The bounds stay with the marker
+    # so the result writer can build a compact, aligned review excerpt for
+    # that specific discrepancy rather than pairing a whole script sentence
+    # with only the changed audio words.
+    markers = []
 
     def snippet(tokens, lo, hi, limit=8):
         words = tokens[lo:hi]
@@ -1052,6 +1057,10 @@ def diff_and_build_markers(chapter_tokens, chapter_unit_idx, chapter_raw_words, 
                 clean_marker_field(doc_snip),
                 clean_marker_field(audio_snip),
                 chapter_unit_idx[source_original] if source_original < len(chapter_unit_idx) else 0,
+                i1,
+                i2,
+                j1,
+                j2,
             )
         )
 
@@ -1079,6 +1088,78 @@ def diff_and_build_markers(chapter_tokens, chapter_unit_idx, chapter_raw_words, 
     }
 
     return markers, covered_range, alignment
+
+
+def build_marker_context(
+    marker_i1, marker_i2, marker_j1, marker_j2, unit_idx, opcodes, index_map, chapter_index_map, chapter_raw_words, transcript_words, context_words=6
+):
+    """Return compact script/recorded excerpts centered on one diff opcode.
+
+    The marker's bounds are in the same normalized-token space as the
+    opcodes.  We keep up to ``context_words`` manuscript tokens on either
+    side, never cross the source sentence, and reconstruct the recorded
+    counterpart from the alignment.  Equal words deliberately reuse the
+    manuscript rendering; only a real replacement or insertion uses Whisper's
+    raw word(s).  This gives the proofing table useful local context without
+    making a run-on sentence fill the expanded row.
+    """
+    if not unit_idx or not chapter_index_map:
+        return "", ""
+
+    n = len(unit_idx)
+    source_i = marker_i1 if marker_i1 < n else marker_i1 - 1
+    if source_i < 0 or source_i >= n:
+        return "", ""
+    source_unit = unit_idx[source_i]
+    if source_unit is None or source_unit < 0:
+        return "", ""
+
+    unit_start = source_i
+    while unit_start > 0 and unit_idx[unit_start - 1] == source_unit:
+        unit_start -= 1
+    unit_end = source_i + 1
+    while unit_end < n and unit_idx[unit_end] == source_unit:
+        unit_end += 1
+
+    window_start = max(unit_start, marker_i1 - context_words)
+    window_end = min(unit_end, marker_i2 + context_words)
+    # An insertion has no document span; include the words on both sides of
+    # its anchor.  The same formula above already does that, but this clamp
+    # keeps an end-of-sentence insertion anchored inside its source unit.
+    if marker_i1 == marker_i2:
+        window_start = max(unit_start, marker_i1 - context_words)
+        window_end = min(unit_end, marker_i1 + context_words)
+
+    def add_doc_words(parts, seen_original, lo, hi):
+        for norm_i in range(max(lo, window_start), min(hi, window_end)):
+            original_i = chapter_index_map[norm_i]
+            if original_i != seen_original[0]:
+                parts.append(chapter_raw_words[original_i])
+                seen_original[0] = original_i
+
+    script_words = []
+    script_seen = [-1]
+    add_doc_words(script_words, script_seen, window_start, window_end)
+
+    heard_words = []
+    heard_seen = [-1]
+    for tag, i1, i2, j1, j2 in opcodes:
+        overlaps_window = i1 < window_end and i2 > window_start
+        is_target_insertion = i1 == i2 and i1 == marker_i1 and j1 == marker_j1 and j2 == marker_j2
+        insertion_in_window = i1 == i2 and window_start <= i1 <= window_end
+        if tag == "equal" and overlaps_window:
+            add_doc_words(heard_words, heard_seen, i1, i2)
+        elif tag == "replace" and overlaps_window:
+            heard_words.extend(transcript_words[index_map[j]][0] for j in range(j1, j2))
+        elif tag == "insert" and (insertion_in_window or is_target_insertion):
+            heard_words.extend(transcript_words[index_map[j]][0] for j in range(j1, j2))
+
+    if not script_words and not heard_words:
+        return "", ""
+
+    prefix = "... " if window_start > unit_start else ""
+    suffix = " ..." if window_end < unit_end else ""
+    return prefix + " ".join(script_words) + suffix, prefix + " ".join(heard_words) + suffix
 
 
 def find_transcript_title_boundary(title, transcript_words):
@@ -1371,12 +1452,27 @@ def run(args):
     with open(args.out, "w", newline="", encoding="utf-8") as f:
         f.write(f"SUMMARY|{summary}\n")
         f.write(f"DIFF|{diff_path}\n")
-        for t, kind, name, doc_text, audio_text, unit_index in markers:
+        for t, kind, name, doc_text, audio_text, unit_index, marker_i1, marker_i2, marker_j1, marker_j2 in markers:
             item_index, srcpos = locate_in_segments(t, segments)
             paragraph = resolve_global_paragraph(chapter, sentence_units[unit_index][1] if 0 <= unit_index < len(sentence_units) else 0)
-            script_context = clean_marker_field(sentence_units[unit_index][0] if 0 <= unit_index < len(sentence_units) else doc_text)
+            script_context, audio_context = build_marker_context(
+                marker_i1,
+                marker_i2,
+                marker_j1,
+                marker_j2,
+                alignment["unit_idx"],
+                alignment["opcodes"],
+                alignment["index_map"],
+                alignment["chapter_index_map"],
+                alignment["chapter_raw_words"],
+                transcript_words,
+            )
+            if not script_context:
+                script_context = sentence_units[unit_index][0] if 0 <= unit_index < len(sentence_units) else doc_text
+            if not audio_context:
+                audio_context = audio_text
             f.write(
-                f"MARKER|{item_index}|{srcpos:.3f}|{kind}|{name}|{doc_text}|{audio_text}|{clean_marker_field(chapter['title'])}|{paragraph}|{script_context}|{audio_text}\n"
+                f"MARKER|{item_index}|{srcpos:.3f}|{kind}|{name}|{doc_text}|{audio_text}|{clean_marker_field(chapter['title'])}|{paragraph}|{clean_marker_field(script_context)}|{clean_marker_field(audio_context)}\n"
             )
 
     log(f"Wrote {len(markers)} marker row(s) to {args.out}")
