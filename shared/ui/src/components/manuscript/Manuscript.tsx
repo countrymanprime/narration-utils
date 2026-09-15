@@ -23,22 +23,18 @@ const defaultState: ReaderState = { expandedChapters: [], bookmarks: [] };
 const escapeSelector = (value: string) =>
   typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(value) : value.replace(/(["\\])/g, '\\$1');
 
-export function Manuscript({
-  notify,
-  focusStoryBibleEntity,
-}: {
-  notify: (text: string) => void;
-  focusStoryBibleEntity: (id: string) => void;
-}) {
+export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: string) => void; focusStoryBibleEntity: (id: string) => void }) {
   const api = useApi();
   const location = useLocation();
   const routerNavigate = useNavigate();
   const readerRef = useRef<HTMLDivElement>(null);
   const bandRef = useRef<HTMLDivElement>(null);
   const searchRequest = useRef(0);
+  const requestedChapters = useRef(new Set<string>());
   const [bandHeight, setBandHeight] = useState(0);
   const [chapters, setChapters] = useState<Awaited<ReturnType<typeof api.manuscriptChapters>>>([]);
   const [paragraphs, setParagraphs] = useState<ManuscriptParagraph[]>([]);
+  const [loadingChapters, setLoadingChapters] = useState<Set<string>>(new Set());
   const [entities, setEntities] = useState<GuideEntity[]>([]);
   const [notes, setNotes] = useState<ManuscriptNote[]>([]);
   const [readerState, setReaderState] = useState<ReaderState>(defaultState);
@@ -75,13 +71,17 @@ export function Manuscript({
   useEffect(() => {
     void (async () => {
       try {
-        const [reader, nextEntities, state] = await Promise.all([api.manuscriptReader(), api.guideEntities(), api.readerState()]);
-        const firstChapter = reader.chapters[0]?.id;
-        const chapterId = (value: string | undefined) => reader.chapters.find((item) => item.id === value || item.title === value)?.id || value;
+        const [nextChapters, nextEntities, state, nextNotes] = await Promise.all([
+          api.manuscriptChapters(),
+          api.guideEntities(),
+          api.readerState(),
+          api.noteList(),
+        ]);
+        const firstChapter = nextChapters[0]?.id;
+        const chapterId = (value: string | undefined) => nextChapters.find((item) => item.id === value || item.title === value)?.id || value;
         const expandedChapters = (state.expandedChapters ?? [state.activeChapter || firstChapter]).map(chapterId).filter((id): id is string => Boolean(id));
-        setChapters(reader.chapters);
-        setParagraphs(reader.paragraphs);
-        setNotes(reader.notes);
+        setChapters(nextChapters);
+        setNotes(nextNotes);
         setEntities(nextEntities);
         setReaderState({ ...state, activeChapter: chapterId(state.activeChapter) || firstChapter, expandedChapters });
       } catch (error) {
@@ -89,6 +89,24 @@ export function Manuscript({
       }
     })();
   }, []);
+  useEffect(() => {
+    for (const chapterId of readerState.expandedChapters || []) {
+      if (requestedChapters.current.has(chapterId)) continue;
+      requestedChapters.current.add(chapterId);
+      setLoadingChapters((current) => new Set(current).add(chapterId));
+      void api
+        .manuscriptParagraphs(chapterId)
+        .then((next) => setParagraphs((current) => [...current.filter((paragraph) => paragraph.chapterId !== chapterId), ...next]))
+        .catch((error) => notify(String(error)))
+        .finally(() =>
+          setLoadingChapters((current) => {
+            const next = new Set(current);
+            next.delete(chapterId);
+            return next;
+          }),
+        );
+    }
+  }, [readerState.expandedChapters, api, notify]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') closeSheet();
@@ -124,16 +142,15 @@ export function Manuscript({
   // "#p123" for paragraph 123 (its globally unique index, assigned at
   // manuscript import - see manuscript_guide.py's export_manuscript), or
   // "#cChapter Title" to land on a chapter without a specific line. A
-  // paragraph anchor needs `paragraphs` loaded to resolve its chapter, so
-  // this waits (re-running as paragraphs arrives) instead of dropping the
-  // link if it fires before the fetch completes.
+  // paragraph-to-chapter mapping arrives with the lightweight chapter list,
+  // so this does not wait for any paragraph body to load.
   useEffect(() => {
     const hash = location.hash;
     if (!hash) return;
     if (hash.startsWith('#p')) {
       const paragraph = Number(hash.slice(2));
       if (Number.isNaN(paragraph)) return;
-      const chapter = paragraphs.find((row) => row.index === paragraph)?.chapterId;
+      const chapter = chapters.find((item) => item.paragraphIds?.some((row) => row.index === paragraph))?.id;
       if (!chapter) return;
       showChapter(chapter, paragraph);
     } else if (hash.startsWith('#c')) {
@@ -142,7 +159,7 @@ export function Manuscript({
       return;
     }
     routerNavigate('/manuscript', { replace: true });
-  }, [location.hash, paragraphs]);
+  }, [location.hash, chapters]);
   const toggleManualChapter = (chapter: string) => {
     const expanded = new Set(readerState.expandedChapters || []);
     if (expanded.has(chapter)) expanded.delete(chapter);
@@ -265,11 +282,7 @@ export function Manuscript({
               </button>
             </TooltipTarget>
             <TooltipTarget text="Collapse all chapters">
-              <button
-                aria-label="Collapse all chapters"
-                className="icon-btn"
-                onClick={() => void saveState({ ...readerState, expandedChapters: [] })}
-              >
+              <button aria-label="Collapse all chapters" className="icon-btn" onClick={() => void saveState({ ...readerState, expandedChapters: [] })}>
                 <FontAwesomeIcon icon={faAnglesUp} />
               </button>
             </TooltipTarget>
@@ -281,12 +294,26 @@ export function Manuscript({
           const expanded = (readerState.expandedChapters || []).includes(chapter.id);
           const chapterBookmark = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapterId === chapter.id);
           return (
-            <article key={chapter.id} className={`reader-chapter chapter-card ${expanded ? 'expanded' : 'collapsed'}`} data-chapter={chapter.title} data-chapter-id={chapter.id}>
+            <article
+              key={chapter.id}
+              className={`reader-chapter chapter-card ${expanded ? 'expanded' : 'collapsed'}`}
+              data-chapter={chapter.title}
+              data-chapter-id={chapter.id}
+            >
               <header className="reader-chapter-header chapter-card-header">
-                <TooltipTarget className="chapter-bookmark-target" text={chapterBookmark ? 'Remove chapter bookmark' : 'Bookmark this chapter'}>
-                  <button className={`chapter-bookmark ${chapterBookmark ? 'active' : ''}`} onClick={() => void toggleChapterBookmark(chapter.id)}>
-                    <FontAwesomeIcon className="bookmark-outline" icon={faBookmarkRegular} />
-                    <FontAwesomeIcon className="bookmark-fill" icon={faBookmarkSolid} />
+                <TooltipTarget className="-ml-1 flex size-[1.4rem]" text={chapterBookmark ? 'Remove chapter bookmark' : 'Bookmark this chapter'}>
+                  <button
+                    className={`group relative flex size-[1.4rem] items-center justify-center text-[var(--text-faint)] ${chapterBookmark ? 'text-[var(--bookmark)]' : ''}`}
+                    onClick={() => void toggleChapterBookmark(chapter.id)}
+                  >
+                    <FontAwesomeIcon
+                      className={`absolute inset-0 m-auto size-[1.4rem] transition-opacity ${chapterBookmark ? 'opacity-0' : 'opacity-50 group-hover:opacity-0 group-focus-visible:opacity-0'}`}
+                      icon={faBookmarkRegular}
+                    />
+                    <FontAwesomeIcon
+                      className={`absolute inset-0 m-auto size-[1.4rem] transition-opacity ${chapterBookmark ? 'opacity-100' : 'opacity-0 group-hover:opacity-70 group-focus-visible:opacity-70'}`}
+                      icon={faBookmarkSolid}
+                    />
                   </button>
                 </TooltipTarget>
                 <button className="chapter-title text-left" onClick={() => toggleManualChapter(chapter.id)}>
@@ -303,21 +330,29 @@ export function Manuscript({
               </header>
               {expanded && (
                 <div className="manuscript-reader mx-auto">
-                  <ParagraphView
-                    paragraphs={paragraphs.filter((item) => item.chapterId === chapter.id)}
-                    entities={entities}
-                    notes={notes.filter((item) => item.chapterId === chapter.id || (!item.chapterId && item.chapter === chapter.title))}
-                    textClass={READER_TEXT_CLASSES[textSize]}
-                    lineNumberPadding={LINE_NUMBER_PADDING_CLASSES[textSize]}
-                    openEntity={(entity) => {
-                      setDetail({ entity });
-                      setSheet('detail');
-                    }}
-                    openNote={(note) => {
-                      setDetail({ note });
-                      setSheet('detail');
-                    }}
-                  />
+                  {loadingChapters.has(chapter.id) ? (
+                    <div className="space-y-2 p-4" aria-label={`Loading ${chapter.title}`}>
+                      {(chapter.paragraphIds || []).map((paragraph) => (
+                        <div key={paragraph.id} className="h-5 animate-pulse rounded bg-[var(--surface-2)]" />
+                      ))}
+                    </div>
+                  ) : (
+                    <ParagraphView
+                      paragraphs={paragraphs.filter((item) => item.chapterId === chapter.id)}
+                      entities={entities}
+                      notes={notes.filter((item) => item.chapterId === chapter.id || (!item.chapterId && item.chapter === chapter.title))}
+                      textClass={READER_TEXT_CLASSES[textSize]}
+                      lineNumberPadding={LINE_NUMBER_PADDING_CLASSES[textSize]}
+                      openEntity={(entity) => {
+                        setDetail({ entity });
+                        setSheet('detail');
+                      }}
+                      openNote={(note) => {
+                        setDetail({ note });
+                        setSheet('detail');
+                      }}
+                    />
+                  )}
                 </div>
               )}
             </article>

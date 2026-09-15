@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { AudiobookEstimatePanel, rollupChapterStatuses } from './AudiobookEstimatePanel';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
@@ -11,9 +12,11 @@ describe('AudiobookEstimatePanel', () => {
   it('shows a total word count and a finished-audio estimate from the backend chapter list', async () => {
     const api = createMockApi();
     render(
-      <ApiProvider api={api}>
-        <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
-      </ApiProvider>,
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
     );
     await waitFor(() => expect(screen.getByText('Audiobook estimate')).toBeTruthy());
     expect(screen.getAllByText(/12 chapters/).length).toBeGreaterThan(0);
@@ -23,9 +26,11 @@ describe('AudiobookEstimatePanel', () => {
   it('reveals the per-chapter breakdown table on demand', async () => {
     const api = createMockApi();
     render(
-      <ApiProvider api={api}>
-        <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
-      </ApiProvider>,
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
     );
     await waitFor(() => screen.getByText('Audiobook estimate'));
     expect(screen.queryByRole('table')).toBeNull();
@@ -37,9 +42,11 @@ describe('AudiobookEstimatePanel', () => {
   it('renders nothing when there are no manuscript chapters yet', async () => {
     const api = createMockApi({ manuscriptChapters: async () => [] });
     render(
-      <ApiProvider api={api}>
-        <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
-      </ApiProvider>,
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
     );
     expect(await screen.findByText(/No manuscript chapters found yet/)).toBeTruthy();
   });
@@ -47,9 +54,11 @@ describe('AudiobookEstimatePanel', () => {
   it('merges chapters with the same status into one progress segment after edits', async () => {
     const api = createMockApi();
     render(
-      <ApiProvider api={api}>
-        <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
-      </ApiProvider>,
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
     );
     await screen.findByText('Audiobook estimate');
     fireEvent.click(screen.getByRole('button', { name: /Show per-chapter breakdown/ }));

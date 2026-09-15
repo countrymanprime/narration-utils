@@ -8,6 +8,9 @@
     "piper_exe": "",
     "piper_model": ""
   },
+  "Manuscript": {
+    "color_note": "B85C1E"
+  },
   "TranscriptCompare": {
     "chunk_seconds": "60",
     "model_size": "small",

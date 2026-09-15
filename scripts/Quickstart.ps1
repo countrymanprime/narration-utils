@@ -209,18 +209,23 @@ if ($SkipDependencies) {
     Install-PiperAssets $sharedPython $UpdateDependencies
 }
 
-$spacyModelInstalled = $false
+$spacyModels = @('en_core_web_sm', 'en_core_web_lg')
+$missingSpacyModels = @()
 if (-not $SkipDependencies) {
-    & $sharedPython '-m' 'pip' 'show' 'en_core_web_sm' *> $null
-    $spacyModelInstalled = ($LASTEXITCODE -eq 0)
+    foreach ($spacyModel in $spacyModels) {
+        & $sharedPython '-m' 'pip' 'show' $spacyModel *> $null
+        if ($LASTEXITCODE -ne 0) { $missingSpacyModels += $spacyModel }
+    }
 }
 if ($SkipDependencies) {
     Write-Host 'Skipping spaCy language model check.'
-} elseif ($spacyModelInstalled -and -not $UpdateDependencies) {
-    Write-Host 'spaCy language model already installed; skipping (pass -UpdateDependencies to refresh).'
+} elseif ($missingSpacyModels.Count -eq 0 -and -not $UpdateDependencies) {
+    Write-Host 'spaCy language models already installed; skipping (pass -UpdateDependencies to refresh).'
 } else {
-    Write-Host 'Installing the Manuscript Guide spaCy language model...'
-    Invoke-Checked $sharedPython @('-m', 'spacy', 'download', 'en_core_web_sm')
+    foreach ($spacyModel in $spacyModels) {
+        Write-Host "Installing the Manuscript Guide spaCy language model $spacyModel..."
+        Invoke-Checked $sharedPython @('-m', 'spacy', 'download', $spacyModel)
+    }
 }
 
 Push-Location (Join-Path $repoRoot 'shared\ui')

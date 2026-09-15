@@ -41,6 +41,16 @@ The suite helps a narrator find and review issues faster. It may analyze local m
 - Produce generic audiobook measurement reports and reviewer packages.
 - Add distributor profiles only after their rules are independently specified and validated.
 
+## Release-readiness work item: first-use dependency provisioning
+
+Replace Quickstart-time optional model downloads with application-owned,
+explicit first-use provisioning before distributing compiled GitHub releases.
+The app must launch without a checkout or developer bootstrap script, download
+no optional model at application startup, and offer every compatible model for
+download only when the narrator selects and uses it. See the
+[first-use dependency provisioning brief](architecture/first-use-dependency-provisioning.md)
+for the required catalog, integrity, UX, migration, and acceptance criteria.
+
 ### Deferred work
 
 - Audacity adapters after the shared contract and REAPER workflow are proven.

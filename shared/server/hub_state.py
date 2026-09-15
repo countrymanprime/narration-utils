@@ -7,6 +7,7 @@ daw-integration.md for the REAPER-Lua boundary these all still respect.
 """
 
 import json
+import importlib.util
 import os
 import shutil
 import threading
@@ -35,6 +36,12 @@ class HubError(Exception):
 
 
 class HubState:
+    @staticmethod
+    def _available_choices(tool: str, key: str, choices: tuple[str, ...]) -> tuple[str, ...]:
+        if tool == "ManuscriptGuide" and key == "spacy_model":
+            return tuple(choice for choice in choices if importlib.util.find_spec(choice) is not None)
+        return choices
+
     def __init__(
         self,
         session_dir: str,
@@ -117,6 +124,7 @@ class HubState:
         for tool, fields in FIELD_SCHEMAS.items():
             entries = []
             for f in fields:
+                choices = self._available_choices(tool, f.key, f.choices)
                 if scope == "project":
                     project = cfg.load_project_settings(self.project_folder or "", tool)
                     is_set = f.key in project
@@ -130,7 +138,7 @@ class HubState:
                     "key": f.key,
                     "label": f.label,
                     "kind": f.kind,
-                    "choices": list(f.choices),
+                    "choices": list(choices),
                     "value": value,
                     "isSet": is_set,
                     "effectiveValue": effective_value,
@@ -151,7 +159,8 @@ class HubState:
                 raise HubError(f"Unknown setting: {key}")
             if value is not None and field.kind == "color" and not is_valid_hex(value):
                 raise HubError(f"{field.label} must be a six-digit hexadecimal color.")
-            if value is not None and field.kind == "choice" and value not in field.choices:
+            choices = self._available_choices(tool, field.key, field.choices)
+            if value is not None and field.kind == "choice" and value not in choices:
                 raise HubError(f"Invalid value for {field.label}.")
             clean[key] = value
         cfg.save_scope_settings(tool, clean, self.project_folder if scope == "project" else None)

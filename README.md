@@ -78,6 +78,12 @@ Python, Piper, packages, downloaded bootstrap files, and Cargo build output
 remain in gitignored folders in this checkout; REAPER does not discover or
 run a global or VST-folder Python.
 
+This is the current **developer-checkout** workflow, not the intended release
+installation path. A planned [first-use dependency provisioning
+item](docs/architecture/first-use-dependency-provisioning.md) will make compiled
+GitHub releases self-starting and defer optional model/voice downloads until a
+narrator explicitly chooses to use the capability that needs them.
+
 Re-running the script after changing `shell/` or `shared/manuscript-import/`
 rebuilds them — cargo and npm both build incrementally, so only what changed
 is recompiled.

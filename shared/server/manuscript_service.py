@@ -62,6 +62,9 @@ def _normalize_bookmark(bookmark: dict) -> dict:
 
 
 class ManuscriptService:
+    _cache: dict[str, tuple[tuple[int, int], dict]] = {}
+    _notes_cache: dict[str, tuple[tuple[int, int] | None, dict]] = {}
+    _entity_index_cache: dict[str, tuple[tuple[int, int] | None, dict[tuple[str, str], list[str]]]] = {}
     def __init__(self, project_folder: str | None, python_exe: str = "", backend: str = ""):
         self._project_folder = project_folder
         self._python_exe = python_exe
@@ -91,7 +94,14 @@ class ManuscriptService:
         if not self._project_folder:
             raise ManuscriptError("Save the REAPER project and import a manuscript first.")
         try:
-            return canonical.load(self._project_folder)
+            path = canonical.manuscript_path(self._project_folder)
+            stamp = (path.stat().st_mtime_ns, path.stat().st_size)
+            cached = self._cache.get(str(path))
+            if cached and cached[0] == stamp:
+                return cached[1]
+            data = canonical.load(self._project_folder)
+            self._cache[str(path)] = (stamp, data)
+            return data
         except canonical.ManuscriptError as exc:
             raise ManuscriptError(str(exc)) from exc
 
@@ -100,6 +110,11 @@ class ManuscriptService:
         guide_path = self._guide_path
         if guide_path is None or not os.path.isfile(guide_path):
             return index
+
+        stamp = (os.stat(guide_path).st_mtime_ns, os.stat(guide_path).st_size)
+        cached = self._entity_index_cache.get(guide_path)
+        if cached and cached[0] == stamp:
+            return cached[1]
 
         guide = json.loads(Path(guide_path).read_text(encoding="utf-8"))
 
@@ -127,6 +142,7 @@ class ManuscriptService:
                 # of {text, pronunciation, occurrences} - skip it the same
                 # way the .NET port's `as JsonObject` safe-cast silently did.
                 add_occurrences(entity_id, alias.get("occurrences") if isinstance(alias, dict) else None)
+        self._entity_index_cache[guide_path] = (stamp, index)
         return index
 
     def _load_notes(self) -> dict:
@@ -134,6 +150,10 @@ class ManuscriptService:
         empty = {"notes": [], "chapterStatus": {}, "readerState": _empty_reader_state()}
         if path is None or not os.path.isfile(path):
             return empty
+        stamp = (os.stat(path).st_mtime_ns, os.stat(path).st_size)
+        cached = self._notes_cache.get(path)
+        if cached and cached[0] == stamp:
+            return cached[1]
         try:
             raw = json.loads(Path(path).read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -144,7 +164,7 @@ class ManuscriptService:
         chapter_status = lowered.get("chapterstatus", {})
         reader_state = lowered.get("readerstate") or {}
         state_lowered = {str(k).lower(): v for k, v in reader_state.items()}
-        return {
+        loaded = {
             "notes": notes,
             "chapterStatus": chapter_status,
             "readerState": {
@@ -154,6 +174,8 @@ class ManuscriptService:
                 "expandedChapters": state_lowered.get("expandedchapters"),
             } if reader_state else _empty_reader_state(),
         }
+        self._notes_cache[path] = (stamp, loaded)
+        return loaded
 
     def _save_notes(self, notes: dict) -> None:
         path = self._notes_path
@@ -174,14 +196,32 @@ class ManuscriptService:
             },
         }
         Path(path).write_text(json.dumps(payload), encoding="utf-8")
+        self._notes_cache.pop(path, None)
+
+    @staticmethod
+    def _chapter_payload(chapter: dict, status: dict, paragraphs_by_chapter: dict[str, list[dict]] | None = None) -> dict:
+        payload = {
+            "id": chapter["id"],
+            "title": chapter["title"],
+            "subtitle": chapter.get("subtitle"),
+            "index": chapter["index"],
+            "wordCount": chapter["wordCount"],
+            "status": status.get(chapter["id"], "not_started"),
+        }
+        if paragraphs_by_chapter is not None:
+            payload["paragraphIds"] = [
+                {"id": paragraph["id"], "index": paragraph["index"]}
+                for paragraph in paragraphs_by_chapter.get(chapter["id"], [])
+            ]
+        return payload
 
     def chapters(self) -> list[dict]:
         data = self._load()
         status = self._load_notes()["chapterStatus"]
-        return [
-            {"id": c["id"], "title": c["title"], "index": c["index"], "wordCount": c["wordCount"], "status": status.get(c["id"], "not_started")}
-            for c in data["chapters"]
-        ]
+        paragraphs_by_chapter: dict[str, list[dict]] = {}
+        for paragraph in data["paragraphs"]:
+            paragraphs_by_chapter.setdefault(paragraph["chapterId"], []).append(paragraph)
+        return [self._chapter_payload(chapter, status, paragraphs_by_chapter) for chapter in data["chapters"]]
 
     def paragraphs(self, chapter_id: str) -> list[dict]:
         data = self._load()
@@ -194,17 +234,18 @@ class ManuscriptService:
 
     def reader(self) -> dict:
         data = self._load()
-        status = self._load_notes()["chapterStatus"]
+        notes = self._load_notes()
+        status = notes["chapterStatus"]
         entity_index = self._entity_occurrence_index()
         chapters = [
-            {"id": c["id"], "title": c["title"], "index": c["index"], "wordCount": c["wordCount"], "status": status.get(c["id"], "not_started")}
+            self._chapter_payload(c, status)
             for c in data["chapters"]
         ]
         paragraphs = [
             {"id": p["id"], "chapterId": p["chapterId"], "chapter": p["chapterTitle"], "index": p["index"], "text": p["text"], "entityIds": entity_index.get((p["chapterId"], p["id"]), [])}
             for p in data["paragraphs"]
         ]
-        return {"chapters": chapters, "paragraphs": paragraphs, "notes": self._load_notes()["notes"]}
+        return {"chapters": chapters, "paragraphs": paragraphs, "notes": notes["notes"]}
 
     def search(self, query: str) -> list[dict]:
         if not query or not query.strip():
@@ -226,7 +267,7 @@ class ManuscriptService:
             raise ManuscriptError("Unknown manuscript chapter.")
         notes["chapterStatus"][chapter_id] = status
         self._save_notes(notes)
-        return {"id": chapter["id"], "title": chapter["title"], "index": chapter["index"], "wordCount": chapter["wordCount"], "status": status}
+        return self._chapter_payload(chapter, {chapter_id: status})
 
     def note_list(self, chapter_id: str | None) -> list[dict]:
         notes = self._load_notes()["notes"]

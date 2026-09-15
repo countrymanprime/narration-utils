@@ -82,6 +82,7 @@ export type ManuscriptChapter = {
   wordCount: number;
   recordedFraction?: number;
   status: ChapterStatus;
+  paragraphIds?: Array<{ id: string; index: number }>;
 };
 export type ManuscriptParagraph = { id: string; chapterId: string; chapter: string; index: number; sourceLine?: number; text: string; entityIds: string[] };
 export type ManuscriptNote = {

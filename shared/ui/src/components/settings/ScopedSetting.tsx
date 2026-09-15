@@ -26,6 +26,7 @@ export function ScopedSetting({
 }) {
   const effective = value || field.effectiveValue;
   const isColor = field.kind === 'color';
+  const isText = field.kind === 'text';
   return (
     <div className="form-row">
       <div className="form-label pt-2">
@@ -44,6 +45,8 @@ export function ScopedSetting({
             />
             <input className="form-control f-mono" value={effective} onChange={(event) => change(event.target.value.replace('#', '').toUpperCase())} />
           </>
+        ) : isText ? (
+          <input className="form-control" value={effective} onChange={(event) => change(event.target.value)} />
         ) : (
           <TooltipTarget text={optionTip(field, effective)}>
             <select className="form-control" value={effective} onChange={(event) => change(event.target.value)}>

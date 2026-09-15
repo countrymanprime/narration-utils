@@ -15,8 +15,11 @@ FIELD_SCHEMAS: dict[str, tuple[FieldSchema, ...]] = {
     "General": (
         FieldSchema("log_verbosity", "Log verbosity", "choice", ("quiet", "normal", "verbose")),
     ),
+    "Manuscript": (
+        FieldSchema("color_note", "Note color", "color"),
+    ),
     "ManuscriptGuide": (
-        FieldSchema("spacy_model", "spaCy model", "text"),
+        FieldSchema("spacy_model", "spaCy model", "choice", ("en_core_web_sm", "en_core_web_lg")),
         FieldSchema("espeak_library", "eSpeak NG DLL", "text"),
         FieldSchema("piper_model", "Piper voice model", "text"),
     ),

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph } from '../../types';
 import { categoryCssName } from '../../state';
 
@@ -40,6 +40,7 @@ export function ParagraphView({
   openEntity: (entity: GuideEntity) => void;
   openNote: (note: ManuscriptNote) => void;
 }) {
+  const entitiesById = useMemo(() => new Map(entities.map((entity) => [entity.id, entity])), [entities]);
   if (!paragraphs.length)
     return (
       <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
@@ -48,108 +49,131 @@ export function ParagraphView({
     );
   return (
     <div className="chapter-card-body">
-      {paragraphs.map((paragraph, chapterParagraphIndex) => {
-        const paragraphNotes = notes.filter((note) => note.paragraph === paragraph.index);
-        const gutterClass = [
-          'ms-gutter !flex !items-start !justify-center border-r border-[var(--border)]',
-          'bg-[var(--surface-2)] !px-1.5 font-mono text-[0.625rem] leading-3',
-          'text-[var(--text-faint)]',
-          lineNumberPadding,
-        ].join(' ');
-        const annotations: Annotation[] = [];
-        paragraph.entityIds.forEach((id) => {
-          const entity = entities.find((item) => item.id === id);
-          if (!entity) return;
-          [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)].filter(Boolean).forEach((term, termIndex) => {
-            const re = new RegExp(escapeRegExp(term), 'gi');
-            let match: RegExpExecArray | null;
-            while ((match = re.exec(paragraph.text)))
-              annotations.push({
-                id: `entity-${entity.id}-${termIndex}-${match.index}`,
-                start: match.index,
-                end: match.index + match[0].length,
-                length: match[0].length,
-                kind: 'entity',
-                entity,
-              });
+      {paragraphs.map((paragraph, chapterParagraphIndex) => (
+        <ParagraphRow
+          key={paragraph.index}
+          paragraph={paragraph}
+          chapterParagraphIndex={chapterParagraphIndex}
+          entitiesById={entitiesById}
+          notes={notes}
+          textClass={textClass}
+          lineNumberPadding={lineNumberPadding}
+          openEntity={openEntity}
+          openNote={openNote}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ParagraphRow({
+  paragraph,
+  chapterParagraphIndex,
+  entitiesById,
+  notes,
+  textClass,
+  lineNumberPadding,
+  openEntity,
+  openNote,
+}: {
+  paragraph: ManuscriptParagraph;
+  chapterParagraphIndex: number;
+  entitiesById: Map<string, GuideEntity>;
+  notes: ManuscriptNote[];
+  textClass: string;
+  lineNumberPadding: string;
+  openEntity: (entity: GuideEntity) => void;
+  openNote: (note: ManuscriptNote) => void;
+}) {
+  const paragraphNotes = useMemo(() => notes.filter((note) => note.paragraph === paragraph.index), [notes, paragraph.index]);
+  const annotations = useMemo(() => {
+    const next: Annotation[] = [];
+    paragraph.entityIds.forEach((id) => {
+      const entity = entitiesById.get(id);
+      if (!entity) return;
+      [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)].filter(Boolean).forEach((term, termIndex) => {
+        const re = new RegExp(escapeRegExp(term), 'gi');
+        let match: RegExpExecArray | null;
+        while ((match = re.exec(paragraph.text)))
+          next.push({
+            id: `entity-${entity.id}-${termIndex}-${match.index}`,
+            start: match.index,
+            end: match.index + match[0].length,
+            length: match[0].length,
+            kind: 'entity',
+            entity,
           });
-        });
-        paragraphNotes.forEach((note) => {
-          if (note.anchorStart !== undefined && note.anchorEnd !== undefined)
-            annotations.push({
-              id: `note-${note.id}`,
-              start: note.anchorStart,
-              end: note.anchorEnd,
-              length: note.anchorEnd - note.anchorStart,
-              kind: 'note',
-              note,
-            });
-        });
-        const renderPiece = (piece: Piece, pieceIndex: number) =>
-          piece.annotations
-            .slice()
-            .reverse()
-            .reduce<ReactNode>(
-              (child, item) =>
-                item.kind === 'note' ? (
-                  <span
-                    key={`${item.id}-${pieceIndex}`}
-                    role="button"
-                    tabIndex={0}
-                    className="note-overlay"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openNote(item.note!);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        openNote(item.note!);
-                      }
-                    }}
-                  >
-                    {child}
-                  </span>
-                ) : (
-                  <mark
-                    key={`${item.id}-${pieceIndex}`}
-                    role="button"
-                    tabIndex={0}
-                    className={`ms-highlight hl-${categoryCssName(item.entity!.category)}`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openEntity(item.entity!);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        openEntity(item.entity!);
-                      }
-                    }}
-                  >
-                    {child}
-                  </mark>
-                ),
-              piece.text,
-            );
-        return (
-          <div
-            key={paragraph.index}
-            className="ms-line !grid min-h-8 !grid-cols-[3.5rem_minmax(0,1fr)]"
-            data-paragraph={paragraph.index}
-            data-source-line={paragraph.sourceLine}
-          >
-            <div className={gutterClass}>
-              <span className="source-line-number">{chapterParagraphIndex + 1}</span>
-            </div>
-            <div className="ms-content min-w-0 !px-4 !py-1">
-              <p className={textClass}>{composeAnnotationPieces(paragraph.text, annotations).map(renderPiece)}</p>
-            </div>
-          </div>
-        );
-      })}
+      });
+    });
+    paragraphNotes.forEach((note) => {
+      if (note.anchorStart !== undefined && note.anchorEnd !== undefined)
+        next.push({ id: `note-${note.id}`, start: note.anchorStart, end: note.anchorEnd, length: note.anchorEnd - note.anchorStart, kind: 'note', note });
+    });
+    return next;
+  }, [paragraph, paragraphNotes, entitiesById]);
+  const gutterClass = [
+    'ms-gutter !flex !items-start !justify-center border-r border-[var(--border)]',
+    'bg-[var(--surface-2)] !px-1.5 font-mono text-[0.625rem] leading-3',
+    'text-[var(--text-faint)]',
+    lineNumberPadding,
+  ].join(' ');
+  const renderPiece = (piece: Piece, pieceIndex: number) =>
+    piece.annotations
+      .slice()
+      .reverse()
+      .reduce<ReactNode>(
+        (child, item) =>
+          item.kind === 'note' ? (
+            <span
+              key={`${item.id}-${pieceIndex}`}
+              role="button"
+              tabIndex={0}
+              className="note-overlay"
+              onClick={(event) => {
+                event.stopPropagation();
+                openNote(item.note!);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  openNote(item.note!);
+                }
+              }}
+            >
+              {child}
+            </span>
+          ) : (
+            <mark
+              key={`${item.id}-${pieceIndex}`}
+              role="button"
+              tabIndex={0}
+              className={`ms-highlight hl-${categoryCssName(item.entity!.category)}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                openEntity(item.entity!);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  openEntity(item.entity!);
+                }
+              }}
+            >
+              {child}
+            </mark>
+          ),
+        piece.text,
+      );
+  return (
+    <div className="ms-line !grid min-h-8 !grid-cols-[3.5rem_minmax(0,1fr)]" data-paragraph={paragraph.index} data-source-line={paragraph.sourceLine}>
+      <div className={gutterClass}>
+        <span className="source-line-number">{chapterParagraphIndex + 1}</span>
+      </div>
+      <div className="ms-content min-w-0 !px-4 !py-1">
+        <p className={textClass}>{composeAnnotationPieces(paragraph.text, annotations).map(renderPiece)}</p>
+      </div>
     </div>
   );
 }

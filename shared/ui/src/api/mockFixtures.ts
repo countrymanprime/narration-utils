@@ -172,7 +172,15 @@ const idsFor = (text: string) =>
 export const WIRE_PARAGRAPHS: ManuscriptParagraph[] = aliceChapters.flatMap((chapter, chapterIndex) =>
   chapter.paragraphs.map((text, localIndex) => {
     const index = paragraphIndex(chapterIndex, localIndex);
-    return { id: `p-${index + 1}`, chapterId: `chapter-${chapterIndex + 1}`, chapter: chapter.title, index, sourceLine: 10 + index * 5, text, entityIds: Array.from(new Set(idsFor(text))) };
+    return {
+      id: `p-${index + 1}`,
+      chapterId: `chapter-${chapterIndex + 1}`,
+      chapter: chapter.title,
+      index,
+      sourceLine: 10 + index * 5,
+      text,
+      entityIds: Array.from(new Set(idsFor(text))),
+    };
   }),
 );
 export const WIRE_CHAPTERS: ManuscriptChapter[] = aliceChapters.map((chapter, index) => ({
@@ -180,6 +188,10 @@ export const WIRE_CHAPTERS: ManuscriptChapter[] = aliceChapters.map((chapter, in
   title: chapter.title,
   subtitle: chapter.subtitle,
   index,
+  paragraphIds: WIRE_PARAGRAPHS.filter((paragraph) => paragraph.chapterId === `chapter-${index + 1}`).map(({ id, index: paragraphIndex }) => ({
+    id,
+    index: paragraphIndex,
+  })),
   wordCount: chapter.paragraphs.join(' ').split(/\s+/).length * 4,
   recordedFraction: index < 3 ? 1 : index < 6 ? 0.65 : 0,
   status: index < 3 ? 'finalized' : index < 6 ? 'recording' : index < 8 ? 'editing' : index < 10 ? 'proofing' : 'not_started',
@@ -422,7 +434,7 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     },
   ],
   ManuscriptGuide: [
-    choice('spacy_model', 'Spacy model', ['sm', 'md', 'lg'], 'sm'),
+    choice('spacy_model', 'spaCy model', ['en_core_web_sm', 'en_core_web_lg'], 'en_core_web_sm'),
     ...[
       ['character', 'Character', '3C7A5C'],
       ['location', 'Location', '3F6EA6'],

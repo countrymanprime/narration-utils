@@ -102,7 +102,7 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'chapter-expanded': async (page) => {
       await goToPage(page, 'Manuscript');
-      await clickVisible(page, 'button', 'Expand all');
+      await clickVisible(page, 'button', 'Expand all chapters');
     },
   },
   proofing: {

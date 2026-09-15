@@ -19,7 +19,7 @@ use std::path::Path;
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::Reader;
 
-use crate::model::{collapse_whitespace, non_chapter_headings, Draft, ManuscriptError, Paragraph};
+use crate::model::{classify_pre_heading, collapse_whitespace, non_chapter_headings, Draft, ManuscriptError, Paragraph};
 
 struct ParagraphRecord {
     text: String,
@@ -117,6 +117,7 @@ fn parse_paragraph_records(document_xml: &str, style_names: &HashMap<String, Str
                     outline_level = attr_val(&e, b"val").and_then(|v| v.parse::<i32>().ok());
                 }
                 b"tab" if in_paragraph => text.push('\t'),
+                b"br" | b"cr" if in_paragraph => text.push('\n'),
                 _ => {}
             },
             Ok(Event::Text(e)) if in_text_run => {
@@ -159,22 +160,50 @@ pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
     let records = parse_paragraph_records(&document_xml, &style_names);
     let non_chapter = non_chapter_headings();
 
-    let mut chapter = "Front matter".to_string();
+    let mut chapter = "Front Matter".to_string();
+    let mut chapter_subtitle = None;
     let mut paragraphs = Vec::new();
     let mut titles = Vec::new();
+    let first_heading = records
+        .iter()
+        .position(|record| record.is_heading_outline && !non_chapter.contains(collapse_whitespace(&record.text).to_lowercase().as_str()))
+        .unwrap_or(records.len());
+    let pre_heading_indexes: Vec<usize> = records
+        .iter()
+        .enumerate()
+        .filter(|(index, record)| *index < first_heading && !record.is_heading_outline)
+        .map(|(index, _)| index)
+        .collect();
+    let pre_heading: Vec<String> = pre_heading_indexes.iter().map(|index| collapse_whitespace(&records[*index].text)).collect();
+    let pre_heading_kinds = classify_pre_heading(&pre_heading);
+    let mut pre_heading_kind_by_record = vec![None; records.len()];
+    for (index, kind) in pre_heading_indexes.into_iter().zip(pre_heading_kinds) {
+        pre_heading_kind_by_record[index] = Some(kind);
+    }
 
-    for record in records {
+    for (record_index, record) in records.into_iter().enumerate() {
         let text = collapse_whitespace(&record.text);
         if record.is_heading_outline {
             if non_chapter.contains(text.to_lowercase().as_str()) {
                 continue;
             }
-            chapter = text.clone();
-            titles.push(text);
+            let mut lines = record.text.lines().map(collapse_whitespace).filter(|line| !line.is_empty());
+            let title = lines.next().unwrap_or_default();
+            chapter_subtitle = {
+                let subtitle = lines.collect::<Vec<_>>().join(" ");
+                (!subtitle.is_empty()).then_some(subtitle)
+            };
+            chapter = title.clone();
+            titles.push(title);
             continue;
+        }
+        if let Some(kind) = pre_heading_kind_by_record[record_index] {
+            chapter = kind.chapter_name().to_string();
+            chapter_subtitle = None;
         }
         paragraphs.push(Paragraph {
             chapter: chapter.clone(),
+            chapter_subtitle: chapter_subtitle.clone(),
             section: None,
             text,
             source_index: paragraphs.len(),

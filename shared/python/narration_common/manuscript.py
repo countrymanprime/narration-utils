@@ -60,6 +60,25 @@ def _text(value: str) -> str:
     return " ".join(value.split())
 
 
+def _classify_pre_heading(paragraphs: list[dict[str, Any]]) -> list[str]:
+    """Shared fallback equivalent of the Rust title-page classifier."""
+    max_cover_lines = 3
+    cover_count = 0
+    for paragraph in paragraphs[:max_cover_lines]:
+        if len(paragraph["text"]) > 120:
+            break
+        cover_count += 1
+    second = paragraphs[1]["text"].strip().casefold() if len(paragraphs) > 1 else ""
+    first = paragraphs[0]["text"].strip().casefold() if paragraphs else ""
+    has_cover = (cover_count >= 2 and (
+        len(paragraphs) <= max_cover_lines
+        or second.startswith("by ")
+        or "copyright" in second
+        or "author" in second
+    )) or first.startswith("title:")
+    return ["Cover" if has_cover and index < cover_count else "Front Matter" for index in range(len(paragraphs))]
+
+
 def _new_draft(format_name: str, path: Path, paragraphs: list[dict[str, Any]], chapter_titles: list[str]) -> dict[str, Any]:
     if not paragraphs:
         raise ManuscriptError("The manuscript has no readable text paragraphs.")
@@ -72,18 +91,33 @@ def _new_draft(format_name: str, path: Path, paragraphs: list[dict[str, Any]], c
 
 
 def _docx_draft(path: Path, progress=None) -> dict[str, Any]:
-    chapter = "Front matter"
+    chapter = "Front Matter"
+    chapter_subtitle: str | None = None
     paragraphs: list[dict[str, Any]] = []
     titles: list[str] = []
-    for record in load_docx_paragraph_records(path, progress=progress):
+    records = load_docx_paragraph_records(path, progress=progress)
+    first_heading = next(
+        (index for index, record in enumerate(records) if record["is_heading_outline"] and _text(record["text"]).casefold() not in NON_CHAPTER_HEADINGS),
+        len(records),
+    )
+    pre_heading_indexes = [index for index, record in enumerate(records[:first_heading]) if not record["is_heading_outline"]]
+    pre_heading = [{"text": _text(records[index]["text"])} for index in pre_heading_indexes]
+    pre_heading_kinds = _classify_pre_heading(pre_heading)
+    pre_heading_kind_by_index = dict(zip(pre_heading_indexes, pre_heading_kinds))
+    for index, record in enumerate(records):
         text = _text(record["text"])
         if record["is_heading_outline"]:
             if text.casefold() in NON_CHAPTER_HEADINGS:
                 continue
-            chapter = text
-            titles.append(text)
+            heading_lines = [_text(line) for line in record["text"].splitlines() if _text(line)]
+            chapter = heading_lines[0] if heading_lines else text
+            chapter_subtitle = " ".join(heading_lines[1:]) or None
+            titles.append(chapter)
             continue
-        paragraphs.append({"chapter": chapter, "text": text, "sourceIndex": len(paragraphs)})
+        if index in pre_heading_kind_by_index:
+            chapter = pre_heading_kind_by_index[index]
+            chapter_subtitle = None
+        paragraphs.append({"chapter": chapter, "chapterSubtitle": chapter_subtitle, "text": text, "sourceIndex": len(paragraphs)})
     return _new_draft("docx", path, paragraphs, titles)
 
 
@@ -93,7 +127,7 @@ _MARKDOWN_HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$")
 def _markdown_draft(path: Path, heading_level: int) -> dict[str, Any]:
     if heading_level < 1 or heading_level > 6:
         raise ManuscriptError("Markdown chapter heading level must be between H1 and H6.")
-    chapter = "Front matter"
+    chapter = "Front Matter"
     section: str | None = None
     paragraphs: list[dict[str, Any]] = []
     titles: list[str] = []
@@ -123,6 +157,9 @@ def _markdown_draft(path: Path, heading_level: int) -> dict[str, Any]:
         else:
             pending.append(raw.strip())
     flush()
+    pre_heading = [paragraph for paragraph in paragraphs if paragraph["chapter"] == "Front Matter"]
+    for paragraph, kind in zip(pre_heading, _classify_pre_heading(pre_heading)):
+        paragraph["chapter"] = kind
     return _new_draft("markdown", path, paragraphs, titles)
 
 
@@ -139,7 +176,7 @@ def _pdf_draft(path: Path) -> dict[str, Any]:
     text = "\n".join(raw_pages)
     if len(re.sub(r"\s+", "", text)) < 80:
         raise ManuscriptError("This PDF has no selectable manuscript text. OCR support is not available yet; use a text-based PDF.")
-    chapter = "Front matter"
+    chapter = "Front Matter"
     paragraphs: list[dict[str, Any]] = []
     titles: list[str] = []
     for block in re.split(r"\n\s*\n+", text):
@@ -153,6 +190,9 @@ def _pdf_draft(path: Path) -> dict[str, Any]:
             titles.append(candidate)
             continue
         paragraphs.append({"chapter": chapter, "text": _text(" ".join(lines)), "sourceIndex": len(paragraphs)})
+    pre_heading = [paragraph for paragraph in paragraphs if paragraph["chapter"] == "Front Matter"]
+    for paragraph, kind in zip(pre_heading, _classify_pre_heading(pre_heading)):
+        paragraph["chapter"] = kind
     return _new_draft("pdf", path, paragraphs, titles)
 
 
@@ -237,7 +277,14 @@ def _canonical(draft: dict[str, Any], source: Path, source_relative_path: str, s
         title = source_paragraph["chapter"]
         chapter = chapter_by_title.get(title)
         if chapter is None:
-            chapter = {"id": f"c-{len(chapters) + 1:04d}", "title": title, "index": len(chapters), "wordCount": 0, "sections": []}
+            chapter = {
+                "id": f"c-{len(chapters) + 1:04d}",
+                "title": title,
+                "subtitle": source_paragraph.get("chapterSubtitle"),
+                "index": len(chapters),
+                "wordCount": 0,
+                "sections": [],
+            }
             chapters.append(chapter)
             chapter_by_title[title] = chapter
         section_title = source_paragraph.get("section")

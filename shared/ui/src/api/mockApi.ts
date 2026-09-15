@@ -163,19 +163,39 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
       }) as Bootstrap,
     poll: async () => ({ revision, transcript: wireClone(transcript) }),
     selectManuscript: async () => {
-      importJob = { id: 'mock-import', kind: 'manuscript_import', phase: 'ready', message: 'Import preview is ready.', percent: 100, logs: ['Selected manuscript', 'Import preview is ready.'], elapsed: 1, preview: { format: 'docx', sourceName: 'Alice.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] }, requiresReset: false };
+      importJob = {
+        id: 'mock-import',
+        kind: 'manuscript_import',
+        phase: 'ready',
+        message: 'Import preview is ready.',
+        percent: 100,
+        logs: ['Selected manuscript', 'Import preview is ready.'],
+        elapsed: 1,
+        preview: { format: 'docx', sourceName: 'Alice.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] },
+        requiresReset: false,
+      };
       return { selected: true, jobId: 'mock-import' };
     },
     manuscriptImportState: async () => wireClone(importJob),
     manuscriptImportPreview: async (_jobId, markdownHeadingLevel) => {
-      importJob = { ...importJob, preview: { format: 'markdown', sourceName: 'Alice.md', paragraphCount: 240, chapterTitles: [`Chapter ${markdownHeadingLevel}`] } };
+      importJob = {
+        ...importJob,
+        preview: { format: 'markdown', sourceName: 'Alice.md', paragraphCount: 240, chapterTitles: [`Chapter ${markdownHeadingLevel}`] },
+      };
       return wireClone(importJob);
     },
     manuscriptImportCommit: async () => {
-      importJob = { ...importJob, phase: 'success', message: 'Manuscript import complete.', result: { id: 'alice', format: 'docx', sourceName: 'Alice.docx', importedAt: '2026-01-01T00:00:00Z' } };
+      importJob = {
+        ...importJob,
+        phase: 'success',
+        message: 'Manuscript import complete.',
+        result: { id: 'alice', format: 'docx', sourceName: 'Alice.docx', importedAt: '2026-01-01T00:00:00Z' },
+      };
       return wireClone(importJob);
     },
-    manuscriptImportCancel: async () => { importJob = { ...importJob, phase: 'cancelled', message: 'Manuscript import cancelled.' }; },
+    manuscriptImportCancel: async () => {
+      importJob = { ...importJob, phase: 'cancelled', message: 'Manuscript import cancelled.' };
+    },
     manuscriptLegacyPreview: async () => base.selectManuscript(),
     saveSettings: async (tool, scope, values) => {
       settings[scope][tool] = (settings[scope][tool] || []).map((field) =>
@@ -192,7 +212,16 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     },
     settingsForScope: async (scope) => wireClone(settings[scope]),
     guideBuild: async () => {
-      storyBibleJob = { id: 'mock-guide', kind: 'story_bible', phase: 'success', message: 'Story Bible rebuild complete.', percent: 100, logs: ['Reading canonical manuscript', 'Built Story Bible with 7 entities'], elapsed: 1, result: { message: 'Story Bible rebuilt.' } };
+      storyBibleJob = {
+        id: 'mock-guide',
+        kind: 'story_bible',
+        phase: 'success',
+        message: 'Story Bible rebuild complete.',
+        percent: 100,
+        logs: ['Reading canonical manuscript', 'Built Story Bible with 7 entities'],
+        elapsed: 1,
+        result: { message: 'Story Bible rebuilt.' },
+      };
       return wireClone(storyBibleJob);
     },
     guideBuildState: async () => wireClone(storyBibleJob),
@@ -325,14 +354,27 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     transcriptJump: async () => {},
     transcriptExportMarkers: async () => {
       const exportable = transcript.rows.filter((row) => (row.markerState ?? 'pending') === 'pending');
-      transcript = { ...transcript, markerExport: { phase: 'exporting', message: `Exporting ${exportable.length} marker${exportable.length === 1 ? '' : 's'} to REAPER…`, added: 0, skipped: 0 } };
+      transcript = {
+        ...transcript,
+        markerExport: {
+          phase: 'exporting',
+          message: `Exporting ${exportable.length} marker${exportable.length === 1 ? '' : 's'} to REAPER…`,
+          added: 0,
+          skipped: 0,
+        },
+      };
       publish();
       setTimeout(() => {
         const added = transcript.rows.filter((row) => (row.markerState ?? 'pending') === 'pending').length;
         transcript = {
           ...transcript,
           rows: transcript.rows.map((row) => ((row.markerState ?? 'pending') === 'pending' ? { ...row, markerState: 'exported' } : row)),
-          markerExport: { phase: 'complete', message: `Exported ${added} marker${added === 1 ? '' : 's'}; skipped ${transcript.rows.length - added} existing.`, added, skipped: transcript.rows.length - added },
+          markerExport: {
+            phase: 'complete',
+            message: `Exported ${added} marker${added === 1 ? '' : 's'}; skipped ${transcript.rows.length - added} existing.`,
+            added,
+            skipped: transcript.rows.length - added,
+          },
         };
         lastCompleted = wireClone(transcript);
         publish();
@@ -353,7 +395,7 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     },
     manuscriptParagraphs: async (chapter) => {
       await manuscriptReady;
-      return wireClone(paragraphs.filter((paragraph) => paragraph.chapter === chapter));
+      return wireClone(paragraphs.filter((paragraph) => paragraph.chapterId === chapter || paragraph.chapter === chapter));
     },
     manuscriptSearch: async (query) => {
       await manuscriptReady;

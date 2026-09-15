@@ -34,11 +34,15 @@ CAPITALIZED = re.compile(r"\b[A-Z][A-Za-z'’-]*(?:\s+(?:(?:of|the|and)\s+)?[A-Z
 SENTENCES = re.compile(r"(?<=[.!?])\s+")
 STOPWORDS = {
     "A",
+    "About",
+    "Above",
+    "After",
     "An",
     "And",
     "As",
     "At",
     "But",
+    "Before",
     "Chapter",
     "For",
     "He",
@@ -50,17 +54,20 @@ STOPWORDS = {
     "Its",
     "My",
     "No",
+    "Now",
     "Not",
     "Of",
     "On",
     "Or",
     "Our",
     "She",
+    "So",
     "The",
     "Their",
     "They",
     "This",
     "That",
+    "Then",
     "These",
     "Those",
     "To",
@@ -231,6 +238,7 @@ def rule_candidates(paragraphs: list[dict[str, str]]) -> list[dict[str, str]]:
         text = paragraph["text"]
         for match in CAPITALIZED.finditer(text):
             name = match.group(0).strip(" ,.;:!?\"'”’")
+            name = re.sub(r"^(?:A|An|The)\s+", "", name).strip()
             words = name.split()
             if not name or name in STOPWORDS or all(word in STOPWORDS for word in words):
                 continue
@@ -253,14 +261,14 @@ def rule_candidates(paragraphs: list[dict[str, str]]) -> list[dict[str, str]]:
     return found
 
 
-def spacy_candidates(paragraphs: list[dict[str, str]], model_name: str) -> list[dict[str, str]]:
+def spacy_candidates(paragraphs: list[dict[str, str]], model_name: str) -> list[dict[str, str]] | None:
     try:
         import spacy
 
         nlp = spacy.load(model_name, disable=["parser", "lemmatizer", "textcat"])
     except Exception as exc:  # Local rule extraction is a supported fallback.
-        log(f"spaCy model unavailable ({exc}); using rules only.")
-        return []
+        log(f"WARNING: spaCy model unavailable ({exc}); using lower-quality rules-only extraction.")
+        return None
     found: list[dict[str, str]] = []
     allowed = {"PERSON", "ORG", "GPE", "LOC", "FAC"}
     for para_index, (paragraph, doc) in enumerate(zip(paragraphs, nlp.pipe(p["text"] for p in paragraphs))):
@@ -384,7 +392,8 @@ def direct_description(name: str, occurrences: list[dict[str, str]]) -> dict[str
 
 
 def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_library: str | None) -> list[dict[str, Any]]:
-    candidates = rule_candidates(paragraphs) + spacy_candidates(paragraphs, model_name)
+    spacy = spacy_candidates(paragraphs, model_name)
+    candidates = rule_candidates(paragraphs) if spacy is None else spacy
     grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
     for candidate in candidates:
         name = candidate["name"]
@@ -409,6 +418,8 @@ def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_lib
 
     entities: list[dict[str, Any]] = []
     for normalized, occurrences in grouped.items():
+        if all(item["source"] == "rule" for item in occurrences) and len(occurrences) < 2 and classify(occurrences[0]) == "Needs Review":
+            continue
         names = sorted({item["name"] for item in occurrences}, key=lambda value: (-len(value), value))
         canonical_name = names[0]
         alias_names = [name for name in names if name != canonical_name]

@@ -855,20 +855,6 @@ table.proofing-table th {
   border-radius: 0.5rem;
   border-bottom: 0;
 }
-.chapter-bookmark {
-  display: inline-flex;
-  width: 1.4rem;
-  height: 1.4rem;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-faint);
-  opacity: 0.28;
-}
-.chapter-bookmark:hover,
-.chapter-bookmark.active {
-  color: var(--bookmark);
-  opacity: 1;
-}
 .chapter-meta {
   justify-self: end;
   text-align: right;
@@ -1252,8 +1238,12 @@ table.proofing-table th {
   animation: work-progress-slide 1.15s ease-in-out infinite;
 }
 @keyframes work-progress-slide {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(2400%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(2400%);
+  }
 }
 .type-chip {
   border-radius: 0.25rem;
@@ -1547,22 +1537,6 @@ table.proofing-table th {
 .reader-chapter-header {
   padding-inline: 1.25rem;
 }
-.chapter-bookmark-target {
-  width: 1.4rem;
-  height: 1.4rem;
-  margin-left: -0.25rem;
-}
-.chapter-bookmark {
-  width: 100%;
-  height: 100%;
-  opacity: 0.42;
-}
-.chapter-bookmark-target:hover .chapter-bookmark,
-.chapter-bookmark:focus-visible,
-.chapter-bookmark.active {
-  color: var(--bookmark);
-  opacity: 1;
-}
 .ms-line {
   grid-template-columns: 3.5rem minmax(0, 1fr);
 }
@@ -1591,37 +1565,6 @@ table.proofing-table th {
   --lore: #9a6b34;
   --item: #42758a;
   --event: #9a4e69;
-}
-/* Manual reader navigation and bookmark affordances. */
-.chapter-bookmark {
-  position: relative;
-  opacity: 1;
-}
-.chapter-bookmark .bookmark-outline {
-  opacity: 0.48;
-}
-.chapter-bookmark .bookmark-fill {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-}
-.chapter-bookmark:hover .bookmark-outline,
-.chapter-bookmark:focus-visible .bookmark-outline,
-.chapter-bookmark.active .bookmark-outline {
-  opacity: 0;
-}
-.chapter-bookmark:hover .bookmark-fill,
-.chapter-bookmark:focus-visible .bookmark-fill {
-  color: var(--bookmark);
-  opacity: 0.68;
-}
-.chapter-bookmark.active .bookmark-fill {
-  color: var(--bookmark);
-  opacity: 1;
-}
-.chapter-bookmark.active:hover .bookmark-fill,
-.chapter-bookmark.active:focus-visible .bookmark-fill {
-  opacity: 1;
 }
 .ms-gutter {
   align-items: flex-start;

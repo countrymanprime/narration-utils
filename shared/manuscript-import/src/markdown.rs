@@ -4,7 +4,7 @@ use std::path::Path;
 
 use regex::Regex;
 
-use crate::model::{collapse_whitespace, Draft, ManuscriptError, Paragraph};
+use crate::model::{classify_pre_heading, collapse_whitespace, Draft, ManuscriptError, Paragraph};
 
 pub fn build_draft(path: &Path, heading_level: u8) -> Result<Draft, ManuscriptError> {
     if !(1..=6).contains(&heading_level) {
@@ -16,7 +16,7 @@ pub fn build_draft(path: &Path, heading_level: u8) -> Result<Draft, ManuscriptEr
     // Mirrors Python's `encoding="utf-8-sig"`: strip a leading BOM if present.
     let content = raw.strip_prefix('\u{FEFF}').unwrap_or(&raw);
 
-    let mut chapter = "Front matter".to_string();
+    let mut chapter = "Front Matter".to_string();
     let mut section: Option<String> = None;
     let mut paragraphs: Vec<Paragraph> = Vec::new();
     let mut titles: Vec<String> = Vec::new();
@@ -28,6 +28,7 @@ pub fn build_draft(path: &Path, heading_level: u8) -> Result<Draft, ManuscriptEr
             if !body.is_empty() {
                 paragraphs.push(Paragraph {
                     chapter: chapter.to_string(),
+                    chapter_subtitle: None,
                     section: section.clone(),
                     text: body,
                     source_index: paragraphs.len(),
@@ -60,6 +61,19 @@ pub fn build_draft(path: &Path, heading_level: u8) -> Result<Draft, ManuscriptEr
         }
     }
     flush(&mut pending, &chapter, &section, &mut paragraphs);
+
+    let pre_heading: Vec<String> = paragraphs
+        .iter()
+        .filter(|paragraph| paragraph.chapter == "Front Matter")
+        .map(|paragraph| paragraph.text.clone())
+        .collect();
+    for (paragraph, kind) in paragraphs
+        .iter_mut()
+        .filter(|paragraph| paragraph.chapter == "Front Matter")
+        .zip(classify_pre_heading(&pre_heading))
+    {
+        paragraph.chapter = kind.chapter_name().to_string();
+    }
 
     let source_name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
     Draft::new("markdown", source_name, paragraphs, titles)

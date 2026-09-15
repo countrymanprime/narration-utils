@@ -3,6 +3,7 @@ import importlib.util
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -14,6 +15,23 @@ SPEC.loader.exec_module(guide)
 
 
 class ManuscriptGuideTests(unittest.TestCase):
+    def test_spacy_empty_result_does_not_activate_rule_fallback(self):
+        paragraphs = [{"chapter": "Chapter 1", "text": "Captain Arelian arrives."}]
+        with patch.object(guide, "spacy_candidates", return_value=[]), patch.object(guide, "rule_candidates", side_effect=AssertionError("rules should not run")):
+            self.assertEqual([], guide.build_entities(paragraphs, "unused", None))
+
+    def test_rule_fallback_strips_articles_and_prunes_singletons(self):
+        paragraphs = [
+            {"chapter": "Chapter 1", "text": "A Black Halo appeared. About noon, it vanished."},
+            {"chapter": "Chapter 2", "text": "Black Halo appeared again."},
+        ]
+        candidates = guide.rule_candidates(paragraphs)
+        self.assertIn("Black Halo", [candidate["name"] for candidate in candidates])
+        self.assertNotIn("About", [candidate["name"] for candidate in candidates])
+        with patch.object(guide, "spacy_candidates", return_value=None):
+            entities = guide.build_entities(paragraphs, "unused", None)
+        self.assertEqual(["Black Halo"], [entity["canonical_name"] for entity in entities])
+
     def test_locked_edit_survives_rebuild(self):
         generated = [
             {

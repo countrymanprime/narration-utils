@@ -21,7 +21,7 @@ use std::path::Path;
 
 use regex::Regex;
 
-use crate::model::{collapse_whitespace, Draft, ManuscriptError, Paragraph};
+use crate::model::{classify_pre_heading, collapse_whitespace, Draft, ManuscriptError, Paragraph};
 
 pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
     let bytes = std::fs::read(path).map_err(|e| ManuscriptError(format!("Could not read this PDF: {e}")))?;
@@ -37,7 +37,7 @@ pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
     let block_split_re = Regex::new(r"\n\s*\n+").unwrap();
     let chapter_prefix_re = Regex::new(r"(?i)^(chapter|book|part)\b").unwrap();
 
-    let mut chapter = "Front matter".to_string();
+    let mut chapter = "Front Matter".to_string();
     let mut paragraphs: Vec<Paragraph> = Vec::new();
     let mut titles: Vec<String> = Vec::new();
 
@@ -55,10 +55,24 @@ pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
         }
         paragraphs.push(Paragraph {
             chapter: chapter.clone(),
+            chapter_subtitle: None,
             section: None,
             text: collapse_whitespace(&lines.join(" ")),
             source_index: paragraphs.len(),
         });
+    }
+
+    let pre_heading: Vec<String> = paragraphs
+        .iter()
+        .filter(|paragraph| paragraph.chapter == "Front Matter")
+        .map(|paragraph| paragraph.text.clone())
+        .collect();
+    for (paragraph, kind) in paragraphs
+        .iter_mut()
+        .filter(|paragraph| paragraph.chapter == "Front Matter")
+        .zip(classify_pre_heading(&pre_heading))
+    {
+        paragraph.chapter = kind.chapter_name().to_string();
     }
 
     let source_name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();

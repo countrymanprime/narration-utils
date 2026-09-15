@@ -187,8 +187,8 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   it('uses outline/fill chapter bookmarks and has no per-paragraph bookmark gutter', async () => {
     renderManuscript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
-    expect(document.querySelector('.chapter-bookmark-target > .chapter-bookmark .bookmark-outline')).toBeTruthy();
-    expect(document.querySelector('.chapter-bookmark-target > .chapter-bookmark .bookmark-fill')).toBeTruthy();
+    expect(document.querySelector('[data-chapter="Chapter 1"] button.group svg')).toBeTruthy();
+    expect(document.querySelectorAll('[data-chapter="Chapter 1"] button.group svg')).toHaveLength(2);
     expect(document.querySelector('.ms-marker-gutter')).toBeNull();
     expect(document.querySelector('.paragraph-bookmark')).toBeNull();
     expect(document.querySelector('.marker-count')).toBeNull();

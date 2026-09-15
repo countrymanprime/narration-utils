@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileLines } from '@fortawesome/free-solid-svg-icons';
 import type { ChapterStatus, ManuscriptChapter } from '../../types';
@@ -31,13 +32,7 @@ export function rollupChapterStatuses(chapters: ManuscriptChapter[]): Record<Cha
   }, empty);
 }
 
-export function AudiobookEstimatePanel({
-  notify,
-  goToManuscript,
-}: {
-  notify: (text: string) => void;
-  goToManuscript: (chapter: string) => void;
-}) {
+export function AudiobookEstimatePanel({ notify, goToManuscript }: { notify: (text: string) => void; goToManuscript: (chapter: string) => void }) {
   const api = useApi();
   const [chapters, setChapters] = useState<ManuscriptChapter[]>();
   const [breakdownOpen, setBreakdownOpen] = useState(false);
@@ -98,7 +93,7 @@ export function AudiobookEstimatePanel({
               {finalizedCount} of {chapters.length} chapters finalized
             </span>
           </div>
-          <div className="flex h-2 overflow-hidden rounded-full" style={{ background: 'var(--surface-3)' }}>
+          <div className="flex h-4 overflow-hidden rounded-full" style={{ background: 'var(--surface-3)' }}>
             {STATUS_ORDER.filter((status) => statusTotals[status].count > 0).map((status) => (
               <TooltipTarget
                 key={status}
@@ -139,9 +134,18 @@ export function AudiobookEstimatePanel({
                       <td>
                         <div className="flex items-center gap-1">
                           <TooltipTarget text="Jump to chapter in Manuscript">
-                            <button aria-label={`Jump to ${chapter.title} in manuscript`} className="icon-btn" onClick={() => goToManuscript(chapter.id)}>
+                            <Link
+                              aria-label={`Jump to ${chapter.title} in manuscript`}
+                              className="icon-btn"
+                              to={`/manuscript#c${encodeURIComponent(chapter.id)}`}
+                              onClick={(event) => {
+                                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                                event.preventDefault();
+                                goToManuscript(chapter.id);
+                              }}
+                            >
                               <FontAwesomeIcon icon={faFileLines} />
-                            </button>
+                            </Link>
                           </TooltipTarget>
                           <span>
                             {chapter.title}
