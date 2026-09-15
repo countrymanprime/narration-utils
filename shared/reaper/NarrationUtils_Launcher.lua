@@ -1,7 +1,9 @@
 -- Narration Utils - the sole REAPER action for the suite.
--- Opens the persistent React/Python workspace in the user's default browser.
--- REAPER itself has no workflow UI; the bridge below only services requests
--- from that workspace.
+-- Launches the native shell app (shell/src-tauri) that hosts the React UI
+-- and supervises the Python backend for its whole lifetime - closing the
+-- shell's window is the only thing that stops the backend. REAPER itself
+-- has no workflow UI; the bridge below only services requests from that
+-- workspace.
 
 local function script_dir()
   local _, path = reaper.get_action_context()
@@ -29,11 +31,11 @@ end
 
 -- All runtimes are owned by this checkout. The only REAPER configuration is
 -- the launcher action itself; it never reads legacy ExtState paths or any
--- previous install location. The host is the shared venv's Python running
--- shared/server (see shared/server/main.py) - it opens the UI in the user's
--- default browser instead of a native window.
+-- previous install location. The host is the native shell app (built from
+-- shell/src-tauri); it supervises the shared venv's Python running
+-- shared/server (see shared/server/main.py) as a child process for its
+-- whole lifetime and shows the UI in its own window instead of a browser tab.
 local shared_python = REPO_ROOT .. "\\.venv\\Scripts\\python.exe"
-local server_main = REPO_ROOT .. "\\shared\\server\\main.py"
 local manuscript_core = REPO_ROOT .. "\\tools\\manuscript-guide\\core"
 local compare_core = REPO_ROOT .. "\\tools\\transcript-compare\\core"
 local manuscript_python = shared_python
@@ -42,12 +44,19 @@ local compare_python = shared_python
 local compare_backend = compare_core .. "\\compare.py"
 local ui_index = REPO_ROOT .. "\\shared\\ui\\dist\\index.html"
 
+-- Prefer a release build of the shell; fall back to a debug build so
+-- `cargo tauri dev`-produced binaries work without a separate release step
+-- during development. Neither path is installed/versioned yet - see the
+-- open "distribution path" question in the shell's migration plan.
+local shell_release = REPO_ROOT .. "\\shell\\src-tauri\\target\\release\\narration-utils-shell.exe"
+local shell_debug = REPO_ROOT .. "\\shell\\src-tauri\\target\\debug\\narration-utils-shell.exe"
+local shell_exe = common.file_exists(shell_release) and shell_release or shell_debug
+
 local project_folder, project_name = project_context()
 local session_dir = reaper.GetResourcePath() .. "\\NarrationUtils\\sessions\\hub_" .. tostring(reaper.time_precise()):gsub("[%.]", "")
 reaper.RecursiveCreateDirectory(session_dir .. "\\commands", 0)
 
-if not common.file_exists(shared_python) or not common.file_exists(server_main)
-  or not common.file_exists(ui_index) then
+if not common.file_exists(shared_python) or not common.file_exists(ui_index) then
   local quickstart = REPO_ROOT .. "\\scripts\\Quickstart.cmd"
   local answer = reaper.ShowMessageBox(
     "Narration Utils has not been set up in this checkout yet.\n\n"
@@ -69,33 +78,24 @@ if not common.file_exists(shared_python) or not common.file_exists(server_main)
   return
 end
 
-local function quote(value) return process.quote(value) end
-local SERVER_PORT = 48767
-
--- The server binds a fixed local port by design (see shared/server/main.py)
--- rather than picking a new one each launch, so a live instance from an
--- earlier session (still open in a browser tab, or not yet reclaimed by the
--- idle watchdog) would otherwise make a second launch race it and fail. Probe
--- first and reuse it instead of spawning a doomed second process.
-local probe_exit_path = session_dir .. "\\probe.exitcode"
-local probe_command = quote(shared_python) .. " -m shared.server.main --probe"
-  .. " --session-dir " .. quote(session_dir)
-  .. " --port " .. tostring(SERVER_PORT)
-process.run_hidden(session_dir, probe_command, { wait = true, show_window = false, cwd = REPO_ROOT, exit_code_path = probe_exit_path })
-local probe_file = io.open(probe_exit_path, "r")
-local already_running = false
-if probe_file then
-  local code = probe_file:read("*a")
-  probe_file:close()
-  already_running = tonumber(code) == 0
-end
-
-if already_running then
-  process.open_file_with_default_app(session_dir, "http://127.0.0.1:" .. tostring(SERVER_PORT))
+if not common.file_exists(shell_exe) then
+  reaper.ShowMessageBox(
+    "The Narration Utils shell app has not been built yet.\n\n"
+      .. "From this checkout, run:\n  cd shell\n  npm run build\n\n"
+      .. "(or `npm run dev` while iterating on it), then launch Narration Utils again.",
+    "Narration Utils setup required", 0)
   return
 end
 
-local command = quote(shared_python) .. " -m shared.server.main"
+local function quote(value) return process.quote(value) end
+local SERVER_PORT = 48767
+
+-- No probe/reuse step here anymore: the shell exe owns single-instance
+-- detection itself (tauri-plugin-single-instance) and simply forwards to
+-- its already-running window instead of spawning a second backend, so
+-- every launch just spawns the shell unconditionally.
+local command = quote(shell_exe)
+  .. " --repo-root " .. quote(REPO_ROOT)
   .. " --session-dir " .. quote(session_dir)
   .. " --project-folder " .. quote(project_folder)
   .. " --project-name " .. quote(project_name)
@@ -106,8 +106,11 @@ local command = quote(shared_python) .. " -m shared.server.main"
   .. " --compare-backend " .. quote(compare_backend)
   .. " --port " .. tostring(SERVER_PORT)
 
--- Run from REPO_ROOT so "-m shared.server.main" resolves as a package.
-if not process.run_hidden(session_dir, command, { wait = false, show_window = false, cwd = REPO_ROOT }) then
+-- Run from REPO_ROOT so the shell's own relative asset lookups (and the
+-- Python backend it spawns with "-m shared.server.main") resolve correctly.
+-- show_window = true: unlike the Python/browser-tab setup this replaces,
+-- the shell has its own real GUI window that needs to actually appear.
+if not process.run_hidden(session_dir, command, { wait = false, show_window = true, cwd = REPO_ROOT }) then
   reaper.ShowMessageBox("Could not open Narration Utils.", "Narration Utils", 0)
   return
 end
@@ -127,14 +130,6 @@ local function watch_startup()
   if failure then
     local message = failure:read("*a") or "Narration Utils could not start."
     failure:close()
-    if message:find("could not bind its fixed local port", 1, true) then
-      -- The probe above found nothing listening, but another launch won the
-      -- race and bound the port in between the probe and this spawn. Reuse
-      -- it rather than reporting a startup failure for what is really just
-      -- a launch collision.
-      process.open_file_with_default_app(session_dir, "http://127.0.0.1:" .. tostring(SERVER_PORT))
-      return
-    end
     reaper.ShowMessageBox(message .. "\n\nDiagnostic session:\n" .. session_dir, "Narration Utils setup required", 0)
     return
   end

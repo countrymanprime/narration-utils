@@ -5,22 +5,30 @@ Creates every local runtime Narration Utils needs and builds its React UI.
 .DESCRIPTION
 Downloads a private Python runtime, creates one shared Python environment for
 every first-party tool (Manuscript Guide, Transcript Compare, and the shared
-server/config code), and builds the React UI. Machine prerequisite is
-Node.js/npm. All Python runtimes, Python packages, the virtual environment,
-and Node packages remain inside this checkout and are excluded from Git.
+server/config code), builds the React UI, and builds the two Rust
+components (shared/manuscript-import and the shell/src-tauri native app).
+Machine prerequisites are Node.js/npm and a Rust toolchain (rustup) with,
+on Windows, the "Desktop development with C++" Visual Studio workload. All
+Python runtimes, Python packages, the virtual environment, Node packages,
+and Cargo build output remain inside this checkout and are excluded from
+Git. Rust builds always run (cargo/npm build incrementally, so a rerun
+after editing shell/ or shared/manuscript-import/ only rebuilds what
+changed).
 
-Dependency handling (the Python venv, spaCy model, Piper voice, npm packages)
-has three modes:
+Dependency handling (the Python venv, spaCy model, Piper voice, npm
+packages, the tauri-cli cargo subcommand) has three modes:
 
   (default)            Install only what's missing. An existing venv, an
                         existing node_modules, an already-downloaded spaCy
-                        model or Piper voice are left alone untouched.
+                        model or Piper voice, or an already-installed
+                        tauri-cli are left alone untouched.
   -SkipDependencies     Skip dependency checks entirely, even for missing
                         ones. Only use this if you already know everything
-                        is installed; the build step still runs.
+                        is installed; the build steps still run.
   -UpdateDependencies   Force every dependency to be reinstalled/updated to
                         latest (pip install --upgrade, npm update, spaCy
-                        model re-download), even where already installed.
+                        model re-download, tauri-cli reinstall), even where
+                        already installed.
 #>
 [CmdletBinding()]
 param(
@@ -167,6 +175,25 @@ $npm = Get-Command npm.cmd -ErrorAction SilentlyContinue
 if (-not $npm) { throw 'Node.js/npm is required to build the Narration Utils UI. Install Node.js LTS, then run this script again.' }
 $npmExecutable = [string]$npm.Source
 
+$cargo = Get-Command cargo.exe -ErrorAction SilentlyContinue
+if (-not $cargo) { throw 'A Rust toolchain is required to build shared/manuscript-import and the shell app. Install it via https://rustup.rs (on Windows, also install the "Desktop development with C++" Visual Studio workload), then run this script again.' }
+$cargoExecutable = [string]$cargo.Source
+
+function Install-TauriCli {
+    $tauriCliInstalled = $false
+    try { & $cargoExecutable 'tauri' '--version' *> $null; $tauriCliInstalled = ($LASTEXITCODE -eq 0) } catch { }
+
+    if ($SkipDependencies) {
+        if (-not $tauriCliInstalled) { throw 'tauri-cli (cargo tauri) is not installed and -SkipDependencies was passed. Run once without it first.' }
+        Write-Host 'Skipping tauri-cli dependency check.'
+    } elseif ($tauriCliInstalled -and -not $UpdateDependencies) {
+        Write-Host 'tauri-cli already installed; skipping (pass -UpdateDependencies to refresh).'
+    } else {
+        Write-Host $(if ($UpdateDependencies) { 'Updating tauri-cli...' } else { 'Installing tauri-cli...' })
+        Invoke-Checked $cargoExecutable @('install', 'tauri-cli', '--version', '^2', '--locked') | Out-Host
+    }
+}
+
 $sharedPython = Install-Environment (Join-Path $repoRoot '.venv') (Join-Path $repoRoot 'requirements.txt') 'Narration Utils'
 if ($SkipDependencies) {
     Write-Host 'Skipping dev-tooling dependency check.'
@@ -216,6 +243,25 @@ try {
     Write-Host 'Creating the production UI bundle...'
     & $npmExecutable run build
     if ($LASTEXITCODE -ne 0) { throw "npm run build failed ($LASTEXITCODE)." }
+} finally {
+    Pop-Location
+}
+
+Write-Host 'Building the manuscript importer (shared/manuscript-import)...'
+Push-Location (Join-Path $repoRoot 'shared\manuscript-import')
+try {
+    Invoke-Checked $cargoExecutable @('build', '--release') | Out-Host
+} finally {
+    Pop-Location
+}
+
+Install-TauriCli
+
+Write-Host 'Building the native shell app (shell/)...'
+Push-Location (Join-Path $repoRoot 'shell')
+try {
+    & $npmExecutable run build
+    if ($LASTEXITCODE -ne 0) { throw "npm run build (shell) failed ($LASTEXITCODE)." }
 } finally {
     Pop-Location
 }

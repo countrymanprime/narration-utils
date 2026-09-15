@@ -12,9 +12,15 @@ logic is DAW-agnostic; a thin per-DAW driver wires it into a specific host.
 
 ```
 narration-utils/
+  shell/
+    src-tauri/                 Native shell (Rust/Tauri) that hosts the UI and supervises
+                                shared/server's Python backend for its whole lifetime
   shared/
+    manuscript-import/         Rust CLI: parses a source manuscript (.docx/.md) into the
+                                draft JSON narration_common.manuscript turns into manuscript.json
     python/narration_common/   DAW-agnostic helpers shared by both tools' backends
     reaper/                    REAPER launcher and non-UI integration bridge
+    server/                    FastAPI/uvicorn API host, launched as the shell's sidecar
     ui/                        React + Tailwind workspace (built static assets)
     audacity/                  placeholder for future Audacity-specific shared helpers
   tools/
@@ -47,8 +53,10 @@ install path.
 
 ## Quickstart
 
-The supported UI is a local React + Tailwind workspace, opened in the user's
-default browser and served by a Python API host (`shared/server`). From the
+The UI is a local React + Tailwind workspace, shown in its own native window
+(`shell/`, a Rust/Tauri app) which serves it via a Python API host
+(`shared/server`) that it starts and supervises for its whole lifetime —
+closing the window is the only thing that stops the backend. From the
 checkout root, run either:
 
 ```powershell
@@ -60,10 +68,19 @@ runtime, creates and maintains one shared gitignored virtual environment for
 every first-party tool (Manuscript Guide, Transcript Compare, and the shared
 server), installs their dependencies, downloads the default spaCy model,
 installs UI packages, and builds the production UI bundle. It also installs
-the local Piper preview runtime and a U.S. English medium voice. Node.js/npm
-is the machine-level prerequisite. Python, Piper, packages, and the
-downloaded bootstrap files remain in gitignored folders in this checkout;
-REAPER does not discover or run a global or VST-folder Python.
+the local Piper preview runtime and a U.S. English medium voice, then builds
+the two Rust components: `shared/manuscript-import` (`cargo build --release`)
+and the native shell app in `shell/` (`cargo tauri build`, installing the
+`tauri-cli` cargo subcommand first if needed). Machine-level prerequisites
+are Node.js/npm and a Rust toolchain (`rustup`), plus, on Windows, the
+"Desktop development with C++" Visual Studio workload for the MSVC linker.
+Python, Piper, packages, downloaded bootstrap files, and Cargo build output
+remain in gitignored folders in this checkout; REAPER does not discover or
+run a global or VST-folder Python.
+
+Re-running the script after changing `shell/` or `shared/manuscript-import/`
+rebuilds them — cargo and npm both build incrementally, so only what changed
+is recompiled.
 
 If desired, an existing Python interpreter can still be used only to create
 the private environments; it is never retained as a REAPER dependency:
@@ -71,6 +88,12 @@ the private environments; it is never retained as a REAPER dependency:
 ```powershell
 .\scripts\Quickstart.ps1 -BootstrapPython C:\path\to\python.exe
 ```
+
+While iterating on the shell without a full release build, `cd shell; npm run
+dev` runs it directly via `cargo tauri dev`. `shared/manuscript-import`'s
+Rust binary is not itself a hard dependency at runtime — if it's ever missing
+(built manually and later deleted, say), manuscript import falls back to the
+(slower) Python implementation automatically.
 
 The launcher is intentionally the only REAPER action. It starts the companion
 window; REAPER continues to service only selection, take-marker, and cursor

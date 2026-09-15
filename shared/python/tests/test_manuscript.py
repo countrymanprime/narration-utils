@@ -2,8 +2,28 @@ import sys
 import types
 
 import pytest
+from docx import Document
 
 from narration_common import manuscript
+
+
+def test_docx_import_splits_chapters_and_skips_table_of_contents(tmp_path):
+    doc = Document()
+    doc.add_paragraph("Table of Contents", style="Heading 1")
+    doc.add_paragraph("Should not appear as its own chapter.")
+    doc.add_paragraph("Chapter One", style="Heading 1")
+    doc.add_paragraph("First   paragraph\twith odd whitespace.")
+    doc.add_paragraph("")  # empty paragraphs are dropped
+    source = tmp_path / "book.docx"
+    doc.save(source)
+
+    draft = manuscript.prepare_import(source)
+    assert draft["chapterTitles"] == ["Chapter One"]
+    assert [item["chapter"] for item in draft["paragraphs"]] == ["Front matter", "Chapter One"]
+    assert draft["paragraphs"][1]["text"] == "First paragraph with odd whitespace."
+
+    committed = manuscript.commit_import(tmp_path, source, draft)
+    assert [c["title"] for c in committed["chapters"]] == ["Front matter", "Chapter One"]
 
 
 def test_markdown_import_uses_selected_chapter_level_and_keeps_deeper_sections(tmp_path):

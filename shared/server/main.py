@@ -45,6 +45,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--seed", action="append", default=[])
     parser.add_argument("--smoke-test", action="store_true")
     parser.add_argument("--probe", action="store_true")
+    parser.add_argument(
+        "--no-open-browser",
+        action="store_true",
+        help="Skip opening the OS browser - the Tauri shell already shows the UI in its own window.",
+    )
     return parser.parse_args(argv)
 
 
@@ -146,7 +151,7 @@ def main(argv: list[str] | None = None) -> int:
         return asyncio.run(_smoke_test(app, hub))
 
     try:
-        asyncio.run(_serve(app, hub, session_dir, open_browser=True, has_audio_dir=audio_dir is not None, shutdown_event=shutdown_event, port=options.port))
+        asyncio.run(_serve(app, hub, session_dir, open_browser=not options.no_open_browser, has_audio_dir=audio_dir is not None, shutdown_event=shutdown_event, port=options.port))
     except Exception as exc:  # noqa: BLE001 - mirrors Program.cs's startup-failure path
         write_startup_failure(session_dir, f"Narration Utils could not start its desktop API: {exc}")
         raise

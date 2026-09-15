@@ -13,12 +13,16 @@ import json
 import os
 import re
 import shutil
+import subprocess
+import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from .docx_chapters import NON_CHAPTER_HEADINGS, load_docx_paragraph_records
+
+_CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 
 SCHEMA_VERSION = 1
 IMPORTER_VERSION = 1
@@ -152,16 +156,66 @@ def _pdf_draft(path: Path) -> dict[str, Any]:
     return _new_draft("pdf", path, paragraphs, titles)
 
 
+def _manuscript_import_binary() -> Path | None:
+    """Locates the compiled shared/manuscript-import Rust CLI, if built.
+
+    Docx/markdown parsing moved there for speed (see that crate's docstrings
+    for the ported logic); PDF stays on the Python path below for now - a
+    quick test showed pdf-extract's line/paragraph-break heuristics don't
+    match pypdf's closely enough to trust for the chapter-vs-paragraph
+    split, and PDF is the least-used of the three formats.
+
+    Falls back to the Python implementation entirely when the binary hasn't
+    been built yet (see shared/manuscript-import/README or run
+    `cargo build --release` there) - a fresh checkout without a Rust
+    toolchain should still be able to import docx/markdown manuscripts.
+    """
+    repo_root = Path(__file__).resolve().parents[3]
+    binary_name = "manuscript-import.exe" if os.name == "nt" else "manuscript-import"
+    for profile in ("release", "debug"):
+        candidate = repo_root / "shared" / "manuscript-import" / "target" / profile / binary_name
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _draft_via_rust(binary: Path, path: Path, markdown_heading_level: int) -> dict[str, Any]:
+    # --out (a file), not stdout: this process runs with all three standard
+    # streams redirected to null (spawned that way by the Tauri shell), and
+    # under that exact condition subprocess.run(capture_output=True) comes
+    # back with stdout=None on Windows even though the child wrote to it and
+    # exited 0 - reproduced directly, not theoretical. A file sidesteps the
+    # pipe-inheritance quirk entirely and matches the --out convention
+    # tools/manuscript-guide's CLI already uses for the same reason.
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        out_path = Path(tmp_dir) / "draft.json"
+        args = [str(binary), "--source", str(path), "--out", str(out_path)]
+        if source_format(path) == "markdown":
+            args += ["--markdown-heading-level", str(markdown_heading_level)]
+        result = subprocess.run(args, capture_output=True, text=True, creationflags=_CREATE_NO_WINDOW)
+        if result.returncode != 0:
+            raise ManuscriptError((result.stderr or "").strip() or "Could not parse this manuscript.")
+        try:
+            return json.loads(out_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ManuscriptError("The manuscript parser returned invalid data.") from exc
+
+
 def prepare_import(source: str | Path, markdown_heading_level: int = 1, progress=None) -> dict[str, Any]:
     path = Path(source)
     if not path.is_file():
         raise ManuscriptError("The selected manuscript no longer exists.")
     format_name = source_format(path)
+    if format_name == "pdf":
+        return _pdf_draft(path)
+    binary = _manuscript_import_binary()
+    if binary is not None:
+        if progress:
+            progress("Reading manuscript…")
+        return _draft_via_rust(binary, path, markdown_heading_level)
     if format_name == "docx":
         return _docx_draft(path, progress=progress)
-    if format_name == "markdown":
-        return _markdown_draft(path, markdown_heading_level)
-    return _pdf_draft(path)
+    return _markdown_draft(path, markdown_heading_level)
 
 
 def preview(draft: dict[str, Any]) -> dict[str, Any]:
