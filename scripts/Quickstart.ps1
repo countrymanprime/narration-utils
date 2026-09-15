@@ -85,7 +85,7 @@ function Get-BootstrapPython {
     if ($BootstrapPythonPath) {
         if (-not (Test-Path -LiteralPath $BootstrapPythonPath)) { throw "Bootstrap Python was not found: $BootstrapPythonPath" }
         $available = $false
-        try { & $BootstrapPythonPath --version 2>$null | Out-Null; $available = $LASTEXITCODE -eq 0 } catch { }
+        try { & $BootstrapPythonPath --version 2>$null | Out-Null; $available = $LASTEXITCODE -eq 0 } catch { Write-Verbose "Bootstrap Python version check failed: $($_.Exception.Message)" }
         if ($available) { return [pscustomobject]@{ Executable = [string]$BootstrapPythonPath; Arguments = @() } }
         throw "Bootstrap Python could not run: $BootstrapPythonPath"
     }
@@ -181,7 +181,7 @@ $cargoExecutable = [string]$cargo.Source
 
 function Install-TauriCli {
     $tauriCliInstalled = $false
-    try { & $cargoExecutable 'tauri' '--version' *> $null; $tauriCliInstalled = ($LASTEXITCODE -eq 0) } catch { }
+    try { & $cargoExecutable 'tauri' '--version' *> $null; $tauriCliInstalled = ($LASTEXITCODE -eq 0) } catch { Write-Verbose "tauri-cli version check failed: $($_.Exception.Message)" }
 
     if ($SkipDependencies) {
         if (-not $tauriCliInstalled) { throw 'tauri-cli (cargo tauri) is not installed and -SkipDependencies was passed. Run once without it first.' }
@@ -194,6 +194,48 @@ function Install-TauriCli {
     }
 }
 
+function Install-RootTooling {
+    Push-Location $repoRoot
+    try {
+        $nodeModulesExisted = Test-Path -LiteralPath (Join-Path $repoRoot 'node_modules')
+        if ($SkipDependencies) {
+            if (-not $nodeModulesExisted) { throw 'root node_modules does not exist and -SkipDependencies was passed. Run once without it first.' }
+            Write-Host 'Skipping root developer-tooling install.'
+        } elseif ($UpdateDependencies -and $nodeModulesExisted) {
+            Write-Host 'Updating root developer tooling...'
+            & $npmExecutable update
+            if ($LASTEXITCODE -ne 0) { throw "npm update (root) failed ($LASTEXITCODE)." }
+        } elseif (-not $nodeModulesExisted) {
+            Write-Host 'Installing root developer tooling and Git hooks...'
+            & $npmExecutable ci
+            if ($LASTEXITCODE -ne 0) { throw "npm ci (root) failed ($LASTEXITCODE)." }
+        } else {
+            Write-Host 'Root developer tooling already installed; skipping (pass -UpdateDependencies to refresh).'
+        }
+    } finally {
+        Pop-Location
+    }
+}
+
+function Install-QualityTools {
+    $styluaInstalled = $false
+    try { & $cargoExecutable 'stylua' '--version' *> $null; $styluaInstalled = ($LASTEXITCODE -eq 0) } catch { Write-Verbose "Stylua version check failed: $($_.Exception.Message)" }
+    if ($SkipDependencies) {
+        if (-not $styluaInstalled) { throw 'stylua is required for the pre-commit quality gate and -SkipDependencies was passed.' }
+        Write-Host 'Skipping Stylua dependency check.'
+    } elseif (-not $styluaInstalled -or $UpdateDependencies) {
+        Write-Host 'Installing Stylua for Lua formatting checks...'
+        Invoke-Checked $cargoExecutable @('install', 'stylua', '--version', '2.1.0', '--locked') | Out-Host
+    }
+
+    if (-not (Get-Command Invoke-ScriptAnalyzer -ErrorAction SilentlyContinue) -or $UpdateDependencies) {
+        if ($SkipDependencies) { throw 'PSScriptAnalyzer is required for the pre-commit quality gate and -SkipDependencies was passed.' }
+        Write-Host 'Installing PSScriptAnalyzer for PowerShell checks...'
+        Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+    }
+}
+
+$null = Install-RootTooling
 $sharedPython = Install-Environment (Join-Path $repoRoot '.venv') (Join-Path $repoRoot 'requirements.txt') 'Narration Utils'
 if ($SkipDependencies) {
     Write-Host 'Skipping dev-tooling dependency check.'
@@ -261,6 +303,7 @@ try {
 }
 
 Install-TauriCli
+Install-QualityTools
 
 Write-Host 'Building the native shell app (shell/)...'
 Push-Location (Join-Path $repoRoot 'shell')

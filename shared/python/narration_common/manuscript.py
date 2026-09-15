@@ -37,7 +37,13 @@ def validate(data: dict[str, Any]) -> dict[str, Any]:
     chapter_ids = {item.get("id") for item in data["chapters"] if isinstance(item, dict)}
     paragraph_ids = set()
     for paragraph in data["paragraphs"]:
-        if not isinstance(paragraph, dict) or not isinstance(paragraph.get("id"), str) or paragraph["id"] in paragraph_ids or paragraph.get("chapterId") not in chapter_ids or not isinstance(paragraph.get("text"), str):
+        if (
+            not isinstance(paragraph, dict)
+            or not isinstance(paragraph.get("id"), str)
+            or paragraph["id"] in paragraph_ids
+            or paragraph.get("chapterId") not in chapter_ids
+            or not isinstance(paragraph.get("text"), str)
+        ):
             raise ManuscriptError("The canonical manuscript has invalid paragraph records.")
         paragraph_ids.add(paragraph["id"])
     return data

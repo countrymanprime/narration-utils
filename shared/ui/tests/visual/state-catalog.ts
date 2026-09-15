@@ -18,8 +18,7 @@ export const STATE_CATALOG: StateEntry[] = [
   {
     page: 'home',
     state: 'hint-chips',
-    description:
-      'Vocabulary hint chips widget (accepted + pending) - lives on Proofing, catalogued under "home" for historical reasons',
+    description: 'Vocabulary hint chips widget (accepted + pending) - lives on Proofing, catalogued under "home" for historical reasons',
   },
   { page: 'home', state: 'info-tooltip', description: 'Home, info icon tooltip visible' },
 

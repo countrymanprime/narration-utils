@@ -70,10 +70,15 @@ const del = <T>(path: string) => request<T>('DELETE', path);
 export const httpClient: NarrationApi = {
   ready: () => get<HostReady>('/api/health'),
   bootstrap: () => get<Bootstrap>('/api/bootstrap').then((value) => ({ ...value, transcript: normalizeTranscriptState(value.transcript) })),
-  poll: () => get<{ revision: number; transcript: TranscriptState }>('/api/transcript/state').then((value) => ({ ...value, transcript: normalizeTranscriptState(value.transcript) })),
+  poll: () =>
+    get<{ revision: number; transcript: TranscriptState }>('/api/transcript/state').then((value) => ({
+      ...value,
+      transcript: normalizeTranscriptState(value.transcript),
+    })),
   selectManuscript: () => post<ManuscriptImportSelection>('/api/manuscript/select-file'),
   manuscriptImportState: (jobId) => get<WorkJob>(`/api/manuscript/import/${encodeURIComponent(jobId)}`),
-  manuscriptImportPreview: (jobId, markdownHeadingLevel) => post<WorkJob>(`/api/manuscript/import/${encodeURIComponent(jobId)}/preview`, { markdownHeadingLevel }),
+  manuscriptImportPreview: (jobId, markdownHeadingLevel) =>
+    post<WorkJob>(`/api/manuscript/import/${encodeURIComponent(jobId)}/preview`, { markdownHeadingLevel }),
   manuscriptImportCommit: (jobId, confirmedReset) => post<WorkJob>(`/api/manuscript/import/${encodeURIComponent(jobId)}/commit`, { confirmedReset }),
   manuscriptImportCancel: (jobId) => post(`/api/manuscript/import/${encodeURIComponent(jobId)}/cancel`),
   manuscriptLegacyPreview: () => post<ManuscriptImportSelection>('/api/manuscript/import/legacy-preview'),
@@ -98,7 +103,8 @@ export const httpClient: NarrationApi = {
   transcriptStart: (options) => post('/api/transcript/start', options),
   transcriptCancel: () => post('/api/transcript/cancel'),
   transcriptReset: () => post('/api/transcript/reset'),
-  transcriptLastCompleted: () => get<TranscriptState | null>('/api/transcript/last-completed').then((value) => (value ? normalizeTranscriptState(value) : undefined)),
+  transcriptLastCompleted: () =>
+    get<TranscriptState | null>('/api/transcript/last-completed').then((value) => (value ? normalizeTranscriptState(value) : undefined)),
   transcriptAddEquivalence: (id) => post<{ message: string }>(`/api/transcript/discrepancies/${id}/equivalence`).then((r) => r.message),
   transcriptJump: (id) => post(`/api/transcript/discrepancies/${id}/jump`),
   transcriptExportMarkers: () => post('/api/transcript/markers/export'),

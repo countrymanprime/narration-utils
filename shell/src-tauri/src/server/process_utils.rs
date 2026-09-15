@@ -64,8 +64,13 @@ impl DetachedProcess {
 /// `crate::winjob`), and drains its stdout/stderr in the background.
 pub fn start_detached(program: &str, args: &[String]) -> Result<DetachedProcess, String> {
     let mut command = command(program, args);
-    command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
-    let mut child = command.spawn().map_err(|error| format!("Could not start {program}: {error}"))?;
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let mut child = command
+        .spawn()
+        .map_err(|error| format!("Could not start {program}: {error}"))?;
 
     #[cfg(windows)]
     if let Some(handle) = child.raw_handle() {
@@ -89,7 +94,9 @@ pub fn start_detached(program: &str, args: &[String]) -> Result<DetachedProcess,
     let exit_code_writer = exit_code.clone();
     tokio::spawn(async move {
         let status = child.wait().await;
-        let code = status.map(|status| status.code().unwrap_or(-1)).unwrap_or(-1);
+        let code = status
+            .map(|status| status.code().unwrap_or(-1))
+            .unwrap_or(-1);
         *exit_code_writer.lock().await = Some(code);
     });
 

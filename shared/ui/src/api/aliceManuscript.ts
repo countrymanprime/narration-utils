@@ -59,7 +59,15 @@ export function parseAliceManuscript(
       .filter((paragraph) => paragraph.text && !/^\[Illustration/.test(paragraph.text) && !/^\*\s*\*/.test(paragraph.text));
     const firstParagraph = paragraphs.length;
     rows.forEach((row, localIndex) =>
-      paragraphs.push({ id: `p-${firstParagraph + localIndex + 1}`, chapterId: `chapter-${index + 1}`, chapter: seed.title, index: firstParagraph + localIndex, sourceLine: row.sourceLine, text: row.text, entityIds: [] }),
+      paragraphs.push({
+        id: `p-${firstParagraph + localIndex + 1}`,
+        chapterId: `chapter-${index + 1}`,
+        chapter: seed.title,
+        index: firstParagraph + localIndex,
+        sourceLine: row.sourceLine,
+        text: row.text,
+        entityIds: [],
+      }),
     );
     return {
       id: `chapter-${index + 1}`,

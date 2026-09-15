@@ -27,6 +27,8 @@ This folder records planned work for a local-first audiobook narration toolkit. 
 5. Before adding a local model, executable, or model pack, use the [local dependency evaluation and license plan](research/local-dependency-evaluation.md).
 6. For the planned move from developer bootstrap downloads to packaged-release
    first-use downloads, use the [first-use dependency provisioning brief](architecture/first-use-dependency-provisioning.md).
+7. For developer checks, GitHub Actions, release promotion, and the required
+   one-time repository settings, use [CI and releases](operations/ci-and-releases.md).
 
 ## Terms
 

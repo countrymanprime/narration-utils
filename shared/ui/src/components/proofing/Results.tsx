@@ -166,7 +166,10 @@ export function Results({
         </div>
       )}
       {state.markerExport.phase !== 'idle' && (
-        <p className={`px-3 pb-3 text-xs ${state.markerExport.phase === 'error' ? 'text-red-400' : ''}`} style={{ color: state.markerExport.phase === 'error' ? undefined : 'var(--text-muted)' }}>
+        <p
+          className={`px-3 pb-3 text-xs ${state.markerExport.phase === 'error' ? 'text-red-400' : ''}`}
+          style={{ color: state.markerExport.phase === 'error' ? undefined : 'var(--text-muted)' }}
+        >
           {state.markerExport.message}
         </p>
       )}

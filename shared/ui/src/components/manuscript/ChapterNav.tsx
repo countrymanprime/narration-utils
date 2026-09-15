@@ -33,7 +33,8 @@ export function ChapterNav({
 }) {
   const searching = Boolean(searchQuery.trim());
   const lineNumber = (paragraph?: number) => (paragraph === undefined ? undefined : (lineNumbers.get(paragraph) ?? paragraph));
-  const matchesFor = (chapter: ManuscriptChapter) => searchResults.filter((hit) => hit.chapterId === chapter.id || (!hit.chapterId && hit.chapter === chapter.title));
+  const matchesFor = (chapter: ManuscriptChapter) =>
+    searchResults.filter((hit) => hit.chapterId === chapter.id || (!hit.chapterId && hit.chapter === chapter.title));
   const visibleChapters = searching ? chapters.filter((chapter) => matchesFor(chapter).length > 0) : chapters;
   return (
     <div className="space-y-1">

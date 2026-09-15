@@ -8,10 +8,10 @@ use clap::Parser;
 #[derive(Parser, Clone, Debug)]
 #[command(name = "narration-utils-shell")]
 pub struct Args {
-    #[arg(long = "repo-root")]
+    #[arg(long = "repo-root", default_value = "")]
     pub repo_root: String,
 
-    #[arg(long = "session-dir")]
+    #[arg(long = "session-dir", default_value = "")]
     pub session_dir: String,
 
     #[arg(long = "project-folder", default_value = "")]

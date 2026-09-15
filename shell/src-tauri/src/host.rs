@@ -32,18 +32,66 @@ pub fn start(app: AppHandle, args: Args) {
 }
 
 fn build_config(app: &AppHandle, args: &Args) -> ServerConfig {
+    let packaged_root = app
+        .path()
+        .resource_dir()
+        .ok()
+        .filter(|root| root.join("shared/ui/dist/index.html").is_file());
+    let repo_root = non_empty(&args.repo_root)
+        .map(PathBuf::from)
+        .or_else(|| packaged_root.clone())
+        .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+    let session_dir = non_empty(&args.session_dir)
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            std::env::temp_dir().join(format!("narration-utils-{}", std::process::id()))
+        });
+    let runtime = packaged_root.map(|root| root.join("runtime"));
+    let manuscript_python = runtime
+        .as_ref()
+        .map(|path| executable(path, "manuscript-guide"))
+        .filter(|path| path.is_file())
+        .map(|path| path.to_string_lossy().to_string())
+        .unwrap_or_else(|| args.manuscript_python.clone());
+    let compare_python = runtime
+        .as_ref()
+        .map(|path| executable(path, "transcript-compare"))
+        .filter(|path| path.is_file())
+        .map(|path| path.to_string_lossy().to_string())
+        .unwrap_or_else(|| args.compare_python.clone());
     ServerConfig {
-        repo_root: PathBuf::from(&args.repo_root),
-        session_dir: PathBuf::from(&args.session_dir),
+        repo_root,
+        session_dir,
         project_folder: non_empty(&args.project_folder).map(PathBuf::from),
         project_name: args.project_name.clone(),
         daw: args.daw.clone(),
-        manuscript_python: args.manuscript_python.clone(),
-        manuscript_backend: args.manuscript_backend.clone(),
-        compare_python: args.compare_python.clone(),
-        compare_backend: args.compare_backend.clone(),
+        manuscript_python,
+        // A frozen sidecar receives the tool arguments directly. Dev
+        // launches retain the Python interpreter + script pairing.
+        manuscript_backend: if runtime.is_some() {
+            String::new()
+        } else {
+            args.manuscript_backend.clone()
+        },
+        compare_python,
+        compare_backend: if runtime.is_some() {
+            String::new()
+        } else {
+            args.compare_backend.clone()
+        },
         app_handle: Some(app.clone()),
     }
+}
+
+fn executable(runtime: &std::path::Path, name: &str) -> PathBuf {
+    let filename = if cfg!(windows) {
+        format!("{name}.exe")
+    } else {
+        name.to_string()
+    };
+    // PyInstaller's onedir layout keeps its Python shared libraries beside
+    // the entry executable, so do not flatten this path when packaging.
+    runtime.join(name).join(filename)
 }
 
 fn non_empty(value: &str) -> Option<&str> {
@@ -101,8 +149,11 @@ fn navigate(app: &AppHandle, port: u16) {
 fn show_startup_error(app: &AppHandle, message: &str) {
     eprintln!("Narration Utils shell: startup error: {message}");
     if let Some(window) = app.get_webview_window("main") {
-        let escaped = message.replace('\\', "\\\\").replace('\'', "\\'").replace('\n', "\\n");
-        let _ = window.eval(&format!(
+        let escaped = message
+            .replace('\\', "\\\\")
+            .replace('\'', "\\'")
+            .replace('\n', "\\n");
+        let _ = window.eval(format!(
             "document.body.innerText = 'Narration Utils could not start: {escaped}';"
         ));
     }

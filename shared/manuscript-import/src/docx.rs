@@ -19,7 +19,10 @@ use std::path::Path;
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::Reader;
 
-use crate::model::{classify_pre_heading, collapse_whitespace, non_chapter_headings, Draft, ManuscriptError, Paragraph};
+use crate::model::{
+    classify_pre_heading, collapse_whitespace, non_chapter_headings, Draft, ManuscriptError,
+    Paragraph,
+};
 
 struct ParagraphRecord {
     text: String,
@@ -79,7 +82,10 @@ fn parse_style_names(styles_xml: &str) -> HashMap<String, String> {
     names
 }
 
-fn parse_paragraph_records(document_xml: &str, style_names: &HashMap<String, String>) -> Vec<ParagraphRecord> {
+fn parse_paragraph_records(
+    document_xml: &str,
+    style_names: &HashMap<String, String>,
+) -> Vec<ParagraphRecord> {
     let mut records = Vec::new();
     let mut reader = Reader::from_str(document_xml);
     reader.config_mut().trim_text(false);
@@ -131,10 +137,18 @@ fn parse_paragraph_records(document_xml: &str, style_names: &HashMap<String, Str
                     in_paragraph = false;
                     let trimmed = text.trim().to_string();
                     if !trimmed.is_empty() {
-                        let style_name = style_id.as_ref().and_then(|id| style_names.get(id)).cloned().unwrap_or_default();
+                        let style_name = style_id
+                            .as_ref()
+                            .and_then(|id| style_names.get(id))
+                            .cloned()
+                            .unwrap_or_default();
                         let is_heading = style_name.starts_with("heading") || style_name == "title";
-                        let is_heading_outline = is_heading || outline_level.map(|v| v < 9).unwrap_or(false);
-                        records.push(ParagraphRecord { text: trimmed, is_heading_outline });
+                        let is_heading_outline =
+                            is_heading || outline_level.map(|v| v < 9).unwrap_or(false);
+                        records.push(ParagraphRecord {
+                            text: trimmed,
+                            is_heading_outline,
+                        });
                     }
                 }
                 _ => {}
@@ -149,12 +163,15 @@ fn parse_paragraph_records(document_xml: &str, style_names: &HashMap<String, Str
 }
 
 pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
-    let file = std::fs::File::open(path).map_err(|e| ManuscriptError(format!("Could not open this Word document: {e}")))?;
-    let mut archive = zip::ZipArchive::new(file).map_err(|e| ManuscriptError(format!("Could not read this Word document: {e}")))?;
+    let file = std::fs::File::open(path)
+        .map_err(|e| ManuscriptError(format!("Could not open this Word document: {e}")))?;
+    let mut archive = zip::ZipArchive::new(file)
+        .map_err(|e| ManuscriptError(format!("Could not read this Word document: {e}")))?;
 
     let styles_xml = read_zip_entry(&mut archive, "word/styles.xml").unwrap_or_default();
-    let document_xml = read_zip_entry(&mut archive, "word/document.xml")
-        .ok_or_else(|| ManuscriptError("This .docx file is missing its document contents.".to_string()))?;
+    let document_xml = read_zip_entry(&mut archive, "word/document.xml").ok_or_else(|| {
+        ManuscriptError("This .docx file is missing its document contents.".to_string())
+    })?;
 
     let style_names = parse_style_names(&styles_xml);
     let records = parse_paragraph_records(&document_xml, &style_names);
@@ -166,7 +183,10 @@ pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
     let mut titles = Vec::new();
     let first_heading = records
         .iter()
-        .position(|record| record.is_heading_outline && !non_chapter.contains(collapse_whitespace(&record.text).to_lowercase().as_str()))
+        .position(|record| {
+            record.is_heading_outline
+                && !non_chapter.contains(collapse_whitespace(&record.text).to_lowercase().as_str())
+        })
         .unwrap_or(records.len());
     let pre_heading_indexes: Vec<usize> = records
         .iter()
@@ -174,7 +194,10 @@ pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
         .filter(|(index, record)| *index < first_heading && !record.is_heading_outline)
         .map(|(index, _)| index)
         .collect();
-    let pre_heading: Vec<String> = pre_heading_indexes.iter().map(|index| collapse_whitespace(&records[*index].text)).collect();
+    let pre_heading: Vec<String> = pre_heading_indexes
+        .iter()
+        .map(|index| collapse_whitespace(&records[*index].text))
+        .collect();
     let pre_heading_kinds = classify_pre_heading(&pre_heading);
     let mut pre_heading_kind_by_record = vec![None; records.len()];
     for (index, kind) in pre_heading_indexes.into_iter().zip(pre_heading_kinds) {
@@ -187,7 +210,11 @@ pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
             if non_chapter.contains(text.to_lowercase().as_str()) {
                 continue;
             }
-            let mut lines = record.text.lines().map(collapse_whitespace).filter(|line| !line.is_empty());
+            let mut lines = record
+                .text
+                .lines()
+                .map(collapse_whitespace)
+                .filter(|line| !line.is_empty());
             let title = lines.next().unwrap_or_default();
             chapter_subtitle = {
                 let subtitle = lines.collect::<Vec<_>>().join(" ");
@@ -210,6 +237,9 @@ pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
         });
     }
 
-    let source_name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+    let source_name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
     Draft::new("docx", source_name, paragraphs, titles)
 }

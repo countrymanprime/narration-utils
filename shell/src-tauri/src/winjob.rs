@@ -11,7 +11,8 @@ use std::os::windows::io::RawHandle;
 use windows::Win32::Foundation::HANDLE;
 use windows::Win32::System::JobObjects::{
     AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation,
-    SetInformationJobObject, JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+    SetInformationJobObject, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
 };
 
 /// Assigns a process (identified by its raw OS handle) to a fresh job
@@ -50,9 +51,12 @@ pub fn bind_to_job_object(handle: RawHandle) {
         }
 
         let process_handle = HANDLE(handle);
-        let assign_result: windows::core::Result<()> = AssignProcessToJobObject(job, process_handle);
+        let assign_result: windows::core::Result<()> =
+            AssignProcessToJobObject(job, process_handle);
         if let Err(err) = assign_result {
-            eprintln!("Narration Utils shell: could not assign backend process to job object: {err}");
+            eprintln!(
+                "Narration Utils shell: could not assign backend process to job object: {err}"
+            );
         }
     }
 }

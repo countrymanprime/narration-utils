@@ -226,7 +226,10 @@ export function GuideDetail({
               <div className="form-control form-control--readonly f-mono" style={{ paddingRight: '2.75rem' }}>
                 {entity.pronunciation.ipa || 'Not generated'}
               </div>
-              <TooltipTarget text="Play provider-generated pronunciation" style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}>
+              <TooltipTarget
+                text="Play provider-generated pronunciation"
+                style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}
+              >
                 <button
                   aria-label="Play preview"
                   className="icon-btn"
@@ -263,7 +266,7 @@ export function GuideDetail({
             <tbody>
               {entity.aliases.map((alias, index) => (
                 <tr key={alias.text}>
-                  <td className="align-middle f-mono text-sm">{alias.text}</td>
+                  <td className="f-mono align-middle text-sm">{alias.text}</td>
                   <td className="align-middle">
                     <div style={{ position: 'relative', width: '100%' }}>
                       <div className="form-control form-control--readonly f-mono text-xs" style={{ paddingRight: '2.75rem' }}>
@@ -289,8 +292,8 @@ export function GuideDetail({
                       </TooltipTarget>
                     </div>
                   </td>
-                  <td className="align-middle f-mono">{alias.occurrences.length}</td>
-                  <td className="align-middle text-right">
+                  <td className="f-mono align-middle">{alias.occurrences.length}</td>
+                  <td className="text-right align-middle">
                     <button
                       className="icon-btn"
                       aria-label={`Remove alias ${alias.text}`}

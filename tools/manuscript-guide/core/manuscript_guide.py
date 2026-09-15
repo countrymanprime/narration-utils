@@ -190,8 +190,7 @@ def document_hash(path: str) -> str:
 def load_manuscript(path: str) -> list[dict[str, str]]:
     data = canonical_manuscript.load_file(path)
     paragraphs = [
-        {"chapter": item["chapterTitle"], "chapterId": item["chapterId"], "paragraphId": item["id"], "text": item["text"]}
-        for item in data["paragraphs"]
+        {"chapter": item["chapterTitle"], "chapterId": item["chapterId"], "paragraphId": item["id"], "text": item["text"]} for item in data["paragraphs"]
     ]
     if not paragraphs:
         raise ValueError("The manuscript has no readable text paragraphs.")
@@ -228,7 +227,15 @@ def find_occurrences(paragraphs: list[dict[str, str]], name: str) -> list[dict[s
     for para_index, paragraph in enumerate(paragraphs):
         text = paragraph["text"]
         for match in pattern.finditer(text):
-            found.append({"chapter": paragraph["chapter"], "chapterId": paragraph["chapterId"], "paragraph": para_index, "paragraphId": paragraph["paragraphId"], "excerpt": excerpt(text, match.start(), match.end())})
+            found.append(
+                {
+                    "chapter": paragraph["chapter"],
+                    "chapterId": paragraph["chapterId"],
+                    "paragraph": para_index,
+                    "paragraphId": paragraph["paragraphId"],
+                    "excerpt": excerpt(text, match.start(), match.end()),
+                }
+            )
     return found
 
 
@@ -503,10 +510,7 @@ def load_json(path: str) -> dict[str, Any] | None:
     for entity in data.get("entities", []) if isinstance(data, dict) else []:
         aliases = entity.get("aliases")
         if isinstance(aliases, list):
-            entity["aliases"] = [
-                alias if isinstance(alias, dict) else {"text": alias, "pronunciation": {}, "occurrences": []}
-                for alias in aliases
-            ]
+            entity["aliases"] = [alias if isinstance(alias, dict) else {"text": alias, "pronunciation": {}, "occurrences": []} for alias in aliases]
     return data
 
 

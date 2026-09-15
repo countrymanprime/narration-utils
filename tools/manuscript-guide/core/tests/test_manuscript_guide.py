@@ -62,7 +62,10 @@ def _write_manuscript(root: Path, chapter_title: str, paragraph_texts: list[str]
 class ManuscriptGuideTests(unittest.TestCase):
     def test_spacy_empty_result_does_not_activate_rule_fallback(self):
         paragraphs = [{"chapter": "Chapter 1", "text": "Captain Arelian arrives."}]
-        with patch.object(guide, "spacy_candidates", return_value=[]), patch.object(guide, "rule_candidates", side_effect=AssertionError("rules should not run")):
+        with (
+            patch.object(guide, "spacy_candidates", return_value=[]),
+            patch.object(guide, "rule_candidates", side_effect=AssertionError("rules should not run")),
+        ):
             self.assertEqual([], guide.build_entities(paragraphs, "unused", None))
 
     def test_rule_fallback_strips_articles_and_prunes_singletons(self):

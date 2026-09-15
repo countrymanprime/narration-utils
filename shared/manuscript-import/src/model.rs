@@ -58,11 +58,19 @@ pub fn classify_pre_heading(paragraphs: &[String]) -> Vec<SectionKind> {
                 let lower = line.trim().to_ascii_lowercase();
                 lower.starts_with("by ") || lower.contains("copyright") || lower.contains("author")
             })))
-        || paragraphs.first().is_some_and(|line| line.trim().to_ascii_lowercase().starts_with("title:"));
+        || paragraphs
+            .first()
+            .is_some_and(|line| line.trim().to_ascii_lowercase().starts_with("title:"));
     paragraphs
         .iter()
         .enumerate()
-        .map(|(index, _)| if has_cover && index < cover_count { SectionKind::Cover } else { SectionKind::FrontMatter })
+        .map(|(index, _)| {
+            if has_cover && index < cover_count {
+                SectionKind::Cover
+            } else {
+                SectionKind::FrontMatter
+            }
+        })
         .collect()
 }
 
@@ -88,7 +96,10 @@ mod tests {
             "Copyright 2026 Example Press".to_string(),
             "This edition was prepared for narration.".to_string(),
         ]);
-        assert_eq!(kinds[..3], [SectionKind::Cover, SectionKind::Cover, SectionKind::Cover]);
+        assert_eq!(
+            kinds[..3],
+            [SectionKind::Cover, SectionKind::Cover, SectionKind::Cover]
+        );
         assert_eq!(kinds[3], SectionKind::FrontMatter);
     }
 }
@@ -103,10 +114,22 @@ pub fn collapse_whitespace(value: &str) -> String {
 pub struct ManuscriptError(pub String);
 
 impl Draft {
-    pub fn new(format: &'static str, source_name: String, paragraphs: Vec<Paragraph>, chapter_titles: Vec<String>) -> Result<Draft, ManuscriptError> {
+    pub fn new(
+        format: &'static str,
+        source_name: String,
+        paragraphs: Vec<Paragraph>,
+        chapter_titles: Vec<String>,
+    ) -> Result<Draft, ManuscriptError> {
         if paragraphs.is_empty() {
-            return Err(ManuscriptError("The manuscript has no readable text paragraphs.".to_string()));
+            return Err(ManuscriptError(
+                "The manuscript has no readable text paragraphs.".to_string(),
+            ));
         }
-        Ok(Draft { format, source_name, paragraphs, chapter_titles })
+        Ok(Draft {
+            format,
+            source_name,
+            paragraphs,
+            chapter_titles,
+        })
     }
 }

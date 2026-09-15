@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "cargo tauri dev",
-    "build": "cargo tauri build"
+    "build": "cargo tauri build",
+    "build:windows": "cargo tauri build --config src-tauri/tauri.release.conf.json --bundles nsis",
+    "build:macos": "cargo tauri build --config src-tauri/tauri.release.conf.json --bundles dmg",
+    "build:linux": "cargo tauri build --config src-tauri/tauri.release.conf.json --bundles appimage,deb"
   }
 }

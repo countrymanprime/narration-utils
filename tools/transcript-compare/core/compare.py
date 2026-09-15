@@ -444,7 +444,7 @@ def build_concatenated_audio(segments, progress_path=None):
     for i, seg in enumerate(segments):
         check_cancelled(progress_path)
         write_progress(progress_path, "DECODE", 2 + int(13 * i / max(1, n)), f"Decoding item {i + 1}/{n}")
-        log(f"Decoding item {seg['item_index']}: {seg['source_file']} " f"[{seg['start_offset']:.2f}s, {seg['length']:.2f}s]")
+        log(f"Decoding item {seg['item_index']}: {seg['source_file']} [{seg['start_offset']:.2f}s, {seg['length']:.2f}s]")
         audio = decode_segment(seg["source_file"], seg["start_offset"], seg["length"])
         pieces.append(audio)
         seg = dict(seg)
@@ -623,7 +623,7 @@ def transcribe_chunked(full_audio, model_size, language, device, progress_path, 
             }
         )
     n_chunks = len(chunks)
-    log(f"Chunked transcription: {n_chunks} chunk(s) of ~{chunk_seconds}s " f"(with {CHUNK_OVERLAP_SECONDS}s overlap between neighbors)")
+    log(f"Chunked transcription: {n_chunks} chunk(s) of ~{chunk_seconds}s (with {CHUNK_OVERLAP_SECONDS}s overlap between neighbors)")
 
     max_by_model = MAX_WORKERS_BY_MODEL.get(model_size, 2)
     if device == "cuda":
@@ -760,7 +760,10 @@ def transcribe_chunked(full_audio, model_size, language, device, progress_path, 
 def load_manuscript_chapters(manuscript_path):
     """Return comparison chapters from canonical manuscript data only."""
     data = canonical_manuscript.load_file(manuscript_path)
-    by_chapter = {chapter["id"]: {"id": chapter["id"], "title": chapter["title"], "paragraphs": [], "global_indices": [], "paragraph_ids": []} for chapter in data["chapters"]}
+    by_chapter = {
+        chapter["id"]: {"id": chapter["id"], "title": chapter["title"], "paragraphs": [], "global_indices": [], "paragraph_ids": []}
+        for chapter in data["chapters"]
+    }
     for paragraph in data["paragraphs"]:
         chapter = by_chapter[paragraph["chapterId"]]
         chapter["paragraphs"].append(paragraph["text"])
@@ -1445,7 +1448,7 @@ def run(args):
 
     diff_path = write_unified_diff(chapter, transcript_words, args.diff_out, covered_range, sentence_units, alignment)
 
-    summary = f"MATCH: '{display_title(chapter['title'])}' (score {score:.2f}) - " f"{len(markers)} discrepancy marker(s)"
+    summary = f"MATCH: '{display_title(chapter['title'])}' (score {score:.2f}) - {len(markers)} discrepancy marker(s)"
 
     check_cancelled(progress_path)
     write_progress(progress_path, "WRITE", 99, "Writing results...")
@@ -1503,7 +1506,9 @@ def main():
     )
     ap.add_argument("--parallel-workers", type=int, default=0, help="Max chunk workers to run at once when chunked (0 = auto, based on model size)")
     ap.add_argument(
-        "--extract-hints", action="store_true", help="Instead of transcribing, scan --manuscript for candidate vocabulary-hint terms and write them to --hints-out"
+        "--extract-hints",
+        action="store_true",
+        help="Instead of transcribing, scan --manuscript for candidate vocabulary-hint terms and write them to --hints-out",
     )
     ap.add_argument("--hints-out", default=None, help="Path to write suggested hint terms to (used with --extract-hints)")
     args = ap.parse_args()

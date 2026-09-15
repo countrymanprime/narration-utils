@@ -8,11 +8,14 @@ use crate::model::{classify_pre_heading, collapse_whitespace, Draft, ManuscriptE
 
 pub fn build_draft(path: &Path, heading_level: u8) -> Result<Draft, ManuscriptError> {
     if !(1..=6).contains(&heading_level) {
-        return Err(ManuscriptError("Markdown chapter heading level must be between H1 and H6.".to_string()));
+        return Err(ManuscriptError(
+            "Markdown chapter heading level must be between H1 and H6.".to_string(),
+        ));
     }
     let heading_re = Regex::new(r"^(#{1,6})\s+(.+?)\s*#*\s*$").unwrap();
 
-    let raw = std::fs::read_to_string(path).map_err(|e| ManuscriptError(format!("Could not read this Markdown file: {e}")))?;
+    let raw = std::fs::read_to_string(path)
+        .map_err(|e| ManuscriptError(format!("Could not read this Markdown file: {e}")))?;
     // Mirrors Python's `encoding="utf-8-sig"`: strip a leading BOM if present.
     let content = raw.strip_prefix('\u{FEFF}').unwrap_or(&raw);
 
@@ -22,7 +25,10 @@ pub fn build_draft(path: &Path, heading_level: u8) -> Result<Draft, ManuscriptEr
     let mut titles: Vec<String> = Vec::new();
     let mut pending: Vec<String> = Vec::new();
 
-    let flush = |pending: &mut Vec<String>, chapter: &str, section: &Option<String>, paragraphs: &mut Vec<Paragraph>| {
+    let flush = |pending: &mut Vec<String>,
+                 chapter: &str,
+                 section: &Option<String>,
+                 paragraphs: &mut Vec<Paragraph>| {
         if !pending.is_empty() {
             let body = collapse_whitespace(&pending.join(" "));
             if !body.is_empty() {
@@ -75,6 +81,9 @@ pub fn build_draft(path: &Path, heading_level: u8) -> Result<Draft, ManuscriptEr
         paragraph.chapter = kind.chapter_name().to_string();
     }
 
-    let source_name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+    let source_name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
     Draft::new("markdown", source_name, paragraphs, titles)
 }

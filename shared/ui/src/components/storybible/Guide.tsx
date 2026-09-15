@@ -21,13 +21,7 @@ const TAB_PLURAL: Record<string, string> = {
   'Needs Review': 'Needs Review',
 };
 
-export function Guide({
-  notify,
-  goToManuscript,
-}: {
-  notify: (text: string) => void;
-  goToManuscript: (chapter: string, paragraph: number) => void;
-}) {
+export function Guide({ notify, goToManuscript }: { notify: (text: string) => void; goToManuscript: (chapter: string, paragraph: number) => void }) {
   const api = useApi();
   const location = useLocation();
   const routerNavigate = useNavigate();
@@ -55,18 +49,27 @@ export function Guide({
   useEffect(() => {
     if (!buildJob?.id || !['preparing', 'running'].includes(buildJob.phase)) return;
     let active = true;
-    const refresh = () => void api.guideBuildState().then((next) => {
-      if (!active) return;
-      setBuildJob(next);
-      if (next.phase === 'success') {
-        void load();
-        notify(next.result?.message || 'Story Bible rebuilt.');
-        setBuildJob(undefined);
-      }
-    }).catch((error) => active && setBuildJob((current) => current ? { ...current, phase: 'error', error: String(error), message: String(error) } : current));
+    const refresh = () =>
+      void api
+        .guideBuildState()
+        .then((next) => {
+          if (!active) return;
+          setBuildJob(next);
+          if (next.phase === 'success') {
+            void load();
+            notify(next.result?.message || 'Story Bible rebuilt.');
+            setBuildJob(undefined);
+          }
+        })
+        .catch(
+          (error) => active && setBuildJob((current) => (current ? { ...current, phase: 'error', error: String(error), message: String(error) } : current)),
+        );
     refresh();
     const timer = window.setInterval(refresh, 250);
-    return () => { active = false; window.clearInterval(timer); };
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
   }, [api, buildJob?.id, buildJob?.phase]);
 
   // A Draft entry (a brand new, not-yet-categorized entity) is hidden from

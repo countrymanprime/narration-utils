@@ -16,4 +16,9 @@ logs/
 shell/src-tauri/target/
 shell/src-tauri/gen/
 shared/manuscript-import/target/
+shell/src-tauri/resources/
+.release-build/
+.nx/
+.test-tmp/
+release-notes.md
 target/

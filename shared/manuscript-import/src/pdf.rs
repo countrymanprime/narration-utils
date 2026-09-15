@@ -24,8 +24,10 @@ use regex::Regex;
 use crate::model::{classify_pre_heading, collapse_whitespace, Draft, ManuscriptError, Paragraph};
 
 pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
-    let bytes = std::fs::read(path).map_err(|e| ManuscriptError(format!("Could not read this PDF: {e}")))?;
-    let text = pdf_extract::extract_text_from_mem(&bytes).map_err(|e| ManuscriptError(format!("Could not read this PDF: {e}")))?;
+    let bytes = std::fs::read(path)
+        .map_err(|e| ManuscriptError(format!("Could not read this PDF: {e}")))?;
+    let text = pdf_extract::extract_text_from_mem(&bytes)
+        .map_err(|e| ManuscriptError(format!("Could not read this PDF: {e}")))?;
 
     let whitespace_re = Regex::new(r"\s+").unwrap();
     if whitespace_re.replace_all(&text, "").len() < 80 {
@@ -42,12 +44,17 @@ pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
     let mut titles: Vec<String> = Vec::new();
 
     for block in block_split_re.split(&text) {
-        let lines: Vec<String> = block.lines().map(collapse_whitespace).filter(|l| !l.is_empty()).collect();
+        let lines: Vec<String> = block
+            .lines()
+            .map(collapse_whitespace)
+            .filter(|l| !l.is_empty())
+            .collect();
         if lines.is_empty() {
             continue;
         }
         let candidate = &lines[0];
-        let is_chapter = chapter_prefix_re.is_match(candidate) || (lines.len() == 1 && candidate.chars().count() <= 90 && is_upper(candidate));
+        let is_chapter = chapter_prefix_re.is_match(candidate)
+            || (lines.len() == 1 && candidate.chars().count() <= 90 && is_upper(candidate));
         if is_chapter {
             chapter = candidate.clone();
             titles.push(candidate.clone());
@@ -75,7 +82,10 @@ pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
         paragraph.chapter = kind.chapter_name().to_string();
     }
 
-    let source_name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+    let source_name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
     Draft::new("pdf", source_name, paragraphs, titles)
 }
 

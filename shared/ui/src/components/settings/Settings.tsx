@@ -154,10 +154,13 @@ export function Settings({
                 <div className="rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
                   <div className="font-medium">Clear derived project data</div>
                   <div className="mt-1" style={{ color: 'var(--text-muted)' }}>
-                    Removes the imported manuscript and stored source, Story Bible, proofing artifacts, reader notes/bookmarks, and saved comparison results. Settings remain.
+                    Removes the imported manuscript and stored source, Story Bible, proofing artifacts, reader notes/bookmarks, and saved comparison results.
+                    Settings remain.
                   </div>
                 </div>
-                <button className="btn btn-danger" onClick={() => setConfirmClearProjectData(true)}>Clear derived project data…</button>
+                <button className="btn btn-danger" onClick={() => setConfirmClearProjectData(true)}>
+                  Clear derived project data…
+                </button>
               </div>
             ) : (
               <form
@@ -229,11 +232,16 @@ export function Settings({
           title="Clear derived project data?"
           body="This permanently removes the imported manuscript and stored source, Story Bible and proofing data, reader notes/bookmarks, and saved comparison results for this project. Settings will remain."
           confirmLabel="Clear project data"
-          confirm={() => void api.clearProjectData().then(() => {
-            setConfirmClearProjectData(false);
-            notify('Derived project data cleared.');
-            window.setTimeout(() => location.reload(), 0);
-          }).catch((error) => notify(String(error)))}
+          confirm={() =>
+            void api
+              .clearProjectData()
+              .then(() => {
+                setConfirmClearProjectData(false);
+                notify('Derived project data cleared.');
+                window.setTimeout(() => location.reload(), 0);
+              })
+              .catch((error) => notify(String(error)))
+          }
           cancel={() => setConfirmClearProjectData(false)}
         />
       )}

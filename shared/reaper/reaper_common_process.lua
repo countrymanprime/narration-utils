@@ -4,7 +4,7 @@
 local M = {}
 
 local function quote(v)
-  return '"' .. tostring(v or ""):gsub('"', '""') .. '"'
+  return '"' .. tostring(v or ''):gsub('"', '""') .. '"'
 end
 M.quote = quote
 
@@ -31,15 +31,17 @@ M.quote = quote
 --                  returns, since os.execute only sees wscript.exe's status.
 function M.run_hidden(scratch_dir, command, opts)
   opts = opts or {}
-  local vbs_path = scratch_dir .. "\\run_" .. tostring(reaper.time_precise()):gsub("[%.]", "") .. ".vbs"
-  local vf = io.open(vbs_path, "w")
-  if not vf then return false end
+  local vbs_path = scratch_dir .. '\\run_' .. tostring(reaper.time_precise()):gsub('[%.]', '') .. '.vbs'
+  local vf = io.open(vbs_path, 'w')
+  if not vf then
+    return false
+  end
   vf:write('Set shell = CreateObject("WScript.Shell")\r\n')
   if opts.cwd then
     vf:write('shell.CurrentDirectory = "' .. opts.cwd:gsub('"', '""') .. '"\r\n')
   end
-  local wait_flag = opts.wait and "True" or "False"
-  local window_style = opts.show_window and "1" or "0"
+  local wait_flag = opts.wait and 'True' or 'False'
+  local window_style = opts.show_window and '1' or '0'
   if opts.wait and opts.exit_code_path then
     vf:write('code = shell.Run("' .. command:gsub('"', '""') .. '", ' .. window_style .. ', True)\r\n')
     vf:write('Set fso = CreateObject("Scripting.FileSystemObject")\r\n')
@@ -64,9 +66,11 @@ end
 -- Shell.Application's ShellExecute is the actual association-aware API -
 -- the same one Explorer itself uses for a double-click.
 function M.open_file_with_default_app(scratch_dir, path)
-  local vbs_path = scratch_dir .. "\\open_" .. tostring(reaper.time_precise()):gsub("[%.]", "") .. ".vbs"
-  local vf = io.open(vbs_path, "w")
-  if not vf then return false end
+  local vbs_path = scratch_dir .. '\\open_' .. tostring(reaper.time_precise()):gsub('[%.]', '') .. '.vbs'
+  local vf = io.open(vbs_path, 'w')
+  if not vf then
+    return false
+  end
   vf:write('CreateObject("Shell.Application").ShellExecute "' .. path:gsub('"', '""') .. '", "", "", "open", 1\r\n')
   vf:close()
   local result = os.execute('wscript.exe //B //Nologo ' .. quote(vbs_path))
@@ -80,8 +84,10 @@ function M.split_pipe(s, n)
   local fields = {}
   local start = 1
   while #fields < n - 1 do
-    local pipe_pos = s:find("|", start, true)
-    if not pipe_pos then break end
+    local pipe_pos = s:find('|', start, true)
+    if not pipe_pos then
+      break
+    end
     fields[#fields + 1] = s:sub(start, pipe_pos - 1)
     start = pipe_pos + 1
   end
@@ -91,7 +97,9 @@ end
 
 -- Percent-decodes %XX escapes (used by Manuscript Guide's index protocol).
 function M.percent_decode(s)
-  return (s:gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end))
+  return (s:gsub('%%(%x%x)', function(h)
+    return string.char(tonumber(h, 16))
+  end))
 end
 
 return M

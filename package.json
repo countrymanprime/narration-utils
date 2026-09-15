@@ -1,0 +1,23 @@
+{
+  "name": "narration-utils",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Release and developer tooling for Narration Utils.",
+  "scripts": {
+    "prepare": "husky",
+    "check": "node scripts/quality.mjs check",
+    "check:fast": "node scripts/quality.mjs staged",
+    "release:sync": "node scripts/release/sync-version.mjs",
+    "release:check": "node scripts/release/sync-version.mjs --check",
+    "release:notes": "node scripts/release/generate-notes.mjs",
+    "release:assets": "node scripts/release/collect-assets.mjs",
+    "release:verify-installable": "node scripts/release/verify-installable.mjs"
+  },
+  "devDependencies": {
+    "@nx/js": "^22.4.1",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "husky": "^9.1.7",
+    "nx": "^22.4.1"
+  }
+}

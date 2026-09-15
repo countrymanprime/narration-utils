@@ -207,7 +207,7 @@ export function Home({
             <p className="mt-3 text-xs">Detected chapters: {importJob.preview.chapterTitles.join(' · ')}</p>
           )}
           <div className="mt-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-            <div className="mb-1.5 section-label">Preview activity</div>
+            <div className="section-label mb-1.5">Preview activity</div>
             <div className="progressbar">
               <div style={{ width: `${importJob.percent}%` }} />
             </div>
