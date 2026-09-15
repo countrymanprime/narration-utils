@@ -68,6 +68,23 @@ class GuideService:
             raise GuideError(result[2].strip() if result[2].strip() else "Manuscript Guide build failed.")
         return "Guide rebuilt."
 
+    def start_build(self, progress_path: str, log_path: str):
+        """Launch a rebuild without making the HTTP request wait for NLP."""
+        manuscript, guide_path, data_dir = self._manuscript, self._guide_path, self._data_dir
+        if manuscript is None or guide_path is None or data_dir is None:
+            raise GuideError("Save the REAPER project and import a manuscript first.")
+        if not os.path.isfile(self._python_exe):
+            raise GuideError("Configure the Manuscript Guide Python executable before continuing.")
+        if not os.path.isfile(self._backend):
+            raise GuideError("Configure the Manuscript Guide backend before continuing.")
+        os.makedirs(data_dir, exist_ok=True)
+        model, _ = cfg.get("ManuscriptGuide", "spacy_model", self._project_folder, "en_core_web_sm")
+        espeak, _ = cfg.get("ManuscriptGuide", "espeak_library", self._project_folder, "")
+        args = ["build", "--manuscript", manuscript, "--out", guide_path, "--spacy-model", model, "--progress", progress_path, "--log", log_path]
+        if espeak:
+            args += ["--espeak-library", espeak]
+        return process_utils.start_detached_silently(self._python_exe, [self._backend, *args]), guide_path
+
     def entities(self) -> list:
         guide_path = self._guide_path
         if guide_path is None or not os.path.isfile(guide_path):

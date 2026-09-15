@@ -78,6 +78,10 @@ class ImportOptionsRequest(BaseModel):
     confirmedReset: bool = False
 
 
+class ConfirmRequest(BaseModel):
+    confirmed: bool = False
+
+
 class ErrorToJsonMiddleware:
     """Wraps any unhandled exception as a JSON error body, mirroring
     HubWebApp.cs's catch-all. Also touches hub.last_activity_at on every
@@ -239,17 +243,31 @@ def build_app(hub: HubState, ui_dist_dir: str, audio_dir: str | None = None, shu
         except HubError as exc:
             _bad_request(exc)
 
-    @api.post("/manuscript/import/preview")
-    def manuscript_import_preview(body: ImportOptionsRequest):
+    @api.get("/manuscript/import/{job_id}")
+    def manuscript_import_state(job_id: str):
         try:
-            return hub.manuscript_import_preview(body.markdownHeadingLevel)
+            return hub.manuscript_import_state(job_id)
         except HubError as exc:
             _bad_request(exc)
 
-    @api.post("/manuscript/import/commit")
-    def manuscript_import_commit(body: ImportOptionsRequest):
+    @api.post("/manuscript/import/{job_id}/preview")
+    def manuscript_import_preview_for_job(job_id: str, body: ImportOptionsRequest):
         try:
-            return hub.manuscript_import_commit(body.markdownHeadingLevel, body.confirmedReset)
+            return hub.manuscript_import_preview(job_id, body.markdownHeadingLevel)
+        except HubError as exc:
+            _bad_request(exc)
+
+    @api.post("/manuscript/import/{job_id}/commit", status_code=202)
+    def manuscript_import_commit(job_id: str, body: ImportOptionsRequest):
+        try:
+            return hub.manuscript_import_commit(job_id, body.confirmedReset)
+        except HubError as exc:
+            _bad_request(exc)
+
+    @api.post("/manuscript/import/{job_id}/cancel")
+    def manuscript_import_cancel(job_id: str):
+        try:
+            hub.manuscript_import_cancel(job_id)
         except HubError as exc:
             _bad_request(exc)
 
@@ -274,16 +292,27 @@ def build_app(hub: HubState, ui_dist_dir: str, audio_dir: str | None = None, shu
         except HubError as exc:
             _bad_request(exc)
 
+    @api.post("/project-data/clear")
+    def project_data_clear(body: ConfirmRequest):
+        try:
+            hub.clear_project_data(body.confirmed)
+        except HubError as exc:
+            _bad_request(exc)
+
     @api.get("/guide/entities")
     def guide_entities():
         return hub.guide_entities()
 
-    @api.post("/guide/build")
+    @api.post("/guide/build", status_code=202)
     def guide_build():
         try:
-            return {"message": hub.guide_build()}
+            return hub.guide_build_start()
         except HubError as exc:
             _bad_request(exc)
+
+    @api.get("/guide/build")
+    def guide_build_state():
+        return hub.guide_build_state()
 
     @api.post("/guide/entities")
     def guide_create(body: CreateEntityRequest):

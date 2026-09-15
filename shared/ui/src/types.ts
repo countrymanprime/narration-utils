@@ -110,7 +110,20 @@ export type ReaderBookmark = {
 export type ReaderState = { activeChapter?: string; activeSourceLine?: number; expandedChapters?: string[]; bookmarks: ReaderBookmark[] };
 export type SearchHit = { chapter: string; chapterId?: string; paragraph: number; paragraphId?: string; sourceLine?: number; excerpt: string };
 export type ManuscriptImportPreview = { format: 'docx' | 'markdown' | 'pdf'; sourceName: string; paragraphCount: number; chapterTitles: string[] };
-export type ManuscriptImportSelection = { selected: boolean; requiresReset?: boolean; preview?: ManuscriptImportPreview };
+export type WorkJob = {
+  id: string | null;
+  kind: 'manuscript_import' | 'story_bible';
+  phase: 'idle' | 'preparing' | 'ready' | 'committing' | 'running' | 'success' | 'cancelled' | 'error';
+  message: string;
+  percent: number;
+  logs: string[];
+  elapsed: number;
+  preview?: ManuscriptImportPreview | null;
+  requiresReset?: boolean;
+  result?: { id?: string; format?: string; sourceName?: string; importedAt?: string; message?: string } | null;
+  error?: string;
+};
+export type ManuscriptImportSelection = { selected: boolean; jobId?: string };
 export type ManuscriptReader = { chapters: ManuscriptChapter[]; paragraphs: ManuscriptParagraph[]; notes: ManuscriptNote[] };
 
 export interface NarrationApi {
@@ -118,12 +131,16 @@ export interface NarrationApi {
   bootstrap(): Promise<Bootstrap>;
   poll(revision: number): Promise<{ revision: number; transcript: TranscriptState }>;
   selectManuscript(): Promise<ManuscriptImportSelection>;
-  manuscriptImportPreview(markdownHeadingLevel: number): Promise<ManuscriptImportSelection>;
-  manuscriptImportCommit(markdownHeadingLevel: number, confirmedReset: boolean): Promise<Bootstrap['manuscript']>;
+  manuscriptImportState(jobId: string): Promise<WorkJob>;
+  manuscriptImportPreview(jobId: string, markdownHeadingLevel: number): Promise<WorkJob>;
+  manuscriptImportCommit(jobId: string, confirmedReset: boolean): Promise<WorkJob>;
+  manuscriptImportCancel(jobId: string): Promise<void>;
   manuscriptLegacyPreview(): Promise<ManuscriptImportSelection>;
   saveSettings(tool: string, scope: Scope, values: Record<string, string | null>): Promise<Bootstrap>;
   settingsForScope(scope: Scope): Promise<Record<string, ScopedSettingField[]>>;
-  guideBuild(): Promise<string>;
+  guideBuild(): Promise<WorkJob>;
+  guideBuildState(): Promise<WorkJob>;
+  clearProjectData(): Promise<void>;
   guideEntities(): Promise<GuideEntity[]>;
   guideEdit(id: string, values: Record<string, string>): Promise<void>;
   guideSetLocked(id: string, locked: boolean): Promise<void>;

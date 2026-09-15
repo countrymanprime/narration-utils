@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
-import type { GuideEntity, ManuscriptChapter, ManuscriptImportSelection } from '../../types';
+import type { GuideEntity, ManuscriptChapter, WorkJob } from '../../types';
 import type { Bootstrap } from '../../types';
 import { Heading } from '../primitives/Heading';
 import { AudiobookEstimatePanel } from './AudiobookEstimatePanel';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
+import { WorkDialog } from '../primitives/WorkDialog';
 
 export function Home({
   data,
@@ -21,7 +22,7 @@ export function Home({
   const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
   const [entities, setEntities] = useState<GuideEntity[]>([]);
   const found = Boolean(data.manuscript);
-  const [pendingImport, setPendingImport] = useState<ManuscriptImportSelection>();
+  const [importJob, setImportJob] = useState<WorkJob>();
   const [headingLevel, setHeadingLevel] = useState(1);
   useEffect(() => {
     void Promise.all([api.manuscriptChapters(), api.guideEntities()])
@@ -31,6 +32,18 @@ export function Home({
       })
       .catch(() => {});
   }, [api]);
+  useEffect(() => {
+    if (!importJob?.id || !['preparing', 'committing'].includes(importJob.phase)) return;
+    let active = true;
+    const refresh = () => void api.manuscriptImportState(importJob.id!).then((next) => {
+      if (!active) return;
+      setImportJob(next);
+      if (next.phase === 'success') location.reload();
+    }).catch((error) => active && setImportJob((current) => current ? { ...current, phase: 'error', error: String(error), message: String(error) } : current));
+    refresh();
+    const timer = window.setInterval(refresh, 250);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [api, importJob?.id, importJob?.phase]);
   const words = chapters.reduce((total, chapter) => total + chapter.wordCount, 0);
   const review = entities.find((entity) => entity.review_state === 'unreviewed' || entity.category === 'Needs Review');
   return (
@@ -59,43 +72,40 @@ export function Home({
             className={found ? 'btn btn-ghost text-xs' : 'btn btn-primary text-xs'}
             onClick={async () => {
               const result = await api.selectManuscript();
-              if (result.selected) setPendingImport(result);
+              if (result.selected && result.jobId) setImportJob({ id: result.jobId, kind: 'manuscript_import', phase: 'preparing', message: 'Preparing manuscript import…', percent: 0, logs: [], elapsed: 0 });
               else notify('No manuscript selected');
             }}
           >
             {found ? 'Replace manuscript…' : 'Import manuscript…'}
           </button>
-          {!found && data.legacyManuscriptAvailable && <button className="btn btn-ghost text-xs" onClick={() => void api.manuscriptLegacyPreview().then(setPendingImport).catch((error) => notify(error.message))}>Import legacy Word file…</button>}
+          {!found && data.legacyManuscriptAvailable && <button className="btn btn-ghost text-xs" onClick={() => void api.manuscriptLegacyPreview().then((result) => result.jobId && setImportJob({ id: result.jobId, kind: 'manuscript_import', phase: 'preparing', message: 'Preparing manuscript import…', percent: 0, logs: [], elapsed: 0 })).catch((error) => notify(error.message))}>Import legacy Word file…</button>}
         </div>
       </section>
-      {pendingImport?.preview && (
+      {importJob?.phase === 'ready' && importJob.preview && (
         <ConfirmDialog
-          title={`Import ${pendingImport.preview.sourceName}`}
-          body={`${pendingImport.preview.format.toUpperCase()} · ${pendingImport.preview.paragraphCount} paragraphs · ${pendingImport.preview.chapterTitles.length || 1} proposed chapters.${pendingImport.requiresReset ? ' This replaces the active manuscript and clears Story Bible, notes, bookmarks, statuses, and saved comparison results.' : ''}`}
-          confirmLabel={pendingImport.requiresReset ? 'Replace and reset' : 'Import'}
+          title={`Import ${importJob.preview.sourceName}`}
+          body={`${importJob.preview.format.toUpperCase()} · ${importJob.preview.paragraphCount} paragraphs · ${importJob.preview.chapterTitles.length || 1} proposed chapters.${importJob.requiresReset ? ' This replaces the active manuscript and clears Story Bible, notes, bookmarks, statuses, and saved comparison results.' : ''}`}
+          confirmLabel={importJob.requiresReset ? 'Replace and reset' : 'Import'}
           confirm={() => {
-            void api.manuscriptImportCommit(headingLevel, Boolean(pendingImport.requiresReset)).then(() => {
-              setPendingImport(undefined);
-              notify('Manuscript imported.');
-              location.reload();
-            }).catch((error) => notify(error.message));
+            void api.manuscriptImportCommit(importJob.id!, Boolean(importJob.requiresReset)).then(setImportJob).catch((error) => notify(error.message));
           }}
-          cancel={() => setPendingImport(undefined)}
+          cancel={() => void api.manuscriptImportCancel(importJob.id!).then(() => setImportJob(undefined)).catch((error) => notify(error.message))}
         >
-          {pendingImport.preview.format === 'markdown' && (
+          {importJob.preview.format === 'markdown' && (
             <label className="mt-4 flex items-center gap-2 text-sm">Markdown chapter heading level
               <select value={headingLevel} onChange={(event) => {
                 const level = Number(event.target.value);
                 setHeadingLevel(level);
-                void api.manuscriptImportPreview(level).then(setPendingImport).catch((error) => notify(error.message));
+                void api.manuscriptImportPreview(importJob.id!, level).then(setImportJob).catch((error) => notify(error.message));
               }}>
                 {[1, 2, 3, 4, 5, 6].map((level) => <option key={level} value={level}>H{level}</option>)}
               </select>
             </label>
           )}
-          {pendingImport.preview.format === 'pdf' && pendingImport.preview.chapterTitles.length > 0 && <p className="mt-3 text-xs">Detected chapters: {pendingImport.preview.chapterTitles.join(' · ')}</p>}
+          {importJob.preview.format === 'pdf' && importJob.preview.chapterTitles.length > 0 && <p className="mt-3 text-xs">Detected chapters: {importJob.preview.chapterTitles.join(' · ')}</p>}
         </ConfirmDialog>
       )}
+      {importJob && importJob.phase !== 'ready' && importJob.phase !== 'success' && <WorkDialog title="Import manuscript" job={importJob} cancel={importJob.phase === 'preparing' ? () => void api.manuscriptImportCancel(importJob.id!).then(() => setImportJob(undefined)) : undefined} close={() => setImportJob(undefined)} />}
       <AudiobookEstimatePanel notify={notify} goToManuscript={goToManuscript} />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <button aria-label="Open Proofing" className="panel panel-body text-left transition hover:-translate-y-px" onClick={() => go('/proofing')}>

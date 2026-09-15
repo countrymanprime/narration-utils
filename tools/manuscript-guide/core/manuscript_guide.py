@@ -25,7 +25,7 @@ if str(_SHARED_PYTHON) not in sys.path:
 
 from narration_common.config import get_default  # noqa: E402
 from narration_common import manuscript as canonical_manuscript  # noqa: E402
-from narration_common.logging_utils import log  # noqa: E402
+from narration_common.logging_utils import log, set_log_file  # noqa: E402
 from narration_common.progress import write_progress  # noqa: E402
 
 
@@ -591,13 +591,17 @@ def write_json(path: str, data: dict[str, Any]) -> None:
 
 
 def build(args: argparse.Namespace) -> None:
+    log("Reading canonical manuscript")
     write_progress(args.progress, "LOAD", 5, "Reading manuscript...")
     source_hash = document_hash(args.manuscript)
     paragraphs = load_manuscript(args.manuscript)
+    log(f"Loaded {len(paragraphs):,} paragraphs")
     write_progress(args.progress, "EXTRACT", 30, "Finding people, places, and organizations...")
     previous = load_json(args.out)
+    log(f"Extracting candidates with spaCy model {args.spacy_model}")
     entities = build_entities(paragraphs, args.spacy_model, args.espeak_library or None)
     write_progress(args.progress, "MERGE", 85, "Preserving locked edits...")
+    log("Merging generated entries with locked and manual edits")
     entities = merge_locked(entities, previous)
     guide = {
         "schema_version": SCHEMA_VERSION,
@@ -609,6 +613,7 @@ def build(args: argparse.Namespace) -> None:
     }
     write_json(args.out, guide)
     write_progress(args.progress, "DONE", 100, f"Built guide with {len(entities)} entities")
+    log(f"Built Story Bible with {len(entities)} entities")
     print(f"BUILT|{len(entities)}|{args.out}")
 
 
@@ -931,6 +936,7 @@ def main() -> None:
     build_parser.add_argument("--manuscript", required=True)
     build_parser.add_argument("--out", required=True)
     build_parser.add_argument("--progress")
+    build_parser.add_argument("--log")
     build_parser.add_argument("--spacy-model", default=get_default("ManuscriptGuide", "spacy_model", "en_core_web_sm"))
     build_parser.add_argument("--espeak-library", default="")
     status_parser = command.add_parser("status")
@@ -984,6 +990,12 @@ def main() -> None:
     audio_parser.add_argument("--piper-model", required=True)
     audio_parser.add_argument("--alias-index", type=int, default=None)
     args = parser.parse_args()
+    log_handle = None
+    if getattr(args, "log", None):
+        path = Path(args.log)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        log_handle = path.open("a", encoding="utf-8")
+        set_log_file(log_handle)
     try:
         {
             "build": build,
@@ -1003,6 +1015,10 @@ def main() -> None:
         if args.command == "build":
             write_progress(getattr(args, "progress", None), "ERROR", 0, str(exc))
         sys.exit(1)
+    finally:
+        if log_handle is not None:
+            log_handle.close()
+            set_log_file(None)
 
 
 if __name__ == "__main__":

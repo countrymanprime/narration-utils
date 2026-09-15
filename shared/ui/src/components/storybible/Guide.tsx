@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileExport, faLock, faPlus, faRotate, faXmark } from '@fortawesome/free-solid-svg-icons';
-import type { GuideEntity } from '../../types';
+import type { GuideEntity, WorkJob } from '../../types';
 import { categoryCssName, categoryLabel, sortEntities, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { Heading } from '../primitives/Heading';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { GuideDetail } from './GuideDetail';
+import { WorkDialog } from '../primitives/WorkDialog';
 
 type EntitySort = { key: 'name' | 'occurrences'; dir: 'asc' | 'desc' };
 const TAB_PLURAL: Record<string, string> = {
@@ -36,6 +37,7 @@ export function Guide({
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState('All');
   const [sort, setSort] = useState<EntitySort>({ key: 'name', dir: 'asc' });
+  const [buildJob, setBuildJob] = useState<WorkJob>();
 
   const load = async (selectId?: string) => {
     try {
@@ -50,6 +52,22 @@ export function Guide({
     void load(entityId);
     if (entityId) routerNavigate('/story-bible', { replace: true });
   }, [entityId]);
+  useEffect(() => {
+    if (!buildJob?.id || !['preparing', 'running'].includes(buildJob.phase)) return;
+    let active = true;
+    const refresh = () => void api.guideBuildState().then((next) => {
+      if (!active) return;
+      setBuildJob(next);
+      if (next.phase === 'success') {
+        void load();
+        notify(next.result?.message || 'Story Bible rebuilt.');
+        setBuildJob(undefined);
+      }
+    }).catch((error) => active && setBuildJob((current) => current ? { ...current, phase: 'error', error: String(error), message: String(error) } : current));
+    refresh();
+    const timer = window.setInterval(refresh, 250);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [api, buildJob?.id, buildJob?.phase]);
 
   // A Draft entry (a brand new, not-yet-categorized entity) is hidden from
   // every tab/search except while it's the one open in the detail pane - it
@@ -94,8 +112,11 @@ export function Guide({
                 className="icon-btn"
                 onClick={async () => {
                   try {
-                    notify(await api.guideBuild());
-                    await load();
+                    const job = await api.guideBuild();
+                    if (job.phase === 'success') {
+                      await load();
+                      notify(job.result?.message || 'Story Bible rebuilt.');
+                    } else setBuildJob(job);
                   } catch (error) {
                     notify(String(error));
                   }
@@ -199,6 +220,7 @@ export function Guide({
           <GuideDetail entity={selected} entities={rows} reload={load} notify={notify} select={setSelectedId} goToManuscript={goToManuscript} />
         </div>
       </div>
+      {buildJob && <WorkDialog title="Rebuild Story Bible" job={buildJob} close={() => setBuildJob(undefined)} />}
     </div>
   );
 }

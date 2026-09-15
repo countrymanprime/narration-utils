@@ -13,6 +13,7 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'], filter: (field) => field.key !== 'piper_model' },
   { key: 'Daw', label: 'DAW Integration', scopes: ['global'] },
   { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global'] },
+  { key: 'ProjectData', label: 'Project data', scopes: ['project'] },
 ];
 
 export function Settings({
@@ -33,6 +34,7 @@ export function Settings({
   const [values, setValues] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState(false);
   const [pendingChange, setPendingChange] = useState<() => void>();
+  const [confirmClearProjectData, setConfirmClearProjectData] = useState(false);
   const categories = useMemo(() => SETTINGS_CATEGORIES.filter((entry) => entry.scopes.includes(scope)), [scope]);
   const active = categories.find((entry) => entry.key === category) ?? categories[0];
   const fields = active?.tool ? (settings[active.tool] || []).filter((field) => !active.filter || active.filter(field)) : [];
@@ -147,6 +149,16 @@ export function Settings({
                   </div>
                 </div>
               </div>
+            ) : category === 'ProjectData' ? (
+              <div className="space-y-4 text-sm">
+                <div className="rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
+                  <div className="font-medium">Clear derived project data</div>
+                  <div className="mt-1" style={{ color: 'var(--text-muted)' }}>
+                    Removes the imported manuscript and stored source, Story Bible, proofing artifacts, reader notes/bookmarks, and saved comparison results. Settings remain.
+                  </div>
+                </div>
+                <button className="btn btn-danger" onClick={() => setConfirmClearProjectData(true)}>Clear derived project data…</button>
+              </div>
             ) : (
               <form
                 onSubmit={(event) => {
@@ -210,6 +222,19 @@ export function Settings({
             void discard().then(next);
           }}
           cancel={() => setPendingChange(undefined)}
+        />
+      )}
+      {confirmClearProjectData && (
+        <ConfirmDialog
+          title="Clear derived project data?"
+          body="This permanently removes the imported manuscript and stored source, Story Bible and proofing data, reader notes/bookmarks, and saved comparison results for this project. Settings will remain."
+          confirmLabel="Clear project data"
+          confirm={() => void api.clearProjectData().then(() => {
+            setConfirmClearProjectData(false);
+            notify('Derived project data cleared.');
+            window.setTimeout(() => location.reload(), 0);
+          }).catch((error) => notify(String(error)))}
+          cancel={() => setConfirmClearProjectData(false)}
         />
       )}
     </div>

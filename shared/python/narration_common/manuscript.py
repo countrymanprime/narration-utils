@@ -67,11 +67,11 @@ def _new_draft(format_name: str, path: Path, paragraphs: list[dict[str, Any]], c
     }
 
 
-def _docx_draft(path: Path) -> dict[str, Any]:
+def _docx_draft(path: Path, progress=None) -> dict[str, Any]:
     chapter = "Front matter"
     paragraphs: list[dict[str, Any]] = []
     titles: list[str] = []
-    for record in load_docx_paragraph_records(path):
+    for record in load_docx_paragraph_records(path, progress=progress):
         text = _text(record["text"])
         if record["is_heading_outline"]:
             if text.casefold() in NON_CHAPTER_HEADINGS:
@@ -152,13 +152,13 @@ def _pdf_draft(path: Path) -> dict[str, Any]:
     return _new_draft("pdf", path, paragraphs, titles)
 
 
-def prepare_import(source: str | Path, markdown_heading_level: int = 1) -> dict[str, Any]:
+def prepare_import(source: str | Path, markdown_heading_level: int = 1, progress=None) -> dict[str, Any]:
     path = Path(source)
     if not path.is_file():
         raise ManuscriptError("The selected manuscript no longer exists.")
     format_name = source_format(path)
     if format_name == "docx":
-        return _docx_draft(path)
+        return _docx_draft(path, progress=progress)
     if format_name == "markdown":
         return _markdown_draft(path, markdown_heading_level)
     return _pdf_draft(path)
@@ -174,7 +174,7 @@ def preview(draft: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _canonical(draft: dict[str, Any], source: Path, source_relative_path: str) -> dict[str, Any]:
+def _canonical(draft: dict[str, Any], source: Path, source_relative_path: str, source_hash: str) -> dict[str, Any]:
     document_id = uuid.uuid4().hex
     chapters: list[dict[str, Any]] = []
     chapter_by_title: dict[str, dict[str, Any]] = {}
@@ -206,7 +206,7 @@ def _canonical(draft: dict[str, Any], source: Path, source_relative_path: str) -
         "documentId": document_id,
         "importedAt": datetime.now(timezone.utc).isoformat(),
         "importer": {"format": draft["format"], "version": IMPORTER_VERSION},
-        "source": {"fileName": source.name, "sha256": file_hash(source), "storedPath": source_relative_path},
+        "source": {"fileName": source.name, "sha256": source_hash, "storedPath": source_relative_path},
         "chapters": chapters,
         "paragraphs": paragraphs,
     }
@@ -244,7 +244,7 @@ def load(project_folder: str | Path) -> dict[str, Any]:
     return load_file(manuscript_path(project_folder))
 
 
-def commit_import(project_folder: str | Path, source: str | Path, draft: dict[str, Any]) -> dict[str, Any]:
+def commit_import(project_folder: str | Path, source: str | Path, draft: dict[str, Any], progress=None) -> dict[str, Any]:
     """Copy source then atomically activate normalized data. Caller resets sidecars first."""
     root = Path(project_folder)
     selected = Path(source)
@@ -252,9 +252,23 @@ def commit_import(project_folder: str | Path, source: str | Path, draft: dict[st
     source_folder = folder / "sources" / uuid.uuid4().hex
     source_folder.mkdir(parents=True, exist_ok=True)
     stored = source_folder / selected.name
-    shutil.copy2(selected, stored)
+    total = selected.stat().st_size
+    copied = 0
+    digest = hashlib.sha256()
+    if progress:
+        progress(0, "Copying selected manuscript…")
+    with selected.open("rb") as input_handle, stored.open("wb") as output_handle:
+        while block := input_handle.read(1024 * 1024):
+            output_handle.write(block)
+            digest.update(block)
+            copied += len(block)
+            if progress:
+                progress(round(copied * 100 / total) if total else 100, f"Copying manuscript… {copied:,} bytes")
+    shutil.copystat(selected, stored)
     relative = stored.relative_to(root).as_posix()
-    data = _canonical(draft, selected, relative)
+    if progress:
+        progress(100, "Writing canonical manuscript data…")
+    data = _canonical(draft, selected, relative, digest.hexdigest())
     target = manuscript_path(root)
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(".json.tmp")

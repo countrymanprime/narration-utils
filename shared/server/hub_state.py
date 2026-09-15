@@ -23,6 +23,7 @@ from .guide_service import GuideError, GuideService, preview_url
 from .manuscript_service import ManuscriptError, ManuscriptService
 from . import process_utils
 from .transcript_run import TranscriptRun
+from .work_job import WorkJob
 
 API_VERSION = 1
 
@@ -65,7 +66,8 @@ class HubState:
         self._revision = 1
         self.closed = False
         self.show_open_manuscript_dialog = None
-        self._pending_import: str | None = None
+        self._import_job: WorkJob | None = None
+        self._guide_job: WorkJob | None = None
 
         # Tracks whether the browser tab is still around, so main.py's idle
         # watchdog can shut this process down once it's gone - see
@@ -184,13 +186,60 @@ class HubState:
         with self._lock:
             return {"revision": self._revision, "transcript": self._run.snapshot()}
 
+    def _job_event(self, job: WorkJob, message: str, percent: int | None = None) -> None:
+        """Update a job and leave an operator-readable timing trail."""
+        with self._lock:
+            job.message = message
+            if percent is not None:
+                job.percent = max(0, min(100, percent))
+            job.add_log(message)
+        self.diagnostics.event(f"{job.kind}_job", {"id": job.id, "phase": job.phase, "percent": job.percent, "message": message})
+
+    @staticmethod
+    def _fingerprint(path: str) -> tuple[int, int]:
+        stat = Path(path).stat()
+        return stat.st_size, stat.st_mtime_ns
+
+    def _start_import(self, selected: str, markdown_heading_level: int = 1) -> dict:
+        try:
+            fingerprint = self._fingerprint(selected)
+        except OSError as exc:
+            raise HubError("The selected manuscript no longer exists.") from exc
+        job = WorkJob(kind="manuscript_import", phase="preparing", message="Preparing manuscript import…", source=selected, source_fingerprint=fingerprint)
+        job.requires_reset = canonical.exists(self.project_folder)
+        with self._lock:
+            self._import_job = job
+        self._job_event(job, "Selected manuscript; preparing preview…", 1)
+        threading.Thread(target=self._prepare_import_job, args=(job, markdown_heading_level), daemon=True).start()
+        return {"selected": True, "jobId": job.id}
+
+    def _prepare_import_job(self, job: WorkJob, markdown_heading_level: int) -> None:
+        try:
+            def progress(message: str) -> None:
+                self._job_event(job, message, min(85, job.percent + 4))
+
+            self._job_event(job, "Reading manuscript for import preview…", 5)
+            draft = canonical.prepare_import(job.source, markdown_heading_level, progress=progress)
+            with self._lock:
+                if job.phase == "cancelled":
+                    return
+                job.draft = draft
+                job.preview = canonical.preview(draft)
+                job.phase = "ready"
+                job.percent = 100
+            self._job_event(job, "Import preview is ready.", 100)
+        except Exception as exc:  # parser/library failures must not leave the UI stuck on "Preparing"
+            with self._lock:
+                job.phase, job.error = "error", str(exc)
+            self._job_event(job, f"Import preview failed: {exc}")
+
     def select_manuscript(self) -> dict:
         if not self.project_folder:
             raise HubError("Save the REAPER project before selecting its manuscript.")
         selected = self.show_open_manuscript_dialog() if self.show_open_manuscript_dialog else None
         if not selected:
             return {"selected": False}
-        return self._prepare_import(selected)
+        return self._start_import(selected)
 
     def manuscript_info(self) -> dict | None:
         if not self.project_folder or not canonical.exists(self.project_folder):
@@ -201,26 +250,31 @@ class HubState:
             return None
         return {"id": data["documentId"], "format": data["importer"]["format"], "sourceName": data["source"]["fileName"], "importedAt": data["importedAt"]}
 
-    def _prepare_import(self, selected: str, markdown_heading_level: int = 1) -> dict:
-        try:
-            draft = canonical.prepare_import(selected, markdown_heading_level)
-        except canonical.ManuscriptError as exc:
-            raise HubError(str(exc)) from exc
-        self._pending_import = selected
-        return {"selected": True, "requiresReset": canonical.exists(self.project_folder), "preview": canonical.preview(draft)}
-
     def manuscript_legacy_preview(self) -> dict:
         if not self.project_folder:
             raise HubError("Save the REAPER project before importing a manuscript.")
         legacy = Path(self.project_folder) / "Manuscript.docx"
         if not legacy.is_file():
             raise HubError("No legacy Word manuscript was found in this project.")
-        return self._prepare_import(str(legacy))
+        return self._start_import(str(legacy))
 
-    def manuscript_import_preview(self, markdown_heading_level: int = 1) -> dict:
-        if not self._pending_import:
-            raise HubError("Choose a manuscript file first.")
-        return self._prepare_import(self._pending_import, markdown_heading_level)
+    def manuscript_import_state(self, job_id: str) -> dict:
+        with self._lock:
+            if self._import_job is None or self._import_job.id != job_id:
+                raise HubError("This manuscript import is no longer available.")
+            return self._import_job.snapshot()
+
+    def manuscript_import_preview(self, job_id: str, markdown_heading_level: int = 1) -> dict:
+        with self._lock:
+            job = self._import_job
+            if job is None or job.id != job_id:
+                raise HubError("This manuscript import is no longer available.")
+            if job.phase not in ("ready", "error"):
+                raise HubError("Wait for the current manuscript import step to finish.")
+            job.phase, job.error, job.draft, job.preview, job.percent = "preparing", "", None, None, 0
+        self._job_event(job, "Refreshing import preview…", 1)
+        threading.Thread(target=self._prepare_import_job, args=(job, markdown_heading_level), daemon=True).start()
+        return job.snapshot()
 
     def _reset_manuscript_derivatives(self) -> None:
         """Only called after user-confirmed replacement/migration."""
@@ -236,21 +290,77 @@ class HubState:
         self._last_completed_json = None
         self._run = TranscriptRun()
 
-    def manuscript_import_commit(self, markdown_heading_level: int = 1, confirmed_reset: bool = False) -> dict:
-        if not self.project_folder or not self._pending_import:
+    def manuscript_import_commit(self, job_id: str, confirmed_reset: bool = False) -> dict:
+        if not self.project_folder:
             raise HubError("Choose a manuscript file first.")
-        replacing = canonical.exists(self.project_folder)
-        if replacing and not confirmed_reset:
+        with self._lock:
+            job = self._import_job
+            if job is None or job.id != job_id or job.phase != "ready" or job.draft is None:
+                raise HubError("Wait for the manuscript preview before importing.")
+        if job.requires_reset and not confirmed_reset:
             raise HubError("Confirm replacement before clearing manuscript-derived project data.")
+        with self._lock:
+            if self._guide_job is not None and self._guide_job.phase in ("preparing", "running"):
+                raise HubError("Wait for the active Story Bible rebuild before replacing the manuscript.")
+            if self._run.phase in ("preparing", "running", "inspecting"):
+                raise HubError("Wait for the active transcript comparison before replacing the manuscript.")
+        with self._lock:
+            job.phase, job.error, job.percent = "committing", "", 0
+        self._job_event(job, "Importing manuscript into this project…", 0)
+        threading.Thread(target=self._commit_import_job, args=(job,), daemon=True).start()
+        return job.snapshot()
+
+    def _commit_import_job(self, job: WorkJob) -> None:
         try:
-            draft = canonical.prepare_import(self._pending_import, markdown_heading_level)
-            canonical.commit_import(self.project_folder, self._pending_import, draft)
-        except canonical.ManuscriptError as exc:
-            raise HubError(str(exc)) from exc
+            if self._fingerprint(job.source) != job.source_fingerprint:
+                raise canonical.ManuscriptError("The selected manuscript changed after preview. Choose it again to import the current version.")
+
+            def progress(percent: int, message: str) -> None:
+                self._job_event(job, message, percent)
+
+            canonical.commit_import(self.project_folder, job.source, job.draft or {}, progress=progress)
+            self._reset_manuscript_derivatives()
+            with self._lock:
+                job.phase, job.percent, job.result = "success", 100, self.manuscript_info() or {}
+            self._job_event(job, "Manuscript import complete.", 100)
+            self._changed()
+        except Exception as exc:  # disk failures must become a visible job error, not a stranded worker
+            with self._lock:
+                job.phase, job.error = "error", str(exc)
+            self._job_event(job, f"Manuscript import failed: {exc}")
+
+    def manuscript_import_cancel(self, job_id: str) -> None:
+        with self._lock:
+            job = self._import_job
+            if job is None or job.id != job_id:
+                raise HubError("This manuscript import is no longer available.")
+            if job.phase == "committing":
+                raise HubError("The manuscript is already being written and cannot be cancelled.")
+            job.phase, job.draft = "cancelled", None
+        self._job_event(job, "Manuscript import cancelled.")
+
+    def clear_project_data(self, confirmed: bool = False) -> None:
+        if not self.project_folder:
+            raise HubError("Save the REAPER project first.")
+        if not confirmed:
+            raise HubError("Confirm clearing derived project data before continuing.")
+        with self._lock:
+            if self._guide_job is not None and self._guide_job.phase in ("preparing", "running"):
+                raise HubError("Wait for the active Story Bible rebuild before clearing project data.")
+            if self._import_job is not None and self._import_job.phase == "committing":
+                raise HubError("Wait for the active manuscript import before clearing project data.")
+            if self._run.phase in ("preparing", "running", "inspecting"):
+                raise HubError("Wait for the active transcript comparison before clearing project data.")
         self._reset_manuscript_derivatives()
-        self._pending_import = None
+        # Unlike manuscript replacement, an operator-initiated project reset
+        # intentionally returns Home to its pristine "No imported manuscript"
+        # state. Remove the canonical JSON and its project-owned source copy
+        # only after derived data has been cleared.
+        manuscript_folder = canonical.manuscript_dir(self.project_folder)
+        if manuscript_folder.exists():
+            shutil.rmtree(manuscript_folder)
+        self.diagnostics.event("project_derived_data_cleared", {"project_folder": self.project_folder})
         self._changed()
-        return self.manuscript_info() or {}
 
     # -- transcript-compare lifecycle --------------------------------------------
 
@@ -387,6 +497,32 @@ class HubState:
             return self._guide().build()
         except GuideError as exc:
             raise HubError(str(exc)) from exc
+
+    def guide_build_start(self) -> dict:
+        with self._lock:
+            if self._guide_job is not None and self._guide_job.phase in ("running", "preparing"):
+                raise HubError("A Story Bible rebuild is already running.")
+            job = WorkJob(kind="story_bible", phase="preparing", message="Preparing Story Bible rebuild…")
+            self._guide_job = job
+        progress_path = str(Path(self._session_dir) / f"guide_progress_{job.id}.txt")
+        log_path = str(Path(self._session_dir) / f"guide_log_{job.id}.txt")
+        try:
+            process, guide_path = self._guide().start_build(progress_path, log_path)
+        except GuideError as exc:
+            with self._lock:
+                job.phase, job.error = "error", str(exc)
+            self._job_event(job, f"Story Bible rebuild failed to start: {exc}")
+            return job.snapshot()
+        with self._lock:
+            job.phase, job.process, job.progress_path, job.log_path, job.guide_path = "running", process, progress_path, log_path, guide_path
+        self._job_event(job, "Story Bible rebuild started.", 1)
+        return job.snapshot()
+
+    def guide_build_state(self) -> dict:
+        with self._lock:
+            if self._guide_job is None:
+                return {"id": None, "kind": "story_bible", "phase": "idle", "message": "Ready to build the Story Bible.", "percent": 0, "logs": [], "elapsed": 0, "preview": None, "requiresReset": False, "result": None, "error": ""}
+            return self._guide_job.snapshot()
 
     def guide_entities(self) -> list:
         return self._guide().entities()
@@ -526,9 +662,54 @@ class HubState:
                 for raw in self._bridge.read_events():
                     self._handle_event(decode_fields(raw))
                 self._poll_backend()
+                self._poll_guide_build()
             except Exception as exc:  # noqa: BLE001 - mirrors Hub.cs's catch-all bridge-loop guard
                 self._append_log(f"Bridge error: {exc}")
             time.sleep(0.15)
+
+    def _poll_guide_build(self) -> None:
+        with self._lock:
+            job = self._guide_job
+            if job is None or job.phase != "running":
+                return
+            progress_path, log_path, process, guide_path = job.progress_path, job.log_path, job.process, job.guide_path
+
+        if progress_path and os.path.isfile(progress_path):
+            line = Path(progress_path).read_text(encoding="utf-8", errors="replace").splitlines()[-1:]
+            if line:
+                stage, _, rest = line[0].partition("|")
+                percent, _, message = rest.partition("|")
+                try:
+                    value = int(percent)
+                except ValueError:
+                    value = job.percent
+                if message and (message != job.message or value != job.percent):
+                    self._job_event(job, message or stage, value)
+
+        if log_path and os.path.isfile(log_path):
+            with open(log_path, "rb") as handle:
+                handle.seek(job.log_offset)
+                raw = handle.read()
+                job.log_offset = handle.tell()
+            text = raw.decode("utf-8", errors="replace")
+            if text:
+                with self._lock:
+                    job.add_log(text)
+                self.diagnostics.event("story_bible_backend_log", {"id": job.id, "message": text[-4000:]})
+
+        if process is not None and process.has_exited:
+            with self._lock:
+                if process.exit_code == 0 and guide_path and os.path.isfile(guide_path):
+                    job.phase, job.percent = "success", 100
+                    job.result = {"message": "Story Bible rebuilt."}
+                    job.message = "Story Bible rebuild complete."
+                    job.add_log(job.message)
+                else:
+                    job.phase = "error"
+                    job.error = "Story Bible rebuild failed. Review the activity log for details."
+                    job.message = job.error
+                    job.add_log(job.error)
+            self.diagnostics.event("story_bible_job_complete", {"id": job.id, "phase": job.phase, "elapsed": job.snapshot()["elapsed"]})
 
     @staticmethod
     def _parse_float(value: str) -> float:

@@ -1248,6 +1248,13 @@ table.proofing-table th {
   padding: 0.25rem 0.45rem;
   border-bottom: 1px solid var(--border);
 }
+.work-progress-indeterminate {
+  animation: work-progress-slide 1.15s ease-in-out infinite;
+}
+@keyframes work-progress-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(2400%); }
+}
 .type-chip {
   border-radius: 0.25rem;
   padding: 0.1rem 0.45rem;

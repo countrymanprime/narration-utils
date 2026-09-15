@@ -14,6 +14,7 @@ import type {
   Scope,
   ScopedSettingField,
   TranscriptState,
+  WorkJob,
 } from '../types';
 import {
   aliceChapterSeeds,
@@ -92,6 +93,8 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
   const subscribers = new Set<(state: TranscriptState) => void>();
   let nextId = 1;
   let runTimers: ReturnType<typeof setTimeout>[] = [];
+  let importJob: WorkJob = { id: null, kind: 'manuscript_import', phase: 'idle', message: 'Ready to import.', percent: 0, logs: [], elapsed: 0 };
+  let storyBibleJob: WorkJob = { id: null, kind: 'story_bible', phase: 'idle', message: 'Ready to build.', percent: 0, logs: [], elapsed: 0 };
   const publish = () => {
     revision += 1;
     subscribers.forEach((fn) => fn(wireClone(transcript)));
@@ -159,10 +162,21 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
         transcript: wireClone(transcript),
       }) as Bootstrap,
     poll: async () => ({ revision, transcript: wireClone(transcript) }),
-    selectManuscript: async () => ({ selected: true, requiresReset: false, preview: { format: 'docx', sourceName: 'Alice.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] } }),
-    manuscriptImportPreview: async () => ({ selected: true, requiresReset: false, preview: { format: 'markdown', sourceName: 'Alice.md', paragraphCount: 240, chapterTitles: ['Chapter 1'] } }),
-    manuscriptImportCommit: async () => ({ id: 'alice', format: 'markdown', sourceName: 'Alice.md', importedAt: '2026-01-01T00:00:00Z' }),
-    manuscriptLegacyPreview: async () => ({ selected: true, requiresReset: false, preview: { format: 'docx', sourceName: 'Manuscript.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] } }),
+    selectManuscript: async () => {
+      importJob = { id: 'mock-import', kind: 'manuscript_import', phase: 'ready', message: 'Import preview is ready.', percent: 100, logs: ['Selected manuscript', 'Import preview is ready.'], elapsed: 1, preview: { format: 'docx', sourceName: 'Alice.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] }, requiresReset: false };
+      return { selected: true, jobId: 'mock-import' };
+    },
+    manuscriptImportState: async () => wireClone(importJob),
+    manuscriptImportPreview: async (_jobId, markdownHeadingLevel) => {
+      importJob = { ...importJob, preview: { format: 'markdown', sourceName: 'Alice.md', paragraphCount: 240, chapterTitles: [`Chapter ${markdownHeadingLevel}`] } };
+      return wireClone(importJob);
+    },
+    manuscriptImportCommit: async () => {
+      importJob = { ...importJob, phase: 'success', message: 'Manuscript import complete.', result: { id: 'alice', format: 'docx', sourceName: 'Alice.docx', importedAt: '2026-01-01T00:00:00Z' } };
+      return wireClone(importJob);
+    },
+    manuscriptImportCancel: async () => { importJob = { ...importJob, phase: 'cancelled', message: 'Manuscript import cancelled.' }; },
+    manuscriptLegacyPreview: async () => base.selectManuscript(),
     saveSettings: async (tool, scope, values) => {
       settings[scope][tool] = (settings[scope][tool] || []).map((field) =>
         field.key in values
@@ -177,7 +191,12 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
       return base.bootstrap();
     },
     settingsForScope: async (scope) => wireClone(settings[scope]),
-    guideBuild: async () => 'Story Bible refreshed — 1 entry needs review.',
+    guideBuild: async () => {
+      storyBibleJob = { id: 'mock-guide', kind: 'story_bible', phase: 'success', message: 'Story Bible rebuild complete.', percent: 100, logs: ['Reading canonical manuscript', 'Built Story Bible with 7 entities'], elapsed: 1, result: { message: 'Story Bible rebuilt.' } };
+      return wireClone(storyBibleJob);
+    },
+    guideBuildState: async () => wireClone(storyBibleJob),
+    clearProjectData: async () => {},
     guideEntities: async () => {
       await manuscriptReady;
       return wireClone(entities);

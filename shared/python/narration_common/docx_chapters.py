@@ -15,7 +15,7 @@ opening/walking/heading-detection step lives here.
 NON_CHAPTER_HEADINGS = {"table of contents", "contents"}
 
 
-def load_docx_paragraph_records(path):
+def load_docx_paragraph_records(path, progress=None):
     """Every non-empty paragraph in document order, stripped only (no
     internal-whitespace collapsing - callers that need that do it
     themselves, since they don't all want it), carrying BOTH heading
@@ -37,9 +37,14 @@ def load_docx_paragraph_records(path):
     """
     from docx import Document  # lazy import, matches both callers' existing pattern
 
+    if progress:
+        progress("Opening Word document…")
     document = Document(path)
     records = []
-    for paragraph in document.paragraphs:
+    total = len(document.paragraphs)
+    if progress:
+        progress(f"Reading {total:,} Word paragraphs…")
+    for index, paragraph in enumerate(document.paragraphs, start=1):
         text = paragraph.text.strip()
         if not text:
             continue
@@ -55,6 +60,8 @@ def load_docx_paragraph_records(path):
             outline_level = outline_lvl.val if outline_lvl is not None else None
             is_heading_outline = outline_level is not None and outline_level < 9
         records.append({"text": text, "is_heading": is_heading, "is_heading_outline": is_heading_outline})
+        if progress and index % 250 == 0:
+            progress(f"Read {index:,} of {total:,} Word paragraphs…")
     return records
 
 
