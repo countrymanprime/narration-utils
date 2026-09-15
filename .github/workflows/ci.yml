@@ -18,26 +18,34 @@ concurrency:
 jobs:
   conventional-commit:
     name: Conventional Commit title
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: No pull request title to validate
+        if: github.event_name != 'pull_request'
+        run: echo "No squash commit title is present for this run."
+      - if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - if: github.event_name == 'pull_request'
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
-      - run: npm ci
+      - if: github.event_name == 'pull_request'
+        run: npm ci
       - name: Validate the squash commit title
+        if: github.event_name == 'pull_request'
         env:
           TITLE: ${{ github.event.pull_request.title }}
         run: printf '%s\n' "$TITLE" | npx --no -- commitlint
 
   build:
     name: Build sources
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs: conventional-commit
+    if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,7 +70,8 @@ jobs:
 
   test:
     name: Test suite
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs: build
+    if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -101,7 +110,8 @@ jobs:
 
   format-and-lint:
     name: Format and lint
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs: build
+    if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -146,7 +156,8 @@ jobs:
 
   package:
     name: Package (${{ matrix.name }})
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs: [test, format-and-lint]
+    if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     strategy:
       fail-fast: false
       matrix:

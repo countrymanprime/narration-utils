@@ -39,12 +39,13 @@ rebuilds an approved candidate.
 
 ## CI performance
 
-The workflow keeps build, test, format/lint, and packaging as independent jobs
-so failures are clear and unaffected jobs can run in parallel. `setup-node` and
-`setup-python` cache npm and pip package downloads; the workflow also caches
-Cargo's registry and Git dependency sources per OS, architecture, and lockfile.
-Installer artifacts are retained for review and handoff, rather than used as a
-cache: platform-specific sidecars must be built on their target OS.
+The workflow is gated as Conventional Commit validation, source build, test and
+format/lint in parallel, then the installer matrix. A failed prerequisite skips
+all of its dependent jobs. `setup-node` and `setup-python` cache npm and pip
+package downloads; the workflow also caches Cargo's registry and Git dependency
+sources per OS, architecture, and lockfile. Installer artifacts are retained for
+review and handoff, rather than used as a cache: platform-specific sidecars must
+be built on their target OS.
 
 ## Runtime provenance
 
