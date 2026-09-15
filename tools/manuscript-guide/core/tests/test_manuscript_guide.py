@@ -14,6 +14,51 @@ assert SPEC.loader is not None
 SPEC.loader.exec_module(guide)
 
 
+def _write_manuscript(root: Path, chapter_title: str, paragraph_texts: list[str]) -> Path:
+    """Writes a minimal canonical manuscript.json directly at the path
+    manuscript_guide.py reads via canonical_manuscript.load_file.
+
+    Import (turning a .docx/.md source into this file) is Rust-only now -
+    see shared/manuscript-import and shell/src-tauri/src/server/manuscript_canonical.rs.
+    These tests only need a real, valid canonical file to build a Story
+    Bible from, not the import step itself.
+    """
+    paragraphs = [
+        {
+            "id": f"p-{index + 1:06d}",
+            "index": index,
+            "chapterId": "c-0001",
+            "chapterTitle": chapter_title,
+            "sectionId": None,
+            "text": text,
+            "sourceIndex": index,
+        }
+        for index, text in enumerate(paragraph_texts)
+    ]
+    data = {
+        "schemaVersion": guide.canonical_manuscript.SCHEMA_VERSION,
+        "documentId": "test-document",
+        "importedAt": "2026-01-01T00:00:00+00:00",
+        "importer": {"format": "markdown", "version": guide.canonical_manuscript.IMPORTER_VERSION},
+        "source": {"fileName": "fixture.md", "sha256": "0" * 64, "storedPath": "narration-utils/manuscript/sources/fixture.md"},
+        "chapters": [
+            {
+                "id": "c-0001",
+                "title": chapter_title,
+                "subtitle": None,
+                "index": 0,
+                "wordCount": sum(len(text.split()) for text in paragraph_texts),
+                "sections": [],
+            }
+        ],
+        "paragraphs": paragraphs,
+    }
+    path = guide.canonical_manuscript.manuscript_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data), encoding="utf-8")
+    return path
+
+
 class ManuscriptGuideTests(unittest.TestCase):
     def test_spacy_empty_result_does_not_activate_rule_fallback(self):
         paragraphs = [{"chapter": "Chapter 1", "text": "Captain Arelian arrives."}]
@@ -81,10 +126,7 @@ class ManuscriptGuideTests(unittest.TestCase):
     def test_status_and_hotword_export_are_independent_files(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            source = root / "fixture.md"
-            source.write_text("# Chapter 1\n\nfixture manuscript", encoding="utf-8")
-            guide.canonical_manuscript.commit_import(root, source, guide.canonical_manuscript.prepare_import(source))
-            manuscript = guide.canonical_manuscript.manuscript_path(root)
+            manuscript = _write_manuscript(root, "Chapter 1", ["fixture manuscript"])
             guide_file = root / "ManuscriptGuide" / "manuscript_guide.json"
             guide.write_json(
                 str(guide_file),
@@ -107,18 +149,14 @@ class ManuscriptGuideTests(unittest.TestCase):
             self.assertIn("Dawnspire", hotwords.read_text(encoding="utf-8"))
             self.assertFalse((root / "TranscriptCompare").exists())
 
-    def test_real_docx_build_uses_project_owned_guide_file(self):
-        from docx import Document
-
+    def test_build_uses_project_owned_guide_file(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            source = root / "Manuscript.docx"
-            document = Document()
-            document.add_heading("Chapter 1", level=1)
-            document.add_paragraph("Captain Arelian said the Council of Ash would meet in Dawnspire.")
-            document.save(source)
-            guide.canonical_manuscript.commit_import(root, source, guide.canonical_manuscript.prepare_import(source))
-            manuscript = guide.canonical_manuscript.manuscript_path(root)
+            manuscript = _write_manuscript(
+                root,
+                "Chapter 1",
+                ["Captain Arelian said the Council of Ash would meet in Dawnspire."],
+            )
             output = root / "ManuscriptGuide" / "manuscript_guide.json"
             guide.build(
                 argparse.Namespace(

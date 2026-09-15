@@ -1,12 +1,8 @@
-mod docx;
-mod markdown;
-mod model;
-mod pdf;
-
 use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Parser;
+use manuscript_import::{build_draft, model::ManuscriptError};
 
 /// Parses a source manuscript into the draft JSON shape
 /// shared/python/narration_common/manuscript.py's prepare_import() used to
@@ -38,21 +34,7 @@ struct Args {
 fn main() -> ExitCode {
     let args = Args::parse();
 
-    let extension = args
-        .source
-        .extension()
-        .and_then(|e| e.to_str())
-        .map(|e| e.to_lowercase())
-        .unwrap_or_default();
-
-    let result = match extension.as_str() {
-        "docx" => docx::build_draft(&args.source),
-        "md" | "markdown" => markdown::build_draft(&args.source, args.markdown_heading_level),
-        "pdf" => pdf::build_draft(&args.source),
-        _ => Err(model::ManuscriptError(
-            "Choose a Word (.docx), Markdown (.md), or text-based PDF (.pdf) manuscript.".to_string(),
-        )),
-    };
+    let result = build_draft(&args.source, args.markdown_heading_level);
 
     match result {
         Ok(draft) => match serde_json::to_string(&draft) {
@@ -74,7 +56,7 @@ fn main() -> ExitCode {
                 ExitCode::FAILURE
             }
         },
-        Err(model::ManuscriptError(message)) => {
+        Err(ManuscriptError(message)) => {
             eprintln!("{message}");
             ExitCode::FAILURE
         }

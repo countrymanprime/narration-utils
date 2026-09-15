@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "shell/src-tauri",
+    "shared/manuscript-import",
+]
+resolver = "2"

@@ -1,7 +1,7 @@
 [package]
 name = "manuscript-import"
 version = "0.1.0"
-description = "Parses a source manuscript (.docx/.md/.pdf) into the draft JSON shape shared/python/narration_common/manuscript.py turns into the canonical manuscript.json. Invoked as a subprocess from Python - see manuscript.py::prepare_import."
+description = "Parses a source manuscript (.docx/.md/.pdf) into the draft JSON shape shared/python/narration_common/manuscript.py turns into the canonical manuscript.json. Exposes both a reusable library and a compatibility CLI."
 edition = "2021"
 
 [dependencies]

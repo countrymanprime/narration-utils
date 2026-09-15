@@ -1,8 +1,10 @@
 -- Narration Utils - the sole REAPER action for the suite.
--- Launches the native shell app (shell/src-tauri) that hosts the React UI
--- and supervises the Python backend for its whole lifetime - closing the
--- shell's window is the only thing that stops the backend. REAPER itself
--- has no workflow UI; the bridge below only services requests from that
+-- Launches the native shell app (shell/src-tauri), which hosts the React UI
+-- and its own in-process server for its whole lifetime - closing the
+-- shell's window is the only thing that stops it. Python only runs as a
+-- short-lived subprocess the shell spawns for Story Bible builds and
+-- transcript comparisons, never as a supervised server. REAPER itself has
+-- no workflow UI; the bridge below only services requests from that
 -- workspace.
 
 local function script_dir()
@@ -32,9 +34,10 @@ end
 -- All runtimes are owned by this checkout. The only REAPER configuration is
 -- the launcher action itself; it never reads legacy ExtState paths or any
 -- previous install location. The host is the native shell app (built from
--- shell/src-tauri); it supervises the shared venv's Python running
--- shared/server (see shared/server/main.py) as a child process for its
--- whole lifetime and shows the UI in its own window instead of a browser tab.
+-- shell/src-tauri); it shows the UI in its own window instead of a browser
+-- tab, and shells out to the shared venv's Python only for the two "core"
+-- tools below (Story Bible builds, transcript comparisons) - never as a
+-- persistent server.
 local shared_python = REPO_ROOT .. "\\.venv\\Scripts\\python.exe"
 local manuscript_core = REPO_ROOT .. "\\tools\\manuscript-guide\\core"
 local compare_core = REPO_ROOT .. "\\tools\\transcript-compare\\core"
@@ -106,42 +109,20 @@ local command = quote(shell_exe)
   .. " --compare-backend " .. quote(compare_backend)
   .. " --port " .. tostring(SERVER_PORT)
 
--- Run from REPO_ROOT so the shell's own relative asset lookups (and the
--- Python backend it spawns with "-m shared.server.main") resolve correctly.
--- show_window = true: unlike the Python/browser-tab setup this replaces,
--- the shell has its own real GUI window that needs to actually appear.
+-- Run from REPO_ROOT so the shell's own relative asset lookups resolve
+-- correctly. show_window = true: unlike the Python/browser-tab setup this
+-- replaces, the shell has its own real GUI window that needs to actually
+-- appear.
+--
+-- No startup handshake to poll for here anymore: binding the port and
+-- showing the UI all happen inside that one process now, so there's no
+-- second process whose readiness this script needs to observe. If startup
+-- fails (e.g. the port is already in use), the shell reports the error
+-- directly in its own window instead of through a marker file in
+-- session_dir.
 if not process.run_hidden(session_dir, command, { wait = false, show_window = true, cwd = REPO_ROOT }) then
   reaper.ShowMessageBox("Could not open Narration Utils.", "Narration Utils", 0)
   return
 end
-
--- The host reports startup outcomes as one of two marker files (see
--- shared/server/main.py): "startup.ready" once the API handshake actually
--- succeeds, or "startup.failure" with a human-readable reason.
--- Unlike the old preflight/timeout race, this now distinguishes three
--- outcomes instead of silently going quiet in the ambiguous case: success,
--- an explicit failure, and "still nothing after the deadline" - which is
--- itself surfaced instead of leaving the user with no feedback at all.
-local startup_deadline = reaper.time_precise() + 20
-local function watch_startup()
-  local ready = io.open(session_dir .. "\\startup.ready", "r")
-  if ready then ready:close(); return end
-  local failure = io.open(session_dir .. "\\startup.failure", "r")
-  if failure then
-    local message = failure:read("*a") or "Narration Utils could not start."
-    failure:close()
-    reaper.ShowMessageBox(message .. "\n\nDiagnostic session:\n" .. session_dir, "Narration Utils setup required", 0)
-    return
-  end
-  if reaper.time_precise() < startup_deadline then
-    reaper.defer(watch_startup)
-    return
-  end
-  reaper.ShowMessageBox(
-    "Narration Utils is taking longer than expected to start.\n\nIt may still open - if not, check:\n"
-      .. session_dir .. "\\host.log",
-    "Narration Utils", 0)
-end
-reaper.defer(watch_startup)
 
 bridge.run(session_dir)

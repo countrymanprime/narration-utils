@@ -99,6 +99,7 @@ pub fn collapse_whitespace(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+#[derive(Debug)]
 pub struct ManuscriptError(pub String);
 
 impl Draft {

@@ -16,3 +16,4 @@ logs/
 shell/src-tauri/target/
 shell/src-tauri/gen/
 shared/manuscript-import/target/
+target/
