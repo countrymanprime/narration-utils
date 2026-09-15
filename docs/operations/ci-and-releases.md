@@ -12,10 +12,11 @@ quality suite.
 
 GitHub Actions cannot configure these repository settings from a workflow. In
 the repository UI, create a `main` ruleset that requires pull requests, squash
-merges, the `CI / Conventional Commit title`, `CI / UI, Python, and Rust
-quality`, `CI / PowerShell and Lua style`, and all package jobs. Disable force
-pushes. `CODEOWNERS` requests `@countrymanprime` for review but is intentionally
-not a required review while the repository has a solo maintainer.
+merges, `CI / Conventional Commit title`, `CI / Build sources`, `CI / Test
+suite`, `CI / Format and lint`, and all package jobs. Disable force pushes.
+Draft pull requests intentionally skip these jobs; marking one ready for review
+starts a fresh run. `CODEOWNERS` requests `@countrymanprime` for review but is
+intentionally not a required review while the repository has a solo maintainer.
 
 Create a `production` environment with `@countrymanprime` as a required
 reviewer. Leave **Prevent self-review** disabled and leave administrator bypass
@@ -35,6 +36,15 @@ Use **Promote pre-release** with the beta tag when it is ready. It validates
 main ancestry and checksums, waits for `production` approval, then creates the
 stable tag and GitHub release from the exact same downloaded assets. It never
 rebuilds an approved candidate.
+
+## CI performance
+
+The workflow keeps build, test, format/lint, and packaging as independent jobs
+so failures are clear and unaffected jobs can run in parallel. `setup-node` and
+`setup-python` cache npm and pip package downloads; the workflow also caches
+Cargo's registry and Git dependency sources per OS, architecture, and lockfile.
+Installer artifacts are retained for review and handoff, rather than used as a
+cache: platform-specific sidecars must be built on their target OS.
 
 ## Runtime provenance
 
