@@ -9,22 +9,11 @@ Photino native window.
 import argparse
 import asyncio
 import sys
-import time
 import webbrowser
 from pathlib import Path
 
 import uvicorn
 
-# How long the server can go with zero requests of any kind before treating
-# the browser tab as gone for good and shutting itself down. Deliberately
-# generous: this tab is normally *backgrounded* while the narrator works in
-# REAPER, and browsers throttle a backgrounded tab's timers (the heartbeat
-# App.tsx sends included) down to roughly once a minute or slower - a short
-# timeout here would kill a session the user still has open and intends to
-# come back to. This is a backstop for "actually closed/crashed", not a
-# resource-reclaiming optimization.
-IDLE_SHUTDOWN_GRACE_SECONDS = 600
-IDLE_WATCHDOG_INTERVAL_SECONDS = 30
 # Stable loopback origin for the browser UI. Keeping this fixed means browser
 # bookmarks, local firewall rules, and dev tooling do not need a new URL after
 # every rebuild/restart. We deliberately fail clearly if another process owns
@@ -72,22 +61,6 @@ async def _watch_shutdown(server: uvicorn.Server, shutdown_event: asyncio.Event)
     server.should_exit = True
 
 
-async def _idle_watchdog(hub: HubState, shutdown_event: asyncio.Event) -> None:
-    """Shuts the server down once nothing has talked to it for a long time.
-
-    App.tsx sends a periodic heartbeat independent of which page is open, so
-    "no request of any kind for IDLE_SHUTDOWN_GRACE_SECONDS" means the tab is
-    gone (closed, crashed, or the machine slept) rather than merely idle or
-    backgrounded - see the module docstring's note on timer throttling.
-    """
-    while not shutdown_event.is_set():
-        await asyncio.sleep(IDLE_WATCHDOG_INTERVAL_SECONDS)
-        if time.monotonic() - hub.last_activity_at >= IDLE_SHUTDOWN_GRACE_SECONDS:
-            hub.diagnostics.event("idle_shutdown_no_browser_tab")
-            shutdown_event.set()
-            return
-
-
 async def _serve(app, hub: HubState, session_dir: Path, open_browser: bool, has_audio_dir: bool, shutdown_event: asyncio.Event, port: int = DEFAULT_PORT) -> None:
     config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning")
     server = uvicorn.Server(config)
@@ -108,12 +81,10 @@ async def _serve(app, hub: HubState, session_dir: Path, open_browser: bool, has_
         webbrowser.open(base_url)
 
     watch_task = asyncio.create_task(_watch_shutdown(server, shutdown_event))
-    idle_task = asyncio.create_task(_idle_watchdog(hub, shutdown_event))
     try:
         await task
     finally:
         watch_task.cancel()
-        idle_task.cancel()
 
 
 def probe_existing_instance(port: int) -> bool:

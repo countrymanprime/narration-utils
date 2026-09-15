@@ -110,20 +110,6 @@ function AppRoutes() {
     return () => window.clearInterval(interval);
   }, []);
 
-  // Tells the server to shut down as soon as this tab actually closes,
-  // instead of leaving the process bound to its fixed port for up to
-  // IDLE_SHUTDOWN_GRACE_SECONDS (main.py) - that's what let a second REAPER
-  // launch collide with a still-alive process from a tab the user thought
-  // they'd already closed. sendBeacon (not fetch) because the page is
-  // unloading and won't wait around for a response; pagehide (not
-  // beforeunload) because it also fires on tab close/navigation without
-  // blocking bfcache.
-  useEffect(() => {
-    const notifyShutdown = () => navigator.sendBeacon('/api/shutdown');
-    window.addEventListener('pagehide', notifyShutdown);
-    return () => window.removeEventListener('pagehide', notifyShutdown);
-  }, []);
-
   useEffect(() => {
     if (!data) return;
     const cssName: Record<string, string> = {

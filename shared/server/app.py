@@ -167,10 +167,9 @@ def build_app(hub: HubState, ui_dist_dir: str, audio_dir: str | None = None, shu
 
     @api.post("/shutdown")
     def shutdown():
-        # Lets an operator (or a future admin action) request a clean exit;
-        # the normal path is main.py's idle watchdog noticing no activity
-        # (see hub.touch_activity/last_activity_at) for a long stretch once
-        # the browser tab closes.
+        # The server otherwise stays up indefinitely - this is the only way
+        # it exits. Called by the host shell's window-close handler; see the
+        # Tauri shell's main.rs once that lands.
         hub.diagnostics.event("shutdown_requested_via_api")
         if shutdown_event is not None:
             shutdown_event.set()
