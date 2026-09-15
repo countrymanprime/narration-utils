@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
-import type { GuideEntity, ManuscriptChapter } from '../../types';
+import type { GuideEntity, ManuscriptChapter, ManuscriptImportSelection } from '../../types';
 import type { Bootstrap } from '../../types';
 import { Heading } from '../primitives/Heading';
 import { AudiobookEstimatePanel } from './AudiobookEstimatePanel';
+import { ConfirmDialog } from '../primitives/ConfirmDialog';
 
 export function Home({
   data,
@@ -19,7 +20,9 @@ export function Home({
   const api = useApi();
   const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
   const [entities, setEntities] = useState<GuideEntity[]>([]);
-  const found = Boolean(data.manuscriptPath);
+  const found = Boolean(data.manuscript);
+  const [pendingImport, setPendingImport] = useState<ManuscriptImportSelection>();
+  const [headingLevel, setHeadingLevel] = useState(1);
   useEffect(() => {
     void Promise.all([api.manuscriptChapters(), api.guideEntities()])
       .then(([nextChapters, nextEntities]) => {
@@ -45,27 +48,54 @@ export function Home({
               </>
             ) : (
               <>
-                <strong>Manuscript not found</strong> — expected a .docx in the project folder
+              <strong>No imported manuscript</strong> — import a Word, Markdown, or text-based PDF manuscript
               </>
             )}
           </span>
         </div>
-        {found ? (
-          <button className="btn btn-ghost text-xs" onClick={() => go('/manuscript')}>
-            View manuscript →
-          </button>
-        ) : (
+        <div className="flex gap-2">
+          {found && <button className="btn btn-ghost text-xs" onClick={() => go('/manuscript')}>View manuscript →</button>}
           <button
-            className="btn btn-primary text-xs"
+            className={found ? 'btn btn-ghost text-xs' : 'btn btn-primary text-xs'}
             onClick={async () => {
               const result = await api.selectManuscript();
-              notify(result?.path ? 'Manuscript located' : 'No manuscript selected');
+              if (result.selected) setPendingImport(result);
+              else notify('No manuscript selected');
             }}
           >
-            Locate manuscript…
+            {found ? 'Replace manuscript…' : 'Import manuscript…'}
           </button>
-        )}
+          {!found && data.legacyManuscriptAvailable && <button className="btn btn-ghost text-xs" onClick={() => void api.manuscriptLegacyPreview().then(setPendingImport).catch((error) => notify(error.message))}>Import legacy Word file…</button>}
+        </div>
       </section>
+      {pendingImport?.preview && (
+        <ConfirmDialog
+          title={`Import ${pendingImport.preview.sourceName}`}
+          body={`${pendingImport.preview.format.toUpperCase()} · ${pendingImport.preview.paragraphCount} paragraphs · ${pendingImport.preview.chapterTitles.length || 1} proposed chapters.${pendingImport.requiresReset ? ' This replaces the active manuscript and clears Story Bible, notes, bookmarks, statuses, and saved comparison results.' : ''}`}
+          confirmLabel={pendingImport.requiresReset ? 'Replace and reset' : 'Import'}
+          confirm={() => {
+            void api.manuscriptImportCommit(headingLevel, Boolean(pendingImport.requiresReset)).then(() => {
+              setPendingImport(undefined);
+              notify('Manuscript imported.');
+              location.reload();
+            }).catch((error) => notify(error.message));
+          }}
+          cancel={() => setPendingImport(undefined)}
+        >
+          {pendingImport.preview.format === 'markdown' && (
+            <label className="mt-4 flex items-center gap-2 text-sm">Markdown chapter heading level
+              <select value={headingLevel} onChange={(event) => {
+                const level = Number(event.target.value);
+                setHeadingLevel(level);
+                void api.manuscriptImportPreview(level).then(setPendingImport).catch((error) => notify(error.message));
+              }}>
+                {[1, 2, 3, 4, 5, 6].map((level) => <option key={level} value={level}>H{level}</option>)}
+              </select>
+            </label>
+          )}
+          {pendingImport.preview.format === 'pdf' && pendingImport.preview.chapterTitles.length > 0 && <p className="mt-3 text-xs">Detected chapters: {pendingImport.preview.chapterTitles.join(' · ')}</p>}
+        </ConfirmDialog>
+      )}
       <AudiobookEstimatePanel notify={notify} goToManuscript={goToManuscript} />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <button aria-label="Open Proofing" className="panel panel-body text-left transition hover:-translate-y-px" onClick={() => go('/proofing')}>

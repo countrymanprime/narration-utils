@@ -139,7 +139,7 @@ export function AudiobookEstimatePanel({
                       <td>
                         <div className="flex items-center gap-1">
                           <TooltipTarget text="Jump to chapter in Manuscript">
-                            <button aria-label={`Jump to ${chapter.title} in manuscript`} className="icon-btn" onClick={() => goToManuscript(chapter.title)}>
+                            <button aria-label={`Jump to ${chapter.title} in manuscript`} className="icon-btn" onClick={() => goToManuscript(chapter.id)}>
                               <FontAwesomeIcon icon={faFileLines} />
                             </button>
                           </TooltipTarget>
@@ -162,7 +162,7 @@ export function AudiobookEstimatePanel({
                           value={chapter.status}
                           onChange={async (event) => {
                             try {
-                              const updated = await api.manuscriptSetChapterStatus(chapter.title, event.target.value as ChapterStatus);
+                              const updated = await api.manuscriptSetChapterStatus(chapter.id, event.target.value as ChapterStatus);
                               setChapters((current) =>
                                 current?.map((c) =>
                                   c.id === chapter.id

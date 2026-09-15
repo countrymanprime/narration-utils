@@ -9,7 +9,7 @@ export type ScopedSettingField = {
   effectiveValue: string;
   effectiveSource: string;
 };
-export type GuideEvidence = { chapter: string; paragraph: number; excerpt: string; sourceLine?: number };
+export type GuideEvidence = { chapter: string; chapterId?: string; paragraph: number; paragraphId?: string; excerpt: string; sourceLine?: number };
 export type GuideRelationship = { id: string; name: string; label: string };
 export type GuidePronunciation = { ipa: string; source: string; confidence: string };
 export type GuideNote = { text: string; evidence: { chapter?: string; excerpt?: string } };
@@ -66,7 +66,8 @@ export type Bootstrap = {
   projectFolder: string;
   projectName: string;
   daw: string;
-  manuscriptPath: string;
+  manuscript: { id: string; format: string; sourceName: string; importedAt: string } | null;
+  legacyManuscriptAvailable: boolean;
   runtime: Record<string, string>;
   transcript: TranscriptState;
 };
@@ -82,11 +83,13 @@ export type ManuscriptChapter = {
   recordedFraction?: number;
   status: ChapterStatus;
 };
-export type ManuscriptParagraph = { chapter: string; index: number; sourceLine?: number; text: string; entityIds: string[] };
+export type ManuscriptParagraph = { id: string; chapterId: string; chapter: string; index: number; sourceLine?: number; text: string; entityIds: string[] };
 export type ManuscriptNote = {
   id: string;
   chapter: string;
+  chapterId?: string;
   paragraph: number;
+  paragraphId?: string;
   text: string;
   createdAt: string;
   anchorStart?: number;
@@ -97,20 +100,27 @@ export type ReaderBookmark = {
   id: string;
   kind: 'chapter' | 'line' | 'note';
   chapter: string;
+  chapterId?: string;
   paragraph?: number;
+  paragraphId?: string;
   sourceLine?: number;
   noteId?: string;
   createdAt: string;
 };
 export type ReaderState = { activeChapter?: string; activeSourceLine?: number; expandedChapters?: string[]; bookmarks: ReaderBookmark[] };
-export type SearchHit = { chapter: string; paragraph: number; sourceLine?: number; excerpt: string };
+export type SearchHit = { chapter: string; chapterId?: string; paragraph: number; paragraphId?: string; sourceLine?: number; excerpt: string };
+export type ManuscriptImportPreview = { format: 'docx' | 'markdown' | 'pdf'; sourceName: string; paragraphCount: number; chapterTitles: string[] };
+export type ManuscriptImportSelection = { selected: boolean; requiresReset?: boolean; preview?: ManuscriptImportPreview };
 export type ManuscriptReader = { chapters: ManuscriptChapter[]; paragraphs: ManuscriptParagraph[]; notes: ManuscriptNote[] };
 
 export interface NarrationApi {
   ready(): Promise<HostReady>;
   bootstrap(): Promise<Bootstrap>;
   poll(revision: number): Promise<{ revision: number; transcript: TranscriptState }>;
-  selectManuscript(): Promise<{ path: string }>;
+  selectManuscript(): Promise<ManuscriptImportSelection>;
+  manuscriptImportPreview(markdownHeadingLevel: number): Promise<ManuscriptImportSelection>;
+  manuscriptImportCommit(markdownHeadingLevel: number, confirmedReset: boolean): Promise<Bootstrap['manuscript']>;
+  manuscriptLegacyPreview(): Promise<ManuscriptImportSelection>;
   saveSettings(tool: string, scope: Scope, values: Record<string, string | null>): Promise<Bootstrap>;
   settingsForScope(scope: Scope): Promise<Record<string, ScopedSettingField[]>>;
   guideBuild(): Promise<string>;
@@ -146,7 +156,7 @@ export interface NarrationApi {
   readerStateSave(values: Pick<ReaderState, 'activeChapter' | 'activeSourceLine' | 'expandedChapters'>): Promise<ReaderState>;
   readerBookmarkCreate(bookmark: Omit<ReaderBookmark, 'id' | 'createdAt'>): Promise<ReaderBookmark>;
   readerBookmarkDelete(id: string): Promise<void>;
-  noteCreate(chapter: string, paragraph: number, text: string, anchorStart?: number, anchorEnd?: number, anchorText?: string): Promise<ManuscriptNote>;
+  noteCreate(chapterId: string, paragraphId: string, text: string, anchorStart?: number, anchorEnd?: number, anchorText?: string): Promise<ManuscriptNote>;
   noteDelete(id: string): Promise<void>;
   /** Subscribes to live transcript-run updates (SSE in httpClient; a simple
    * synchronous replay in mockApi). Returns an unsubscribe function. Only the

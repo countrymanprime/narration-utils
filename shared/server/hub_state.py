@@ -14,6 +14,7 @@ import time
 from pathlib import Path
 
 from narration_common import config as cfg
+from narration_common import manuscript as canonical
 from narration_common.ui_bridge import BridgeClient, decode_fields
 
 from .diagnostics import SessionDiagnostics
@@ -63,7 +64,8 @@ class HubState:
         self._last_completed_json: str | None = None
         self._revision = 1
         self.closed = False
-        self.show_open_docx_dialog = None  # set by main.py once a dialog implementation is wired up (Phase 4)
+        self.show_open_manuscript_dialog = None
+        self._pending_import: str | None = None
 
         # Tracks whether the browser tab is still around, so main.py's idle
         # watchdog can shut this process down once it's gone - see
@@ -157,18 +159,20 @@ class HubState:
     # -- bootstrap / poll --------------------------------------------------------
 
     def bootstrap(self) -> dict:
-        manuscript_path = Path(self.project_folder) / "Manuscript.docx" if self.project_folder else None
-        manuscript = str(manuscript_path) if manuscript_path and manuscript_path.exists() else ""
+        manuscript = canonical.manuscript_path(self.project_folder) if self.project_folder else None
+        manuscript_found = bool(manuscript and manuscript.exists())
+        legacy = Path(self.project_folder) / "Manuscript.docx" if self.project_folder else None
         with self._lock:
             transcript = self._run.snapshot()
-        self.diagnostics.event("bootstrap_completed", {"manuscript_found": bool(manuscript)})
+        self.diagnostics.event("bootstrap_completed", {"manuscript_found": manuscript_found})
         return {
             "apiVersion": API_VERSION,
             "diagnosticId": self.diagnostics.identifier,
             "projectFolder": self.project_folder or "",
             "projectName": self.project_name,
             "daw": self.daw,
-            "manuscriptPath": manuscript,
+            "manuscript": self.manuscript_info(),
+            "legacyManuscriptAvailable": bool(legacy and legacy.is_file() and not manuscript_found),
             "runtime": {
                 "ManuscriptGuide": {"python_exe": self.manuscript_python, "backend": self.manuscript_backend},
                 "TranscriptCompare": {"python_exe": self.compare_python, "compare_script": self.compare_backend},
@@ -183,14 +187,70 @@ class HubState:
     def select_manuscript(self) -> dict:
         if not self.project_folder:
             raise HubError("Save the REAPER project before selecting its manuscript.")
-        selected = self.show_open_docx_dialog() if self.show_open_docx_dialog else None
+        selected = self.show_open_manuscript_dialog() if self.show_open_manuscript_dialog else None
         if not selected:
-            return {"path": ""}
-        destination = str(Path(self.project_folder) / "Manuscript.docx")
-        shutil.copyfile(selected, destination)
-        cfg.save_global_setting("_shared", "last_docx_path", selected)
+            return {"selected": False}
+        return self._prepare_import(selected)
+
+    def manuscript_info(self) -> dict | None:
+        if not self.project_folder or not canonical.exists(self.project_folder):
+            return None
+        try:
+            data = canonical.load(self.project_folder)
+        except canonical.ManuscriptError:
+            return None
+        return {"id": data["documentId"], "format": data["importer"]["format"], "sourceName": data["source"]["fileName"], "importedAt": data["importedAt"]}
+
+    def _prepare_import(self, selected: str, markdown_heading_level: int = 1) -> dict:
+        try:
+            draft = canonical.prepare_import(selected, markdown_heading_level)
+        except canonical.ManuscriptError as exc:
+            raise HubError(str(exc)) from exc
+        self._pending_import = selected
+        return {"selected": True, "requiresReset": canonical.exists(self.project_folder), "preview": canonical.preview(draft)}
+
+    def manuscript_legacy_preview(self) -> dict:
+        if not self.project_folder:
+            raise HubError("Save the REAPER project before importing a manuscript.")
+        legacy = Path(self.project_folder) / "Manuscript.docx"
+        if not legacy.is_file():
+            raise HubError("No legacy Word manuscript was found in this project.")
+        return self._prepare_import(str(legacy))
+
+    def manuscript_import_preview(self, markdown_heading_level: int = 1) -> dict:
+        if not self._pending_import:
+            raise HubError("Choose a manuscript file first.")
+        return self._prepare_import(self._pending_import, markdown_heading_level)
+
+    def _reset_manuscript_derivatives(self) -> None:
+        """Only called after user-confirmed replacement/migration."""
+        if not self.project_folder:
+            return
+        root = Path(self.project_folder)
+        for target in (root / "ManuscriptGuide", root / "TranscriptCompare"):
+            if target.exists():
+                shutil.rmtree(target)
+        for target in (root / "narration-utils" / "manuscript-notes.json", root / ".narration-last-comparison.json"):
+            if target.exists():
+                target.unlink()
+        self._last_completed_json = None
+        self._run = TranscriptRun()
+
+    def manuscript_import_commit(self, markdown_heading_level: int = 1, confirmed_reset: bool = False) -> dict:
+        if not self.project_folder or not self._pending_import:
+            raise HubError("Choose a manuscript file first.")
+        replacing = canonical.exists(self.project_folder)
+        if replacing and not confirmed_reset:
+            raise HubError("Confirm replacement before clearing manuscript-derived project data.")
+        try:
+            draft = canonical.prepare_import(self._pending_import, markdown_heading_level)
+            canonical.commit_import(self.project_folder, self._pending_import, draft)
+        except canonical.ManuscriptError as exc:
+            raise HubError(str(exc)) from exc
+        self._reset_manuscript_derivatives()
+        self._pending_import = None
         self._changed()
-        return {"path": destination}
+        return self.manuscript_info() or {}
 
     # -- transcript-compare lifecycle --------------------------------------------
 
@@ -198,8 +258,8 @@ class HubState:
         with self._lock:
             if self._run.phase in ("preparing", "running"):
                 raise HubError("A comparison is already running.")
-            if not self.project_folder or not (Path(self.project_folder) / "Manuscript.docx").is_file():
-                raise HubError("Save the REAPER project and select its manuscript first.")
+            if not self.project_folder or not canonical.exists(self.project_folder):
+                raise HubError("Save the REAPER project and import a manuscript first.")
             run_id = str(int(time.time() * 1000)) + "000"
             hints_path = Path(self.project_folder) / "TranscriptCompare" / "vocabulary_hints.txt"
             hints_path.parent.mkdir(parents=True, exist_ok=True)
@@ -411,9 +471,9 @@ class HubState:
     def manuscript_reader_state_save(self, active_chapter, active_source_line, expanded_chapters=None) -> dict:
         return self._manuscript().save_reader_state(active_chapter, active_source_line, expanded_chapters)
 
-    def manuscript_bookmark_create(self, kind, chapter, paragraph, source_line, note_id) -> dict:
+    def manuscript_bookmark_create(self, kind, chapter, chapter_id, paragraph, paragraph_id, source_line, note_id) -> dict:
         try:
-            return self._manuscript().create_bookmark(kind, chapter, paragraph, source_line, note_id)
+            return self._manuscript().create_bookmark(kind, chapter, chapter_id, paragraph, paragraph_id, source_line, note_id)
         except ManuscriptError as exc:
             raise HubError(str(exc)) from exc
 
@@ -490,13 +550,13 @@ class HubState:
         tag, rest = fields[0], fields[1:]
 
         if tag == "COMPARE_PREPARED" and len(rest) >= 5:
-            run_id, manifest, docx, track, diff_path = rest[0], rest[1], rest[2], rest[3], rest[4]
+            run_id, manifest, manuscript, track, diff_path = rest[0], rest[1], rest[2], rest[3], rest[4]
             with self._lock:
                 if run_id != self._run.run_id or self._run.phase != "preparing":
                     return
                 self._run.manifest = manifest
                 self._run.diff_path = diff_path
-            self._launch_backend(docx, track)
+            self._launch_backend(manuscript, track)
 
         elif tag == "COMPARE_MARKER" and len(rest) >= 8:
             run_id, row_id, kind, name, doc_text, audio_text, project_time, item_index = rest[:8]
@@ -562,7 +622,7 @@ class HubState:
         if self.project_folder:
             (Path(self.project_folder) / ".narration-last-comparison.json").write_text(self._last_completed_json, encoding="utf-8")
 
-    def _launch_backend(self, docx: str, track: str) -> None:
+    def _launch_backend(self, manuscript: str, track: str) -> None:
         with self._lock:
             run = self._run
             if run.manifest is None:
@@ -572,7 +632,7 @@ class HubState:
             run.progress = str(Path(self._session_dir) / f"progress_{run.run_id}.txt")
             run.log_path = str(Path(self._session_dir) / f"log_{run.run_id}.txt")
             args = [
-                self.compare_backend, "--manifest", run.manifest, "--docx", docx, "--track-name", track,
+                self.compare_backend, "--manifest", run.manifest, "--manuscript", manuscript, "--track-name", track,
                 "--out", run.output, "--diff-out", run.diff_path or "", "--model", options.get("model", "small"),
                 "--progress", run.progress, "--log", run.log_path,
             ]

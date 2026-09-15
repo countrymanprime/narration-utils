@@ -1,6 +1,6 @@
 """Non-GUI settings access for values only a DAW's own scripting side
 consumes (e.g. REAPER take-marker colors) and can't get simply by invoking
-the analysis backend with `--docx`.
+the analysis backend with `--manuscript`.
 
 Writes results to `--out` rather than stdout, matching this repo's existing
 file-based IPC convention (progress/log/out files) instead of requiring a

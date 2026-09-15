@@ -49,7 +49,7 @@ export function Manuscript({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
   const { selection, clear: clearSelection } = useTextSelection(readerRef);
-  const active = readerState.activeChapter || chapters[0]?.title;
+  const active = readerState.activeChapter || chapters[0]?.id;
   const lineNumbers = useMemo(() => chapterLineNumbers(paragraphs), [paragraphs]);
 
   useEffect(() => {
@@ -76,13 +76,14 @@ export function Manuscript({
     void (async () => {
       try {
         const [reader, nextEntities, state] = await Promise.all([api.manuscriptReader(), api.guideEntities(), api.readerState()]);
-        const firstChapter = reader.chapters[0]?.title;
-        const expandedChapters = state.expandedChapters ?? [state.activeChapter || firstChapter].filter((title): title is string => Boolean(title));
+        const firstChapter = reader.chapters[0]?.id;
+        const chapterId = (value: string | undefined) => reader.chapters.find((item) => item.id === value || item.title === value)?.id || value;
+        const expandedChapters = (state.expandedChapters ?? [state.activeChapter || firstChapter]).map(chapterId).filter((id): id is string => Boolean(id));
         setChapters(reader.chapters);
         setParagraphs(reader.paragraphs);
         setNotes(reader.notes);
         setEntities(nextEntities);
-        setReaderState({ ...state, activeChapter: state.activeChapter || firstChapter, expandedChapters });
+        setReaderState({ ...state, activeChapter: chapterId(state.activeChapter) || firstChapter, expandedChapters });
       } catch (error) {
         notify(String(error));
       }
@@ -98,9 +99,10 @@ export function Manuscript({
 
   const showChapter = (chapter: string, paragraph?: number) => {
     if (!chapter) return;
-    const next = { ...readerState, activeChapter: chapter, expandedChapters: Array.from(new Set([...(readerState.expandedChapters || []), chapter])) };
+    const chapterId = chapters.find((item) => item.id === chapter || item.title === chapter)?.id || chapter;
+    const next = { ...readerState, activeChapter: chapterId, expandedChapters: Array.from(new Set([...(readerState.expandedChapters || []), chapterId])) };
     void saveState(next);
-    const selector = paragraph === undefined ? `[data-chapter="${escapeSelector(chapter)}"]` : `[data-paragraph="${paragraph}"]`;
+    const selector = paragraph === undefined ? `[data-chapter-id="${escapeSelector(chapterId)}"]` : `[data-paragraph="${paragraph}"]`;
     // Expanding a chapter that wasn't already rendered mounts a new
     // ParagraphView (which re-runs entity highlighting) before the target
     // node exists; poll across frames instead of guessing a fixed delay so
@@ -131,7 +133,7 @@ export function Manuscript({
     if (hash.startsWith('#p')) {
       const paragraph = Number(hash.slice(2));
       if (Number.isNaN(paragraph)) return;
-      const chapter = paragraphs.find((row) => row.index === paragraph)?.chapter;
+      const chapter = paragraphs.find((row) => row.index === paragraph)?.chapterId;
       if (!chapter) return;
       showChapter(chapter, paragraph);
     } else if (hash.startsWith('#c')) {
@@ -148,13 +150,14 @@ export function Manuscript({
     void saveState({ ...readerState, activeChapter: chapter, expandedChapters: [...expanded] });
   };
   const toggleChapterBookmark = async (chapter: string) => {
-    const current = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapter === chapter);
+    const current = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapterId === chapter);
     try {
       if (current) {
         await api.readerBookmarkDelete(current.id);
         setReaderState({ ...readerState, bookmarks: readerState.bookmarks.filter((item) => item.id !== current.id) });
       } else {
-        const next = await api.readerBookmarkCreate({ kind: 'chapter', chapter });
+        const title = chapters.find((item) => item.id === chapter)?.title || '';
+        const next = await api.readerBookmarkCreate({ kind: 'chapter', chapter: title, chapterId: chapter });
         setReaderState({ ...readerState, bookmarks: [...readerState.bookmarks, next] });
       }
     } catch (error) {
@@ -194,7 +197,7 @@ export function Manuscript({
     const paragraph = paragraphs.find((item) => item.index === target?.paragraphIndex);
     if (!target || !paragraph) return;
     try {
-      const created = await api.noteCreate(paragraph.chapter, paragraph.index, text, target.anchorStart, target.anchorEnd, target.anchorText);
+      const created = await api.noteCreate(paragraph.chapterId, paragraph.id, text, target.anchorStart, target.anchorEnd, target.anchorText);
       setNotes((current) => [...current, created]);
       notify('Note added.');
     } catch (error) {
@@ -256,7 +259,7 @@ export function Manuscript({
               <button
                 aria-label="Expand all chapters"
                 className="icon-btn"
-                onClick={() => void saveState({ ...readerState, expandedChapters: chapters.map((chapter) => chapter.title) })}
+                onClick={() => void saveState({ ...readerState, expandedChapters: chapters.map((chapter) => chapter.id) })}
               >
                 <FontAwesomeIcon icon={faAnglesDown} />
               </button>
@@ -275,18 +278,18 @@ export function Manuscript({
       </div>
       <div ref={readerRef} className="reader-chapters">
         {chapters.map((chapter) => {
-          const expanded = (readerState.expandedChapters || []).includes(chapter.title);
-          const chapterBookmark = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapter === chapter.title);
+          const expanded = (readerState.expandedChapters || []).includes(chapter.id);
+          const chapterBookmark = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapterId === chapter.id);
           return (
-            <article key={chapter.id} className={`reader-chapter chapter-card ${expanded ? 'expanded' : 'collapsed'}`} data-chapter={chapter.title}>
+            <article key={chapter.id} className={`reader-chapter chapter-card ${expanded ? 'expanded' : 'collapsed'}`} data-chapter={chapter.title} data-chapter-id={chapter.id}>
               <header className="reader-chapter-header chapter-card-header">
                 <TooltipTarget className="chapter-bookmark-target" text={chapterBookmark ? 'Remove chapter bookmark' : 'Bookmark this chapter'}>
-                  <button className={`chapter-bookmark ${chapterBookmark ? 'active' : ''}`} onClick={() => void toggleChapterBookmark(chapter.title)}>
+                  <button className={`chapter-bookmark ${chapterBookmark ? 'active' : ''}`} onClick={() => void toggleChapterBookmark(chapter.id)}>
                     <FontAwesomeIcon className="bookmark-outline" icon={faBookmarkRegular} />
                     <FontAwesomeIcon className="bookmark-fill" icon={faBookmarkSolid} />
                   </button>
                 </TooltipTarget>
-                <button className="chapter-title text-left" onClick={() => toggleManualChapter(chapter.title)}>
+                <button className="chapter-title text-left" onClick={() => toggleManualChapter(chapter.id)}>
                   <h2>
                     {chapter.title} {chapter.subtitle && <span>— {chapter.subtitle}</span>}
                   </h2>
@@ -301,9 +304,9 @@ export function Manuscript({
               {expanded && (
                 <div className="manuscript-reader mx-auto">
                   <ParagraphView
-                    paragraphs={paragraphs.filter((item) => item.chapter === chapter.title)}
+                    paragraphs={paragraphs.filter((item) => item.chapterId === chapter.id)}
                     entities={entities}
-                    notes={notes.filter((item) => item.chapter === chapter.title)}
+                    notes={notes.filter((item) => item.chapterId === chapter.id || (!item.chapterId && item.chapter === chapter.title))}
                     textClass={READER_TEXT_CLASSES[textSize]}
                     lineNumberPadding={LINE_NUMBER_PADDING_CLASSES[textSize]}
                     openEntity={(entity) => {
@@ -377,7 +380,7 @@ export function Manuscript({
                 <div className="section-label mb-1">Chapters</div>
                 <ChapterNav
                   chapters={chapters}
-                  selectedId={chapters.find((item) => item.title === active)?.id}
+                  selectedId={active}
                   bookmarks={readerState.bookmarks}
                   searchQuery={searchQuery}
                   searchResults={searchResults}
@@ -386,7 +389,7 @@ export function Manuscript({
                     const chapter = chapters.find((item) => item.id === id);
                     if (chapter) {
                       closeSheet();
-                      showChapter(chapter.title, paragraph);
+                      showChapter(chapter.id, paragraph);
                     }
                   }}
                   removeBookmark={(id) =>

@@ -9,6 +9,7 @@ import urllib.parse
 from pathlib import Path
 
 from narration_common import config as cfg
+from narration_common import manuscript as canonical
 
 from . import process_utils
 
@@ -27,7 +28,7 @@ class GuideService:
     def _manuscript(self) -> str | None:
         if not self._project_folder:
             return None
-        path = Path(self._project_folder) / "Manuscript.docx"
+        path = canonical.manuscript_path(self._project_folder)
         return str(path) if path.exists() else None
 
     @property
@@ -59,7 +60,7 @@ class GuideService:
         os.makedirs(data_dir, exist_ok=True)
         model, _ = cfg.get("ManuscriptGuide", "spacy_model", self._project_folder, "en_core_web_sm")
         espeak, _ = cfg.get("ManuscriptGuide", "espeak_library", self._project_folder, "")
-        args = ["build", "--docx", manuscript, "--out", guide_path, "--spacy-model", model]
+        args = ["build", "--manuscript", manuscript, "--out", guide_path, "--spacy-model", model]
         if espeak:
             args += ["--espeak-library", espeak]
         result = self._run_backend(*args)
@@ -99,7 +100,7 @@ class GuideService:
             if field == "aliases":
                 manuscript = self._manuscript
                 if manuscript:
-                    args += ["--docx", manuscript]
+                    args += ["--manuscript", manuscript]
                 espeak, _ = cfg.get("ManuscriptGuide", "espeak_library", self._project_folder, "")
                 if espeak:
                     args += ["--espeak-library", espeak]
@@ -121,7 +122,7 @@ class GuideService:
         if manuscript is None:
             raise GuideError("Save the REAPER project and select a manuscript first.")
         self._throw_if_failed(
-            self._run_backend("rescan", "--guide", guide_path, "--docx", manuscript, "--entity-id", entity_id),
+            self._run_backend("rescan", "--guide", guide_path, "--manuscript", manuscript, "--entity-id", entity_id),
             "Could not rescan the manuscript.",
         )
 
@@ -132,7 +133,7 @@ class GuideService:
         if manuscript is None:
             raise GuideError("Save the REAPER project and select a manuscript first.")
         espeak, _ = cfg.get("ManuscriptGuide", "espeak_library", self._project_folder, "")
-        args = ["create", "--guide", guide_path, "--docx", manuscript, "--name", name, "--category", category, "--aliases", ";".join(aliases)]
+        args = ["create", "--guide", guide_path, "--manuscript", manuscript, "--name", name, "--category", category, "--aliases", ";".join(aliases)]
         if espeak:
             args += ["--espeak-library", espeak]
         result = self._run_backend(*args)

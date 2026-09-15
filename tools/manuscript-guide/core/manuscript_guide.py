@@ -1,7 +1,7 @@
 """Local backend for the independent REAPER Manuscript Guide.
 
-The only shared contract with other REAPER tools is the project's
-``Manuscript.docx`` file. All output belongs in the caller-provided
+The only shared contract with other REAPER tools is the project's canonical
+``narration-utils/manuscript/manuscript.json`` file. All output belongs in the caller-provided
 ManuscriptGuide directory.
 """
 
@@ -24,7 +24,7 @@ if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
 from narration_common.config import get_default  # noqa: E402
-from narration_common.docx_chapters import NON_CHAPTER_HEADINGS, load_docx_paragraphs  # noqa: E402
+from narration_common import manuscript as canonical_manuscript  # noqa: E402
 from narration_common.logging_utils import log  # noqa: E402
 from narration_common.progress import write_progress  # noqa: E402
 
@@ -180,20 +180,12 @@ def document_hash(path: str) -> str:
     return digest.hexdigest()
 
 
-def load_docx(path: str) -> list[dict[str, str]]:
-    chapter = "Front matter"
-    paragraphs: list[dict[str, str]] = []
-    for item in load_docx_paragraphs(path, detect_outline_headings=True):
-        text = item["text"]
-        if item["is_heading"]:
-            heading = " ".join(text.split())
-            # Structural headings like "Table of Contents" describe the document,
-            # not a chapter to narrate - skip them rather than starting a chapter.
-            if heading.strip().lower() in NON_CHAPTER_HEADINGS:
-                continue
-            chapter = heading
-            continue
-        paragraphs.append({"chapter": chapter, "text": " ".join(text.split())})
+def load_manuscript(path: str) -> list[dict[str, str]]:
+    data = canonical_manuscript.load_file(path)
+    paragraphs = [
+        {"chapter": item["chapterTitle"], "chapterId": item["chapterId"], "paragraphId": item["id"], "text": item["text"]}
+        for item in data["paragraphs"]
+    ]
     if not paragraphs:
         raise ValueError("The manuscript has no readable text paragraphs.")
     return paragraphs
@@ -229,7 +221,7 @@ def find_occurrences(paragraphs: list[dict[str, str]], name: str) -> list[dict[s
     for para_index, paragraph in enumerate(paragraphs):
         text = paragraph["text"]
         for match in pattern.finditer(text):
-            found.append({"chapter": paragraph["chapter"], "paragraph": para_index, "excerpt": excerpt(text, match.start(), match.end())})
+            found.append({"chapter": paragraph["chapter"], "chapterId": paragraph["chapterId"], "paragraph": para_index, "paragraphId": paragraph["paragraphId"], "excerpt": excerpt(text, match.start(), match.end())})
     return found
 
 
@@ -249,7 +241,9 @@ def rule_candidates(paragraphs: list[dict[str, str]]) -> list[dict[str, str]]:
                 {
                     "name": name,
                     "chapter": paragraph["chapter"],
+                    "chapterId": paragraph.get("chapterId", f"legacy-chapter-{para_index}"),
                     "paragraph": str(para_index),
+                    "paragraphId": paragraph.get("paragraphId", f"legacy-paragraph-{para_index}"),
                     "text": text,
                     "start": str(match.start()),
                     "end": str(match.end()),
@@ -277,7 +271,9 @@ def spacy_candidates(paragraphs: list[dict[str, str]], model_name: str) -> list[
                 {
                     "name": ent.text.strip(),
                     "chapter": paragraph["chapter"],
+                    "chapterId": paragraph.get("chapterId", f"legacy-chapter-{para_index}"),
                     "paragraph": str(para_index),
+                    "paragraphId": paragraph.get("paragraphId", f"legacy-paragraph-{para_index}"),
                     "text": paragraph["text"],
                     "start": str(ent.start_char),
                     "end": str(ent.end_char),
@@ -432,7 +428,9 @@ def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_lib
             return [
                 {
                     "chapter": item["chapter"],
+                    "chapterId": item["chapterId"],
                     "paragraph": int(item["paragraph"]),
+                    "paragraphId": item["paragraphId"],
                     "excerpt": excerpt(item["text"], int(item["start"]), int(item["end"])),
                 }
                 for item in by_literal_name.get(literal_name, [])
@@ -594,8 +592,8 @@ def write_json(path: str, data: dict[str, Any]) -> None:
 
 def build(args: argparse.Namespace) -> None:
     write_progress(args.progress, "LOAD", 5, "Reading manuscript...")
-    source_hash = document_hash(args.docx)
-    paragraphs = load_docx(args.docx)
+    source_hash = document_hash(args.manuscript)
+    paragraphs = load_manuscript(args.manuscript)
     write_progress(args.progress, "EXTRACT", 30, "Finding people, places, and organizations...")
     previous = load_json(args.out)
     entities = build_entities(paragraphs, args.spacy_model, args.espeak_library or None)
@@ -603,7 +601,7 @@ def build(args: argparse.Namespace) -> None:
     entities = merge_locked(entities, previous)
     guide = {
         "schema_version": SCHEMA_VERSION,
-        "source": {"path": str(Path(args.docx).resolve()), "sha256": source_hash},
+        "source": {"path": str(Path(args.manuscript).resolve()), "sha256": source_hash},
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "entities": entities,
         "vocabulary_candidates": vocabulary_candidates(entities),
@@ -618,7 +616,7 @@ def status(args: argparse.Namespace) -> None:
     guide = load_json(args.guide)
     if not guide:
         result = "STATUS|MISSING"
-    elif guide.get("source", {}).get("sha256") != document_hash(args.docx):
+    elif guide.get("source", {}).get("sha256") != document_hash(args.manuscript):
         result = "STATUS|STALE"
     else:
         result = "STATUS|CURRENT"
@@ -672,7 +670,7 @@ def edit(args: argparse.Namespace) -> None:
     elif args.field == "aliases":
         requested = [item.strip() for item in args.value.split(";") if item.strip()]
         existing_by_text = {alias["text"].lower(): alias for alias in entity.get("aliases", [])}
-        paragraphs = load_docx(args.docx) if args.docx else None
+        paragraphs = load_manuscript(args.manuscript) if args.manuscript else None
         new_aliases = []
         for name in requested:
             existing = existing_by_text.get(name.lower())
@@ -700,7 +698,7 @@ def rescan(args: argparse.Namespace) -> None:
     if not guide:
         raise ValueError("Guide file does not exist; build it first.")
     entity = find_entity(guide, args.entity_id)
-    paragraphs = load_docx(args.docx)
+    paragraphs = load_manuscript(args.manuscript)
     entity["occurrences"] = find_occurrences(paragraphs, entity["canonical_name"])
     for alias in entity.get("aliases", []):
         alias["occurrences"] = find_occurrences(paragraphs, alias["text"])
@@ -725,7 +723,7 @@ def create(args: argparse.Namespace) -> None:
     if any(value["id"] == new_id for value in guide["entities"]):
         raise ValueError("An entity with this name already exists.")
     alias_names = [item.strip() for item in args.aliases.split(";") if item.strip()]
-    paragraphs = load_docx(args.docx)
+    paragraphs = load_manuscript(args.manuscript)
     canonical_occurrences = find_occurrences(paragraphs, name)
     aliases = [
         {
@@ -926,43 +924,17 @@ def render_audio(args: argparse.Namespace) -> None:
     print("AUDIO|" + str(destination))
 
 
-def export_manuscript(args: argparse.Namespace) -> None:
-    """Emits full chapter text with stable paragraph indices for the
-    Manuscript reader page. Reuses load_docx() rather than re-parsing the
-    .docx, so a paragraph's index here is guaranteed to line up with the
-    "paragraph" field already stored in entity occurrences by build()/
-    find_occurrences() - both walk the exact same list in the exact same
-    order."""
-    paragraphs = load_docx(args.docx)
-    chapters: list[dict[str, object]] = []
-    seen_chapters: dict[str, int] = {}
-    for paragraph in paragraphs:
-        chapter = paragraph["chapter"]
-        word_count = len(paragraph["text"].split())
-        if chapter not in seen_chapters:
-            seen_chapters[chapter] = len(chapters)
-            chapters.append({"title": chapter, "index": len(chapters), "wordCount": 0})
-        chapters[seen_chapters[chapter]]["wordCount"] += word_count
-    payload = {
-        "chapters": chapters,
-        "paragraphs": [{"chapter": p["chapter"], "index": i, "text": p["text"]} for i, p in enumerate(paragraphs)],
-    }
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out).write_text(json.dumps(payload), encoding="utf-8")
-    print(f"EXPORTED|{len(chapters)}|{len(paragraphs)}|{args.out}")
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     command = parser.add_subparsers(dest="command", required=True)
     build_parser = command.add_parser("build")
-    build_parser.add_argument("--docx", required=True)
+    build_parser.add_argument("--manuscript", required=True)
     build_parser.add_argument("--out", required=True)
     build_parser.add_argument("--progress")
     build_parser.add_argument("--spacy-model", default=get_default("ManuscriptGuide", "spacy_model", "en_core_web_sm"))
     build_parser.add_argument("--espeak-library", default="")
     status_parser = command.add_parser("status")
-    status_parser.add_argument("--docx", required=True)
+    status_parser.add_argument("--manuscript", required=True)
     status_parser.add_argument("--guide", required=True)
     status_parser.add_argument("--out")
     edit_parser = command.add_parser("edit")
@@ -970,15 +942,15 @@ def main() -> None:
     edit_parser.add_argument("--entity-id", required=True)
     edit_parser.add_argument("--field", required=True)
     edit_parser.add_argument("--value", required=True)
-    edit_parser.add_argument("--docx", default="")
+    edit_parser.add_argument("--manuscript", default="")
     edit_parser.add_argument("--espeak-library", default="")
     rescan_parser = command.add_parser("rescan")
     rescan_parser.add_argument("--guide", required=True)
-    rescan_parser.add_argument("--docx", required=True)
+    rescan_parser.add_argument("--manuscript", required=True)
     rescan_parser.add_argument("--entity-id", required=True)
     create_parser = command.add_parser("create")
     create_parser.add_argument("--guide", required=True)
-    create_parser.add_argument("--docx", required=True)
+    create_parser.add_argument("--manuscript", required=True)
     create_parser.add_argument("--name", required=True)
     create_parser.add_argument("--category", default="")
     create_parser.add_argument("--aliases", default="")
@@ -1004,9 +976,6 @@ def main() -> None:
     export_parser.add_argument("--guide", required=True)
     export_parser.add_argument("--out", required=True)
     export_parser.add_argument("--entity-ids", default="")
-    export_manuscript_parser = command.add_parser("export-manuscript")
-    export_manuscript_parser.add_argument("--docx", required=True)
-    export_manuscript_parser.add_argument("--out", required=True)
     audio_parser = command.add_parser("render-audio")
     audio_parser.add_argument("--guide", required=True)
     audio_parser.add_argument("--entity-id", required=True)
@@ -1028,7 +997,6 @@ def main() -> None:
             "unrelate": unrelate,
             "export-hotwords": export_hotwords,
             "render-audio": render_audio,
-            "export-manuscript": export_manuscript,
         }[args.command](args)
     except Exception as exc:
         log(f"ERROR: {exc}")

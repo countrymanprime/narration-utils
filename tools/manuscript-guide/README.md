@@ -1,6 +1,6 @@
 # Manuscript Guide
 
-Builds a narrator reference from a Word manuscript. It lists candidate characters, places, and
+Builds a narrator reference from a project-owned canonical manuscript. It lists candidate characters, places, and
 organizations; stores editable pronunciations, IPA, descriptions, evidence, and conservative
 personality notes; and can create local Piper WAV previews.
 
@@ -8,11 +8,11 @@ It is not dependent on Transcript Compare. The two tools deliberately share one 
 input only:
 
 ```
-<project folder>\Manuscript.docx
+<project folder>\narration-utils\manuscript\manuscript.json
 ```
 
-The Narration Utils workspace's **Select manuscript…** button may replace that
-file. This tool never reads or writes Transcript Compare's settings or
+The Narration Utils workspace's **Import manuscript…** flow may replace that
+file after confirmation. This tool never reads or writes Transcript Compare's settings or
 generated files.
 
 ## Settings: global vs. this project
@@ -53,7 +53,7 @@ use the corner **Settings** button without leaving that window.
 
 Python backends run only from repo-managed local environments created by the
 quickstart script, so REAPER never needs to know or configure Python. Select a
-manuscript from Home; it is copied beside the `.rpp` as `Manuscript.docx`.
+manuscript from Home; it is normalized into canonical JSON and its source is retained for provenance.
 
 ## Use
 

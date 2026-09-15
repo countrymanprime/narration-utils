@@ -153,12 +153,16 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
         projectFolder: 'C:/Projects/Alice-in-Wonderland',
         projectName: 'Alice’s Adventures in Wonderland',
         daw: 'REAPER',
-        manuscriptPath: 'C:/Projects/Alice-in-Wonderland/Manuscript.docx',
+        manuscript: { id: 'alice', format: 'docx', sourceName: 'Alice.docx', importedAt: '2026-01-01T00:00:00Z' },
+        legacyManuscriptAvailable: false,
         runtime: {},
         transcript: wireClone(transcript),
       }) as Bootstrap,
     poll: async () => ({ revision, transcript: wireClone(transcript) }),
-    selectManuscript: async () => ({ path: 'C:/Projects/Alice-in-Wonderland/Manuscript.docx' }),
+    selectManuscript: async () => ({ selected: true, requiresReset: false, preview: { format: 'docx', sourceName: 'Alice.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] } }),
+    manuscriptImportPreview: async () => ({ selected: true, requiresReset: false, preview: { format: 'markdown', sourceName: 'Alice.md', paragraphCount: 240, chapterTitles: ['Chapter 1'] } }),
+    manuscriptImportCommit: async () => ({ id: 'alice', format: 'markdown', sourceName: 'Alice.md', importedAt: '2026-01-01T00:00:00Z' }),
+    manuscriptLegacyPreview: async () => ({ selected: true, requiresReset: false, preview: { format: 'docx', sourceName: 'Manuscript.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] } }),
     saveSettings: async (tool, scope, values) => {
       settings[scope][tool] = (settings[scope][tool] || []).map((field) =>
         field.key in values
@@ -342,7 +346,7 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     },
     manuscriptSetChapterStatus: async (chapter, status) => {
       await manuscriptReady;
-      const found = chapters.find((item) => item.title === chapter);
+      const found = chapters.find((item) => item.id === chapter || item.title === chapter);
       if (!found) throw new Error(`Unknown chapter: ${chapter}`);
       found.status = status as ChapterStatus;
       return wireClone(found);
@@ -365,11 +369,15 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     readerBookmarkDelete: async (id) => {
       readerState = { ...readerState, bookmarks: readerState.bookmarks.filter((bookmark) => bookmark.id !== id) };
     },
-    noteCreate: async (chapter, paragraph, text, anchorStart, anchorEnd, anchorText) => {
+    noteCreate: async (chapterId, paragraphId, text, anchorStart, anchorEnd, anchorText) => {
+      const paragraph = paragraphs.find((item) => item.id === paragraphId);
+      if (!paragraph || paragraph.chapterId !== chapterId) throw new Error('Unknown manuscript paragraph');
       const note: ManuscriptNote = {
         id: `note-${nextId++}`,
-        chapter,
-        paragraph,
+        chapter: paragraph.chapter,
+        chapterId,
+        paragraph: paragraph.index,
+        paragraphId,
         text,
         createdAt: new Date().toISOString(),
         anchorStart,

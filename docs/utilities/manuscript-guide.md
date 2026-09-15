@@ -4,7 +4,7 @@
 
 ## Current capability and problem
 
-The current Python backend reads `Manuscript.docx`, detects candidate characters, places, and organizations, and writes editable JSON with pronunciation, evidence, conservative descriptions, and personality notes. The REAPER driver supports building, reviewing, editing/locking fields, exporting hotwords, and optional local Piper previews. It gives narrators a local reference for unfamiliar terms before and during recording.
+The current Python backend reads the project-owned canonical manuscript JSON, detects candidate characters, places, and organizations, and writes editable JSON with pronunciation, evidence, conservative descriptions, and personality notes. DOCX, Markdown, and text-based PDFs are imported once before analysis. The REAPER driver supports building, reviewing, editing/locking fields, exporting hotwords, and optional local Piper previews.
 
 ## Target workflow
 

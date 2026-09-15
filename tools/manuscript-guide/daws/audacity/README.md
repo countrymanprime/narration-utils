@@ -1,7 +1,7 @@
 # Manuscript Guide — Audacity driver (placeholder)
 
 Not implemented yet. The shared React workspace plus REAPER integration bridge are the reference
-implementation for what an adapter needs to do: resolve/copy the shared `Manuscript.docx`, run
+implementation for what an adapter needs to do: resolve the shared canonical manuscript JSON, run
 `core/manuscript_guide.py` as a subprocess, and present its results (searchable entity list,
 edit/lock fields, hotword export, audio preview playback) in the host's UI.
 

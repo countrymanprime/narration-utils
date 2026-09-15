@@ -78,9 +78,9 @@ multi-minute wait first.
    transcription).
 2. Run **Narration Utils** from the action list, open **Transcript Compare**, and choose
    **Start comparison**.
-3. The first time you run it in a project, select the Word manuscript from Home.
-   (`.docx`). It's then copied to `<project folder>\Manuscript.docx` (next to the `.rpp` file)
-   — every run after that reuses it automatically with no prompt. (The project must be saved
+3. The first time you run it in a project, import a DOCX, Markdown, or text-based PDF manuscript from Home.
+   It is normalized into `<project folder>\narration-utils\manuscript\manuscript.json`; every run
+   reuses that canonical data with no source-file parsing. (The project must be saved
    at least once, since the manuscript is stored alongside the project file; for an unsaved
    project it falls back to prompting every run instead.)
 4. The same responsive companion window stays open for the whole run

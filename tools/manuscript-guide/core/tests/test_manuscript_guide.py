@@ -63,8 +63,10 @@ class ManuscriptGuideTests(unittest.TestCase):
     def test_status_and_hotword_export_are_independent_files(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            manuscript = root / "Manuscript.docx"
-            manuscript.write_bytes(b"fixture manuscript")
+            source = root / "fixture.md"
+            source.write_text("# Chapter 1\n\nfixture manuscript", encoding="utf-8")
+            guide.canonical_manuscript.commit_import(root, source, guide.canonical_manuscript.prepare_import(source))
+            manuscript = guide.canonical_manuscript.manuscript_path(root)
             guide_file = root / "ManuscriptGuide" / "manuscript_guide.json"
             guide.write_json(
                 str(guide_file),
@@ -80,7 +82,7 @@ class ManuscriptGuideTests(unittest.TestCase):
                 },
             )
             status_file = root / "ManuscriptGuide" / "status.txt"
-            guide.status(argparse.Namespace(docx=str(manuscript), guide=str(guide_file), out=str(status_file)))
+            guide.status(argparse.Namespace(manuscript=str(manuscript), guide=str(guide_file), out=str(status_file)))
             self.assertEqual("STATUS|CURRENT\n", status_file.read_text(encoding="utf-8"))
             hotwords = root / "ManuscriptGuide" / "whisper_hotwords.txt"
             guide.export_hotwords(argparse.Namespace(guide=str(guide_file), out=str(hotwords), entity_ids=""))
@@ -92,15 +94,17 @@ class ManuscriptGuideTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            manuscript = root / "Manuscript.docx"
+            source = root / "Manuscript.docx"
             document = Document()
             document.add_heading("Chapter 1", level=1)
             document.add_paragraph("Captain Arelian said the Council of Ash would meet in Dawnspire.")
-            document.save(manuscript)
+            document.save(source)
+            guide.canonical_manuscript.commit_import(root, source, guide.canonical_manuscript.prepare_import(source))
+            manuscript = guide.canonical_manuscript.manuscript_path(root)
             output = root / "ManuscriptGuide" / "manuscript_guide.json"
             guide.build(
                 argparse.Namespace(
-                    docx=str(manuscript),
+                    manuscript=str(manuscript),
                     out=str(output),
                     progress=str(root / "ManuscriptGuide" / "progress.txt"),
                     spacy_model="en_core_web_sm",

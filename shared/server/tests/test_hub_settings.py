@@ -1,10 +1,11 @@
 """Ported from shared/hub.Tests/SettingsForScopeTests.cs and TranscriptHintsTests.cs."""
 
-import os
+from pathlib import Path
 
 import pytest
 
 from shared.server.hub_state import HubError, HubState
+from narration_common import manuscript as canonical
 
 
 @pytest.fixture
@@ -79,3 +80,25 @@ def test_saving_hints_without_a_project_folder_throws(tmp_path, isolated_appdata
     hub_no_project = HubState(session_dir=str(tmp_path / "session2"), project_folder="")
     with pytest.raises(HubError):
         hub_no_project.transcript_save_hints(["x"])
+
+
+def test_import_commits_project_owned_json_and_replacement_resets_derivatives(hub, tmp_path):
+    source = tmp_path / "source.md"
+    source.write_text("# Chapter One\n\nText for narration.", encoding="utf-8")
+    hub.show_open_manuscript_dialog = lambda: str(source)
+
+    selected = hub.select_manuscript()
+    assert selected["preview"]["format"] == "markdown"
+    info = hub.manuscript_import_commit()
+    assert info["format"] == "markdown"
+    assert canonical.exists(hub.project_folder)
+
+    project = Path(hub.project_folder)
+    (project / "ManuscriptGuide").mkdir()
+    (project / "ManuscriptGuide" / "manuscript_guide.json").write_text("{}", encoding="utf-8")
+    hub._pending_import = str(source)
+    with pytest.raises(HubError, match="Confirm replacement"):
+        hub.manuscript_import_commit()
+    hub.manuscript_import_commit(confirmed_reset=True)
+    assert not (project / "ManuscriptGuide").exists()
+    assert len(list((project / "narration-utils" / "manuscript" / "sources").iterdir())) == 2

@@ -12,7 +12,7 @@ Select a chapter track, confirm its manuscript mapping and settings, run compari
 
 ## Inputs and outputs
 
-- Inputs: REAPER item manifest, chapter-track name, `Manuscript.docx`, local model configuration, hotwords, and equivalence lists.
+- Inputs: REAPER item manifest, chapter-track name, canonical manuscript JSON, local model configuration, hotwords, and equivalence lists.
 - Outputs: current marker protocol and diff files; planned structured transcript-discrepancy findings.
 - Narrator actions: select chapter, set recognition controls, add reviewed equivalences, navigate/loop findings, explicitly export new markers, and accept/dismiss/defer them.
 

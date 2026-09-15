@@ -7,6 +7,7 @@ import type {
   GuideEntity,
   HostReady,
   ManuscriptChapter,
+  ManuscriptImportSelection,
   ManuscriptNote,
   ManuscriptParagraph,
   ManuscriptReader,
@@ -69,7 +70,11 @@ export const httpClient: NarrationApi = {
   ready: () => get<HostReady>('/api/health'),
   bootstrap: () => get<Bootstrap>('/api/bootstrap').then((value) => ({ ...value, transcript: normalizeTranscriptState(value.transcript) })),
   poll: () => get<{ revision: number; transcript: TranscriptState }>('/api/transcript/state').then((value) => ({ ...value, transcript: normalizeTranscriptState(value.transcript) })),
-  selectManuscript: () => post('/api/manuscript/select-file'),
+  selectManuscript: () => post<ManuscriptImportSelection>('/api/manuscript/select-file'),
+  manuscriptImportPreview: (markdownHeadingLevel) => post<ManuscriptImportSelection>('/api/manuscript/import/preview', { markdownHeadingLevel }),
+  manuscriptImportCommit: (markdownHeadingLevel, confirmedReset) =>
+    post<NonNullable<Bootstrap['manuscript']>>('/api/manuscript/import/commit', { markdownHeadingLevel, confirmedReset }),
+  manuscriptLegacyPreview: () => post<ManuscriptImportSelection>('/api/manuscript/import/legacy-preview'),
   saveSettings: (tool, scope, values) => put<Bootstrap>(`/api/settings/${tool}/${scope}`, values),
   settingsForScope: (scope) => get<Record<string, ScopedSettingField[]>>(`/api/settings?scope=${scope}`),
   guideBuild: () => post<{ message: string }>('/api/guide/build').then((r) => r.message),
@@ -107,8 +112,8 @@ export const httpClient: NarrationApi = {
   manuscriptSearch: (query) => get<SearchHit[]>(`/api/manuscript/search?q=${encodeURIComponent(query)}`),
   manuscriptSetChapterStatus: (chapter, status) => put<ManuscriptChapter>(`/api/manuscript/chapters/${encodeURIComponent(chapter)}/status`, { status }),
   noteList: (chapter) => get<ManuscriptNote[]>(`/api/manuscript/notes${chapter ? `?chapter=${encodeURIComponent(chapter)}` : ''}`),
-  noteCreate: (chapter, paragraph, text, anchorStart, anchorEnd, anchorText) =>
-    post<ManuscriptNote>('/api/manuscript/notes', { chapter, paragraph, text, anchorStart, anchorEnd, anchorText }),
+  noteCreate: (chapterId, paragraphId, text, anchorStart, anchorEnd, anchorText) =>
+    post<ManuscriptNote>('/api/manuscript/notes', { chapterId, paragraphId, text, anchorStart, anchorEnd, anchorText }),
   noteDelete: (id) => del(`/api/manuscript/notes/${id}`),
   subscribeTranscript: (onUpdate) => {
     const source = new EventSource('/api/transcript/events');

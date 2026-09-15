@@ -70,6 +70,31 @@ if not common.file_exists(shared_python) or not common.file_exists(server_main)
 end
 
 local function quote(value) return process.quote(value) end
+local SERVER_PORT = 48767
+
+-- The server binds a fixed local port by design (see shared/server/main.py)
+-- rather than picking a new one each launch, so a live instance from an
+-- earlier session (still open in a browser tab, or not yet reclaimed by the
+-- idle watchdog) would otherwise make a second launch race it and fail. Probe
+-- first and reuse it instead of spawning a doomed second process.
+local probe_exit_path = session_dir .. "\\probe.exitcode"
+local probe_command = quote(shared_python) .. " -m shared.server.main --probe"
+  .. " --session-dir " .. quote(session_dir)
+  .. " --port " .. tostring(SERVER_PORT)
+process.run_hidden(session_dir, probe_command, { wait = true, show_window = false, cwd = REPO_ROOT, exit_code_path = probe_exit_path })
+local probe_file = io.open(probe_exit_path, "r")
+local already_running = false
+if probe_file then
+  local code = probe_file:read("*a")
+  probe_file:close()
+  already_running = tonumber(code) == 0
+end
+
+if already_running then
+  process.open_file_with_default_app(session_dir, "http://127.0.0.1:" .. tostring(SERVER_PORT))
+  return
+end
+
 local command = quote(shared_python) .. " -m shared.server.main"
   .. " --session-dir " .. quote(session_dir)
   .. " --project-folder " .. quote(project_folder)
@@ -79,6 +104,7 @@ local command = quote(shared_python) .. " -m shared.server.main"
   .. " --manuscript-backend " .. quote(manuscript_backend)
   .. " --compare-python " .. quote(compare_python)
   .. " --compare-backend " .. quote(compare_backend)
+  .. " --port " .. tostring(SERVER_PORT)
 
 -- Run from REPO_ROOT so "-m shared.server.main" resolves as a package.
 if not process.run_hidden(session_dir, command, { wait = false, show_window = false, cwd = REPO_ROOT }) then
@@ -101,6 +127,14 @@ local function watch_startup()
   if failure then
     local message = failure:read("*a") or "Narration Utils could not start."
     failure:close()
+    if message:find("could not bind its fixed local port", 1, true) then
+      -- The probe above found nothing listening, but another launch won the
+      -- race and bound the port in between the probe and this spawn. Reuse
+      -- it rather than reporting a startup failure for what is really just
+      -- a launch collision.
+      process.open_file_with_default_app(session_dir, "http://127.0.0.1:" .. tostring(SERVER_PORT))
+      return
+    end
     reaper.ShowMessageBox(message .. "\n\nDiagnostic session:\n" .. session_dir, "Narration Utils setup required", 0)
     return
   end

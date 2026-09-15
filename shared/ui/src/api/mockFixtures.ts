@@ -172,7 +172,7 @@ const idsFor = (text: string) =>
 export const WIRE_PARAGRAPHS: ManuscriptParagraph[] = aliceChapters.flatMap((chapter, chapterIndex) =>
   chapter.paragraphs.map((text, localIndex) => {
     const index = paragraphIndex(chapterIndex, localIndex);
-    return { chapter: chapter.title, index, sourceLine: 10 + index * 5, text, entityIds: Array.from(new Set(idsFor(text))) };
+    return { id: `p-${index + 1}`, chapterId: `chapter-${chapterIndex + 1}`, chapter: chapter.title, index, sourceLine: 10 + index * 5, text, entityIds: Array.from(new Set(idsFor(text))) };
   }),
 );
 export const WIRE_CHAPTERS: ManuscriptChapter[] = aliceChapters.map((chapter, index) => ({

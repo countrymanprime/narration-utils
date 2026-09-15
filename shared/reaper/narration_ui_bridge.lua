@@ -60,8 +60,8 @@ local function prepare_compare(session_dir, runs, run_id)
   local _, rpp = reaper.EnumProjects(-1, "")
   local project_folder = rpp and dirname(rpp) or ""
   if project_folder == "" then event(session_dir, "ERROR", "Save the REAPER project before starting Transcript Compare."); return end
-  local docx = project_folder .. "\\Manuscript.docx"
-  if not file_exists(docx) then event(session_dir, "ERROR", "Select a manuscript in Narration Utils before starting Transcript Compare."); return end
+  local manuscript = project_folder .. "\\narration-utils\\manuscript\\manuscript.json"
+  if not file_exists(manuscript) then event(session_dir, "ERROR", "Import a manuscript in Narration Utils before starting Transcript Compare."); return end
 
   local track, raw_items = nil, {}
   local selected = reaper.CountSelectedMediaItems(0)
@@ -101,11 +101,11 @@ local function prepare_compare(session_dir, runs, run_id)
   local output = io.open(manifest_path, "w")
   if not output then event(session_dir, "ERROR", "Could not write the REAPER audio manifest."); return end
   output:write(table.concat(manifest, "\n") .. "\n"); output:close()
-  local data_dir, diffs = dirname(docx) .. "\\TranscriptCompare", dirname(docx) .. "\\TranscriptCompare\\diffs"
+  local data_dir, diffs = project_folder .. "\\TranscriptCompare", project_folder .. "\\TranscriptCompare\\diffs"
   reaper.RecursiveCreateDirectory(diffs, 0)
   local diff_path = diffs .. "\\" .. safe_name(track_name) .. "_" .. run_id .. ".diff"
   runs[run_id] = { mapping = mapping, track = track_name, diff_path = diff_path, rows = {} }
-  event(session_dir, "COMPARE_PREPARED", run_id, manifest_path, docx, track_name, diff_path)
+  event(session_dir, "COMPARE_PREPARED", run_id, manifest_path, manuscript, track_name, diff_path)
 end
 
 local function marker_kind(name)

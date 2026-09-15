@@ -6,7 +6,7 @@ Prepare a reliable narration reference before recording, then turn spoken-text d
 
 ## Flow
 
-1. Save the project and select the manuscript; both current tools use the copy at `<project>/Manuscript.docx`.
+1. Save the project and import the manuscript; both tools use project-owned canonical JSON, not the source file.
 2. Run Manuscript Guide and review uncertain entities, aliases, categories, and pronunciations. Lock narrator-authored values.
 3. Export approved names as transcription hotwords when useful; this is an explicit export, not an implicit shared setting.
 4. Record or assemble a chapter on a REAPER track whose name maps to the Word heading.

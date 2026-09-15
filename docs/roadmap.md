@@ -15,7 +15,7 @@ The suite helps a narrator find and review issues faster. It may analyze local m
 
 - Publish this documentation set.
 - Define the shared [finding](architecture/findings-contract.md) and review-state contract.
-- Preserve the existing independent tool layouts and the `Manuscript.docx` project convention.
+- Preserve the existing independent tool layouts and the project-owned canonical manuscript convention.
 
 ### 1. Dashboard foundation
 

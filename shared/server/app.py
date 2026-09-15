@@ -49,8 +49,8 @@ class ChapterStatusRequest(BaseModel):
 
 
 class CreateNoteRequest(BaseModel):
-    chapter: str
-    paragraph: int
+    chapterId: str
+    paragraphId: str
     text: str
     anchorStart: int | None = None
     anchorEnd: int | None = None
@@ -66,9 +66,16 @@ class ReaderStateRequest(BaseModel):
 class CreateBookmarkRequest(BaseModel):
     kind: str
     chapter: str
+    chapterId: str | None = None
     paragraph: int | None = None
+    paragraphId: str | None = None
     sourceLine: int | None = None
     noteId: str | None = None
+
+
+class ImportOptionsRequest(BaseModel):
+    markdownHeadingLevel: int = 1
+    confirmedReset: bool = False
 
 
 class ErrorToJsonMiddleware:
@@ -232,6 +239,27 @@ def build_app(hub: HubState, ui_dist_dir: str, audio_dir: str | None = None, shu
         except HubError as exc:
             _bad_request(exc)
 
+    @api.post("/manuscript/import/preview")
+    def manuscript_import_preview(body: ImportOptionsRequest):
+        try:
+            return hub.manuscript_import_preview(body.markdownHeadingLevel)
+        except HubError as exc:
+            _bad_request(exc)
+
+    @api.post("/manuscript/import/commit")
+    def manuscript_import_commit(body: ImportOptionsRequest):
+        try:
+            return hub.manuscript_import_commit(body.markdownHeadingLevel, body.confirmedReset)
+        except HubError as exc:
+            _bad_request(exc)
+
+    @api.post("/manuscript/import/legacy-preview")
+    def manuscript_legacy_preview():
+        try:
+            return hub.manuscript_legacy_preview()
+        except HubError as exc:
+            _bad_request(exc)
+
     @api.get("/settings")
     def get_settings(scope: str):
         try:
@@ -356,7 +384,7 @@ def build_app(hub: HubState, ui_dist_dir: str, audio_dir: str | None = None, shu
     @api.post("/manuscript/bookmarks")
     def manuscript_bookmark_create(body: CreateBookmarkRequest):
         try:
-            return hub.manuscript_bookmark_create(body.kind, body.chapter, body.paragraph, body.sourceLine, body.noteId)
+            return hub.manuscript_bookmark_create(body.kind, body.chapter, body.chapterId, body.paragraph, body.paragraphId, body.sourceLine, body.noteId)
         except HubError as exc:
             _bad_request(exc)
 
@@ -392,7 +420,7 @@ def build_app(hub: HubState, ui_dist_dir: str, audio_dir: str | None = None, shu
     @api.post("/manuscript/notes")
     def manuscript_note_create(body: CreateNoteRequest):
         try:
-            return hub.manuscript_note_create(body.chapter, body.paragraph, body.text, body.anchorStart, body.anchorEnd, body.anchorText)
+            return hub.manuscript_note_create(body.chapterId, body.paragraphId, body.text, body.anchorStart, body.anchorEnd, body.anchorText)
         except HubError as exc:
             _bad_request(exc)
 

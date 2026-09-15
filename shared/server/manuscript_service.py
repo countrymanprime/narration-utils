@@ -12,17 +12,13 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import process_utils
+from narration_common import manuscript as canonical
 
 _ALLOWED_STATUSES = ("not_started", "recording", "editing", "proofing", "finalized")
 
 
 class ManuscriptError(Exception):
     pass
-
-
-def _slug(title: str) -> str:
-    return "".join(ch.lower() if ch.isalnum() else "-" for ch in title).strip("-")
 
 
 def _now_iso() -> str:
@@ -39,7 +35,9 @@ def _normalize_note(note: dict) -> dict:
     return {
         "id": lowered.get("id"),
         "chapter": lowered.get("chapter"),
+        "chapterId": lowered.get("chapterid"),
         "paragraph": lowered.get("paragraph"),
+        "paragraphId": lowered.get("paragraphid"),
         "text": lowered.get("text"),
         "createdAt": lowered.get("createdat"),
         "anchorStart": lowered.get("anchorstart"),
@@ -54,7 +52,9 @@ def _normalize_bookmark(bookmark: dict) -> dict:
         "id": lowered.get("id"),
         "kind": lowered.get("kind"),
         "chapter": lowered.get("chapter"),
+        "chapterId": lowered.get("chapterid"),
         "paragraph": lowered.get("paragraph"),
+        "paragraphId": lowered.get("paragraphid"),
         "sourceLine": lowered.get("sourceline"),
         "noteId": lowered.get("noteid"),
         "createdAt": lowered.get("createdat"),
@@ -62,7 +62,7 @@ def _normalize_bookmark(bookmark: dict) -> dict:
 
 
 class ManuscriptService:
-    def __init__(self, project_folder: str | None, python_exe: str, backend: str):
+    def __init__(self, project_folder: str | None, python_exe: str = "", backend: str = ""):
         self._project_folder = project_folder
         self._python_exe = python_exe
         self._backend = backend
@@ -71,17 +71,12 @@ class ManuscriptService:
     def _manuscript(self) -> str | None:
         if not self._project_folder:
             return None
-        path = Path(self._project_folder) / "Manuscript.docx"
+        path = canonical.manuscript_path(self._project_folder)
         return str(path) if path.exists() else None
 
     @property
     def _data_dir(self) -> str | None:
         return str(Path(self._project_folder) / "ManuscriptGuide") if self._project_folder else None
-
-    @property
-    def _text_cache_path(self) -> str | None:
-        data_dir = self._data_dir
-        return str(Path(data_dir) / "manuscript_text.json") if data_dir else None
 
     @property
     def _guide_path(self) -> str | None:
@@ -92,32 +87,16 @@ class ManuscriptService:
     def _notes_path(self) -> str | None:
         return str(Path(self._project_folder) / "narration-utils" / "manuscript-notes.json") if self._project_folder else None
 
-    def _run_backend(self, *args: str) -> tuple[int, str, str]:
-        if not os.path.isfile(self._python_exe):
-            raise ManuscriptError("Configure the Manuscript Guide Python executable before continuing.")
-        if not os.path.isfile(self._backend):
-            raise ManuscriptError("Configure the Manuscript Guide backend before continuing.")
-        return process_utils.run(self._python_exe, [self._backend, *args])
+    def _load(self) -> dict:
+        if not self._project_folder:
+            raise ManuscriptError("Save the REAPER project and import a manuscript first.")
+        try:
+            return canonical.load(self._project_folder)
+        except canonical.ManuscriptError as exc:
+            raise ManuscriptError(str(exc)) from exc
 
-    @staticmethod
-    def _throw_if_failed(result: tuple[int, str, str], fallback: str) -> None:
-        code, _out, err = result
-        if code != 0:
-            raise ManuscriptError(err.strip() if err.strip() else fallback)
-
-    def _load_or_rebuild_text_cache(self) -> dict:
-        manuscript = self._manuscript
-        if manuscript is None:
-            raise ManuscriptError("Select a manuscript first.")
-        cache_path = self._text_cache_path
-        stale = not os.path.isfile(cache_path) or os.path.getmtime(cache_path) < os.path.getmtime(manuscript)
-        if stale:
-            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-            self._throw_if_failed(self._run_backend("export-manuscript", "--docx", manuscript, "--out", cache_path), "Could not read the manuscript.")
-        return json.loads(Path(cache_path).read_text(encoding="utf-8"))
-
-    def _entity_occurrence_index(self) -> dict[tuple[str, int], list[str]]:
-        index: dict[tuple[str, int], list[str]] = {}
+    def _entity_occurrence_index(self) -> dict[tuple[str, str], list[str]]:
+        index: dict[tuple[str, str], list[str]] = {}
         guide_path = self._guide_path
         if guide_path is None or not os.path.isfile(guide_path):
             return index
@@ -128,8 +107,8 @@ class ManuscriptService:
             for occ in occurrences or []:
                 if not isinstance(occ, dict):
                     continue
-                chapter, paragraph = occ.get("chapter"), occ.get("paragraph")
-                if chapter is None or paragraph is None:
+                chapter, paragraph = occ.get("chapterId"), occ.get("paragraphId")
+                if not isinstance(chapter, str) or not isinstance(paragraph, str):
                     continue
                 key = (chapter, paragraph)
                 ids = index.setdefault(key, [])
@@ -197,67 +176,73 @@ class ManuscriptService:
         Path(path).write_text(json.dumps(payload), encoding="utf-8")
 
     def chapters(self) -> list[dict]:
-        cache = self._load_or_rebuild_text_cache()
+        data = self._load()
         status = self._load_notes()["chapterStatus"]
         return [
-            {"id": _slug(c["title"]), "title": c["title"], "index": c["index"], "wordCount": c["wordCount"], "status": status.get(c["title"], "not_started")}
-            for c in cache["chapters"]
+            {"id": c["id"], "title": c["title"], "index": c["index"], "wordCount": c["wordCount"], "status": status.get(c["id"], "not_started")}
+            for c in data["chapters"]
         ]
 
-    def paragraphs(self, chapter: str) -> list[dict]:
-        cache = self._load_or_rebuild_text_cache()
+    def paragraphs(self, chapter_id: str) -> list[dict]:
+        data = self._load()
         entity_index = self._entity_occurrence_index()
         return [
-            {"chapter": p["chapter"], "index": p["index"], "text": p["text"], "entityIds": entity_index.get((p["chapter"], p["index"]), [])}
-            for p in cache["paragraphs"]
-            if p["chapter"] == chapter
+            {"id": p["id"], "chapterId": p["chapterId"], "chapter": p["chapterTitle"], "index": p["index"], "text": p["text"], "entityIds": entity_index.get((p["chapterId"], p["id"]), [])}
+            for p in data["paragraphs"]
+            if p["chapterId"] == chapter_id
         ]
 
     def reader(self) -> dict:
-        cache = self._load_or_rebuild_text_cache()
+        data = self._load()
         status = self._load_notes()["chapterStatus"]
         entity_index = self._entity_occurrence_index()
         chapters = [
-            {"id": _slug(c["title"]), "title": c["title"], "index": c["index"], "wordCount": c["wordCount"], "status": status.get(c["title"], "not_started")}
-            for c in cache["chapters"]
+            {"id": c["id"], "title": c["title"], "index": c["index"], "wordCount": c["wordCount"], "status": status.get(c["id"], "not_started")}
+            for c in data["chapters"]
         ]
         paragraphs = [
-            {"chapter": p["chapter"], "index": p["index"], "text": p["text"], "entityIds": entity_index.get((p["chapter"], p["index"]), [])}
-            for p in cache["paragraphs"]
+            {"id": p["id"], "chapterId": p["chapterId"], "chapter": p["chapterTitle"], "index": p["index"], "text": p["text"], "entityIds": entity_index.get((p["chapterId"], p["id"]), [])}
+            for p in data["paragraphs"]
         ]
         return {"chapters": chapters, "paragraphs": paragraphs, "notes": self._load_notes()["notes"]}
 
     def search(self, query: str) -> list[dict]:
         if not query or not query.strip():
             return []
-        cache = self._load_or_rebuild_text_cache()
+        data = self._load()
         needle = query.lower()
         return [
-            {"chapter": p["chapter"], "paragraph": p["index"], "excerpt": p["text"]}
-            for p in cache["paragraphs"]
+            {"chapter": p["chapterTitle"], "chapterId": p["chapterId"], "paragraph": p["index"], "paragraphId": p["id"], "excerpt": p["text"]}
+            for p in data["paragraphs"]
             if needle in p["text"].lower()
         ]
 
-    def set_chapter_status(self, chapter: str, status: str) -> dict:
+    def set_chapter_status(self, chapter_id: str, status: str) -> dict:
         if status not in _ALLOWED_STATUSES:
             raise ManuscriptError(f"Unknown chapter status: {status}")
         notes = self._load_notes()
-        notes["chapterStatus"][chapter] = status
+        chapter = next((item for item in self._load()["chapters"] if item["id"] == chapter_id), None)
+        if chapter is None:
+            raise ManuscriptError("Unknown manuscript chapter.")
+        notes["chapterStatus"][chapter_id] = status
         self._save_notes(notes)
-        return {"id": _slug(chapter), "title": chapter, "index": 0, "wordCount": 0, "status": status}
+        return {"id": chapter["id"], "title": chapter["title"], "index": chapter["index"], "wordCount": chapter["wordCount"], "status": status}
 
-    def note_list(self, chapter: str | None) -> list[dict]:
+    def note_list(self, chapter_id: str | None) -> list[dict]:
         notes = self._load_notes()["notes"]
-        return notes if chapter is None else [n for n in notes if n.get("chapter") == chapter]
+        return notes if chapter_id is None else [n for n in notes if n.get("chapterId") == chapter_id]
 
-    def note_create(self, chapter: str, paragraph: int, text: str, anchor_start: int | None = None, anchor_end: int | None = None, anchor_text: str | None = None) -> dict:
+    def note_create(self, chapter_id: str, paragraph_id: str, text: str, anchor_start: int | None = None, anchor_end: int | None = None, anchor_text: str | None = None) -> dict:
         if (anchor_start is not None and anchor_start < 0) or (anchor_end is not None and (anchor_start is None or anchor_end < anchor_start)):
             raise ManuscriptError("Invalid note anchor.")
+        paragraph = next((item for item in self._load()["paragraphs"] if item["id"] == paragraph_id and item["chapterId"] == chapter_id), None)
+        if paragraph is None:
+            raise ManuscriptError("Unknown manuscript paragraph.")
         notes = self._load_notes()
         note = {
             "id": uuid.uuid4().hex,
-            "chapter": chapter,
-            "paragraph": paragraph,
+            "chapter": paragraph["chapterTitle"], "chapterId": chapter_id,
+            "paragraph": paragraph["index"], "paragraphId": paragraph_id,
             "text": text,
             "createdAt": _now_iso(),
             "anchorStart": anchor_start,
@@ -289,13 +274,13 @@ class ManuscriptService:
         self._save_notes(notes)
         return next_state
 
-    def create_bookmark(self, kind: str, chapter: str, paragraph: int | None, source_line: int | None, note_id: str | None) -> dict:
+    def create_bookmark(self, kind: str, chapter: str, chapter_id: str | None, paragraph: int | None, paragraph_id: str | None, source_line: int | None, note_id: str | None) -> dict:
         if kind not in ("chapter", "line", "note"):
             raise ManuscriptError("Unknown bookmark kind.")
         notes = self._load_notes()
         state = notes["readerState"]
         duplicate = next(
-            (b for b in state["bookmarks"] if b.get("kind") == kind and b.get("chapter") == chapter and b.get("paragraph") == paragraph and b.get("noteId") == note_id),
+            (b for b in state["bookmarks"] if b.get("kind") == kind and b.get("chapterId") == chapter_id and b.get("paragraphId") == paragraph_id and b.get("noteId") == note_id),
             None,
         )
         if duplicate is not None:
@@ -304,7 +289,9 @@ class ManuscriptService:
             "id": uuid.uuid4().hex,
             "kind": kind,
             "chapter": chapter,
+            "chapterId": chapter_id,
             "paragraph": paragraph,
+            "paragraphId": paragraph_id,
             "sourceLine": source_line,
             "noteId": note_id,
             "createdAt": _now_iso(),

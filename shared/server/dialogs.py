@@ -10,7 +10,7 @@ shape, just for Tk instead of STA/COM. Works unchanged on Windows/macOS/Linux.
 import threading
 
 
-def show_open_docx_dialog(title: str = "Choose manuscript") -> str | None:
+def show_open_manuscript_dialog(title: str = "Choose manuscript") -> str | None:
     result: dict[str, str | None] = {"path": None}
     error: dict[str, Exception | None] = {"value": None}
 
@@ -24,7 +24,7 @@ def show_open_docx_dialog(title: str = "Choose manuscript") -> str | None:
         try:
             path = filedialog.askopenfilename(
                 title=title,
-                filetypes=[("Word documents", "*.docx")],
+                filetypes=[("Supported manuscripts", "*.docx *.md *.markdown *.pdf"), ("Word documents", "*.docx"), ("Markdown", "*.md *.markdown"), ("PDF", "*.pdf")],
                 parent=root,
             )
             result["path"] = path or None

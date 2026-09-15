@@ -80,9 +80,9 @@ requests while the window is open.
 
 Both tools retain their own DAW-agnostic Python backends. What they share:
 
-- **`<project folder>\Manuscript.docx`** — the one intentional data contract between the two
-  tools. Either tool's "Select Manuscript" action can (re)write it; neither reads the other's
-  settings or output.
+- **`<project folder>\narration-utils\manuscript\manuscript.json`** — the one intentional,
+  project-owned data contract between the two tools. DOCX, Markdown, and text-based PDF files
+  are imported once; their preserved source copies are provenance only and are never reparsed.
 - **`shared/reaper/`** — `reaper_common_core.lua` (ExtState access, file/path helpers) and
   `reaper_common_process.lua` (hidden-subprocess launching, the pipe-delimited protocol used by
   each tool's Python backend). Every reascript loads these via `dofile`, resolved relative to

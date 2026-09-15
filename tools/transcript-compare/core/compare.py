@@ -1,11 +1,11 @@
 """
 Transcribe one or more audio segments (items on a REAPER track), match them
-against the correspondingly-named chapter in a Word document by track name,
+against the correspondingly-named chapter in a canonical manuscript by track name,
 diff the transcript against that chapter's text, and write take-marker
 placements REAPER can import.
 
 Usage:
-    python compare.py --manifest segments.txt --docx "script.docx" \
+    python compare.py --manifest segments.txt --manuscript "manuscript.json" \
         --track-name "Chapter 1" --out results.txt [--model base]
 
 Manifest input format (pipe-delimited, no header):
@@ -42,7 +42,7 @@ if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
 from narration_common.config import get_default  # noqa: E402
-from narration_common.docx_chapters import NON_CHAPTER_HEADINGS, load_docx_paragraphs  # noqa: E402
+from narration_common import manuscript as canonical_manuscript  # noqa: E402
 from narration_common.logging_utils import log, set_log_file  # noqa: E402
 from narration_common.progress import write_progress  # noqa: E402
 
@@ -230,17 +230,17 @@ def tokenize(text):
     return tokens
 
 
-def project_data_dir(docx_path):
+def project_data_dir(manuscript_path):
     """This tool's per-project metadata folder, next to the manuscript
     itself - houses the diff output and the custom word-equivalence list,
-    derived by convention from --docx rather than a separate argument, so
+    derived by convention from --manuscript rather than a separate argument, so
     the caller (the REAPER script) never has to plumb an extra path
     through."""
-    return os.path.join(os.path.dirname(os.path.abspath(docx_path)), "TranscriptCompare")
+    return str(Path(manuscript_path).resolve().parents[2] / "TranscriptCompare")
 
 
-def project_data_path(docx_path, filename):
-    return os.path.join(project_data_dir(docx_path), filename)
+def project_data_path(manuscript_path, filename):
+    return os.path.join(project_data_dir(manuscript_path), filename)
 
 
 def tokenize_with_raw(text):
@@ -757,38 +757,46 @@ def transcribe_chunked(full_audio, model_size, language, device, progress_path, 
     return all_words
 
 
-def load_docx_chapters(docx_path):
-    chapters = []  # list of dict(title, paragraphs=[str,...])
-    current = None
-
-    for item in load_docx_paragraphs(docx_path):
-        text = item["text"]
-        if item["is_heading"]:
-            if text.strip().lower() in NON_CHAPTER_HEADINGS:
-                continue
-            if current is not None and current["paragraphs"]:
-                chapters.append(current)
-            current = {"title": text, "paragraphs": []}
-        elif current is not None:
-            current["paragraphs"].append(text)
-
-    if current is not None and current["paragraphs"]:
-        chapters.append(current)
-
+def load_manuscript_chapters(manuscript_path):
+    """Return comparison chapters from canonical manuscript data only."""
+    data = canonical_manuscript.load_file(manuscript_path)
+    by_chapter = {chapter["id"]: {"id": chapter["id"], "title": chapter["title"], "paragraphs": [], "global_indices": [], "paragraph_ids": []} for chapter in data["chapters"]}
+    for paragraph in data["paragraphs"]:
+        chapter = by_chapter[paragraph["chapterId"]]
+        chapter["paragraphs"].append(paragraph["text"])
+        chapter["global_indices"].append(paragraph["index"])
+        chapter["paragraph_ids"].append(paragraph["id"])
+    chapters = [chapter for chapter in by_chapter.values() if chapter["paragraphs"]]
     if not chapters:
-        raise ValueError("No chapter headings detected in the Word document. " "Make sure chapter titles use one of Word's built-in Heading styles.")
-
+        raise ValueError("The canonical manuscript has no narratable chapters.")
     return chapters
 
 
-def extract_hints(docx_path, hints_out_path):
+def resolve_global_paragraph(chapter, local_index):
+    """The Manuscript reader's global paragraph index for the local_index-th
+    paragraph of this chapter, falling back to the
+    nearest paragraph with a known global index if that exact one has none."""
+    indices = chapter["global_indices"]
+    if not indices:
+        return 0
+    local_index = min(max(local_index, 0), len(indices) - 1)
+    if indices[local_index] is not None:
+        return indices[local_index]
+    for distance in range(1, len(indices)):
+        for candidate in (local_index - distance, local_index + distance):
+            if 0 <= candidate < len(indices) and indices[candidate] is not None:
+                return indices[candidate]
+    return 0
+
+
+def extract_hints(manuscript_path, hints_out_path):
     """Scans the manuscript for candidate vocabulary-hint terms: words
     capitalized somewhere other than a sentence's first word (index 0 of
     the sentence's own word list) - a heuristic that tends to catch
     invented names/terms an ordinary dictionary wouldn't know how to spell,
     while a plain word that's only ever capitalized at a sentence's start
     self-excludes naturally, no separate logic needed. Deliberately fast
-    (no model load, no audio decode - reuses only load_docx_chapters() and
+    (no model load, no audio decode - reuses only load_manuscript_chapters() and
     split_sentences()) since this is meant to run synchronously from the
     config screen while the user waits a few seconds, unlike the real
     --manifest/model transcription path below.
@@ -797,7 +805,7 @@ def extract_hints(docx_path, hints_out_path):
     hints_out_path, matching this script's existing tagged-line convention
     (SUMMARY|, NEED_CHAPTER|, MARKER|) for its other file-based output.
     """
-    chapters = load_docx_chapters(docx_path)
+    chapters = load_manuscript_chapters(manuscript_path)
 
     counts = {}  # lowercase key -> total occurrences
     suspicious = {}  # lowercase key -> times capitalized, not sentence-initial
@@ -1274,7 +1282,7 @@ def run(args):
     # to the manuscript rather than a separate argument, so there's
     # nothing extra for the caller to plumb through. Registered before
     # anything below calls tokenize() (chapter matching included).
-    equivalences_path = project_data_path(args.docx, "equivalences.csv")
+    equivalences_path = project_data_path(args.manuscript, "equivalences.csv")
     custom_groups = load_equivalence_groups(equivalences_path)
     if custom_groups:
         _CUSTOM_CANON.update(_build_canon(custom_groups))
@@ -1284,14 +1292,14 @@ def run(args):
     if not segments:
         raise ValueError("Manifest contained no segments.")
 
-    # Chapter matching only needs the docx and the track name (or an
+    # Chapter matching only needs canonical manuscript data and the track name (or an
     # explicit --chapter-title override) - resolve it before the expensive
     # decode+transcribe steps below, so a NEED_CHAPTER prompt (or a bad
-    # --docx path) doesn't cost the user a multi-minute wait first.
+    # --manuscript path) doesn't cost the user a multi-minute wait first.
     check_cancelled(progress_path)
     write_progress(progress_path, "MATCH", 1, "Matching chapter to track name...")
-    log("Loading Word document and splitting into chapters...")
-    chapters = load_docx_chapters(args.docx)
+    log("Loading canonical manuscript and splitting into chapters...")
+    chapters = load_manuscript_chapters(args.manuscript)
     log(f"Found {len(chapters)} chapter(s)/section(s) in the document.")
 
     if args.chapter_title:
@@ -1309,7 +1317,7 @@ def run(args):
     check_cancelled(progress_path)
     full_audio, segments = build_concatenated_audio(segments, progress_path)
 
-    vocab_hints_path = project_data_path(args.docx, "vocabulary_hints.txt")
+    vocab_hints_path = project_data_path(args.manuscript, "vocabulary_hints.txt")
     hotwords = None
     if os.path.exists(vocab_hints_path):
         try:
@@ -1365,7 +1373,7 @@ def run(args):
         f.write(f"DIFF|{diff_path}\n")
         for t, kind, name, doc_text, audio_text, unit_index in markers:
             item_index, srcpos = locate_in_segments(t, segments)
-            paragraph = sentence_units[unit_index][1] if 0 <= unit_index < len(sentence_units) else 0
+            paragraph = resolve_global_paragraph(chapter, sentence_units[unit_index][1] if 0 <= unit_index < len(sentence_units) else 0)
             script_context = clean_marker_field(sentence_units[unit_index][0] if 0 <= unit_index < len(sentence_units) else doc_text)
             f.write(
                 f"MARKER|{item_index}|{srcpos:.3f}|{kind}|{name}|{doc_text}|{audio_text}|{clean_marker_field(chapter['title'])}|{paragraph}|{script_context}|{audio_text}\n"
@@ -1378,7 +1386,7 @@ def run(args):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--manifest", required=False, help="Path to the pipe-delimited segment manifest")
-    ap.add_argument("--docx", required=True, help="Path to the Word document (.docx) script")
+    ap.add_argument("--manuscript", required=True, help="Path to canonical manuscript.json")
     ap.add_argument("--track-name", required=False, help="REAPER track name (matched against a doc heading)")
     ap.add_argument("--chapter-title", default=None, help="Bypass track-name matching and use this exact chapter title (from a prior NEED_CHAPTER prompt)")
     ap.add_argument("--out", required=False, help="Path to write the tagged results file")
@@ -1399,7 +1407,7 @@ def main():
     )
     ap.add_argument("--parallel-workers", type=int, default=0, help="Max chunk workers to run at once when chunked (0 = auto, based on model size)")
     ap.add_argument(
-        "--extract-hints", action="store_true", help="Instead of transcribing, scan --docx for candidate vocabulary-hint terms and write them to --hints-out"
+        "--extract-hints", action="store_true", help="Instead of transcribing, scan --manuscript for candidate vocabulary-hint terms and write them to --hints-out"
     )
     ap.add_argument("--hints-out", default=None, help="Path to write suggested hint terms to (used with --extract-hints)")
     args = ap.parse_args()
@@ -1412,7 +1420,7 @@ def main():
 
     if args.extract_hints:
         try:
-            extract_hints(args.docx, args.hints_out)
+            extract_hints(args.manuscript, args.hints_out)
         except Exception as e:
             log(traceback.format_exc())
             if args.hints_out:

@@ -8,6 +8,7 @@
 - Continue resolving paths from the script location so checkouts remain relocatable.
 - The launcher resolves only repo-relative, gitignored local environments. It does not read or write ExtState paths; all user settings are resolved by the shared, DAW-agnostic Python config layer.
 - Import only `shared/reaper/NarrationUtils_Launcher.lua` into REAPER's Action list. It starts the non-blocking React/Python workspace (`shared/server`, opened in the user's default browser) and its file-session bridge for REAPER-only operations.
+- The workspace always binds to `http://127.0.0.1:48767` by default. The launcher can pass `--port` only for an intentional local override; startup fails visibly if the selected port is occupied.
 - For new work, carry REAPER project, track, item, and take GUIDs in the shared finding record; use project-time ranges only as fallbacks.
 - All mutation actions must be explicitly triggered by the narrator, wrapped in REAPER undo blocks, and report failures without partially applying unrelated actions. Transcript Compare therefore inspects take markers after analysis and only writes its pending findings when the narrator selects **Export markers**.
 - Before export, the REAPER adapter marks a finding as already marked when the same active take has a marker within 0.15 seconds with the same case-insensitive issue prefix (`MISREAD:`, `SKIPPED:`, or `EXTRA:`). Export rechecks immediately before every add and reports added and skipped counts.
@@ -26,7 +27,7 @@ REAPER never parses this JSON. The persistent server (`shared/server`) owns sett
 
 - Store generated, reviewable metadata beside the `.rpp` project in a tool-specific folder.
 - Do not rewrite source media or make user choices in place. Keep analyzer output, decision state, and cache data distinct.
-- Continue using `<project>/Manuscript.docx` as the common manuscript input until a deliberate migration is specified.
+- Use `<project>/narration-utils/manuscript/manuscript.json` as the common manuscript input. Source DOCX, Markdown, and text-based PDFs are copied into the manuscript source folder at explicit import time; runtime tools never parse them.
 - A project's settings overrides live in one shared sidecar, `<project>/narration-utils/settings.json` (sectioned by tool name), separate from each tool's own generated-output folder - it holds user-set overrides, not analyzer output.
 
 ## Audacity boundary

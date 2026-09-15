@@ -25,6 +25,10 @@ M.quote = quote
 --                  0 is meant for suppressing a console, and relying on it
 --                  also being ignored by an unrelated GUI toolkit's own
 --                  window-visibility calls isn't a safe bet to make silently.
+--   exit_code_path - only meaningful with wait = true. If set, the command's
+--                  real exit code (not wscript.exe's own) is written to this
+--                  path so the caller can read it back after run_hidden
+--                  returns, since os.execute only sees wscript.exe's status.
 function M.run_hidden(scratch_dir, command, opts)
   opts = opts or {}
   local vbs_path = scratch_dir .. "\\run_" .. tostring(reaper.time_precise()):gsub("[%.]", "") .. ".vbs"
@@ -36,7 +40,15 @@ function M.run_hidden(scratch_dir, command, opts)
   end
   local wait_flag = opts.wait and "True" or "False"
   local window_style = opts.show_window and "1" or "0"
-  vf:write('shell.Run "' .. command:gsub('"', '""') .. '", ' .. window_style .. ', ' .. wait_flag .. '\r\n')
+  if opts.wait and opts.exit_code_path then
+    vf:write('code = shell.Run("' .. command:gsub('"', '""') .. '", ' .. window_style .. ', True)\r\n')
+    vf:write('Set fso = CreateObject("Scripting.FileSystemObject")\r\n')
+    vf:write('Set outFile = fso.CreateTextFile("' .. opts.exit_code_path:gsub('"', '""') .. '", True)\r\n')
+    vf:write('outFile.Write CStr(code)\r\n')
+    vf:write('outFile.Close\r\n')
+  else
+    vf:write('shell.Run "' .. command:gsub('"', '""') .. '", ' .. window_style .. ', ' .. wait_flag .. '\r\n')
+  end
   if opts.wait then
     vf:write('CreateObject("Scripting.FileSystemObject").DeleteFile WScript.ScriptFullName, True\r\n')
   end

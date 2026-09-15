@@ -25,6 +25,11 @@ import uvicorn
 # resource-reclaiming optimization.
 IDLE_SHUTDOWN_GRACE_SECONDS = 600
 IDLE_WATCHDOG_INTERVAL_SECONDS = 30
+# Stable loopback origin for the browser UI. Keeping this fixed means browser
+# bookmarks, local firewall rules, and dev tooling do not need a new URL after
+# every rebuild/restart. We deliberately fail clearly if another process owns
+# it instead of silently selecting a different port.
+DEFAULT_PORT = 48767
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "python"))
@@ -33,7 +38,7 @@ from narration_common import config as cfg  # noqa: E402
 
 from .app import build_app  # noqa: E402
 from .diagnostics import SessionDiagnostics  # noqa: E402
-from .dialogs import show_open_docx_dialog  # noqa: E402
+from .dialogs import show_open_manuscript_dialog  # noqa: E402
 from .hub_state import HubState  # noqa: E402
 
 
@@ -47,8 +52,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--manuscript-backend", default="")
     parser.add_argument("--compare-python", default="")
     parser.add_argument("--compare-backend", default="")
+    parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--seed", action="append", default=[])
     parser.add_argument("--smoke-test", action="store_true")
+    parser.add_argument("--probe", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -81,14 +88,17 @@ async def _idle_watchdog(hub: HubState, shutdown_event: asyncio.Event) -> None:
             return
 
 
-async def _serve(app, hub: HubState, session_dir: Path, open_browser: bool, has_audio_dir: bool, shutdown_event: asyncio.Event) -> None:
-    config = uvicorn.Config(app, host="127.0.0.1", port=0, log_level="warning")
+async def _serve(app, hub: HubState, session_dir: Path, open_browser: bool, has_audio_dir: bool, shutdown_event: asyncio.Event, port: int = DEFAULT_PORT) -> None:
+    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning")
     server = uvicorn.Server(config)
     task = asyncio.create_task(server.serve())
     while not server.started:
+        if task.done():
+            task.result()
+            raise RuntimeError(f"Narration Utils could not bind its fixed local port {port}. Close the process using http://127.0.0.1:{port} and try again.")
         await asyncio.sleep(0.01)
-    port = server.servers[0].sockets[0].getsockname()[1]
-    base_url = f"http://127.0.0.1:{port}"
+    bound_port = server.servers[0].sockets[0].getsockname()[1]
+    base_url = f"http://127.0.0.1:{bound_port}"
     if has_audio_dir:
         hub.guide_audio_base_url = base_url.rstrip("/") + "/audio/"
         hub.diagnostics.event("audio_server_started", {"url": hub.guide_audio_base_url})
@@ -106,8 +116,28 @@ async def _serve(app, hub: HubState, session_dir: Path, open_browser: bool, has_
         idle_task.cancel()
 
 
+def probe_existing_instance(port: int) -> bool:
+    """Checks whether a Narration Utils server is already listening on `port`.
+
+    Used by the REAPER launcher before spawning a new process, since the port
+    is fixed (DEFAULT_PORT) and a second process can't also bind it - see the
+    module docstring's note on why binding fails loudly instead of picking a
+    different port.
+    """
+    import urllib.error
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/health", timeout=1.5) as response:
+            return response.status == 200
+    except (OSError, urllib.error.URLError):
+        return False
+
+
 def main(argv: list[str] | None = None) -> int:
     options = parse_args(argv if argv is not None else sys.argv[1:])
+    if options.probe:
+        return 0 if probe_existing_instance(options.port) else 1
     session_dir = Path(options.session_dir)
     session_dir.mkdir(parents=True, exist_ok=True)
     diagnostics = SessionDiagnostics(str(session_dir))
@@ -137,7 +167,7 @@ def main(argv: list[str] | None = None) -> int:
         compare_backend=options.compare_backend,
         diagnostics=diagnostics,
     )
-    hub.show_open_docx_dialog = show_open_docx_dialog
+    hub.show_open_manuscript_dialog = show_open_manuscript_dialog
     shutdown_event = asyncio.Event()
     app = build_app(hub, str(ui_dist_dir), audio_dir, shutdown_event=shutdown_event)
 
@@ -145,7 +175,7 @@ def main(argv: list[str] | None = None) -> int:
         return asyncio.run(_smoke_test(app, hub))
 
     try:
-        asyncio.run(_serve(app, hub, session_dir, open_browser=True, has_audio_dir=audio_dir is not None, shutdown_event=shutdown_event))
+        asyncio.run(_serve(app, hub, session_dir, open_browser=True, has_audio_dir=audio_dir is not None, shutdown_event=shutdown_event, port=options.port))
     except Exception as exc:  # noqa: BLE001 - mirrors Program.cs's startup-failure path
         write_startup_failure(session_dir, f"Narration Utils could not start its desktop API: {exc}")
         raise
