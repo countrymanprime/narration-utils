@@ -1,0 +1,23 @@
+{
+  "General": {
+    "log_verbosity": "normal"
+  },
+  "ManuscriptGuide": {
+    "spacy_model": "en_core_web_sm",
+    "espeak_library": ""
+  },
+  "Piper": {
+    "tts_provider": "piper",
+    "tts_voice_id": "en_US-ljspeech-high"
+  },
+  "Manuscript": {
+    "color_note": "B85C1E"
+  },
+  "TranscriptCompare": {
+    "chunk_seconds": "60",
+    "model_size": "small",
+    "color_misread": "FF4040",
+    "color_skipped": "FFC000",
+    "color_extra": "40A0FF"
+  }
+}

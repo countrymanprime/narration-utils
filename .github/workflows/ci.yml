@@ -1,0 +1,255 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 13 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conventional-commit:
+    name: Conventional Commit title
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: No pull request title to validate
+        if: github.event_name != 'pull_request'
+        run: echo "No squash commit title is present for this run."
+      - if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - if: github.event_name == 'pull_request'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - if: github.event_name == 'pull_request'
+        run: npm ci
+      - name: Validate the squash commit title
+        if: github.event_name == 'pull_request'
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: printf '%s\n' "$TITLE" | npx --no -- commitlint
+
+  build:
+    name: Build sources
+    needs: conventional-commit
+    if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux desktop build dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: shared/ui/package-lock.json
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
+      - run: npm --prefix shared/ui ci
+      - name: Build the UI
+        run: npm --prefix shared/ui run build
+      - name: Build every Rust workspace package
+        run: cargo build --workspace
+
+  bootstrap:
+    name: Bootstrap (${{ matrix.name }})
+    needs: conventional-commit
+    if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x64
+            os: windows-latest
+          - name: macos-x64
+            os: macos-13
+          - name: macos-arm64
+            os: macos-14
+          - name: linux-x64
+            os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux desktop build dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            shared/ui/package-lock.json
+            shell/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: narration-utils-bootstrap-${{ runner.os }}-${{ runner.arch }}
+      - name: Bootstrap this checkout
+        run: npm run bootstrap
+      - name: Confirm bootstrap downloaded no optional models or voices
+        shell: pwsh
+        run: |
+          $python = if ($IsWindows) { '.venv/Scripts/python.exe' } else { '.venv/bin/python' }
+          & $python -c "import importlib.util, sys; sys.exit(1 if importlib.util.find_spec('en_core_web_sm') else 0)"
+          if ($LASTEXITCODE -ne 0) { throw 'Bootstrap installed an optional spaCy model.' }
+          if (Test-Path 'shared/python/.piper') { throw 'Bootstrap created a Piper asset directory.' }
+
+  test:
+    name: Test suite
+    needs: build
+    if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux desktop build dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: shared/ui/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
+      - name: Install test dependencies
+        run: |
+          npm --prefix shared/ui ci
+          python -m pip install -r requirements.lock
+          node --test scripts/bootstrap.test.mjs
+      - name: Run UI tests
+        run: npm --prefix shared/ui test
+      - name: Run Python tests
+        env:
+          PYTHONPATH: shared/python
+        run: python -m pytest -q --basetemp .test-tmp
+      - name: Run every Rust test
+        env:
+          NARRATION_UTILS_TEST_PYTHON: python
+        run: cargo test --workspace
+
+  format-and-lint:
+    name: Format and lint
+    needs: build
+    if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: shared/ui/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
+      - name: Install lint dependencies
+        shell: pwsh
+        run: |
+          npm --prefix shared/ui ci
+          python -m pip install -r requirements.lock
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+          cargo install stylua --version 2.1.0 --locked
+      - name: Format and lint every language
+        shell: pwsh
+        run: |
+          npm --prefix shared/ui run lint:ci
+          npm --prefix shared/ui run format:check
+          python -m ruff format --check .
+          python -m ruff check .
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets -- -D warnings
+          ./scripts/quality/invoke-powershell-analyzer.ps1 scripts
+          stylua --check shared/reaper
+
+  package:
+    name: Package (${{ matrix.name }})
+    needs: [test, format-and-lint]
+    if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x64
+            os: windows-latest
+            command: npm --prefix shell run build:windows
+            artifact: target/release/bundle/nsis
+          - name: macos-x64
+            os: macos-13
+            command: npm --prefix shell run build:macos
+            artifact: target/release/bundle/dmg
+          - name: macos-arm64
+            os: macos-14
+            command: npm --prefix shell run build:macos
+            artifact: target/release/bundle/dmg
+          - name: linux-x64
+            os: ubuntu-latest
+            command: npm --prefix shell run build:linux
+            artifact: target/release/bundle
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            shared/ui/package-lock.json
+            shell/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
+      - name: Install Linux bundle dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - name: Install UI and Python build dependencies
+        run: |
+          npm --prefix shared/ui ci
+          npm --prefix shell ci
+          python -m pip install -r requirements.lock
+      - name: Build first-party runtime resources
+        run: |
+          npm --prefix shared/ui run build
+          python scripts/release/prepare-resources.py --clean
+          node scripts/release/verify-installable.mjs
+      - name: Build installer packages
+        run: ${{ matrix.command }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.name }}
+          path: ${{ matrix.artifact }}
+          if-no-files-found: error
+          retention-days: 14

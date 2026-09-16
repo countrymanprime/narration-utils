@@ -1,0 +1,12 @@
+[tool.black]
+line-length = 160
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 160
+target-version = "py311"
+extend-exclude = [".venv", ".runtime", ".bootstrap"]
+
+[tool.pytest.ini_options]
+pythonpath = ["shared/python"]
+addopts = "-p no:cacheprovider"

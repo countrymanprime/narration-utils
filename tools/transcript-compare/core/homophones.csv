@@ -1,0 +1,61 @@
+# Transcript Compare - built-in homophone list
+#
+# Whisper sometimes transcribes a correctly-spoken homophone with the wrong
+# spelling (heard "your", wrote "you're") - these aren't narration errors,
+# so each group below is canonicalized to its first member before matching.
+# One group per line, comma-separated, case doesn't matter. '#' starts a
+# comment (whole-line or trailing).
+#
+# Deliberately EXCLUDES one/won, to/too/two, for/four, ate/eight: each has a
+# member that's also a NUMBER_WORDS entry in compare.py, and
+# merge_number_words() accumulates *consecutive* number words into one
+# combined value (e.g. "twenty two" -> 22) - aliasing "won" to "one" could
+# turn an unrelated adjacent number into a bogus merge (e.g. "she won two
+# races" -> "she one two races" -> merged into a single garbage token).
+
+your, you're
+their, there, they're
+its, it's
+whose, who's
+weather, whether
+write, right
+here, hear
+new, knew
+know, no
+break, brake
+threw, through
+passed, past
+peace, piece
+plain, plane
+sea, see
+way, weigh
+weak, week
+which, witch
+would, wood
+allowed, aloud
+bare, bear
+board, bored
+buy, by, bye
+cell, sell
+flower, flour
+hole, whole
+hour, our
+made, maid
+mail, male
+meat, meet
+night, knight
+pair, pear
+principal, principle
+sale, sail
+sight, site, cite
+sole, soul
+son, sun
+stair, stare
+steal, steel
+tail, tale
+waist, waste
+wait, weight
+miner, minor
+miners, minors
+vane, vein
+vanes, veins
