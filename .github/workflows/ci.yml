@@ -56,14 +56,9 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: shared/ui/package-lock.json
-      - uses: actions/cache@v4
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-
+          shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
       - run: npm --prefix shared/ui ci
       - name: Build the UI
         run: npm --prefix shared/ui run build
@@ -91,14 +86,9 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             tools/requirements-dev.txt
-      - uses: actions/cache@v4
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-
+          shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
       - name: Install test dependencies
         run: |
           npm --prefix shared/ui ci
@@ -133,14 +123,9 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             tools/requirements-dev.txt
-      - uses: actions/cache@v4
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-
+          shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
       - name: Install lint dependencies
         shell: pwsh
         run: |
@@ -191,7 +176,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: shared/ui/package-lock.json
+          cache-dependency-path: |
+            shared/ui/package-lock.json
+            shell/package-lock.json
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -199,23 +186,17 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             tools/requirements-dev.txt
-      - uses: actions/cache@v4
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-
+          shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
       - name: Install Linux bundle dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - name: Install UI and Python build dependencies
         run: |
           npm --prefix shared/ui ci
+          npm --prefix shell ci
           python -m pip install -r requirements.txt -r tools/requirements-dev.txt
-      - name: Install Tauri CLI
-        run: cargo install tauri-cli --version '^2' --locked
       - name: Build first-party runtime resources
         run: |
           npm --prefix shared/ui run build

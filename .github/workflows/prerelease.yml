@@ -77,7 +77,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: shared/ui/package-lock.json
+          cache-dependency-path: |
+            shared/ui/package-lock.json
+            shell/package-lock.json
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -85,12 +87,15 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             tools/requirements-dev.txt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - run: |
           npm --prefix shared/ui ci
+          npm --prefix shell ci
           python -m pip install -r requirements.txt -r tools/requirements-dev.txt
-          cargo install tauri-cli --version '^2' --locked
           npm --prefix shared/ui run build
           python scripts/release/prepare-resources.py --clean
           node scripts/release/verify-installable.mjs
