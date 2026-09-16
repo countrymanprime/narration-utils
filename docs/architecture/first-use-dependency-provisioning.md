@@ -1,13 +1,13 @@
 # First-Use Dependency Provisioning
 
-**Status: Planned — release-readiness foundation.**
+**Status: Partially implemented — Piper preview voices.**
 
 ## Problem
 
-`scripts/Quickstart.ps1` is a developer-checkout bootstrapper. It currently
-creates the local runtime and installs Python/UI/build dependencies, then
-downloads both supported spaCy models and the default Piper voice whether or
-not the narrator uses the related feature. That is unsuitable for a GitHub
+`scripts/Quickstart.ps1` is a developer-checkout bootstrapper. It creates the
+local runtime and installs Python/UI/build dependencies; it still downloads
+the development spaCy models, but no longer downloads a Piper voice. That is
+unsuitable for a GitHub
 release consumer: a compiled application must launch without a source checkout,
 Node, Rust, a Python bootstrap installer, or a quickstart script.
 
@@ -108,9 +108,9 @@ hash cannot be verified against the asset catalog.
 3. Add install-state APIs and UI for Settings and the first-use gate. Convert
    spaCy choices from the current installed-only filter to catalog-backed
    compatible choices.
-4. Move the spaCy Story Bible path first, then migrate Piper preview voices,
-   Whisper models, and every subsequently approved optional asset through the
-   same manager.
+4. Piper preview voices now use the catalog/cache manager. Move the spaCy
+   Story Bible path, Whisper models, and every subsequently approved optional
+   asset through the same manager.
 5. Change Quickstart and release documentation, migrate or deliberately reject
    legacy caches, and add release-install smoke coverage.
 

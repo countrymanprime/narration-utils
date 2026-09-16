@@ -13,6 +13,7 @@ pub mod manuscript_canonical;
 pub mod manuscript_service;
 pub mod process_utils;
 pub mod transcript;
+pub mod tts;
 pub mod work_job;
 
 #[cfg(test)]
@@ -75,12 +76,15 @@ pub(crate) mod test_support {
 use std::{
     collections::BTreeMap,
     path::{Path as FsPath, PathBuf},
-    sync::{Arc, Mutex},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    },
 };
 
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
+    http::{header::CONTENT_TYPE, StatusCode},
     response::{IntoResponse, Response},
     routing::{any, get, post, put},
     Json, Router,
@@ -96,10 +100,11 @@ use self::{
     field_schemas::{is_valid_hex, schemas_for, FIELD_SCHEMAS},
     guide_service::GuideService,
     manuscript_service::ManuscriptService,
+    tts::{AssetManager, InstallState},
     work_job::WorkJob,
 };
 
-pub const API_VERSION: u8 = 1;
+pub const API_VERSION: u8 = 2;
 
 #[derive(Clone, Debug)]
 pub struct ServerConfig {
@@ -126,6 +131,32 @@ pub struct AppState {
     transcript: tokio::sync::Mutex<transcript::TranscriptRun>,
     last_completed_json: tokio::sync::Mutex<Option<String>>,
     bridge: tokio::sync::Mutex<bridge::BridgeClient>,
+    tts: AssetManager,
+    tts_jobs: tokio::sync::Mutex<BTreeMap<String, TtsInstallJob>>,
+}
+
+#[derive(Clone)]
+struct TtsInstallJob {
+    id: String,
+    voice_id: String,
+    phase: String,
+    percent: u8,
+    message: String,
+    error: String,
+    cancelled: Arc<AtomicBool>,
+}
+
+impl TtsInstallJob {
+    fn snapshot(&self) -> Value {
+        json!({
+            "id": self.id,
+            "voiceId": self.voice_id,
+            "phase": self.phase,
+            "percent": self.percent,
+            "message": self.message,
+            "error": self.error,
+        })
+    }
 }
 
 impl AppState {
@@ -162,6 +193,8 @@ impl AppState {
                 transcript: tokio::sync::Mutex::new(transcript::TranscriptRun::default()),
                 last_completed_json: tokio::sync::Mutex::new(last_completed_json),
                 bridge: tokio::sync::Mutex::new(bridge),
+                tts: AssetManager::new(),
+                tts_jobs: tokio::sync::Mutex::new(BTreeMap::new()),
             }),
             receiver,
         ))
@@ -328,7 +361,126 @@ impl AppState {
             self.config.manuscript_python.clone(),
             self.config.manuscript_backend.clone(),
             self.settings.clone(),
+            self.tts.clone(),
         )
+    }
+
+    fn tts_catalog(&self) -> Value {
+        let (provider, provider_source) = self.settings.effective("Piper", "tts_provider", "piper");
+        let (voice_id, voice_source) =
+            self.settings
+                .effective("Piper", "tts_voice_id", "en_US-ljspeech-high");
+        let voices = self
+            .tts
+            .voices()
+            .map(|voice| {
+                json!({
+                    "id": voice.id.clone(),
+                    "provider": voice.provider.clone(),
+                    "displayName": voice.display_name.clone(),
+                    "locale": voice.locale.clone(),
+                    "version": voice.version.clone(),
+                    "publisher": voice.publisher.clone(),
+                    "license": voice.license.clone(),
+                    "licenseUrl": voice.license_url.clone(),
+                    "modelCardUrl": voice.model_card_url.clone(),
+                    "provenanceUrl": voice.provenance_url.clone(),
+                    "attribution": voice.attribution.clone(),
+                    "downloadSize": voice.files.iter().map(|file| file.size).sum::<u64>(),
+                    "installState": self.tts.state(voice),
+                })
+            })
+            .collect::<Vec<_>>();
+        json!({
+            "catalogVersion": self.tts.catalog_version(),
+            "provider": { "id": provider, "effectiveSource": provider_source },
+            "voice": { "id": voice_id, "effectiveSource": voice_source },
+            "voices": voices,
+        })
+    }
+
+    async fn tts_install(self: &Arc<Self>, voice_id: &str) -> Result<Value, ApiError> {
+        let voice = self.tts.voice(voice_id).cloned().ok_or_else(|| {
+            ApiError::bad_request("That TTS voice is not in this release's approved catalog.")
+        })?;
+        if self.tts.state(&voice) == InstallState::Installed {
+            return Ok(json!({
+                "id": Value::Null,
+                "voiceId": voice.id.clone(),
+                "phase": "success",
+                "percent": 100,
+                "message": "Voice is already installed and verified.",
+                "error": "",
+            }));
+        }
+        let job = TtsInstallJob {
+            id: uuid::Uuid::new_v4().to_string(),
+            voice_id: voice.id.clone(),
+            phase: "downloading".to_string(),
+            percent: 1,
+            message: "Downloading the approved voice…".to_string(),
+            error: String::new(),
+            cancelled: Arc::new(AtomicBool::new(false)),
+        };
+        let snapshot = job.snapshot();
+        let id = job.id.clone();
+        self.tts_jobs.lock().await.insert(id.clone(), job.clone());
+        let state = Arc::clone(self);
+        tokio::spawn(async move {
+            let result = state.tts.install(&voice, job.cancelled.clone()).await;
+            let mut jobs = state.tts_jobs.lock().await;
+            if let Some(current) = jobs.get_mut(&id) {
+                if current.cancelled.load(Ordering::SeqCst) {
+                    current.phase = "cancelled".to_string();
+                    current.percent = 0;
+                    current.message = "Voice download cancelled.".to_string();
+                } else if let Err(error) = result {
+                    current.phase = "error".to_string();
+                    current.message = "Voice installation failed.".to_string();
+                    current.error = error;
+                } else {
+                    current.phase = "success".to_string();
+                    current.percent = 100;
+                    current.message = "Voice installed and verified.".to_string();
+                }
+            }
+            drop(jobs);
+            state.changed();
+        });
+        self.changed();
+        Ok(snapshot)
+    }
+
+    async fn tts_job(&self, id: &str) -> Result<Value, ApiError> {
+        self.tts_jobs
+            .lock()
+            .await
+            .get(id)
+            .map(TtsInstallJob::snapshot)
+            .ok_or_else(|| {
+                ApiError::bad_request("That TTS installation job is no longer available.")
+            })
+    }
+
+    async fn tts_cancel(&self, id: &str) -> Result<Value, ApiError> {
+        let mut jobs = self.tts_jobs.lock().await;
+        let job = jobs.get_mut(id).ok_or_else(|| {
+            ApiError::bad_request("That TTS installation job is no longer available.")
+        })?;
+        if job.phase == "downloading" {
+            job.cancelled.store(true, Ordering::SeqCst);
+            job.message = "Cancelling voice download…".to_string();
+        }
+        Ok(job.snapshot())
+    }
+
+    fn tts_remove(&self, voice_id: &str) -> Result<(), ApiError> {
+        let voice = self.tts.voice(voice_id).ok_or_else(|| {
+            ApiError::bad_request("That TTS voice is not in this release's approved catalog.")
+        })?;
+        self.tts.remove(voice).map_err(ApiError::bad_request)?;
+        self.changed();
+        Ok(())
     }
 
     fn start_import(&self, source: &FsPath, heading_level: u8) -> Result<Value, ApiError> {
@@ -690,14 +842,36 @@ impl AppState {
         entity_id: &str,
         alias_index: Option<i64>,
     ) -> Result<Value, ApiError> {
-        // TODO(phase f): thread the real bound-port audio base URL through
-        // once the server actually binds one; until then this always
-        // returns a file:// URL, matching Python when guide_audio_base_url
-        // is unset.
-        let url = guide_service::preview_url(&self.guide(), None, entity_id, alias_index)
+        match self
+            .guide()
+            .preview(entity_id, alias_index)
             .await
+            .map_err(ApiError::bad_request)?
+        {
+            guide_service::PreviewResult::Ready { file_name } => {
+                Ok(json!({"status": "ready", "url": format!("/api/guide/audio/{file_name}")}))
+            }
+            guide_service::PreviewResult::AssetRequired {
+                voice,
+                install_state,
+            } => {
+                let download_size = voice.files.iter().map(|file| file.size).sum::<u64>();
+                Ok(json!({
+                    "status": "asset_required",
+                    "voice": voice,
+                    "installState": install_state,
+                    "downloadSize": download_size,
+                }))
+            }
+        }
+    }
+
+    fn guide_audio(&self, file_name: &str) -> Result<Vec<u8>, ApiError> {
+        let file = self
+            .guide()
+            .audio_file(file_name)
             .map_err(ApiError::bad_request)?;
-        Ok(json!({"url": url}))
+        std::fs::read(file).map_err(|_| ApiError::bad_request("Preview audio is unavailable."))
     }
 }
 
@@ -776,6 +950,14 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/api/bootstrap", get(bootstrap))
         .route("/api/settings", get(settings))
         .route("/api/settings/{tool}/{scope}", put(save_settings))
+        .route("/api/tts/catalog", get(tts_catalog))
+        .route("/api/tts/voices/{voice_id}/install", post(tts_install))
+        .route(
+            "/api/tts/voices/{voice_id}",
+            axum::routing::delete(tts_remove),
+        )
+        .route("/api/tts/jobs/{job_id}", get(tts_install_state))
+        .route("/api/tts/jobs/{job_id}/cancel", post(tts_install_cancel))
         .route("/api/diagnostics", post(report_diagnostic))
         .route("/api/shutdown", post(shutdown))
         .route("/api/manuscript/chapters", get(manuscript_chapters))
@@ -840,6 +1022,7 @@ pub fn router(state: Arc<AppState>) -> Router {
             "/api/guide/entities/{entity_id}/preview",
             get(guide_preview),
         )
+        .route("/api/guide/audio/{file_name}", get(guide_audio))
         .route("/api/guide/merge", post(guide_merge))
         .route(
             "/api/guide/relationships",
@@ -907,6 +1090,39 @@ async fn save_settings(
     Json(values): Json<BTreeMap<String, Option<String>>>,
 ) -> Result<Json<Value>, ApiError> {
     Ok(Json(state.save_settings(&tool, &scope, values).await?))
+}
+
+async fn tts_catalog(State(state): State<Arc<AppState>>) -> Json<Value> {
+    Json(state.tts_catalog())
+}
+
+async fn tts_install(
+    State(state): State<Arc<AppState>>,
+    Path(voice_id): Path<String>,
+) -> Result<Json<Value>, ApiError> {
+    Ok(Json(state.tts_install(&voice_id).await?))
+}
+
+async fn tts_install_state(
+    State(state): State<Arc<AppState>>,
+    Path(job_id): Path<String>,
+) -> Result<Json<Value>, ApiError> {
+    Ok(Json(state.tts_job(&job_id).await?))
+}
+
+async fn tts_install_cancel(
+    State(state): State<Arc<AppState>>,
+    Path(job_id): Path<String>,
+) -> Result<Json<Value>, ApiError> {
+    Ok(Json(state.tts_cancel(&job_id).await?))
+}
+
+async fn tts_remove(
+    State(state): State<Arc<AppState>>,
+    Path(voice_id): Path<String>,
+) -> Result<StatusCode, ApiError> {
+    state.tts_remove(&voice_id)?;
+    Ok(StatusCode::OK)
 }
 
 async fn report_diagnostic(
@@ -1155,6 +1371,13 @@ async fn guide_preview(
     Ok(Json(
         state.guide_preview(&entity_id, query.alias_index).await?,
     ))
+}
+async fn guide_audio(
+    State(state): State<Arc<AppState>>,
+    Path(file_name): Path<String>,
+) -> Result<Response, ApiError> {
+    let bytes = state.guide_audio(&file_name)?;
+    Ok(([(CONTENT_TYPE, "audio/wav")], bytes).into_response())
 }
 #[derive(Deserialize)]
 struct MergeRequest {
@@ -1433,6 +1656,42 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn tts_catalog_is_available_without_downloading_a_voice() {
+        let response = router(state(None))
+            .oneshot(
+                Request::builder()
+                    .uri("/api/tts/catalog")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let catalog: Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(catalog["catalogVersion"], 1);
+        assert_eq!(catalog["voices"][0]["id"], "en_US-ljspeech-high");
+        assert_ne!(catalog["voices"][0]["installState"], "downloading");
+    }
+
+    #[tokio::test]
+    async fn tts_rejects_unknown_catalog_voice_without_starting_download() {
+        let response = router(state(None))
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/tts/voices/not-reviewed/install")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     }
 
     #[tokio::test]

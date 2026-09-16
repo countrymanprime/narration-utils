@@ -15,6 +15,8 @@ import type {
   ScopedSettingField,
   TranscriptState,
   WorkJob,
+  TtsCatalog,
+  TtsInstallJob,
 } from '../types';
 import {
   aliceChapterSeeds,
@@ -95,6 +97,22 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
   let runTimers: ReturnType<typeof setTimeout>[] = [];
   let importJob: WorkJob = { id: null, kind: 'manuscript_import', phase: 'idle', message: 'Ready to import.', percent: 0, logs: [], elapsed: 0 };
   let storyBibleJob: WorkJob = { id: null, kind: 'story_bible', phase: 'idle', message: 'Ready to build.', percent: 0, logs: [], elapsed: 0 };
+  let ttsInstalled = false;
+  const mockVoice = {
+    id: 'en_US-ljspeech-high',
+    provider: 'piper',
+    displayName: 'LJ Speech (U.S. English)',
+    locale: 'en_US',
+    version: '1.0.0',
+    publisher: 'rhasspy',
+    license: 'Public domain training data; Piper Voices repository MIT',
+    licenseUrl: 'https://keithito.com/LJ-Speech-Dataset/',
+    modelCardUrl: 'https://huggingface.co/rhasspy/piper-voices/blob/v1.0.0/en/en_US/ljspeech/high/MODEL_CARD',
+    provenanceUrl: 'https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0/en/en_US/ljspeech/high',
+    attribution: 'LJ Speech Dataset (public domain); Piper voice model by rhasspy contributors.',
+    downloadSize: 114203981,
+    installState: 'not_installed' as const,
+  };
   const publish = () => {
     revision += 1;
     subscribers.forEach((fn) => fn(wireClone(transcript)));
@@ -337,7 +355,34 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
         relationships: entity.relationships.filter((relationship) => !(relationship.id === otherId && relationship.label === label)),
       })),
     guideExport: async () => 'C:/Projects/Voltage-and-the-Undercroft/TranscriptCompare/hotwords.txt',
-    guidePreview: async () => '',
+    guidePreview: async () =>
+      ttsInstalled
+        ? { status: 'ready' as const, url: '' }
+        : { status: 'asset_required' as const, voice: mockVoice, installState: 'not_installed' as const, downloadSize: mockVoice.downloadSize },
+    ttsCatalog: async () =>
+      ({
+        catalogVersion: 1,
+        provider: { id: 'piper', effectiveSource: 'repo_default' },
+        voice: { id: mockVoice.id, effectiveSource: 'repo_default' },
+        voices: [{ ...mockVoice, installState: ttsInstalled ? 'installed' : 'not_installed' }],
+      }) as TtsCatalog,
+    ttsInstall: async (voiceId) => {
+      if (voiceId !== mockVoice.id) throw new Error('Unknown approved TTS voice.');
+      ttsInstalled = true;
+      return { id: null, voiceId, phase: 'success', percent: 100, message: 'Voice installed and verified.', error: '' } as TtsInstallJob;
+    },
+    ttsInstallState: async (jobId) => ({
+      id: jobId,
+      voiceId: mockVoice.id,
+      phase: 'success',
+      percent: 100,
+      message: 'Voice installed and verified.',
+      error: '',
+    }),
+    ttsInstallCancel: async (jobId) => ({ id: jobId, voiceId: mockVoice.id, phase: 'cancelled', percent: 0, message: 'Voice download cancelled.', error: '' }),
+    ttsRemove: async (voiceId) => {
+      if (voiceId === mockVoice.id) ttsInstalled = false;
+    },
     transcriptStart: async () => startRun(),
     transcriptCancel: async () => {
       stopRun();

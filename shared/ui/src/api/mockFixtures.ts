@@ -488,10 +488,7 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
       effectiveSource: 'repo default',
     },
   ],
-  Piper: [
-    choice('piper_provider', 'Provider', ['piper'], 'piper'),
-    choice('piper_model', 'Voice model', ['lessac-medium', 'lessac-high', 'ryan-medium'], 'lessac-medium'),
-  ],
+  Piper: [choice('tts_provider', 'TTS provider', ['piper'], 'piper'), choice('tts_voice_id', 'Preview voice', ['en_US-ljspeech-high'], 'en_US-ljspeech-high')],
   Daw: [],
 });
 export const wireClone = <T>(value: T): T => structuredClone(value);

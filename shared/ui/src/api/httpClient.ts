@@ -3,7 +3,6 @@
 // Every method maps directly to an API route.
 import type {
   Bootstrap,
-  ChapterStatus,
   GuideEntity,
   HostReady,
   ManuscriptChapter,
@@ -15,10 +14,12 @@ import type {
   NarrationApi,
   ReaderBookmark,
   ReaderState,
-  Scope,
   ScopedSettingField,
   SearchHit,
   TranscriptState,
+  TtsCatalog,
+  TtsInstallJob,
+  GuidePreview,
 } from '../types';
 
 // Defends against a stale/hand-edited guide.json on disk (predating a field,
@@ -98,8 +99,12 @@ export const httpClient: NarrationApi = {
   guideUnrelate: (id, otherId, label) =>
     del(`/api/guide/relationships?id=${encodeURIComponent(id)}&otherId=${encodeURIComponent(otherId)}&label=${encodeURIComponent(label)}`),
   guideExport: () => get<{ path: string }>('/api/guide/export').then((r) => r.path),
-  guidePreview: (id, aliasIndex) =>
-    get<{ url: string }>(`/api/guide/entities/${id}/preview${aliasIndex !== undefined ? `?aliasIndex=${aliasIndex}` : ''}`).then((r) => r.url),
+  guidePreview: (id, aliasIndex) => get<GuidePreview>(`/api/guide/entities/${id}/preview${aliasIndex !== undefined ? `?aliasIndex=${aliasIndex}` : ''}`),
+  ttsCatalog: () => get<TtsCatalog>('/api/tts/catalog'),
+  ttsInstall: (voiceId) => post<TtsInstallJob>(`/api/tts/voices/${encodeURIComponent(voiceId)}/install`),
+  ttsInstallState: (jobId) => get<TtsInstallJob>(`/api/tts/jobs/${encodeURIComponent(jobId)}`),
+  ttsInstallCancel: (jobId) => post<TtsInstallJob>(`/api/tts/jobs/${encodeURIComponent(jobId)}/cancel`),
+  ttsRemove: (voiceId) => del(`/api/tts/voices/${encodeURIComponent(voiceId)}`),
   transcriptStart: (options) => post('/api/transcript/start', options),
   transcriptCancel: () => post('/api/transcript/cancel'),
   transcriptReset: () => post('/api/transcript/reset'),

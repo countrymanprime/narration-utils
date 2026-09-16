@@ -15,12 +15,12 @@ Git. Rust builds always run (cargo/npm build incrementally, so a rerun
 after editing shell/ or shared/manuscript-import/ only rebuilds what
 changed).
 
-Dependency handling (the Python venv, spaCy model, Piper voice, npm
-packages, the tauri-cli cargo subcommand) has three modes:
+Dependency handling (the Python venv, spaCy model, npm packages, the tauri-cli
+cargo subcommand) has three modes:
 
   (default)            Install only what's missing. An existing venv, an
                         existing node_modules, an already-downloaded spaCy
-                        model or Piper voice, or an already-installed
+                        model, or an already-installed
                         tauri-cli are left alone untouched.
   -SkipDependencies     Skip dependency checks entirely, even for missing
                         ones. Only use this if you already know everything
@@ -43,8 +43,6 @@ if ($SkipDependencies -and $UpdateDependencies) { throw '-SkipDependencies and -
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $embeddedPythonVersion = '3.12.10'
-$piperVoice = 'en_US-lessac-medium'
-$piperVoiceBaseUrl = 'https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium'
 
 function Get-EmbeddedPython {
     $runtimeRoot = Join-Path $repoRoot 'shared\python\.runtime'
@@ -127,46 +125,6 @@ function Install-Environment([string]$EnvironmentPath, [string]$RequirementsPath
     return $pythonPath
 }
 
-function Seed-PiperSettings([string]$PiperExe, [string]$VoiceModel) {
-    $settingsRoot = if ($env:APPDATA) { Join-Path $env:APPDATA 'narration-utils' } else { Join-Path $env:USERPROFILE 'AppData\Roaming\narration-utils' }
-    $settingsPath = Join-Path $settingsRoot 'global-settings.json'
-    New-Item -ItemType Directory -Force -Path $settingsRoot | Out-Null
-    $settings = @{}
-    if (Test-Path -LiteralPath $settingsPath) {
-        $existing = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
-        foreach ($section in $existing.PSObject.Properties) {
-            $values = @{}
-            foreach ($entry in $section.Value.PSObject.Properties) { $values[$entry.Name] = $entry.Value }
-            $settings[$section.Name] = $values
-        }
-    }
-    if (-not $settings.ContainsKey('ManuscriptGuide')) { $settings['ManuscriptGuide'] = @{} }
-    if (-not $settings['ManuscriptGuide'].ContainsKey('piper_exe')) { $settings['ManuscriptGuide']['piper_exe'] = $PiperExe }
-    if (-not $settings['ManuscriptGuide'].ContainsKey('piper_model')) { $settings['ManuscriptGuide']['piper_model'] = $VoiceModel }
-    $temporary = "$settingsPath.tmp"
-    $settings | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $temporary -Encoding utf8
-    Move-Item -LiteralPath $temporary -Destination $settingsPath -Force
-}
-
-function Install-PiperAssets([string]$GuidePython, [bool]$Force) {
-    $piperExe = Join-Path (Split-Path -Parent $GuidePython) 'piper.exe'
-    if (-not (Test-Path -LiteralPath $piperExe)) { throw "The local Piper executable was not installed: $piperExe" }
-    $piperRoot = Join-Path $repoRoot 'shared\python\.piper'
-    $voicesRoot = Join-Path $piperRoot 'voices'
-    $modelPath = Join-Path $voicesRoot "$piperVoice.onnx"
-    $configPath = "$modelPath.json"
-    New-Item -ItemType Directory -Force -Path $voicesRoot | Out-Null
-    if ($Force -or -not (Test-Path -LiteralPath $modelPath)) {
-        Write-Host "Downloading local Piper voice $piperVoice..."
-        Invoke-WebRequest -Uri "$piperVoiceBaseUrl/$piperVoice.onnx" -OutFile $modelPath
-    }
-    if ($Force -or -not (Test-Path -LiteralPath $configPath)) {
-        Invoke-WebRequest -Uri "$piperVoiceBaseUrl/$piperVoice.onnx.json" -OutFile $configPath
-    }
-    Seed-PiperSettings $piperExe $modelPath
-    Write-Host "Piper preview runtime is ready: $piperVoice"
-}
-
 $bootstrapPython = Get-BootstrapPython
 $bootstrapPythonExecutable = [string]$bootstrapPython.Executable
 $bootstrapPythonArguments = [string[]]@($bootstrapPython.Arguments)
@@ -243,12 +201,6 @@ if ($SkipDependencies) {
     Invoke-Checked $sharedPython @('-m', 'pip', 'install', '-r', (Join-Path $repoRoot 'tools\requirements-dev.txt')) | Out-Host
 } else {
     Invoke-Checked $sharedPython @('-m', 'pip', 'install', '--upgrade', '-r', (Join-Path $repoRoot 'tools\requirements-dev.txt')) | Out-Host
-}
-
-if ($SkipDependencies) {
-    Write-Host 'Skipping Piper preview runtime check.'
-} else {
-    Install-PiperAssets $sharedPython $UpdateDependencies
 }
 
 $spacyModels = @('en_core_web_sm', 'en_core_web_lg')

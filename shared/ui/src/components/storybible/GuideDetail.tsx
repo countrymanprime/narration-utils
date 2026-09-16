@@ -13,7 +13,7 @@ import {
   faWaveSquare,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
-import type { GuideEntity } from '../../types';
+import type { GuideEntity, GuidePreview, TtsInstallJob } from '../../types';
 import { allEvidence, categoryCssName, categoryLabel, categoryValue, CREATABLE_CATEGORIES, findAliasMatches, highlightTerms } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { Field } from '../primitives/Field';
@@ -45,6 +45,8 @@ export function GuideDetail({
   const [relationLabel, setRelationLabel] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
   const [confirmation, setConfirmation] = useState<'delete' | 'merge'>();
+  const [ttsPrompt, setTtsPrompt] = useState<{ preview: Extract<GuidePreview, { status: 'asset_required' }>; aliasIndex?: number }>();
+  const [ttsJob, setTtsJob] = useState<TtsInstallJob>();
 
   useEffect(() => {
     setPreviewUrl('');
@@ -52,6 +54,8 @@ export function GuideDetail({
     setAliasQuery('');
     setAliasSelectedId(undefined);
     setAliasActiveIndex(0);
+    setTtsPrompt(undefined);
+    setTtsJob(undefined);
     if (entity)
       setDraft({
         name: entity.canonical_name,
@@ -59,7 +63,7 @@ export function GuideDetail({
         personality: entity.personality_notes.map((note) => note.text).join(' '),
         context: entity.context || '',
       });
-  }, [entity?.id]);
+  }, [entity]);
 
   if (!entity) return <section className="panel panel-body">No matching entities. Build the guide to discover names and terms.</section>;
   const locked = entity.locked;
@@ -89,6 +93,50 @@ export function GuideDetail({
     if (!value) return;
     clearAliasMatch();
     void setAliasTexts([...entity.aliases.map((alias) => alias.text), value]);
+  };
+  const playPreview = async (aliasIndex?: number) => {
+    try {
+      const preview = await api.guidePreview(entity.id, aliasIndex);
+      if (preview.status === 'ready') setPreviewUrl(preview.url);
+      else {
+        setTtsJob(undefined);
+        setTtsPrompt({ preview, aliasIndex });
+      }
+    } catch (error) {
+      notify(String(error));
+    }
+  };
+  const installPreviewVoice = async () => {
+    if (!ttsPrompt || ttsJob?.phase === 'downloading') return;
+    try {
+      let job = await api.ttsInstall(ttsPrompt.preview.voice.id);
+      setTtsJob(job);
+      while (job.id && job.phase === 'downloading') {
+        await new Promise((resolve) => window.setTimeout(resolve, 400));
+        job = await api.ttsInstallState(job.id);
+        setTtsJob(job);
+      }
+      if (job.phase === 'success') {
+        const aliasIndex = ttsPrompt.aliasIndex;
+        setTtsPrompt(undefined);
+        setTtsJob(undefined);
+        await playPreview(aliasIndex);
+      } else if (job.phase !== 'cancelled') notify(job.error || job.message);
+    } catch (error) {
+      notify(String(error));
+    }
+  };
+  const cancelVoiceInstall = async () => {
+    if (ttsJob?.id && ttsJob.phase === 'downloading') {
+      try {
+        setTtsJob(await api.ttsInstallCancel(ttsJob.id));
+      } catch (error) {
+        notify(String(error));
+      }
+      return;
+    }
+    setTtsPrompt(undefined);
+    setTtsJob(undefined);
   };
   const rescanOccurrences = async () => {
     try {
@@ -230,17 +278,7 @@ export function GuideDetail({
                 text="Play provider-generated pronunciation"
                 style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}
               >
-                <button
-                  aria-label="Play preview"
-                  className="icon-btn"
-                  onClick={async () => {
-                    try {
-                      setPreviewUrl(await api.guidePreview(entity.id));
-                    } catch (error) {
-                      notify(String(error));
-                    }
-                  }}
-                >
+                <button aria-label="Play preview" className="icon-btn" onClick={() => void playPreview()}>
                   <FontAwesomeIcon icon={faWaveSquare} />
                 </button>
               </TooltipTarget>
@@ -276,17 +314,7 @@ export function GuideDetail({
                         text="Play this alias pronunciation"
                         style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}
                       >
-                        <button
-                          aria-label="Play alias pronunciation"
-                          className="icon-btn"
-                          onClick={async () => {
-                            try {
-                              setPreviewUrl(await api.guidePreview(entity.id, index));
-                            } catch (error) {
-                              notify(String(error));
-                            }
-                          }}
-                        >
+                        <button aria-label="Play alias pronunciation" className="icon-btn" onClick={() => void playPreview(index)}>
                           <FontAwesomeIcon icon={faWaveSquare} />
                         </button>
                       </TooltipTarget>
@@ -551,6 +579,51 @@ export function GuideDetail({
             ))
           )}
         </div>
+        {ttsPrompt && (
+          <ConfirmDialog
+            title={ttsJob?.phase === 'downloading' ? 'Downloading preview voice' : 'Download local preview voice?'}
+            body={
+              ttsJob?.phase === 'downloading'
+                ? ttsJob.message
+                : `This local voice is needed to play “${ttsPrompt.aliasIndex === undefined ? entity.canonical_name : (entity.aliases[ttsPrompt.aliasIndex]?.text ?? 'this alias')}”. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`
+            }
+            confirmLabel={ttsJob?.phase === 'downloading' ? 'Downloading…' : 'Download voice'}
+            confirm={() => void installPreviewVoice()}
+            cancel={() => void cancelVoiceInstall()}
+          >
+            <dl className="mt-3 space-y-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <div>
+                <dt className="inline font-medium">Voice: </dt>
+                <dd className="inline">
+                  {ttsPrompt.preview.voice.displayName} · {ttsPrompt.preview.voice.locale}
+                </dd>
+              </div>
+              <div>
+                <dt className="inline font-medium">Download: </dt>
+                <dd className="inline">
+                  {Math.ceil(ttsPrompt.preview.downloadSize / (1024 * 1024))} MB · {ttsPrompt.preview.voice.publisher}
+                </dd>
+              </div>
+              <div>
+                <dt className="inline font-medium">License: </dt>
+                <dd className="inline">
+                  <a className="link" href={ttsPrompt.preview.voice.licenseUrl} target="_blank" rel="noreferrer">
+                    {ttsPrompt.preview.voice.license}
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <a className="link" href={ttsPrompt.preview.voice.modelCardUrl} target="_blank" rel="noreferrer">
+                  Model card
+                </a>
+                {' · '}
+                <a className="link" href={ttsPrompt.preview.voice.provenanceUrl} target="_blank" rel="noreferrer">
+                  Provenance
+                </a>
+              </div>
+            </dl>
+          </ConfirmDialog>
+        )}
         {confirmation === 'delete' && (
           <ConfirmDialog
             title="Delete entry"

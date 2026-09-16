@@ -6,15 +6,35 @@
 
 use std::path::{Path, PathBuf};
 
+use serde::Serialize;
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 
-use super::{config::SettingsStore, process_utils, process_utils::DetachedProcess};
+use super::{
+    config::SettingsStore,
+    process_utils,
+    process_utils::DetachedProcess,
+    tts::{AssetManager, InstallState, PiperProvider, TtsProvider, Voice},
+};
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(tag = "status", rename_all = "snake_case")]
+pub enum PreviewResult {
+    Ready {
+        file_name: String,
+    },
+    AssetRequired {
+        voice: Box<Voice>,
+        install_state: InstallState,
+    },
+}
 
 pub struct GuideService {
     project_folder: Option<PathBuf>,
     python_exe: String,
     backend: String,
     settings: SettingsStore,
+    tts: AssetManager,
 }
 
 impl GuideService {
@@ -23,12 +43,14 @@ impl GuideService {
         python_exe: String,
         backend: String,
         settings: SettingsStore,
+        tts: AssetManager,
     ) -> Self {
         Self {
             project_folder,
             python_exe,
             backend,
             settings,
+            tts,
         }
     }
 
@@ -411,24 +433,98 @@ impl GuideService {
         Ok(out_path.to_string_lossy().to_string())
     }
 
+    fn selected_voice(&self) -> Result<&Voice, String> {
+        let provider = self.settings.effective("Piper", "tts_provider", "piper").0;
+        if provider != "piper" {
+            return Err("The selected TTS provider is not available in this release.".to_string());
+        }
+        let voice_id = self
+            .settings
+            .effective("Piper", "tts_voice_id", "en_US-ljspeech-high")
+            .0;
+        self.tts.voice(&voice_id).ok_or_else(|| {
+            "The selected TTS voice is not in this release's approved catalog.".to_string()
+        })
+    }
+
+    fn spoken_text(&self, entity_id: &str, alias_index: Option<i64>) -> Result<String, String> {
+        let guide_path = self
+            .guide_path()
+            .ok_or_else(|| "No project guide is available.".to_string())?;
+        let text = std::fs::read_to_string(guide_path)
+            .map_err(|error| format!("Could not read the Story Bible: {error}"))?;
+        let guide: Value = serde_json::from_str(&text)
+            .map_err(|error| format!("Could not read the Story Bible: {error}"))?;
+        let entity = guide["entities"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .find(|entity| entity["id"].as_str() == Some(entity_id))
+            .ok_or_else(|| "The requested Story Bible entry no longer exists.".to_string())?;
+        match alias_index {
+            None => entity["canonical_name"]
+                .as_str()
+                .map(str::to_string)
+                .filter(|value| !value.trim().is_empty())
+                .ok_or_else(|| "The requested Story Bible name is empty.".to_string()),
+            Some(index) if index >= 0 => entity["aliases"]
+                .as_array()
+                .and_then(|aliases| aliases.get(index as usize))
+                .and_then(|alias| alias["text"].as_str())
+                .map(str::to_string)
+                .filter(|value| !value.trim().is_empty())
+                .ok_or_else(|| "The requested Story Bible alias no longer exists.".to_string()),
+            Some(_) => Err("The requested Story Bible alias is invalid.".to_string()),
+        }
+    }
+
+    fn preview_name(spoken: &str, voice: &Voice) -> String {
+        let mut digest = Sha256::new();
+        digest.update(b"narration-utils-tts-preview-v1\0");
+        digest.update(voice.provider.as_bytes());
+        digest.update(b"\0");
+        digest.update(voice.version.as_bytes());
+        digest.update(b"\0");
+        digest.update(spoken.as_bytes());
+        format!("{:x}.wav", digest.finalize())
+    }
+
     pub async fn preview(
         &self,
         entity_id: &str,
         alias_index: Option<i64>,
-    ) -> Result<String, String> {
+    ) -> Result<PreviewResult, String> {
+        let voice = self.selected_voice()?;
+        let install_state = self.tts.state(voice);
+        if install_state != InstallState::Installed {
+            return Ok(PreviewResult::AssetRequired {
+                voice: Box::new(voice.clone()),
+                install_state,
+            });
+        }
         let guide_path = self
             .guide_path()
             .ok_or_else(|| "No project guide is available.".to_string())?;
         let data_dir = self.data_dir().expect("guide_path implies data_dir");
-        // Deliberately a raw config read, not a schema field - piper_exe
-        // isn't exposed in the Settings UI (only piper_model is), matching
-        // guide_service.py's own direct `cfg.get(...)` call here.
-        let piper = self.config("piper_exe", "");
-        let voice = self.config("piper_model", "");
-        if piper.is_empty() || voice.is_empty() {
-            return Err("Set Piper executable and voice model in Settings.".to_string());
+        let spoken = self.spoken_text(entity_id, alias_index)?;
+        let file_name = Self::preview_name(&spoken, voice);
+        let audio_dir = data_dir.join("audio").join("tts");
+        let output = audio_dir.join(&file_name);
+        if output.is_file() {
+            return Ok(PreviewResult::Ready { file_name });
         }
-        let audio_dir = data_dir.join("audio");
+        let paths = self.tts.paths(voice)?;
+        if !paths.config.is_file() {
+            return Err("The verified Piper voice configuration is unavailable. Repair the voice and try again.".to_string());
+        }
+        let runtime_dir = Path::new(&self.python_exe)
+            .parent()
+            .ok_or_else(|| "The packaged Piper runtime is unavailable. Repair Narration Utils before using TTS.".to_string())?;
+        let provider = PiperProvider;
+        if provider.id() != voice.provider {
+            return Err("The selected TTS provider is not available in this release.".to_string());
+        }
+        let piper = provider.runtime(runtime_dir)?;
         let mut args = vec![
             "render-audio".to_string(),
             "--guide".to_string(),
@@ -438,20 +534,17 @@ impl GuideService {
             "--audio-dir".to_string(),
             audio_dir.to_string_lossy().to_string(),
             "--piper-exe".to_string(),
-            piper,
+            piper.to_string_lossy().to_string(),
             "--piper-model".to_string(),
-            voice,
+            paths.model.to_string_lossy().to_string(),
+            "--output-name".to_string(),
+            file_name.clone(),
         ];
         if let Some(index) = alias_index {
             args.push("--alias-index".to_string());
             args.push(index.to_string());
         }
         let result = self.run_backend(&args).await?;
-        let filename = match alias_index {
-            Some(index) => format!("{entity_id}__alias{index}.wav"),
-            None => format!("{entity_id}.wav"),
-        };
-        let output = audio_dir.join(filename);
         if result.0 != 0 || !output.is_file() {
             return Err(if result.2.trim().is_empty() {
                 "Could not render the preview.".to_string()
@@ -459,35 +552,39 @@ impl GuideService {
                 result.2.trim().to_string()
             });
         }
-        Ok(output.to_string_lossy().to_string())
+        Ok(PreviewResult::Ready { file_name })
     }
-}
 
-/// Turns a rendered preview's file path into a URL. Mirrors
-/// `guide_service.py::preview_url`.
-pub async fn preview_url(
-    guide: &GuideService,
-    audio_base_url: Option<&str>,
-    entity_id: &str,
-    alias_index: Option<i64>,
-) -> Result<String, String> {
-    let path = guide.preview(entity_id, alias_index).await?;
-    match audio_base_url {
-        None | Some("") => Ok(format!("file:///{}", path.replace('\\', "/"))),
-        Some(base) => {
-            let name = Path::new(&path)
-                .file_name()
-                .map(|name| name.to_string_lossy().to_string())
-                .unwrap_or_default();
-            Ok(format!("{base}{}", super::bridge::percent_encode(&name)))
+    pub fn audio_file(&self, file_name: &str) -> Result<PathBuf, String> {
+        let valid_name = file_name.len() == 68
+            && file_name.ends_with(".wav")
+            && file_name[..64].bytes().all(|byte| byte.is_ascii_hexdigit());
+        if !valid_name {
+            return Err("Invalid preview audio request.".to_string());
         }
+        let root = self
+            .data_dir()
+            .ok_or_else(|| "No project guide is available.".to_string())?
+            .join("audio")
+            .join("tts");
+        let root = root
+            .canonicalize()
+            .map_err(|_| "Preview audio is unavailable.".to_string())?;
+        let candidate = root.join(file_name);
+        let candidate = candidate
+            .canonicalize()
+            .map_err(|_| "Preview audio is unavailable.".to_string())?;
+        if !candidate.starts_with(&root) || !candidate.is_file() {
+            return Err("Preview audio is unavailable.".to_string());
+        }
+        Ok(candidate)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{preview_url, GuideService};
-    use crate::server::{config::SettingsStore, test_support};
+    use super::GuideService;
+    use crate::server::{config::SettingsStore, test_support, tts::AssetManager};
     use std::{fs, path::PathBuf};
 
     fn project(label: &str) -> PathBuf {
@@ -505,7 +602,13 @@ mod tests {
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
             Some(project.clone()),
         );
-        GuideService::new(Some(project), python_exe, backend, settings)
+        GuideService::new(
+            Some(project),
+            python_exe,
+            backend,
+            settings,
+            AssetManager::new(),
+        )
     }
 
     /// A minimal stand-in for manuscript_guide.py: only understands enough
@@ -536,22 +639,23 @@ sys.exit(1)
     }
 
     #[tokio::test]
-    async fn preview_reports_missing_piper_configuration_without_touching_the_backend() {
+    async fn preview_requires_an_approved_voice_before_touching_the_backend() {
         let project = project("preview-no-piper");
-        // Deliberately invalid paths: if preview() ever reached
-        // run_backend() before checking Piper config, this would fail with
-        // a different error ("Configure the Manuscript Guide..."), not the
-        // Piper one - this is the ordering guarantee test_guide_entities.py
-        // asserts in Python.
+        // Deliberately invalid paths: a missing catalog voice must be surfaced
+        // before a render can reach any backend/runtime path.
         let service = service(
             project.clone(),
             "does-not-exist.exe".to_string(),
             "does-not-exist.py".to_string(),
         );
-        let error = preview_url(&service, None, "e-1", None)
+        let preview = service
+            .preview("e-1", None)
             .await
-            .expect_err("must fail");
-        assert!(error.contains("Piper"), "unexpected error: {error}");
+            .expect("request is gated");
+        assert!(matches!(
+            preview,
+            super::PreviewResult::AssetRequired { .. }
+        ));
         let _ = fs::remove_dir_all(project);
     }
 

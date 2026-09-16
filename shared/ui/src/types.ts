@@ -124,6 +124,39 @@ export type WorkJob = {
   result?: { id?: string; format?: string; sourceName?: string; importedAt?: string; message?: string } | null;
   error?: string;
 };
+export type TtsInstallState = 'installed' | 'not_installed' | 'verification_failed';
+export type TtsVoice = {
+  id: string;
+  provider: string;
+  displayName: string;
+  locale: string;
+  version: string;
+  publisher: string;
+  license: string;
+  licenseUrl: string;
+  modelCardUrl: string;
+  provenanceUrl: string;
+  attribution: string;
+  downloadSize: number;
+  installState: TtsInstallState;
+};
+export type TtsCatalog = {
+  catalogVersion: number;
+  provider: { id: string; effectiveSource: string };
+  voice: { id: string; effectiveSource: string };
+  voices: TtsVoice[];
+};
+export type TtsInstallJob = {
+  id: string | null;
+  voiceId: string;
+  phase: 'downloading' | 'success' | 'cancelled' | 'error';
+  percent: number;
+  message: string;
+  error: string;
+};
+export type GuidePreview =
+  | { status: 'ready'; url: string }
+  | { status: 'asset_required'; voice: Omit<TtsVoice, 'downloadSize' | 'installState'>; installState: TtsInstallState; downloadSize: number };
 export type ManuscriptImportSelection = { selected: boolean; jobId?: string };
 export type ManuscriptReader = { chapters: ManuscriptChapter[]; paragraphs: ManuscriptParagraph[]; notes: ManuscriptNote[] };
 
@@ -152,7 +185,12 @@ export interface NarrationApi {
   guideRelate(id: string, otherId: string, label: string): Promise<void>;
   guideUnrelate(id: string, otherId: string, label: string): Promise<void>;
   guideExport(): Promise<string>;
-  guidePreview(id: string, aliasIndex?: number): Promise<string>;
+  guidePreview(id: string, aliasIndex?: number): Promise<GuidePreview>;
+  ttsCatalog(): Promise<TtsCatalog>;
+  ttsInstall(voiceId: string): Promise<TtsInstallJob>;
+  ttsInstallState(jobId: string): Promise<TtsInstallJob>;
+  ttsInstallCancel(jobId: string): Promise<TtsInstallJob>;
+  ttsRemove(voiceId: string): Promise<void>;
   transcriptStart(options: { model: string; chunk: string; workers: string; hints: string; chapterTitle?: string }): Promise<void>;
   transcriptCancel(): Promise<void>;
   transcriptReset(): Promise<void>;

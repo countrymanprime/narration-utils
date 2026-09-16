@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { Bootstrap, Scope, ScopedSettingField } from '../../types';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { Bootstrap, Scope, ScopedSettingField, TtsCatalog } from '../../types';
 import { useApi } from '../../api/ApiContext';
 import { Heading } from '../primitives/Heading';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
@@ -10,9 +10,9 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'General', label: 'General', tool: 'General', scopes: ['global'] },
   { key: 'Manuscript', label: 'Manuscript', tool: 'Manuscript', scopes: ['global', 'project'] },
   { key: 'TranscriptCompare', label: 'Proofing', tool: 'TranscriptCompare', scopes: ['global', 'project'] },
-  { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'], filter: (field) => field.key !== 'piper_model' },
+  { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'] },
   { key: 'Daw', label: 'DAW Integration', scopes: ['global'] },
-  { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global'] },
+  { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global', 'project'] },
   { key: 'ProjectData', label: 'Project data', scopes: ['project'] },
 ];
 
@@ -35,10 +35,12 @@ export function Settings({
   const [dirty, setDirty] = useState(false);
   const [pendingChange, setPendingChange] = useState<() => void>();
   const [confirmClearProjectData, setConfirmClearProjectData] = useState(false);
+  const [ttsCatalog, setTtsCatalog] = useState<TtsCatalog>();
+  const [confirmRemoveVoice, setConfirmRemoveVoice] = useState(false);
   const categories = useMemo(() => SETTINGS_CATEGORIES.filter((entry) => entry.scopes.includes(scope)), [scope]);
   const active = categories.find((entry) => entry.key === category) ?? categories[0];
   const fields = active?.tool ? (settings[active.tool] || []).filter((field) => !active.filter || active.filter(field)) : [];
-  const applyPalette = (next: Record<string, ScopedSettingField[]>) => {
+  const applyPalette = useCallback((next: Record<string, ScopedSettingField[]>) => {
     const root = document.documentElement;
     const pairs: Record<string, string> = {
       color_character: '--character',
@@ -53,12 +55,14 @@ export function Settings({
     [...(next.ManuscriptGuide || []), ...(next.Manuscript || [])].forEach((field) => {
       if (pairs[field.key] && field.effectiveValue) root.style.setProperty(pairs[field.key], `#${field.effectiveValue.replace('#', '')}`);
     });
-  };
+  }, []);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const next = await api.settingsForScope(scope);
+      const catalog = category === 'Piper' ? await api.ttsCatalog() : undefined;
       setSettings(next);
+      setTtsCatalog(catalog);
       applyPalette(next);
       const currentTool = active?.tool;
       const currentFields = currentTool ? (next[currentTool] || []).filter((field) => !active?.filter || active.filter(field)) : [];
@@ -67,18 +71,18 @@ export function Settings({
     } catch (error) {
       notify(String(error));
     }
-  };
+  }, [active, api, applyPalette, category, notify, scope]);
   useEffect(() => {
     void load();
-  }, [scope, category]);
+  }, [load]);
   useEffect(() => {
     if (active?.key !== category) setCategory(categories[0]?.key ?? '');
-  }, [scope]);
+  }, [scope, active?.key, categories, category]);
   useEffect(() => {
     onDirtyChange(dirty);
   }, [dirty, onDirtyChange]);
 
-  const save = async () => {
+  const save = useCallback(async () => {
     if (!active?.tool) return;
     try {
       await api.saveSettings(active.tool, scope, values);
@@ -87,13 +91,13 @@ export function Settings({
     } catch (error) {
       notify(String(error));
     }
-  };
-  const discard = async () => {
+  }, [active?.tool, api, load, notify, scope, values]);
+  const discard = useCallback(async () => {
     await load();
-  };
+  }, [load]);
   useEffect(() => {
     registerActions({ save, discard });
-  }, [dirty, scope, category, values]);
+  }, [save, discard, registerActions]);
   const requestChange = (next: () => void) => {
     if (dirty) setPendingChange(() => next);
     else next();
@@ -108,6 +112,7 @@ export function Settings({
       notify(String(error));
     }
   };
+  const selectedTtsVoice = ttsCatalog?.voices.find((voice) => voice.id === ttsCatalog.voice.id);
 
   return (
     <div className="settings-page">
@@ -170,9 +175,34 @@ export function Settings({
                 }}
               >
                 {category === 'Piper' && (
-                  <div className="mb-4 rounded-md p-3 text-sm" style={{ background: 'var(--surface-2)' }}>
-                    <div className="font-medium">Piper is configured</div>
-                    <div style={{ color: 'var(--text-muted)' }}>Installed and managed automatically — there's no executable path to point at manually.</div>
+                  <div className="mb-4 space-y-3 rounded-md p-3 text-sm" style={{ background: 'var(--surface-2)' }}>
+                    <div>
+                      <div className="font-medium">Local TTS previews</div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        Piper voices are optional, catalog-managed local assets. Selecting a voice never downloads it; downloading is confirmed when you request
+                        a preview.
+                      </div>
+                    </div>
+                    {selectedTtsVoice && (
+                      <div className="flex items-center justify-between gap-3 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+                        <div>
+                          <div className="font-medium">{selectedTtsVoice.displayName}</div>
+                          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            {selectedTtsVoice.installState === 'installed'
+                              ? 'Installed and verified'
+                              : selectedTtsVoice.installState === 'verification_failed'
+                                ? 'Needs repair'
+                                : 'Not installed'}{' '}
+                            · {Math.ceil(selectedTtsVoice.downloadSize / (1024 * 1024))} MB
+                          </div>
+                        </div>
+                        {selectedTtsVoice.installState === 'installed' && (
+                          <button className="btn btn-ghost text-xs" type="button" onClick={() => setConfirmRemoveVoice(true)}>
+                            Remove local voice…
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="space-y-3">
@@ -243,6 +273,24 @@ export function Settings({
               .catch((error) => notify(String(error)))
           }
           cancel={() => setConfirmClearProjectData(false)}
+        />
+      )}
+      {confirmRemoveVoice && selectedTtsVoice && (
+        <ConfirmDialog
+          title="Remove local preview voice?"
+          body={`Remove ${selectedTtsVoice.displayName} from this computer? Your settings and project preview WAVs remain; requesting a new preview will ask to download the voice again.`}
+          confirmLabel="Remove voice"
+          confirm={() =>
+            void api
+              .ttsRemove(selectedTtsVoice.id)
+              .then(async () => {
+                setConfirmRemoveVoice(false);
+                notify('Local preview voice removed.');
+                await load();
+              })
+              .catch((error) => notify(String(error)))
+          }
+          cancel={() => setConfirmRemoveVoice(false)}
         />
       )}
     </div>

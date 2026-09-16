@@ -67,14 +67,16 @@ or double-click `scripts\Quickstart.cmd`. The script downloads a private Python
 runtime, creates and maintains one shared gitignored virtual environment for
 every first-party tool (Manuscript Guide, Transcript Compare, and the shared
 server), installs their dependencies, downloads the default spaCy model,
-installs UI packages, and builds the production UI bundle. It also installs
-the local Piper preview runtime and a U.S. English medium voice, then builds
-the two Rust components: `shared/manuscript-import` (`cargo build --release`)
+installs UI packages, and builds the production UI bundle. The Piper runtime
+is installed with the managed Python environment, but Quickstart never
+downloads a voice. TTS voices are catalog-managed optional assets that are
+downloaded only after a narrator explicitly requests a Story Bible preview.
+The script then builds the two Rust components: `shared/manuscript-import` (`cargo build --release`)
 and the native shell app in `shell/` (`cargo tauri build`, installing the
 `tauri-cli` cargo subcommand first if needed). Machine-level prerequisites
 are Node.js/npm and a Rust toolchain (`rustup`), plus, on Windows, the
 "Desktop development with C++" Visual Studio workload for the MSVC linker.
-Python, Piper, packages, downloaded bootstrap files, and Cargo build output
+Python, the Piper runtime, packages, downloaded bootstrap files, and Cargo build output
 remain in gitignored folders in this checkout; REAPER does not discover or
 run a global or VST-folder Python.
 

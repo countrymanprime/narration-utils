@@ -930,13 +930,13 @@ def render_audio(args: argparse.Namespace) -> None:
         raise ValueError("Configure both the Piper executable and voice model before creating previews.")
     if args.alias_index is None:
         spoken = entity["canonical_name"]
-        filename = f"{entity['id']}.wav"
+        filename = args.output_name or f"{entity['id']}.wav"
     else:
         aliases = entity.get("aliases", [])
         if not 0 <= args.alias_index < len(aliases):
             raise ValueError("Alias index out of range.")
         spoken = aliases[args.alias_index]["text"]
-        filename = f"{entity['id']}__alias{args.alias_index}.wav"
+        filename = args.output_name or f"{entity['id']}__alias{args.alias_index}.wav"
     audio_dir = Path(args.audio_dir)
     audio_dir.mkdir(parents=True, exist_ok=True)
     destination = audio_dir / filename
@@ -1004,6 +1004,7 @@ def main() -> None:
     audio_parser.add_argument("--piper-exe", required=True)
     audio_parser.add_argument("--piper-model", required=True)
     audio_parser.add_argument("--alias-index", type=int, default=None)
+    audio_parser.add_argument("--output-name", default="")
     args = parser.parse_args()
     log_handle = None
     if getattr(args, "log", None):

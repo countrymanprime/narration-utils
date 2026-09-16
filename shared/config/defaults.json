@@ -4,9 +4,11 @@
   },
   "ManuscriptGuide": {
     "spacy_model": "en_core_web_sm",
-    "espeak_library": "",
-    "piper_exe": "",
-    "piper_model": ""
+    "espeak_library": ""
+  },
+  "Piper": {
+    "tts_provider": "piper",
+    "tts_voice_id": "en_US-ljspeech-high"
   },
   "Manuscript": {
     "color_note": "B85C1E"

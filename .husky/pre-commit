@@ -1,2 +1,2 @@
 #!/usr/bin/env sh
-node scripts/quality.mjs staged
+npx --no -- lint-staged

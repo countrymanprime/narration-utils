@@ -2,7 +2,7 @@
 
 Builds a narrator reference from a project-owned canonical manuscript. It lists candidate characters, places, and
 organizations; stores editable pronunciations, IPA, descriptions, evidence, and conservative
-personality notes; and can create local Piper WAV previews.
+personality notes; and can create local, catalog-managed Piper WAV previews.
 
 It is not dependent on Transcript Compare. The two tools deliberately share one project-level
 input only:
@@ -17,7 +17,7 @@ generated files.
 
 ## Settings: global vs. this project
 
-Settings (spaCy model, eSpeak/Piper paths) are layered: a repo-wide default, a per-user
+Settings (spaCy, eSpeak, and the TTS provider/voice selection) are layered: a repo-wide default, a per-user
 **Global Defaults** value, and an optional **This
 Project** override, in that order. Global values live in
 `%APPDATA%\narration-utils\global-settings.json`; a project override lives in
@@ -64,15 +64,17 @@ manuscript from Home; it is normalized into canonical JSON and its source is ret
    survive a rebuild.
 3. **Export all** writes `ManuscriptGuide\whisper_hotwords.txt`. It is a standalone reference;
    copying it into a transcript tool is an explicit user action.
-4. For playable WAV previews, configure a local Piper executable and voice model, then choose
-   **Play preview**. eSpeak NG is optional but enables an IPA fallback for unknown names.
+4. Choose a local TTS provider and preview voice in Settings. **Play preview**
+   asks for explicit download approval if that reviewed voice is missing, then
+   creates a cached WAV for the exact name or alias. eSpeak NG is optional but
+   enables an IPA fallback for unknown names.
 
 ## Project files
 
 The guide keeps all of its outputs in `<project>\ManuscriptGuide\`:
 
 - `manuscript_guide.json` — canonical, editable guide data
-- `audio\` — cached Piper WAV previews
+- `audio\tts\` — cached Piper WAV previews, invalidated when the spoken text or voice version changes
 - `whisper_hotwords.txt` — independent export
 - transient progress/index/status files
 

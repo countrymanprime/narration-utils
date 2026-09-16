@@ -40,11 +40,22 @@ pub const FIELD_SCHEMAS: &[(&str, &[FieldSchema])] = &[
                 kind: "text",
                 choices: &[],
             },
+        ],
+    ),
+    (
+        "Piper",
+        &[
             FieldSchema {
-                key: "piper_model",
-                label: "Piper voice model",
-                kind: "text",
-                choices: &[],
+                key: "tts_provider",
+                label: "TTS provider",
+                kind: "choice",
+                choices: &["piper"],
+            },
+            FieldSchema {
+                key: "tts_voice_id",
+                label: "Preview voice",
+                kind: "choice",
+                choices: &["en_US-ljspeech-high"],
             },
         ],
     ),
