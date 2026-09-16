@@ -759,7 +759,7 @@ pub fn spawn_bridge_loop(state: std::sync::Arc<AppState>) {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{manuscript_canonical, AppState, ServerConfig};
+    use super::super::{manuscript_canonical, test_support, AppState, ServerConfig};
     use std::{path::PathBuf, sync::Arc};
 
     fn project(label: &str) -> PathBuf {
@@ -922,10 +922,7 @@ with open(args.out, "w", encoding="utf-8") as f:
     async fn full_compare_lifecycle_runs_through_a_fake_backend_to_inspecting() {
         let project = project("lifecycle");
         import_manuscript(&project);
-        let python_exe = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../.venv/Scripts/python.exe")
-            .to_string_lossy()
-            .to_string();
+        let python_exe = test_support::python_executable();
         let backend = write_fake_compare_backend(&project)
             .to_string_lossy()
             .to_string();

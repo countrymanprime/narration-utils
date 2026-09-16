@@ -487,7 +487,7 @@ pub async fn preview_url(
 #[cfg(test)]
 mod tests {
     use super::{preview_url, GuideService};
-    use crate::server::config::SettingsStore;
+    use crate::server::{config::SettingsStore, test_support};
     use std::{fs, path::PathBuf};
 
     fn project(label: &str) -> PathBuf {
@@ -587,12 +587,11 @@ sys.exit(1)
         fs::create_dir_all(&manuscript_dir).unwrap();
         fs::write(manuscript_dir.join("manuscript.json"), "{}").unwrap();
 
-        let python_exe =
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.venv/Scripts/python.exe");
+        let python_exe = test_support::python_executable();
         let backend = write_fake_backend(&project);
         let service = service(
             project.clone(),
-            python_exe.to_string_lossy().to_string(),
+            python_exe,
             backend.to_string_lossy().to_string(),
         );
 

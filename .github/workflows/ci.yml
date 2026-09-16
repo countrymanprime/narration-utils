@@ -110,6 +110,8 @@ jobs:
           PYTHONPATH: shared/python
         run: python -m pytest -q --basetemp .test-tmp
       - name: Run every Rust test
+        env:
+          NARRATION_UTILS_TEST_PYTHON: python
         run: cargo test --workspace
 
   format-and-lint:

@@ -15,6 +15,63 @@ pub mod process_utils;
 pub mod transcript;
 pub mod work_job;
 
+#[cfg(test)]
+pub(crate) mod test_support {
+    use std::{
+        env,
+        path::{Path, PathBuf},
+        process::Command,
+    };
+
+    fn resolve(command: &str) -> Result<String, String> {
+        let output = Command::new(command)
+            .args(["-c", "import sys; print(sys.executable)"])
+            .output()
+            .map_err(|error| format!("could not start `{command}`: {error}"))?;
+        if !output.status.success() {
+            return Err(format!("`{command}` exited with {}", output.status));
+        }
+
+        let executable = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if executable.is_empty() || !Path::new(&executable).is_file() {
+            return Err(format!("`{command}` did not report an executable file"));
+        }
+        Ok(executable)
+    }
+
+    pub fn python_executable() -> String {
+        if let Ok(command) = env::var("NARRATION_UTILS_TEST_PYTHON") {
+            return resolve(&command).unwrap_or_else(|error| {
+                panic!("NARRATION_UTILS_TEST_PYTHON is not usable: {error}")
+            });
+        }
+
+        let venv = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join(".venv")
+            .join(if cfg!(windows) {
+                "Scripts/python.exe"
+            } else {
+                "bin/python"
+            });
+        if venv.is_file() {
+            return venv.to_string_lossy().to_string();
+        }
+
+        let fallback = if cfg!(windows) {
+            "python.exe"
+        } else {
+            "python3"
+        };
+        resolve(fallback).unwrap_or_else(|error| {
+            panic!(
+                "No usable test Python was found. Set NARRATION_UTILS_TEST_PYTHON, create {}, or install `{fallback}` on PATH: {error}",
+                venv.display()
+            )
+        })
+    }
+}
+
 use std::{
     collections::BTreeMap,
     path::{Path as FsPath, PathBuf},
@@ -1308,7 +1365,7 @@ async fn project_data_clear(
 
 #[cfg(test)]
 mod tests {
-    use super::{manuscript_canonical, router, AppState, ServerConfig};
+    use super::{manuscript_canonical, router, test_support, AppState, ServerConfig};
     use axum::{
         body::Body,
         http::{Request, StatusCode},
@@ -1583,10 +1640,7 @@ with open(args.out, "w", encoding="utf-8") as f:
         )
         .unwrap();
 
-        let python_exe = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../.venv/Scripts/python.exe")
-            .to_string_lossy()
-            .to_string();
+        let python_exe = test_support::python_executable();
         let backend = write_fake_guide_build_backend(&project)
             .to_string_lossy()
             .to_string();
@@ -1628,10 +1682,7 @@ with open(args.out, "w", encoding="utf-8") as f:
         )
         .unwrap();
 
-        let python_exe = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../.venv/Scripts/python.exe")
-            .to_string_lossy()
-            .to_string();
+        let python_exe = test_support::python_executable();
         let backend = write_fake_guide_build_backend(&project)
             .to_string_lossy()
             .to_string();
