@@ -37,12 +37,11 @@ either scope from the workspace's corner **Settings** button.
 
 ## Install (Reaper)
 
-From the repository root, run the shared quickstart script. It creates the
-repo-wide `.venv`, installs every tool's dependencies, and downloads the default
-spaCy model:
+From the repository root, run the shared developer bootstrap. It creates the
+repo-wide `.venv`, installs locked tool dependencies, and builds the workspace:
 
-```powershell
-.\scripts\Quickstart.ps1
+```sh
+npm run bootstrap
 ```
 
 In REAPER, use **Actions → Show action list → New action → Load ReaScript...** and load just
@@ -52,7 +51,7 @@ imported into REAPER's Action list. Running it opens the persistent, centered
 use the corner **Settings** button without leaving that window.
 
 Python backends run only from repo-managed local environments created by the
-quickstart script, so REAPER never needs to know or configure Python. Select a
+bootstrap, so REAPER never needs to know or configure Python. Select a
 manuscript from Home; it is normalized into canonical JSON and its source is retained for provenance.
 
 ## Use

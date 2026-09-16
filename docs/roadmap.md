@@ -43,7 +43,7 @@ The suite helps a narrator find and review issues faster. It may analyze local m
 
 ## Release-readiness work item: first-use dependency provisioning
 
-Replace Quickstart-time optional model downloads with application-owned,
+Keep optional model downloads out of checkout bootstrap and move them to application-owned,
 explicit first-use provisioning before distributing compiled GitHub releases.
 The app must launch without a checkout or developer bootstrap script, download
 no optional model at application startup, and offer every compatible model for

@@ -4,12 +4,11 @@
 
 ## Problem
 
-`scripts/Quickstart.ps1` is a developer-checkout bootstrapper. It creates the
-local runtime and installs Python/UI/build dependencies; it still downloads
-the development spaCy models, but no longer downloads a Piper voice. That is
-unsuitable for a GitHub
+`npm run bootstrap` is a developer-checkout bootstrapper. It creates the local
+environment and installs locked Python/UI/build dependencies, but it downloads
+neither spaCy models nor Piper voices. That is unsuitable for a GitHub
 release consumer: a compiled application must launch without a source checkout,
-Node, Rust, a Python bootstrap installer, or a quickstart script.
+Node, Rust, a Python bootstrap installer, or a developer bootstrap command.
 
 The application should also avoid consuming network bandwidth and disk space
 for an analyzer or voice that the narrator never elects to use.
@@ -85,23 +84,21 @@ downloads for a source checkout, not release-time first-use provisioning.
 
 The release build must package the compiled shell, UI assets, local backend,
 and its base runtime into the GitHub release artifact. It must not call
-`Quickstart.ps1` or require developer build tooling after installation.
+`npm run bootstrap` or require developer build tooling after installation.
 
-`Quickstart.ps1` may remain a development bootstrapper, but it must stop
-preloading optional assets by default once this work lands. Development should
+The developer bootstrap must not preload optional assets. Development should
 exercise the same catalog and first-use installer as the released application;
 an explicit developer-only provisioning command may seed assets for offline
-testing or packaging verification. The script's existing spaCy and Piper
-downloads are therefore migration targets, not the release design.
+testing or packaging verification.
 
-Existing caches created by Quickstart should be detected only by an explicit,
+Existing caches created by retired Windows bootstrap scripts should be detected only by an explicit,
 documented migration/repair path. Do not silently adopt files whose version or
 hash cannot be verified against the asset catalog.
 
 ## Delivery slices
 
 1. Define the release packaging boundary and the versioned asset-catalog/cache
-   manifest format; package a launchable application without Quickstart.
+   manifest format; package a launchable application without developer bootstrap.
 2. Add an asset manager owned by the application backend, including hash
    verification, temporary downloads, atomic install, cancellation, repair,
    removal, and diagnostics.
@@ -111,14 +108,14 @@ hash cannot be verified against the asset catalog.
 4. Piper preview voices now use the catalog/cache manager. Move the spaCy
    Story Bible path, Whisper models, and every subsequently approved optional
    asset through the same manager.
-5. Change Quickstart and release documentation, migrate or deliberately reject
+5. Change bootstrap and release documentation, migrate or deliberately reject
    legacy caches, and add release-install smoke coverage.
 
 ## Acceptance criteria
 
 - A clean machine can install a GitHub release and open the app without a
   repository checkout, Node, Rust, an external Python installer, or
-  `Quickstart.ps1`.
+  `npm run bootstrap`.
 - First application launch performs no optional asset download.
 - A narrator who never builds a Story Bible does not download spaCy; a narrator
   who never requests a Piper preview does not download a Piper voice.

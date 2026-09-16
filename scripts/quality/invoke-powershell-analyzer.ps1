@@ -7,12 +7,10 @@ param(
 $ErrorActionPreference = 'Stop'
 
 if (-not (Get-Command Invoke-ScriptAnalyzer -ErrorAction SilentlyContinue)) {
-    throw 'PSScriptAnalyzer is required. Install it with: Install-Module PSScriptAnalyzer -Scope CurrentUser'
+    throw 'PSScriptAnalyzer is required. Run: npm run bootstrap'
 }
 
 $excludedRules = @(
-    # Quickstart is an interactive installer with established function names and
-    # deliberate host-visible progress; these are not correctness concerns.
     'PSAvoidUsingWriteHost',
     'PSUseApprovedVerbs',
     'PSUseSingularNouns',

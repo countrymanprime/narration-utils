@@ -1,6 +1,6 @@
 # Single, repo-wide Python dependency set for all first-party tools
-# (Manuscript Guide, Transcript Compare, and the shared server). Installed
-# into one venv by scripts/Quickstart.ps1 instead of a venv per tool.
+# (Manuscript Guide, Transcript Compare, and their shared helpers). The
+# checkout bootstrap installs the fully pinned requirements.lock into one venv.
 python-docx==1.2.0
 pypdf==6.1.3
 spacy>=3.7

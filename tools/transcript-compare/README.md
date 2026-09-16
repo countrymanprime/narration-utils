@@ -29,7 +29,7 @@ actually said.
 - The React Narration Utils workspace owns this workflow and settings: its Settings page opens
   **Global**/**This Project** values for the default Whisper model and
   take-marker colors. Python runtimes are fixed local checkout dependencies
-  managed by `scripts\Quickstart.ps1`.
+  managed by `npm run bootstrap`.
 - Pick or replace the Word manuscript from the workspace Home page.
 
 ## Install as REAPER actions

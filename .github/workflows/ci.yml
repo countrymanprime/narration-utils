@@ -65,6 +65,54 @@ jobs:
       - name: Build every Rust workspace package
         run: cargo build --workspace
 
+  bootstrap:
+    name: Bootstrap (${{ matrix.name }})
+    needs: conventional-commit
+    if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x64
+            os: windows-latest
+          - name: macos-x64
+            os: macos-13
+          - name: macos-arm64
+            os: macos-14
+          - name: linux-x64
+            os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux desktop build dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            shared/ui/package-lock.json
+            shell/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: narration-utils-bootstrap-${{ runner.os }}-${{ runner.arch }}
+      - name: Bootstrap this checkout
+        run: npm run bootstrap
+      - name: Confirm bootstrap downloaded no optional models or voices
+        shell: pwsh
+        run: |
+          $python = if ($IsWindows) { '.venv/Scripts/python.exe' } else { '.venv/bin/python' }
+          & $python -c "import importlib.util, sys; sys.exit(1 if importlib.util.find_spec('en_core_web_sm') else 0)"
+          if ($LASTEXITCODE -ne 0) { throw 'Bootstrap installed an optional spaCy model.' }
+          if (Test-Path 'shared/python/.piper') { throw 'Bootstrap created a Piper asset directory.' }
+
   test:
     name: Test suite
     needs: build
@@ -83,16 +131,15 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            tools/requirements-dev.txt
+          cache-dependency-path: requirements.lock
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
       - name: Install test dependencies
         run: |
           npm --prefix shared/ui ci
-          python -m pip install -r requirements.txt -r tools/requirements-dev.txt
+          python -m pip install -r requirements.lock
+          node --test scripts/bootstrap.test.mjs
       - name: Run UI tests
         run: npm --prefix shared/ui test
       - name: Run Python tests
@@ -120,9 +167,7 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            tools/requirements-dev.txt
+          cache-dependency-path: requirements.lock
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
@@ -130,7 +175,7 @@ jobs:
         shell: pwsh
         run: |
           npm --prefix shared/ui ci
-          python -m pip install -r requirements.txt -r tools/requirements-dev.txt
+          python -m pip install -r requirements.lock
           Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
           cargo install stylua --version 2.1.0 --locked
       - name: Format and lint every language
@@ -183,9 +228,7 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            tools/requirements-dev.txt
+          cache-dependency-path: requirements.lock
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
@@ -196,7 +239,7 @@ jobs:
         run: |
           npm --prefix shared/ui ci
           npm --prefix shell ci
-          python -m pip install -r requirements.txt -r tools/requirements-dev.txt
+          python -m pip install -r requirements.lock
       - name: Build first-party runtime resources
         run: |
           npm --prefix shared/ui run build

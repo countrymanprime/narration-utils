@@ -2,7 +2,7 @@
 
 ## Local setup
 
-Run `scripts\Quickstart.ps1` once after cloning. It installs the root release
+Run `npm run bootstrap` once after cloning. It installs the root release
 tooling and Husky hooks in addition to the existing application dependencies.
 The hooks enforce Conventional Commit messages and check staged TypeScript,
 Python, Rust, PowerShell, and Lua files. Use `npm run check` for the full

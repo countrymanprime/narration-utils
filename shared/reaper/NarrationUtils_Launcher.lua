@@ -63,39 +63,23 @@ local session_dir = reaper.GetResourcePath() .. '\\NarrationUtils\\sessions\\hub
 reaper.RecursiveCreateDirectory(session_dir .. '\\commands', 0)
 
 if not common.file_exists(shared_python) or not common.file_exists(ui_index) then
-  local quickstart = REPO_ROOT .. '\\scripts\\Quickstart.cmd'
-  local answer = reaper.ShowMessageBox(
+  reaper.ShowMessageBox(
     'Narration Utils has not been set up in this checkout yet.\n\n'
-      .. 'Run scripts\\Quickstart.ps1 now? It builds the shared Python environment\n'
-      .. 'and downloads a couple of small local models - this can take a few\n'
-      .. 'minutes the first time, and needs Node.js/npm already installed.\n\n'
+      .. 'From the repository root, run:\n\n'
+      .. '  npm run bootstrap\n\n'
+      .. 'It creates the local Python environment and builds the workspace.\n'
+      .. 'Optional spaCy models and Piper voices are not downloaded at setup.\n\n'
       .. 'Diagnostic session:\n'
       .. session_dir,
     'Narration Utils setup required',
-    4
+    0
   )
-  if answer == 6 then -- IDYES
-    -- Shown, not hidden: this is a multi-minute operation (model downloads,
-    -- an npm build) the user should be able to watch and, if something goes
-    -- wrong, read the real error from directly.
-    if process.run_hidden(session_dir, process.quote(quickstart), { wait = false, show_window = true, cwd = REPO_ROOT .. '\\scripts' }) then
-      reaper.ShowMessageBox('Setup is running in a console window. Once it finishes, launch Narration Utils again.', 'Narration Utils setup', 0)
-    else
-      reaper.ShowMessageBox(
-        'Could not start scripts\\Quickstart.cmd.\n\nRun it manually from:\n' .. REPO_ROOT .. '\\scripts',
-        'Narration Utils setup required',
-        0
-      )
-    end
-  end
   return
 end
 
 if not common.file_exists(shell_exe) then
   reaper.ShowMessageBox(
-    'The Narration Utils shell app has not been built yet.\n\n'
-      .. 'From this checkout, run:\n  cd shell\n  npm run build\n\n'
-      .. '(or `npm run dev` while iterating on it), then launch Narration Utils again.',
+    'The Narration Utils shell app has not been built yet.\n\n' .. 'From this checkout, run:\n  npm run bootstrap\n\n' .. 'Then launch Narration Utils again.',
     'Narration Utils setup required',
     0
   )

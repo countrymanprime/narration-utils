@@ -13,8 +13,8 @@ logic is DAW-agnostic; a thin per-DAW driver wires it into a specific host.
 ```
 narration-utils/
   shell/
-    src-tauri/                 Native shell (Rust/Tauri) that hosts the UI and supervises
-                                shared/server's Python backend for its whole lifetime
+    src-tauri/                 Native shell (Rust/Tauri) that hosts the UI and its
+                                in-process Axum API for the app lifetime
   shared/
     manuscript-import/         Rust CLI: parses a source manuscript (.docx/.md) into the
                                 draft JSON narration_common.manuscript turns into manuscript.json
@@ -51,51 +51,40 @@ install path.
   port of the Reaper one. Placeholder folders exist under `daws/audacity/` in each tool and
   under `shared/audacity/`.
 
-## Quickstart
+## Developer bootstrap
 
 The UI is a local React + Tailwind workspace, shown in its own native window
-(`shell/`, a Rust/Tauri app) which serves it via a Python API host
-(`shared/server`) that it starts and supervises for its whole lifetime —
-closing the window is the only thing that stops the backend. From the
-checkout root, run either:
+(`shell/`, a Rust/Tauri app) backed by an in-process Axum API host. Python is
+used only for the two analysis tools the shell starts on demand. From the
+checkout root, run:
 
-```powershell
-.\scripts\Quickstart.ps1
+```sh
+npm run bootstrap
 ```
 
-or double-click `scripts\Quickstart.cmd`. The script downloads a private Python
-runtime, creates and maintains one shared gitignored virtual environment for
-every first-party tool (Manuscript Guide, Transcript Compare, and the shared
-server), installs their dependencies, downloads the default spaCy model,
-installs UI packages, and builds the production UI bundle. The Piper runtime
-is installed with the managed Python environment, but Quickstart never
-downloads a voice. TTS voices are catalog-managed optional assets that are
-downloaded only after a narrator explicitly requests a Story Bible preview.
-The script then builds the two Rust components: `shared/manuscript-import` (`cargo build --release`)
-and the native shell app in `shell/` (`cargo tauri build`, installing the
-`tauri-cli` cargo subcommand first if needed). Machine-level prerequisites
-are Node.js/npm and a Rust toolchain (`rustup`), plus, on Windows, the
-"Desktop development with C++" Visual Studio workload for the MSVC linker.
-Python, the Piper runtime, packages, downloaded bootstrap files, and Cargo build output
-remain in gitignored folders in this checkout; REAPER does not discover or
-run a global or VST-folder Python.
+The bootstrap validates Node.js 22, Python 3.12, Rust/Cargo, and PowerShell 7;
+creates the checkout-local `.venv`; installs locked Python, Node, and quality
+tool dependencies; builds the UI; and builds the release workspace binary. It
+uses the Tauri CLI from `shell/node_modules`, never a global Cargo install.
+Windows needs Visual Studio's Desktop development with C++ workload; macOS
+needs Xcode Command Line Tools; Linux needs the WebKit/GTK development packages
+listed in CI. The bootstrap does not install operating-system prerequisites.
+
+On Windows the command uses the Python Launcher (`py -3.12`) by default. Use
+`npm run bootstrap -- --python /path/to/python` to select Python explicitly,
+`--skip-install` to build from existing local environments, or `--refresh` to
+recreate them from the committed lockfiles. It does not build installers and
+does not download spaCy models or Piper voices. Without a spaCy model, Story
+Bible uses its supported rules-only extraction fallback; Piper voices remain
+catalog-managed, explicit first-use downloads.
 
 This is the current **developer-checkout** workflow, not the intended release
-installation path. A planned [first-use dependency provisioning
-item](docs/architecture/first-use-dependency-provisioning.md) will make compiled
-GitHub releases self-starting and defer optional model/voice downloads until a
-narrator explicitly chooses to use the capability that needs them.
+installation path. Compiled GitHub releases package their own sidecars and
+installer resources, and never call this command.
 
-Re-running the script after changing `shell/` or `shared/manuscript-import/`
-rebuilds them — cargo and npm both build incrementally, so only what changed
-is recompiled.
-
-If desired, an existing Python interpreter can still be used only to create
-the private environments; it is never retained as a REAPER dependency:
-
-```powershell
-.\scripts\Quickstart.ps1 -BootstrapPython C:\path\to\python.exe
-```
+Legacy `.runtime` and `.bootstrap` directories created by the retired Windows
+bootstrap are ignored but unused. After a successful bootstrap, review and
+remove them manually if no older checkout still needs them.
 
 While iterating on the shell without a full release build, `cd shell; npm run
 dev` runs it directly via `cargo tauri dev`. `shared/manuscript-import`'s
@@ -125,7 +114,6 @@ Both tools retain their own DAW-agnostic Python backends. What they share:
 
 ## Dependencies
 
-All first-party Python tools (Manuscript Guide, Transcript Compare, and the shared server/config
-code) share one gitignored virtual environment at the repo root (`.venv/`), built from the
-repo-root `requirements.txt`. `scripts\Quickstart.ps1` manages this environment together with
-the UI host.
+All first-party Python tools (Manuscript Guide and Transcript Compare) share one
+gitignored virtual environment at the repo root (`.venv/`), built from the
+committed `requirements.lock` by `npm run bootstrap`.

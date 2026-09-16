@@ -5,6 +5,8 @@
   "description": "Release and developer tooling for Narration Utils.",
   "scripts": {
     "prepare": "husky",
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "test:bootstrap": "node --test scripts/bootstrap.test.mjs",
     "check": "node scripts/quality.mjs check",
     "check:fast": "node scripts/quality.mjs staged",
     "fix:staged": "lint-staged",
