@@ -62,9 +62,9 @@ checkout root, run:
 npm run bootstrap
 ```
 
-The bootstrap validates Node.js 22, Python 3.12, Rust/Cargo, and PowerShell 7;
+The bootstrap validates Node.js 22, Python 3.12, and Rust/Cargo;
 creates the checkout-local `.venv`; installs locked Python, Node, and quality
-tool dependencies; builds the UI; and builds the release workspace binary. It
+tool dependencies; builds the UI; and builds the debug workspace binary. It
 uses the Tauri CLI from `shell/node_modules`, never a global Cargo install.
 Windows needs Visual Studio's Desktop development with C++ workload; macOS
 needs Xcode Command Line Tools; Linux needs the WebKit/GTK development packages
@@ -72,8 +72,9 @@ listed in CI. The bootstrap does not install operating-system prerequisites.
 
 On Windows the command uses the Python Launcher (`py -3.12`) by default. Use
 `npm run bootstrap -- --python /path/to/python` to select Python explicitly,
-`--skip-install` to build from existing local environments, or `--refresh` to
-recreate them from the committed lockfiles. It does not build installers and
+`--skip-install` to build from existing local environments, `--refresh` to
+recreate them from the committed lockfiles, or `--release` to build the Rust
+workspace with Cargo's release profile. It does not build installers and
 does not download spaCy models or Piper voices. Without a spaCy model, Story
 Bible uses its supported rules-only extraction fallback; Piper voices remain
 catalog-managed, explicit first-use downloads.

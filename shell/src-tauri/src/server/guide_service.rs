@@ -598,6 +598,7 @@ mod tests {
     }
 
     fn service(project: PathBuf, python_exe: String, backend: String) -> GuideService {
+        let cache_root = project.join("test-assets");
         let settings = SettingsStore::new(
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
             Some(project.clone()),
@@ -607,7 +608,7 @@ mod tests {
             python_exe,
             backend,
             settings,
-            AssetManager::new(),
+            AssetManager::with_cache_root(cache_root),
         )
     }
 

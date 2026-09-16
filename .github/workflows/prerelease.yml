@@ -27,7 +27,7 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - name: Calculate the next beta version with Nx Release
         run: npx nx release version --preid beta
       - name: Synchronize every application version source
@@ -84,9 +84,7 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            tools/requirements-dev.txt
+          cache-dependency-path: requirements.lock
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
@@ -95,7 +93,7 @@ jobs:
       - run: |
           npm --prefix shared/ui ci
           npm --prefix shell ci
-          python -m pip install -r requirements.txt -r tools/requirements-dev.txt
+          python -m pip install -r requirements.lock
           npm --prefix shared/ui run build
           python scripts/release/prepare-resources.py --clean
           node scripts/release/verify-installable.mjs

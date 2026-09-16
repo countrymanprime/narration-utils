@@ -12,11 +12,10 @@ import process from 'node:process';
 
 export const NODE_MAJOR = 22;
 export const PYTHON_VERSION = '3.12';
-export const PSSCRIPT_ANALYZER_VERSION = '1.24.0';
 export const STYLUA_VERSION = '2.1.0';
 
 export function parseOptions(argv) {
-  const options = { python: undefined, skipInstall: false, refresh: false };
+  const options = { python: undefined, skipInstall: false, refresh: false, release: false };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === '--python') {
@@ -26,6 +25,8 @@ export function parseOptions(argv) {
       options.skipInstall = true;
     } else if (argument === '--refresh') {
       options.refresh = true;
+    } else if (argument === '--release') {
+      options.release = true;
     } else if (argument === '--help' || argument === '-h') {
       return { ...options, help: true };
     } else {
@@ -57,22 +58,14 @@ export function bootstrapCommands(root, python, platform = process.platform, pyt
     ['npm', ['ci']],
     ['npm', ['--prefix', 'shared/ui', 'ci']],
     ['npm', ['--prefix', 'shell', 'ci']],
-    [
-      'pwsh',
-      [
-        '-NoProfile',
-        '-Command',
-        `Install-Module -Name PSScriptAnalyzer -RequiredVersion ${PSSCRIPT_ANALYZER_VERSION} -Scope CurrentUser -Repository PSGallery -Force -AllowClobber`,
-      ],
-    ],
     ['cargo', ['install', 'stylua', '--version', STYLUA_VERSION, '--locked']],
   ];
 }
 
-export function buildCommands() {
+export function buildCommands({ release = false } = {}) {
   return [
     ['npm', ['--prefix', 'shared/ui', 'run', 'build']],
-    ['cargo', ['build', '--workspace', '--release']],
+    ['cargo', ['build', '--workspace', ...(release ? ['--release'] : [])]],
   ];
 }
 
@@ -90,8 +83,8 @@ function run(command, args, { root, platform, capture = false }) {
   const result = spawnSync(commandName(command, platform), args, {
     cwd: root,
     encoding: 'utf8',
-    // npm.cmd is a batch file on Windows. Every other command must bypass the
-    // shell so Python -c snippets and PowerShell commands retain their argv.
+    // npm.cmd is a batch file on Windows. Every other command bypasses the
+    // shell so Python arguments retain their argv.
     shell: platform === 'win32' && command === 'npm',
     stdio: capture ? 'pipe' : 'inherit',
   });
@@ -122,7 +115,6 @@ function verifyToolchain(context) {
   }
   run('npm', ['--version'], contextWithCapture(context));
   run('cargo', ['--version'], contextWithCapture(context));
-  run('pwsh', ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.ToString()'], contextWithCapture(context));
 }
 
 export function pythonVersionError(error) {
@@ -165,11 +157,12 @@ function clearLocalInstalls(root, platform) {
 }
 
 function helpText() {
-  return `Usage: npm run bootstrap -- [--python <path>] [--skip-install] [--refresh]
+  return `Usage: npm run bootstrap -- [--python <path>] [--skip-install] [--refresh] [--release]
 
-Creates a portable checkout environment and builds the UI and release workspace binary.
+Creates a portable checkout environment and builds the UI and debug workspace binary.
 It never builds installers or downloads optional spaCy models or Piper voices.
---skip-install requires existing local environments. --refresh recreates them from lockfiles.`;
+--skip-install requires existing local environments. --refresh recreates them from lockfiles.
+--release builds the workspace binary with Cargo's release profile.`;
 }
 
 export function runBootstrap(options, dependencies = {}) {
@@ -214,7 +207,7 @@ export function runBootstrap(options, dependencies = {}) {
     verifyToolchain(context);
     verifyPython(localPython(root, platform), [], context);
   }
-  for (const [command, args] of buildCommands()) {
+  for (const [command, args] of buildCommands({ release: options.release })) {
     runner(command, args, context);
   }
 
@@ -231,4 +224,3 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     process.exitCode = 1;
   }
 }
-

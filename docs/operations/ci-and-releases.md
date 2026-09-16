@@ -5,18 +5,19 @@
 Run `npm run bootstrap` once after cloning. It installs the root release
 tooling and Husky hooks in addition to the existing application dependencies.
 The hooks enforce Conventional Commit messages and check staged TypeScript,
-Python, Rust, PowerShell, and Lua files. Use `npm run check` for the full
-quality suite.
+Python, Rust, and Lua files. Use `npm run check` for the full quality suite.
 
 ## Repository settings to configure once
 
-GitHub Actions cannot configure these repository settings from a workflow. In
-the repository UI, create a `main` ruleset that requires pull requests, squash
-merges, `CI / Conventional Commit title`, `CI / Build sources`, `CI / Test
-suite`, `CI / Format and lint`, and all package jobs. Disable force pushes.
-Draft pull requests intentionally skip these jobs; marking one ready for review
-starts a fresh run. `CODEOWNERS` requests `@countrymanprime` for review but is
-intentionally not a required review while the repository has a solo maintainer.
+GitHub Actions cannot configure these repository settings from a workflow. Once
+the optimized workflow has completed successfully on a pull request, create a
+`main` ruleset that requires pull requests, squash merges, `CI / Conventional
+Commit title`, `CI / Linux quality`, `CI / Format and lint`, and all package
+jobs. Conditionally skipped package jobs are successful for documentation-only
+pull requests. Disable force pushes. Draft pull requests intentionally skip
+these jobs; marking one ready for review starts a fresh run. `CODEOWNERS`
+requests `@countrymanprime` for review but is intentionally not a required
+review while the repository has a solo maintainer.
 
 Create a `production` environment with `@countrymanprime` as a required
 reviewer. Leave **Prevent self-review** disabled and leave administrator bypass
@@ -39,13 +40,18 @@ rebuilds an approved candidate.
 
 ## CI performance
 
-The workflow is gated as Conventional Commit validation, source build, test and
-format/lint in parallel, then the installer matrix. A failed prerequisite skips
-all of its dependent jobs. `setup-node` and `setup-python` cache npm and pip
-package downloads; the workflow also caches Cargo's registry and Git dependency
-sources per OS, architecture, and lockfile. Installer artifacts are retained for
-review and handoff, rather than used as a cache: platform-specific sidecars must
-be built on their target OS.
+The workflow validates Conventional Commit metadata, classifies changed files,
+then runs Linux quality and Windows format/lint in parallel. The four-platform
+bootstrap and installer matrices run for bootstrap or runtime/package changes;
+they also run for scheduled and manually dispatched validation. Documentation
+and explicitly non-runtime metadata changes skip native packages, while unknown
+paths fail safe and retain package coverage. `setup-node` and `setup-python`
+cache npm and pip package downloads; one Cargo cache namespace is shared per OS
+and architecture across bootstrap, quality, lint, and package jobs. Installer
+artifacts are retained for review and handoff, rather than used as a cache:
+platform-specific sidecars must be built on their target OS. After a green
+optimized run, delete the obsolete `narration-utils-bootstrap-*` caches from
+GitHub's Actions cache inventory.
 
 ## Runtime provenance
 

@@ -35,40 +35,33 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - if: github.event_name == 'pull_request'
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Validate the squash commit title
         if: github.event_name == 'pull_request'
         env:
           TITLE: ${{ github.event.pull_request.title }}
         run: printf '%s\n' "$TITLE" | npx --no -- commitlint
 
-  build:
-    name: Build sources
+  changes:
+    name: Change scope
     needs: conventional-commit
     if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
+    outputs:
+      bootstrap: ${{ steps.classify.outputs.bootstrap }}
+      package: ${{ steps.classify.outputs.package }}
     steps:
       - uses: actions/checkout@v4
-      - name: Install Linux desktop build dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-      - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: shared/ui/package-lock.json
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
-      - run: npm --prefix shared/ui ci
-      - name: Build the UI
-        run: npm --prefix shared/ui run build
-      - name: Build every Rust workspace package
-        run: cargo build --workspace
+          fetch-depth: 0
+      - id: classify
+        name: Classify changed files
+        run: node scripts/ci/changed-files.mjs "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
 
   bootstrap:
     name: Bootstrap (${{ matrix.name }})
-    needs: conventional-commit
-    if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    needs: [conventional-commit, changes]
+    if: ${{ needs.changes.outputs.bootstrap == 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -102,7 +95,7 @@ jobs:
           cache-dependency-path: requirements.lock
       - uses: Swatinem/rust-cache@v2
         with:
-          shared-key: narration-utils-bootstrap-${{ runner.os }}-${{ runner.arch }}
+          shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
       - name: Bootstrap this checkout
         run: npm run bootstrap
       - name: Confirm bootstrap downloaded no optional models or voices
@@ -113,9 +106,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Bootstrap installed an optional spaCy model.' }
           if (Test-Path 'shared/python/.piper') { throw 'Bootstrap created a Piper asset directory.' }
 
-  test:
-    name: Test suite
-    needs: build
+  linux-quality:
+    name: Linux quality
+    needs: conventional-commit
     if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     steps:
@@ -127,19 +120,24 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: shared/ui/package-lock.json
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: requirements.lock
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: narration-utils-${{ runner.os }}-${{ runner.arch }}
-      - name: Install test dependencies
+      - name: Install quality dependencies
         run: |
           npm --prefix shared/ui ci
           python -m pip install -r requirements.lock
-          node --test scripts/bootstrap.test.mjs
+      - name: Validate the bootstrap contract
+        run: node --test scripts/bootstrap.test.mjs scripts/ci/changed-files.test.mjs
+      - name: Build sources
+        run: |
+          npm --prefix shared/ui run build
+          cargo build --workspace
       - name: Run UI tests
         run: npm --prefix shared/ui test
       - name: Run Python tests
@@ -153,7 +151,7 @@ jobs:
 
   format-and-lint:
     name: Format and lint
-    needs: build
+    needs: conventional-commit
     if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: windows-latest
     steps:
@@ -176,7 +174,6 @@ jobs:
         run: |
           npm --prefix shared/ui ci
           python -m pip install -r requirements.lock
-          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
           cargo install stylua --version 2.1.0 --locked
       - name: Format and lint every language
         shell: pwsh
@@ -187,13 +184,12 @@ jobs:
           python -m ruff check .
           cargo fmt --all -- --check
           cargo clippy --workspace --all-targets -- -D warnings
-          ./scripts/quality/invoke-powershell-analyzer.ps1 scripts
           stylua --check shared/reaper
 
   package:
     name: Package (${{ matrix.name }})
-    needs: [test, format-and-lint]
-    if: ${{ success() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    needs: [changes, linux-quality, format-and-lint]
+    if: ${{ needs.changes.outputs.package == 'true' }}
     strategy:
       fail-fast: false
       matrix:
