@@ -13,6 +13,7 @@ import { Transcript } from './components/proofing/Transcript';
 import { Settings } from './components/settings/Settings';
 import { TooltipProvider } from './components/primitives/Tooltip';
 import { ErrorBoundary } from './components/primitives/ErrorBoundary';
+import { DESKTOP_HOST_API_VERSION } from './hostApi';
 
 export function App() {
   return (
@@ -36,6 +37,7 @@ function AppRoutes() {
   const [settingsDirty, setSettingsDirty] = useState(false);
   const [pendingPath, setPendingPath] = useState<string>();
   const settingsActions = useRef<{ save: () => Promise<void>; discard: () => Promise<void> }>();
+  const hasBootstrap = data !== undefined;
 
   // Importing changes data that is deliberately held at the application
   // boundary (the active manuscript affects several pages).  Refresh this
@@ -50,13 +52,15 @@ function AppRoutes() {
   // Startup verifies the host and then loads its bootstrap payload.
   useEffect(() => {
     let active = true;
+    let loaded = false;
     const load = async () => {
       try {
         const ready = await api.ready();
-        if (ready.apiVersion !== 1) throw new Error(`Desktop host API version ${ready.apiVersion} is incompatible with this UI.`);
+        if (ready.apiVersion !== DESKTOP_HOST_API_VERSION) throw new Error(`Desktop host API version ${ready.apiVersion} is incompatible with this UI.`);
         if (active) setDiagnosticId(ready.diagnosticId);
         const next = await api.bootstrap();
         if (active) {
+          loaded = true;
           setDiagnosticId(next.diagnosticId);
           setData(next);
         }
@@ -75,7 +79,7 @@ function AppRoutes() {
     window.addEventListener('unhandledrejection', rejection);
     void load();
     const timeout = window.setTimeout(() => {
-      if (active && !data) {
+      if (active && !loaded) {
         setStartup('timeout');
         setStartupError('The desktop host did not respond within 10 seconds.');
       }
@@ -92,9 +96,9 @@ function AppRoutes() {
   // poll loop - see api/httpClient.ts's subscribeTranscript / Endpoints.cs's
   // /api/transcript/events.
   useEffect(() => {
-    if (!data) return;
+    if (!hasBootstrap) return;
     return api.subscribeTranscript((transcript) => setData((current) => (current ? { ...current, transcript } : current)));
-  }, [data === undefined]);
+  }, [api, hasBootstrap]);
 
   // Keeps the Python server (shared/server, no native window of its own) in
   // sync with this tab: as long as this pings successfully, main.py's idle
@@ -118,10 +122,10 @@ function AppRoutes() {
         });
     }, 30_000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [api]);
 
   useEffect(() => {
-    if (!data) return;
+    if (!hasBootstrap) return;
     const cssName: Record<string, string> = {
       color_character: '--character',
       color_location: '--place',
@@ -141,7 +145,7 @@ function AppRoutes() {
         }),
       )
       .catch(() => {});
-  }, [data === undefined]);
+  }, [api, hasBootstrap]);
 
   if (!data || serverLost)
     return (

@@ -18,6 +18,7 @@ import type {
   TtsCatalog,
   TtsInstallJob,
 } from '../types';
+import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import {
   aliceChapterSeeds,
   WIRE_CHAPTERS,
@@ -166,10 +167,10 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     );
   };
   const base: NarrationApi = {
-    ready: async () => ({ apiVersion: 1, diagnosticId: 'mock' }) as HostReady,
+    ready: async () => ({ apiVersion: DESKTOP_HOST_API_VERSION, diagnosticId: 'mock' }) as HostReady,
     bootstrap: async () =>
       ({
-        apiVersion: 1,
+        apiVersion: DESKTOP_HOST_API_VERSION,
         diagnosticId: 'mock',
         projectFolder: 'C:/Projects/Alice-in-Wonderland',
         projectName: 'Alice’s Adventures in Wonderland',

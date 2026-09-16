@@ -46,12 +46,7 @@ export function localPython(root, platform = process.platform) {
 export function localPaths(root, platform = process.platform) {
   const separator = platform === 'win32' ? '\\' : '/';
   const path = (...parts) => [root.replace(/[\\/]+$/, ''), ...parts].join(separator);
-  return [
-    localPython(root, platform),
-    path('node_modules'),
-    path('shared', 'ui', 'node_modules'),
-    path('shell', 'node_modules'),
-  ];
+  return [localPython(root, platform), path('node_modules'), path('shared', 'ui', 'node_modules'), path('shell', 'node_modules')];
 }
 
 export function bootstrapCommands(root, python, platform = process.platform, pythonPrefix = []) {
@@ -62,7 +57,14 @@ export function bootstrapCommands(root, python, platform = process.platform, pyt
     ['npm', ['ci']],
     ['npm', ['--prefix', 'shared/ui', 'ci']],
     ['npm', ['--prefix', 'shell', 'ci']],
-    ['pwsh', ['-NoProfile', '-Command', `Install-Module -Name PSScriptAnalyzer -RequiredVersion ${PSSCRIPT_ANALYZER_VERSION} -Scope CurrentUser -Repository PSGallery -Force -AllowClobber`]],
+    [
+      'pwsh',
+      [
+        '-NoProfile',
+        '-Command',
+        `Install-Module -Name PSScriptAnalyzer -RequiredVersion ${PSSCRIPT_ANALYZER_VERSION} -Scope CurrentUser -Repository PSGallery -Force -AllowClobber`,
+      ],
+    ],
     ['cargo', ['install', 'stylua', '--version', STYLUA_VERSION, '--locked']],
   ];
 }
@@ -123,8 +125,22 @@ function verifyToolchain(context) {
   run('pwsh', ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.ToString()'], contextWithCapture(context));
 }
 
+export function pythonVersionError(error) {
+  return `Python ${PYTHON_VERSION} is required. ${error.message} Install Python ${PYTHON_VERSION} or rerun with --python <path-to-python-${PYTHON_VERSION}>.`;
+}
+
 function verifyPython(python, pythonPrefix, context) {
-  requireVersion(python, [...pythonPrefix, '-c', 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")'], /^(\d+\.\d+)$/, PYTHON_VERSION, context);
+  try {
+    requireVersion(
+      python,
+      [...pythonPrefix, '-c', 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")'],
+      /^(\d+\.\d+)$/,
+      PYTHON_VERSION,
+      context,
+    );
+  } catch (error) {
+    throw new Error(pythonVersionError(error));
+  }
 }
 
 function defaultPython(platform, context) {
@@ -215,3 +231,4 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     process.exitCode = 1;
   }
 }
+

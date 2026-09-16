@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { bootstrapCommands, buildCommands, localPaths, localPython, parseOptions, runBootstrap } from './bootstrap.mjs';
+import { bootstrapCommands, buildCommands, localPaths, localPython, parseOptions, pythonVersionError, runBootstrap } from './bootstrap.mjs';
 
 test('parses supported options and rejects conflicting installs', () => {
   assert.deepEqual(parseOptions(['--python', '/opt/python', '--skip-install']), { python: '/opt/python', skipInstall: true, refresh: false });
@@ -38,7 +38,19 @@ test('runs setup commands in order and reports subprocess failure', () => {
   assert.equal(calls[0][0], 'python3');
   assert.equal(calls.at(-1)[0], 'cargo');
   assert.throws(
-    () => runBootstrap({ python: 'python3', skipInstall: false, refresh: false }, { root: '/repo', platform: 'linux', skipPreflight: true, run: () => { throw new Error('network unavailable'); }, log: () => {} }),
+    () =>
+      runBootstrap(
+        { python: 'python3', skipInstall: false, refresh: false },
+        {
+          root: '/repo',
+          platform: 'linux',
+          skipPreflight: true,
+          run: () => {
+            throw new Error('network unavailable');
+          },
+          log: () => {},
+        },
+      ),
     /network unavailable/,
   );
 });
@@ -47,7 +59,14 @@ test('keeps an existing virtual environment while reconciling locked dependencie
   const calls = [];
   runBootstrap(
     { python: 'python3', skipInstall: false, refresh: false },
-    { root: '/repo', platform: 'linux', skipPreflight: true, exists: (path) => path.endsWith('/.venv/bin/python'), run: (command, args) => calls.push([command, args]), log: () => {} },
+    {
+      root: '/repo',
+      platform: 'linux',
+      skipPreflight: true,
+      exists: (path) => path.endsWith('/.venv/bin/python'),
+      run: (command, args) => calls.push([command, args]),
+      log: () => {},
+    },
   );
   assert.deepEqual(calls[0], ['/repo/.venv/bin/python', ['-m', 'pip', 'install', '--disable-pip-version-check', '--requirement', 'requirements.lock']]);
 });
@@ -67,3 +86,8 @@ test('skip install requires every local environment', () => {
     /requires existing local paths/,
   );
 });
+
+test('reports how to select the required Python version', () => {
+  assert.match(pythonVersionError(new Error('python must be version 3.12; found 3.13.')), /Install Python 3\.12 or rerun with --python <path-to-python-3\.12>/);
+});
+

@@ -38,6 +38,12 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(screen.getByRole('button', { name: /Retry connection/ })).toBeTruthy();
   });
 
+  it('rejects an incompatible desktop-host API version', async () => {
+    renderApp({ ready: async () => ({ apiVersion: 1, diagnosticId: 'old-host' }) });
+    await waitFor(() => expect(screen.getByText('Desktop host needs attention')).toBeTruthy());
+    expect(screen.getByText(/Desktop host API version 1 is incompatible/)).toBeTruthy();
+  });
+
   it('navigates to Story Bible and lists entities from the backend', async () => {
     renderApp();
     await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
