@@ -19,7 +19,7 @@ pub fn build_draft(path: &Path, heading_level: u8) -> Result<Draft, ManuscriptEr
     // Mirrors Python's `encoding="utf-8-sig"`: strip a leading BOM if present.
     let content = raw.strip_prefix('\u{FEFF}').unwrap_or(&raw);
 
-    let mut chapter = "Front Matter".to_string();
+    let mut chapter = "Opening pages".to_string();
     let mut section: Option<String> = None;
     let mut paragraphs: Vec<Paragraph> = Vec::new();
     let mut titles: Vec<String> = Vec::new();
@@ -70,12 +70,12 @@ pub fn build_draft(path: &Path, heading_level: u8) -> Result<Draft, ManuscriptEr
 
     let pre_heading: Vec<String> = paragraphs
         .iter()
-        .filter(|paragraph| paragraph.chapter == "Front Matter")
+        .filter(|paragraph| paragraph.chapter == "Opening pages")
         .map(|paragraph| paragraph.text.clone())
         .collect();
     for (paragraph, kind) in paragraphs
         .iter_mut()
-        .filter(|paragraph| paragraph.chapter == "Front Matter")
+        .filter(|paragraph| paragraph.chapter == "Opening pages")
         .zip(classify_pre_heading(&pre_heading))
     {
         paragraph.chapter = kind.chapter_name().to_string();

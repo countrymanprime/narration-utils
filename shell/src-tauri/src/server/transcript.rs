@@ -9,6 +9,7 @@
 use std::path::Path;
 use std::time::Instant;
 
+use chrono::{SecondsFormat, Utc};
 use serde_json::{json, Value};
 
 use super::{process_utils, process_utils::DetachedProcess, ApiError, AppState};
@@ -20,6 +21,9 @@ pub struct TranscriptRun {
     pub message: String,
     pub logs: Vec<String>,
     pub chapters: Vec<String>,
+    pub track_name: Option<String>,
+    pub audio_item_count: Option<usize>,
+    pub completed_at: Option<String>,
     pub rows: Vec<Value>,
     pub diff: String,
     pub summary: String,
@@ -47,6 +51,9 @@ impl Default for TranscriptRun {
             message: "Select a track in REAPER, then start a comparison.".into(),
             logs: Vec::new(),
             chapters: Vec::new(),
+            track_name: None,
+            audio_item_count: None,
+            completed_at: None,
             rows: Vec::new(),
             diff: String::new(),
             summary: String::new(),
@@ -87,6 +94,7 @@ impl TranscriptRun {
             "phase": self.phase, "percent": self.percent, "message": self.message,
             "logs": self.logs[start..],
             "chapters": self.chapters, "rows": self.rows, "diff": self.diff, "summary": self.summary,
+            "trackName": self.track_name, "audioItemCount": self.audio_item_count, "completedAt": self.completed_at,
             "markerExport": {
                 "phase": self.marker_export_phase, "message": self.marker_export_message,
                 "added": self.marker_export_added, "skipped": self.marker_export_skipped,
@@ -408,6 +416,9 @@ impl AppState {
                     } else {
                         run.manifest = Some(manifest.clone());
                         run.diff_path = Some(diff_path.clone());
+                        run.track_name = Some(track.clone());
+                        run.audio_item_count =
+                            rest.get(5).and_then(|value| value.parse::<usize>().ok());
                         true
                     }
                 };
@@ -449,6 +460,8 @@ impl AppState {
                     run.message =
                         "Comparison complete — review discrepancies before exporting markers."
                             .into();
+                    run.completed_at =
+                        Some(Utc::now().to_rfc3339_opts(SecondsFormat::AutoSi, true));
                     self.persist_last_comparison(&run);
                     drop(run);
                     self.changed();
@@ -799,7 +812,13 @@ mod tests {
         let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
         let source = repo.join("shared/test-fixtures/alice.md");
         let draft = manuscript_canonical::prepare_import(&source, 1).expect("fixture parses");
-        manuscript_canonical::commit_import(project, &source, &draft).expect("commit succeeds");
+        manuscript_canonical::commit_import(
+            project,
+            &source,
+            &draft,
+            &std::collections::BTreeMap::new(),
+        )
+        .expect("commit succeeds");
     }
 
     fn write_fake_compare_backend(dir: &std::path::Path) -> PathBuf {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileLines } from '@fortawesome/free-solid-svg-icons';
+import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import type { ChapterStatus, ManuscriptChapter } from '../../types';
 import { estimateFinishedHours } from '../../state';
 import { useApi } from '../../api/ApiContext';
@@ -59,11 +59,13 @@ export function AudiobookEstimatePanel({
   }, [api, refreshKey]);
 
   if (!chapters) return null;
-  if (chapters.length === 0) return <Panel>No manuscript chapters found yet. Select a manuscript from Home to see an audiobook estimate.</Panel>;
+  const narrationChapters = chapters.filter((chapter) => (chapter.contentKind ?? 'narration') === 'narration');
+  if (narrationChapters.length === 0)
+    return <Panel>No narratable manuscript chapters found yet. Select a manuscript from Home to see an audiobook estimate.</Panel>;
 
-  const totalWords = chapters.reduce((sum, c) => sum + c.wordCount, 0);
+  const totalWords = narrationChapters.reduce((sum, c) => sum + c.wordCount, 0);
   const finishedHours = estimateFinishedHours(totalWords);
-  const recordedHours = chapters.reduce((sum, c) => sum + estimateFinishedHours(c.wordCount) * (c.recordedFraction ?? RECORDED_FRACTION[c.status]), 0);
+  const recordedHours = narrationChapters.reduce((sum, c) => sum + estimateFinishedHours(c.wordCount) * (c.recordedFraction ?? RECORDED_FRACTION[c.status]), 0);
   const stats = [
     { label: 'Est. finished audio', value: fmtHours(finishedHours) },
     { label: 'Actual recorded', value: fmtHours(recordedHours) },
@@ -71,8 +73,8 @@ export function AudiobookEstimatePanel({
     { label: 'Est. edit time', value: fmtHours(finishedHours * 2) },
     { label: 'Est. proof time', value: fmtHours(finishedHours * 1) },
   ];
-  const finalizedCount = chapters.filter((c) => c.status === 'finalized').length;
-  const statusTotals = rollupChapterStatuses(chapters);
+  const finalizedCount = narrationChapters.filter((c) => c.status === 'finalized').length;
+  const statusTotals = rollupChapterStatuses(narrationChapters);
 
   return (
     <section className="panel">
@@ -80,13 +82,20 @@ export function AudiobookEstimatePanel({
         <div>
           <h2 className="text-sm font-semibold">Audiobook estimate</h2>
           <div className="mt-0.5 flex items-center text-xs" style={{ color: 'var(--text-faint)' }}>
-            {totalWords.toLocaleString()} words · {chapters.length} chapters · ~150 words/min narrated{' '}
+            {totalWords.toLocaleString()} words · {narrationChapters.length} chapters · ~150 words/min narrated{' '}
             <Tooltip text="Fixed industry rule of thumb (~9,300 words per finished hour). Record, edit, and proof use standard multipliers of that finished length." />
           </div>
         </div>
-        <button className="btn btn-ghost text-xs" onClick={() => setBreakdownOpen((value) => !value)}>
-          {breakdownOpen ? 'Hide' : 'Show'} per-chapter breakdown
-        </button>
+        <TooltipTarget text={breakdownOpen ? 'Hide per-chapter breakdown' : 'Show per-chapter breakdown'}>
+          <button
+            aria-label={breakdownOpen ? 'Hide per-chapter breakdown' : 'Show per-chapter breakdown'}
+            aria-expanded={breakdownOpen}
+            className="icon-btn"
+            onClick={() => setBreakdownOpen((value) => !value)}
+          >
+            <FontAwesomeIcon icon={breakdownOpen ? faChevronUp : faChevronDown} />
+          </button>
+        </TooltipTarget>
       </div>
       <div className="panel-body space-y-4">
         <div className="grid grid-cols-5 gap-4">
@@ -101,7 +110,7 @@ export function AudiobookEstimatePanel({
           <div className="mb-1.5 flex justify-between text-xs">
             <span className="section-label">Recording progress</span>
             <span className="f-mono" style={{ color: 'var(--text-muted)' }}>
-              {finalizedCount} of {chapters.length} chapters finalized
+              {finalizedCount} of {narrationChapters.length} chapters finalized
             </span>
           </div>
           <div className="flex h-4 overflow-hidden rounded-full" style={{ background: 'var(--surface-3)' }}>
@@ -138,30 +147,30 @@ export function AudiobookEstimatePanel({
                 </tr>
               </thead>
               <tbody>
-                {chapters.map((chapter) => {
+                {narrationChapters.map((chapter) => {
                   const finished = estimateFinishedHours(chapter.wordCount);
                   return (
                     <tr key={chapter.id}>
                       <td>
-                        <div className="flex items-center gap-1">
-                          <TooltipTarget text="Jump to chapter in Manuscript">
-                            <Link
-                              aria-label={`Jump to ${chapter.title} in manuscript`}
-                              className="icon-btn"
-                              to={`/manuscript#c${encodeURIComponent(chapter.id)}`}
-                              onClick={(event) => {
-                                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                                event.preventDefault();
-                                goToManuscript(chapter.id);
-                              }}
-                            >
-                              <FontAwesomeIcon icon={faFileLines} />
-                            </Link>
-                          </TooltipTarget>
-                          <span>
+                        <div>
+                          <Link
+                            className="font-medium hover:underline"
+                            to={`/manuscript#c${encodeURIComponent(chapter.id)}`}
+                            aria-label={chapter.subtitle ? `${chapter.title} — ${chapter.subtitle}` : chapter.title}
+                            onClick={(event) => {
+                              if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                              event.preventDefault();
+                              goToManuscript(chapter.id);
+                            }}
+                          >
                             {chapter.title}
-                            {chapter.subtitle && <span style={{ color: 'var(--text-faint)' }}> — {chapter.subtitle}</span>}
-                          </span>
+                            {chapter.subtitle && (
+                              <span style={{ color: 'var(--text-faint)' }}>
+                                {' — '}
+                                {chapter.subtitle}
+                              </span>
+                            )}
+                          </Link>
                         </div>
                       </td>
                       <td className="f-mono">{chapter.wordCount.toLocaleString()}</td>

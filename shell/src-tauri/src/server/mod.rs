@@ -616,7 +616,12 @@ impl AppState {
         self.changed();
         Ok(())
     }
-    fn commit_import(&self, id: &str, confirmed: bool) -> Result<Value, ApiError> {
+    fn commit_import(
+        &self,
+        id: &str,
+        confirmed: bool,
+        selection: &contracts::manuscript::ImportSelection,
+    ) -> Result<Value, ApiError> {
         let project = self
             .config
             .project_folder
@@ -653,11 +658,23 @@ impl AppState {
             project,
             &source,
             job.draft.as_ref().expect("ready job has draft"),
+            &selection.section_kinds,
         )
         .map_err(ApiError::bad_request)?;
         if job.requires_reset {
             manuscript_canonical::reset_derivatives(project).map_err(ApiError::bad_request)?;
         }
+        manuscript_canonical::seed_character_candidates(
+            project,
+            &data,
+            job.draft.as_ref().expect("ready job has draft"),
+            &selection
+                .character_candidate_ids
+                .iter()
+                .cloned()
+                .collect::<std::collections::HashSet<_>>(),
+        )
+        .map_err(ApiError::bad_request)?;
         job.phase = "success".into();
         job.percent = 100;
         job.message = "Manuscript import complete.".into();
@@ -1517,7 +1534,11 @@ async fn manuscript_import_commit(
     Path(job_id): Path<String>,
     Json(body): Json<contracts::manuscript::ImportCommitRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    Ok(Json(state.commit_import(&job_id, body.confirmed_reset)?))
+    Ok(Json(state.commit_import(
+        &job_id,
+        body.confirmed_reset,
+        &body.selection,
+    )?))
 }
 async fn manuscript_import_cancel(
     State(state): State<Arc<AppState>>,
@@ -1756,7 +1777,11 @@ mod tests {
         std::fs::write(&source, "# Changed\n\nDifferent content entirely.\n").unwrap();
 
         let error = app_state
-            .commit_import(&job_id, false)
+            .commit_import(
+                &job_id,
+                false,
+                &contracts::manuscript::ImportSelection::default(),
+            )
             .expect_err("changed source must be rejected");
         assert!(
             error.message.contains("changed after preview"),
@@ -1786,7 +1811,11 @@ mod tests {
             .expect("preview succeeds");
         let job_id = preview["id"].as_str().unwrap().to_string();
         app_state
-            .commit_import(&job_id, false)
+            .commit_import(
+                &job_id,
+                false,
+                &contracts::manuscript::ImportSelection::default(),
+            )
             .expect("first import needs no confirmation");
         assert!(manuscript_canonical::exists(&project));
 

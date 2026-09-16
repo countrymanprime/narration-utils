@@ -81,6 +81,9 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     summary: '2 discrepancies found.',
     logs: WIRE_LOGS.map((entry) => entry.text),
     rows: wireClone(WIRE_DISCREPANCIES),
+    trackName: 'Chapter 1',
+    audioItemCount: 3,
+    completedAt: '2026-09-15T14:30:00Z',
   };
   let revision = 1;
   const globalSettings = wireSettings();
@@ -196,7 +199,7 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
       return { selected: true, jobId: 'mock-import' };
     },
     manuscriptImportState: async () => wireClone(importJob),
-    manuscriptImportPreview: async (_jobId, markdownHeadingLevel) => {
+    manuscriptImportPreview: async (_jobId, { markdownHeadingLevel }) => {
       importJob = {
         ...importJob,
         preview: { format: 'markdown', sourceName: 'Alice.md', paragraphCount: 240, chapterTitles: [`Chapter ${markdownHeadingLevel}`] },

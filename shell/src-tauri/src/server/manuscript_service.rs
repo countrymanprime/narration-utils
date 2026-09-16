@@ -402,7 +402,7 @@ fn chapter_payload(
     status: &Map<String, Value>,
     paragraphs: Option<&Vec<Value>>,
 ) -> Value {
-    let mut value = json!({"id":chapter["id"],"title":chapter["title"],"subtitle":chapter["subtitle"],"index":chapter["index"],"wordCount":chapter["wordCount"],"status":status.get(chapter["id"].as_str().unwrap_or_default()).cloned().unwrap_or_else(||json!("not_started"))});
+    let mut value = json!({"id":chapter["id"],"title":chapter["title"],"subtitle":chapter["subtitle"],"index":chapter["index"],"wordCount":chapter["wordCount"],"contentKind":chapter.get("contentKind").cloned().unwrap_or_else(|| json!("narration")),"status":status.get(chapter["id"].as_str().unwrap_or_default()).cloned().unwrap_or_else(||json!("not_started"))});
     if let Some(paragraphs) = paragraphs {
         value["paragraphIds"] = Value::Array(
             paragraphs
@@ -476,8 +476,13 @@ mod tests {
         let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
         let source = repo.join("shared/test-fixtures/alice.md");
         let draft = manuscript_canonical::prepare_import(&source, 1).expect("fixture parses");
-        let canonical =
-            manuscript_canonical::commit_import(project, &source, &draft).expect("commit succeeds");
+        let canonical = manuscript_canonical::commit_import(
+            project,
+            &source,
+            &draft,
+            &std::collections::BTreeMap::new(),
+        )
+        .expect("commit succeeds");
         let chapter_id = canonical["chapters"][0]["id"].as_str().unwrap().to_string();
         let paragraph_id = canonical["paragraphs"][0]["id"]
             .as_str()

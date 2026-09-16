@@ -1,4 +1,5 @@
 export type ChapterStatus = 'not_started' | 'recording' | 'editing' | 'proofing' | 'finalized';
+export type ManuscriptContentKind = 'narration' | 'opening' | 'reference';
 export type ManuscriptChapter = {
   id: string;
   title: string;
@@ -7,6 +8,8 @@ export type ManuscriptChapter = {
   wordCount: number;
   recordedFraction?: number;
   status: ChapterStatus;
+  /** Omitted by manuscripts imported before structural classification. */
+  contentKind?: ManuscriptContentKind;
   paragraphIds?: Array<{ id: string; index: number }>;
 };
 export type ManuscriptParagraph = { id: string; chapterId: string; chapter: string; index: number; sourceLine?: number; text: string; entityIds: string[] };
@@ -35,8 +38,26 @@ export type ReaderBookmark = {
 };
 export type ReaderState = { activeChapter?: string; activeSourceLine?: number; expandedChapters?: string[]; bookmarks: ReaderBookmark[] };
 export type SearchHit = { chapter: string; chapterId?: string; paragraph: number; paragraphId?: string; sourceLine?: number; excerpt: string };
-export type ManuscriptImportPreview = { format: 'docx' | 'markdown' | 'pdf'; sourceName: string; paragraphCount: number; chapterTitles: string[] };
-export type ManuscriptImportSelection = { selected: boolean; jobId?: string };
+export type ManuscriptImportSection = {
+  id: string;
+  title: string;
+  contentKind: ManuscriptContentKind;
+  paragraphCount: number;
+};
+export type ManuscriptCharacterCandidate = { id: string; name: string; description: string; sourceSectionId: string };
+export type ManuscriptImportSelection = {
+  sectionKinds?: Record<string, ManuscriptContentKind>;
+  characterCandidateIds?: string[];
+};
+export type ManuscriptImportPreview = {
+  format: 'docx' | 'markdown' | 'pdf';
+  sourceName: string;
+  paragraphCount: number;
+  chapterTitles: string[];
+  sections?: ManuscriptImportSection[];
+  characterCandidates?: ManuscriptCharacterCandidate[];
+};
+export type ManuscriptFileSelection = { selected: boolean; jobId?: string };
 export type ManuscriptReader = { chapters: ManuscriptChapter[]; paragraphs: ManuscriptParagraph[]; notes: ManuscriptNote[] };
 export type WorkJob = {
   id: string | null;
@@ -53,12 +74,12 @@ export type WorkJob = {
 };
 
 export interface ManuscriptApi {
-  selectManuscript(): Promise<ManuscriptImportSelection>;
+  selectManuscript(): Promise<ManuscriptFileSelection>;
   manuscriptImportState(jobId: string): Promise<WorkJob>;
-  manuscriptImportPreview(jobId: string, markdownHeadingLevel: number): Promise<WorkJob>;
-  manuscriptImportCommit(jobId: string, confirmedReset: boolean): Promise<WorkJob>;
+  manuscriptImportPreview(jobId: string, options: { markdownHeadingLevel: number }): Promise<WorkJob>;
+  manuscriptImportCommit(jobId: string, options: { confirmedReset: boolean; selection?: ManuscriptImportSelection }): Promise<WorkJob>;
   manuscriptImportCancel(jobId: string): Promise<void>;
-  manuscriptLegacyPreview(): Promise<ManuscriptImportSelection>;
+  manuscriptLegacyPreview(): Promise<ManuscriptFileSelection>;
   clearProjectData(): Promise<void>;
   manuscriptChapters(): Promise<ManuscriptChapter[]>;
   manuscriptParagraphs(chapter: string): Promise<ManuscriptParagraph[]>;

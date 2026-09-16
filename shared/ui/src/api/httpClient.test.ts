@@ -8,7 +8,7 @@ describe('httpClient manuscript import contract', () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'job', phase: 'ready' }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await httpClient.manuscriptImportPreview('job', 2);
+    await httpClient.manuscriptImportPreview('job', { markdownHeadingLevel: 2 });
 
     expect(fetchMock).toHaveBeenCalledWith('/api/manuscript/import/job/preview', {
       method: 'POST',

@@ -60,6 +60,29 @@ def _write_manuscript(root: Path, chapter_title: str, paragraph_texts: list[str]
 
 
 class ManuscriptGuideTests(unittest.TestCase):
+    def test_reference_material_is_not_scanned_as_narration(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            path = root / "manuscript.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "documentId": "test",
+                        "chapters": [
+                            {"id": "c-1", "title": "Chapter 1", "contentKind": "narration"},
+                            {"id": "c-2", "title": "Characters", "contentKind": "reference"},
+                        ],
+                        "paragraphs": [
+                            {"id": "p-1", "chapterId": "c-1", "chapterTitle": "Chapter 1", "text": "Ada arrives."},
+                            {"id": "p-2", "chapterId": "c-2", "chapterTitle": "Characters", "text": "Ben Holt."},
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(["Ada arrives."], [item["text"] for item in guide.load_manuscript(str(path))])
+
     def test_spacy_empty_result_does_not_activate_rule_fallback(self):
         paragraphs = [{"chapter": "Chapter 1", "text": "Captain Arelian arrives."}]
         with (

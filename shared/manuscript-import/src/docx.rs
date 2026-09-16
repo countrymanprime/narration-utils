@@ -177,7 +177,7 @@ pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
     let records = parse_paragraph_records(&document_xml, &style_names);
     let non_chapter = non_chapter_headings();
 
-    let mut chapter = "Front Matter".to_string();
+    let mut chapter = "Opening pages".to_string();
     let mut chapter_subtitle = None;
     let mut paragraphs = Vec::new();
     let mut titles = Vec::new();

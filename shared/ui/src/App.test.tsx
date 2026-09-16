@@ -29,6 +29,8 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(screen.getByText(/Opening Narration Console/)).toBeTruthy();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeTruthy());
     expect(screen.getAllByText('Alice’s Adventures in Wonderland').length).toBeGreaterThan(0);
+    expect(await screen.findByText(/Chapter 1 · 3 audio items/)).toBeTruthy();
+    expect(screen.queryByText(/Ch\.1 take 4/)).toBeNull();
   });
 
   it('shows an actionable error screen when bootstrap fails', async () => {
@@ -148,7 +150,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     await screen.findByRole('heading', { name: 'Welcome back' });
     expect(screen.getByText(/No imported manuscript/)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Import manuscript…' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import manuscript' }));
     await screen.findByRole('dialog', { name: 'Import Alice.docx' });
     expect(screen.getByText('Preview activity')).toBeTruthy();
     expect(document.querySelector('.progressbar')).toBeTruthy();

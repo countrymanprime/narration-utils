@@ -763,9 +763,12 @@ def load_manuscript_chapters(manuscript_path):
     by_chapter = {
         chapter["id"]: {"id": chapter["id"], "title": chapter["title"], "paragraphs": [], "global_indices": [], "paragraph_ids": []}
         for chapter in data["chapters"]
+        if chapter.get("contentKind", "narration") == "narration"
     }
     for paragraph in data["paragraphs"]:
-        chapter = by_chapter[paragraph["chapterId"]]
+        chapter = by_chapter.get(paragraph["chapterId"])
+        if chapter is None:
+            continue
         chapter["paragraphs"].append(paragraph["text"])
         chapter["global_indices"].append(paragraph["index"])
         chapter["paragraph_ids"].append(paragraph["id"])

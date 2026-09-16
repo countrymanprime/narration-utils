@@ -20,6 +20,10 @@ export type MarkerExport = { phase: 'idle' | 'exporting' | 'complete' | 'error';
 
 export type TranscriptState = {
   runId?: string;
+  /** Present on completed snapshots from current desktop hosts. */
+  trackName?: string;
+  audioItemCount?: number;
+  completedAt?: string;
   phase: 'idle' | 'preparing' | 'running' | 'inspecting' | 'need_chapter' | 'success' | 'cancelled' | 'error';
   percent: number;
   message: string;

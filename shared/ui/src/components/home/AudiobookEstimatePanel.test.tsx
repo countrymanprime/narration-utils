@@ -36,6 +36,7 @@ describe('AudiobookEstimatePanel', () => {
     expect(screen.queryByRole('table')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Show per-chapter breakdown/ }));
     expect(screen.getByRole('table')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Chapter 1 — Down the Rabbit-Hole/ })).toBeTruthy();
     expect(screen.getAllByText((_, node) => node?.textContent === 'Chapter 1 — Down the Rabbit-Hole').length).toBeGreaterThan(0);
   });
 
@@ -48,7 +49,7 @@ describe('AudiobookEstimatePanel', () => {
         </ApiProvider>
       </MemoryRouter>,
     );
-    expect(await screen.findByText(/No manuscript chapters found yet/)).toBeTruthy();
+    expect(await screen.findByText(/No narratable manuscript chapters found yet/)).toBeTruthy();
   });
 
   it('merges chapters with the same status into one progress segment after edits', async () => {

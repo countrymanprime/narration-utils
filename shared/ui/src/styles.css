@@ -116,6 +116,7 @@
     padding: 1.1rem;
   }
   .rail-btn {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 0.6rem;
@@ -123,7 +124,7 @@
     padding: 0.55rem 0.8rem;
     border-radius: 0.4rem;
     color: var(--text-muted);
-    border-left: 3px solid transparent;
+    border: 0;
     font-family: 'Barlow Condensed', sans-serif;
     font-weight: 600;
     font-size: 1rem;
@@ -136,9 +137,8 @@
     color: var(--text);
   }
   .rail-btn.active {
-    background: var(--surface-2);
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
     color: var(--accent);
-    border-left-color: var(--accent);
   }
   .btn {
     font-family: 'Barlow Condensed', sans-serif;
@@ -1281,22 +1281,14 @@ table.proofing-table th {
   }
   .medium-rail .rail-btn {
     justify-content: center;
-    padding: 0.55rem;
+    height: 2.5rem;
+    padding: 0;
+  }
+  .medium-rail .rail-tooltip {
+    width: 100%;
   }
   .medium-rail .rail-btn svg {
     font-size: 1rem;
-  }
-  .medium-rail .rail-btn:not(:hover)::after {
-    display: none;
-  }
-  .medium-rail .rail-btn {
-    font-size: 0;
-  }
-  .medium-rail .rail-btn::before {
-    content: attr(aria-label);
-  }
-  .medium-rail .rail-btn::before {
-    display: none;
   }
 }
 @media (max-width: 767px) {

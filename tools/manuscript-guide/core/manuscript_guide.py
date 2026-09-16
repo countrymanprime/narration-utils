@@ -189,8 +189,11 @@ def document_hash(path: str) -> str:
 
 def load_manuscript(path: str) -> list[dict[str, str]]:
     data = canonical_manuscript.load_file(path)
+    narratable_ids = {chapter["id"] for chapter in data["chapters"] if chapter.get("contentKind", "narration") == "narration"}
     paragraphs = [
-        {"chapter": item["chapterTitle"], "chapterId": item["chapterId"], "paragraphId": item["id"], "text": item["text"]} for item in data["paragraphs"]
+        {"chapter": item["chapterTitle"], "chapterId": item["chapterId"], "paragraphId": item["id"], "text": item["text"]}
+        for item in data["paragraphs"]
+        if item["chapterId"] in narratable_ids
     ]
     if not paragraphs:
         raise ValueError("The manuscript has no readable text paragraphs.")

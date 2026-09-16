@@ -42,9 +42,18 @@ function rootRelative(file) {
   return relative(root, isAbsolute(file) ? file : join(root, file)).replaceAll('\\', '/');
 }
 
+function uiFormattingFiles(files) {
+  return files.filter((file) => file.startsWith('shared/ui/') && /\.(?:[cm]?[jt]sx?|json|css)$/.test(file));
+}
+
+function uiLintFiles(files) {
+  return files.filter((file) => file.startsWith('shared/ui/') && /\.(?:[cm]?[jt]sx?)$/.test(file));
+}
+
 function fixStaged(files, fixer) {
   const rootFiles = files.map(rootRelative);
-  const ui = rootFiles.filter((file) => file.startsWith('shared/ui/') && /\.(?:[cm]?[jt]sx?|json|css)$/.test(file));
+  const ui = uiFormattingFiles(rootFiles);
+  const uiLint = uiLintFiles(rootFiles);
   const pythonFiles = rootFiles.filter((file) => file.endsWith('.py'));
   const rustFiles = rootFiles.filter((file) => file.endsWith('.rs') || /(?:^|\/)Cargo(?:\.lock|\.toml)$/.test(file));
   const luaFiles = rootFiles.filter((file) => file.endsWith('.lua'));
@@ -53,7 +62,10 @@ function fixStaged(files, fixer) {
     const uiRoot = join(root, 'shared', 'ui');
     const uiFiles = ui.map((file) => relative(uiRoot, join(root, file)));
     run(uiBinary('prettier'), ['--write', ...uiFiles], { cwd: uiRoot });
-    run(uiBinary('eslint'), ['--fix', ...uiFiles], { cwd: uiRoot });
+    if (uiLint.length) {
+      const uiLintFiles = uiLint.map((file) => relative(uiRoot, join(root, file)));
+      run(uiBinary('eslint'), ['--fix', ...uiLintFiles], { cwd: uiRoot });
+    }
   }
   if (fixer === 'python' && pythonFiles.length) {
     run(python(), ['-m', 'ruff', 'format', ...pythonFiles]);
@@ -65,7 +77,8 @@ function fixStaged(files, fixer) {
 
 function checkStagedFiles(files, checker) {
   const rootFiles = files.map(rootRelative);
-  const ui = rootFiles.filter((file) => file.startsWith('shared/ui/') && /\.(?:[cm]?[jt]sx?|json|css)$/.test(file));
+  const ui = uiFormattingFiles(rootFiles);
+  const uiLint = uiLintFiles(rootFiles);
   const pythonFiles = rootFiles.filter((file) => file.endsWith('.py'));
   const rustFiles = rootFiles.filter((file) => file.endsWith('.rs') || /(?:^|\/)Cargo(?:\.lock|\.toml)$/.test(file));
   const luaFiles = rootFiles.filter((file) => file.endsWith('.lua'));
@@ -74,7 +87,10 @@ function checkStagedFiles(files, checker) {
     const uiRoot = join(root, 'shared', 'ui');
     const uiFiles = ui.map((file) => relative(uiRoot, join(root, file)));
     run(uiBinary('prettier'), ['--check', ...uiFiles], { cwd: uiRoot });
-    run(uiBinary('eslint'), ['--max-warnings', '0', ...uiFiles], { cwd: uiRoot });
+    if (uiLint.length) {
+      const uiLintFiles = uiLint.map((file) => relative(uiRoot, join(root, file)));
+      run(uiBinary('eslint'), ['--max-warnings', '0', ...uiLintFiles], { cwd: uiRoot });
+    }
   }
   if (checker === 'python' && pythonFiles.length) {
     run(python(), ['-m', 'ruff', 'format', '--check', ...pythonFiles]);
@@ -85,7 +101,8 @@ function checkStagedFiles(files, checker) {
 }
 
 function runStaged(files) {
-  const ui = files.filter((file) => file.startsWith('shared/ui/') && /\.(?:[cm]?[jt]sx?|json|css)$/.test(file));
+  const ui = uiFormattingFiles(files);
+  const uiLint = uiLintFiles(files);
   const pythonFiles = files.filter((file) => file.endsWith('.py'));
   const rustFiles = files.filter((file) => file.endsWith('.rs') || /(?:^|\/)Cargo(?:\.lock|\.toml)$/.test(file));
   const luaFiles = files.filter((file) => file.endsWith('.lua'));
@@ -94,7 +111,10 @@ function runStaged(files) {
     const uiRoot = join(root, 'shared', 'ui');
     const uiFiles = ui.map((file) => relative('shared/ui', file));
     run(uiBinary('prettier'), ['--check', ...uiFiles], { cwd: uiRoot });
-    run(uiBinary('eslint'), ['--max-warnings', '0', ...uiFiles], { cwd: uiRoot });
+    if (uiLint.length) {
+      const uiLintFiles = uiLint.map((file) => relative('shared/ui', file));
+      run(uiBinary('eslint'), ['--max-warnings', '0', ...uiLintFiles], { cwd: uiRoot });
+    }
   }
   if (pythonFiles.length) {
     run(python(), ['-m', 'ruff', 'format', '--check', ...pythonFiles]);

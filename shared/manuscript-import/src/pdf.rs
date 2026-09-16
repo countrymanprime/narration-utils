@@ -39,7 +39,7 @@ pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
     let block_split_re = Regex::new(r"\n\s*\n+").unwrap();
     let chapter_prefix_re = Regex::new(r"(?i)^(chapter|book|part)\b").unwrap();
 
-    let mut chapter = "Front Matter".to_string();
+    let mut chapter = "Opening pages".to_string();
     let mut paragraphs: Vec<Paragraph> = Vec::new();
     let mut titles: Vec<String> = Vec::new();
 
@@ -71,12 +71,12 @@ pub fn build_draft(path: &Path) -> Result<Draft, ManuscriptError> {
 
     let pre_heading: Vec<String> = paragraphs
         .iter()
-        .filter(|paragraph| paragraph.chapter == "Front Matter")
+        .filter(|paragraph| paragraph.chapter == "Opening pages")
         .map(|paragraph| paragraph.text.clone())
         .collect();
     for (paragraph, kind) in paragraphs
         .iter_mut()
-        .filter(|paragraph| paragraph.chapter == "Front Matter")
+        .filter(|paragraph| paragraph.chapter == "Opening pages")
         .zip(classify_pre_heading(&pre_heading))
     {
         paragraph.chapter = kind.chapter_name().to_string();

@@ -164,7 +164,7 @@ local function prepare_compare(session_dir, runs, run_id)
   reaper.RecursiveCreateDirectory(diffs, 0)
   local diff_path = diffs .. '\\' .. safe_name(track_name) .. '_' .. run_id .. '.diff'
   runs[run_id] = { mapping = mapping, track = track_name, diff_path = diff_path, rows = {} }
-  event(session_dir, 'COMPARE_PREPARED', run_id, manifest_path, manuscript, track_name, diff_path)
+  event(session_dir, 'COMPARE_PREPARED', run_id, manifest_path, manuscript, track_name, diff_path, tostring(#manifest))
 end
 
 local function marker_kind(name)

@@ -60,12 +60,12 @@ export function AppShell({
       <aside className="desktop-sidebar">{navigation}</aside>
       <aside className="medium-rail" aria-label="Primary navigation">
         {NAV.map((item) => (
-          <NavButton key={item.name} active={isActivePath(pathname, item.path)} icon={item.icon} onClick={() => go(item.path)}>
+          <NavButton key={item.name} active={isActivePath(pathname, item.path)} icon={item.icon} onClick={() => go(item.path)} iconOnly>
             {item.name}
           </NavButton>
         ))}
         <div className="mt-auto">
-          <NavButton active={settingsActive} icon={faGear} onClick={() => go('/settings')}>
+          <NavButton active={settingsActive} icon={faGear} onClick={() => go('/settings')} iconOnly>
             Settings
           </NavButton>
         </div>

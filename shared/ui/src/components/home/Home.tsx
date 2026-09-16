@@ -1,16 +1,25 @@
 import { useEffect, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFileArrowUp, faFileImport, faFileLines } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
-import type { GuideEntity, ManuscriptChapter, WorkJob } from '../../types';
+import type { GuideEntity, ManuscriptChapter, ManuscriptImportSelection, TranscriptState, WorkJob } from '../../types';
 import type { Bootstrap } from '../../types';
 import { Heading } from '../primitives/Heading';
 import { AudiobookEstimatePanel } from './AudiobookEstimatePanel';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { WorkDialog } from '../primitives/WorkDialog';
+import { TooltipTarget } from '../primitives/Tooltip';
 
 const MIN_IMPORT_ACTIVITY_MS = 450;
 
 function appendLog(logs: string[], line: string) {
   return logs.includes(line) ? logs : [...logs, line];
+}
+
+function completedLabel(value?: string) {
+  if (!value) return 'completed previously';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'completed previously' : `completed ${date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}`;
 }
 
 export function Home({
@@ -29,8 +38,10 @@ export function Home({
   const api = useApi();
   const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
   const [entities, setEntities] = useState<GuideEntity[]>([]);
+  const [lastCompleted, setLastCompleted] = useState<TranscriptState>();
   const found = Boolean(data.manuscript);
   const [importJob, setImportJob] = useState<WorkJob>();
+  const [importSelection, setImportSelection] = useState<ManuscriptImportSelection>({});
   const [headingLevel, setHeadingLevel] = useState(1);
   useEffect(() => {
     void Promise.all([api.manuscriptChapters(), api.guideEntities()])
@@ -39,6 +50,10 @@ export function Home({
         setEntities(nextEntities);
       })
       .catch(() => {});
+    void api
+      .transcriptLastCompleted()
+      .then(setLastCompleted)
+      .catch(() => setLastCompleted(undefined));
   }, [api, data.manuscript?.id, data.manuscript?.importedAt]);
   useEffect(() => {
     if (!importJob?.id || importJob.phase !== 'preparing') return;
@@ -81,7 +96,12 @@ export function Home({
         : current,
     );
     try {
-      const completed = await api.manuscriptImportCommit(importJob.id, Boolean(importJob.requiresReset));
+      const selectedCharacterCandidateIds =
+        importSelection.characterCandidateIds ?? importJob.preview?.characterCandidates?.map((candidate) => candidate.id) ?? [];
+      const completed = await api.manuscriptImportCommit(importJob.id, {
+        confirmedReset: Boolean(importJob.requiresReset),
+        selection: { sectionKinds: importSelection.sectionKinds, characterCandidateIds: selectedCharacterCandidateIds },
+      });
       // Refresh the shared application state as soon as the server confirms
       // the transaction.  This updates Home and pages reached afterwards
       // without disrupting the completed activity panel.
@@ -94,8 +114,11 @@ export function Home({
       setImportJob((current) => (current ? { ...current, phase: 'error', error: message, message } : current));
     }
   };
-  const words = chapters.reduce((total, chapter) => total + chapter.wordCount, 0);
-  const review = entities.find((entity) => entity.review_state === 'unreviewed' || entity.category === 'Needs Review');
+  const narrationChapters = chapters.filter((chapter) => (chapter.contentKind ?? 'narration') === 'narration');
+  const words = narrationChapters.reduce((total, chapter) => total + chapter.wordCount, 0);
+  const review = entities.find(
+    (entity) => entity.review_state === 'needs review' || entity.review_state === 'unreviewed' || entity.category === 'Needs Review',
+  );
   return (
     <div className="mx-auto max-w-5xl space-y-4">
       <Heading title="Welcome back">
@@ -107,7 +130,7 @@ export function Home({
           <span>
             {found ? (
               <>
-                <strong>Manuscript found</strong> — {words.toLocaleString()} words across {chapters.length} chapters
+                <strong>Manuscript found</strong> — {words.toLocaleString()} words across {narrationChapters.length} narratable chapters
               </>
             ) : (
               <>
@@ -118,38 +141,72 @@ export function Home({
         </div>
         <div className="flex gap-2">
           {found && (
-            <button className="btn btn-ghost text-xs" onClick={() => go('/manuscript')}>
-              View manuscript →
-            </button>
+            <TooltipTarget text="View manuscript">
+              <button className="icon-btn" aria-label="View manuscript" onClick={() => go('/manuscript')}>
+                <FontAwesomeIcon icon={faFileLines} />
+              </button>
+            </TooltipTarget>
           )}
-          <button
-            className={found ? 'btn btn-ghost text-xs' : 'btn btn-primary text-xs'}
-            onClick={async () => {
-              const result = await api.selectManuscript();
-              if (result.selected && result.jobId)
-                setImportJob({
-                  id: result.jobId,
-                  kind: 'manuscript_import',
-                  phase: 'preparing',
-                  message: 'Preparing manuscript import…',
-                  percent: 0,
-                  logs: [],
-                  elapsed: 0,
-                });
-              else notify('No manuscript selected');
-            }}
-          >
-            {found ? 'Replace manuscript…' : 'Import manuscript…'}
-          </button>
+          {found ? (
+            <TooltipTarget text="Replace manuscript — confirmation clears Story Bible, notes, bookmarks, chapter statuses, and saved proofing results.">
+              <button
+                aria-label="Replace manuscript"
+                className="icon-btn"
+                onClick={async () => {
+                  const result = await api.selectManuscript();
+                  if (result.selected && result.jobId) {
+                    setImportSelection({});
+                    setImportJob({
+                      id: result.jobId,
+                      kind: 'manuscript_import',
+                      phase: 'preparing',
+                      message: 'Preparing manuscript import…',
+                      percent: 0,
+                      logs: [],
+                      elapsed: 0,
+                    });
+                  } else notify('No manuscript selected');
+                }}
+              >
+                <FontAwesomeIcon icon={faFileArrowUp} />
+              </button>
+            </TooltipTarget>
+          ) : (
+            <TooltipTarget text="Import manuscript">
+              <button
+                aria-label="Import manuscript"
+                className="icon-btn"
+                onClick={async () => {
+                  const result = await api.selectManuscript();
+                  if (result.selected && result.jobId) {
+                    setImportSelection({});
+                    setImportJob({
+                      id: result.jobId,
+                      kind: 'manuscript_import',
+                      phase: 'preparing',
+                      message: 'Preparing manuscript import…',
+                      percent: 0,
+                      logs: [],
+                      elapsed: 0,
+                    });
+                  } else notify('No manuscript selected');
+                }}
+              >
+                <FontAwesomeIcon icon={faFileArrowUp} />
+              </button>
+            </TooltipTarget>
+          )}
           {!found && data.legacyManuscriptAvailable && (
-            <button
-              className="btn btn-ghost text-xs"
-              onClick={() =>
-                void api
-                  .manuscriptLegacyPreview()
-                  .then(
-                    (result) =>
-                      result.jobId &&
+            <TooltipTarget text="Import legacy Word file">
+              <button
+                aria-label="Import legacy Word file"
+                className="icon-btn"
+                onClick={() =>
+                  void api
+                    .manuscriptLegacyPreview()
+                    .then((result) => {
+                      if (!result.jobId) return;
+                      setImportSelection({});
                       setImportJob({
                         id: result.jobId,
                         kind: 'manuscript_import',
@@ -158,13 +215,14 @@ export function Home({
                         percent: 0,
                         logs: [],
                         elapsed: 0,
-                      }),
-                  )
-                  .catch((error) => notify(error.message))
-              }
-            >
-              Import legacy Word file…
-            </button>
+                      });
+                    })
+                    .catch((error) => notify(error.message))
+                }
+              >
+                <FontAwesomeIcon icon={faFileImport} />
+              </button>
+            </TooltipTarget>
           )}
         </div>
       </section>
@@ -189,8 +247,9 @@ export function Home({
                 onChange={(event) => {
                   const level = Number(event.target.value);
                   setHeadingLevel(level);
+                  setImportSelection({});
                   void api
-                    .manuscriptImportPreview(importJob.id!, level)
+                    .manuscriptImportPreview(importJob.id!, { markdownHeadingLevel: level })
                     .then(setImportJob)
                     .catch((error) => notify(error.message));
                 }}
@@ -205,6 +264,67 @@ export function Home({
           )}
           {importJob.preview.format === 'pdf' && importJob.preview.chapterTitles.length > 0 && (
             <p className="mt-3 text-xs">Detected chapters: {importJob.preview.chapterTitles.join(' · ')}</p>
+          )}
+          {importJob.preview.sections && importJob.preview.sections.length > 0 && (
+            <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+              <legend className="section-label px-1">Review imported structure</legend>
+              <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                Reference material stays readable but is excluded from audiobook totals and Proofing.
+              </p>
+              <div className="space-y-1.5">
+                {importJob.preview.sections.map((section) => (
+                  <label key={section.id} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="min-w-0 truncate">{section.title}</span>
+                    <select
+                      aria-label={`${section.title} content type`}
+                      className="flex-none"
+                      value={importSelection.sectionKinds?.[section.id] ?? section.contentKind}
+                      onChange={(event) =>
+                        setImportSelection((current) => ({
+                          ...current,
+                          sectionKinds: { ...current.sectionKinds, [section.id]: event.target.value as 'narration' | 'opening' | 'reference' },
+                        }))
+                      }
+                    >
+                      <option value="narration">Narration chapter</option>
+                      <option value="opening">Opening pages</option>
+                      <option value="reference">Reference material</option>
+                    </select>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+          {importJob.preview.characterCandidates && importJob.preview.characterCandidates.length > 0 && (
+            <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+              <legend className="section-label px-1">Story Bible character suggestions</legend>
+              <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                Checked names become reviewable Character entries after import.
+              </p>
+              {importJob.preview.characterCandidates.map((candidate) => {
+                const checked = (importSelection.characterCandidateIds ?? importJob.preview!.characterCandidates!.map((item) => item.id)).includes(
+                  candidate.id,
+                );
+                return (
+                  <label key={candidate.id} className="flex items-start gap-2 py-0.5 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) => {
+                        const selected = new Set(importSelection.characterCandidateIds ?? importJob.preview!.characterCandidates!.map((item) => item.id));
+                        if (event.target.checked) selected.add(candidate.id);
+                        else selected.delete(candidate.id);
+                        setImportSelection((current) => ({ ...current, characterCandidateIds: [...selected] }));
+                      }}
+                    />
+                    <span>
+                      {candidate.name}
+                      {candidate.description && <span style={{ color: 'var(--text-muted)' }}> — {candidate.description}</span>}
+                    </span>
+                  </label>
+                );
+              })}
+            </fieldset>
           )}
           <div className="mt-4 text-xs" style={{ color: 'var(--text-muted)' }}>
             <div className="section-label mb-1.5">Preview activity</div>
@@ -238,13 +358,20 @@ export function Home({
         <button aria-label="Open Proofing" className="panel panel-body text-left transition hover:-translate-y-px" onClick={() => go('/proofing')}>
           <div className="mb-1 flex items-center justify-between">
             <span className="section-label">Proofing</span>
-            <span className="badge" style={{ background: 'var(--review-soft)', color: 'var(--review)' }}>
-              2 discrepancies
+            <span
+              className="badge"
+              style={
+                lastCompleted ? { background: 'var(--review-soft)', color: 'var(--review)' } : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
+              }
+            >
+              {lastCompleted ? `${lastCompleted.rows.length} ${lastCompleted.rows.length === 1 ? 'discrepancy' : 'discrepancies'}` : 'Ready'}
             </span>
           </div>
-          <div className="font-semibold">Continue reviewing the last take</div>
+          <div className="font-semibold">{lastCompleted ? 'Review latest comparison' : 'Ready to compare selected REAPER audio'}</div>
           <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-            Track 3 — “Ch.1 take 4” · run today
+            {lastCompleted
+              ? `${lastCompleted.trackName || 'Selected REAPER audio'}${lastCompleted.audioItemCount ? ` · ${lastCompleted.audioItemCount} audio item${lastCompleted.audioItemCount === 1 ? '' : 's'}` : ''} · ${completedLabel(lastCompleted.completedAt)}`
+              : 'Select audio items or a track in REAPER, then start Proofing.'}
           </div>
         </button>
         <button aria-label="Open Story Bible" className="panel panel-body text-left transition hover:-translate-y-px" onClick={() => go('/story-bible')}>
@@ -254,9 +381,14 @@ export function Home({
               {entities.length} entities · {review ? 1 : 0} review
             </span>
           </div>
-          <div className="font-semibold">{review ? `Review “${review.canonical_name}”` : 'Story Bible is up to date'}</div>
+          <div className="font-semibold">
+            {review ? `Review “${review.canonical_name}”` : entities.length ? 'Browse Story Bible entries' : 'No Story Bible entries yet'}
+          </div>
           <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-            {review?.description.text || 'Build the Story Bible to discover names and terms.'}
+            {review?.description.text ||
+              (entities.length
+                ? `${entities.length} saved ${entities.length === 1 ? 'entity' : 'entities'}`
+                : 'Build the Story Bible to discover names and terms.')}
           </div>
         </button>
       </div>
