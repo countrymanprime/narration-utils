@@ -7,6 +7,7 @@ import {
   faFloppyDisk,
   faLock,
   faLockOpen,
+  faPause,
   faPlus,
   faRotate,
   faTrash,
@@ -19,6 +20,7 @@ import { useApi } from '../../api/ApiContext';
 import { Field } from '../primitives/Field';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
+import { CANONICAL_PREVIEW, previewKey, usePreviewAudio } from './usePreviewAudio';
 
 export function GuideDetail({
   entity,
@@ -43,13 +45,23 @@ export function GuideDetail({
   const [aliasActiveIndex, setAliasActiveIndex] = useState(0);
   const [relationOtherId, setRelationOtherId] = useState('');
   const [relationLabel, setRelationLabel] = useState('');
-  const [previewUrl, setPreviewUrl] = useState('');
   const [confirmation, setConfirmation] = useState<'delete' | 'merge'>();
   const [ttsPrompt, setTtsPrompt] = useState<{ preview: Extract<GuidePreview, { status: 'asset_required' }>; aliasIndex?: number }>();
   const [ttsJob, setTtsJob] = useState<TtsInstallJob>();
+  const { playingPreview, playPreview } = usePreviewAudio({
+    resetKey: entity,
+    requestPreview: (aliasIndex) => {
+      if (!entity) throw new Error('Select a Story Bible entry before previewing it.');
+      return api.guidePreview(entity.id, aliasIndex);
+    },
+    onAssetRequired: (preview, aliasIndex) => {
+      setTtsJob(undefined);
+      setTtsPrompt({ preview, aliasIndex });
+    },
+    notify,
+  });
 
   useEffect(() => {
-    setPreviewUrl('');
     setCategoryMenuOpen(false);
     setAliasQuery('');
     setAliasSelectedId(undefined);
@@ -93,18 +105,6 @@ export function GuideDetail({
     if (!value) return;
     clearAliasMatch();
     void setAliasTexts([...entity.aliases.map((alias) => alias.text), value]);
-  };
-  const playPreview = async (aliasIndex?: number) => {
-    try {
-      const preview = await api.guidePreview(entity.id, aliasIndex);
-      if (preview.status === 'ready') setPreviewUrl(preview.url);
-      else {
-        setTtsJob(undefined);
-        setTtsPrompt({ preview, aliasIndex });
-      }
-    } catch (error) {
-      notify(String(error));
-    }
   };
   const installPreviewVoice = async () => {
     if (!ttsPrompt || ttsJob?.phase === 'downloading') return;
@@ -275,18 +275,21 @@ export function GuideDetail({
                 {entity.pronunciation.ipa || 'Not generated'}
               </div>
               <TooltipTarget
-                text="Play provider-generated pronunciation"
+                text={playingPreview === CANONICAL_PREVIEW ? 'Pause pronunciation preview' : 'Play provider-generated pronunciation'}
                 style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}
               >
-                <button aria-label="Play preview" className="icon-btn" onClick={() => void playPreview()}>
-                  <FontAwesomeIcon icon={faWaveSquare} />
+                <button
+                  aria-label={playingPreview === CANONICAL_PREVIEW ? 'Pause preview' : 'Play preview'}
+                  className="icon-btn"
+                  onClick={() => void playPreview()}
+                >
+                  <FontAwesomeIcon icon={playingPreview === CANONICAL_PREVIEW ? faPause : faWaveSquare} />
                 </button>
               </TooltipTarget>
             </div>
             <p className="mt-1 text-xs" style={{ color: 'var(--text-faint)' }}>
               Source: {entity.pronunciation.source} · Confidence: {entity.pronunciation.confidence}
             </p>
-            {previewUrl && <audio className="mt-2 w-full" controls autoPlay src={previewUrl} />}
           </div>
         </div>
 
@@ -311,11 +314,15 @@ export function GuideDetail({
                         {alias.pronunciation.ipa || 'Not generated'}
                       </div>
                       <TooltipTarget
-                        text="Play this alias pronunciation"
+                        text={playingPreview === previewKey(index) ? 'Pause alias pronunciation preview' : 'Play this alias pronunciation'}
                         style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}
                       >
-                        <button aria-label="Play alias pronunciation" className="icon-btn" onClick={() => void playPreview(index)}>
-                          <FontAwesomeIcon icon={faWaveSquare} />
+                        <button
+                          aria-label={playingPreview === previewKey(index) ? 'Pause alias pronunciation' : 'Play alias pronunciation'}
+                          className="icon-btn"
+                          onClick={() => void playPreview(index)}
+                        >
+                          <FontAwesomeIcon icon={playingPreview === previewKey(index) ? faPause : faWaveSquare} />
                         </button>
                       </TooltipTarget>
                     </div>

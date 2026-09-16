@@ -1,17 +1,19 @@
 //! In-process HTTP host foundation.
 //!
-//! This phase implements API operations independent of the manuscript,
-//! guide, REAPER, and transcript subsystems. The production shell continues
-//! to launch Python until every shipped endpoint has a Rust peer.
+//! The production shell hosts this Axum API for its lifetime. Python remains
+//! an on-demand analysis backend for Manuscript Guide and Transcript Compare;
+//! it is not an HTTP sidecar.
 
 pub mod bridge;
 pub mod config;
+pub mod contracts;
 pub mod diagnostics;
 pub mod field_schemas;
 pub mod guide_service;
 pub mod manuscript_canonical;
 pub mod manuscript_service;
 pub mod process_utils;
+pub mod routes;
 pub mod transcript;
 pub mod tts;
 pub mod work_job;
@@ -86,7 +88,7 @@ use axum::{
     extract::{Path, Query, State},
     http::{header::CONTENT_TYPE, StatusCode},
     response::{IntoResponse, Response},
-    routing::{any, get, post, put},
+    routing::any,
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -553,6 +555,67 @@ impl AppState {
         })?;
         Ok(job.snapshot())
     }
+    fn preview_import(&self, id: &str, heading_level: u8) -> Result<Value, ApiError> {
+        let mut guard = self.import_job.lock().expect("import job mutex");
+        let job = guard.as_mut().filter(|job| job.id == id).ok_or_else(|| {
+            ApiError::bad_request("This manuscript import is no longer available.")
+        })?;
+        if matches!(job.phase.as_str(), "committing" | "success" | "cancelled") {
+            return Err(ApiError::bad_request(
+                "Choose the manuscript again before changing its import preview.",
+            ));
+        }
+        let source = PathBuf::from(&job.source);
+        job.phase = "preparing".into();
+        job.percent = 10;
+        job.message = "Rebuilding manuscript import preview…".into();
+        job.error.clear();
+        job.preview = None;
+        job.draft = None;
+        job.add_log("Rebuilding manuscript import preview…");
+        match manuscript_canonical::fingerprint(&source)
+            .and_then(|fingerprint| {
+                job.source_fingerprint = fingerprint;
+                manuscript_canonical::prepare_import(&source, heading_level)
+            })
+            .and_then(|draft| manuscript_canonical::preview(&draft).map(|preview| (draft, preview)))
+        {
+            Ok((draft, preview)) => {
+                job.phase = "ready".into();
+                job.message = "Import preview is ready.".into();
+                job.percent = 100;
+                job.draft = Some(draft);
+                job.preview = Some(preview);
+                job.add_log("Import preview is ready.");
+            }
+            Err(error) => {
+                job.phase = "error".into();
+                job.error = error.clone();
+                job.message = format!("Import preview failed: {error}");
+            }
+        }
+        self.changed();
+        Ok(job.snapshot())
+    }
+    fn cancel_import(&self, id: &str) -> Result<(), ApiError> {
+        let mut guard = self.import_job.lock().expect("import job mutex");
+        let job = guard.as_mut().filter(|job| job.id == id).ok_or_else(|| {
+            ApiError::bad_request("This manuscript import is no longer available.")
+        })?;
+        if job.phase == "committing" {
+            return Err(ApiError::bad_request(
+                "The manuscript import is already being committed.",
+            ));
+        }
+        job.phase = "cancelled".into();
+        job.percent = 0;
+        job.message = "Manuscript import cancelled.".into();
+        job.draft = None;
+        job.preview = None;
+        job.add_log("Manuscript import cancelled.");
+        self.changed();
+        Ok(())
+    }
     fn commit_import(&self, id: &str, confirmed: bool) -> Result<Value, ApiError> {
         let project = self
             .config
@@ -894,16 +957,6 @@ struct DiagnosticRequest {
     message: String,
 }
 #[derive(Deserialize)]
-struct ImportOptionsRequest {
-    #[serde(rename = "markdownHeadingLevel", default = "default_heading_level")]
-    markdown_heading_level: u8,
-    #[serde(rename = "confirmedReset", default)]
-    confirmed_reset: bool,
-}
-fn default_heading_level() -> u8 {
-    1
-}
-#[derive(Deserialize)]
 struct ChapterStatusRequest {
     status: String,
 }
@@ -945,123 +998,7 @@ impl IntoResponse for ApiError {
 
 pub fn router(state: Arc<AppState>) -> Router {
     let ui_dist = state.config.repo_root.join("shared/ui/dist");
-    Router::new()
-        .route("/api/health", get(health))
-        .route("/api/bootstrap", get(bootstrap))
-        .route("/api/settings", get(settings))
-        .route("/api/settings/{tool}/{scope}", put(save_settings))
-        .route("/api/tts/catalog", get(tts_catalog))
-        .route("/api/tts/voices/{voice_id}/install", post(tts_install))
-        .route(
-            "/api/tts/voices/{voice_id}",
-            axum::routing::delete(tts_remove),
-        )
-        .route("/api/tts/jobs/{job_id}", get(tts_install_state))
-        .route("/api/tts/jobs/{job_id}/cancel", post(tts_install_cancel))
-        .route("/api/diagnostics", post(report_diagnostic))
-        .route("/api/shutdown", post(shutdown))
-        .route("/api/manuscript/chapters", get(manuscript_chapters))
-        .route(
-            "/api/manuscript/chapters/{chapter}/paragraphs",
-            get(manuscript_paragraphs),
-        )
-        .route("/api/manuscript/reader", get(manuscript_reader))
-        .route(
-            "/api/manuscript/reader-state",
-            get(manuscript_reader_state).put(manuscript_save_reader_state),
-        )
-        .route(
-            "/api/manuscript/bookmarks",
-            post(manuscript_bookmark_create),
-        )
-        .route(
-            "/api/manuscript/bookmarks/{bookmark_id}",
-            axum::routing::delete(manuscript_bookmark_delete),
-        )
-        .route("/api/manuscript/search", get(manuscript_search))
-        .route(
-            "/api/manuscript/chapters/{chapter}/status",
-            put(manuscript_set_status),
-        )
-        .route(
-            "/api/manuscript/notes",
-            get(manuscript_notes).post(manuscript_note_create),
-        )
-        .route(
-            "/api/manuscript/notes/{note_id}",
-            axum::routing::delete(manuscript_note_delete),
-        )
-        .route(
-            "/api/manuscript/import/legacy-preview",
-            post(manuscript_legacy_preview),
-        )
-        .route("/api/manuscript/select-file", post(manuscript_select_file))
-        .route(
-            "/api/manuscript/import/{job_id}",
-            get(manuscript_import_state),
-        )
-        .route(
-            "/api/manuscript/import/{job_id}/commit",
-            post(manuscript_import_commit),
-        )
-        .route("/api/project-data/clear", post(project_data_clear))
-        .route(
-            "/api/guide/entities",
-            get(guide_entities).post(guide_create),
-        )
-        .route(
-            "/api/guide/entities/{entity_id}",
-            axum::routing::patch(guide_edit).delete(guide_delete),
-        )
-        .route(
-            "/api/guide/entities/{entity_id}/locked",
-            put(guide_set_locked),
-        )
-        .route("/api/guide/entities/{entity_id}/rescan", post(guide_rescan))
-        .route(
-            "/api/guide/entities/{entity_id}/preview",
-            get(guide_preview),
-        )
-        .route("/api/guide/audio/{file_name}", get(guide_audio))
-        .route("/api/guide/merge", post(guide_merge))
-        .route(
-            "/api/guide/relationships",
-            post(guide_relate).delete(guide_unrelate),
-        )
-        .route("/api/guide/export", get(guide_export))
-        .route(
-            "/api/guide/build",
-            get(guide_build_state).post(guide_build_start),
-        )
-        .route("/api/transcript/state", get(transcript_state))
-        .route("/api/transcript/events", get(transcript_events))
-        .route("/api/transcript/start", post(transcript_start))
-        .route("/api/transcript/cancel", post(transcript_cancel))
-        .route("/api/transcript/reset", post(transcript_reset))
-        .route(
-            "/api/transcript/last-completed",
-            get(transcript_last_completed),
-        )
-        .route(
-            "/api/transcript/discrepancies/{row_id}/equivalence",
-            post(transcript_add_equivalence),
-        )
-        .route(
-            "/api/transcript/discrepancies/{row_id}/jump",
-            post(transcript_jump),
-        )
-        .route(
-            "/api/transcript/markers/export",
-            post(transcript_export_markers),
-        )
-        .route(
-            "/api/transcript/hints/suggestions",
-            get(transcript_suggest_hints),
-        )
-        .route(
-            "/api/transcript/hints",
-            get(transcript_hints).put(transcript_save_hints),
-        )
+    routes::register(Router::new())
         .route("/api/{*path}", any(api_not_found))
         .fallback_service(
             ServeDir::new(&ui_dist).fallback(ServeFile::new(ui_dist.join("index.html"))),
@@ -1566,13 +1503,28 @@ async fn manuscript_import_state(
 ) -> Result<Json<Value>, ApiError> {
     Ok(Json(state.import_state(&job_id)?))
 }
+async fn manuscript_import_preview(
+    State(state): State<Arc<AppState>>,
+    Path(job_id): Path<String>,
+    Json(body): Json<contracts::manuscript::ImportPreviewRequest>,
+) -> Result<Json<Value>, ApiError> {
+    Ok(Json(
+        state.preview_import(&job_id, body.markdown_heading_level)?,
+    ))
+}
 async fn manuscript_import_commit(
     State(state): State<Arc<AppState>>,
     Path(job_id): Path<String>,
-    Json(body): Json<ImportOptionsRequest>,
+    Json(body): Json<contracts::manuscript::ImportCommitRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let _ = body.markdown_heading_level;
     Ok(Json(state.commit_import(&job_id, body.confirmed_reset)?))
+}
+async fn manuscript_import_cancel(
+    State(state): State<Arc<AppState>>,
+    Path(job_id): Path<String>,
+) -> Result<StatusCode, ApiError> {
+    state.cancel_import(&job_id)?;
+    Ok(StatusCode::OK)
 }
 #[derive(Deserialize)]
 struct ClearProjectDataRequest {
@@ -1656,6 +1608,48 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn manuscript_preview_and_cancel_routes_match_the_ui_contract() {
+        let project = std::env::temp_dir().join(format!(
+            "narration-utils-import-route-test-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&project).unwrap();
+        let state = state(Some(project));
+        let source =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../shared/test-fixtures/alice.md");
+        let selected = state.start_import(&source, 1).unwrap();
+        let job_id = selected["id"].as_str().unwrap();
+        let app = router(Arc::clone(&state));
+
+        let preview = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/manuscript/import/{job_id}/preview"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(r#"{"markdownHeadingLevel":1}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(preview.status(), StatusCode::OK);
+
+        let cancel = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/manuscript/import/{job_id}/cancel"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(cancel.status(), StatusCode::OK);
+        assert_eq!(state.import_state(job_id).unwrap()["phase"], "cancelled");
     }
 
     #[tokio::test]

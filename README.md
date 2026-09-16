@@ -20,7 +20,7 @@ narration-utils/
                                 draft JSON narration_common.manuscript turns into manuscript.json
     python/narration_common/   DAW-agnostic helpers shared by both tools' backends
     reaper/                    REAPER launcher and non-UI integration bridge
-    server/                    FastAPI/uvicorn API host, launched as the shell's sidecar
+    server/                    In-process Rust/Axum API hosted by the native shell
     ui/                        React + Tailwind workspace (built static assets)
     audacity/                  placeholder for future Audacity-specific shared helpers
   tools/
@@ -108,10 +108,13 @@ Both tools retain their own DAW-agnostic Python backends. What they share:
   `reaper_common_process.lua` (hidden-subprocess launching, the pipe-delimited protocol used by
   each tool's Python backend). Every reascript loads these via `dofile`, resolved relative to
   its own script path.
-- **`shared/python/narration_common/`** — `docx_chapters.py` (shared docx-opening/paragraph-
-  walking primitive), `progress.py` (the `stage|pct|message` progress-file writer,
+- **`shared/python/narration_common/`** — cross-tool contracts including canonical manuscript,
+  settings, bridge, logging, and `progress.py` (the `stage|pct|message` progress-file writer,
   retry-hardened against Windows sharing violations), and `logging_utils.py` (stderr[+file]
   logging). Each backend adds this to `sys.path` relative to its own file.
+
+See [`docs/architecture/codebase-map.md`](docs/architecture/codebase-map.md) for runtime
+ownership and the staged module boundaries.
 
 ## Dependencies
 
