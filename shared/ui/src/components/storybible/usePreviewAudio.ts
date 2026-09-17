@@ -23,6 +23,7 @@ export function usePreviewAudio({ resetKey, requestPreview, onAssetRequired, not
   const [playingPreview, setPlayingPreview] = useState<string>();
   const audioRef = useRef<HTMLAudioElement>();
   const activeKeyRef = useRef<string>();
+  const objectUrlRef = useRef<string>();
   const requestRef = useRef(0);
   const callbacksRef = useRef({ requestPreview, onAssetRequired, notify });
   callbacksRef.current = { requestPreview, onAssetRequired, notify };
@@ -35,6 +36,10 @@ export function usePreviewAudio({ resetKey, requestPreview, onAssetRequired, not
       audio.currentTime = 0;
       audioRef.current = undefined;
       activeKeyRef.current = undefined;
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = undefined;
+      }
     }
     setPlayingPreview(undefined);
   }, []);
@@ -75,7 +80,10 @@ export function usePreviewAudio({ resetKey, requestPreview, onAssetRequired, not
           return;
         }
 
-        const nextAudio = new Audio(preview.url);
+        const bytes = Uint8Array.from(atob(preview.audioBase64), (character) => character.charCodeAt(0));
+        const objectUrl = URL.createObjectURL(new Blob([bytes], { type: preview.mimeType }));
+        objectUrlRef.current = objectUrl;
+        const nextAudio = new Audio(objectUrl);
         audioRef.current = nextAudio;
         activeKeyRef.current = target;
         nextAudio.onended = () => clear(nextAudio);

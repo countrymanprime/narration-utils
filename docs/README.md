@@ -21,6 +21,7 @@ This folder records planned work for a local-first audiobook narration toolkit. 
 ## Reading order
 
 1. Start with the [roadmap](roadmap.md).
+1. Before changing anything in `shared/ui/src/components/primitives/`, `shared/ui/src/styles.css`, or a behavior an ADR names, read the [ADR index](adr/README.md) and the [design system reference](design/design-system.md) — see the `design-spec-guard` skill.
 2. Read the [findings contract](architecture/findings-contract.md) before adding any analyzer or dashboard action.
 3. Use the workflow documents to understand how utilities combine: [manuscript/editorial](workflows/manuscript-and-editorial-review.md), [recording/comping](workflows/recording-and-comping.md), [character continuity](workflows/character-continuity.md), and [technical QC/handoff](workflows/technical-qc-and-handoff.md).
 4. Each planned utility has a dedicated implementation brief in [utilities/](utilities/).

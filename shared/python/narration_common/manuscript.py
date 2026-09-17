@@ -2,7 +2,7 @@
 
 Importing a source file into ``narration-utils/manuscript/manuscript.json``
 is Rust-only now (see ``shared/manuscript-import`` and
-``shell/src-tauri/src/server/manuscript_canonical.rs``). This module keeps
+``shell/internal/manuscript``). This module keeps
 only the read side, because ``manuscript_guide.py`` and ``compare.py``
 still need to load that file as plain data.
 """

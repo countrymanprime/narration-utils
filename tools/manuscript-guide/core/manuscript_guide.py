@@ -12,8 +12,8 @@ import hashlib
 import json
 import os
 import re
-import subprocess
 import sys
+import wave
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,6 +27,7 @@ from narration_common.config import get_default  # noqa: E402
 from narration_common import manuscript as canonical_manuscript  # noqa: E402
 from narration_common.logging_utils import log, set_log_file  # noqa: E402
 from narration_common.progress import write_progress  # noqa: E402
+from piper.voice import PiperVoice  # noqa: E402
 
 
 SCHEMA_VERSION = 2
@@ -385,7 +386,11 @@ def direct_description(name: str, occurrences: list[dict[str, str]]) -> dict[str
     """Return only an explicit appositive/copular description, never a guess."""
     names = [re.escape(name), re.escape(name.split()[-1])]
     for occurrence in occurrences:
-        for sentence in SENTENCES.split(occurrence["text"]):
+        # build_entities() candidates carry the full paragraph "text", but
+        # find_occurrences() (used by create/rescan/merge) only stores a
+        # truncated "excerpt" - fall back to it instead of crashing.
+        source_text = occurrence.get("text", occurrence.get("excerpt", ""))
+        for sentence in SENTENCES.split(source_text):
             for candidate in names:
                 match = re.search(
                     rf"\b{candidate}\b\s*(?:,\s*)?(?:was|is)\s+(?:an?|the)\s+([^,.!;]+)",
@@ -676,6 +681,8 @@ def edit(args: argparse.Namespace) -> None:
     if not guide:
         raise ValueError("Guide file does not exist; build it first.")
     entity = find_entity(guide, args.entity_id)
+    if entity.get("locked") and args.field != "locked":
+        raise ValueError("This entity is locked. Unlock it before editing.")
     if args.field == "locked":
         entity["locked"] = args.value.strip().lower() in {"1", "true", "yes", "on"}
     elif args.field == "description":
@@ -733,9 +740,18 @@ def rescan(args: argparse.Namespace) -> None:
 
 
 def create(args: argparse.Namespace) -> None:
-    guide = load_json(args.guide)
-    if not guide:
-        raise ValueError("Guide file does not exist; build it first.")
+    # A manuscript import can seed manual character candidates before the
+    # Story Bible has ever been Built, so there may be no guide file yet -
+    # start an empty one instead of requiring a prior build. status() then
+    # correctly reports it as stale until a real build populates `source`.
+    guide = load_json(args.guide) or {
+        "schema_version": SCHEMA_VERSION,
+        "source": {},
+        "generated_at": None,
+        "entities": [],
+        "vocabulary_candidates": [],
+        "absorbed_names": {},
+    }
     category = args.category.strip() or "Draft"
     if category != "Draft" and category not in VALID_CATEGORIES:
         raise ValueError(f"Unknown category: {category}")
@@ -929,8 +945,8 @@ def render_audio(args: argparse.Namespace) -> None:
     if not guide:
         raise ValueError("Guide file does not exist; build it first.")
     entity = find_entity(guide, args.entity_id)
-    if not args.piper_exe or not args.piper_model:
-        raise ValueError("Configure both the Piper executable and voice model before creating previews.")
+    if not args.piper_model:
+        raise ValueError("Install a verified Piper voice before creating previews.")
     if args.alias_index is None:
         spoken = entity["canonical_name"]
         filename = args.output_name or f"{entity['id']}.wav"
@@ -943,7 +959,12 @@ def render_audio(args: argparse.Namespace) -> None:
     audio_dir = Path(args.audio_dir)
     audio_dir.mkdir(parents=True, exist_ok=True)
     destination = audio_dir / filename
-    subprocess.run([args.piper_exe, "--model", args.piper_model, "--output_file", str(destination)], input=spoken + "\n", text=True, check=True)
+    # Piper is bundled into this existing sidecar by PyInstaller.  Calling its
+    # supported Python API avoids relying on a checkout-local piper.exe or
+    # adding a third Python sidecar to the native host.
+    voice = PiperVoice.load(args.piper_model)
+    with wave.open(str(destination), "wb") as wav_file:
+        voice.synthesize_wav(spoken, wav_file)
     print("AUDIO|" + str(destination))
 
 
@@ -1004,7 +1025,6 @@ def main() -> None:
     audio_parser.add_argument("--guide", required=True)
     audio_parser.add_argument("--entity-id", required=True)
     audio_parser.add_argument("--audio-dir", required=True)
-    audio_parser.add_argument("--piper-exe", required=True)
     audio_parser.add_argument("--piper-model", required=True)
     audio_parser.add_argument("--alias-index", type=int, default=None)
     audio_parser.add_argument("--output-name", default="")

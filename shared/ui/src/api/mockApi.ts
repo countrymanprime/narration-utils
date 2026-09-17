@@ -85,7 +85,6 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     audioItemCount: 3,
     completedAt: '2026-09-15T14:30:00Z',
   };
-  let revision = 1;
   const globalSettings = wireSettings();
   const settings: Record<Scope, Record<string, ScopedSettingField[]>> = {
     global: globalSettings,
@@ -118,7 +117,6 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     installState: 'not_installed' as const,
   };
   const publish = () => {
-    revision += 1;
     subscribers.forEach((fn) => fn(wireClone(transcript)));
   };
   const stopRun = () => {
@@ -178,21 +176,26 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
         projectFolder: 'C:/Projects/Alice-in-Wonderland',
         projectName: 'Alice’s Adventures in Wonderland',
         daw: 'REAPER',
-        manuscript: { id: 'alice', format: 'docx', sourceName: 'Alice.docx', importedAt: '2026-01-01T00:00:00Z' },
-        legacyManuscriptAvailable: false,
+        manuscript: {
+          id: 'alice',
+          format: 'docx',
+          sourceName: 'Alice.docx',
+          importedAt: '2026-01-01T00:00:00Z',
+          narratableWordCount: 2672,
+          narratableChapterCount: 3,
+        },
         runtime: {},
         transcript: wireClone(transcript),
       }) as Bootstrap,
-    poll: async () => ({ revision, transcript: wireClone(transcript) }),
     selectManuscript: async () => {
       importJob = {
         id: 'mock-import',
         kind: 'manuscript_import',
-        phase: 'ready',
-        message: 'Import preview is ready.',
-        percent: 100,
-        logs: ['Selected manuscript', 'Import preview is ready.'],
-        elapsed: 1,
+        phase: 'preparing',
+        message: 'Manuscript selected. Choose import options to continue.',
+        percent: 0,
+        logs: ['Selected manuscript'],
+        elapsed: 0,
         preview: { format: 'docx', sourceName: 'Alice.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] },
         requiresReset: false,
       };
@@ -202,7 +205,10 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     manuscriptImportPreview: async (_jobId, { markdownHeadingLevel }) => {
       importJob = {
         ...importJob,
-        preview: { format: 'markdown', sourceName: 'Alice.md', paragraphCount: 240, chapterTitles: [`Chapter ${markdownHeadingLevel}`] },
+        phase: 'ready',
+        percent: 100,
+        message: 'Import preview is ready.',
+        logs: [...importJob.logs, `Parsed chapter heading level ${markdownHeadingLevel}.`],
       };
       return wireClone(importJob);
     },
@@ -218,7 +224,6 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     manuscriptImportCancel: async () => {
       importJob = { ...importJob, phase: 'cancelled', message: 'Manuscript import cancelled.' };
     },
-    manuscriptLegacyPreview: async () => base.selectManuscript(),
     saveSettings: async (tool, scope, values) => {
       settings[scope][tool] = (settings[scope][tool] || []).map((field) =>
         field.key in values
@@ -361,7 +366,7 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
     guideExport: async () => 'C:/Projects/Voltage-and-the-Undercroft/TranscriptCompare/hotwords.txt',
     guidePreview: async () =>
       ttsInstalled
-        ? { status: 'ready' as const, url: '' }
+        ? { status: 'ready' as const, audioBase64: '', mimeType: 'audio/wav' }
         : { status: 'asset_required' as const, voice: mockVoice, installState: 'not_installed' as const, downloadSize: mockVoice.downloadSize },
     ttsCatalog: async () =>
       ({
@@ -505,6 +510,7 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
       onUpdate(wireClone(transcript));
       return () => subscribers.delete(onUpdate);
     },
+    subscribeProjectAttach: () => () => {},
   };
   return { ...base, ...overrides };
 }

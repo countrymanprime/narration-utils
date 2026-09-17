@@ -2,7 +2,7 @@ import { createContext, useContext, type ReactNode } from 'react';
 import type { NarrationApi } from '../types';
 
 // The single injection point for the backend service layer: every component
-// that needs data calls useApi() instead of importing httpClient.ts (or,
+// that needs data calls useApi() instead of importing a transport (or,
 // previously, reaching for a window.pywebview global) directly. Swapping the
 // whole app onto a mock is then a one-line change at the provider, in tests
 // or in the browser-only dev mode (see main.tsx).

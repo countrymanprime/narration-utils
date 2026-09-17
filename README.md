@@ -13,14 +13,11 @@ logic is DAW-agnostic; a thin per-DAW driver wires it into a specific host.
 ```
 narration-utils/
   shell/
-    src-tauri/                 Native shell (Rust/Tauri) that hosts the UI and its
-                                in-process Axum API for the app lifetime
+    app.go, bindings.go        Native Go/Wails shell and generated binding boundary
   shared/
-    manuscript-import/         Rust CLI: parses a source manuscript (.docx/.md) into the
-                                draft JSON narration_common.manuscript turns into manuscript.json
+    (Go importer lives under shell/cmd/manuscript-import)
     python/narration_common/   DAW-agnostic helpers shared by both tools' backends
     reaper/                    REAPER launcher and non-UI integration bridge
-    server/                    In-process Rust/Axum API hosted by the native shell
     ui/                        React + Tailwind workspace (built static assets)
     audacity/                  placeholder for future Audacity-specific shared helpers
   tools/
@@ -54,27 +51,28 @@ install path.
 ## Developer bootstrap
 
 The UI is a local React + Tailwind workspace, shown in its own native window
-(`shell/`, a Rust/Tauri app) backed by an in-process Axum API host. Python is
+(`shell/`, a Go/Wails app) with generated native bindings. Python is
 used only for the two analysis tools the shell starts on demand. From the
 checkout root, run:
 
 ```sh
-npm run bootstrap
+pnpm run bootstrap
 ```
 
-The bootstrap validates Node.js 22, Python 3.12, and Rust/Cargo;
+The bootstrap validates Node.js 22, Python 3.12, and Go;
 creates the checkout-local `.venv`; installs locked Python, Node, and quality
-tool dependencies; builds the UI; and builds the debug workspace binary. It
-uses the Tauri CLI from `shell/node_modules`, never a global Cargo install.
+tool dependencies; builds the UI; and builds the native workspace binary. It
+uses the pinned Wails CLI and Go tooling declared by the repository, never
+Cargo or a Rust toolchain.
 Windows needs Visual Studio's Desktop development with C++ workload; macOS
 needs Xcode Command Line Tools; Linux needs the WebKit/GTK development packages
 listed in CI. The bootstrap does not install operating-system prerequisites.
 
 On Windows the command uses the Python Launcher (`py -3.12`) by default. Use
-`npm run bootstrap -- --python /path/to/python` to select Python explicitly,
+`pnpm run bootstrap -- --python /path/to/python` to select Python explicitly,
 `--skip-install` to build from existing local environments, `--refresh` to
-recreate them from the committed lockfiles, or `--release` to build the Rust
-workspace with Cargo's release profile. It does not build installers and
+recreate them from the committed lockfiles, or `--release` to build the Wails
+release binary. It does not build installers and
 does not download spaCy models or Piper voices. Without a spaCy model, Story
 Bible uses its supported rules-only extraction fallback; Piper voices remain
 catalog-managed, explicit first-use downloads.
@@ -87,11 +85,9 @@ Legacy `.runtime` and `.bootstrap` directories created by the retired Windows
 bootstrap are ignored but unused. After a successful bootstrap, review and
 remove them manually if no older checkout still needs them.
 
-While iterating on the shell without a full release build, `cd shell; npm run
-dev` runs it directly via `cargo tauri dev`. `shared/manuscript-import`'s
-Rust binary is not itself a hard dependency at runtime — if it's ever missing
-(built manually and later deleted, say), manuscript import falls back to the
-(slower) Python implementation automatically.
+While iterating on the shell without a full release build, `pnpm --dir shell run
+dev` runs the native Wails window directly. The shipped Go importer accepts
+Markdown and DOCX; PDF remains intentionally disabled pending corpus parity.
 
 The launcher is intentionally the only REAPER action. It starts the companion
 window; REAPER continues to service only selection, take-marker, and cursor
@@ -102,8 +98,10 @@ requests while the window is open.
 Both tools retain their own DAW-agnostic Python backends. What they share:
 
 - **`<project folder>\narration-utils\manuscript\manuscript.json`** — the one intentional,
-  project-owned data contract between the two tools. DOCX, Markdown, and text-based PDF files
-  are imported once; their preserved source copies are provenance only and are never reparsed.
+  project-owned data contract between the two tools. DOCX and Markdown files are imported once;
+  their preserved source copies are provenance only and are never reparsed. Existing v1
+  PDF-derived canonical data remains readable, but new PDF import is fail-closed pending corpus
+  parity.
 - **`shared/reaper/`** — `reaper_common_core.lua` (ExtState access, file/path helpers) and
   `reaper_common_process.lua` (hidden-subprocess launching, the pipe-delimited protocol used by
   each tool's Python backend). Every reascript loads these via `dofile`, resolved relative to
@@ -120,4 +118,4 @@ ownership and the staged module boundaries.
 
 All first-party Python tools (Manuscript Guide and Transcript Compare) share one
 gitignored virtual environment at the repo root (`.venv/`), built from the
-committed `requirements.lock` by `npm run bootstrap`.
+committed `uv.lock` by `pnpm run bootstrap`.

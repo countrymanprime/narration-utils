@@ -4,11 +4,11 @@
 
 ## Problem
 
-`npm run bootstrap` is a developer-checkout bootstrapper. It creates the local
+`pnpm run bootstrap` is a developer-checkout bootstrapper. It creates the local
 environment and installs locked Python/UI/build dependencies, but it downloads
 neither spaCy models nor Piper voices. That is unsuitable for a GitHub
 release consumer: a compiled application must launch without a source checkout,
-Node, Rust, a Python bootstrap installer, or a developer bootstrap command.
+Node, Go, a Python bootstrap installer, or a developer bootstrap command.
 
 The application should also avoid consuming network bandwidth and disk space
 for an analyzer or voice that the narrator never elects to use.
@@ -84,7 +84,7 @@ downloads for a source checkout, not release-time first-use provisioning.
 
 The release build must package the compiled shell, UI assets, local backend,
 and its base runtime into the GitHub release artifact. It must not call
-`npm run bootstrap` or require developer build tooling after installation.
+`pnpm run bootstrap` or require developer build tooling after installation.
 
 The developer bootstrap must not preload optional assets. Development should
 exercise the same catalog and first-use installer as the released application;
@@ -114,8 +114,8 @@ hash cannot be verified against the asset catalog.
 ## Acceptance criteria
 
 - A clean machine can install a GitHub release and open the app without a
-  repository checkout, Node, Rust, an external Python installer, or
-  `npm run bootstrap`.
+  repository checkout, Node, Go, an external Python installer, or
+  `pnpm run bootstrap`.
 - First application launch performs no optional asset download.
 - A narrator who never builds a Story Bible does not download spaCy; a narrator
   who never requests a Piper preview does not download a Piper voice.

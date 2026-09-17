@@ -8,17 +8,22 @@ export function NavButton({
   children,
   onClick,
   iconOnly = false,
+  disabled = false,
+  disabledReason,
 }: {
   active: boolean;
   icon: typeof faHouse;
   children: string;
   onClick: () => void;
   iconOnly?: boolean;
+  disabled?: boolean;
+  disabledReason?: string;
 }) {
   const button = (
     <button
       className={`rail-btn ${active ? 'active' : ''}`}
       onClick={onClick}
+      disabled={disabled}
       aria-label={iconOnly ? children : undefined}
       aria-current={active ? 'page' : undefined}
     >
@@ -26,8 +31,8 @@ export function NavButton({
       {!iconOnly && children}
     </button>
   );
-  return iconOnly ? (
-    <TooltipTarget text={children} className="rail-tooltip">
+  return iconOnly || disabled ? (
+    <TooltipTarget text={disabledReason || children} className={iconOnly ? 'rail-tooltip' : ''}>
       {button}
     </TooltipTarget>
   ) : (

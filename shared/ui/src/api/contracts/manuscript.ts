@@ -50,6 +50,8 @@ export type ManuscriptImportSelection = {
   characterCandidateIds?: string[];
 };
 export type ManuscriptImportPreview = {
+  // `pdf` remains readable for a pre-migration canonical manuscript, but the
+  // native picker and shipped importer currently reject new PDF imports.
   format: 'docx' | 'markdown' | 'pdf';
   sourceName: string;
   paragraphCount: number;
@@ -79,7 +81,6 @@ export interface ManuscriptApi {
   manuscriptImportPreview(jobId: string, options: { markdownHeadingLevel: number }): Promise<WorkJob>;
   manuscriptImportCommit(jobId: string, options: { confirmedReset: boolean; selection?: ManuscriptImportSelection }): Promise<WorkJob>;
   manuscriptImportCancel(jobId: string): Promise<void>;
-  manuscriptLegacyPreview(): Promise<ManuscriptFileSelection>;
   clearProjectData(): Promise<void>;
   manuscriptChapters(): Promise<ManuscriptChapter[]>;
   manuscriptParagraphs(chapter: string): Promise<ManuscriptParagraph[]>;

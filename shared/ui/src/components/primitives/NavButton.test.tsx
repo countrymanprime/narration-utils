@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { faHouse } from '@fortawesome/free-solid-svg-icons';
 import { NavButton } from './NavButton';
 import { TooltipProvider } from './Tooltip';
 
 describe('NavButton', () => {
-  it('labels collapsed navigation and exposes its tooltip on keyboard focus', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('labels collapsed navigation and exposes its tooltip immediately on keyboard focus', () => {
+    vi.useFakeTimers();
     render(
       <TooltipProvider>
         <NavButton active icon={faHouse} iconOnly onClick={() => {}}>

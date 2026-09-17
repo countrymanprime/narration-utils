@@ -614,6 +614,13 @@
     color: var(--accent-strong);
   }
 }
+.rail-btn:disabled {
+  opacity: 0.46;
+}
+.rail-btn:disabled:hover {
+  background: transparent;
+  color: var(--text-muted);
+}
 #tooltip-layer,
 .tooltip-layer {
   position: fixed;
@@ -653,11 +660,28 @@
   background: rgba(20, 17, 12, 0.42);
 }
 .confirm-dialog {
-  width: min(31rem, 100%);
+  display: flex;
+  width: min(31rem, 80vw);
+  max-height: 80dvh;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 0.55rem;
   box-shadow: var(--shadow-lg);
+}
+.confirm-dialog > .panel-head,
+.confirm-dialog > .dialog-actions {
+  flex: none;
+}
+.confirm-dialog > .panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.confirm-dialog > .dialog-actions {
+  margin-top: 0;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid var(--border);
 }
 .ms-highlight.hl-Note {
   background: var(--accent-soft);

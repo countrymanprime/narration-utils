@@ -3,6 +3,7 @@
 -- shared NarrationUtils_Launcher.lua in this suite.
 
 local M = {}
+local SEP = package.config:sub(1, 1)
 
 -- reaper.GetExtState returns a single string, not (ok, value). Reading it
 -- as `local ok, v = reaper.GetExtState(...)` leaves v always nil, so a
@@ -69,7 +70,7 @@ end
 -- (script_path would be the launcher's own path instead).
 function M.core_dir(own_script_path)
   local script_dir = own_script_path:match('^(.*)[\\/]') or '.'
-  return script_dir .. '\\..\\..\\core'
+  return script_dir .. SEP .. '..' .. SEP .. '..' .. SEP .. 'core'
 end
 
 -- Splits a comma-separated list from a reaper.GetUserInputs result into its

@@ -2,7 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
-import { httpClient } from './api/httpClient';
+import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
 import './styles.css';
 
@@ -14,7 +14,9 @@ declare global {
     __NARRATION_MOCK_OVERRIDES__?: Parameters<typeof createMockApi>[0];
   }
 }
-const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__) : httpClient;
+// Production is a native Wails window. Browser use is supported only through
+// the explicit mock mode used by UI tests; no loopback HTTP host exists.
+const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__) : wailsClient;
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

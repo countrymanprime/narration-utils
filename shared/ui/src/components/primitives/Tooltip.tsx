@@ -40,22 +40,35 @@ export function TooltipTarget({ text, children, className = '', style }: { text:
   const shared = useContext(TooltipContext);
   const [local, setLocal] = useState<ActiveTooltip>();
   const isActiveRef = useRef(false);
+  const timer = useRef<number>();
   const disabledChild = isValidElement(children) && Boolean((children.props as { disabled?: boolean }).disabled);
   const show = (rect: DOMRect) => {
     isActiveRef.current = true;
-    if (shared) shared.show(text, rect);
-    else setLocal({ text, rect, key: Date.now() });
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      if (!isActiveRef.current) return;
+      if (shared) shared.show(text, rect);
+      else setLocal({ text, rect, key: Date.now() });
+    }, 1000);
   };
   const hide = () => {
     isActiveRef.current = false;
+    window.clearTimeout(timer.current);
     if (shared) shared.hide();
     else setLocal(undefined);
+  };
+  const showImmediately = (rect: DOMRect) => {
+    isActiveRef.current = true;
+    window.clearTimeout(timer.current);
+    if (shared) shared.show(text, rect);
+    else setLocal({ text, rect, key: Date.now() });
   };
   useEffect(
     () => () => {
       // If this target is unmounted (e.g. a click navigates away) while its
       // tooltip is showing, no mouseleave/blur ever fires to hide it - clear
       // it explicitly so it doesn't stay stuck on the next page.
+      window.clearTimeout(timer.current);
       if (isActiveRef.current) hide();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- must run only on unmount; hide() reads isActiveRef, not stale state
@@ -69,7 +82,7 @@ export function TooltipTarget({ text, children, className = '', style }: { text:
       aria-describedby={shared || local ? 'tooltip-layer' : undefined}
       onMouseEnter={(e) => show(e.currentTarget.getBoundingClientRect())}
       onMouseLeave={hide}
-      onFocus={(e) => show(e.currentTarget.getBoundingClientRect())}
+      onFocus={(e) => showImmediately(e.currentTarget.getBoundingClientRect())}
       onBlur={hide}
     >
       {children}

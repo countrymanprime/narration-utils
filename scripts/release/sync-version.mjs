@@ -19,16 +19,6 @@ function updateJson(file) {
   changed = true;
 }
 
-function updatePackageLock(file) {
-  const value = JSON.parse(readFileSync(file, 'utf8'));
-  if (value.packages?.['']?.version === version && value.version === version) return;
-  if (checkOnly) throw new Error(`${file} does not match ${version}`);
-  value.version = version;
-  if (value.packages?.['']) value.packages[''].version = version;
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
-  changed = true;
-}
-
 function replaceVersion(file, pattern) {
   const before = readFileSync(file, 'utf8');
   const match = before.match(pattern);
@@ -44,17 +34,6 @@ function replaceVersion(file, pattern) {
 }
 
 updateJson('shared/ui/package.json');
-updatePackageLock('package-lock.json');
-updatePackageLock('shared/ui/package-lock.json');
 updateJson('shell/package.json');
-updateJson('shell/src-tauri/tauri.conf.json');
-replaceVersion('shell/src-tauri/Cargo.toml', /(^version\s*=\s*")[^"]+("\s*$)/m);
-replaceVersion('shared/manuscript-import/Cargo.toml', /(^version\s*=\s*")[^"]+("\s*$)/m);
-
-// Cargo records local package versions in the lockfile. Updating them here
-// keeps `cargo --locked` deterministic without resolving the dependency graph.
-for (const name of ['narration-utils-shell', 'manuscript-import']) {
-  replaceVersion('Cargo.lock', new RegExp(`(\\[\\[package\\]\\]\\r?\\nname = "${name}"\\r?\\nversion = ")[^"]+("\\r?\\n)`));
-}
 
 if (!checkOnly && changed) console.log(`Synchronized release version ${version}.`);

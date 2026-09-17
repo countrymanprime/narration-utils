@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileExport, faLock, faPlus, faRotate, faXmark } from '@fortawesome/free-solid-svg-icons';
-import type { GuideEntity, WorkJob } from '../../types';
+import { normalizeGuideEntity, type GuideEntity, type WorkJob } from '../../types';
 import { categoryCssName, categoryLabel, sortEntities, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { Heading } from '../primitives/Heading';
@@ -21,6 +21,24 @@ const TAB_PLURAL: Record<string, string> = {
   'Needs Review': 'Needs Review',
 };
 
+// A brand-new entity has no backend record at all until a category is chosen
+// (see GuideDetail's isNewDraft handling) - this is a purely local stand-in
+// for the form to render against, never sent anywhere.
+const emptyGuideEntity = (name: string): GuideEntity => ({
+  id: '',
+  canonical_name: name,
+  aliases: [],
+  category: 'Draft',
+  occurrences: [],
+  occurrence_count: 0,
+  pronunciation: { ipa: '', source: '', confidence: '' },
+  description: { text: '', evidence: {} },
+  personality_notes: [],
+  relationships: [],
+  locked: false,
+  review_state: 'reviewed',
+});
+
 export function Guide({ notify, goToManuscript }: { notify: (text: string) => void; goToManuscript: (chapter: string, paragraph: number) => void }) {
   const api = useApi();
   const location = useLocation();
@@ -32,31 +50,45 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
   const [tab, setTab] = useState('All');
   const [sort, setSort] = useState<EntitySort>({ key: 'name', dir: 'asc' });
   const [buildJob, setBuildJob] = useState<WorkJob>();
+  const [pendingNewEntity, setPendingNewEntity] = useState<{ name: string }>();
+  // Memoized so the object identity only changes when a draft opens/closes,
+  // not on every Guide re-render - GuideDetail resets its local form state
+  // whenever the `entity` prop identity changes, so a fresh object per
+  // render would silently discard whatever the user just typed.
+  const newEntityDraft = useMemo(() => (pendingNewEntity ? emptyGuideEntity(pendingNewEntity.name) : undefined), [pendingNewEntity]);
 
-  const load = async (selectId?: string) => {
-    try {
-      const next = (await api.guideEntities()) || [];
-      setRows(next);
-      setSelectedId((current) => (next.find((row) => row.id === (selectId ?? current)) || next.find((row) => row.category !== 'Draft'))?.id);
-    } catch (error) {
-      notify(String(error));
-    }
-  };
+  const load = useCallback(
+    async (selectId?: string) => {
+      try {
+        const next = ((await api.guideEntities()) || []).map(normalizeGuideEntity);
+        setRows(next);
+        setSelectedId((current) => (next.find((row) => row.id === (selectId ?? current)) || next.find((row) => row.category !== 'Draft'))?.id);
+      } catch (error) {
+        notify(String(error));
+      }
+    },
+    [api, notify],
+  );
   useEffect(() => {
     void load(entityId);
     if (entityId) routerNavigate('/story-bible', { replace: true });
-  }, [entityId]);
+  }, [entityId, load, routerNavigate]);
   useEffect(() => {
     if (!buildJob?.id || !['preparing', 'running'].includes(buildJob.phase)) return;
     let active = true;
     const refresh = () =>
       void api
         .guideBuildState()
-        .then((next) => {
+        .then(async (next) => {
           if (!active) return;
           setBuildJob(next);
           if (next.phase === 'success') {
-            void load();
+            // Await the reload before dismissing the dialog/showing success,
+            // so the page never briefly renders on stale (pre-build) rows -
+            // that render used to trip the route ErrorBoundary once, which
+            // looked exactly like the build itself had failed.
+            await load();
+            if (!active) return;
             notify(next.result?.message || 'Story Bible rebuilt.');
             setBuildJob(undefined);
           }
@@ -70,7 +102,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
       active = false;
       window.clearInterval(timer);
     };
-  }, [api, buildJob?.id, buildJob?.phase]);
+  }, [api, buildJob?.id, buildJob?.phase, load, notify]);
 
   // A Draft entry (a brand new, not-yet-categorized entity) is hidden from
   // every tab/search except while it's the one open in the detail pane - it
@@ -87,15 +119,17 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
     setSort((current) => (current.key === key ? { key, dir: current.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'occurrences' ? 'desc' : 'asc' }));
   const sortArrow = (key: EntitySort['key']) => (sort.key !== key ? '' : sort.dir === 'asc' ? '↑' : '↓');
 
-  const addEntity = async () => {
+  // No backend record is created here - see GuideDetail's isNewDraft prop.
+  // Navigating away or picking a different row just discards this, matching
+  // a "doesn't exist until saved" model instead of create-then-delete.
+  const addEntity = () => {
     const base = 'New entity';
     const name = rows.some((row) => row.canonical_name.toLowerCase() === base.toLowerCase()) ? `${base} ${rows.length + 1}` : base;
-    try {
-      const id = await api.guideCreate(name, '', []);
-      await load(id);
-    } catch (error) {
-      notify(String(error));
-    }
+    setPendingNewEntity({ name });
+  };
+  const selectRow = (id?: string) => {
+    setPendingNewEntity(undefined);
+    setSelectedId(id);
   };
 
   return (
@@ -105,7 +139,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
           <Heading title="Story Bible" />
           <div className="flex gap-2">
             <TooltipTarget text="Add entity">
-              <button aria-label="Add entity" className="icon-btn" onClick={() => void addEntity()}>
+              <button aria-label="Add entity" className="icon-btn" onClick={addEntity}>
                 <FontAwesomeIcon icon={faPlus} />
               </button>
             </TooltipTarget>
@@ -192,7 +226,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
               </thead>
               <tbody>
                 {sorted.map((row) => (
-                  <tr key={row.id} data-row className={selectedId === row.id ? 'row-selected' : ''} onClick={() => setSelectedId(row.id)}>
+                  <tr key={row.id} data-row className={!pendingNewEntity && selectedId === row.id ? 'row-selected' : ''} onClick={() => selectRow(row.id)}>
                     <td>
                       <div className="flex items-center gap-2">
                         <span className={`cat-dot type-${categoryCssName(row.category)}`} />
@@ -220,7 +254,19 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
           </div>
         </section>
         <div className="guide-detail-panel min-w-0">
-          <GuideDetail entity={selected} entities={rows} reload={load} notify={notify} select={setSelectedId} goToManuscript={goToManuscript} />
+          <GuideDetail
+            entity={newEntityDraft ?? selected}
+            isNewDraft={Boolean(newEntityDraft)}
+            onDiscardNewDraft={() => setPendingNewEntity(undefined)}
+            onCreatedNewDraft={(id) => {
+              setPendingNewEntity(undefined);
+              void load(id);
+            }}
+            entities={rows}
+            reload={load}
+            notify={notify}
+            goToManuscript={goToManuscript}
+          />
         </div>
       </div>
       {buildJob && <WorkDialog title="Rebuild Story Bible" job={buildJob} close={() => setBuildJob(undefined)} />}

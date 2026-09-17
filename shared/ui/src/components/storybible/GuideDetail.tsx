@@ -17,6 +17,7 @@ import {
 import type { GuideEntity, GuidePreview, TtsInstallJob } from '../../types';
 import { allEvidence, categoryCssName, categoryLabel, categoryValue, CREATABLE_CATEGORIES, findAliasMatches, highlightTerms } from '../../state';
 import { useApi } from '../../api/ApiContext';
+import { EntitySummary } from '../manuscript/EntitySummary';
 import { Field } from '../primitives/Field';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
@@ -24,17 +25,25 @@ import { CANONICAL_PREVIEW, previewKey, usePreviewAudio } from './usePreviewAudi
 
 export function GuideDetail({
   entity,
+  isNewDraft = false,
+  onDiscardNewDraft,
+  onCreatedNewDraft,
   entities,
   reload,
   notify,
-  select,
   goToManuscript,
 }: {
   entity?: GuideEntity;
+  // A brand-new entity with no backend record yet - see Guide.tsx's
+  // pendingNewEntity/emptyGuideEntity. Nothing is written until a category
+  // is chosen, so navigating away just discards it instead of orphaning a
+  // "Draft"-category record the way an immediate create-on-click used to.
+  isNewDraft?: boolean;
+  onDiscardNewDraft?: () => void;
+  onCreatedNewDraft?: (id: string) => void;
   entities: GuideEntity[];
   reload: (selectId?: string) => Promise<void>;
   notify: (text: string) => void;
-  select: (id: string) => void;
   goToManuscript: (chapter: string, paragraph: number) => void;
 }) {
   const api = useApi();
@@ -46,6 +55,10 @@ export function GuideDetail({
   const [relationOtherId, setRelationOtherId] = useState('');
   const [relationLabel, setRelationLabel] = useState('');
   const [confirmation, setConfirmation] = useState<'delete' | 'merge'>();
+  // A slide-over, not select(id), so opening an alias match to review it
+  // never resets the in-progress draft of the entry the user was already
+  // editing - see the "Review entry" button below.
+  const [reviewOverlayId, setReviewOverlayId] = useState<string>();
   const [ttsPrompt, setTtsPrompt] = useState<{ preview: Extract<GuidePreview, { status: 'asset_required' }>; aliasIndex?: number }>();
   const [ttsJob, setTtsJob] = useState<TtsInstallJob>();
   const { playingPreview, playPreview } = usePreviewAudio({
@@ -79,9 +92,11 @@ export function GuideDetail({
 
   if (!entity) return <section className="panel panel-body">No matching entities. Build the guide to discover names and terms.</section>;
   const locked = entity.locked;
+  const editingDisabled = locked || isNewDraft;
   const otherEntities = entities.filter((row) => row.id !== entity.id && row.category !== 'Draft');
   const aliasMatches = aliasSelectedId ? [] : findAliasMatches(entities, aliasQuery, entity.id);
   const selectedAliasMatch = aliasSelectedId ? entities.find((row) => row.id === aliasSelectedId) : undefined;
+  const reviewOverlayEntity = reviewOverlayId ? entities.find((row) => row.id === reviewOverlayId) : undefined;
   const evidence = allEvidence(entity);
   const highlightNames = [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)];
 
@@ -120,6 +135,7 @@ export function GuideDetail({
         const aliasIndex = ttsPrompt.aliasIndex;
         setTtsPrompt(undefined);
         setTtsJob(undefined);
+        notify('Preview voice installed.');
         await playPreview(aliasIndex);
       } else if (job.phase !== 'cancelled') notify(job.error || job.message);
     } catch (error) {
@@ -137,6 +153,15 @@ export function GuideDetail({
     }
     setTtsPrompt(undefined);
     setTtsJob(undefined);
+  };
+  const createNewEntity = async (category: string) => {
+    try {
+      const id = await api.guideCreate(draft.name.trim() || entity.canonical_name, category, []);
+      notify('Entity created.');
+      onCreatedNewDraft?.(id);
+    } catch (error) {
+      notify(String(error));
+    }
   };
   const rescanOccurrences = async () => {
     try {
@@ -174,7 +199,7 @@ export function GuideDetail({
           <h2 className="truncate font-semibold">{entity.canonical_name || 'New entity'}</h2>
           <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
             <div style={{ position: 'relative' }}>
-              <button type="button" className={`badge badge-${entity.category}`} onClick={() => setCategoryMenuOpen((value) => !value)}>
+              <button type="button" className={`badge badge-${entity.category}`} disabled={locked} onClick={() => setCategoryMenuOpen((value) => !value)}>
                 {categoryLabel(entity.category)} <FontAwesomeIcon icon={faChevronDown} />
               </button>
               {categoryMenuOpen && (
@@ -185,7 +210,8 @@ export function GuideDetail({
                       role="menuitem"
                       onClick={() => {
                         setCategoryMenuOpen(false);
-                        void save({ category: categoryValue(label) }, `Category changed to ${label}.`);
+                        if (isNewDraft) void createNewEntity(categoryValue(label));
+                        else void save({ category: categoryValue(label) }, `Category changed to ${label}.`);
                       }}
                     >
                       <span className={`cat-dot type-${categoryValue(label)}`} />
@@ -201,27 +227,32 @@ export function GuideDetail({
           <span className="f-mono mr-1 text-xs" style={{ color: 'var(--text-faint)' }}>
             {entity.occurrence_count} occurrences
           </span>
-          <TooltipTarget text={locked ? 'Unlock entry' : 'Lock entry'}>
-            <button
-              aria-label={locked ? 'Unlock entry' : 'Lock entry'}
-              className="icon-btn"
-              onClick={async () => {
-                try {
-                  await api.guideSetLocked(entity.id, !locked);
-                  notify(locked ? 'Entry unlocked.' : 'Entry locked.');
-                  await reload(entity.id);
-                } catch (error) {
-                  notify(String(error));
-                }
-              }}
-            >
-              <FontAwesomeIcon icon={locked ? faLock : faLockOpen} />
-            </button>
-          </TooltipTarget>
-          <TooltipTarget text="Save changes to this entry">
+          {!isNewDraft && (
+            <TooltipTarget text={locked ? 'Unlock entry' : 'Lock entry'}>
+              <button
+                aria-label={locked ? 'Unlock entry' : 'Lock entry'}
+                className="icon-btn"
+                onClick={async () => {
+                  try {
+                    await api.guideSetLocked(entity.id, !locked);
+                    notify(locked ? 'Entry unlocked.' : 'Entry locked.');
+                    await reload(entity.id);
+                  } catch (error) {
+                    notify(String(error));
+                  }
+                }}
+              >
+                <FontAwesomeIcon icon={locked ? faLock : faLockOpen} />
+              </button>
+            </TooltipTarget>
+          )}
+          <TooltipTarget
+            text={locked ? 'Unlock this entry before editing it' : isNewDraft ? 'Choose a category above to create this entry' : 'Save changes to this entry'}
+          >
             <button
               aria-label="Save changes to this entry"
               className="icon-btn"
+              disabled={editingDisabled}
               onClick={() =>
                 void save(
                   {
@@ -237,10 +268,17 @@ export function GuideDetail({
               <FontAwesomeIcon icon={faFloppyDisk} />
             </button>
           </TooltipTarget>
-          {!locked && (
+          {!locked && !isNewDraft && (
             <TooltipTarget text="Delete entity">
               <button aria-label="Delete entity" className="icon-btn" onClick={() => setConfirmation('delete')}>
                 <FontAwesomeIcon icon={faTrash} />
+              </button>
+            </TooltipTarget>
+          )}
+          {isNewDraft && (
+            <TooltipTarget text="Discard this new entry">
+              <button aria-label="Discard this new entry" className="icon-btn" onClick={() => onDiscardNewDraft?.()}>
+                <FontAwesomeIcon icon={faXmark} />
               </button>
             </TooltipTarget>
           )}
@@ -261,7 +299,7 @@ export function GuideDetail({
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <div className="label mb-1.5">Name</div>
-            <input className="input" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+            <input className="input" disabled={editingDisabled} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
           </div>
           <div>
             <div className="label mb-1.5">
@@ -281,6 +319,7 @@ export function GuideDetail({
                 <button
                   aria-label={playingPreview === CANONICAL_PREVIEW ? 'Pause preview' : 'Play preview'}
                   className="icon-btn"
+                  disabled={isNewDraft}
                   onClick={() => void playPreview()}
                 >
                   <FontAwesomeIcon icon={playingPreview === CANONICAL_PREVIEW ? faPause : faWaveSquare} />
@@ -332,6 +371,7 @@ export function GuideDetail({
                     <button
                       className="icon-btn"
                       aria-label={`Remove alias ${alias.text}`}
+                      disabled={editingDisabled}
                       onClick={() => void setAliasTexts(entity.aliases.filter((other) => other.text !== alias.text).map((other) => other.text))}
                     >
                       <FontAwesomeIcon icon={faXmark} />
@@ -346,6 +386,7 @@ export function GuideDetail({
               className="input"
               role="combobox"
               aria-expanded={aliasMatches.length > 0}
+              disabled={editingDisabled}
               value={aliasQuery}
               onChange={(event) => {
                 setAliasQuery(event.target.value);
@@ -361,7 +402,7 @@ export function GuideDetail({
                   Selected match: <strong>{selectedAliasMatch.canonical_name}</strong>
                   {selectedAliasMatch.locked ? ' · locked' : ''}
                 </span>
-                <button className="btn btn-ghost text-xs" onClick={() => select(selectedAliasMatch.id)}>
+                <button className="btn btn-ghost text-xs" onClick={() => setReviewOverlayId(selectedAliasMatch.id)}>
                   Review entry
                 </button>
                 {selectedAliasMatch.locked ? (
@@ -409,12 +450,12 @@ export function GuideDetail({
                 )}
                 <div className="alias-match-actions justify-between" style={{ padding: '.5rem' }}>
                   <TooltipTarget text="Add alias">
-                    <button aria-label="Add alias" className="icon-btn" onClick={addAliasFromQuery}>
+                    <button aria-label="Add alias" className="icon-btn" disabled={editingDisabled} onClick={addAliasFromQuery}>
                       <FontAwesomeIcon icon={faPlus} />
                     </button>
                   </TooltipTarget>
                   <TooltipTarget text="Rescan occurrences for this entry">
-                    <button aria-label="Rescan occurrences" className="icon-btn" onClick={() => void rescanOccurrences()}>
+                    <button aria-label="Rescan occurrences" className="icon-btn" disabled={isNewDraft} onClick={() => void rescanOccurrences()}>
                       <FontAwesomeIcon icon={faRotate} />
                     </button>
                   </TooltipTarget>
@@ -423,12 +464,12 @@ export function GuideDetail({
             ) : (
               <div className="alias-match-actions justify-between">
                 <TooltipTarget text="Add alias">
-                  <button aria-label="Add alias" className="icon-btn" onClick={addAliasFromQuery}>
+                  <button aria-label="Add alias" className="icon-btn" disabled={editingDisabled} onClick={addAliasFromQuery}>
                     <FontAwesomeIcon icon={faPlus} />
                   </button>
                 </TooltipTarget>
                 <TooltipTarget text="Rescan occurrences for this entry">
-                  <button aria-label="Rescan occurrences" className="icon-btn" onClick={() => void rescanOccurrences()}>
+                  <button aria-label="Rescan occurrences" className="icon-btn" disabled={isNewDraft} onClick={() => void rescanOccurrences()}>
                     <FontAwesomeIcon icon={faRotate} />
                   </button>
                 </TooltipTarget>
@@ -437,31 +478,55 @@ export function GuideDetail({
           </div>
         </div>
 
-        <Field label="Description" textarea value={draft.description} onChange={(value) => setDraft({ ...draft, description: value })} />
+        <Field
+          label="Description"
+          textarea
+          disabled={editingDisabled}
+          value={draft.description}
+          onChange={(value) => setDraft({ ...draft, description: value })}
+        />
 
         {entity.category === 'Character' && (
           <>
-            <Field label="Personality notes" textarea value={draft.personality} onChange={(value) => setDraft({ ...draft, personality: value })} />
+            <Field
+              label="Personality notes"
+              textarea
+              disabled={editingDisabled}
+              value={draft.personality}
+              onChange={(value) => setDraft({ ...draft, personality: value })}
+            />
             <div className="mt-5">
               <div className="label mb-1.5">Voice samples</div>
               <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
                 No samples yet.
               </p>
-              <button className="btn btn-ghost mt-1.5 text-xs" onClick={() => notify('Voice-sample picker is a future integration.')}>
+              <button
+                className="btn btn-ghost mt-1.5 text-xs"
+                disabled={editingDisabled}
+                onClick={() => notify('Voice-sample picker is a future integration.')}
+              >
                 + Add sample
               </button>
             </div>
           </>
         )}
         {entity.category === 'Place' && (
-          <Field label="Location context" textarea value={draft.context} onChange={(value) => setDraft({ ...draft, context: value })} />
+          <Field
+            label="Location context"
+            textarea
+            disabled={editingDisabled}
+            value={draft.context}
+            onChange={(value) => setDraft({ ...draft, context: value })}
+          />
         )}
-        {entity.category === 'Event' && <Field label="Timeline context" value={draft.context} onChange={(value) => setDraft({ ...draft, context: value })} />}
+        {entity.category === 'Event' && (
+          <Field label="Timeline context" disabled={editingDisabled} value={draft.context} onChange={(value) => setDraft({ ...draft, context: value })} />
+        )}
         {entity.category === 'Item' && (
-          <Field label="Item context" textarea value={draft.context} onChange={(value) => setDraft({ ...draft, context: value })} />
+          <Field label="Item context" textarea disabled={editingDisabled} value={draft.context} onChange={(value) => setDraft({ ...draft, context: value })} />
         )}
         {entity.category === 'Lore' && (
-          <Field label="Lore context" textarea value={draft.context} onChange={(value) => setDraft({ ...draft, context: value })} />
+          <Field label="Lore context" textarea disabled={editingDisabled} value={draft.context} onChange={(value) => setDraft({ ...draft, context: value })} />
         )}
 
         <div className="mt-5 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
@@ -483,6 +548,7 @@ export function GuideDetail({
                     <button
                       className="icon-btn"
                       aria-label="Remove relationship"
+                      disabled={editingDisabled}
                       onClick={async () => {
                         try {
                           await api.guideUnrelate(entity.id, rel.id, rel.label);
@@ -509,11 +575,12 @@ export function GuideDetail({
           <div className="mt-3 grid gap-3" style={{ gridTemplateColumns: '1fr 1fr auto' }}>
             <input
               className="input"
+              disabled={editingDisabled}
               value={relationLabel}
               onChange={(event) => setRelationLabel(event.target.value)}
               placeholder="Relationship, e.g. located in"
             />
-            <select className="input" value={relationOtherId} onChange={(event) => setRelationOtherId(event.target.value)}>
+            <select className="input" disabled={editingDisabled} value={relationOtherId} onChange={(event) => setRelationOtherId(event.target.value)}>
               <option value="">Choose entry…</option>
               {otherEntities.map((row) => (
                 <option key={row.id} value={row.id}>
@@ -523,6 +590,7 @@ export function GuideDetail({
             </select>
             <button
               className="btn btn-ghost text-xs"
+              disabled={editingDisabled}
               onClick={async () => {
                 if (!relationOtherId || !relationLabel.trim()) return;
                 try {
@@ -598,6 +666,11 @@ export function GuideDetail({
             confirm={() => void installPreviewVoice()}
             cancel={() => void cancelVoiceInstall()}
           >
+            {ttsJob?.phase === 'downloading' && (
+              <div className="progressbar mt-3">
+                <div style={{ width: `${Math.max(ttsJob.percent, 4)}%` }} />
+              </div>
+            )}
             <dl className="mt-3 space-y-1 text-xs" style={{ color: 'var(--text-muted)' }}>
               <div>
                 <dt className="inline font-medium">Voice: </dt>
@@ -669,6 +742,18 @@ export function GuideDetail({
           />
         )}
       </div>
+      {reviewOverlayEntity && <div className="sheet-backdrop" onMouseDown={() => setReviewOverlayId(undefined)} />}
+      <aside className={`overlay-panel ${reviewOverlayEntity ? 'overlay-open' : ''}`} aria-hidden={!reviewOverlayEntity}>
+        <div className="panel-head">
+          <h3 className="text-sm font-semibold">{reviewOverlayEntity?.canonical_name || 'Review entry'}</h3>
+          <button className="icon-btn" aria-label="Close review panel" onClick={() => setReviewOverlayId(undefined)}>
+            <FontAwesomeIcon icon={faXmark} />
+          </button>
+        </div>
+        <div className="panel-body flex-1 overflow-y-auto">
+          {reviewOverlayEntity && <EntitySummary entity={reviewOverlayEntity} jumpToLine={goToManuscript} />}
+        </div>
+      </aside>
     </section>
   );
 }

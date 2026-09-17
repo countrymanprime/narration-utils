@@ -1,0 +1,4 @@
+# Wails emits blank indentation in its generated model stubs. Keep generated
+# bindings source-controlled without treating that upstream formatting as a
+# handwritten whitespace error.
+shared/ui/wailsjs/go/models.ts -whitespace

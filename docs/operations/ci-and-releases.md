@@ -2,10 +2,10 @@
 
 ## Local setup
 
-Run `npm run bootstrap` once after cloning. It installs the root release
+Run `pnpm run bootstrap` once after cloning. It installs the root release
 tooling and Husky hooks in addition to the existing application dependencies.
 The hooks enforce Conventional Commit messages and check staged TypeScript,
-Python, Rust, and Lua files. Use `npm run check` for the full quality suite.
+Python, Go, and Lua files. Use `pnpm run check` for the full quality suite.
 
 ## Repository settings to configure once
 
@@ -45,9 +45,13 @@ then runs Linux quality and Windows format/lint in parallel. The four-platform
 bootstrap and installer matrices run for bootstrap or runtime/package changes;
 they also run for scheduled and manually dispatched validation. Documentation
 and explicitly non-runtime metadata changes skip native packages, while unknown
-paths fail safe and retain package coverage. `setup-node` and `setup-python`
-cache npm and pip package downloads; one Cargo cache namespace is shared per OS
-and architecture across bootstrap, quality, lint, and package jobs. Installer
+paths fail safe and retain package coverage. pnpm's content-addressable store,
+uv's package cache, and Go's module/build caches are restored by the workflows;
+they never cache `node_modules`, `.venv`, or release artifacts. `setup-node`,
+`setup-python`, and `setup-go` provision the exact pinned Node, Python, and Go versions. The native
+matrix installs Wails v2.16.0, Staticcheck v0.8.1, and the standalone StyLua
+v2.1.0 binary declared in `scripts/toolchain.json`; it does not use Cargo.
+Installer
 artifacts are retained for review and handoff, rather than used as a cache:
 platform-specific sidecars must be built on their target OS. After a green
 optimized run, delete the obsolete `narration-utils-bootstrap-*` caches from

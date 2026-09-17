@@ -9,6 +9,7 @@ import { Panel } from '../primitives/Panel';
 import { Pill } from '../primitives/Pill';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { Results } from './Results';
+import { PROOFING_CHUNK_OPTIONS } from './options';
 
 const seconds = (value: number) =>
   `${Math.floor(value / 60)
@@ -33,8 +34,8 @@ const WORKER_LIMITS: Record<string, string[]> = {
   'large-v3-turbo': ['Auto', '1', '2'],
   'large-v3': ['1'],
 };
-const CHUNK_OPTIONS = [30, 60, 300, 600];
-const CHUNK_LABELS = ['30s', '1m', '5m', '10m'];
+const CHUNK_OPTIONS: number[] = PROOFING_CHUNK_OPTIONS.map((option) => option.seconds);
+const CHUNK_LABELS = PROOFING_CHUNK_OPTIONS.map((option) => option.label);
 const CHUNK_LIMIT_INDEX: Record<string, number> = { tiny: 3, small: 3, medium: 2, 'large-v3-turbo': 2, 'large-v3': 1 };
 const CHUNK_LENGTH_TOOLTIP = [
   'Shorter chunks transcribe in parallel faster but can split a sentence across a boundary.',
@@ -74,7 +75,7 @@ export function Transcript({
         /* no manuscript selected yet */
       }
     })();
-  }, []);
+  }, [api]);
   useEffect(() => {
     (async () => {
       try {
@@ -89,13 +90,13 @@ export function Transcript({
         /* defaults remain usable */
       }
     })();
-  }, []);
+  }, [api]);
   useEffect(() => {
     void api
       .transcriptLastCompleted()
       .then(setLastCompleted)
       .catch(() => {});
-  }, []);
+  }, [api]);
 
   const selectModel = (value: string) => {
     setModel(value);
@@ -198,11 +199,13 @@ export function Transcript({
                   setReviewingLast(true);
                 }}
               >
-                Last narrated take: Track 3 — “Ch.1 take 4”
+                Last narrated take: {lastCompleted.trackName || 'Selected REAPER audio'}
+                {lastCompleted.audioItemCount ? ` · ${lastCompleted.audioItemCount} audio item${lastCompleted.audioItemCount === 1 ? '' : 's'}` : ''}
+                {lastCompleted.completedAt ? ` · ${new Date(lastCompleted.completedAt).toLocaleString()}` : ''}
               </button>
             ) : (
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                Last narrated take: Track 3 — “Ch.1 take 4”
+                No narrated take yet
               </span>
             )}
           </div>

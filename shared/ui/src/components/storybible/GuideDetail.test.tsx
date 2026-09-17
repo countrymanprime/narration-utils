@@ -24,12 +24,13 @@ class PreviewAudio {
 
 function readyPreviewApi() {
   const api = createMockApi();
-  vi.spyOn(api, 'guidePreview').mockResolvedValue({ status: 'ready', url: '/api/guide/audio/preview.wav' });
+  vi.spyOn(api, 'guidePreview').mockResolvedValue({ status: 'ready', audioBase64: '', mimeType: 'audio/wav' });
   return api;
 }
 
 function renderReadyPreview(entity = WIRE_ENTITIES[1]) {
   const previews: PreviewAudio[] = [];
+  vi.stubGlobal('URL', { createObjectURL: vi.fn(() => 'blob:preview'), revokeObjectURL: vi.fn() });
   vi.stubGlobal(
     'Audio',
     class extends PreviewAudio {
@@ -41,18 +42,26 @@ function renderReadyPreview(entity = WIRE_ENTITIES[1]) {
   );
   render(
     <ApiProvider api={readyPreviewApi()}>
-      <GuideDetail
-        entity={entity}
-        entities={WIRE_ENTITIES}
-        reload={vi.fn().mockResolvedValue(undefined)}
-        notify={vi.fn()}
-        select={vi.fn()}
-        goToManuscript={vi.fn()}
-      />
+      <GuideDetail entity={entity} entities={WIRE_ENTITIES} reload={vi.fn().mockResolvedValue(undefined)} notify={vi.fn()} goToManuscript={vi.fn()} />
     </ApiProvider>,
   );
   return previews;
 }
+
+describe('Story Bible locked entries', () => {
+  it('disables the editable fields and Save button for a locked entry', () => {
+    const entity = WIRE_ENTITIES.find((row) => row.locked);
+    if (!entity) throw new Error('fixture must include a locked entity');
+    render(
+      <ApiProvider api={createMockApi()}>
+        <GuideDetail entity={entity} entities={WIRE_ENTITIES} reload={vi.fn().mockResolvedValue(undefined)} notify={vi.fn()} goToManuscript={vi.fn()} />
+      </ApiProvider>,
+    );
+    expect((screen.getByDisplayValue(entity.canonical_name) as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Save changes to this entry' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Delete entity' })).toBeNull();
+  });
+});
 
 describe('Story Bible local TTS preview', () => {
   it('requires explicit approval before downloading a missing local voice and retries the preview', async () => {
@@ -65,7 +74,6 @@ describe('Story Bible local TTS preview', () => {
           entities={WIRE_ENTITIES}
           reload={vi.fn().mockResolvedValue(undefined)}
           notify={vi.fn()}
-          select={vi.fn()}
           goToManuscript={vi.fn()}
         />
       </ApiProvider>,
@@ -85,7 +93,7 @@ describe('Story Bible local TTS preview', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Play preview' }));
     await waitFor(() => expect(previews).toHaveLength(1));
-    expect(previews[0].src).toBe('/api/guide/audio/preview.wav');
+    expect(previews[0].src).toBe('blob:preview');
     expect(previews[0].play).toHaveBeenCalledTimes(1);
     expect(document.querySelector('audio')).toBeNull();
     expect(screen.getByRole('button', { name: 'Pause preview' })).toBeTruthy();

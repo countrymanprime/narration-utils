@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileArrowUp, faFileImport, faFileLines } from '@fortawesome/free-solid-svg-icons';
+import { faFileArrowUp, faFileLines } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
-import type { GuideEntity, ManuscriptChapter, ManuscriptImportSelection, TranscriptState, WorkJob } from '../../types';
+import type { GuideEntity, ManuscriptImportSelection, TranscriptState, WorkJob } from '../../types';
 import type { Bootstrap } from '../../types';
 import { Heading } from '../primitives/Heading';
 import { AudiobookEstimatePanel } from './AudiobookEstimatePanel';
@@ -36,7 +36,6 @@ export function Home({
   refreshBootstrap: () => Promise<void>;
 }) {
   const api = useApi();
-  const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
   const [entities, setEntities] = useState<GuideEntity[]>([]);
   const [lastCompleted, setLastCompleted] = useState<TranscriptState>();
   const found = Boolean(data.manuscript);
@@ -44,11 +43,9 @@ export function Home({
   const [importSelection, setImportSelection] = useState<ManuscriptImportSelection>({});
   const [headingLevel, setHeadingLevel] = useState(1);
   useEffect(() => {
-    void Promise.all([api.manuscriptChapters(), api.guideEntities()])
-      .then(([nextChapters, nextEntities]) => {
-        setChapters(nextChapters);
-        setEntities(nextEntities);
-      })
+    void api
+      .guideEntities()
+      .then(setEntities)
       .catch(() => {});
     void api
       .transcriptLastCompleted()
@@ -81,6 +78,16 @@ export function Home({
       if (timer !== undefined) window.clearInterval(timer);
     };
   }, [api, importJob?.id, importJob?.phase]);
+  const beginImportPreview = async (jobId: string) => {
+    setHeadingLevel(1);
+    setImportJob({ id: jobId, kind: 'manuscript_import', phase: 'preparing', message: 'Preparing manuscript import…', percent: 0, logs: [], elapsed: 0 });
+    try {
+      setImportJob(await api.manuscriptImportPreview(jobId, { markdownHeadingLevel: 1 }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setImportJob((current) => (current ? { ...current, phase: 'error', error: message, message } : current));
+    }
+  };
   const commitImport = async () => {
     if (!importJob?.id) return;
     const startedAt = Date.now();
@@ -114,8 +121,6 @@ export function Home({
       setImportJob((current) => (current ? { ...current, phase: 'error', error: message, message } : current));
     }
   };
-  const narrationChapters = chapters.filter((chapter) => (chapter.contentKind ?? 'narration') === 'narration');
-  const words = narrationChapters.reduce((total, chapter) => total + chapter.wordCount, 0);
   const review = entities.find(
     (entity) => entity.review_state === 'needs review' || entity.review_state === 'unreviewed' || entity.category === 'Needs Review',
   );
@@ -130,11 +135,12 @@ export function Home({
           <span>
             {found ? (
               <>
-                <strong>Manuscript found</strong> — {words.toLocaleString()} words across {narrationChapters.length} narratable chapters
+                <strong>Manuscript found</strong> — {data.manuscript!.narratableWordCount.toLocaleString()} words across{' '}
+                {data.manuscript!.narratableChapterCount} narratable chapters
               </>
             ) : (
               <>
-                <strong>No imported manuscript</strong> — import a Word, Markdown, or text-based PDF manuscript
+                <strong>No imported manuscript</strong> — import a Word or Markdown manuscript
               </>
             )}
           </span>
@@ -156,15 +162,7 @@ export function Home({
                   const result = await api.selectManuscript();
                   if (result.selected && result.jobId) {
                     setImportSelection({});
-                    setImportJob({
-                      id: result.jobId,
-                      kind: 'manuscript_import',
-                      phase: 'preparing',
-                      message: 'Preparing manuscript import…',
-                      percent: 0,
-                      logs: [],
-                      elapsed: 0,
-                    });
+                    void beginImportPreview(result.jobId);
                   } else notify('No manuscript selected');
                 }}
               >
@@ -180,47 +178,11 @@ export function Home({
                   const result = await api.selectManuscript();
                   if (result.selected && result.jobId) {
                     setImportSelection({});
-                    setImportJob({
-                      id: result.jobId,
-                      kind: 'manuscript_import',
-                      phase: 'preparing',
-                      message: 'Preparing manuscript import…',
-                      percent: 0,
-                      logs: [],
-                      elapsed: 0,
-                    });
+                    void beginImportPreview(result.jobId);
                   } else notify('No manuscript selected');
                 }}
               >
                 <FontAwesomeIcon icon={faFileArrowUp} />
-              </button>
-            </TooltipTarget>
-          )}
-          {!found && data.legacyManuscriptAvailable && (
-            <TooltipTarget text="Import legacy Word file">
-              <button
-                aria-label="Import legacy Word file"
-                className="icon-btn"
-                onClick={() =>
-                  void api
-                    .manuscriptLegacyPreview()
-                    .then((result) => {
-                      if (!result.jobId) return;
-                      setImportSelection({});
-                      setImportJob({
-                        id: result.jobId,
-                        kind: 'manuscript_import',
-                        phase: 'preparing',
-                        message: 'Preparing manuscript import…',
-                        percent: 0,
-                        logs: [],
-                        elapsed: 0,
-                      });
-                    })
-                    .catch((error) => notify(error.message))
-                }
-              >
-                <FontAwesomeIcon icon={faFileImport} />
               </button>
             </TooltipTarget>
           )}
@@ -287,7 +249,7 @@ export function Home({
                       }
                     >
                       <option value="narration">Narration chapter</option>
-                      <option value="opening">Opening pages</option>
+                      <option value="opening">Front Matter</option>
                       <option value="reference">Reference material</option>
                     </select>
                   </label>
@@ -355,42 +317,56 @@ export function Home({
         refreshKey={data.manuscript ? `${data.manuscript.id}:${data.manuscript.importedAt}` : 'no-manuscript'}
       />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <button aria-label="Open Proofing" className="panel panel-body text-left transition hover:-translate-y-px" onClick={() => go('/proofing')}>
-          <div className="mb-1 flex items-center justify-between">
-            <span className="section-label">Proofing</span>
-            <span
-              className="badge"
-              style={
-                lastCompleted ? { background: 'var(--review-soft)', color: 'var(--review)' } : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
-              }
-            >
-              {lastCompleted ? `${lastCompleted.rows.length} ${lastCompleted.rows.length === 1 ? 'discrepancy' : 'discrepancies'}` : 'Ready'}
-            </span>
-          </div>
-          <div className="font-semibold">{lastCompleted ? 'Review latest comparison' : 'Ready to compare selected REAPER audio'}</div>
-          <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-            {lastCompleted
-              ? `${lastCompleted.trackName || 'Selected REAPER audio'}${lastCompleted.audioItemCount ? ` · ${lastCompleted.audioItemCount} audio item${lastCompleted.audioItemCount === 1 ? '' : 's'}` : ''} · ${completedLabel(lastCompleted.completedAt)}`
-              : 'Select audio items or a track in REAPER, then start Proofing.'}
-          </div>
-        </button>
-        <button aria-label="Open Story Bible" className="panel panel-body text-left transition hover:-translate-y-px" onClick={() => go('/story-bible')}>
-          <div className="mb-1 flex items-center justify-between">
-            <span className="section-label">Story Bible</span>
-            <span className="badge" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
-              {entities.length} entities · {review ? 1 : 0} review
-            </span>
-          </div>
-          <div className="font-semibold">
-            {review ? `Review “${review.canonical_name}”` : entities.length ? 'Browse Story Bible entries' : 'No Story Bible entries yet'}
-          </div>
-          <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-            {review?.description.text ||
-              (entities.length
-                ? `${entities.length} saved ${entities.length === 1 ? 'entity' : 'entities'}`
-                : 'Build the Story Bible to discover names and terms.')}
-          </div>
-        </button>
+        <TooltipTarget text={found ? 'Open Proofing' : 'Import a manuscript to unlock Proofing.'} className="w-full">
+          <button
+            aria-label="Open Proofing"
+            disabled={!found}
+            className="panel panel-body w-full text-left transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
+            onClick={() => go('/proofing')}
+          >
+            <div className="mb-1 flex items-center justify-between">
+              <span className="section-label">Proofing</span>
+              <span
+                className="badge"
+                style={
+                  lastCompleted ? { background: 'var(--review-soft)', color: 'var(--review)' } : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
+                }
+              >
+                {lastCompleted ? `${lastCompleted.rows.length} ${lastCompleted.rows.length === 1 ? 'discrepancy' : 'discrepancies'}` : 'Ready'}
+              </span>
+            </div>
+            <div className="font-semibold">{lastCompleted ? 'Review latest comparison' : 'Ready to compare selected REAPER audio'}</div>
+            <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+              {lastCompleted
+                ? `${lastCompleted.trackName || 'Selected REAPER audio'}${lastCompleted.audioItemCount ? ` · ${lastCompleted.audioItemCount} audio item${lastCompleted.audioItemCount === 1 ? '' : 's'}` : ''} · ${completedLabel(lastCompleted.completedAt)}`
+                : 'Select audio items or a track in REAPER, then start Proofing.'}
+            </div>
+          </button>
+        </TooltipTarget>
+        <TooltipTarget text={found ? 'Open Story Bible' : 'Import a manuscript to unlock Story Bible.'} className="w-full">
+          <button
+            aria-label="Open Story Bible"
+            disabled={!found}
+            className="panel panel-body w-full text-left transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
+            onClick={() => go('/story-bible')}
+          >
+            <div className="mb-1 flex items-center justify-between">
+              <span className="section-label">Story Bible</span>
+              <span className="badge" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+                {entities.length} entities · {review ? 1 : 0} review
+              </span>
+            </div>
+            <div className="font-semibold">
+              {review ? `Review “${review.canonical_name}”` : entities.length ? 'Browse Story Bible entries' : 'No Story Bible entries yet'}
+            </div>
+            <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+              {review?.description.text ||
+                (entities.length
+                  ? `${entities.length} saved ${entities.length === 1 ? 'entity' : 'entities'}`
+                  : 'Build the Story Bible to discover names and terms.')}
+            </div>
+          </button>
+        </TooltipTarget>
       </div>
     </div>
   );

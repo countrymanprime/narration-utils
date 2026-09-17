@@ -4,15 +4,21 @@
  * Portable checkout bootstrapper. Release packaging intentionally lives in
  * scripts/release/ and is never invoked here.
  */
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 
+export const TOOLCHAIN = JSON.parse(readFileSync(new URL('./toolchain.json', import.meta.url), 'utf8'));
 export const NODE_MAJOR = 22;
 export const PYTHON_VERSION = '3.12';
-export const STYLUA_VERSION = '2.1.0';
+export const PNPM_VERSION = TOOLCHAIN.pnpm;
+export const UV_VERSION = TOOLCHAIN.uv;
+export const GO_VERSION = TOOLCHAIN.go;
+export const STYLUA_VERSION = TOOLCHAIN.stylua.version;
+export const WAILS_VERSION = TOOLCHAIN.wails.version;
+export const STATICCHECK_VERSION = TOOLCHAIN.staticcheck.version;
 
 export function parseOptions(argv) {
   const options = { python: undefined, skipInstall: false, refresh: false, release: false };
@@ -50,43 +56,48 @@ export function localPaths(root, platform = process.platform) {
   return [localPython(root, platform), path('node_modules'), path('shared', 'ui', 'node_modules'), path('shell', 'node_modules')];
 }
 
+export function localToolPaths(root, platform = process.platform) {
+  const separator = platform === 'win32' ? '\\' : '/';
+  const path = (...parts) => [root.replace(/[\\/]+$/, ''), ...parts].join(separator);
+  return [path('.tools', `go-${GO_VERSION}`, 'go', 'bin'), path('.tools', 'go-bin'), path('.tools', 'wails-bin')];
+}
+
 export function bootstrapCommands(root, python, platform = process.platform, pythonPrefix = []) {
-  const venvPython = localPython(root, platform);
   return [
     [python, [...pythonPrefix, '-m', 'venv', '.venv']],
-    [venvPython, ['-m', 'pip', 'install', '--disable-pip-version-check', '--requirement', 'requirements.lock']],
-    ['npm', ['ci']],
-    ['npm', ['--prefix', 'shared/ui', 'ci']],
-    ['npm', ['--prefix', 'shell', 'ci']],
-    ['cargo', ['install', 'stylua', '--version', STYLUA_VERSION, '--locked']],
+    ['uv', ['sync', '--locked']],
+    ['pnpm', ['install', '--frozen-lockfile']],
+    ['go', ['install', `${TOOLCHAIN.wails.module}@${WAILS_VERSION}`]],
+    ['go', ['install', `${TOOLCHAIN.staticcheck.module}@${STATICCHECK_VERSION}`]],
   ];
 }
 
-export function buildCommands({ release = false } = {}) {
+export function buildCommands() {
   return [
-    ['npm', ['--prefix', 'shared/ui', 'run', 'build']],
-    ['cargo', ['build', '--workspace', ...(release ? ['--release'] : [])]],
+    ['pnpm', ['--dir', 'shared/ui', 'run', 'build']],
+    ['go', ['-C', 'shell', 'test', './...']],
+    // The REAPER launcher starts this binary as an end-user desktop app.
+    // Keep developer tools out of that path; use `pnpm --dir shell run dev`
+    // when an interactive Wails debugging session is wanted.
+    ['pnpm', ['--dir', 'shell', 'run', 'build']],
   ];
 }
 
 function commandName(command, platform) {
   if (platform !== 'win32') return command;
-  if (command === 'npm') return 'npm.cmd';
-  if (command === 'cargo' || command === 'stylua') {
-    const cargoBinary = join(process.env.USERPROFILE ?? '', '.cargo', 'bin', `${command}.exe`);
-    if (existsSync(cargoBinary)) return cargoBinary;
-  }
+  if (command === 'pnpm') return 'pnpm.cmd';
   return /[\\/]|\.exe$/i.test(command) ? command : `${command}.exe`;
 }
 
-function run(command, args, { root, platform, capture = false }) {
+function run(command, args, { root, platform, capture = false, env }) {
   const result = spawnSync(commandName(command, platform), args, {
     cwd: root,
     encoding: 'utf8',
-    // npm.cmd is a batch file on Windows. Every other command bypasses the
+    // pnpm.cmd is a batch file on Windows. Every other command bypasses the
     // shell so Python arguments retain their argv.
-    shell: platform === 'win32' && command === 'npm',
+    shell: platform === 'win32' && command === 'pnpm',
     stdio: capture ? 'pipe' : 'inherit',
+    env,
   });
   if (result.error) throw new Error(`Could not start ${command}: ${result.error.message}`);
   if (result.status !== 0) {
@@ -113,8 +124,25 @@ function verifyToolchain(context) {
   if (nodeMajor !== NODE_MAJOR) {
     throw new Error(`Node.js ${NODE_MAJOR} is required; found ${process.versions.node}.`);
   }
-  run('npm', ['--version'], contextWithCapture(context));
-  run('cargo', ['--version'], contextWithCapture(context));
+  requireVersion('pnpm', ['--version'], /^(\d+\.\d+\.\d+)$/, PNPM_VERSION, context);
+  requireVersion('uv', ['--version'], /^uv (\d+\.\d+\.\d+)/, UV_VERSION, context);
+  run('go', ['version'], contextWithCapture(context));
+}
+
+function toolchainContext(root, platform) {
+  const delimiter = platform === 'win32' ? ';' : ':';
+  const pathKey = platform === 'win32' ? 'Path' : 'PATH';
+  const inheritedPath = process.env[pathKey] ?? process.env.PATH ?? '';
+  const tools = localToolPaths(root, platform);
+  return {
+    root,
+    platform,
+    env: {
+      ...process.env,
+      [pathKey]: [...tools, inheritedPath].filter(Boolean).join(delimiter),
+      GOBIN: join(root, '.tools', 'go-bin'),
+    },
+  };
 }
 
 export function pythonVersionError(error) {
@@ -157,12 +185,12 @@ function clearLocalInstalls(root, platform) {
 }
 
 function helpText() {
-  return `Usage: npm run bootstrap -- [--python <path>] [--skip-install] [--refresh] [--release]
+  return `Usage: pnpm run bootstrap -- [--python <path>] [--skip-install] [--refresh] [--release]
 
-Creates a portable checkout environment and builds the UI and debug workspace binary.
+Creates a portable checkout environment and builds the UI and native Wails binary.
 It never builds installers or downloads optional spaCy models or Piper voices.
 --skip-install requires existing local environments. --refresh recreates them from lockfiles.
---release builds the workspace binary with Cargo's release profile.`;
+--release builds the Wails release binary.`;
 }
 
 export function runBootstrap(options, dependencies = {}) {
@@ -172,7 +200,7 @@ export function runBootstrap(options, dependencies = {}) {
   const exists = dependencies.exists ?? existsSync;
   let python = options.python;
   let pythonPrefix = [];
-  const context = { root, platform };
+  const context = toolchainContext(root, platform);
 
   if (options.help) {
     (dependencies.log ?? console.log)(helpText());

@@ -1,0 +1,328 @@
+package main
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/importer"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+)
+
+// Each exported method is a concrete Wails binding. Keep this boundary
+// operation-specific: unlike the retired HTTP host, the frontend cannot send
+// an arbitrary method name to a generic dispatcher.
+func encodeBinding(value any, err error) (string, error) {
+	if err != nil {
+		return "", err
+	}
+	bytes, err := json.Marshal(value)
+	return string(bytes), err
+}
+
+func (h *Host) SystemSettingsForScope(scope string) (string, error) {
+	return encodeBinding(h.settingsForScope(scope))
+}
+func (h *Host) SystemSaveSettings(tool, scope string, values map[string]*string) (string, error) {
+	if err := h.saveSettings(tool, scope, values); err != nil {
+		return "", err
+	}
+	return encodeBinding(h.Bootstrap(), nil)
+}
+func (h *Host) SystemReportDiagnostic(kind, message string) (string, error) {
+	// Diagnostics are deliberately local and best-effort.
+	return encodeBinding(nil, nil)
+}
+
+func (h *Host) TtsCatalog() (string, error) {
+	if h.tts == nil {
+		return "", fmt.Errorf("the approved TTS catalog is unavailable")
+	}
+	catalog := h.tts.Catalog()
+	provider, providerSource := h.settings.Effective("Piper", "tts_provider", "piper")
+	voice, voiceSource := h.settings.Effective("Piper", "tts_voice_id", "en_US-ljspeech-high")
+	catalog["provider"] = map[string]any{"id": provider, "effectiveSource": providerSource}
+	catalog["voice"] = map[string]any{"id": voice, "effectiveSource": voiceSource}
+	return encodeBinding(catalog, nil)
+}
+func (h *Host) TtsInstall(voiceID string) (string, error) {
+	return encodeBinding(h.startTtsInstall(voiceID))
+}
+func (h *Host) TtsInstallState(jobID string) (string, error) {
+	return encodeBinding(h.ttsInstallState(jobID))
+}
+func (h *Host) TtsInstallCancel(jobID string) (string, error) {
+	return encodeBinding(h.cancelTtsInstall(jobID))
+}
+func (h *Host) TtsRemove(voiceID string) (string, error) {
+	if h.tts == nil {
+		return "", fmt.Errorf("the approved TTS catalog is unavailable")
+	}
+	return encodeBinding(nil, h.tts.Remove(voiceID))
+}
+
+func (h *Host) GuideBuild() (string, error) { return encodeBinding(h.startGuideBuild()) }
+func (h *Host) GuideBuildState() (string, error) {
+	return encodeBinding(h.guideBuildState(), nil)
+}
+func (h *Host) GuideEntities() (string, error) {
+	if h.guide == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	entities, err := h.guide.Entities()
+	return encodeBinding(entities, err)
+}
+func (h *Host) GuideEdit(id string, values map[string]string) (string, error) {
+	if h.guide == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	for field, value := range values {
+		if err := h.guide.Edit(id, field, value); err != nil {
+			return "", err
+		}
+	}
+	return encodeBinding(nil, nil)
+}
+func (h *Host) GuideSetLocked(id string, locked bool) (string, error) {
+	if h.guide == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	return encodeBinding(nil, h.guide.Edit(id, "locked", fmt.Sprint(locked)))
+}
+func (h *Host) GuideRescan(id string) (string, error) {
+	if h.guide == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	return encodeBinding(nil, h.guide.Rescan(id))
+}
+func (h *Host) GuideCreate(name, category string, aliases []string) (string, error) {
+	if h.guide == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	id, err := h.guide.Create(name, category, aliases)
+	return encodeBinding(map[string]any{"id": id}, err)
+}
+func (h *Host) GuideMerge(sourceID, targetID string) (string, error) {
+	if h.guide == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	return encodeBinding(nil, h.guide.Merge(sourceID, targetID))
+}
+func (h *Host) GuideDelete(id string) (string, error) {
+	if h.guide == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	return encodeBinding(nil, h.guide.Delete(id))
+}
+func (h *Host) GuideRelate(id, otherID, label string) (string, error) {
+	if h.guide == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	return encodeBinding(nil, h.guide.Relate(id, otherID, label))
+}
+func (h *Host) GuideUnrelate(id, otherID, label string) (string, error) {
+	if h.guide == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	return encodeBinding(nil, h.guide.Unrelate(id, otherID, label))
+}
+func (h *Host) GuideExport() (string, error) {
+	if h.guide == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	path, err := h.guide.ExportHotwords()
+	return encodeBinding(map[string]any{"path": path}, err)
+}
+func (h *Host) GuidePreview(id string, aliasIndex *int) (string, error) {
+	if h.guide == nil || h.tts == nil {
+		return "", fmt.Errorf("story Bible preview is unavailable")
+	}
+	voiceID, _ := h.settings.Effective("Piper", "tts_voice_id", "en_US-ljspeech-high")
+	voice, knownVoice := h.tts.Voice(voiceID)
+	if !knownVoice {
+		return "", fmt.Errorf("the selected preview voice is not in the approved catalog")
+	}
+	model, _, err := h.tts.Paths(voiceID)
+	if err != nil {
+		return encodeBinding(map[string]any{"status": "asset_required", "voice": previewVoice(voice), "installState": h.tts.State(voice), "downloadSize": voiceDownloadSize(voice)}, nil)
+	}
+	audio, err := h.guide.Preview(id, aliasIndex, model, voice.Provider, voice.Version)
+	return encodeBinding(map[string]any{"status": "ready", "audioBase64": base64.StdEncoding.EncodeToString(audio), "mimeType": "audio/wav"}, err)
+}
+
+func (h *Host) ManuscriptSelectFile() (string, error) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx == nil {
+		return "", fmt.Errorf("the desktop host is not ready")
+	}
+	path, err := runtime.OpenFileDialog(ctx, runtime.OpenDialogOptions{Title: "Select manuscript", Filters: []runtime.FileFilter{{DisplayName: "Manuscripts", Pattern: "*.docx;*.md;*.markdown"}}})
+	if err != nil {
+		return "", err
+	}
+	if path == "" {
+		return encodeBinding(map[string]any{"selected": false}, nil)
+	}
+	job := h.manuscript.Begin(path)
+	return encodeBinding(map[string]any{"selected": true, "jobId": job.ID}, nil)
+}
+func (h *Host) ManuscriptImportState(jobID string) (string, error) {
+	return encodeBinding(h.manuscript.State(jobID))
+}
+func (h *Host) ManuscriptImportPreview(jobID string, markdownHeadingLevel int) (string, error) {
+	return encodeBinding(h.manuscript.Preview(jobID, markdownHeadingLevel))
+}
+func (h *Host) ManuscriptImportCommit(jobID string, confirmedReset bool, sectionKinds map[string]string, characterCandidateIDs []string) (string, error) {
+	job, err := h.manuscript.Commit(jobID, confirmedReset, sectionKinds)
+	if err != nil {
+		return "", err
+	}
+	if job.Phase == "success" && job.Draft != nil && h.guide != nil {
+		h.seedCharacterCandidates(job.Draft.CharacterCandidates, characterCandidateIDs)
+	}
+	return encodeBinding(job, nil)
+}
+
+// seedCharacterCandidates writes the user's checked character suggestions
+// into the Story Bible as manual entities. Calls run sequentially (never in
+// parallel) because each one shells out to a Python process that rewrites
+// the whole manuscript_guide.json file - concurrent writers would race. A
+// failed candidate is skipped, not fatal: the manuscript import itself
+// already succeeded by this point.
+func (h *Host) seedCharacterCandidates(candidates []importer.CharacterCandidate, selectedIDs []string) {
+	selected := make(map[string]bool, len(selectedIDs))
+	for _, id := range selectedIDs {
+		selected[id] = true
+	}
+	for _, candidate := range candidates {
+		if !selected[candidate.ID] {
+			continue
+		}
+		entityID, err := h.guide.Create(candidate.Name, "Character", nil)
+		if err != nil {
+			continue
+		}
+		if candidate.Description != "" {
+			_ = h.guide.Edit(entityID, "description", candidate.Description)
+		}
+	}
+}
+func (h *Host) ManuscriptImportCancel(jobID string) (string, error) {
+	return encodeBinding(nil, h.manuscript.Cancel(jobID))
+}
+func (h *Host) ManuscriptClearProjectData(confirmed bool) (string, error) {
+	if !confirmed {
+		return "", fmt.Errorf("project data clear requires confirmation")
+	}
+	return encodeBinding(nil, h.manuscript.Clear())
+}
+func (h *Host) ManuscriptChapters() (string, error) { return encodeBinding(h.manuscript.Chapters()) }
+func (h *Host) ManuscriptParagraphs(chapter string) (string, error) {
+	return encodeBinding(h.manuscript.Paragraphs(chapter))
+}
+func (h *Host) ManuscriptReader() (string, error) { return encodeBinding(h.manuscript.Reader()) }
+func (h *Host) ManuscriptSearch(query string) (string, error) {
+	return encodeBinding(h.manuscript.Search(query))
+}
+func (h *Host) ManuscriptSetChapterStatus(chapter, status string) (string, error) {
+	return encodeBinding(h.manuscript.SetChapterStatus(chapter, status))
+}
+func (h *Host) ManuscriptNotes(chapter string) (string, error) {
+	return encodeBinding(h.manuscript.Notes(chapter), nil)
+}
+func (h *Host) ManuscriptCreateNote(chapterID, paragraphID, text, anchorText string, anchorStart, anchorEnd *int) (string, error) {
+	return encodeBinding(h.manuscript.CreateNote(chapterID, paragraphID, text, anchorStart, anchorEnd, anchorText))
+}
+func (h *Host) ManuscriptDeleteNote(id string) (string, error) {
+	return encodeBinding(nil, h.manuscript.DeleteNote(id))
+}
+func (h *Host) ManuscriptReaderState() (string, error) {
+	return encodeBinding(h.manuscript.ReaderState(), nil)
+}
+func (h *Host) ManuscriptSaveReaderState(activeChapter string, activeSourceLine *int, expandedChapters []string) (string, error) {
+	return encodeBinding(h.manuscript.SaveReaderState(activeChapter, activeSourceLine, expandedChapters, expandedChapters != nil))
+}
+func (h *Host) ManuscriptCreateBookmark(values map[string]any) (string, error) {
+	return encodeBinding(h.manuscript.CreateBookmark(values))
+}
+func (h *Host) ManuscriptDeleteBookmark(id string) (string, error) {
+	return encodeBinding(nil, h.manuscript.DeleteBookmark(id))
+}
+
+func (h *Host) TranscriptStart(options map[string]string) (string, error) {
+	if h.transcript == nil {
+		return "", fmt.Errorf("the Transcript Compare service is unavailable")
+	}
+	return encodeBinding(nil, h.transcript.Start(options))
+}
+func (h *Host) TranscriptCancel() (string, error) {
+	if h.transcript != nil {
+		h.transcript.Cancel()
+	}
+	return encodeBinding(nil, nil)
+}
+func (h *Host) TranscriptReset() (string, error) {
+	if h.transcript == nil {
+		return encodeBinding(nil, nil)
+	}
+	return encodeBinding(nil, h.transcript.Reset())
+}
+func (h *Host) TranscriptLastCompleted() (string, error) {
+	if h.transcript == nil {
+		return encodeBinding(nil, nil)
+	}
+	return encodeBinding(h.transcript.LastCompleted(), nil)
+}
+func (h *Host) TranscriptAddEquivalence(id string) (string, error) {
+	if h.transcript == nil {
+		return "", fmt.Errorf("the Transcript Compare service is unavailable")
+	}
+	message, err := h.transcript.AddEquivalence(id)
+	return encodeBinding(map[string]any{"message": message}, err)
+}
+func (h *Host) TranscriptJump(id string) (string, error) {
+	if h.transcript == nil {
+		return "", fmt.Errorf("the Transcript Compare service is unavailable")
+	}
+	return encodeBinding(nil, h.transcript.Jump(id))
+}
+func (h *Host) TranscriptExportMarkers() (string, error) {
+	if h.transcript == nil {
+		return "", fmt.Errorf("the Transcript Compare service is unavailable")
+	}
+	return encodeBinding(nil, h.transcript.Export())
+}
+func (h *Host) TranscriptSuggestHints() (string, error) {
+	if h.guide == nil || h.transcript == nil {
+		return "", fmt.Errorf("build the Story Bible before requesting vocabulary suggestions")
+	}
+	values, err := h.guide.VocabularyCandidates()
+	if err != nil {
+		return "", err
+	}
+	accepted := map[string]bool{}
+	for _, value := range h.transcript.Hints() {
+		accepted[strings.ToLower(value)] = true
+	}
+	suggested := []string{}
+	for _, value := range values {
+		if !accepted[strings.ToLower(value)] {
+			suggested = append(suggested, value)
+		}
+	}
+	return encodeBinding(map[string]any{"value": strings.Join(suggested, ", ")}, nil)
+}
+func (h *Host) TranscriptHints() (string, error) {
+	if h.transcript == nil {
+		return encodeBinding([]string{}, nil)
+	}
+	return encodeBinding(h.transcript.Hints(), nil)
+}
+func (h *Host) TranscriptSaveHints(accepted []string) (string, error) {
+	if h.transcript == nil {
+		return "", fmt.Errorf("the Transcript Compare service is unavailable")
+	}
+	return encodeBinding(nil, h.transcript.SaveHints(accepted))
+}

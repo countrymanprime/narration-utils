@@ -30,7 +30,7 @@ either scope from the workspace's corner **Settings** button.
 
 - `core/` — the DAW-agnostic Python backend (`manuscript_guide.py`) and its tests. No DAW APIs
   are used here; it's a plain CLI invoked by whichever DAW driver below is running it. Its
-  dependencies are declared in the repo-root `requirements.txt`.
+  dependencies are declared in the repo-root `pyproject.toml` and pinned in `uv.lock`.
 - `daws/reaper/` — reserved for a future dedicated adapter; current REAPER integration is
   centralized in `shared/reaper/narration_ui_bridge.lua`.
 - `daws/audacity/` — placeholder for a future Audacity driver.
@@ -41,7 +41,7 @@ From the repository root, run the shared developer bootstrap. It creates the
 repo-wide `.venv`, installs locked tool dependencies, and builds the workspace:
 
 ```sh
-npm run bootstrap
+pnpm run bootstrap
 ```
 
 In REAPER, use **Actions → Show action list → New action → Load ReaScript...** and load just

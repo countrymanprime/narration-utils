@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
@@ -29,6 +29,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(screen.getByText(/Opening Narration Console/)).toBeTruthy();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeTruthy());
     expect(screen.getAllByText('Alice’s Adventures in Wonderland').length).toBeGreaterThan(0);
+    expect(screen.getByText(/2,672 words across 3 narratable chapters/)).toBeTruthy();
     expect(await screen.findByText(/Chapter 1 · 3 audio items/)).toBeTruthy();
     expect(screen.queryByText(/Ch\.1 take 4/)).toBeNull();
   });
@@ -54,6 +55,44 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect((await screen.findAllByText('Alice')).length).toBeGreaterThan(0);
   });
 
+  it('does not create a Story Bible entity until a category is chosen for a new entry', async () => {
+    const api = renderApp();
+    const guideCreate = vi.spyOn(api, 'guideCreate');
+    await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
+    fireEvent.click(screen.getByRole('button', { name: /Open Story Bible/ }));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Story Bible' })).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add entity' }));
+    expect(await screen.findByDisplayValue(/New entity/)).toBeTruthy();
+    expect(guideCreate).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Choose category' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Character/ }));
+    await waitFor(() => expect(guideCreate).toHaveBeenCalledTimes(1));
+    expect(guideCreate).toHaveBeenCalledWith(expect.stringMatching(/New entity/), 'Character', []);
+    expect(await screen.findByRole('button', { name: 'Delete entity' })).toBeTruthy();
+  });
+
+  it('opens Review Entry as a read-only overlay without discarding the in-progress edit', async () => {
+    renderApp();
+    await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
+    fireEvent.click(screen.getByRole('button', { name: /Open Story Bible/ }));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Story Bible' })).toBeTruthy());
+
+    fireEvent.click((await screen.findAllByText('Alice'))[0]);
+    const nameInput = await screen.findByDisplayValue('Alice');
+    fireEvent.change(nameInput, { target: { value: 'Alice (editing)' } });
+
+    const aliasInput = screen.getByPlaceholderText('Add an alias or find a matching entry…');
+    fireEvent.change(aliasInput, { target: { value: 'White Rabbit' } });
+    const matchList = await screen.findByRole('listbox', { name: 'Matching Story Bible entries' });
+    fireEvent.click(within(matchList).getByRole('option', { name: /White Rabbit/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Review entry' }));
+
+    expect(await screen.findByRole('button', { name: 'Close review panel' })).toBeTruthy();
+    expect((screen.getByDisplayValue('Alice (editing)') as HTMLInputElement).value).toBe('Alice (editing)');
+  });
+
   it('wires every primary page through the application router', async () => {
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });
@@ -72,6 +111,28 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Home' })[0]);
     await screen.findByRole('heading', { name: 'Welcome back' });
+  });
+
+  it('locks manuscript-dependent navigation and Home cards until a manuscript is imported', async () => {
+    const source = createMockApi();
+    renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+
+    for (const name of ['Manuscript', 'Proofing', 'Story Bible']) {
+      expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
+    }
+    expect((screen.getByRole('button', { name: 'Open Proofing' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Open Story Bible' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Import manuscript' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Import legacy Word file' })).toBeNull();
+  });
+
+  it('redirects a direct manuscript-dependent URL to Home when no manuscript exists', async () => {
+    window.history.replaceState(null, '', '/proofing');
+    const source = createMockApi();
+    renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    expect(window.location.pathname).toBe('/');
   });
 
   it('Story Bible has no stale detection notice, and entry actions render as icon-only buttons on one row', async () => {
@@ -112,6 +173,16 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
 
   it('keeps fast manuscript-import activity visible and refreshes the Home state without a browser reload', async () => {
     const source = createMockApi();
+    const preview = vi.fn(async () => ({
+      id: 'mock-import',
+      kind: 'manuscript_import' as const,
+      phase: 'ready' as const,
+      message: 'Import preview is ready.',
+      percent: 100,
+      logs: ['Selected manuscript', 'Import preview is ready.'],
+      elapsed: 1,
+      preview: { format: 'docx' as const, sourceName: 'Alice.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] },
+    }));
     let imported = false;
     const importedChapters = [{ id: 'c-1', title: 'Chapter 1', index: 0, wordCount: 1234, status: 'not_started' as const }];
     const bootstrap = vi.fn(async () => {
@@ -120,6 +191,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     });
     const api = createMockApi({
       bootstrap,
+      manuscriptImportPreview: preview,
       manuscriptChapters: async () => (imported ? importedChapters : []),
       manuscriptImportCommit: async () => {
         imported = true;
@@ -152,6 +224,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Import manuscript' }));
     await screen.findByRole('dialog', { name: 'Import Alice.docx' });
+    expect(preview).toHaveBeenCalledWith('mock-import', { markdownHeadingLevel: 1 });
     expect(screen.getByText('Preview activity')).toBeTruthy();
     expect(document.querySelector('.progressbar')).toBeTruthy();
 

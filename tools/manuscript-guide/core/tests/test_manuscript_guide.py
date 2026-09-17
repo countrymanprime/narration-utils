@@ -3,7 +3,7 @@ import importlib.util
 import json
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 
 
@@ -18,8 +18,8 @@ def _write_manuscript(root: Path, chapter_title: str, paragraph_texts: list[str]
     """Writes a minimal canonical manuscript.json directly at the path
     manuscript_guide.py reads via canonical_manuscript.load_file.
 
-    Import (turning a .docx/.md source into this file) is Rust-only now -
-    see shared/manuscript-import and shell/src-tauri/src/server/manuscript_canonical.rs.
+    Import (turning a .docx/.md source into this file) is Go-host-only now -
+    see shell/cmd/manuscript-import and shell/internal/manuscript.
     These tests only need a real, valid canonical file to build a Story
     Bible from, not the import step itself.
     """
@@ -131,6 +131,25 @@ class ManuscriptGuideTests(unittest.TestCase):
         merged = guide.merge_locked(generated, previous)
         self.assertEqual("ah-RELL-ee-in", merged[0]["pronunciation"]["say_as"])
 
+    def test_edit_rejects_every_field_on_a_locked_entity_except_unlocking(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            guide_file = root / "ManuscriptGuide" / "manuscript_guide.json"
+            guide.write_json(
+                str(guide_file),
+                {"entities": [{"id": "entity-1", "canonical_name": "Alice", "category": "Character", "locked": True}]},
+            )
+            with self.assertRaises(ValueError):
+                guide.edit(
+                    argparse.Namespace(
+                        guide=str(guide_file), entity_id="entity-1", field="description", value="A new description.", manuscript=None, espeak_library=""
+                    )
+                )
+            # Unlocking itself must still be allowed.
+            guide.edit(argparse.Namespace(guide=str(guide_file), entity_id="entity-1", field="locked", value="false", manuscript=None, espeak_library=""))
+            data = json.loads(guide_file.read_text(encoding="utf-8"))
+            self.assertFalse(data["entities"][0]["locked"])
+
     def test_direct_trait_has_evidence(self):
         occurrences = [{"chapter": "Chapter 1", "text": "Arelian was brave and wary.", "start": "0", "end": "7"}]
         notes = guide.trait_notes("Arelian", occurrences)
@@ -202,6 +221,58 @@ class ManuscriptGuideTests(unittest.TestCase):
             )
             self.assertEqual(expected_candidates, data["vocabulary_candidates"])
             self.assertTrue((root / "ManuscriptGuide" / "progress.txt").read_text(encoding="utf-8").startswith("DONE|100"))
+
+    def test_create_initializes_a_guide_file_when_none_exists_yet(self):
+        # A manuscript import can seed manual character candidates before the
+        # Story Bible has ever been Built - see shell/bindings.go's
+        # ManuscriptImportCommit - so create() must not require a prior build.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manuscript = _write_manuscript(root, "Chapter 1", ["Alice arrives in Dawnspire."])
+            guide_file = root / "ManuscriptGuide" / "manuscript_guide.json"
+            self.assertFalse(guide_file.exists())
+            guide.create(
+                argparse.Namespace(
+                    guide=str(guide_file),
+                    name="Alice",
+                    category="Character",
+                    aliases="",
+                    manuscript=str(manuscript),
+                    espeak_library="",
+                )
+            )
+            data = json.loads(guide_file.read_text(encoding="utf-8"))
+            self.assertEqual(["Alice"], [entity["canonical_name"] for entity in data["entities"]])
+            self.assertTrue(data["entities"][0]["manual"])
+
+    def test_preview_uses_bundled_piper_api_not_a_checkout_executable(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            guide_file = root / "ManuscriptGuide" / "manuscript_guide.json"
+            guide.write_json(str(guide_file), {"entities": [{"id": "entity-1", "canonical_name": "Dawnspire", "aliases": []}]})
+            voice = MagicMock()
+
+            def synthesize(_spoken, wav_file):
+                wav_file.setnchannels(1)
+                wav_file.setsampwidth(2)
+                wav_file.setframerate(22050)
+                wav_file.writeframes(b"\0\0")
+
+            voice.synthesize_wav.side_effect = synthesize
+            with patch.object(guide.PiperVoice, "load", return_value=voice) as load:
+                guide.render_audio(
+                    argparse.Namespace(
+                        guide=str(guide_file),
+                        entity_id="entity-1",
+                        audio_dir=str(root / "ManuscriptGuide" / "audio"),
+                        piper_model=str(root / "voice.onnx"),
+                        alias_index=None,
+                        output_name="preview.wav",
+                    )
+                )
+            load.assert_called_once_with(str(root / "voice.onnx"))
+            voice.synthesize_wav.assert_called_once()
+            self.assertTrue((root / "ManuscriptGuide" / "audio" / "preview.wav").is_file())
 
 
 if __name__ == "__main__":

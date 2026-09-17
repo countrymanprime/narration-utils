@@ -27,10 +27,15 @@ function python() {
   return existsSync(local) ? local : (process.env.PYTHON ?? 'python');
 }
 
-function executable(command) {
-  if (process.platform !== 'win32' || !['cargo', 'stylua'].includes(command)) return command;
-  const candidate = join(process.env.USERPROFILE ?? '', '.cargo', 'bin', `${command}.exe`);
-  return existsSync(candidate) ? candidate : command;
+function executable(command) { return command; }
+
+function checkGofmt(files) {
+  const result = spawnSync('gofmt', ['-l', ...files], { cwd: root, encoding: 'utf8', shell: process.platform === 'win32' });
+  if (result.status !== 0) process.exit(result.status ?? 1);
+  if (result.stdout.trim()) {
+    console.error(`Run gofmt on:\n${result.stdout.trim()}`);
+    process.exit(1);
+  }
 }
 
 function uiBinary(command) {
@@ -43,11 +48,11 @@ function rootRelative(file) {
 }
 
 function uiFormattingFiles(files) {
-  return files.filter((file) => file.startsWith('shared/ui/') && /\.(?:[cm]?[jt]sx?|json|css)$/.test(file));
+  return files.filter((file) => file.startsWith('shared/ui/') && !file.startsWith('shared/ui/wailsjs/') && /\.(?:[cm]?[jt]sx?|json|css)$/.test(file));
 }
 
 function uiLintFiles(files) {
-  return files.filter((file) => file.startsWith('shared/ui/') && /\.(?:[cm]?[jt]sx?)$/.test(file));
+  return files.filter((file) => file.startsWith('shared/ui/') && !file.startsWith('shared/ui/wailsjs/') && /\.(?:[cm]?[jt]sx?)$/.test(file));
 }
 
 function fixStaged(files, fixer) {
@@ -55,7 +60,7 @@ function fixStaged(files, fixer) {
   const ui = uiFormattingFiles(rootFiles);
   const uiLint = uiLintFiles(rootFiles);
   const pythonFiles = rootFiles.filter((file) => file.endsWith('.py'));
-  const rustFiles = rootFiles.filter((file) => file.endsWith('.rs') || /(?:^|\/)Cargo(?:\.lock|\.toml)$/.test(file));
+  const goFiles = rootFiles.filter((file) => file.startsWith('shell/') && file.endsWith('.go'));
   const luaFiles = rootFiles.filter((file) => file.endsWith('.lua'));
 
   if (fixer === 'ui' && ui.length) {
@@ -71,7 +76,7 @@ function fixStaged(files, fixer) {
     run(python(), ['-m', 'ruff', 'format', ...pythonFiles]);
     run(python(), ['-m', 'ruff', 'check', '--fix', ...pythonFiles]);
   }
-  if (fixer === 'rust' && rustFiles.length) run(executable('cargo'), ['fmt', '--all']);
+  if (fixer === 'go' && goFiles.length) run('go', ['-C', 'shell', 'fmt', './...']);
   if (fixer === 'lua' && luaFiles.length) run(executable('stylua'), [...luaFiles]);
 }
 
@@ -80,7 +85,7 @@ function checkStagedFiles(files, checker) {
   const ui = uiFormattingFiles(rootFiles);
   const uiLint = uiLintFiles(rootFiles);
   const pythonFiles = rootFiles.filter((file) => file.endsWith('.py'));
-  const rustFiles = rootFiles.filter((file) => file.endsWith('.rs') || /(?:^|\/)Cargo(?:\.lock|\.toml)$/.test(file));
+  const goFiles = rootFiles.filter((file) => file.startsWith('shell/') && file.endsWith('.go'));
   const luaFiles = rootFiles.filter((file) => file.endsWith('.lua'));
 
   if (checker === 'ui' && ui.length) {
@@ -96,7 +101,7 @@ function checkStagedFiles(files, checker) {
     run(python(), ['-m', 'ruff', 'format', '--check', ...pythonFiles]);
     run(python(), ['-m', 'ruff', 'check', ...pythonFiles]);
   }
-  if (checker === 'rust' && rustFiles.length) run(executable('cargo'), ['fmt', '--all', '--', '--check']);
+  if (checker === 'go' && goFiles.length) checkGofmt(goFiles);
   if (checker === 'lua' && luaFiles.length) run(executable('stylua'), ['--check', ...luaFiles]);
 }
 
@@ -104,7 +109,7 @@ function runStaged(files) {
   const ui = uiFormattingFiles(files);
   const uiLint = uiLintFiles(files);
   const pythonFiles = files.filter((file) => file.endsWith('.py'));
-  const rustFiles = files.filter((file) => file.endsWith('.rs') || /(?:^|\/)Cargo(?:\.lock|\.toml)$/.test(file));
+  const goFiles = files.filter((file) => file.startsWith('shell/') && file.endsWith('.go'));
   const luaFiles = files.filter((file) => file.endsWith('.lua'));
 
   if (ui.length) {
@@ -120,7 +125,10 @@ function runStaged(files) {
     run(python(), ['-m', 'ruff', 'format', '--check', ...pythonFiles]);
     run(python(), ['-m', 'ruff', 'check', ...pythonFiles]);
   }
-  if (rustFiles.length) run(executable('cargo'), ['fmt', '--all', '--', '--check']);
+  if (goFiles.length) {
+    checkGofmt(goFiles);
+    run('go', ['-C', 'shell', 'test', './...']);
+  }
   if (luaFiles.length) run(executable('stylua'), ['--check', ...luaFiles]);
 }
 
@@ -144,14 +152,17 @@ if (mode !== 'check') {
   process.exit(2);
 }
 
-run('npm', ['--prefix', 'shared/ui', 'run', 'lint:ci']);
-run('npm', ['--prefix', 'shared/ui', 'run', 'format:check']);
-run('npm', ['--prefix', 'shared/ui', 'test']);
-run('npm', ['--prefix', 'shared/ui', 'run', 'build']);
+run('pnpm', ['--dir', 'shared/ui', 'run', 'lint:ci']);
+run('pnpm', ['--dir', 'shared/ui', 'run', 'format:check']);
+run('pnpm', ['--dir', 'shared/ui', 'test']);
+run('pnpm', ['--dir', 'shared/ui', 'run', 'build']);
 run(python(), ['-m', 'ruff', 'format', '--check', '.']);
 run(python(), ['-m', 'ruff', 'check', '.']);
-run(python(), ['-m', 'pytest', '-q', '--basetemp', '.test-tmp']);
-run(executable('cargo'), ['fmt', '--all', '--', '--check']);
-run(executable('cargo'), ['clippy', '--workspace', '--all-targets', '--', '-D', 'warnings']);
-run(executable('cargo'), ['test', '--workspace']);
-run(executable('stylua'), ['--check', 'shared/reaper']);
+// A fixed pytest base directory is prone to Windows file-handle races after a
+// previous test process exits. Keep every quality run isolated; the directory
+// is ignored and pytest owns its own cleanup within that run.
+run(python(), ['-m', 'pytest', '-q', '--basetemp', `.test-tmp-${process.pid}`]);
+run('go', ['-C', 'shell', 'vet', './...']);
+run('go', ['-C', 'shell', 'test', './...']);
+run('staticcheck', ['./...'], { cwd: join(root, 'shell') });
+run('stylua', ['--check', 'shared/reaper']);

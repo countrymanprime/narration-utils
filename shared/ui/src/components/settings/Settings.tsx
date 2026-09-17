@@ -21,11 +21,13 @@ export function Settings({
   notify,
   onDirtyChange,
   registerActions,
+  onProjectDataCleared,
 }: {
   data: Bootstrap;
   notify: (text: string) => void;
   onDirtyChange: (dirty: boolean) => void;
   registerActions: (actions: { save: () => Promise<void>; discard: () => Promise<void> }) => void;
+  onProjectDataCleared: () => Promise<void>;
 }) {
   const api = useApi();
   const [scope, setScope] = useState<Scope>('global');
@@ -37,6 +39,7 @@ export function Settings({
   const [confirmClearProjectData, setConfirmClearProjectData] = useState(false);
   const [ttsCatalog, setTtsCatalog] = useState<TtsCatalog>();
   const [confirmRemoveVoice, setConfirmRemoveVoice] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const categories = useMemo(() => SETTINGS_CATEGORIES.filter((entry) => entry.scopes.includes(scope)), [scope]);
   const active = categories.find((entry) => entry.key === category) ?? categories[0];
   const fields = active?.tool ? (settings[active.tool] || []).filter((field) => !active.filter || active.filter(field)) : [];
@@ -63,13 +66,16 @@ export function Settings({
       const catalog = category === 'Piper' ? await api.ttsCatalog() : undefined;
       setSettings(next);
       setTtsCatalog(catalog);
+      setLoadError('');
       applyPalette(next);
       const currentTool = active?.tool;
       const currentFields = currentTool ? (next[currentTool] || []).filter((field) => !active?.filter || active.filter(field)) : [];
       setValues(Object.fromEntries(currentFields.map((field) => [field.key, field.value])));
       setDirty(false);
     } catch (error) {
-      notify(String(error));
+      const message = String(error);
+      setLoadError(message);
+      notify(message);
     }
   }, [active, api, applyPalette, category, notify, scope]);
   useEffect(() => {
@@ -113,6 +119,7 @@ export function Settings({
     }
   };
   const selectedTtsVoice = ttsCatalog?.voices.find((voice) => voice.id === ttsCatalog.voice.id);
+  const reaperLauncher = data.runtime.Reaper?.launcherPath;
 
   return (
     <div className="settings-page">
@@ -144,6 +151,11 @@ export function Settings({
             </span>
           </div>
           <div className="panel-body">
+            {loadError && (
+              <div className="mb-4 rounded-md p-3 text-sm" role="alert" style={{ background: 'var(--review-soft)', color: 'var(--review)' }}>
+                Settings could not be loaded: {loadError}. Select another category or try again.
+              </div>
+            )}
             {category === 'Daw' ? (
               <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-3 rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
@@ -153,6 +165,30 @@ export function Settings({
                     <div style={{ color: 'var(--text-muted)' }}>Connected — detected automatically from the running project.</div>
                   </div>
                 </div>
+                {reaperLauncher && (
+                  <div className="rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
+                    <div className="font-medium">REAPER launcher</div>
+                    <p className="mt-1" style={{ color: 'var(--text-muted)' }}>
+                      Import this action once in REAPER. If Narration Utils is moved or updated, re-import this path when prompted; the app never changes REAPER
+                      for you.
+                    </p>
+                    <code className="mt-2 block break-all rounded p-2 text-xs" style={{ background: 'var(--surface)' }}>
+                      {reaperLauncher}
+                    </code>
+                    <button
+                      className="btn btn-ghost mt-2 text-xs"
+                      type="button"
+                      onClick={() =>
+                        void navigator.clipboard
+                          .writeText(reaperLauncher)
+                          .then(() => notify('REAPER launcher path copied.'))
+                          .catch(() => notify('Could not copy the REAPER launcher path.'))
+                      }
+                    >
+                      Copy path
+                    </button>
+                  </div>
+                )}
               </div>
             ) : category === 'ProjectData' ? (
               <div className="space-y-4 text-sm">
@@ -262,16 +298,16 @@ export function Settings({
           title="Clear derived project data?"
           body="This permanently removes the imported manuscript and stored source, Story Bible and proofing data, reader notes/bookmarks, and saved comparison results for this project. Settings will remain."
           confirmLabel="Clear project data"
-          confirm={() =>
-            void api
-              .clearProjectData()
-              .then(() => {
-                setConfirmClearProjectData(false);
-                notify('Derived project data cleared.');
-                window.setTimeout(() => location.reload(), 0);
-              })
-              .catch((error) => notify(String(error)))
-          }
+          confirm={async () => {
+            try {
+              await api.clearProjectData();
+              setConfirmClearProjectData(false);
+              notify('Derived project data cleared.');
+              await onProjectDataCleared();
+            } catch (error) {
+              notify(String(error));
+            }
+          }}
           cancel={() => setConfirmClearProjectData(false)}
         />
       )}

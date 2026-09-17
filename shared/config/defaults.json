@@ -3,8 +3,7 @@
     "log_verbosity": "normal"
   },
   "ManuscriptGuide": {
-    "spacy_model": "en_core_web_sm",
-    "espeak_library": ""
+    "spacy_model": "en_core_web_sm"
   },
   "Piper": {
     "tts_provider": "piper",

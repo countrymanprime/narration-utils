@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create the release-only Tauri resources from approved local inputs.
+"""Create embedded Wails resources from approved local inputs.
 
 The build intentionally freezes only first-party command entry points. Optional
 models and voices remain first-use downloads and must never be copied into a
@@ -16,8 +16,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-RESOURCES = ROOT / "shell" / "src-tauri" / "resources"
+RESOURCES = ROOT / "shell" / "cmd" / "narration-utils" / "resources"
 RUNTIME = RESOURCES / "runtime"
+REAPER = RESOURCES / "reaper"
 
 
 def freeze(name: str, entry: Path, paths: list[Path]) -> None:
@@ -54,17 +55,28 @@ def freeze(name: str, entry: Path, paths: list[Path]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--clean", action="store_true")
+    parser.add_argument("--sidecar", choices=["manuscript-guide", "transcript-compare"], help="build one sidecar while diagnosing a platform package")
     args = parser.parse_args()
     if args.clean:
         shutil.rmtree(RESOURCES, ignore_errors=True)
-    shutil.rmtree(RUNTIME, ignore_errors=True)
+    if not args.sidecar:
+        shutil.rmtree(RUNTIME, ignore_errors=True)
     shared_python = ROOT / "shared" / "python"
-    freeze(
-        "manuscript-guide", ROOT / "tools" / "manuscript-guide" / "core" / "manuscript_guide.py", [shared_python, ROOT / "tools" / "manuscript-guide" / "core"]
-    )
-    freeze("transcript-compare", ROOT / "tools" / "transcript-compare" / "core" / "compare.py", [shared_python, ROOT / "tools" / "transcript-compare" / "core"])
-    shutil.copytree(ROOT / "shared" / "ui" / "dist", RESOURCES / "shared" / "ui" / "dist", dirs_exist_ok=True)
-    shutil.copytree(ROOT / "shared" / "config", RESOURCES / "shared" / "config", dirs_exist_ok=True)
+    if args.sidecar in (None, "manuscript-guide"):
+        freeze(
+            "manuscript-guide",
+            ROOT / "tools" / "manuscript-guide" / "core" / "manuscript_guide.py",
+            [shared_python, ROOT / "tools" / "manuscript-guide" / "core"],
+        )
+    if args.sidecar in (None, "transcript-compare"):
+        freeze(
+            "transcript-compare", ROOT / "tools" / "transcript-compare" / "core" / "compare.py", [shared_python, ROOT / "tools" / "transcript-compare" / "core"]
+        )
+    shutil.copytree(ROOT / "shared" / "config", RESOURCES / "config", dirs_exist_ok=True)
+    # The action package is embedded with the desktop host.  At first launch
+    # the host materializes it in its per-user cache and writes the installed
+    # executable path beside it.  REAPER imports only when the narrator asks.
+    shutil.copytree(ROOT / "shared" / "reaper", REAPER, dirs_exist_ok=True)
 
 
 if __name__ == "__main__":

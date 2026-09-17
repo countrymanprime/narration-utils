@@ -6,7 +6,7 @@ import { basename, join, resolve } from 'node:path';
 
 const output = resolve(process.env.RELEASE_ASSETS_DIR ?? 'release-assets');
 const roots = (process.env.BUNDLE_DIRS ?? '').split(process.platform === 'win32' ? ';' : ':').filter(Boolean);
-if (!roots.length) throw new Error('BUNDLE_DIRS must name one or more Tauri bundle output directories.');
+if (!roots.length) throw new Error('BUNDLE_DIRS must name one or more Wails package output directories.');
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 const extensions = new Set(['.exe', '.msi', '.dmg', '.appimage', '.deb']);

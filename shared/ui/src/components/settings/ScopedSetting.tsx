@@ -1,5 +1,6 @@
 import type { Scope, ScopedSettingField } from '../../types';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
+import { proofingChoiceLabel } from '../proofing/options';
 
 const TOOLTIP: Record<string, string> = {
   spacy_model: 'Controls Story Bible detection quality and build speed.',
@@ -9,7 +10,9 @@ const TOOLTIP: Record<string, string> = {
   log_verbosity: 'Controls diagnostic output shown in logs.',
 };
 const optionTip = (field: ScopedSettingField, value: string) =>
-  field.key.includes('color') ? `Use ${value} as the saved base color.` : `${value} is the selected ${field.label.toLowerCase()} option.`;
+  field.key.includes('color')
+    ? `Use ${value} as the saved base color.`
+    : `${proofingChoiceLabel(field.key, value)} is the selected ${field.label.toLowerCase()} option.`;
 
 export function ScopedSetting({
   field,
@@ -51,7 +54,9 @@ export function ScopedSetting({
           <TooltipTarget text={optionTip(field, effective)}>
             <select className="form-control" value={effective} onChange={(event) => change(event.target.value)}>
               {field.choices.map((choice) => (
-                <option key={choice}>{choice}</option>
+                <option key={choice} value={choice}>
+                  {proofingChoiceLabel(field.key, choice)}
+                </option>
               ))}
             </select>
           </TooltipTarget>

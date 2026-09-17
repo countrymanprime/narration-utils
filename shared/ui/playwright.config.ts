@@ -18,7 +18,7 @@ export default defineConfig({
     screenshot: 'off',
   },
   webServer: {
-    command: 'npm run dev:mock',
+    command: 'pnpm run dev:mock',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,

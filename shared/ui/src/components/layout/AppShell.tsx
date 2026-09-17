@@ -16,12 +16,14 @@ export function AppShell({
   navigate,
   projectName,
   daw,
+  hasManuscript,
   children,
 }: {
   pathname: string;
   navigate: (path: string) => void;
   projectName: string;
   daw: string;
+  hasManuscript: boolean;
   children: ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -43,7 +45,14 @@ export function AppShell({
       </div>
       <nav className="shell-nav">
         {NAV.map((item) => (
-          <NavButton key={item.name} active={isActivePath(pathname, item.path)} icon={item.icon} onClick={() => go(item.path)}>
+          <NavButton
+            key={item.name}
+            active={isActivePath(pathname, item.path)}
+            icon={item.icon}
+            onClick={() => go(item.path)}
+            disabled={item.path !== '/' && !hasManuscript}
+            disabledReason="Import a manuscript to unlock this page."
+          >
             {item.name}
           </NavButton>
         ))}
@@ -60,7 +69,15 @@ export function AppShell({
       <aside className="desktop-sidebar">{navigation}</aside>
       <aside className="medium-rail" aria-label="Primary navigation">
         {NAV.map((item) => (
-          <NavButton key={item.name} active={isActivePath(pathname, item.path)} icon={item.icon} onClick={() => go(item.path)} iconOnly>
+          <NavButton
+            key={item.name}
+            active={isActivePath(pathname, item.path)}
+            icon={item.icon}
+            onClick={() => go(item.path)}
+            iconOnly
+            disabled={item.path !== '/' && !hasManuscript}
+            disabledReason="Import a manuscript to unlock this page."
+          >
             {item.name}
           </NavButton>
         ))}

@@ -1,5 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBookmark, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { isListableChapter } from '../../state';
 import type { ManuscriptChapter, ReaderBookmark, SearchHit } from '../../types';
 
 export const STATUS_LABELS = { not_started: 'Not Started', recording: 'Recording', editing: 'Editing', proofing: 'Proofing', finalized: 'Finalized' } as const;
@@ -35,7 +36,8 @@ export function ChapterNav({
   const lineNumber = (paragraph?: number) => (paragraph === undefined ? undefined : (lineNumbers.get(paragraph) ?? paragraph));
   const matchesFor = (chapter: ManuscriptChapter) =>
     searchResults.filter((hit) => hit.chapterId === chapter.id || (!hit.chapterId && hit.chapter === chapter.title));
-  const visibleChapters = searching ? chapters.filter((chapter) => matchesFor(chapter).length > 0) : chapters;
+  const listableChapters = chapters.filter(isListableChapter);
+  const visibleChapters = searching ? listableChapters.filter((chapter) => matchesFor(chapter).length > 0) : listableChapters;
   return (
     <div className="space-y-1">
       {searching && searchResults.length === 0 && (

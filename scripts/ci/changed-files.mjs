@@ -6,12 +6,12 @@ import { pathToFileURL } from 'node:url';
 
 const BOOTSTRAP_INPUTS = new Set([
   'package.json',
-  'package-lock.json',
-  'requirements.lock',
+  'pnpm-lock.yaml',
+  'pyproject.toml',
+  'uv.lock',
   'shell/package.json',
-  'shell/package-lock.json',
   'shared/ui/package.json',
-  'shared/ui/package-lock.json',
+  'pnpm-workspace.yaml',
 ]);
 
 const NON_RUNTIME_FILES = new Set(['.editorconfig', '.gitattributes', '.gitignore', '.github/pull_request_template.md', 'LICENSE', 'LICENSE.md']);
@@ -20,9 +20,8 @@ export function needsBootstrap(files) {
   return files.some(
     (file) =>
       BOOTSTRAP_INPUTS.has(file) ||
-      file === 'Cargo.lock' ||
-      file.endsWith('/Cargo.toml') ||
-      file === 'Cargo.toml' ||
+	  file === 'shell/go.mod' ||
+	  file === 'shell/go.sum' ||
       file === 'scripts/bootstrap.mjs' ||
       file === 'scripts/bootstrap.test.mjs',
   );

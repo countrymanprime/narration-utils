@@ -9,11 +9,12 @@ test('documentation-only changes skip bootstrap and native packages', () => {
 
 test('bootstrap inputs run the bootstrap matrix and retain package coverage', () => {
   assert.deepEqual(classifyFiles(['scripts/bootstrap.mjs']), { bootstrap: true, package: true });
-  assert.deepEqual(classifyFiles(['requirements.lock']), { bootstrap: true, package: true });
+  assert.deepEqual(classifyFiles(['uv.lock']), { bootstrap: true, package: true });
+  assert.deepEqual(classifyFiles(['pnpm-lock.yaml']), { bootstrap: true, package: true });
 });
 
 test('runtime and unknown paths retain native package coverage', () => {
-  assert.deepEqual(classifyFiles(['shell/src-tauri/src/main.rs']), { bootstrap: false, package: true });
+  assert.deepEqual(classifyFiles(['shell/app.go']), { bootstrap: false, package: true });
   assert.deepEqual(classifyFiles(['new-runtime-area/config.json']), { bootstrap: false, package: true });
 });
 

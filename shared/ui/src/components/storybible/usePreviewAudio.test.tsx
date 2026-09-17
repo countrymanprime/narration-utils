@@ -20,15 +20,16 @@ afterEach(() => {
 
 describe('usePreviewAudio', () => {
   it('ignores a stale request after the selected entity changes', async () => {
-    let resolvePreview: (value: { status: 'ready'; url: string }) => void = () => {};
+    let resolvePreview: (value: { status: 'ready'; audioBase64: string; mimeType: string }) => void = () => {};
     const requestPreview = vi.fn(
       () =>
-        new Promise<{ status: 'ready'; url: string }>((resolve) => {
+        new Promise<{ status: 'ready'; audioBase64: string; mimeType: string }>((resolve) => {
           resolvePreview = resolve;
         }),
     );
     const notify = vi.fn();
     vi.stubGlobal('Audio', PreviewAudio);
+    vi.stubGlobal('URL', { createObjectURL: vi.fn(() => 'blob:test'), revokeObjectURL: vi.fn() });
     const { result, rerender } = renderHook(
       ({ resetKey }) =>
         usePreviewAudio({
@@ -42,7 +43,7 @@ describe('usePreviewAudio', () => {
 
     act(() => void result.current.playPreview());
     rerender({ resetKey: 'second' });
-    await act(async () => resolvePreview({ status: 'ready', url: '/stale.wav' }));
+    await act(async () => resolvePreview({ status: 'ready', audioBase64: '', mimeType: 'audio/wav' }));
 
     expect(requestPreview).toHaveBeenCalledTimes(1);
     expect(notify).not.toHaveBeenCalled();
@@ -51,6 +52,7 @@ describe('usePreviewAudio', () => {
 
   it('stops active audio when the feature unmounts', async () => {
     const previews: PreviewAudio[] = [];
+    vi.stubGlobal('URL', { createObjectURL: vi.fn(() => 'blob:test'), revokeObjectURL: vi.fn() });
     vi.stubGlobal(
       'Audio',
       class extends PreviewAudio {
@@ -63,7 +65,7 @@ describe('usePreviewAudio', () => {
     const { result, unmount } = renderHook(() =>
       usePreviewAudio({
         resetKey: 'entry',
-        requestPreview: async () => ({ status: 'ready', url: '/preview.wav' }),
+        requestPreview: async () => ({ status: 'ready', audioBase64: '', mimeType: 'audio/wav' }),
         onAssetRequired: vi.fn(),
         notify: vi.fn(),
       }),

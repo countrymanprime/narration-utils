@@ -9,7 +9,7 @@ actually said.
 
 - `core/` — the DAW-agnostic Python backend (`compare.py`), plus `homophones.csv` and
   `common_words.txt`. No DAW APIs are used here; it's a plain CLI invoked by whichever DAW
-  driver below is running it. Its dependencies are declared in the repo-root `requirements.txt`.
+  driver below is running it. Its dependencies are declared in the repo-root `pyproject.toml` and pinned in `uv.lock`.
 - `daws/reaper/` — reserved for a future dedicated adapter. REAPER integration is currently
   centralized in `shared/reaper/narration_ui_bridge.lua`.
 - `daws/audacity/` — placeholder for a future Audacity driver.
@@ -29,7 +29,7 @@ actually said.
 - The React Narration Utils workspace owns this workflow and settings: its Settings page opens
   **Global**/**This Project** values for the default Whisper model and
   take-marker colors. Python runtimes are fixed local checkout dependencies
-  managed by `npm run bootstrap`.
+  managed by `pnpm run bootstrap`.
 - Pick or replace the Word manuscript from the workspace Home page.
 
 ## Install as REAPER actions
@@ -78,7 +78,7 @@ multi-minute wait first.
    transcription).
 2. Run **Narration Utils** from the action list, open **Transcript Compare**, and choose
    **Start comparison**.
-3. The first time you run it in a project, import a DOCX, Markdown, or text-based PDF manuscript from Home.
+3. The first time you run it in a project, import a DOCX or Markdown manuscript from Home. New PDF import is fail-closed pending corpus parity; existing canonical v1 data remains readable.
    It is normalized into `<project folder>\narration-utils\manuscript\manuscript.json`; every run
    reuses that canonical data with no source-file parsing. (The project must be saved
    at least once, since the manuscript is stored alongside the project file; for an unsaved

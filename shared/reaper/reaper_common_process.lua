@@ -3,8 +3,16 @@
 
 local M = {}
 
+local function windows()
+  return reaper.GetOS():find('Win') ~= nil
+end
+
 local function quote(v)
-  return '"' .. tostring(v or ''):gsub('"', '""') .. '"'
+  local value = tostring(v or '')
+  if windows() then
+    return '"' .. value:gsub('"', '""') .. '"'
+  end
+  return "'" .. value:gsub("'", "'\\''") .. "'"
 end
 M.quote = quote
 
@@ -31,6 +39,18 @@ M.quote = quote
 --                  returns, since os.execute only sees wscript.exe's status.
 function M.run_hidden(scratch_dir, command, opts)
   opts = opts or {}
+  if not windows() then
+    -- REAPER's asynchronous process API is available on macOS and Linux.
+    -- A Wails GUI executable owns its own window, so there is no hidden
+    -- console shim or Windows-specific helper on those platforms.
+    local launch = command
+    if opts.cwd and opts.cwd ~= '' then
+      launch = 'cd ' .. quote(opts.cwd) .. ' && ' .. command
+    end
+    local timeout = opts.wait and 0 or -1
+    local ok = pcall(reaper.ExecProcess, launch, timeout)
+    return ok
+  end
   local vbs_path = scratch_dir .. '\\run_' .. tostring(reaper.time_precise()):gsub('[%.]', '') .. '.vbs'
   local vf = io.open(vbs_path, 'w')
   if not vf then
@@ -66,6 +86,11 @@ end
 -- Shell.Application's ShellExecute is the actual association-aware API -
 -- the same one Explorer itself uses for a double-click.
 function M.open_file_with_default_app(scratch_dir, path)
+  if not windows() then
+    local opener = reaper.GetOS():find('OSX') and 'open' or 'xdg-open'
+    local ok = pcall(reaper.ExecProcess, opener .. ' ' .. quote(path), -1)
+    return ok
+  end
   local vbs_path = scratch_dir .. '\\open_' .. tostring(reaper.time_precise()):gsub('[%.]', '') .. '.vbs'
   local vf = io.open(vbs_path, 'w')
   if not vf then

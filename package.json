@@ -2,6 +2,7 @@
   "name": "narration-utils",
   "private": true,
   "version": "0.1.0",
+  "packageManager": "pnpm@11.27.0",
   "description": "Release and developer tooling for Narration Utils.",
   "scripts": {
     "prepare": "husky",

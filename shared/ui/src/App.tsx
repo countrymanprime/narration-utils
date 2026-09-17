@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import type { Bootstrap } from './types';
 import { useApi } from './api/ApiContext';
 import { AppShell } from './components/layout/AppShell';
@@ -33,7 +33,6 @@ function AppRoutes() {
   const [startupError, setStartupError] = useState('');
   const [diagnosticId, setDiagnosticId] = useState('');
   const [retryKey, setRetryKey] = useState(0);
-  const [serverLost, setServerLost] = useState(false);
   const [settingsDirty, setSettingsDirty] = useState(false);
   const [pendingPath, setPendingPath] = useState<string>();
   const settingsActions = useRef<{ save: () => Promise<void>; discard: () => Promise<void> }>();
@@ -92,37 +91,22 @@ function AppRoutes() {
     };
   }, [retryKey, api]);
 
-  // Live transcript-run progress arrives over SSE instead of a 350ms client
-  // poll loop - see api/httpClient.ts's subscribeTranscript / Endpoints.cs's
-  // /api/transcript/events.
+  // Transcript state arrives through one native Wails event subscription.
   useEffect(() => {
     if (!hasBootstrap) return;
     return api.subscribeTranscript((transcript) => setData((current) => (current ? { ...current, transcript } : current)));
   }, [api, hasBootstrap]);
 
-  // Keeps the Python server (shared/server, no native window of its own) in
-  // sync with this tab: as long as this pings successfully, main.py's idle
-  // watchdog knows someone still has the app open and won't shut down. Runs
-  // unconditionally (not gated on `data`) and independently of which page is
-  // open, and also doubles as the "did the server disappear" check - after a
-  // few consecutive misses, show the same startup screen with a reconnect
-  // option instead of leaving every page silently failing its own fetches.
+  // Wails forwards a second REAPER launch to the existing native window. The
+  // host replaces project-scoped services only after proving it is idle, then
+  // this one subscription refreshes the shared application bootstrap.
   useEffect(() => {
-    let misses = 0;
-    const interval = window.setInterval(() => {
-      void api
-        .ready()
-        .then(() => {
-          misses = 0;
-          setServerLost(false);
-        })
-        .catch(() => {
-          misses += 1;
-          if (misses >= 3) setServerLost(true);
-        });
-    }, 30_000);
-    return () => window.clearInterval(interval);
-  }, [api]);
+    if (!hasBootstrap) return;
+    return api.subscribeProjectAttach((state) => {
+      if (state.attached) void refreshBootstrap();
+      else if (state.reason) setNotice(state.reason);
+    });
+  }, [api, hasBootstrap, refreshBootstrap]);
 
   useEffect(() => {
     if (!hasBootstrap) return;
@@ -147,14 +131,13 @@ function AppRoutes() {
       .catch(() => {});
   }, [api, hasBootstrap]);
 
-  if (!data || serverLost)
+  if (!data)
     return (
       <StartupScreen
-        state={serverLost ? 'disconnected' : startup}
+        state={startup}
         error={startupError}
         diagnosticId={diagnosticId}
         retry={() => {
-          setServerLost(false);
           setStartup('connecting');
           setStartupError('');
           setRetryKey((value) => value + 1);
@@ -173,6 +156,10 @@ function AppRoutes() {
 
   const guardedNavigate = (next: string) => {
     const nextPath = next.split('#')[0] || '/';
+    if (!data.manuscript && ['/manuscript', '/proofing', '/story-bible'].includes(nextPath)) {
+      navigate('/', { replace: true });
+      return;
+    }
     if (nextPath !== location.pathname && location.pathname === '/settings' && settingsDirty) {
       setPendingPath(next);
       return;
@@ -184,18 +171,36 @@ function AppRoutes() {
   return (
     <div className="h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       <TooltipProvider>
-        <AppShell pathname={location.pathname} navigate={guardedNavigate} projectName={data.projectName} daw={data.daw}>
+        <AppShell
+          pathname={location.pathname}
+          navigate={guardedNavigate}
+          projectName={data.projectName}
+          daw={data.daw}
+          hasManuscript={Boolean(data.manuscript)}
+        >
           <ErrorBoundary key={location.pathname.split('/')[1] || 'home'}>
             <Routes>
               <Route
                 path="/"
                 element={<Home data={data} go={guardedNavigate} notify={setNotice} goToManuscript={goToManuscript} refreshBootstrap={refreshBootstrap} />}
               />
-              <Route path="/manuscript" element={<Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} />} />
-              <Route path="/story-bible" element={<Guide notify={setNotice} goToManuscript={goToManuscript} />} />
+              <Route
+                path="/manuscript"
+                element={data.manuscript ? <Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} /> : <Navigate to="/" replace />}
+              />
+              <Route
+                path="/story-bible"
+                element={data.manuscript ? <Guide notify={setNotice} goToManuscript={goToManuscript} /> : <Navigate to="/" replace />}
+              />
               <Route
                 path="/proofing"
-                element={<Transcript state={data.transcript} notify={setNotice} goHome={() => guardedNavigate('/')} goToManuscript={goToManuscript} />}
+                element={
+                  data.manuscript ? (
+                    <Transcript state={data.transcript} notify={setNotice} goHome={() => guardedNavigate('/')} goToManuscript={goToManuscript} />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                }
               />
               <Route
                 path="/settings"
@@ -206,6 +211,10 @@ function AppRoutes() {
                     onDirtyChange={setSettingsDirty}
                     registerActions={(actions) => {
                       settingsActions.current = actions;
+                    }}
+                    onProjectDataCleared={async () => {
+                      await refreshBootstrap();
+                      guardedNavigate('/');
                     }}
                   />
                 }

@@ -3,6 +3,10 @@
 -- take markers, and moves the edit cursor on commands from the Python host.
 
 local M = {}
+local SEP = package.config:sub(1, 1)
+local function join(base, child)
+  return base .. SEP .. child
+end
 
 local function encode(value)
   return tostring(value or ''):gsub('[^%w%-_%.~]', function(c)
@@ -31,7 +35,7 @@ local function event(session_dir, tag, ...)
   for _, value in ipairs({ ... }) do
     values[#values + 1] = encode(value)
   end
-  local handle = io.open(session_dir .. '\\events.log', 'a')
+  local handle = io.open(join(session_dir, 'events.log'), 'a')
   if handle then
     handle:write(table.concat(values, '|') .. '\n')
     handle:close()
@@ -96,7 +100,7 @@ local function prepare_compare(session_dir, runs, run_id)
     event(session_dir, 'ERROR', 'Save the REAPER project before starting Transcript Compare.')
     return
   end
-  local manuscript = project_folder .. '\\narration-utils\\manuscript\\manuscript.json'
+  local manuscript = join(join(join(project_folder, 'narration-utils'), 'manuscript'), 'manuscript.json')
   if not file_exists(manuscript) then
     event(session_dir, 'ERROR', 'Import a manuscript in Narration Utils before starting Transcript Compare.')
     return
@@ -152,7 +156,7 @@ local function prepare_compare(session_dir, runs, run_id)
     event(session_dir, 'ERROR', 'No resolvable audio sources were found in the selection.')
     return
   end
-  local manifest_path = session_dir .. '\\manifest_' .. run_id .. '.txt'
+  local manifest_path = join(session_dir, 'manifest_' .. run_id .. '.txt')
   local output = io.open(manifest_path, 'w')
   if not output then
     event(session_dir, 'ERROR', 'Could not write the REAPER audio manifest.')
@@ -160,9 +164,9 @@ local function prepare_compare(session_dir, runs, run_id)
   end
   output:write(table.concat(manifest, '\n') .. '\n')
   output:close()
-  local data_dir, diffs = project_folder .. '\\TranscriptCompare', project_folder .. '\\TranscriptCompare\\diffs'
+  local data_dir, diffs = join(project_folder, 'TranscriptCompare'), join(join(project_folder, 'TranscriptCompare'), 'diffs')
   reaper.RecursiveCreateDirectory(diffs, 0)
-  local diff_path = diffs .. '\\' .. safe_name(track_name) .. '_' .. run_id .. '.diff'
+  local diff_path = join(diffs, safe_name(track_name) .. '_' .. run_id .. '.diff')
   runs[run_id] = { mapping = mapping, track = track_name, diff_path = diff_path, rows = {} }
   event(session_dir, 'COMPARE_PREPARED', run_id, manifest_path, manuscript, track_name, diff_path, tostring(#manifest))
 end
@@ -285,10 +289,10 @@ local function export_results(session_dir, runs, run_id, path, misread, skipped,
 end
 
 function M.run(session_dir)
-  local commands_dir, active, runs = session_dir .. '\\commands', true, {}
+  local commands_dir, active, runs = join(session_dir, 'commands'), true, {}
   local function tick()
     for _, name in ipairs(command_files(commands_dir)) do
-      local path = commands_dir .. '\\' .. name
+      local path = join(commands_dir, name)
       local handle = io.open(path, 'r')
       local line = handle and handle:read('*l') or ''
       if handle then

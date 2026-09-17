@@ -5,6 +5,7 @@ import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import type { ChapterStatus, ManuscriptChapter } from '../../types';
 import { estimateFinishedHours } from '../../state';
 import { useApi } from '../../api/ApiContext';
+import { MeterBar } from '../primitives/MeterBar';
 import { Panel } from '../primitives/Panel';
 import { STATUS_COLOR, STATUS_LABELS, STATUS_ORDER } from '../manuscript/ChapterNav';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
@@ -113,18 +114,17 @@ export function AudiobookEstimatePanel({
               {finalizedCount} of {narrationChapters.length} chapters finalized
             </span>
           </div>
-          <div className="flex h-4 overflow-hidden rounded-full" style={{ background: 'var(--surface-3)' }}>
-            {STATUS_ORDER.filter((status) => statusTotals[status].count > 0).map((status) => (
-              <TooltipTarget
-                key={status}
-                className="progress-segment"
-                style={{ flexBasis: `${((statusTotals[status].words / totalWords) * 100).toFixed(1)}%` }}
-                text={`${STATUS_LABELS[status]}: ${statusTotals[status].count} chapter${statusTotals[status].count === 1 ? '' : 's'} · ~${fmtHours(statusTotals[status].hours)} finished audio`}
-              >
-                <span style={{ background: STATUS_COLOR[status] }} />
-              </TooltipTarget>
-            ))}
-          </div>
+          <MeterBar
+            segments={[...STATUS_ORDER]
+              .reverse()
+              .filter((status) => statusTotals[status].count > 0)
+              .map((status) => ({
+                key: status,
+                widthPercent: (statusTotals[status].words / totalWords) * 100,
+                color: STATUS_COLOR[status],
+                tooltip: `${STATUS_LABELS[status]}: ${statusTotals[status].count} chapter${statusTotals[status].count === 1 ? '' : 's'} · ~${fmtHours(statusTotals[status].hours)} finished audio`,
+              }))}
+          />
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs" style={{ color: 'var(--text-muted)' }}>
             {STATUS_ORDER.map((status) => (
               <span key={status} className="flex items-center gap-1.5">
@@ -140,9 +140,9 @@ export function AudiobookEstimatePanel({
               <thead>
                 <tr>
                   <th>Chapter</th>
-                  <th>Words</th>
-                  <th>Est. finished length</th>
-                  <th>Actual recorded</th>
+                  <th className="text-right">Words</th>
+                  <th className="text-right">Est. finished length</th>
+                  <th className="text-right">Actual recorded</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -173,9 +173,9 @@ export function AudiobookEstimatePanel({
                           </Link>
                         </div>
                       </td>
-                      <td className="f-mono">{chapter.wordCount.toLocaleString()}</td>
-                      <td className="f-mono">{fmtHours(finished)}</td>
-                      <td className="f-mono">
+                      <td className="f-mono text-right">{chapter.wordCount.toLocaleString()}</td>
+                      <td className="f-mono text-right">{fmtHours(finished)}</td>
+                      <td className="f-mono text-right">
                         {(chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status]) > 0
                           ? fmtHours(finished * (chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status]))
                           : '—'}

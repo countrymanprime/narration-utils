@@ -1,0 +1,12 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "Narration Utils",
+  "outputfilename": "narration-utils-shell",
+  "frontend:dir": "../shared/ui",
+  "frontend:build": "pnpm run build && node ../../scripts/copy-wails-frontend.mjs",
+  "frontend:dev:watcher": "pnpm run dev",
+  "frontend:dev:serverUrl": "",
+  "author": {
+    "name": "Narration Utils"
+  }
+}

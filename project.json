@@ -5,13 +5,13 @@
   "sourceRoot": ".",
   "targets": {
     "build": {
-      "command": "npm --prefix shared/ui run build && npm --prefix shell run build"
+      "command": "pnpm --dir shared/ui run build && pnpm --dir shell run build"
     },
     "test": {
-      "command": "npm --prefix shared/ui test"
+      "command": "pnpm --dir shared/ui test"
     },
     "lint": {
-      "command": "npm --prefix shared/ui run lint:ci"
+      "command": "pnpm --dir shared/ui run lint:ci"
     }
   }
 }

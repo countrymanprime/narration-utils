@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faList, faXmark } from '@fortawesome/free-solid-svg-icons';
@@ -31,6 +31,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
   const bandRef = useRef<HTMLDivElement>(null);
   const searchRequest = useRef(0);
   const requestedChapters = useRef(new Set<string>());
+  const highlightTimer = useRef<number>();
   const [bandHeight, setBandHeight] = useState(0);
   const [chapters, setChapters] = useState<Awaited<ReturnType<typeof api.manuscriptChapters>>>([]);
   const [paragraphs, setParagraphs] = useState<ManuscriptParagraph[]>([]);
@@ -55,18 +56,26 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
+  useEffect(() => () => window.clearTimeout(highlightTimer.current), []);
   const closeSheet = () => {
     setSheet(undefined);
     setDetail(undefined);
   };
-  const saveState = async (next: ReaderState) => {
-    setReaderState(next);
-    try {
-      await api.readerStateSave({ activeChapter: next.activeChapter, activeSourceLine: next.activeSourceLine, expandedChapters: next.expandedChapters || [] });
-    } catch (error) {
-      notify(String(error));
-    }
-  };
+  const saveState = useCallback(
+    async (next: ReaderState) => {
+      setReaderState(next);
+      try {
+        await api.readerStateSave({
+          activeChapter: next.activeChapter,
+          activeSourceLine: next.activeSourceLine,
+          expandedChapters: next.expandedChapters || [],
+        });
+      } catch (error) {
+        notify(String(error));
+      }
+    },
+    [api, notify],
+  );
 
   useEffect(() => {
     void (async () => {
@@ -88,7 +97,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
         notify(String(error));
       }
     })();
-  }, []);
+  }, [api, notify]);
   useEffect(() => {
     for (const chapterId of readerState.expandedChapters || []) {
       if (requestedChapters.current.has(chapterId)) continue;
@@ -115,29 +124,33 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const showChapter = (chapter: string, paragraph?: number) => {
-    if (!chapter) return;
-    const chapterId = chapters.find((item) => item.id === chapter || item.title === chapter)?.id || chapter;
-    const next = { ...readerState, activeChapter: chapterId, expandedChapters: Array.from(new Set([...(readerState.expandedChapters || []), chapterId])) };
-    void saveState(next);
-    const selector = paragraph === undefined ? `[data-chapter-id="${escapeSelector(chapterId)}"]` : `[data-paragraph="${paragraph}"]`;
-    // Expanding a chapter that wasn't already rendered mounts a new
-    // ParagraphView (which re-runs entity highlighting) before the target
-    // node exists; poll across frames instead of guessing a fixed delay so
-    // cross-chapter jumps land correctly once the node actually appears.
-    const deadline = Date.now() + 2000;
-    const attempt = () => {
-      const target = document.querySelector<HTMLElement>(selector);
-      if (target) {
-        target.scrollIntoView?.({ behavior: 'smooth', block: paragraph === undefined ? 'start' : 'center' });
-        target.classList.add('source-flash');
-        window.setTimeout(() => target.classList.remove('source-flash'), 1700);
-        return;
-      }
-      if (Date.now() < deadline) requestAnimationFrame(attempt);
-    };
-    requestAnimationFrame(attempt);
-  };
+  const showChapter = useCallback(
+    (chapter: string, paragraph?: number) => {
+      if (!chapter) return;
+      const chapterId = chapters.find((item) => item.id === chapter || item.title === chapter)?.id || chapter;
+      const next = { ...readerState, activeChapter: chapterId, expandedChapters: Array.from(new Set([...(readerState.expandedChapters || []), chapterId])) };
+      void saveState(next);
+      const selector = paragraph === undefined ? `[data-chapter-id="${escapeSelector(chapterId)}"]` : `[data-paragraph="${paragraph}"]`;
+      // Expanding a chapter that wasn't already rendered mounts a new
+      // ParagraphView (which re-runs entity highlighting) before the target
+      // node exists; poll across frames instead of guessing a fixed delay so
+      // cross-chapter jumps land correctly once the node actually appears.
+      const deadline = Date.now() + 2000;
+      const attempt = () => {
+        const target = document.querySelector<HTMLElement>(selector);
+        if (target) {
+          target.scrollIntoView?.({ behavior: 'smooth', block: paragraph === undefined ? 'start' : 'center' });
+          window.clearTimeout(highlightTimer.current);
+          target.classList.add('source-flash');
+          highlightTimer.current = window.setTimeout(() => target.classList.remove('source-flash'), 30_000);
+          return;
+        }
+        if (Date.now() < deadline) requestAnimationFrame(attempt);
+      };
+      requestAnimationFrame(attempt);
+    },
+    [chapters, readerState, saveState],
+  );
   // Deep links into a specific paragraph/chapter arrive as a URL anchor -
   // "#p123" for paragraph 123 (its globally unique index, assigned at
   // manuscript import - see manuscript_guide.py's export_manuscript), or
@@ -159,7 +172,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
       return;
     }
     routerNavigate('/manuscript', { replace: true });
-  }, [location.hash, chapters]);
+  }, [location.hash, chapters, routerNavigate, showChapter]);
   const toggleManualChapter = (chapter: string) => {
     const expanded = new Set(readerState.expandedChapters || []);
     if (expanded.has(chapter)) expanded.delete(chapter);

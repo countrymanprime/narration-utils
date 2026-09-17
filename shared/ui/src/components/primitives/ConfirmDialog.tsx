@@ -1,6 +1,6 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import type { ReactNode } from 'react';
+import { Button } from './Button';
+import { Dialog } from './Dialog';
 
 export function ConfirmDialog({
   title,
@@ -22,34 +22,31 @@ export function ConfirmDialog({
   children?: ReactNode;
 }) {
   return (
-    <div className="confirm-backdrop" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="confirm-dialog">
-        <div className="panel-head">
-          <h2 className="font-semibold">{title}</h2>
-          <button className="icon-btn" aria-label="Close" onClick={cancel}>
-            <FontAwesomeIcon icon={faXmark} />
-          </button>
-        </div>
-        <div className="panel-body">
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            {body}
-          </p>
-          {children}
-          <div className="mt-5 flex justify-end gap-2">
-            <button className="btn btn-ghost" onClick={cancel}>
-              Cancel
-            </button>
+    <Dialog
+      title={title}
+      onClose={cancel}
+      actions={
+        <>
+          <Button variant="ghost" onClick={cancel}>
+            Cancel
+          </Button>
+          <div className="flex gap-2">
             {danger && (
-              <button className="btn btn-danger" onClick={danger}>
+              <Button variant="danger" onClick={danger}>
                 {dangerLabel}
-              </button>
+              </Button>
             )}
-            <button className="btn btn-primary" onClick={confirm}>
+            <Button variant="primary" onClick={confirm}>
               {confirmLabel}
-            </button>
+            </Button>
           </div>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+        {body}
+      </p>
+      {children}
+    </Dialog>
   );
 }

@@ -1,7 +1,31 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { bootstrapCommands, buildCommands, localPaths, localPython, parseOptions, pythonVersionError, runBootstrap } from './bootstrap.mjs';
+import {
+  bootstrapCommands,
+  buildCommands,
+  GO_VERSION,
+  localToolPaths,
+  localPaths,
+  localPython,
+  parseOptions,
+  PNPM_VERSION,
+  pythonVersionError,
+  runBootstrap,
+  STATICCHECK_VERSION,
+  STYLUA_VERSION,
+  UV_VERSION,
+  WAILS_VERSION,
+} from './bootstrap.mjs';
+
+test('reads all pinned Go/Wails quality-tool versions from the toolchain manifest', () => {
+  assert.equal(PNPM_VERSION, '11.27.0');
+  assert.equal(UV_VERSION, '0.12.15');
+  assert.equal(GO_VERSION, '1.27.1');
+  assert.equal(WAILS_VERSION, 'v2.16.0');
+  assert.equal(STATICCHECK_VERSION, 'v0.8.1');
+  assert.equal(STYLUA_VERSION, 'v2.1.0');
+});
 
 test('parses supported options and rejects conflicting installs', () => {
   assert.deepEqual(parseOptions(['--python', '/opt/python', '--skip-install']), { python: '/opt/python', skipInstall: true, refresh: false, release: false });
@@ -16,16 +40,22 @@ test('uses platform-specific virtual-environment paths', () => {
   assert.equal(localPaths('/repo', 'darwin').length, 4);
 });
 
-test('build plan installs locked dependencies and defaults to a debug workspace build', () => {
+test('prefers the pinned repo-local Go and Wails tool directories', () => {
+  assert.deepEqual(localToolPaths('C:\\repo', 'win32'), ['C:\\repo\\.tools\\go-1.27.1\\go\\bin', 'C:\\repo\\.tools\\go-bin', 'C:\\repo\\.tools\\wails-bin']);
+});
+
+test('build plan installs locked dependencies and creates a production-like workspace binary', () => {
   const commands = bootstrapCommands('/repo', 'python3', 'linux');
-  assert.deepEqual(commands[1], ['/repo/.venv/bin/python', ['-m', 'pip', 'install', '--disable-pip-version-check', '--requirement', 'requirements.lock']]);
+  assert.deepEqual(commands[1], ['uv', ['sync', '--locked']]);
+  assert.ok(commands.some(([command, args]) => command === 'pnpm' && args.join(' ') === 'install --frozen-lockfile'));
   const builds = buildCommands();
-  assert.ok(builds.some(([command, args]) => command === 'cargo' && args.join(' ') === 'build --workspace'));
-  assert.ok(builds.every(([, args]) => !args.includes('--release')));
+  assert.ok(builds.some(([command, args]) => command === 'go' && args.join(' ') === '-C shell test ./...'));
+  assert.ok(builds.some(([command, args]) => command === 'pnpm' && args.join(' ') === '--dir shell run build'));
+  assert.ok(builds.every(([, args]) => !args.includes('-debug')));
   const releaseBuilds = buildCommands({ release: true });
-  assert.ok(releaseBuilds.some(([command, args]) => command === 'cargo' && args.join(' ') === 'build --workspace --release'));
+  assert.ok(releaseBuilds.some(([command, args]) => command === 'pnpm' && args.join(' ') === '--dir shell run build'));
   assert.ok([...commands, ...builds].every(([, args]) => !args.join(' ').includes('prepare-resources')));
-  assert.ok([...commands, ...builds].every(([, args]) => !args.join(' ').includes('tauri build')));
+  assert.ok([...commands, ...builds].every(([, args]) => !args.join(' ').includes('cargo')));
 });
 
 test('uses the Windows Python launcher only when no executable was selected', () => {
@@ -40,7 +70,7 @@ test('runs setup commands in order and reports subprocess failure', () => {
     { root: '/repo', platform: 'linux', skipPreflight: true, run: (command, args) => calls.push([command, args]), log: () => {} },
   );
   assert.equal(calls[0][0], 'python3');
-  assert.equal(calls.at(-1)[0], 'cargo');
+  assert.equal(calls.at(-1)[0], 'pnpm');
   assert.throws(
     () =>
       runBootstrap(
@@ -72,7 +102,7 @@ test('keeps an existing virtual environment while reconciling locked dependencie
       log: () => {},
     },
   );
-  assert.deepEqual(calls[0], ['/repo/.venv/bin/python', ['-m', 'pip', 'install', '--disable-pip-version-check', '--requirement', 'requirements.lock']]);
+  assert.deepEqual(calls[0], ['uv', ['sync', '--locked']]);
 });
 
 test('skip install still builds existing environments', () => {

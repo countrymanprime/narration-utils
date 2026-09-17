@@ -5,8 +5,9 @@ implementation around the product domain that owns its behavior.
 
 ## Stable boundaries
 
-- `shell/` is the Tauri desktop host. Its in-process Axum API owns the
-  loopback HTTP surface and static UI fallback.
+- `shell/` is the Go/Wails desktop host. It exposes generated, typed Wails
+  bindings and native events only; it has no loopback HTTP surface, port, or
+  browser fallback.
 - `shared/ui/` is the React application. It communicates only through the
   typed API facade; feature components do not import HTTP transport code.
 - `tools/*/core/` remain stable Python CLI entrypoints for DAW integrations.
@@ -16,9 +17,9 @@ implementation around the product domain that owns its behavior.
   as canonical manuscript access, settings, logging, progress, and bridge
   encoding. Feature-specific analysis stays with its tool.
 
-## Rust host ownership
+## Go host ownership
 
-`shell/src-tauri/src/server/routes/` is the auditable HTTP route index:
+`shell/bindings.go` is the auditable generated-Wails binding index. The native app does not expose HTTP routes.
 
 - `system` owns health, bootstrap, settings, diagnostics, and shutdown.
 - `manuscript` owns canonical text, reader state, notes, and import jobs.
@@ -26,9 +27,8 @@ implementation around the product domain that owns its behavior.
 - `transcript` owns comparison lifecycle, review results, and marker export.
 - `tts` owns the approved voice catalog and install jobs.
 
-`contracts/` holds request/response wire types. Services and infrastructure
-remain implementation details behind the route boundary; unknown `/api/*`
-requests must return 404 before the SPA fallback handles browser paths.
+`shell/internal/` holds domain services and infrastructure. The Wails binding
+surface is operation-specific; it does not accept arbitrary route names.
 
 ## UI ownership
 
@@ -39,10 +39,8 @@ state or hooks beside the feature. For example, Story Bible pronunciation
 playback lives in `components/storybible/usePreviewAudio.ts`, while editing and
 rendering remain in `GuideDetail.tsx`.
 
-## Next slices
+## Sidecar boundary
 
-The route registry is the first host split. Move handlers and state methods
-from `server/mod.rs` into their corresponding domain modules only when a test
-preserves the existing HTTP behavior. Split Python tools the same way behind
-their existing `core` entry scripts; do not create a new generic utility
-module for tool-specific algorithms.
+The two Python tools retain their stable `core` CLI contracts and are frozen
+as immutable packaged sidecars. Go supervises them; feature code must not add
+a Python server or a browser transport.
