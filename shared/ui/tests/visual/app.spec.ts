@@ -205,6 +205,11 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'button', 'Global');
       await clickSettingsCategory(page, 'TTS');
     },
+    'global-appearance': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'button', 'Global');
+      await clickSettingsCategory(page, 'Appearance');
+    },
     'project-proofing': async (page) => {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'button', 'This Project');
@@ -253,6 +258,20 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const unlock = page.getByRole('button', { name: 'Unlock entry' });
       if (await unlock.count()) await unlock.click();
       await clickVisible(page, 'button', 'Delete entity');
+    },
+    'theme-light': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'button', 'Global');
+      await clickSettingsCategory(page, 'Appearance');
+      await clickVisible(page, 'button', 'Light');
+      await clickVisible(page, 'button', 'Home');
+    },
+    'theme-dark': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'button', 'Global');
+      await clickSettingsCategory(page, 'Appearance');
+      await clickVisible(page, 'button', 'Dark');
+      await clickVisible(page, 'button', 'Home');
     },
   },
 };

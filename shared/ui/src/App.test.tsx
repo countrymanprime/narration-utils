@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { createMockApi } from './api/mockApi';
+import { ThemeProvider } from './theme/ThemeContext';
 
 // BrowserRouter reads/writes the real window.location via history.pushState,
 // which jsdom keeps alive across tests in this file - reset it so each test
@@ -16,9 +17,11 @@ afterEach(cleanup);
 function renderApp(overrides: Parameters<typeof createMockApi>[0] = {}, initial: Parameters<typeof createMockApi>[1] = {}) {
   const api = createMockApi(overrides, initial);
   render(
-    <ApiProvider api={api}>
-      <App />
-    </ApiProvider>,
+    <ThemeProvider>
+      <ApiProvider api={api}>
+        <App />
+      </ApiProvider>
+    </ThemeProvider>,
   );
   return api;
 }

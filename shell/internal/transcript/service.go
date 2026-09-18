@@ -389,6 +389,9 @@ func (s *Service) handlePrepared(fields []string) {
 	if s.config.Backend != "" {
 		args = append([]string{s.config.Backend}, args...)
 	}
+	if modelDir := option(options, "modelDir", ""); modelDir != "" {
+		args = append(args, "--model-dir", modelDir)
+	}
 	if chapter := option(options, "chapterTitle", ""); chapter != "" {
 		args = append(args, "--chapter-title", chapter)
 	}

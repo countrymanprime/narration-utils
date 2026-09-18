@@ -225,3 +225,23 @@ export function TtsInstallState(arg1) {
 export function TtsRemove(arg1) {
   return window['go']['main']['Host']['TtsRemove'](arg1);
 }
+
+export function WhisperCatalog() {
+  return window['go']['main']['Host']['WhisperCatalog']();
+}
+
+export function WhisperInstall(arg1) {
+  return window['go']['main']['Host']['WhisperInstall'](arg1);
+}
+
+export function WhisperInstallCancel(arg1) {
+  return window['go']['main']['Host']['WhisperInstallCancel'](arg1);
+}
+
+export function WhisperInstallState(arg1) {
+  return window['go']['main']['Host']['WhisperInstallState'](arg1);
+}
+
+export function WhisperRemove(arg1) {
+  return window['go']['main']['Host']['WhisperRemove'](arg1);
+}

@@ -57,6 +57,7 @@ export const STATE_CATALOG: StateEntry[] = [
 
   // Settings
   { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category' },
+  { page: 'settings', state: 'global-appearance', description: 'Settings, Global scope / Appearance category (theme switcher)' },
   { page: 'settings', state: 'global-proofing', description: 'Settings, Global scope / Proofing category' },
   { page: 'settings', state: 'global-storybible', description: 'Settings, Global scope / Story Bible category' },
   { page: 'settings', state: 'global-daw', description: 'Settings, Global scope / DAW Integration category' },
@@ -71,4 +72,10 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'global', state: 'tooltip', description: 'Global tooltip overlay' },
   { page: 'global', state: 'toast', description: 'Global toast overlay' },
   { page: 'global', state: 'confirm-dialog', description: 'Global confirm dialog overlay' },
+
+  // Theme smoke check (Home only, not the full page/state matrix - see
+  // ADR 0010) - explicit Light/Dark selected via Settings > Appearance,
+  // captured on Home across every viewport.
+  { page: 'global', state: 'theme-light', description: 'Home with Light explicitly selected in Settings > Appearance' },
+  { page: 'global', state: 'theme-dark', description: 'Home with Dark explicitly selected in Settings > Appearance' },
 ];

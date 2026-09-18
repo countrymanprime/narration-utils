@@ -17,9 +17,12 @@ import type {
   RecentProject,
   ScopedSettingField,
   SearchHit,
+  TranscriptStartResult,
   TranscriptState,
   TtsCatalog,
   TtsInstallJob,
+  WhisperCatalog,
+  WhisperInstallJob,
   WorkJob,
 } from '../types';
 import * as host from '../../wailsjs/go/main/Host';
@@ -80,7 +83,12 @@ export const wailsClient: NarrationApi = {
   ttsInstallState: (jobId) => decode<TtsInstallJob>(host.TtsInstallState(jobId)),
   ttsInstallCancel: (jobId) => decode<TtsInstallJob>(host.TtsInstallCancel(jobId)),
   ttsRemove: (voiceId) => decode<void>(host.TtsRemove(voiceId)),
-  transcriptStart: (options) => decode<void>(host.TranscriptStart(options)),
+  whisperCatalog: () => decode<WhisperCatalog>(host.WhisperCatalog()),
+  whisperInstall: (modelId) => decode<WhisperInstallJob>(host.WhisperInstall(modelId)),
+  whisperInstallState: (jobId) => decode<WhisperInstallJob>(host.WhisperInstallState(jobId)),
+  whisperInstallCancel: (jobId) => decode<WhisperInstallJob>(host.WhisperInstallCancel(jobId)),
+  whisperRemove: (modelId) => decode<void>(host.WhisperRemove(modelId)),
+  transcriptStart: (options) => decode<TranscriptStartResult>(host.TranscriptStart(options)),
   transcriptCancel: () => decode<void>(host.TranscriptCancel()),
   transcriptReset: () => decode<void>(host.TranscriptReset()),
   transcriptLastCompleted: () =>

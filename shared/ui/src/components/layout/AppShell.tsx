@@ -91,7 +91,7 @@ export function AppShell({
         </div>
       </aside>
       {drawerOpen && (
-        <div className="fixed inset-0 z-[70] bg-[rgba(20,17,12,0.42)]" onMouseDown={() => setDrawerOpen(false)}>
+        <div className="fixed inset-0 z-[70] bg-[var(--backdrop)]" onMouseDown={() => setDrawerOpen(false)}>
           <aside
             className="flex h-full w-[min(17rem,86vw)] flex-col bg-[var(--surface)] shadow-[var(--shadow-lg)]"
             onMouseDown={(event) => event.stopPropagation()}

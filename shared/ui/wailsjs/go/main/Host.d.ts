@@ -112,3 +112,13 @@ export function TtsInstallCancel(arg1:string):Promise<string>;
 export function TtsInstallState(arg1:string):Promise<string>;
 
 export function TtsRemove(arg1:string):Promise<string>;
+
+export function WhisperCatalog():Promise<string>;
+
+export function WhisperInstall(arg1:string):Promise<string>;
+
+export function WhisperInstallCancel(arg1:string):Promise<string>;
+
+export function WhisperInstallState(arg1:string):Promise<string>;
+
+export function WhisperRemove(arg1:string):Promise<string>;

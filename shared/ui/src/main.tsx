@@ -4,6 +4,7 @@ import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
+import { ThemeProvider } from './theme/ThemeContext';
 import './styles.css';
 
 // Mock mode runs the complete UI in a browser without the desktop host.
@@ -20,8 +21,10 @@ const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__N
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ApiProvider api={api}>
-      <App />
-    </ApiProvider>
+    <ThemeProvider>
+      <ApiProvider api={api}>
+        <App />
+      </ApiProvider>
+    </ThemeProvider>
   </React.StrictMode>,
 );

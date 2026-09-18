@@ -482,15 +482,25 @@ def locate_in_segments(concat_time, segments):
     return chosen["item_index"], srcpos
 
 
-def transcribe(audio_array, model_size, language, device="cpu", progress_path=None, hotwords=None, return_info=False):
+def transcribe(audio_array, model_size, language, device="cpu", progress_path=None, hotwords=None, return_info=False, model_dir=None):
     from faster_whisper import WhisperModel
 
     total_duration = len(audio_array) / SAMPLE_RATE
 
-    write_progress(progress_path, "LOAD", 15, f"Loading Whisper model '{model_size}' (first use may download it)...")
-    log(f"Loading Whisper model '{model_size}' on {device} (first run downloads it once)...")
+    # model_dir is a Narration Utils asset-cache directory whose contents were
+    # already hash-verified before this process was started (see
+    # shell/internal/whisper). Passing it with local_files_only=True stops
+    # faster-whisper/huggingface_hub from ever reaching the network here -
+    # without it, only a bare model_size falls back to that legacy download
+    # path, kept for direct/manual CLI use outside the desktop host.
+    if model_dir:
+        write_progress(progress_path, "LOAD", 15, f"Loading Whisper model '{model_size}'...")
+        log(f"Loading Whisper model '{model_size}' from the locally verified asset cache...")
+    else:
+        write_progress(progress_path, "LOAD", 15, f"Loading Whisper model '{model_size}' (first use may download it)...")
+        log(f"Loading Whisper model '{model_size}' on {device} (first run downloads it once)...")
     compute_type = "int8" if device == "cpu" else "float16"
-    model = WhisperModel(model_size, device=device, compute_type=compute_type)
+    model = WhisperModel(model_dir or model_size, device=device, compute_type=compute_type, local_files_only=bool(model_dir))
 
     write_progress(progress_path, "TRANSCRIBE", 18, f"Transcribing... 00:00 / {format_time(total_duration)}")
     if hotwords:
@@ -567,7 +577,7 @@ def _read_last_progress_pct(path):
         return None
 
 
-def _chunk_worker_entry(chunk_audio_path, model_size, language, device, hotwords, chunk_progress_path, chunk_out_path):
+def _chunk_worker_entry(chunk_audio_path, model_size, language, device, hotwords, chunk_progress_path, chunk_out_path, model_dir=None):
     """Entry point for one chunk's transcription in its own OS process (see
     transcribe_chunked below). A spawned worker is a fresh interpreter -
     nothing is shared with the parent or sibling workers - so it loads its
@@ -586,7 +596,7 @@ def _chunk_worker_entry(chunk_audio_path, model_size, language, device, hotwords
     """
     try:
         audio = np.load(chunk_audio_path)
-        words = transcribe(audio, model_size, language, device, chunk_progress_path, hotwords)
+        words = transcribe(audio, model_size, language, device, chunk_progress_path, hotwords, model_dir=model_dir)
         tmp_path = chunk_out_path + ".tmp"
         with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump(words, f)
@@ -603,7 +613,7 @@ def _chunk_worker_entry(chunk_audio_path, model_size, language, device, hotwords
         os._exit(0)
 
 
-def transcribe_chunked(full_audio, model_size, language, device, progress_path, hotwords, chunk_seconds, parallel_workers, work_dir):
+def transcribe_chunked(full_audio, model_size, language, device, progress_path, hotwords, chunk_seconds, parallel_workers, work_dir, model_dir=None):
     """Chunked/optionally-parallel counterpart to transcribe(): splits
     full_audio into chunk_seconds-length, slightly overlapping windows,
     transcribes each independently (in parallel worker processes beyond
@@ -663,7 +673,7 @@ def transcribe_chunked(full_audio, model_size, language, device, progress_path, 
     write_progress(progress_path, "TRANSCRIBE", 18, f"Transcribing chunk 1/{n_chunks}...")
     _, _, first_out_path = chunk_paths(0)
     first_words, first_info = transcribe(
-        full_audio[chunks[0]["start_sample"] : chunks[0]["end_sample"]], model_size, language, device, None, hotwords, return_info=True
+        full_audio[chunks[0]["start_sample"] : chunks[0]["end_sample"]], model_size, language, device, None, hotwords, return_info=True, model_dir=model_dir
     )
     with open(first_out_path, "w", encoding="utf-8") as f:
         json.dump(first_words, f)
@@ -692,7 +702,7 @@ def transcribe_chunked(full_audio, model_size, language, device, progress_path, 
             audio_path, chunk_prog_path, chunk_out_path = chunk_paths(c["index"])
             p = multiprocessing.Process(
                 target=_chunk_worker_entry,
-                args=(audio_path, model_size, effective_language, device, hotwords, chunk_prog_path, chunk_out_path),
+                args=(audio_path, model_size, effective_language, device, hotwords, chunk_prog_path, chunk_out_path, model_dir),
                 daemon=True,
             )
             p.start()
@@ -1479,10 +1489,19 @@ def run(args):
     if args.chunk_seconds and args.chunk_seconds > 0:
         chunk_work_dir = os.path.splitext(args.out)[0] + "_chunks"
         transcript_words = transcribe_chunked(
-            full_audio, args.model, args.language, args.device, progress_path, hotwords, args.chunk_seconds, args.parallel_workers, chunk_work_dir
+            full_audio,
+            args.model,
+            args.language,
+            args.device,
+            progress_path,
+            hotwords,
+            args.chunk_seconds,
+            args.parallel_workers,
+            chunk_work_dir,
+            model_dir=args.model_dir,
         )
     else:
-        transcript_words = transcribe(full_audio, args.model, args.language, args.device, progress_path, hotwords)
+        transcript_words = transcribe(full_audio, args.model, args.language, args.device, progress_path, hotwords, model_dir=args.model_dir)
 
     check_cancelled(progress_path)
 
@@ -1559,6 +1578,12 @@ def main():
     ap.add_argument("--diff-out", required=False, help="Path to write the unified-diff-formatted manuscript/recorded comparison file")
     ap.add_argument(
         "--model", default=get_default("TranscriptCompare", "model_size", "small"), help="Whisper model size (tiny/base/small/medium/large-v3-turbo/large-v3)"
+    )
+    ap.add_argument(
+        "--model-dir",
+        default=None,
+        help="Local, already-verified faster-whisper model directory (passed by the desktop host's asset manager); "
+        "when omitted, falls back to letting faster-whisper resolve --model itself for direct/manual CLI use",
     )
     ap.add_argument("--language", default=None, help="Force language code, e.g. 'en' (default: auto-detect)")
     ap.add_argument("--min-words", type=int, default=1, help="Minimum word-block length to report as a discrepancy")

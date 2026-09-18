@@ -4,9 +4,11 @@
 
 ## Tokens
 
-Design tokens are CSS custom properties defined in `shared/ui/src/styles.css`'s `:root` block (with dark-mode overrides under `@media (prefers-color-scheme: dark)` and `:root[data-theme='dark']`). New Tailwind-based components reference them via arbitrary-value syntax — `bg-[var(--surface)]`, `border-[var(--border)]`, `text-[var(--text-muted)]` — rather than duplicating values into `tailwind.config.js`. See [ADR 0003](../adr/0003-tailwind-tokenized-primitives.md).
+Design tokens are CSS custom properties defined in `shared/ui/src/styles.css`'s `:root` block, with dark-mode overrides in a single `:root[data-theme='dark']` block. New Tailwind-based components reference them via arbitrary-value syntax — `bg-[var(--surface)]`, `border-[var(--border)]`, `text-[var(--text-muted)]` — rather than duplicating values into `tailwind.config.js`. See [ADR 0003](../adr/0003-tailwind-tokenized-primitives.md).
 
-Key tokens: `--bg`, `--surface`, `--surface-2`, `--surface-3`, `--border`, `--text`, `--text-muted`, `--text-faint`, `--accent`, `--accent-strong`, `--accent-soft`, `--accent-contrast`, `--danger`, `--character`/`--place`/`--org`/`--review` (category colors), `--shadow`, `--shadow-lg`.
+Key tokens: `--bg`, `--surface`, `--surface-2`, `--surface-3`, `--border`, `--text`, `--text-muted`, `--text-faint`, `--accent`, `--accent-strong`, `--accent-soft`, `--accent-contrast`, `--danger`, `--character`/`--place`/`--org`/`--review` (category colors), `--backdrop` (modal/drawer scrim), `--shadow`, `--shadow-lg`. `--space-*`/`--font-size-*` are additive spacing/type-size steps, grounded in values already repeated across the file — not a full scale, for new/touched code to converge on rather than picking another one-off rem value.
+
+**Theme switching:** `data-theme` on `<html>` is set by `ThemeProvider`/`useTheme` (`shared/ui/src/theme/`), a tri-state Light/Dark/System preference persisted to `localStorage`, exposed via a new "Appearance" category in `Settings.tsx`. An inline bootstrap script in `index.html` sets the attribute before first paint to avoid a flash of the wrong theme. See [ADR 0010](../adr/0010-theme-switching.md).
 
 ## Primitive components
 

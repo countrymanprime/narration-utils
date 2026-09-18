@@ -18,7 +18,7 @@ export function Dialog({
   children: ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-label={title}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--backdrop)] p-4" role="dialog" aria-modal="true" aria-label={title}>
       <div
         className="flex w-full max-w-[70vw] flex-col overflow-hidden rounded-[0.55rem] border"
         style={{ maxHeight: '80dvh', background: 'var(--surface)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-lg)' }}

@@ -19,6 +19,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
+	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -31,24 +32,31 @@ const hostAPIVersion = 3
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
 type Host struct {
-	mu         sync.RWMutex
-	ctx        context.Context
-	cancel     context.CancelFunc
-	diagnostic string
-	config     config
-	manuscript *manuscript.Service
-	sidecars   *process.Supervisor
-	settings   *settings.Store
-	tts        *tts.Manager
-	ttsJobs    map[string]*ttsJob
-	guide      *guide.Service
-	guideJob   *workJob
-	transcript *transcript.Service
-	recents    *recents.Store
+	mu          sync.RWMutex
+	ctx         context.Context
+	cancel      context.CancelFunc
+	diagnostic  string
+	config      config
+	manuscript  *manuscript.Service
+	sidecars    *process.Supervisor
+	settings    *settings.Store
+	tts         *tts.Manager
+	ttsJobs     map[string]*ttsJob
+	whisper     *whisper.Manager
+	whisperJobs map[string]*whisperJob
+	guide       *guide.Service
+	guideJob    *workJob
+	transcript  *transcript.Service
+	recents     *recents.Store
 }
 type ttsJob struct {
 	mu                          sync.RWMutex
 	id, voiceID, phase, message string
+	cancel                      context.CancelFunc
+}
+type whisperJob struct {
+	mu                          sync.RWMutex
+	id, modelID, phase, message string
 	cancel                      context.CancelFunc
 }
 type workJob struct {
@@ -75,7 +83,7 @@ type config struct {
 func NewHost() *Host {
 	workingDirectory, _ := os.Getwd()
 	repoRoot := discoverRepoRoot(workingDirectory)
-	return &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), config: config{repoRoot: repoRoot}, manuscript: manuscript.New(""), sidecars: process.NewSupervisor(), settings: settings.New(repoRoot, ""), ttsJobs: map[string]*ttsJob{}, recents: recents.New(recentProjectsPath())}
+	return &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), config: config{repoRoot: repoRoot}, manuscript: manuscript.New(""), sidecars: process.NewSupervisor(), settings: settings.New(repoRoot, ""), ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recents.New(recentProjectsPath())}
 }
 
 // recentProjectsPath resolves the per-user recent-projects file. Recent
@@ -141,6 +149,14 @@ func (h *Host) configureLocked(next config) {
 	}
 	if manager, err := tts.New(catalog, cacheRoot); err == nil {
 		h.tts = manager
+	}
+	whisperCacheRoot := filepath.Join(cacheBase, "narration-utils", "assets", "whisper")
+	whisperCatalog := filepath.Join(h.config.repoRoot, "shared", "config", "whisper-assets.json")
+	if _, err := os.Stat(whisperCatalog); err != nil && packagedRoot != "" {
+		whisperCatalog = filepath.Join(packagedRoot, "config", "whisper-assets.json")
+	}
+	if manager, err := whisper.New(whisperCatalog, whisperCacheRoot); err == nil {
+		h.whisper = manager
 	}
 	var client *bridge.Client
 	if h.config.sessionDir != "" {
@@ -424,6 +440,14 @@ func (h *Host) canAttachLocked() bool {
 			return false
 		}
 	}
+	for _, job := range h.whisperJobs {
+		job.mu.RLock()
+		running := job.phase == "running"
+		job.mu.RUnlock()
+		if running {
+			return false
+		}
+	}
 	if h.transcript != nil {
 		phase, _ := h.transcript.Snapshot()["phase"].(string)
 		switch phase {
@@ -536,6 +560,29 @@ func voiceDownloadSize(voice tts.Voice) int64 {
 		total += file.Size
 	}
 	return total
+}
+
+func previewModel(model whisper.Model) map[string]any {
+	return map[string]any{"id": model.ID, "provider": model.Provider, "displayName": model.DisplayName, "version": model.Version, "publisher": model.Publisher, "license": model.License, "licenseUrl": model.LicenseURL, "modelCardUrl": model.ModelCardURL, "provenanceUrl": model.ProvenanceURL, "attribution": model.Attribution}
+}
+
+func modelDownloadSize(model whisper.Model) int64 {
+	var total int64
+	for _, file := range model.Files {
+		total += file.Size
+	}
+	return total
+}
+
+// resolveWhisperModelID mirrors the "model" option fallback already used to
+// build the compare.py --model argument in transcript.Service, so the
+// first-use gate checks the exact model that would otherwise be requested.
+func (h *Host) resolveWhisperModelID(options map[string]string) string {
+	if value := options["model"]; value != "" {
+		return value
+	}
+	value, _ := h.settings.Effective("TranscriptCompare", "model_size", "small")
+	return value
 }
 
 type fieldSchema struct {
@@ -651,6 +698,61 @@ func snapshotTts(job *ttsJob) map[string]any {
 	job.mu.RLock()
 	defer job.mu.RUnlock()
 	return map[string]any{"id": job.id, "voiceId": job.voiceID, "phase": job.phase, "message": job.message}
+}
+func (h *Host) startWhisperInstall(modelID string) (map[string]any, error) {
+	if h.whisper == nil {
+		return nil, fmt.Errorf("the approved Whisper catalog is unavailable")
+	}
+	if _, ok := h.whisper.Model(modelID); !ok {
+		return nil, fmt.Errorf("the selected Whisper model is not in the approved catalog")
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	job := &whisperJob{id: fmt.Sprintf("whisper-%d", time.Now().UnixNano()), modelID: modelID, phase: "running", message: "Downloading and verifying the approved Whisper model…", cancel: cancel}
+	h.mu.Lock()
+	h.whisperJobs[job.id] = job
+	h.mu.Unlock()
+	go func() {
+		err := h.whisper.Install(ctx, modelID)
+		job.mu.Lock()
+		defer job.mu.Unlock()
+		if err != nil {
+			if ctx.Err() != nil {
+				job.phase = "cancelled"
+				job.message = "Whisper model download cancelled."
+			} else {
+				job.phase = "error"
+				job.message = err.Error()
+			}
+		} else {
+			job.phase = "success"
+			job.message = "Whisper model installed and verified."
+		}
+	}()
+	return snapshotWhisper(job), nil
+}
+func (h *Host) whisperInstallState(id string) (map[string]any, error) {
+	h.mu.RLock()
+	job := h.whisperJobs[id]
+	h.mu.RUnlock()
+	if job == nil {
+		return nil, fmt.Errorf("unknown Whisper install job")
+	}
+	return snapshotWhisper(job), nil
+}
+func (h *Host) cancelWhisperInstall(id string) (map[string]any, error) {
+	h.mu.RLock()
+	job := h.whisperJobs[id]
+	h.mu.RUnlock()
+	if job == nil {
+		return nil, fmt.Errorf("unknown Whisper install job")
+	}
+	job.cancel()
+	return snapshotWhisper(job), nil
+}
+func snapshotWhisper(job *whisperJob) map[string]any {
+	job.mu.RLock()
+	defer job.mu.RUnlock()
+	return map[string]any{"id": job.id, "modelId": job.modelID, "phase": job.phase, "message": job.message}
 }
 func (h *Host) startGuideBuild() (map[string]any, error) {
 	if h.guide == nil {

@@ -54,6 +54,44 @@ describe('Transcript vocabulary suggestions', () => {
     await waitFor(() => expect(exportMarkers).toHaveBeenCalledOnce());
   });
 
+  it('gates on the approved Whisper model, installs it, then starts the comparison', async () => {
+    const transcriptStart = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: 'asset_required',
+        model: {
+          id: 'small',
+          provider: 'faster-whisper',
+          displayName: 'Small',
+          version: '1',
+          publisher: 'Systran',
+          license: 'MIT',
+          licenseUrl: 'https://example.invalid',
+          modelCardUrl: '',
+          provenanceUrl: '',
+          attribution: '',
+        },
+        installState: 'not_installed',
+        downloadSize: 483546902,
+      })
+      .mockResolvedValueOnce({ status: 'started' });
+    const whisperInstall = vi.fn().mockResolvedValue({ id: null, modelId: 'small', phase: 'success', message: 'Whisper model installed and verified.' });
+    const api = createMockApi({ transcriptStart, whisperInstall });
+    render(
+      <ApiProvider api={api}>
+        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} />
+      </ApiProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Start comparison/ }));
+    await screen.findByText('Download local Whisper model?');
+    fireEvent.click(screen.getByRole('button', { name: 'Download model' }));
+
+    await waitFor(() => expect(whisperInstall).toHaveBeenCalledWith('small'));
+    await waitFor(() => expect(transcriptStart).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByText('Download local Whisper model?')).toBeNull());
+  });
+
   it('extends an expanded discrepancy background across every results column', () => {
     const api = createMockApi();
     render(

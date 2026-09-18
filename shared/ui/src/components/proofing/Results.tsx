@@ -10,7 +10,7 @@ import { InlineDiffRow, KIND_STYLES } from './InlineDiffRow';
 
 const TYPE_CHIP_BG: Record<string, string> = {
   MISREAD: 'bg-[var(--review-soft)]',
-  SKIPPED: 'bg-[#f1e2c4]',
+  SKIPPED: 'bg-[var(--accent-soft)]',
   EXTRA: 'bg-[var(--place-soft)]',
 };
 

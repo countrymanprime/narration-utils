@@ -13,6 +13,7 @@ Select a chapter track, confirm its manuscript mapping and settings, run compari
 ## Inputs and outputs
 
 - Inputs: REAPER item manifest, chapter-track name, canonical manuscript JSON, local model configuration, hotwords, and equivalence lists.
+- Whisper model provisioning: the selected model (`shared/config/whisper-assets.json`) is a catalog-managed, hash-verified local asset installed through the same first-use gate as Piper preview voices — see [First-Use Dependency Provisioning](../architecture/first-use-dependency-provisioning.md). Starting a comparison with a model that is not yet installed prompts to download it before anything runs; it no longer relies on `faster-whisper`'s own implicit, unverified download.
 - Outputs: current marker protocol and diff files; planned structured transcript-discrepancy findings.
 - Narrator actions: select chapter, set recognition controls, add reviewed equivalences, navigate/loop findings, explicitly export new markers, and accept/dismiss/defer them.
 

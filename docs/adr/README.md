@@ -32,3 +32,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0007](0007-story-bible-locked-entry-enforcement.md) | Story Bible locked-entry enforcement is server-side authoritative | Accepted |
 | [0008](0008-timing-confidence-over-forced-alignment-model-for-transcript-compare.md) | Timing-confidence signal over a forced-alignment model for Transcript Compare, for now | Accepted |
 | [0009](0009-complete-tailwind-migration.md) | Complete the Tailwind migration; retire the legacy custom-CSS system | Accepted |
+| [0010](0010-theme-switching.md) | Tri-state Light/Dark/System theme switching | Accepted |

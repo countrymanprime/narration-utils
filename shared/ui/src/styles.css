@@ -27,41 +27,63 @@
   --warn: #b5871e;
   --info: #3f6ea6;
   --bookmark: #3b6fc4;
+  --backdrop: rgba(20, 17, 12, 0.42);
   --shadow: 0 1px 2px rgba(30, 26, 16, 0.06), 0 1px 1px rgba(30, 26, 16, 0.04);
   --shadow-lg: 0 4px 16px rgba(30, 26, 16, 0.14), 0 2px 6px rgba(30, 26, 16, 0.08);
   --control-radius: 0.45rem;
   --control-height: 2.55rem;
   --z-tooltip: 1000;
+  /* Spacing/type-size steps grounded in the values already repeated across
+     styles.css and the primitives (badges, chips, table cells, form controls)
+     - not a full scale, additive tokens for new/touched code to converge on. */
+  --space-1: 0.15rem;
+  --space-2: 0.35rem;
+  --space-3: 0.45rem;
+  --space-4: 0.6rem;
+  --space-5: 0.85rem;
+  --space-6: 1.1rem;
+  --font-size-2xs: 0.68rem;
+  --font-size-xs: 0.72rem;
+  --font-size-sm: 0.82rem;
+  --font-size-base: 0.88rem;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #171410;
-    --surface: #201c16;
-    --surface-2: #2a251c;
-    --surface-3: #363023;
-    --border: #3c3527;
-    --text: #f1ece1;
-    --text-muted: #b0a891;
-    --text-faint: #786f5a;
-    --accent: #e2903f;
-    --accent-strong: #f2a75a;
-    --accent-soft: #3a2a16;
-    --accent-contrast: #1a1408;
-    --character: #5fae85;
-    --character-soft: #1d2e24;
-    --place: #6e9fdb;
-    --place-soft: #1c2a3b;
-    --org: #ad8de0;
-    --org-soft: #2a2138;
-    --review: #db7a6e;
-    --review-soft: #3a2320;
-    --danger: #db7a6e;
-    --warn: #e0b255;
-    --info: #6e9fdb;
-    --bookmark: #6e9fdb;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25);
-    --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.3);
-  }
+/* Single source of truth for dark values - set via ThemeProvider
+   (shared/ui/src/theme/ThemeContext.tsx), which also handles the "system"
+   preference and writes this attribute, plus an inline bootstrap script in
+   index.html that sets it before first paint to avoid a flash of the wrong
+   theme. Previously duplicated under a `prefers-color-scheme` media query;
+   that copy had drifted and was missing the --shadow/--shadow-lg overrides
+   below, so dialogs/panels kept light-mode shadows under an explicit dark
+   preference. */
+:root[data-theme='dark'] {
+  --bg: #171410;
+  --surface: #201c16;
+  --surface-2: #2a251c;
+  --surface-3: #363023;
+  --border: #3c3527;
+  --text: #f1ece1;
+  --text-muted: #b0a891;
+  --text-faint: #786f5a;
+  --accent: #e2903f;
+  --accent-strong: #f2a75a;
+  --accent-soft: #3a2a16;
+  --accent-contrast: #1a1408;
+  --character: #5fae85;
+  --character-soft: #1d2e24;
+  --place: #6e9fdb;
+  --place-soft: #1c2a3b;
+  --org: #ad8de0;
+  --org-soft: #2a2138;
+  --review: #db7a6e;
+  --review-soft: #3a2320;
+  --danger: #db7a6e;
+  --warn: #e0b255;
+  --info: #6e9fdb;
+  --bookmark: #6e9fdb;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
 }
 @layer base {
   body {
@@ -248,32 +270,6 @@
 }
 /* Scroll remains available to wheel/keyboard users, but the
    reader/application chrome does not reserve or display a native gutter. */
-:root[data-theme='dark'] {
-  --bg: #171410;
-  --surface: #201c16;
-  --surface-2: #2a251c;
-  --surface-3: #363023;
-  --border: #3c3527;
-  --text: #f1ece1;
-  --text-muted: #b0a891;
-  --text-faint: #786f5a;
-  --accent: #e2903f;
-  --accent-strong: #f2a75a;
-  --accent-soft: #3a2a16;
-  --accent-contrast: #1a1408;
-  --character: #5fae85;
-  --character-soft: #1d2e24;
-  --place: #6e9fdb;
-  --place-soft: #1c2a3b;
-  --org: #ad8de0;
-  --org-soft: #2a2138;
-  --review: #db7a6e;
-  --review-soft: #3a2320;
-  --danger: #db7a6e;
-  --warn: #e0b255;
-  --info: #6e9fdb;
-  --bookmark: #6e9fdb;
-}
 .scroll-chrome-hidden {
   scrollbar-width: none;
 }

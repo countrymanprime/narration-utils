@@ -37,6 +37,41 @@ recheck all upstream terms at the exact version being offered.
 | Voice activity detection | `tools/transcript-compare/core/compare.py` calls faster-whisper with `vad_filter=True`. Faster-whisper's VAD path uses Silero VAD to omit non-speech before ASR. | Standalone VAD is justified only if exposing its time ranges creates useful review/recording actions. |
 | Audio import | PyAV decodes audio inside Transcript Compare. No direct `ffmpeg`/`ffprobe` executable dependency is currently configured. | FFmpeg is an optional post-render inspection/export tool, not a replacement for the DAW. |
 
+### Faster-Whisper model weights — dependency record
+
+The `faster-whisper` package itself is an existing baseline dependency (see
+table above); its downloadable CTranslate2 model weights are the first
+optional-asset dependency provisioned through the
+[first-use dependency provisioning](../architecture/first-use-dependency-provisioning.md)
+flow, per the required record below.
+
+- **Models**: `tiny`, `small`, `medium`, `large-v3` (publisher: Systran) and
+  `large-v3-turbo` (publisher: deepdml — no official Systran turbo repo
+  exists; deepdml's CTranslate2 conversion is the community-standard one).
+- **Exact version**: each model is pinned to an upstream Hugging Face commit
+  SHA, not a moving `main`/`latest` alias. **Immutable URL and SHA-256**: one
+  entry per file, all in
+  [`shared/config/whisper-assets.json`](../../shared/config/whisper-assets.json).
+- **Code/weight license**: MIT for every listed model repository (see each
+  entry's `licenseUrl`); no separate training-data license applies beyond the
+  repository's own MIT terms.
+- **Model card/provenance**: each catalog entry's `modelCardUrl`/
+  `provenanceUrl` points at the exact pinned Hugging Face revision.
+- **Runtime dependency**: none beyond the already-approved `faster-whisper`
+  Python package; no additional network calls beyond the pinned download URLs.
+- **Invocation**: downloaded and hash-verified by the Go host
+  (`shell/internal/whisper`, sharing `shell/internal/assets` with Piper
+  voices), then loaded in-process by `faster-whisper`'s `WhisperModel` with
+  `local_files_only=True` (`tools/transcript-compare/core/compare.py`).
+- **Removal/update policy**: removable from Settings ("Remove local model…");
+  no automatic updates — a new pinned commit requires a reviewed catalog
+  change.
+- **Test result**: covered by `shell/internal/assets`, `shell/internal/whisper`,
+  and `shell/bindings_test.go` (install/verify/remove and the
+  `TranscriptStart` first-use gate); every catalog URL/hash was verified
+  against the live upstream repository before being recorded.
+- **Feature enabled**: Transcript Compare's ASR backend.
+
 ## License and provenance policy
 
 ### License classes

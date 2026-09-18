@@ -1,20 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Bootstrap, Scope, ScopedSettingField, TtsCatalog } from '../../types';
+import type { Bootstrap, Scope, ScopedSettingField, TtsCatalog, WhisperCatalog } from '../../types';
 import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
+import { Pill } from '../primitives/Pill';
+import { useTheme } from '../../theme/ThemeContext';
+import type { ThemePreference } from '../../theme/theme';
 import { ScopedSetting } from './ScopedSetting';
 
 type SettingsCategory = { key: string; label: string; tool?: string; scopes: Scope[]; filter?: (field: ScopedSettingField) => boolean };
 const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'General', label: 'General', tool: 'General', scopes: ['global'] },
+  { key: 'Appearance', label: 'Appearance', scopes: ['global'] },
   { key: 'Manuscript', label: 'Manuscript', tool: 'Manuscript', scopes: ['global', 'project'] },
   { key: 'TranscriptCompare', label: 'Proofing', tool: 'TranscriptCompare', scopes: ['global', 'project'] },
   { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'] },
   { key: 'Daw', label: 'DAW Integration', scopes: ['global'] },
   { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global', 'project'] },
   { key: 'ProjectData', label: 'Project data', scopes: ['project'] },
+];
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'system', label: 'System' },
 ];
 
 export function Settings({
@@ -31,6 +40,7 @@ export function Settings({
   onProjectDataCleared: () => Promise<void>;
 }) {
   const api = useApi();
+  const { preference: themePreference, setPreference: setThemePreference } = useTheme();
   const [scope, setScope] = useState<Scope>('global');
   const [category, setCategory] = useState('General');
   const [settings, setSettings] = useState<Record<string, ScopedSettingField[]>>({});
@@ -40,6 +50,8 @@ export function Settings({
   const [confirmClearProjectData, setConfirmClearProjectData] = useState(false);
   const [ttsCatalog, setTtsCatalog] = useState<TtsCatalog>();
   const [confirmRemoveVoice, setConfirmRemoveVoice] = useState(false);
+  const [whisperCatalog, setWhisperCatalog] = useState<WhisperCatalog>();
+  const [confirmRemoveModel, setConfirmRemoveModel] = useState(false);
   const [loadError, setLoadError] = useState('');
   const categories = useMemo(() => SETTINGS_CATEGORIES.filter((entry) => entry.scopes.includes(scope)), [scope]);
   const active = categories.find((entry) => entry.key === category) ?? categories[0];
@@ -65,8 +77,10 @@ export function Settings({
     try {
       const next = await api.settingsForScope(scope);
       const catalog = category === 'Piper' ? await api.ttsCatalog() : undefined;
+      const modelCatalog = category === 'TranscriptCompare' ? await api.whisperCatalog() : undefined;
       setSettings(next);
       setTtsCatalog(catalog);
+      setWhisperCatalog(modelCatalog);
       setLoadError('');
       applyPalette(next);
       const currentTool = active?.tool;
@@ -120,6 +134,7 @@ export function Settings({
     }
   };
   const selectedTtsVoice = ttsCatalog?.voices.find((voice) => voice.id === ttsCatalog.voice.id);
+  const selectedWhisperModel = whisperCatalog?.models.find((model) => model.id === whisperCatalog.model.id);
   const reaperLauncher = data.runtime.Reaper?.launcherPath;
 
   return (
@@ -196,6 +211,16 @@ export function Settings({
                   </div>
                 )}
               </div>
+            ) : category === 'Appearance' ? (
+              <div className="space-y-3 text-sm">
+                <div className="font-medium">Theme</div>
+                <div style={{ color: 'var(--text-muted)' }}>Choose Light or Dark, or follow your system setting.</div>
+                <div className="flex gap-2">
+                  {THEME_OPTIONS.map((option) => (
+                    <Pill key={option.value} label={option.label} active={themePreference === option.value} onClick={() => setThemePreference(option.value)} />
+                  ))}
+                </div>
+              </div>
             ) : category === 'ProjectData' ? (
               <div className="space-y-4 text-sm">
                 <div className="rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
@@ -216,6 +241,37 @@ export function Settings({
                   void save();
                 }}
               >
+                {category === 'TranscriptCompare' && (
+                  <div className="mb-4 space-y-3 rounded-md p-3 text-sm" style={{ background: 'var(--surface-2)' }}>
+                    <div>
+                      <div className="font-medium">Local Whisper models</div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        Whisper models are optional, catalog-managed local assets. Selecting a model never downloads it; downloading is confirmed when you start
+                        a comparison.
+                      </div>
+                    </div>
+                    {selectedWhisperModel && (
+                      <div className="flex items-center justify-between gap-3 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+                        <div>
+                          <div className="font-medium">{selectedWhisperModel.displayName}</div>
+                          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            {selectedWhisperModel.installState === 'installed'
+                              ? 'Installed and verified'
+                              : selectedWhisperModel.installState === 'verification_failed'
+                                ? 'Needs repair'
+                                : 'Not installed'}{' '}
+                            · {Math.ceil(selectedWhisperModel.downloadSize / (1024 * 1024))} MB
+                          </div>
+                        </div>
+                        {selectedWhisperModel.installState === 'installed' && (
+                          <Button variant="ghost" className="text-xs" type="button" onClick={() => setConfirmRemoveModel(true)}>
+                            Remove local model…
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {category === 'Piper' && (
                   <div className="mb-4 space-y-3 rounded-md p-3 text-sm" style={{ background: 'var(--surface-2)' }}>
                     <div>
@@ -333,6 +389,24 @@ export function Settings({
               .catch((error) => notify(String(error)))
           }
           cancel={() => setConfirmRemoveVoice(false)}
+        />
+      )}
+      {confirmRemoveModel && selectedWhisperModel && (
+        <ConfirmDialog
+          title="Remove local Whisper model?"
+          body={`Remove ${selectedWhisperModel.displayName} from this computer? Starting a comparison with this model selected will ask to download it again.`}
+          confirmLabel="Remove model"
+          confirm={() =>
+            void api
+              .whisperRemove(selectedWhisperModel.id)
+              .then(async () => {
+                setConfirmRemoveModel(false);
+                notify('Local Whisper model removed.');
+                await load();
+              })
+              .catch((error) => notify(String(error)))
+          }
+          cancel={() => setConfirmRemoveModel(false)}
         />
       )}
     </div>

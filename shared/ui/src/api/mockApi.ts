@@ -19,6 +19,8 @@ import type {
   WorkJob,
   TtsCatalog,
   TtsInstallJob,
+  WhisperCatalog,
+  WhisperInstallJob,
 } from '../types';
 import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import {
@@ -139,6 +141,24 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
     provenanceUrl: 'https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0/en/en_US/ljspeech/high',
     attribution: 'LJ Speech Dataset (public domain); Piper voice model by rhasspy contributors.',
     downloadSize: 114203981,
+    installState: 'not_installed' as const,
+  };
+  // Whisper defaults to already installed so existing setup/run flows are not
+  // gated in every test; a dedicated scenario calls whisperRemove first to
+  // exercise the asset_required prompt.
+  let whisperInstalled = true;
+  const mockWhisperModel = {
+    id: 'small',
+    provider: 'faster-whisper',
+    displayName: 'Small',
+    version: '536b0662742c02347bc0e980a01041f333bce120',
+    publisher: 'Systran',
+    license: 'MIT',
+    licenseUrl: 'https://huggingface.co/Systran/faster-whisper-small',
+    modelCardUrl: 'https://huggingface.co/Systran/faster-whisper-small',
+    provenanceUrl: 'https://huggingface.co/Systran/faster-whisper-small',
+    attribution: 'CTranslate2 conversion of OpenAI Whisper small, published by Systran.',
+    downloadSize: 483546902 + 2370 + 2203239 + 459861,
     installState: 'not_installed' as const,
   };
   const publish = () => {
@@ -417,7 +437,26 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
     ttsRemove: async (voiceId) => {
       if (voiceId === mockVoice.id) ttsInstalled = false;
     },
-    transcriptStart: async () => startRun(),
+    whisperCatalog: async () =>
+      ({
+        catalogVersion: 1,
+        model: { id: mockWhisperModel.id, effectiveSource: 'repo_default' },
+        models: [{ ...mockWhisperModel, installState: whisperInstalled ? 'installed' : 'not_installed' }],
+      }) as WhisperCatalog,
+    whisperInstall: async (modelId) => {
+      if (modelId !== mockWhisperModel.id) throw new Error('Unknown approved Whisper model.');
+      whisperInstalled = true;
+      return { id: null, modelId, phase: 'success', message: 'Whisper model installed and verified.' } as WhisperInstallJob;
+    },
+    whisperInstallState: async (jobId) => ({ id: jobId, modelId: mockWhisperModel.id, phase: 'success', message: 'Whisper model installed and verified.' }),
+    whisperInstallCancel: async (jobId) => ({ id: jobId, modelId: mockWhisperModel.id, phase: 'cancelled', message: 'Whisper model download cancelled.' }),
+    whisperRemove: async (modelId) => {
+      if (modelId === mockWhisperModel.id) whisperInstalled = false;
+    },
+    transcriptStart: async () =>
+      whisperInstalled
+        ? (startRun(), { status: 'started' as const })
+        : { status: 'asset_required' as const, model: mockWhisperModel, installState: 'not_installed' as const, downloadSize: mockWhisperModel.downloadSize },
     transcriptCancel: async () => {
       stopRun();
       transcript = { ...transcript, phase: 'cancelled', message: 'Comparison cancelled' };

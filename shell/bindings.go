@@ -64,6 +64,31 @@ func (h *Host) TtsRemove(voiceID string) (string, error) {
 	return encodeBinding(nil, h.tts.Remove(voiceID))
 }
 
+func (h *Host) WhisperCatalog() (string, error) {
+	if h.whisper == nil {
+		return "", fmt.Errorf("the approved Whisper catalog is unavailable")
+	}
+	catalog := h.whisper.Catalog()
+	modelID, modelSource := h.settings.Effective("TranscriptCompare", "model_size", "small")
+	catalog["model"] = map[string]any{"id": modelID, "effectiveSource": modelSource}
+	return encodeBinding(catalog, nil)
+}
+func (h *Host) WhisperInstall(modelID string) (string, error) {
+	return encodeBinding(h.startWhisperInstall(modelID))
+}
+func (h *Host) WhisperInstallState(jobID string) (string, error) {
+	return encodeBinding(h.whisperInstallState(jobID))
+}
+func (h *Host) WhisperInstallCancel(jobID string) (string, error) {
+	return encodeBinding(h.cancelWhisperInstall(jobID))
+}
+func (h *Host) WhisperRemove(modelID string) (string, error) {
+	if h.whisper == nil {
+		return "", fmt.Errorf("the approved Whisper catalog is unavailable")
+	}
+	return encodeBinding(nil, h.whisper.Remove(modelID))
+}
+
 func (h *Host) GuideBuild() (string, error) { return encodeBinding(h.startGuideBuild()) }
 func (h *Host) GuideBuildState() (string, error) {
 	return encodeBinding(h.guideBuildState(), nil)
@@ -333,7 +358,24 @@ func (h *Host) TranscriptStart(options map[string]string) (string, error) {
 	if h.transcript == nil {
 		return "", fmt.Errorf("the Transcript Compare service is unavailable")
 	}
-	return encodeBinding(nil, h.transcript.Start(options))
+	if h.whisper == nil {
+		return "", fmt.Errorf("the approved Whisper catalog is unavailable")
+	}
+	modelID := h.resolveWhisperModelID(options)
+	model, knownModel := h.whisper.Model(modelID)
+	if !knownModel {
+		return "", fmt.Errorf("the selected Whisper model is not in the approved catalog")
+	}
+	modelDir, err := h.whisper.Dir(modelID)
+	if err != nil {
+		return encodeBinding(map[string]any{"status": "asset_required", "model": previewModel(model), "installState": h.whisper.State(model), "downloadSize": modelDownloadSize(model)}, nil)
+	}
+	started := map[string]string{}
+	for key, value := range options {
+		started[key] = value
+	}
+	started["modelDir"] = modelDir
+	return encodeBinding(map[string]any{"status": "started"}, h.transcript.Start(started))
 }
 func (h *Host) TranscriptCancel() (string, error) {
 	if h.transcript != nil {

@@ -1,3 +1,5 @@
+import type { WhisperInstallState, WhisperModel } from './whisper';
+
 export type Discrepancy = {
   id: string;
   kind: string;
@@ -18,6 +20,10 @@ export type Discrepancy = {
 
 export type MarkerExport = { phase: 'idle' | 'exporting' | 'complete' | 'error'; message: string; added: number; skipped: number };
 
+export type TranscriptStartResult =
+  | { status: 'started' }
+  | { status: 'asset_required'; model: Omit<WhisperModel, 'downloadSize' | 'installState'>; installState: WhisperInstallState; downloadSize: number };
+
 export type TranscriptState = {
   runId?: string;
   /** Present on completed snapshots from current desktop hosts. */
@@ -37,7 +43,7 @@ export type TranscriptState = {
 };
 
 export interface TranscriptApi {
-  transcriptStart(options: { model: string; chunk: string; workers: string; hints: string; chapterTitle?: string }): Promise<void>;
+  transcriptStart(options: { model: string; chunk: string; workers: string; hints: string; chapterTitle?: string }): Promise<TranscriptStartResult>;
   transcriptCancel(): Promise<void>;
   transcriptReset(): Promise<void>;
   transcriptLastCompleted(): Promise<TranscriptState | undefined>;

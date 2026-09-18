@@ -1,6 +1,6 @@
 # First-Use Dependency Provisioning
 
-**Status: Partially implemented — Piper preview voices.**
+**Status: Partially implemented — Piper preview voices and Whisper transcription models.**
 
 ## Problem
 
@@ -105,9 +105,11 @@ hash cannot be verified against the asset catalog.
 3. Add install-state APIs and UI for Settings and the first-use gate. Convert
    spaCy choices from the current installed-only filter to catalog-backed
    compatible choices.
-4. Piper preview voices now use the catalog/cache manager. Move the spaCy
-   Story Bible path, Whisper models, and every subsequently approved optional
-   asset through the same manager.
+4. Piper preview voices and Whisper transcription models now use the shared
+   catalog/cache manager (`shell/internal/assets`, backing both
+   `shell/internal/tts` and `shell/internal/whisper`). Move the spaCy Story
+   Bible path and every subsequently approved optional asset through the same
+   manager.
 5. Change bootstrap and release documentation, migrate or deliberately reject
    legacy caches, and add release-install smoke coverage.
 
