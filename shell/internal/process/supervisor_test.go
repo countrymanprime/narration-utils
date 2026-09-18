@@ -2,14 +2,23 @@ package process
 
 import (
 	"context"
+	"runtime"
 	"testing"
 	"time"
 )
 
+func echoExitCommand() (string, []string) {
+	if runtime.GOOS == "windows" {
+		return "cmd.exe", []string{"/c", "echo output & echo error 1>&2 & exit /b 7"}
+	}
+	return "sh", []string{"-c", "echo output; echo error 1>&2; exit 7"}
+}
+
 func TestSupervisorDrainsAndRecordsExit(t *testing.T) {
 	supervisor := NewSupervisor()
 	t.Cleanup(func() { _ = supervisor.Close() })
-	child, err := supervisor.Start(context.Background(), "cmd.exe", "/c", "echo output & echo error 1>&2 & exit /b 7")
+	name, args := echoExitCommand()
+	child, err := supervisor.Start(context.Background(), name, args...)
 	if err != nil {
 		t.Fatal(err)
 	}
