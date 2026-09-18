@@ -11,28 +11,10 @@ concurrency:
   cancel-in-progress: true
 jobs:
   quality:
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { name: windows-x64, os: windows-latest }
-          - { name: macos-x64, os: macos-13 }
-          - { name: macos-arm64, os: macos-14 }
-          - { name: linux-x64, os: ubuntu-latest }
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-toolchain
-      - name: Test and lint
-        run: |
-          pnpm run check
-          go -C shell test -race ./...
-          cd shell
-          wails doctor
-      - name: Build native package
-        run: |
-          python scripts/release/prepare-resources.py --clean
-          node scripts/release/verify-installable.mjs
-          cd shell
-          wails build ${{ runner.os == 'Windows' && '-nsis' || '' }}
+    uses: ./.github/workflows/_quality.yml
+  build:
+    needs: quality
+    uses: ./.github/workflows/_build-native.yml
+    with:
+      upload: false
+      artifact-prefix: ci
