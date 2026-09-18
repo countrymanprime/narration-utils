@@ -383,6 +383,37 @@ packs. [Vale](https://github.com/vale-cli/vale)
 **Risk.** A noisy prose linter trains users to ignore all findings. Keep rules
 narrow, transparent, tested, and per-project opt-in.
 
+### 9. WhisperLive — ported streaming-inference logic for Manuscript Teleprompter
+
+**What it contributes.** WhisperLive already solves live-chunking ASR: a
+VAD-gated rolling `faster-whisper` decode loop producing real per-word
+timestamps, needed for the deferred [Manuscript Teleprompter
+brief](../architecture/manuscript-teleprompter.md)'s live position tracking.
+
+**Nature of reuse — this entry differs from every other candidate above.**
+It is not a downloaded dependency or a linked package; the plan is to port
+its streaming-inference logic (VAD chunking, rolling decode, word timestamps)
+into a repository-owned Python sidecar module, not to run its WebSocket
+client/server or depend on its package at runtime. See the brief for why the
+server component itself is rejected (it would reintroduce the loopback
+server this app's DAW-integration boundary explicitly disallows).
+
+**License/provenance.** WhisperLive is MIT licensed
+(`Copyright (c) 2023 Vineet Suryan, Collabora Ltd.`) — same permissive class
+as this repository, so porting its logic is unrestricted. The only
+obligation is preserving attribution: the ported module's header must cite
+the source repository and copyright holder, pinned to the exact upstream
+commit ported from, since MIT's condition ("the above copyright notice and
+this permission notice shall be included in all copies or substantial
+portions of the Software") is not satisfied by depending on the package —
+it has to travel with the ported code itself.
+[WhisperLive](https://github.com/collabora/WhisperLive) ·
+[MIT license](https://github.com/collabora/WhisperLive/blob/main/LICENSE)
+
+**Risk.** Porting freezes a snapshot of upstream logic rather than tracking
+its improvements. Record the exact commit ported from so a future
+re-sync is a deliberate, reviewed action rather than silent drift.
+
 ## Clarifications for adjacent tools
 
 ### FFmpeg and ffprobe versus the DAW

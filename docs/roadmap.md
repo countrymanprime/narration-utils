@@ -57,7 +57,7 @@ for the required catalog, integrity, UX, migration, and acceptance criteria.
 - macOS/Linux installers and adapters.
 - Languages beyond US English.
 - Team collaboration, cloud analysis, or shared project services.
-- Manuscript Teleprompter: local live microphone listening with karaoke-style manuscript highlighting and reviewable suspected word-level substitutions, skips, or misreads; it never edits text or audio automatically.
+- Manuscript Teleprompter: local live microphone listening with karaoke-style manuscript highlighting and reviewable suspected word-level substitutions, skips, or misreads; it never edits text or audio automatically. See the [Manuscript Teleprompter brief](architecture/manuscript-teleprompter.md) for the resolved design questions.
 
 ## Dependency rules
 
