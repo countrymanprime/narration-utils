@@ -1,8 +1,12 @@
 name: Create unsigned beta
 on: { workflow_dispatch: {}, push: { branches: [main] } }
-permissions: { contents: write }
+permissions: { contents: read }
+concurrency:
+  group: prerelease-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   package:
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -14,39 +18,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-      - uses: pnpm/action-setup@v4
-        with: { version: 11.27.0 }
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.27.1'
-          cache-dependency-path: shell/go.sum
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - uses: astral-sh/setup-uv@v10
-        with:
-          version: 0.12.15
-          enable-cache: true
-          cache-dependency-glob: |
-            pyproject.toml
-            uv.lock
-      - uses: JohnnyMorganz/stylua-action@v4.1.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          version: v2.1.0
-          args: false
-      - run: |
-          go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
-          go install honnef.co/go/tools/cmd/staticcheck@v0.8.1
-          pnpm install --frozen-lockfile
-          uv sync --locked
-          pnpm run check
+      - uses: ./.github/actions/setup-toolchain
+      - name: Test and lint
+        run: pnpm run check
+      - name: Build native package
+        run: |
           python scripts/release/prepare-resources.py --clean
           node scripts/release/verify-installable.mjs
           cd shell

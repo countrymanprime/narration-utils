@@ -1,0 +1,45 @@
+name: Setup toolchain
+description: Install pnpm, Node, Go, Python, uv, and the pinned build tools shared by CI and release workflows
+
+runs:
+  using: composite
+  steps:
+    - if: runner.os == 'Linux'
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+    - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      with: { version: 11.27.0 }
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: pnpm
+        cache-dependency-path: pnpm-lock.yaml
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '1.27.1'
+        cache-dependency-path: shell/go.sum
+    - uses: actions/setup-python@v5
+      with: { python-version: '3.12' }
+    - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      with:
+        version: 0.12.15
+        enable-cache: true
+        cache-dependency-glob: |
+          pyproject.toml
+          uv.lock
+    - name: Install pinned Go tools
+      shell: bash
+      run: |
+        go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
+        go install honnef.co/go/tools/cmd/staticcheck@v0.8.1
+    - name: Install pinned standalone StyLua
+      uses: JohnnyMorganz/stylua-action@479972f01e665acfcba96ada452c36608bdbbb5e # v4.1.0
+      with:
+        token: ${{ github.token }}
+        version: v2.1.0
+        args: false
+    - name: Install project dependencies
+      shell: bash
+      run: |
+        pnpm install --frozen-lockfile
+        uv sync --locked
