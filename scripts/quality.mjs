@@ -101,7 +101,10 @@ function checkStagedFiles(files, checker) {
     run(python(), ['-m', 'ruff', 'format', '--check', ...pythonFiles]);
     run(python(), ['-m', 'ruff', 'check', ...pythonFiles]);
   }
-  if (checker === 'go' && goFiles.length) checkGofmt(goFiles);
+  if (checker === 'go' && goFiles.length) {
+    checkGofmt(goFiles);
+    run('go', ['-C', 'shell', 'vet', './...']);
+  }
   if (checker === 'lua' && luaFiles.length) run(executable('stylua'), ['--check', ...luaFiles]);
 }
 
@@ -127,6 +130,7 @@ function runStaged(files) {
   }
   if (goFiles.length) {
     checkGofmt(goFiles);
+    run('go', ['-C', 'shell', 'vet', './...']);
     run('go', ['-C', 'shell', 'test', './...']);
   }
   if (luaFiles.length) run(executable('stylua'), ['--check', ...luaFiles]);

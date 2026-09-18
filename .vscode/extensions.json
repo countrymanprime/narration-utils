@@ -5,6 +5,7 @@
     "charliermarsh.ruff",
     "rust-lang.rust-analyzer",
     "ms-vscode.powershell",
-    "johnnymorganz.stylua"
+    "johnnymorganz.stylua",
+    "golang.go"
   ]
 }

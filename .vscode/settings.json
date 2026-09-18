@@ -12,5 +12,7 @@
   "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
   "[rust]": { "editor.defaultFormatter": "rust-lang.rust-analyzer" },
   "[lua]": { "editor.defaultFormatter": "johnnymorganz.stylua" },
-  "ruff.lint.run": "onSave"
+  "[go]": { "editor.defaultFormatter": "golang.go", "editor.formatOnSave": true },
+  "ruff.lint.run": "onSave",
+  "gopls": { "ui.diagnostic.staticcheck": true }
 }
