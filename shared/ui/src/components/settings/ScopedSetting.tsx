@@ -30,29 +30,35 @@ export function ScopedSetting({
   const effective = value || field.effectiveValue;
   const isColor = field.kind === 'color';
   const isText = field.kind === 'text';
+  const controlClass =
+    'min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-[var(--accent)] focus:outline-offset-1';
   return (
-    <div className="form-row">
-      <div className="form-label pt-2">
+    <div className="grid grid-cols-[minmax(12rem,16rem)_minmax(0,1fr)] items-start gap-5 border-b border-[var(--border)] py-4">
+      <div className="pt-2 text-[0.82rem] font-medium text-[var(--text-muted)]">
         {field.label}
         <Tooltip text={TOOLTIP[field.key] || `Configure ${field.label.toLowerCase()}.`} />
       </div>
-      <div className="setting-control">
+      <div className="flex items-center gap-[0.6rem]">
         {isColor ? (
           <>
             <input
               aria-label={`${field.label} hex`}
-              className="color-swatch"
+              className="h-[2.35rem] w-[2.35rem] rounded-[0.35rem] border border-[var(--border)] bg-[var(--surface)] p-[0.2rem]"
               type="color"
               value={`#${effective.padStart(6, '0')}`}
               onChange={(event) => change(event.target.value.slice(1).toUpperCase())}
             />
-            <input className="form-control f-mono" value={effective} onChange={(event) => change(event.target.value.replace('#', '').toUpperCase())} />
+            <input
+              className={`${controlClass} font-['IBM_Plex_Mono',ui-monospace,monospace]`}
+              value={effective}
+              onChange={(event) => change(event.target.value.replace('#', '').toUpperCase())}
+            />
           </>
         ) : isText ? (
-          <input className="form-control" value={effective} onChange={(event) => change(event.target.value)} />
+          <input className={controlClass} value={effective} onChange={(event) => change(event.target.value)} />
         ) : (
           <TooltipTarget text={optionTip(field, effective)}>
-            <select className="form-control" value={effective} onChange={(event) => change(event.target.value)}>
+            <select className={controlClass} value={effective} onChange={(event) => change(event.target.value)}>
               {field.choices.map((choice) => (
                 <option key={choice} value={choice}>
                   {proofingChoiceLabel(field.key, choice)}
@@ -62,7 +68,7 @@ export function ScopedSetting({
           </TooltipTarget>
         )}
         {scope === 'project' && field.isSet && (
-          <button type="button" className="reset-override" onClick={onClearOverride}>
+          <button type="button" className="ml-auto text-[0.75rem] text-[var(--accent)] underline" onClick={onClearOverride}>
             Reset
           </button>
         )}

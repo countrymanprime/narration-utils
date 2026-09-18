@@ -4,6 +4,7 @@ import { faArrowLeft, faPlay, faWandMagicSparkles, faXmark } from '@fortawesome/
 import type { Discrepancy, TranscriptState } from '../../types';
 import { isTranscriptActive } from '../../state';
 import { useApi } from '../../api/ApiContext';
+import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { Pill } from '../primitives/Pill';
@@ -165,21 +166,21 @@ export function Transcript({
         <Heading title="Proofing" />
         <div className="flex items-center gap-1 text-xs">
           <span
-            className={`f-label rounded px-2 py-1 ${phase === 'setup' ? 'font-semibold' : ''}`}
+            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] uppercase tracking-[0.08em] ${phase === 'setup' ? 'font-semibold' : ''}`}
             style={{ background: phase === 'setup' ? 'var(--accent-soft)' : undefined }}
           >
             1 · Setup
           </span>
           <span style={{ color: 'var(--text-faint)' }}>→</span>
           <span
-            className={`f-label rounded px-2 py-1 ${phase === 'running' ? 'font-semibold' : ''}`}
+            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] uppercase tracking-[0.08em] ${phase === 'running' ? 'font-semibold' : ''}`}
             style={{ background: phase === 'running' ? 'var(--accent-soft)' : undefined }}
           >
             2 · Running
           </span>
           <span style={{ color: 'var(--text-faint)' }}>→</span>
           <span
-            className={`f-label rounded px-2 py-1 ${phase === 'results' ? 'font-semibold' : ''}`}
+            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] uppercase tracking-[0.08em] ${phase === 'results' ? 'font-semibold' : ''}`}
             style={{ background: phase === 'results' ? 'var(--accent-soft)' : undefined }}
           >
             3 · Results
@@ -187,8 +188,8 @@ export function Transcript({
         </div>
       </div>
       {phase === 'setup' && (
-        <section className="panel">
-          <div className="panel-head">
+        <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
+          <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
             <h2 className="text-sm font-semibold">Setup</h2>
             {lastCompleted ? (
               <button
@@ -209,10 +210,10 @@ export function Transcript({
               </span>
             )}
           </div>
-          <div className="panel-body space-y-4">
+          <div className="space-y-4 p-[1.1rem]">
             <div className="grid gap-5 md:grid-cols-3">
               <div>
-                <label className="label">
+                <label className="text-[0.82rem] font-medium text-[var(--text-muted)]">
                   Whisper model
                   <Tooltip text="Bigger models catch more misreads but run slower and use more memory per instance. Chunk length and worker count are capped automatically once you pick a model." />
                 </label>
@@ -229,7 +230,7 @@ export function Transcript({
                 </div>
               </div>
               <div>
-                <label className="label">
+                <label className="text-[0.82rem] font-medium text-[var(--text-muted)]">
                   Chunk length
                   <Tooltip text={CHUNK_LENGTH_TOOLTIP} />
                 </label>
@@ -247,7 +248,7 @@ export function Transcript({
                 </div>
               </div>
               <div>
-                <label className="label">
+                <label className="text-[0.82rem] font-medium text-[var(--text-muted)]">
                   Parallel workers
                   <Tooltip text="Each worker loads its own full copy of the Whisper model, so memory use multiplies with worker count. Auto picks a safe count for this machine." />
                 </label>
@@ -269,13 +270,16 @@ export function Transcript({
               </div>
             </div>
             <div className="mt-5">
-              <label className="label mb-1.5 block">
+              <label className="mb-1.5 block text-[0.82rem] font-medium text-[var(--text-muted)]">
                 Vocabulary hints
                 <Tooltip text="Unusual names and invented words Whisper is likely to mis-hear. Accepted hints are remembered for this project - you won't need to re-suggest them every run." />
               </label>
               <div className="flex min-h-11 flex-wrap gap-2 rounded-md p-2" style={{ border: '1px solid var(--border)', background: 'var(--surface-2)' }}>
                 {acceptedHints.map((term) => (
-                  <span key={term} className="chip accepted">
+                  <span
+                    key={term}
+                    className="inline-flex items-center gap-[0.35rem] rounded-full border border-[var(--accent)] bg-[var(--accent-soft)] px-[0.55rem] py-[0.3rem] font-['IBM_Plex_Mono',monospace] text-[0.8rem] text-[var(--accent-strong)]"
+                  >
                     {term}
                     <button aria-label={`Remove ${term}`} onClick={() => removeHint(term)}>
                       <FontAwesomeIcon icon={faXmark} />
@@ -284,7 +288,10 @@ export function Transcript({
                 ))}
                 {pendingHints.map((term) => (
                   <TooltipTarget key={term} text="Suggested — click to accept">
-                    <button className="chip pending" onClick={() => acceptHint(term)}>
+                    <button
+                      className="inline-flex items-center gap-[0.35rem] rounded-full border border-dashed border-[var(--border)] bg-transparent px-[0.55rem] py-[0.3rem] font-['IBM_Plex_Mono',monospace] text-[0.8rem] text-[var(--text-muted)]"
+                      onClick={() => acceptHint(term)}
+                    >
                       + {term}
                     </button>
                   </TooltipTarget>
@@ -297,7 +304,7 @@ export function Transcript({
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <input
-                  className="input w-48"
+                  className="min-h-[var(--control-height)] w-48 rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
                   value={manualHint}
                   placeholder="Add a term…"
                   onChange={(event) => setManualHint(event.target.value)}
@@ -308,24 +315,24 @@ export function Transcript({
                     }
                   }}
                 />
-                <button className="btn btn-ghost" onClick={addManualHint}>
+                <Button variant="ghost" onClick={addManualHint}>
                   Add
-                </button>
-                <button className="btn btn-ghost" onClick={() => void suggestHints()}>
+                </Button>
+                <Button variant="ghost" onClick={() => void suggestHints()}>
                   <FontAwesomeIcon icon={faWandMagicSparkles} />
                   Suggest from manuscript
-                </button>
+                </Button>
               </div>
             </div>
             <div className="mt-5 flex items-center justify-between gap-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-              <button className="btn btn-ghost" onClick={goHome}>
+              <Button variant="ghost" onClick={goHome}>
                 <FontAwesomeIcon icon={faArrowLeft} />
                 Back to Home
-              </button>
-              <button className="btn btn-primary" onClick={() => void start()}>
+              </Button>
+              <Button variant="primary" onClick={() => void start()}>
                 <FontAwesomeIcon icon={faPlay} />
                 Start comparison
-              </button>
+              </Button>
             </div>
           </div>
         </section>
@@ -338,55 +345,61 @@ export function Transcript({
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {state.chapters.map((chapter) => (
-              <button className="btn btn-ghost" key={chapter} onClick={() => void start(chapter)}>
+              <Button variant="ghost" key={chapter} onClick={() => void start(chapter)}>
                 {chapter}
-              </button>
+              </Button>
             ))}
           </div>
         </Panel>
       )}
       {running && (
-        <section className="panel">
-          <div className="panel-head">
-            <h2 className="f-label text-lg">Running</h2>
-            <span className="f-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+        <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
+          <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
+            <h2 className="font-['Barlow_Condensed',sans-serif] text-lg uppercase tracking-[0.08em]">Running</h2>
+            <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
               {seconds(state.elapsed)} elapsed
             </span>
           </div>
-          <div className="panel-body">
+          <div className="p-[1.1rem]">
             <div className="flex justify-between text-sm">
               <span>{state.phase === 'success' ? state.summary : state.message}</span>
               <span>
                 {state.percent}% · {seconds(state.elapsed)}
               </span>
             </div>
-            <div className="progressbar mt-3">
-              <div style={{ width: `${state.percent}%` }} />
+            <div className="progressbar mt-3 h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
+              <div className="h-full bg-[var(--accent)] transition-[width] duration-[0.4s] ease-in-out" style={{ width: `${state.percent}%` }} />
             </div>
             <div className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
               <div className="mb-1.5 flex items-center justify-between">
-                <span className="section-label">Live activity</span>
+                <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Live activity
+                </span>
                 <span className="flex gap-1 text-[.65rem] normal-case">
                   {(['Quiet', 'Normal', 'Verbose'] as const).map((mode) => (
-                    <button key={mode} className={`swatch-toggle ${logVerbosity === mode ? 'active' : ''}`} onClick={() => setLogVerbosity(mode)}>
+                    <button
+                      key={mode}
+                      className={`rounded-[0.35rem] border border-[var(--border)] px-[0.65rem] py-[0.3rem] font-['Barlow_Condensed',sans-serif] text-[0.78rem] font-semibold uppercase tracking-[0.03em] text-[var(--text-muted)] ${logVerbosity === mode ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]' : ''}`}
+                      onClick={() => setLogVerbosity(mode)}
+                    >
                       {mode}
                     </button>
                   ))}
                 </span>
               </div>
-              <div className="run-log f-mono">
+              <div className="h-36 overflow-y-auto border border-[var(--border)] bg-[var(--surface-2)] font-['IBM_Plex_Mono',ui-monospace,monospace]">
                 {(logVerbosity === 'Verbose'
                   ? state.logs
                   : logVerbosity === 'Quiet'
                     ? state.logs.filter((line) => /complete|error|cancel/i.test(line))
                     : state.logs.filter((line) => /Exported|Loaded|Whisper|Chunk|complete|error|match|cancel/i.test(line))
                 ).map((line) => (
-                  <div key={line} className="run-log-entry">
+                  <div key={line} className="border-b border-[var(--border)] px-[0.45rem] py-1">
                     {line}
                   </div>
                 ))}
                 {state.logs.length === 0 && (
-                  <div className="run-log-entry" style={{ color: 'var(--text-faint)' }}>
+                  <div className="border-b border-[var(--border)] px-[0.45rem] py-1" style={{ color: 'var(--text-faint)' }}>
                     Waiting for notable events…
                   </div>
                 )}
@@ -394,13 +407,13 @@ export function Transcript({
             </div>
             <div className="mt-4 flex items-center justify-between border-t pt-3" style={{ borderColor: 'var(--border)' }}>
               {import.meta.env.MODE === 'mock' && (
-                <button className="btn btn-ghost text-xs" onClick={() => void api.transcriptReset()}>
+                <Button variant="ghost" className="text-xs" onClick={() => void api.transcriptReset()}>
                   Skip to results (demo)
-                </button>
+                </Button>
               )}
-              <button className="btn btn-danger" onClick={() => void api.transcriptCancel()}>
+              <Button variant="danger" onClick={() => void api.transcriptCancel()}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         </section>

@@ -78,8 +78,8 @@ export function AudiobookEstimatePanel({
   const statusTotals = rollupChapterStatuses(narrationChapters);
 
   return (
-    <section className="panel">
-      <div className="panel-head">
+    <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
         <div>
           <h2 className="text-sm font-semibold">Audiobook estimate</h2>
           <div className="mt-0.5 flex items-center text-xs" style={{ color: 'var(--text-faint)' }}>
@@ -91,26 +91,30 @@ export function AudiobookEstimatePanel({
           <button
             aria-label={breakdownOpen ? 'Hide per-chapter breakdown' : 'Show per-chapter breakdown'}
             aria-expanded={breakdownOpen}
-            className="icon-btn"
+            className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
             onClick={() => setBreakdownOpen((value) => !value)}
           >
             <FontAwesomeIcon icon={breakdownOpen ? faChevronUp : faChevronDown} />
           </button>
         </TooltipTarget>
       </div>
-      <div className="panel-body space-y-4">
+      <div className="space-y-4 p-[1.1rem]">
         <div className="grid grid-cols-5 gap-4">
           {stats.map((stat) => (
             <div key={stat.label}>
-              <div className="section-label">{stat.label}</div>
-              <div className="f-mono mt-1 text-2xl font-semibold">{stat.value}</div>
+              <div className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                {stat.label}
+              </div>
+              <div className="mt-1 font-['IBM_Plex_Mono',ui-monospace,monospace] text-2xl font-semibold">{stat.value}</div>
             </div>
           ))}
         </div>
         <div>
           <div className="mb-1.5 flex justify-between text-xs">
-            <span className="section-label">Recording progress</span>
-            <span className="f-mono" style={{ color: 'var(--text-muted)' }}>
+            <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              Recording progress
+            </span>
+            <span className="font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-muted)' }}>
               {finalizedCount} of {narrationChapters.length} chapters finalized
             </span>
           </div>
@@ -173,9 +177,9 @@ export function AudiobookEstimatePanel({
                           </Link>
                         </div>
                       </td>
-                      <td className="f-mono text-right">{chapter.wordCount.toLocaleString()}</td>
-                      <td className="f-mono text-right">{fmtHours(finished)}</td>
-                      <td className="f-mono text-right">
+                      <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]">{chapter.wordCount.toLocaleString()}</td>
+                      <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]">{fmtHours(finished)}</td>
+                      <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]">
                         {(chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status]) > 0
                           ? fmtHours(finished * (chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status]))
                           : '—'}

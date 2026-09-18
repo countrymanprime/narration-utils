@@ -15,11 +15,11 @@ export function MeterBar({ segments }: { segments: MeterSegment[] }) {
       {segments.map((segment) => (
         <TooltipTarget
           key={segment.key}
-          className="progress-segment transition-[flex-basis] duration-300 ease-out"
-          style={{ flexBasis: `${segment.widthPercent.toFixed(1)}%` }}
+          className="progress-segment h-full flex-none transition-[flex-basis] duration-300 ease-out"
+          style={{ flexBasis: `${segment.widthPercent.toFixed(1)}%`, display: 'block' }}
           text={segment.tooltip}
         >
-          <span style={{ background: segment.color }} />
+          <span className="block size-full" style={{ background: segment.color }} />
         </TooltipTarget>
       ))}
     </div>

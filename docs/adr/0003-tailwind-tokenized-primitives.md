@@ -1,6 +1,6 @@
 # 0003. Tailwind-based tokenized primitives over ad hoc custom CSS classes
 
-**Status:** Accepted
+**Status:** Superseded by ADR-0009
 **Date:** 2026-09-17
 
 ## Context

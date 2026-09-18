@@ -4,8 +4,15 @@ import { faFileExport, faFileLines, faHeadphones, faPlus, faRotateLeft } from '@
 import type { Discrepancy, TranscriptState } from '../../types';
 import { canAddEquivalence } from '../../state';
 import { useApi } from '../../api/ApiContext';
+import { Button } from '../primitives/Button';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { InlineDiffRow, KIND_STYLES } from './InlineDiffRow';
+
+const TYPE_CHIP_BG: Record<string, string> = {
+  MISREAD: 'bg-[var(--review-soft)]',
+  SKIPPED: 'bg-[#f1e2c4]',
+  EXTRA: 'bg-[var(--place-soft)]',
+};
 
 const seconds = (value: number) =>
   `${Math.floor(value / 60)
@@ -36,11 +43,14 @@ export function Results({
   const exporting = state.markerExport.phase === 'exporting';
   const markerState = (row: Discrepancy) => row.markerState ?? 'pending';
   return (
-    <section className="panel proofing-results">
-      <div className="panel-head">
+    <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
         <h2 className="text-sm font-semibold">Discrepancies</h2>
         <div className="flex items-center gap-2">
-          <span className="badge" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+          <span
+            className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.03em]"
+            style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}
+          >
             {state.rows.length} found
           </span>
           <TooltipTarget
@@ -52,8 +62,9 @@ export function Results({
                   : `Export ${pendingMarkers} new marker${pendingMarkers === 1 ? '' : 's'} to REAPER`
             }
           >
-            <button
-              className="btn btn-primary text-xs"
+            <Button
+              variant="primary"
+              className="text-xs"
               disabled={!canExportMarkers || pendingMarkers === 0 || exporting}
               onClick={async () => {
                 try {
@@ -66,13 +77,13 @@ export function Results({
             >
               <FontAwesomeIcon icon={faFileExport} />
               {exporting ? 'Exporting…' : `Export ${pendingMarkers} marker${pendingMarkers === 1 ? '' : 's'}`}
-            </button>
+            </Button>
           </TooltipTarget>
           <TooltipTarget text="Return to setup for another comparison">
-            <button className="btn btn-ghost text-xs" onClick={reset}>
+            <Button variant="ghost" className="text-xs" onClick={reset}>
               <FontAwesomeIcon icon={faRotateLeft} />
               New comparison
-            </button>
+            </Button>
           </TooltipTarget>
         </div>
       </div>
@@ -82,15 +93,15 @@ export function Results({
         </p>
       ) : (
         <div className="overflow-auto">
-          <table className="dtable proofing-table">
+          <table className="dtable">
             <thead>
               <tr>
-                <th>Type</th>
-                <th>Script</th>
-                <th>Heard</th>
-                <th>Time</th>
-                <th>Marker</th>
-                <th>Actions</th>
+                <th className="align-middle">Type</th>
+                <th className="align-middle">Script</th>
+                <th className="align-middle">Heard</th>
+                <th className="align-middle">Time</th>
+                <th className="align-middle">Marker</th>
+                <th className="align-middle">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -101,48 +112,66 @@ export function Results({
                   <Fragment key={row.id}>
                     <tr data-row className={isSelected ? 'row-selected' : ''} onClick={() => select(isSelected ? undefined : row)}>
                       <td className="align-middle">
-                        <span className={`type-chip type-${row.kind}`} style={{ color: (KIND_STYLES[row.kind] ?? KIND_STYLES.MISREAD).color }}>
+                        <span
+                          className={`rounded px-[0.45rem] py-[0.1rem] font-['Barlow_Condensed',sans-serif] text-[0.68rem] font-bold tracking-[0.03em] ${TYPE_CHIP_BG[row.kind] ?? TYPE_CHIP_BG.MISREAD}`}
+                          style={{ color: (KIND_STYLES[row.kind] ?? KIND_STYLES.MISREAD).color }}
+                        >
                           {row.kind}
                         </span>
                       </td>
-                      <td className="f-mono align-middle">{row.docText || '—'}</td>
-                      <td className="f-mono align-middle" style={{ color: 'var(--text-muted)' }}>
+                      <td className="align-middle font-['IBM_Plex_Mono',ui-monospace,monospace]">{row.docText || '—'}</td>
+                      <td className="align-middle font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-muted)' }}>
                         {row.audioText || '—'}
                       </td>
-                      <td className="f-mono align-middle text-xs" style={{ color: 'var(--text-faint)' }}>
+                      <td className="align-middle font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
                         {seconds(row.projectTime)}
                       </td>
                       <td className="align-middle text-xs">
-                        {markerState(row) === 'pending' && <span className="marker-state marker-state-pending">Ready to export</span>}
-                        {markerState(row) === 'exported' && <span className="marker-state marker-state-exported">Exported</span>}
+                        {markerState(row) === 'pending' && (
+                          <span className="inline-flex items-center whitespace-nowrap rounded-full bg-[var(--accent-soft)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold text-[var(--accent-strong)]">
+                            Ready to export
+                          </span>
+                        )}
+                        {markerState(row) === 'exported' && (
+                          <span className="inline-flex items-center whitespace-nowrap rounded-full bg-[color-mix(in_srgb,var(--character)_18%,transparent)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold text-[var(--character)]">
+                            Exported
+                          </span>
+                        )}
                         {markerState(row) === 'existing' && (
                           <TooltipTarget text={row.existingMarkerName ? `Existing marker: ${row.existingMarkerName}` : 'A matching marker already exists'}>
-                            <span className="marker-state marker-state-existing">Already marked</span>
+                            <span className="inline-flex items-center whitespace-nowrap rounded-full bg-[color-mix(in_srgb,var(--warn)_18%,transparent)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold text-[var(--warn)]">
+                              Already marked
+                            </span>
                           </TooltipTarget>
                         )}
                       </td>
                       <td className="align-middle">
                         <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
-                          <TooltipTarget text={row.chapter ? 'Jump to script in Manuscript' : 'No manuscript source is available'}>
-                            <button aria-label="Jump to manuscript" className="icon-btn" disabled={!row.chapter} onClick={() => goToManuscript(row)}>
+                          <TooltipTarget className="flex-none" text={row.chapter ? 'Jump to script in Manuscript' : 'No manuscript source is available'}>
+                            <button
+                              aria-label="Jump to manuscript"
+                              className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                              disabled={!row.chapter}
+                              onClick={() => goToManuscript(row)}
+                            >
                               <FontAwesomeIcon icon={faFileLines} />
                             </button>
                           </TooltipTarget>
-                          <TooltipTarget text={`Play heard audio at ${seconds(row.projectTime)}`}>
+                          <TooltipTarget className="flex-none" text={`Play heard audio at ${seconds(row.projectTime)}`}>
                             <button
                               aria-label="Play recorded audio"
-                              className="icon-btn"
+                              className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                               disabled={!row.projectTime}
                               onClick={() => void api.transcriptJump(row.id)}
                             >
                               <FontAwesomeIcon icon={faHeadphones} />
                             </button>
                           </TooltipTarget>
-                          <TooltipTarget text={eligible ? 'Add pronunciation equivalence' : 'Only available for single-word misreads'}>
+                          <TooltipTarget className="flex-none" text={eligible ? 'Add pronunciation equivalence' : 'Only available for single-word misreads'}>
                             <button
                               aria-label="Add pronunciation equivalence"
                               disabled={!eligible}
-                              className="icon-btn"
+                              className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                               onClick={async () => {
                                 try {
                                   notify(await api.transcriptAddEquivalence(row.id));

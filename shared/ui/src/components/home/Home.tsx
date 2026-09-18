@@ -127,9 +127,12 @@ export function Home({
   return (
     <div className="mx-auto max-w-5xl space-y-4">
       <Heading title="Welcome back">
-        Project folder: <span className="f-mono">…/{data.projectName}/</span>
+        Project folder: <span className="font-['IBM_Plex_Mono',ui-monospace,monospace]">…/{data.projectName}/</span>
       </Heading>
-      <section className="panel panel-body flex flex-wrap items-center justify-between gap-3" style={!found ? { borderColor: 'var(--review)' } : undefined}>
+      <section
+        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] shadow-[var(--shadow)]"
+        style={!found ? { borderColor: 'var(--review)' } : undefined}
+      >
         <div className="flex items-center gap-2 text-sm">
           <span className="size-2 flex-none rounded-full" style={{ background: found ? 'var(--character)' : 'var(--review)' }} />
           <span>
@@ -148,7 +151,11 @@ export function Home({
         <div className="flex gap-2">
           {found && (
             <TooltipTarget text="View manuscript">
-              <button className="icon-btn" aria-label="View manuscript" onClick={() => go('/manuscript')}>
+              <button
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                aria-label="View manuscript"
+                onClick={() => go('/manuscript')}
+              >
                 <FontAwesomeIcon icon={faFileLines} />
               </button>
             </TooltipTarget>
@@ -157,7 +164,7 @@ export function Home({
             <TooltipTarget text="Replace manuscript — confirmation clears Story Bible, notes, bookmarks, chapter statuses, and saved proofing results.">
               <button
                 aria-label="Replace manuscript"
-                className="icon-btn"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 onClick={async () => {
                   const result = await api.selectManuscript();
                   if (result.selected && result.jobId) {
@@ -173,7 +180,7 @@ export function Home({
             <TooltipTarget text="Import manuscript">
               <button
                 aria-label="Import manuscript"
-                className="icon-btn"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 onClick={async () => {
                   const result = await api.selectManuscript();
                   if (result.selected && result.jobId) {
@@ -229,7 +236,9 @@ export function Home({
           )}
           {importJob.preview.sections && importJob.preview.sections.length > 0 && (
             <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-              <legend className="section-label px-1">Review imported structure</legend>
+              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                Review imported structure
+              </legend>
               <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
                 Reference material stays readable but is excluded from audiobook totals and Proofing.
               </p>
@@ -259,7 +268,9 @@ export function Home({
           )}
           {importJob.preview.characterCandidates && importJob.preview.characterCandidates.length > 0 && (
             <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-              <legend className="section-label px-1">Story Bible character suggestions</legend>
+              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                Story Bible character suggestions
+              </legend>
               <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
                 Checked names become reviewable Character entries after import.
               </p>
@@ -289,13 +300,15 @@ export function Home({
             </fieldset>
           )}
           <div className="mt-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-            <div className="section-label mb-1.5">Preview activity</div>
-            <div className="progressbar">
-              <div style={{ width: `${importJob.percent}%` }} />
+            <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              Preview activity
             </div>
-            <div className="run-log f-mono mt-2">
+            <div className="progressbar h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
+              <div className="h-full bg-[var(--accent)] transition-[width] duration-[0.4s] ease-in-out" style={{ width: `${importJob.percent}%` }} />
+            </div>
+            <div className="mt-2 h-36 overflow-y-auto border border-[var(--border)] bg-[var(--surface-2)] font-['IBM_Plex_Mono',ui-monospace,monospace]">
               {importJob.logs.map((line, index) => (
-                <div key={`${index}-${line}`} className="run-log-entry">
+                <div key={`${index}-${line}`} className="border-b border-[var(--border)] px-[0.45rem] py-1">
                   {line}
                 </div>
               ))}
@@ -321,13 +334,15 @@ export function Home({
           <button
             aria-label="Open Proofing"
             disabled={!found}
-            className="panel panel-body w-full text-left transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
             onClick={() => go('/proofing')}
           >
             <div className="mb-1 flex items-center justify-between">
-              <span className="section-label">Proofing</span>
+              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                Proofing
+              </span>
               <span
-                className="badge"
+                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.03em]"
                 style={
                   lastCompleted ? { background: 'var(--review-soft)', color: 'var(--review)' } : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
                 }
@@ -347,12 +362,17 @@ export function Home({
           <button
             aria-label="Open Story Bible"
             disabled={!found}
-            className="panel panel-body w-full text-left transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
             onClick={() => go('/story-bible')}
           >
             <div className="mb-1 flex items-center justify-between">
-              <span className="section-label">Story Bible</span>
-              <span className="badge" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                Story Bible
+              </span>
+              <span
+                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.03em]"
+                style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}
+              >
                 {entities.length} entities · {review ? 1 : 0} review
               </span>
             </div>

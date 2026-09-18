@@ -7,6 +7,7 @@ import { categoryCssName, categoryLabel, sortEntities, STORY_BIBLE_TABS } from '
 import { useApi } from '../../api/ApiContext';
 import { Heading } from '../primitives/Heading';
 import { TooltipTarget } from '../primitives/Tooltip';
+import { CAT_DOT_BG, CAT_DOT_CLASS } from '../manuscript/EntitySummary';
 import { GuideDetail } from './GuideDetail';
 import { WorkDialog } from '../primitives/WorkDialog';
 
@@ -133,20 +134,24 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
   };
 
   return (
-    <div className="guide-page mx-auto max-w-6xl">
-      <div className="guide-page-header space-y-4">
+    <div className="mx-auto flex h-[calc(100dvh-6.5rem)] max-w-6xl flex-col gap-4 overflow-hidden max-md:h-auto">
+      <div className="flex-none space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <Heading title="Story Bible" />
           <div className="flex gap-2">
             <TooltipTarget text="Add entity">
-              <button aria-label="Add entity" className="icon-btn" onClick={addEntity}>
+              <button
+                aria-label="Add entity"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                onClick={addEntity}
+              >
                 <FontAwesomeIcon icon={faPlus} />
               </button>
             </TooltipTarget>
             <TooltipTarget text="Build / refresh Story Bible">
               <button
                 aria-label="Build / refresh Story Bible"
-                className="icon-btn"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 onClick={async () => {
                   try {
                     const job = await api.guideBuild();
@@ -165,7 +170,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
             <TooltipTarget text="Export hotwords">
               <button
                 aria-label="Export hotwords"
-                className="icon-btn"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 onClick={async () => {
                   try {
                     notify(`Hotwords exported to ${await api.guideExport()}`);
@@ -181,18 +186,22 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
         </div>
         <div className="flex gap-1 overflow-x-auto border-b" style={{ borderColor: 'var(--border)' }}>
           {STORY_BIBLE_TABS.map((name) => (
-            <button key={name} onClick={() => setTab(name)} className={`tab-btn whitespace-nowrap ${tab === name ? 'active' : ''}`}>
+            <button
+              key={name}
+              onClick={() => setTab(name)}
+              className={`whitespace-nowrap border-b-2 border-transparent px-[0.9rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold uppercase tracking-[0.03em] text-[var(--text-muted)] hover:text-[var(--text)] ${tab === name ? 'border-[var(--accent)] text-[var(--text)]' : ''}`}
+            >
               {name === 'All' ? `All · ${visible.length}` : `${TAB_PLURAL[name]} · ${visible.filter((row) => categoryLabel(row.category) === name).length}`}
             </button>
           ))}
         </div>
       </div>
-      <div className="guide-workspace grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
-        <section className="panel flex min-h-0 flex-col overflow-hidden">
-          <div className="panel-body pb-2">
+      <div className="grid min-h-0 flex-1 gap-4 max-md:h-auto lg:grid-cols-[18rem_minmax(0,1fr)] [&>*]:max-md:min-h-96">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
+          <div className="p-[1.1rem] pb-2">
             <div style={{ position: 'relative', width: '100%' }}>
               <input
-                className="input"
+                className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
                 aria-label="Search entries"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -201,24 +210,34 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
               />
               {query && (
                 <TooltipTarget text="Clear search" style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}>
-                  <button aria-label="Clear search" className="icon-btn" onClick={() => setQuery('')}>
+                  <button
+                    aria-label="Clear search"
+                    className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                    onClick={() => setQuery('')}
+                  >
                     <FontAwesomeIcon icon={faXmark} />
                   </button>
                 </TooltipTarget>
               )}
             </div>
           </div>
-          <div className="guide-list-scroll px-2 pb-2">
+          <div className="guide-list-scroll min-h-0 overflow-y-auto px-2 pb-2">
             <table className="dtable">
-              <thead className="sticky-table-head">
+              <thead className="sticky top-0 z-[2] bg-[var(--surface)]">
                 <tr>
                   <th>
-                    <button className={`sort-btn ${sort.key === 'name' ? 'active' : ''}`} onClick={() => toggleSort('name')}>
+                    <button
+                      className={`inline-flex items-center gap-1 text-inherit ${sort.key === 'name' ? 'text-[var(--accent)]' : ''}`}
+                      onClick={() => toggleSort('name')}
+                    >
                       Name {sortArrow('name')}
                     </button>
                   </th>
                   <th className="text-right">
-                    <button className={`sort-btn ${sort.key === 'occurrences' ? 'active' : ''}`} onClick={() => toggleSort('occurrences')}>
+                    <button
+                      className={`inline-flex items-center gap-1 text-inherit ${sort.key === 'occurrences' ? 'text-[var(--accent)]' : ''}`}
+                      onClick={() => toggleSort('occurrences')}
+                    >
                       Occurrences {sortArrow('occurrences')}
                     </button>
                   </th>
@@ -229,7 +248,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
                   <tr key={row.id} data-row className={!pendingNewEntity && selectedId === row.id ? 'row-selected' : ''} onClick={() => selectRow(row.id)}>
                     <td>
                       <div className="flex items-center gap-2">
-                        <span className={`cat-dot type-${categoryCssName(row.category)}`} />
+                        <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(row.category)] }} />
                         <span className="truncate text-sm font-medium">{row.canonical_name}</span>
                         {row.locked && <FontAwesomeIcon icon={faLock} className="text-[10px]" style={{ color: 'var(--text-faint)' }} />}
                       </div>
@@ -237,7 +256,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
                         {categoryLabel(row.category)}
                       </div>
                     </td>
-                    <td className="f-mono text-right" style={{ color: 'var(--text-faint)' }}>
+                    <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-faint)' }}>
                       {row.occurrence_count}
                     </td>
                   </tr>
@@ -253,7 +272,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
             </table>
           </div>
         </section>
-        <div className="guide-detail-panel min-w-0">
+        <div className="flex min-h-0 min-w-0">
           <GuideDetail
             entity={newEntityDraft ?? selected}
             isNewDraft={Boolean(newEntityDraft)}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Bootstrap, Scope, ScopedSettingField, TtsCatalog } from '../../types';
 import { useApi } from '../../api/ApiContext';
+import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { ScopedSetting } from './ScopedSetting';
@@ -122,35 +123,39 @@ export function Settings({
   const reaperLauncher = data.runtime.Reaper?.launcherPath;
 
   return (
-    <div className="settings-page">
+    <div className="mx-auto grid max-w-6xl grid-rows-[auto_auto_minmax(0,1fr)] gap-4 md:h-[calc(100dvh-6.5rem)]">
       <Heading title="Settings" />
       <div className="flex gap-1 border-b" style={{ borderColor: 'var(--border)' }}>
         {(['global', 'project'] as Scope[]).map((option) => (
-          <button key={option} className={`tab-btn ${scope === option ? 'active' : ''}`} onClick={() => requestChange(() => setScope(option))}>
+          <button
+            key={option}
+            className={`border-b-2 border-transparent px-[0.9rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold uppercase tracking-[0.03em] text-[var(--text-muted)] hover:text-[var(--text)] ${scope === option ? 'border-[var(--accent)] text-[var(--text)]' : ''}`}
+            onClick={() => requestChange(() => setScope(option))}
+          >
             {option === 'global' ? 'Global' : 'This Project'}
           </button>
         ))}
       </div>
-      <div className="settings-workspace">
-        <nav className="settings-nav space-y-1">
+      <div className="grid min-h-0 grid-cols-1 gap-4 md:grid-cols-[13rem_minmax(0,1fr)]">
+        <nav className="settings-nav static flex gap-1 space-y-1 overflow-auto md:sticky md:top-0 md:block md:self-start md:overflow-visible">
           {categories.map((entry) => (
             <button
               key={entry.key}
-              className={`rail-btn ${category === entry.key ? 'active' : ''}`}
+              className={`relative flex items-center gap-[0.6rem] whitespace-nowrap rounded-[0.4rem] border-0 px-[0.8rem] py-[0.55rem] text-left font-['Barlow_Condensed',sans-serif] text-base font-semibold uppercase tracking-[0.03em] text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text)] md:w-full md:whitespace-normal ${category === entry.key ? 'bg-[color-mix(in_srgb,var(--accent)_10%,var(--surface))] text-[var(--accent)]' : ''}`}
               onClick={() => requestChange(() => setCategory(entry.key))}
             >
               {entry.label}
             </button>
           ))}
         </nav>
-        <section className="panel settings-scroll">
-          <div className="panel-head">
-            <h2 className="f-label text-lg">{active?.label}</h2>
+        <section className="min-h-0 overflow-visible rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)] md:overflow-auto">
+          <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
+            <h2 className="font-['Barlow_Condensed',sans-serif] text-lg uppercase tracking-[0.08em]">{active?.label}</h2>
             <span className="text-xs" style={{ color: 'var(--text-faint)' }}>
               {scope === 'global' ? 'Global defaults' : 'This Project — falls back to Global where unset'}
             </span>
           </div>
-          <div className="panel-body">
+          <div className="p-[1.1rem]">
             {loadError && (
               <div className="mb-4 rounded-md p-3 text-sm" role="alert" style={{ background: 'var(--review-soft)', color: 'var(--review)' }}>
                 Settings could not be loaded: {loadError}. Select another category or try again.
@@ -175,8 +180,9 @@ export function Settings({
                     <code className="mt-2 block break-all rounded p-2 text-xs" style={{ background: 'var(--surface)' }}>
                       {reaperLauncher}
                     </code>
-                    <button
-                      className="btn btn-ghost mt-2 text-xs"
+                    <Button
+                      variant="ghost"
+                      className="mt-2 text-xs"
                       type="button"
                       onClick={() =>
                         void navigator.clipboard
@@ -186,7 +192,7 @@ export function Settings({
                       }
                     >
                       Copy path
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -199,9 +205,9 @@ export function Settings({
                     Settings remain.
                   </div>
                 </div>
-                <button className="btn btn-danger" onClick={() => setConfirmClearProjectData(true)}>
+                <Button variant="danger" onClick={() => setConfirmClearProjectData(true)}>
                   Clear derived project data…
-                </button>
+                </Button>
               </div>
             ) : (
               <form
@@ -233,9 +239,9 @@ export function Settings({
                           </div>
                         </div>
                         {selectedTtsVoice.installState === 'installed' && (
-                          <button className="btn btn-ghost text-xs" type="button" onClick={() => setConfirmRemoveVoice(true)}>
+                          <Button variant="ghost" className="text-xs" type="button" onClick={() => setConfirmRemoveVoice(true)}>
                             Remove local voice…
-                          </button>
+                          </Button>
                         )}
                       </div>
                     )}
@@ -261,12 +267,12 @@ export function Settings({
                     {dirty && 'Unsaved changes'}
                   </span>
                   <div className="flex gap-2">
-                    <button className="btn btn-ghost" type="button" disabled={!dirty} onClick={() => void discard()}>
+                    <Button variant="ghost" type="button" disabled={!dirty} onClick={() => void discard()}>
                       Discard changes
-                    </button>
-                    <button className="btn btn-primary" type="submit" disabled={!dirty}>
+                    </Button>
+                    <Button variant="primary" type="submit" disabled={!dirty}>
                       Save
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </form>

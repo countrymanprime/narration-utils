@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolderOpen, faFolderPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
+import { Button } from '../primitives/Button';
 import type { ProjectSwitchResult, RecentProject } from '../../types';
 
 // The application-data empty state for "no project folder was given" - a
@@ -104,7 +105,7 @@ export function ProjectPicker() {
 
   return (
     <div className="grid min-h-screen place-items-center p-6">
-      <div className="panel w-full max-w-2xl p-6">
+      <div className="w-full max-w-2xl rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
         <div className="text-lg font-semibold">Open a project</div>
         <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
           Choose a recent project, browse to an existing folder, or create a new one.
@@ -115,7 +116,11 @@ export function ProjectPicker() {
           </p>
         )}
         <section className="mt-5">
-          <div className="section-label mb-2" tabIndex={-1} ref={recentsHeadingRef}>
+          <div
+            className="mb-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]"
+            tabIndex={-1}
+            ref={recentsHeadingRef}
+          >
             Open recent
           </div>
           {recentsFailed ? (
@@ -132,12 +137,12 @@ export function ProjectPicker() {
                 <li key={entry.path} className="relative">
                   <button
                     type="button"
-                    className="panel panel-body w-full pr-10 text-left transition hover:-translate-y-px"
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] pr-10 text-left shadow-[var(--shadow)] transition hover:-translate-y-px"
                     onClick={() => void openRecent(entry)}
                     disabled={busy}
                   >
                     <div className="truncate font-semibold">{entry.name}</div>
-                    <div className="f-mono truncate text-sm" style={{ color: 'var(--text-muted)' }}>
+                    <div className="truncate font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm" style={{ color: 'var(--text-muted)' }}>
                       {entry.path}
                     </div>
                   </button>
@@ -147,7 +152,7 @@ export function ProjectPicker() {
                       if (node) removeButtonRefs.current.set(entry.path, node);
                       else removeButtonRefs.current.delete(entry.path);
                     }}
-                    className="btn absolute right-2 top-2"
+                    className="absolute right-2 top-2 inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold uppercase tracking-[0.03em] disabled:pointer-events-none disabled:opacity-40"
                     aria-label={`Remove ${entry.name} from recent projects`}
                     onClick={() => void removeRecent(entry)}
                     disabled={busy}
@@ -160,11 +165,16 @@ export function ProjectPicker() {
           )}
         </section>
         <div className="mt-5 flex gap-2">
-          <button type="button" className="btn btn-primary" onClick={() => void browse()} disabled={busy}>
+          <Button variant="primary" onClick={() => void browse()} disabled={busy}>
             <FontAwesomeIcon icon={faFolderOpen} />
             Browse…
-          </button>
-          <button type="button" className="btn" onClick={() => void createNew()} disabled={busy}>
+          </Button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold uppercase tracking-[0.03em] disabled:pointer-events-none disabled:opacity-40"
+            onClick={() => void createNew()}
+            disabled={busy}
+          >
             <FontAwesomeIcon icon={faFolderPlus} />
             Create new…
           </button>

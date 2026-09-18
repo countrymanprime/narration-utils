@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph } from '../../types';
 import { categoryCssName } from '../../state';
+import { hlClassName, HL_STYLE } from './EntitySummary';
 
 type Annotation = { id: string; start: number; end: number; length: number; kind: 'entity' | 'note'; entity?: GuideEntity; note?: ManuscriptNote };
 type Piece = { text: string; annotations: Annotation[] };
@@ -48,7 +49,7 @@ export function ParagraphView({
       </p>
     );
   return (
-    <div className="chapter-card-body">
+    <div className="relative bg-[var(--surface)]">
       {paragraphs.map((paragraph, chapterParagraphIndex) => (
         <ParagraphRow
           key={paragraph.index}
@@ -112,8 +113,8 @@ function ParagraphRow({
     return next;
   }, [paragraph, paragraphNotes, entitiesById]);
   const gutterClass = [
-    'ms-gutter !flex !items-start !justify-center border-r border-[var(--border)]',
-    'bg-[var(--surface-2)] !px-1.5 font-mono text-[0.625rem] leading-3',
+    'relative flex items-start justify-center border-r border-[var(--border)]',
+    "bg-[var(--surface-2)] px-1.5 font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.625rem] leading-3",
     'text-[var(--text-faint)]',
     lineNumberPadding,
   ].join(' ');
@@ -128,7 +129,7 @@ function ParagraphRow({
               key={`${item.id}-${pieceIndex}`}
               role="button"
               tabIndex={0}
-              className="note-overlay"
+              className="note-overlay relative z-[2] cursor-pointer rounded-[0.1rem] border-b-2 border-[var(--note)] text-inherit"
               onClick={(event) => {
                 event.stopPropagation();
                 openNote(item.note!);
@@ -148,7 +149,8 @@ function ParagraphRow({
               key={`${item.id}-${pieceIndex}`}
               role="button"
               tabIndex={0}
-              className={`ms-highlight hl-${categoryCssName(item.entity!.category)}`}
+              className={hlClassName(categoryCssName(item.entity!.category))}
+              style={HL_STYLE[categoryCssName(item.entity!.category)]}
               onClick={(event) => {
                 event.stopPropagation();
                 openEntity(item.entity!);
@@ -167,11 +169,16 @@ function ParagraphRow({
         piece.text,
       );
   return (
-    <div className="ms-line !grid min-h-8 !grid-cols-[3.5rem_minmax(0,1fr)]" data-paragraph={paragraph.index} data-source-line={paragraph.sourceLine}>
+    <div className="grid min-h-8 grid-cols-[3.5rem_minmax(0,1fr)]" data-paragraph={paragraph.index} data-source-line={paragraph.sourceLine}>
       <div className={gutterClass}>
-        <span className="source-line-number">{chapterParagraphIndex + 1}</span>
+        <span
+          className="source-line-number relative z-[3] pt-[0.1rem]"
+          style={{ pointerEvents: 'none', textShadow: '0 0 3px var(--surface-2), 0 0 3px var(--surface-2)' }}
+        >
+          {chapterParagraphIndex + 1}
+        </span>
       </div>
-      <div className="ms-content min-w-0 !px-4 !py-1">
+      <div className="min-w-0 px-4 py-1">
         <p className={textClass}>{composeAnnotationPieces(paragraph.text, annotations).map(renderPiece)}</p>
       </div>
     </div>

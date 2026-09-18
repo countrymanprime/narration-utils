@@ -15,7 +15,6 @@ export const STATUS_COLOR: Record<keyof typeof STATUS_LABELS, string> = {
 
 export function ChapterNav({
   chapters,
-  selectedId,
   bookmarks,
   searchQuery,
   searchResults,
@@ -49,19 +48,26 @@ export function ChapterNav({
         const chapterBookmarks = bookmarks.filter((item) => item.chapterId === chapter.id);
         const chapterBookmark = chapterBookmarks.find((item) => item.kind === 'chapter');
         return (
-          <div key={chapter.id} className={`chapter-nav-row ${selectedId === chapter.id ? 'active' : ''}`}>
-            <button className="entity-row w-full text-left" onClick={() => select(chapter.id)}>
+          <div key={chapter.id} className="rounded-[0.4rem]">
+            <button
+              className="flex w-full items-center gap-[0.6rem] rounded-[0.4rem] border border-transparent px-[0.7rem] py-[0.55rem] text-left hover:bg-[var(--surface-2)]"
+              onClick={() => select(chapter.id)}
+            >
               <span className="size-2 flex-none rounded-full" style={{ background: STATUS_COLOR[chapter.status] }} />
               <span className="flex-1 truncate text-sm font-medium">{chapter.title}</span>
-              {chapterBookmark && <FontAwesomeIcon className="chapter-nav-bookmark" icon={faBookmark} />}
-              <span className="f-mono text-xs" style={{ color: 'var(--text-faint)' }}>
+              {chapterBookmark && <FontAwesomeIcon className="text-[var(--accent)]" icon={faBookmark} />}
+              <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
                 {(chapter.wordCount / 1000).toFixed(0)}k
               </span>
             </button>
             {searching
               ? matchesFor(chapter).map((hit, index) => (
-                  <div key={`${hit.paragraph}-${index}`} className="chapter-nav-bookmark-item chapter-nav-search-item">
+                  <div
+                    key={`${hit.paragraph}-${index}`}
+                    className="mb-[0.2rem] ml-7 mr-[0.35rem] flex items-center justify-between gap-[0.4rem] border-l border-[var(--border)] px-[0.4rem] py-[0.28rem] text-[0.74rem] text-[var(--text-muted)]"
+                  >
                     <button
+                      className="w-full"
                       aria-label={`Search result in ${chapter.title}, line ${lineNumber(hit.paragraph)}`}
                       onClick={() => select(chapter.id, hit.paragraph)}
                     >
@@ -75,12 +81,15 @@ export function ChapterNav({
               : chapterBookmarks
                   .filter((item) => item.kind !== 'chapter')
                   .map((item) => (
-                    <div key={item.id} className="chapter-nav-bookmark-item">
-                      <button onClick={() => select(chapter.id, item.paragraph)}>
+                    <div
+                      key={item.id}
+                      className="mb-[0.2rem] ml-7 mr-[0.35rem] flex items-center justify-between gap-[0.4rem] border-l border-[var(--border)] px-[0.4rem] py-[0.28rem] text-[0.74rem] text-[var(--text-muted)]"
+                    >
+                      <button className="flex min-w-0 items-center gap-[0.35rem]" onClick={() => select(chapter.id, item.paragraph)}>
                         <FontAwesomeIcon icon={faBookmark} />
                         {item.kind === 'note' ? 'Note' : `Line ${lineNumber(item.paragraph)}`}
                       </button>
-                      <button aria-label={`Remove ${item.kind} bookmark`} onClick={() => removeBookmark(item.id)}>
+                      <button className="text-[var(--text-faint)]" aria-label={`Remove ${item.kind} bookmark`} onClick={() => removeBookmark(item.id)}>
                         ×
                       </button>
                     </div>

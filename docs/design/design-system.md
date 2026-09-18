@@ -18,7 +18,7 @@ Location: `shared/ui/src/components/primitives/`.
 | `Button` | Tokenized button, `primary`/`ghost`/`danger` variants | Bakes in `disabled:pointer-events-none` so future buttons don't need to remember to guard hover-while-disabled by hand |
 | `MeterBar` | Segmented horizontal meter | Caller controls segment order — see [ADR 0006](../adr/0006-chapter-progress-bar-ordering.md) for why the chapter-progress usage reverses it |
 
-Legacy custom-CSS equivalents (`.btn`, `.btn-primary`/`.btn-ghost`/`.btn-danger`, `.confirm-dialog`, `.panel-head`/`.panel-body`, `.progressbar`) remain in `styles.css` and are still the right choice for existing consumers not yet migrated — see [ADR 0003](../adr/0003-tailwind-tokenized-primitives.md) for scope.
+The custom-CSS system (`.btn`, `.panel-head`/`.panel-body`, `.progressbar`, etc.) that ADR 0003 deliberately left in place for not-yet-migrated consumers has since been fully migrated to Tailwind utilities — see [ADR 0009](../adr/0009-complete-tailwind-migration.md), which supersedes ADR 0003. New UI work should reach for Tailwind utilities directly rather than adding to `styles.css`. ADR 0009 also lists the small set of deliberate exceptions still in `styles.css` (a generic `table.dtable` style, scrollbar-hiding rules, keyframe animations, and a handful of unstyled "marker" classes kept only because visual/unit tests select by CSS class).
 
 ## Conventions
 

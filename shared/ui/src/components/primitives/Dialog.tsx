@@ -23,15 +23,19 @@ export function Dialog({
         className="flex w-full max-w-[70vw] flex-col overflow-hidden rounded-[0.55rem] border"
         style={{ maxHeight: '80dvh', background: 'var(--surface)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-lg)' }}
       >
-        <div className="panel-head flex-none">
+        <div className="flex flex-none items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
           <h2 className="font-semibold">{title}</h2>
           {onClose && (
-            <button className="icon-btn" aria-label="Close" onClick={onClose}>
+            <button
+              className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              aria-label="Close"
+              onClick={onClose}
+            >
               <FontAwesomeIcon icon={faXmark} />
             </button>
           )}
         </div>
-        <div className="panel-body min-h-0 flex-1 overflow-y-auto overflow-x-hidden break-words">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden break-words p-[1.1rem]">{children}</div>
         <div
           className={`flex flex-none gap-2 border-t px-4 pb-4 pt-3 ${actionsAlign === 'between' ? 'justify-between' : 'justify-end'}`}
           style={{ borderColor: 'var(--border)' }}

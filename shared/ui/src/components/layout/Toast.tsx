@@ -13,7 +13,10 @@ export function Toast({ text, dismiss }: { text: string; dismiss: () => void }) 
     };
   }, [dismiss]);
   return (
-    <div className={`toast ${leaving ? 'toast-leaving' : ''}`} role="status">
+    <div
+      className={`ease fixed bottom-5 right-5 z-50 flex items-center gap-[0.6rem] rounded-[0.4rem] bg-[var(--text)] px-4 py-[0.65rem] text-[0.85rem] text-[var(--bg)] shadow-[var(--shadow)] transition-[opacity,transform] duration-150 ${leaving ? 'translate-y-1 opacity-0' : 'opacity-100'}`}
+      role="status"
+    >
       {text}
       <button aria-label="Dismiss message" onClick={dismiss}>
         <FontAwesomeIcon icon={faXmark} />

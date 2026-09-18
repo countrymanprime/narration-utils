@@ -7,6 +7,7 @@ import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderState, Sea
 import { categoryCssName, chapterLineNumbers, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { useTextSelection } from '../../hooks/useTextSelection';
+import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { ChapterNav } from './ChapterNav';
@@ -14,7 +15,7 @@ import { SearchBar } from './SearchBar';
 import { ParagraphView } from './ParagraphView';
 import { SelectionMenu } from './SelectionMenu';
 import { AddNoteDialog } from './AddNoteDialog';
-import { EntitySummary } from './EntitySummary';
+import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from './EntitySummary';
 
 const TEXT_SIZES = ['small', 'medium', 'large'] as const;
 const READER_TEXT_CLASSES = { small: 'text-sm leading-5', medium: 'text-base leading-6', large: 'text-xl leading-7' } as const;
@@ -246,16 +247,19 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
   };
 
   return (
-    <div className="reader-page" style={{ '--band-h': `${bandHeight}px` } as CSSProperties}>
-      <div ref={bandRef} className="reader-control-band">
-        <div className="reader-control-inner">
-          <div className="reader-toolbar">
+    <div className="reader-page min-h-full [--reader-inline:1.5rem] max-md:[--reader-inline:1rem]" style={{ '--band-h': `${bandHeight}px` } as CSSProperties}>
+      <div
+        ref={bandRef}
+        className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--bg)] p-0 shadow-[0_2px_8px_color-mix(in_srgb,var(--text)_10%,transparent)]"
+      >
+        <div className="px-[var(--reader-inline)] pb-3 pt-4">
+          <div className="mb-4 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
             <div className="flex items-center gap-3">
               <Heading title="Manuscript" />
               <TooltipTarget text="Chapters & Search">
                 <button
                   aria-label="Chapters & Search"
-                  className="icon-btn"
+                  className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                   onClick={() => {
                     setDetail(undefined);
                     setSheet('chapters');
@@ -265,22 +269,26 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
                 </button>
               </TooltipTarget>
             </div>
-            <div className="reader-legend">
+            <div className="flex flex-wrap gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] uppercase tracking-wider text-[var(--text-muted)]">
               {[...STORY_BIBLE_TABS.filter((item) => item !== 'All'), 'Note'].map((name) => (
                 <span key={name} className="flex items-center gap-1">
-                  <span className={`cat-dot type-${categoryCssName(name === 'Location' ? 'Place' : name)}`} />
+                  <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(name === 'Location' ? 'Place' : name)] }} />
                   {name}
                 </span>
               ))}
             </div>
           </div>
-          <div className="reader-options">
-            <span className="section-label">
+          <div className="mb-4 flex flex-wrap items-center gap-4">
+            <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
               Text size <Tooltip text="The manuscript always uses the full reading width - adjust text size instead." />
             </span>
             <div className="flex gap-1">
               {TEXT_SIZES.map((value) => (
-                <button key={value} className={`swatch-toggle ${textSize === value ? 'active' : ''}`} onClick={() => setTextSize(value)}>
+                <button
+                  key={value}
+                  className={`rounded-[0.35rem] border border-[var(--border)] px-[0.65rem] py-[0.3rem] font-['Barlow_Condensed',sans-serif] text-[0.78rem] font-semibold uppercase tracking-[0.03em] text-[var(--text-muted)] ${textSize === value ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]' : ''}`}
+                  onClick={() => setTextSize(value)}
+                >
                   {value}
                 </button>
               ))}
@@ -288,32 +296,38 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
             <TooltipTarget text="Expand all chapters">
               <button
                 aria-label="Expand all chapters"
-                className="icon-btn"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 onClick={() => void saveState({ ...readerState, expandedChapters: chapters.map((chapter) => chapter.id) })}
               >
                 <FontAwesomeIcon icon={faAnglesDown} />
               </button>
             </TooltipTarget>
             <TooltipTarget text="Collapse all chapters">
-              <button aria-label="Collapse all chapters" className="icon-btn" onClick={() => void saveState({ ...readerState, expandedChapters: [] })}>
+              <button
+                aria-label="Collapse all chapters"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                onClick={() => void saveState({ ...readerState, expandedChapters: [] })}
+              >
                 <FontAwesomeIcon icon={faAnglesUp} />
               </button>
             </TooltipTarget>
           </div>
         </div>
       </div>
-      <div ref={readerRef} className="reader-chapters">
+      <div ref={readerRef} className="reader-chapters pt-3">
         {chapters.map((chapter) => {
           const expanded = (readerState.expandedChapters || []).includes(chapter.id);
           const chapterBookmark = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapterId === chapter.id);
           return (
             <article
               key={chapter.id}
-              className={`reader-chapter chapter-card ${expanded ? 'expanded' : 'collapsed'}`}
+              className="relative mx-[var(--reader-inline)] mb-4 scroll-mt-[var(--band-h,4rem)] overflow-visible rounded-lg border border-[var(--border)] bg-[var(--surface)]"
               data-chapter={chapter.title}
               data-chapter-id={chapter.id}
             >
-              <header className="reader-chapter-header chapter-card-header">
+              <header
+                className={`sticky top-[var(--band-h,4rem)] z-10 grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-3 border-[var(--border)] p-3 md:grid-cols-[1.4rem_minmax(0,1fr)_auto] md:px-5 md:py-[0.8rem] ${expanded ? 'rounded-t-lg border-b' : 'rounded-lg border-b-0'}`}
+              >
                 <TooltipTarget className="-ml-1 flex size-[1.4rem]" text={chapterBookmark ? 'Remove chapter bookmark' : 'Bookmark this chapter'}>
                   <button
                     className={`group relative flex size-[1.4rem] items-center justify-center text-[var(--text-faint)] ${chapterBookmark ? 'text-[var(--bookmark)]' : ''}`}
@@ -329,20 +343,23 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
                     />
                   </button>
                 </TooltipTarget>
-                <button className="chapter-title text-left" onClick={() => toggleManualChapter(chapter.id)}>
-                  <h2>
-                    {chapter.title} {chapter.subtitle && <span>— {chapter.subtitle}</span>}
+                <button className="text-left" onClick={() => toggleManualChapter(chapter.id)}>
+                  <h2 className="m-0 font-['Barlow_Condensed',sans-serif] text-[1.2rem] font-semibold">
+                    {chapter.title}{' '}
+                    {chapter.subtitle && (
+                      <span className="font-['IBM_Plex_Mono',monospace] text-[0.8rem] font-normal text-[var(--text-faint)]">— {chapter.subtitle}</span>
+                    )}
                   </h2>
                 </button>
-                <div className="chapter-meta">
-                  <div className="f-mono text-xs">{chapter.wordCount.toLocaleString()} words</div>
+                <div className="justify-self-end text-right max-md:col-start-2 max-md:flex max-md:gap-2 max-md:justify-self-start">
+                  <div className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs">{chapter.wordCount.toLocaleString()} words</div>
                   <div className="mt-0.5 text-xs" style={{ color: 'var(--text-faint)' }}>
                     ~{Math.max(1, Math.round(chapter.wordCount / 200))} min read
                   </div>
                 </div>
               </header>
               {expanded && (
-                <div className="manuscript-reader mx-auto">
+                <div className="manuscript-reader mx-auto overflow-hidden rounded-b-lg">
                   {loadingChapters.has(chapter.id) ? (
                     <div className="space-y-2 p-4" aria-label={`Loading ${chapter.title}`}>
                       {(chapter.paragraphIds || []).map((paragraph) => (
@@ -385,28 +402,39 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
         />
       )}
       {pendingNote && <AddNoteDialog anchorText={pendingNote.anchorText} confirm={(text) => void confirmNote(text)} cancel={() => setPendingNote(undefined)} />}
-      {sheet && <div className="sheet-backdrop" onMouseDown={closeSheet} />}
-      <aside className={`overlay-panel ${sheet ? 'overlay-open' : ''}`} aria-hidden={!sheet}>
-        <div className="panel-head">
+      {sheet && <div className="sheet-backdrop fixed inset-0 z-[45] bg-transparent" onMouseDown={closeSheet} />}
+      <aside
+        className={`overlay-panel ease fixed right-0 top-0 z-50 flex h-screen w-[min(20rem,100vw)] flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)] transition-transform duration-200 ${sheet ? 'translate-x-0' : 'translate-x-full'}`}
+        aria-hidden={!sheet}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
           <h3 className="text-sm font-semibold">{detail?.note ? 'Note' : detail?.entity?.canonical_name || 'Chapters & Search'}</h3>
-          <button className="icon-btn" aria-label="Close" onClick={closeSheet}>
+          <button
+            className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            aria-label="Close"
+            onClick={closeSheet}
+          >
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
-        <div className="panel-body scroll-chrome-hidden flex-1 overflow-y-auto">
+        <div className="scroll-chrome-hidden flex-1 overflow-y-auto p-[1.1rem]">
           {detail?.note ? (
             <>
               <div className="mb-3">
-                <div className="section-label mb-1">Anchored text</div>
+                <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Anchored text
+                </div>
                 <p className="text-sm italic">“{detail.note.anchorText || 'Paragraph note'}”</p>
               </div>
               <div className="mb-4">
-                <div className="section-label mb-1">Note</div>
+                <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Note
+                </div>
                 <p className="text-sm">{detail.note.text}</p>
               </div>
-              <button className="btn btn-danger text-xs" onClick={() => void deleteNote(detail.note!.id)}>
+              <Button variant="danger" className="text-xs" onClick={() => void deleteNote(detail.note!.id)}>
                 Delete note
-              </button>
+              </Button>
             </>
           ) : detail?.entity ? (
             <>
@@ -417,15 +445,17 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
                   showChapter(chapter, paragraph);
                 }}
               />
-              <button className="btn btn-ghost mt-4 text-xs" onClick={() => focusStoryBibleEntity(detail.entity!.id)}>
+              <Button variant="ghost" className="mt-4 text-xs" onClick={() => focusStoryBibleEntity(detail.entity!.id)}>
                 Open in Story Bible →
-              </button>
+              </Button>
             </>
           ) : (
             <>
               <SearchBar query={searchQuery} onQueryChange={(value) => void runSearch(value)} />
               <div className="mt-4 border-t pt-3">
-                <div className="section-label mb-1">Chapters</div>
+                <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Chapters
+                </div>
                 <ChapterNav
                   chapters={chapters}
                   selectedId={active}

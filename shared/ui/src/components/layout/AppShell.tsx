@@ -34,16 +34,16 @@ export function AppShell({
   const settingsActive = isActivePath(pathname, '/settings');
   const navigation = (
     <>
-      <div className="brand-block">
-        <span className="brand-icon">
+      <div className="flex items-center gap-2 border-b border-[var(--border)] p-4">
+        <span className="flex size-7 items-center justify-center rounded bg-[var(--accent)] text-[var(--accent-contrast)]">
           <FontAwesomeIcon icon={faMicrophone} fixedWidth />
         </span>
         <span className="leading-tight">
-          <b className="brand-name">Narration</b>
-          <span className="brand-subtitle">Console</span>
+          <b className="block font-['Barlow_Condensed',sans-serif] text-sm uppercase tracking-[0.02em]">Narration</b>
+          <span className="block font-['Barlow_Condensed',sans-serif] text-[0.65rem] uppercase tracking-[0.08em] text-[var(--text-faint)]">Console</span>
         </span>
       </div>
-      <nav className="shell-nav">
+      <nav className="flex-1 p-2">
         {NAV.map((item) => (
           <NavButton
             key={item.name}
@@ -57,7 +57,7 @@ export function AppShell({
           </NavButton>
         ))}
       </nav>
-      <div className="shell-settings">
+      <div className="border-t border-[var(--border)] p-2">
         <NavButton active={settingsActive} icon={faGear} onClick={() => go('/settings')}>
           Settings
         </NavButton>
@@ -65,9 +65,12 @@ export function AppShell({
     </>
   );
   return (
-    <div className="app-shell">
-      <aside className="desktop-sidebar">{navigation}</aside>
-      <aside className="medium-rail" aria-label="Primary navigation">
+    <div className="flex h-full overflow-hidden bg-[var(--bg)]">
+      <aside className="hidden w-56 flex-none flex-col border-r border-[var(--border)] bg-[var(--surface)] min-[1400px]:flex">{navigation}</aside>
+      <aside
+        className="medium-rail hidden w-14 flex-none flex-col gap-1 border-r border-[var(--border)] bg-[var(--surface)] p-2 md:flex min-[1400px]:hidden"
+        aria-label="Primary navigation"
+      >
         {NAV.map((item) => (
           <NavButton
             key={item.name}
@@ -88,18 +91,29 @@ export function AppShell({
         </div>
       </aside>
       {drawerOpen && (
-        <div className="drawer-backdrop" onMouseDown={() => setDrawerOpen(false)}>
-          <aside className="mobile-drawer" onMouseDown={(event) => event.stopPropagation()}>
-            <button className="icon-btn drawer-close" aria-label="Close navigation" onClick={() => setDrawerOpen(false)}>
+        <div className="fixed inset-0 z-[70] bg-[rgba(20,17,12,0.42)]" onMouseDown={() => setDrawerOpen(false)}>
+          <aside
+            className="flex h-full w-[min(17rem,86vw)] flex-col bg-[var(--surface)] shadow-[var(--shadow-lg)]"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              className="absolute right-3 top-3 inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              aria-label="Close navigation"
+              onClick={() => setDrawerOpen(false)}
+            >
               <FontAwesomeIcon icon={faXmark} />
             </button>
             {navigation}
           </aside>
         </div>
       )}
-      <main className="shell-main">
-        <header className="shell-header">
-          <button className="icon-btn mobile-menu" aria-label="Open navigation" onClick={() => setDrawerOpen(true)}>
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex h-14 flex-none items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 text-sm md:px-5">
+          <button
+            className="hidden size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] max-md:inline-flex"
+            aria-label="Open navigation"
+            onClick={() => setDrawerOpen(true)}
+          >
             <FontAwesomeIcon icon={faBars} />
           </button>
           <div className="flex min-w-0 items-center gap-2">
@@ -107,12 +121,12 @@ export function AppShell({
             <FontAwesomeIcon icon={faFolder} style={{ color: 'var(--text-faint)' }} />
             <span className="truncate font-medium">{projectName}</span>
           </div>
-          <span className="pill">
-            <span className="led" />
+          <span className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em]">
+            <span className="h-[7px] w-[7px] flex-none rounded-full bg-[var(--character)] shadow-[0_0_5px_var(--character)]" />
             {daw}
           </span>
         </header>
-        <div className={`shell-content scroll-chrome-hidden ${isActivePath(pathname, '/manuscript') ? 'manuscript-content' : ''}`}>{children}</div>
+        <div className={`scroll-chrome-hidden flex-1 overflow-y-auto ${isActivePath(pathname, '/manuscript') ? 'p-0' : 'p-4 md:p-6'}`}>{children}</div>
       </main>
     </div>
   );

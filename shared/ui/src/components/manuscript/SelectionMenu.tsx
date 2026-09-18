@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBookOpen, faNoteSticky } from '@fortawesome/free-solid-svg-icons';
 import type { ManuscriptSelection } from '../../hooks/useTextSelection';
+import { Button } from '../primitives/Button';
 
 // A single, opaque rich-text toolbar. Rendering in document.body prevents it
 // being clipped by reader cards and allows placement to be clamped precisely.
@@ -26,7 +27,7 @@ export function SelectionMenu({
     const above = selection.rect.top - height - 10;
     setPosition({ left, top: above >= 8 ? above : Math.min(window.innerHeight - height - 8, selection.rect.bottom + 10) });
   };
-  useLayoutEffect(place, [selection.rect.left, selection.rect.top, selection.rect.width, selection.rect.height]);
+  useLayoutEffect(place, [selection.rect.left, selection.rect.top, selection.rect.width, selection.rect.height, selection.rect.bottom]);
   useEffect(() => {
     window.addEventListener('resize', place);
     const escape = (event: KeyboardEvent) => {
@@ -41,18 +42,18 @@ export function SelectionMenu({
   return createPortal(
     <div
       ref={ref}
-      className="selection-toolbar"
+      className="fixed isolate z-[65] flex overflow-hidden rounded-[0.45rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)]"
       role="toolbar"
       aria-label="Selected manuscript text actions"
       style={position}
       onMouseDown={(event) => event.preventDefault()}
     >
-      <button className="btn btn-primary text-xs" aria-label="+ Note" onClick={addNote}>
+      <Button variant="primary" className="rounded-none border-0 text-xs" aria-label="+ Note" onClick={addNote}>
         <FontAwesomeIcon icon={faNoteSticky} /> Note
-      </button>
-      <button className="btn btn-ghost text-xs" aria-label="+ Story Bible" onClick={addToStoryBible}>
+      </Button>
+      <Button variant="ghost" className="rounded-none border-0 border-l border-l-[var(--border)] text-xs" aria-label="+ Story Bible" onClick={addToStoryBible}>
         <FontAwesomeIcon icon={faBookOpen} /> Story Bible
-      </button>
+      </Button>
     </div>,
     document.body,
   );

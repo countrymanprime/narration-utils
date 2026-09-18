@@ -98,7 +98,7 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'chapter-collapsed': async (page) => {
       await goToPage(page, 'Manuscript');
-      await clickVisible(page, 'button', 'Collapse all');
+      await clickVisible(page, 'button', 'Collapse all chapters');
     },
     'chapter-expanded': async (page) => {
       await goToPage(page, 'Manuscript');

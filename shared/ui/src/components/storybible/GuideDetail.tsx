@@ -17,7 +17,8 @@ import {
 import type { GuideEntity, GuidePreview, TtsInstallJob } from '../../types';
 import { allEvidence, categoryCssName, categoryLabel, categoryValue, CREATABLE_CATEGORIES, findAliasMatches, highlightTerms } from '../../state';
 import { useApi } from '../../api/ApiContext';
-import { EntitySummary } from '../manuscript/EntitySummary';
+import { BADGE_CLASS, BADGE_STYLE, CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary, hlClassName, HL_STYLE } from '../manuscript/EntitySummary';
+import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
@@ -90,7 +91,12 @@ export function GuideDetail({
       });
   }, [entity]);
 
-  if (!entity) return <section className="panel panel-body">No matching entities. Build the guide to discover names and terms.</section>;
+  if (!entity)
+    return (
+      <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] shadow-[var(--shadow)]">
+        No matching entities. Build the guide to discover names and terms.
+      </section>
+    );
   const locked = entity.locked;
   const editingDisabled = locked || isNewDraft;
   const otherEntities = entities.filter((row) => row.id !== entity.id && row.category !== 'Draft');
@@ -192,29 +198,39 @@ export function GuideDetail({
   };
 
   return (
-    <section className={`panel guide-detail-card ${locked ? 'is-locked' : ''}`}>
-      <div className="panel-head guide-detail-head flex-wrap">
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
         <div className="flex min-w-0 items-center gap-2">
-          <span className={`cat-dot type-${categoryCssName(entity.category)}`} />
+          <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(entity.category)] }} />
           <h2 className="truncate font-semibold">{entity.canonical_name || 'New entity'}</h2>
           <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
             <div style={{ position: 'relative' }}>
-              <button type="button" className={`badge badge-${entity.category}`} disabled={locked} onClick={() => setCategoryMenuOpen((value) => !value)}>
+              <button
+                type="button"
+                className={BADGE_CLASS}
+                style={BADGE_STYLE[entity.category]}
+                disabled={locked}
+                onClick={() => setCategoryMenuOpen((value) => !value)}
+              >
                 {categoryLabel(entity.category)} <FontAwesomeIcon icon={faChevronDown} />
               </button>
               {categoryMenuOpen && (
-                <div className="category-menu" role="menu">
+                <div
+                  className="absolute left-0 top-[calc(100%+0.4rem)] z-10 w-44 rounded-[0.4rem] border border-[var(--border)] bg-[var(--surface)] p-[0.35rem] shadow-[var(--shadow-lg)]"
+                  role="menu"
+                >
                   {CREATABLE_CATEGORIES.map((label) => (
                     <button
                       key={label}
                       role="menuitem"
+                      className="flex w-full items-center gap-2 rounded-[0.3rem] px-[0.55rem] py-[0.45rem] text-left text-[0.82rem] hover:bg-[var(--surface-2)]"
                       onClick={() => {
                         setCategoryMenuOpen(false);
                         if (isNewDraft) void createNewEntity(categoryValue(label));
                         else void save({ category: categoryValue(label) }, `Category changed to ${label}.`);
                       }}
                     >
-                      <span className={`cat-dot type-${categoryValue(label)}`} />
+                      <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryValue(label)] }} />
                       {label}
                     </button>
                   ))}
@@ -224,14 +240,14 @@ export function GuideDetail({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="f-mono mr-1 text-xs" style={{ color: 'var(--text-faint)' }}>
+          <span className="mr-1 font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
             {entity.occurrence_count} occurrences
           </span>
           {!isNewDraft && (
             <TooltipTarget text={locked ? 'Unlock entry' : 'Lock entry'}>
               <button
                 aria-label={locked ? 'Unlock entry' : 'Lock entry'}
-                className="icon-btn"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 onClick={async () => {
                   try {
                     await api.guideSetLocked(entity.id, !locked);
@@ -251,7 +267,7 @@ export function GuideDetail({
           >
             <button
               aria-label="Save changes to this entry"
-              className="icon-btn"
+              className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
               disabled={editingDisabled}
               onClick={() =>
                 void save(
@@ -270,21 +286,29 @@ export function GuideDetail({
           </TooltipTarget>
           {!locked && !isNewDraft && (
             <TooltipTarget text="Delete entity">
-              <button aria-label="Delete entity" className="icon-btn" onClick={() => setConfirmation('delete')}>
+              <button
+                aria-label="Delete entity"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                onClick={() => setConfirmation('delete')}
+              >
                 <FontAwesomeIcon icon={faTrash} />
               </button>
             </TooltipTarget>
           )}
           {isNewDraft && (
             <TooltipTarget text="Discard this new entry">
-              <button aria-label="Discard this new entry" className="icon-btn" onClick={() => onDiscardNewDraft?.()}>
+              <button
+                aria-label="Discard this new entry"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                onClick={() => onDiscardNewDraft?.()}
+              >
                 <FontAwesomeIcon icon={faXmark} />
               </button>
             </TooltipTarget>
           )}
         </div>
       </div>
-      <div className="panel-body guide-detail-scroll space-y-4">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-[1.1rem]">
         {locked && (
           <p className="rounded px-3 py-1.5 text-xs" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
             <FontAwesomeIcon icon={faLock} className="mr-1.5" />
@@ -298,18 +322,28 @@ export function GuideDetail({
         )}
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <div className="label mb-1.5">Name</div>
-            <input className="input" disabled={editingDisabled} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+            <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">Name</div>
+            <input
+              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
+              disabled={editingDisabled}
+              value={draft.name}
+              onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+            />
           </div>
           <div>
-            <div className="label mb-1.5">
+            <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">
               Pronunciation{' '}
               <TooltipTarget text="Generated pronunciation; the waveform button plays an audio preview.">
-                <span className="tip-icon">i</span>
+                <span className="inline-flex h-[15px] w-[15px] cursor-help items-center justify-center rounded-full border border-[var(--text-faint)] font-['IBM_Plex_Mono',monospace] text-[0.68rem] text-[var(--text-faint)] hover:border-[var(--accent)] hover:text-[var(--accent)]">
+                  i
+                </span>
               </TooltipTarget>
             </div>
             <div style={{ position: 'relative', width: '100%' }}>
-              <div className="form-control form-control--readonly f-mono" style={{ paddingRight: '2.75rem' }}>
+              <div
+                className="min-h-[var(--control-height)] w-full cursor-default rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface-2)] px-3 py-[0.6rem] font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.88rem] leading-[1.35] text-[var(--text)]"
+                style={{ paddingRight: '2.75rem' }}
+              >
                 {entity.pronunciation.ipa || 'Not generated'}
               </div>
               <TooltipTarget
@@ -318,7 +352,7 @@ export function GuideDetail({
               >
                 <button
                   aria-label={playingPreview === CANONICAL_PREVIEW ? 'Pause preview' : 'Play preview'}
-                  className="icon-btn"
+                  className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                   disabled={isNewDraft}
                   onClick={() => void playPreview()}
                 >
@@ -333,7 +367,7 @@ export function GuideDetail({
         </div>
 
         <div className="mt-5">
-          <div className="label mb-1.5">Aliases</div>
+          <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">Aliases</div>
           <table className="dtable">
             <thead>
               <tr>
@@ -346,10 +380,13 @@ export function GuideDetail({
             <tbody>
               {entity.aliases.map((alias, index) => (
                 <tr key={alias.text}>
-                  <td className="f-mono align-middle text-sm">{alias.text}</td>
+                  <td className="align-middle font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm">{alias.text}</td>
                   <td className="align-middle">
                     <div style={{ position: 'relative', width: '100%' }}>
-                      <div className="form-control form-control--readonly f-mono text-xs" style={{ paddingRight: '2.75rem' }}>
+                      <div
+                        className="min-h-[var(--control-height)] w-full cursor-default rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface-2)] px-3 py-[0.6rem] font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs leading-[1.35] text-[var(--text)]"
+                        style={{ paddingRight: '2.75rem' }}
+                      >
                         {alias.pronunciation.ipa || 'Not generated'}
                       </div>
                       <TooltipTarget
@@ -358,7 +395,7 @@ export function GuideDetail({
                       >
                         <button
                           aria-label={playingPreview === previewKey(index) ? 'Pause alias pronunciation' : 'Play alias pronunciation'}
-                          className="icon-btn"
+                          className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                           onClick={() => void playPreview(index)}
                         >
                           <FontAwesomeIcon icon={playingPreview === previewKey(index) ? faPause : faWaveSquare} />
@@ -366,10 +403,10 @@ export function GuideDetail({
                       </TooltipTarget>
                     </div>
                   </td>
-                  <td className="f-mono align-middle">{alias.occurrences.length}</td>
+                  <td className="align-middle font-['IBM_Plex_Mono',ui-monospace,monospace]">{alias.occurrences.length}</td>
                   <td className="text-right align-middle">
                     <button
-                      className="icon-btn"
+                      className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                       aria-label={`Remove alias ${alias.text}`}
                       disabled={editingDisabled}
                       onClick={() => void setAliasTexts(entity.aliases.filter((other) => other.text !== alias.text).map((other) => other.text))}
@@ -383,7 +420,7 @@ export function GuideDetail({
           </table>
           <div className="mt-3">
             <input
-              className="input"
+              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
               role="combobox"
               aria-expanded={aliasMatches.length > 0}
               disabled={editingDisabled}
@@ -402,24 +439,24 @@ export function GuideDetail({
                   Selected match: <strong>{selectedAliasMatch.canonical_name}</strong>
                   {selectedAliasMatch.locked ? ' · locked' : ''}
                 </span>
-                <button className="btn btn-ghost text-xs" onClick={() => setReviewOverlayId(selectedAliasMatch.id)}>
+                <Button variant="ghost" className="text-xs" onClick={() => setReviewOverlayId(selectedAliasMatch.id)}>
                   Review entry
-                </button>
+                </Button>
                 {selectedAliasMatch.locked ? (
                   <TooltipTarget text="Locked entries cannot be merged because the source would be deleted.">
-                    <button className="btn btn-primary text-xs" disabled>
+                    <Button variant="primary" className="text-xs" disabled>
                       Merge into current entry
-                    </button>
+                    </Button>
                   </TooltipTarget>
                 ) : (
-                  <button className="btn btn-primary text-xs" onClick={() => setConfirmation('merge')}>
+                  <Button variant="primary" className="text-xs" onClick={() => setConfirmation('merge')}>
                     <FontAwesomeIcon icon={faCodeMerge} />
                     Merge into current entry
-                  </button>
+                  </Button>
                 )}
-                <button className="btn btn-ghost text-xs" onClick={clearAliasMatch}>
+                <Button variant="ghost" className="text-xs" onClick={clearAliasMatch}>
                   Clear selection
-                </button>
+                </Button>
               </div>
             ) : aliasQuery ? (
               <div className="alias-match-menu" role="listbox" aria-label="Matching Story Bible entries">
@@ -433,7 +470,7 @@ export function GuideDetail({
                       className={`alias-match-option ${index === aliasActiveIndex ? 'active' : ''}`}
                       onClick={() => setAliasSelectedId(match.id)}
                     >
-                      <span className={`cat-dot type-${match.category}`} />
+                      <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[match.category] }} />
                       <span className="min-w-0 flex-1">
                         <strong className="text-sm">{match.canonical_name}</strong>
                         <span className="block text-xs" style={{ color: 'var(--text-faint)' }}>
@@ -450,12 +487,22 @@ export function GuideDetail({
                 )}
                 <div className="alias-match-actions justify-between" style={{ padding: '.5rem' }}>
                   <TooltipTarget text="Add alias">
-                    <button aria-label="Add alias" className="icon-btn" disabled={editingDisabled} onClick={addAliasFromQuery}>
+                    <button
+                      aria-label="Add alias"
+                      className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                      disabled={editingDisabled}
+                      onClick={addAliasFromQuery}
+                    >
                       <FontAwesomeIcon icon={faPlus} />
                     </button>
                   </TooltipTarget>
                   <TooltipTarget text="Rescan occurrences for this entry">
-                    <button aria-label="Rescan occurrences" className="icon-btn" disabled={isNewDraft} onClick={() => void rescanOccurrences()}>
+                    <button
+                      aria-label="Rescan occurrences"
+                      className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                      disabled={isNewDraft}
+                      onClick={() => void rescanOccurrences()}
+                    >
                       <FontAwesomeIcon icon={faRotate} />
                     </button>
                   </TooltipTarget>
@@ -464,12 +511,22 @@ export function GuideDetail({
             ) : (
               <div className="alias-match-actions justify-between">
                 <TooltipTarget text="Add alias">
-                  <button aria-label="Add alias" className="icon-btn" disabled={editingDisabled} onClick={addAliasFromQuery}>
+                  <button
+                    aria-label="Add alias"
+                    className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                    disabled={editingDisabled}
+                    onClick={addAliasFromQuery}
+                  >
                     <FontAwesomeIcon icon={faPlus} />
                   </button>
                 </TooltipTarget>
                 <TooltipTarget text="Rescan occurrences for this entry">
-                  <button aria-label="Rescan occurrences" className="icon-btn" disabled={isNewDraft} onClick={() => void rescanOccurrences()}>
+                  <button
+                    aria-label="Rescan occurrences"
+                    className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                    disabled={isNewDraft}
+                    onClick={() => void rescanOccurrences()}
+                  >
                     <FontAwesomeIcon icon={faRotate} />
                   </button>
                 </TooltipTarget>
@@ -496,17 +553,18 @@ export function GuideDetail({
               onChange={(value) => setDraft({ ...draft, personality: value })}
             />
             <div className="mt-5">
-              <div className="label mb-1.5">Voice samples</div>
+              <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">Voice samples</div>
               <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
                 No samples yet.
               </p>
-              <button
-                className="btn btn-ghost mt-1.5 text-xs"
+              <Button
+                variant="ghost"
+                className="mt-1.5 text-xs"
                 disabled={editingDisabled}
                 onClick={() => notify('Voice-sample picker is a future integration.')}
               >
                 + Add sample
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -530,7 +588,7 @@ export function GuideDetail({
         )}
 
         <div className="mt-5 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
-          <div className="label mb-2">Relationships</div>
+          <div className="mb-2 text-[0.82rem] font-medium text-[var(--text-muted)]">Relationships</div>
           <table className="dtable">
             <thead>
               <tr>
@@ -546,7 +604,7 @@ export function GuideDetail({
                   <td>{rel.name}</td>
                   <td className="text-right">
                     <button
-                      className="icon-btn"
+                      className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                       aria-label="Remove relationship"
                       disabled={editingDisabled}
                       onClick={async () => {
@@ -574,13 +632,18 @@ export function GuideDetail({
           </table>
           <div className="mt-3 grid gap-3" style={{ gridTemplateColumns: '1fr 1fr auto' }}>
             <input
-              className="input"
+              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
               disabled={editingDisabled}
               value={relationLabel}
               onChange={(event) => setRelationLabel(event.target.value)}
               placeholder="Relationship, e.g. located in"
             />
-            <select className="input" disabled={editingDisabled} value={relationOtherId} onChange={(event) => setRelationOtherId(event.target.value)}>
+            <select
+              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
+              disabled={editingDisabled}
+              value={relationOtherId}
+              onChange={(event) => setRelationOtherId(event.target.value)}
+            >
               <option value="">Choose entry…</option>
               {otherEntities.map((row) => (
                 <option key={row.id} value={row.id}>
@@ -588,8 +651,9 @@ export function GuideDetail({
                 </option>
               ))}
             </select>
-            <button
-              className="btn btn-ghost text-xs"
+            <Button
+              variant="ghost"
+              className="text-xs"
               disabled={editingDisabled}
               onClick={async () => {
                 if (!relationOtherId || !relationLabel.trim()) return;
@@ -604,14 +668,14 @@ export function GuideDetail({
               }}
             >
               <FontAwesomeIcon icon={faPlus} /> Add
-            </button>
+            </Button>
           </div>
         </div>
 
         <div className="mt-5 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
-          <div className="label mb-1.5">
+          <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">
             Evidence{' '}
-            <span className="f-mono text-xs" style={{ color: 'var(--text-faint)' }}>
+            <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
               ({evidence.length} shown)
             </span>
           </div>
@@ -623,19 +687,19 @@ export function GuideDetail({
             evidence.map((item, index) => (
               <div key={index} className="flex items-center justify-between gap-3 border-b py-3 last:border-0" style={{ borderColor: 'var(--border)' }}>
                 <div className="min-w-0 flex-1">
-                  <span className="f-mono text-xs" style={{ color: 'var(--text-faint)' }}>
+                  <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
                     {item.chapter}
                     {item.alias ? (
                       <>
                         {' '}
-                        · <span className="alias-term">alias: {item.alias}</span>
+                        · <span className="font-['IBM_Plex_Mono',monospace] text-[var(--accent-strong)]">alias: {item.alias}</span>
                       </>
                     ) : null}
                   </span>
                   <p className="mt-1 break-words text-sm">
                     {highlightTerms(item.excerpt, highlightNames).map((segment, i) =>
                       segment.match ? (
-                        <mark key={i} className={`ms-highlight hl-${entity.category}`}>
+                        <mark key={i} className={hlClassName(entity.category)} style={HL_STYLE[entity.category]}>
                           {segment.text}
                         </mark>
                       ) : (
@@ -645,10 +709,10 @@ export function GuideDetail({
                   </p>
                 </div>
                 <TooltipTarget text="Open this evidence in Manuscript">
-                  <button className="btn btn-ghost flex-none text-xs" onClick={() => goToManuscript(item.chapter, item.paragraph)}>
+                  <Button variant="ghost" className="flex-none text-xs" onClick={() => goToManuscript(item.chapter, item.paragraph)}>
                     <FontAwesomeIcon icon={faFileLines} />
                     Go to line
-                  </button>
+                  </Button>
                 </TooltipTarget>
               </div>
             ))
@@ -667,8 +731,11 @@ export function GuideDetail({
             cancel={() => void cancelVoiceInstall()}
           >
             {ttsJob?.phase === 'downloading' && (
-              <div className="progressbar mt-3">
-                <div style={{ width: `${Math.max(ttsJob.percent, 4)}%` }} />
+              <div className="progressbar mt-3 h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
+                <div
+                  className="h-full bg-[var(--accent)] transition-[width] duration-[0.4s] ease-in-out"
+                  style={{ width: `${Math.max(ttsJob.percent, 4)}%` }}
+                />
               </div>
             )}
             <dl className="mt-3 space-y-1 text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -744,13 +811,17 @@ export function GuideDetail({
       </div>
       {reviewOverlayEntity && <div className="sheet-backdrop" onMouseDown={() => setReviewOverlayId(undefined)} />}
       <aside className={`overlay-panel ${reviewOverlayEntity ? 'overlay-open' : ''}`} aria-hidden={!reviewOverlayEntity}>
-        <div className="panel-head">
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
           <h3 className="text-sm font-semibold">{reviewOverlayEntity?.canonical_name || 'Review entry'}</h3>
-          <button className="icon-btn" aria-label="Close review panel" onClick={() => setReviewOverlayId(undefined)}>
+          <button
+            className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            aria-label="Close review panel"
+            onClick={() => setReviewOverlayId(undefined)}
+          >
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
-        <div className="panel-body flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto p-[1.1rem]">
           {reviewOverlayEntity && <EntitySummary entity={reviewOverlayEntity} jumpToLine={goToManuscript} />}
         </div>
       </aside>

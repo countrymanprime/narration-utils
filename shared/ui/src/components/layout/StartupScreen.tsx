@@ -1,5 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleNotch, faRotate } from '@fortawesome/free-solid-svg-icons';
+import { Button } from '../primitives/Button';
 
 export type StartupState = 'connecting' | 'error' | 'timeout' | 'disconnected';
 
@@ -15,7 +16,7 @@ export function StartupScreen({ state, error, diagnosticId, retry }: { state: St
           : error;
   return (
     <div className="grid min-h-screen place-items-center p-6">
-      <div className="panel max-w-lg p-6 text-center">
+      <div className="max-w-lg rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 text-center shadow-[var(--shadow)]">
         <div className="text-lg font-semibold">
           {waiting ? (
             <>
@@ -30,15 +31,15 @@ export function StartupScreen({ state, error, diagnosticId, retry }: { state: St
           {detail}
         </p>
         {diagnosticId && (
-          <p className="f-mono mt-3 text-xs" style={{ color: 'var(--text-faint)' }}>
+          <p className="mt-3 font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
             Diagnostic: {diagnosticId}
           </p>
         )}
         {!waiting && (
-          <button className="btn btn-primary mt-5" onClick={retry}>
+          <Button variant="primary" className="mt-5" onClick={retry}>
             <FontAwesomeIcon icon={faRotate} />
             Retry connection
-          </button>
+          </Button>
         )}
       </div>
     </div>
