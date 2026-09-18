@@ -13,10 +13,6 @@ shared/ui/playwright-report/
 shared/ui/test-results/
 logs/
 .claude/
-shell/src-tauri/target/
-shell/src-tauri/gen/
-shared/manuscript-import/target/
-shell/src-tauri/resources/
 shell/cmd/narration-utils/frontend/dist/*
 !shell/cmd/narration-utils/frontend/dist/.gitkeep
 shell/cmd/narration-utils/frontend/wailsjs/
