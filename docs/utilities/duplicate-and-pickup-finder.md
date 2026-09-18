@@ -22,6 +22,7 @@ Analyze a selected chapter or range; review suspected pickup, restart, exact dup
 
 - Detect immediate restarts and exact/near-duplicate voiced passages.
 - Associate candidates with likely manuscript spans when alignment evidence exists.
+- Surface a partial-span match (only part of a candidate cleanly covers the target range) distinctly from a full match, so a partially usable pickup is never silently treated as complete — see [Take Intelligence](take-intelligence.md)'s segment-level evidence for the matching per-take view.
 - Provide contextual A/B loop audition and exact source/target timestamps.
 - Create a duplicate as a new take only after confirmation and only in a user-selected item.
 

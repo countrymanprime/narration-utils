@@ -28,6 +28,7 @@ Run diagnostics over selected items, a chapter, or render-ready output; inspect 
 
 - Conservative mouth-noise/breath candidates, session-to-session environment comparison, and custom narrator baselines.
 - Chapter pacing heatmaps and trends across a book.
+- Share silence/level measurement logic with [Silence Cleanup](silence-cleanup.md) and [Clause Splitting and Level Normalization](clause-split-and-level-normalize.md) instead of duplicating detection across utilities — this diagnostic stays read-only; those utilities own the reversible edit actions.
 
 ## Non-goals and review boundary
 

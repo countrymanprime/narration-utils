@@ -12,7 +12,7 @@ Select an item with alternate takes or a reviewed duplicate group; align each ta
 
 ## Inputs and outputs
 
-- Inputs: same-span REAPER takes, transcript/alignment results, local audio measurements, optional approved character references, and narrator-selected evaluation weights.
+- Inputs: same-span REAPER takes, transcript/alignment results (confidence-scored per ADR-0008, not forced-aligned), local audio measurements, optional approved character references, and narrator-selected evaluation weights.
 - Outputs: `take_comparison` findings with per-take evidence and separate technical/text/reference rankings.
 - Narrator actions: constrain comparison scope, audition, inspect scoring reasons, adjust weights, choose the active take, or ignore rankings.
 
@@ -22,6 +22,7 @@ Select an item with alternate takes or a reviewed duplicate group; align each ta
 
 - Validate that candidates map to the same manuscript span before ranking.
 - Compare word fidelity, clipping/noise indicators, duration, pause profile, and basic level consistency.
+- Localize divergence to the specific sub-span within a take rather than only scoring the take as a whole, so a partially usable take (e.g. a clean first half with a flub partway through) is identified by segment. This is what lets a narrator combine the usable part of one take with the usable part of another via [Duplicate and Pickup Finder](duplicate-and-pickup-finder.md)'s take creation, instead of forcing an all-or-nothing choice.
 - Provide A/B and context-loop controls with no automatic active-take change.
 - Explain each metric and identify unavailable evidence rather than substituting a hidden estimate.
 

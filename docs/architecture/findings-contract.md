@@ -28,7 +28,7 @@ Each analyzer writes a versioned JSON finding record with these fields:
 
 ## Initial categories
 
-`transcript_discrepancy`, `pronunciation`, `entity`, `pickup`, `duplicate_read`, `take_comparison`, `character_continuity`, `pacing`, `audio_quality`, and `delivery_qc`.
+`transcript_discrepancy`, `pronunciation`, `entity`, `pickup`, `duplicate_read`, `take_comparison`, `character_continuity`, `pacing`, `audio_quality`, `delivery_qc`, `silence_cleanup` (see [Silence Cleanup](../utilities/silence-cleanup.md)), and `level_consistency` (see [Clause Splitting and Level Normalization](../utilities/clause-split-and-level-normalize.md)).
 
 ## Acceptance criteria
 

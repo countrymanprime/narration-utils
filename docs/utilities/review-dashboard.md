@@ -12,7 +12,7 @@ Open a REAPER panel, choose a chapter or filter set, select a finding, jump to a
 
 ## Inputs and outputs
 
-- Inputs: versioned shared finding files and project-sidecar review state.
+- Inputs: versioned shared finding files and project-sidecar review state. Chapter grouping uses the [DAW Project Scan](daw-project-scan.md) track-to-chapter mapping where a project has been scanned, falling back to manuscript-only grouping otherwise.
 - Outputs: updated review state, explicit REAPER actions such as selecting/looping or adding an approved marker, and an optional filtered report.
 - Narrator actions: filter by chapter/category/severity/status/character, listen, add notes, and make every decision.
 
@@ -28,7 +28,7 @@ Open a REAPER panel, choose a chapter or filter set, select a finding, jump to a
 ### Later work
 
 - Bulk review actions, saved views, audio snippets, and cross-project reports.
-- Ingestion of pickup, take, character, and QC analyzers.
+- Ingestion of pickup, take, character, QC, [silence-cleanup](silence-cleanup.md), and [level-normalization](clause-split-and-level-normalize.md) analyzers.
 
 ## Non-goals and review boundary
 
