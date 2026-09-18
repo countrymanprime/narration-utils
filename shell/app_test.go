@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,8 +10,10 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
+	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
+	"github.com/wailsapp/wails/v2/pkg/options"
 )
 
 func TestResourceKeyChangesWithEmbeddedContent(t *testing.T) {
@@ -132,6 +135,221 @@ func TestCanAttachRejectsPreparedImportAndActiveTranscript(t *testing.T) {
 	}
 	if host.canAttachLocked() {
 		t.Fatal("active transcript state must prevent a project switch")
+	}
+}
+
+func TestAttachProjectLockedAppliesFolderNameAndDaw(t *testing.T) {
+	host := NewHost()
+	project := t.TempDir()
+	next := host.config
+	next.projectFolder, next.projectName, next.daw = project, "My Book", "Standalone"
+	attached, reason := host.attachProjectLocked(next)
+	if !attached || reason != "" {
+		t.Fatalf("attachProjectLocked() = (%v, %q), want (true, \"\")", attached, reason)
+	}
+	if host.config.projectFolder != project || host.config.projectName != "My Book" || host.config.daw != "Standalone" {
+		t.Fatalf("config after attach = %#v", host.config)
+	}
+	if host.transcript == nil || host.guide == nil {
+		t.Fatal("attachProjectLocked must reconfigure project-scoped services")
+	}
+}
+
+func TestAttachProjectLockedRejectsEmptyFolder(t *testing.T) {
+	host := NewHost()
+	before := host.config
+	next := host.config
+	next.projectName, next.daw = "Name", "Standalone"
+	attached, reason := host.attachProjectLocked(next)
+	if attached {
+		t.Fatal("an empty folder must not attach")
+	}
+	if reason != "No project folder was provided." {
+		t.Fatalf("reason = %q", reason)
+	}
+	if host.config != before {
+		t.Fatalf("config changed on rejected attach: %#v", host.config)
+	}
+}
+
+func TestAttachProjectLockedRefusesWhenBusy(t *testing.T) {
+	host := NewHost()
+	host.manuscript.Begin("draft.md")
+	before := host.config
+	next := host.config
+	next.projectFolder, next.projectName, next.daw = t.TempDir(), "Busy Book", "Standalone"
+	attached, reason := host.attachProjectLocked(next)
+	if attached {
+		t.Fatal("busy host must refuse to attach")
+	}
+	if reason != "Narration Utils is busy, so the current project was left unchanged." {
+		t.Fatalf("reason = %q", reason)
+	}
+	if host.config != before {
+		t.Fatalf("config changed while busy: %#v", host.config)
+	}
+}
+
+func TestConfigureLockedToleratesAbsentSessionDirAndProjectFolder(t *testing.T) {
+	root := t.TempDir()
+	host := NewHost()
+	host.configureLocked(parseConfigArgs(root, []string{}))
+
+	boot := host.Bootstrap()
+	if boot["projectFolder"] != "" {
+		t.Fatalf("projectFolder = %#v, want empty", boot["projectFolder"])
+	}
+	if boot["manuscript"] != nil {
+		t.Fatalf("manuscript = %#v, want nil", boot["manuscript"])
+	}
+	if host.transcript == nil || host.guide == nil {
+		t.Fatal("project-scoped services must still be constructed with no project folder")
+	}
+}
+
+func TestProjectCreateMakesDirectoryAndAttaches(t *testing.T) {
+	host := NewHost()
+	project := filepath.Join(t.TempDir(), "New Book")
+	raw, err := host.ProjectCreate(project, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result map[string]any
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result["switched"] != true {
+		t.Fatalf("result = %#v, want switched:true", result)
+	}
+	if _, err := os.Stat(project); err != nil {
+		t.Fatalf("project folder was not created: %v", err)
+	}
+	if host.config.projectFolder != project {
+		t.Fatalf("projectFolder = %q, want %q", host.config.projectFolder, project)
+	}
+	if host.config.projectName != "New Book" {
+		t.Fatalf("projectName = %q, want folder basename", host.config.projectName)
+	}
+}
+
+func TestProjectSwitchRefusesWhenBusy(t *testing.T) {
+	host := NewHost()
+	host.manuscript.Begin("draft.md")
+	raw, err := host.ProjectSwitch(t.TempDir(), "Busy Book")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result map[string]any
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result["switched"] != false {
+		t.Fatalf("result = %#v, want switched:false", result)
+	}
+	if reason, _ := result["reason"].(string); reason == "" {
+		t.Fatal("expected a non-empty busy reason")
+	}
+}
+
+func TestProjectSwitchTouchesRecents(t *testing.T) {
+	host := NewHost()
+	host.recents = recents.New(filepath.Join(t.TempDir(), "recent-projects.json"))
+	project := t.TempDir()
+	if _, err := host.ProjectSwitch(project, "My Project"); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := host.recents.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Path != filepath.Clean(project) || entries[0].Name != "My Project" {
+		t.Fatalf("recents = %#v", entries)
+	}
+}
+
+func TestProjectRecentsEncodesTheStoredList(t *testing.T) {
+	host := NewHost()
+	host.recents = recents.New(filepath.Join(t.TempDir(), "recent-projects.json"))
+	project := t.TempDir()
+	if err := host.recents.Touch(project, "My Project"); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := host.ProjectRecents()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var entries []recents.Entry
+	if err := json.Unmarshal([]byte(raw), &entries); err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Name != "My Project" {
+		t.Fatalf("entries = %#v", entries)
+	}
+}
+
+func TestProjectRecentsReturnsEmptyArrayWithNoStore(t *testing.T) {
+	host := &Host{}
+	raw, err := host.ProjectRecents()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if raw != "[]" {
+		t.Fatalf("raw = %q, want an empty JSON array", raw)
+	}
+}
+
+func TestProjectRemoveRecentDropsTheEntry(t *testing.T) {
+	host := NewHost()
+	host.recents = recents.New(filepath.Join(t.TempDir(), "recent-projects.json"))
+	first := t.TempDir()
+	second := t.TempDir()
+	if err := host.recents.Touch(first, "First"); err != nil {
+		t.Fatal(err)
+	}
+	if err := host.recents.Touch(second, "Second"); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := host.ProjectRemoveRecent(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var entries []recents.Entry
+	if err := json.Unmarshal([]byte(raw), &entries); err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Name != "Second" {
+		t.Fatalf("entries = %#v, want only %q left", entries, "Second")
+	}
+}
+
+func TestProjectRemoveRecentReturnsEmptyArrayWithNoStore(t *testing.T) {
+	host := &Host{}
+	raw, err := host.ProjectRemoveRecent(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if raw != "[]" {
+		t.Fatalf("raw = %q, want an empty JSON array", raw)
+	}
+}
+
+func TestProjectSelectFolderRejectsWhenHostNotReady(t *testing.T) {
+	host := NewHost()
+	if _, err := host.ProjectSelectFolder(); err == nil || !strings.Contains(err.Error(), "not ready") {
+		t.Fatalf("err = %v, want a not-ready error", err)
+	}
+}
+
+func TestOnSecondInstanceRefreshesSessionDirFromNewArgs(t *testing.T) {
+	host := NewHost()
+	host.config.sessionDir = `C:\old\session`
+	host.onSecondInstance(options.SecondInstanceData{Args: []string{
+		"--project-folder", t.TempDir(),
+		"--session-dir", `C:\new\session`,
+		"--daw", "REAPER",
+	}})
+	if host.config.sessionDir != `C:\new\session` {
+		t.Fatalf("sessionDir = %q, want the second launch's session dir", host.config.sessionDir)
 	}
 }
 

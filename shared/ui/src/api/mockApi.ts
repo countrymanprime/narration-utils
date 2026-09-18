@@ -9,8 +9,10 @@ import type {
   HostReady,
   ManuscriptNote,
   NarrationApi,
+  ProjectAttachState,
   ReaderBookmark,
   ReaderState,
+  RecentProject,
   Scope,
   ScopedSettingField,
   TranscriptState,
@@ -34,13 +36,36 @@ import {
 } from './mockFixtures';
 import { loadAliceManuscript } from './aliceManuscript';
 
-export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationApi {
+const DEFAULT_PROJECT_FOLDER = 'C:/Projects/Alice-in-Wonderland';
+const DEFAULT_PROJECT_NAME = 'Alice’s Adventures in Wonderland';
+
+/** Mirrors the Go backend's `filepath.Base(path)` default-naming rule for a folder chosen with no explicit name. */
+function basename(path: string): string {
+  return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
+}
+
+export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { projectFolder?: string } = {}): NarrationApi {
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
   let paragraphs = wireClone(WIRE_PARAGRAPHS);
   let notes = wireClone(WIRE_NOTES);
   let readerState: ReaderState = wireClone(WIRE_READER_STATE);
   let hints: string[] = [];
+  let projectFolder = initial.projectFolder ?? DEFAULT_PROJECT_FOLDER;
+  let projectName = initial.projectFolder === undefined ? DEFAULT_PROJECT_NAME : basename(projectFolder);
+  let daw = 'REAPER';
+  let recentProjects: RecentProject[] = [
+    { path: 'C:/Projects/Alice-in-Wonderland', name: 'Alice’s Adventures in Wonderland', lastOpened: '2026-09-15T09:00:00Z' },
+    { path: 'C:/Projects/Voltage-and-the-Undercroft', name: 'Voltage and the Undercroft', lastOpened: '2026-09-10T18:30:00Z' },
+  ];
+  const projectAttachSubscribers = new Set<(state: ProjectAttachState) => void>();
+  const attachProject = (path: string, name?: string) => {
+    projectFolder = path;
+    projectName = name || basename(path);
+    daw = 'Standalone';
+    projectAttachSubscribers.forEach((fn) => fn({ attached: true }));
+    return { switched: true };
+  };
   const manuscriptReady = loadAliceManuscript(aliceChapterSeeds).then((loaded) => {
     if (!loaded) return;
     chapters = loaded.chapters;
@@ -173,9 +198,9 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
       ({
         apiVersion: DESKTOP_HOST_API_VERSION,
         diagnosticId: 'mock',
-        projectFolder: 'C:/Projects/Alice-in-Wonderland',
-        projectName: 'Alice’s Adventures in Wonderland',
-        daw: 'REAPER',
+        projectFolder,
+        projectName,
+        daw,
         manuscript: {
           id: 'alice',
           format: 'docx',
@@ -510,7 +535,18 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}): NarrationA
       onUpdate(wireClone(transcript));
       return () => subscribers.delete(onUpdate);
     },
-    subscribeProjectAttach: () => () => {},
+    subscribeProjectAttach: (onUpdate) => {
+      projectAttachSubscribers.add(onUpdate);
+      return () => projectAttachSubscribers.delete(onUpdate);
+    },
+    projectRecents: async () => wireClone(recentProjects),
+    selectProjectFolder: async () => ({ selected: true, path: 'C:/Projects/Mock-Project' }),
+    switchProject: async (path, name) => attachProject(path, name),
+    createProject: async (path, name) => attachProject(path, name),
+    removeRecentProject: async (path) => {
+      recentProjects = recentProjects.filter((entry) => entry.path.toLowerCase() !== path.toLowerCase());
+      return wireClone(recentProjects);
+    },
   };
   return { ...base, ...overrides };
 }

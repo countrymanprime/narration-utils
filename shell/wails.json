@@ -8,5 +8,11 @@
   "frontend:dev:serverUrl": "",
   "author": {
     "name": "Narration Utils"
+  },
+  "info": {
+    "companyName": "Narration Utils",
+    "productName": "Narration Utils",
+    "productVersion": "0.1.0",
+    "copyright": "Copyright © Narration Utils"
   }
 }

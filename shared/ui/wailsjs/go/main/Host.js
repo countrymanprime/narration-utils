@@ -130,6 +130,26 @@ export function ManuscriptSetChapterStatus(arg1, arg2) {
   return window['go']['main']['Host']['ManuscriptSetChapterStatus'](arg1, arg2);
 }
 
+export function ProjectCreate(arg1, arg2) {
+  return window['go']['main']['Host']['ProjectCreate'](arg1, arg2);
+}
+
+export function ProjectRecents() {
+  return window['go']['main']['Host']['ProjectRecents']();
+}
+
+export function ProjectRemoveRecent(arg1) {
+  return window['go']['main']['Host']['ProjectRemoveRecent'](arg1);
+}
+
+export function ProjectSelectFolder() {
+  return window['go']['main']['Host']['ProjectSelectFolder']();
+}
+
+export function ProjectSwitch(arg1, arg2) {
+  return window['go']['main']['Host']['ProjectSwitch'](arg1, arg2);
+}
+
 export function Ready() {
   return window['go']['main']['Host']['Ready']();
 }

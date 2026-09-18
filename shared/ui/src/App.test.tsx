@@ -13,8 +13,8 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-function renderApp(overrides: Parameters<typeof createMockApi>[0] = {}) {
-  const api = createMockApi(overrides);
+function renderApp(overrides: Parameters<typeof createMockApi>[0] = {}, initial: Parameters<typeof createMockApi>[1] = {}) {
+  const api = createMockApi(overrides, initial);
   render(
     <ApiProvider api={api}>
       <App />
@@ -244,5 +244,23 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Home' })[0]);
     await screen.findByRole('heading', { name: 'Welcome back' });
     expect(screen.getByText(/Manuscript found/)).toBeTruthy();
+  });
+
+  it('shows the project picker instead of the routed app when a standalone launch has no attached project folder', async () => {
+    renderApp({}, { projectFolder: '' });
+    await waitFor(() => expect(screen.getByText('Open a project')).toBeTruthy());
+    expect(screen.queryByRole('heading', { name: 'Welcome back' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Manuscript' })).toBeNull();
+    expect(screen.queryByRole('navigation')).toBeNull();
+  });
+
+  it('transitions from the project picker to the routed app once a project is attached', async () => {
+    renderApp({}, { projectFolder: '' });
+    await waitFor(() => expect(screen.getByText('Voltage and the Undercroft')).toBeTruthy());
+
+    fireEvent.click(screen.getByText('Voltage and the Undercroft'));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeTruthy());
+    expect(screen.queryByText('Open a project')).toBeNull();
   });
 });

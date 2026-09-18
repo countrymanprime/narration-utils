@@ -15,6 +15,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
+	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
@@ -43,6 +44,7 @@ type Host struct {
 	guide      *guide.Service
 	guideJob   *workJob
 	transcript *transcript.Service
+	recents    *recents.Store
 }
 type ttsJob struct {
 	mu                          sync.RWMutex
@@ -73,7 +75,23 @@ type config struct {
 func NewHost() *Host {
 	workingDirectory, _ := os.Getwd()
 	repoRoot := discoverRepoRoot(workingDirectory)
-	return &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), config: config{repoRoot: repoRoot}, manuscript: manuscript.New(""), sidecars: process.NewSupervisor(), settings: settings.New(repoRoot, ""), ttsJobs: map[string]*ttsJob{}}
+	return &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), config: config{repoRoot: repoRoot}, manuscript: manuscript.New(""), sidecars: process.NewSupervisor(), settings: settings.New(repoRoot, ""), ttsJobs: map[string]*ttsJob{}, recents: recents.New(recentProjectsPath())}
+}
+
+// recentProjectsPath resolves the per-user recent-projects file. Recent
+// projects are not project-scoped, so this is constructed exactly once in
+// NewHost and never rebuilt by configureLocked. Mirrors the %APPDATA%-with-
+// %USERPROFILE%-fallback chain in shell/internal/settings/store.go's
+// globalPath(), duplicated inline rather than shared since it is only a few
+// lines.
+func recentProjectsPath() string {
+	if value := os.Getenv("APPDATA"); value != "" {
+		return filepath.Join(value, "narration-utils", "recent-projects.json")
+	}
+	if value := os.Getenv("USERPROFILE"); value != "" {
+		return filepath.Join(value, "AppData", "Roaming", "narration-utils", "recent-projects.json")
+	}
+	return filepath.Join("AppData", "Roaming", "narration-utils", "recent-projects.json")
 }
 
 func (h *Host) Startup(ctx context.Context) {
@@ -309,6 +327,22 @@ func (h *Host) Shutdown(context.Context) {
 	}
 }
 
+// attachProjectLocked applies next onto the running host, subject to the same
+// in-flight-work guard shared by the REAPER second-instance attach path and
+// the picker-driven UI bindings. The caller holds h.mu and builds next itself
+// (e.g. from a fresh argv parse, or from h.config with only folder/name/daw
+// overridden) so each caller controls exactly which fields carry over.
+func (h *Host) attachProjectLocked(next config) (bool, string) {
+	if next.projectFolder == "" {
+		return false, "No project folder was provided."
+	}
+	if !h.canAttachLocked() {
+		return false, "Narration Utils is busy, so the current project was left unchanged."
+	}
+	h.configureLocked(next)
+	return true, ""
+}
+
 func (h *Host) onSecondInstance(instance options.SecondInstanceData) {
 	h.mu.Lock()
 	ctx := h.ctx
@@ -317,11 +351,8 @@ func (h *Host) onSecondInstance(instance options.SecondInstanceData) {
 		next := parseConfigArgs(h.config.repoRoot, instance.Args)
 		if next.projectFolder == "" {
 			reason = "The second launch did not include a project folder."
-		} else if !h.canAttachLocked() {
-			reason = "Narration Utils is busy, so the current project was left unchanged."
 		} else {
-			h.configureLocked(next)
-			attached = true
+			attached, reason = h.attachProjectLocked(next)
 		}
 	}
 	h.mu.Unlock()

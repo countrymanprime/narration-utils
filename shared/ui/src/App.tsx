@@ -8,6 +8,7 @@ import { Toast } from './components/layout/Toast';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
 import { Home } from './components/home/Home';
 import { Manuscript } from './components/manuscript/Manuscript';
+import { ProjectPicker } from './components/project/ProjectPicker';
 import { Guide } from './components/storybible/Guide';
 import { Transcript } from './components/proofing/Transcript';
 import { Settings } from './components/settings/Settings';
@@ -144,6 +145,13 @@ function AppRoutes() {
         }}
       />
     );
+
+  // A standalone launch (Start Menu shortcut, taskbar pin) has no
+  // REAPER-supplied project, so Bootstrap() returns a populated payload with
+  // an empty projectFolder rather than null. subscribeProjectAttach (above)
+  // already refreshes `data` once ProjectPicker's switch/create succeeds, so
+  // no callback needs to be threaded through here.
+  if (!data.projectFolder) return <ProjectPicker />;
 
   // Deep links are expressed as a URL anchor on the fixed page path, not as
   // path params - "#p123" points at paragraph 123 (its globally unique

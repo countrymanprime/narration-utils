@@ -67,4 +67,56 @@ describe('wailsClient', () => {
     expect(eventsOn).toHaveBeenCalledWith('system:attached', expect.any(Function), -1);
     expect(update).toHaveBeenCalledWith({ attached: false, reason: 'Busy' });
   });
+
+  it('lists recent projects from the native binding', async () => {
+    const recents = [{ path: 'C:/Projects/Alice', name: 'Alice', lastOpened: '2026-09-10T12:00:00Z' }];
+    const projectRecents = vi.fn().mockResolvedValue(JSON.stringify(recents));
+    window.go = { main: { Host: { ProjectRecents: projectRecents } } };
+
+    await expect(wailsClient.projectRecents()).resolves.toEqual(recents);
+    expect(projectRecents).toHaveBeenCalledWith();
+  });
+
+  it('opens the native folder-browse dialog for selecting a project folder', async () => {
+    const selectProjectFolder = vi.fn().mockResolvedValue(JSON.stringify({ selected: true, path: 'C:/Projects/New-Project' }));
+    window.go = { main: { Host: { ProjectSelectFolder: selectProjectFolder } } };
+
+    await expect(wailsClient.selectProjectFolder()).resolves.toEqual({ selected: true, path: 'C:/Projects/New-Project' });
+    expect(selectProjectFolder).toHaveBeenCalledWith();
+  });
+
+  it('switches the active project, defaulting an omitted name to an empty string for the backend to fill in', async () => {
+    const switchProject = vi.fn().mockResolvedValue(JSON.stringify({ switched: true }));
+    window.go = { main: { Host: { ProjectSwitch: switchProject } } };
+
+    await expect(wailsClient.switchProject('C:/Projects/Alice')).resolves.toEqual({ switched: true });
+    expect(switchProject).toHaveBeenCalledWith('C:/Projects/Alice', '');
+
+    await wailsClient.switchProject('C:/Projects/Alice', 'Alice');
+    expect(switchProject).toHaveBeenCalledWith('C:/Projects/Alice', 'Alice');
+  });
+
+  it('surfaces a refusal reason when switching project fails', async () => {
+    const switchProject = vi.fn().mockResolvedValue(JSON.stringify({ switched: false, reason: 'Narration Utils is busy.' }));
+    window.go = { main: { Host: { ProjectSwitch: switchProject } } };
+
+    await expect(wailsClient.switchProject('C:/Projects/Alice')).resolves.toEqual({ switched: false, reason: 'Narration Utils is busy.' });
+  });
+
+  it('creates a new project, defaulting an omitted name to an empty string for the backend to fill in', async () => {
+    const createProject = vi.fn().mockResolvedValue(JSON.stringify({ switched: true }));
+    window.go = { main: { Host: { ProjectCreate: createProject } } };
+
+    await expect(wailsClient.createProject('C:/Projects/New-Project')).resolves.toEqual({ switched: true });
+    expect(createProject).toHaveBeenCalledWith('C:/Projects/New-Project', '');
+  });
+
+  it('removes a recent project via the native binding and resolves with the updated list', async () => {
+    const remaining = [{ path: 'C:/Projects/Alice', name: 'Alice', lastOpened: '2026-09-10T12:00:00Z' }];
+    const removeRecentProject = vi.fn().mockResolvedValue(JSON.stringify(remaining));
+    window.go = { main: { Host: { ProjectRemoveRecent: removeRecentProject } } };
+
+    await expect(wailsClient.removeRecentProject('C:/Projects/Voltage-and-the-Undercroft')).resolves.toEqual(remaining);
+    expect(removeRecentProject).toHaveBeenCalledWith('C:/Projects/Voltage-and-the-Undercroft');
+  });
 });

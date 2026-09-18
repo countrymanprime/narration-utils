@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
@@ -149,6 +151,82 @@ func (h *Host) GuidePreview(id string, aliasIndex *int) (string, error) {
 	}
 	audio, err := h.guide.Preview(id, aliasIndex, model, voice.Provider, voice.Version)
 	return encodeBinding(map[string]any{"status": "ready", "audioBase64": base64.StdEncoding.EncodeToString(audio), "mimeType": "audio/wav"}, err)
+}
+
+func (h *Host) ProjectSelectFolder() (string, error) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx == nil {
+		return "", fmt.Errorf("the desktop host is not ready")
+	}
+	path, err := runtime.OpenDirectoryDialog(ctx, runtime.OpenDialogOptions{Title: "Choose a project folder", CanCreateDirectories: true})
+	if err != nil {
+		return "", err
+	}
+	if path == "" {
+		return encodeBinding(map[string]any{"selected": false}, nil)
+	}
+	return encodeBinding(map[string]any{"selected": true, "path": path}, nil)
+}
+
+// ProjectSwitch is the single choke point for attaching a picker-chosen
+// project: both "open recent" and post-browse/create-new flows call this, so
+// system:attached emission and recents-touching happen in exactly one place.
+func (h *Host) ProjectSwitch(path, name string) (string, error) {
+	if name == "" {
+		name = filepath.Base(path)
+	}
+	h.mu.Lock()
+	ctx := h.ctx
+	next := h.config
+	next.projectFolder, next.projectName, next.daw = path, name, "Standalone"
+	attached, reason := h.attachProjectLocked(next)
+	h.mu.Unlock()
+	if attached && h.recents != nil {
+		// Best-effort: a recents-write hiccup must not fail the switch itself.
+		_ = h.recents.Touch(path, name)
+	}
+	if ctx != nil {
+		if attached {
+			runtime.EventsEmit(ctx, "system:attached", map[string]any{"attached": true})
+		} else if reason != "" {
+			runtime.EventsEmit(ctx, "system:attached", map[string]any{"attached": false, "reason": reason})
+		}
+	}
+	return encodeBinding(map[string]any{"switched": attached, "reason": reason}, nil)
+}
+
+func (h *Host) ProjectCreate(path, name string) (string, error) {
+	if path == "" {
+		return "", fmt.Errorf("a folder path is required")
+	}
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		return "", fmt.Errorf("could not create the project folder: %w", err)
+	}
+	return h.ProjectSwitch(path, name)
+}
+
+func (h *Host) ProjectRecents() (string, error) {
+	if h.recents == nil {
+		return encodeBinding([]any{}, nil)
+	}
+	entries, err := h.recents.List()
+	return encodeBinding(entries, err)
+}
+
+// ProjectRemoveRecent drops path from the recent-projects list and returns
+// the updated list, so the caller can re-render from the response instead of
+// making a second round trip.
+func (h *Host) ProjectRemoveRecent(path string) (string, error) {
+	if h.recents == nil {
+		return encodeBinding([]any{}, nil)
+	}
+	if err := h.recents.Remove(path); err != nil {
+		return "", err
+	}
+	entries, err := h.recents.List()
+	return encodeBinding(entries, err)
 }
 
 func (h *Host) ManuscriptSelectFile() (string, error) {
