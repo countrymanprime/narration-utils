@@ -1,0 +1,393 @@
+import { useEffect, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFileArrowUp, faFileLines } from '@fortawesome/free-solid-svg-icons';
+import { useApi } from '../../api/ApiContext';
+import type { GuideEntity, ManuscriptImportSelection, TranscriptState, WorkJob } from '../../types';
+import type { Bootstrap } from '../../types';
+import { Heading } from '../primitives/Heading';
+import { AudiobookEstimatePanel } from './AudiobookEstimatePanel';
+import { ConfirmDialog } from '../primitives/ConfirmDialog';
+import { WorkDialog } from '../primitives/WorkDialog';
+import { TooltipTarget } from '../primitives/Tooltip';
+
+const MIN_IMPORT_ACTIVITY_MS = 450;
+
+function appendLog(logs: string[], line: string) {
+  return logs.includes(line) ? logs : [...logs, line];
+}
+
+function completedLabel(value?: string) {
+  if (!value) return 'completed previously';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'completed previously' : `completed ${date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}`;
+}
+
+export function Home({
+  data,
+  go,
+  notify,
+  goToManuscript,
+  refreshBootstrap,
+}: {
+  data: Bootstrap;
+  go: (page: string) => void;
+  notify: (text: string) => void;
+  goToManuscript: (chapter: string) => void;
+  refreshBootstrap: () => Promise<void>;
+}) {
+  const api = useApi();
+  const [entities, setEntities] = useState<GuideEntity[]>([]);
+  const [lastCompleted, setLastCompleted] = useState<TranscriptState>();
+  const found = Boolean(data.manuscript);
+  const [importJob, setImportJob] = useState<WorkJob>();
+  const [importSelection, setImportSelection] = useState<ManuscriptImportSelection>({});
+  const [headingLevel, setHeadingLevel] = useState(1);
+  useEffect(() => {
+    void api
+      .guideEntities()
+      .then(setEntities)
+      .catch(() => {});
+    void api
+      .transcriptLastCompleted()
+      .then(setLastCompleted)
+      .catch(() => setLastCompleted(undefined));
+  }, [api, data.manuscript?.id, data.manuscript?.importedAt]);
+  useEffect(() => {
+    if (!importJob?.id || importJob.phase !== 'preparing') return;
+    let active = true;
+    const refresh = () =>
+      void api
+        .manuscriptImportState(importJob.id!)
+        .then((next) => {
+          if (active) setImportJob(next);
+        })
+        .catch(
+          (error) => active && setImportJob((current) => (current ? { ...current, phase: 'error', error: String(error), message: String(error) } : current)),
+        );
+    // A picker/import can finish before the browser gets a frame.  Delay the
+    // first read just enough for the progress and activity panel to be useful
+    // rather than flashing past it on local SSDs.
+    let timer: number | undefined;
+    const firstRefresh = window.setTimeout(() => {
+      refresh();
+      timer = window.setInterval(refresh, 250);
+    }, MIN_IMPORT_ACTIVITY_MS);
+    return () => {
+      active = false;
+      window.clearTimeout(firstRefresh);
+      if (timer !== undefined) window.clearInterval(timer);
+    };
+  }, [api, importJob?.id, importJob?.phase]);
+  const beginImportPreview = async (jobId: string) => {
+    setHeadingLevel(1);
+    setImportJob({ id: jobId, kind: 'manuscript_import', phase: 'preparing', message: 'Preparing manuscript import…', percent: 0, logs: [], elapsed: 0 });
+    try {
+      setImportJob(await api.manuscriptImportPreview(jobId, { markdownHeadingLevel: 1 }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setImportJob((current) => (current ? { ...current, phase: 'error', error: message, message } : current));
+    }
+  };
+  const commitImport = async () => {
+    if (!importJob?.id) return;
+    const startedAt = Date.now();
+    setImportJob((current) =>
+      current
+        ? {
+            ...current,
+            phase: 'committing',
+            percent: 12,
+            message: 'Writing the project-owned manuscript…',
+            logs: appendLog(current.logs, 'Writing the project-owned manuscript…'),
+          }
+        : current,
+    );
+    try {
+      const selectedCharacterCandidateIds =
+        importSelection.characterCandidateIds ?? importJob.preview?.characterCandidates?.map((candidate) => candidate.id) ?? [];
+      const completed = await api.manuscriptImportCommit(importJob.id, {
+        confirmedReset: Boolean(importJob.requiresReset),
+        selection: { sectionKinds: importSelection.sectionKinds, characterCandidateIds: selectedCharacterCandidateIds },
+      });
+      // Refresh the shared application state as soon as the server confirms
+      // the transaction.  This updates Home and pages reached afterwards
+      // without disrupting the completed activity panel.
+      await refreshBootstrap();
+      const remaining = MIN_IMPORT_ACTIVITY_MS - (Date.now() - startedAt);
+      if (remaining > 0) await new Promise<void>((resolve) => window.setTimeout(resolve, remaining));
+      setImportJob(completed);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setImportJob((current) => (current ? { ...current, phase: 'error', error: message, message } : current));
+    }
+  };
+  const review = entities.find(
+    (entity) => entity.review_state === 'needs review' || entity.review_state === 'unreviewed' || entity.category === 'Needs Review',
+  );
+  return (
+    <div className="mx-auto max-w-5xl space-y-4">
+      <Heading title="Welcome back">
+        Project folder: <span className="font-['IBM_Plex_Mono',ui-monospace,monospace]">…/{data.projectName}/</span>
+      </Heading>
+      <section
+        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] shadow-[var(--shadow)]"
+        style={!found ? { borderColor: 'var(--review)' } : undefined}
+      >
+        <div className="flex items-center gap-2 text-sm">
+          <span className="size-2 flex-none rounded-full" style={{ background: found ? 'var(--character)' : 'var(--review)' }} />
+          <span>
+            {found ? (
+              <>
+                <strong>Manuscript found</strong> — {data.manuscript!.narratableWordCount.toLocaleString()} words across{' '}
+                {data.manuscript!.narratableChapterCount} narratable chapters
+              </>
+            ) : (
+              <>
+                <strong>No imported manuscript</strong> — import a Word or Markdown manuscript
+              </>
+            )}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          {found && (
+            <TooltipTarget text="View manuscript">
+              <button
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                aria-label="View manuscript"
+                onClick={() => go('/manuscript')}
+              >
+                <FontAwesomeIcon icon={faFileLines} />
+              </button>
+            </TooltipTarget>
+          )}
+          {found ? (
+            <TooltipTarget text="Replace manuscript — confirmation clears Story Bible, notes, bookmarks, chapter statuses, and saved proofing results.">
+              <button
+                aria-label="Replace manuscript"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                onClick={async () => {
+                  const result = await api.selectManuscript();
+                  if (result.selected && result.jobId) {
+                    setImportSelection({});
+                    void beginImportPreview(result.jobId);
+                  } else notify('No manuscript selected');
+                }}
+              >
+                <FontAwesomeIcon icon={faFileArrowUp} />
+              </button>
+            </TooltipTarget>
+          ) : (
+            <TooltipTarget text="Import manuscript">
+              <button
+                aria-label="Import manuscript"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                onClick={async () => {
+                  const result = await api.selectManuscript();
+                  if (result.selected && result.jobId) {
+                    setImportSelection({});
+                    void beginImportPreview(result.jobId);
+                  } else notify('No manuscript selected');
+                }}
+              >
+                <FontAwesomeIcon icon={faFileArrowUp} />
+              </button>
+            </TooltipTarget>
+          )}
+        </div>
+      </section>
+      {importJob?.phase === 'ready' && importJob.preview && (
+        <ConfirmDialog
+          title={`Import ${importJob.preview.sourceName}`}
+          body={`${importJob.preview.format.toUpperCase()} · ${importJob.preview.paragraphCount} paragraphs · ${importJob.preview.chapterTitles.length || 1} proposed chapters.${importJob.requiresReset ? ' This replaces the active manuscript and clears Story Bible, notes, bookmarks, statuses, and saved comparison results.' : ''}`}
+          confirmLabel={importJob.requiresReset ? 'Replace and reset' : 'Import'}
+          confirm={() => void commitImport()}
+          cancel={() =>
+            void api
+              .manuscriptImportCancel(importJob.id!)
+              .then(() => setImportJob(undefined))
+              .catch((error) => notify(error.message))
+          }
+        >
+          {importJob.preview.format === 'markdown' && (
+            <label className="mt-4 flex items-center gap-2 text-sm">
+              Markdown chapter heading level
+              <select
+                value={headingLevel}
+                onChange={(event) => {
+                  const level = Number(event.target.value);
+                  setHeadingLevel(level);
+                  setImportSelection({});
+                  void api
+                    .manuscriptImportPreview(importJob.id!, { markdownHeadingLevel: level })
+                    .then(setImportJob)
+                    .catch((error) => notify(error.message));
+                }}
+              >
+                {[1, 2, 3, 4, 5, 6].map((level) => (
+                  <option key={level} value={level}>
+                    H{level}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {importJob.preview.format === 'pdf' && importJob.preview.chapterTitles.length > 0 && (
+            <p className="mt-3 text-xs">Detected chapters: {importJob.preview.chapterTitles.join(' · ')}</p>
+          )}
+          {importJob.preview.sections && importJob.preview.sections.length > 0 && (
+            <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                Review imported structure
+              </legend>
+              <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                Reference material stays readable but is excluded from audiobook totals and Proofing.
+              </p>
+              <div className="space-y-1.5">
+                {importJob.preview.sections.map((section) => (
+                  <label key={section.id} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="min-w-0 truncate">{section.title}</span>
+                    <select
+                      aria-label={`${section.title} content type`}
+                      className="flex-none"
+                      value={importSelection.sectionKinds?.[section.id] ?? section.contentKind}
+                      onChange={(event) =>
+                        setImportSelection((current) => ({
+                          ...current,
+                          sectionKinds: { ...current.sectionKinds, [section.id]: event.target.value as 'narration' | 'opening' | 'reference' },
+                        }))
+                      }
+                    >
+                      <option value="narration">Narration chapter</option>
+                      <option value="opening">Front Matter</option>
+                      <option value="reference">Reference material</option>
+                    </select>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+          {importJob.preview.characterCandidates && importJob.preview.characterCandidates.length > 0 && (
+            <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                Story Bible character suggestions
+              </legend>
+              <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                Checked names become reviewable Character entries after import.
+              </p>
+              {importJob.preview.characterCandidates.map((candidate) => {
+                const checked = (importSelection.characterCandidateIds ?? importJob.preview!.characterCandidates!.map((item) => item.id)).includes(
+                  candidate.id,
+                );
+                return (
+                  <label key={candidate.id} className="flex items-start gap-2 py-0.5 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) => {
+                        const selected = new Set(importSelection.characterCandidateIds ?? importJob.preview!.characterCandidates!.map((item) => item.id));
+                        if (event.target.checked) selected.add(candidate.id);
+                        else selected.delete(candidate.id);
+                        setImportSelection((current) => ({ ...current, characterCandidateIds: [...selected] }));
+                      }}
+                    />
+                    <span>
+                      {candidate.name}
+                      {candidate.description && <span style={{ color: 'var(--text-muted)' }}> — {candidate.description}</span>}
+                    </span>
+                  </label>
+                );
+              })}
+            </fieldset>
+          )}
+          <div className="mt-4 text-xs" style={{ color: 'var(--text-muted)' }}>
+            <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              Preview activity
+            </div>
+            <div className="progressbar h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
+              <div className="h-full bg-[var(--accent)] transition-[width] duration-[0.4s] ease-in-out" style={{ width: `${importJob.percent}%` }} />
+            </div>
+            <div className="mt-2 h-36 overflow-y-auto border border-[var(--border)] bg-[var(--surface-2)] font-['IBM_Plex_Mono',ui-monospace,monospace]">
+              {importJob.logs.map((line, index) => (
+                <div key={`${index}-${line}`} className="border-b border-[var(--border)] px-[0.45rem] py-1">
+                  {line}
+                </div>
+              ))}
+            </div>
+          </div>
+        </ConfirmDialog>
+      )}
+      {importJob && importJob.phase !== 'ready' && (
+        <WorkDialog
+          title="Import manuscript"
+          job={importJob}
+          cancel={importJob.phase === 'preparing' ? () => void api.manuscriptImportCancel(importJob.id!).then(() => setImportJob(undefined)) : undefined}
+          close={() => setImportJob(undefined)}
+        />
+      )}
+      <AudiobookEstimatePanel
+        notify={notify}
+        goToManuscript={goToManuscript}
+        refreshKey={data.manuscript ? `${data.manuscript.id}:${data.manuscript.importedAt}` : 'no-manuscript'}
+      />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <TooltipTarget text={found ? 'Open Proofing' : 'Import a manuscript to unlock Proofing.'} className="w-full">
+          <button
+            aria-label="Open Proofing"
+            disabled={!found}
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
+            onClick={() => go('/proofing')}
+          >
+            <div className="mb-1 flex items-center justify-between">
+              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                Proofing
+              </span>
+              <span
+                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.03em]"
+                style={
+                  lastCompleted ? { background: 'var(--review-soft)', color: 'var(--review)' } : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
+                }
+              >
+                {lastCompleted ? `${lastCompleted.rows.length} ${lastCompleted.rows.length === 1 ? 'discrepancy' : 'discrepancies'}` : 'Ready'}
+              </span>
+            </div>
+            <div className="font-semibold">{lastCompleted ? 'Review latest comparison' : 'Ready to compare selected REAPER audio'}</div>
+            <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+              {lastCompleted
+                ? `${lastCompleted.trackName || 'Selected REAPER audio'}${lastCompleted.audioItemCount ? ` · ${lastCompleted.audioItemCount} audio item${lastCompleted.audioItemCount === 1 ? '' : 's'}` : ''} · ${completedLabel(lastCompleted.completedAt)}`
+                : 'Select audio items or a track in REAPER, then start Proofing.'}
+            </div>
+          </button>
+        </TooltipTarget>
+        <TooltipTarget text={found ? 'Open Story Bible' : 'Import a manuscript to unlock Story Bible.'} className="w-full">
+          <button
+            aria-label="Open Story Bible"
+            disabled={!found}
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
+            onClick={() => go('/story-bible')}
+          >
+            <div className="mb-1 flex items-center justify-between">
+              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                Story Bible
+              </span>
+              <span
+                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.03em]"
+                style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}
+              >
+                {entities.length} entities · {review ? 1 : 0} review
+              </span>
+            </div>
+            <div className="font-semibold">
+              {review ? `Review “${review.canonical_name}”` : entities.length ? 'Browse Story Bible entries' : 'No Story Bible entries yet'}
+            </div>
+            <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+              {review?.description.text ||
+                (entities.length
+                  ? `${entities.length} saved ${entities.length === 1 ? 'entity' : 'entities'}`
+                  : 'Build the Story Bible to discover names and terms.')}
+            </div>
+          </button>
+        </TooltipTarget>
+      </div>
+    </div>
+  );
+}

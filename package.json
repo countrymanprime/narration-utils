@@ -1,0 +1,29 @@
+{
+  "name": "narration-utils",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.27.0",
+  "description": "Release and developer tooling for Narration Utils.",
+  "scripts": {
+    "prepare": "husky",
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "test:bootstrap": "node --test scripts/bootstrap.test.mjs",
+    "check": "node scripts/quality.mjs check",
+    "check:fast": "node scripts/quality.mjs staged",
+    "fix:staged": "lint-staged",
+    "release:sync": "node scripts/release/sync-version.mjs",
+    "release:check": "node scripts/release/sync-version.mjs --check",
+    "release:notes": "node scripts/release/generate-notes.mjs",
+    "release:assets": "node scripts/release/collect-assets.mjs",
+    "release:verify-installable": "node scripts/release/verify-installable.mjs",
+    "release:promote": "node scripts/release/promote.mjs"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@nx/js": "^22.4.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "nx": "^22.4.1"
+  }
+}

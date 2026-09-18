@@ -1,0 +1,66 @@
+name: Promote pre-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      prerelease_tag:
+        description: Existing release-candidate tag to promote, for example v0.2.0-rc
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 11.27.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Validate the selected candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.prerelease_tag }}
+        run: |
+          test "$(printf '%s' "$TAG" | sed -nE 's/^v([0-9]+\.[0-9]+\.[0-9]+)-rc$/ok/p')" = ok
+          git fetch origin main --tags
+          git merge-base --is-ancestor "$TAG" origin/main
+          gh release view "$TAG" --json isPrerelease --jq '.isPrerelease' | grep -x true
+      - name: Download and verify the approved assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.prerelease_tag }}
+        run: |
+          mkdir prerelease-assets
+          gh release download "$TAG" --dir prerelease-assets
+          (cd prerelease-assets && sha256sum -c SHA256SUMS.txt)
+      - name: Create the stable tag and release without rebuilding
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.prerelease_tag }}
+        run: |
+          VERSION="${TAG#v}"
+          VERSION="${VERSION%-rc}"
+          STABLE_TAG="v${VERSION}"
+          git rev-parse "$TAG"
+          test -z "$(git tag --list "$STABLE_TAG")"
+          git tag "$STABLE_TAG" "$TAG"
+          git push origin "$STABLE_TAG"
+          node scripts/release/generate-notes.mjs "$STABLE_TAG"
+          gh release create "$STABLE_TAG" prerelease-assets/* --title "$STABLE_TAG" --notes-file release-notes.md

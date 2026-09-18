@@ -1,0 +1,88 @@
+name: Prerelease
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+permissions: { contents: read }
+concurrency:
+  group: prerelease-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  quality:
+    uses: ./.github/workflows/_quality.yml
+
+  version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.compute.outputs.version }}
+      tag: ${{ steps.compute.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 11.27.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - id: compute
+        name: Compute the next version from conventional commits
+        run: |
+          pnpm exec nx release version
+          node scripts/release/sync-version.mjs
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}-rc" >> "$GITHUB_OUTPUT"
+
+  package:
+    needs: [quality, version]
+    uses: ./.github/workflows/_build-native.yml
+    with:
+      upload: true
+      artifact-prefix: unsigned-rc
+      version: ${{ needs.version.outputs.version }}
+
+  publish:
+    needs: [version, package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: unsigned-rc-*
+          path: dist
+      - name: Remove any existing release candidate
+        run: |
+          for old in $(gh release list --limit 20 --json tagName -q '.[].tagName' | grep -E -- '-rc$' || true); do
+            gh release delete "$old" --cleanup-tag -y
+          done
+      - name: Tag this release candidate
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
+      - name: Collect and checksum installers
+        env:
+          BUNDLE_DIRS: dist/unsigned-rc-windows-x64:dist/unsigned-rc-macos-arm64:dist/unsigned-rc-linux-x64
+        run: node scripts/release/collect-assets.mjs
+      - name: Generate release notes
+        run: node scripts/release/generate-notes.mjs "$TAG"
+      - name: Publish the prerelease
+        run: gh release create "$TAG" release-assets/* --prerelease --title "$TAG" --notes-file release-notes.md

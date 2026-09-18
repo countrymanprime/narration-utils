@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "charliermarsh.ruff",
+    "rust-lang.rust-analyzer",
+    "ms-vscode.powershell",
+    "johnnymorganz.stylua",
+    "golang.go"
+  ]
+}

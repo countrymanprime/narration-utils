@@ -1,0 +1,59 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "release": {
+    "projects": ["narration-utils"],
+    "projectsRelationship": "fixed",
+    "releaseTagPattern": "v{version}",
+    "version": {
+      "fallbackCurrentVersionResolver": "disk",
+      "git": {
+        "commit": false,
+        "tag": false
+      },
+      "conventionalCommits": {
+        "types": {
+          "feat": {
+            "semverBump": "minor"
+          },
+          "fix": {
+            "semverBump": "patch"
+          },
+          "perf": {
+            "semverBump": "patch"
+          },
+          "refactor": {
+            "semverBump": "patch"
+          },
+          "docs": {
+            "semverBump": "patch"
+          },
+          "test": {
+            "semverBump": "patch"
+          },
+          "build": {
+            "semverBump": "patch"
+          },
+          "ci": {
+            "semverBump": "patch"
+          },
+          "chore": {
+            "semverBump": "patch"
+          },
+          "revert": {
+            "semverBump": "patch"
+          }
+        }
+      },
+      "generatorOptions": {
+        "specifierSource": "conventional-commits"
+      }
+    },
+    "changelog": {
+      "workspaceChangelog": {
+        "file": "CHANGELOG.md",
+        "createRelease": false
+      }
+    }
+  },
+  "analytics": false
+}

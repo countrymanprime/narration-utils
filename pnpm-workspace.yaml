@@ -1,0 +1,7 @@
+packages:
+  - shared/ui
+  - shell
+
+allowBuilds:
+  esbuild: true
+  nx: true

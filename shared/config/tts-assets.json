@@ -1,0 +1,32 @@
+{
+  "catalogVersion": 1,
+  "voices": [
+    {
+      "id": "en_US-ljspeech-high",
+      "provider": "piper",
+      "displayName": "LJ Speech (U.S. English)",
+      "locale": "en_US",
+      "version": "1.0.0",
+      "publisher": "rhasspy",
+      "license": "Public domain training data; Piper Voices repository MIT",
+      "licenseUrl": "https://keithito.com/LJ-Speech-Dataset/",
+      "modelCardUrl": "https://huggingface.co/rhasspy/piper-voices/blob/v1.0.0/en/en_US/ljspeech/high/MODEL_CARD",
+      "provenanceUrl": "https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0/en/en_US/ljspeech/high",
+      "attribution": "LJ Speech Dataset (public domain); Piper voice model by rhasspy contributors.",
+      "files": [
+        {
+          "name": "en_US-ljspeech-high.onnx",
+          "url": "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ljspeech/high/en_US-ljspeech-high.onnx",
+          "sha256": "5d4f08ba6a2a48c44592eed3ce56bf85e9de3dd4e20df90541ae68a8310c029a",
+          "size": 114199011
+        },
+        {
+          "name": "en_US-ljspeech-high.onnx.json",
+          "url": "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ljspeech/high/en_US-ljspeech-high.onnx.json",
+          "sha256": "7e1f4634af596d83cca997fb7a931ba80b70f8a316a2655ee69c55365e0ace14",
+          "size": 4970
+        }
+      ]
+    }
+  ]
+}

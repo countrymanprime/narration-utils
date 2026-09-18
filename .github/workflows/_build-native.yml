@@ -1,0 +1,60 @@
+name: Build native
+on:
+  workflow_call:
+    inputs:
+      upload:
+        type: boolean
+        default: false
+      artifact-prefix:
+        type: string
+        default: build
+      version:
+        type: string
+        default: ''
+permissions: { contents: read }
+jobs:
+  build:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: windows-x64, os: windows-latest, args: '-nsis' }
+          - { name: macos-arm64, os: macos-14, args: '' }
+          - { name: linux-x64, os: ubuntu-latest, args: '-tags webkit2_41' }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-pnpm: 'false'
+          need-stylua: 'false'
+      - if: inputs.version != ''
+        name: Apply the computed release version
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          npm pkg set version="$VERSION"
+          node scripts/release/sync-version.mjs
+      - name: Clear frontend dist placeholder
+        shell: bash
+        run: rm -rf shell/cmd/narration-utils/frontend/dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: ui-dist
+          path: shell/cmd/narration-utils/frontend/dist
+      - name: Build native package
+        shell: bash
+        run: |
+          uv run python scripts/release/prepare-resources.py --clean
+          node scripts/release/verify-installable.mjs
+          cd shell
+          wails doctor
+          wails build -s ${{ matrix.args }}
+      - if: inputs.upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-prefix }}-${{ matrix.name }}
+          path: shell/build/bin
+          if-no-files-found: error

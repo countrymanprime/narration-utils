@@ -1,0 +1,373 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f1efea;
+  --surface: #fff;
+  --surface-2: #e7e4dc;
+  --surface-3: #dcd8cd;
+  --border: #d3cfc3;
+  --text: #211e17;
+  --text-muted: #6e6959;
+  --text-faint: #96907e;
+  --accent: #b85c1e;
+  --accent-strong: #96490f;
+  --accent-soft: #f1dcc4;
+  --accent-contrast: #fff;
+  --character: #3c7a5c;
+  --character-soft: #dcede3;
+  --place: #3f6ea6;
+  --place-soft: #dce7f3;
+  --org: #7a5cae;
+  --org-soft: #e7def4;
+  --review: #b5473c;
+  --review-soft: #f5dedb;
+  --danger: #b5473c;
+  --warn: #b5871e;
+  --info: #3f6ea6;
+  --bookmark: #3b6fc4;
+  --backdrop: rgba(20, 17, 12, 0.42);
+  --shadow: 0 1px 2px rgba(30, 26, 16, 0.06), 0 1px 1px rgba(30, 26, 16, 0.04);
+  --shadow-lg: 0 4px 16px rgba(30, 26, 16, 0.14), 0 2px 6px rgba(30, 26, 16, 0.08);
+  --control-radius: 0.45rem;
+  --control-height: 2.55rem;
+  --z-tooltip: 1000;
+  /* Spacing/type-size steps grounded in the values already repeated across
+     styles.css and the primitives (badges, chips, table cells, form controls)
+     - not a full scale, additive tokens for new/touched code to converge on. */
+  --space-1: 0.15rem;
+  --space-2: 0.35rem;
+  --space-3: 0.45rem;
+  --space-4: 0.6rem;
+  --space-5: 0.85rem;
+  --space-6: 1.1rem;
+  --font-size-2xs: 0.68rem;
+  --font-size-xs: 0.72rem;
+  --font-size-sm: 0.82rem;
+  --font-size-base: 0.88rem;
+  color-scheme: light;
+}
+/* Single source of truth for dark values - set via ThemeProvider
+   (shared/ui/src/theme/ThemeContext.tsx), which also handles the "system"
+   preference and writes this attribute, plus an inline bootstrap script in
+   index.html that sets it before first paint to avoid a flash of the wrong
+   theme. Previously duplicated under a `prefers-color-scheme` media query;
+   that copy had drifted and was missing the --shadow/--shadow-lg overrides
+   below, so dialogs/panels kept light-mode shadows under an explicit dark
+   preference. */
+:root[data-theme='dark'] {
+  --bg: #171410;
+  --surface: #201c16;
+  --surface-2: #2a251c;
+  --surface-3: #363023;
+  --border: #3c3527;
+  --text: #f1ece1;
+  --text-muted: #b0a891;
+  --text-faint: #786f5a;
+  --accent: #e2903f;
+  --accent-strong: #f2a75a;
+  --accent-soft: #3a2a16;
+  --accent-contrast: #1a1408;
+  --character: #5fae85;
+  --character-soft: #1d2e24;
+  --place: #6e9fdb;
+  --place-soft: #1c2a3b;
+  --org: #ad8de0;
+  --org-soft: #2a2138;
+  --review: #db7a6e;
+  --review-soft: #3a2320;
+  --danger: #db7a6e;
+  --warn: #e0b255;
+  --info: #6e9fdb;
+  --bookmark: #6e9fdb;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
+}
+@layer base {
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+@layer components {
+  .f-label,
+  .section-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .f-mono {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+  .section-label {
+    font-weight: 600;
+    font-size: 0.72rem;
+    color: var(--text-faint);
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow);
+  }
+  .panel-head {
+    padding: 0.85rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .panel-body {
+    padding: 1.1rem;
+  }
+  .label,
+  label.field-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+  .input,
+  input[type='text'],
+  select,
+  textarea {
+    box-sizing: border-box;
+    min-height: var(--control-height);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--control-radius);
+    padding: 0.6rem 0.75rem;
+    color: var(--text);
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+  .input {
+    width: 100%;
+  }
+  input[readonly] {
+    background: var(--surface-2);
+    color: var(--text);
+    cursor: default;
+  }
+  input:focus,
+  select:focus,
+  textarea:focus,
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .progressbar {
+    height: 1rem;
+    border-radius: 999px;
+    background: var(--surface-3);
+    overflow: hidden;
+  }
+  .progressbar > div {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.4s ease;
+  }
+  table.dtable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+  }
+  table.dtable th {
+    text-align: left;
+    padding: 0.5rem 0.7rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    color: var(--text-faint);
+    border-bottom: 1px solid var(--border);
+  }
+  table.dtable td {
+    padding: 0.55rem 0.7rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.dtable tr.row-selected {
+    background: var(--surface-2);
+  }
+  table.dtable tr[data-row]:hover td {
+    background: var(--surface-2);
+    cursor: pointer;
+  }
+  .cat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: none;
+  }
+}
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+  }
+}
+.manuscript-reader {
+  margin: 0 auto;
+  max-width: none;
+}
+.overlay-panel {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  right: 0;
+  display: flex;
+  width: min(23rem, 100vw);
+  height: 100vh;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.2s ease;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+.overlay-panel.overlay-open {
+  transform: translateX(0);
+}
+
+.progress-segment {
+  display: block;
+  flex: 0 0 auto;
+  height: 100%;
+}
+.progress-segment > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.note-overlay {
+  position: relative;
+  z-index: 2;
+  border-bottom: 2px solid var(--note);
+  border-radius: 0.1rem;
+  color: inherit;
+  cursor: pointer;
+}
+/* Scroll remains available to wheel/keyboard users, but the
+   reader/application chrome does not reserve or display a native gutter. */
+.scroll-chrome-hidden {
+  scrollbar-width: none;
+}
+.scroll-chrome-hidden::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.source-flash {
+  animation: source-flash 1.6s ease;
+}
+@keyframes source-flash {
+  0% {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+  100% {
+    box-shadow: inset 0 -1.5px 0 currentColor;
+  }
+}
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: transparent;
+}
+.overlay-panel {
+  z-index: 50;
+  width: min(20rem, 100vw);
+}
+.guide-list-scroll {
+  scrollbar-width: none;
+}
+.guide-list-scroll::-webkit-scrollbar {
+  width: 0;
+}
+.guide-list-scroll tr:has(.type-Character) td:first-child {
+  border-left: 3px solid var(--character);
+}
+.guide-list-scroll tr:has(.type-Place) td:first-child {
+  border-left: 3px solid var(--place);
+}
+.guide-list-scroll tr:has(.type-Organization) td:first-child {
+  border-left: 3px solid var(--org);
+}
+.guide-list-scroll tr:has(.type-Review) td:first-child {
+  border-left: 3px solid var(--review);
+}
+.guide-list-scroll tr:has(.type-Lore) td:first-child {
+  border-left: 3px solid var(--lore);
+}
+.guide-list-scroll tr:has(.type-Item) td:first-child {
+  border-left: 3px solid var(--item);
+}
+.guide-list-scroll tr:has(.type-Event) td:first-child {
+  border-left: 3px solid var(--event);
+}
+@keyframes work-progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(2400%);
+  }
+}
+/* Second parity pass: reader headers use the page width while prose keeps the
+   chosen reading measure. Custom colors are CSS variables so every consumer
+   (tabs, list rows, highlights, and legend) remains in sync. */
+.reader-page {
+  width: 100%;
+}
+/* The reader owns its horizontal padding so its sticky control band can cover
+   the entire scroll surface, including the top edge beneath app chrome. */
+.reader-page {
+  --reader-inline: 1.5rem;
+  min-height: 100%;
+}
+.reader-control-band {
+  top: 0;
+  padding: 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--text) 10%, transparent);
+}
+.reader-chapters {
+  padding-top: 0.75rem;
+}
+.source-line-number {
+  z-index: 3;
+  padding-top: 0.1rem;
+}
+@media (max-width: 767px) {
+  .reader-page {
+    --reader-inline: 1rem;
+  }
+}
+
+:root {
+  --note: #b85c1e;
+  --lore: #9a6b34;
+  --item: #42758a;
+  --event: #9a4e69;
+}

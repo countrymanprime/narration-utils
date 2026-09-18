@@ -1,0 +1,17 @@
+{
+  "pnpm": "11.27.0",
+  "uv": "0.12.15",
+  "go": "1.27.1",
+  "wails": {
+    "module": "github.com/wailsapp/wails/v2/cmd/wails",
+    "version": "v2.16.0"
+  },
+  "staticcheck": {
+    "module": "honnef.co/go/tools/cmd/staticcheck",
+    "version": "v0.8.1"
+  },
+  "stylua": {
+    "version": "v2.1.0",
+    "provisioner": "JohnnyMorganz/stylua-action@v4.1.0"
+  }
+}

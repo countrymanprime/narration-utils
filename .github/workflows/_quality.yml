@@ -1,0 +1,83 @@
+name: Quality
+on:
+  workflow_call: {}
+permissions: { contents: read }
+jobs:
+  js:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-go: 'false'
+          need-python: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+          need-linux-native-deps: 'false'
+      - run: pnpm --dir shared/ui run lint:ci
+      - run: pnpm --dir shared/ui run format:check
+      - run: pnpm --dir shared/ui test
+      - run: pnpm --dir shared/ui run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui-dist
+          path: shared/ui/dist
+          if-no-files-found: error
+
+  python:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-node: 'false'
+          need-pnpm: 'false'
+          need-go: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+          need-linux-native-deps: 'false'
+      - run: uv run ruff format --check .
+      - run: uv run ruff check .
+      - run: uv run pytest -q
+
+  lua:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: JohnnyMorganz/stylua-action@479972f01e665acfcba96ada452c36608bdbbb5e # v4.1.0
+        with:
+          token: ${{ github.token }}
+          version: v2.1.0
+          args: --check shared/reaper
+
+  go:
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-node: 'false'
+          need-pnpm: 'false'
+          need-python: 'false'
+          need-stylua: 'false'
+      - name: gofmt check
+        shell: bash
+        run: |
+          files=$(gofmt -l ./shell)
+          if [ -n "$files" ]; then
+            echo "Run gofmt on:"
+            echo "$files"
+            exit 1
+          fi
+      - run: go -C shell vet ./...
+      - run: go -C shell test -race ./...
+      - run: staticcheck ./...
+        working-directory: shell

@@ -1,0 +1,487 @@
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faList, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
+import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderState, SearchHit } from '../../types';
+import { categoryCssName, chapterLineNumbers, STORY_BIBLE_TABS } from '../../state';
+import { useApi } from '../../api/ApiContext';
+import { useTextSelection } from '../../hooks/useTextSelection';
+import { Button } from '../primitives/Button';
+import { Heading } from '../primitives/Heading';
+import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
+import { ChapterNav } from './ChapterNav';
+import { SearchBar } from './SearchBar';
+import { ParagraphView } from './ParagraphView';
+import { SelectionMenu } from './SelectionMenu';
+import { AddNoteDialog } from './AddNoteDialog';
+import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from './EntitySummary';
+
+const TEXT_SIZES = ['small', 'medium', 'large'] as const;
+const READER_TEXT_CLASSES = { small: 'text-sm leading-5', medium: 'text-base leading-6', large: 'text-xl leading-7' } as const;
+const LINE_NUMBER_PADDING_CLASSES = { small: '!pt-2', medium: '!pt-2.5', large: '!pt-3' } as const;
+const defaultState: ReaderState = { expandedChapters: [], bookmarks: [] };
+const escapeSelector = (value: string) =>
+  typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(value) : value.replace(/(["\\])/g, '\\$1');
+
+export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: string) => void; focusStoryBibleEntity: (id: string) => void }) {
+  const api = useApi();
+  const location = useLocation();
+  const routerNavigate = useNavigate();
+  const readerRef = useRef<HTMLDivElement>(null);
+  const bandRef = useRef<HTMLDivElement>(null);
+  const searchRequest = useRef(0);
+  const requestedChapters = useRef(new Set<string>());
+  const highlightTimer = useRef<number>();
+  const [bandHeight, setBandHeight] = useState(0);
+  const [chapters, setChapters] = useState<Awaited<ReturnType<typeof api.manuscriptChapters>>>([]);
+  const [paragraphs, setParagraphs] = useState<ManuscriptParagraph[]>([]);
+  const [loadingChapters, setLoadingChapters] = useState<Set<string>>(new Set());
+  const [entities, setEntities] = useState<GuideEntity[]>([]);
+  const [notes, setNotes] = useState<ManuscriptNote[]>([]);
+  const [readerState, setReaderState] = useState<ReaderState>(defaultState);
+  const [sheet, setSheet] = useState<'chapters' | 'detail'>();
+  const [textSize, setTextSize] = useState<(typeof TEXT_SIZES)[number]>('medium');
+  const [detail, setDetail] = useState<{ entity?: GuideEntity; note?: ManuscriptNote }>();
+  const [pendingNote, setPendingNote] = useState<{ paragraphIndex: number; anchorStart: number; anchorEnd: number; anchorText: string }>();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
+  const { selection, clear: clearSelection } = useTextSelection(readerRef);
+  const active = readerState.activeChapter || chapters[0]?.id;
+  const lineNumbers = useMemo(() => chapterLineNumbers(paragraphs), [paragraphs]);
+
+  useEffect(() => {
+    const element = bandRef.current;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => setBandHeight(entry.contentRect.height));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => () => window.clearTimeout(highlightTimer.current), []);
+  const closeSheet = () => {
+    setSheet(undefined);
+    setDetail(undefined);
+  };
+  const saveState = useCallback(
+    async (next: ReaderState) => {
+      setReaderState(next);
+      try {
+        await api.readerStateSave({
+          activeChapter: next.activeChapter,
+          activeSourceLine: next.activeSourceLine,
+          expandedChapters: next.expandedChapters || [],
+        });
+      } catch (error) {
+        notify(String(error));
+      }
+    },
+    [api, notify],
+  );
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const [nextChapters, nextEntities, state, nextNotes] = await Promise.all([
+          api.manuscriptChapters(),
+          api.guideEntities(),
+          api.readerState(),
+          api.noteList(),
+        ]);
+        const firstChapter = nextChapters[0]?.id;
+        const chapterId = (value: string | undefined) => nextChapters.find((item) => item.id === value || item.title === value)?.id || value;
+        const expandedChapters = (state.expandedChapters ?? [state.activeChapter || firstChapter]).map(chapterId).filter((id): id is string => Boolean(id));
+        setChapters(nextChapters);
+        setNotes(nextNotes);
+        setEntities(nextEntities);
+        setReaderState({ ...state, activeChapter: chapterId(state.activeChapter) || firstChapter, expandedChapters });
+      } catch (error) {
+        notify(String(error));
+      }
+    })();
+  }, [api, notify]);
+  useEffect(() => {
+    for (const chapterId of readerState.expandedChapters || []) {
+      if (requestedChapters.current.has(chapterId)) continue;
+      requestedChapters.current.add(chapterId);
+      setLoadingChapters((current) => new Set(current).add(chapterId));
+      void api
+        .manuscriptParagraphs(chapterId)
+        .then((next) => setParagraphs((current) => [...current.filter((paragraph) => paragraph.chapterId !== chapterId), ...next]))
+        .catch((error) => notify(String(error)))
+        .finally(() =>
+          setLoadingChapters((current) => {
+            const next = new Set(current);
+            next.delete(chapterId);
+            return next;
+          }),
+        );
+    }
+  }, [readerState.expandedChapters, api, notify]);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeSheet();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const showChapter = useCallback(
+    (chapter: string, paragraph?: number) => {
+      if (!chapter) return;
+      const chapterId = chapters.find((item) => item.id === chapter || item.title === chapter)?.id || chapter;
+      const next = { ...readerState, activeChapter: chapterId, expandedChapters: Array.from(new Set([...(readerState.expandedChapters || []), chapterId])) };
+      void saveState(next);
+      const selector = paragraph === undefined ? `[data-chapter-id="${escapeSelector(chapterId)}"]` : `[data-paragraph="${paragraph}"]`;
+      // Expanding a chapter that wasn't already rendered mounts a new
+      // ParagraphView (which re-runs entity highlighting) before the target
+      // node exists; poll across frames instead of guessing a fixed delay so
+      // cross-chapter jumps land correctly once the node actually appears.
+      const deadline = Date.now() + 2000;
+      const attempt = () => {
+        const target = document.querySelector<HTMLElement>(selector);
+        if (target) {
+          target.scrollIntoView?.({ behavior: 'smooth', block: paragraph === undefined ? 'start' : 'center' });
+          window.clearTimeout(highlightTimer.current);
+          target.classList.add('source-flash');
+          highlightTimer.current = window.setTimeout(() => target.classList.remove('source-flash'), 30_000);
+          return;
+        }
+        if (Date.now() < deadline) requestAnimationFrame(attempt);
+      };
+      requestAnimationFrame(attempt);
+    },
+    [chapters, readerState, saveState],
+  );
+  // Deep links into a specific paragraph/chapter arrive as a URL anchor -
+  // "#p123" for paragraph 123 (its globally unique index, assigned at
+  // manuscript import - see manuscript_guide.py's export_manuscript), or
+  // "#cChapter Title" to land on a chapter without a specific line. A
+  // paragraph-to-chapter mapping arrives with the lightweight chapter list,
+  // so this does not wait for any paragraph body to load.
+  useEffect(() => {
+    const hash = location.hash;
+    if (!hash) return;
+    if (hash.startsWith('#p')) {
+      const paragraph = Number(hash.slice(2));
+      if (Number.isNaN(paragraph)) return;
+      const chapter = chapters.find((item) => item.paragraphIds?.some((row) => row.index === paragraph))?.id;
+      if (!chapter) return;
+      showChapter(chapter, paragraph);
+    } else if (hash.startsWith('#c')) {
+      showChapter(decodeURIComponent(hash.slice(2)));
+    } else {
+      return;
+    }
+    routerNavigate('/manuscript', { replace: true });
+  }, [location.hash, chapters, routerNavigate, showChapter]);
+  const toggleManualChapter = (chapter: string) => {
+    const expanded = new Set(readerState.expandedChapters || []);
+    if (expanded.has(chapter)) expanded.delete(chapter);
+    else expanded.add(chapter);
+    void saveState({ ...readerState, activeChapter: chapter, expandedChapters: [...expanded] });
+  };
+  const toggleChapterBookmark = async (chapter: string) => {
+    const current = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapterId === chapter);
+    try {
+      if (current) {
+        await api.readerBookmarkDelete(current.id);
+        setReaderState({ ...readerState, bookmarks: readerState.bookmarks.filter((item) => item.id !== current.id) });
+      } else {
+        const title = chapters.find((item) => item.id === chapter)?.title || '';
+        const next = await api.readerBookmarkCreate({ kind: 'chapter', chapter: title, chapterId: chapter });
+        setReaderState({ ...readerState, bookmarks: [...readerState.bookmarks, next] });
+      }
+    } catch (error) {
+      notify(String(error));
+    }
+  };
+  const runSearch = async (query: string) => {
+    setSearchQuery(query);
+    const request = ++searchRequest.current;
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    try {
+      const results = await api.manuscriptSearch(query);
+      if (request === searchRequest.current) setSearchResults(results);
+    } catch (error) {
+      if (request === searchRequest.current) notify(String(error));
+    }
+  };
+  const addNote = () => {
+    if (!selection || selection.paragraphIndex === undefined || selection.anchorStart === undefined || selection.anchorEnd === undefined) {
+      notify('Select text within a single line to add a note.');
+      return;
+    }
+    setPendingNote({
+      paragraphIndex: selection.paragraphIndex,
+      anchorStart: selection.anchorStart,
+      anchorEnd: selection.anchorEnd,
+      anchorText: selection.text,
+    });
+    clearSelection();
+  };
+  const confirmNote = async (text: string) => {
+    const target = pendingNote;
+    setPendingNote(undefined);
+    const paragraph = paragraphs.find((item) => item.index === target?.paragraphIndex);
+    if (!target || !paragraph) return;
+    try {
+      const created = await api.noteCreate(paragraph.chapterId, paragraph.id, text, target.anchorStart, target.anchorEnd, target.anchorText);
+      setNotes((current) => [...current, created]);
+      notify('Note added.');
+    } catch (error) {
+      notify(String(error));
+    }
+  };
+  const deleteNote = async (id: string) => {
+    try {
+      await api.noteDelete(id);
+      setNotes((current) => current.filter((item) => item.id !== id));
+      closeSheet();
+      notify('Note deleted.');
+    } catch (error) {
+      notify(String(error));
+    }
+  };
+
+  return (
+    <div className="reader-page min-h-full [--reader-inline:1.5rem] max-md:[--reader-inline:1rem]" style={{ '--band-h': `${bandHeight}px` } as CSSProperties}>
+      <div
+        ref={bandRef}
+        className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--bg)] p-0 shadow-[0_2px_8px_color-mix(in_srgb,var(--text)_10%,transparent)]"
+      >
+        <div className="px-[var(--reader-inline)] pb-3 pt-4">
+          <div className="mb-4 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
+            <div className="flex items-center gap-3">
+              <Heading title="Manuscript" />
+              <TooltipTarget text="Chapters & Search">
+                <button
+                  aria-label="Chapters & Search"
+                  className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                  onClick={() => {
+                    setDetail(undefined);
+                    setSheet('chapters');
+                  }}
+                >
+                  <FontAwesomeIcon icon={faList} />
+                </button>
+              </TooltipTarget>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] uppercase tracking-wider text-[var(--text-muted)]">
+              {[...STORY_BIBLE_TABS.filter((item) => item !== 'All'), 'Note'].map((name) => (
+                <span key={name} className="flex items-center gap-1">
+                  <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(name === 'Location' ? 'Place' : name)] }} />
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="mb-4 flex flex-wrap items-center gap-4">
+            <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              Text size <Tooltip text="The manuscript always uses the full reading width - adjust text size instead." />
+            </span>
+            <div className="flex gap-1">
+              {TEXT_SIZES.map((value) => (
+                <button
+                  key={value}
+                  className={`rounded-[0.35rem] border border-[var(--border)] px-[0.65rem] py-[0.3rem] font-['Barlow_Condensed',sans-serif] text-[0.78rem] font-semibold uppercase tracking-[0.03em] text-[var(--text-muted)] ${textSize === value ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]' : ''}`}
+                  onClick={() => setTextSize(value)}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+            <TooltipTarget text="Expand all chapters">
+              <button
+                aria-label="Expand all chapters"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                onClick={() => void saveState({ ...readerState, expandedChapters: chapters.map((chapter) => chapter.id) })}
+              >
+                <FontAwesomeIcon icon={faAnglesDown} />
+              </button>
+            </TooltipTarget>
+            <TooltipTarget text="Collapse all chapters">
+              <button
+                aria-label="Collapse all chapters"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                onClick={() => void saveState({ ...readerState, expandedChapters: [] })}
+              >
+                <FontAwesomeIcon icon={faAnglesUp} />
+              </button>
+            </TooltipTarget>
+          </div>
+        </div>
+      </div>
+      <div ref={readerRef} className="reader-chapters pt-3">
+        {chapters.map((chapter) => {
+          const expanded = (readerState.expandedChapters || []).includes(chapter.id);
+          const chapterBookmark = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapterId === chapter.id);
+          return (
+            <article
+              key={chapter.id}
+              className="relative mx-[var(--reader-inline)] mb-4 scroll-mt-[var(--band-h,4rem)] overflow-visible rounded-lg border border-[var(--border)] bg-[var(--surface)]"
+              data-chapter={chapter.title}
+              data-chapter-id={chapter.id}
+            >
+              <header
+                className={`sticky top-[var(--band-h,4rem)] z-10 grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-3 border-[var(--border)] p-3 md:grid-cols-[1.4rem_minmax(0,1fr)_auto] md:px-5 md:py-[0.8rem] ${expanded ? 'rounded-t-lg border-b' : 'rounded-lg border-b-0'}`}
+              >
+                <TooltipTarget className="-ml-1 flex size-[1.4rem]" text={chapterBookmark ? 'Remove chapter bookmark' : 'Bookmark this chapter'}>
+                  <button
+                    className={`group relative flex size-[1.4rem] items-center justify-center text-[var(--text-faint)] ${chapterBookmark ? 'text-[var(--bookmark)]' : ''}`}
+                    onClick={() => void toggleChapterBookmark(chapter.id)}
+                  >
+                    <FontAwesomeIcon
+                      className={`absolute inset-0 m-auto size-[1.4rem] transition-opacity ${chapterBookmark ? 'opacity-0' : 'opacity-50 group-hover:opacity-0 group-focus-visible:opacity-0'}`}
+                      icon={faBookmarkRegular}
+                    />
+                    <FontAwesomeIcon
+                      className={`absolute inset-0 m-auto size-[1.4rem] transition-opacity ${chapterBookmark ? 'opacity-100' : 'opacity-0 group-hover:opacity-70 group-focus-visible:opacity-70'}`}
+                      icon={faBookmarkSolid}
+                    />
+                  </button>
+                </TooltipTarget>
+                <button className="text-left" onClick={() => toggleManualChapter(chapter.id)}>
+                  <h2 className="m-0 font-['Barlow_Condensed',sans-serif] text-[1.2rem] font-semibold">
+                    {chapter.title}{' '}
+                    {chapter.subtitle && (
+                      <span className="font-['IBM_Plex_Mono',monospace] text-[0.8rem] font-normal text-[var(--text-faint)]">— {chapter.subtitle}</span>
+                    )}
+                  </h2>
+                </button>
+                <div className="justify-self-end text-right max-md:col-start-2 max-md:flex max-md:gap-2 max-md:justify-self-start">
+                  <div className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs">{chapter.wordCount.toLocaleString()} words</div>
+                  <div className="mt-0.5 text-xs" style={{ color: 'var(--text-faint)' }}>
+                    ~{Math.max(1, Math.round(chapter.wordCount / 200))} min read
+                  </div>
+                </div>
+              </header>
+              {expanded && (
+                <div className="manuscript-reader mx-auto overflow-hidden rounded-b-lg">
+                  {loadingChapters.has(chapter.id) ? (
+                    <div className="space-y-2 p-4" aria-label={`Loading ${chapter.title}`}>
+                      {(chapter.paragraphIds || []).map((paragraph) => (
+                        <div key={paragraph.id} className="h-5 animate-pulse rounded bg-[var(--surface-2)]" />
+                      ))}
+                    </div>
+                  ) : (
+                    <ParagraphView
+                      paragraphs={paragraphs.filter((item) => item.chapterId === chapter.id)}
+                      entities={entities}
+                      notes={notes.filter((item) => item.chapterId === chapter.id || (!item.chapterId && item.chapter === chapter.title))}
+                      textClass={READER_TEXT_CLASSES[textSize]}
+                      lineNumberPadding={LINE_NUMBER_PADDING_CLASSES[textSize]}
+                      openEntity={(entity) => {
+                        setDetail({ entity });
+                        setSheet('detail');
+                      }}
+                      openNote={(note) => {
+                        setDetail({ note });
+                        setSheet('detail');
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+      {selection && !pendingNote && (
+        <SelectionMenu
+          selection={selection}
+          addNote={addNote}
+          addToStoryBible={() => {
+            const text = selection.text;
+            clearSelection();
+            void api.guideCreate(text, '', []).then(focusStoryBibleEntity);
+          }}
+          dismiss={clearSelection}
+        />
+      )}
+      {pendingNote && <AddNoteDialog anchorText={pendingNote.anchorText} confirm={(text) => void confirmNote(text)} cancel={() => setPendingNote(undefined)} />}
+      {sheet && <div className="sheet-backdrop fixed inset-0 z-[45] bg-transparent" onMouseDown={closeSheet} />}
+      <aside
+        className={`overlay-panel ease fixed right-0 top-0 z-50 flex h-screen w-[min(20rem,100vw)] flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)] transition-transform duration-200 ${sheet ? 'translate-x-0' : 'translate-x-full'}`}
+        aria-hidden={!sheet}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
+          <h3 className="text-sm font-semibold">{detail?.note ? 'Note' : detail?.entity?.canonical_name || 'Chapters & Search'}</h3>
+          <button
+            className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            aria-label="Close"
+            onClick={closeSheet}
+          >
+            <FontAwesomeIcon icon={faXmark} />
+          </button>
+        </div>
+        <div className="scroll-chrome-hidden flex-1 overflow-y-auto p-[1.1rem]">
+          {detail?.note ? (
+            <>
+              <div className="mb-3">
+                <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Anchored text
+                </div>
+                <p className="text-sm italic">“{detail.note.anchorText || 'Paragraph note'}”</p>
+              </div>
+              <div className="mb-4">
+                <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Note
+                </div>
+                <p className="text-sm">{detail.note.text}</p>
+              </div>
+              <Button variant="danger" className="text-xs" onClick={() => void deleteNote(detail.note!.id)}>
+                Delete note
+              </Button>
+            </>
+          ) : detail?.entity ? (
+            <>
+              <EntitySummary
+                entity={detail.entity}
+                jumpToLine={(chapter, paragraph) => {
+                  closeSheet();
+                  showChapter(chapter, paragraph);
+                }}
+              />
+              <Button variant="ghost" className="mt-4 text-xs" onClick={() => focusStoryBibleEntity(detail.entity!.id)}>
+                Open in Story Bible →
+              </Button>
+            </>
+          ) : (
+            <>
+              <SearchBar query={searchQuery} onQueryChange={(value) => void runSearch(value)} />
+              <div className="mt-4 border-t pt-3">
+                <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                  Chapters
+                </div>
+                <ChapterNav
+                  chapters={chapters}
+                  selectedId={active}
+                  bookmarks={readerState.bookmarks}
+                  searchQuery={searchQuery}
+                  searchResults={searchResults}
+                  lineNumbers={lineNumbers}
+                  select={(id, paragraph) => {
+                    const chapter = chapters.find((item) => item.id === id);
+                    if (chapter) {
+                      closeSheet();
+                      showChapter(chapter.id, paragraph);
+                    }
+                  }}
+                  removeBookmark={(id) =>
+                    void api
+                      .readerBookmarkDelete(id)
+                      .then(() => setReaderState((current) => ({ ...current, bookmarks: current.bookmarks.filter((item) => item.id !== id) })))
+                      .catch((error) => notify(String(error)))
+                  }
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </aside>
+    </div>
+  );
+}
