@@ -2,3 +2,11 @@
 # bindings source-controlled without treating that upstream formatting as a
 # handwritten whitespace error.
 shared/ui/wailsjs/go/models.ts -whitespace
+
+# Prettier's endOfLine is "lf" (matches what's committed). Force LF checkouts
+# on every platform so Windows contributors and CI runners with autocrlf=true
+# don't reintroduce CRLF and desync from prettier --check.
+shared/ui/src/** text eol=lf
+shared/ui/tests/** text eol=lf
+shared/ui/*.json text eol=lf
+shared/ui/*.ts text eol=lf
