@@ -67,7 +67,7 @@ jobs:
           tar -czf narration-utils-shell-${{ matrix.name }}.tar.gz narration-utils-shell
           rm -f narration-utils-shell
       - if: inputs.upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.artifact-prefix }}-${{ matrix.name }}
           path: shell/build/bin
