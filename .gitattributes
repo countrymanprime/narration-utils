@@ -10,3 +10,9 @@ shared/ui/src/** text eol=lf
 shared/ui/tests/** text eol=lf
 shared/ui/*.json text eol=lf
 shared/ui/*.ts text eol=lf
+
+# gofmt and stylua both normalize to LF (matches what's committed). Force LF
+# checkouts here too, or windows-latest CI runners (autocrlf=true by default)
+# checkout CRLF and desync from gofmt -l / stylua --check.
+*.go text eol=lf
+shared/reaper/** text eol=lf
