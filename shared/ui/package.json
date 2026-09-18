@@ -13,7 +13,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"tests/**/*.ts\" \"*.{json,ts}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"tests/**/*.ts\" \"*.{json,ts}\"",
-    "screenshots": "playwright test tests/visual"
+    "screenshots": "playwright test tests/visual",
+    "docs:sync-screenshots": "node scripts/sync-doc-screenshots.mjs"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
@@ -40,6 +41,7 @@
     "jsdom": "^29.1.1",
     "postcss": "^8.4.49",
     "prettier": "^3.9.6",
+    "sharp": "^0.35.4",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.70.0",

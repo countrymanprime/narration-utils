@@ -8,6 +8,11 @@ logic is DAW-agnostic; a thin per-DAW driver wires it into a specific host.
 - [`tools/transcript-compare/`](tools/transcript-compare/README.md) — transcribes a recorded
   chapter and diffs it against the manuscript, dropping take markers at every discrepancy.
 
+Both tools share one native UI, shown below on the Home page. See
+[Using the app](docs/guides/using-the-app.md) for a full screenshot walkthrough.
+
+![Home, manuscript found](docs/images/ui/home-default.webp)
+
 ## Layout
 
 ```

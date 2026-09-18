@@ -1,0 +1,65 @@
+[
+  {
+    "page": "home",
+    "state": "default",
+    "viewport": "desktop",
+    "docName": "home-default",
+    "caption": "Home - manuscript loaded, chapter table collapsed"
+  },
+  {
+    "page": "manuscript",
+    "state": "reader-text-medium",
+    "viewport": "desktop",
+    "docName": "manuscript-reader",
+    "caption": "Manuscript reader at the medium text size"
+  },
+  {
+    "page": "manuscript",
+    "state": "reader-text-large",
+    "viewport": "desktop",
+    "docName": "manuscript-reader-large",
+    "caption": "Manuscript reader at the large text size"
+  },
+  {
+    "page": "proofing",
+    "state": "setup-default",
+    "viewport": "desktop",
+    "docName": "proofing-setup",
+    "caption": "Proofing - setup panel before starting a comparison"
+  },
+  {
+    "page": "proofing",
+    "state": "results-row-expanded",
+    "viewport": "desktop",
+    "docName": "proofing-results",
+    "caption": "Proofing - results table with a discrepancy row expanded"
+  },
+  {
+    "page": "storybible",
+    "state": "category-character",
+    "viewport": "desktop",
+    "docName": "storybible-characters",
+    "caption": "Story Bible - filtered to the Characters category"
+  },
+  {
+    "page": "storybible",
+    "state": "entity-selected",
+    "viewport": "desktop",
+    "docName": "storybible-entity",
+    "caption": "Story Bible - an entity selected, detail panel open"
+  },
+  {
+    "page": "settings",
+    "state": "global-general",
+    "viewport": "desktop",
+    "docName": "settings-general",
+    "caption": "Settings - Global scope, General category"
+  },
+  {
+    "page": "settings",
+    "state": "global-appearance",
+    "viewport": "desktop",
+    "docName": "settings-appearance",
+    "caption": "Settings - Global scope, Appearance category (theme switcher)"
+  }
+]
