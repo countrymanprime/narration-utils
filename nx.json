@@ -12,16 +12,36 @@
       },
       "conventionalCommits": {
         "types": {
-          "feat": { "semverBump": "minor" },
-          "fix": { "semverBump": "patch" },
-          "perf": { "semverBump": "patch" },
-          "refactor": { "semverBump": "patch" },
-          "docs": { "semverBump": "patch" },
-          "test": { "semverBump": "patch" },
-          "build": { "semverBump": "patch" },
-          "ci": { "semverBump": "patch" },
-          "chore": { "semverBump": "patch" },
-          "revert": { "semverBump": "patch" }
+          "feat": {
+            "semverBump": "minor"
+          },
+          "fix": {
+            "semverBump": "patch"
+          },
+          "perf": {
+            "semverBump": "patch"
+          },
+          "refactor": {
+            "semverBump": "patch"
+          },
+          "docs": {
+            "semverBump": "patch"
+          },
+          "test": {
+            "semverBump": "patch"
+          },
+          "build": {
+            "semverBump": "patch"
+          },
+          "ci": {
+            "semverBump": "patch"
+          },
+          "chore": {
+            "semverBump": "patch"
+          },
+          "revert": {
+            "semverBump": "patch"
+          }
         }
       },
       "generatorOptions": {
@@ -34,5 +54,6 @@
         "createRelease": false
       }
     }
-  }
+  },
+  "analytics": false
 }
