@@ -15,7 +15,8 @@
     "release:check": "node scripts/release/sync-version.mjs --check",
     "release:notes": "node scripts/release/generate-notes.mjs",
     "release:assets": "node scripts/release/collect-assets.mjs",
-    "release:verify-installable": "node scripts/release/verify-installable.mjs"
+    "release:verify-installable": "node scripts/release/verify-installable.mjs",
+    "release:promote": "node scripts/release/promote.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",

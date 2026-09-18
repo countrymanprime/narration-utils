@@ -8,6 +8,9 @@ on:
       artifact-prefix:
         type: string
         default: build
+      version:
+        type: string
+        default: ''
 permissions: { contents: read }
 jobs:
   build:
@@ -26,6 +29,14 @@ jobs:
         with:
           need-pnpm: 'false'
           need-stylua: 'false'
+      - if: inputs.version != ''
+        name: Apply the computed release version
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          npm pkg set version="$VERSION"
+          node scripts/release/sync-version.mjs
       - name: Clear frontend dist placeholder
         shell: bash
         run: rm -rf shell/cmd/narration-utils/frontend/dist
