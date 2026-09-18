@@ -35,8 +35,9 @@ jobs:
           name: ui-dist
           path: shell/cmd/narration-utils/frontend/dist
       - name: Build native package
+        shell: bash
         run: |
-          python scripts/release/prepare-resources.py --clean
+          uv run python scripts/release/prepare-resources.py --clean
           node scripts/release/verify-installable.mjs
           cd shell
           wails doctor
