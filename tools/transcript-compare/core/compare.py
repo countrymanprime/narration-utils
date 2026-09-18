@@ -16,12 +16,20 @@ NEED_CHAPTER line alone, or a SUMMARY/DIFF/MARKER* block:
     NEED_CHAPTER|<title1>|<title2>|...
     SUMMARY|<text>
     DIFF|<diff_file_path>
-    MARKER|<item_index>|<srcpos_seconds>|<kind>|<name>|<doc_text>|<audio_text>
+    MARKER|<item_index>|<srcpos_seconds>|<kind>|<name>|<doc_text>|<audio_text>|
+           <chapter_title>|<paragraph>|<script_context>|<audio_context>|
+           <confidence>|<timing_gap_seconds>
 
 kind is one of MISREAD / SKIPPED / EXTRA. doc_text/audio_text may be empty
-(e.g. SKIPPED has no audio_text, EXTRA has no doc_text). NEED_CHAPTER means
-the track name didn't confidently match any heading - the caller should
-re-invoke with --chapter-title set to one of the listed titles.
+(e.g. SKIPPED has no audio_text, EXTRA has no doc_text). confidence is one
+of high/medium/low/unknown, derived from the audio-timing gap (in seconds,
+empty when unknown) at the discrepancy's boundary - see
+_marker_timing_confidence(). It is a secondary signal only: a low value
+means the words ran together with no pause (weaker evidence this is a
+genuine misread/skip/insertion rather than a token-split artifact of the
+diff itself), not proof either way. NEED_CHAPTER means the track name
+didn't confidently match any heading - the caller should re-invoke with
+--chapter-title set to one of the listed titles.
 """
 
 import argparse
@@ -969,6 +977,58 @@ def _fuse_hyphen_split_opcodes(opcodes, chapter_norm, filtered_tokens):
     return fixed
 
 
+# A near-zero gap at a discrepancy's audio boundary means the words ran
+# together with no pause - weaker evidence that this is a genuine
+# misread/skip/insertion rather than a token-split artifact of the diff
+# itself (a homophone spelling difference, a hyphen/number-merge edge, an
+# ASR word-boundary wobble). PAUSE_GAP_SECONDS (already used to split audio
+# into sentences on a natural pause) is reused as the "clearly a real
+# pause" threshold, so the same audio behavior means the same thing in both
+# places rather than introducing a second, differently-tuned constant.
+TIGHT_GAP_SECONDS = 0.05
+
+
+def _boundary_gap_seconds(index_map, transcript_words, filtered_idx):
+    """Seconds of silence in the ORIGINAL transcript between the word
+    immediately before filtered_idx and the word at/after it (filtered_idx
+    is an index into the merged/filtered token space diff_and_build_markers'
+    opcodes use, the same space time_for() maps from). None when
+    filtered_idx sits at either edge of the transcript, since there's no
+    boundary to measure there."""
+    if filtered_idx <= 0 or filtered_idx >= len(index_map):
+        return None
+    prev_orig = index_map[filtered_idx - 1]
+    next_orig = index_map[filtered_idx]
+    if prev_orig >= len(transcript_words) or next_orig >= len(transcript_words):
+        return None
+    return max(0.0, transcript_words[next_orig][1] - transcript_words[prev_orig][2])
+
+
+def _marker_timing_confidence(j1, j2, index_map, transcript_words):
+    """Confidence label + the raw gap (seconds) it was derived from, for one
+    discrepancy spanning filtered-token audio positions [j1, j2) (j1 == j2
+    for a SKIPPED marker, which has no audio span of its own - only a
+    boundary point). Deliberately conservative: this never changes which
+    markers are produced, only annotates each with a transparent secondary
+    signal a reviewer (or a future UI filter) can use to prioritize/
+    suppress low-value results. ASR confidence is not proof of a spoken
+    error either way - see docs/utilities/transcript-compare.md's stated
+    risk - and neither is this."""
+    gap_before = _boundary_gap_seconds(index_map, transcript_words, j1)
+    gap_after = _boundary_gap_seconds(index_map, transcript_words, j2) if j2 != j1 else gap_before
+    candidates = [g for g in (gap_before, gap_after) if g is not None]
+    if not candidates:
+        return "unknown", None
+    gap = max(candidates)
+    if gap >= PAUSE_GAP_SECONDS:
+        label = "high"
+    elif gap < TIGHT_GAP_SECONDS:
+        label = "low"
+    else:
+        label = "medium"
+    return label, gap
+
+
 def diff_and_build_markers(chapter_tokens, chapter_unit_idx, chapter_raw_words, transcript_words, min_words):
     filtered_tokens = []
     index_map = []
@@ -1055,6 +1115,7 @@ def diff_and_build_markers(chapter_tokens, chapter_unit_idx, chapter_raw_words, 
 
         source_token = i1 if i1 < len(chapter_norm) else max(0, i1 - 1)
         source_original = chapter_index_map[source_token] if chapter_index_map else 0
+        confidence, timing_gap = _marker_timing_confidence(j1, j2, index_map, transcript_words)
         markers.append(
             (
                 t,
@@ -1067,6 +1128,8 @@ def diff_and_build_markers(chapter_tokens, chapter_unit_idx, chapter_raw_words, 
                 i2,
                 j1,
                 j2,
+                confidence,
+                timing_gap,
             )
         )
 
@@ -1458,7 +1521,7 @@ def run(args):
     with open(args.out, "w", newline="", encoding="utf-8") as f:
         f.write(f"SUMMARY|{summary}\n")
         f.write(f"DIFF|{diff_path}\n")
-        for t, kind, name, doc_text, audio_text, unit_index, marker_i1, marker_i2, marker_j1, marker_j2 in markers:
+        for t, kind, name, doc_text, audio_text, unit_index, marker_i1, marker_i2, marker_j1, marker_j2, confidence, timing_gap in markers:
             item_index, srcpos = locate_in_segments(t, segments)
             paragraph = resolve_global_paragraph(chapter, sentence_units[unit_index][1] if 0 <= unit_index < len(sentence_units) else 0)
             script_context, audio_context = build_marker_context(
@@ -1477,8 +1540,9 @@ def run(args):
                 script_context = sentence_units[unit_index][0] if 0 <= unit_index < len(sentence_units) else doc_text
             if not audio_context:
                 audio_context = audio_text
+            timing_gap_field = f"{timing_gap:.3f}" if timing_gap is not None else ""
             f.write(
-                f"MARKER|{item_index}|{srcpos:.3f}|{kind}|{name}|{doc_text}|{audio_text}|{clean_marker_field(chapter['title'])}|{paragraph}|{clean_marker_field(script_context)}|{clean_marker_field(audio_context)}\n"
+                f"MARKER|{item_index}|{srcpos:.3f}|{kind}|{name}|{doc_text}|{audio_text}|{clean_marker_field(chapter['title'])}|{paragraph}|{clean_marker_field(script_context)}|{clean_marker_field(audio_context)}|{confidence}|{timing_gap_field}\n"
             )
 
     log(f"Wrote {len(markers)} marker row(s) to {args.out}")

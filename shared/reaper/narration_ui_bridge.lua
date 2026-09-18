@@ -202,7 +202,12 @@ local function inspect_results(session_dir, runs, run_id, path)
     if tag == 'SUMMARY' then
       summary = body
     elseif tag == 'MARKER' then
-      local fields = pipe_fields(body, 10)
+      -- 12 fields: compare.py appends <confidence>|<timing_gap_seconds>
+      -- after <audio_context> (field 10) - the count here must match or
+      -- pipe_fields dumps the trailing fields into fields[10], corrupting
+      -- audio_context. Not yet forwarded to COMPARE_MARKER below; they
+      -- exist for future UI work (see docs/utilities/transcript-compare.md).
+      local fields = pipe_fields(body, 12)
       local item_index, srcpos = tonumber(fields[1]), tonumber(fields[2])
       local entry = item_index and run.mapping[item_index]
       if entry and srcpos then
@@ -256,7 +261,8 @@ local function export_results(session_dir, runs, run_id, path, misread, skipped,
   for line in input:lines() do
     local tag, body = line:match('^([A-Z_]+)|(.*)$')
     if tag == 'MARKER' then
-      local fields = pipe_fields(body, 10)
+      -- Kept in sync with the 12-field count in inspect_results() above.
+      local fields = pipe_fields(body, 12)
       local item_index, srcpos = tonumber(fields[1]), tonumber(fields[2])
       local entry = item_index and run.mapping[item_index]
       local row_id = item_index and srcpos and (tostring(item_index) .. '@' .. string.format('%.6f', srcpos)) or ''

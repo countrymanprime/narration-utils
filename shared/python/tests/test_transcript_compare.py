@@ -26,7 +26,7 @@ class TranscriptCompareContextTests(unittest.TestCase):
         )
 
         contexts = {}
-        for _time, kind, _name, _doc_text, audio_text, _unit, i1, i2, j1, j2 in markers:
+        for _time, kind, _name, _doc_text, audio_text, _unit, i1, i2, j1, j2, _confidence, _timing_gap in markers:
             contexts[(kind, audio_text)] = compare.build_marker_context(
                 i1,
                 i2,
@@ -55,7 +55,7 @@ class TranscriptCompareContextTests(unittest.TestCase):
         chapter_tokens, raw_words = compare.tokenize_with_raw(script)
         transcript_words = [(word, float(index), float(index) + 0.5) for index, word in enumerate(heard.split())]
         markers, _covered, alignment = compare.diff_and_build_markers(chapter_tokens, [0] * len(chapter_tokens), raw_words, transcript_words, min_words=1)
-        _time, _kind, _name, _doc_text, _audio_text, _unit, i1, i2, j1, j2 = markers[0]
+        _time, _kind, _name, _doc_text, _audio_text, _unit, i1, i2, j1, j2, _confidence, _timing_gap = markers[0]
 
         script_context, heard_context = compare.build_marker_context(
             i1,

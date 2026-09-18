@@ -30,3 +30,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0005](0005-reference-material-excluded-from-chapter-nav.md) | Reference-material sections excluded from chapter navigation, retained in source data | Accepted |
 | [0006](0006-chapter-progress-bar-ordering.md) | Chapter progress bar ordered finalized-to-not-started, left to right | Accepted |
 | [0007](0007-story-bible-locked-entry-enforcement.md) | Story Bible locked-entry enforcement is server-side authoritative | Accepted |
+| [0008](0008-timing-confidence-over-forced-alignment-model-for-transcript-compare.md) | Timing-confidence signal over a forced-alignment model for Transcript Compare, for now | Accepted |
