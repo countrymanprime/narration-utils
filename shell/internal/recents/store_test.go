@@ -128,7 +128,13 @@ func TestTouchDedupesCaseInsensitively(t *testing.T) {
 	if err := store.Touch(strings.ToLower(project), "Lower"); err != nil {
 		t.Fatal(err)
 	}
-	entries, err := store.List()
+	// Read the raw persisted entries rather than going through List(), which
+	// also prunes by os.Stat: on a case-sensitive filesystem (Linux),
+	// strings.ToLower(project) is a path that doesn't exist on disk, which
+	// would fail this dedup-specific assertion for an unrelated reason.
+	store.mu.Lock()
+	entries, err := store.readLocked()
+	store.mu.Unlock()
 	if err != nil {
 		t.Fatal(err)
 	}
