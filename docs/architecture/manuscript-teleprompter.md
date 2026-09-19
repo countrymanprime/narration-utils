@@ -340,11 +340,17 @@ the exact commit ported from. The LocalAgreement policy added later comes from
 - Moonshine packaging: `moonshine-voice` is not a project dependency yet, and
   its native wheels would have to bundle correctly with PyInstaller on every
   supported platform (no macOS Intel wheel is published).
-- Script tracker placement: decided as the sidecar (implemented there). Still
-  open: what feeds it the script (a chapter from the canonical
-  `manuscript.json` rather than a plain-text file), and how the frontend maps
-  `read` indices onto paragraphs and words (it must tokenize by whitespace
-  exactly as `script_words` does).
+- Script tracker placement and source: decided. The sidecar hosts it and reads
+  the script from a chapter of the project's canonical `manuscript.json`
+  (`--manuscript FILE --chapter ID_OR_TITLE`, narration chapters only): the
+  chapter title, then each paragraph, split on whitespace. A one-off `script`
+  event first carries the token count and each paragraph's span, and with
+  Moonshine the chapter text is also used as biasing context. `--script FILE`
+  remains for plain text. Still open: how the frontend maps `read` indices
+  onto paragraphs and words (it must tokenize each paragraph exactly as
+  `chapter_script.py` does, and can verify itself against the `script`
+  event), and how the chapter is chosen in the UI (Transcript Compare picks
+  it from the REAPER track name).
 - Tracker limits to revisit with real use: word matching is normalization plus
   a close-spelling check, without Transcript Compare's homophone, number-word
   and hyphenation handling; invented names and spoken numbers are the likely

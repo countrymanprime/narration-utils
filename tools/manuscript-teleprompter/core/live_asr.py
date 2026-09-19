@@ -43,9 +43,13 @@ turns them into these three event types:
     {"type": "segment_end", "segment": 0}
         the segment closed; all its words were emitted as `word` events first
     {"type": "position", "read": 12, "committed": 10, "status": "listening", "jump": null, "skipped": null}
-        only with --script FILE: where the narrator is in the script, on
-        change only (see script_tracker.py); replay.py runs recorded output
-        through the same tracker offline
+        only with --script FILE or --manuscript FILE --chapter X: where the
+        narrator is in the script, on change only (see script_tracker.py);
+        replay.py runs recorded output through the same tracker offline
+    {"type": "script", "chapter": {"id": "c1", "title": "..."}, "tokens": 512, "spans": [{"kind": "paragraph", "id": "p1", "index": 0, "start": 6, "count": 4}]}
+        once, first, only with --manuscript: how the chapter was tokenized
+        (title, then each paragraph split on whitespace) so a frontend can
+        map `read` indices onto paragraphs and words (see chapter_script.py)
 Word timings come from the engine and are advisory: they can be noisy or run
 backwards (Moonshine's do, mostly in partials), so the only guarantee is that
 `end` is never before `start`. Consumers should rely on word ORDER, not times.
@@ -489,7 +493,7 @@ def ticking(chunks: Iterable[np.ndarray], clock: StreamClock, on_tick: Callable[
         yield chunk
 
 
-def load_moonshine_transcriber(model: str, model_dir: str | None, update_interval: float, keyterms: str | None, context_path: str | None):
+def load_moonshine_transcriber(model: str, model_dir: str | None, update_interval: float, keyterms: str | None, context: str | None):
     """Load a Moonshine streaming Transcriber. moonshine-voice is an optional
     dependency imported only here, so the Whisper path never needs it."""
     try:
@@ -512,8 +516,8 @@ def load_moonshine_transcriber(model: str, model_dir: str | None, update_interva
     transcriber = Transcriber(model_path, arch, update_interval=update_interval, options={"word_timestamps": "true"})
     if keyterms:
         transcriber.set_keyterms([term.strip() for term in keyterms.split(",") if term.strip()])
-    if context_path:
-        transcriber.set_context(Path(context_path).read_text(encoding="utf-8"))
+    if context:
+        transcriber.set_context(context)
     return transcriber
 
 
@@ -535,7 +539,7 @@ def _load_whisper_engine(args) -> EventStream:
 
 
 def _load_moonshine_engine(args) -> EventStream:
-    transcriber = load_moonshine_transcriber(args.model, args.model_dir, args.decode_interval, args.hotwords, args.context)
+    transcriber = load_moonshine_transcriber(args.model, args.model_dir, args.decode_interval, args.hotwords, args.context_text)
 
     def stream(chunks: Iterable[np.ndarray]) -> Iterator[dict]:
         try:
@@ -554,13 +558,27 @@ def _check_engine_args(ap: argparse.ArgumentParser, args) -> None:
             ap.error("--engine moonshine is English only for now")
     elif args.context:
         ap.error("--context is only supported with --engine moonshine")
+    if bool(args.manuscript) != bool(args.chapter):
+        ap.error("--manuscript and --chapter go together")
 
 
-def _load_tracker(script_path: str):
-    """The script tracker (sibling module, imported only when --script is used)."""
+def _load_script(ap: argparse.ArgumentParser, args):
+    """(tracker, `script` event, chapter text) for --manuscript/--chapter or
+    --script, or all None. Sibling modules are imported only when needed."""
     from script_tracker import ScriptTracker, script_words
 
-    return ScriptTracker(script_words(Path(script_path).read_text(encoding="utf-8")))
+    if args.manuscript:
+        from chapter_script import ChapterError, load_chapter_script, script_event
+
+        try:
+            chapter = load_chapter_script(args.manuscript, args.chapter)
+        except ChapterError as error:
+            choices = f" Choose one of: {'; '.join(error.candidates)}" if error.candidates else ""
+            ap.error(f"{error}{choices}")
+        return ScriptTracker(chapter.tokens), script_event(chapter), chapter.text
+    if args.script:
+        return ScriptTracker(script_words(Path(args.script).read_text(encoding="utf-8"))), None, None
+    return None, None, None
 
 
 def _emit(event: dict) -> None:
@@ -613,7 +631,12 @@ def main() -> None:
     ap.add_argument("--language", default=None, help="Force language code, e.g. 'en' (default: auto-detect)")
     ap.add_argument("--hotwords", default=None, help="Comma-separated vocabulary hints (faster-whisper hotwords, or Moonshine key terms)")
     ap.add_argument("--context", default=None, help="Text file (e.g. the script passage) whose unusual words Moonshine is biased toward; moonshine only")
-    ap.add_argument("--script", default=None, help="Plain-text script being read; adds `position` events (see script_tracker.py) to the stream")
+    script_source = ap.add_mutually_exclusive_group()
+    script_source.add_argument("--script", default=None, help="Plain-text script being read; adds `position` events (see script_tracker.py) to the stream")
+    script_source.add_argument(
+        "--manuscript", default=None, help="Canonical manuscript.json to read the script from (needs --chapter); also emits a `script` event"
+    )
+    ap.add_argument("--chapter", default=None, help="Chapter id or title in --manuscript (narration chapters only)")
     ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"], help="Inference device (default: cpu)")
     ap.add_argument(
         "--decode-interval",
@@ -633,7 +656,10 @@ def main() -> None:
         ap.error("one of --wav or --mic is required")
     _check_engine_args(ap, args)
 
-    tracker = _load_tracker(args.script) if args.script else None
+    tracker, script_message, chapter_text = _load_script(ap, args)
+    args.context_text = Path(args.context).read_text(encoding="utf-8") if args.context else (chapter_text if args.engine == "moonshine" else None)
+    if script_message:
+        _emit(script_message)
     stream = (_load_moonshine_engine if args.engine == "moonshine" else _load_whisper_engine)(args)
     chunks = iter_wav_chunks(args.wav) if args.wav else iter_microphone_chunks(args.mic)
     log("Listening..." if args.mic else f"Replaying {args.wav}...")
