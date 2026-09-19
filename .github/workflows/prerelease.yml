@@ -8,7 +8,7 @@ on:
       - '**/*.md'
 permissions: { contents: read }
 concurrency:
-  group: prerelease-${{ github.ref }}
+  group: prerelease
   cancel-in-progress: false
 jobs:
   quality:
@@ -67,9 +67,14 @@ jobs:
         with:
           pattern: unsigned-rc-*
           path: dist
-      - name: Remove any existing release candidate
+      # Keep the newest 10 RCs including the one being published, so nx still
+      # finds a recent RC tag and bumps past it instead of re-stamping the same version.
+      - name: Prune old release candidates
+        env:
+          KEEP_EXISTING: 9
         run: |
-          for old in $(gh release list --limit 20 --json tagName -q '.[].tagName' | grep -E -- '-rc$' || true); do
+          stale=$(gh release list --limit 200 --json tagName -q '.[].tagName' | grep -E -- '-rc$' | tail -n +$((KEEP_EXISTING + 1)) || true)
+          for old in $stale; do
             gh release delete "$old" --cleanup-tag -y
           done
       - name: Tag this release candidate
