@@ -3,7 +3,9 @@
   "release": {
     "projects": ["narration-utils"],
     "projectsRelationship": "fixed",
-    "releaseTagPattern": "v{version}-rc",
+    "releaseTag": {
+      "pattern": "v{version}-rc"
+    },
     "version": {
       "currentVersionResolver": "git-tag",
       "fallbackCurrentVersionResolver": "disk",
