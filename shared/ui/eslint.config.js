@@ -23,7 +23,10 @@ export default tseslint.config(
     },
     plugins: { 'react-hooks': reactHooks },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      // Only the classic hook rules: eslint-plugin-react-hooks 7's `recommended` adds the React
+      // Compiler rules (set-state-in-effect, refs, purity...), which need their own cleanup pass.
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       'tailwindcss/no-custom-classname': 'off',
       // Tailwind 4 syntax-preference rules: `[var(--x)]` and `(--x)` are both valid, so don't
