@@ -27,7 +27,7 @@ export function SlideOver({
         data-slide-over
         data-open={open}
         aria-hidden={!open}
-        className={`fixed right-0 top-0 z-50 flex h-screen w-[min(20rem,100vw)] flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)] transition-[transform,visibility] duration-200 ease-out ${open ? 'visible translate-x-0' : 'invisible translate-x-full'}`}
+        className={`fixed top-0 right-0 z-50 flex h-screen w-[min(20rem,100vw)] flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)] transition-[transform,visibility] duration-200 ease-out ${open ? 'visible translate-x-0' : 'invisible translate-x-full'}`}
       >
         <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
           <h3 className="text-sm font-semibold">{title}</h3>

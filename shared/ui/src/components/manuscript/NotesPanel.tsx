@@ -5,7 +5,7 @@ import type { ManuscriptNote } from '../../types';
 export function NotesPanel({ notes, remove }: { notes: ManuscriptNote[]; remove: (id: string) => void }) {
   return (
     <div>
-      <div className="mb-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+      <div className="mb-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
         Notes {notes.length > 0 && `(${notes.length})`}
       </div>
       {notes.length === 0 ? (

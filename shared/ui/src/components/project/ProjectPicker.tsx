@@ -117,7 +117,7 @@ export function ProjectPicker() {
         )}
         <section className="mt-5">
           <div
-            className="mb-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]"
+            className="mb-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase"
             tabIndex={-1}
             ref={recentsHeadingRef}
           >
@@ -152,7 +152,7 @@ export function ProjectPicker() {
                       if (node) removeButtonRefs.current.set(entry.path, node);
                       else removeButtonRefs.current.delete(entry.path);
                     }}
-                    className="absolute right-2 top-2 inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold uppercase tracking-[0.03em] disabled:pointer-events-none disabled:opacity-40"
+                    className="absolute top-2 right-2 inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase disabled:pointer-events-none disabled:opacity-40"
                     aria-label={`Remove ${entry.name} from recent projects`}
                     onClick={() => void removeRecent(entry)}
                     disabled={busy}
@@ -171,7 +171,7 @@ export function ProjectPicker() {
           </Button>
           <button
             type="button"
-            className="inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold uppercase tracking-[0.03em] disabled:pointer-events-none disabled:opacity-40"
+            className="inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase disabled:pointer-events-none disabled:opacity-40"
             onClick={() => void createNew()}
             disabled={busy}
           >

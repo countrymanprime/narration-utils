@@ -39,13 +39,13 @@ export function InlineDiffRow({ row }: { row: Discrepancy }) {
       <td colSpan={6} className="p-3 text-sm">
         <div className="space-y-1.5">
           <div>
-            <span className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-faint)' }}>
+            <span className="text-xs tracking-wide uppercase" style={{ color: 'var(--text-faint)' }}>
               Script
             </span>
             <div className="mt-0.5">{render(diff.script)}</div>
           </div>
           <div>
-            <span className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-faint)' }}>
+            <span className="text-xs tracking-wide uppercase" style={{ color: 'var(--text-faint)' }}>
               Heard
             </span>
             <div className="mt-0.5">{render(diff.heard)}</div>

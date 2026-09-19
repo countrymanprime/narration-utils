@@ -135,7 +135,7 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
                     </>
                   ) : null}
                 </span>
-                <p className="mt-0.5 break-words text-sm">
+                <p className="mt-0.5 text-sm break-words">
                   {highlightTerms(item.excerpt, [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)]).map((segment, piece) =>
                     segment.match ? (
                       <Highlight key={piece} kind={highlightKind(entity.category)}>

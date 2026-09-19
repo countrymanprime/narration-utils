@@ -208,21 +208,21 @@ export function Transcript({
         <Heading title="Proofing" />
         <div className="flex items-center gap-1 text-xs">
           <span
-            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] uppercase tracking-[0.08em] ${phase === 'setup' ? 'font-semibold' : ''}`}
+            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] tracking-[0.08em] uppercase ${phase === 'setup' ? 'font-semibold' : ''}`}
             style={{ background: phase === 'setup' ? 'var(--accent-soft)' : undefined }}
           >
             1 · Setup
           </span>
           <span style={{ color: 'var(--text-faint)' }}>→</span>
           <span
-            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] uppercase tracking-[0.08em] ${phase === 'running' ? 'font-semibold' : ''}`}
+            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] tracking-[0.08em] uppercase ${phase === 'running' ? 'font-semibold' : ''}`}
             style={{ background: phase === 'running' ? 'var(--accent-soft)' : undefined }}
           >
             2 · Running
           </span>
           <span style={{ color: 'var(--text-faint)' }}>→</span>
           <span
-            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] uppercase tracking-[0.08em] ${phase === 'results' ? 'font-semibold' : ''}`}
+            className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] tracking-[0.08em] uppercase ${phase === 'results' ? 'font-semibold' : ''}`}
             style={{ background: phase === 'results' ? 'var(--accent-soft)' : undefined }}
           >
             3 · Results
@@ -311,7 +311,7 @@ export function Transcript({
                 </div>
               </div>
             </div>
-            <div className="mt-5">
+            <div>
               <label className="mb-1.5 block text-[0.82rem] font-medium text-[var(--text-muted)]">
                 Vocabulary hints
                 <Tooltip text="Unusual names and invented words Whisper is likely to mis-hear. Accepted hints are remembered for this project - you won't need to re-suggest them every run." />
@@ -346,7 +346,7 @@ export function Transcript({
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <input
-                  className="min-h-[var(--control-height)] w-48 rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
+                  className="min-h-[var(--control-height)] w-48 rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
                   value={manualHint}
                   placeholder="Add a term…"
                   onChange={(event) => setManualHint(event.target.value)}
@@ -366,7 +366,7 @@ export function Transcript({
                 </Button>
               </div>
             </div>
-            <div className="mt-5 flex items-center justify-between gap-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex items-center justify-between gap-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
               <Button variant="ghost" onClick={goHome}>
                 <FontAwesomeIcon icon={faArrowLeft} />
                 Back to Home
@@ -397,7 +397,7 @@ export function Transcript({
       {running && (
         <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
           <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
-            <h2 className="font-['Barlow_Condensed',sans-serif] text-lg uppercase tracking-[0.08em]">Running</h2>
+            <h2 className="font-['Barlow_Condensed',sans-serif] text-lg tracking-[0.08em] uppercase">Running</h2>
             <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
               {seconds(state.elapsed)} elapsed
             </span>
@@ -414,7 +414,7 @@ export function Transcript({
             </div>
             <div className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
               <div className="mb-1.5 flex items-center justify-between">
-                <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
                   Live activity
                 </span>
                 <span className="flex gap-1 text-[.65rem] normal-case">
