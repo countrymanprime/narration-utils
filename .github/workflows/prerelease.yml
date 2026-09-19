@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
+      release: ${{ steps.compute.outputs.release }}
       version: ${{ steps.compute.outputs.version }}
       tag: ${{ steps.compute.outputs.tag }}
     steps:
@@ -34,16 +35,26 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - id: compute
-        name: Compute the next version from conventional commits
+        name: Compute the next release candidate from conventional commits
         run: |
+          CURRENT=$(node -p "require('./package.json').version")
+          # nx.json's releaseTagPattern (v{version}-rc) makes nx treat the latest RC tag as the
+          # current version and bump past it (v0.2.0-rc -> 0.2.1).
           pnpm exec nx release version
           node scripts/release/sync-version.mjs
           VERSION=$(node -p "require('./package.json').version")
+          if [ "$VERSION" = "$CURRENT" ]; then
+            echo "No releasable changes since the latest release candidate; skipping."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "release=true" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v${VERSION}-rc" >> "$GITHUB_OUTPUT"
 
   package:
     needs: [quality, version]
+    if: needs.version.outputs.release == 'true'
     uses: ./.github/workflows/_build-native.yml
     with:
       upload: true
@@ -68,7 +79,7 @@ jobs:
           pattern: unsigned-rc-*
           path: dist
       # Keep the newest 10 RCs including the one being published, so nx still
-      # finds a recent RC tag and bumps past it instead of re-stamping the same version.
+      # finds the latest RC tag and bumps past it instead of re-stamping the same version.
       - name: Prune old release candidates
         env:
           KEEP_EXISTING: 9
