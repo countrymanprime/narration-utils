@@ -1,0 +1,59 @@
+name: CodeQL
+# Advisory: not a required status check. Results appear under Security > Code scanning.
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch: {}
+permissions: { contents: read }
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  # Never cancel a run on main: it is the baseline shown in the Security tab.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    # Fork and Dependabot pull requests get a read-only token, so the results upload would fail.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { language: go, build-mode: manual }
+          - { language: javascript-typescript, build-mode: none }
+          - { language: python, build-mode: none }
+    steps:
+      - uses: actions/checkout@v7
+      - if: matrix.language == 'go'
+        uses: ./.github/actions/setup-toolchain
+        with:
+          need-node: 'false'
+          need-pnpm: 'false'
+          need-python: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+      # Two things CodeQL's Go tracer needs: -a, because setup-go restores the build cache and only
+      # recompiled code is seen, and `go build` run from the module directory rather than
+      # `go -C shell build`, whose leading flag stops the tracer recognising the build.
+      - if: matrix.language == 'go'
+        working-directory: shell
+        run: go build -a ./...
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}

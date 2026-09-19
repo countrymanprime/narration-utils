@@ -82,4 +82,9 @@ These live outside the repository, so a pull request cannot enforce them:
 | Squash-only merges, delete branch on merge | On |
 | `Main Protection` ruleset | Active; see [CI and releases](ci-and-releases.md) |
 | Secret scanning and push protection | On |
-| Private vulnerability reporting, Dependabot alerts and security updates | See [`SECURITY.md`](../../SECURITY.md) |
+| Private vulnerability reporting (what [`SECURITY.md`](../../SECURITY.md) points reporters to) | `gh api -X PUT repos/countrymanprime/narration-utils/private-vulnerability-reporting` |
+| Dependabot alerts (also turns on the dependency graph that `dependency-review.yml` needs) | `gh api -X PUT repos/countrymanprime/narration-utils/vulnerability-alerts` |
+| Dependabot security updates | `gh api -X PUT repos/countrymanprime/narration-utils/automated-security-fixes` |
+
+`codeql.yml` and `dependency-review.yml` are advisory: their results show under **Security** and on pull requests, but
+they are not in the `Main Protection` ruleset's required checks. Add them there only after a few clean runs.
