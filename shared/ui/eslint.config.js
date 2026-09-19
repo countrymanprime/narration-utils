@@ -12,7 +12,8 @@ export default tseslint.config(
   { ignores: ['dist/**', 'node_modules/**', 'playwright-report/**', 'test-results/**', 'wailsjs/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  ...tailwind.configs['flat/recommended'],
+  tailwind.configs.recommended,
+  { settings: { tailwindcss: { cssConfigPath: path.join(__dirname, 'src', 'styles.css') } } },
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -21,16 +22,17 @@ export default tseslint.config(
       globals: { ...globals.browser, ...globals.node },
     },
     plugins: { 'react-hooks': reactHooks },
-    settings: {
-      tailwindcss: {
-        callees: ['classnames', 'clsx', 'cn'],
-        config: path.join(__dirname, 'tailwind.config.js'),
-      },
-    },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      // Only the classic hook rules: eslint-plugin-react-hooks 7's `recommended` adds the React
+      // Compiler rules (set-state-in-effect, refs, purity...), which need their own cleanup pass.
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       'tailwindcss/no-custom-classname': 'off',
+      // Tailwind 4 syntax-preference rules: `[var(--x)]` and `(--x)` are both valid, so don't
+      // churn hundreds of class strings just to switch spelling.
+      'tailwindcss/enforces-canonical-classname': 'off',
+      'tailwindcss/no-unnecessary-arbitrary-value': 'off',
     },
   },
 );

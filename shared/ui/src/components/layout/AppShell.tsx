@@ -55,8 +55,8 @@ export function AppShell({
           <FontAwesomeIcon icon={faMicrophone} fixedWidth />
         </span>
         <span className="leading-tight">
-          <b className="block font-['Barlow_Condensed',sans-serif] text-sm uppercase tracking-[0.02em]">Narration</b>
-          <span className="block font-['Barlow_Condensed',sans-serif] text-[0.65rem] uppercase tracking-[0.08em] text-[var(--text-faint)]">Console</span>
+          <b className="block font-['Barlow_Condensed',sans-serif] text-sm tracking-[0.02em] uppercase">Narration</b>
+          <span className="block font-['Barlow_Condensed',sans-serif] text-[0.65rem] tracking-[0.08em] text-[var(--text-faint)] uppercase">Console</span>
         </span>
       </div>
       <nav className="flex-1 p-2">
@@ -84,7 +84,7 @@ export function AppShell({
     <div className="flex h-full overflow-hidden bg-[var(--bg)]">
       <aside className="hidden w-56 flex-none flex-col border-r border-[var(--border)] bg-[var(--surface)] min-[1400px]:flex">{navigation}</aside>
       <aside
-        className="medium-rail hidden w-14 flex-none flex-col gap-1 border-r border-[var(--border)] bg-[var(--surface)] p-2 md:flex min-[1400px]:hidden"
+        className="medium-rail hidden w-14 flex-none flex-col gap-1 border-r border-[var(--border)] bg-[var(--surface)] p-2 md:max-[1399px]:flex"
         aria-label="Primary navigation"
       >
         {NAV.map((item) => (
@@ -113,7 +113,7 @@ export function AppShell({
             onMouseDown={(event) => event.stopPropagation()}
           >
             <button
-              className="absolute right-3 top-3 inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              className="absolute top-3 right-3 inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
               aria-label="Close navigation"
               onClick={() => setDrawerOpen(false)}
             >
@@ -138,7 +138,7 @@ export function AppShell({
             <span className="truncate font-medium">{projectName}</span>
           </div>
           <span className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em]">
-            <span className="h-[7px] w-[7px] flex-none rounded-full bg-[var(--character)] shadow-[0_0_5px_var(--character)]" />
+            <span className="size-[7px] flex-none rounded-full bg-[var(--character)] shadow-[0_0_5px_var(--character)]" />
             {daw}
           </span>
         </header>

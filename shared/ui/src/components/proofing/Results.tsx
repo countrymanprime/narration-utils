@@ -48,7 +48,7 @@ export function Results({
         <h2 className="text-sm font-semibold">Discrepancies</h2>
         <div className="flex items-center gap-2">
           <span
-            className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.03em]"
+            className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
             style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}
           >
             {state.rows.length} found
@@ -128,18 +128,18 @@ export function Results({
                       </td>
                       <td className="align-middle text-xs">
                         {markerState(row) === 'pending' && (
-                          <span className="inline-flex items-center whitespace-nowrap rounded-full bg-[var(--accent-soft)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold text-[var(--accent-strong)]">
+                          <span className="inline-flex items-center rounded-full bg-[var(--accent-soft)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold whitespace-nowrap text-[var(--accent-strong)]">
                             Ready to export
                           </span>
                         )}
                         {markerState(row) === 'exported' && (
-                          <span className="inline-flex items-center whitespace-nowrap rounded-full bg-[color-mix(in_srgb,var(--character)_18%,transparent)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold text-[var(--character)]">
+                          <span className="inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--character)_18%,transparent)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold whitespace-nowrap text-[var(--character)]">
                             Exported
                           </span>
                         )}
                         {markerState(row) === 'existing' && (
                           <TooltipTarget text={row.existingMarkerName ? `Existing marker: ${row.existingMarkerName}` : 'A matching marker already exists'}>
-                            <span className="inline-flex items-center whitespace-nowrap rounded-full bg-[color-mix(in_srgb,var(--warn)_18%,transparent)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold text-[var(--warn)]">
+                            <span className="inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--warn)_18%,transparent)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold whitespace-nowrap text-[var(--warn)]">
                               Already marked
                             </span>
                           </TooltipTarget>
