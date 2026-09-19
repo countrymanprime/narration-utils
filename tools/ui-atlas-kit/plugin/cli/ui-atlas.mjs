@@ -224,13 +224,17 @@ export function audit(dir) {
   const tier = config?.tier ?? 0;
   const primitivesDir = join(dir, 'src', config?.vars?.PRIMITIVES_DIR ?? detectComponentsDir(dir));
   const all = walk(primitivesDir);
-  const components = [...new Set(all.filter(isComponentFile).map(stripExt))].sort();
+  const componentFiles = all.filter(isComponentFile);
+  const relOf = (file) => posix(relative(primitivesDir, file)).replace(/\.(tsx|jsx)$/, '');
+  const components = [...new Set(componentFiles.map(stripExt))].sort();
   const storied = new Set(all.filter((f) => /\.stories\.(tsx|jsx)$/.test(f)).map((f) => basename(f).replace(/\.stories\.(tsx|jsx)$/, '')));
   const coveragePath = join(dir, 'src', 'atlasCoverage.test.ts');
   const exemptBlock = existsSync(coveragePath) ? (readText(coveragePath).match(/ATLAS_EXEMPT[^=]*=\s*\{([\s\S]*?)\};/) ?? [])[1] ?? '' : '';
   const exempt = [...exemptBlock.matchAll(/^\s*['"]?([\w/.-]+)['"]?\s*:/gm)].map((m) => m[1]);
   const withStories = components.filter((name) => storied.has(name));
-  const uncovered = components.filter((name) => !storied.has(name) && !exempt.includes(name));
+  // An exemption may name a component by its file name or by its path under the components directory.
+  const isExempt = (name) => exempt.includes(name) || componentFiles.filter((f) => stripExt(f) === name).every((f) => exempt.includes(relOf(f)));
+  const uncovered = components.filter((name) => !storied.has(name) && !isExempt(name));
 
   const visualDir = join(dir, 'tests', 'visual');
   const catalogRows = countMatches(join(visualDir, 'state-catalog.ts'), /^\s*(?:\{\s*)?page:\s*'/gm);

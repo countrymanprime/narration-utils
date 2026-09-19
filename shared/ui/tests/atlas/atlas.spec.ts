@@ -95,7 +95,7 @@ async function contentClip(page: Page): Promise<{ x: number; y: number; width: n
 // viewport-bound and cannot make the page taller, so they are ignored when sizing (a closed slide-over parked
 // below the fold would otherwise inflate every screenshot).
 async function fitViewportToContent(page: Page, width: number, height: number): Promise<void> {
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }));
   const needed = await page.evaluate(() => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;

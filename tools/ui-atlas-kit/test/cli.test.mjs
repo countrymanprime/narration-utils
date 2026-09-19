@@ -314,6 +314,19 @@ describe('v0.3: what the upgrade round taught', () => {
     writeFileSync(join(dir, 'src/components/primitives/Button.stories.tsx'), 'export default {};\n');
     assert.ok(audit(dir).counts.exempt.includes('layout/Panel'));
   });
+
+  test('a path-keyed exemption covers the nested component it names, not just a same-named one', () => {
+    const dir = fixture();
+    init(dir, {});
+    mkdirSync(join(dir, 'src/components/primitives/layout'), { recursive: true });
+    writeFileSync(join(dir, 'src/components/primitives/layout/Spacer.tsx'), 'export const S = 1;\n');
+    writeFileSync(join(dir, 'src/components/primitives/Button.stories.tsx'), 'export default {};\n');
+    writeFileSync(join(dir, 'src/components/primitives/Panel.stories.tsx'), 'export default {};\n');
+    assert.deepEqual(audit(dir).counts.uncovered, ['Spacer']);
+    const file = join(dir, 'src/atlasCoverage.test.ts');
+    writeFileSync(file, readFileSync(file, 'utf8').replace('const ATLAS_EXEMPT: Record<string, string> = {};', "const ATLAS_EXEMPT: Record<string, string> = { 'layout/Spacer': 'pure layout wrapper' };"));
+    assert.deepEqual(audit(dir).counts.uncovered, []);
+  });
 });
 
 describe('v0.3.1: what the second upgrade round taught', () => {

@@ -9,7 +9,7 @@ scaffold files (yours after `init`), so the **Adopt by hand** lines below are wh
   when cropping (a closed slide-over parked below the fold used to make every screenshot two thirds blank); a `fullPage`
   capture taller than 6000px now fails instead of being silently cut off; the atlas config comment no longer says `pnpm`.
 - **Core:** stale atlas screenshot folders are pruned (new vendored file `tests/atlas/global-setup.ts`, registered in `playwright.atlas.config.ts`); a story reports all its problems at once (`expect.soft`); axe `incomplete` results are attached as `axe-incomplete` annotations.
-- **CLI:** `sync --dry-run` writes nothing; `docs` names pages by title when two titles share a component file (stable
+- **CLI:** `audit` matches an exemption keyed by a component's path (`'layout/Spacer'`) as well as its file name; the atlas scrolls to the top with `behavior: 'instant'`; `sync --dry-run` writes nothing; `docs` names pages by title when two titles share a component file (stable
   whatever Storybook's index order) and finds importers by the file's name; the docs index pluralises "1 story".
 - **Adopt by hand:** none.
 
