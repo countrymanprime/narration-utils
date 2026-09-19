@@ -1,0 +1,41 @@
+# Applied by .github/workflows/labeler.yml. Every label named here must exist in
+# .github/labels.json (a test enforces that).
+area:ui:
+  - changed-files:
+      - any-glob-to-any-file:
+          - shared/ui/**
+          - tools/ui-atlas-kit/**
+
+area:shell:
+  - changed-files:
+      - any-glob-to-any-file: shell/**
+
+area:python:
+  - changed-files:
+      - any-glob-to-any-file:
+          - shared/python/**
+          - tools/manuscript-guide/**
+          - tools/manuscript-teleprompter/**
+          - tools/transcript-compare/**
+          - pyproject.toml
+          - uv.lock
+
+area:reaper:
+  - changed-files:
+      - any-glob-to-any-file: shared/reaper/**
+
+area:ci-release:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**
+          - .husky/**
+          - scripts/**
+          - nx.json
+          - project.json
+          - commitlint.config.cjs
+
+area:docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - docs/**
+          - '*.md'

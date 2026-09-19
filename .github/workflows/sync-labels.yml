@@ -1,0 +1,22 @@
+name: Sync labels
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/labels.json
+      - .github/workflows/sync-labels.yml
+      - scripts/github/**
+  workflow_dispatch: {}
+permissions: { contents: read, issues: write }
+concurrency:
+  group: sync-labels
+  cancel-in-progress: false
+jobs:
+  sync:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: node scripts/github/sync-labels.mjs --apply
+        env:
+          GH_TOKEN: ${{ github.token }}

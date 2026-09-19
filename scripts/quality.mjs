@@ -170,3 +170,4 @@ run('go', ['-C', 'shell', 'vet', './...']);
 run('go', ['-C', 'shell', 'test', './...']);
 run('staticcheck', ['./...'], { cwd: join(root, 'shell') });
 run('stylua', ['--check', 'shared/reaper']);
+run('node', ['--test', 'scripts/github/*.test.mjs']);
