@@ -1,6 +1,6 @@
 # DAW Project Scan
 
-**Status: Planned.**
+**Status: Planned.** The track/item enumeration part of the MVP is already delivered by [Tracks](tracks.md), which reads the project's `.rpp` file directly rather than through a new REAPER bridge action; the rest (chapter matching, measured duration, transcript/waveform) is still planned and should build on that parser.
 
 ## User problem
 

@@ -17,6 +17,8 @@ import type {
   RecentProject,
   ScopedSettingField,
   SearchHit,
+  TracksDiscovery,
+  TracksProject,
   TranscriptStartResult,
   TranscriptState,
   TtsCatalog,
@@ -33,6 +35,9 @@ declare global {
     go?: { main?: { Host?: unknown } };
   }
 }
+
+// Matches shell/media.go's mediaRoute constant.
+const mediaRoute = '/media';
 
 function normalizeTranscriptState(state: TranscriptState): TranscriptState {
   return { ...state, markerExport: state.markerExport ?? { phase: 'idle', message: '', added: 0, skipped: 0 } };
@@ -121,4 +126,8 @@ export const wailsClient: NarrationApi = {
   switchProject: (path, name) => decode<ProjectSwitchResult>(host.ProjectSwitch(path, name ?? '')),
   createProject: (path, name) => decode<ProjectSwitchResult>(host.ProjectCreate(path, name ?? '')),
   removeRecentProject: (path) => decode<RecentProject[]>(host.ProjectRemoveRecent(path)),
+  tracksDiscover: () => decode<TracksDiscovery>(host.TracksDiscover()),
+  tracksSelect: (path) => decode<TracksDiscovery>(host.TracksSelect(path)),
+  tracksList: () => decode<TracksProject>(host.TracksList()),
+  mediaUrl: (sourceFile) => `${mediaRoute}?path=${encodeURIComponent(sourceFile)}`,
 };
