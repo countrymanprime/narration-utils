@@ -42,6 +42,10 @@ turns them into these three event types:
         a confirmed word; append-only, never retracted
     {"type": "segment_end", "segment": 0}
         the segment closed; all its words were emitted as `word` events first
+    {"type": "position", "read": 12, "committed": 10, "status": "listening", "jump": null, "skipped": null}
+        only with --script FILE: where the narrator is in the script, on
+        change only (see script_tracker.py); replay.py runs recorded output
+        through the same tracker offline
 Word timings come from the engine and are advisory: they can be noisy or run
 backwards (Moonshine's do, mostly in partials), so the only guarantee is that
 `end` is never before `start`. Consumers should rely on word ORDER, not times.
@@ -456,6 +460,35 @@ def event_lag_seconds(event: dict, elapsed: float) -> float | None:
     return None
 
 
+class StreamClock:
+    """Stream time for the script tracker: wall time since capture began for a
+    mic, or the audio consumed so far for a file (which replays faster than
+    real time)."""
+
+    def __init__(self, capture_started: float | None = None, time_fn: Callable[[], float] = time.perf_counter) -> None:
+        self._capture_started = capture_started
+        self._time = time_fn
+        self._audio_seconds = 0.0
+
+    def note_chunk(self, chunk: np.ndarray) -> None:
+        self._audio_seconds += len(chunk) / SAMPLE_RATE
+
+    def now(self) -> float:
+        if self._capture_started is None:
+            return self._audio_seconds
+        return self._time() - self._capture_started
+
+
+def ticking(chunks: Iterable[np.ndarray], clock: StreamClock, on_tick: Callable[[float], None]) -> Iterator[np.ndarray]:
+    """Pass chunks through, reporting the stream time as each arrives, so
+    time-based status (the tracker's pause timeout) advances even while the
+    engine emits nothing."""
+    for chunk in chunks:
+        clock.note_chunk(chunk)
+        on_tick(clock.now())
+        yield chunk
+
+
 def load_moonshine_transcriber(model: str, model_dir: str | None, update_interval: float, keyterms: str | None, context_path: str | None):
     """Load a Moonshine streaming Transcriber. moonshine-voice is an optional
     dependency imported only here, so the Whisper path never needs it."""
@@ -523,6 +556,45 @@ def _check_engine_args(ap: argparse.ArgumentParser, args) -> None:
         ap.error("--context is only supported with --engine moonshine")
 
 
+def _load_tracker(script_path: str):
+    """The script tracker (sibling module, imported only when --script is used)."""
+    from script_tracker import ScriptTracker, script_words
+
+    return ScriptTracker(script_words(Path(script_path).read_text(encoding="utf-8")))
+
+
+def _emit(event: dict) -> None:
+    print(json.dumps(event), flush=True)
+
+
+def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> None:
+    """Stream engine events (and, with a tracker, the position events they
+    cause) to stdout until the input ends or Ctrl+C."""
+    capture_started = None
+    try:
+        if args.mic:
+            chunks, capture_started = _anchor_capture_clock(chunks)
+        clock = StreamClock(capture_started)
+        if tracker:
+
+            def on_tick(now: float) -> None:
+                for position in tracker.tick(now):
+                    _emit(position)
+
+            chunks = ticking(chunks, clock, on_tick)
+        for event in stream(chunks):
+            _emit(event)
+            if tracker:
+                for position in tracker.feed(event, clock.now()):
+                    _emit(position)
+            if args.timing and capture_started is not None:
+                lag = event_lag_seconds(event, clock.now())
+                if lag is not None:
+                    log(f"lag {lag:.2f}s behind ({event['type']})")
+    except KeyboardInterrupt:
+        log("Stopped.")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Stream live word-timestamp ASR as NDJSON for the Manuscript Teleprompter prototype")
     ap.add_argument("--wav", default=None, help="Replay this audio file as if it were live mic input (fixture testing)")
@@ -541,6 +613,7 @@ def main() -> None:
     ap.add_argument("--language", default=None, help="Force language code, e.g. 'en' (default: auto-detect)")
     ap.add_argument("--hotwords", default=None, help="Comma-separated vocabulary hints (faster-whisper hotwords, or Moonshine key terms)")
     ap.add_argument("--context", default=None, help="Text file (e.g. the script passage) whose unusual words Moonshine is biased toward; moonshine only")
+    ap.add_argument("--script", default=None, help="Plain-text script being read; adds `position` events (see script_tracker.py) to the stream")
     ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"], help="Inference device (default: cpu)")
     ap.add_argument(
         "--decode-interval",
@@ -560,21 +633,11 @@ def main() -> None:
         ap.error("one of --wav or --mic is required")
     _check_engine_args(ap, args)
 
+    tracker = _load_tracker(args.script) if args.script else None
     stream = (_load_moonshine_engine if args.engine == "moonshine" else _load_whisper_engine)(args)
     chunks = iter_wav_chunks(args.wav) if args.wav else iter_microphone_chunks(args.mic)
     log("Listening..." if args.mic else f"Replaying {args.wav}...")
-    capture_started = None
-    try:
-        if args.mic:
-            chunks, capture_started = _anchor_capture_clock(chunks)
-        for event in stream(chunks):
-            print(json.dumps(event), flush=True)
-            if args.timing and capture_started is not None:
-                lag = event_lag_seconds(event, time.perf_counter() - capture_started)
-                if lag is not None:
-                    log(f"lag {lag:.2f}s behind ({event['type']})")
-    except KeyboardInterrupt:
-        log("Stopped.")
+    _run(args, stream, chunks, tracker)
 
 
 if __name__ == "__main__":

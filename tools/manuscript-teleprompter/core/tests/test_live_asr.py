@@ -393,6 +393,33 @@ def test_moonshine_hypotheses_feed_the_shared_event_layer_like_any_other_engine(
     ]
 
 
+def test_stream_clock_for_a_file_counts_the_audio_consumed_so_far():
+    clock = live_asr.StreamClock()
+
+    clock.note_chunk(np.zeros(HALF_SECOND, dtype=np.float32))
+    clock.note_chunk(np.zeros(HALF_SECOND, dtype=np.float32))
+
+    assert clock.now() == pytest.approx(1.0)
+
+
+def test_stream_clock_for_a_mic_is_wall_time_since_capture_began():
+    clock = live_asr.StreamClock(capture_started=10.0, time_fn=lambda: 12.5)
+
+    clock.note_chunk(np.zeros(HALF_SECOND, dtype=np.float32))
+
+    assert clock.now() == pytest.approx(2.5)
+
+
+def test_ticking_reports_the_clock_after_each_chunk_and_passes_chunks_through():
+    clock = live_asr.StreamClock()
+    ticks = []
+
+    passed = list(live_asr.ticking(_chunks(3), clock, ticks.append))
+
+    assert len(passed) == 3
+    assert ticks == pytest.approx([0.5, 1.0, 1.5])
+
+
 def test_event_lag_is_measured_from_the_end_of_the_newest_word_carried():
     word = {"type": "word", "segment": 0, "word": "a", "start": 1.0, "end": 1.4}
     partial = {"type": "partial", "segment": 0, "words": [{"word": "a", "start": 1.0, "end": 1.4}, {"word": "b", "start": 1.5, "end": 1.9}]}

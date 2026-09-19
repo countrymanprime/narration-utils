@@ -195,6 +195,25 @@ fuzzy matching against the script is the ordinary open-source pattern.
    guaranteed, and the script tracker must rely on word order and arrival
    time, not engine timestamps. Karaoke-style word animation should pace
    itself instead of trusting per-word times.
+
+   The script tracker is implemented (`script_tracker.py`, enabled with
+   `live_asr.py --script FILE`, which adds `position` events to the stream:
+   `read` = index of the next script word, `committed`, `status` of
+   listening / waiting / done, and `jump` restart / skip with the skipped
+   span). It keeps a forward-only speculative cursor driven by partials and a
+   committed position driven by confirmed words, ignores heard words that fit
+   nothing nearby, and jumps elsewhere in the script only when 3 or more words
+   match and beat the nearby alignment by 2. `replay.py` runs recorded
+   Moonshine spike output through the real adapter, event layer and tracker
+   offline. Replaying three real mic readings of a 55-word script (Small with
+   context, Small without, Tiny): the cursor reached the end every time, with
+   no false restarts or skips, 0 or 1 backward moves, and the speculative
+   cursor reached each word a median of about 0.5s (p90 0.5 to 1.1s) before
+   confirmed words alone would have. The one backward move was a real
+   one-word correction (a partial heard a word that Moonshine's final line
+   dropped), so the UI should not animate a one-word backward step. Pause
+   status appeared 0 to 2 times per reading, detected at the next record
+   after the pause.
 3. **Spike results that shaped this** (Moonshine Small and Tiny Streaming, real
    mic and one synthetic recording, Windows CPU, 16–25 s of reading per run;
    small samples):
@@ -321,9 +340,16 @@ the exact commit ported from. The LocalAgreement policy added later comes from
 - Moonshine packaging: `moonshine-voice` is not a project dependency yet, and
   its native wheels would have to bundle correctly with PyInstaller on every
   supported platform (no macOS Intel wheel is published).
-- Where the script tracker runs (sidecar vs. frontend). Leaning sidecar: it
-  keeps the frontend thin and lets recorded partials be replayed through it in
-  pytest, with no UI needed.
+- Script tracker placement: decided as the sidecar (implemented there). Still
+  open: what feeds it the script (a chapter from the canonical
+  `manuscript.json` rather than a plain-text file), and how the frontend maps
+  `read` indices onto paragraphs and words (it must tokenize by whitespace
+  exactly as `script_words` does).
+- Tracker limits to revisit with real use: word matching is normalization plus
+  a close-spelling check, without Transcript Compare's homophone, number-word
+  and hyphenation handling; invented names and spoken numbers are the likely
+  misses. No flags are emitted yet (skipped or misread words feed the findings
+  contract in a later step).
 - Phase 2 trailing confirmation pass (see "Confirming suspected misreads").
 - Mic device selection UX and where device enumeration lives (Go vs. Python).
 - Whether a flagged span needs its own short rolling audio buffer captured
