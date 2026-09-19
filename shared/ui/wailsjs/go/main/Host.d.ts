@@ -15,7 +15,6 @@ export function GuideEdit(arg1:string,arg2:Record<string, string>):Promise<strin
 
 export function GuideEntities():Promise<string>;
 
-export function GuideExport():Promise<string>;
 
 export function GuideMerge(arg1:string,arg2:string):Promise<string>;
 
@@ -28,6 +27,8 @@ export function GuideRescan(arg1:string):Promise<string>;
 export function GuideSetLocked(arg1:string,arg2:boolean):Promise<string>;
 
 export function GuideUnrelate(arg1:string,arg2:string,arg3:string):Promise<string>;
+
+export function ManuscriptBeginImport(arg1:string):Promise<string>;
 
 export function ManuscriptChapters():Promise<string>;
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faList, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faList } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderState, SearchHit } from '../../types';
 import { categoryCssName, chapterLineNumbers, STORY_BIBLE_TABS } from '../../state';
@@ -9,6 +9,8 @@ import { useApi } from '../../api/ApiContext';
 import { useTextSelection } from '../../hooks/useTextSelection';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
+import { Pill } from '../primitives/Pill';
+import { SlideOver } from '../primitives/SlideOver';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { ChapterNav } from './ChapterNav';
 import { SearchBar } from './SearchBar';
@@ -18,7 +20,15 @@ import { AddNoteDialog } from './AddNoteDialog';
 import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from './EntitySummary';
 
 const TEXT_SIZES = ['small', 'medium', 'large'] as const;
-const READER_TEXT_CLASSES = { small: 'text-sm leading-5', medium: 'text-base leading-6', large: 'text-xl leading-7' } as const;
+// --hl-pad-y sizes a highlight's vertical padding so its background fills the
+// full line height at each text size (see primitives/Highlight.tsx).
+const READER_TEXT_CLASSES = {
+  small: 'text-sm leading-5 [--hl-pad-y:0.07em]',
+  medium: 'text-base leading-6 [--hl-pad-y:0.09em]',
+  large: 'text-xl leading-7 [--hl-pad-y:0.07em]',
+} as const;
+// How long "Go to line" keeps its destination highlighted.
+export const JUMP_HIGHLIGHT_MS = 60_000;
 const LINE_NUMBER_PADDING_CLASSES = { small: '!pt-2', medium: '!pt-2.5', large: '!pt-3' } as const;
 const defaultState: ReaderState = { expandedChapters: [], bookmarks: [] };
 const escapeSelector = (value: string) =>
@@ -44,6 +54,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
   const [textSize, setTextSize] = useState<(typeof TEXT_SIZES)[number]>('medium');
   const [detail, setDetail] = useState<{ entity?: GuideEntity; note?: ManuscriptNote }>();
   const [pendingNote, setPendingNote] = useState<{ paragraphIndex: number; anchorStart: number; anchorEnd: number; anchorText: string }>();
+  const [jumpTarget, setJumpTarget] = useState<number>();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
   const { selection, clear: clearSelection } = useTextSelection(readerRef);
@@ -142,8 +153,10 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
         if (target) {
           target.scrollIntoView?.({ behavior: 'smooth', block: paragraph === undefined ? 'start' : 'center' });
           window.clearTimeout(highlightTimer.current);
-          target.classList.add('source-flash');
-          highlightTimer.current = window.setTimeout(() => target.classList.remove('source-flash'), 30_000);
+          if (paragraph !== undefined) {
+            setJumpTarget(paragraph);
+            highlightTimer.current = window.setTimeout(() => setJumpTarget(undefined), JUMP_HIGHLIGHT_MS);
+          }
           return;
         }
         if (Date.now() < deadline) requestAnimationFrame(attempt);
@@ -284,13 +297,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
             </span>
             <div className="flex gap-1">
               {TEXT_SIZES.map((value) => (
-                <button
-                  key={value}
-                  className={`rounded-[0.35rem] border border-[var(--border)] px-[0.65rem] py-[0.3rem] font-['Barlow_Condensed',sans-serif] text-[0.78rem] font-semibold uppercase tracking-[0.03em] text-[var(--text-muted)] ${textSize === value ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]' : ''}`}
-                  onClick={() => setTextSize(value)}
-                >
-                  {value}
-                </button>
+                <Pill key={value} label={value} active={textSize === value} onClick={() => setTextSize(value)} />
               ))}
             </div>
             <TooltipTarget text="Expand all chapters">
@@ -326,11 +333,11 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
               data-chapter-id={chapter.id}
             >
               <header
-                className={`sticky top-[var(--band-h,4rem)] z-10 grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-3 border-[var(--border)] p-3 md:grid-cols-[1.4rem_minmax(0,1fr)_auto] md:px-5 md:py-[0.8rem] ${expanded ? 'rounded-t-lg border-b' : 'rounded-lg border-b-0'}`}
+                className={`sticky top-[var(--band-h,4rem)] z-10 grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-3 border-[var(--border)] bg-[var(--surface)] p-3 md:grid-cols-[1.4rem_minmax(0,1fr)_auto] md:px-5 md:py-[0.8rem] ${expanded ? 'rounded-t-lg border-b shadow-[0_2px_6px_color-mix(in_srgb,var(--text)_8%,transparent)]' : 'rounded-lg border-b-0'}`}
               >
                 <TooltipTarget className="-ml-1 flex size-[1.4rem]" text={chapterBookmark ? 'Remove chapter bookmark' : 'Bookmark this chapter'}>
                   <button
-                    className={`group relative flex size-[1.4rem] items-center justify-center text-[var(--text-faint)] ${chapterBookmark ? 'text-[var(--bookmark)]' : ''}`}
+                    className={`group relative flex size-[1.4rem] items-center justify-center ${chapterBookmark ? 'text-[var(--bookmark)]' : 'text-[var(--text-faint)]'}`}
                     onClick={() => void toggleChapterBookmark(chapter.id)}
                   >
                     <FontAwesomeIcon
@@ -373,6 +380,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
                       notes={notes.filter((item) => item.chapterId === chapter.id || (!item.chapterId && item.chapter === chapter.title))}
                       textClass={READER_TEXT_CLASSES[textSize]}
                       lineNumberPadding={LINE_NUMBER_PADDING_CLASSES[textSize]}
+                      jumpTarget={jumpTarget}
                       openEntity={(entity) => {
                         setDetail({ entity });
                         setSheet('detail');
@@ -402,88 +410,70 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
         />
       )}
       {pendingNote && <AddNoteDialog anchorText={pendingNote.anchorText} confirm={(text) => void confirmNote(text)} cancel={() => setPendingNote(undefined)} />}
-      {sheet && <div className="sheet-backdrop fixed inset-0 z-[45] bg-transparent" onMouseDown={closeSheet} />}
-      {/* .overlay-panel's own CSS (styles.css) already provides position/size/transition
-          and the `.overlay-panel.overlay-open` transform toggle GuideDetail.tsx's review
-          overlay relies on - Tailwind's translate-x-0/translate-x-full utilities on this
-          element were silently overridden by that rule's source-order priority, so the
-          panel never visually opened. Use the same overlay-open toggle instead. */}
-      <aside className={`overlay-panel${sheet ? ' overlay-open' : ''}`} aria-hidden={!sheet}>
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
-          <h3 className="text-sm font-semibold">{detail?.note ? 'Note' : detail?.entity?.canonical_name || 'Chapters & Search'}</h3>
-          <button
-            className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-            aria-label="Close"
-            onClick={closeSheet}
-          >
-            <FontAwesomeIcon icon={faXmark} />
-          </button>
-        </div>
-        <div className="scroll-chrome-hidden flex-1 overflow-y-auto p-[1.1rem]">
-          {detail?.note ? (
-            <>
-              <div className="mb-3">
-                <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                  Anchored text
-                </div>
-                <p className="text-sm italic">“{detail.note.anchorText || 'Paragraph note'}”</p>
+      <SlideOver open={Boolean(sheet)} title={detail?.note ? 'Note' : detail?.entity?.canonical_name || 'Chapters & Search'} onClose={closeSheet}>
+        {detail?.note ? (
+          <>
+            <div className="mb-3">
+              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                Anchored text
               </div>
-              <div className="mb-4">
-                <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                  Note
-                </div>
-                <p className="text-sm">{detail.note.text}</p>
+              <p className="text-sm italic">“{detail.note.anchorText || 'Paragraph note'}”</p>
+            </div>
+            <div className="mb-4">
+              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                Note
               </div>
-              <Button variant="danger" className="text-xs" onClick={() => void deleteNote(detail.note!.id)}>
-                Delete note
-              </Button>
-            </>
-          ) : detail?.entity ? (
-            <>
-              <EntitySummary
-                entity={detail.entity}
-                jumpToLine={(chapter, paragraph) => {
-                  closeSheet();
-                  showChapter(chapter, paragraph);
-                }}
-              />
-              <Button variant="ghost" className="mt-4 text-xs" onClick={() => focusStoryBibleEntity(detail.entity!.id)}>
-                Open in Story Bible →
-              </Button>
-            </>
-          ) : (
-            <>
-              <SearchBar query={searchQuery} onQueryChange={(value) => void runSearch(value)} />
-              <div className="mt-4 border-t pt-3">
-                <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-                  Chapters
-                </div>
-                <ChapterNav
-                  chapters={chapters}
-                  selectedId={active}
-                  bookmarks={readerState.bookmarks}
-                  searchQuery={searchQuery}
-                  searchResults={searchResults}
-                  lineNumbers={lineNumbers}
-                  select={(id, paragraph) => {
-                    const chapter = chapters.find((item) => item.id === id);
-                    if (chapter) {
-                      closeSheet();
-                      showChapter(chapter.id, paragraph);
-                    }
-                  }}
-                  removeBookmark={(id) =>
-                    void api
-                      .readerBookmarkDelete(id)
-                      .then(() => setReaderState((current) => ({ ...current, bookmarks: current.bookmarks.filter((item) => item.id !== id) })))
-                      .catch((error) => notify(String(error)))
+              <p className="text-sm">{detail.note.text}</p>
+            </div>
+            <Button variant="danger" className="text-xs" onClick={() => void deleteNote(detail.note!.id)}>
+              Delete note
+            </Button>
+          </>
+        ) : detail?.entity ? (
+          <>
+            <EntitySummary
+              entity={detail.entity}
+              jumpToLine={(chapter, paragraph) => {
+                closeSheet();
+                showChapter(chapter, paragraph);
+              }}
+            />
+            <Button variant="ghost" className="mt-4 text-xs" onClick={() => focusStoryBibleEntity(detail.entity!.id)}>
+              Open in Story Bible →
+            </Button>
+          </>
+        ) : (
+          <>
+            <SearchBar query={searchQuery} onQueryChange={(value) => void runSearch(value)} />
+            <div className="mt-4 border-t pt-3">
+              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+                Chapters
+              </div>
+              <ChapterNav
+                chapters={chapters}
+                selectedId={active}
+                bookmarks={readerState.bookmarks}
+                searchQuery={searchQuery}
+                searchResults={searchResults}
+                lineNumbers={lineNumbers}
+                select={(id, paragraph) => {
+                  const chapter = chapters.find((item) => item.id === id);
+                  if (chapter) {
+                    closeSheet();
+                    showChapter(chapter.id, paragraph);
                   }
-                />
-              </div>
-            </>
-          )}
-        </div>
-      </aside>
+                }}
+                removeBookmark={(id) =>
+                  void api
+                    .readerBookmarkDelete(id)
+                    .then(() => setReaderState((current) => ({ ...current, bookmarks: current.bookmarks.filter((item) => item.id !== id) })))
+                    .catch((error) => notify(String(error)))
+                }
+              />
+            </div>
+          </>
+        )}
+      </SlideOver>
     </div>
   );
 }

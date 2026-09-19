@@ -1,9 +1,11 @@
 import argparse
 import importlib.util
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 MODULE_PATH = Path(__file__).parents[1] / "manuscript_guide.py"
@@ -90,10 +92,11 @@ class ManuscriptGuideTests(unittest.TestCase):
         ):
             self.assertEqual([], guide.build_entities(paragraphs, "unused", None))
 
-    def test_rule_fallback_strips_articles_and_prunes_singletons(self):
+    def test_rule_fallback_strips_articles_and_keeps_names_seen_three_times(self):
         paragraphs = [
             {"chapter": "Chapter 1", "text": "A Black Halo appeared. About noon, it vanished."},
             {"chapter": "Chapter 2", "text": "Black Halo appeared again."},
+            {"chapter": "Chapter 3", "text": "Black Halo appeared once more."},
         ]
         candidates = guide.rule_candidates(paragraphs)
         self.assertIn("Black Halo", [candidate["name"] for candidate in candidates])
@@ -188,9 +191,6 @@ class ManuscriptGuideTests(unittest.TestCase):
             status_file = root / "ManuscriptGuide" / "status.txt"
             guide.status(argparse.Namespace(manuscript=str(manuscript), guide=str(guide_file), out=str(status_file)))
             self.assertEqual("STATUS|CURRENT\n", status_file.read_text(encoding="utf-8"))
-            hotwords = root / "ManuscriptGuide" / "whisper_hotwords.txt"
-            guide.export_hotwords(argparse.Namespace(guide=str(guide_file), out=str(hotwords), entity_ids=""))
-            self.assertIn("Dawnspire", hotwords.read_text(encoding="utf-8"))
             self.assertFalse((root / "TranscriptCompare").exists())
 
     def test_build_uses_project_owned_guide_file(self):
@@ -272,6 +272,214 @@ class ManuscriptGuideTests(unittest.TestCase):
             load.assert_called_once_with(str(root / "voice.onnx"))
             voice.synthesize_wav.assert_called_once()
             self.assertTrue((root / "ManuscriptGuide" / "audio" / "preview.wav").is_file())
+
+
+def _paragraphs(*texts: str) -> list[dict[str, str]]:
+    return [{"chapter": "Chapter 1", "text": text} for text in texts]
+
+
+def _stub_spacy(entities: dict[str, str]):
+    """Patches spacy.load with a fake pipeline. `entities` maps a literal entity
+    text to its NER label; every whole-word occurrence in each paragraph is
+    reported as an entity of that label."""
+
+    def pipe(texts):
+        for text in texts:
+            found = [
+                SimpleNamespace(text=literal, label_=label, start_char=match.start(), end_char=match.end())
+                for literal, label in entities.items()
+                for match in re.finditer(r"(?<![A-Za-z])" + re.escape(literal) + r"(?![A-Za-z])", text)
+            ]
+            yield SimpleNamespace(ents=sorted(found, key=lambda ent: ent.start_char))
+
+    return patch("spacy.load", return_value=SimpleNamespace(pipe=pipe))
+
+
+COMMON_WORD_PARAGRAPHS = _paragraphs(
+    "Abandoned ships drifted past. Nobody wanted an abandoned hull.",
+    "Adorable puppies barked. The adorable pair ran off.",
+    "Afraid to speak, she waited. She was afraid of the dark.",
+    "Active minds wander. An active mind is a happy mind.",
+    "ACCEPTABLE terms were offered. The terms were acceptable to all.",
+)
+COMMON_WORD_LABELS = {word: "PERSON" for word in ("Abandoned", "Adorable", "Afraid", "Active", "ACCEPTABLE")}
+NAME_PARAGRAPHS = _paragraphs(
+    "Captain Arelian said the Council of Ash would meet in Dawnspire.",
+    "Arelian was a veteran navigator, brave and wary before the council arrived.",
+    "Later they saw Dawnspire burning. The road to Dawnspire was long.",
+    "Everyone knew Dawnspire well.",
+)
+HOPE_PARAGRAPHS = _paragraphs("They loved Hope dearly.", "Ada stood near Hope and wept.", "Without hope there is nothing.")
+
+
+class StrictEntityExtractionTests(unittest.TestCase):
+    """Precision over recall: see docs/architecture/story-bible-entity-accuracy.md."""
+
+    # (a) common words never become entities -------------------------------
+
+    def test_rules_only_rejects_sentence_initial_common_words(self):
+        self.assertEqual([], guide.rule_candidates(COMMON_WORD_PARAGRAPHS))
+        with patch.object(guide, "spacy_candidates", return_value=None):
+            self.assertEqual([], guide.build_entities(COMMON_WORD_PARAGRAPHS, "unused", None))
+
+    def test_spacy_path_rejects_common_words_even_when_tagged_person(self):
+        with _stub_spacy(COMMON_WORD_LABELS):
+            self.assertEqual([], guide.spacy_candidates(COMMON_WORD_PARAGRAPHS, "stub"))
+            self.assertEqual([], guide.build_entities(COMMON_WORD_PARAGRAPHS, "stub", None))
+
+    def test_rules_only_rejects_common_word_capitalized_mid_sentence_twice(self):
+        self.assertEqual([], guide.rule_candidates(HOPE_PARAGRAPHS))
+
+    def test_rules_only_rejects_adjective_suffix_words_without_spacy_support(self):
+        paragraphs = _paragraphs("They fled Blazing near Hollowed at dusk.", "Ada left Blazing near Hollowed behind.")
+        self.assertEqual([], guide.rule_candidates(paragraphs))
+
+    def test_spacy_tag_plus_two_mid_sentence_mentions_rescues_a_common_looking_word(self):
+        with _stub_spacy({"Hope": "PERSON"}):
+            self.assertEqual(["Hope", "Hope"], [c["name"] for c in guide.spacy_candidates(HOPE_PARAGRAPHS, "stub")])
+
+    def test_spacy_tag_alone_does_not_rescue_a_common_looking_word_with_one_mid_sentence_mention(self):
+        paragraphs = _paragraphs("They loved Hope dearly.", "Without hope there is nothing.")
+        with _stub_spacy({"Hope": "PERSON"}):
+            self.assertEqual([], guide.spacy_candidates(paragraphs, "stub"))
+
+    def test_spacy_tag_rescues_suffix_word_only_with_two_mid_sentence_mentions(self):
+        paragraphs = _paragraphs("They fled Blazing at dusk.", "Ada left Blazing behind.")
+        with _stub_spacy({"Blazing": "GPE"}):
+            self.assertEqual(2, len(guide.spacy_candidates(paragraphs, "stub")))
+        with _stub_spacy({"Blazing": "GPE"}):
+            self.assertEqual([], guide.spacy_candidates(paragraphs[:1], "stub"))
+
+    def test_stopword_single_word_spacy_entities_are_dropped(self):
+        with _stub_spacy({"They": "PERSON"}):
+            self.assertEqual([], guide.spacy_candidates(_paragraphs("Ada saw them. They ran. They hid."), "stub"))
+
+    # (b) filler prefixes and no default-to-Character ----------------------
+
+    def test_spacy_strips_leading_filler_from_entity_text(self):
+        text = "They talked About S-Dawn all night."
+        with _stub_spacy({"About S-Dawn": "GPE"}):
+            candidates = guide.spacy_candidates(_paragraphs(text), "stub")
+        self.assertEqual(["S-Dawn"], [c["name"] for c in candidates])
+        self.assertEqual("S-Dawn", text[int(candidates[0]["start"]) : int(candidates[0]["end"])])
+
+    def test_spacy_entity_made_only_of_filler_is_dropped(self):
+        with _stub_spacy({"The": "ORG", "of the": "ORG"}):
+            self.assertEqual([], guide.spacy_candidates(_paragraphs("The end of the road."), "stub"))
+
+    def test_rules_strip_leading_filler_and_stopwords_from_multi_word_names(self):
+        paragraphs = _paragraphs("He asked About S-Dawn twice.", "Then Ada Voss arrived. With Ada Voss came rain.")
+        names = [c["name"] for c in guide.rule_candidates(paragraphs)]
+        self.assertNotIn("About S-Dawn", names)
+        self.assertNotIn("Then Ada Voss", names)
+        self.assertNotIn("With Ada Voss", names)
+        self.assertEqual(["Ada Voss", "Ada Voss"], [name for name in names if name.startswith("Ada")])
+
+    def test_unexplained_single_word_is_never_categorized_as_character(self):
+        paragraphs = _paragraphs(
+            "S-Dawn said nothing for a long while.",
+            "They talked About S-Dawn all night.",
+            "Nobody trusted S-Dawn, and S-Dawn looked away.",
+        )
+        with patch.object(guide, "spacy_candidates", return_value=None):
+            entities = guide.build_entities(paragraphs, "unused", None)
+        by_name = {entity["canonical_name"]: entity for entity in entities}
+        self.assertIn("S-Dawn", by_name)
+        self.assertEqual("Needs Review", by_name["S-Dawn"]["category"])
+        self.assertEqual("needs review", by_name["S-Dawn"]["review_state"])
+        self.assertNotIn("About S-Dawn", by_name)
+
+    def test_proximity_cues_only_apply_to_multi_word_names(self):
+        single = {"name": "Zyx", "source": "rule", "text": "Zyx said hello.", "start": "0", "end": "3"}
+        multi = {"name": "Zyx Qor", "source": "rule", "text": "Zyx Qor said hello.", "start": "0", "end": "7"}
+        self.assertEqual("Needs Review", guide.classify(single))
+        self.assertEqual("Character", guide.classify(multi))
+
+    def test_explicit_title_place_and_org_rules_still_apply(self):
+        def candidate(name):
+            return {"name": name, "source": "rule", "text": name, "start": "0", "end": str(len(name))}
+
+        self.assertEqual("Character", guide.classify(candidate("Captain Arelian")))
+        self.assertEqual("Place", guide.classify(candidate("Silver River")))
+        self.assertEqual("Organization", guide.classify(candidate("Council of Ash")))
+
+    def test_needs_review_entities_need_three_occurrences(self):
+        two = _paragraphs("Ada met Zyx Qor there.", "Later Ada left Zyx Qor alone.")
+        three = [*two, *_paragraphs("Ada forgot Zyx Qor entirely.")]
+        with patch.object(guide, "spacy_candidates", return_value=None):
+            self.assertEqual([], guide.build_entities(two, "unused", None))
+            entities = guide.build_entities(three, "unused", None)
+        self.assertEqual([("Zyx Qor", "Needs Review", 3)], [(e["canonical_name"], e["category"], e["occurrence_count"]) for e in entities])
+
+    # (c) real names survive ------------------------------------------------
+
+    def test_rules_only_keeps_real_multi_occurrence_names(self):
+        with patch.object(guide, "spacy_candidates", return_value=None):
+            entities = guide.build_entities(NAME_PARAGRAPHS, "unused", None)
+        by_name = {entity["canonical_name"]: entity for entity in entities}
+        self.assertEqual({"Captain Arelian", "Council of Ash", "Dawnspire"}, set(by_name))
+        self.assertEqual("Character", by_name["Captain Arelian"]["category"])
+        self.assertEqual(["Arelian"], [alias["text"] for alias in by_name["Captain Arelian"]["aliases"]])
+        self.assertEqual("Organization", by_name["Council of Ash"]["category"])
+        self.assertEqual(4, by_name["Dawnspire"]["occurrence_count"])
+
+    def test_rules_only_drops_a_single_word_seen_capitalized_mid_sentence_once(self):
+        paragraphs = _paragraphs("They sailed to Dawnspire.", "Dawnspire fell. Dawnspire burned.")
+        self.assertEqual([], guide.rule_candidates(paragraphs))
+
+    def test_spacy_path_keeps_real_names_with_their_categories(self):
+        labels = {"Captain Arelian": "PERSON", "Arelian": "PERSON", "Council of Ash": "ORG", "Dawnspire": "GPE"}
+        with _stub_spacy(labels):
+            entities = guide.build_entities(NAME_PARAGRAPHS, "stub", None)
+        categories = {entity["canonical_name"]: entity["category"] for entity in entities}
+        self.assertEqual({"Captain Arelian": "Character", "Council of Ash": "Organization", "Dawnspire": "Place"}, categories)
+
+    # (d) vocabulary candidates --------------------------------------------
+
+    def test_vocabulary_candidates_exclude_needs_review_and_low_count_singletons(self):
+        def entity(name, category, count, **extra):
+            return {"canonical_name": name, "category": category, "occurrence_count": count, "aliases": [], "locked": False, "manual": False, **extra}
+
+        entities = [
+            entity("Captain Arelian", "Character", 1, aliases=[{"text": "Arelian", "occurrences": []}]),
+            entity("Halo", "Character", 2),
+            entity("Dawnspire", "Place", 3),
+            entity("Vex", "Character", 1, locked=True),
+            entity("Nyx", "Draft", 0, manual=True),
+            entity("Black Halo", "Needs Review", 9),
+            entity("Mystery", "Needs Review", 5),
+        ]
+        self.assertEqual(["Arelian", "Captain Arelian", "Dawnspire", "Nyx", "Vex"], guide.vocabulary_candidates(entities))
+
+    # (e) locked / manual entities survive a rebuild ------------------------
+
+    def test_locked_and_manual_entities_survive_rebuild_unchanged(self):
+        with patch.object(guide, "spacy_candidates", return_value=None):
+            generated = guide.build_entities(NAME_PARAGRAPHS, "unused", None)
+        locked_dawnspire = {
+            "id": guide.entity_id("Dawnspire"),
+            "canonical_name": "Dawnspire",
+            "aliases": [],
+            "category": "Place",
+            "occurrences": [],
+            "occurrence_count": 0,
+            "pronunciation": {"ipa": "custom"},
+            "description": {"text": "Hand written.", "evidence": {}},
+            "personality_notes": [],
+            "locked": True,
+            "manual": False,
+        }
+        # Would never be extracted (single word, one mention) but is locked.
+        locked_vex = {**locked_dawnspire, "id": guide.entity_id("Vex"), "canonical_name": "Vex", "category": "Character", "occurrence_count": 1}
+        manual_nyx = {**locked_dawnspire, "id": guide.entity_id("Nyx"), "canonical_name": "Nyx", "category": "Lore", "locked": False, "manual": True}
+        previous = {"entities": [locked_dawnspire, locked_vex, manual_nyx]}
+        merged = {entity["id"]: entity for entity in guide.merge_locked(generated, previous)}
+        self.assertEqual(locked_dawnspire, merged[locked_dawnspire["id"]])
+        self.assertEqual(locked_vex, merged[locked_vex["id"]])
+        self.assertEqual(manual_nyx, merged[manual_nyx["id"]])
+        self.assertIn(guide.entity_id("Captain Arelian"), merged)
+        vocabulary = guide.vocabulary_candidates(list(merged.values()))
+        self.assertTrue({"Dawnspire", "Vex", "Nyx"} <= set(vocabulary))
 
 
 if __name__ == "__main__":
