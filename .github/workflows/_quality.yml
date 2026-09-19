@@ -73,6 +73,21 @@ jobs:
           path: shared/ui/screenshots/atlas
           if-no-files-found: ignore
           retention-days: 7
+  ui-atlas-kit:
+    # The reusable UI-atlas plugin under tools/ui-atlas-kit: CLI, hooks, and a check that
+    # shared/ui has not drifted from the vendored core files the kit ships.
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-go: 'false'
+          need-python: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+          need-linux-native-deps: 'false'
+      - run: node --test tools/ui-atlas-kit/test/*.test.mjs
   python:
     timeout-minutes: 15
     runs-on: ubuntu-latest

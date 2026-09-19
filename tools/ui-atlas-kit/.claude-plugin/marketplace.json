@@ -1,0 +1,12 @@
+{
+  "name": "ui-atlas-kit",
+  "owner": { "name": "Count" },
+  "description": "Skills, agents, hooks and a CLI for testing and self-documenting React UIs through a visual component library.",
+  "plugins": [
+    {
+      "name": "ui-atlas",
+      "source": "./plugin",
+      "description": "Test and self-document a React UI through a validated visual capture contract and a Storybook component atlas."
+    }
+  ]
+}

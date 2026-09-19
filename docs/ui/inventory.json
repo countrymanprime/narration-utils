@@ -1,0 +1,321 @@
+{
+  "generatedBy": "ui-atlas 0.1.0",
+  "components": [
+    {
+      "title": "Primitives/Button",
+      "name": "Button",
+      "source": "src/components/primitives/Button.tsx",
+      "stories": [
+        "Primary",
+        "Ghost",
+        "Danger",
+        "Primary Disabled",
+        "Ghost Disabled",
+        "Danger Disabled",
+        "Click Invokes Handler",
+        "Disabled Is Inert"
+      ],
+      "consumers": [
+        "src/components/layout/StartupScreen.tsx",
+        "src/components/manuscript/AddNoteDialog.tsx",
+        "src/components/manuscript/Manuscript.tsx",
+        "src/components/manuscript/SelectionMenu.tsx",
+        "src/components/primitives/ConfirmDialog.tsx",
+        "src/components/primitives/ErrorBoundary.tsx",
+        "src/components/primitives/WorkDialog.tsx",
+        "src/components/project/ProjectPicker.tsx",
+        "src/components/proofing/Results.tsx",
+        "src/components/proofing/Transcript.tsx",
+        "src/components/settings/Settings.tsx",
+        "src/components/storybible/GuideDetail.tsx",
+        "src/components/tracks/TracksPage.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/ConfirmDialog",
+      "name": "ConfirmDialog",
+      "source": "src/components/primitives/ConfirmDialog.tsx",
+      "stories": [
+        "Default",
+        "Destructive Confirm",
+        "With Danger Action",
+        "With Children",
+        "Long Unbroken Body",
+        "Long Scrolling Children",
+        "Confirm Invokes Handler",
+        "Cancel And Close Invoke Cancel",
+        "Danger Invokes Only Danger"
+      ],
+      "consumers": [
+        "src/App.tsx",
+        "src/components/home/Home.tsx",
+        "src/components/proofing/Transcript.tsx",
+        "src/components/settings/Settings.tsx",
+        "src/components/storybible/GuideDetail.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/Dialog",
+      "name": "Dialog",
+      "source": "src/components/primitives/Dialog.tsx",
+      "stories": [
+        "Actions Between",
+        "Actions End",
+        "Actions Between With Group",
+        "Without Close Button",
+        "Long Unbroken Token",
+        "Long Scrolling Content",
+        "Close Button Invokes On Close"
+      ],
+      "consumers": [
+        "src/components/manuscript/AddNoteDialog.tsx",
+        "src/components/primitives/ConfirmDialog.tsx",
+        "src/components/primitives/WorkDialog.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/ErrorBoundary",
+      "name": "ErrorBoundary",
+      "source": "src/components/primitives/ErrorBoundary.tsx",
+      "stories": [
+        "Healthy",
+        "Child Throws",
+        "Try Again Recovers"
+      ],
+      "consumers": [
+        "src/App.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/Field",
+      "name": "Field",
+      "source": "src/components/primitives/Field.tsx",
+      "stories": [
+        "Text Input",
+        "Text Input Empty",
+        "Text Input Long Value",
+        "Textarea",
+        "Textarea Empty",
+        "Textarea Multiline",
+        "Text Input Disabled",
+        "Textarea Disabled",
+        "Typing Updates Value",
+        "Clearing Reports Empty String",
+        "Textarea Typing Keeps Newlines",
+        "Blur Commits Draft",
+        "Disabled Is Inert",
+        "Textarea Disabled Is Inert"
+      ],
+      "consumers": [
+        "src/components/storybible/GuideDetail.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/Heading",
+      "name": "Heading",
+      "source": "src/components/primitives/Heading.tsx",
+      "stories": [
+        "Title Only",
+        "With Subtitle",
+        "With Rich Subtitle",
+        "Long Title Wraps",
+        "Long Subtitle Wraps",
+        "Renders Level One Heading",
+        "Title Only Omits Subtitle"
+      ],
+      "consumers": [
+        "src/components/home/Home.tsx",
+        "src/components/manuscript/Manuscript.tsx",
+        "src/components/proofing/Transcript.tsx",
+        "src/components/settings/Settings.tsx",
+        "src/components/storybible/Guide.tsx",
+        "src/components/tracks/TracksPage.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/Highlight",
+      "name": "Highlight",
+      "source": "src/components/primitives/Highlight.tsx",
+      "stories": [
+        "Character",
+        "Place",
+        "Organization",
+        "Lore",
+        "Item",
+        "Event",
+        "Review",
+        "Note",
+        "In Running Text",
+        "Interactive",
+        "Click Activates",
+        "Keyboard Activates",
+        "Static Is Not A Button"
+      ],
+      "consumers": [
+        "src/components/manuscript/EntitySummary.tsx",
+        "src/components/manuscript/ParagraphView.tsx",
+        "src/components/storybible/GuideDetail.tsx"
+      ],
+      "a11yDebt": true
+    },
+    {
+      "title": "Primitives/MeterBar",
+      "name": "MeterBar",
+      "source": "src/components/primitives/MeterBar.tsx",
+      "stories": [
+        "Partial Finished First",
+        "Partial Chronological",
+        "Empty",
+        "Nothing Started",
+        "Single Segment Partial",
+        "Full",
+        "Thin Segments",
+        "With Caption And Legend",
+        "Segments Render In Caller Order",
+        "Chronological Order Is The Mirror Image",
+        "Empty Draws No Segments",
+        "Updates When Progress Changes"
+      ],
+      "consumers": [
+        "src/components/home/AudiobookEstimatePanel.tsx"
+      ],
+      "a11yDebt": true
+    },
+    {
+      "title": "Primitives/NavButton",
+      "name": "NavButton",
+      "source": "src/components/primitives/NavButton.tsx",
+      "stories": [
+        "Inactive",
+        "Active",
+        "Disabled",
+        "Icon Only",
+        "Sidebar",
+        "Icon Rail",
+        "Click Invokes Handler",
+        "Active Marks Current Page",
+        "Inactive Is Not Current",
+        "Disabled Is Inert",
+        "Icon Only Shows Label On Focus"
+      ],
+      "consumers": [
+        "src/components/layout/AppShell.tsx"
+      ],
+      "a11yDebt": true
+    },
+    {
+      "title": "Primitives/Panel",
+      "name": "Panel",
+      "source": "src/components/primitives/Panel.tsx",
+      "stories": [
+        "Text Only",
+        "Title And Description",
+        "With Header And Actions",
+        "With Header No Actions",
+        "With Form Fields",
+        "Long Content"
+      ],
+      "consumers": [
+        "src/components/home/AudiobookEstimatePanel.tsx",
+        "src/components/proofing/Transcript.tsx",
+        "src/components/tracks/TracksPage.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/Pill",
+      "name": "Pill",
+      "source": "src/components/primitives/Pill.tsx",
+      "stories": [
+        "Inactive",
+        "Active",
+        "Disabled",
+        "With Tooltip",
+        "Click Selects"
+      ],
+      "consumers": [
+        "src/components/manuscript/Manuscript.tsx",
+        "src/components/proofing/Transcript.tsx",
+        "src/components/settings/Settings.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/SlideOver",
+      "name": "SlideOver",
+      "source": "src/components/primitives/SlideOver.tsx",
+      "stories": [
+        "Open",
+        "Closed",
+        "Long Content",
+        "Custom Close Label",
+        "Close Button Invokes On Close",
+        "Backdrop Click Invokes On Close"
+      ],
+      "consumers": [
+        "src/components/manuscript/Manuscript.tsx",
+        "src/components/storybible/GuideDetail.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/Tooltip",
+      "name": "Tooltip",
+      "source": "src/components/primitives/Tooltip.tsx",
+      "stories": [
+        "Info Icon",
+        "Info Icon Shows Tooltip",
+        "On Button",
+        "Shows Tooltip On Focus",
+        "Hides Tooltip On Blur",
+        "On Disabled Button",
+        "Disabled Button Explains Why On Focus"
+      ],
+      "consumers": [
+        "src/App.tsx",
+        "src/components/home/AudiobookEstimatePanel.tsx",
+        "src/components/home/Home.tsx",
+        "src/components/manuscript/EntitySummary.tsx",
+        "src/components/manuscript/Manuscript.tsx",
+        "src/components/primitives/MeterBar.tsx",
+        "src/components/primitives/NavButton.tsx",
+        "src/components/primitives/Pill.tsx",
+        "src/components/proofing/Results.tsx",
+        "src/components/proofing/Transcript.tsx",
+        "src/components/settings/ScopedSetting.tsx",
+        "src/components/storybible/Guide.tsx",
+        "src/components/storybible/GuideDetail.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/WorkDialog",
+      "name": "WorkDialog",
+      "source": "src/components/primitives/WorkDialog.tsx",
+      "stories": [
+        "Preparing",
+        "Running Indeterminate",
+        "Running With Progress",
+        "Committing",
+        "Running Without Cancel",
+        "Success",
+        "Error State",
+        "Cancelled",
+        "Long Logs",
+        "Cancel Invokes Cancel",
+        "Close Invokes Close When Finished"
+      ],
+      "consumers": [
+        "src/components/home/Home.tsx",
+        "src/components/storybible/Guide.tsx"
+      ],
+      "a11yDebt": true
+    }
+  ]
+}
