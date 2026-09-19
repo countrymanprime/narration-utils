@@ -32,6 +32,7 @@ import {
   WIRE_LOGS,
   WIRE_NOTES,
   WIRE_PARAGRAPHS,
+  withFormatting,
   WIRE_READER_STATE,
   WIRE_TRACKS_PROJECT,
   WIRE_TRANSCRIPT,
@@ -82,7 +83,12 @@ function mockAudioSource(): string | undefined {
   return mockAudioUrl;
 }
 
-export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { projectFolder?: string; tracksCandidates?: string[] } = {}): NarrationApi {
+export function createMockApi(
+  overrides: Partial<NarrationApi> = {},
+  // manuscriptCandidate boots a project with no imported manuscript but a
+  // manuscript file waiting in its folder (Home offers to import it, ADR-0019).
+  initial: { projectFolder?: string; tracksCandidates?: string[]; manuscriptCandidate?: { path: string; name: string } } = {},
+): NarrationApi {
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
   let paragraphs = wireClone(WIRE_PARAGRAPHS);
@@ -110,11 +116,19 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
   const manuscriptReady = loadAliceManuscript(aliceChapterSeeds).then((loaded) => {
     if (!loaded) return;
     chapters = loaded.chapters;
-    paragraphs = loaded.paragraphs.map((paragraph) => ({
+    // The real text needs the same preserved formatting/line-break sample as
+    // the seed fixture, so the reader shows both in either data source.
+    paragraphs = loaded.paragraphs.map(withFormatting).map((paragraph) => ({
       ...paragraph,
       entityIds: entities
         .filter((entity) => [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)].some((term) => paragraph.text.includes(term)))
         .map((entity) => entity.id),
+    }));
+    // The host's chapter list carries each chapter's paragraph ids/indexes, which
+    // "Go to line" deep links (#p<index>) use to find the owning chapter.
+    chapters = chapters.map((chapter) => ({
+      ...chapter,
+      paragraphIds: paragraphs.filter((paragraph) => paragraph.chapterId === chapter.id).map(({ id, index }) => ({ id, index })),
     }));
     // WIRE_ENTITIES' occurrence paragraph numbers are computed against the
     // small local seed fixture, not the real manuscript text just loaded
@@ -260,14 +274,17 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
         projectFolder,
         projectName,
         daw,
-        manuscript: {
-          id: 'alice',
-          format: 'docx',
-          sourceName: 'Alice.docx',
-          importedAt: '2026-01-01T00:00:00Z',
-          narratableWordCount: 2672,
-          narratableChapterCount: 3,
-        },
+        manuscript: initial.manuscriptCandidate
+          ? null
+          : {
+              id: 'alice',
+              format: 'docx',
+              sourceName: 'Alice.docx',
+              importedAt: '2026-01-01T00:00:00Z',
+              narratableWordCount: 2672,
+              narratableChapterCount: 3,
+            },
+        manuscriptCandidate: initial.manuscriptCandidate ?? null,
         runtime: {},
         transcript: wireClone(transcript),
       }) as Bootstrap,
