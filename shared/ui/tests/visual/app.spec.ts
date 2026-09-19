@@ -158,6 +158,16 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Story Bible');
       await page.locator('tr[data-row]').first().click();
     },
+    'alias-typeahead': async (page) => {
+      await goToPage(page, 'Story Bible');
+      await page.locator('tr[data-row]').first().click();
+      // "at" matches multiple canonical names in the mock fixture set
+      // (Hatter, Caterpillar, Cheshire Cat) regardless of which entity the
+      // fixture data happens to sort first into the row - findAliasMatches
+      // excludes the selected entity by id, not by name, so this can't
+      // accidentally match zero results.
+      await page.getByPlaceholder('Add an alias or find a matching entry…').fill('at');
+    },
     'delete-confirm': async (page) => {
       await goToPage(page, 'Story Bible');
       await page.locator('tr[data-row]').first().click();
@@ -246,6 +256,14 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   global: {
     tooltip: async (page) => {
       await page.getByLabel('More information').hover();
+    },
+    'nav-drawer-open': async (page) => {
+      // The hamburger button only renders below the `md` breakpoint
+      // (AppShell's `max-md:inline-flex`) - at desktop/small-desktop/tablet
+      // widths the persistent nav rail is already visible, so there's
+      // nothing to open and this is intentionally a no-op there.
+      const hamburger = page.getByRole('button', { name: 'Open navigation' });
+      if (await hamburger.count()) await hamburger.click();
     },
     toast: async (page) => {
       await goToPage(page, 'Proofing');

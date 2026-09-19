@@ -72,6 +72,12 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'global', state: 'tooltip', description: 'Global tooltip overlay' },
   { page: 'global', state: 'toast', description: 'Global toast overlay' },
   { page: 'global', state: 'confirm-dialog', description: 'Global confirm dialog overlay' },
+  {
+    page: 'global',
+    state: 'nav-drawer-open',
+    description:
+      'Primary navigation - the mobile slide-in drawer opened via the hamburger button; a no-op at desktop/small-desktop/tablet widths where the persistent nav rail is already visible',
+  },
 
   // Theme smoke check (Home only, not the full page/state matrix - see
   // ADR 0010) - explicit Light/Dark selected via Settings > Appearance,
