@@ -4,8 +4,8 @@ import json
 import re
 import tempfile
 import unittest
-from types import SimpleNamespace
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 MODULE_PATH = Path(__file__).parents[1] / "manuscript_guide.py"
