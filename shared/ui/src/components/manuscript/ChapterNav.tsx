@@ -64,7 +64,7 @@ export function ChapterNav({
               ? matchesFor(chapter).map((hit, index) => (
                   <div
                     key={`${hit.paragraph}-${index}`}
-                    className="mb-[0.2rem] ml-7 mr-[0.35rem] flex items-center justify-between gap-[0.4rem] border-l border-[var(--border)] px-[0.4rem] py-[0.28rem] text-[0.74rem] text-[var(--text-muted)]"
+                    className="mr-[0.35rem] mb-[0.2rem] ml-7 flex items-center justify-between gap-[0.4rem] border-l border-[var(--border)] px-[0.4rem] py-[0.28rem] text-[0.74rem] text-[var(--text-muted)]"
                   >
                     <button
                       className="w-full"
@@ -83,7 +83,7 @@ export function ChapterNav({
                   .map((item) => (
                     <div
                       key={item.id}
-                      className="mb-[0.2rem] ml-7 mr-[0.35rem] flex items-center justify-between gap-[0.4rem] border-l border-[var(--border)] px-[0.4rem] py-[0.28rem] text-[0.74rem] text-[var(--text-muted)]"
+                      className="mr-[0.35rem] mb-[0.2rem] ml-7 flex items-center justify-between gap-[0.4rem] border-l border-[var(--border)] px-[0.4rem] py-[0.28rem] text-[0.74rem] text-[var(--text-muted)]"
                     >
                       <button className="flex min-w-0 items-center gap-[0.35rem]" onClick={() => select(chapter.id, item.paragraph)}>
                         <FontAwesomeIcon icon={faBookmark} />

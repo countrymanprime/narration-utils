@@ -216,7 +216,7 @@ export function GuideDetail({
               </button>
               {categoryMenuOpen && (
                 <div
-                  className="absolute left-0 top-[calc(100%+0.4rem)] z-10 w-44 rounded-[0.4rem] border border-[var(--border)] bg-[var(--surface)] p-[0.35rem] shadow-[var(--shadow-lg)]"
+                  className="absolute top-[calc(100%+0.4rem)] left-0 z-10 w-44 rounded-[0.4rem] border border-[var(--border)] bg-[var(--surface)] p-[0.35rem] shadow-[var(--shadow-lg)]"
                   role="menu"
                 >
                   {CREATABLE_CATEGORIES.map((label) => (
@@ -324,7 +324,7 @@ export function GuideDetail({
           <div>
             <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">Name</div>
             <input
-              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
+              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
               disabled={editingDisabled}
               value={draft.name}
               onChange={(event) => setDraft({ ...draft, name: event.target.value })}
@@ -334,7 +334,7 @@ export function GuideDetail({
             <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">
               Pronunciation{' '}
               <TooltipTarget text="Generated pronunciation; the waveform button plays an audio preview.">
-                <span className="inline-flex h-[15px] w-[15px] cursor-help items-center justify-center rounded-full border border-[var(--text-faint)] font-['IBM_Plex_Mono',monospace] text-[0.68rem] text-[var(--text-faint)] hover:border-[var(--accent)] hover:text-[var(--accent)]">
+                <span className="inline-flex size-[15px] cursor-help items-center justify-center rounded-full border border-[var(--text-faint)] font-['IBM_Plex_Mono',monospace] text-[0.68rem] text-[var(--text-faint)] hover:border-[var(--accent)] hover:text-[var(--accent)]">
                   i
                 </span>
               </TooltipTarget>
@@ -420,7 +420,7 @@ export function GuideDetail({
           </table>
           <div className="mt-3">
             <input
-              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
+              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
               role="combobox"
               aria-expanded={aliasMatches.length > 0}
               disabled={editingDisabled}
@@ -632,14 +632,14 @@ export function GuideDetail({
           </table>
           <div className="mt-3 grid gap-3" style={{ gridTemplateColumns: '1fr 1fr auto' }}>
             <input
-              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
+              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
               disabled={editingDisabled}
               value={relationLabel}
               onChange={(event) => setRelationLabel(event.target.value)}
               placeholder="Relationship, e.g. located in"
             />
             <select
-              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
+              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
               disabled={editingDisabled}
               value={relationOtherId}
               onChange={(event) => setRelationOtherId(event.target.value)}
@@ -696,7 +696,7 @@ export function GuideDetail({
                       </>
                     ) : null}
                   </span>
-                  <p className="mt-1 break-words text-sm">
+                  <p className="mt-1 text-sm break-words">
                     {highlightTerms(item.excerpt, highlightNames).map((segment, i) =>
                       segment.match ? (
                         <mark key={i} className={hlClassName(entity.category)} style={HL_STYLE[entity.category]}>
