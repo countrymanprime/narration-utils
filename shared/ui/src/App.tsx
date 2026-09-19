@@ -36,7 +36,7 @@ function AppRoutes() {
   const [retryKey, setRetryKey] = useState(0);
   const [settingsDirty, setSettingsDirty] = useState(false);
   const [pendingPath, setPendingPath] = useState<string>();
-  const settingsActions = useRef<{ save: () => Promise<void>; discard: () => Promise<void> }>();
+  const settingsActions = useRef<{ save: () => Promise<void>; discard: () => Promise<void> } | undefined>(undefined);
   const hasBootstrap = data !== undefined;
 
   // Importing changes data that is deliberately held at the application

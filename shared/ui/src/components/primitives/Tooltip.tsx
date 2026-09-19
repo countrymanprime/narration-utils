@@ -45,7 +45,7 @@ export function TooltipTarget({ text, children, className = '', style }: { text:
   const shared = useContext(TooltipContext);
   const [local, setLocal] = useState<ActiveTooltip>();
   const isActiveRef = useRef(false);
-  const timer = useRef<number>();
+  const timer = useRef<number | undefined>(undefined);
   const disabledChild = isValidElement(children) && Boolean((children.props as { disabled?: boolean }).disabled);
   const show = (rect: DOMRect) => {
     isActiveRef.current = true;
