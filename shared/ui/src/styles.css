@@ -1,3 +1,9 @@
+/* FontAwesome injects its own unlayered <style> at runtime, which would now beat
+   Tailwind's layered preflight (svg { vertical-align: middle }). Load its CSS
+   ourselves in the lowest layer so preflight keeps precedence, as it did before
+   Tailwind 4. main.tsx turns off FontAwesome's auto-injection. */
+@layer fa, theme, base, components, utilities;
+@import '@fortawesome/fontawesome-svg-core/styles.css' layer(fa);
 @import 'tailwindcss';
 
 :root {

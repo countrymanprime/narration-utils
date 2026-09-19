@@ -68,7 +68,7 @@ export function AppShell({
     <div className="flex h-full overflow-hidden bg-[var(--bg)]">
       <aside className="hidden w-56 flex-none flex-col border-r border-[var(--border)] bg-[var(--surface)] min-[1400px]:flex">{navigation}</aside>
       <aside
-        className="medium-rail hidden w-14 flex-none flex-col gap-1 border-r border-[var(--border)] bg-[var(--surface)] p-2 min-[1400px]:hidden md:flex"
+        className="medium-rail hidden w-14 flex-none flex-col gap-1 border-r border-[var(--border)] bg-[var(--surface)] p-2 md:max-[1399px]:flex"
         aria-label="Primary navigation"
       >
         {NAV.map((item) => (
