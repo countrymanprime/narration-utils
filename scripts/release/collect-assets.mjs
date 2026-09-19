@@ -9,14 +9,18 @@ const roots = (process.env.BUNDLE_DIRS ?? '').split(process.platform === 'win32'
 if (!roots.length) throw new Error('BUNDLE_DIRS must name one or more Wails package output directories.');
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
-const extensions = new Set(['.exe', '.msi', '.dmg', '.appimage', '.deb']);
+const extensions = new Set(['.exe', '.msi', '.dmg', '.appimage', '.deb', '.zip', '.tar.gz']);
+function extOf(path) {
+  const lower = path.toLowerCase();
+  return lower.endsWith('.tar.gz') ? '.tar.gz' : lower.slice(lower.lastIndexOf('.'));
+}
 const assets = [];
 function visit(path) {
   for (const entry of readdirSync(path)) {
     const child = join(path, entry);
     const stat = statSync(child);
     if (stat.isDirectory()) visit(child);
-    else if (extensions.has(child.slice(child.lastIndexOf('.')).toLowerCase())) {
+    else if (extensions.has(extOf(child))) {
       const target = join(output, basename(child));
       cpSync(child, target);
       assets.push(target);

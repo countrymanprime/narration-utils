@@ -10,6 +10,13 @@ export interface StateEntry {
 // own driver (how to reach the state) keyed by page+state - see
 // APP_DRIVERS in app.spec.ts.
 export const STATE_CATALOG: StateEntry[] = [
+  // Project (pre-app: no project folder attached yet)
+  {
+    page: 'project',
+    state: 'picker-empty',
+    description: 'No project open yet - ProjectPicker with a recent-projects list, browse, and create actions',
+  },
+
   // Home
   { page: 'home', state: 'default', description: 'Home, manuscript found' },
   { page: 'home', state: 'manuscript-not-found', description: 'Home, manuscript-not-found banner' },
@@ -21,6 +28,12 @@ export const STATE_CATALOG: StateEntry[] = [
     description: 'Vocabulary hint chips widget (accepted + pending) - lives on Proofing, catalogued under "home" for historical reasons',
   },
   { page: 'home', state: 'info-tooltip', description: 'Home, info icon tooltip visible' },
+  {
+    page: 'home',
+    state: 'import-confirm',
+    description:
+      'Home, import manuscript confirm dialog with format/paragraph/chapter preview (reached via "Replace manuscript" since a manuscript is already loaded)',
+  },
 
   // Manuscript
   { page: 'manuscript', state: 'reader-text-small', description: 'Manuscript, small text size' },
@@ -33,13 +46,18 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'manuscript', state: 'overlapping-highlights', description: 'Manuscript, entity highlight overlapping a note' },
   { page: 'manuscript', state: 'sticky-header-scrolled', description: 'Manuscript, scrolled with sticky chapter header' },
   { page: 'manuscript', state: 'chapter-collapsed', description: 'Manuscript, a chapter card collapsed' },
-  { page: 'manuscript', state: 'chapter-expanded', description: 'Manuscript, a chapter card expanded' },
+  { page: 'manuscript', state: 'add-note-dialog', description: 'Manuscript, Add Note dialog open after selecting text' },
 
   // Proofing
   { page: 'proofing', state: 'setup-default', description: 'Proofing, setup panel default selection' },
   { page: 'proofing', state: 'setup-alt-selection', description: 'Proofing, setup panel alternate model/worker/chunk selection' },
   { page: 'proofing', state: 'running', description: 'Proofing, running panel mid-progress with log' },
   { page: 'proofing', state: 'results-row-expanded', description: 'Proofing, results table with one discrepancy row expanded' },
+  {
+    page: 'proofing',
+    state: 'results-extra-row-expanded',
+    description: 'Proofing, results table with an EXTRA (words heard but not written) discrepancy row expanded',
+  },
   { page: 'proofing', state: 'disabled-button', description: 'Proofing, a disabled-button precondition' },
   { page: 'proofing', state: 'toast', description: 'Proofing, a toast visible' },
 
@@ -61,9 +79,11 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'settings', state: 'global-proofing', description: 'Settings, Global scope / Proofing category' },
   { page: 'settings', state: 'global-storybible', description: 'Settings, Global scope / Story Bible category' },
   { page: 'settings', state: 'global-daw', description: 'Settings, Global scope / DAW Integration category' },
+  { page: 'settings', state: 'global-manuscript', description: 'Settings, Global scope / Manuscript category (note color picker)' },
   { page: 'settings', state: 'global-tts', description: 'Settings, Global scope / TTS category' },
   { page: 'settings', state: 'project-proofing', description: 'Settings, Project scope / Proofing category' },
   { page: 'settings', state: 'project-storybible', description: 'Settings, Project scope / Story Bible category' },
+  { page: 'settings', state: 'project-data', description: 'Settings, Project scope / Project data category (clear derived project data)' },
   { page: 'settings', state: 'dirty-footer', description: 'Settings, unsaved-changes footer visible' },
   { page: 'settings', state: 'navigate-away-confirm', description: 'Settings, navigate-away-while-dirty confirm dialog' },
   { page: 'settings', state: 'reset-override', description: 'Settings, reset/clear-override control on a field' },
@@ -72,6 +92,12 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'global', state: 'tooltip', description: 'Global tooltip overlay' },
   { page: 'global', state: 'toast', description: 'Global toast overlay' },
   { page: 'global', state: 'confirm-dialog', description: 'Global confirm dialog overlay' },
+  {
+    page: 'global',
+    state: 'nav-drawer-open',
+    description:
+      'Primary navigation - the mobile slide-in drawer opened via the hamburger button; a no-op at desktop/small-desktop/tablet widths where the persistent nav rail is already visible',
+  },
 
   // Theme smoke check (Home only, not the full page/state matrix - see
   // ADR 0010) - explicit Light/Dark selected via Settings > Appearance,
