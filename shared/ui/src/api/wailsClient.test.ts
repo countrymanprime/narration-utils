@@ -140,6 +140,41 @@ describe('wailsClient', () => {
     await expect(wailsClient.tracksList()).resolves.toEqual(project);
   });
 
+  it('starts, stops and reads the teleprompter through the native bindings', async () => {
+    const start = vi.fn().mockResolvedValue(JSON.stringify({ status: 'started' }));
+    const stop = vi.fn().mockResolvedValue('');
+    const state = vi.fn().mockResolvedValue(JSON.stringify({ phase: 'idle', script: null, position: null }));
+    window.go = { main: { Host: { TeleprompterStart: start, TeleprompterStop: stop, TeleprompterState: state } } };
+    const options = { chapter: 'chapter-1', device: 'Microphone (USB)', model: 'tiny' };
+
+    await expect(wailsClient.teleprompterStart(options)).resolves.toEqual({ status: 'started' });
+    expect(start).toHaveBeenCalledWith(options);
+    await wailsClient.teleprompterStop();
+    expect(stop).toHaveBeenCalledWith();
+    await expect(wailsClient.teleprompterState()).resolves.toEqual({ phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null });
+  });
+
+  it('relays the teleprompter event and state subscriptions from the native runtime', () => {
+    const listeners = new Map<string, (payload: unknown) => void>();
+    const eventsOn = vi.fn((event: string, listener: (payload: unknown) => void) => {
+      listeners.set(event, listener);
+      return () => {};
+    });
+    (window as unknown as { runtime: { EventsOnMultiple: typeof eventsOn } }).runtime = { EventsOnMultiple: eventsOn };
+    const onEvent = vi.fn();
+    const onState = vi.fn();
+
+    wailsClient.subscribeTeleprompterEvent(onEvent);
+    wailsClient.subscribeTeleprompterState(onState);
+    listeners.get('teleprompter:event')?.({ type: 'position', read: 3, committed: 2, status: 'listening', jump: null, skipped: null });
+    listeners.get('teleprompter:event')?.('{"type":"segment_end","segment":1}');
+    listeners.get('teleprompter:state')?.({ phase: 'running', message: 'Listening…' });
+
+    expect(onEvent).toHaveBeenNthCalledWith(1, expect.objectContaining({ type: 'position', read: 3 }));
+    expect(onEvent).toHaveBeenNthCalledWith(2, { type: 'segment_end', segment: 1 });
+    expect(onState).toHaveBeenCalledWith(expect.objectContaining({ phase: 'running', script: null, position: null }));
+  });
+
   it('builds a /media playback URL with the source path percent-encoded', () => {
     expect(wailsClient.mediaUrl('C:\\My Book\\media\\take 1.wav')).toBe('/media?path=C%3A%5CMy%20Book%5Cmedia%5Ctake%201.wav');
   });

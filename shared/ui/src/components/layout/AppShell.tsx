@@ -9,6 +9,7 @@ import {
   faHouse,
   faLayerGroup,
   faMicrophone,
+  faScroll,
   faWaveSquare,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
@@ -21,6 +22,7 @@ const NAV = [
   { name: 'Manuscript', path: '/manuscript', icon: faFileLines, alwaysEnabled: false },
   { name: 'Proofing', path: '/proofing', icon: faWaveSquare, alwaysEnabled: false },
   { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, alwaysEnabled: false },
+  { name: 'Teleprompter', path: '/teleprompter', icon: faScroll, alwaysEnabled: false },
   { name: 'Tracks', path: '/tracks', icon: faLayerGroup, alwaysEnabled: true },
 ];
 const MANUSCRIPT_REQUIRED_REASON = 'Import a manuscript to unlock this page.';

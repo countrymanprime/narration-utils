@@ -40,6 +40,7 @@ import {
   wireSettings,
 } from './mockFixtures';
 import { loadAliceManuscript } from './aliceManuscript';
+import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
 
 const DEFAULT_PROJECT_FOLDER = 'C:/Projects/Alice-in-Wonderland';
 const DEFAULT_PROJECT_NAME = 'Alice’s Adventures in Wonderland';
@@ -87,7 +88,14 @@ export function createMockApi(
   overrides: Partial<NarrationApi> = {},
   // manuscriptCandidate boots a project with no imported manuscript but a
   // manuscript file waiting in its folder (Home offers to import it, ADR-0019).
-  initial: { projectFolder?: string; tracksCandidates?: string[]; noManuscript?: boolean; manuscriptCandidate?: { path: string; name: string } } = {},
+  // teleprompter boots with a session already part-way through the first chapter.
+  initial: {
+    projectFolder?: string;
+    tracksCandidates?: string[];
+    noManuscript?: boolean;
+    manuscriptCandidate?: { path: string; name: string };
+    teleprompter?: TeleprompterSeed;
+  } = {},
 ): NarrationApi {
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
@@ -214,6 +222,16 @@ export function createMockApi(
     downloadSize: 483546902 + 2370 + 2203239 + 459861,
     installState: 'not_installed' as const,
   };
+  const teleprompter = createTeleprompterMock({
+    ready: manuscriptReady,
+    chapters: () => chapters,
+    paragraphs: () => paragraphs,
+    assetRequired: () =>
+      whisperInstalled
+        ? undefined
+        : { status: 'asset_required', model: mockWhisperModel, installState: 'not_installed', downloadSize: mockWhisperModel.downloadSize },
+    seed: initial.teleprompter,
+  });
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));
   };
@@ -671,6 +689,7 @@ export function createMockApi(
       return wireClone(tracksDiscovery);
     },
     tracksList: async () => wireClone(WIRE_TRACKS_PROJECT),
+    ...teleprompter,
     mediaUrl: (sourceFile) => mockAudioSource() ?? sourceFile,
   };
   return { ...base, ...overrides };

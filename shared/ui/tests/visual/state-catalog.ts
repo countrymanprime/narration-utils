@@ -141,6 +141,30 @@ export const STATE_CATALOG: StateEntry[] = [
     description: 'Tracks, the last track (muted, MIDI-only) selected - Muted badge shown and Next track disabled',
   },
 
+  // Teleprompter
+  {
+    page: 'teleprompter',
+    state: 'setup-default',
+    description: 'Teleprompter, before a session - chapter, microphone and model choices with the chapter text below (no highlight yet)',
+  },
+  {
+    page: 'teleprompter',
+    state: 'listening',
+    description:
+      'Teleprompter, mid-session and listening - the setup fields collapse to a status bar with Stop, the current word has the solid accent highlight and read words are dimmed (reached via the ?mockTeleprompter=listening mock seam)',
+  },
+  {
+    page: 'teleprompter',
+    state: 'waiting',
+    description:
+      'Teleprompter, mid-session but the narrator has paused - "Waiting for you to return to the script" (reached via the ?mockTeleprompter=waiting mock seam)',
+  },
+  {
+    page: 'teleprompter',
+    state: 'done',
+    description: 'Teleprompter, chapter finished - every word dimmed, no current word, "Done" status (reached via the ?mockTeleprompter=done mock seam)',
+  },
+
   // Settings
   { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category' },
   { page: 'settings', state: 'global-appearance', description: 'Settings, Global scope / Appearance category (theme switcher)' },
