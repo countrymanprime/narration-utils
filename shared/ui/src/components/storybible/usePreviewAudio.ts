@@ -21,9 +21,9 @@ type PreviewAudioOptions = {
  */
 export function usePreviewAudio({ resetKey, requestPreview, onAssetRequired, notify }: PreviewAudioOptions) {
   const [playingPreview, setPlayingPreview] = useState<string>();
-  const audioRef = useRef<HTMLAudioElement>();
-  const activeKeyRef = useRef<string>();
-  const objectUrlRef = useRef<string>();
+  const audioRef = useRef<HTMLAudioElement | undefined>(undefined);
+  const activeKeyRef = useRef<string | undefined>(undefined);
+  const objectUrlRef = useRef<string | undefined>(undefined);
   const requestRef = useRef(0);
   const callbacksRef = useRef({ requestPreview, onAssetRequired, notify });
   callbacksRef.current = { requestPreview, onAssetRequired, notify };

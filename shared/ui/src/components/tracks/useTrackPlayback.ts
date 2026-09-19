@@ -13,7 +13,7 @@ const SKIP_SECONDS = 30;
  * with next/previous track are the same state, not two that can drift apart.
  */
 export function useTrackPlayback(tracks: Track[], trackIndex: number, onTrackIndexChange: (index: number) => void, mediaUrl: (sourceFile: string) => string) {
-  const audioRef = useRef<HTMLAudioElement>();
+  const audioRef = useRef<HTMLAudioElement | undefined>(undefined);
   if (!audioRef.current) audioRef.current = new Audio();
   const isPlayingRef = useRef(false);
 

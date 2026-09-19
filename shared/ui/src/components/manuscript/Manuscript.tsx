@@ -42,7 +42,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
   const bandRef = useRef<HTMLDivElement>(null);
   const searchRequest = useRef(0);
   const requestedChapters = useRef(new Set<string>());
-  const highlightTimer = useRef<number>();
+  const highlightTimer = useRef<number | undefined>(undefined);
   const [bandHeight, setBandHeight] = useState(0);
   const [chapters, setChapters] = useState<Awaited<ReturnType<typeof api.manuscriptChapters>>>([]);
   const [paragraphs, setParagraphs] = useState<ManuscriptParagraph[]>([]);
