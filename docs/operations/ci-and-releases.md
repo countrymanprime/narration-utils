@@ -24,6 +24,9 @@ reviewer. Leave **Prevent self-review** disabled and leave administrator bypass
 enabled so the owner can promote an emergency or solo release. Restrict the
 environment to `main` and tags matching `v*`.
 
+Issues, labels, milestones, and the project board are covered in
+[Tracking work on GitHub](github-workflow.md).
+
 ## Version lifecycle
 
 The pre-release workflow runs after each non-release push to `main`. Nx Release
