@@ -443,6 +443,46 @@ in the module header, no new runtime dependency. Trade-off recorded: each
 decode re-reads the whole open segment, so CPU cost grows with model size and
 segment length (capped by `MAX_BUFFER_SECONDS`).
 
+### 10. Moonshine Voice — streaming ASR candidate for the live teleprompter path
+
+**Status: candidate under evaluation. Not a project dependency.** It is
+imported only by the optional `--engine moonshine` path of
+[`live_asr.py`](../../tools/manuscript-teleprompter/core/live_asr.py) and run in
+an ephemeral `uv` environment; `pyproject.toml` and `uv.lock` are untouched.
+It cannot ship until the record below is completed.
+
+**What it contributes.** Streaming speech recognition that caches encoder state
+instead of re-decoding, partial and final line events, word timestamps in
+streaming mode, and `set_context()` / `set_keyterms()` biasing toward script
+text. See the [Manuscript Teleprompter brief](../architecture/manuscript-teleprompter.md)
+for why two live engines are supported and how they are compared.
+
+**Record so far.**
+
+- **Package**: `moonshine-voice` 0.1.5 on PyPI, MIT
+  ([repository](https://github.com/moonshine-ai/moonshine)); pure-Python wheel
+  with bundled native libraries (Windows x64 wheel 16.5 MB; Linux x86-64/arm64
+  and macOS arm64 wheels exist; **no macOS Intel wheel**). Runtime dependencies:
+  `numpy`, `sounddevice`, `requests`, `tqdm`, `filelock`, `platformdirs`,
+  `google-crc32c`.
+- **Model license**: the project states its English streaming models are MIT
+  (the non-commercial Moonshine Community License covers only legacy
+  non-streaming models for other languages). GitHub's license detector reports
+  the repository as unrecognized, so the exact per-model license text must be
+  confirmed at the pinned artifact before adoption.
+- **Model artifacts** (English streaming; sizes observed downloading, about 10
+  files each): Small about 215 MB including the 78 MB attention decoder that
+  word timestamps require; Tiny about 74 MB. The library fetches them from
+  Moonshine's own servers.
+- **Missing before adoption**: immutable URL and SHA-256 for every file, model
+  card/provenance, and loading from a pre-placed directory through the
+  hashed, versioned asset catalog (the product must not let the library
+  download models itself); PyInstaller packaging of the native libraries on
+  each supported platform; removal and update policy.
+- **Observed behavior** (small samples, Windows CPU): about 0.26x real time
+  for Small and 0.17x for Tiny; partial updates every 0.5s; word timestamps
+  noisy in partials; final line identical to the last partial in 27 of 27 lines.
+
 ## Clarifications for adjacent tools
 
 ### FFmpeg and ffprobe versus the DAW

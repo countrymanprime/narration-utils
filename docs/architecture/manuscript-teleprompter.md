@@ -185,7 +185,16 @@ fuzzy matching against the script is the ordinary open-source pattern.
    the UI. The contract is implemented in `live_asr.py` as three NDJSON event
    types: `partial` (the whole current reading of the open segment, replaced
    each time), `word` (confirmed, append-only, never retracted) and
-   `segment_end`.
+   `segment_end`. Both engines are implemented behind it
+   (`--engine whisper|moonshine`). Two things the Moonshine adapter taught us:
+   its line text is authoritative (its timing list can omit a word the text
+   contains, so timings are aligned onto the text's words), and its word
+   timestamps are noisy, especially in partials (on a synthetic clip, 6 of 23
+   partials had out-of-order or inverted word times). The event contract
+   therefore treats word times as advisory: only `end >= start` is
+   guaranteed, and the script tracker must rely on word order and arrival
+   time, not engine timestamps. Karaoke-style word animation should pace
+   itself instead of trusting per-word times.
 3. **Spike results that shaped this** (Moonshine Small and Tiny Streaming, real
    mic and one synthetic recording, Windows CPU, 16–25 s of reading per run;
    small samples):
@@ -307,7 +316,7 @@ the exact commit ported from. The LocalAgreement policy added later comes from
   candidate only).
 - Moonshine provisioning: its library downloads models from its own servers,
   but this product provisions models through the hashed, versioned asset
-  catalog. Needs catalog entries (URL and SHA-256 per file, about 9 files) and
+  catalog. Needs catalog entries (URL and SHA-256 per file, about 10 files) and
   loading from a pre-placed directory, not the library's own downloader.
 - Moonshine packaging: `moonshine-voice` is not a project dependency yet, and
   its native wheels would have to bundle correctly with PyInstaller on every

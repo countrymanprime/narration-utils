@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -156,6 +157,16 @@ def test_confirmed_events_carry_the_full_current_hypothesis_in_each_partial():
     assert events == [{"type": "partial", "segment": 0, "words": [{"word": "a", "start": 0.0, "end": 0.4}, {"word": "b", "start": 0.5, "end": 0.9}]}]
 
 
+def test_event_words_never_end_before_they_start_even_if_the_engine_says_so():
+    inverted = (("a", 2.0, 1.5),)
+    hypotheses = [live_asr.Hypothesis(0, inverted, final=False), live_asr.Hypothesis(0, inverted, final=True)]
+
+    events = list(live_asr.confirmed_events(hypotheses))
+
+    assert events[0]["words"][0] == {"word": "a", "start": 2.0, "end": 2.0}
+    assert next(e for e in events if e["type"] == "word")["end"] == 2.0
+
+
 def test_confirmed_events_reset_agreement_between_segments():
     hypotheses = [
         _hyp(0, ["a", "b", "c"]),
@@ -186,6 +197,200 @@ def test_whisper_events_stream_partials_then_words_then_a_segment_end():
     assert types[-1] == "segment_end"
     assert [e["word"] for e in events if e["type"] == "word"] == NAMES
     assert [e["start"] for e in events if e["type"] == "word"] == [0.0, 0.5, 1.0, 1.5, 2.0, 2.5]
+
+
+class LineTextChanged:
+    def __init__(self, line):
+        self.line = line
+
+
+class LineCompleted:
+    def __init__(self, line):
+        self.line = line
+
+
+class LineStarted:
+    def __init__(self, line):
+        self.line = line
+
+
+def _line(line_id, text, start=0.0, duration=1.0, timings=None):
+    words = None if timings is None else [SimpleNamespace(word=w, start=s, end=e) for w, s, e in timings]
+    return SimpleNamespace(line_id=line_id, text=text, start_time=start, duration=duration, words=words)
+
+
+class FakeTranscriber:
+    """Stands in for moonshine_voice.Transcriber: events fire synchronously
+    inside add_audio (keyed by call number) and stop (key "stop")."""
+
+    def __init__(self, script):
+        self.script = script
+        self.calls = 0
+        self.calls_log = []
+        self.listener = None
+
+    def add_listener(self, listener):
+        self.listener = listener
+        self.calls_log.append("add_listener")
+
+    def start(self):
+        self.calls_log.append("start")
+
+    def add_audio(self, samples, sample_rate):
+        self.calls += 1
+        self.calls_log.append(("add_audio", len(samples), sample_rate))
+        for event in self.script.get(self.calls, []):
+            self.listener(event)
+
+    def stop(self):
+        self.calls_log.append("stop")
+        for event in self.script.get("stop", []):
+            self.listener(event)
+
+
+HELLO = [("hello", 1.0, 1.4)]
+HELLO_WORLD = [("hello", 1.0, 1.4), ("world", 1.5, 1.9)]
+
+
+def test_moonshine_hypotheses_map_line_events_to_partial_and_final_hypotheses():
+    script = {
+        1: [LineTextChanged(_line(900, "hello", timings=HELLO))],
+        2: [LineTextChanged(_line(900, "hello world", timings=HELLO_WORLD))],
+        3: [LineCompleted(_line(900, "hello world", timings=HELLO_WORLD))],
+    }
+
+    hypotheses = list(live_asr.moonshine_hypotheses(_chunks(3), FakeTranscriber(script)))
+
+    assert [(h.segment, h.final, [w[0] for w in h.words]) for h in hypotheses] == [
+        (0, False, ["hello"]),
+        (0, False, ["hello", "world"]),
+        (0, True, ["hello", "world"]),
+    ]
+    assert hypotheses[1].words[1] == ("world", 1.5, 1.9)
+
+
+def test_moonshine_hypotheses_number_segments_in_order_of_first_appearance():
+    script = {
+        1: [LineCompleted(_line(9_000_000_000_000_000_001, "one", timings=[("one", 0.0, 0.3)]))],
+        2: [LineTextChanged(_line(4_000_000_000_000_000_002, "two", start=1.0, timings=[("two", 1.0, 1.3)]))],
+        3: [LineCompleted(_line(4_000_000_000_000_000_002, "two", start=1.0, timings=[("two", 1.0, 1.3)]))],
+    }
+
+    hypotheses = list(live_asr.moonshine_hypotheses(_chunks(3), FakeTranscriber(script)))
+
+    assert [(h.segment, h.final) for h in hypotheses] == [(0, True), (1, False), (1, True)]
+
+
+def test_moonshine_hypotheses_are_yielded_while_audio_is_still_being_fed():
+    consumed = []
+
+    def chunks():
+        for chunk in _chunks(3):
+            consumed.append(1)
+            yield chunk
+
+    script = {1: [LineTextChanged(_line(1, "hello", timings=HELLO))]}
+
+    first = next(live_asr.moonshine_hypotheses(chunks(), FakeTranscriber(script)))
+
+    assert first.words[0][0] == "hello"
+    assert len(consumed) == 1
+
+
+def test_moonshine_hypotheses_skip_empty_partials_but_keep_an_empty_final():
+    script = {
+        1: [LineStarted(_line(1, "", duration=0.0)), LineTextChanged(_line(1, "", duration=0.0))],
+        2: [LineCompleted(_line(1, "", duration=0.0))],
+    }
+
+    hypotheses = list(live_asr.moonshine_hypotheses(_chunks(2), FakeTranscriber(script)))
+
+    assert [(h.final, h.words) for h in hypotheses] == [(True, ())]
+
+
+def test_moonshine_hypotheses_flush_lines_completed_by_stop():
+    script = {
+        1: [LineTextChanged(_line(1, "hello", timings=HELLO))],
+        "stop": [LineCompleted(_line(1, "hello", timings=HELLO))],
+    }
+
+    hypotheses = list(live_asr.moonshine_hypotheses(_chunks(1), FakeTranscriber(script)))
+
+    assert [h.final for h in hypotheses] == [False, True]
+
+
+def test_moonshine_hypotheses_start_before_audio_and_stop_after_it():
+    transcriber = FakeTranscriber({})
+
+    list(live_asr.moonshine_hypotheses(_chunks(2), transcriber))
+
+    assert transcriber.calls_log == [
+        "add_listener",
+        "start",
+        ("add_audio", HALF_SECOND, live_asr.SAMPLE_RATE),
+        ("add_audio", HALF_SECOND, live_asr.SAMPLE_RATE),
+        "stop",
+    ]
+
+
+def test_moonshine_words_are_stripped_and_blank_ones_dropped():
+    script = {1: [LineTextChanged(_line(1, "hi there", timings=[(" hi ", 0.0, 0.2), ("", 0.2, 0.3), ("there", 0.3, 0.6)]))]}
+
+    hypothesis = next(live_asr.moonshine_hypotheses(_chunks(1), FakeTranscriber(script)))
+
+    assert [w[0] for w in hypothesis.words] == ["hi", "there"]
+
+
+def test_moonshine_falls_back_to_evenly_spaced_words_when_the_line_has_no_timings():
+    script = {1: [LineTextChanged(_line(1, "a b", start=2.0, duration=1.0, timings=None))]}
+
+    hypothesis = next(live_asr.moonshine_hypotheses(_chunks(1), FakeTranscriber(script)))
+
+    assert hypothesis.words == (("a", 2.0, 2.5), ("b", 2.5, 3.0))
+
+
+def test_moonshine_keeps_a_word_the_timing_list_omitted_using_the_texts_words():
+    line = _line(1, "The ancient artifact", start=1.0, duration=2.0, timings=[("The", 1.0, 1.4), ("ancient", 1.4, 2.0)])
+
+    words = live_asr._moonshine_words(line)
+
+    assert words == (("The", 1.0, 1.4), ("ancient", 1.4, 2.0), ("artifact", 2.0, 3.0))
+
+
+def test_moonshine_words_keep_the_texts_punctuation_and_the_timings():
+    line = _line(1, "Hello, world.", timings=[("Hello", 0.1, 0.5), ("world", 0.6, 0.9)])
+
+    assert live_asr._moonshine_words(line) == (("Hello,", 0.1, 0.5), ("world.", 0.6, 0.9))
+
+
+def test_moonshine_interpolates_a_word_missing_from_the_middle_of_the_timing_list():
+    line = _line(1, "a x b", start=0.0, duration=3.0, timings=[("a", 0.0, 1.0), ("b", 2.0, 3.0)])
+
+    assert live_asr._moonshine_words(line) == (("a", 0.0, 1.0), ("x", 1.0, 2.0), ("b", 2.0, 3.0))
+
+
+def test_moonshine_ignores_timed_words_that_are_not_in_the_text():
+    line = _line(1, "a b", timings=[("a", 0.0, 0.5), ("stray", 0.5, 0.7), ("b", 0.7, 1.0)])
+
+    assert live_asr._moonshine_words(line) == (("a", 0.0, 0.5), ("b", 0.7, 1.0))
+
+
+def test_moonshine_hypotheses_feed_the_shared_event_layer_like_any_other_engine():
+    script = {
+        1: [LineTextChanged(_line(7, "hello", timings=HELLO))],
+        2: [LineTextChanged(_line(7, "hello world", timings=HELLO_WORLD))],
+        3: [LineCompleted(_line(7, "hello world", timings=HELLO_WORLD))],
+    }
+
+    events = list(live_asr.confirmed_events(live_asr.moonshine_hypotheses(_chunks(3), FakeTranscriber(script))))
+
+    assert [(e["type"], e.get("word")) for e in events] == [
+        ("partial", None),
+        ("partial", None),
+        ("word", "hello"),
+        ("word", "world"),
+        ("segment_end", None),
+    ]
 
 
 def test_event_lag_is_measured_from_the_end_of_the_newest_word_carried():

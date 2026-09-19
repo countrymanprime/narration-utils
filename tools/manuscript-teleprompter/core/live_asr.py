@@ -28,6 +28,9 @@ Both are recorded in docs/research/local-dependency-evaluation.md.
 Usage:
     python live_asr.py --wav segment.wav --model small [--model-dir DIR]
     python live_asr.py --mic "Microphone Array (Realtek(R) Audio)" --model tiny --timing
+    uv run --no-project --python 3.12 --with moonshine-voice==0.1.5 --with av==18.1.0 \\
+        python live_asr.py --engine moonshine --model small --mic "Microphone Array" --context script.txt --timing
+(moonshine-voice is an optional dependency, not in pyproject.toml, hence the ephemeral uv environment.)
 
 Output (stdout, one JSON object per line, flushed immediately; times are
 seconds of stream time). Engines only produce hypotheses; one shared layer
@@ -39,12 +42,16 @@ turns them into these three event types:
         a confirmed word; append-only, never retracted
     {"type": "segment_end", "segment": 0}
         the segment closed; all its words were emitted as `word` events first
+Word timings come from the engine and are advisory: they can be noisy or run
+backwards (Moonshine's do, mostly in partials), so the only guarantee is that
+`end` is never before `start`. Consumers should rely on word ORDER, not times.
 Diagnostics go to stderr via narration_common.logging_utils.log, never stdout.
 --timing adds decode-time lines and, for --mic, how far behind the speaker
 each partial and confirmed word was emitted.
 """
 
 import argparse
+import difflib
 import itertools
 import json
 import re
@@ -80,6 +87,10 @@ SPEECH_PAD_MS = 200
 # the whole open segment). With two decodes needed to confirm a word, output
 # trails speech by about two of these plus decode time.
 DECODE_INTERVAL_SECONDS = 0.5
+
+# Moonshine streaming model sizes selectable with --engine moonshine
+# (English only for now).
+MOONSHINE_ARCHS = {"tiny": "TINY_STREAMING", "small": "SMALL_STREAMING", "medium": "MEDIUM_STREAMING"}
 
 # Upper bound on how long unbroken speech can accumulate before it is
 # force-closed even without a detected pause, bounding both memory and the
@@ -149,8 +160,11 @@ class Hypothesis:
 
 
 def _word_json(word: Word) -> dict:
+    """A word as an event field set. Engine timings are advisory and can be
+    noisy (Moonshine's occasionally run backwards), so the one thing guaranteed
+    here is a non-negative duration."""
     text, start, end = word
-    return {"word": text, "start": round(start, 3), "end": round(end, 3)}
+    return {"word": text, "start": round(start, 3), "end": round(max(end, start), 3)}
 
 
 def _decode_span(decode: Decoder, buffer: np.ndarray, start: int, end: int, buffer_start_time: float, sample_rate: int) -> list[Word]:
@@ -251,6 +265,83 @@ def confirmed_events(hypotheses: Iterable[Hypothesis]) -> Iterator[dict]:
 def whisper_events(chunks: Iterable[np.ndarray], decode: Decoder, **engine_options) -> Iterator[dict]:
     """The Whisper engine wired to the shared event layer."""
     return confirmed_events(whisper_hypotheses(chunks, decode, **engine_options))
+
+
+def _align_timings_to_text(tokens: list[str], timed: list[Word], line_start: float, line_end: float) -> list[Word]:
+    """Give each of the text's tokens a timing: copy it from the matching timed
+    word, or spread the tokens with no match evenly across the gap between
+    their timed neighbours. The text is authoritative because Moonshine's
+    timing list can omit a word the text contains (seen on a final line whose
+    text had 3 words and timings for 2)."""
+    matcher = difflib.SequenceMatcher(None, [_normalize_word(t) for t in tokens], [_normalize_word(w[0]) for w in timed], autojunk=False)
+    matched: dict[int, tuple[float, float]] = {}
+    for block in matcher.get_matching_blocks():
+        for offset in range(block.size):
+            matched[block.a + offset] = timed[block.b + offset][1:]
+
+    words: list[Word] = []
+    previous_end = line_start
+    index = 0
+    while index < len(tokens):
+        if index in matched:
+            start, end = matched[index]
+            words.append((tokens[index], start, end))
+            previous_end = end
+            index += 1
+            continue
+        run_end = index
+        while run_end < len(tokens) and run_end not in matched:
+            run_end += 1
+        next_start = max(matched[run_end][0] if run_end < len(tokens) else line_end, previous_end)
+        step = (next_start - previous_end) / (run_end - index)
+        words.extend((tokens[index + n], previous_end + n * step, previous_end + (n + 1) * step) for n in range(run_end - index))
+        index = run_end
+    return words
+
+
+def _moonshine_words(line) -> tuple[Word, ...]:
+    """A Moonshine line's words in absolute stream time (its word timings are
+    already absolute): the text's own words, with timings aligned onto them."""
+    timed = [(w.word.strip(), w.start, w.end) for w in (line.words or []) if w.word.strip()]
+    return tuple(_align_timings_to_text(line.text.split(), timed, line.start_time, line.start_time + line.duration))
+
+
+def _take_all(items: list) -> list:
+    batch = list(items)
+    items.clear()
+    return batch
+
+
+def moonshine_hypotheses(chunks: Iterable[np.ndarray], transcriber, sample_rate: int = SAMPLE_RATE) -> Iterator[Hypothesis]:
+    """The Moonshine engine: feed audio to a streaming Transcriber and turn
+    its line events into hypotheses - LineTextChanged is a non-final reading
+    of the open line, LineCompleted its final one (in practice identical to
+    the last partial, so it closes the segment rather than correcting it).
+
+    Events are matched by class name so this needs no moonshine import, and
+    tests can drive it with a fake transcriber. Moonshine's own line ids are
+    huge, so segments are renumbered 0, 1, 2... in order of first appearance."""
+    pending: list[Hypothesis] = []
+    segments: dict[int, int] = {}
+
+    def on_event(event) -> None:
+        kind = type(event).__name__
+        if kind not in ("LineTextChanged", "LineCompleted"):
+            return
+        final = kind == "LineCompleted"
+        words = _moonshine_words(event.line)
+        if not words and not final:
+            return
+        segment = segments.setdefault(event.line.line_id, len(segments))
+        pending.append(Hypothesis(segment, words, final))
+
+    transcriber.add_listener(on_event)
+    transcriber.start()
+    for chunk in chunks:
+        transcriber.add_audio(chunk.tolist(), sample_rate)
+        yield from _take_all(pending)
+    transcriber.stop()
+    yield from _take_all(pending)
 
 
 def make_decoder(model, language: str | None, hotwords: str | None) -> Decoder:
@@ -365,18 +456,91 @@ def event_lag_seconds(event: dict, elapsed: float) -> float | None:
     return None
 
 
+def load_moonshine_transcriber(model: str, model_dir: str | None, update_interval: float, keyterms: str | None, context_path: str | None):
+    """Load a Moonshine streaming Transcriber. moonshine-voice is an optional
+    dependency imported only here, so the Whisper path never needs it."""
+    try:
+        from moonshine_voice import ModelArch, Transcriber
+    except ImportError as error:
+        raise SystemExit(
+            "--engine moonshine needs the moonshine-voice package, which is not a project dependency yet. Run with: "
+            "uv run --no-project --python 3.12 --with moonshine-voice==0.1.5 --with av==18.1.0 python <this script> ..."
+        ) from error
+
+    arch = getattr(ModelArch, MOONSHINE_ARCHS[model])
+    if model_dir:
+        model_path = model_dir
+        log(f"Loading Moonshine {MOONSHINE_ARCHS[model]} from {model_dir}...")
+    else:
+        from moonshine_voice.download import get_model_for_language
+
+        log(f"Loading Moonshine {MOONSHINE_ARCHS[model]} (first run downloads it from Moonshine's servers)...")
+        model_path, arch = get_model_for_language("en", arch, include_word_timestamps=True)
+    transcriber = Transcriber(model_path, arch, update_interval=update_interval, options={"word_timestamps": "true"})
+    if keyterms:
+        transcriber.set_keyterms([term.strip() for term in keyterms.split(",") if term.strip()])
+    if context_path:
+        transcriber.set_context(Path(context_path).read_text(encoding="utf-8"))
+    return transcriber
+
+
+EventStream = Callable[[Iterable[np.ndarray]], Iterator[dict]]
+
+
+def _load_whisper_engine(args) -> EventStream:
+    """Load the model now; return a function that streams events for a chunk
+    source (so loading never overlaps with live capture)."""
+    from faster_whisper import WhisperModel
+
+    compute_type = "int8" if args.device == "cpu" else "float16"
+    log(f"Loading Whisper model '{args.model}'{' from the locally verified asset cache' if args.model_dir else ''}...")
+    model = WhisperModel(args.model_dir or args.model, device=args.device, compute_type=compute_type, local_files_only=bool(args.model_dir))
+    decode = make_decoder(model, args.language, args.hotwords)
+    if args.timing:
+        decode = with_decode_timing(decode)
+    return lambda chunks: whisper_events(chunks, decode, decode_interval_seconds=args.decode_interval)
+
+
+def _load_moonshine_engine(args) -> EventStream:
+    transcriber = load_moonshine_transcriber(args.model, args.model_dir, args.decode_interval, args.hotwords, args.context)
+
+    def stream(chunks: Iterable[np.ndarray]) -> Iterator[dict]:
+        try:
+            yield from confirmed_events(moonshine_hypotheses(chunks, transcriber))
+        finally:
+            transcriber.close()
+
+    return stream
+
+
+def _check_engine_args(ap: argparse.ArgumentParser, args) -> None:
+    if args.engine == "moonshine":
+        if args.model not in MOONSHINE_ARCHS:
+            ap.error(f"--engine moonshine supports --model {'/'.join(MOONSHINE_ARCHS)}, not {args.model!r}")
+        if args.language not in (None, "en"):
+            ap.error("--engine moonshine is English only for now")
+    elif args.context:
+        ap.error("--context is only supported with --engine moonshine")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Stream live word-timestamp ASR as NDJSON for the Manuscript Teleprompter prototype")
     ap.add_argument("--wav", default=None, help="Replay this audio file as if it were live mic input (fixture testing)")
     ap.add_argument("--mic", default=None, help="Capture from this input device name instead of --wav (Windows dshow device name)")
-    ap.add_argument("--model", default="small", help="Whisper model size (tiny/base/small/medium/large-v3-turbo/large-v3)")
+    ap.add_argument("--engine", default="whisper", choices=["whisper", "moonshine"], help="Live ASR engine (default: whisper); both emit the same events")
+    ap.add_argument(
+        "--model",
+        default="small",
+        help="Model size: whisper tiny/base/small/medium/large-v3-turbo/large-v3, or moonshine tiny/small/medium (streaming)",
+    )
     ap.add_argument(
         "--model-dir",
         default=None,
         help="Local, already-verified model directory from the whisper asset catalog (shell/internal/whisper); omit to let faster-whisper resolve --model itself for direct/manual CLI use",
     )
     ap.add_argument("--language", default=None, help="Force language code, e.g. 'en' (default: auto-detect)")
-    ap.add_argument("--hotwords", default=None, help="Comma-separated vocabulary hints passed to faster-whisper as hotwords")
+    ap.add_argument("--hotwords", default=None, help="Comma-separated vocabulary hints (faster-whisper hotwords, or Moonshine key terms)")
+    ap.add_argument("--context", default=None, help="Text file (e.g. the script passage) whose unusual words Moonshine is biased toward; moonshine only")
     ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"], help="Inference device (default: cpu)")
     ap.add_argument(
         "--decode-interval",
@@ -394,23 +558,16 @@ def main() -> None:
         set_log_file(open(args.log, "a", encoding="utf-8"))  # noqa: SIM115
     if not args.wav and not args.mic:
         ap.error("one of --wav or --mic is required")
+    _check_engine_args(ap, args)
 
-    from faster_whisper import WhisperModel
-
-    compute_type = "int8" if args.device == "cpu" else "float16"
-    log(f"Loading Whisper model '{args.model}'{' from the locally verified asset cache' if args.model_dir else ''}...")
-    model = WhisperModel(args.model_dir or args.model, device=args.device, compute_type=compute_type, local_files_only=bool(args.model_dir))
-    decode = make_decoder(model, args.language, args.hotwords)
-    if args.timing:
-        decode = with_decode_timing(decode)
-
+    stream = (_load_moonshine_engine if args.engine == "moonshine" else _load_whisper_engine)(args)
     chunks = iter_wav_chunks(args.wav) if args.wav else iter_microphone_chunks(args.mic)
     log("Listening..." if args.mic else f"Replaying {args.wav}...")
     capture_started = None
     try:
         if args.mic:
             chunks, capture_started = _anchor_capture_clock(chunks)
-        for event in whisper_events(chunks, decode, decode_interval_seconds=args.decode_interval):
+        for event in stream(chunks):
             print(json.dumps(event), flush=True)
             if args.timing and capture_started is not None:
                 lag = event_lag_seconds(event, time.perf_counter() - capture_started)
