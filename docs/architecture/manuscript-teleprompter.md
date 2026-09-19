@@ -1,6 +1,6 @@
 # Manuscript Teleprompter
 
-**Status: Planned. Deferred work item — see [roadmap.md](../roadmap.md#deferred-work). Only a prototype ASR sidecar exists ([`tools/manuscript-teleprompter/core/live_asr.py`](../../tools/manuscript-teleprompter/core/live_asr.py)); there is no UI, Go integration, or shipped feature yet. This brief exists to make the deferred sentence concrete enough to plan tasks from, not to schedule it into a milestone.**
+**Status: Planned. Deferred work item — see [roadmap.md](../roadmap.md#deferred-work). The ASR sidecar ([`tools/manuscript-teleprompter/core/live_asr.py`](../../tools/manuscript-teleprompter/core/live_asr.py)) and its Go host integration (streaming supervisor, teleprompter service, bindings and events) exist; there is no frontend page or shipped feature yet. This brief exists to make the deferred sentence concrete enough to plan tasks from, not to schedule it into a milestone.**
 
 ## Problem
 
@@ -277,13 +277,42 @@ like `Results.tsx` already does for offline findings today.
 
 ## Streaming subprocess support (resolves decision #5)
 
-`shell/internal/process.Supervisor.Start` currently drains stdout/stderr to
-`io.Discard` for the two batch sidecars (Manuscript Guide, Transcript
-Compare) — see `supervisor.go`. A live teleprompter sidecar needs a second,
-additive code path: a streaming variant that reads NDJSON lines from the
-child's stdout and relays each as a Wails event to the frontend, instead of
-discarding it. This is new capability alongside the existing batch path, not
-a change to it — the batch sidecars keep their current behavior.
+`shell/internal/process.Supervisor.Start` drains stdout/stderr to `io.Discard`
+for the two batch sidecars (Manuscript Guide, Transcript Compare) — see
+`supervisor.go`. A live sidecar needs a second, additive code path, so
+`stream.go` adds `Supervisor.StartStream`: it hands each stdout line to a
+callback, keeps the tail of stderr for diagnostics, reads with `ReadString`
+rather than a `Scanner` (the one-off `script` event describes a whole chapter
+and can be very long), and returns a `StreamChild` with `Done`, `Kill` and
+`StderrTail`. The batch path is untouched.
+
+**Implemented in the desktop host (2026-09-19).**
+`shell/internal/teleprompter.Service` owns one session: it builds the sidecar
+arguments (`--engine`, `--model`, `--model-dir`, `--manuscript`, `--chapter`,
+`--mic` or a developer `--wav`, `--stop-file`), relays every valid JSON line
+verbatim as the Wails event `teleprompter:event`, publishes phase changes as
+`teleprompter:state`, and keeps the last `script` and `position` events in its
+snapshot so a view that opens mid-session catches up. The `Host` exposes
+`TeleprompterStart`, `TeleprompterStop` and `TeleprompterState` (host API
+version 5). `TeleprompterStart` uses the same first-use model gate as
+Transcript Compare and defaults to the `tiny` model, because live
+transcription has to keep up with speech. Only the Whisper engine is
+launchable from the host until Moonshine's models are provisioned through the
+asset catalog.
+
+**Stopping.** Go cannot send Ctrl+C to the sidecar, and the other sidecars use
+`.cancel` sentinel files, so the sidecar accepts `--stop-file`: once that file
+exists the audio stream ends, the engine flushes what it heard, and the
+process exits 0. `Stop` creates the file and kills the process if it has not
+exited after a grace period. A live session also counts as busy, so the host
+will not switch REAPER projects underneath it, and `Shutdown` stops it before
+closing the supervisor (without holding the host lock, because the service's
+state callback needs it).
+
+**Packaging.** The sidecar is frozen as `manuscript-teleprompter` by
+`scripts/release/prepare-resources.py` and required by
+`scripts/release/verify-installable.mjs`. `moonshine-voice` is deliberately
+not bundled yet.
 
 ## Where listening runs (resolves decision #1)
 
