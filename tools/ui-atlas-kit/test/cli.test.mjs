@@ -249,3 +249,69 @@ describe('v0.2: what the six rollouts taught', () => {
     assert.deepEqual(components[0].consumers, ['src/page.tsx']);
   });
 });
+
+describe('v0.3: what the upgrade round taught', () => {
+  const indexWith = (dir, entries) => {
+    mkdirSync(join(dir, 'storybook-static'), { recursive: true });
+    writeFileSync(join(dir, 'storybook-static', 'index.json'), JSON.stringify({ v: 5, entries }));
+  };
+  const story = (id, title, name, componentPath) => ({ id, type: 'story', title, name, importPath: './x.stories.tsx', componentPath });
+
+  test('two story files for one component stay two pages instead of merging', async () => {
+    const dir = fixture();
+    indexWith(dir, {
+      'a--one': story('a--one', 'Composites/MovieCard', 'One', './src/MovieCard.tsx'),
+      'b--two': story('b--two', 'Composites/MovieCardNoShowtimes', 'Two', './src/MovieCard.tsx'),
+    });
+    const result = await docs(dir);
+    assert.equal(result.components, 2);
+    const names = JSON.parse(readFileSync(join(dir, 'docs', 'ui', 'inventory.json'), 'utf8')).components.map((c) => c.name).sort();
+    assert.equal(new Set(names).size, 2, 'page names must be unique');
+    assert.ok(names.includes('MovieCard'));
+  });
+
+  test('docs deletes generated pages and images it no longer produces, but not other files', async () => {
+    const dir = fixture();
+    indexWith(dir, { 'a--one': story('a--one', 'Primitives/Button', 'One', './src/Button.tsx') });
+    mkdirSync(join(dir, 'docs', 'ui', 'atlas'), { recursive: true });
+    mkdirSync(join(dir, 'docs', 'ui', 'images'), { recursive: true });
+    writeFileSync(join(dir, 'docs', 'ui', 'atlas', 'Gone.md'), '# stale');
+    writeFileSync(join(dir, 'docs', 'ui', 'images', 'gone.webp'), 'x');
+    writeFileSync(join(dir, 'docs', 'ui', 'README.md'), 'hand written');
+    await docs(dir);
+    assert.equal(existsSync(join(dir, 'docs', 'ui', 'atlas', 'Gone.md')), false);
+    assert.equal(existsSync(join(dir, 'docs', 'ui', 'images', 'gone.webp')), false);
+    assert.equal(existsSync(join(dir, 'docs', 'ui', 'README.md')), true);
+  });
+
+  test('docs adopts the casing of an existing curated inventory instead of duplicating it', async () => {
+    const dir = fixture();
+    indexWith(dir, { 'a--one': story('a--one', 'Sections/feature-grid', 'One', './src/feature-grid.tsx') });
+    mkdirSync(join(dir, 'docs', 'ui'), { recursive: true });
+    writeFileSync(join(dir, 'docs', 'ui', 'inventory.json'), JSON.stringify({ components: [{ name: 'FeatureGrid', tier: 'composite' }] }));
+    await docs(dir);
+    const { components } = JSON.parse(readFileSync(join(dir, 'docs', 'ui', 'inventory.json'), 'utf8'));
+    assert.equal(components.length, 1);
+    assert.equal(components[0].name, 'FeatureGrid');
+    assert.equal(components[0].tier, 'composite');
+    assert.equal(existsSync(join(dir, 'docs', 'ui', 'atlas', 'FeatureGrid.md')), true);
+  });
+
+  test('sync stamps the kit version into ui-atlas.config.json', () => {
+    const dir = fixture();
+    init(dir, {});
+    const file = join(dir, 'ui-atlas.config.json');
+    writeFileSync(file, readFileSync(file, 'utf8').replace(/"kit": "[^"]+"/, '"kit": "0.0.1"'));
+    sync(dir, {});
+    assert.notEqual(JSON.parse(readFileSync(file, 'utf8')).kit, '0.0.1');
+  });
+
+  test('exemptions keyed by a path are understood by the audit', () => {
+    const dir = fixture();
+    init(dir, {});
+    const file = join(dir, 'src/atlasCoverage.test.ts');
+    writeFileSync(file, readFileSync(file, 'utf8').replace('const ATLAS_EXEMPT: Record<string, string> = {};', "const ATLAS_EXEMPT: Record<string, string> = { 'layout/Panel': 'pure layout wrapper' };"));
+    writeFileSync(join(dir, 'src/components/primitives/Button.stories.tsx'), 'export default {};\n');
+    assert.ok(audit(dir).counts.exempt.includes('layout/Panel'));
+  });
+});

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ui-atlas: bootstrap, audit, document and keep in sync the visual component library of a React UI repo.
 // Dependency-free Node ESM (>= 20). See tools/ui-atlas-kit/docs/design.md for the contract.
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
@@ -228,7 +228,7 @@ export function audit(dir) {
   const storied = new Set(all.filter((f) => /\.stories\.(tsx|jsx)$/.test(f)).map((f) => basename(f).replace(/\.stories\.(tsx|jsx)$/, '')));
   const coveragePath = join(dir, 'src', 'atlasCoverage.test.ts');
   const exemptBlock = existsSync(coveragePath) ? (readText(coveragePath).match(/ATLAS_EXEMPT[^=]*=\s*\{([\s\S]*?)\};/) ?? [])[1] ?? '' : '';
-  const exempt = [...exemptBlock.matchAll(/^\s*['"]?([\w-]+)['"]?\s*:/gm)].map((m) => m[1]);
+  const exempt = [...exemptBlock.matchAll(/^\s*['"]?([\w/.-]+)['"]?\s*:/gm)].map((m) => m[1]);
   const withStories = components.filter((name) => storied.has(name));
   const uncovered = components.filter((name) => !storied.has(name) && !exempt.includes(name));
 
@@ -278,10 +278,10 @@ export async function docs(dir) {
   const indexPath = join(dir, 'storybook-static', 'index.json');
   if (!existsSync(indexPath)) throw new Error(`no ${posix(relative(process.cwd(), indexPath))}: run the storybook build (pnpm atlas) first`);
   const entries = Object.values(readJson(indexPath).entries).filter((e) => e.type === 'story');
-  // One page per component: group by the component file when Storybook knows it, else by title.
+  // One page per Storybook title: two story files for one component file stay two pages.
   const groups = new Map();
   for (const entry of entries) {
-    const key = entry.componentPath ?? entry.title;
+    const key = entry.title;
     groups.set(key, [...(groups.get(key) ?? []), entry]);
   }
 
@@ -305,11 +305,22 @@ export async function docs(dir) {
   const sources = walk(dir, (f) => /\.(tsx?|jsx?)$/.test(f) && !/\.(stories|test|spec)\./.test(f) && !SOURCE_SKIP.test(posix(relative(dir, f))));
   const debtPath = join(dir, 'tests', 'atlas', 'a11y-debt.ts');
   const debtText = existsSync(debtPath) ? readText(debtPath) : '';
+  const inventoryPath = join(outDir, 'inventory.json');
+  const prior = existsSync(inventoryPath) ? (readJson(inventoryPath).components ?? []) : [];
+  const norm = (n) => n.toLowerCase().replace(/[-_\s]/g, '');
+  const used = new Set();
+  const writtenPages = new Set(['index.md']);
+  const writtenImages = new Set();
   const inventory = [];
-  for (const [key, stories] of groups) {
+  for (const [, stories] of groups) {
     const first = stories[0];
     const componentPath = first.componentPath ? posix(first.componentPath).replace(/^\.\//, '') : undefined;
-    const name = componentPath ? stripExt(componentPath) : first.title.split('/').pop();
+    const titleTail = first.title.split('/').pop();
+    const fileName = componentPath ? stripExt(componentPath) : titleTail;
+    // Adopt the casing of a hand-curated inventory entry rather than duplicating it.
+    let name = prior.find((p) => norm(p.name) === norm(fileName))?.name ?? fileName;
+    if (used.has(norm(name))) name = `${name}-${slug(titleTail)}`;
+    used.add(norm(name));
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const importer = new RegExp(`from ['"][^'"]*/${escaped}(?:/index)?['"]`);
     const consumers = sources.filter((f) => importer.test(readText(f))).map((f) => posix(relative(dir, f)));
@@ -318,6 +329,7 @@ export async function docs(dir) {
       const file = join(dir, 'screenshots', 'atlas', slug(story.title), `${slug(story.name)}--light-wide.png`);
       if (!existsSync(file) || (await isBlank(file))) continue;
       image = `images/${slug(name)}.webp`;
+      writtenImages.add(`${slug(name)}.webp`);
       if (sharp) await sharp(file).resize({ width: 960, withoutEnlargement: true }).webp({ quality: 80 }).toFile(join(outDir, image));
       else image = '';
       break;
@@ -331,13 +343,16 @@ export async function docs(dir) {
     lines.push('## Used by', '', ...(consumers.length ? consumers.map((c) => `- \`${c}\``) : ['- nothing outside its own stories and tests yet']), '');
     if (debt) lines.push('## Known accessibility debt', '', 'This component has a recorded, reasoned exemption in `tests/atlas/a11y-debt.ts`.', '');
     writeFileSync(join(outDir, 'atlas', `${name}.md`), lines.join('\n'));
+    writtenPages.add(`${name}.md`);
+  }
+  // Everything under docs/ui/atlas and docs/ui/images is generated: drop what this run did not produce.
+  for (const [folder, ext, keep] of [['atlas', '.md', writtenPages], ['images', '.webp', writtenImages]]) {
+    for (const file of readdirSync(join(outDir, folder))) if (file.endsWith(ext) && !keep.has(file)) unlinkSync(join(outDir, folder, file));
   }
   inventory.sort((a, b) => a.name.localeCompare(b.name));
   writeFileSync(join(outDir, 'atlas', 'index.md'), ['# Component atlas', '', 'Generated by `ui-atlas docs` from the Storybook build. Do not edit by hand.', '', ...inventory.map((c) => `- [${c.name}](${c.name}.md): ${c.stories.length} stories`), ''].join('\n'));
   // inventory.json is shared with the ui-component-inventory skill, which adds tier/depth/atlasExempt
   // and lists components that have no stories. Regenerate what Storybook knows; keep what a person wrote.
-  const inventoryPath = join(outDir, 'inventory.json');
-  const prior = existsSync(inventoryPath) ? (readJson(inventoryPath).components ?? []) : [];
   const merged = inventory.map((generated) => ({ ...prior.find((p) => p.name === generated.name), ...generated }));
   const kept = prior.filter((p) => !inventory.some((generated) => generated.name === p.name));
   const components = [...merged, ...kept].sort((a, b) => a.name.localeCompare(b.name));
@@ -364,6 +379,7 @@ export function sync(dir, flags = {}) {
       refreshed.push(file.rel);
     }
   }
+  if (!flags.check && config.kit !== KIT_VERSION) writeFileSync(join(dir, 'ui-atlas.config.json'), JSON.stringify({ ...config, kit: KIT_VERSION }, null, 2) + '\n');
   return { drift, refreshed, tier };
 }
 

@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.2.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 /* eslint-disable @typescript-eslint/no-explicit-any -- in-page access to Storybook's untyped window globals */
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync, readFileSync } from 'node:fs';
@@ -66,9 +66,6 @@ async function contentClip(page: Page): Promise<{ x: number; y: number; width: n
     const pad = 12;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    // Page coordinates: a story taller than the viewport is captured whole (fullPage).
-    const pageWidth = Math.max(vw, document.documentElement.scrollWidth);
-    const pageHeight = Math.max(vh, document.documentElement.scrollHeight);
     const rects = [...document.body.querySelectorAll('*')]
       .filter((el) => !['SCRIPT', 'STYLE', 'LINK', 'META'].includes(el.tagName))
       .map((el) => el.getBoundingClientRect())
@@ -76,10 +73,28 @@ async function contentClip(page: Page): Promise<{ x: number; y: number; width: n
     if (rects.length === 0) return undefined;
     const left = Math.max(0, Math.min(...rects.map((r) => r.left)) - pad);
     const top = Math.max(0, Math.min(...rects.map((r) => r.top)) - pad);
-    const right = Math.min(pageWidth, Math.max(...rects.map((r) => r.right)) + pad);
-    const bottom = Math.min(pageHeight, Math.max(...rects.map((r) => r.bottom)) + pad);
+    const right = Math.min(vw, Math.max(...rects.map((r) => r.right)) + pad);
+    const bottom = Math.min(vh, Math.max(...rects.map((r) => r.bottom)) + pad);
     return right > left && bottom > top ? { x: left, y: top, width: right - left, height: bottom - top } : undefined;
   });
+}
+
+// A story taller than the viewport is shown whole by growing the viewport to fit it, not with Playwright's
+// fullPage: fullPage stretches fixed elements (a bottom bar) across the whole page and mixes coordinate systems
+// when a play() scrolled. Scroll back to the top first so the measurement and the clip agree.
+async function fitViewportToContent(page: Page, width: number, height: number): Promise<void> {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const needed = await page.evaluate(() => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const bottoms = [...document.body.querySelectorAll('*')]
+      .filter((el) => !['SCRIPT', 'STYLE', 'LINK', 'META'].includes(el.tagName))
+      .map((el) => el.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.height > 0 && !(r.width >= vw - 1 && r.height >= vh - 1))
+      .map((r) => r.bottom);
+    return bottoms.length ? Math.ceil(Math.max(...bottoms)) + 12 : 0;
+  });
+  if (needed > height) await page.setViewportSize({ width, height: Math.min(needed, 4000) });
 }
 
 const slug = (text: string) =>
@@ -107,14 +122,21 @@ for (const entry of stories) {
         const { finished, playError, errorDisplay } = await finishedStory(page, entry.id);
 
         await page.evaluate(() => document.fonts.ready);
+        await fitViewportToContent(page, viewport.width, viewport.height);
         const overflowPx = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        // Storybook's static server answers a missing file with a fallback page and status 200, so a broken image
+        // shows up only as an <img> that finished loading with no pixels.
+        const brokenImages = await page.evaluate(() =>
+          [...document.images]
+            .filter((img) => img.complete && img.naturalWidth === 0 && !img.currentSrc.endsWith('.svg'))
+            .map((img) => img.currentSrc || img.src),
+        );
         const dir = `screenshots/atlas/${slug(entry.title)}`;
         mkdirSync(dir, { recursive: true });
         await page.screenshot({
           path: `${dir}/${slug(entry.name)}--${theme}-${viewport.name}.png`,
           animations: 'disabled',
           caret: 'hide',
-          fullPage: true,
           clip: await contentClip(page),
         });
 
@@ -131,6 +153,7 @@ for (const entry of stories) {
         // The addon marks a story 'error' for ANY axe result, including rules recorded as debt above.
         if (allowed.length === 0) expect(finished.status).toBe('success');
         expect(overflowPx, `story scrolls sideways by ${overflowPx}px`).toBeLessThanOrEqual(1);
+        expect(brokenImages, 'images that failed to load').toEqual([]);
         expect(problems, 'the story logged errors').toEqual([]);
       });
     }

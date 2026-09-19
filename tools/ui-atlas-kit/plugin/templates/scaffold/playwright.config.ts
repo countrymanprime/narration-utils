@@ -21,7 +21,8 @@ export default defineConfig({
     // TODO(ui-atlas-init): add `--mode <name>` etc. if the app needs a special dev mode (a mock API).
     command: `npx --no-install vite --port ${port} --strictPort`,
     url: `http://localhost:${port}`,
-    reuseExistingServer: !process.env.CI,
+    // Attaching to whatever already listens on the port could be a different app (your own dev server); opt in with UI_REUSE_SERVER=1.
+    reuseExistingServer: Boolean(process.env.UI_REUSE_SERVER),
     timeout: 30_000,
   },
 });

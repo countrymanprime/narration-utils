@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.2.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 // Pure checks over what one visual-suite run captured. Kept free of Playwright
 // and Node APIs so they are unit-tested by Vitest (src/visualSuite.test.ts) and
 // reused unchanged by global-setup.ts's post-run teardown.

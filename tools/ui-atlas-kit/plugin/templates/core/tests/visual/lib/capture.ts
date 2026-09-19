@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.2.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -59,6 +59,11 @@ export async function captureState(page: Page, entry: StateEntry, viewport: View
   await page.goto('/');
   await settlePage(page);
   await driver(page);
+  // A long page is shown whole by growing the viewport (Playwright's fullPage would stretch fixed elements).
+  if (entry.fullPage) {
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    await page.setViewportSize({ width: viewport.width, height: Math.min(height, 6000) });
+  }
   await settleFrames(page);
   // A pointer left over from the driver's last click paints a hover style on
   // whatever it rests on, and whether it lands before the shot is a race.
@@ -69,7 +74,6 @@ export async function captureState(page: Page, entry: StateEntry, viewport: View
     path: `${screenshotDir(entry.page, entry.state)}/${viewport.name}.png`,
     animations: 'disabled',
     caret: 'hide',
-    fullPage: entry.fullPage,
     mask: entry.mask?.map((selector) => page.locator(selector)),
   });
 

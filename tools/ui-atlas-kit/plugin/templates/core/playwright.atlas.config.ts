@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.2.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { defineConfig } from '@playwright/test';
 
 // Component atlas: every Storybook story x theme x viewport, captured and
@@ -20,7 +20,8 @@ export default defineConfig({
     // npx --no-install runs the repo's own vite whichever package manager installed it.
     command: `npx --no-install vite preview --outDir storybook-static --port ${port} --strictPort`,
     url: `http://localhost:${port}/index.json`,
-    reuseExistingServer: !process.env.CI,
+    // Attaching to whatever already listens on the port could be another repo's Storybook; opt in with UI_REUSE_SERVER=1.
+    reuseExistingServer: Boolean(process.env.UI_REUSE_SERVER),
     timeout: 30_000,
   },
 });

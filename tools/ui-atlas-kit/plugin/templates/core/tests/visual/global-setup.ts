@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.2.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { RUN_DIR, screenshotDir } from './helpers/settle';
@@ -23,6 +23,7 @@ function pruneStaleScreenshots(): void {
     for (const state of readdirSync(join(root, page.name), { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
       if (!known.has(`${page.name}/${state.name}`)) rmSync(join(root, page.name, state.name), { recursive: true, force: true });
     }
+    if (readdirSync(join(root, page.name)).length === 0) rmSync(join(root, page.name), { recursive: true, force: true });
   }
 }
 
