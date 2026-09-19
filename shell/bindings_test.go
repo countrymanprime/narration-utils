@@ -97,3 +97,108 @@ func TestTranscriptStartProceedsOnceTheModelIsInstalled(t *testing.T) {
 		t.Fatalf("expected the post-gate Start() project error, got %v", err)
 	}
 }
+
+func newTestHostForTracks(t *testing.T, projectFolder string) *Host {
+	t.Helper()
+	host := &Host{settings: settings.New(t.TempDir(), projectFolder)}
+	host.config.projectFolder = projectFolder
+	return host
+}
+
+func writeFile(t *testing.T, path, contents string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTracksDiscoverAutoSelectsTheOnlyRppFile(t *testing.T) {
+	folder := t.TempDir()
+	writeFile(t, filepath.Join(folder, "Book.rpp"), "x")
+	host := newTestHostForTracks(t, folder)
+
+	raw, err := host.TracksDiscover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result map[string]any
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result["selected"] != filepath.Join(folder, "Book.rpp") {
+		t.Fatalf("selected = %v, want the sole candidate", result["selected"])
+	}
+}
+
+func TestTracksDiscoverLeavesSelectionEmptyWhenAmbiguous(t *testing.T) {
+	folder := t.TempDir()
+	writeFile(t, filepath.Join(folder, "Draft.rpp"), "x")
+	writeFile(t, filepath.Join(folder, "Final.rpp"), "x")
+	host := newTestHostForTracks(t, folder)
+
+	raw, err := host.TracksDiscover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result map[string]any
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result["selected"] != "" {
+		t.Fatalf("selected = %v, want empty until the narrator chooses", result["selected"])
+	}
+	if candidates, _ := result["candidates"].([]any); len(candidates) != 2 {
+		t.Fatalf("candidates = %#v, want 2", result["candidates"])
+	}
+}
+
+func TestTracksSelectPersistsAndDiscoverThenReturnsIt(t *testing.T) {
+	folder := t.TempDir()
+	writeFile(t, filepath.Join(folder, "Draft.rpp"), "x")
+	writeFile(t, filepath.Join(folder, "Final.rpp"), "x")
+	host := newTestHostForTracks(t, folder)
+
+	if _, err := host.TracksSelect(filepath.Join(folder, "Final.rpp")); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := host.TracksDiscover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result map[string]any
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result["selected"] != filepath.Join(folder, "Final.rpp") {
+		t.Fatalf("selected = %v, want the persisted choice", result["selected"])
+	}
+}
+
+func TestTracksSelectRejectsAPathOutsideTheDiscoveredCandidates(t *testing.T) {
+	folder := t.TempDir()
+	writeFile(t, filepath.Join(folder, "Draft.rpp"), "x")
+	host := newTestHostForTracks(t, folder)
+
+	if _, err := host.TracksSelect(filepath.Join(t.TempDir(), "Elsewhere.rpp")); err == nil {
+		t.Fatal("expected an error for a path outside the current project folder's candidates")
+	}
+}
+
+func TestTracksListErrorsWhenNoRppFileExists(t *testing.T) {
+	host := newTestHostForTracks(t, t.TempDir())
+	if _, err := host.TracksList(); err == nil {
+		t.Fatal("expected an error when no .rpp file was found")
+	}
+}
+
+func TestTracksListErrorsWhenSelectionIsAmbiguous(t *testing.T) {
+	folder := t.TempDir()
+	writeFile(t, filepath.Join(folder, "Draft.rpp"), "x")
+	writeFile(t, filepath.Join(folder, "Final.rpp"), "x")
+	host := newTestHostForTracks(t, folder)
+
+	_, err := host.TracksList()
+	if err == nil || !strings.Contains(err.Error(), "choose which") {
+		t.Fatalf("expected a 'choose which' error, got %v", err)
+	}
+}
