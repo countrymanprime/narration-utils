@@ -1,5 +1,12 @@
 [
   {
+    "page": "project",
+    "state": "picker-empty",
+    "viewport": "desktop",
+    "docName": "project-picker",
+    "caption": "No project open yet - recent projects, browse, and create actions"
+  },
+  {
     "page": "global",
     "state": "nav-drawer-open",
     "viewport": "desktop",
@@ -42,11 +49,46 @@
     "caption": "Manuscript - collapsed chapter list, for jumping between chapters without scrolling"
   },
   {
+    "page": "manuscript",
+    "state": "detail-sidebar-note",
+    "viewport": "desktop",
+    "docName": "manuscript-note-sidebar",
+    "caption": "Manuscript - detail sidebar open on a reader note"
+  },
+  {
+    "page": "manuscript",
+    "state": "selection-popup",
+    "viewport": "desktop",
+    "docName": "manuscript-selection-popup",
+    "caption": "Manuscript - text-selection action popup (+ Note, + Story Bible)"
+  },
+  {
+    "page": "manuscript",
+    "state": "add-note-dialog",
+    "viewport": "desktop",
+    "docName": "manuscript-add-note",
+    "caption": "Manuscript - Add Note dialog open after selecting text"
+  },
+  {
     "page": "home",
     "state": "chapter-table-expanded",
     "viewport": "desktop",
     "docName": "home-chapter-table-expanded",
     "caption": "Home - per-chapter breakdown expanded"
+  },
+  {
+    "page": "home",
+    "state": "import-confirm",
+    "viewport": "desktop",
+    "docName": "home-import-confirm",
+    "caption": "Home - import manuscript confirm dialog with format/paragraph/chapter preview"
+  },
+  {
+    "page": "home",
+    "state": "hint-chips",
+    "viewport": "desktop",
+    "docName": "proofing-hint-chips",
+    "caption": "Proofing - vocabulary hint chips: an accepted term alongside suggested (pending) candidates"
   },
   {
     "page": "proofing",
@@ -68,6 +110,13 @@
     "viewport": "desktop",
     "docName": "proofing-results",
     "caption": "Proofing - results table with a discrepancy row expanded"
+  },
+  {
+    "page": "proofing",
+    "state": "results-extra-row-expanded",
+    "viewport": "desktop",
+    "docName": "proofing-results-extra",
+    "caption": "Proofing - an EXTRA (words heard but not written) discrepancy row expanded"
   },
   {
     "page": "storybible",
@@ -103,5 +152,26 @@
     "viewport": "desktop",
     "docName": "settings-appearance",
     "caption": "Settings - Global scope, Appearance category (theme switcher)"
+  },
+  {
+    "page": "settings",
+    "state": "global-manuscript",
+    "viewport": "desktop",
+    "docName": "settings-manuscript",
+    "caption": "Settings - Global scope, Manuscript category (note color picker)"
+  },
+  {
+    "page": "settings",
+    "state": "project-data",
+    "viewport": "desktop",
+    "docName": "settings-project-data",
+    "caption": "Settings - Project scope, Project data category (clear derived project data)"
+  },
+  {
+    "page": "global",
+    "state": "theme-dark",
+    "viewport": "desktop",
+    "docName": "theme-dark",
+    "caption": "Home with Dark theme selected"
   }
 ]
