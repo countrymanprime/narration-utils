@@ -10,7 +10,7 @@ import { resolve } from 'node:path';
 const runtime = resolve(process.env.NARRATION_UTILS_RUNTIME_DIR ?? 'shell/cmd/narration-utils/resources/runtime');
 const resources = resolve(runtime, '..');
 const executable = (name) => process.platform === 'win32' ? `${name}.exe` : name;
-const missing = ['manuscript-guide', 'transcript-compare']
+const missing = ['manuscript-guide', 'transcript-compare', 'manuscript-teleprompter']
   .filter((name) => !existsSync(resolve(runtime, name, executable(name))));
 if (missing.length) {
   throw new Error(`Release runtime is incomplete: ${missing.join(', ')}. Build the native Python tool sidecars before publishing.`);

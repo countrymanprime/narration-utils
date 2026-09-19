@@ -483,6 +483,17 @@ class StreamClock:
         return self._time() - self._capture_started
 
 
+def stoppable(chunks: Iterable[np.ndarray], stop_path: str | None) -> Iterator[np.ndarray]:
+    """End the stream, so the engine flushes and the process exits normally,
+    as soon as the sentinel file `stop_path` exists. This is how a parent that
+    cannot send Ctrl+C (the Go host) asks for a clean stop, matching the
+    `.cancel` sentinels the other sidecars use."""
+    for chunk in chunks:
+        if stop_path and Path(stop_path).exists():
+            return
+        yield chunk
+
+
 def ticking(chunks: Iterable[np.ndarray], clock: StreamClock, on_tick: Callable[[float], None]) -> Iterator[np.ndarray]:
     """Pass chunks through, reporting the stream time as each arrives, so
     time-based status (the tracker's pause timeout) advances even while the
@@ -593,6 +604,7 @@ def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> No
         if args.mic:
             chunks, capture_started = _anchor_capture_clock(chunks)
         clock = StreamClock(capture_started)
+        chunks = stoppable(chunks, args.stop_file)
         if tracker:
 
             def on_tick(now: float) -> None:
@@ -613,7 +625,7 @@ def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> No
         log("Stopped.")
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="Stream live word-timestamp ASR as NDJSON for the Manuscript Teleprompter prototype")
     ap.add_argument("--wav", default=None, help="Replay this audio file as if it were live mic input (fixture testing)")
     ap.add_argument("--mic", default=None, help="Capture from this input device name instead of --wav (Windows dshow device name)")
@@ -647,7 +659,13 @@ def main() -> None:
     ap.add_argument(
         "--timing", action="store_true", help="Log each decode's wall time and, with --mic, how far behind the speaker each partial and word was emitted"
     )
+    ap.add_argument("--stop-file", default=None, help="Stop cleanly (flush, then exit 0) once this sentinel file exists; how the desktop host requests a stop")
     ap.add_argument("--log", default=None, help="Path to also mirror log output to (optional)")
+    return ap
+
+
+def main() -> None:
+    ap = build_parser()
     args = ap.parse_args()
 
     if args.log:

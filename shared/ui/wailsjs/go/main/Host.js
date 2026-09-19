@@ -30,7 +30,6 @@ export function GuideEntities() {
   return window['go']['main']['Host']['GuideEntities']();
 }
 
-
 export function GuideMerge(arg1, arg2) {
   return window['go']['main']['Host']['GuideMerge'](arg1, arg2);
 }
@@ -165,6 +164,18 @@ export function SystemSaveSettings(arg1, arg2, arg3) {
 
 export function SystemSettingsForScope(arg1) {
   return window['go']['main']['Host']['SystemSettingsForScope'](arg1);
+}
+
+export function TeleprompterStart(arg1) {
+  return window['go']['main']['Host']['TeleprompterStart'](arg1);
+}
+
+export function TeleprompterState() {
+  return window['go']['main']['Host']['TeleprompterState']();
+}
+
+export function TeleprompterStop() {
+  return window['go']['main']['Host']['TeleprompterStop']();
 }
 
 export function TracksDiscover() {

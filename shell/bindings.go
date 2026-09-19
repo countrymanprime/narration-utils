@@ -393,6 +393,48 @@ func (h *Host) TranscriptStart(options map[string]string) (string, error) {
 	started["modelDir"] = modelDir
 	return encodeBinding(map[string]any{"status": "started"}, h.transcript.Start(started))
 }
+
+// TeleprompterStart begins a live teleprompter session for one manuscript
+// chapter. Like TranscriptStart it stops at the first-use gate when the Whisper
+// model is not installed and reports it as asset_required; once running, the
+// sidecar's events arrive as "teleprompter:event" and phase changes as
+// "teleprompter:state".
+func (h *Host) TeleprompterStart(options map[string]string) (string, error) {
+	service := h.teleprompterService()
+	if service == nil {
+		return "", fmt.Errorf("the teleprompter service is unavailable")
+	}
+	if h.whisper == nil {
+		return "", fmt.Errorf("the approved Whisper catalog is unavailable")
+	}
+	modelID := resolveTeleprompterModelID(options)
+	model, knownModel := h.whisper.Model(modelID)
+	if !knownModel {
+		return "", fmt.Errorf("the selected Whisper model is not in the approved catalog")
+	}
+	modelDir, err := h.whisper.Dir(modelID)
+	if err != nil {
+		return encodeBinding(map[string]any{"status": "asset_required", "model": previewModel(model), "installState": h.whisper.State(model), "downloadSize": modelDownloadSize(model)}, nil)
+	}
+	started := map[string]string{}
+	for key, value := range options {
+		started[key] = value
+	}
+	started["model"], started["modelDir"] = modelID, modelDir
+	return encodeBinding(map[string]any{"status": "started"}, service.Start(started))
+}
+func (h *Host) TeleprompterStop() (string, error) {
+	if service := h.teleprompterService(); service != nil {
+		service.Stop()
+	}
+	return encodeBinding(nil, nil)
+}
+func (h *Host) TeleprompterState() (string, error) {
+	if service := h.teleprompterService(); service != nil {
+		return encodeBinding(service.Snapshot(), nil)
+	}
+	return encodeBinding(map[string]any{"phase": "idle", "script": nil, "position": nil}, nil)
+}
 func (h *Host) TranscriptCancel() (string, error) {
 	if h.transcript != nil {
 		h.transcript.Cancel()

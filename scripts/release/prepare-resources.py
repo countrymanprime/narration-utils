@@ -20,7 +20,7 @@ RUNTIME = RESOURCES / "runtime"
 REAPER = RESOURCES / "reaper"
 
 
-def freeze(name: str, entry: Path, paths: list[Path]) -> None:
+def freeze(name: str, entry: Path, paths: list[Path], collect_data: tuple[str, ...] = ()) -> None:
     work = ROOT / ".release-build" / name
     args = [
         sys.executable,
@@ -40,6 +40,8 @@ def freeze(name: str, entry: Path, paths: list[Path]) -> None:
     ]
     for path in paths:
         args.extend(["--paths", str(path)])
+    for package in collect_data:
+        args.extend(["--collect-data", package])
     args.append(str(entry))
     subprocess.run(args, cwd=ROOT, check=True)
     source = work / "dist" / name / (f"{name}.exe" if sys.platform == "win32" else name)
@@ -54,7 +56,9 @@ def freeze(name: str, entry: Path, paths: list[Path]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--clean", action="store_true")
-    parser.add_argument("--sidecar", choices=["manuscript-guide", "transcript-compare"], help="build one sidecar while diagnosing a platform package")
+    parser.add_argument(
+        "--sidecar", choices=["manuscript-guide", "transcript-compare", "manuscript-teleprompter"], help="build one sidecar while diagnosing a platform package"
+    )
     args = parser.parse_args()
     if args.clean:
         shutil.rmtree(RESOURCES, ignore_errors=True)
@@ -67,9 +71,26 @@ def main() -> None:
             ROOT / "tools" / "manuscript-guide" / "core" / "manuscript_guide.py",
             [shared_python, ROOT / "tools" / "manuscript-guide" / "core"],
         )
+    # faster-whisper ships its Silero VAD model (assets/silero_vad_v6.onnx) as
+    # package data and PyInstaller has no hook for it. Without collecting it, a
+    # frozen sidecar that uses vad_filter=True fails with NoSuchFile at runtime.
     if args.sidecar in (None, "transcript-compare"):
         freeze(
-            "transcript-compare", ROOT / "tools" / "transcript-compare" / "core" / "compare.py", [shared_python, ROOT / "tools" / "transcript-compare" / "core"]
+            "transcript-compare",
+            ROOT / "tools" / "transcript-compare" / "core" / "compare.py",
+            [shared_python, ROOT / "tools" / "transcript-compare" / "core"],
+            collect_data=("faster_whisper",),
+        )
+    if args.sidecar in (None, "manuscript-teleprompter"):
+        # live_asr.py imports script_tracker and chapter_script (siblings) inside
+        # functions; PyInstaller finds them because their directory is on --paths.
+        # The optional Moonshine engine (moonshine_voice) is deliberately not
+        # bundled: it is not a project dependency yet.
+        freeze(
+            "manuscript-teleprompter",
+            ROOT / "tools" / "manuscript-teleprompter" / "core" / "live_asr.py",
+            [shared_python, ROOT / "tools" / "manuscript-teleprompter" / "core"],
+            collect_data=("faster_whisper",),
         )
     shutil.copytree(ROOT / "shared" / "config", RESOURCES / "config", dirs_exist_ok=True)
     # The action package is embedded with the desktop host.  At first launch

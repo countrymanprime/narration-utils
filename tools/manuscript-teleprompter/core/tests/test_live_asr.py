@@ -393,6 +393,70 @@ def test_moonshine_hypotheses_feed_the_shared_event_layer_like_any_other_engine(
     ]
 
 
+def test_the_cli_accepts_exactly_the_flags_the_desktop_host_passes():
+    """shell/internal/teleprompter/service.go builds these arguments by hand;
+    this fails if a flag is renamed here without updating it."""
+    parser = live_asr.build_parser()
+
+    mic = parser.parse_args(
+        [
+            "--engine",
+            "whisper",
+            "--model",
+            "tiny",
+            "--manuscript",
+            "m.json",
+            "--chapter",
+            "c1",
+            "--stop-file",
+            "s.stop",
+            "--model-dir",
+            "d",
+            "--language",
+            "en",
+            "--mic",
+            "Mic",
+        ]
+    )
+    replay = parser.parse_args(
+        ["--engine", "whisper", "--model", "small", "--manuscript", "m.json", "--chapter", "c1", "--stop-file", "s.stop", "--wav", "r.wav"]
+    )
+
+    assert (mic.engine, mic.model, mic.manuscript, mic.chapter, mic.stop_file, mic.model_dir, mic.language, mic.mic) == (
+        "whisper",
+        "tiny",
+        "m.json",
+        "c1",
+        "s.stop",
+        "d",
+        "en",
+        "Mic",
+    )
+    assert replay.wav == "r.wav"
+
+
+def test_stoppable_passes_every_chunk_through_when_no_stop_file_is_given():
+    assert len(list(live_asr.stoppable(_chunks(3), None))) == 3
+
+
+def test_stoppable_ends_the_stream_once_the_stop_file_appears(tmp_path):
+    stop_file = tmp_path / "stop"
+    stream = live_asr.stoppable(_chunks(5), str(stop_file))
+
+    next(stream)
+    next(stream)
+    stop_file.write_text("")
+
+    assert list(stream) == []
+
+
+def test_stoppable_yields_nothing_if_the_stop_file_already_exists(tmp_path):
+    stop_file = tmp_path / "stop"
+    stop_file.write_text("")
+
+    assert list(live_asr.stoppable(_chunks(3), str(stop_file))) == []
+
+
 def test_stream_clock_for_a_file_counts_the_audio_consumed_so_far():
     clock = live_asr.StreamClock()
 
