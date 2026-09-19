@@ -31,7 +31,7 @@ func main() {
 		Height:             860,
 		MinWidth:           960,
 		MinHeight:          640,
-		AssetServer:        &assetserver.Options{Assets: assets},
+		AssetServer:        &assetserver.Options{Assets: assets, Middleware: app.mediaMiddleware},
 		OnStartup:          app.Startup,
 		OnShutdown:         app.Shutdown,
 		Bind:               []interface{}{app},

@@ -2,7 +2,6 @@ import importlib.util
 import unittest
 from pathlib import Path
 
-
 MODULE_PATH = Path(__file__).parents[3] / "tools" / "transcript-compare" / "core" / "compare.py"
 SPEC = importlib.util.spec_from_file_location("transcript_compare", MODULE_PATH)
 compare = importlib.util.module_from_spec(SPEC)

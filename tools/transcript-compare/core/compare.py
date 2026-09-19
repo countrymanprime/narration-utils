@@ -49,10 +49,10 @@ _SHARED_PYTHON = Path(__file__).resolve().parents[3] / "shared" / "python"
 if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
-from narration_common.config import get_default  # noqa: E402
-from narration_common import manuscript as canonical_manuscript  # noqa: E402
-from narration_common.logging_utils import log, set_log_file  # noqa: E402
-from narration_common.progress import write_progress  # noqa: E402
+from narration_common import manuscript as canonical_manuscript
+from narration_common.config import get_default
+from narration_common.logging_utils import log, set_log_file
+from narration_common.progress import write_progress
 
 FILLER_WORDS = {"uh", "um", "umm", "uhh", "erm", "hmm", "mhm", "huh"}
 
@@ -398,7 +398,7 @@ def decode_segment(source_file, start_offset, length):
     container = av.open(source_file)
     stream = container.streams.audio[0]
     resampler = av.AudioResampler(format="fltp", layout="mono", rate=SAMPLE_RATE)
-    total_needed = int(round(length * SAMPLE_RATE))
+    total_needed = round(length * SAMPLE_RATE)
 
     if start_offset > 0:
         seek_pts = int(start_offset / stream.time_base)
@@ -417,7 +417,7 @@ def decode_segment(source_file, start_offset, length):
             collected_samples += len(arr)
 
         if first_frame_time is not None:
-            lead_in = max(0, int(round((start_offset - first_frame_time) * SAMPLE_RATE)))
+            lead_in = max(0, round((start_offset - first_frame_time) * SAMPLE_RATE))
             if collected_samples >= lead_in + total_needed:
                 break
 
@@ -430,7 +430,7 @@ def decode_segment(source_file, start_offset, length):
 
     lead_in = 0
     if first_frame_time is not None:
-        lead_in = min(len(audio), max(0, int(round((start_offset - first_frame_time) * SAMPLE_RATE))))
+        lead_in = min(len(audio), max(0, round((start_offset - first_frame_time) * SAMPLE_RATE)))
     audio = audio[lead_in:]
 
     if len(audio) > total_needed:
@@ -601,7 +601,7 @@ def _chunk_worker_entry(chunk_audio_path, model_size, language, device, hotwords
         with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump(words, f)
         os.replace(tmp_path, chunk_out_path)
-    except Exception:
+    except Exception:  # noqa: BLE001, S110
         # Best-effort: leave chunk_out_path missing on failure. The parent
         # has no separate per-chunk error channel today - a chunk that
         # never produces its output file is indistinguishable here from
@@ -1228,9 +1228,7 @@ def build_marker_context(
         insertion_in_window = i1 == i2 and window_start <= i1 <= window_end
         if tag == "equal" and overlaps_window:
             add_doc_words(heard_words, heard_seen, i1, i2)
-        elif tag == "replace" and overlaps_window:
-            heard_words.extend(transcript_words[index_map[j]][0] for j in range(j1, j2))
-        elif tag == "insert" and (insertion_in_window or is_target_insertion):
+        elif tag == "replace" and overlaps_window or tag == "insert" and (insertion_in_window or is_target_insertion):
             heard_words.extend(transcript_words[index_map[j]][0] for j in range(j1, j2))
 
     if not script_words and not heard_words:
@@ -1607,14 +1605,14 @@ def main():
 
     if args.log:
         try:
-            set_log_file(open(args.log, "w", encoding="utf-8"))
+            set_log_file(open(args.log, "w", encoding="utf-8"))  # noqa: SIM115
         except OSError:
             pass
 
     if args.extract_hints:
         try:
             extract_hints(args.manuscript, args.hints_out)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             log(traceback.format_exc())
             if args.hints_out:
                 try:
@@ -1663,7 +1661,7 @@ def main():
         except OSError:
             pass
         os._exit(0)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         log(traceback.format_exc())
         write_progress(args.progress, "ERROR", 0, str(e))
         os._exit(1)

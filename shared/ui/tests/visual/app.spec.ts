@@ -23,7 +23,7 @@ async function clickVisible(page: Page, role: Parameters<Page['getByRole']>[0], 
   await target.first().click();
 }
 
-async function goToPage(page: Page, name: 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Settings'): Promise<void> {
+async function goToPage(page: Page, name: 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Tracks' | 'Settings'): Promise<void> {
   if (name === 'Home') return; // App boots on Home.
   await clickVisible(page, 'button', name);
 }
@@ -252,6 +252,46 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.locator('tr[data-row]').first().click();
     },
   },
+  tracks: {
+    default: async (page) => {
+      await goToPage(page, 'Tracks');
+    },
+    'unplayable-track-selected': async (page) => {
+      await goToPage(page, 'Tracks');
+      // Chapter 2's mock source file is missing on disk.
+      await clickVisible(page, 'button', /Chapter 2/);
+    },
+    'rpp-picker': async (page) => {
+      // Reload with the mock's two-.rpp seam (see main.tsx) - the outer
+      // loop's default page.goto('/') has already happened by now.
+      await page.goto('/?mockMultipleRpp=1');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+    },
+    'no-rpp': async (page) => {
+      await page.goto('/?mockNoRpp=1');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+    },
+    playing: async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Play');
+      // The mock serves a real silent 10-minute WAV; wait for its metadata so
+      // the readout shows a duration instead of 0:00 / 0:00.
+      await page.getByText(/^0:0\d \/ 10:00$/).waitFor();
+    },
+    'skipped-forward': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Play');
+      await page.getByText(/^0:0\d \/ 10:00$/).waitFor();
+      await clickVisible(page, 'button', 'Skip forward 30 seconds');
+      await page.getByText(/^0:3\d \/ 10:00$/).waitFor();
+    },
+    'last-track-selected': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', /Click Track/);
+    },
+  },
   settings: {
     'global-general': async (page) => {
       await goToPage(page, 'Settings');
@@ -329,6 +369,20 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   global: {
     tooltip: async (page) => {
       await page.getByLabel('More information').hover();
+    },
+    'nav-rail-tooltip': async (page) => {
+      // Only the icon-only rail (small-desktop and tablet widths) wraps its
+      // buttons in a tooltip; the full sidebar and the mobile drawer show
+      // labels already, so hovering there changes nothing visible.
+      // Icon-only buttons are the ones carrying an aria-label; the full
+      // sidebar's button has the same accessible name from its text instead.
+      const railButton = page.locator('button[aria-label="Tracks"]:visible');
+      if (await railButton.count()) {
+        await railButton.first().hover();
+        // TooltipTarget waits 1s after hover before showing (focus shows it
+        // immediately), so wait for it rather than screenshotting too early.
+        await page.getByRole('tooltip').waitFor({ timeout: 3_000 });
+      }
     },
     'nav-drawer-open': async (page) => {
       // The hamburger button only renders below the `md` breakpoint
