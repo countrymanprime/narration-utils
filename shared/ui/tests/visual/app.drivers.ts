@@ -38,7 +38,7 @@ async function clickVisible(page: Page, role: Parameters<Page['getByRole']>[0], 
   await target.first().click();
 }
 
-async function goToPage(page: Page, name: 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Tracks' | 'Settings'): Promise<void> {
+async function goToPage(page: Page, name: 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Settings'): Promise<void> {
   if (name === 'Home') return; // App boots on Home.
   await clickVisible(page, 'button', name);
 }
@@ -386,6 +386,33 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'last-track-selected': async (page) => {
       await goToPage(page, 'Tracks');
       await clickVisible(page, 'button', /Click Track/);
+    },
+  },
+  teleprompter: {
+    'setup-default': async (page) => {
+      await goToPage(page, 'Teleprompter');
+      await page.getByText('Alice was beginning').first().waitFor();
+    },
+    // The seams boot a session already 30 words into the first paragraph (word
+    // 35 of the chapter). Wait for the highlight to land there so the shot is
+    // never taken mid-walk.
+    listening: async (page) => {
+      await page.goto('/?mockTeleprompter=listening');
+      await settlePage(page);
+      await goToPage(page, 'Teleprompter');
+      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+    },
+    waiting: async (page) => {
+      await page.goto('/?mockTeleprompter=waiting');
+      await settlePage(page);
+      await goToPage(page, 'Teleprompter');
+      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+    },
+    done: async (page) => {
+      await page.goto('/?mockTeleprompter=done');
+      await settlePage(page);
+      await goToPage(page, 'Teleprompter');
+      await page.getByRole('status').filter({ hasText: 'Done' }).waitFor();
     },
   },
   settings: {

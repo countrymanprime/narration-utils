@@ -1,6 +1,6 @@
 # Manuscript Teleprompter
 
-**Status: Planned. Deferred work item — see [roadmap.md](../roadmap.md#deferred-work). The ASR sidecar ([`tools/manuscript-teleprompter/core/live_asr.py`](../../tools/manuscript-teleprompter/core/live_asr.py)) and its Go host integration (streaming supervisor, teleprompter service, bindings and events) exist; there is no frontend page or shipped feature yet. This brief exists to make the deferred sentence concrete enough to plan tasks from, not to schedule it into a milestone.**
+**Status: Planned. Deferred work item — see [roadmap.md](../roadmap.md#deferred-work). The ASR sidecar ([`tools/manuscript-teleprompter/core/live_asr.py`](../../tools/manuscript-teleprompter/core/live_asr.py)) and its Go host integration (streaming supervisor, teleprompter service, bindings and events) exist; the Teleprompter page follows a chapter with the Whisper engine (see [UI](#ui-what-shipped-and-what-is-still-open) below), but microphone choice, Moonshine and misread findings are still open. This brief exists to make the deferred sentence concrete enough to plan tasks from, not to schedule it into a milestone.**
 
 ## Problem
 
@@ -324,13 +324,35 @@ selection plumbing, and relaying streamed events to the React frontend.
 REAPER Lua is not involved in the live loop at all — same boundary the DAW
 integration doc already draws for take/marker mutation.
 
-## UI (mirrors `ParagraphView.tsx`)
+## UI: what shipped and what is still open
+
+**Shipped (Teleprompter page, `shared/ui/src/components/teleprompter/`).** Pick a
+narration chapter, type the microphone's name, choose Tiny or Small, and Start.
+The setup fields collapse to a sticky status bar (Listening, Waiting for you to
+return to the script, Done) with Stop, and the chapter text below highlights the
+current word as you read: read words dim, the current word is a solid accent
+fill (the `Cursor` kind of `Highlight`), words the tracker says you skipped get
+a dotted underline, and the page scrolls to keep the current word near the
+middle. It does not reuse `ParagraphView` (that renders character-offset
+annotations, not words). The design choices are recorded in
+[ADR 0024](../adr/0024-teleprompter-highlight-follows-the-sidecars-spans.md).
+Leaving the page and coming back mid-session picks up where it was. A missing
+model triggers the same first-use download prompt as Transcript Compare. In
+browser mock mode Start replays a position stream recorded from the real tracker
+(`spikes/record_mock_stream.py`), and `?mockTeleprompter=listening|waiting|done`
+boots part-way through a chapter for the visual suite.
+
+**Still open here:** a microphone picker (the name is typed, remembered in the
+browser, and Windows-only), an engine choice, stopping automatically at the end of
+the chapter (today the narrator presses Stop after Done), letting the narrator
+scroll by hand without being pulled back, and everything under "Findings and
+review" and the flagged-word design below, which is the intended shape of
+that later work:
 
 Reuse the existing paragraph gutter+text grid layout from
-`shared/ui/src/components/manuscript/ParagraphView.tsx` rather than a new
-layout: the current paragraph's row gets a background tint
-(`--bg-accent-muted`/local equivalent), the current word renders as a
-solid-filled span (mirrors the existing entity `<mark>` treatment), and a
+`shared/ui/src/components/manuscript/ParagraphView.tsx` for flagged words: the
+current paragraph's row gets a background tint
+(`--bg-accent-muted`/local equivalent) and a
 flagged word renders as a clickable `<mark role="button" tabIndex>` wrapped
 in the existing `TooltipTarget` primitive (`shared/ui/src/components/
 primitives/Tooltip.tsx`) showing what was heard, with `onClick` opening a
@@ -375,11 +397,13 @@ the exact commit ported from. The LocalAgreement policy added later comes from
   chapter title, then each paragraph, split on whitespace. A one-off `script`
   event first carries the token count and each paragraph's span, and with
   Moonshine the chapter text is also used as biasing context. `--script FILE`
-  remains for plain text. Still open: how the frontend maps `read` indices
-  onto paragraphs and words (it must tokenize each paragraph exactly as
-  `chapter_script.py` does, and can verify itself against the `script`
-  event), and how the chapter is chosen in the UI (Transcript Compare picks
-  it from the REAPER track name).
+  remains for plain text. The frontend maps `read` onto words by tokenizing each
+  paragraph exactly as `chapter_script.py` does and checking itself against the
+  `script` event's spans (a paragraph that disagrees is shown untracked), and
+  the chapter is chosen from a picker that starts on the reader's active chapter
+  ([ADR 0024](../adr/0024-teleprompter-highlight-follows-the-sidecars-spans.md)).
+  Still open: choosing the chapter from the REAPER track name, as Transcript
+  Compare does.
 - Tracker limits to revisit with real use: word matching is normalization plus
   a close-spelling check, without Transcript Compare's homophone, number-word
   and hyphenation handling; invented names and spoken numbers are the likely
@@ -387,6 +411,7 @@ the exact commit ported from. The LocalAgreement policy added later comes from
   contract in a later step).
 - Phase 2 trailing confirmation pass (see "Confirming suspected misreads").
 - Mic device selection UX and where device enumeration lives (Go vs. Python).
+  Today the page takes the device name as text.
 - Whether a flagged span needs its own short rolling audio buffer captured
   for playback in the review panel (Results.tsx plays back heard audio for
   offline findings; the live case doesn't yet have an obvious source for

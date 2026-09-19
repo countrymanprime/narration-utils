@@ -28,6 +28,8 @@ implementation around the product domain that owns its behavior.
 - `tts` owns the approved voice catalog and install jobs.
 - `tracks` owns reading a project's `.rpp` file (discovery, selection, track/item metadata). `shell/media.go` serves those tracks' audio to the webview through the asset server's `/media` route (see [ADR 0012](../adr/0012-media-route-for-track-playback.md)); it is the only non-frontend content the asset server serves.
 
+- `teleprompter` owns one live listening session: it runs the `manuscript-teleprompter` sidecar, relays its events as `teleprompter:event`, publishes phase changes as `teleprompter:state`, and keeps the last `script` and `position` so a page opened mid-session can catch up (see [ADR 0022](../adr/0022-live-sidecar-events-over-wails-and-stop-file.md)). The Teleprompter page lives in `shared/ui/src/components/teleprompter/` (see [ADR 0024](../adr/0024-teleprompter-highlight-follows-the-sidecars-spans.md)).
+
 `shell/internal/` holds domain services and infrastructure. The Wails binding
 surface is operation-specific; it does not accept arbitrary route names.
 

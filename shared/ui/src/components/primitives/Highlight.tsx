@@ -1,6 +1,8 @@
 import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from 'react';
 
-export type HighlightKind = 'Character' | 'Place' | 'Organization' | 'Lore' | 'Item' | 'Event' | 'Review' | 'Note';
+// `Cursor` is the Teleprompter's current word - a solid accent fill rather than a
+// tint, so it reads as a position marker and never as an entity or note.
+export type HighlightKind = 'Character' | 'Place' | 'Organization' | 'Lore' | 'Item' | 'Event' | 'Review' | 'Note' | 'Cursor';
 
 // Story Bible categories arrive under several spellings ("Needs Review",
 // "Location", the transient "Draft"). Every highlight funnels through this one
@@ -32,6 +34,7 @@ const TOKEN: Record<HighlightKind, string> = {
   Event: '--event',
   Review: '--review',
   Note: '--note',
+  Cursor: '--accent',
 };
 
 // Tints mix with `transparent`, not a surface color, so the same highlight
@@ -40,6 +43,8 @@ const TOKEN: Record<HighlightKind, string> = {
 // background fills the whole line height rather than just the glyph box.
 export function highlightStyle(kind: HighlightKind): CSSProperties {
   const token = `var(${TOKEN[kind]})`;
+  // The negative margin cancels the mark's horizontal padding, so moving the cursor never changes where a line wraps.
+  if (kind === 'Cursor') return { background: token, color: 'var(--accent-contrast)', margin: '0 -0.05em' };
   return {
     background: `color-mix(in srgb, ${token} 20%, transparent)`,
     color: kind === 'Note' ? undefined : token,

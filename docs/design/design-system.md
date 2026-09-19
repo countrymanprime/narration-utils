@@ -20,7 +20,7 @@ Location: `shared/ui/src/components/primitives/`.
 | --- | --- | --- |
 | `Dialog` | Modal shell (backdrop, head, scrollable body, action row) | Max-width `70vw`, `overflow-x-hidden` + `break-words` body ([ADR 0001](../adr/0001-import-dialog-max-width-and-overflow.md)); `actionsAlign="between"` default, `"end"` for single-action dialogs ([ADR 0002](../adr/0002-dialog-action-button-placement.md)) |
 | `Button` | Tokenized button, `primary`/`ghost`/`danger` variants | Bakes in `disabled:pointer-events-none` so future buttons don't need to remember to guard hover-while-disabled by hand |
-| `Highlight` | Highlighted text (entity / note / review) | One category→color mapping; fills the line height ([ADR 0016](../adr/0016-highlight-primitive.md)) |
+| `Highlight` | Highlighted text (entity / note / review, plus the Teleprompter's `Cursor` word) | One category→color mapping; fills the line height; `Cursor` is a solid accent fill, not a tint ([ADR 0016](../adr/0016-highlight-primitive.md), [ADR 0024](../adr/0024-teleprompter-highlight-follows-the-sidecars-spans.md)) |
 | `SlideOver` | Right-edge panel with click-away backdrop | Pure Tailwind; `invisible translate-x-full` when closed ([ADR 0017](../adr/0017-no-legacy-css-shadowing-tailwind.md)) |
 | `Pill` | Toggle chip | Active/inactive classes are mutually exclusive so text stays readable in dark mode |
 | `MeterBar` | Segmented horizontal meter | Caller controls segment order — see [ADR 0006](../adr/0006-chapter-progress-bar-ordering.md) for why the chapter-progress usage reverses it |
