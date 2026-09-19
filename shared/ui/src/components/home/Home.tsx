@@ -242,7 +242,7 @@ export function Home({
           )}
           {importJob.preview.sections && importJob.preview.sections.length > 0 && (
             <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
                 Review imported structure
               </legend>
               <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -274,7 +274,7 @@ export function Home({
           )}
           {importJob.preview.characterCandidates && importJob.preview.characterCandidates.length > 0 && (
             <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
                 Story Bible character suggestions
               </legend>
               <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -306,7 +306,7 @@ export function Home({
             </fieldset>
           )}
           <div className="mt-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-            <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+            <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
               Preview activity
             </div>
             <div className="progressbar h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
@@ -344,11 +344,11 @@ export function Home({
             onClick={() => go('/proofing')}
           >
             <div className="mb-1 flex items-center justify-between">
-              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
                 Proofing
               </span>
               <span
-                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.03em]"
+                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
                 style={
                   lastCompleted ? { background: 'var(--review-soft)', color: 'var(--review)' } : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
                 }
@@ -372,11 +372,11 @@ export function Home({
             onClick={() => go('/story-bible')}
           >
             <div className="mb-1 flex items-center justify-between">
-              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
                 Story Bible
               </span>
               <span
-                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.03em]"
+                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
                 style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}
               >
                 {entities.length} entities · {review ? 1 : 0} review
