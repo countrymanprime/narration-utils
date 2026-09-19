@@ -362,6 +362,8 @@ actions reuse existing Transcript Compare review actions
 (`Results.tsx`: open in review, add pronunciation equivalence) rather than
 inventing a new action set.
 
+**Planned next:** turning this page into a reading mode of the Manuscript (modal, story bible and notes, misread marks, seek to a word, DAW resume and punch-and-roll) is planned in [teleprompter-manuscript-integration.md](teleprompter-manuscript-integration.md).
+
 ## Third-party license note
 
 Porting WhisperLive's streaming-inference logic is permitted without
