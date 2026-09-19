@@ -1,0 +1,22 @@
+name: Sync milestones
+on:
+  push:
+    branches: [main]
+    paths:
+      - shared/config/roadmap.json
+      - .github/workflows/sync-milestones.yml
+      - scripts/github/**
+  workflow_dispatch: {}
+permissions: { contents: read, issues: write }
+concurrency:
+  group: sync-milestones
+  cancel-in-progress: false
+jobs:
+  sync:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: node scripts/github/sync-milestones.mjs --apply
+        env:
+          GH_TOKEN: ${{ github.token }}
