@@ -11,6 +11,7 @@
 - Import `NarrationUtils_Launcher.lua` into REAPER's Action list. It starts the non-blocking native Wails workspace and its file-session bridge for REAPER-only operations. There is no loopback server, REST endpoint, browser tab, or port override.
 - The workspace is a native Wails window. REAPER launches the executable directly; it does not use a loopback port, REST endpoint, browser tab, or port override.
 - For new work, carry REAPER project, track, item, and take GUIDs in the shared finding record; use project-time ranges only as fallbacks.
+- Manuscript line identity is stored on items as namespaced extension data and read back through the bridge; see [manuscript-line-identity.md](manuscript-line-identity.md) and [ADR 0025](../adr/0025-manuscript-line-identity-in-item-extension-data.md).
 - All mutation actions must be explicitly triggered by the narrator, wrapped in REAPER undo blocks, and report failures without partially applying unrelated actions. Transcript Compare therefore inspects take markers after analysis and only writes its pending findings when the narrator selects **Export markers**.
 - Before export, the REAPER adapter marks a finding as already marked when the same active take has a marker within 0.15 seconds with the same case-insensitive issue prefix (`MISREAD:`, `SKIPPED:`, or `EXTRA:`). Export rechecks immediately before every add and reports added and skipped counts.
 
