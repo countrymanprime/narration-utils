@@ -23,3 +23,4 @@ Storybook title: `Primitives/ConfirmDialog`. Source: `src/components/primitives/
 - `src/components/proofing/Transcript.tsx`
 - `src/components/settings/Settings.tsx`
 - `src/components/storybible/GuideDetail.tsx`
+- `src/components/teleprompter/TeleprompterPage.tsx`

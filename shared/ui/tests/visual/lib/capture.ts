@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.3.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.1 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -62,6 +62,7 @@ export async function captureState(page: Page, entry: StateEntry, viewport: View
   // A long page is shown whole by growing the viewport (Playwright's fullPage would stretch fixed elements).
   if (entry.fullPage) {
     const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    if (height > 6000) problems.push(`fullPage: the page is ${height}px tall, beyond the 6000px cap - the capture would be cut off`);
     await page.setViewportSize({ width: viewport.width, height: Math.min(height, 6000) });
   }
   await settleFrames(page);

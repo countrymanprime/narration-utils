@@ -1,8 +1,8 @@
-// ui-atlas-kit 0.3.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.1 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { defineConfig } from '@playwright/test';
 
 // Component atlas: every Storybook story x theme x viewport, captured and
-// checked (a11y, play(), overflow, console errors). Run through `pnpm atlas`,
+// checked (a11y, play(), overflow, console errors). Run through the `atlas` script,
 // which builds Storybook first - the spec enumerates storybook-static/index.json.
 // UI_ATLAS_PORT moves the static server (default 6106) when several repos run at once.
 const port = Number(process.env.UI_ATLAS_PORT ?? 6106);
@@ -11,6 +11,7 @@ const LAUNCH = { args: ['--disable-partial-raster'] };
 
 export default defineConfig({
   testDir: './tests/atlas',
+  globalSetup: './tests/atlas/global-setup.ts',
   fullyParallel: true,
   workers: 4,
   retries: 0,

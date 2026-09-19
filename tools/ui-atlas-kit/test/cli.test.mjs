@@ -315,3 +315,43 @@ describe('v0.3: what the upgrade round taught', () => {
     assert.ok(audit(dir).counts.exempt.includes('layout/Panel'));
   });
 });
+
+describe('v0.3.1: what the second upgrade round taught', () => {
+  const story = (id, title, name, componentPath) => ({ id, type: 'story', title, name, importPath: './x.stories.tsx', componentPath });
+  const writeIndex = (dir, entries) => {
+    mkdirSync(join(dir, 'storybook-static'), { recursive: true });
+    writeFileSync(join(dir, 'storybook-static', 'index.json'), JSON.stringify({ v: 5, entries }));
+  };
+
+  test('sync --dry-run reports drift and writes nothing', () => {
+    const dir = fixture();
+    init(dir, {});
+    const file = join(dir, 'tests/visual/lib/validators.ts');
+    writeFileSync(file, readFileSync(file, 'utf8') + '\n// local edit\n');
+    const result = sync(dir, { 'dry-run': true });
+    assert.deepEqual(result.drift, ['tests/visual/lib/validators.ts']);
+    assert.deepEqual(result.refreshed, []);
+    assert.match(readFileSync(file, 'utf8'), /local edit/);
+  });
+
+  test('two titles for one component file get stable, title-derived names whatever the index order', async () => {
+    for (const order of [0, 1]) {
+      const dir = fixture();
+      const a = story('a--x', 'Composites/MovieCard', 'X', './src/MovieCard.tsx');
+      const b = story('b--x', 'Composites/MovieCardNoShowtimes', 'X', './src/MovieCard.tsx');
+      writeIndex(dir, order ? { b: b, a: a } : { a: a, b: b });
+      writeFileSync(join(dir, 'src', 'Showtimes.tsx'), "import { MovieCard } from './MovieCard';\n");
+      await docs(dir);
+      const { components } = JSON.parse(readFileSync(join(dir, 'docs', 'ui', 'inventory.json'), 'utf8'));
+      assert.deepEqual(components.map((c) => c.name), ['MovieCard', 'MovieCardNoShowtimes']);
+      assert.ok(components.every((c) => c.consumers.includes('src/Showtimes.tsx')), 'both pages find the real importers of the file');
+    }
+  });
+
+  test('the docs index does not say "1 stories"', async () => {
+    const dir = fixture();
+    writeIndex(dir, { a: story('a--x', 'Primitives/Button', 'Only', './src/Button.tsx') });
+    await docs(dir);
+    assert.match(readFileSync(join(dir, 'docs', 'ui', 'atlas', 'index.md'), 'utf8'), /1 story\b/);
+  });
+});

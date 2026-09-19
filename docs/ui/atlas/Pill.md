@@ -17,3 +17,4 @@ Storybook title: `Primitives/Pill`. Source: `src/components/primitives/Pill.tsx`
 - `src/components/manuscript/Manuscript.tsx`
 - `src/components/proofing/Transcript.tsx`
 - `src/components/settings/Settings.tsx`
+- `src/components/teleprompter/TeleprompterPage.tsx`

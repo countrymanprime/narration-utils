@@ -1,5 +1,5 @@
 {
-  "generatedBy": "ui-atlas 0.3.0",
+  "generatedBy": "ui-atlas 0.3.1",
   "components": [
     {
       "title": "Primitives/Button",
@@ -28,6 +28,7 @@
         "src/components/proofing/Transcript.tsx",
         "src/components/settings/Settings.tsx",
         "src/components/storybible/GuideDetail.tsx",
+        "src/components/teleprompter/TeleprompterPage.tsx",
         "src/components/tracks/TracksPage.tsx"
       ],
       "a11yDebt": false
@@ -52,7 +53,8 @@
         "src/components/home/Home.tsx",
         "src/components/proofing/Transcript.tsx",
         "src/components/settings/Settings.tsx",
-        "src/components/storybible/GuideDetail.tsx"
+        "src/components/storybible/GuideDetail.tsx",
+        "src/components/teleprompter/TeleprompterPage.tsx"
       ],
       "a11yDebt": false
     },
@@ -134,6 +136,7 @@
         "src/components/proofing/Transcript.tsx",
         "src/components/settings/Settings.tsx",
         "src/components/storybible/Guide.tsx",
+        "src/components/teleprompter/TeleprompterPage.tsx",
         "src/components/tracks/TracksPage.tsx"
       ],
       "a11yDebt": false
@@ -151,6 +154,7 @@
         "Event",
         "Review",
         "Note",
+        "Cursor",
         "In Running Text",
         "Interactive",
         "Click Activates",
@@ -160,7 +164,8 @@
       "consumers": [
         "src/components/manuscript/EntitySummary.tsx",
         "src/components/manuscript/ParagraphView.tsx",
-        "src/components/storybible/GuideDetail.tsx"
+        "src/components/storybible/GuideDetail.tsx",
+        "src/components/teleprompter/ReaderText.tsx"
       ],
       "a11yDebt": true
     },
@@ -224,6 +229,7 @@
       "consumers": [
         "src/components/home/AudiobookEstimatePanel.tsx",
         "src/components/proofing/Transcript.tsx",
+        "src/components/teleprompter/TeleprompterPage.tsx",
         "src/components/tracks/TracksPage.tsx"
       ],
       "a11yDebt": false
@@ -242,7 +248,8 @@
       "consumers": [
         "src/components/manuscript/Manuscript.tsx",
         "src/components/proofing/Transcript.tsx",
-        "src/components/settings/Settings.tsx"
+        "src/components/settings/Settings.tsx",
+        "src/components/teleprompter/TeleprompterPage.tsx"
       ],
       "a11yDebt": false
     },
