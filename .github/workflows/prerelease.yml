@@ -38,7 +38,7 @@ jobs:
         name: Compute the next release candidate from conventional commits
         run: |
           CURRENT=$(node -p "require('./package.json').version")
-          # nx.json's releaseTagPattern (v{version}-rc) makes nx treat the latest RC tag as the
+          # nx.json's releaseTag.pattern (v{version}-rc) makes nx treat the latest RC tag as the
           # current version and bump past it (v0.2.0-rc -> 0.2.1).
           pnpm exec nx release version
           node scripts/release/sync-version.mjs
