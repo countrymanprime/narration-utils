@@ -55,6 +55,7 @@ export const wailsClient: NarrationApi = {
   ready: () => host.Ready() as Promise<HostReady>,
   bootstrap: () => host.Bootstrap().then((value) => ({ ...(value as Bootstrap), transcript: normalizeTranscriptState((value as Bootstrap).transcript) })),
   selectManuscript: () => decode<ManuscriptFileSelection>(host.ManuscriptSelectFile()),
+  manuscriptBeginImport: (path) => decode<ManuscriptFileSelection>(host.ManuscriptBeginImport(path)),
   manuscriptImportState: (jobId) => decode<WorkJob>(host.ManuscriptImportState(jobId)),
   manuscriptImportPreview: (jobId, options) => decode<WorkJob>(host.ManuscriptImportPreview(jobId, options.markdownHeadingLevel)),
   manuscriptImportCommit: (jobId, options) =>
@@ -81,7 +82,6 @@ export const wailsClient: NarrationApi = {
   guideDelete: (id) => decode<void>(host.GuideDelete(id)),
   guideRelate: (id, otherId, label) => decode<void>(host.GuideRelate(id, otherId, label)),
   guideUnrelate: (id, otherId, label) => decode<void>(host.GuideUnrelate(id, otherId, label)),
-  guideExport: () => decode<{ path: string }>(host.GuideExport()).then((value) => value.path),
   guidePreview: (id, aliasIndex) => decode<GuidePreview>(host.GuidePreview(id, aliasIndex)),
   ttsCatalog: () => decode<TtsCatalog>(host.TtsCatalog()),
   ttsInstall: (voiceId) => decode<TtsInstallJob>(host.TtsInstall(voiceId)),

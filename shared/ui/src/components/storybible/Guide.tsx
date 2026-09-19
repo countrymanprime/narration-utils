@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileExport, faLock, faPlus, faRotate, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faLock, faPlus, faRotate, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { normalizeGuideEntity, type GuideEntity, type WorkJob } from '../../types';
 import { categoryCssName, categoryLabel, sortEntities, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
@@ -167,21 +167,6 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
                 <FontAwesomeIcon icon={faRotate} />
               </button>
             </TooltipTarget>
-            <TooltipTarget text="Export hotwords">
-              <button
-                aria-label="Export hotwords"
-                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                onClick={async () => {
-                  try {
-                    notify(`Hotwords exported to ${await api.guideExport()}`);
-                  } catch (error) {
-                    notify(String(error));
-                  }
-                }}
-              >
-                <FontAwesomeIcon icon={faFileExport} />
-              </button>
-            </TooltipTarget>
           </div>
         </div>
         <div className="flex gap-1 overflow-x-auto border-b" style={{ borderColor: 'var(--border)' }}>
@@ -189,7 +174,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
             <button
               key={name}
               onClick={() => setTab(name)}
-              className={`border-b-2 border-transparent px-[0.9rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] whitespace-nowrap text-[var(--text-muted)] uppercase hover:text-[var(--text)] ${tab === name ? 'border-[var(--accent)] text-[var(--text)]' : ''}`}
+              className={`border-b-2 px-[0.9rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] whitespace-nowrap uppercase hover:text-[var(--text)] ${tab === name ? 'border-[var(--accent)] text-[var(--text)]' : 'border-transparent text-[var(--text-muted)]'}`}
             >
               {name === 'All' ? `All · ${visible.length}` : `${TAB_PLURAL[name]} · ${visible.filter((row) => categoryLabel(row.category) === name).length}`}
             </button>

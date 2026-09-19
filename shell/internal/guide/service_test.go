@@ -22,6 +22,53 @@ func TestEntitiesToleratesMissingGuide(t *testing.T) {
 	}
 }
 
+func TestVocabularyCandidatesFallBackToReviewedEntitiesForOlderGuides(t *testing.T) {
+	root := t.TempDir()
+	s := New(root, "", "", settings.New(root, root), process.NewSupervisor())
+	if err := os.MkdirAll(filepath.Dir(s.guidePath()), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	older := `{"entities":[{"canonical_name":"Dawnspire","category":"Place","aliases":[{"text":"the Spire"}]},{"canonical_name":"Abandoned","category":"Needs Review"}]}`
+	if err := os.WriteFile(s.guidePath(), []byte(older), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.VocabularyCandidates()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"Dawnspire", "the Spire"}; !slices.Equal(got, want) {
+		t.Fatalf("candidates = %#v, want %#v", got, want)
+	}
+}
+
+func TestEntitiesFillsMissingPronunciationAndDescription(t *testing.T) {
+	root := t.TempDir()
+	s := New(root, "", "", settings.New(root, root), process.NewSupervisor())
+	if err := os.MkdirAll(filepath.Dir(s.guidePath()), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	legacy := `{"entities":[{"id":"one","aliases":[{"text":"Al"}]}]}`
+	if err := os.WriteFile(s.guidePath(), []byte(legacy), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	entities, err := s.Entities()
+	if err != nil || len(entities) != 1 {
+		t.Fatalf("entities = %#v, %v", entities, err)
+	}
+	entity := entities[0]
+	if _, ok := entity["pronunciation"].(map[string]any); !ok {
+		t.Fatalf("pronunciation missing: %#v", entity)
+	}
+	description, ok := entity["description"].(map[string]any)
+	if !ok || description["text"] != "" {
+		t.Fatalf("description missing: %#v", entity["description"])
+	}
+	alias := entity["aliases"].([]any)[0].(map[string]any)
+	if _, ok := alias["pronunciation"].(map[string]any); !ok {
+		t.Fatalf("alias pronunciation missing: %#v", alias)
+	}
+}
+
 func TestEntitiesNormalizesNullCollectionsAndRejectsMalformedGuide(t *testing.T) {
 	root := t.TempDir()
 	s := New(root, "", "", settings.New(root, root), process.NewSupervisor())

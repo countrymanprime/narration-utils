@@ -144,7 +144,7 @@ export function Settings({
         {(['global', 'project'] as Scope[]).map((option) => (
           <button
             key={option}
-            className={`border-b-2 border-transparent px-[0.9rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] text-[var(--text-muted)] uppercase hover:text-[var(--text)] ${scope === option ? 'border-[var(--accent)] text-[var(--text)]' : ''}`}
+            className={`border-b-2 px-[0.9rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase hover:text-[var(--text)] ${scope === option ? 'border-[var(--accent)] text-[var(--text)]' : 'border-transparent text-[var(--text-muted)]'}`}
             onClick={() => requestChange(() => setScope(option))}
           >
             {option === 'global' ? 'Global' : 'This Project'}
@@ -156,7 +156,7 @@ export function Settings({
           {categories.map((entry) => (
             <button
               key={entry.key}
-              className={`relative flex items-center gap-[0.6rem] rounded-[0.4rem] border-0 px-[0.8rem] py-[0.55rem] text-left font-['Barlow_Condensed',sans-serif] text-base font-semibold tracking-[0.03em] whitespace-nowrap text-[var(--text-muted)] uppercase hover:bg-[var(--surface-2)] hover:text-[var(--text)] md:w-full md:whitespace-normal ${category === entry.key ? 'bg-[color-mix(in_srgb,var(--accent)_10%,var(--surface))] text-[var(--accent)]' : ''}`}
+              className={`relative flex items-center gap-[0.6rem] rounded-[0.4rem] border-0 px-[0.8rem] py-[0.55rem] text-left font-['Barlow_Condensed',sans-serif] text-base font-semibold tracking-[0.03em] whitespace-nowrap uppercase hover:bg-[var(--surface-2)] hover:text-[var(--text)] md:w-full md:whitespace-normal ${category === entry.key ? 'bg-[color-mix(in_srgb,var(--accent)_10%,var(--surface))] text-[var(--accent)]' : 'text-[var(--text-muted)]'}`}
               onClick={() => requestChange(() => setCategory(entry.key))}
             >
               {entry.label}

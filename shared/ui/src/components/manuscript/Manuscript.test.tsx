@@ -62,8 +62,8 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       if (!match) throw new Error('highlighted "Alice" mark not rendered yet');
       return match;
     });
-    expect(highlighted.className).toContain('hl-Character');
-    expect(document.querySelector('.note-overlay')).toBeTruthy();
+    expect(highlighted.getAttribute('data-highlight')).toBe('Character');
+    expect(document.querySelector('[data-highlight="Note"]')).toBeTruthy();
     expect(document.querySelector('[data-paragraph="0"] .source-line-number')?.textContent).toBe('1');
     expect(document.querySelector('[data-paragraph="0"]')?.getAttribute('data-source-line')).toBeTruthy();
   });
@@ -145,10 +145,10 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   it('opens an existing note with the note headers and a delete button (not a bookmark toggle)', async () => {
     const { api } = renderManuscript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
-    await waitFor(() => expect(document.querySelector('.note-overlay')).toBeTruthy());
+    await waitFor(() => expect(document.querySelector('[data-highlight="Note"]')).toBeTruthy());
     const [existingNote] = await api.noteList();
 
-    fireEvent.click(document.querySelector('.note-overlay')!);
+    fireEvent.click(document.querySelector('[data-highlight="Note"]')!);
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Note' })).toBeTruthy());
     expect(screen.getByText('Anchored text')).toBeTruthy();
@@ -201,7 +201,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     fireEvent.change(screen.getByLabelText('Search manuscript'), { target: { value: 'Rabbit' } });
 
     const [result] = await screen.findAllByRole('button', { name: /Search result in Chapter 1/ });
-    expect(within(document.querySelector('.overlay-panel')!).queryByRole('button', { name: /Chapter 3/ })).toBeNull();
+    expect(within(document.querySelector('[data-slide-over]')!).queryByRole('button', { name: /Chapter 3/ })).toBeNull();
     fireEvent.click(result);
     await waitFor(() => expect(document.querySelector('[data-chapter="Chapter 1"] .manuscript-reader')).toBeTruthy());
   });

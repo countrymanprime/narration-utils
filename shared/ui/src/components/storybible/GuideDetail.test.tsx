@@ -48,18 +48,51 @@ function renderReadyPreview(entity = WIRE_ENTITIES[1]) {
   return previews;
 }
 
+function renderDetail(entity: (typeof WIRE_ENTITIES)[number]) {
+  render(
+    <ApiProvider api={createMockApi()}>
+      <GuideDetail entity={entity} entities={WIRE_ENTITIES} reload={vi.fn().mockResolvedValue(undefined)} notify={vi.fn()} goToManuscript={vi.fn()} />
+    </ApiProvider>,
+  );
+}
+
 describe('Story Bible locked entries', () => {
-  it('disables the editable fields and Save button for a locked entry', () => {
+  it('offers neither Edit nor Save for a locked entry and keeps its fields read-only', () => {
     const entity = WIRE_ENTITIES.find((row) => row.locked);
     if (!entity) throw new Error('fixture must include a locked entity');
-    render(
-      <ApiProvider api={createMockApi()}>
-        <GuideDetail entity={entity} entities={WIRE_ENTITIES} reload={vi.fn().mockResolvedValue(undefined)} notify={vi.fn()} goToManuscript={vi.fn()} />
-      </ApiProvider>,
-    );
+    renderDetail(entity);
     expect((screen.getByDisplayValue(entity.canonical_name) as HTMLInputElement).disabled).toBe(true);
-    expect((screen.getByRole('button', { name: 'Save changes to this entry' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Edit this entry' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Save changes to this entry' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Delete entity' })).toBeNull();
+  });
+});
+
+describe('Story Bible read-only entries (ADR-0018)', () => {
+  const unlocked = () => {
+    const entity = WIRE_ENTITIES.find((row) => !row.locked);
+    if (!entity) throw new Error('fixture must include an unlocked entity');
+    return entity;
+  };
+
+  it('opens read-only with no Save button until Edit is clicked', () => {
+    const entity = unlocked();
+    renderDetail(entity);
+    expect((screen.getByDisplayValue(entity.canonical_name) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Save changes to this entry' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Edit this entry' })).toBeTruthy();
+  });
+
+  it('Edit enables the fields and shows Save and Cancel; Cancel restores read-only', () => {
+    const entity = unlocked();
+    renderDetail(entity);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit this entry' }));
+    expect((screen.getByDisplayValue(entity.canonical_name) as HTMLInputElement).disabled).toBe(false);
+    expect(screen.getByRole('button', { name: 'Save changes to this entry' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel editing' }));
+    expect((screen.getByDisplayValue(entity.canonical_name) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Save changes to this entry' })).toBeNull();
   });
 });
 
