@@ -182,7 +182,10 @@ fuzzy matching against the script is the ordinary open-source pattern.
    segment-end signal; one shared layer applies the LocalAgreement rule to
    turn consecutive partials into append-only confirmed words, and one shared
    script tracker consumes both. Neither engine is baked into the tracker or
-   the UI.
+   the UI. The contract is implemented in `live_asr.py` as three NDJSON event
+   types: `partial` (the whole current reading of the open segment, replaced
+   each time), `word` (confirmed, append-only, never retracted) and
+   `segment_end`.
 3. **Spike results that shaped this** (Moonshine Small and Tiny Streaming, real
    mic and one synthetic recording, Windows CPU, 16–25 s of reading per run;
    small samples):
@@ -299,9 +302,6 @@ the exact commit ported from. The LocalAgreement policy added later comes from
 - `faster-whisper` model size / latency tradeoff on CPU-only machines:
   partly answered (`tiny`: median lag about 1.2s, decode keeps up); `base` and
   `small` are untested, and the engine spike above may supersede this.
-- Event contract for speculative advance: whether partial hypotheses are a
-  second event type alongside confirmed words, and how the frontend tells them
-  apart.
 - Engine evaluation: run both engines against the real scrolling UI and
   animation, then record the default in an ADR (Sherpa-ONNX stays a fallback
   candidate only).

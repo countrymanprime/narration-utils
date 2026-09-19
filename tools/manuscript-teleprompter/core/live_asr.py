@@ -29,11 +29,19 @@ Usage:
     python live_asr.py --wav segment.wav --model small [--model-dir DIR]
     python live_asr.py --mic "Microphone Array (Realtek(R) Audio)" --model tiny --timing
 
-Output (stdout, one JSON object per line, flushed immediately):
-    {"word": "hello", "start": 1.24, "end": 1.51}
+Output (stdout, one JSON object per line, flushed immediately; times are
+seconds of stream time). Engines only produce hypotheses; one shared layer
+turns them into these three event types:
+    {"type": "partial", "segment": 0, "words": [{"word": "hello", "start": 1.24, "end": 1.51}]}
+        the whole current reading of the open segment; REPLACES the previous
+        partial and may still change - use it for speculative cursor movement
+    {"type": "word", "segment": 0, "word": "hello", "start": 1.24, "end": 1.51}
+        a confirmed word; append-only, never retracted
+    {"type": "segment_end", "segment": 0}
+        the segment closed; all its words were emitted as `word` events first
 Diagnostics go to stderr via narration_common.logging_utils.log, never stdout.
 --timing adds decode-time lines and, for --mic, how far behind the speaker
-each word was emitted.
+each partial and confirmed word was emitted.
 """
 
 import argparse
@@ -42,8 +50,9 @@ import json
 import re
 import sys
 import time
+from collections.abc import Callable, Iterable, Iterator
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable, Iterator, List, Optional, Tuple
 
 import numpy as np
 
@@ -51,13 +60,13 @@ _SHARED_PYTHON = Path(__file__).resolve().parents[3] / "shared" / "python"
 if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
-from narration_common.logging_utils import log, set_log_file  # noqa: E402
+from narration_common.logging_utils import log, set_log_file
 
 SAMPLE_RATE = 16000
 
 # (word, start_seconds, end_seconds)
-Word = Tuple[str, float, float]
-Decoder = Callable[[np.ndarray], List[Word]]
+Word = tuple[str, float, float]
+Decoder = Callable[[np.ndarray], list[Word]]
 
 # Mirrors compare.py's PAUSE_GAP_SECONDS (0.6s) - the same "how long a pause
 # has to be before it counts as a real break" judgment call, reused here so
@@ -82,7 +91,7 @@ CHUNK_SECONDS = 0.32
 _NON_WORD_CHARS_RE = re.compile(r"[^\w']")
 
 
-def _closed_segment_end(speeches: List[dict], buffer_len: int) -> Optional[int]:
+def _closed_segment_end(speeches: list[dict], buffer_len: int) -> int | None:
     """A leading speech span in `speeches` is "closed" - confirmed by a
     following pause - once VAD has already found a later span (meaning
     silence separated them), or the current span's end sits strictly before
@@ -107,7 +116,7 @@ def _normalize_word(word: str) -> str:
     return _NON_WORD_CHARS_RE.sub("", word.lower())
 
 
-def _confirm_agreed_words(previous: List[Word], current: List[Word], committed: int) -> Tuple[List[Word], int]:
+def _confirm_agreed_words(previous: list[Word], current: list[Word], committed: int) -> tuple[list[Word], int]:
     """LocalAgreement-2: the words `previous` and `current` (consecutive
     decodes of the same growing segment) agree on, as a prefix, are stable.
     Returns the newly stable words past the `committed` count already emitted
@@ -127,29 +136,43 @@ def _confirm_agreed_words(previous: List[Word], current: List[Word], committed: 
     return current[committed:agreed], agreed
 
 
-def _to_event(word: Word) -> dict:
+@dataclass(frozen=True)
+class Hypothesis:
+    """An engine's current best reading of one speech segment, in absolute
+    stream time. `final` marks the segment's last hypothesis (pause, size cap,
+    or end of stream). Every engine produces these; nothing downstream knows
+    which engine it was."""
+
+    segment: int
+    words: tuple[Word, ...]
+    final: bool
+
+
+def _word_json(word: Word) -> dict:
     text, start, end = word
     return {"word": text, "start": round(start, 3), "end": round(end, 3)}
 
 
-def _decode_span(decode: Decoder, buffer: np.ndarray, start: int, end: int, buffer_start_time: float, sample_rate: int) -> List[Word]:
+def _decode_span(decode: Decoder, buffer: np.ndarray, start: int, end: int, buffer_start_time: float, sample_rate: int) -> list[Word]:
     """Decode buffer[start:end] and return its words in absolute stream time
     (blank words dropped)."""
     offset = buffer_start_time + start / sample_rate
     return [(text, offset + word_start, offset + word_end) for text, word_start, word_end in decode(buffer[start:end]) if text]
 
 
-def rolling_words(
+def whisper_hypotheses(
     chunks: Iterable[np.ndarray],
     decode: Decoder,
     sample_rate: int = SAMPLE_RATE,
     decode_interval_seconds: float = DECODE_INTERVAL_SECONDS,
     max_buffer_seconds: float = MAX_BUFFER_SECONDS,
-    detect_speech: Optional[Callable] = None,
-) -> Iterator[dict]:
-    """Yield append-only word events (absolute stream time) for a stream of
-    audio chunks. `detect_speech` defaults to faster_whisper's bundled Silero
-    VAD but is injectable so the buffering/agreement logic can be unit-tested
+    detect_speech: Callable | None = None,
+) -> Iterator[Hypothesis]:
+    """The Whisper engine: buffer audio, re-decode the open segment every
+    decode interval (a non-final Hypothesis each time) and close it with one
+    last decode (a final Hypothesis) on a VAD-confirmed pause, the size cap,
+    or end of stream. `detect_speech` defaults to faster_whisper's bundled
+    Silero VAD but is injectable so the buffering logic can be unit-tested
     without loading any model."""
     if detect_speech is None:
         from faster_whisper.vad import get_speech_timestamps
@@ -165,8 +188,7 @@ def rolling_words(
     buffer = np.zeros(0, dtype=np.float32)
     buffer_start_time = 0.0
     samples_since_decode = 0
-    previous: List[Word] = []
-    committed = 0
+    segment = 0
 
     for chunk in chunks:
         if len(chunk) == 0:
@@ -181,39 +203,63 @@ def rolling_words(
 
         if flush_end:
             if speeches:
-                final = _decode_span(decode, buffer, speeches[0]["start"], flush_end, buffer_start_time, sample_rate)
-                for word in final[committed:]:
-                    yield _to_event(word)
+                words = _decode_span(decode, buffer, speeches[0]["start"], flush_end, buffer_start_time, sample_rate)
+                yield Hypothesis(segment, tuple(words), final=True)
+                segment += 1
             buffer_start_time += flush_end / sample_rate
             buffer = buffer[flush_end:]
-            previous, committed, samples_since_decode = [], 0, 0
+            samples_since_decode = 0
             continue
 
         if speeches and samples_since_decode >= interval_samples:
             start = speeches[0]["start"]
             if len(buffer) - start >= interval_samples:
-                current = _decode_span(decode, buffer, start, len(buffer), buffer_start_time, sample_rate)
-                confirmed, committed = _confirm_agreed_words(previous, current, committed)
-                previous = current
+                words = _decode_span(decode, buffer, start, len(buffer), buffer_start_time, sample_rate)
                 samples_since_decode = 0
-                for word in confirmed:
-                    yield _to_event(word)
+                yield Hypothesis(segment, tuple(words), final=False)
 
     if len(buffer) > 0:
         speeches = detect_speech(buffer, vad_options, sampling_rate=sample_rate)
         if speeches:
-            final = _decode_span(decode, buffer, speeches[0]["start"], len(buffer), buffer_start_time, sample_rate)
-            for word in final[committed:]:
-                yield _to_event(word)
+            words = _decode_span(decode, buffer, speeches[0]["start"], len(buffer), buffer_start_time, sample_rate)
+            yield Hypothesis(segment, tuple(words), final=True)
 
 
-def make_decoder(model, language: Optional[str], hotwords: Optional[str]) -> Decoder:
+def confirmed_events(hypotheses: Iterable[Hypothesis]) -> Iterator[dict]:
+    """The engine-independent event layer. Every non-final hypothesis becomes a
+    `partial` event (the whole current reading, replace semantics, may still
+    change); words two consecutive hypotheses agree on become append-only
+    `word` events; a final hypothesis flushes its unconfirmed words and ends
+    with `segment_end`, after which agreement state resets."""
+    previous: list[Word] = []
+    committed = 0
+    for hypothesis in hypotheses:
+        words = list(hypothesis.words)
+        if hypothesis.final:
+            for word in words[committed:]:
+                yield {"type": "word", "segment": hypothesis.segment, **_word_json(word)}
+            yield {"type": "segment_end", "segment": hypothesis.segment}
+            previous, committed = [], 0
+            continue
+        yield {"type": "partial", "segment": hypothesis.segment, "words": [_word_json(w) for w in words]}
+        confirmed, committed = _confirm_agreed_words(previous, words, committed)
+        previous = words
+        for word in confirmed:
+            yield {"type": "word", "segment": hypothesis.segment, **_word_json(word)}
+
+
+def whisper_events(chunks: Iterable[np.ndarray], decode: Decoder, **engine_options) -> Iterator[dict]:
+    """The Whisper engine wired to the shared event layer."""
+    return confirmed_events(whisper_hypotheses(chunks, decode, **engine_options))
+
+
+def make_decoder(model, language: str | None, hotwords: str | None) -> Decoder:
     """Wrap a loaded faster-whisper WhisperModel as a plain
     audio -> [(word, start, end)] function, mirroring compare.py's own
     transcribe() word-collection loop. vad_filter is off here: the caller
     already cut this exact span to where VAD found speech."""
 
-    def decode(audio: np.ndarray) -> List[Word]:
+    def decode(audio: np.ndarray) -> list[Word]:
         segments, _info = model.transcribe(
             audio,
             language=language,
@@ -236,7 +282,7 @@ def with_decode_timing(decode: Decoder) -> Decoder:
     stderr, so model sizes can be compared on the same recording. A ratio
     under 1.0 means decoding keeps up with real time."""
 
-    def timed(audio: np.ndarray) -> List[Word]:
+    def timed(audio: np.ndarray) -> list[Word]:
         duration = len(audio) / SAMPLE_RATE
         started = time.perf_counter()
         words = decode(audio)
@@ -299,7 +345,7 @@ def iter_microphone_chunks(device_name: str, chunk_seconds: float = CHUNK_SECOND
         yield pending
 
 
-def _anchor_capture_clock(chunks: Iterator[np.ndarray]) -> Tuple[Iterator[np.ndarray], float]:
+def _anchor_capture_clock(chunks: Iterator[np.ndarray]) -> tuple[Iterator[np.ndarray], float]:
     """Pull the first chunk so the wall clock can be anchored to when capture
     actually began (its audio time zero), independent of model load and
     device-open time."""
@@ -307,6 +353,16 @@ def _anchor_capture_clock(chunks: Iterator[np.ndarray]) -> Tuple[Iterator[np.nda
     if first is None:
         return iter(()), time.perf_counter()
     return itertools.chain([first], chunks), time.perf_counter() - len(first) / SAMPLE_RATE
+
+
+def event_lag_seconds(event: dict, elapsed: float) -> float | None:
+    """How far behind the speaker an event is: capture-relative wall time
+    minus the end of the newest word it carries (None if it carries none)."""
+    if event["type"] == "word":
+        return elapsed - event["end"]
+    if event["type"] == "partial" and event["words"]:
+        return elapsed - event["words"][-1]["end"]
+    return None
 
 
 def main() -> None:
@@ -322,12 +378,20 @@ def main() -> None:
     ap.add_argument("--language", default=None, help="Force language code, e.g. 'en' (default: auto-detect)")
     ap.add_argument("--hotwords", default=None, help="Comma-separated vocabulary hints passed to faster-whisper as hotwords")
     ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"], help="Inference device (default: cpu)")
-    ap.add_argument("--timing", action="store_true", help="Log each decode's wall time and, with --mic, how far behind the speaker each word was emitted")
+    ap.add_argument(
+        "--decode-interval",
+        type=float,
+        default=DECODE_INTERVAL_SECONDS,
+        help="Seconds of new audio between re-decodes of the open segment (default 0.5; smaller = faster updates, more CPU)",
+    )
+    ap.add_argument(
+        "--timing", action="store_true", help="Log each decode's wall time and, with --mic, how far behind the speaker each partial and word was emitted"
+    )
     ap.add_argument("--log", default=None, help="Path to also mirror log output to (optional)")
     args = ap.parse_args()
 
     if args.log:
-        set_log_file(open(args.log, "a", encoding="utf-8"))
+        set_log_file(open(args.log, "a", encoding="utf-8"))  # noqa: SIM115
     if not args.wav and not args.mic:
         ap.error("one of --wav or --mic is required")
 
@@ -346,10 +410,12 @@ def main() -> None:
     try:
         if args.mic:
             chunks, capture_started = _anchor_capture_clock(chunks)
-        for event in rolling_words(chunks, decode):
+        for event in whisper_events(chunks, decode, decode_interval_seconds=args.decode_interval):
             print(json.dumps(event), flush=True)
             if args.timing and capture_started is not None:
-                log(f"lag {time.perf_counter() - capture_started - event['end']:.2f}s behind: {event['word']}")
+                lag = event_lag_seconds(event, time.perf_counter() - capture_started)
+                if lag is not None:
+                    log(f"lag {lag:.2f}s behind ({event['type']})")
     except KeyboardInterrupt:
         log("Stopped.")
 

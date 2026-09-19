@@ -24,7 +24,7 @@ import queue
 import re
 import sys
 import time
-from typing import Dict, List, Optional
+from pathlib import Path
 
 import numpy as np
 
@@ -34,11 +34,11 @@ TAIL_SILENCE_SECONDS = 1.5
 ARCH_NAMES = {"tiny": "TINY_STREAMING", "small": "SMALL_STREAMING", "medium": "MEDIUM_STREAMING"}
 
 
-def normalize_words(text: str) -> List[str]:
+def normalize_words(text: str) -> list[str]:
     return re.findall(r"[a-z0-9']+", text.lower())
 
 
-def word_error_rate(reference: List[str], hypothesis: List[str]) -> float:
+def word_error_rate(reference: list[str], hypothesis: list[str]) -> float:
     """Word-level Levenshtein distance divided by the reference length."""
     if not reference:
         return 0.0 if not hypothesis else 1.0
@@ -52,7 +52,7 @@ def word_error_rate(reference: List[str], hypothesis: List[str]) -> float:
     return previous[-1] / len(reference)
 
 
-def _first_seen_lags(partials: List[dict], final: dict) -> List[float]:
+def _first_seen_lags(partials: list[dict], final: dict) -> list[float]:
     """For each word with a final timestamp: wall time it first appeared in
     any partial (or the final) minus the audio time the word ended."""
     lags = []
@@ -62,26 +62,26 @@ def _first_seen_lags(partials: List[dict], final: dict) -> List[float]:
     return lags
 
 
-def _percentile(values: List[float], fraction: float) -> Optional[float]:
+def _percentile(values: list[float], fraction: float) -> float | None:
     if not values:
         return None
     ordered = sorted(values)
     return round(ordered[int(fraction * (len(ordered) - 1))], 3)
 
 
-def summarize(records: List[dict]) -> dict:
+def summarize(records: list[dict]) -> dict:
     """Aggregate the per-event records into the spike's headline numbers."""
-    by_line: Dict[int, List[dict]] = {}
+    by_line: dict[int, list[dict]] = {}
     for record in records:
         by_line.setdefault(record["line_id"], []).append(record)
 
-    lags: List[float] = []
+    lags: list[float] = []
     shown = revised = completed = mismatched = 0
     partial_events = timed_partials = 0
     for line_records in by_line.values():
         partials = [r for r in line_records if r["kind"] == "LineTextChanged"]
         final = next((r for r in line_records if r["kind"] == "LineCompleted"), None)
-        previous: List[str] = []
+        previous: list[str] = []
         for partial in partials:
             partial_events += 1
             timed_partials += 1 if partial["words"] else 0
@@ -111,7 +111,7 @@ class ProbeListener:
 
     def __init__(self, echo: bool = True) -> None:
         self.t0 = time.perf_counter()
-        self.records: List[dict] = []
+        self.records: list[dict] = []
         self._echo = echo
 
     def __call__(self, event) -> None:
@@ -182,12 +182,12 @@ def _find_input_device(query: str):
     return matches[0]
 
 
-def feed_microphone(transcriber, listener: ProbeListener, device_query: str, seconds: Optional[float]) -> float:
+def feed_microphone(transcriber, listener: ProbeListener, device_query: str, seconds: float | None) -> float:
     import sounddevice as sd
 
     device = _find_input_device(device_query)
     rate = int(sd.query_devices(device)["default_samplerate"])
-    blocks: "queue.Queue[np.ndarray]" = queue.Queue()
+    blocks: queue.Queue[np.ndarray] = queue.Queue()
     processing = 0.0
     print(f"Listening on device {device} at {rate} Hz. Ctrl+C to stop.", file=sys.stderr)
     with sd.InputStream(device=device, channels=1, samplerate=rate, dtype="float32", callback=lambda data, frames, info, status: blocks.put(data[:, 0].copy())):
@@ -206,7 +206,7 @@ def feed_microphone(transcriber, listener: ProbeListener, device_query: str, sec
     return processing
 
 
-def build_transcriber(arch_name: str, update_interval: float, context_path: Optional[str]):
+def build_transcriber(arch_name: str, update_interval: float, context_path: str | None):
     from moonshine_voice import ModelArch, Transcriber
     from moonshine_voice.download import get_model_for_language
 
@@ -215,7 +215,7 @@ def build_transcriber(arch_name: str, update_interval: float, context_path: Opti
     model_path, model_arch = get_model_for_language("en", arch, include_word_timestamps=True)
     transcriber = Transcriber(model_path, model_arch, update_interval=update_interval, options={"word_timestamps": "true"})
     if context_path:
-        transcriber.set_context(open(context_path, encoding="utf-8").read())
+        transcriber.set_context(Path(context_path).read_text(encoding="utf-8"))
     return transcriber
 
 
@@ -262,7 +262,7 @@ def main() -> None:
     summary["add_audio_realtime_factor"] = round(processing / audio_seconds, 3) if audio_seconds else None
     summary["paced"] = bool(args.mic) or not args.no_pace
     if args.reference:
-        reference = normalize_words(open(args.reference, encoding="utf-8").read())
+        reference = normalize_words(Path(args.reference).read_text(encoding="utf-8"))
         heard = normalize_words(" ".join(r["text"] for r in listener.records if r["kind"] == "LineCompleted"))
         summary["word_error_rate_vs_reference"] = round(word_error_rate(reference, heard), 3)
     if args.events_out:
