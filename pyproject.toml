@@ -4,7 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "av==18.1.0",
-  "black==25.1.0",
+  "black==26.5.1",
   "ctranslate2==4.8.2",
   "fastapi==0.121.2",
   "faster-whisper==1.2.1",
