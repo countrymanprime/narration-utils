@@ -414,6 +414,21 @@ it has to travel with the ported code itself.
 its improvements. Record the exact commit ported from so a future
 re-sync is a deliberate, reviewed action rather than silent drift.
 
+**Implementation status (day-1 prototype).**
+[`tools/manuscript-teleprompter/core/live_asr.py`](../../tools/manuscript-teleprompter/core/live_asr.py)
+implements the VAD-gated-window / rolling-decode / word-timestamp shape
+described above. This is a clean-room re-implementation against this
+repository's own already-pinned `faster-whisper`/`onnxruntime` stack (reusing
+faster-whisper's bundled Silero VAD via `faster_whisper.vad`, not a new
+dependency) rather than a line-for-line copy of WhisperLive's own client/
+server source — so there is no single upstream commit whose literal code was
+copied to pin here. The attribution requirement above is for the ported
+*design* (the chunking/decode/timestamp technique), which the module's own
+header states, not for copied source lines. Still unresolved from this
+entry's original risk list, pending the manual mic-latency measurement this
+prototype exists to produce: which `faster-whisper` model size is viable at
+real-time latency on a CPU-only machine.
+
 ## Clarifications for adjacent tools
 
 ### FFmpeg and ffprobe versus the DAW
