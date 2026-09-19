@@ -1,25 +1,46 @@
 # Story Bible entity-extraction accuracy
 
-**Status: Planned — documented, not fixed in the accompanying bug-fix pass.**
+**Status: Implemented** in `tools/manuscript-guide/core/manuscript_guide.py`, with regression tests in `tools/manuscript-guide/core/tests/test_manuscript_guide.py` (`StrictEntityExtractionTests`).
 
-Per explicit user direction, this is heuristic/NLP tuning work, not a quick fix — it's recorded here as a backlog item with a concrete proposed approach, and was **not** changed in `tools/manuscript-guide/core/manuscript_guide.py` alongside the rest of this session's fixes.
+**Policy: precision over recall, chosen deliberately by the user.** Direct quote: "i would rather miss a few due to being stricter than picking up half the dictionary in single words because we let anything in." Every rule below trades missed names for fewer junk entries. A real name that gets missed can be added by hand (manual entities); junk that floods the Story Bible cannot be reviewed away one entry at a time.
 
-## Known failure modes (confirmed this session)
+## Failure modes this addressed
 
-All in `manuscript_guide.py`:
+1. **Common-word false positives.** The `CAPITALIZED` regex matches any capitalized word, including sentence-initial descriptive words ("Abandoned", "Adorable", "Afraid", "Active") and ALL-CAPS words ("ACCEPTABLE"). The hand-maintained `STOPWORDS` list cannot cover every English word.
+2. **Filler-word contamination.** "About S-Dawn" survived as a name because "S-Dawn" alone is not a stopword.
+3. **Proximity-heuristic misclassification.** `classify()` guessed Character/Place from words within 28 characters, so an unexplained term like "S-Dawn" could land as a Character.
+4. **Repetition implies legitimacy.** Anything seen twice survived regardless of whether it was a name.
 
-1. **Common-word false positives.** The `CAPITALIZED` regex (`:32`) matches any capitalized word/phrase, including ALL-CAPS common words like "ACCEPTABLE". `STOPWORDS` (`:34-71`) is a small, hand-maintained closed list that doesn't (and can't practically) cover every common English word that might appear capitalized — "Aboveground", "Abandoned", "Accurate", "Accidentally" and similar are not filtered.
-2. **Filler-word contamination.** `rule_candidates` (`:254`) only drops a candidate if the *whole* multi-word name is a stopword or *every* word in it is — a phrase like "About S-Dawn" survives because "S-Dawn" alone isn't a stopword, even though "About" is clearly a sentence-leading filler word, not part of a name.
-3. **Proximity-heuristic misclassification.** `classify()` (`:305-330`): when spaCy NER doesn't confidently tag something, a ±28-character proximity heuristic against `PERSON_WORDS`/`PLACE_WORDS` guesses a category, defaulting ambiguous cases toward `"Character"`. This is why something like "S-Dawn" (the user's own example — a lore/world-building term, not a person) can land as a Character if a person-associated word happens to sit nearby in the text.
-4. **Repetition doesn't imply legitimacy.** `build_entities` (`:432`) drops single-occurrence rule-based "Needs Review" candidates, but anything appearing ≥2 times survives regardless of whether it's a real name — a term repeated across reference/glossary material (which is exactly where character names cluster) gets no extra scrutiny for being noise.
+## Rules that shipped
 
-## Proposed scoped fix (for a future pass)
+**Shared signals (computed once per build by `word_stats`).**
 
-1. **Strip leading filler words** before a multi-word candidate is evaluated (e.g. a small `FILLER_PREFIXES = {"about", "the", "a", "an", "with", "from", "near"}` set, checked against the first word) — turns "About S-Dawn" into "S-Dawn" before classification runs.
-2. **Generalize common-word rejection** beyond the hand-maintained `STOPWORDS` list — e.g. reject a single-word candidate that matches a bundled common-English-word frequency list, or that has a common adjective/adverb suffix (`-able`, `-ing`, `-ed`, `-ly`) *unless* spaCy NER independently tagged it as `PERSON`/`GPE`/`FAC`/`ORG`/`LOC`.
-3. **Bias ambiguous proximity guesses to "Needs Review"** instead of defaulting to `"Character"` — matches the user's own example directly: an unclear case should ask for review, not confidently mis-tag as a person.
-4. **Fixture-driven regression testing**: add a small, explicit fixture set of known-good and known-bad names — including the user's own reported examples ("ACCEPTABLE" should be rejected; "S-Dawn"/"About S-Dawn" should not default to Character) — to `tools/manuscript-guide/core/tests/test_manuscript_guide.py`, and iterate the heuristics against it rather than promising a general accuracy guarantee. This is a heuristic-tuning problem with both false-positive and false-negative tradeoffs on any change; treat it as ongoing, not a one-shot fix.
+- `lowercase_forms`: every word that appears wholly lowercase anywhere in the manuscript. This is the dictionary-free "common word" signal: if the manuscript itself uses "abandoned" in lowercase, "Abandoned" is not a name.
+- `mid_sentence_counts`: how often each capitalized word appears somewhere other than the first word of a sentence. Sentence starts are detected after `.`, `!`, `?`, `…` (skipping quotes and brackets) or at the paragraph start.
+
+**Cleaning (both paths).** `clean_entity_text` strips leading filler words (`FILLER_PREFIXES`: about, the, a, an, with, from, near, of, in, on, at, to, by, plus every `STOPWORDS` entry), trailing punctuation and a trailing possessive, keeping the character offsets in step. "About S-Dawn" becomes "S-Dawn". A name that is nothing but filler is dropped.
+
+**Common-word test (`is_common_word`, single-word candidates only).** Rejected when its lowercase form is in `lowercase_forms`, or when it has a common adjective/adverb suffix (-able, -ible, -ing, -ed, -ly, -ous, -ful, -less, -ive; the stem must be at least 3 letters so "Ned" and "Fred" are not caught). The one override: a spaCy entity tag (PERSON/ORG/GPE/LOC/FAC) **and** at least two capitalized mid-sentence mentions.
+
+**spaCy path (`spacy_candidates`).** Keeps PERSON/ORG/GPE/LOC/FAC entities, cleans them as above, and drops single-word entities that fail the common-word test.
+
+**Rules-only fallback (`rule_candidates`, used when the spaCy model is unavailable).** A cleaned candidate is accepted only if it is multi-word, or a single word that passes the common-word test (no spaCy override here) **and** either appears capitalized mid-sentence at least twice or is the short form of an accepted title-prefixed name ("Arelian" after "Captain Arelian"). Sentence-initial-only words are therefore rejected.
+
+**Classification (`classify`).** The explicit rules are unchanged (ORG_WORDS, PLACE_WORDS, TITLE_WORDS, spaCy labels). The `PERSON_WORDS`/`PLACE_WORDS` proximity guess now applies only to multi-word names. Anything else returns `"Needs Review"` instead of defaulting toward Character. When an entity's occurrences vote for several categories, a confident category beats "Needs Review" votes.
+
+**Build filter (`build_entities`).** A `"Needs Review"` entity is dropped unless it has at least 3 occurrences (was: dropped only when rule-based with fewer than 2).
+
+**Proofing vocabulary (`vocabulary_candidates`).** Excludes every `"Needs Review"` entity and any single-word entity that is neither locked nor manual and has fewer than 3 occurrences, so "Suggest from manuscript" is not polluted.
+
+**Unchanged.** Locked and manual entities are never touched by these rules: `merge_locked` still preserves them (including ones a rebuild would no longer extract), and `edit()` still rejects field changes on locked entities (ADR-0007).
+
+## Known trade-offs
+
+- In the rules-only fallback, a lone-word name is always "Needs Review" (no proximity guessing) and so needs 3 occurrences to appear. Installing the spaCy model gives real Character/Place/Organization labels.
+- Multi-word capitalized phrases are trusted as proper-name-shaped, so a run such as "Abandoned And Afraid" can still appear; it stays "Needs Review" and is dropped below 3 occurrences.
+- Names that are also lowercase words in the manuscript ("Hope", "Grace") and names ending in a common suffix ("Sterling") are missed unless spaCy tags them and they appear capitalized mid-sentence twice. Add these as manual entities.
+- Name matching is not a general accuracy guarantee; the fixtures in `StrictEntityExtractionTests` pin the reported examples ("ACCEPTABLE", "Abandoned", "About S-Dawn") and should grow with any new report.
 
 ## Not proposed here
 
-Replacing the rule/spaCy approach with a different model or an LLM-based extractor — that's a bigger architectural change that would need its own research/cost tradeoff discussion, out of scope for this backlog note.
+Replacing the rule/spaCy approach with a different model or an LLM-based extractor — that's a bigger architectural change that would need its own research/cost tradeoff discussion, out of scope for this note.

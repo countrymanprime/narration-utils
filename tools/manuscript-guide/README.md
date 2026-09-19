@@ -61,9 +61,7 @@ manuscript from Home; it is normalized into canonical JSON and its source is ret
 2. Search the guide, select an entity, then edit its category, aliases, narrator-friendly
    `Say it as` value, IPA, description, personality note, and locked fields. Locked fields
    survive a rebuild.
-3. **Export all** writes `ManuscriptGuide\whisper_hotwords.txt`. It is a standalone reference;
-   copying it into a transcript tool is an explicit user action.
-4. Choose a local TTS provider and preview voice in Settings. **Play preview**
+3. Choose a local TTS provider and preview voice in Settings. **Play preview**
    asks for explicit download approval if that reviewed voice is missing, then
    creates a cached WAV for the exact name or alias. eSpeak NG is optional but
    enables an IPA fallback for unknown names.
@@ -74,7 +72,6 @@ The guide keeps all of its outputs in `<project>\ManuscriptGuide\`:
 
 - `manuscript_guide.json` — canonical, editable guide data
 - `audio\tts\` — cached Piper WAV previews, invalidated when the spoken text or voice version changes
-- `whisper_hotwords.txt` — independent export
 - transient progress/index/status files
 
 The initial extractor is deliberately conservative. It uses local spaCy when available, plus

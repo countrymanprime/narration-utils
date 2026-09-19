@@ -64,7 +64,19 @@ func (s *Service) Entities() ([]map[string]any, error) {
 	return out, nil
 }
 
+// normalizeEntity guarantees the shape the UI renders against. The guide file is
+// written by a Python sidecar across several schema generations, so any of
+// these can be absent; a missing object must read as empty, never crash the
+// Story Bible page after a rebuild.
 func normalizeEntity(entity map[string]any) error {
+	if _, ok := entity["pronunciation"].(map[string]any); !ok {
+		entity["pronunciation"] = map[string]any{}
+	}
+	if description, ok := entity["description"].(map[string]any); !ok {
+		entity["description"] = map[string]any{"text": "", "evidence": map[string]any{}}
+	} else if description["evidence"] == nil {
+		description["evidence"] = map[string]any{}
+	}
 	for _, key := range []string{"aliases", "occurrences", "personality_notes", "relationships"} {
 		if entity[key] == nil {
 			entity[key] = []any{}
@@ -79,6 +91,9 @@ func normalizeEntity(entity map[string]any) error {
 			alias, ok := raw.(map[string]any)
 			if !ok {
 				return fmt.Errorf("the Story Bible alias data is invalid")
+			}
+			if _, ok := alias["pronunciation"].(map[string]any); !ok {
+				alias["pronunciation"] = map[string]any{}
 			}
 			if alias["occurrences"] == nil {
 				alias["occurrences"] = []any{}
@@ -188,11 +203,6 @@ func (s *Service) Unrelate(id, other, label string) error {
 	_, err := s.Run("unrelate", "--guide", s.guidePath(), "--entity-id", id, "--other-id", other, "--label", label)
 	return err
 }
-func (s *Service) ExportHotwords() (string, error) {
-	out := filepath.Join(s.project, "ManuscriptGuide", "whisper_hotwords.txt")
-	_, err := s.Run("export-hotwords", "--guide", s.guidePath(), "--out", out)
-	return out, err
-}
 
 // VocabularyCandidates mirrors the Python Guide's reviewed vocabulary
 // suggestions. It preserves the first spelling of each case-insensitive name.
@@ -206,13 +216,40 @@ func (s *Service) VocabularyCandidates() ([]string, error) {
 		return nil, fmt.Errorf("could not read the Story Bible: %w", err)
 	}
 	seen := map[string]string{}
+	add := func(text string) {
+		text = strings.TrimSpace(text)
+		if text == "" {
+			return
+		}
+		if _, exists := seen[strings.ToLower(text)]; !exists {
+			seen[strings.ToLower(text)] = text
+		}
+	}
 	if raw, ok := document["vocabulary_candidates"].([]any); ok {
 		for _, value := range raw {
-			text, ok := value.(string)
-			text = strings.TrimSpace(text)
-			if ok && text != "" {
-				if _, exists := seen[strings.ToLower(text)]; !exists {
-					seen[strings.ToLower(text)] = text
+			if text, ok := value.(string); ok {
+				add(text)
+			}
+		}
+	} else if entities, ok := document["entities"].([]any); ok {
+		// A guide built before the sidecar wrote vocabulary_candidates would
+		// otherwise return nothing and make "Suggest from manuscript" look dead;
+		// derive the list from the reviewed entities instead. Needs Review
+		// entries are excluded, matching the sidecar's own list.
+		for _, item := range entities {
+			entity, _ := item.(map[string]any)
+			if entity == nil || entity["category"] == "Needs Review" || entity["category"] == "Draft" {
+				continue
+			}
+			if name, ok := entity["canonical_name"].(string); ok {
+				add(name)
+			}
+			aliases, _ := entity["aliases"].([]any)
+			for _, raw := range aliases {
+				if alias, ok := raw.(map[string]any); ok {
+					if text, ok := alias["text"].(string); ok {
+						add(text)
+					}
 				}
 			}
 		}

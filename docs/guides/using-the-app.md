@@ -47,14 +47,47 @@ paragraph count, and proposed chapters before anything changes.
 
 ![Home - import manuscript confirm dialog with format/paragraph/chapter preview](../images/ui/home-import-confirm.webp)
 
+If the project folder contains a file named `manuscript.docx` or `manuscript.md` and nothing has
+been imported yet, Home asks whether to import it. It is only ever an offer — nothing is
+imported until you agree, and declining keeps it quiet for the rest of the session. The import
+button on Home is always available to pick a different file.
+
+![Home - offer to import a manuscript file found in the project folder](../images/ui/home-manuscript-offer.webp)
+
+Importing runs in the background and reports what it is actually doing — reading the document,
+counting paragraphs and headings, copying the source into the project, adding checked
+characters to the Story Bible — in a live activity log, so the progress bar and log always match
+the real work.
+
+![Home - a finished manuscript import with its real, step-by-step activity log](../images/ui/home-import-activity.webp)
+
 ## Manuscript
 
 The manuscript reader shows the imported chapter text with characters, places, and other
-entities highlighted inline. Text size is adjustable independently of the rest of the app.
+entities highlighted inline, with alternating row shading and any italics, bold or underline
+from the original document. Clicking a highlighted name or note opens its details in a side
+panel. "Go to line" from the Story Bible keeps the destination line highlighted for a minute.
+Text size is adjustable independently of the rest of the app.
 
 ![Manuscript reader at the medium text size](../images/ui/manuscript-reader.webp)
 
 ![Manuscript reader at the large text size](../images/ui/manuscript-reader-large.webp)
+
+Importing keeps the storytelling formatting from a Word or Markdown manuscript — italics, bold
+and underline — and line breaks inside a paragraph (verse, addresses), so the reader matches the
+original. Chapter titles and subtitles that Word stores on separate lines are shown as a title
+with its subtitle. Re-import a manuscript (Replace manuscript) to pick this up in an older project.
+
+![Manuscript - italic, bold and underline from the source document, and a preserved line break inside a paragraph](../images/ui/manuscript-formatting.webp)
+
+Bookmark a chapter with the icon at the left of its header; bookmarks show in blue. Chapter
+headers stay opaque as you scroll so the text never shows through them.
+
+![Manuscript - a chapter bookmarked, shown with a blue bookmark icon](../images/ui/manuscript-bookmark.webp)
+
+The reader follows the Light, Dark or System theme, with readable controls in both.
+
+![Manuscript reader in the Dark theme - readable controls and an opaque sticky chapter header](../images/ui/manuscript-reader-dark.webp)
 
 Chapters default to fully expanded inline; collapsing them switches to a compact list for
 jumping between chapters without scrolling through the full text.
@@ -75,6 +108,11 @@ the note's anchored text and content for a note, or pronunciation, description, 
 for an entity.
 
 ![Manuscript - detail sidebar open on a reader note](../images/ui/manuscript-note-sidebar.webp)
+
+Choosing "Go to line" on a Story Bible entry's evidence opens the Manuscript at that line and
+keeps it highlighted for about a minute, so you can see where you landed after the scroll.
+
+![Manuscript - the line reached from the Story Bible stays highlighted so it is easy to find](../images/ui/manuscript-go-to-line.webp)
 
 ## Proofing
 
@@ -111,9 +149,22 @@ with pronunciation, aliases, and narration notes. Category tabs filter the list.
 
 ![Story Bible filtered to the Characters category](../images/ui/storybible-characters.webp)
 
-Selecting an entry opens its detail panel for editing pronunciation, aliases, and notes.
+Selecting an entry opens its detail panel, read-only at first. Press Edit to change
+pronunciation, aliases, and notes, then Save (or Cancel). Locked entries can't be edited until
+unlocked. Rebuilding is deliberately strict: it favors missing a name over listing ordinary
+words, so add unusual names by hand with the + button.
 
 ![Story Bible entity detail panel](../images/ui/storybible-entity.webp)
+
+Pressing Edit switches the entry to edit mode, where Save and Cancel appear. Locked entries show
+neither Edit nor Save.
+
+![Story Bible - an entry in edit mode, with Save and Cancel shown](../images/ui/storybible-entry-editing.webp)
+
+Entries the build isn't sure about are filed under Needs Review, and their evidence is
+highlighted in the review color so it is clear which entries still need a decision.
+
+![Story Bible - a Needs Review entry, its evidence highlighted in the review color](../images/ui/storybible-needs-review.webp)
 
 Typing into the alias field opens a dropdown of existing entries whose name or alias matches,
 so a name mentioned under a different spelling can be merged into the entry it already

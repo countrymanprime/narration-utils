@@ -8,6 +8,7 @@ import {
   faLock,
   faLockOpen,
   faPause,
+  faPen,
   faPlus,
   faRotate,
   faTrash,
@@ -17,7 +18,9 @@ import {
 import type { GuideEntity, GuidePreview, TtsInstallJob } from '../../types';
 import { allEvidence, categoryCssName, categoryLabel, categoryValue, CREATABLE_CATEGORIES, findAliasMatches, highlightTerms } from '../../state';
 import { useApi } from '../../api/ApiContext';
-import { BADGE_CLASS, BADGE_STYLE, CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary, hlClassName, HL_STYLE } from '../manuscript/EntitySummary';
+import { BADGE_CLASS, BADGE_STYLE, CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from '../manuscript/EntitySummary';
+import { Highlight, highlightKind } from '../primitives/Highlight';
+import { SlideOver } from '../primitives/SlideOver';
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
@@ -49,6 +52,7 @@ export function GuideDetail({
 }) {
   const api = useApi();
   const [draft, setDraft] = useState({ name: '', description: '', personality: '', context: '' });
+  const [editing, setEditing] = useState(false);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const [aliasQuery, setAliasQuery] = useState('');
   const [aliasSelectedId, setAliasSelectedId] = useState<string>();
@@ -75,6 +79,9 @@ export function GuideDetail({
     notify,
   });
 
+  // Selecting a different entry always starts read-only; a reload of the same
+  // entry (after Save, an alias change, ...) keeps its mode.
+  useEffect(() => setEditing(false), [entity?.id]);
   useEffect(() => {
     setCategoryMenuOpen(false);
     setAliasQuery('');
@@ -98,7 +105,20 @@ export function GuideDetail({
       </section>
     );
   const locked = entity.locked;
-  const editingDisabled = locked || isNewDraft;
+  // Entries open read-only (ADR-0018): Edit reveals the form controls and Save.
+  // A locked entry cannot be edited at all, and a brand-new draft is created by
+  // choosing its category rather than through the edit form.
+  const canEdit = !locked && !isNewDraft;
+  const editingDisabled = !canEdit || !editing;
+  const stopEditing = () => {
+    setEditing(false);
+    setDraft({
+      name: entity.canonical_name,
+      description: entity.description.text,
+      personality: entity.personality_notes.map((note) => note.text).join(' '),
+      context: entity.context || '',
+    });
+  };
   const otherEntities = entities.filter((row) => row.id !== entity.id && row.category !== 'Draft');
   const aliasMatches = aliasSelectedId ? [] : findAliasMatches(entities, aliasQuery, entity.id);
   const selectedAliasMatch = aliasSelectedId ? entities.find((row) => row.id === aliasSelectedId) : undefined;
@@ -106,13 +126,15 @@ export function GuideDetail({
   const evidence = allEvidence(entity);
   const highlightNames = [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)];
 
-  const save = async (values: Record<string, string>, message: string) => {
+  const save = async (values: Record<string, string>, message: string): Promise<boolean> => {
     try {
       await api.guideEdit(entity.id, values);
       notify(message);
       await reload(entity.id);
+      return true;
     } catch (error) {
       notify(String(error));
+      return false;
     }
   };
   const setAliasTexts = (aliases: string[]) => save({ aliases: aliases.join(';') }, 'Aliases updated.');
@@ -209,7 +231,7 @@ export function GuideDetail({
                 type="button"
                 className={BADGE_CLASS}
                 style={BADGE_STYLE[entity.category]}
-                disabled={locked}
+                disabled={locked || !(editing || isNewDraft)}
                 onClick={() => setCategoryMenuOpen((value) => !value)}
               >
                 {categoryLabel(entity.category)} <FontAwesomeIcon icon={faChevronDown} />
@@ -262,28 +284,49 @@ export function GuideDetail({
               </button>
             </TooltipTarget>
           )}
-          <TooltipTarget
-            text={locked ? 'Unlock this entry before editing it' : isNewDraft ? 'Choose a category above to create this entry' : 'Save changes to this entry'}
-          >
-            <button
-              aria-label="Save changes to this entry"
-              className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-              disabled={editingDisabled}
-              onClick={() =>
-                void save(
-                  {
-                    canonical_name: draft.name.trim() || entity.canonical_name,
-                    description: draft.description,
-                    personality: draft.personality,
-                    context: draft.context,
-                  },
-                  'Entry saved.',
-                )
-              }
-            >
-              <FontAwesomeIcon icon={faFloppyDisk} />
-            </button>
-          </TooltipTarget>
+          {canEdit && !editing && (
+            <TooltipTarget text="Edit this entry">
+              <button
+                aria-label="Edit this entry"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                onClick={() => setEditing(true)}
+              >
+                <FontAwesomeIcon icon={faPen} />
+              </button>
+            </TooltipTarget>
+          )}
+          {canEdit && editing && (
+            <>
+              <TooltipTarget text="Save changes to this entry">
+                <button
+                  aria-label="Save changes to this entry"
+                  className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-strong)]"
+                  onClick={() =>
+                    void save(
+                      {
+                        canonical_name: draft.name.trim() || entity.canonical_name,
+                        description: draft.description,
+                        personality: draft.personality,
+                        context: draft.context,
+                      },
+                      'Entry saved.',
+                    ).then((saved) => saved && setEditing(false))
+                  }
+                >
+                  <FontAwesomeIcon icon={faFloppyDisk} />
+                </button>
+              </TooltipTarget>
+              <TooltipTarget text="Discard changes and stop editing">
+                <button
+                  aria-label="Cancel editing"
+                  className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                  onClick={stopEditing}
+                >
+                  <FontAwesomeIcon icon={faXmark} />
+                </button>
+              </TooltipTarget>
+            </>
+          )}
           {!locked && !isNewDraft && (
             <TooltipTarget text="Delete entity">
               <button
@@ -434,7 +477,7 @@ export function GuideDetail({
               placeholder="Add an alias or find a matching entry…"
             />
             {selectedAliasMatch ? (
-              <div className="alias-match-actions">
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                   Selected match: <strong>{selectedAliasMatch.canonical_name}</strong>
                   {selectedAliasMatch.locked ? ' · locked' : ''}
@@ -459,7 +502,11 @@ export function GuideDetail({
                 </Button>
               </div>
             ) : aliasQuery ? (
-              <div className="alias-match-menu" role="listbox" aria-label="Matching Story Bible entries">
+              <div
+                className="mt-1 flex flex-col overflow-hidden rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)]"
+                role="listbox"
+                aria-label="Matching Story Bible entries"
+              >
                 {aliasMatches.length > 0 ? (
                   aliasMatches.map((match, index) => (
                     <button
@@ -467,17 +514,16 @@ export function GuideDetail({
                       type="button"
                       role="option"
                       aria-selected={index === aliasActiveIndex}
-                      className={`alias-match-option ${index === aliasActiveIndex ? 'active' : ''}`}
+                      className={`flex w-full items-center gap-2 border-b border-[var(--border)] px-3 py-2 text-left hover:bg-[var(--surface-2)] ${index === aliasActiveIndex ? 'bg-[var(--surface-2)]' : ''}`}
                       onClick={() => setAliasSelectedId(match.id)}
                     >
-                      <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[match.category] }} />
+                      <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(match.category)] }} />
                       <span className="min-w-0 flex-1">
                         <strong className="text-sm">{match.canonical_name}</strong>
                         <span className="block text-xs" style={{ color: 'var(--text-faint)' }}>
                           {categoryLabel(match.category)} · {match.occurrence_count} occurrence{match.occurrence_count === 1 ? '' : 's'}
                         </span>
                       </span>
-                      <FontAwesomeIcon icon={match.locked ? faLock : faLockOpen} />
                     </button>
                   ))
                 ) : (
@@ -485,7 +531,7 @@ export function GuideDetail({
                     No matching Story Bible entries.
                   </div>
                 )}
-                <div className="alias-match-actions justify-between" style={{ padding: '.5rem' }}>
+                <div data-alias-actions className="flex items-center justify-between p-2">
                   <TooltipTarget text="Add alias">
                     <button
                       aria-label="Add alias"
@@ -509,7 +555,7 @@ export function GuideDetail({
                 </div>
               </div>
             ) : (
-              <div className="alias-match-actions justify-between">
+              <div data-alias-actions className="mt-2 flex items-center justify-between">
                 <TooltipTarget text="Add alias">
                   <button
                     aria-label="Add alias"
@@ -699,9 +745,9 @@ export function GuideDetail({
                   <p className="mt-1 break-words text-sm">
                     {highlightTerms(item.excerpt, highlightNames).map((segment, i) =>
                       segment.match ? (
-                        <mark key={i} className={hlClassName(entity.category)} style={HL_STYLE[entity.category]}>
+                        <Highlight key={i} kind={highlightKind(entity.category)}>
                           {segment.text}
-                        </mark>
+                        </Highlight>
                       ) : (
                         <span key={i}>{segment.text}</span>
                       ),
@@ -809,22 +855,14 @@ export function GuideDetail({
           />
         )}
       </div>
-      {reviewOverlayEntity && <div className="sheet-backdrop" onMouseDown={() => setReviewOverlayId(undefined)} />}
-      <aside className={`overlay-panel ${reviewOverlayEntity ? 'overlay-open' : ''}`} aria-hidden={!reviewOverlayEntity}>
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
-          <h3 className="text-sm font-semibold">{reviewOverlayEntity?.canonical_name || 'Review entry'}</h3>
-          <button
-            className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-            aria-label="Close review panel"
-            onClick={() => setReviewOverlayId(undefined)}
-          >
-            <FontAwesomeIcon icon={faXmark} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-[1.1rem]">
-          {reviewOverlayEntity && <EntitySummary entity={reviewOverlayEntity} jumpToLine={goToManuscript} />}
-        </div>
-      </aside>
+      <SlideOver
+        open={Boolean(reviewOverlayEntity)}
+        title={reviewOverlayEntity?.canonical_name || 'Review entry'}
+        closeLabel="Close review panel"
+        onClose={() => setReviewOverlayId(undefined)}
+      >
+        {reviewOverlayEntity && <EntitySummary entity={reviewOverlayEntity} jumpToLine={goToManuscript} />}
+      </SlideOver>
     </section>
   );
 }

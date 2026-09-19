@@ -215,5 +215,61 @@
     "viewport": "desktop",
     "docName": "theme-dark",
     "caption": "Home with Dark theme selected"
+  },
+  {
+    "page": "home",
+    "state": "manuscript-candidate-offer",
+    "viewport": "desktop",
+    "docName": "home-manuscript-offer",
+    "caption": "Home - offer to import a manuscript file found in the project folder"
+  },
+  {
+    "page": "home",
+    "state": "import-activity-log",
+    "viewport": "desktop",
+    "docName": "home-import-activity",
+    "caption": "Home - a finished manuscript import with its real, step-by-step activity log"
+  },
+  {
+    "page": "manuscript",
+    "state": "formatted-text-and-line-breaks",
+    "viewport": "desktop",
+    "docName": "manuscript-formatting",
+    "caption": "Manuscript - italic, bold and underline from the source document, and a preserved line break inside a paragraph"
+  },
+  {
+    "page": "manuscript",
+    "state": "chapter-bookmarked",
+    "viewport": "desktop",
+    "docName": "manuscript-bookmark",
+    "caption": "Manuscript - a chapter bookmarked, shown with a blue bookmark icon"
+  },
+  {
+    "page": "manuscript",
+    "state": "go-to-line-highlight",
+    "viewport": "desktop",
+    "docName": "manuscript-go-to-line",
+    "caption": "Manuscript - the line reached from the Story Bible stays highlighted so it is easy to find"
+  },
+  {
+    "page": "manuscript",
+    "state": "reader-dark",
+    "viewport": "desktop",
+    "docName": "manuscript-reader-dark",
+    "caption": "Manuscript reader in the Dark theme - readable controls and an opaque sticky chapter header"
+  },
+  {
+    "page": "storybible",
+    "state": "entry-editing",
+    "viewport": "desktop",
+    "docName": "storybible-entry-editing",
+    "caption": "Story Bible - an entry in edit mode, with Save and Cancel shown"
+  },
+  {
+    "page": "storybible",
+    "state": "entry-needs-review",
+    "viewport": "desktop",
+    "docName": "storybible-needs-review",
+    "caption": "Story Bible - a Needs Review entry, its evidence highlighted in the review color"
   }
 ]

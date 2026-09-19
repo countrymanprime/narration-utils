@@ -9,6 +9,7 @@ import type {
   ManuscriptParagraph,
   ReaderState,
   ScopedSettingField,
+  TextSpan,
   TracksProject,
   TranscriptState,
 } from '../types';
@@ -170,7 +171,7 @@ const idsFor = (text: string) =>
     .filter(([term]) => text.includes(term))
     .map(([, id]) => id);
 
-export const WIRE_PARAGRAPHS: ManuscriptParagraph[] = aliceChapters.flatMap((chapter, chapterIndex) =>
+const plainParagraphs: ManuscriptParagraph[] = aliceChapters.flatMap((chapter, chapterIndex) =>
   chapter.paragraphs.map((text, localIndex) => {
     const index = paragraphIndex(chapterIndex, localIndex);
     return {
@@ -184,6 +185,30 @@ export const WIRE_PARAGRAPHS: ManuscriptParagraph[] = aliceChapters.flatMap((cha
     };
   }),
 );
+
+// Two paragraphs carry what the importer now preserves - a line break inside a
+// paragraph ("\n") and bold/italic/underline spans (ADR-0013/0014) - so the
+// visual suite and the user guide can show them. Spans are located by phrase so
+// they stay correct if the seed prose is edited.
+const spanFor = (text: string, phrase: string, style: TextSpan['style']): TextSpan[] => {
+  const start = text.indexOf(phrase);
+  return start < 0 ? [] : [{ start, end: start + phrase.length, style }];
+};
+export const withFormatting = (paragraph: ManuscriptParagraph): ManuscriptParagraph => {
+  if (paragraph.index === 4) {
+    const text = paragraph.text.replace(' and then dipped', '\nand then dipped');
+    return {
+      ...paragraph,
+      text,
+      spans: [...spanFor(text, 'tunnel', 'underline'), ...spanFor(text, 'suddenly down', 'italic'), ...spanFor(text, 'a very deep well', 'bold')],
+    };
+  }
+  if (paragraph.index === 6) {
+    return { ...paragraph, spans: [...spanFor(paragraph.text, 'thought Alice to herself', 'italic'), ...spanFor(paragraph.text, 'nothing', 'bold')] };
+  }
+  return paragraph;
+};
+export const WIRE_PARAGRAPHS: ManuscriptParagraph[] = plainParagraphs.map(withFormatting);
 export const WIRE_CHAPTERS: ManuscriptChapter[] = aliceChapters.map((chapter, index) => ({
   id: 'chapter-' + (index + 1),
   title: chapter.title,

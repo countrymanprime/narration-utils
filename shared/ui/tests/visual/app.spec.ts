@@ -102,6 +102,18 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'info-tooltip': async (page) => {
       await page.getByLabel('More information').hover();
     },
+    'manuscript-candidate-offer': async (page) => {
+      // Reload with the mock's candidate boot seam (see main.tsx), like
+      // project/picker-empty does for the no-project seam.
+      await page.goto('/?mockManuscriptCandidate=1');
+      await settlePage(page);
+      await page.getByRole('dialog', { name: 'Import manuscript?' }).waitFor();
+    },
+    'import-activity-log': async (page) => {
+      await clickVisible(page, 'button', 'Replace manuscript');
+      await clickVisible(page, 'button', 'Import');
+      await page.getByText('Manuscript imported', { exact: true }).first().waitFor();
+    },
     'import-confirm': async (page) => {
       // The default mock state already has a manuscript loaded, so "Import
       // manuscript" isn't visible - "Replace manuscript" drives the same
@@ -131,9 +143,9 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       // The default chapter's seeded note spans a whole paragraph, and an
       // entity <mark> nested inside it calls stopPropagation() on click - a
       // click resolving to that nested mark never reaches the outer note's
-      // handler. Exclude overlays that contain a mark so the click lands on
-      // the note itself.
-      await page.locator('.note-overlay:not(:has(.ms-highlight))').first().click();
+      // handler. Exclude notes that contain another highlight so the click
+      // lands on the note itself.
+      await page.locator('[data-highlight="Note"]:not(:has([data-highlight]))').first().click();
     },
     'detail-sidebar-entity': async (page) => {
       await goToPage(page, 'Manuscript');
@@ -158,6 +170,36 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Manuscript');
       await selectFirstParagraphText(page);
       await clickVisible(page, 'button', '+ Note');
+    },
+    'formatted-text-and-line-breaks': async (page) => {
+      await goToPage(page, 'Manuscript');
+      // The mock seeds an underlined, italic and bold phrase plus a line break
+      // in the rabbit-hole paragraph (mockFixtures.ts withFormatting).
+      await page.locator('[data-paragraph-text] u').first().scrollIntoViewIfNeeded();
+      await page
+        .locator('[data-paragraph-text] u')
+        .first()
+        .evaluate((element) => element.scrollIntoView({ block: 'center' }));
+    },
+    'chapter-bookmarked': async (page) => {
+      await goToPage(page, 'Manuscript');
+      await page.locator('article header button.group').first().click();
+    },
+    'go-to-line-highlight': async (page) => {
+      await goToPage(page, 'Story Bible');
+      await page.locator('tr[data-row]').first().click();
+      await page
+        .getByRole('button', { name: /Go to line/ })
+        .first()
+        .click();
+      await page.locator('[data-jump-target]').first().waitFor();
+    },
+    'reader-dark': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'button', 'Global');
+      await clickSettingsCategory(page, 'Appearance');
+      await clickVisible(page, 'button', 'Dark');
+      await goToPage(page, 'Manuscript');
     },
   },
   proofing: {
@@ -229,7 +271,16 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       // fixture data happens to sort first into the row - findAliasMatches
       // excludes the selected entity by id, not by name, so this can't
       // accidentally match zero results.
+      // Entries open read-only (ADR-0018): unlock if needed, then Edit, before
+      // the alias field accepts input.
+      const unlock = page.getByRole('button', { name: 'Unlock entry' });
+      if (await unlock.count()) await unlock.click();
+      await clickVisible(page, 'button', 'Edit this entry');
       await page.getByPlaceholder('Add an alias or find a matching entry…').fill('at');
+    },
+    'entry-needs-review': async (page) => {
+      await goToPage(page, 'Story Bible');
+      await page.locator('tr[data-row]', { hasText: 'March Hare' }).click();
     },
     'delete-confirm': async (page) => {
       await goToPage(page, 'Story Bible');
@@ -250,6 +301,13 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'entry-unlocked': async (page) => {
       await goToPage(page, 'Story Bible');
       await page.locator('tr[data-row]').first().click();
+    },
+    'entry-editing': async (page) => {
+      await goToPage(page, 'Story Bible');
+      await page.locator('tr[data-row]').first().click();
+      const unlock = page.getByRole('button', { name: 'Unlock entry' });
+      if (await unlock.count()) await unlock.click();
+      await clickVisible(page, 'button', 'Edit this entry');
     },
   },
   tracks: {

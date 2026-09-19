@@ -6,6 +6,33 @@ import (
 	"testing"
 )
 
+func TestBuiltinDefaultsMatchRepoDefaultsFile(t *testing.T) {
+	document := readDocument(filepath.Join("..", "..", "..", "shared", "config", "defaults.json"))
+	if len(document) == 0 {
+		t.Fatal("could not read shared/config/defaults.json")
+	}
+	for tool := range document {
+		file := readTool(filepath.Join("..", "..", "..", "shared", "config", "defaults.json"), tool)
+		for key, want := range file {
+			if got := builtinDefaults[tool][key]; got != want {
+				t.Errorf("builtinDefaults[%q][%q] = %q, defaults.json has %q", tool, key, got, want)
+			}
+		}
+		for key := range builtinDefaults[tool] {
+			if _, ok := file[key]; !ok {
+				t.Errorf("builtinDefaults[%q][%q] is not in defaults.json", tool, key)
+			}
+		}
+	}
+}
+
+func TestDefaultsFallBackToBuiltinsWithoutARepoCheckout(t *testing.T) {
+	store := New(t.TempDir(), "")
+	if value, source := store.Effective("TranscriptCompare", "color_misread", ""); value != "FF4040" || source != "repo_default" {
+		t.Fatalf("installed builds must still have color defaults, got %q from %q", value, source)
+	}
+}
+
 func TestPreservesLayerPrecedenceAndProjectReset(t *testing.T) {
 	root := t.TempDir()
 	project := filepath.Join(root, "project")
