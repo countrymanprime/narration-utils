@@ -15,7 +15,7 @@ import re
 import sys
 import wave
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -23,12 +23,11 @@ _SHARED_PYTHON = Path(__file__).resolve().parents[3] / "shared" / "python"
 if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
-from narration_common.config import get_default  # noqa: E402
-from narration_common import manuscript as canonical_manuscript  # noqa: E402
-from narration_common.logging_utils import log, set_log_file  # noqa: E402
-from narration_common.progress import write_progress  # noqa: E402
-from piper.voice import PiperVoice  # noqa: E402
-
+from narration_common import manuscript as canonical_manuscript
+from narration_common.config import get_default
+from narration_common.logging_utils import log, set_log_file
+from narration_common.progress import write_progress
+from piper.voice import PiperVoice
 
 SCHEMA_VERSION = 2
 CAPITALIZED = re.compile(r"\b[A-Z][A-Za-z'’-]*(?:\s+(?:(?:of|the|and)\s+)?[A-Z][A-Za-z'’-]*){0,3}\b")
@@ -277,7 +276,7 @@ def spacy_candidates(paragraphs: list[dict[str, str]], model_name: str) -> list[
         import spacy
 
         nlp = spacy.load(model_name, disable=["parser", "lemmatizer", "textcat"])
-    except Exception as exc:  # Local rule extraction is a supported fallback.
+    except Exception as exc:  # Local rule extraction is a supported fallback.  # noqa: BLE001
         log(f"WARNING: spaCy model unavailable ({exc}); using lower-quality rules-only extraction.")
         return None
     found: list[dict[str, str]] = []
@@ -348,7 +347,7 @@ def pronunciation(name: str, espeak_library: str | None) -> dict[str, str]:
         phones = [pronouncing.phones_for_word(word.lower())[0] for word in words if pronouncing.phones_for_word(word.lower())]
         if words and len(phones) == len(words):
             return {"ipa": " ".join(arpabet_to_ipa(phone) for phone in phones), "source": "CMU dictionary", "confidence": "medium"}
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         log(f"CMU pronunciation unavailable ({exc}).")
     try:
         from phonemizer import phonemize
@@ -360,7 +359,7 @@ def pronunciation(name: str, espeak_library: str | None) -> dict[str, str]:
         ipa = phonemize(name, language="en-us", backend="espeak", strip=True, with_stress=True)
         if ipa:
             return {"ipa": ipa, "source": "eSpeak NG", "confidence": "low"}
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         log(f"eSpeak phonetic fallback unavailable ({exc}).")
     return {"ipa": "", "source": "not generated", "confidence": "unknown"}
 
@@ -404,6 +403,19 @@ def direct_description(name: str, occurrences: list[dict[str, str]]) -> dict[str
                         "evidence": {"chapter": occurrence["chapter"], "excerpt": sentence.strip()},
                     }
     return {"text": "", "evidence": {}}
+
+
+def evidence_entries(items: list[dict[str, str]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "chapter": item["chapter"],
+            "chapterId": item["chapterId"],
+            "paragraph": int(item["paragraph"]),
+            "paragraphId": item["paragraphId"],
+            "excerpt": excerpt(item["text"], int(item["start"]), int(item["end"])),
+        }
+        for item in items
+    ]
 
 
 def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_library: str | None) -> list[dict[str, Any]]:
@@ -450,24 +462,12 @@ def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_lib
         for item in occurrences:
             by_literal_name[item["name"]].append(item)
 
-        def evidence_for(literal_name: str) -> list[dict[str, Any]]:
-            return [
-                {
-                    "chapter": item["chapter"],
-                    "chapterId": item["chapterId"],
-                    "paragraph": int(item["paragraph"]),
-                    "paragraphId": item["paragraphId"],
-                    "excerpt": excerpt(item["text"], int(item["start"]), int(item["end"])),
-                }
-                for item in by_literal_name.get(literal_name, [])
-            ]
-
-        canonical_evidence = evidence_for(canonical_name)
+        canonical_evidence = evidence_entries(by_literal_name.get(canonical_name, []))
         aliases = [
             {
                 "text": name,
                 "pronunciation": pronunciation(name, espeak_library),
-                "occurrences": evidence_for(name),
+                "occurrences": evidence_entries(by_literal_name.get(name, [])),
             }
             for name in alias_names
         ]
@@ -629,7 +629,7 @@ def build(args: argparse.Namespace) -> None:
     guide = {
         "schema_version": SCHEMA_VERSION,
         "source": {"path": str(Path(args.manuscript).resolve()), "sha256": source_hash},
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "entities": entities,
         "vocabulary_candidates": vocabulary_candidates(entities),
         "absorbed_names": (previous or {}).get("absorbed_names", {}),
@@ -1049,7 +1049,7 @@ def main() -> None:
             "export-hotwords": export_hotwords,
             "render-audio": render_audio,
         }[args.command](args)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         log(f"ERROR: {exc}")
         if args.command == "build":
             write_progress(getattr(args, "progress", None), "ERROR", 0, str(exc))

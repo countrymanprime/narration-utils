@@ -34,7 +34,7 @@ class BridgeCommand:
         return encode_fields(PROTOCOL_VERSION, self.action, *self.fields) + "\n"
 
     @classmethod
-    def parse(cls, line: str) -> "BridgeCommand":
+    def parse(cls, line: str) -> BridgeCommand:
         fields = decode_fields(line)
         if len(fields) < 2 or fields[0] != str(PROTOCOL_VERSION):
             raise ValueError("Unsupported Narration Utils bridge command")
