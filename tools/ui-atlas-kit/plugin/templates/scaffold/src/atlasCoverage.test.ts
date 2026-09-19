@@ -12,11 +12,14 @@ const primitivesDir = join(__dirname, '{{PRIMITIVES_DIR}}');
 const all = readdirSync(primitivesDir, { recursive: true }).map(String);
 const base = (file: string) => file.split(/[\\/]/).pop() ?? file;
 const primitives = [...new Set(all.filter((file) => /\.(tsx|jsx)$/.test(file) && !/\.(stories|test|spec)\./.test(file) && !/^index\./.test(base(file))).map((file) => base(file).replace(/\.(tsx|jsx)$/, '')))];
+// An exemption may name a component by its file name or by its path under the components directory (e.g. 'layout/Spacer').
+const relPath = (name: string): string[] => all.filter((file) => base(file).replace(/\.(tsx|jsx)$/, '') === name).map((file) => file.replace(/\\/g, '/').replace(/\.(tsx|jsx)$/, ''));
+const isExempt = (name: string): boolean => name in ATLAS_EXEMPT || relPath(name).some((path) => path in ATLAS_EXEMPT);
 const storied = new Set(all.filter((file) => /\.stories\.(tsx|jsx)$/.test(file)).map((file) => base(file).replace(/\.stories\.(tsx|jsx)$/, '')));
 
 describe('component atlas coverage', () => {
   test('every primitive has a story file or a recorded exemption', () => {
-    const uncovered = primitives.filter((name) => !storied.has(name) && !(name in ATLAS_EXEMPT));
+    const uncovered = primitives.filter((name) => !storied.has(name) && !isExempt(name));
     expect(uncovered, 'add <Name>.stories.tsx next to the component, or exempt it with a reason').toEqual([]);
   });
 

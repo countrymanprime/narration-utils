@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.3.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.1 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import type { SameAsDeclaration } from './validators';
 
 export interface StateEntry {

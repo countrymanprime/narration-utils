@@ -1,5 +1,5 @@
 {
-  "kit": "0.3.0",
+  "kit": "0.3.1",
   "tier": 2,
   "stack": { "pm": "pnpm", "react": 19, "vite": 8, "tailwind": 4 },
   "vars": {

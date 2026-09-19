@@ -1,14 +1,15 @@
 # Rollout ledger
 
 One row per React UI repository. Tier meanings are in [design.md](design.md). Each PR vendors the kit's core files
-(`ui-atlas sync` refreshes them); all were upgraded from kit 0.1.0 to 0.2.0 after the first round of feedback, and the
-kit is now 0.3.0 (see "Not yet synced").
+(`ui-atlas sync` refreshes them). All six were upgraded 0.1.0 to 0.2.0 to 0.3.0 to 0.3.1 as the rollouts fed back, and are
+on 0.3.1 now (see [CHANGELOG](../CHANGELOG.md)). Each repo's unfixed defects are documented in its own
+`docs/FLAWS_AND_ENHANCEMENTS.md`; this repo's are in `docs/design/known-ui-defects.md`.
 
 | Repository | Stack | Tier | PR | Coverage | Escape hatches | Audit |
 | --- | --- | --- | --- | --- | --- | --- |
 | narration-utils (`shared/ui`) | React 19, Vite 8, Tailwind 4, pnpm | 2 | [#28](https://github.com/countrymanprime/narration-utils/pull/28) | 14 primitives, 119 stories, 71 app states x 4 viewports | 4 a11y debt (palette tokens), 10 sameAs | 95 |
 | shelby-theatres | React 18, Tailwind 3, Vite 5, npm | 2 | [#7](https://github.com/countrymanprime/shelby-theatres/pull/7) | 4 components, 23 stories, 9 app states | 1 debt, 1 sameAs | 100 |
-| sandbox-childcare-center | React 18, Tailwind 3, Vite 5, npm | 2 | [#18](https://github.com/countrymanprime/sandbox-childcare-center/pull/18) | 10 components (3 exempt), 44 stories, 20 app states x 5 viewports | 5 debt (brand contrast), 1 sameAs | 87 (audit undercounts exemptions; fixed in 0.3.0) |
+| sandbox-childcare-center | React 18, Tailwind 3, Vite 5, npm | 2 | [#18](https://github.com/countrymanprime/sandbox-childcare-center/pull/18) | 10 components (3 exempt), 44 stories, 20 app states x 5 viewports | 5 debt (brand contrast), 1 sameAs | 95 |
 | sensational-styles | React 19, Tailwind 3, Vite 6, npm | 1 | [#8](https://github.com/countrymanprime/sensational-styles/pull/8) | 7 components (extracted from a 400-line `App.tsx`), 32 stories, 8 app states | 0 debt, 1 sameAs | 100 |
 | dev-site | React 19, Tailwind 4, Vite 7, npm | 1 | [#17](https://github.com/countrymanprime/dev-site/pull/17) | 7 components (2 exempt), 43 stories, 15 app states | 1 debt, 1 sameAs | 100 |
 | fortune-and-son | React 18, Tailwind 4, Vite 7, npm | 1 | [#22](https://github.com/countrymanprime/fortune-and-son/pull/22) | 6 components with stories (3 exempt), 5 app states | 2 debt | 100 |
@@ -32,8 +33,17 @@ revert on their own:
   uncommitted work in the local checkout, so the PR added the tooling itself. The overlay will need catalog rows and a
   story when it lands.
 
-## Not yet synced
+## Open defects
 
-Kit 0.3.0 (grow-the-viewport full-page capture, atlas broken-image check, `UI_REUSE_SERVER` opt-in, docs that group by
-title and prune what they no longer generate, `sync` stamping the kit version) is in `narration-utils` only. Each other
-repository adopts it with `ui-atlas sync --dir <ui-root>` and one re-run of its suites.
+Every defect the suites found and the rollouts left unfixed is written up (severity, where, reproduction, suggested fix,
+whether a suite would catch a regression) in the repo's own `docs/FLAWS_AND_ENHANCEMENTS.md`, so it can be scheduled there:
+
+- sandbox-childcare-center: form submit throws (high), tour links to a missing anchor, brand contrast, heading order,
+  a clipped title, dead code, a stuck "Submitting..." state.
+- shelby-theatres: showtimes open on tomorrow's date in the evening, floating buttons (offset and overlap), dialog
+  accessibility, contrast axe cannot see.
+- fortune-and-son: white-on-white call-to-action (high), floating buttons, contrast, missing images, small accessibility gaps.
+- dev-site: `npm run lint` fails on `main`, StrictMode race in `DemosPage`, floating buttons, contrast, a no-op dark toggle.
+- coshocton-coffee-connection: sticky header over headings, the Demo Settings drawer, cramped menu cards.
+- sensational-styles: a favicon that does not exist (low).
+- narration-utils: see `docs/design/known-ui-defects.md`.

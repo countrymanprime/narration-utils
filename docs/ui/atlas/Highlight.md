@@ -14,6 +14,7 @@ Storybook title: `Primitives/Highlight`. Source: `src/components/primitives/High
 - Event
 - Review
 - Note
+- Cursor
 - In Running Text
 - Interactive
 - Click Activates
@@ -25,6 +26,7 @@ Storybook title: `Primitives/Highlight`. Source: `src/components/primitives/High
 - `src/components/manuscript/EntitySummary.tsx`
 - `src/components/manuscript/ParagraphView.tsx`
 - `src/components/storybible/GuideDetail.tsx`
+- `src/components/teleprompter/ReaderText.tsx`
 
 ## Known accessibility debt
 

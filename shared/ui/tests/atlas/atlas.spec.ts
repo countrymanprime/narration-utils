@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.3.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.1 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 /* eslint-disable @typescript-eslint/no-explicit-any -- in-page access to Storybook's untyped window globals */
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync, readFileSync } from 'node:fs';
@@ -18,7 +18,7 @@ interface Violation {
 interface Finished {
   storyId: string;
   status: 'success' | 'error';
-  reporters: Array<{ type: string; result?: { violations?: Violation[] } }>;
+  reporters: Array<{ type: string; result?: { violations?: Violation[]; incomplete?: Array<{ id: string; nodes: unknown[] }> } }>;
 }
 
 // Small canvases on purpose: a component is judged on its own, once at a width
@@ -58,18 +58,28 @@ function describeViolation(violation: Violation): string {
   return `${violation.id} (${violation.impact ?? 'n/a'}): ${nodes.join(' | ')}`;
 }
 
-// Crop the screenshot to what the story actually draws, so a small component is not a mostly empty
-// canvas. Elements that span the whole viewport (the decorator wrapper, a modal's backdrop) are ignored;
-// with nothing left to crop to, the whole viewport is used.
+// Crop the screenshot to what the story actually draws, so a small component is not a mostly empty canvas; with nothing
+// left to crop to, the whole viewport is used.
 async function contentClip(page: Page): Promise<{ x: number; y: number; width: number; height: number } | undefined> {
   return page.evaluate(() => {
     const pad = 12;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    const insideFixedLayer = (el: Element): boolean => {
+      for (let node: Element | null = el; node; node = node.parentElement) if (getComputedStyle(node).position === 'fixed') return true;
+      return false;
+    };
     const rects = [...document.body.querySelectorAll('*')]
       .filter((el) => !['SCRIPT', 'STYLE', 'LINK', 'META'].includes(el.tagName))
-      .map((el) => el.getBoundingClientRect())
-      .filter((r) => r.width > 0 && r.height > 0 && !(r.width >= vw - 1 && r.height >= vh - 1));
+      .map((el) => ({ el, r: el.getBoundingClientRect() }))
+      .filter(
+        ({ el, r }) =>
+          r.width > 0 &&
+          r.height > 0 &&
+          !(r.width >= vw - 1 && r.height >= vh - 1) &&
+          !(insideFixedLayer(el) && (r.top >= vh || r.left >= vw || r.bottom <= 0 || r.right <= 0)),
+      )
+      .map(({ r }) => r);
     if (rects.length === 0) return undefined;
     const left = Math.max(0, Math.min(...rects.map((r) => r.left)) - pad);
     const top = Math.max(0, Math.min(...rects.map((r) => r.top)) - pad);
@@ -81,14 +91,20 @@ async function contentClip(page: Page): Promise<{ x: number; y: number; width: n
 
 // A story taller than the viewport is shown whole by growing the viewport to fit it, not with Playwright's
 // fullPage: fullPage stretches fixed elements (a bottom bar) across the whole page and mixes coordinate systems
-// when a play() scrolled. Scroll back to the top first so the measurement and the clip agree.
+// when a play() scrolled. Scroll back to the top first so the measurement and the clip agree. Fixed layers are
+// viewport-bound and cannot make the page taller, so they are ignored when sizing (a closed slide-over parked
+// below the fold would otherwise inflate every screenshot).
 async function fitViewportToContent(page: Page, width: number, height: number): Promise<void> {
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }));
   const needed = await page.evaluate(() => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    const insideFixedLayer = (el: Element): boolean => {
+      for (let node: Element | null = el; node; node = node.parentElement) if (getComputedStyle(node).position === 'fixed') return true;
+      return false;
+    };
     const bottoms = [...document.body.querySelectorAll('*')]
-      .filter((el) => !['SCRIPT', 'STYLE', 'LINK', 'META'].includes(el.tagName))
+      .filter((el) => !['SCRIPT', 'STYLE', 'LINK', 'META'].includes(el.tagName) && !insideFixedLayer(el))
       .map((el) => el.getBoundingClientRect())
       .filter((r) => r.width > 0 && r.height > 0 && !(r.width >= vw - 1 && r.height >= vh - 1))
       .map((r) => r.bottom);
@@ -140,6 +156,10 @@ for (const entry of stories) {
           clip: await contentClip(page),
         });
 
+        for (const reporter of finished.reporters.filter((r) => r.type === 'a11y')) {
+          const undecided = (reporter.result?.incomplete ?? []).map((item) => `${item.id} (${item.nodes.length})`);
+          if (undecided.length) test.info().annotations.push({ type: 'axe-incomplete', description: undecided.join(', ') });
+        }
         const allowed = allowedRules(entry.title);
         const violations = finished.reporters
           .filter((reporter) => reporter.type === 'a11y')
@@ -149,12 +169,12 @@ for (const entry of stories) {
 
         expect(playError, 'play() threw').toBeUndefined();
         expect(errorDisplay, 'Storybook is showing its error display').toBe(false);
-        expect(violations, 'accessibility violations').toEqual([]);
+        expect.soft(violations, 'accessibility violations').toEqual([]);
         // The addon marks a story 'error' for ANY axe result, including rules recorded as debt above.
-        if (allowed.length === 0) expect(finished.status).toBe('success');
-        expect(overflowPx, `story scrolls sideways by ${overflowPx}px`).toBeLessThanOrEqual(1);
-        expect(brokenImages, 'images that failed to load').toEqual([]);
-        expect(problems, 'the story logged errors').toEqual([]);
+        if (allowed.length === 0) expect.soft(finished.status).toBe('success');
+        expect.soft(overflowPx, `story scrolls sideways by ${overflowPx}px`).toBeLessThanOrEqual(1);
+        expect.soft(brokenImages, 'images that failed to load').toEqual([]);
+        expect.soft(problems, 'the story logged errors').toEqual([]);
       });
     }
   }
