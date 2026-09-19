@@ -15,6 +15,7 @@ import type {
   RecentProject,
   Scope,
   ScopedSettingField,
+  TracksDiscovery,
   TranscriptState,
   WorkJob,
   TtsCatalog,
@@ -32,6 +33,7 @@ import {
   WIRE_NOTES,
   WIRE_PARAGRAPHS,
   WIRE_READER_STATE,
+  WIRE_TRACKS_PROJECT,
   WIRE_TRANSCRIPT,
   wireClone,
   wireSettings,
@@ -46,7 +48,41 @@ function basename(path: string): string {
   return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 }
 
-export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { projectFolder?: string } = {}): NarrationApi {
+const MOCK_AUDIO_SECONDS = 600;
+let mockAudioUrl: string | undefined;
+
+/**
+ * Browser mock mode has no /media route, so play, skip, and the time readout
+ * would have nothing to act on. This serves a real, silent WAV from memory
+ * instead. It's built lazily and only where object URLs exist (not jsdom).
+ */
+function mockAudioSource(): string | undefined {
+  if (typeof URL.createObjectURL !== 'function') return undefined;
+  if (!mockAudioUrl) {
+    const sampleRate = 8000;
+    const dataBytes = sampleRate * MOCK_AUDIO_SECONDS;
+    const wav = new Uint8Array(44 + dataBytes).fill(128); // unsigned 8-bit silence
+    const view = new DataView(wav.buffer);
+    const text = (offset: number, value: string) => [...value].forEach((char, index) => view.setUint8(offset + index, char.charCodeAt(0)));
+    text(0, 'RIFF');
+    view.setUint32(4, 36 + dataBytes, true);
+    text(8, 'WAVE');
+    text(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate, true);
+    view.setUint16(32, 1, true);
+    view.setUint16(34, 8, true);
+    text(36, 'data');
+    view.setUint32(40, dataBytes, true);
+    mockAudioUrl = URL.createObjectURL(new Blob([wav], { type: 'audio/wav' }));
+  }
+  return mockAudioUrl;
+}
+
+export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { projectFolder?: string; tracksCandidates?: string[] } = {}): NarrationApi {
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
   let paragraphs = wireClone(WIRE_PARAGRAPHS);
@@ -56,6 +92,9 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
   let projectFolder = initial.projectFolder ?? DEFAULT_PROJECT_FOLDER;
   let projectName = initial.projectFolder === undefined ? DEFAULT_PROJECT_NAME : basename(projectFolder);
   let daw = 'REAPER';
+  // One candidate auto-selects (like the Go host); several leave the choice to the narrator.
+  const tracksCandidates = initial.tracksCandidates ?? [WIRE_TRACKS_PROJECT.path];
+  let tracksDiscovery: TracksDiscovery = { candidates: tracksCandidates, selected: tracksCandidates.length === 1 ? tracksCandidates[0] : '' };
   let recentProjects: RecentProject[] = [
     { path: 'C:/Projects/Alice-in-Wonderland', name: 'Alice’s Adventures in Wonderland', lastOpened: '2026-09-15T09:00:00Z' },
     { path: 'C:/Projects/Voltage-and-the-Undercroft', name: 'Voltage and the Undercroft', lastOpened: '2026-09-10T18:30:00Z' },
@@ -586,6 +625,13 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
       recentProjects = recentProjects.filter((entry) => entry.path.toLowerCase() !== path.toLowerCase());
       return wireClone(recentProjects);
     },
+    tracksDiscover: async () => wireClone(tracksDiscovery),
+    tracksSelect: async (path) => {
+      tracksDiscovery = { ...tracksDiscovery, selected: path };
+      return wireClone(tracksDiscovery);
+    },
+    tracksList: async () => wireClone(WIRE_TRACKS_PROJECT),
+    mediaUrl: (sourceFile) => mockAudioSource() ?? sourceFile,
   };
   return { ...base, ...overrides };
 }

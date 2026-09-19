@@ -446,3 +446,9 @@ func (h *Host) TranscriptSaveHints(accepted []string) (string, error) {
 	}
 	return encodeBinding(nil, h.transcript.SaveHints(accepted))
 }
+
+func (h *Host) TracksDiscover() (string, error) { return encodeBinding(h.tracksDiscover()) }
+func (h *Host) TracksSelect(path string) (string, error) {
+	return encodeBinding(h.tracksSelect(path))
+}
+func (h *Host) TracksList() (string, error) { return encodeBinding(h.tracksList()) }

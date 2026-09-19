@@ -1,14 +1,29 @@
 import { useState, type ReactNode } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBars, faBookOpen, faFileLines, faFolder, faGear, faHouse, faMicrophone, faWaveSquare, faXmark } from '@fortawesome/free-solid-svg-icons';
+import {
+  faBars,
+  faBookOpen,
+  faFileLines,
+  faFolder,
+  faGear,
+  faHouse,
+  faLayerGroup,
+  faMicrophone,
+  faWaveSquare,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons';
 import { NavButton } from '../primitives/NavButton';
 
+// alwaysEnabled items don't depend on an imported manuscript - Tracks reads
+// the project's REAPER file directly, independent of the manuscript feature.
 const NAV = [
-  { name: 'Home', path: '/', icon: faHouse },
-  { name: 'Manuscript', path: '/manuscript', icon: faFileLines },
-  { name: 'Proofing', path: '/proofing', icon: faWaveSquare },
-  { name: 'Story Bible', path: '/story-bible', icon: faBookOpen },
+  { name: 'Home', path: '/', icon: faHouse, alwaysEnabled: true },
+  { name: 'Manuscript', path: '/manuscript', icon: faFileLines, alwaysEnabled: false },
+  { name: 'Proofing', path: '/proofing', icon: faWaveSquare, alwaysEnabled: false },
+  { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, alwaysEnabled: false },
+  { name: 'Tracks', path: '/tracks', icon: faLayerGroup, alwaysEnabled: true },
 ];
+const MANUSCRIPT_REQUIRED_REASON = 'Import a manuscript to unlock this page.';
 const isActivePath = (pathname: string, path: string) => (path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`));
 
 export function AppShell({
@@ -32,6 +47,7 @@ export function AppShell({
     navigate(next);
   };
   const settingsActive = isActivePath(pathname, '/settings');
+  const isDisabled = (item: (typeof NAV)[number]) => !item.alwaysEnabled && !hasManuscript;
   const navigation = (
     <>
       <div className="flex items-center gap-2 border-b border-[var(--border)] p-4">
@@ -50,8 +66,8 @@ export function AppShell({
             active={isActivePath(pathname, item.path)}
             icon={item.icon}
             onClick={() => go(item.path)}
-            disabled={item.path !== '/' && !hasManuscript}
-            disabledReason="Import a manuscript to unlock this page."
+            disabled={isDisabled(item)}
+            disabledReason={isDisabled(item) ? MANUSCRIPT_REQUIRED_REASON : undefined}
           >
             {item.name}
           </NavButton>
@@ -78,8 +94,8 @@ export function AppShell({
             icon={item.icon}
             onClick={() => go(item.path)}
             iconOnly
-            disabled={item.path !== '/' && !hasManuscript}
-            disabledReason="Import a manuscript to unlock this page."
+            disabled={isDisabled(item)}
+            disabledReason={isDisabled(item) ? MANUSCRIPT_REQUIRED_REASON : undefined}
           >
             {item.name}
           </NavButton>
