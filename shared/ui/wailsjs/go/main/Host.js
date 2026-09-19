@@ -166,6 +166,18 @@ export function SystemSettingsForScope(arg1) {
   return window['go']['main']['Host']['SystemSettingsForScope'](arg1);
 }
 
+export function TracksDiscover() {
+  return window['go']['main']['Host']['TracksDiscover']();
+}
+
+export function TracksList() {
+  return window['go']['main']['Host']['TracksList']();
+}
+
+export function TracksSelect(arg1) {
+  return window['go']['main']['Host']['TracksSelect'](arg1);
+}
+
 export function TranscriptAddEquivalence(arg1) {
   return window['go']['main']['Host']['TranscriptAddEquivalence'](arg1);
 }

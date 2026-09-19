@@ -15,6 +15,7 @@ import type {
   RecentProject,
   Scope,
   ScopedSettingField,
+  TracksDiscovery,
   TranscriptState,
   WorkJob,
   TtsCatalog,
@@ -32,6 +33,7 @@ import {
   WIRE_NOTES,
   WIRE_PARAGRAPHS,
   WIRE_READER_STATE,
+  WIRE_TRACKS_PROJECT,
   WIRE_TRANSCRIPT,
   wireClone,
   wireSettings,
@@ -46,7 +48,7 @@ function basename(path: string): string {
   return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 }
 
-export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { projectFolder?: string } = {}): NarrationApi {
+export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { projectFolder?: string; tracksCandidates?: string[] } = {}): NarrationApi {
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
   let paragraphs = wireClone(WIRE_PARAGRAPHS);
@@ -56,6 +58,9 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
   let projectFolder = initial.projectFolder ?? DEFAULT_PROJECT_FOLDER;
   let projectName = initial.projectFolder === undefined ? DEFAULT_PROJECT_NAME : basename(projectFolder);
   let daw = 'REAPER';
+  // One candidate auto-selects (like the Go host); several leave the choice to the narrator.
+  const tracksCandidates = initial.tracksCandidates ?? [WIRE_TRACKS_PROJECT.path];
+  let tracksDiscovery: TracksDiscovery = { candidates: tracksCandidates, selected: tracksCandidates.length === 1 ? tracksCandidates[0] : '' };
   let recentProjects: RecentProject[] = [
     { path: 'C:/Projects/Alice-in-Wonderland', name: 'Alice’s Adventures in Wonderland', lastOpened: '2026-09-15T09:00:00Z' },
     { path: 'C:/Projects/Voltage-and-the-Undercroft', name: 'Voltage and the Undercroft', lastOpened: '2026-09-10T18:30:00Z' },
@@ -586,6 +591,13 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
       recentProjects = recentProjects.filter((entry) => entry.path.toLowerCase() !== path.toLowerCase());
       return wireClone(recentProjects);
     },
+    tracksDiscover: async () => wireClone(tracksDiscovery),
+    tracksSelect: async (path) => {
+      tracksDiscovery = { ...tracksDiscovery, selected: path };
+      return wireClone(tracksDiscovery);
+    },
+    tracksList: async () => wireClone(WIRE_TRACKS_PROJECT),
+    mediaUrl: (sourceFile) => sourceFile,
   };
   return { ...base, ...overrides };
 }

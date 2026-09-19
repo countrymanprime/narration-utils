@@ -23,7 +23,7 @@ async function clickVisible(page: Page, role: Parameters<Page['getByRole']>[0], 
   await target.first().click();
 }
 
-async function goToPage(page: Page, name: 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Settings'): Promise<void> {
+async function goToPage(page: Page, name: 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Tracks' | 'Settings'): Promise<void> {
   if (name === 'Home') return; // App boots on Home.
   await clickVisible(page, 'button', name);
 }
@@ -250,6 +250,23 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'entry-unlocked': async (page) => {
       await goToPage(page, 'Story Bible');
       await page.locator('tr[data-row]').first().click();
+    },
+  },
+  tracks: {
+    default: async (page) => {
+      await goToPage(page, 'Tracks');
+    },
+    'unplayable-track-selected': async (page) => {
+      await goToPage(page, 'Tracks');
+      // Chapter 2's mock source file is missing on disk.
+      await clickVisible(page, 'button', /Chapter 2/);
+    },
+    'rpp-picker': async (page) => {
+      // Reload with the mock's two-.rpp seam (see main.tsx) - the outer
+      // loop's default page.goto('/') has already happened by now.
+      await page.goto('/?mockMultipleRpp=1');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
     },
   },
   settings: {

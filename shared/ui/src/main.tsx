@@ -21,11 +21,16 @@ declare global {
 // attached yet) - a URL param rather than a window global so a Playwright
 // driver can reach it with a plain second `page.goto`, no init-script
 // plumbing needed before the app's first render.
-const mockNoProject = new URLSearchParams(window.location.search).has('mockNoProject');
-const api =
-  import.meta.env.VITE_USE_MOCK_API === '1'
-    ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockNoProject ? { projectFolder: '' } : undefined)
-    : wailsClient;
+// `?mockMultipleRpp=1` seeds two .rpp candidates so the Tracks page shows
+// its choose-a-project-file prompt instead of auto-selecting the only one.
+const mockParams = new URLSearchParams(window.location.search);
+const mockNoProject = mockParams.has('mockNoProject');
+const mockMultipleRpp = mockParams.has('mockMultipleRpp');
+const mockInitial = {
+  ...(mockNoProject ? { projectFolder: '' } : {}),
+  ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),
+};
+const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -12,6 +12,7 @@ import { ProjectPicker } from './components/project/ProjectPicker';
 import { Guide } from './components/storybible/Guide';
 import { Transcript } from './components/proofing/Transcript';
 import { Settings } from './components/settings/Settings';
+import { TracksPage } from './components/tracks/TracksPage';
 import { TooltipProvider } from './components/primitives/Tooltip';
 import { ErrorBoundary } from './components/primitives/ErrorBoundary';
 import { DESKTOP_HOST_API_VERSION } from './hostApi';
@@ -210,6 +211,7 @@ function AppRoutes() {
                   )
                 }
               />
+              <Route path="/tracks" element={<TracksPage />} />
               <Route
                 path="/settings"
                 element={

@@ -14,7 +14,7 @@ recent projects to reopen, or actions to browse to an existing folder or create 
 
 ## Navigation
 
-Home, Manuscript, Proofing, and Story Bible are reachable from a sidebar on the left. At
+Home, Manuscript, Proofing, Story Bible, and Tracks are reachable from a sidebar on the left. At
 desktop widths it stays open with labels; narrower windows switch it to icon-only, then hide
 it behind a hamburger menu that opens it as a slide-in drawer. Settings lives at the bottom
 of the sidebar in every layout.
@@ -113,6 +113,31 @@ so a name mentioned under a different spelling can be merged into the entry it a
 belongs to instead of creating a duplicate.
 
 ![Story Bible alias field with a matching-entries dropdown open](../images/ui/storybible-alias-dropdown.webp)
+
+## Tracks
+
+Tracks reads the project's REAPER project file (`.rpp`) directly, so REAPER doesn't need to be
+running, and it doesn't need an imported manuscript. Each track shows its color, a Muted badge
+when it's muted, and how many of its items have playable audio (for example `1/1`). A warning
+triangle marks a track with an item whose audio file can't be found on disk, or that isn't
+audio at all (such as a MIDI item).
+
+![Tracks page with transport controls and a list of project tracks](../images/ui/tracks-default.webp)
+
+The transport plays the selected track's audio items back to back. It has play/pause, skip back
+and forward 30 seconds, and previous/next track — those two move between tracks, not between
+items within one.
+
+Selecting a track with no playable audio says so and disables the playback controls (previous
+and next track still work).
+
+![Tracks page with a track selected whose audio file is missing](../images/ui/tracks-unplayable.webp)
+
+If the project folder holds more than one `.rpp` file, Tracks asks which one to read. Backup
+copies (`.rpp-bak`, or files inside a subfolder such as Backups) aren't offered. The choice is
+remembered for the project.
+
+![Tracks page asking which of two REAPER project files to use](../images/ui/tracks-rpp-picker.webp)
 
 ## Settings
 

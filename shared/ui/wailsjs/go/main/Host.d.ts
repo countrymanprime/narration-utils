@@ -83,6 +83,12 @@ export function SystemSaveSettings(arg1:string,arg2:string,arg3:Record<string, a
 
 export function SystemSettingsForScope(arg1:string):Promise<string>;
 
+export function TracksDiscover():Promise<string>;
+
+export function TracksList():Promise<string>;
+
+export function TracksSelect(arg1:string):Promise<string>;
+
 export function TranscriptAddEquivalence(arg1:string):Promise<string>;
 
 export function TranscriptCancel():Promise<string>;

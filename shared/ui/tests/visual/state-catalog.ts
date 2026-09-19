@@ -73,6 +73,23 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'storybible', state: 'entry-locked', description: 'Story Bible, a locked entry' },
   { page: 'storybible', state: 'entry-unlocked', description: 'Story Bible, an unlocked entry' },
 
+  // Tracks
+  {
+    page: 'tracks',
+    state: 'default',
+    description: 'Tracks, a single .rpp auto-selected - first track active with transport controls, other tracks flagged for missing/unsupported items',
+  },
+  {
+    page: 'tracks',
+    state: 'unplayable-track-selected',
+    description: 'Tracks, a track whose source file is missing selected - "no playable audio" message with disabled transport',
+  },
+  {
+    page: 'tracks',
+    state: 'rpp-picker',
+    description: 'Tracks, more than one .rpp file found - choose-a-project-file prompt (reached via the ?mockMultipleRpp=1 mock seam)',
+  },
+
   // Settings
   { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category' },
   { page: 'settings', state: 'global-appearance', description: 'Settings, Global scope / Appearance category (theme switcher)' },
