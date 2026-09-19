@@ -4,12 +4,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 PYTHON_ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(PYTHON_ROOT))
 
-from narration_common import config  # noqa: E402
-from narration_common.ui_bridge import BridgeClient, BridgeCommand, decode_fields  # noqa: E402
+from narration_common import config
+from narration_common.ui_bridge import BridgeClient, BridgeCommand, decode_fields
 
 
 class UiBridgeTests(unittest.TestCase):

@@ -9,6 +9,7 @@ import type {
   ManuscriptParagraph,
   ReaderState,
   ScopedSettingField,
+  TracksProject,
   TranscriptState,
 } from '../types';
 
@@ -509,4 +510,57 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
   Piper: [choice('tts_provider', 'TTS provider', ['piper'], 'piper'), choice('tts_voice_id', 'Preview voice', ['en_US-ljspeech-high'], 'en_US-ljspeech-high')],
   Daw: [],
 });
+export const WIRE_TRACKS_PROJECT: TracksProject = {
+  path: 'C:/Projects/Alice-in-Wonderland/Alice.rpp',
+  tracks: [
+    {
+      guid: '{0E4D1D7F-D039-674D-87E6-719376DE95EC}',
+      index: 0,
+      name: 'Chapter 1',
+      color: '#3F6EA6',
+      muted: false,
+      soloed: false,
+      items: [
+        {
+          position: 0,
+          length: 612.4,
+          name: 'ch1_take3.wav',
+          sourceKind: 'WAVE',
+          sourceFile: 'C:/Projects/Alice-in-Wonderland/media/ch1_take3.wav',
+          sourceAvailable: true,
+          supported: true,
+        },
+      ],
+    },
+    {
+      guid: '{DA2D209F-D10F-5E46-93E7-098D96499ED0}',
+      index: 1,
+      name: 'Chapter 2',
+      color: '',
+      muted: false,
+      soloed: false,
+      items: [
+        {
+          position: 0,
+          length: 548.9,
+          name: 'ch2_take1.wav',
+          sourceKind: 'WAVE',
+          sourceFile: 'C:/Projects/Alice-in-Wonderland/media/ch2_take1.wav',
+          sourceAvailable: false,
+          supported: true,
+        },
+      ],
+    },
+    {
+      guid: '{C33A3BE7-8F84-7940-9610-65C6ED6CED7A}',
+      index: 2,
+      name: 'Click Track',
+      color: '',
+      muted: true,
+      soloed: false,
+      items: [{ position: 0, length: 4, name: 'click', sourceKind: 'MIDI', sourceFile: '', sourceAvailable: false, supported: false }],
+    },
+  ],
+};
+
 export const wireClone = <T>(value: T): T => structuredClone(value);

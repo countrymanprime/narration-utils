@@ -119,4 +119,28 @@ describe('wailsClient', () => {
     await expect(wailsClient.removeRecentProject('C:/Projects/Voltage-and-the-Undercroft')).resolves.toEqual(remaining);
     expect(removeRecentProject).toHaveBeenCalledWith('C:/Projects/Voltage-and-the-Undercroft');
   });
+
+  it('decodes the Tracks discover, select, and list bindings', async () => {
+    const discovery = { candidates: ['C:/Projects/Alice/Alice.rpp'], selected: 'C:/Projects/Alice/Alice.rpp' };
+    const project = { path: 'C:/Projects/Alice/Alice.rpp', tracks: [] };
+    const select = vi.fn().mockResolvedValue(JSON.stringify(discovery));
+    window.go = {
+      main: {
+        Host: {
+          TracksDiscover: vi.fn().mockResolvedValue(JSON.stringify(discovery)),
+          TracksSelect: select,
+          TracksList: vi.fn().mockResolvedValue(JSON.stringify(project)),
+        },
+      },
+    };
+
+    await expect(wailsClient.tracksDiscover()).resolves.toEqual(discovery);
+    await expect(wailsClient.tracksSelect('C:/Projects/Alice/Alice.rpp')).resolves.toEqual(discovery);
+    expect(select).toHaveBeenCalledWith('C:/Projects/Alice/Alice.rpp');
+    await expect(wailsClient.tracksList()).resolves.toEqual(project);
+  });
+
+  it('builds a /media playback URL with the source path percent-encoded', () => {
+    expect(wailsClient.mediaUrl('C:\\My Book\\media\\take 1.wav')).toBe('/media?path=C%3A%5CMy%20Book%5Cmedia%5Ctake%201.wav');
+  });
 });

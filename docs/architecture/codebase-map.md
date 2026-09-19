@@ -26,6 +26,7 @@ implementation around the product domain that owns its behavior.
 - `story_bible` owns guide entities, relationships, audio preview, and build jobs.
 - `transcript` owns comparison lifecycle, review results, and marker export.
 - `tts` owns the approved voice catalog and install jobs.
+- `tracks` owns reading a project's `.rpp` file (discovery, selection, track/item metadata). `shell/media.go` serves those tracks' audio to the webview through the asset server's `/media` route (see [ADR 0012](../adr/0012-media-route-for-track-playback.md)); it is the only non-frontend content the asset server serves.
 
 `shell/internal/` holds domain services and infrastructure. The Wails binding
 surface is operation-specific; it does not accept arbitrary route names.
