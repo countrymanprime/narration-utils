@@ -12,6 +12,7 @@ import { ProjectPicker } from './components/project/ProjectPicker';
 import { Guide } from './components/storybible/Guide';
 import { Transcript } from './components/proofing/Transcript';
 import { Settings } from './components/settings/Settings';
+import { TeleprompterPage } from './components/teleprompter/TeleprompterPage';
 import { TracksPage } from './components/tracks/TracksPage';
 import { TooltipProvider } from './components/primitives/Tooltip';
 import { ErrorBoundary } from './components/primitives/ErrorBoundary';
@@ -165,7 +166,7 @@ function AppRoutes() {
 
   const guardedNavigate = (next: string) => {
     const nextPath = next.split('#')[0] || '/';
-    if (!data.manuscript && ['/manuscript', '/proofing', '/story-bible'].includes(nextPath)) {
+    if (!data.manuscript && ['/manuscript', '/proofing', '/story-bible', '/teleprompter'].includes(nextPath)) {
       navigate('/', { replace: true });
       return;
     }
@@ -211,6 +212,7 @@ function AppRoutes() {
                   )
                 }
               />
+              <Route path="/teleprompter" element={data.manuscript ? <TeleprompterPage /> : <Navigate to="/" replace />} />
               <Route path="/tracks" element={<TracksPage />} />
               <Route
                 path="/settings"

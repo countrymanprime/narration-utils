@@ -147,6 +147,27 @@
     "caption": "Story Bible - alias typeahead dropdown matching existing entries"
   },
   {
+    "page": "teleprompter",
+    "state": "setup-default",
+    "viewport": "desktop",
+    "docName": "teleprompter-setup",
+    "caption": "Teleprompter - before a session, with the chapter, microphone and model choices above the chapter text"
+  },
+  {
+    "page": "teleprompter",
+    "state": "listening",
+    "viewport": "desktop",
+    "docName": "teleprompter-listening",
+    "caption": "Teleprompter - listening, with read words dimmed and the current word highlighted"
+  },
+  {
+    "page": "teleprompter",
+    "state": "waiting",
+    "viewport": "desktop",
+    "docName": "teleprompter-waiting",
+    "caption": "Teleprompter - waiting after the narrator paused"
+  },
+  {
     "page": "tracks",
     "state": "default",
     "viewport": "desktop",
