@@ -3,9 +3,8 @@ import importlib.util
 import json
 import tempfile
 import unittest
-from unittest.mock import MagicMock, patch
 from pathlib import Path
-
+from unittest.mock import MagicMock, patch
 
 MODULE_PATH = Path(__file__).parents[1] / "manuscript_guide.py"
 SPEC = importlib.util.spec_from_file_location("manuscript_guide", MODULE_PATH)
