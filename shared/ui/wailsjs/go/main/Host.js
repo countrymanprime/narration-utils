@@ -30,9 +30,6 @@ export function GuideEntities() {
   return window['go']['main']['Host']['GuideEntities']();
 }
 
-export function GuideExport() {
-  return window['go']['main']['Host']['GuideExport']();
-}
 
 export function GuideMerge(arg1, arg2) {
   return window['go']['main']['Host']['GuideMerge'](arg1, arg2);

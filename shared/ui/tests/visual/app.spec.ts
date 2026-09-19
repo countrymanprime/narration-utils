@@ -131,9 +131,9 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       // The default chapter's seeded note spans a whole paragraph, and an
       // entity <mark> nested inside it calls stopPropagation() on click - a
       // click resolving to that nested mark never reaches the outer note's
-      // handler. Exclude overlays that contain a mark so the click lands on
-      // the note itself.
-      await page.locator('.note-overlay:not(:has(.ms-highlight))').first().click();
+      // handler. Exclude notes that contain another highlight so the click
+      // lands on the note itself.
+      await page.locator('[data-highlight="Note"]:not(:has([data-highlight]))').first().click();
     },
     'detail-sidebar-entity': async (page) => {
       await goToPage(page, 'Manuscript');

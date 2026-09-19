@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileExport, faLock, faPlus, faRotate, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faLock, faPlus, faRotate, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { normalizeGuideEntity, type GuideEntity, type WorkJob } from '../../types';
 import { categoryCssName, categoryLabel, sortEntities, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
@@ -165,21 +165,6 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
                 }}
               >
                 <FontAwesomeIcon icon={faRotate} />
-              </button>
-            </TooltipTarget>
-            <TooltipTarget text="Export hotwords">
-              <button
-                aria-label="Export hotwords"
-                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                onClick={async () => {
-                  try {
-                    notify(`Hotwords exported to ${await api.guideExport()}`);
-                  } catch (error) {
-                    notify(String(error));
-                  }
-                }}
-              >
-                <FontAwesomeIcon icon={faFileExport} />
               </button>
             </TooltipTarget>
           </div>

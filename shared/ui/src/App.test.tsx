@@ -167,7 +167,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
 
     const addAliasButton = screen.getByRole('button', { name: 'Add alias' });
     const rescanButton = screen.getByRole('button', { name: /Rescan occurrences/ });
-    expect(addAliasButton.closest('.alias-match-actions')).toBe(rescanButton.closest('.alias-match-actions'));
+    expect(addAliasButton.closest('[data-alias-actions]')).toBe(rescanButton.closest('[data-alias-actions]'));
   });
 
   it('guards navigating away from unsaved Settings changes and saves on confirm', async () => {

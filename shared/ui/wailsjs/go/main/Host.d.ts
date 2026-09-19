@@ -15,7 +15,6 @@ export function GuideEdit(arg1:string,arg2:Record<string, string>):Promise<strin
 
 export function GuideEntities():Promise<string>;
 
-export function GuideExport():Promise<string>;
 
 export function GuideMerge(arg1:string,arg2:string):Promise<string>;
 

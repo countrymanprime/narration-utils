@@ -81,7 +81,6 @@ export const wailsClient: NarrationApi = {
   guideDelete: (id) => decode<void>(host.GuideDelete(id)),
   guideRelate: (id, otherId, label) => decode<void>(host.GuideRelate(id, otherId, label)),
   guideUnrelate: (id, otherId, label) => decode<void>(host.GuideUnrelate(id, otherId, label)),
-  guideExport: () => decode<{ path: string }>(host.GuideExport()).then((value) => value.path),
   guidePreview: (id, aliasIndex) => decode<GuidePreview>(host.GuidePreview(id, aliasIndex)),
   ttsCatalog: () => decode<TtsCatalog>(host.TtsCatalog()),
   ttsInstall: (voiceId) => decode<TtsInstallJob>(host.TtsInstall(voiceId)),

@@ -18,6 +18,9 @@ Location: `shared/ui/src/components/primitives/`.
 | --- | --- | --- |
 | `Dialog` | Modal shell (backdrop, head, scrollable body, action row) | Max-width `70vw`, `overflow-x-hidden` + `break-words` body ([ADR 0001](../adr/0001-import-dialog-max-width-and-overflow.md)); `actionsAlign="between"` default, `"end"` for single-action dialogs ([ADR 0002](../adr/0002-dialog-action-button-placement.md)) |
 | `Button` | Tokenized button, `primary`/`ghost`/`danger` variants | Bakes in `disabled:pointer-events-none` so future buttons don't need to remember to guard hover-while-disabled by hand |
+| `Highlight` | Highlighted text (entity / note / review) | One category→color mapping; fills the line height ([ADR 0015](../adr/0015-highlight-primitive.md)) |
+| `SlideOver` | Right-edge panel with click-away backdrop | Pure Tailwind; `invisible translate-x-full` when closed ([ADR 0016](../adr/0016-no-legacy-css-shadowing-tailwind.md)) |
+| `Pill` | Toggle chip | Active/inactive classes are mutually exclusive so text stays readable in dark mode |
 | `MeterBar` | Segmented horizontal meter | Caller controls segment order — see [ADR 0006](../adr/0006-chapter-progress-bar-ordering.md) for why the chapter-progress usage reverses it |
 
 The custom-CSS system (`.btn`, `.panel-head`/`.panel-body`, `.progressbar`, etc.) that ADR 0003 deliberately left in place for not-yet-migrated consumers has since been fully migrated to Tailwind utilities — see [ADR 0009](../adr/0009-complete-tailwind-migration.md), which supersedes ADR 0003. New UI work should reach for Tailwind utilities directly rather than adding to `styles.css`. ADR 0009 also lists the small set of deliberate exceptions still in `styles.css` (a generic `table.dtable` style, scrollbar-hiding rules, keyframe animations, and a handful of unstyled "marker" classes kept only because visual/unit tests select by CSS class).
@@ -27,7 +30,16 @@ The custom-CSS system (`.btn`, `.panel-head`/`.panel-body`, `.progressbar`, etc.
 - **Numeric table columns are right-aligned** (`text-right` on both `<th>` and `<td>`) — see `AudiobookEstimatePanel.tsx`'s Words/Est./Actual columns for the reference implementation.
 - **Disabled interactive elements never show a hover affordance.** Use `disabled:pointer-events-none` (Tailwind) alongside `disabled:opacity-*`, not just the opacity change alone — a hover transform/background change that still fires on a disabled element reads as clickable when it isn't.
 - **A field that is locked/not-yet-persisted is `disabled`, not hidden**, so the user can see what exists without being able to edit it — see `GuideDetail.tsx`'s `editingDisabled = locked || isNewDraft` pattern.
-- **A non-destructive "peek at something else" action is an overlay/slide-over (`.overlay-panel`/`.sheet-backdrop`), never a navigation that replaces the current view's state.** See `Manuscript.tsx`'s Chapters & Search overlay and `GuideDetail.tsx`'s "Review entry" overlay — both exist specifically so switching context doesn't discard an in-progress edit.
+- **A non-destructive "peek at something else" action is a `SlideOver` primitive, never a navigation that replaces the current view's state.** See `Manuscript.tsx`'s Chapters & Search overlay and `GuideDetail.tsx`'s "Review entry" overlay — both exist specifically so switching context doesn't discard an in-progress edit.
+
+## Manuscript reader
+
+- **Alternating rows.** Paragraph rows alternate between `--surface` and `--row-alt` (a touch darker in light theme, a touch lighter in dark) with a 1px `--border` line between rows, like banded table rows. Highlights tint with `transparent` mixes so they read on either row.
+- **Highlights** are the `Highlight` primitive only ([ADR 0015](../adr/0015-highlight-primitive.md)): entity, note and review share one look, filling the full line height, in the kind's color.
+- **Sticky chapter headers** are opaque (`bg-[var(--surface)]`) with a soft shadow once stuck; they must never be transparent over scrolling text.
+- **"Go to line" target** stays highlighted (accent edge and tint) for 60 seconds (`JUMP_HIGHLIGHT_MS` in `Manuscript.tsx`), with a brief ring pulse on arrival.
+- **Formatting and line breaks** from import (`spans`, `\n`) render as `<strong>`/`<em>`/`<u>` and `white-space: pre-line` ([ADR 0013](../adr/0013-inline-formatting-as-offset-spans.md)).
+- **Side panels** use `SlideOver`; state-dependent classes are mutually exclusive ([ADR 0016](../adr/0016-no-legacy-css-shadowing-tailwind.md)).
 
 ## CSS layering gotcha
 

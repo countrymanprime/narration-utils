@@ -154,13 +154,6 @@ func (h *Host) GuideUnrelate(id, otherID, label string) (string, error) {
 	}
 	return encodeBinding(nil, h.guide.Unrelate(id, otherID, label))
 }
-func (h *Host) GuideExport() (string, error) {
-	if h.guide == nil {
-		return "", fmt.Errorf("the Story Bible is unavailable")
-	}
-	path, err := h.guide.ExportHotwords()
-	return encodeBinding(map[string]any{"path": path}, err)
-}
 func (h *Host) GuidePreview(id string, aliasIndex *int) (string, error) {
 	if h.guide == nil || h.tts == nil {
 		return "", fmt.Errorf("story Bible preview is unavailable")

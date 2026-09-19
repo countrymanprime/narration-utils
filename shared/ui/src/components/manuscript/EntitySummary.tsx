@@ -3,6 +3,7 @@ import { faFileLines, faLock } from '@fortawesome/free-solid-svg-icons';
 import type { CSSProperties } from 'react';
 import type { GuideEntity } from '../../types';
 import { allEvidence, categoryLabel, highlightTerms } from '../../state';
+import { Highlight, highlightKind } from '../primitives/Highlight';
 import { TooltipTarget } from '../primitives/Tooltip';
 
 export const BADGE_STYLE: Record<string, CSSProperties> = {
@@ -16,19 +17,6 @@ export const BADGE_STYLE: Record<string, CSSProperties> = {
 };
 export const BADGE_CLASS =
   "inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.03em]";
-
-export const HL_STYLE: Record<string, CSSProperties> = {
-  Character: { background: 'var(--character-soft)', color: 'var(--character)' },
-  Place: { background: 'var(--place-soft)', color: 'var(--place)' },
-  Organization: { background: 'var(--org-soft)', color: 'var(--org)' },
-  Lore: { background: 'color-mix(in srgb, var(--lore) 18%, var(--surface))', color: 'var(--lore)' },
-  Item: { background: 'color-mix(in srgb, var(--item) 18%, var(--surface))', color: 'var(--item)' },
-  Event: { background: 'color-mix(in srgb, var(--event) 18%, var(--surface))', color: 'var(--event)' },
-  Review: { background: 'color-mix(in srgb, var(--review) 18%, var(--surface))', color: 'var(--review)' },
-  Draft: { background: 'color-mix(in srgb, var(--review) 18%, var(--surface))', color: 'var(--review)' },
-  Note: { background: 'color-mix(in srgb, var(--note) 22%, transparent)', color: 'var(--note)' },
-};
-export const hlClassName = (category: string) => `ms-highlight hl-${category} cursor-pointer shadow-[inset_0_-1.5px_0_currentColor]`;
 
 export const CAT_DOT_BG: Record<string, string> = {
   Character: 'var(--character)',
@@ -150,9 +138,9 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
                 <p className="mt-0.5 break-words text-sm">
                   {highlightTerms(item.excerpt, [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)]).map((segment, piece) =>
                     segment.match ? (
-                      <mark key={piece} className={hlClassName(entity.category)} style={HL_STYLE[entity.category]}>
+                      <Highlight key={piece} kind={highlightKind(entity.category)}>
                         {segment.text}
-                      </mark>
+                      </Highlight>
                     ) : (
                       <span key={piece}>{segment.text}</span>
                     ),

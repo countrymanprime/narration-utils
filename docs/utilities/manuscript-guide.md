@@ -4,7 +4,7 @@
 
 ## Current capability and problem
 
-The current Python backend reads the project-owned canonical manuscript JSON, detects candidate characters, places, and organizations, and writes editable JSON with pronunciation, evidence, conservative descriptions, and personality notes. The native Go/Wails host imports DOCX and Markdown once before analysis; new PDF import is fail-closed pending corpus parity. The REAPER bridge supports building, reviewing, editing/locking fields, exporting hotwords, and optional local Piper previews.
+The current Python backend reads the project-owned canonical manuscript JSON, detects candidate characters, places, and organizations, and writes editable JSON with pronunciation, evidence, conservative descriptions, and personality notes. The native Go/Wails host imports DOCX and Markdown once before analysis; new PDF import is fail-closed pending corpus parity. The REAPER bridge supports building, reviewing, editing/locking fields, and optional local Piper previews.
 
 ## Target workflow
 
@@ -13,7 +13,7 @@ Run the guide after manuscript selection; review uncertain candidates; lock narr
 ## Inputs and outputs
 
 - Inputs: Word manuscript, local spaCy model when available, optional eSpeak, the selected catalog-managed Piper voice, and existing guide JSON.
-- Outputs: `<project>/ManuscriptGuide/manuscript_guide.json`, hotword export, optional audio previews, then shared entity/pronunciation findings.
+- Outputs: `<project>/ManuscriptGuide/manuscript_guide.json`, optional audio previews, then shared entity/pronunciation findings.
 - Narrator actions: edit, lock, merge/reject candidates, approve pronunciations, and choose exports.
 
 ## Planned features

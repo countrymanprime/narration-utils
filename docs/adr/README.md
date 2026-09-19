@@ -35,3 +35,8 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0010](0010-theme-switching.md) | Tri-state Light/Dark/System theme switching | Accepted |
 | [0011](0011-doc-screenshots-curated-from-visual-suite.md) | Documentation screenshots are curated from the Playwright visual suite, not captured separately | Accepted |
 | [0012](0012-media-route-for-track-playback.md) | Local track audio is streamed through a Wails asset-server route, not the base64-binding pattern | Accepted |
+| [0012](0012-import-preserves-structural-whitespace.md) | Manuscript import preserves structural whitespace and repairs glued headings | Accepted |
+| [0013](0013-inline-formatting-as-offset-spans.md) | Inline formatting is stored as offset spans over canonical plain text | Accepted |
+| [0015](0015-highlight-primitive.md) | One `Highlight` primitive for entity, note and review highlights | Accepted (amends ADR-0009) |
+| [0016](0016-no-legacy-css-shadowing-tailwind.md) | No unlayered legacy CSS or contradictory utilities shadow Tailwind | Accepted (amends ADR-0009) |
+| [0019](0019-entity-extraction-precision-over-recall.md) | Story Bible entity extraction favors precision over recall | Accepted |

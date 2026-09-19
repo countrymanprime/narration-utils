@@ -17,7 +17,9 @@ import {
 import type { GuideEntity, GuidePreview, TtsInstallJob } from '../../types';
 import { allEvidence, categoryCssName, categoryLabel, categoryValue, CREATABLE_CATEGORIES, findAliasMatches, highlightTerms } from '../../state';
 import { useApi } from '../../api/ApiContext';
-import { BADGE_CLASS, BADGE_STYLE, CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary, hlClassName, HL_STYLE } from '../manuscript/EntitySummary';
+import { BADGE_CLASS, BADGE_STYLE, CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from '../manuscript/EntitySummary';
+import { Highlight, highlightKind } from '../primitives/Highlight';
+import { SlideOver } from '../primitives/SlideOver';
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
@@ -434,7 +436,7 @@ export function GuideDetail({
               placeholder="Add an alias or find a matching entry…"
             />
             {selectedAliasMatch ? (
-              <div className="alias-match-actions">
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                   Selected match: <strong>{selectedAliasMatch.canonical_name}</strong>
                   {selectedAliasMatch.locked ? ' · locked' : ''}
@@ -459,7 +461,11 @@ export function GuideDetail({
                 </Button>
               </div>
             ) : aliasQuery ? (
-              <div className="alias-match-menu" role="listbox" aria-label="Matching Story Bible entries">
+              <div
+                className="mt-1 flex flex-col overflow-hidden rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)]"
+                role="listbox"
+                aria-label="Matching Story Bible entries"
+              >
                 {aliasMatches.length > 0 ? (
                   aliasMatches.map((match, index) => (
                     <button
@@ -467,17 +473,16 @@ export function GuideDetail({
                       type="button"
                       role="option"
                       aria-selected={index === aliasActiveIndex}
-                      className={`alias-match-option ${index === aliasActiveIndex ? 'active' : ''}`}
+                      className={`flex w-full items-center gap-2 border-b border-[var(--border)] px-3 py-2 text-left hover:bg-[var(--surface-2)] ${index === aliasActiveIndex ? 'bg-[var(--surface-2)]' : ''}`}
                       onClick={() => setAliasSelectedId(match.id)}
                     >
-                      <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[match.category] }} />
+                      <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(match.category)] }} />
                       <span className="min-w-0 flex-1">
                         <strong className="text-sm">{match.canonical_name}</strong>
                         <span className="block text-xs" style={{ color: 'var(--text-faint)' }}>
                           {categoryLabel(match.category)} · {match.occurrence_count} occurrence{match.occurrence_count === 1 ? '' : 's'}
                         </span>
                       </span>
-                      <FontAwesomeIcon icon={match.locked ? faLock : faLockOpen} />
                     </button>
                   ))
                 ) : (
@@ -485,7 +490,7 @@ export function GuideDetail({
                     No matching Story Bible entries.
                   </div>
                 )}
-                <div className="alias-match-actions justify-between" style={{ padding: '.5rem' }}>
+                <div data-alias-actions className="flex items-center justify-between p-2">
                   <TooltipTarget text="Add alias">
                     <button
                       aria-label="Add alias"
@@ -509,7 +514,7 @@ export function GuideDetail({
                 </div>
               </div>
             ) : (
-              <div className="alias-match-actions justify-between">
+              <div data-alias-actions className="mt-2 flex items-center justify-between">
                 <TooltipTarget text="Add alias">
                   <button
                     aria-label="Add alias"
@@ -699,9 +704,9 @@ export function GuideDetail({
                   <p className="mt-1 break-words text-sm">
                     {highlightTerms(item.excerpt, highlightNames).map((segment, i) =>
                       segment.match ? (
-                        <mark key={i} className={hlClassName(entity.category)} style={HL_STYLE[entity.category]}>
+                        <Highlight key={i} kind={highlightKind(entity.category)}>
                           {segment.text}
-                        </mark>
+                        </Highlight>
                       ) : (
                         <span key={i}>{segment.text}</span>
                       ),
@@ -809,22 +814,14 @@ export function GuideDetail({
           />
         )}
       </div>
-      {reviewOverlayEntity && <div className="sheet-backdrop" onMouseDown={() => setReviewOverlayId(undefined)} />}
-      <aside className={`overlay-panel ${reviewOverlayEntity ? 'overlay-open' : ''}`} aria-hidden={!reviewOverlayEntity}>
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
-          <h3 className="text-sm font-semibold">{reviewOverlayEntity?.canonical_name || 'Review entry'}</h3>
-          <button
-            className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-            aria-label="Close review panel"
-            onClick={() => setReviewOverlayId(undefined)}
-          >
-            <FontAwesomeIcon icon={faXmark} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-[1.1rem]">
-          {reviewOverlayEntity && <EntitySummary entity={reviewOverlayEntity} jumpToLine={goToManuscript} />}
-        </div>
-      </aside>
+      <SlideOver
+        open={Boolean(reviewOverlayEntity)}
+        title={reviewOverlayEntity?.canonical_name || 'Review entry'}
+        closeLabel="Close review panel"
+        onClose={() => setReviewOverlayId(undefined)}
+      >
+        {reviewOverlayEntity && <EntitySummary entity={reviewOverlayEntity} jumpToLine={goToManuscript} />}
+      </SlideOver>
     </section>
   );
 }

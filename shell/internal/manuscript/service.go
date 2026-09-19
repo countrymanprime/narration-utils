@@ -292,7 +292,11 @@ func canonicalize(draft importer.Draft, name, storedPath, sha string, kinds map[
 			}
 			sectionID = found
 		}
-		paragraphs = append(paragraphs, map[string]any{"id": fmt.Sprintf("p-%06d", len(paragraphs)+1), "index": len(paragraphs), "chapterId": chapterID, "chapterTitle": source.Chapter, "sectionId": sectionID, "text": source.Text, "sourceIndex": source.SourceIndex})
+		paragraph := map[string]any{"id": fmt.Sprintf("p-%06d", len(paragraphs)+1), "index": len(paragraphs), "chapterId": chapterID, "chapterTitle": source.Chapter, "sectionId": sectionID, "text": source.Text, "sourceIndex": source.SourceIndex}
+		if len(source.Spans) > 0 {
+			paragraph["spans"] = source.Spans
+		}
+		paragraphs = append(paragraphs, paragraph)
 	}
 	return map[string]any{"schemaVersion": 1, "documentId": newID(), "importedAt": time.Now().UTC().Format(time.RFC3339Nano), "importer": map[string]any{"format": draft.Format, "version": 1}, "source": map[string]any{"fileName": name, "sha256": sha, "storedPath": storedPath}, "chapters": chapters, "paragraphs": paragraphs}, nil
 }

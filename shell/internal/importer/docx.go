@@ -3,6 +3,7 @@ package importer
 import (
 	"archive/zip"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 type paragraphRecord struct {
 	text    string
+	spans   []Span
 	heading bool
 }
 
@@ -37,11 +39,17 @@ func attr(start xml.StartElement, local string) string {
 	return ""
 }
 
-func styleNames(content []byte) map[string]string {
-	names := map[string]string{}
+// wordStyles holds the lower-cased display names of a document's paragraph
+// and character styles, keyed by style id.
+type wordStyles struct {
+	paragraph map[string]string
+	character map[string]string
+}
+
+func styleNames(content []byte) wordStyles {
+	styles := wordStyles{paragraph: map[string]string{}, character: map[string]string{}}
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
-	id := ""
-	paragraph := false
+	id, kind := "", ""
 	for {
 		token, err := decoder.Token()
 		if err != nil {
@@ -51,28 +59,61 @@ func styleNames(content []byte) map[string]string {
 		case xml.StartElement:
 			switch value.Name.Local {
 			case "style":
-				id = attr(value, "styleId")
-				paragraph = attr(value, "type") == "paragraph"
+				id, kind = attr(value, "styleId"), attr(value, "type")
 			case "name":
-				if paragraph && id != "" {
-					names[id] = strings.ToLower(attr(value, "val"))
+				if id == "" {
+					continue
+				}
+				name := strings.ToLower(attr(value, "val"))
+				switch kind {
+				case "paragraph":
+					styles.paragraph[id] = name
+				case "character":
+					styles.character[id] = name
 				}
 			}
 		case xml.EndElement:
 			if value.Name.Local == "style" {
-				id = ""
-				paragraph = false
+				id, kind = "", ""
 			}
 		}
 	}
-	return names
+	return styles
 }
 
-func documentRecords(content []byte, styles map[string]string) []paragraphRecord {
+// switchOff reports whether a run-property toggle such as <w:b w:val="0"/>
+// explicitly disables its formatting; a bare element means "on".
+func switchOff(value string) bool {
+	switch strings.ToLower(value) {
+	case "0", "false", "off", "none":
+		return true
+	}
+	return false
+}
+
+// characterStyleFormatting maps the built-in semantic character styles Word
+// applies for Emphasis/Strong to the formatting they visually produce.
+func characterStyleFormatting(name string) Style {
+	switch {
+	case strings.Contains(name, "strong"):
+		return styleBold
+	case strings.Contains(name, "emphasis"):
+		return styleItalic
+	}
+	return 0
+}
+
+// documentRecords reads word/document.xml paragraph by paragraph. Beyond <w:t>
+// text it honors the structural elements that separate visible text without
+// containing any: <w:br/>/<w:cr/> (soft line breaks), <w:tab/>, and
+// hyphen variants. Dropping these is what glues "CHAPTER ONE" to its subtitle
+// (docs/architecture/docx-import-quirks.md).
+func documentRecords(content []byte, styles wordStyles) []paragraphRecord {
 	records := []paragraphRecord{}
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
-	inParagraph, inText := false, false
-	var text strings.Builder
+	inParagraph, inRun, inRunProperties, inText := false, false, false, false
+	var builder richBuilder
+	var runStyle Style
 	styleID := ""
 	outline := ""
 	for {
@@ -85,15 +126,47 @@ func documentRecords(content []byte, styles map[string]string) []paragraphRecord
 			switch value.Name.Local {
 			case "p":
 				inParagraph = true
-				text.Reset()
+				builder.reset()
 				styleID = ""
 				outline = ""
+			case "r":
+				inRun, runStyle = inParagraph, 0
+			case "rPr":
+				inRunProperties = inRun
+			case "b":
+				if inRunProperties && !switchOff(attr(value, "val")) {
+					runStyle |= styleBold
+				}
+			case "i":
+				if inRunProperties && !switchOff(attr(value, "val")) {
+					runStyle |= styleItalic
+				}
+			case "u":
+				if inRunProperties && !switchOff(attr(value, "val")) {
+					runStyle |= styleUnderline
+				}
+			case "rStyle":
+				if inRunProperties {
+					runStyle |= characterStyleFormatting(styles.character[attr(value, "val")])
+				}
 			case "t":
-				if inParagraph {
+				if inRun {
 					inText = true
 				}
+			case "br", "cr":
+				if inRun {
+					builder.lineBreak()
+				}
+			case "tab":
+				if inRun {
+					builder.tab()
+				}
+			case "noBreakHyphen":
+				if inRun {
+					builder.text("-", runStyle)
+				}
 			case "pStyle":
-				if inParagraph {
+				if inParagraph && !inRun {
 					styleID = attr(value, "val")
 				}
 			case "outlineLvl":
@@ -105,23 +178,28 @@ func documentRecords(content []byte, styles map[string]string) []paragraphRecord
 			switch value.Name.Local {
 			case "t":
 				inText = false
+			case "rPr":
+				inRunProperties = false
+			case "r":
+				inRun = false
 			case "p":
-				if inParagraph {
-					trimmed := strings.TrimSpace(text.String())
-					if trimmed != "" {
-						style := styles[styleID]
-						heading := strings.HasPrefix(style, "heading") || style == "title"
-						if outline != "" && outline != "9" {
-							heading = true
-						}
-						records = append(records, paragraphRecord{text: trimmed, heading: heading})
-					}
-					inParagraph = false
+				if !inParagraph {
+					continue
+				}
+				inParagraph = false
+				style := styles.paragraph[styleID]
+				heading := strings.HasPrefix(style, "heading") || style == "title"
+				if outline != "" && outline != "9" {
+					heading = true
+				}
+				text, spans := builder.build(heading)
+				if text != "" {
+					records = append(records, paragraphRecord{text: text, spans: spans, heading: heading})
 				}
 			}
 		case xml.CharData:
 			if inText {
-				text.Write([]byte(value))
+				builder.text(string(value), runStyle)
 			}
 		}
 	}
@@ -163,19 +241,18 @@ func docx(path string) (Draft, error) {
 	chapter, subtitle := "Front Matter", ""
 	paragraphs := []Paragraph{}
 	titles := []string{}
+	notices := []string{}
 	for index, record := range records {
-		text := collapse(record.text)
 		if record.heading {
-			if isNonChapterHeading(record.text) {
-				chapter = text
+			if isNonChapterHeading(collapse(record.text)) {
+				chapter = collapse(record.text)
 				subtitle = ""
 				continue
 			}
-			lines := strings.Split(record.text, "\n")
-			chapter = collapse(lines[0])
-			subtitle = ""
-			if len(lines) > 1 {
-				subtitle = collapse(strings.Join(lines[1:], " "))
+			var glued bool
+			chapter, subtitle, glued = headingParts(record.text)
+			if glued {
+				notices = append(notices, fmt.Sprintf("Heading %q had no gap between its number and title; split into %q and %q.", collapse(record.text), chapter, subtitle))
 			}
 			titles = append(titles, chapter)
 			continue
@@ -189,7 +266,9 @@ func docx(path string) (Draft, error) {
 			copy := subtitle
 			subtitlePointer = &copy
 		}
-		paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitlePointer, Text: text, SourceIndex: len(paragraphs)})
+		paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitlePointer, Text: record.text, Spans: record.spans, SourceIndex: len(paragraphs)})
 	}
-	return newDraft("docx", filepath.Base(path), paragraphs, titles)
+	draft, err := newDraft("docx", filepath.Base(path), paragraphs, titles)
+	draft.Notices = notices
+	return draft, err
 }

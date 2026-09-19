@@ -49,6 +49,5 @@ export interface StoryBibleApi {
   guideDelete(id: string): Promise<void>;
   guideRelate(id: string, otherId: string, label: string): Promise<void>;
   guideUnrelate(id: string, otherId: string, label: string): Promise<void>;
-  guideExport(): Promise<string>;
   guidePreview(id: string, aliasIndex?: number): Promise<GuidePreview>;
 }

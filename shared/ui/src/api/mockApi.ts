@@ -447,7 +447,6 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
         ...entity,
         relationships: entity.relationships.filter((relationship) => !(relationship.id === otherId && relationship.label === label)),
       })),
-    guideExport: async () => 'C:/Projects/Voltage-and-the-Undercroft/TranscriptCompare/hotwords.txt',
     guidePreview: async () =>
       ttsInstalled
         ? { status: 'ready' as const, audioBase64: '', mimeType: 'audio/wav' }

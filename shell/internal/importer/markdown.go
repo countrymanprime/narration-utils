@@ -9,6 +9,25 @@ import (
 
 var markdownHeading = regexp.MustCompile(`^(#{1,6})\s+(.+?)\s*#*\s*$`)
 
+type markdownLine struct {
+	text      string
+	hardBreak bool
+}
+
+// markdownLineOf trims a source line and reports whether it ends in a
+// CommonMark hard break (two trailing spaces or a trailing backslash), which
+// the author meant as a visible line break inside the paragraph.
+func markdownLineOf(raw string) markdownLine {
+	raw = strings.TrimSuffix(raw, "\r")
+	hard := strings.HasSuffix(raw, "  ")
+	text := strings.TrimSpace(raw)
+	if strings.HasSuffix(text, "\\") && !strings.HasSuffix(text, "\\\\") {
+		hard = true
+		text = strings.TrimSuffix(text, "\\")
+	}
+	return markdownLine{text: text, hardBreak: hard}
+}
+
 func markdown(path string, headingLevel int) (Draft, error) {
 	if headingLevel < 1 || headingLevel > 6 {
 		return Draft{}, &Error{"Markdown chapter heading level must be between H1 and H6."}
@@ -17,22 +36,37 @@ func markdown(path string, headingLevel int) (Draft, error) {
 	if err != nil {
 		return Draft{}, &Error{"Could not read this Markdown file: " + err.Error()}
 	}
-	content := strings.TrimPrefix(string(raw), "\ufeff")
-	chapter, section := "Front Matter", ""
+	content := strings.TrimPrefix(string(raw), "\xef\xbb\xbf")
+	chapter, subtitle, section := "Front Matter", "", ""
 	paragraphs := []Paragraph{}
-	titles, pending := []string{}, []string{}
+	titles, pending := []string{}, []markdownLine{}
 	flush := func() {
 		if len(pending) == 0 {
 			return
 		}
-		body := collapse(strings.Join(pending, " "))
+		var builder richBuilder
+		for index, line := range pending {
+			appendInline(&builder, line.text, 0)
+			switch {
+			case index == len(pending)-1:
+			case line.hardBreak:
+				builder.lineBreak()
+			default:
+				builder.text(" ", 0)
+			}
+		}
+		body, spans := builder.build(false)
 		if body != "" {
-			var sectionValue *string
+			var sectionValue, subtitleValue *string
 			if section != "" {
 				copy := section
 				sectionValue = &copy
 			}
-			paragraphs = append(paragraphs, Paragraph{Chapter: chapter, Section: sectionValue, Text: body, SourceIndex: len(paragraphs)})
+			if subtitle != "" {
+				copy := subtitle
+				subtitleValue = &copy
+			}
+			paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitleValue, Section: sectionValue, Text: body, Spans: spans, SourceIndex: len(paragraphs)})
 		}
 		pending = nil
 	}
@@ -40,25 +74,26 @@ func markdown(path string, headingLevel int) (Draft, error) {
 		if matches := markdownHeading.FindStringSubmatch(strings.TrimSuffix(line, "\r")); matches != nil {
 			flush()
 			level := len(matches[1])
-			text := collapse(matches[2])
+			var headingText richBuilder
+			appendInline(&headingText, matches[2], 0)
+			text, _ := headingText.build(true)
 			if level == headingLevel {
 				if isNonChapterHeading(text) {
-					chapter = text
-					section = ""
+					chapter, subtitle, section = collapse(text), "", ""
 					continue
 				}
-				chapter = text
+				chapter, subtitle, _ = headingParts(text)
 				section = ""
-				titles = append(titles, text)
+				titles = append(titles, chapter)
 			} else if level > headingLevel {
-				section = text
+				section = collapse(text)
 			}
 			continue
 		}
 		if strings.TrimSpace(line) == "" {
 			flush()
 		} else {
-			pending = append(pending, strings.TrimSpace(line))
+			pending = append(pending, markdownLineOf(line))
 		}
 	}
 	flush()

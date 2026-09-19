@@ -188,11 +188,6 @@ func (s *Service) Unrelate(id, other, label string) error {
 	_, err := s.Run("unrelate", "--guide", s.guidePath(), "--entity-id", id, "--other-id", other, "--label", label)
 	return err
 }
-func (s *Service) ExportHotwords() (string, error) {
-	out := filepath.Join(s.project, "ManuscriptGuide", "whisper_hotwords.txt")
-	_, err := s.Run("export-hotwords", "--guide", s.guidePath(), "--out", out)
-	return out, err
-}
 
 // VocabularyCandidates mirrors the Python Guide's reviewed vocabulary
 // suggestions. It preserves the first spelling of each case-insensitive name.
