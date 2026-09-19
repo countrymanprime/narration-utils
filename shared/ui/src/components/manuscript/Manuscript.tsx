@@ -265,7 +265,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
         ref={bandRef}
         className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--bg)] p-0 shadow-[0_2px_8px_color-mix(in_srgb,var(--text)_10%,transparent)]"
       >
-        <div className="px-[var(--reader-inline)] pb-3 pt-4">
+        <div className="px-[var(--reader-inline)] pt-4 pb-3">
           <div className="mb-4 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
             <div className="flex items-center gap-3">
               <Heading title="Manuscript" />
@@ -282,7 +282,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
                 </button>
               </TooltipTarget>
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] uppercase tracking-wider text-[var(--text-muted)]">
+            <div className="flex flex-wrap gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] tracking-wider text-[var(--text-muted)] uppercase">
               {[...STORY_BIBLE_TABS.filter((item) => item !== 'All'), 'Note'].map((name) => (
                 <span key={name} className="flex items-center gap-1">
                   <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(name === 'Location' ? 'Place' : name)] }} />
@@ -292,7 +292,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
             </div>
           </div>
           <div className="mb-4 flex flex-wrap items-center gap-4">
-            <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+            <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
               Text size <Tooltip text="The manuscript always uses the full reading width - adjust text size instead." />
             </span>
             <div className="flex gap-1">
@@ -414,13 +414,13 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
         {detail?.note ? (
           <>
             <div className="mb-3">
-              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
                 Anchored text
               </div>
               <p className="text-sm italic">“{detail.note.anchorText || 'Paragraph note'}”</p>
             </div>
             <div className="mb-4">
-              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
                 Note
               </div>
               <p className="text-sm">{detail.note.text}</p>
@@ -446,7 +446,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
           <>
             <SearchBar query={searchQuery} onQueryChange={(value) => void runSearch(value)} />
             <div className="mt-4 border-t pt-3">
-              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
                 Chapters
               </div>
               <ChapterNav

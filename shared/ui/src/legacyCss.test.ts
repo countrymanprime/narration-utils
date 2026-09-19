@@ -38,7 +38,7 @@ function unlayeredCss(css: string): string {
     const char = css[index];
     if (char === '{') {
       const header = css.slice(out.length > 0 ? Math.max(0, css.lastIndexOf('}', index) + 1) : 0, index).trim();
-      if (skipDepth < 0 && /^@(layer|keyframes|media)|^:root/.test(header.split('\n').pop()!.trim() || header)) skipDepth = depth;
+      if (skipDepth < 0 && /^@(layer|keyframes|media|theme)|^:root/.test(header.split('\n').pop()!.trim() || header)) skipDepth = depth;
       depth++;
     } else if (char === '}') {
       depth--;
@@ -62,7 +62,10 @@ describe('legacy CSS guards (ADR-0017)', () => {
   });
 
   it('styles.css only keeps reviewed unlayered class rules', () => {
-    const css = readFileSync(join(SRC, 'styles.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    // @import/@layer statements (Tailwind's split imports) carry no rules, only file names like "theme.css".
+    const css = readFileSync(join(SRC, 'styles.css'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/@(import|layer)[^;{]*;/g, '');
     const classes = new Set([...unlayeredCss(css).matchAll(/\.([a-zA-Z][\w-]*)/g)].map((match) => match[1]));
     const unexpected = [...classes].filter((name) => !UNLAYERED_ALLOW_LIST.has(name) && !name.startsWith('type-'));
     expect(unexpected).toEqual([]);

@@ -22,12 +22,12 @@ export function AddNoteDialog({ anchorText, confirm, cancel }: { anchorText: str
       <p className="text-sm italic" style={{ color: 'var(--text-muted)' }}>
         Note for: "{anchorText}"
       </p>
-      <label className="mb-1.5 mt-3 block text-[0.82rem] font-medium text-[var(--text-muted)]" htmlFor="note-text">
+      <label className="mt-3 mb-1.5 block text-[0.82rem] font-medium text-[var(--text-muted)]" htmlFor="note-text">
         Note
       </label>
       <textarea
         id="note-text"
-        className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
+        className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
         rows={3}
         autoFocus
         value={text}

@@ -174,7 +174,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
             <button
               key={name}
               onClick={() => setTab(name)}
-              className={`whitespace-nowrap border-b-2 px-[0.9rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold uppercase tracking-[0.03em] hover:text-[var(--text)] ${tab === name ? 'border-[var(--accent)] text-[var(--text)]' : 'border-transparent text-[var(--text-muted)]'}`}
+              className={`border-b-2 px-[0.9rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] whitespace-nowrap uppercase hover:text-[var(--text)] ${tab === name ? 'border-[var(--accent)] text-[var(--text)]' : 'border-transparent text-[var(--text-muted)]'}`}
             >
               {name === 'All' ? `All · ${visible.length}` : `${TAB_PLURAL[name]} · ${visible.filter((row) => categoryLabel(row.category) === name).length}`}
             </button>
@@ -186,7 +186,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
           <div className="p-[1.1rem] pb-2">
             <div style={{ position: 'relative', width: '100%' }}>
               <input
-                className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
+                className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
                 aria-label="Search entries"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}

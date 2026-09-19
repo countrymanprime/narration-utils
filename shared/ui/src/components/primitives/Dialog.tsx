@@ -35,9 +35,9 @@ export function Dialog({
             </button>
           )}
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden break-words p-[1.1rem]">{children}</div>
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-[1.1rem] break-words">{children}</div>
         <div
-          className={`flex flex-none gap-2 border-t px-4 pb-4 pt-3 ${actionsAlign === 'between' ? 'justify-between' : 'justify-end'}`}
+          className={`flex flex-none gap-2 border-t px-4 pt-3 pb-4 ${actionsAlign === 'between' ? 'justify-between' : 'justify-end'}`}
           style={{ borderColor: 'var(--border)' }}
         >
           {actions}
