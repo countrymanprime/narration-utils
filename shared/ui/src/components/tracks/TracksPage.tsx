@@ -82,6 +82,11 @@ function Transport({ tracks, activeIndex, onActiveIndexChange }: { tracks: Track
           {activeTrack ? 'This track has no playable audio.' : 'Select a track to play it.'}
         </p>
       )}
+      {player.loadError && (
+        <p role="alert" className="mt-1 text-sm" style={{ color: 'var(--danger)' }}>
+          This track&rsquo;s audio couldn&rsquo;t be played. Check that its source files are still where the project expects them.
+        </p>
+      )}
       <div className="mt-3 flex items-center justify-center gap-3">
         <Button variant="ghost" onClick={player.previousTrack} disabled={!player.hasPreviousTrack} aria-label="Previous track">
           <FontAwesomeIcon icon={faBackwardStep} />
@@ -165,6 +170,14 @@ export function TracksPage() {
         <p role="alert" className="text-sm" style={{ color: 'var(--danger)' }}>
           {error}
         </p>
+      )}
+      {discovery && discovery.candidates.length === 0 && (
+        <Panel>
+          <div className="font-semibold">No REAPER project file found</div>
+          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+            This project folder doesn&rsquo;t contain a .rpp file. Save your REAPER project into the folder, then reopen this page.
+          </p>
+        </Panel>
       )}
       {discovery && !discovery.selected && discovery.candidates.length > 1 && <RppPicker discovery={discovery} onSelect={selectRpp} />}
       {project && project.tracks.length === 0 && (

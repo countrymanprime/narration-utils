@@ -89,6 +89,26 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'rpp-picker',
     description: 'Tracks, more than one .rpp file found - choose-a-project-file prompt (reached via the ?mockMultipleRpp=1 mock seam)',
   },
+  {
+    page: 'tracks',
+    state: 'no-rpp',
+    description: 'Tracks, no .rpp file in the project folder - "No REAPER project file found" empty state (reached via the ?mockNoRpp=1 mock seam)',
+  },
+  {
+    page: 'tracks',
+    state: 'playing',
+    description: 'Tracks, Play pressed - the button becomes Pause and the position/duration readout is live',
+  },
+  {
+    page: 'tracks',
+    state: 'skipped-forward',
+    description: 'Tracks, playing then "skip forward 30 seconds" pressed - the readout jumps to about 0:30',
+  },
+  {
+    page: 'tracks',
+    state: 'last-track-selected',
+    description: 'Tracks, the last track (muted, MIDI-only) selected - Muted badge shown and Next track disabled',
+  },
 
   // Settings
   { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category' },
@@ -109,6 +129,12 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'global', state: 'tooltip', description: 'Global tooltip overlay' },
   { page: 'global', state: 'toast', description: 'Global toast overlay' },
   { page: 'global', state: 'confirm-dialog', description: 'Global confirm dialog overlay' },
+  {
+    page: 'global',
+    state: 'nav-rail-tooltip',
+    description:
+      "Primary navigation - hovering an enabled icon in the icon-only rail shows that page's name; at desktop and mobile widths there is no icon-only rail, so this is a no-op there",
+  },
   {
     page: 'global',
     state: 'nav-drawer-open',

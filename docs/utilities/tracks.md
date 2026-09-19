@@ -16,6 +16,7 @@ Open a project folder. The Tracks page finds the project's `.rpp` file, lists it
 - **Discovery.** Only top-level `*.rpp` files in the project folder count. `.rpp-bak` files and anything inside a subfolder (such as REAPER's Backups folder) are ignored. One file is used automatically; with several, the narrator picks one and the choice is saved as `Tracks.selectedRpp` in `<project>/narration-utils/settings.json`. A saved choice that no longer exists is dropped rather than followed.
 - **What is read.** Per track: GUID, name, color (`PEAKCOL`, decoded from REAPER's native color), mute/solo. Per item: position, length, name, and its source. `SECTION` sources (trimmed regions) are unwrapped to the file they wrap.
 - **Unavailable and unsupported are states, not errors.** An item whose source file is missing on disk is reported as unavailable; a non-audio source (MIDI, embedded subproject, video) is reported as unsupported. The track is still listed, flagged, and its playable count shown (for example `0/1`).
+- **Empty and failure states.** A folder with no `.rpp` shows a "No REAPER project file found" message rather than a blank page. If audio that was available at load time can't be played (moved or deleted since), playback stops and the page says so; a playback request interrupted by switching tracks is not treated as a failure.
 - **Playback.** A track's playable items play back to back in project-time order. Previous/next moves between tracks, not items. Audio is streamed through the `/media` route - see [ADR 0012](../adr/0012-media-route-for-track-playback.md) - which only serves files the current project's selected `.rpp` references, and supports HTTP Range requests so skipping doesn't load a whole chapter into memory.
 
 ## Non-goals and review boundary
@@ -26,11 +27,11 @@ Read-only: nothing edits the `.rpp`, moves media, or changes REAPER state. Track
 
 - Quoted values that contain all of `"`, `'` and a backtick (REAPER falls back to its own escape format) are read as plain tokens; this affects display names only.
 - Only the first occurrence of an attribute per chunk is read, which matches how REAPER writes every attribute used here.
-- In the browser-only mock mode there is no `/media` route, so play/pause changes state but no audio loads; real playback needs the desktop app.
+- The browser-only mock mode has no `/media` route. It plays a generated silent 10-minute WAV for every playable item instead, so the transport, skip, and time readout can be exercised and screenshotted; the desktop app is needed to hear real audio.
 
 ## Acceptance
 
 - One `.rpp` is used without prompting; several prompt for a choice, and the choice persists per project.
 - A missing or non-audio item flags its track without failing the page.
 - The media route refuses any path that is not a source of the selected project's tracks.
-- Covered by `shell/internal/tracks` and `shell/media_test.go` (Go), `TracksPage.test.tsx`/`App.test.tsx` (UI), and the `tracks` states in the Playwright visual suite.
+- Covered by `shell/internal/tracks` and `shell/media_test.go` (Go), `TracksPage.test.tsx`/`useTrackPlayback.test.tsx`/`App.test.tsx` (UI), and the `tracks` states in the Playwright visual suite (default, playing, skipped-forward, unplayable-track-selected, last-track-selected, rpp-picker, no-rpp; the audio-failure message is covered by unit tests only, since the mock always serves playable audio).

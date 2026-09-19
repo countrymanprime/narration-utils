@@ -21,6 +21,13 @@
     "caption": "Primary navigation - the slide-in drawer opened via the mobile hamburger button"
   },
   {
+    "page": "global",
+    "state": "nav-rail-tooltip",
+    "viewport": "small-desktop",
+    "docName": "nav-rail-tooltip",
+    "caption": "Primary navigation - the icon-only rail shows a page's name when you hover its icon"
+  },
+  {
     "page": "home",
     "state": "default",
     "viewport": "desktop",
@@ -159,6 +166,20 @@
     "viewport": "desktop",
     "docName": "tracks-rpp-picker",
     "caption": "Tracks - choosing between more than one REAPER project file in the project folder"
+  },
+  {
+    "page": "tracks",
+    "state": "skipped-forward",
+    "viewport": "desktop",
+    "docName": "tracks-playback",
+    "caption": "Tracks - a track playing after skipping forward 30 seconds"
+  },
+  {
+    "page": "tracks",
+    "state": "no-rpp",
+    "viewport": "desktop",
+    "docName": "tracks-no-project-file",
+    "caption": "Tracks - no REAPER project file found in the project folder"
   },
   {
     "page": "settings",

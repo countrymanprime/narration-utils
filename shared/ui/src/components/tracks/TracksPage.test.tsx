@@ -89,6 +89,57 @@ describe('TracksPage', () => {
     await expect(api.tracksDiscover()).resolves.toEqual({ candidates: ['C:/Book/Draft.rpp', 'C:/Book/Final.rpp'], selected: 'C:/Book/Final.rpp' });
   });
 
+  it('explains when the project folder has no .rpp file instead of showing a blank page', async () => {
+    renderTracksPage({}, { tracksCandidates: [] });
+
+    expect(await screen.findByText('No REAPER project file found')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Play' })).toBeNull();
+  });
+
+  it('explains when the selected project has no tracks', async () => {
+    renderTracksPage({ tracksList: async () => ({ path: 'C:/Book/Empty.rpp', tracks: [] }) });
+
+    expect(await screen.findByText('This REAPER project has no tracks yet.')).toBeTruthy();
+  });
+
+  it('resets the transport to Play when switching from a playing track to one with no playable audio', async () => {
+    const user = userEvent.setup();
+    renderTracksPage();
+    await screen.findByRole('button', { name: /Chapter 1/ });
+    await user.click(screen.getByRole('button', { name: 'Play' }));
+    expect(await screen.findByRole('button', { name: 'Pause' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: /Chapter 2/ }));
+
+    expect(await screen.findByRole('button', { name: 'Play' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Pause' })).toBeNull();
+  });
+
+  it('stops and reports when the audio cannot be played', async () => {
+    vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockRejectedValue(new DOMException('no source', 'NotSupportedError'));
+    const user = userEvent.setup();
+    renderTracksPage();
+    await screen.findByRole('button', { name: /Chapter 1/ });
+
+    await user.click(screen.getByRole('button', { name: 'Play' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/audio couldn.t be played/);
+    expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy();
+  });
+
+  it('does not report an error when a track switch interrupts playback', async () => {
+    vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockRejectedValue(new DOMException('interrupted by a new load', 'AbortError'));
+    const user = userEvent.setup();
+    renderTracksPage();
+    await screen.findByRole('button', { name: /Chapter 1/ });
+
+    await user.click(screen.getByRole('button', { name: 'Play' }));
+
+    expect(await screen.findByRole('button', { name: 'Pause' })).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('shows a readable error when discovery fails', async () => {
     renderTracksPage({ tracksDiscover: async () => Promise.reject(new Error('open a project before viewing tracks')) });
 

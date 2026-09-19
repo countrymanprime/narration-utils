@@ -21,6 +21,7 @@ export function useTrackPlayback(tracks: Track[], trackIndex: number, onTrackInd
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [loadError, setLoadError] = useState(false);
 
   isPlayingRef.current = isPlaying;
 
@@ -33,6 +34,15 @@ export function useTrackPlayback(tracks: Track[], trackIndex: number, onTrackInd
 
   useEffect(() => setItemIndex(0), [trackIndex]);
 
+  const startPlayback = useCallback((audio: HTMLAudioElement) => {
+    audio.play().catch((reason: unknown) => {
+      // A newer load interrupting this play() (switching tracks) is expected, not a failure.
+      if (reason instanceof DOMException && reason.name === 'AbortError') return;
+      setIsPlaying(false);
+      setLoadError(true);
+    });
+  }, []);
+
   useEffect(() => {
     const audio = audioRef.current!;
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
@@ -41,18 +51,25 @@ export function useTrackPlayback(tracks: Track[], trackIndex: number, onTrackInd
       setItemIndex((index) => (index + 1 < playableItems.length ? index + 1 : index));
       if (itemIndex + 1 >= playableItems.length) setIsPlaying(false);
     };
+    const onError = () => {
+      setIsPlaying(false);
+      setLoadError(true);
+    };
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('durationchange', onDuration);
     audio.addEventListener('ended', onEnded);
+    audio.addEventListener('error', onError);
     return () => {
       audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('durationchange', onDuration);
       audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('error', onError);
     };
   }, [playableItems.length, itemIndex]);
 
   useEffect(() => {
     const audio = audioRef.current!;
+    setLoadError(false);
     if (!item) {
       audio.pause();
       audio.removeAttribute('src');
@@ -63,16 +80,17 @@ export function useTrackPlayback(tracks: Track[], trackIndex: number, onTrackInd
     }
     audio.src = mediaUrl(item.sourceFile);
     setCurrentTime(0);
-    if (isPlayingRef.current) void audio.play();
-  }, [item, mediaUrl]);
+    if (isPlayingRef.current) startPlayback(audio);
+  }, [item, mediaUrl, startPlayback]);
 
   useEffect(() => () => audioRef.current?.pause(), []);
 
   const play = useCallback(() => {
     if (!item) return;
-    void audioRef.current!.play();
+    startPlayback(audioRef.current!);
+    setLoadError(false);
     setIsPlaying(true);
-  }, [item]);
+  }, [item, startPlayback]);
   const pause = useCallback(() => {
     audioRef.current!.pause();
     setIsPlaying(false);
@@ -98,6 +116,7 @@ export function useTrackPlayback(tracks: Track[], trackIndex: number, onTrackInd
     currentTime,
     duration,
     canPlay: Boolean(item),
+    loadError,
     togglePlay,
     skipForward: () => skip(SKIP_SECONDS),
     skipBackward: () => skip(-SKIP_SECONDS),

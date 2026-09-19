@@ -23,6 +23,13 @@ of the sidebar in every layout.
 
 ![Primary navigation drawer opened on a narrow window](../images/ui/nav-drawer-mobile.webp)
 
+In the icon-only layout, hover an icon (or tab to it) to see the page's name.
+
+![Icon-only navigation rail with a page name shown on hover](../images/ui/nav-rail-tooltip.webp)
+
+Manuscript, Proofing, and Story Bible stay locked until a manuscript has been imported;
+hovering a locked entry says why. Home and Tracks are always available.
+
 ## Home
 
 The landing page after opening a project: manuscript status, audiobook time estimates,
@@ -128,6 +135,15 @@ The transport plays the selected track's audio items back to back. It has play/p
 and forward 30 seconds, and previous/next track — those two move between tracks, not between
 items within one.
 
+While a track plays, the readout beside the controls shows the position and length of the item
+currently playing. Skipping stays within that item, and playback stops at the end of the
+track's last item.
+
+![Tracks page playing a track, after skipping forward 30 seconds](../images/ui/tracks-playback.webp)
+
+If a file that was present when the page loaded can't be played (for example, it was moved or
+deleted since), playback stops and a message says so.
+
 Selecting a track with no playable audio says so and disables the playback controls (previous
 and next track still work).
 
@@ -138,6 +154,11 @@ copies (`.rpp-bak`, or files inside a subfolder such as Backups) aren't offered.
 remembered for the project.
 
 ![Tracks page asking which of two REAPER project files to use](../images/ui/tracks-rpp-picker.webp)
+
+If the folder has no `.rpp` file at all, Tracks says so. Save the REAPER project into the
+project folder and reopen the page.
+
+![Tracks page explaining that no REAPER project file was found](../images/ui/tracks-no-project-file.webp)
 
 ## Settings
 

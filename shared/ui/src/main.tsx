@@ -26,9 +26,12 @@ declare global {
 const mockParams = new URLSearchParams(window.location.search);
 const mockNoProject = mockParams.has('mockNoProject');
 const mockMultipleRpp = mockParams.has('mockMultipleRpp');
+// `?mockNoRpp=1` seeds zero candidates: the project folder has no .rpp file.
+const mockNoRpp = mockParams.has('mockNoRpp');
 const mockInitial = {
   ...(mockNoProject ? { projectFolder: '' } : {}),
   ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),
+  ...(mockNoRpp ? { tracksCandidates: [] } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

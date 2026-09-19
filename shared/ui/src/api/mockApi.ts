@@ -48,6 +48,40 @@ function basename(path: string): string {
   return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 }
 
+const MOCK_AUDIO_SECONDS = 600;
+let mockAudioUrl: string | undefined;
+
+/**
+ * Browser mock mode has no /media route, so play, skip, and the time readout
+ * would have nothing to act on. This serves a real, silent WAV from memory
+ * instead. It's built lazily and only where object URLs exist (not jsdom).
+ */
+function mockAudioSource(): string | undefined {
+  if (typeof URL.createObjectURL !== 'function') return undefined;
+  if (!mockAudioUrl) {
+    const sampleRate = 8000;
+    const dataBytes = sampleRate * MOCK_AUDIO_SECONDS;
+    const wav = new Uint8Array(44 + dataBytes).fill(128); // unsigned 8-bit silence
+    const view = new DataView(wav.buffer);
+    const text = (offset: number, value: string) => [...value].forEach((char, index) => view.setUint8(offset + index, char.charCodeAt(0)));
+    text(0, 'RIFF');
+    view.setUint32(4, 36 + dataBytes, true);
+    text(8, 'WAVE');
+    text(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate, true);
+    view.setUint16(32, 1, true);
+    view.setUint16(34, 8, true);
+    text(36, 'data');
+    view.setUint32(40, dataBytes, true);
+    mockAudioUrl = URL.createObjectURL(new Blob([wav], { type: 'audio/wav' }));
+  }
+  return mockAudioUrl;
+}
+
 export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { projectFolder?: string; tracksCandidates?: string[] } = {}): NarrationApi {
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
@@ -597,7 +631,7 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
       return wireClone(tracksDiscovery);
     },
     tracksList: async () => wireClone(WIRE_TRACKS_PROJECT),
-    mediaUrl: (sourceFile) => sourceFile,
+    mediaUrl: (sourceFile) => mockAudioSource() ?? sourceFile,
   };
   return { ...base, ...overrides };
 }
