@@ -1,0 +1,15 @@
+name: Dependency review
+# Requires the dependency graph (enabled with Dependabot alerts). Advisory, not a required check.
+on:
+  pull_request:
+    branches: [main]
+permissions: { contents: read }
+jobs:
+  review:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/dependency-review-action@v5.0.0
+        with:
+          fail-on-severity: high
