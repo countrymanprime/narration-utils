@@ -5,6 +5,7 @@
     "projectsRelationship": "fixed",
     "releaseTagPattern": "v{version}",
     "version": {
+      "currentVersionResolver": "git-tag",
       "fallbackCurrentVersionResolver": "disk",
       "git": {
         "commit": false,
