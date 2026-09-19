@@ -87,7 +87,7 @@ export function createMockApi(
   overrides: Partial<NarrationApi> = {},
   // manuscriptCandidate boots a project with no imported manuscript but a
   // manuscript file waiting in its folder (Home offers to import it, ADR-0019).
-  initial: { projectFolder?: string; tracksCandidates?: string[]; manuscriptCandidate?: { path: string; name: string } } = {},
+  initial: { projectFolder?: string; tracksCandidates?: string[]; noManuscript?: boolean; manuscriptCandidate?: { path: string; name: string } } = {},
 ): NarrationApi {
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
@@ -274,16 +274,17 @@ export function createMockApi(
         projectFolder,
         projectName,
         daw,
-        manuscript: initial.manuscriptCandidate
-          ? null
-          : {
-              id: 'alice',
-              format: 'docx',
-              sourceName: 'Alice.docx',
-              importedAt: '2026-01-01T00:00:00Z',
-              narratableWordCount: 2672,
-              narratableChapterCount: 3,
-            },
+        manuscript:
+          initial.noManuscript || initial.manuscriptCandidate
+            ? null
+            : {
+                id: 'alice',
+                format: 'docx',
+                sourceName: 'Alice.docx',
+                importedAt: '2026-01-01T00:00:00Z',
+                narratableWordCount: 2672,
+                narratableChapterCount: 3,
+              },
         manuscriptCandidate: initial.manuscriptCandidate ?? null,
         runtime: {},
         transcript: wireClone(transcript),

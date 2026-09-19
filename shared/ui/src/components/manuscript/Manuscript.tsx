@@ -171,16 +171,26 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
   // "#cChapter Title" to land on a chapter without a specific line. A
   // paragraph-to-chapter mapping arrives with the lightweight chapter list,
   // so this does not wait for any paragraph body to load.
+  // showChapter changes identity every time it saves reader state, and the router clears the
+  // hash asynchronously, so without this guard the effect re-fires for a hash it already
+  // handled and loops ("Maximum update depth exceeded").
+  const handledHash = useRef('');
   useEffect(() => {
     const hash = location.hash;
-    if (!hash) return;
+    if (!hash) {
+      handledHash.current = '';
+      return;
+    }
+    if (handledHash.current === hash) return;
     if (hash.startsWith('#p')) {
       const paragraph = Number(hash.slice(2));
       if (Number.isNaN(paragraph)) return;
       const chapter = chapters.find((item) => item.paragraphIds?.some((row) => row.index === paragraph))?.id;
       if (!chapter) return;
+      handledHash.current = hash;
       showChapter(chapter, paragraph);
     } else if (hash.startsWith('#c')) {
+      handledHash.current = hash;
       showChapter(decodeURIComponent(hash.slice(2)));
     } else {
       return;

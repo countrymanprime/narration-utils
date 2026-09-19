@@ -105,7 +105,8 @@ export function ProjectPicker() {
 
   return (
     <div className="grid min-h-screen place-items-center p-6">
-      <div className="w-full max-w-2xl rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
+      {/* min-w-0: as a grid item the card otherwise grows to its longest nowrap child (a project path) and overflows narrow screens. */}
+      <div className="w-full max-w-2xl min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
         <div className="text-lg font-semibold">Open a project</div>
         <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
           Choose a recent project, browse to an existing folder, or create a new one.

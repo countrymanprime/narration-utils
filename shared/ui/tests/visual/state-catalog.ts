@@ -1,8 +1,6 @@
-export interface StateEntry {
-  page: string;
-  state: string;
-  description: string;
-}
+import type { StateEntry } from './lib/types';
+
+export type { StateEntry };
 
 // Every {page, state} pair captured by app.spec.ts, at every size in
 // viewports.ts. This is the single naming authority for
@@ -20,14 +18,19 @@ export const STATE_CATALOG: StateEntry[] = [
   // Home
   { page: 'home', state: 'default', description: 'Home, manuscript found' },
   { page: 'home', state: 'manuscript-not-found', description: 'Home, manuscript-not-found banner' },
-  { page: 'home', state: 'chapter-table-collapsed', description: 'Home, chapter table collapsed' },
+  {
+    page: 'home',
+    state: 'chapter-table-collapsed',
+    description: 'Home, chapter table collapsed',
+    sameAs: { of: 'home/default', reason: 'The per-chapter table starts collapsed, so the default view already is this state.' },
+  },
   { page: 'home', state: 'chapter-table-expanded', description: 'Home, chapter table expanded' },
   {
     page: 'home',
     state: 'hint-chips',
     description: 'Vocabulary hint chips widget (accepted + pending) - lives on Proofing, catalogued under "home" for historical reasons',
   },
-  { page: 'home', state: 'info-tooltip', description: 'Home, info icon tooltip visible' },
+  { page: 'home', state: 'info-tooltip', description: 'Home, info icon tooltip visible', pointer: 'keep' },
   { page: 'home', state: 'manuscript-candidate-offer', description: 'Home, offer to import a manuscript file found in the project folder' },
   { page: 'home', state: 'import-activity-log', description: 'Home, manuscript import finished with its live activity log populated' },
   {
@@ -45,7 +48,12 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'manuscript', state: 'detail-sidebar-note', description: 'Manuscript, detail sidebar open on a note' },
   { page: 'manuscript', state: 'detail-sidebar-entity', description: 'Manuscript, detail sidebar open on an entity' },
   { page: 'manuscript', state: 'selection-popup', description: 'Manuscript, text-selection action popup open' },
-  { page: 'manuscript', state: 'overlapping-highlights', description: 'Manuscript, entity highlight overlapping a note' },
+  {
+    page: 'manuscript',
+    state: 'overlapping-highlights',
+    description: 'Manuscript, entity highlight overlapping a note',
+    sameAs: { of: 'manuscript/reader-text-medium', reason: 'Medium is the default reader size and the overlap is visible in the default view.' },
+  },
   { page: 'manuscript', state: 'sticky-header-scrolled', description: 'Manuscript, scrolled with sticky chapter header' },
   { page: 'manuscript', state: 'chapter-collapsed', description: 'Manuscript, a chapter card collapsed' },
   { page: 'manuscript', state: 'add-note-dialog', description: 'Manuscript, Add Note dialog open after selecting text' },
@@ -64,7 +72,12 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'results-extra-row-expanded',
     description: 'Proofing, results table with an EXTRA (words heard but not written) discrepancy row expanded',
   },
-  { page: 'proofing', state: 'disabled-button', description: 'Proofing, a disabled-button precondition' },
+  {
+    page: 'proofing',
+    state: 'disabled-button',
+    description: 'Home with no manuscript - the Proofing action is locked and its tooltip says why',
+    pointer: 'keep',
+  },
   { page: 'proofing', state: 'toast', description: 'Proofing, a toast visible' },
 
   // Story Bible
@@ -73,11 +86,21 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'storybible', state: 'category-place', description: 'Story Bible, Place/Location category tab' },
   { page: 'storybible', state: 'category-organization', description: 'Story Bible, Organization category tab' },
   { page: 'storybible', state: 'category-needs-review', description: 'Story Bible, Needs Review category tab' },
-  { page: 'storybible', state: 'entity-selected', description: 'Story Bible, an entity selected (detail panel open)' },
+  {
+    page: 'storybible',
+    state: 'entity-selected',
+    description: 'Story Bible, an entity selected (detail panel open)',
+    sameAs: { of: 'storybible/category-all', reason: 'Story Bible opens on All with the first entity already selected.' },
+  },
   { page: 'storybible', state: 'alias-typeahead', description: 'Story Bible, alias-typeahead dropdown open' },
   { page: 'storybible', state: 'delete-confirm', description: 'Story Bible, delete confirm dialog open' },
   { page: 'storybible', state: 'entry-locked', description: 'Story Bible, a locked entry' },
-  { page: 'storybible', state: 'entry-unlocked', description: 'Story Bible, an unlocked entry (read-only until Edit)' },
+  {
+    page: 'storybible',
+    state: 'entry-unlocked',
+    description: 'Story Bible, an unlocked entry (read-only until Edit)',
+    sameAs: { of: 'storybible/entity-selected', reason: 'The fixture entity a fresh selection lands on is unlocked, so selecting it is this state.' },
+  },
   { page: 'storybible', state: 'entry-editing', description: 'Story Bible, an unlocked entry in edit mode (Save and Cancel shown)' },
   { page: 'storybible', state: 'entry-needs-review', description: 'Story Bible, a Needs Review entry with review-colored evidence highlights' },
 
@@ -131,28 +154,60 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'settings', state: 'project-data', description: 'Settings, Project scope / Project data category (clear derived project data)' },
   { page: 'settings', state: 'dirty-footer', description: 'Settings, unsaved-changes footer visible' },
   { page: 'settings', state: 'navigate-away-confirm', description: 'Settings, navigate-away-while-dirty confirm dialog' },
-  { page: 'settings', state: 'reset-override', description: 'Settings, reset/clear-override control on a field' },
+  { page: 'settings', state: 'reset-override', description: 'Settings, reset/clear-override control on a field', pointer: 'keep' },
 
   // Global overlays (captured once against Home, not per-page)
-  { page: 'global', state: 'tooltip', description: 'Global tooltip overlay' },
-  { page: 'global', state: 'toast', description: 'Global toast overlay' },
-  { page: 'global', state: 'confirm-dialog', description: 'Global confirm dialog overlay' },
+  {
+    page: 'global',
+    state: 'tooltip',
+    description: 'Global tooltip overlay',
+    pointer: 'keep',
+    sameAs: { of: 'home/info-tooltip', reason: 'The global overlay is captured by hovering the same Home info icon.' },
+  },
+  {
+    page: 'global',
+    state: 'toast',
+    description: 'Global toast overlay',
+    sameAs: { of: 'proofing/toast', reason: 'The global overlay is captured by adding a vocabulary term, the same flow as the Proofing toast.' },
+  },
+  {
+    page: 'global',
+    state: 'confirm-dialog',
+    description: 'Global confirm dialog overlay',
+    sameAs: { of: 'storybible/delete-confirm', reason: 'The global overlay is captured by opening the same delete-entity confirm dialog.' },
+  },
   {
     page: 'global',
     state: 'nav-rail-tooltip',
     description:
       "Primary navigation - hovering an enabled icon in the icon-only rail shows that page's name; at desktop and mobile widths there is no icon-only rail, so this is a no-op there",
+    pointer: 'keep',
+    sameAs: {
+      of: 'home/default',
+      reason: 'Only the icon-only rail shows tooltips; the full sidebar and mobile view have nothing to hover.',
+      viewports: ['desktop', 'mobile'],
+    },
   },
   {
     page: 'global',
     state: 'nav-drawer-open',
     description:
       'Primary navigation - the mobile slide-in drawer opened via the hamburger button; a no-op at desktop/small-desktop/tablet widths where the persistent nav rail is already visible',
+    sameAs: {
+      of: 'home/default',
+      reason: 'Above the md breakpoint the nav rail is always visible, so there is no drawer to open.',
+      viewports: ['desktop', 'small-desktop', 'tablet'],
+    },
   },
 
   // Theme smoke check (Home only, not the full page/state matrix - see
   // ADR 0010) - explicit Light/Dark selected via Settings > Appearance,
   // captured on Home across every viewport.
-  { page: 'global', state: 'theme-light', description: 'Home with Light explicitly selected in Settings > Appearance' },
+  {
+    page: 'global',
+    state: 'theme-light',
+    description: 'Home with Light explicitly selected in Settings > Appearance',
+    sameAs: { of: 'home/default', reason: 'Light is what Home already renders in by default, so explicitly selecting it changes nothing visible.' },
+  },
   { page: 'global', state: 'theme-dark', description: 'Home with Dark explicitly selected in Settings > Appearance' },
 ];

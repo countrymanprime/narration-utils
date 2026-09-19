@@ -35,7 +35,13 @@ export function Dialog({
             </button>
           )}
         </div>
-        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-[1.1rem] break-words">{children}</div>
+        {/* tabIndex: the body scrolls when content is tall, and a scrolling region must be reachable by keyboard. */}
+        <div
+          tabIndex={0}
+          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-[1.1rem] break-words focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
+        >
+          {children}
+        </div>
         <div
           className={`flex flex-none gap-2 border-t px-4 pt-3 pb-4 ${actionsAlign === 'between' ? 'justify-between' : 'justify-end'}`}
           style={{ borderColor: 'var(--border)' }}

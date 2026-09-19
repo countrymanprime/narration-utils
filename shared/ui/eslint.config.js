@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', 'playwright-report/**', 'test-results/**', 'wailsjs/**'] },
+  { ignores: ['dist/**', 'node_modules/**', 'playwright-report/**', 'test-results/**', 'wailsjs/**', 'storybook-static/**', 'screenshots/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   tailwind.configs.recommended,

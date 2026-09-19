@@ -4,3 +4,4 @@ obj/
 dist/
 logs/
 shared/ui/tests/visual/fixtures/
+tools/ui-atlas-kit/plugin/templates/
