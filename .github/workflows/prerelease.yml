@@ -38,19 +38,19 @@ jobs:
         name: Compute the next release candidate from conventional commits
         run: |
           CURRENT=$(node -p "require('./package.json').version")
-          pnpm exec nx release version --preid rc
+          # nx.json's releaseTagPattern (v{version}-rc) makes nx treat the latest RC tag as the
+          # current version and bump past it (v0.2.0-rc -> 0.2.1).
+          pnpm exec nx release version
           node scripts/release/sync-version.mjs
-          NEXT=$(node -p "require('./package.json').version")
-          if [ "$NEXT" = "$CURRENT" ]; then
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "$VERSION" = "$CURRENT" ]; then
             echo "No releasable changes since the latest release candidate; skipping."
             echo "release=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "release=true" >> "$GITHUB_OUTPUT"
-          # nx bumps past the latest v<version>-rc.N tag (e.g. 0.2.0-rc.1 -> 0.2.0-rc.2).
-          # Installers are built at the stable version so promotion can reuse them without a rebuild.
-          echo "version=${NEXT%%-*}" >> "$GITHUB_OUTPUT"
-          echo "tag=v${NEXT}" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}-rc" >> "$GITHUB_OUTPUT"
 
   package:
     needs: [quality, version]
@@ -80,12 +80,11 @@ jobs:
           path: dist
       # Keep the newest 10 RCs including the one being published, so nx still
       # finds the latest RC tag and bumps past it instead of re-stamping the same version.
-      # Also matches legacy un-numbered v<version>-rc tags.
       - name: Prune old release candidates
         env:
           KEEP_EXISTING: 9
         run: |
-          stale=$(gh release list --limit 200 --json tagName -q '.[].tagName' | grep -E -- '-rc(\.[0-9]+)?$' | tail -n +$((KEEP_EXISTING + 1)) || true)
+          stale=$(gh release list --limit 200 --json tagName -q '.[].tagName' | grep -E -- '-rc$' | tail -n +$((KEEP_EXISTING + 1)) || true)
           for old in $stale; do
             gh release delete "$old" --cleanup-tag -y
           done

@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 
 const tag = process.argv[2];
 if (!tag) {
-  console.error('Usage: pnpm release:promote <rc-tag>  (e.g. v0.2.0-rc.1)');
+  console.error('Usage: pnpm release:promote <rc-tag>  (e.g. v0.2.0-rc)');
   process.exit(1);
 }
 

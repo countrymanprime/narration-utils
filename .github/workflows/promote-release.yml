@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       prerelease_tag:
-        description: Existing release-candidate tag to promote, for example v0.2.0-rc.1
+        description: Existing release-candidate tag to promote, for example v0.2.0-rc
         required: true
         type: string
 
@@ -38,7 +38,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.prerelease_tag }}
         run: |
-          test "$(printf '%s' "$TAG" | sed -nE 's/^v([0-9]+\.[0-9]+\.[0-9]+)-rc(\.[0-9]+)?$/ok/p')" = ok
+          test "$(printf '%s' "$TAG" | sed -nE 's/^v([0-9]+\.[0-9]+\.[0-9]+)-rc$/ok/p')" = ok
           git fetch origin main --tags
           git merge-base --is-ancestor "$TAG" origin/main
           gh release view "$TAG" --json isPrerelease --jq '.isPrerelease' | grep -x true
@@ -56,7 +56,7 @@ jobs:
           TAG: ${{ inputs.prerelease_tag }}
         run: |
           VERSION="${TAG#v}"
-          VERSION="${VERSION%%-rc*}"
+          VERSION="${VERSION%-rc}"
           STABLE_TAG="v${VERSION}"
           git rev-parse "$TAG"
           test -z "$(git tag --list "$STABLE_TAG")"
