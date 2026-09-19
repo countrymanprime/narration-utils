@@ -24,7 +24,7 @@ jobs:
           - { name: linux-x64, os: ubuntu-latest, args: '-tags webkit2_41' }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-toolchain
         with:
           need-pnpm: 'false'
@@ -52,8 +52,22 @@ jobs:
           cd shell
           wails doctor
           wails build -s ${{ matrix.args }}
+      - name: Zip the macOS app bundle
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          cd shell/build/bin
+          zip -r -y "narration-utils-shell-${{ matrix.name }}.zip" "Narration Utils.app"
+          rm -rf "Narration Utils.app"
+      - name: Tar the Linux binary
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          cd shell/build/bin
+          tar -czf narration-utils-shell-${{ matrix.name }}.tar.gz narration-utils-shell
+          rm -f narration-utils-shell
       - if: inputs.upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.artifact-prefix }}-${{ matrix.name }}
           path: shell/build/bin
