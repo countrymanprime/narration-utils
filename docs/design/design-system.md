@@ -50,3 +50,7 @@ The custom-CSS system (`.btn`, `.panel-head`/`.panel-body`, `.progressbar`, etc.
 ## Motion
 
 See [`motion-and-animation.md`](motion-and-animation.md) — not yet a formal system, currently one considered instance (`MeterBar`'s segment transition).
+
+## Known defects
+
+Defects the atlas and visual suite have found and that are not fixed yet live in [known-ui-defects.md](known-ui-defects.md), each with severity, reproduction and a suggested fix.
