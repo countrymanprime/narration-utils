@@ -1,11 +1,11 @@
-// ui-atlas-kit 0.1.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.2.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { test } from '@playwright/test';
 import { APP_DRIVERS } from './app.drivers';
 import { captureState } from './lib/capture';
 import { STATE_CATALOG } from './state-catalog';
 import { VIEWPORTS } from './viewports';
 
-// Screenshots the real app (booted via the `dev:mock` webServer in
+// Screenshots the real app (booted by the webServer in
 // playwright.config.ts) at every {page, state, viewport}. One test per
 // combination so a failure names exactly what broke and the others still run.
 // How each state is reached lives in app.drivers.ts; what is checked about each

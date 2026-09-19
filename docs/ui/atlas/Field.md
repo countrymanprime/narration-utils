@@ -2,7 +2,7 @@
 
 Storybook title: `Primitives/Field`. Source: `src/components/primitives/Field.tsx`.
 
-![Field, Text Input, light theme](../images/primitives-field.webp)
+![Field, Text Input, light theme](../images/field.webp)
 
 ## Stories
 

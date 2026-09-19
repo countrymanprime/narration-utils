@@ -33,6 +33,13 @@ export async function freezeClock(page: Page): Promise<void> {
   await page.clock.pauseAt(new Date(now + 10));
 }
 
+// Optional seam: runs before the app loads on every capture. Use it to stub third-party embeds and
+// non-deterministic network (maps, chat widgets, analytics) with page.route, so the picture and the
+// "no failed requests" check do not depend on someone else's server. Delete it if you do not need it.
+// export async function beforeCapture(page: Page): Promise<void> {
+//   await page.route('**/maps.googleapis.com/**', (route) => route.fulfill({ status: 200, body: '' }));
+// }
+
 // How to reach each {page, state} in STATE_CATALOG, through real UI interaction with accessible-name
 // selectors. Waits are conditions (waitFor / expect), never waitForTimeout.
 export const APP_DRIVERS: Record<string, Record<string, Driver>> = {

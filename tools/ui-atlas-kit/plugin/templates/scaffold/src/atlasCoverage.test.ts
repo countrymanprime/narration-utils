@@ -9,17 +9,19 @@ import { A11Y_DEBT } from '../tests/atlas/a11y-debt';
 const ATLAS_EXEMPT: Record<string, string> = {};
 
 const primitivesDir = join(__dirname, '{{PRIMITIVES_DIR}}');
-const files = readdirSync(primitivesDir);
-const primitives = files.filter((file) => /^[A-Z][A-Za-z]*\.tsx$/.test(file)).map((file) => file.replace('.tsx', ''));
+const all = readdirSync(primitivesDir, { recursive: true }).map(String);
+const base = (file: string) => file.split(/[\\/]/).pop() ?? file;
+const primitives = [...new Set(all.filter((file) => /\.(tsx|jsx)$/.test(file) && !/\.(stories|test|spec)\./.test(file) && !/^index\./.test(base(file))).map((file) => base(file).replace(/\.(tsx|jsx)$/, '')))];
+const storied = new Set(all.filter((file) => /\.stories\.(tsx|jsx)$/.test(file)).map((file) => base(file).replace(/\.stories\.(tsx|jsx)$/, '')));
 
 describe('component atlas coverage', () => {
   test('every primitive has a story file or a recorded exemption', () => {
-    const uncovered = primitives.filter((name) => !files.includes(`${name}.stories.tsx`) && !(name in ATLAS_EXEMPT));
+    const uncovered = primitives.filter((name) => !storied.has(name) && !(name in ATLAS_EXEMPT));
     expect(uncovered, 'add <Name>.stories.tsx next to the component, or exempt it with a reason').toEqual([]);
   });
 
   test('an exemption names a real primitive that still lacks a story', () => {
-    const stale = Object.keys(ATLAS_EXEMPT).filter((name) => !primitives.includes(name) || files.includes(`${name}.stories.tsx`));
+    const stale = Object.keys(ATLAS_EXEMPT).filter((name) => !primitives.includes(name) || storied.has(name));
     expect(stale, 'remove exemptions that no longer apply').toEqual([]);
   });
 

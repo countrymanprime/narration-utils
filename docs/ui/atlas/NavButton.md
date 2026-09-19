@@ -2,7 +2,7 @@
 
 Storybook title: `Primitives/NavButton`. Source: `src/components/primitives/NavButton.tsx`.
 
-![NavButton, Inactive, light theme](../images/primitives-navbutton.webp)
+![NavButton, Inactive, light theme](../images/navbutton.webp)
 
 ## Stories
 

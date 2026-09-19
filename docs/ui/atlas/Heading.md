@@ -2,7 +2,7 @@
 
 Storybook title: `Primitives/Heading`. Source: `src/components/primitives/Heading.tsx`.
 
-![Heading, Title Only, light theme](../images/primitives-heading.webp)
+![Heading, Title Only, light theme](../images/heading.webp)
 
 ## Stories
 

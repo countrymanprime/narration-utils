@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.1.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.2.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import type { SameAsDeclaration } from './validators';
 
 export interface StateEntry {
@@ -17,4 +17,6 @@ export interface StateEntry {
   // The driver hovers or focuses something the screenshot must show, so the
   // pointer stays where the driver left it instead of being parked off-page.
   pointer?: 'keep';
+  // Capture the whole scrollable page instead of just the viewport (long pages, full-height routes).
+  fullPage?: boolean;
 }

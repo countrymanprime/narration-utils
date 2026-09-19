@@ -2,7 +2,7 @@
 
 Storybook title: `Primitives/ConfirmDialog`. Source: `src/components/primitives/ConfirmDialog.tsx`.
 
-![ConfirmDialog, Default, light theme](../images/primitives-confirmdialog.webp)
+![ConfirmDialog, Default, light theme](../images/confirmdialog.webp)
 
 ## Stories
 

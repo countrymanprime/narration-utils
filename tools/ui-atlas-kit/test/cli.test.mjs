@@ -50,7 +50,8 @@ describe('init', () => {
     const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
     assert.equal(pkg.scripts.atlas, 'pnpm run build-storybook && playwright test -c playwright.atlas.config.ts');
     assert.equal(pkg.scripts.dev, 'vite');
-    assert.match(readFileSync(join(dir, 'playwright.config.ts'), 'utf8'), /command: 'pnpm run dev'/);
+    assert.match(readFileSync(join(dir, 'playwright.config.ts'), 'utf8'), /UI_APP_PORT/);
+    assert.match(readFileSync(join(dir, 'playwright.config.ts'), 'utf8'), /npx --no-install vite/);
     assert.doesNotMatch(readFileSync(join(dir, 'src', 'atlasCoverage.test.ts'), 'utf8'), /\{\{/);
 
     writeFileSync(join(dir, 'tests/visual/state-catalog.ts'), '// mine\n');
@@ -160,5 +161,91 @@ describe('docs', () => {
 
   test('says how to fix a missing build', async () => {
     await assert.rejects(docs(fixture()), /run the storybook build/);
+  });
+});
+
+describe('v0.2: what the six rollouts taught', () => {
+  test('TypeScript is detected from tsconfig.json even without the typescript package', () => {
+    const dir = fixture({ extra: {} });
+    const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
+    delete pkg.devDependencies.typescript;
+    writeFileSync(join(dir, 'package.json'), JSON.stringify(pkg));
+    rmSync(join(dir, 'src'), { recursive: true, force: true });
+    assert.match(detectStack(dir).blockers.join(' '), /no TypeScript/);
+    writeFileSync(join(dir, 'tsconfig.json'), '{}');
+    assert.deepEqual(detectStack(dir).blockers, []);
+  });
+
+  test('the components directory is detected, including a flat one and kebab-case files', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ui-atlas-'));
+    roots.push(dir);
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ dependencies: { react: '^18.0.0' }, devDependencies: { vite: '^6.0.0', typescript: '^5.0.0' } }));
+    mkdirSync(join(dir, 'src', 'components', 'nav'), { recursive: true });
+    writeFileSync(join(dir, 'src', 'components', 'nav', 'mobile-nav.tsx'), 'export const A = 1;\n');
+    writeFileSync(join(dir, 'src', 'components', 'Footer.tsx'), 'export const B = 1;\n');
+    writeFileSync(join(dir, 'src', 'components', 'Footer.stories.tsx'), 'export default {};\n');
+    const report = init(dir, { 'dry-run': true });
+    assert.equal(report.vars.PRIMITIVES_DIR, 'components');
+    init(dir, {});
+    const result = audit(dir);
+    assert.deepEqual(result.counts.uncovered, ['mobile-nav']);
+    assert.equal(result.counts.components, 2);
+  });
+
+  test('a tier 0 repo is scored only on what tier 0 asks for', () => {
+    const dir = fixture({ vite: '^4.4.9' });
+    init(dir, {});
+    const result = audit(dir);
+    assert.equal(result.tier, 0);
+    assert.ok(!result.parts.some((part) => part.name === 'component coverage'));
+    assert.ok(!result.parts.some((part) => part.name === 'generated docs fresh'));
+    assert.ok(result.score > 0 && result.score <= 100);
+  });
+
+  test('a workflow that merely mentions "ui-atlas" in a comment does not count as running the atlas', () => {
+    const dir = fixture();
+    init(dir, {});
+    mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
+    writeFileSync(join(dir, '.github', 'workflows', 'ci.yml'), '# ui-atlas soon\njobs:\n  build:\n    steps:\n      - run: npm test\n');
+    assert.match(audit(dir).parts.find((part) => part.name === 'CI runs the suites').detail, /atlas no/);
+    writeFileSync(join(dir, '.github', 'workflows', 'ci.yml'), 'jobs:\n  a:\n    steps:\n      - run: npm run atlas\n');
+    assert.match(audit(dir).parts.find((part) => part.name === 'CI runs the suites').detail, /atlas yes/);
+  });
+
+  test('init at tier 0 without vitest does not write the vitest catalog test, and splits the install hint', () => {
+    const dir = fixture({ vite: '^4.4.9' });
+    const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
+    delete pkg.devDependencies.vitest;
+    writeFileSync(join(dir, 'package.json'), JSON.stringify(pkg));
+    const report = init(dir, {});
+    assert.equal(existsSync(join(dir, 'src', 'visualSuite.test.ts')), false);
+    const installs = report.notes.filter((note) => note.startsWith('install'));
+    assert.ok(installs.length >= 2, 'install commands are split so npm does not choke on one huge resolve');
+    assert.ok(installs.every((note) => !/\bnpm add/.test(note)));
+  });
+
+  test('two lockfiles produce a warning', () => {
+    const dir = fixture();
+    writeFileSync(join(dir, 'package-lock.json'), '{}');
+    assert.match(init(dir, { 'dry-run': true }).notes.join('\n'), /both .*lock/i);
+  });
+
+  test('the theme decorator can switch a class instead of an attribute', () => {
+    const dir = fixture();
+    init(dir, { 'theme-class': 'dark' });
+    const preview = readFileSync(join(dir, '.storybook', 'preview.tsx'), 'utf8');
+    assert.match(preview, /classList\.toggle\('dark'/);
+    assert.doesNotMatch(preview, /setAttribute/);
+  });
+
+  test('docs names a component after its file and finds kebab-case consumers', async () => {
+    const dir = fixture();
+    mkdirSync(join(dir, 'storybook-static'), { recursive: true });
+    writeFileSync(join(dir, 'storybook-static', 'index.json'), JSON.stringify({ v: 5, entries: { 'x--a': { id: 'x--a', type: 'story', title: 'Composites/No showtimes card/Empty', name: 'Empty', importPath: './src/card.stories.tsx', componentPath: './src/components/movie-card.tsx' } } }));
+    writeFileSync(join(dir, 'src', 'page.tsx'), "import { MovieCard } from './components/movie-card';\n");
+    await docs(dir);
+    const { components } = JSON.parse(readFileSync(join(dir, 'docs', 'ui', 'inventory.json'), 'utf8'));
+    assert.equal(components[0].name, 'movie-card');
+    assert.deepEqual(components[0].consumers, ['src/page.tsx']);
   });
 });

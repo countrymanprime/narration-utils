@@ -2,7 +2,7 @@
 
 Storybook title: `Primitives/SlideOver`. Source: `src/components/primitives/SlideOver.tsx`.
 
-![SlideOver, Open, light theme](../images/primitives-slideover.webp)
+![SlideOver, Open, light theme](../images/slideover.webp)
 
 ## Stories
 

@@ -5,9 +5,15 @@ import type { Decorator, Preview } from '@storybook/react-vite';
 // render (not in an effect), so the atlas runner never screenshots the wrong palette.
 const withTheme: Decorator = (Story, context) => {
   const theme = context.globals.theme === 'dark' ? 'dark' : 'light';
-  document.documentElement.setAttribute('{{THEME_ATTR}}', theme);
+  {{THEME_APPLY}}
   // TODO(ui-atlas-init): wrap in the app's providers (router, tooltip, i18n, theme) if components need them.
-  return <Story />;
+  // Keep a full-height surface in the app's background colour: the atlas crops screenshots to what the
+  // story draws, and a short transparent wrapper leaves a black strip in the dark theme.
+  return (
+    <div style={{ minHeight: '100vh', padding: 16 }}>
+      <Story />
+    </div>
+  );
 };
 
 const preview: Preview = {

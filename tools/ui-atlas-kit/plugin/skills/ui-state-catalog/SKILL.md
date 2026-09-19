@@ -65,3 +65,12 @@ that was merely still rendering, and a 63 px overflow at 390 px, all only after 
 It does not write component stories (`ui-story-authoring`), explain why the same state differs between two runs
 (`ui-capture-contract`), or judge whether a picture looks right (`ui-visual-review`). It does not make a green run
 mean the layout is correct: the suite gates errors, overflow, blanks and duplicates, and is not a pixel diff.
+
+## Optional per-row and per-repo seams
+
+- `fullPage: true` on a catalog row captures the whole scrollable page, for long routes.
+- `export async function beforeCapture(page)` in `app.drivers.ts` installs `page.route` stubs before the app loads (third-party
+  embeds, non-deterministic network).
+- A repo that already has a `playwright.config.ts` for e2e keeps it: `ui-atlas init --app-config playwright.visual.config.ts`
+  writes the kit's app config under that name and adds `screenshots: playwright test -c <name>`.
+

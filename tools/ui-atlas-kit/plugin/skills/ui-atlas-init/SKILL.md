@@ -65,3 +65,11 @@ peer dependency (the reference repo skipped `@storybook/addon-vitest` because it
 It does not write stories (`ui-story-authoring`), state rows or drivers (`ui-state-catalog`), classify components
 (`ui-component-inventory`), or merge the CI jobs (`ui-atlas-ci`). It does not generate baseline images: the kit
 captures, validates and documents, it does not pixel-diff (see `ui-capture-contract`).
+
+## Flags worth knowing
+
+`--theme-class dark` (theme by class on `<html>`) or `--theme-attr <name>` (by attribute); `--primitives-dir <path relative to src/>`
+(detected: `components/primitives`, `components/ui`, `components`, or a root `../components`); `--app-config <file>`. `init` prints its install
+commands in separate groups on purpose: one huge resolve crashed npm 10 in two repos. Pin `vitest@^3` for Vite 6 and older,
+and install `@testing-library/dom` next to `@testing-library/react`. Servers move with `UI_APP_PORT` and `UI_ATLAS_PORT`.
+

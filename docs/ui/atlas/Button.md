@@ -2,7 +2,7 @@
 
 Storybook title: `Primitives/Button`. Source: `src/components/primitives/Button.tsx`.
 
-![Button, Primary, light theme](../images/primitives-button.webp)
+![Button, Primary, light theme](../images/button.webp)
 
 ## Stories
 

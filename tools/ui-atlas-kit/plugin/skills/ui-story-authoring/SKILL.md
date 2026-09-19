@@ -69,3 +69,20 @@ throws, hover tooltips race a 1000 ms timer, and an error boundary logs on purpo
 It does not choose which components need stories (`ui-component-inventory`), edit `state-catalog.ts` or
 `app.drivers.ts` (`ui-state-catalog`), or explain byte differences between runs (`ui-capture-contract`). It does
 not judge how a story looks; that is `ui-visual-review`.
+
+## Lessons from the first six rollouts
+
+- `play()` can run in the browser before passive effects flush (it passed in jsdom): when the interaction depends on a listener
+  an effect registers, wait for the outcome with `waitFor` / `findBy*`, not a bare assertion.
+- An element with `display: none` has no accessible name, so `getByRole(..., { hidden: true })` cannot find it: query it a
+  different way, or make the story render it visible (a component that is `md:hidden` needs a story at the narrow viewport
+  or a forced-visible wrapper).
+- A story that shows a native validation bubble ("Please fill out this field") is non-deterministic: blur the field or fill it.
+- A component that is taller than the atlas viewport is captured whole (the screenshot is full page and cropped to the story's
+  content), so tall stories are fine.
+- An app with a single theme runs every story twice for identical output: set `UI_ATLAS_THEMES=light`. An app that themes with
+  the OS setting (Tailwind's default `dark:` variant) is flipped by the atlas through `emulateMedia({ colorScheme })`; an app
+  that themes with a class or attribute needs the decorator in `.storybook/preview.tsx` (`ui-atlas init --theme-class dark`).
+- Components that read a router, i18n or theme context need those providers in the story decorator (`MemoryRouter` for routed
+  components), not mocks inside the component.
+

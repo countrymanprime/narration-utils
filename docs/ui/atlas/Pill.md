@@ -2,7 +2,7 @@
 
 Storybook title: `Primitives/Pill`. Source: `src/components/primitives/Pill.tsx`.
 
-![Pill, Inactive, light theme](../images/primitives-pill.webp)
+![Pill, Inactive, light theme](../images/pill.webp)
 
 ## Stories
 

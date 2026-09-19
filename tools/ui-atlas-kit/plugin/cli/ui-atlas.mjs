@@ -57,7 +57,9 @@ export function detectStack(dir) {
     react: major(deps.react),
     vite: major(deps.vite),
     tailwind: major(deps.tailwindcss),
-    typescript: has('typescript'),
+    typescript: has('typescript') || existsSync(join(dir, 'tsconfig.json')) || walk(join(dir, 'src'), (f) => f.endsWith('.tsx')).length > 0,
+    typesNode: has('@types/node'),
+    lockfiles: ['pnpm-lock.yaml', 'package-lock.json', 'yarn.lock', 'bun.lock', 'bun.lockb'].filter(up),
     playwright: has('@playwright/test'),
     vitest: major(deps.vitest),
     storybook: major(deps.storybook),
@@ -92,23 +94,44 @@ function templateFiles(kind, tierOf) {
 }
 
 // ---- init --------------------------------------------------------------------------------------
+const COMPONENT_DIR_CANDIDATES = ['components/primitives', 'components/ui', 'components', '../components'];
+
+// Path of the components directory relative to <ui-root>/src (the base the coverage test resolves from).
+export function detectComponentsDir(dir) {
+  return COMPONENT_DIR_CANDIDATES.find((rel) => existsSync(join(dir, 'src', rel))) ?? 'components/primitives';
+}
+
+function gitRoot(dir) {
+  for (let current = dir; ; current = dirname(current)) {
+    if (existsSync(join(current, '.git'))) return current;
+    if (dirname(current) === current) return dir;
+  }
+}
+
+const isComponentFile = (file) => /\.(tsx|jsx)$/.test(file) && !/\.(stories|test|spec)\./.test(file) && !/^index\./.test(basename(file));
+const stripExt = (file) => basename(file).replace(/\.(tsx|jsx)$/, '');
+
 export function init(dir, flags = {}) {
   const stack = detectStack(dir);
   const tier = flags.tier !== undefined ? Number(flags.tier) : stack.tier;
   const dry = Boolean(flags['dry-run']);
-  const report = { dir, tier, stack, written: [], skipped: [], notes: [] };
+  const report = { dir, tier, stack, written: [], skipped: [], notes: [], vars: {} };
   if (tier > 0 && stack.tier === 0) report.notes.push(`tier ${tier} requested but blocked: ${stack.blockers.join('; ')}`);
 
   const cmd = pmCommands(stack.pm);
+  const themeAttr = flags['theme-attr'] ?? 'data-theme';
   const vars = {
-    THEME_ATTR: flags['theme-attr'] ?? 'data-theme',
-    PRIMITIVES_DIR: flags['primitives-dir'] ?? 'components/primitives',
-    BASE_URL: flags['base-url'] ?? 'http://localhost:5173',
-    DEV_COMMAND: flags['dev-command'] ?? `${cmd.run} dev`,
+    THEME_ATTR: themeAttr,
+    THEME_APPLY: flags['theme-class']
+      ? `document.documentElement.classList.toggle('${flags['theme-class']}', theme === 'dark');`
+      : `document.documentElement.setAttribute('${themeAttr}', theme);`,
+    PRIMITIVES_DIR: flags['primitives-dir'] ?? detectComponentsDir(dir),
     PM_RUN: cmd.run,
     PM_EXEC: cmd.exec,
-    UI_ROOT: posix(relative(process.cwd(), dir)) || '.',
+    UI_ROOT: posix(relative(gitRoot(dir), dir)) || '.',
   };
+  report.vars = vars;
+  const appConfig = flags['app-config'] ? String(flags['app-config']) : 'playwright.config.ts';
 
   const place = (rel, content) => {
     const target = join(dir, rel);
@@ -119,7 +142,14 @@ export function init(dir, flags = {}) {
     writeFileSync(target, content);
   };
   for (const file of templateFiles('core', CORE_TIER)) if (file.tier <= tier) place(file.rel, readText(file.full));
-  for (const file of templateFiles('scaffold', SCAFFOLD_TIER)) if (file.tier <= tier) place(file.rel, render(readText(file.full), vars));
+  for (const file of templateFiles('scaffold', SCAFFOLD_TIER)) {
+    if (file.tier > tier) continue;
+    if (file.rel === 'src/visualSuite.test.ts' && tier === 0 && !stack.vitest) {
+      report.notes.push('no vitest: src/visualSuite.test.ts (catalog integrity) skipped; the runtime validators in tests/visual/global-setup.ts still run');
+      continue;
+    }
+    place(file.rel === 'playwright.config.ts' ? appConfig : file.rel, render(readText(file.full), vars));
+  }
   if (tier >= 2) {
     place('.ui-atlas/ci-jobs.yml', render(readText(join(TEMPLATES, 'ci', 'ui-atlas-jobs.yml')), vars));
     place('.ui-atlas/CLAUDE.snippet.md', render(readText(join(TEMPLATES, 'CLAUDE.snippet.md')), vars));
@@ -127,8 +157,9 @@ export function init(dir, flags = {}) {
 
   // package.json scripts, only where absent
   const pkgPath = join(dir, 'package.json');
-  const scripts = { screenshots: 'playwright test' };
+  const scripts = { screenshots: appConfig === 'playwright.config.ts' ? 'playwright test' : `playwright test -c ${appConfig}` };
   if (tier >= 1) Object.assign(scripts, { storybook: 'storybook dev --port 6006', 'build-storybook': 'storybook build --output-dir storybook-static', atlas: `${cmd.run} build-storybook && playwright test -c playwright.atlas.config.ts` });
+  if (tier >= 1 || stack.vitest) scripts.test = 'vitest run';
   if (existsSync(pkgPath)) {
     const pkg = readJson(pkgPath);
     const added = Object.keys(scripts).filter((name) => !pkg.scripts?.[name]);
@@ -139,33 +170,46 @@ export function init(dir, flags = {}) {
   }
   // .gitignore lines
   const ignorePath = join(dir, '.gitignore');
-  const wanted = ['storybook-static/', 'screenshots/', 'test-results/', 'playwright-report/', '.ui-atlas/'];
+  const wanted = ['storybook-static/', 'screenshots/', 'test-results/', 'playwright-report/', '.ui-atlas/', '*.tsbuildinfo'];
   const current = existsSync(ignorePath) ? readText(ignorePath) : '';
   const missing = wanted.filter((line) => !current.split('\n').includes(line));
   if (missing.length && !dry) writeFileSync(ignorePath, `${current.replace(/\n*$/, '\n')}${missing.join('\n')}\n`);
   if (missing.length) report.notes.push(`.gitignore lines added: ${missing.join(', ')}`);
 
-  const install = [];
-  if (!stack.playwright) install.push('@playwright/test');
-  if (!stack.sharp) install.push('sharp');
-  if (tier >= 1) install.push('storybook@10', '@storybook/react-vite@10', '@storybook/addon-a11y@10');
-  if (!stack.vitest) install.push('vitest', 'jsdom');
-  if (!stack.testingLibrary) install.push('@testing-library/react');
-  if (install.length) report.notes.push(`install (not run): ${stack.pm} add -D ${install.join(' ')}`);
+  // Install hints are split: one giant resolve crashed npm 10 ("edgesOut") in two repos.
+  const verb = { npm: 'npm install -D', pnpm: 'pnpm add -D', yarn: 'yarn add -D', bun: 'bun add -D' }[stack.pm];
+  const groups = [];
+  const tooling = [];
+  if (tier >= 1 && !stack.vitest) tooling.push('vitest@^3', 'jsdom');
+  if (tier >= 1 && !stack.testingLibrary) tooling.push('@testing-library/react', '@testing-library/dom');
+  if (!stack.typesNode) tooling.push('@types/node');
+  if (tooling.length) groups.push(tooling);
+  const browser = [];
+  if (!stack.playwright) browser.push('@playwright/test');
+  if (!stack.sharp) browser.push('sharp');
+  if (browser.length) groups.push(browser);
+  if (tier >= 1) groups.push(['storybook@10', '@storybook/react-vite@10', '@storybook/addon-a11y@10']);
+  for (const group of groups) report.notes.push(`install (not run): ${verb} ${group.join(' ')}`);
+
+  if (stack.lockfiles.length > 1) report.notes.push(`both ${stack.lockfiles.join(' and ')} exist: commands use ${stack.pm}; fix PM_RUN/PM_EXEC in ui-atlas.config.json if that is wrong`);
   report.notes.push("add 'tests/visual/**' and 'tests/atlas/**' to the unit-test runner's exclude list (Playwright specs are not Vitest tests)");
+  report.notes.push(`the app is served for captures by playwright.config: set UI_APP_PORT (default 5173) if the dev server runs elsewhere; the atlas uses UI_ATLAS_PORT (default 6106)`);
   if (stack.vitest && stack.vitest < 3 && tier >= 1) report.notes.push('Vitest < 3: do not add @storybook/addon-vitest; stories run as unit tests through composeStories (src/stories.test.tsx)');
-  if (tier >= 1) report.notes.push("edit .storybook/preview.tsx: import the app's global stylesheet and wrap stories in its providers (marked TODO)");
+  if (tier >= 1) {
+    report.notes.push("edit .storybook/preview.tsx: import the app's global stylesheet and wrap stories in its providers (marked TODO), and copy the app's web-font <link> tags into .storybook/preview-head.html");
+    if (stack.tailwind && stack.tailwind < 4) report.notes.push("Tailwind < 4: add './.storybook/**/*.{ts,tsx}' to tailwind.config content, or classes used only in the preview decorator are silently missing");
+    const tsconfig = join(dir, 'tsconfig.json');
+    if (existsSync(tsconfig) && /"moduleResolution"\s*:\s*"(node|node10)"/i.test(readText(tsconfig))) report.notes.push('tsconfig moduleResolution is "node": Storybook 10 packages use `exports` maps, so typecheck needs "bundler"');
+  }
 
   if (!dry) {
-    const config = { kit: KIT_VERSION, tier, stack: { pm: stack.pm, react: stack.react, vite: stack.vite, tailwind: stack.tailwind }, vars };
+    const config = { kit: KIT_VERSION, tier, stack: { pm: stack.pm, react: stack.react, vite: stack.vite, tailwind: stack.tailwind }, vars: { THEME_ATTR: vars.THEME_ATTR, PRIMITIVES_DIR: vars.PRIMITIVES_DIR, PM_RUN: vars.PM_RUN, PM_EXEC: vars.PM_EXEC, UI_ROOT: vars.UI_ROOT } };
     if (!existsSync(join(dir, 'ui-atlas.config.json'))) writeFileSync(join(dir, 'ui-atlas.config.json'), JSON.stringify(config, null, 2) + '\n');
   }
   return report;
 }
 
 // ---- audit -------------------------------------------------------------------------------------
-const PRIMITIVE_FILE = /^[A-Z][A-Za-z]*\.tsx$/;
-
 function readConfig(dir) {
   const p = join(dir, 'ui-atlas.config.json');
   return existsSync(p) ? readJson(p) : undefined;
@@ -177,64 +221,71 @@ function countMatches(file, regex) {
 
 export function audit(dir) {
   const config = readConfig(dir);
-  const primitivesRel = config?.vars?.PRIMITIVES_DIR ?? 'components/primitives';
-  const primitivesDir = join(dir, 'src', primitivesRel);
-  const files = existsSync(primitivesDir) ? readdirSync(primitivesDir) : [];
-  const components = files.filter((f) => PRIMITIVE_FILE.test(f)).map((f) => f.replace('.tsx', ''));
+  const tier = config?.tier ?? 0;
+  const primitivesDir = join(dir, 'src', config?.vars?.PRIMITIVES_DIR ?? detectComponentsDir(dir));
+  const all = walk(primitivesDir);
+  const components = [...new Set(all.filter(isComponentFile).map(stripExt))].sort();
+  const storied = new Set(all.filter((f) => /\.stories\.(tsx|jsx)$/.test(f)).map((f) => basename(f).replace(/\.stories\.(tsx|jsx)$/, '')));
   const coveragePath = join(dir, 'src', 'atlasCoverage.test.ts');
   const exemptBlock = existsSync(coveragePath) ? (readText(coveragePath).match(/ATLAS_EXEMPT[^=]*=\s*\{([\s\S]*?)\};/) ?? [])[1] ?? '' : '';
-  const exempt = (exemptBlock.match(/^\s*['"]?[A-Z]\w*['"]?\s*:/gm) ?? []).map((line) => line.replace(/[\s'":]/g, ''));
-  const withStories = components.filter((name) => files.includes(`${name}.stories.tsx`));
-  const uncovered = components.filter((name) => !withStories.includes(name) && !exempt.includes(name));
+  const exempt = [...exemptBlock.matchAll(/^\s*['"]?([\w-]+)['"]?\s*:/gm)].map((m) => m[1]);
+  const withStories = components.filter((name) => storied.has(name));
+  const uncovered = components.filter((name) => !storied.has(name) && !exempt.includes(name));
 
   const visualDir = join(dir, 'tests', 'visual');
   const catalogRows = countMatches(join(visualDir, 'state-catalog.ts'), /^\s*(?:\{\s*)?page:\s*'/gm);
   const undriven = countMatches(join(visualDir, 'state-catalog.ts'), /\bundriven:/g);
   const sameAs = countMatches(join(visualDir, 'state-catalog.ts'), /\bsameAs:/g);
-  const debt = countMatches(join(dir, 'tests', 'atlas', 'a11y-debt.ts'), /^\s*\{\s*title:/gm);
+  const debt = countMatches(join(dir, 'tests', 'atlas', 'a11y-debt.ts'), /\btitle:\s*['"]/g);
 
-  const workflows = walk(resolve(dir, '..', '..', '.github', 'workflows'), (f) => /\.ya?ml$/.test(f)).concat(walk(join(dir, '.github', 'workflows'), (f) => /\.ya?ml$/.test(f)));
-  const ci = workflows.map(readText).join('\n');
-  const ciVisual = /screenshots|playwright test/.test(ci);
-  const ciAtlas = /\batlas\b/.test(ci);
+  // Only `run:` lines count: a comment or a job name that mentions "atlas" is not running it.
+  const workflows = walk(resolve(gitRoot(dir), '.github', 'workflows'), (f) => /\.ya?ml$/.test(f));
+  const runs = workflows.flatMap((f) => readText(f).split('\n')).filter((line) => /^\s*(?:-\s*)?run:/.test(line)).join('\n');
+  const ciVisual = /screenshots|playwright test/.test(runs);
+  const ciAtlas = /\batlas\b/.test(runs);
 
-  const inventory = join(dir, '..', '..', 'docs', 'ui', 'inventory.json');
-  const inventoryPath = [join(dir, 'docs', 'ui', 'inventory.json'), inventory].find(existsSync);
-  const newestStory = Math.max(0, ...walk(join(dir, 'src'), (f) => f.endsWith('.stories.tsx')).map((f) => statSync(f).mtimeMs));
+  const inventoryPath = [join(dir, 'docs', 'ui', 'inventory.json'), join(gitRoot(dir), 'docs', 'ui', 'inventory.json')].find(existsSync);
+  const newestStory = Math.max(0, ...walk(join(dir, 'src'), (f) => /\.stories\.(tsx|jsx)$/.test(f)).map((f) => statSync(f).mtimeMs));
   const docsFresh = Boolean(inventoryPath) && statSync(inventoryPath).mtimeMs >= newestStory;
-
   const drift = sync(dir, { check: true }).drift;
 
+  const contractFiles = ['tests/visual/lib/validators.ts', 'tests/visual/global-setup.ts', 'tests/visual/state-catalog.ts', ...(tier >= 1 ? ['tests/atlas/atlas.spec.ts', 'src/stories.test.tsx'] : [])];
+  const contractShare = 15 / contractFiles.length;
   const parts = [
-    { name: 'component coverage', max: 35, got: components.length ? Math.round((35 * (components.length - uncovered.length)) / components.length) : 0, detail: `${components.length - uncovered.length}/${components.length} primitives covered, ${exempt.length} exempt` },
-    { name: 'CI runs the suites', max: 20, got: (ciVisual ? 10 : 0) + (ciAtlas ? 10 : 0), detail: `app visual ${ciVisual ? 'yes' : 'no'}, atlas ${ciAtlas ? 'yes' : 'no'}` },
-    { name: 'capture contract present', max: 15, got: ['tests/visual/lib/validators.ts', 'tests/visual/global-setup.ts', 'tests/visual/state-catalog.ts', 'tests/atlas/atlas.spec.ts', 'src/stories.test.tsx']
-        .reduce((sum, rel) => sum + (existsSync(join(dir, rel)) ? 3 : 0), 0), detail: 'validators, global setup, catalog, atlas spec, stories test' },
-    { name: 'escape hatches bounded', max: 10, got: undriven === 0 && debt <= 3 ? 10 : undriven === 0 || debt <= 3 ? 5 : 0, detail: `${undriven} undriven, ${sameAs} sameAs, ${debt} a11y debt` },
-    { name: 'generated docs fresh', max: 10, got: docsFresh ? 10 : inventoryPath ? 4 : 0, detail: inventoryPath ? (docsFresh ? 'docs/ui/inventory.json is current' : 'docs/ui/inventory.json is older than the newest story') : 'no docs/ui/inventory.json' },
-    { name: 'kit files in sync', max: 10, got: drift.length === 0 && config ? 10 : 0, detail: config ? (drift.length ? `${drift.length} vendored file(s) drifted` : 'vendored files match the kit') : 'no ui-atlas.config.json (run init)' },
-  ];
-  const score = parts.reduce((sum, p) => sum + p.got, 0);
+    { name: 'component coverage', max: 35, applies: tier >= 1, got: components.length ? Math.round((35 * (components.length - uncovered.length)) / components.length) : 0, detail: `${withStories.length} with stories, ${exempt.length} exempt, ${components.length} components` },
+    { name: 'CI runs the suites', max: tier >= 1 ? 20 : 10, applies: true, got: (ciVisual ? 10 : 0) + (tier >= 1 && ciAtlas ? 10 : 0), detail: `app visual ${ciVisual ? 'yes' : 'no'}${tier >= 1 ? `, atlas ${ciAtlas ? 'yes' : 'no'}` : ''}` },
+    { name: 'capture contract present', max: 15, applies: true, got: Math.round(contractFiles.filter((rel) => existsSync(join(dir, rel))).length * contractShare), detail: contractFiles.map((rel) => basename(rel)).join(', ') },
+    { name: 'escape hatches bounded', max: 10, applies: true, got: undriven === 0 && debt <= 3 ? 10 : undriven === 0 || debt <= 3 ? 5 : 0, detail: `${undriven} undriven, ${sameAs} sameAs, ${debt} a11y debt` },
+    { name: 'generated docs fresh', max: 10, applies: tier >= 2, got: docsFresh ? 10 : inventoryPath ? 4 : 0, detail: inventoryPath ? (docsFresh ? 'docs/ui/inventory.json is current' : 'docs/ui/inventory.json is older than the newest story') : 'no docs/ui/inventory.json' },
+    { name: 'kit files in sync', max: 10, applies: true, got: drift.length === 0 && config ? 10 : 0, detail: config ? (drift.length ? `${drift.length} vendored file(s) drifted` : 'vendored files match the kit') : 'no ui-atlas.config.json (run init)' },
+  ].filter((part) => part.applies);
+  const maxTotal = parts.reduce((sum, p) => sum + p.max, 0);
+  const score = Math.round((100 * parts.reduce((sum, p) => sum + p.got, 0)) / maxTotal);
   const gaps = [
-    ...uncovered.map((name) => `add ${name}.stories.tsx (or exempt ${name} with a reason)`),
+    ...(tier >= 1 ? uncovered.map((name) => `add ${name}.stories.tsx (or exempt ${name} with a reason)`) : []),
     ...(ciVisual ? [] : ['run the app visual suite in CI']),
-    ...(ciAtlas ? [] : ['run the atlas in CI']),
+    ...(tier >= 1 && !ciAtlas ? ['run the atlas in CI'] : []),
     ...drift.map((d) => `vendored file drifted: ${d} (run: ui-atlas sync)`),
-    ...(docsFresh ? [] : ['regenerate docs: ui-atlas docs']),
+    ...(tier >= 2 && !docsFresh ? ['regenerate docs: ui-atlas docs'] : []),
   ];
   return { dir, kit: KIT_VERSION, tier: config?.tier ?? null, score, parts, gaps, counts: { components: components.length, withStories: withStories.length, exempt, uncovered, catalogRows, undriven, sameAs, debt } };
 }
 
 // ---- docs --------------------------------------------------------------------------------------
+const SOURCE_SKIP = /(^|[\\/])(node_modules|dist|storybook-static|screenshots|test-results|docs|\.git)([\\/]|$)/;
+
 export async function docs(dir) {
   const indexPath = join(dir, 'storybook-static', 'index.json');
   if (!existsSync(indexPath)) throw new Error(`no ${posix(relative(process.cwd(), indexPath))}: run the storybook build (pnpm atlas) first`);
   const entries = Object.values(readJson(indexPath).entries).filter((e) => e.type === 'story');
-  const byTitle = new Map();
-  for (const entry of entries) byTitle.set(entry.title, [...(byTitle.get(entry.title) ?? []), entry]);
+  // One page per component: group by the component file when Storybook knows it, else by title.
+  const groups = new Map();
+  for (const entry of entries) {
+    const key = entry.componentPath ?? entry.title;
+    groups.set(key, [...(groups.get(key) ?? []), entry]);
+  }
 
-  const repoRoot = existsSync(join(dir, '..', '..', '.git')) ? resolve(dir, '..', '..') : dir;
-  const outDir = join(repoRoot, 'docs', 'ui');
+  const outDir = join(gitRoot(dir), 'docs', 'ui');
   const imgDir = join(outDir, 'images');
   mkdirSync(join(outDir, 'atlas'), { recursive: true });
   mkdirSync(imgDir, { recursive: true });
@@ -245,32 +296,43 @@ export async function docs(dir) {
   } catch {
     sharp = undefined;
   }
+  const isBlank = async (file) => {
+    if (!sharp) return false;
+    const { channels } = await sharp(file).stats();
+    return Math.max(...channels.slice(0, 3).map((c) => c.stdev)) < 1;
+  };
 
-  const sources = walk(join(dir, 'src'), (f) => /\.(tsx?|jsx?)$/.test(f) && !/\.(stories|test)\./.test(f));
+  const sources = walk(dir, (f) => /\.(tsx?|jsx?)$/.test(f) && !/\.(stories|test|spec)\./.test(f) && !SOURCE_SKIP.test(posix(relative(dir, f))));
   const debtPath = join(dir, 'tests', 'atlas', 'a11y-debt.ts');
   const debtText = existsSync(debtPath) ? readText(debtPath) : '';
   const inventory = [];
-  for (const [title, stories] of [...byTitle].sort(([a], [b]) => a.localeCompare(b))) {
-    const name = title.split('/').pop();
+  for (const [key, stories] of groups) {
     const first = stories[0];
-    const consumers = sources.filter((f) => new RegExp(`from ['"][^'"]*/${name}['"]`).test(readText(f))).map((f) => posix(relative(dir, f)));
-    const shots = join(dir, 'screenshots', 'atlas', slug(title));
-    const wanted = `${slug(first.name)}--light-wide.png`;
+    const componentPath = first.componentPath ? posix(first.componentPath).replace(/^\.\//, '') : undefined;
+    const name = componentPath ? stripExt(componentPath) : first.title.split('/').pop();
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const importer = new RegExp(`from ['"][^'"]*/${escaped}(?:/index)?['"]`);
+    const consumers = sources.filter((f) => importer.test(readText(f))).map((f) => posix(relative(dir, f)));
     let image = '';
-    if (existsSync(join(shots, wanted))) {
-      image = `images/${slug(title)}.webp`;
-      if (sharp) await sharp(join(shots, wanted)).resize({ width: 960, withoutEnlargement: true }).webp({ quality: 80 }).toFile(join(outDir, image));
+    for (const story of stories) {
+      const file = join(dir, 'screenshots', 'atlas', slug(story.title), `${slug(story.name)}--light-wide.png`);
+      if (!existsSync(file) || (await isBlank(file))) continue;
+      image = `images/${slug(name)}.webp`;
+      if (sharp) await sharp(file).resize({ width: 960, withoutEnlargement: true }).webp({ quality: 80 }).toFile(join(outDir, image));
       else image = '';
+      break;
     }
-    const debt = debtText.includes(`title: '${title}'`);
-    inventory.push({ title, name, source: (first.componentPath ?? first.importPath) ? posix(first.componentPath ?? first.importPath).replace(/^\.\//, '') : undefined, stories: stories.map((s) => s.name), consumers, a11yDebt: debt });
-    const lines = [`# ${name}`, '', `Storybook title: \`${title}\`. Source: \`${inventory.at(-1).source ?? 'n/a'}\`.`, ''];
+    const debt = stories.some((s) => debtText.includes(`title: '${s.title}'`));
+    const source = componentPath ?? (first.importPath ? posix(first.importPath).replace(/^\.\//, '') : undefined);
+    inventory.push({ title: first.title, name, source, stories: stories.map((s) => s.name), consumers, a11yDebt: debt });
+    const lines = [`# ${name}`, '', `Storybook title: \`${first.title}\`. Source: \`${source ?? 'n/a'}\`.`, ''];
     if (image) lines.push(`![${name}, ${first.name}, light theme](../${image})`, '');
     lines.push('## Stories', '', ...stories.map((s) => `- ${s.name}`), '');
     lines.push('## Used by', '', ...(consumers.length ? consumers.map((c) => `- \`${c}\``) : ['- nothing outside its own stories and tests yet']), '');
     if (debt) lines.push('## Known accessibility debt', '', 'This component has a recorded, reasoned exemption in `tests/atlas/a11y-debt.ts`.', '');
     writeFileSync(join(outDir, 'atlas', `${name}.md`), lines.join('\n'));
   }
+  inventory.sort((a, b) => a.name.localeCompare(b.name));
   writeFileSync(join(outDir, 'atlas', 'index.md'), ['# Component atlas', '', 'Generated by `ui-atlas docs` from the Storybook build. Do not edit by hand.', '', ...inventory.map((c) => `- [${c.name}](${c.name}.md): ${c.stories.length} stories`), ''].join('\n'));
   // inventory.json is shared with the ui-component-inventory skill, which adds tier/depth/atlasExempt
   // and lists components that have no stories. Regenerate what Storybook knows; keep what a person wrote.
@@ -278,7 +340,8 @@ export async function docs(dir) {
   const prior = existsSync(inventoryPath) ? (readJson(inventoryPath).components ?? []) : [];
   const merged = inventory.map((generated) => ({ ...prior.find((p) => p.name === generated.name), ...generated }));
   const kept = prior.filter((p) => !inventory.some((generated) => generated.name === p.name));
-  writeFileSync(inventoryPath, JSON.stringify({ generatedBy: `ui-atlas ${KIT_VERSION}`, components: [...merged, ...kept] }, null, 2) + '\n');
+  const components = [...merged, ...kept].sort((a, b) => a.name.localeCompare(b.name));
+  writeFileSync(inventoryPath, JSON.stringify({ generatedBy: `ui-atlas ${KIT_VERSION}`, components }, null, 2) + '\n');
   return { components: inventory.length, stories: entries.length, outDir, images: Boolean(sharp) };
 }
 

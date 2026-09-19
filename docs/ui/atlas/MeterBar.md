@@ -2,7 +2,7 @@
 
 Storybook title: `Primitives/MeterBar`. Source: `src/components/primitives/MeterBar.tsx`.
 
-![MeterBar, Partial Finished First, light theme](../images/primitives-meterbar.webp)
+![MeterBar, Partial Finished First, light theme](../images/meterbar.webp)
 
 ## Stories
 

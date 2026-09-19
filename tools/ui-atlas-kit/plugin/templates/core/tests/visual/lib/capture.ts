@@ -1,9 +1,10 @@
-// ui-atlas-kit 0.1.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.2.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { expect, type Page } from '@playwright/test';
 import sharp from 'sharp';
+import * as appDrivers from '../app.drivers';
 import type { Driver } from '../app.drivers';
 import { runRecordPath, screenshotDir, settleFrames, settlePage } from '../helpers/settle';
 import type { Viewport } from '../viewports';
@@ -16,7 +17,10 @@ function watchForProblems(page: Page): string[] {
   page.on('console', (message) => {
     if (message.type() === 'error') problems.push(`console.error: ${message.text()}`);
   });
-  page.on('requestfailed', (request) => problems.push(`request failed: ${request.url()}`));
+  // ERR_ABORTED is the browser cancelling a request the app abandoned (React StrictMode's dev double-effect), not a failure.
+  page.on('requestfailed', (request) => {
+    if (request.failure()?.errorText !== 'net::ERR_ABORTED') problems.push(`request failed: ${request.url()}`);
+  });
   page.on('response', (response) => {
     if (response.status() >= 400) problems.push(`HTTP ${response.status()}: ${response.url()}`);
   });
@@ -50,6 +54,8 @@ export async function captureState(page: Page, entry: StateEntry, viewport: View
   const problems = watchForProblems(page);
 
   await page.setViewportSize({ width: viewport.width, height: viewport.height });
+  // Optional seam in app.drivers.ts: install page.route stubs (third-party embeds) before the app loads.
+  await (appDrivers as { beforeCapture?: (page: Page) => Promise<void> }).beforeCapture?.(page);
   await page.goto('/');
   await settlePage(page);
   await driver(page);
@@ -63,6 +69,7 @@ export async function captureState(page: Page, entry: StateEntry, viewport: View
     path: `${screenshotDir(entry.page, entry.state)}/${viewport.name}.png`,
     animations: 'disabled',
     caret: 'hide',
+    fullPage: entry.fullPage,
     mask: entry.mask?.map((selector) => page.locator(selector)),
   });
 

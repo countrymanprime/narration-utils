@@ -69,3 +69,19 @@ It does not decide whether a state is missing or misnamed (`ui-state-catalog`), 
 or judge a design (`ui-visual-review`). It does not add CI (`ui-atlas-ci`). It never recommends retries, sleeps
 or looser thresholds as the fix; those are the failure modes it exists to remove. The `ui-flake-doctor` agent is
 meant to follow this playbook; this skill defines it.
+
+## Lessons from the first six rollouts
+
+- A fixed, rounded or shadowed element that flickers by one or two colour levels between identical runs is Chromium's
+  partial raster. The scaffold and the vendored atlas config already launch with `--disable-partial-raster`; if a repo
+  wrote its own config, add `launchOptions: { args: ['--disable-partial-raster'] }`. Measure it the way that found it: run the
+  suite twice and diff the PNGs byte for byte.
+- `net::ERR_ABORTED` is not a failed request: it is the browser cancelling a fetch the app abandoned (React StrictMode's
+  dev double-effect). The vendored capture ignores it; every other failed request or HTTP >= 400 still fails the state.
+- A third-party embed (a live map, chat widget, analytics) makes captures depend on someone else's server. Stub it in the
+  optional `beforeCapture(page)` export of `tests/visual/app.drivers.ts`, which runs before the app loads.
+- Renamed or removed states no longer leave stale PNGs behind: `global-setup.ts` prunes `screenshots/app/<page>/<state>`
+  directories that are not in the catalog.
+- Never rely on axe alone for contrast: it misses low-contrast text over semi-transparent overlays and gradients, and it
+  does not run on app states (only on stories). Look at the dark theme with your eyes.
+

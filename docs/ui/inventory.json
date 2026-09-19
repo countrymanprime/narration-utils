@@ -1,5 +1,5 @@
 {
-  "generatedBy": "ui-atlas 0.1.0",
+  "generatedBy": "ui-atlas 0.2.0",
   "components": [
     {
       "title": "Primitives/Button",
@@ -278,6 +278,7 @@
         "Disabled Button Explains Why On Focus"
       ],
       "consumers": [
+        ".storybook/preview.tsx",
         "src/App.tsx",
         "src/components/home/AudiobookEstimatePanel.tsx",
         "src/components/home/Home.tsx",

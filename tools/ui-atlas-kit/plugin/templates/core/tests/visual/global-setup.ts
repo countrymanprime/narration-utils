@@ -1,7 +1,7 @@
-// ui-atlas-kit 0.1.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
-import { mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+// ui-atlas-kit 0.2.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { RUN_DIR } from './helpers/settle';
+import { RUN_DIR, screenshotDir } from './helpers/settle';
 import { findBlankCaptures, findStaleSameAs, findUndeclaredDuplicates, type CaptureRecord } from './lib/validators';
 import { STATE_CATALOG } from './state-catalog';
 
@@ -13,6 +13,19 @@ function readRecords(): CaptureRecord[] {
     );
 }
 
+// A renamed or removed state would otherwise leave its old screenshots behind forever, and a reviewer
+// (or the docs sync) could mistake them for current output.
+function pruneStaleScreenshots(): void {
+  const root = screenshotDir('', '').replace(/\/+$/, '').replace(/\/$/, '');
+  if (!existsSync(root)) return;
+  const known = new Set(STATE_CATALOG.map((entry) => `${entry.page}/${entry.state}`));
+  for (const page of readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
+    for (const state of readdirSync(join(root, page.name), { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
+      if (!known.has(`${page.name}/${state.name}`)) rmSync(join(root, page.name, state.name), { recursive: true, force: true });
+    }
+  }
+}
+
 // Playwright runs this once before the suite; the function it returns runs
 // once after. The per-test checks (console errors, overflow) can only judge one
 // capture at a time - this teardown judges the run as a whole, so a screenshot
@@ -21,6 +34,7 @@ function readRecords(): CaptureRecord[] {
 export default function globalSetup(): () => Promise<void> {
   rmSync(RUN_DIR, { recursive: true, force: true });
   mkdirSync(RUN_DIR, { recursive: true });
+  pruneStaleScreenshots();
 
   return async () => {
     const records = readRecords();

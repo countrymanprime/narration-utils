@@ -49,8 +49,9 @@ produces the reasoning that feeds both.
    (story names, `[]` if none), `consumers` (importing files), `a11yDebt` (boolean). Add `tier` (`primitive | composite |
    feature | page`), `depth` (`matrix | representative | catalog | exempt`), `states` (feature/page: their `page/state`
    keys from `state-catalog.ts`, else `[]`), `atlasExempt` (reason or `null`) and `rationale`. Caution: `ui-atlas docs`
-   rewrites this whole file from the Storybook build and lists only components that have stories, so run it first, then
-   merge the classification fields in, and re-apply them after any later `docs` run.
+   regenerates the fields Storybook knows (`title`, `name`, `source`, `stories`, `consumers`, `a11yDebt`) and MERGES with
+   what is already in the file: your classification fields, and entries for components with no stories, are kept. Run `docs`
+   after you write the classification and nothing is lost.
 7. Hand the gaps to the next skills: components with `depth` set and `story: null` go to `ui-story-authoring`;
    feature/page components with no catalog rows go to `ui-state-catalog`. Then run the repo's unit test command so
    `atlasCoverage.test.ts` confirms the exemptions and coverage.

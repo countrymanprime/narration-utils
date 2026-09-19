@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.1.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.2.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { defineConfig } from '@playwright/test';
 
 // Component atlas: every Storybook story x theme x viewport, captured and
@@ -6,6 +6,8 @@ import { defineConfig } from '@playwright/test';
 // which builds Storybook first - the spec enumerates storybook-static/index.json.
 // UI_ATLAS_PORT moves the static server (default 6106) when several repos run at once.
 const port = Number(process.env.UI_ATLAS_PORT ?? 6106);
+// Chromium's partial raster flips a few anti-aliased pixels on rounded/shadowed fixed elements between identical runs.
+const LAUNCH = { args: ['--disable-partial-raster'] };
 
 export default defineConfig({
   testDir: './tests/atlas',
@@ -13,7 +15,7 @@ export default defineConfig({
   workers: 4,
   retries: 0,
   reporter: [['list']],
-  use: { baseURL: `http://localhost:${port}`, reducedMotion: 'reduce', trace: 'off', video: 'off', screenshot: 'off' },
+  use: { baseURL: `http://localhost:${port}`, reducedMotion: 'reduce', launchOptions: LAUNCH, trace: 'off', video: 'off', screenshot: 'off' },
   webServer: {
     // npx --no-install runs the repo's own vite whichever package manager installed it.
     command: `npx --no-install vite preview --outDir storybook-static --port ${port} --strictPort`,

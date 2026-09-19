@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.1.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.2.0 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 /* eslint-disable @typescript-eslint/no-explicit-any -- in-page access to Storybook's untyped window globals */
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync, readFileSync } from 'node:fs';
@@ -27,7 +27,8 @@ const VIEWPORTS = [
   { name: 'wide', width: 1024, height: 640 },
   { name: 'narrow', width: 390, height: 640 },
 ];
-const THEMES = ['light', 'dark'] as const;
+// UI_ATLAS_THEMES=light limits the run for an app with a single theme.
+const THEMES = (process.env.UI_ATLAS_THEMES ?? 'light,dark').split(',').map((theme) => theme.trim()) as Array<'light' | 'dark'>;
 const READY_TIMEOUT_MS = 15_000;
 
 const index = JSON.parse(readFileSync('storybook-static/index.json', 'utf8')) as { entries: Record<string, IndexEntry> };
@@ -65,6 +66,9 @@ async function contentClip(page: Page): Promise<{ x: number; y: number; width: n
     const pad = 12;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    // Page coordinates: a story taller than the viewport is captured whole (fullPage).
+    const pageWidth = Math.max(vw, document.documentElement.scrollWidth);
+    const pageHeight = Math.max(vh, document.documentElement.scrollHeight);
     const rects = [...document.body.querySelectorAll('*')]
       .filter((el) => !['SCRIPT', 'STYLE', 'LINK', 'META'].includes(el.tagName))
       .map((el) => el.getBoundingClientRect())
@@ -72,8 +76,8 @@ async function contentClip(page: Page): Promise<{ x: number; y: number; width: n
     if (rects.length === 0) return undefined;
     const left = Math.max(0, Math.min(...rects.map((r) => r.left)) - pad);
     const top = Math.max(0, Math.min(...rects.map((r) => r.top)) - pad);
-    const right = Math.min(vw, Math.max(...rects.map((r) => r.right)) + pad);
-    const bottom = Math.min(vh, Math.max(...rects.map((r) => r.bottom)) + pad);
+    const right = Math.min(pageWidth, Math.max(...rects.map((r) => r.right)) + pad);
+    const bottom = Math.min(pageHeight, Math.max(...rects.map((r) => r.bottom)) + pad);
     return right > left && bottom > top ? { x: left, y: top, width: right - left, height: bottom - top } : undefined;
   });
 }
@@ -97,6 +101,8 @@ for (const entry of stories) {
         });
 
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
+        // Apps that theme with prefers-color-scheme (Tailwind's default dark: variant) flip only if the media query does.
+        await page.emulateMedia({ colorScheme: theme });
         await page.goto(`/iframe.html?id=${entry.id}&viewMode=story&globals=theme:${theme}`, { waitUntil: 'commit' });
         const { finished, playError, errorDisplay } = await finishedStory(page, entry.id);
 
@@ -108,6 +114,7 @@ for (const entry of stories) {
           path: `${dir}/${slug(entry.name)}--${theme}-${viewport.name}.png`,
           animations: 'disabled',
           caret: 'hide',
+          fullPage: true,
           clip: await contentClip(page),
         });
 

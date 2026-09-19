@@ -2,8 +2,9 @@ import type { StorybookConfig } from '@storybook/react-vite';
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.stories.@(ts|tsx)'],
-  // addon-vitest is deliberately absent: it needs Vitest 3+ and this repo is on 2.
-  // Stories run as unit tests through composeStories instead (src/stories.test.tsx).
+  // Stories run as unit tests through composeStories (src/stories.test.tsx), so one test runner is enough.
+  // @storybook/addon-vitest is not needed (and needs Vitest 3+).
+  // TODO(ui-atlas-init): if stories load images or fonts by absolute URL (/images/logo.png), add staticDirs: ['../public'].
   addons: ['@storybook/addon-a11y'],
   framework: '@storybook/react-vite',
 };

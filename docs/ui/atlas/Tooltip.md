@@ -2,7 +2,7 @@
 
 Storybook title: `Primitives/Tooltip`. Source: `src/components/primitives/Tooltip.tsx`.
 
-![Tooltip, Info Icon, light theme](../images/primitives-tooltip.webp)
+![Tooltip, Info Icon, light theme](../images/tooltip.webp)
 
 ## Stories
 
@@ -16,6 +16,7 @@ Storybook title: `Primitives/Tooltip`. Source: `src/components/primitives/Toolti
 
 ## Used by
 
+- `.storybook/preview.tsx`
 - `src/App.tsx`
 - `src/components/home/AudiobookEstimatePanel.tsx`
 - `src/components/home/Home.tsx`

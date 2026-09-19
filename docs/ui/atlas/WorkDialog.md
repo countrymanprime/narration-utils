@@ -2,7 +2,7 @@
 
 Storybook title: `Primitives/WorkDialog`. Source: `src/components/primitives/WorkDialog.tsx`.
 
-![WorkDialog, Preparing, light theme](../images/primitives-workdialog.webp)
+![WorkDialog, Preparing, light theme](../images/workdialog.webp)
 
 ## Stories
 
