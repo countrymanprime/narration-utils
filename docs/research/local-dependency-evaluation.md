@@ -429,6 +429,20 @@ entry's original risk list, pending the manual mic-latency measurement this
 prototype exists to produce: which `faster-whisper` model size is viable at
 real-time latency on a CPU-only machine.
 
+**Second source: whisper_streaming's LocalAgreement policy.** First mic
+testing showed that decoding only after a pause delivers a whole utterance at
+once, which cannot drive a live highlight. The module therefore also adopts
+the LocalAgreement-2 technique from
+[whisper_streaming](https://github.com/ufal/whisper_streaming) ("Turning
+Whisper into Real-Time Transcription System"): re-decode the growing segment
+every 0.5s and emit only the words two consecutive decodes agree on, giving an
+append-only stream. Same reuse class as WhisperLive above: MIT
+(`Copyright (c) 2023 ÚFAL`, verified against the repository's LICENSE),
+technique re-implemented from scratch rather than copied, attribution carried
+in the module header, no new runtime dependency. Trade-off recorded: each
+decode re-reads the whole open segment, so CPU cost grows with model size and
+segment length (capped by `MAX_BUFFER_SECONDS`).
+
 ## Clarifications for adjacent tools
 
 ### FFmpeg and ffprobe versus the DAW

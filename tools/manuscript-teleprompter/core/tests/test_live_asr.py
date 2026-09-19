@@ -10,100 +10,130 @@ live_asr = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 SPEC.loader.exec_module(live_asr)
 
-
-def _chunks(total_samples, chunk_size=1600):
-    """1.0s worth of chunks per call at 16kHz by default (chunk_size=1600 => 0.1s)."""
-    audio = np.arange(total_samples, dtype=np.float32)
-    for start in range(0, total_samples, chunk_size):
-        yield audio[start : start + chunk_size]
+HALF_SECOND = live_asr.SAMPLE_RATE // 2  # 8000 samples; equals the default decode interval
 
 
-def test_segment_stream_flushes_as_soon_as_a_later_speech_span_confirms_a_pause():
-    # First VAD check (buffer len 1600): one open span still touching the end -> no flush.
-    # Second check (buffer len 3200): a second span appears, so the first (end=1000) is closed.
-    calls = iter(
-        [
-            [{"start": 0, "end": 1600}],
-            [{"start": 0, "end": 1000}, {"start": 2000, "end": 3200}],
-        ]
-    )
-
-    def fake_detect(buffer, vad_options, sampling_rate):
-        return next(calls)
-
-    segments = list(live_asr.segment_stream(_chunks(3200), max_buffer_seconds=999, detect_speech=fake_detect))
-
-    assert segments[0].start_time == 0.0
-    assert len(segments[0].audio) == 1000
+def _chunks(count, size=HALF_SECOND):
+    for _ in range(count):
+        yield np.zeros(size, dtype=np.float32)
 
 
-def test_segment_stream_carries_the_remainder_into_the_next_segments_start_time():
-    calls = iter(
-        [
-            [{"start": 0, "end": 1600}],
-            [{"start": 0, "end": 1000}, {"start": 2000, "end": 3200}],
-        ]
-    )
-
-    def fake_detect(buffer, vad_options, sampling_rate):
-        return next(calls)
-
-    segments = list(live_asr.segment_stream(_chunks(3200), max_buffer_seconds=999, detect_speech=fake_detect))
-
-    assert len(segments) == 2
-    assert segments[1].start_time == pytest.approx(1000 / live_asr.SAMPLE_RATE)
-    assert len(segments[1].audio) == 2200
+def _words(*texts):
+    return [(text, index * 0.5, index * 0.5 + 0.4) for index, text in enumerate(texts)]
 
 
-def test_segment_stream_force_flushes_when_buffer_exceeds_max_duration_without_a_pause():
+def test_confirm_emits_only_the_prefix_two_consecutive_decodes_agree_on():
+    confirmed, committed = live_asr._confirm_agreed_words(_words("a", "b", "c"), _words("a", "b", "d"), 0)
+
+    assert [w[0] for w in confirmed] == ["a", "b"]
+    assert committed == 2
+
+
+def test_confirm_ignores_case_and_punctuation_when_comparing():
+    confirmed, committed = live_asr._confirm_agreed_words(_words("Hello,", "world"), _words("hello", "world."), 0)
+
+    assert [w[0] for w in confirmed] == ["hello", "world."]
+    assert committed == 2
+
+
+def test_confirm_does_not_re_emit_already_committed_words():
+    confirmed, committed = live_asr._confirm_agreed_words(_words("a", "b", "c"), _words("a", "b", "c"), 2)
+
+    assert [w[0] for w in confirmed] == ["c"]
+    assert committed == 3
+
+
+def test_confirm_emits_nothing_when_agreement_has_not_passed_the_committed_count():
+    confirmed, committed = live_asr._confirm_agreed_words(_words("a", "x"), _words("a", "y"), 2)
+
+    assert confirmed == []
+    assert committed == 2
+
+
+def test_rolling_words_emits_confirmed_words_while_speech_is_still_in_progress():
+    consumed = []
+
+    def chunks():
+        for chunk in _chunks(6):
+            consumed.append(1)
+            yield chunk
+
     def always_open(buffer, vad_options, sampling_rate):
         return [{"start": 0, "end": len(buffer)}]
 
-    max_seconds = 3200 / live_asr.SAMPLE_RATE
-    segments = list(live_asr.segment_stream(_chunks(4800), max_buffer_seconds=max_seconds, detect_speech=always_open))
+    def growing_hypothesis(audio):
+        return _words(*["one", "two", "three", "four", "five", "six"][: len(audio) // HALF_SECOND])
 
-    assert [len(s.audio) for s in segments] == [3200, 1600]
-    assert segments[1].start_time == pytest.approx(3200 / live_asr.SAMPLE_RATE)
+    emitted_at = []
+    events = []
+    for event in live_asr.rolling_words(chunks(), growing_hypothesis, max_buffer_seconds=999, detect_speech=always_open):
+        events.append(event)
+        emitted_at.append(len(consumed))
+
+    assert [e["word"] for e in events] == ["one", "two", "three", "four", "five", "six"]
+    assert [e["start"] for e in events] == [0.0, 0.5, 1.0, 1.5, 2.0, 2.5]
+    assert emitted_at[0] < 6  # the first word was confirmed before the input finished
 
 
-def test_segment_stream_flushes_remaining_audio_once_the_input_ends():
-    def never_closes(buffer, vad_options, sampling_rate):
+def test_rolling_words_closes_a_segment_on_a_pause_and_rebases_the_next_one():
+    scripted = iter(
+        [
+            [{"start": 0, "end": 8000}],  # chunk 1: open, first interim decode
+            [{"start": 0, "end": 12000}],  # chunk 2: closed by trailing silence -> final decode
+            [{"start": 2000, "end": 12000}],  # chunk 3: next utterance open (buffer now 12000 long)
+            [{"start": 2000, "end": 20000}],  # chunk 4: still open, agrees with chunk 3's decode
+            [{"start": 2000, "end": 20000}],  # end of stream: tail check
+        ]
+    )
+
+    def fake_detect(buffer, vad_options, sampling_rate):
+        return next(scripted)
+
+    def fixed_hypothesis(audio):
+        return [("x", 0.0, 0.2), ("y", 0.2, 0.4)]
+
+    events = list(live_asr.rolling_words(_chunks(4), fixed_hypothesis, max_buffer_seconds=999, detect_speech=fake_detect))
+
+    second_start = 12000 / live_asr.SAMPLE_RATE + 2000 / live_asr.SAMPLE_RATE
+    assert [(e["word"], e["start"]) for e in events] == [
+        ("x", 0.0),
+        ("y", 0.2),
+        ("x", pytest.approx(second_start, abs=1e-3)),
+        ("y", pytest.approx(second_start + 0.2, abs=1e-3)),
+    ]
+
+
+def test_rolling_words_never_decodes_silence():
+    def no_speech(buffer, vad_options, sampling_rate):
+        return []
+
+    def must_not_decode(audio):
+        raise AssertionError("silence should never reach the decoder")
+
+    max_seconds = 2 * HALF_SECOND / live_asr.SAMPLE_RATE
+    events = list(live_asr.rolling_words(_chunks(5), must_not_decode, max_buffer_seconds=max_seconds, detect_speech=no_speech))
+
+    assert events == []
+
+
+def test_rolling_words_force_closes_unbroken_speech_at_the_max_buffer_length():
+    def always_open(buffer, vad_options, sampling_rate):
         return [{"start": 0, "end": len(buffer)}]
 
-    segments = list(live_asr.segment_stream(_chunks(1600), max_buffer_seconds=999, detect_speech=never_closes))
+    def one_word_per_half_second(audio):
+        return _words(*["w"] * (len(audio) // HALF_SECOND))
 
-    assert len(segments) == 1
-    assert len(segments[0].audio) == 1600
+    max_seconds = 2 * HALF_SECOND / live_asr.SAMPLE_RATE
+    events = list(live_asr.rolling_words(_chunks(4), one_word_per_half_second, max_buffer_seconds=max_seconds, detect_speech=always_open))
 
-
-def test_stream_words_rebases_each_segments_word_timestamps_to_absolute_stream_time():
-    segments = [
-        live_asr.SpeechSegment(audio=np.ones(10, dtype=np.float32), start_time=0.0),
-        live_asr.SpeechSegment(audio=np.ones(10, dtype=np.float32), start_time=5.0),
-    ]
-
-    def fake_decode(audio):
-        return [("hello", 0.1, 0.4), ("world", 0.5, 0.9)]
-
-    events = list(live_asr.stream_words(segments, fake_decode))
-
-    assert events == [
-        {"word": "hello", "start": 0.1, "end": 0.4},
-        {"word": "world", "start": 0.5, "end": 0.9},
-        {"word": "hello", "start": 5.1, "end": 5.4},
-        {"word": "world", "start": 5.5, "end": 5.9},
-    ]
+    # Two 1.0s segments (force-closed), each decoding to two words; the second starts at t=1.0.
+    assert [e["start"] for e in events] == [0.0, 0.5, 1.0, 1.5]
 
 
-def test_stream_words_skips_empty_segments_and_blank_words():
-    segments = [
-        live_asr.SpeechSegment(audio=np.zeros(0, dtype=np.float32), start_time=0.0),
-        live_asr.SpeechSegment(audio=np.ones(5, dtype=np.float32), start_time=1.0),
-    ]
+def test_with_decode_timing_logs_duration_and_passes_words_through(capsys):
+    decode = live_asr.with_decode_timing(lambda audio: [("hi", 0.0, 0.1)])
 
-    def fake_decode(audio):
-        return [("", 0.0, 0.1), ("ok", 0.1, 0.2)]
+    words = decode(np.zeros(live_asr.SAMPLE_RATE, dtype=np.float32))
 
-    events = list(live_asr.stream_words(segments, fake_decode))
-
-    assert events == [{"word": "ok", "start": 1.1, "end": 1.2}]
+    assert words == [("hi", 0.0, 0.1)]
+    assert "decode: 1.00s audio in" in capsys.readouterr().err

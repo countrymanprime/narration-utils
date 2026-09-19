@@ -1,38 +1,47 @@
 """
 Live word-timestamp ASR sidecar for the Manuscript Teleprompter (see
 docs/architecture/manuscript-teleprompter.md). Captures audio (mic or a
-replayed WAV file for fixture testing / latency measurement), holds a
-growing buffer, and flushes it through faster-whisper for decode whenever
-Silero VAD (faster-whisper's own bundled model - no new dependency) reports
-a confirmed pause, or the buffer grows past MAX_BUFFER_SECONDS. Each decoded
-word is written to stdout as one NDJSON line the instant it's known, so a
-caller (eventually the Go Supervisor's streaming relay path) can consume it
-line-by-line instead of waiting for a whole utterance.
+replayed file for fixture testing), holds a growing buffer, and - while
+speech is in progress - re-decodes that buffer with faster-whisper every
+DECODE_INTERVAL_SECONDS. A word is emitted only once two consecutive decodes
+agree on it (the "LocalAgreement-2" policy), so the stream is append-only and
+trails speech by roughly one to two decode intervals instead of waiting for a
+pause. A confirmed pause (Silero VAD - faster-whisper's own bundled model, no
+new dependency) or MAX_BUFFER_SECONDS closes the segment: one last decode
+emits whatever was still unconfirmed and the state resets. Each word is
+written to stdout as one NDJSON line the moment it is confirmed, so a caller
+(eventually the Go Supervisor's streaming relay path) can consume it
+line-by-line.
 
-This is a same-shape adaptation of WhisperLive's documented streaming design
-(https://github.com/collabora/WhisperLive) - VAD-gated audio windows,
-rolling faster-whisper decode, real per-word timestamps - re-implemented
-from scratch against this repo's already-pinned faster-whisper/onnxruntime
-stack rather than vendoring WhisperLive's own client/server code (this repo
-runs no loopback server; see docs/architecture/daw-integration.md). Per
-docs/architecture/manuscript-teleprompter.md's license note, this is
-recorded as the first "ported logic" entry in
-docs/research/local-dependency-evaluation.md.
-WhisperLive is MIT-licensed: Copyright (c) 2023 Vineet Suryan, Collabora Ltd.
+Adapted from two MIT-licensed designs, re-implemented from scratch against
+this repo's already-pinned faster-whisper/onnxruntime stack rather than
+vendoring either project's code (this repo runs no loopback server; see
+docs/architecture/daw-integration.md):
+- WhisperLive (https://github.com/collabora/WhisperLive) - VAD-gated audio
+  windows, rolling faster-whisper decode, per-word timestamps.
+  Copyright (c) 2023 Vineet Suryan, Collabora Ltd.
+- whisper_streaming, "Turning Whisper into Real-Time Transcription System"
+  (https://github.com/ufal/whisper_streaming) - the LocalAgreement policy for
+  emitting only words that consecutive decodes agree on. Copyright (c) 2023 ÚFAL.
+Both are recorded in docs/research/local-dependency-evaluation.md.
 
 Usage:
     python live_asr.py --wav segment.wav --model small [--model-dir DIR]
-    python live_asr.py --mic "Microphone (Realtek Audio)" --model small
+    python live_asr.py --mic "Microphone Array (Realtek(R) Audio)" --model tiny --timing
 
 Output (stdout, one JSON object per line, flushed immediately):
     {"word": "hello", "start": 1.24, "end": 1.51}
 Diagnostics go to stderr via narration_common.logging_utils.log, never stdout.
+--timing adds decode-time lines and, for --mic, how far behind the speaker
+each word was emitted.
 """
 
 import argparse
+import itertools
 import json
+import re
 import sys
-from dataclasses import dataclass
+import time
 from pathlib import Path
 from typing import Callable, Iterable, Iterator, List, Optional, Tuple
 
@@ -46,6 +55,10 @@ from narration_common.logging_utils import log, set_log_file  # noqa: E402
 
 SAMPLE_RATE = 16000
 
+# (word, start_seconds, end_seconds)
+Word = Tuple[str, float, float]
+Decoder = Callable[[np.ndarray], List[Word]]
+
 # Mirrors compare.py's PAUSE_GAP_SECONDS (0.6s) - the same "how long a pause
 # has to be before it counts as a real break" judgment call, reused here so
 # a narrator's felt sense of a pause is consistent between the offline
@@ -53,24 +66,20 @@ SAMPLE_RATE = 16000
 PAUSE_GAP_MS = 600
 SPEECH_PAD_MS = 200
 
+# How much new audio must arrive before the in-progress speech is decoded
+# again. Smaller = words confirmed sooner but more CPU (each decode re-reads
+# the whole open segment). With two decodes needed to confirm a word, output
+# trails speech by about two of these plus decode time.
+DECODE_INTERVAL_SECONDS = 0.5
+
 # Upper bound on how long unbroken speech can accumulate before it is
-# force-flushed even without a detected pause, so one very long sentence
-# can't grow latency (or memory) unboundedly. Not resolved by the
-# architecture brief - this default is exactly the "latency tradeoff"
-# question the day-1 prototype exists to answer; expect to tune it once
-# real mic latency is measured.
+# force-closed even without a detected pause, bounding both memory and the
+# cost of each re-decode. Tune once real mic latency is measured.
 MAX_BUFFER_SECONDS = 12.0
 
 CHUNK_SECONDS = 0.32
 
-
-@dataclass(frozen=True)
-class SpeechSegment:
-    """A contiguous, VAD-closed (or force-flushed) span of buffered audio,
-    with its absolute offset from the start of the stream."""
-
-    audio: np.ndarray
-    start_time: float
+_NON_WORD_CHARS_RE = re.compile(r"[^\w']")
 
 
 def _closed_segment_end(speeches: List[dict], buffer_len: int) -> Optional[int]:
@@ -83,8 +92,8 @@ def _closed_segment_end(speeches: List[dict], buffer_len: int) -> Optional[int]:
 
     Known simplification: VadOptions.speech_pad_ms pads a closing span's end
     forward, so a pause shorter than that padding can be missed as "not yet
-    closed" for one extra buffer append. Acceptable for a day-1 prototype;
-    revisit only if real mic testing shows it clips words.
+    closed" for one extra buffer append. Revisit only if real mic testing
+    shows it clips words.
     """
     if not speeches:
         return None
@@ -94,16 +103,54 @@ def _closed_segment_end(speeches: List[dict], buffer_len: int) -> Optional[int]:
     return None
 
 
-def segment_stream(
+def _normalize_word(word: str) -> str:
+    return _NON_WORD_CHARS_RE.sub("", word.lower())
+
+
+def _confirm_agreed_words(previous: List[Word], current: List[Word], committed: int) -> Tuple[List[Word], int]:
+    """LocalAgreement-2: the words `previous` and `current` (consecutive
+    decodes of the same growing segment) agree on, as a prefix, are stable.
+    Returns the newly stable words past the `committed` count already emitted
+    (taken from `current`, which has the newer timings) and the new count.
+
+    Position-based: if a later decode re-splits an already-emitted word (e.g.
+    "so-called" -> "so called") the prefix stops agreeing until it settles,
+    and afterwards the next emitted word can be off by one (one duplicated
+    or dropped). Acceptable for a prototype; downstream matching is fuzzy."""
+    agreed = 0
+    for old, new in zip(previous, current):
+        if _normalize_word(old[0]) != _normalize_word(new[0]):
+            break
+        agreed += 1
+    if agreed <= committed:
+        return [], committed
+    return current[committed:agreed], agreed
+
+
+def _to_event(word: Word) -> dict:
+    text, start, end = word
+    return {"word": text, "start": round(start, 3), "end": round(end, 3)}
+
+
+def _decode_span(decode: Decoder, buffer: np.ndarray, start: int, end: int, buffer_start_time: float, sample_rate: int) -> List[Word]:
+    """Decode buffer[start:end] and return its words in absolute stream time
+    (blank words dropped)."""
+    offset = buffer_start_time + start / sample_rate
+    return [(text, offset + word_start, offset + word_end) for text, word_start, word_end in decode(buffer[start:end]) if text]
+
+
+def rolling_words(
     chunks: Iterable[np.ndarray],
+    decode: Decoder,
     sample_rate: int = SAMPLE_RATE,
+    decode_interval_seconds: float = DECODE_INTERVAL_SECONDS,
     max_buffer_seconds: float = MAX_BUFFER_SECONDS,
-    detect_speech: Callable = None,
-) -> Iterator[SpeechSegment]:
-    """Accumulate incoming audio chunks into a buffer and yield it in
-    VAD-paused (or force-flushed) spans. `detect_speech` defaults to
-    faster_whisper's bundled Silero VAD but is injectable so the flush/carry
-    logic can be unit-tested without loading any model."""
+    detect_speech: Optional[Callable] = None,
+) -> Iterator[dict]:
+    """Yield append-only word events (absolute stream time) for a stream of
+    audio chunks. `detect_speech` defaults to faster_whisper's bundled Silero
+    VAD but is injectable so the buffering/agreement logic can be unit-tested
+    without loading any model."""
     if detect_speech is None:
         from faster_whisper.vad import get_speech_timestamps
 
@@ -112,15 +159,20 @@ def segment_stream(
     from faster_whisper.vad import VadOptions
 
     vad_options = VadOptions(min_silence_duration_ms=PAUSE_GAP_MS, speech_pad_ms=SPEECH_PAD_MS)
+    interval_samples = int(decode_interval_seconds * sample_rate)
     max_buffer_samples = int(max_buffer_seconds * sample_rate)
 
     buffer = np.zeros(0, dtype=np.float32)
     buffer_start_time = 0.0
+    samples_since_decode = 0
+    previous: List[Word] = []
+    committed = 0
 
     for chunk in chunks:
         if len(chunk) == 0:
             continue
         buffer = np.concatenate([buffer, chunk])
+        samples_since_decode += len(chunk)
 
         speeches = detect_speech(buffer, vad_options, sampling_rate=sample_rate)
         flush_end = _closed_segment_end(speeches, len(buffer))
@@ -128,40 +180,40 @@ def segment_stream(
             flush_end = len(buffer)
 
         if flush_end:
-            yield SpeechSegment(audio=buffer[:flush_end].copy(), start_time=buffer_start_time)
+            if speeches:
+                final = _decode_span(decode, buffer, speeches[0]["start"], flush_end, buffer_start_time, sample_rate)
+                for word in final[committed:]:
+                    yield _to_event(word)
             buffer_start_time += flush_end / sample_rate
             buffer = buffer[flush_end:]
+            previous, committed, samples_since_decode = [], 0, 0
+            continue
+
+        if speeches and samples_since_decode >= interval_samples:
+            start = speeches[0]["start"]
+            if len(buffer) - start >= interval_samples:
+                current = _decode_span(decode, buffer, start, len(buffer), buffer_start_time, sample_rate)
+                confirmed, committed = _confirm_agreed_words(previous, current, committed)
+                previous = current
+                samples_since_decode = 0
+                for word in confirmed:
+                    yield _to_event(word)
 
     if len(buffer) > 0:
-        yield SpeechSegment(audio=buffer, start_time=buffer_start_time)
+        speeches = detect_speech(buffer, vad_options, sampling_rate=sample_rate)
+        if speeches:
+            final = _decode_span(decode, buffer, speeches[0]["start"], len(buffer), buffer_start_time, sample_rate)
+            for word in final[committed:]:
+                yield _to_event(word)
 
 
-def stream_words(
-    segments: Iterable[SpeechSegment],
-    decode: Callable[[np.ndarray], List[Tuple[str, float, float]]],
-) -> Iterator[dict]:
-    """Decode each flushed segment and rebase its word timestamps from
-    segment-relative to absolute stream time."""
-    for segment in segments:
-        if len(segment.audio) == 0:
-            continue
-        for word, start, end in decode(segment.audio):
-            if not word:
-                continue
-            yield {
-                "word": word,
-                "start": round(segment.start_time + start, 3),
-                "end": round(segment.start_time + end, 3),
-            }
-
-
-def make_decoder(model, language: Optional[str], hotwords: Optional[str]) -> Callable[[np.ndarray], List[Tuple[str, float, float]]]:
+def make_decoder(model, language: Optional[str], hotwords: Optional[str]) -> Decoder:
     """Wrap a loaded faster-whisper WhisperModel as a plain
     audio -> [(word, start, end)] function, mirroring compare.py's own
-    transcribe() word-collection loop. vad_filter is off here: segment_stream
-    already isolated this exact span as one VAD-closed utterance."""
+    transcribe() word-collection loop. vad_filter is off here: the caller
+    already cut this exact span to where VAD found speech."""
 
-    def decode(audio: np.ndarray) -> List[Tuple[str, float, float]]:
+    def decode(audio: np.ndarray) -> List[Word]:
         segments, _info = model.transcribe(
             audio,
             language=language,
@@ -179,11 +231,27 @@ def make_decoder(model, language: Optional[str], hotwords: Optional[str]) -> Cal
     return decode
 
 
+def with_decode_timing(decode: Decoder) -> Decoder:
+    """Log each decode's audio duration and wall time (and their ratio) to
+    stderr, so model sizes can be compared on the same recording. A ratio
+    under 1.0 means decoding keeps up with real time."""
+
+    def timed(audio: np.ndarray) -> List[Word]:
+        duration = len(audio) / SAMPLE_RATE
+        started = time.perf_counter()
+        words = decode(audio)
+        elapsed = time.perf_counter() - started
+        log(f"decode: {duration:.2f}s audio in {elapsed:.2f}s ({elapsed / duration:.2f}x realtime)")
+        return words
+
+    return timed
+
+
 def iter_wav_chunks(path: str, chunk_seconds: float = CHUNK_SECONDS) -> Iterator[np.ndarray]:
     """Decode a whole audio file via PyAV (same resample pattern as
     compare.py's own file decode) and replay it as fixed-size chunks, so a
-    recorded WAV can stand in for live mic input - for the fixture test and
-    for measuring model-size/latency tradeoffs against a known reading."""
+    recorded file can stand in for live mic input. It replays as fast as the
+    CPU allows, so it checks accuracy but not real-time lag."""
     import av
 
     container = av.open(path)
@@ -206,7 +274,8 @@ def iter_microphone_chunks(device_name: str, chunk_seconds: float = CHUNK_SECOND
     """Capture live mic audio via PyAV's Windows dshow input, resampled the
     same way as iter_wav_chunks. Manual-testing path only (device
     enumeration/selection UX is an explicit open item in the architecture
-    brief, not resolved here) - not exercised by the automated test suite."""
+    brief, not resolved here) - not exercised by the automated test suite.
+    Ctrl+C ends the stream so buffered audio is still decoded."""
     import av
 
     container = av.open(file=f"audio={device_name}", format="dshow")
@@ -222,13 +291,27 @@ def iter_microphone_chunks(device_name: str, chunk_seconds: float = CHUNK_SECOND
                 while len(pending) >= chunk_samples:
                     yield pending[:chunk_samples]
                     pending = pending[chunk_samples:]
+    except KeyboardInterrupt:
+        log("Stopping...")
     finally:
         container.close()
+    if len(pending) > 0:
+        yield pending
+
+
+def _anchor_capture_clock(chunks: Iterator[np.ndarray]) -> Tuple[Iterator[np.ndarray], float]:
+    """Pull the first chunk so the wall clock can be anchored to when capture
+    actually began (its audio time zero), independent of model load and
+    device-open time."""
+    first = next(chunks, None)
+    if first is None:
+        return iter(()), time.perf_counter()
+    return itertools.chain([first], chunks), time.perf_counter() - len(first) / SAMPLE_RATE
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Stream live word-timestamp ASR as NDJSON for the Manuscript Teleprompter prototype")
-    ap.add_argument("--wav", default=None, help="Replay this audio file as if it were live mic input (fixture testing / latency measurement)")
+    ap.add_argument("--wav", default=None, help="Replay this audio file as if it were live mic input (fixture testing)")
     ap.add_argument("--mic", default=None, help="Capture from this input device name instead of --wav (Windows dshow device name)")
     ap.add_argument("--model", default="small", help="Whisper model size (tiny/base/small/medium/large-v3-turbo/large-v3)")
     ap.add_argument(
@@ -239,6 +322,7 @@ def main() -> None:
     ap.add_argument("--language", default=None, help="Force language code, e.g. 'en' (default: auto-detect)")
     ap.add_argument("--hotwords", default=None, help="Comma-separated vocabulary hints passed to faster-whisper as hotwords")
     ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"], help="Inference device (default: cpu)")
+    ap.add_argument("--timing", action="store_true", help="Log each decode's wall time and, with --mic, how far behind the speaker each word was emitted")
     ap.add_argument("--log", default=None, help="Path to also mirror log output to (optional)")
     args = ap.parse_args()
 
@@ -253,11 +337,21 @@ def main() -> None:
     log(f"Loading Whisper model '{args.model}'{' from the locally verified asset cache' if args.model_dir else ''}...")
     model = WhisperModel(args.model_dir or args.model, device=args.device, compute_type=compute_type, local_files_only=bool(args.model_dir))
     decode = make_decoder(model, args.language, args.hotwords)
+    if args.timing:
+        decode = with_decode_timing(decode)
 
     chunks = iter_wav_chunks(args.wav) if args.wav else iter_microphone_chunks(args.mic)
     log("Listening..." if args.mic else f"Replaying {args.wav}...")
-    for event in stream_words(segment_stream(chunks), decode):
-        print(json.dumps(event), flush=True)
+    capture_started = None
+    try:
+        if args.mic:
+            chunks, capture_started = _anchor_capture_clock(chunks)
+        for event in rolling_words(chunks, decode):
+            print(json.dumps(event), flush=True)
+            if args.timing and capture_started is not None:
+                log(f"lag {time.perf_counter() - capture_started - event['end']:.2f}s behind: {event['word']}")
+    except KeyboardInterrupt:
+        log("Stopped.")
 
 
 if __name__ == "__main__":
