@@ -8,6 +8,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -508,7 +510,7 @@ func (h *Host) Bootstrap() map[string]any {
 	h.mu.RLock()
 	config := h.config
 	h.mu.RUnlock()
-	var manuscript any
+	var imported any
 	if config.projectFolder != "" {
 		if bytes, err := os.ReadFile(filepath.Join(config.projectFolder, "narration-utils", "manuscript", "manuscript.json")); err == nil {
 			var data map[string]any
@@ -516,15 +518,23 @@ func (h *Host) Bootstrap() map[string]any {
 				importer, _ := data["importer"].(map[string]any)
 				source, _ := data["source"].(map[string]any)
 				words, chapters := narratableManuscriptStats(data)
-				manuscript = map[string]any{"id": data["documentId"], "format": importer["format"], "sourceName": source["fileName"], "importedAt": data["importedAt"], "narratableWordCount": words, "narratableChapterCount": chapters}
+				imported = map[string]any{"id": data["documentId"], "format": importer["format"], "sourceName": source["fileName"], "importedAt": data["importedAt"], "narratableWordCount": words, "narratableChapterCount": chapters}
 			}
+		}
+	}
+	// A manuscript file sitting in the project folder is offered, never
+	// imported on its own (ADR-0018).
+	var manuscriptCandidate any
+	if imported == nil {
+		if path := manuscript.DetectSource(config.projectFolder); path != "" {
+			manuscriptCandidate = map[string]any{"path": path, "name": filepath.Base(path)}
 		}
 	}
 	transcriptState := emptyTranscript()
 	if h.transcript != nil {
 		transcriptState = h.transcript.Snapshot()
 	}
-	return map[string]any{"apiVersion": hostAPIVersion, "diagnosticId": h.diagnostic, "projectFolder": config.projectFolder, "projectName": config.projectName, "daw": config.daw, "manuscript": manuscript, "runtime": map[string]any{"ManuscriptGuide": map[string]string{"python_exe": config.manuscriptPython, "backend": config.manuscriptBackend}, "TranscriptCompare": map[string]string{"python_exe": config.comparePython, "compare_script": config.compareBackend}, "Reaper": map[string]string{"launcherPath": config.reaperLauncher}}, "transcript": transcriptState}
+	return map[string]any{"apiVersion": hostAPIVersion, "diagnosticId": h.diagnostic, "projectFolder": config.projectFolder, "projectName": config.projectName, "daw": config.daw, "manuscript": imported, "manuscriptCandidate": manuscriptCandidate, "runtime": map[string]any{"ManuscriptGuide": map[string]string{"python_exe": config.manuscriptPython, "backend": config.manuscriptBackend}, "TranscriptCompare": map[string]string{"python_exe": config.comparePython, "compare_script": config.compareBackend}, "Reaper": map[string]string{"launcherPath": config.reaperLauncher}}, "transcript": transcriptState}
 }
 
 func narratableManuscriptStats(data map[string]any) (int, int) {
@@ -775,12 +785,30 @@ func (h *Host) startGuideBuild() (map[string]any, error) {
 	progress := filepath.Join(config.sessionDir, "guide_progress_"+job.id+".txt")
 	log := filepath.Join(config.sessionDir, "guide_log_"+job.id+".txt")
 	go func() {
+		// The sidecar writes a stage|pct|message progress file and an
+		// append-only log while it works; tail both so the dialog shows real
+		// activity instead of sitting at 1% until the build finishes (ADR-0014).
+		var logAt int64
+		stop, stopped := make(chan struct{}), make(chan struct{})
+		go func() {
+			defer close(stopped)
+			ticker := time.NewTicker(250 * time.Millisecond)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-stop:
+					return
+				case <-ticker.C:
+					pollWorkJob(job, progress, log, &logAt)
+				}
+			}
+		}()
 		_, err := h.guide.Build(progress, log)
+		close(stop)
+		<-stopped
+		pollWorkJob(job, progress, log, &logAt)
 		job.mu.Lock()
 		defer job.mu.Unlock()
-		if content, e := os.ReadFile(log); e == nil {
-			job.logs = append(job.logs, string(content))
-		}
 		if err != nil {
 			job.phase = "error"
 			job.errorText = err.Error()
@@ -801,6 +829,41 @@ func (h *Host) guideBuildState() map[string]any {
 		return map[string]any{"id": nil, "kind": "story_bible", "phase": "idle", "message": "Ready to build the Story Bible.", "percent": 0, "logs": []string{}, "elapsed": 0}
 	}
 	return snapshotWork(job)
+}
+
+// pollWorkJob folds the sidecar's latest progress line and any new log lines
+// into job. Progress never moves backwards, and *logAt remembers how much of
+// the log has already been read.
+func pollWorkJob(job *workJob, progressPath, logPath string, logAt *int64) {
+	var percent int
+	var message string
+	if raw, err := os.ReadFile(progressPath); err == nil {
+		lines := strings.Split(strings.TrimSpace(string(raw)), "\n")
+		if parts := strings.SplitN(lines[len(lines)-1], "|", 3); len(parts) >= 2 {
+			percent, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
+			if len(parts) == 3 {
+				message = strings.TrimSpace(parts[2])
+			}
+		}
+	}
+	var fresh []string
+	if raw, err := os.ReadFile(logPath); err == nil && *logAt < int64(len(raw)) {
+		for _, line := range strings.Split(string(raw[*logAt:]), "\n") {
+			if line = strings.TrimRight(line, "\r"); line != "" {
+				fresh = append(fresh, line)
+			}
+		}
+		*logAt = int64(len(raw))
+	}
+	job.mu.Lock()
+	defer job.mu.Unlock()
+	if percent > job.percent && percent < 100 {
+		job.percent = percent
+	}
+	if message != "" {
+		job.message = message
+	}
+	job.logs = append(job.logs, fresh...)
 }
 func snapshotWork(job *workJob) map[string]any {
 	job.mu.RLock()

@@ -37,6 +37,9 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0012](0012-media-route-for-track-playback.md) | Local track audio is streamed through a Wails asset-server route, not the base64-binding pattern | Accepted |
 | [0012](0012-import-preserves-structural-whitespace.md) | Manuscript import preserves structural whitespace and repairs glued headings | Accepted |
 | [0013](0013-inline-formatting-as-offset-spans.md) | Inline formatting is stored as offset spans over canonical plain text | Accepted |
+| [0014](0014-real-progress-only.md) | Progress bars and activity logs show real work only | Accepted |
 | [0015](0015-highlight-primitive.md) | One `Highlight` primitive for entity, note and review highlights | Accepted (amends ADR-0009) |
 | [0016](0016-no-legacy-css-shadowing-tailwind.md) | No unlayered legacy CSS or contradictory utilities shadow Tailwind | Accepted (amends ADR-0009) |
+| [0017](0017-story-bible-entries-read-only-until-edit.md) | Story Bible entries are read-only until Edit is pressed | Accepted |
+| [0018](0018-detected-manuscript-is-offered-not-imported.md) | A manuscript found in the project folder is offered, never imported automatically | Accepted |
 | [0019](0019-entity-extraction-precision-over-recall.md) | Story Bible entity extraction favors precision over recall | Accepted |

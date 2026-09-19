@@ -251,6 +251,13 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Story Bible');
       await page.locator('tr[data-row]').first().click();
     },
+    'entry-editing': async (page) => {
+      await goToPage(page, 'Story Bible');
+      await page.locator('tr[data-row]').first().click();
+      const unlock = page.getByRole('button', { name: 'Unlock entry' });
+      if (await unlock.count()) await unlock.click();
+      await clickVisible(page, 'button', 'Edit this entry');
+    },
   },
   tracks: {
     default: async (page) => {

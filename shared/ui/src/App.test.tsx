@@ -5,6 +5,7 @@ import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { createMockApi } from './api/mockApi';
 import { ThemeProvider } from './theme/ThemeContext';
+import type { WorkJob } from './types';
 
 // BrowserRouter reads/writes the real window.location via history.pushState,
 // which jsdom keeps alive across tests in this file - reset it so each test
@@ -25,6 +26,13 @@ function renderApp(overrides: Parameters<typeof createMockApi>[0] = {}, initial:
   );
   return api;
 }
+
+// A project with no imported manuscript but a manuscript file in its folder.
+const bootstrapWithCandidate = (manuscriptCandidate: { path: string; name: string }) => async () => ({
+  ...(await createMockApi().bootstrap()),
+  manuscript: null,
+  manuscriptCandidate,
+});
 
 describe('App (integration, driven through the mock NarrationApi)', () => {
   it('shows the startup screen, then Home once bootstrap resolves', async () => {
@@ -162,8 +170,11 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
 
     expect(screen.queryByText(/Detection cleaned up/)).toBeNull();
 
-    const saveButton = await screen.findByRole('button', { name: 'Save changes to this entry' });
-    expect(saveButton.textContent?.trim()).toBe('');
+    expect(screen.queryByRole('button', { name: 'Save changes to this entry' })).toBeNull();
+    const editButton = await screen.findByRole('button', { name: 'Edit this entry' });
+    expect(editButton.textContent?.trim()).toBe('');
+    fireEvent.click(editButton);
+    expect((await screen.findByRole('button', { name: 'Save changes to this entry' })).textContent?.trim()).toBe('');
 
     const addAliasButton = screen.getByRole('button', { name: 'Add alias' });
     const rescanButton = screen.getByRole('button', { name: /Rescan occurrences/ });
@@ -191,7 +202,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
 
   it('keeps fast manuscript-import activity visible and refreshes the Home state without a browser reload', async () => {
     const source = createMockApi();
-    const preview = vi.fn(async () => ({
+    const readyJob = {
       id: 'mock-import',
       kind: 'manuscript_import' as const,
       phase: 'ready' as const,
@@ -200,7 +211,11 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
       logs: ['Selected manuscript', 'Import preview is ready.'],
       elapsed: 1,
       preview: { format: 'docx' as const, sourceName: 'Alice.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] },
-    }));
+    };
+    // The host is the single source of truth for a job; polling reads the same
+    // state the preview/commit calls return.
+    let hostJob: WorkJob = readyJob;
+    const preview = vi.fn(async () => (hostJob = readyJob));
     let imported = false;
     const importedChapters = [{ id: 'c-1', title: 'Chapter 1', index: 0, wordCount: 1234, status: 'not_started' as const }];
     const bootstrap = vi.fn(async () => {
@@ -210,10 +225,11 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     const api = createMockApi({
       bootstrap,
       manuscriptImportPreview: preview,
+      manuscriptImportState: async () => hostJob,
       manuscriptChapters: async () => (imported ? importedChapters : []),
-      manuscriptImportCommit: async () => {
+      manuscriptImportCommit: async (): Promise<WorkJob> => {
         imported = true;
-        return {
+        return (hostJob = {
           id: 'mock-import',
           kind: 'manuscript_import',
           phase: 'success',
@@ -228,7 +244,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
             'Manuscript import complete.',
           ],
           result: { id: 'alice', format: 'docx', sourceName: 'Alice.docx', importedAt: '2026-01-01T00:00:00Z' },
-        };
+        });
       },
     });
     render(
@@ -262,6 +278,27 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Home' })[0]);
     await screen.findByRole('heading', { name: 'Welcome back' });
     expect(screen.getByText(/Manuscript found/)).toBeTruthy();
+  });
+
+  it('offers to import a manuscript file found in the project folder, and stays quiet once declined', async () => {
+    const candidate = { path: 'C:/Projects/Voltage/manuscript.docx', name: 'manuscript.docx' };
+    renderApp({ bootstrap: bootstrapWithCandidate(candidate) });
+    expect(await screen.findByRole('dialog', { name: 'Import manuscript?' })).toBeTruthy();
+    expect(screen.getByText(/Found manuscript.docx in this project folder/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog', { name: 'Import manuscript?' })).toBeNull();
+  });
+
+  it('imports the offered manuscript file through the host when accepted', async () => {
+    const candidate = { path: 'C:/Projects/Voltage/notes/manuscript.md', name: 'manuscript.md' };
+    const api = renderApp({ bootstrap: bootstrapWithCandidate(candidate) });
+    const beginImport = vi.spyOn(api, 'manuscriptBeginImport');
+    await screen.findByRole('dialog', { name: 'Import manuscript?' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    await waitFor(() => expect(beginImport).toHaveBeenCalledWith(candidate.path));
+    expect(await screen.findByRole('dialog', { name: 'Import Alice.docx' })).toBeTruthy();
   });
 
   it('shows the project picker instead of the routed app when a standalone launch has no attached project folder', async () => {

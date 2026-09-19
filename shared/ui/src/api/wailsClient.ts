@@ -55,6 +55,7 @@ export const wailsClient: NarrationApi = {
   ready: () => host.Ready() as Promise<HostReady>,
   bootstrap: () => host.Bootstrap().then((value) => ({ ...(value as Bootstrap), transcript: normalizeTranscriptState((value as Bootstrap).transcript) })),
   selectManuscript: () => decode<ManuscriptFileSelection>(host.ManuscriptSelectFile()),
+  manuscriptBeginImport: (path) => decode<ManuscriptFileSelection>(host.ManuscriptBeginImport(path)),
   manuscriptImportState: (jobId) => decode<WorkJob>(host.ManuscriptImportState(jobId)),
   manuscriptImportPreview: (jobId, options) => decode<WorkJob>(host.ManuscriptImportPreview(jobId, options.markdownHeadingLevel)),
   manuscriptImportCommit: (jobId, options) =>

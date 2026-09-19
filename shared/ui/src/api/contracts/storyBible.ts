@@ -27,7 +27,13 @@ export type GuideEntity = {
 export function normalizeGuideEntity(entity: GuideEntity): GuideEntity {
   return {
     ...entity,
-    aliases: (entity.aliases ?? []).map((alias) => ({ ...alias, occurrences: alias.occurrences ?? [] })),
+    pronunciation: entity.pronunciation ?? { ipa: '', source: '', confidence: '' },
+    description: { ...entity.description, text: entity.description?.text ?? '', evidence: entity.description?.evidence ?? {} },
+    aliases: (entity.aliases ?? []).map((alias) => ({
+      ...alias,
+      pronunciation: alias.pronunciation ?? { ipa: '', source: '', confidence: '' },
+      occurrences: alias.occurrences ?? [],
+    })),
     occurrences: entity.occurrences ?? [],
     personality_notes: entity.personality_notes ?? [],
     relationships: entity.relationships ?? [],

@@ -55,6 +55,10 @@ export function GuideUnrelate(arg1, arg2, arg3) {
   return window['go']['main']['Host']['GuideUnrelate'](arg1, arg2, arg3);
 }
 
+export function ManuscriptBeginImport(arg1) {
+  return window['go']['main']['Host']['ManuscriptBeginImport'](arg1);
+}
+
 export function ManuscriptChapters() {
   return window['go']['main']['Host']['ManuscriptChapters']();
 }

@@ -29,13 +29,19 @@ func markdownLineOf(raw string) markdownLine {
 }
 
 func markdown(path string, headingLevel int) (Draft, error) {
+	return markdownWithProgress(path, headingLevel, nil)
+}
+
+func markdownWithProgress(path string, headingLevel int, progress Progress) (Draft, error) {
 	if headingLevel < 1 || headingLevel > 6 {
 		return Draft{}, &Error{"Markdown chapter heading level must be between H1 and H6."}
 	}
+	progress.report(5, "Reading Markdown file %s", filepath.Base(path))
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return Draft{}, &Error{"Could not read this Markdown file: " + err.Error()}
 	}
+	progress.report(25, "Parsing %d KB using H%d as the chapter heading level", len(raw)/1024, headingLevel)
 	content := strings.TrimPrefix(string(raw), "\xef\xbb\xbf")
 	chapter, subtitle, section := "Front Matter", "", ""
 	paragraphs := []Paragraph{}
@@ -108,5 +114,11 @@ func markdown(path string, headingLevel int) (Draft, error) {
 	for index, kind := range classifyPreHeading(pre) {
 		paragraphs[preIndexes[index]].Chapter = kind
 	}
-	return newDraft("markdown", filepath.Base(path), paragraphs, titles)
+	progress.report(60, "Read %d paragraphs under %d chapter headings", len(paragraphs), len(titles))
+	progress.report(80, "Classifying front matter, chapters and reference sections")
+	draft, err := newDraft("markdown", filepath.Base(path), paragraphs, titles)
+	if err == nil {
+		progress.report(95, "Found %d chapters in %d sections", len(titles), len(draft.Sections))
+	}
+	return draft, err
 }

@@ -28,6 +28,8 @@ export function GuideSetLocked(arg1:string,arg2:boolean):Promise<string>;
 
 export function GuideUnrelate(arg1:string,arg2:string,arg3:string):Promise<string>;
 
+export function ManuscriptBeginImport(arg1:string):Promise<string>;
+
 export function ManuscriptChapters():Promise<string>;
 
 export function ManuscriptClearProjectData(arg1:boolean):Promise<string>;

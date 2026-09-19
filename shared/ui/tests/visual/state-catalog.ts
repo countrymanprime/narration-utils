@@ -71,7 +71,8 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'storybible', state: 'alias-typeahead', description: 'Story Bible, alias-typeahead dropdown open' },
   { page: 'storybible', state: 'delete-confirm', description: 'Story Bible, delete confirm dialog open' },
   { page: 'storybible', state: 'entry-locked', description: 'Story Bible, a locked entry' },
-  { page: 'storybible', state: 'entry-unlocked', description: 'Story Bible, an unlocked entry' },
+  { page: 'storybible', state: 'entry-unlocked', description: 'Story Bible, an unlocked entry (read-only until Edit)' },
+  { page: 'storybible', state: 'entry-editing', description: 'Story Bible, an unlocked entry in edit mode (Save and Cancel shown)' },
 
   // Tracks
   {

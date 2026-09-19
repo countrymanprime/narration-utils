@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
+	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -264,45 +265,67 @@ func (h *Host) ManuscriptSelectFile() (string, error) {
 	job := h.manuscript.Begin(path)
 	return encodeBinding(map[string]any{"selected": true, "jobId": job.ID}, nil)
 }
+
+// ManuscriptBeginImport starts an import for the manuscript file Bootstrap
+// offered in the project folder. Only that exact file is accepted.
+func (h *Host) ManuscriptBeginImport(path string) (string, error) {
+	job, err := h.manuscript.BeginDetected(path)
+	if err != nil {
+		return "", err
+	}
+	return encodeBinding(map[string]any{"selected": true, "jobId": job.ID}, nil)
+}
 func (h *Host) ManuscriptImportState(jobID string) (string, error) {
 	return encodeBinding(h.manuscript.State(jobID))
 }
 func (h *Host) ManuscriptImportPreview(jobID string, markdownHeadingLevel int) (string, error) {
-	return encodeBinding(h.manuscript.Preview(jobID, markdownHeadingLevel))
+	// Runs in the background; the UI polls ManuscriptImportState for the real
+	// staged progress and log (ADR-0014).
+	return encodeBinding(h.manuscript.StartPreview(jobID, markdownHeadingLevel))
 }
 func (h *Host) ManuscriptImportCommit(jobID string, confirmedReset bool, sectionKinds map[string]string, characterCandidateIDs []string) (string, error) {
-	job, err := h.manuscript.Commit(jobID, confirmedReset, sectionKinds)
-	if err != nil {
-		return "", err
+	var post manuscript.PostCommit
+	if state, err := h.manuscript.State(jobID); err == nil && state.Draft != nil && h.guide != nil {
+		candidates := state.Draft.CharacterCandidates
+		post = func(report func(int, string)) error {
+			h.seedCharacterCandidates(candidates, characterCandidateIDs, report)
+			return nil
+		}
 	}
-	if job.Phase == "success" && job.Draft != nil && h.guide != nil {
-		h.seedCharacterCandidates(job.Draft.CharacterCandidates, characterCandidateIDs)
-	}
-	return encodeBinding(job, nil)
+	return encodeBinding(h.manuscript.StartCommit(jobID, confirmedReset, sectionKinds, post))
 }
 
 // seedCharacterCandidates writes the user's checked character suggestions
 // into the Story Bible as manual entities. Calls run sequentially (never in
 // parallel) because each one shells out to a Python process that rewrites
 // the whole manuscript_guide.json file - concurrent writers would race. A
-// failed candidate is skipped, not fatal: the manuscript import itself
-// already succeeded by this point.
-func (h *Host) seedCharacterCandidates(candidates []importer.CharacterCandidate, selectedIDs []string) {
+// failed candidate is skipped and logged, not fatal: the manuscript import
+// itself has already been written by this point. Each candidate reports its
+// own progress, since these Python launches are the slow part of an import.
+func (h *Host) seedCharacterCandidates(candidates []importer.CharacterCandidate, selectedIDs []string, report func(percent int, message string)) {
 	selected := make(map[string]bool, len(selectedIDs))
 	for _, id := range selectedIDs {
 		selected[id] = true
 	}
+	chosen := make([]importer.CharacterCandidate, 0, len(candidates))
 	for _, candidate := range candidates {
-		if !selected[candidate.ID] {
-			continue
+		if selected[candidate.ID] {
+			chosen = append(chosen, candidate)
 		}
+	}
+	for index, candidate := range chosen {
+		report(index*100/len(chosen), fmt.Sprintf("Adding Story Bible character %d of %d: %s", index+1, len(chosen), candidate.Name))
 		entityID, err := h.guide.Create(candidate.Name, "Character", nil)
 		if err != nil {
+			report(index*100/len(chosen), fmt.Sprintf("Skipped %s: %v", candidate.Name, err))
 			continue
 		}
 		if candidate.Description != "" {
 			_ = h.guide.Edit(entityID, "description", candidate.Description)
 		}
+	}
+	if len(chosen) > 0 {
+		report(100, fmt.Sprintf("Added %d Story Bible characters", len(chosen)))
 	}
 }
 func (h *Host) ManuscriptImportCancel(jobID string) (string, error) {

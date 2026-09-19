@@ -174,7 +174,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
             <button
               key={name}
               onClick={() => setTab(name)}
-              className={`whitespace-nowrap border-b-2 border-transparent px-[0.9rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold uppercase tracking-[0.03em] text-[var(--text-muted)] hover:text-[var(--text)] ${tab === name ? 'border-[var(--accent)] text-[var(--text)]' : ''}`}
+              className={`whitespace-nowrap border-b-2 px-[0.9rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold uppercase tracking-[0.03em] hover:text-[var(--text)] ${tab === name ? 'border-[var(--accent)] text-[var(--text)]' : 'border-transparent text-[var(--text-muted)]'}`}
             >
               {name === 'All' ? `All · ${visible.length}` : `${TAB_PLURAL[name]} · ${visible.filter((row) => categoryLabel(row.category) === name).length}`}
             </button>

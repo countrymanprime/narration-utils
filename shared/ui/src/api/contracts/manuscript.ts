@@ -90,6 +90,8 @@ export type WorkJob = {
 
 export interface ManuscriptApi {
   selectManuscript(): Promise<ManuscriptFileSelection>;
+  /** Begins an import for the file offered as `Bootstrap.manuscriptCandidate`; the host accepts only that exact path. */
+  manuscriptBeginImport(path: string): Promise<ManuscriptFileSelection>;
   manuscriptImportState(jobId: string): Promise<WorkJob>;
   manuscriptImportPreview(jobId: string, options: { markdownHeadingLevel: number }): Promise<WorkJob>;
   manuscriptImportCommit(jobId: string, options: { confirmedReset: boolean; selection?: ManuscriptImportSelection }): Promise<WorkJob>;

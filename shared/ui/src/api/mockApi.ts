@@ -285,6 +285,20 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
       };
       return { selected: true, jobId: 'mock-import' };
     },
+    manuscriptBeginImport: async () => {
+      importJob = {
+        id: 'mock-import',
+        kind: 'manuscript_import',
+        phase: 'preparing',
+        message: 'Manuscript selected. Choose import options to continue.',
+        percent: 0,
+        logs: ['Selected manuscript'],
+        elapsed: 0,
+        preview: { format: 'docx', sourceName: 'Alice.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] },
+        requiresReset: false,
+      };
+      return { selected: true, jobId: 'mock-import' };
+    },
     manuscriptImportState: async () => wireClone(importJob),
     manuscriptImportPreview: async (_jobId, { markdownHeadingLevel }) => {
       importJob = {
@@ -292,7 +306,14 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
         phase: 'ready',
         percent: 100,
         message: 'Import preview is ready.',
-        logs: [...importJob.logs, `Parsed chapter heading level ${markdownHeadingLevel}.`],
+        // Mirrors the host's staged import log (shell/internal/importer).
+        logs: [
+          ...importJob.logs,
+          `Reading document structure using H${markdownHeadingLevel} chapter headings`,
+          'Read 240 paragraphs, 12 of them headings',
+          'Classifying front matter, chapters and reference sections',
+          'Preview ready: 240 paragraphs, 3 chapters, 0 character suggestions',
+        ],
       };
       return wireClone(importJob);
     },
@@ -300,7 +321,9 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
       importJob = {
         ...importJob,
         phase: 'success',
+        percent: 100,
         message: 'Manuscript import complete.',
+        logs: [...importJob.logs, 'Copying Alice.docx (48 KB) into the project and computing its checksum', 'Writing manuscript.json', 'Manuscript imported'],
         result: { id: 'alice', format: 'docx', sourceName: 'Alice.docx', importedAt: '2026-01-01T00:00:00Z' },
       };
       return wireClone(importJob);

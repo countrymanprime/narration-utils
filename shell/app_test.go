@@ -61,6 +61,62 @@ func TestBootstrapReportsCanonicalNarratableTotals(t *testing.T) {
 	}
 }
 
+func TestBootstrapOffersAManuscriptFileFoundInTheProjectFolder(t *testing.T) {
+	project := t.TempDir()
+	if err := os.WriteFile(filepath.Join(project, "Manuscript.docx"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	host := NewHost()
+	host.config.projectFolder = project
+	boot := host.Bootstrap()
+	candidate, ok := boot["manuscriptCandidate"].(map[string]any)
+	if boot["manuscript"] != nil || !ok || candidate["name"] != "Manuscript.docx" {
+		t.Fatalf("bootstrap = manuscript %#v candidate %#v", boot["manuscript"], boot["manuscriptCandidate"])
+	}
+}
+
+func TestPollWorkJobTailsSidecarProgressAndLogOnce(t *testing.T) {
+	dir := t.TempDir()
+	progress, logPath := filepath.Join(dir, "progress.txt"), filepath.Join(dir, "log.txt")
+	job := &workJob{percent: 1}
+	var logAt int64
+
+	if err := os.WriteFile(progress, []byte("EXTRACT|30|Finding people, places, and organizations...\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(logPath, []byte("Reading canonical manuscript\nLoaded 120 paragraphs\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	pollWorkJob(job, progress, logPath, &logAt)
+	if job.percent != 30 || job.message != "Finding people, places, and organizations..." || len(job.logs) != 2 {
+		t.Fatalf("first poll: percent %d message %q logs %#v", job.percent, job.message, job.logs)
+	}
+
+	pollWorkJob(job, progress, logPath, &logAt)
+	if len(job.logs) != 2 {
+		t.Fatalf("an unchanged log must not be re-read: %#v", job.logs)
+	}
+
+	if err := os.WriteFile(progress, []byte("LOAD|5|Reading manuscript...\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := file.WriteString("Merging generated entries\n"); err != nil {
+		t.Fatal(err)
+	}
+	file.Close()
+	pollWorkJob(job, progress, logPath, &logAt)
+	if job.percent != 30 {
+		t.Fatalf("progress moved backwards to %d", job.percent)
+	}
+	if len(job.logs) != 3 || job.logs[2] != "Merging generated entries" {
+		t.Fatalf("appended line was not picked up: %#v", job.logs)
+	}
+}
+
 func TestVoiceDownloadSizeIncludesEveryVerifiedFile(t *testing.T) {
 	voice := tts.Voice{Files: []tts.File{{Name: "voice.onnx", Size: 10}, {Name: "voice.onnx.json", Size: 4}}}
 	if size := voiceDownloadSize(voice); size != 14 {

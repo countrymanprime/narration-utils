@@ -8,6 +8,7 @@ import {
   faLock,
   faLockOpen,
   faPause,
+  faPen,
   faPlus,
   faRotate,
   faTrash,
@@ -51,6 +52,7 @@ export function GuideDetail({
 }) {
   const api = useApi();
   const [draft, setDraft] = useState({ name: '', description: '', personality: '', context: '' });
+  const [editing, setEditing] = useState(false);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const [aliasQuery, setAliasQuery] = useState('');
   const [aliasSelectedId, setAliasSelectedId] = useState<string>();
@@ -77,6 +79,9 @@ export function GuideDetail({
     notify,
   });
 
+  // Selecting a different entry always starts read-only; a reload of the same
+  // entry (after Save, an alias change, ...) keeps its mode.
+  useEffect(() => setEditing(false), [entity?.id]);
   useEffect(() => {
     setCategoryMenuOpen(false);
     setAliasQuery('');
@@ -100,7 +105,20 @@ export function GuideDetail({
       </section>
     );
   const locked = entity.locked;
-  const editingDisabled = locked || isNewDraft;
+  // Entries open read-only (ADR-0017): Edit reveals the form controls and Save.
+  // A locked entry cannot be edited at all, and a brand-new draft is created by
+  // choosing its category rather than through the edit form.
+  const canEdit = !locked && !isNewDraft;
+  const editingDisabled = !canEdit || !editing;
+  const stopEditing = () => {
+    setEditing(false);
+    setDraft({
+      name: entity.canonical_name,
+      description: entity.description.text,
+      personality: entity.personality_notes.map((note) => note.text).join(' '),
+      context: entity.context || '',
+    });
+  };
   const otherEntities = entities.filter((row) => row.id !== entity.id && row.category !== 'Draft');
   const aliasMatches = aliasSelectedId ? [] : findAliasMatches(entities, aliasQuery, entity.id);
   const selectedAliasMatch = aliasSelectedId ? entities.find((row) => row.id === aliasSelectedId) : undefined;
@@ -108,13 +126,15 @@ export function GuideDetail({
   const evidence = allEvidence(entity);
   const highlightNames = [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)];
 
-  const save = async (values: Record<string, string>, message: string) => {
+  const save = async (values: Record<string, string>, message: string): Promise<boolean> => {
     try {
       await api.guideEdit(entity.id, values);
       notify(message);
       await reload(entity.id);
+      return true;
     } catch (error) {
       notify(String(error));
+      return false;
     }
   };
   const setAliasTexts = (aliases: string[]) => save({ aliases: aliases.join(';') }, 'Aliases updated.');
@@ -211,7 +231,7 @@ export function GuideDetail({
                 type="button"
                 className={BADGE_CLASS}
                 style={BADGE_STYLE[entity.category]}
-                disabled={locked}
+                disabled={locked || !(editing || isNewDraft)}
                 onClick={() => setCategoryMenuOpen((value) => !value)}
               >
                 {categoryLabel(entity.category)} <FontAwesomeIcon icon={faChevronDown} />
@@ -264,28 +284,49 @@ export function GuideDetail({
               </button>
             </TooltipTarget>
           )}
-          <TooltipTarget
-            text={locked ? 'Unlock this entry before editing it' : isNewDraft ? 'Choose a category above to create this entry' : 'Save changes to this entry'}
-          >
-            <button
-              aria-label="Save changes to this entry"
-              className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-              disabled={editingDisabled}
-              onClick={() =>
-                void save(
-                  {
-                    canonical_name: draft.name.trim() || entity.canonical_name,
-                    description: draft.description,
-                    personality: draft.personality,
-                    context: draft.context,
-                  },
-                  'Entry saved.',
-                )
-              }
-            >
-              <FontAwesomeIcon icon={faFloppyDisk} />
-            </button>
-          </TooltipTarget>
+          {canEdit && !editing && (
+            <TooltipTarget text="Edit this entry">
+              <button
+                aria-label="Edit this entry"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                onClick={() => setEditing(true)}
+              >
+                <FontAwesomeIcon icon={faPen} />
+              </button>
+            </TooltipTarget>
+          )}
+          {canEdit && editing && (
+            <>
+              <TooltipTarget text="Save changes to this entry">
+                <button
+                  aria-label="Save changes to this entry"
+                  className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-strong)]"
+                  onClick={() =>
+                    void save(
+                      {
+                        canonical_name: draft.name.trim() || entity.canonical_name,
+                        description: draft.description,
+                        personality: draft.personality,
+                        context: draft.context,
+                      },
+                      'Entry saved.',
+                    ).then((saved) => saved && setEditing(false))
+                  }
+                >
+                  <FontAwesomeIcon icon={faFloppyDisk} />
+                </button>
+              </TooltipTarget>
+              <TooltipTarget text="Discard changes and stop editing">
+                <button
+                  aria-label="Cancel editing"
+                  className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                  onClick={stopEditing}
+                >
+                  <FontAwesomeIcon icon={faXmark} />
+                </button>
+              </TooltipTarget>
+            </>
+          )}
           {!locked && !isNewDraft && (
             <TooltipTarget text="Delete entity">
               <button

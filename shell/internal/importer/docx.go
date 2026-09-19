@@ -206,7 +206,8 @@ func documentRecords(content []byte, styles wordStyles) []paragraphRecord {
 	return records
 }
 
-func docx(path string) (Draft, error) {
+func docxWithProgress(path string, progress Progress) (Draft, error) {
+	progress.report(5, "Opening Word document %s", filepath.Base(path))
 	archive, err := zip.OpenReader(path)
 	if err != nil {
 		return Draft{}, &Error{"Could not read this Word document: " + err.Error()}
@@ -217,7 +218,15 @@ func docx(path string) (Draft, error) {
 	if !ok {
 		return Draft{}, &Error{"This .docx file is missing its document contents."}
 	}
+	progress.report(20, "Reading document structure (%d KB of text)", len(document)/1024)
 	records := documentRecords(document, styleNames(styles))
+	headings := 0
+	for _, record := range records {
+		if record.heading {
+			headings++
+		}
+	}
+	progress.report(55, "Read %d paragraphs, %d of them headings", len(records), headings)
 	first := len(records)
 	for index, record := range records {
 		if record.heading && !isNonChapterHeading(record.text) {
@@ -268,7 +277,14 @@ func docx(path string) (Draft, error) {
 		}
 		paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitlePointer, Text: record.text, Spans: record.spans, SourceIndex: len(paragraphs)})
 	}
+	for _, notice := range notices {
+		progress.report(70, "%s", notice)
+	}
+	progress.report(80, "Classifying front matter, chapters and reference sections")
 	draft, err := newDraft("docx", filepath.Base(path), paragraphs, titles)
 	draft.Notices = notices
+	if err == nil {
+		progress.report(95, "Found %d chapters in %d sections", len(titles), len(draft.Sections))
+	}
 	return draft, err
 }
