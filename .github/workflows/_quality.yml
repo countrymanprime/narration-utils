@@ -7,7 +7,7 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-toolchain
         with:
           need-go: 'false'
@@ -19,7 +19,7 @@ jobs:
       - run: pnpm --dir shared/ui run format:check
       - run: pnpm --dir shared/ui test
       - run: pnpm --dir shared/ui run build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ui-dist
           path: shared/ui/dist
@@ -29,7 +29,7 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-toolchain
         with:
           need-node: 'false'
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: JohnnyMorganz/stylua-action@479972f01e665acfcba96ada452c36608bdbbb5e # v4.1.0
+      - uses: JohnnyMorganz/stylua-action@76fd70c03e6340ceaf673366712db9b20560b402 # v5.0.0
         with:
           token: ${{ github.token }}
           version: v2.1.0
@@ -61,7 +61,7 @@ jobs:
         os: [windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-toolchain
         with:
           need-node: 'false'
