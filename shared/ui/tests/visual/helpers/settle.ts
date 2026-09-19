@@ -21,6 +21,24 @@ export async function settlePage(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');
 }
 
+// After a driver runs, let React commit and the browser paint twice so the shot
+// is of the settled state, not a frame mid-update.
+export async function settleFrames(page: Page): Promise<void> {
+  await page.evaluate(() => document.fonts.ready);
+  // A driver may have frozen the page clock, which also stops requestAnimationFrame; race a real-time
+  // cap (this side of the wire) so a frozen page settles instead of hanging.
+  const twoFrames = page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await Promise.race([twoFrames, new Promise<void>((resolve) => setTimeout(resolve, 300))]);
+}
+
 export function screenshotDir(pageName: string, state: string): string {
   return `screenshots/app/${pageName}/${state}`;
+}
+
+// Per-capture sidecar records (hash, contrast, overflow) that global-setup.ts's
+// teardown validates once the whole run is done. Cleared at the start of a run.
+export const RUN_DIR = 'screenshots/.run';
+
+export function runRecordPath(viewport: string, pageName: string, state: string): string {
+  return `${RUN_DIR}/${viewport}/${pageName}__${state}.json`;
 }

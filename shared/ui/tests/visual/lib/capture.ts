@@ -1,0 +1,85 @@
+import { createHash } from 'node:crypto';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { expect, type Page } from '@playwright/test';
+import sharp from 'sharp';
+import type { Driver } from '../app.drivers';
+import { runRecordPath, screenshotDir, settleFrames, settlePage } from '../helpers/settle';
+import type { StateEntry } from '../state-catalog';
+import type { Viewport } from '../viewports';
+import { OVERFLOW_TOLERANCE_PX, SIGNATURE_HEIGHT, SIGNATURE_WIDTH, type CaptureRecord } from './validators';
+
+// Every capture starts from the same wall-clock so relative dates and
+// "x minutes ago" text cannot drift between runs or across days.
+const FIXED_NOW = new Date('2026-09-15T15:00:00Z');
+
+function watchForProblems(page: Page): string[] {
+  const problems: string[] = [];
+  page.on('pageerror', (error) => problems.push(`uncaught error: ${error.message}`));
+  page.on('console', (message) => {
+    if (message.type() === 'error') problems.push(`console.error: ${message.text()}`);
+  });
+  page.on('requestfailed', (request) => problems.push(`request failed: ${request.url()}`));
+  page.on('response', (response) => {
+    if (response.status() >= 400) problems.push(`HTTP ${response.status()}: ${response.url()}`);
+  });
+  return problems;
+}
+
+async function measureHorizontalOverflow(page: Page): Promise<number> {
+  return page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+}
+
+async function maxChannelStdev(png: Buffer): Promise<number> {
+  const { channels } = await sharp(png).stats();
+  return Math.max(...channels.slice(0, 3).map((channel) => channel.stdev));
+}
+
+async function signatureOf(png: Buffer): Promise<number[]> {
+  const cells = await sharp(png).greyscale().resize(SIGNATURE_WIDTH, SIGNATURE_HEIGHT, { fit: 'fill' }).raw().toBuffer();
+  return [...cells];
+}
+
+function writeRecord(record: CaptureRecord): void {
+  const path = runRecordPath(record.viewport, record.page, record.state);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(record));
+}
+
+// One {state, viewport} capture: boot the app fresh, drive to the state,
+// screenshot it, and fail on anything that makes the picture untrustworthy
+// (a page error, a failed request, horizontal overflow).
+export async function captureState(page: Page, entry: StateEntry, viewport: Viewport, driver: Driver): Promise<void> {
+  const problems = watchForProblems(page);
+
+  await page.clock.install({ time: FIXED_NOW });
+  await page.setViewportSize({ width: viewport.width, height: viewport.height });
+  await page.goto('/');
+  await settlePage(page);
+  await driver(page);
+  await settleFrames(page);
+  // A pointer left over from the driver's last click paints a hover style on
+  // whatever it rests on, and whether it lands before the shot is a race.
+  if (entry.pointer !== 'keep') await page.mouse.move(viewport.width - 1, viewport.height - 1);
+
+  const overflowPx = await measureHorizontalOverflow(page);
+  const png = await page.screenshot({
+    path: `${screenshotDir(entry.page, entry.state)}/${viewport.name}.png`,
+    animations: 'disabled',
+    caret: 'hide',
+    mask: entry.mask?.map((selector) => page.locator(selector)),
+  });
+
+  writeRecord({
+    page: entry.page,
+    state: entry.state,
+    viewport: viewport.name,
+    hash: createHash('sha256').update(png).digest('hex'),
+    signature: await signatureOf(png),
+    maxChannelStdev: await maxChannelStdev(png),
+    overflowPx,
+  });
+
+  expect(problems, 'the app reported problems while this state was captured').toEqual([]);
+  expect(overflowPx, `page scrolls sideways by ${overflowPx}px at ${viewport.name}`).toBeLessThanOrEqual(OVERFLOW_TOLERANCE_PX);
+}

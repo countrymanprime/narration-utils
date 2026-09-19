@@ -28,7 +28,11 @@ const mockNoProject = mockParams.has('mockNoProject');
 const mockMultipleRpp = mockParams.has('mockMultipleRpp');
 // `?mockNoRpp=1` seeds zero candidates: the project folder has no .rpp file.
 const mockNoRpp = mockParams.has('mockNoRpp');
+// `?mockNoManuscript=1` boots a project with no manuscript imported yet, so
+// Home shows its manuscript-not-found banner and Proofing/Story Bible are locked.
+const mockNoManuscript = mockParams.has('mockNoManuscript');
 const mockInitial = {
+  ...(mockNoManuscript ? { noManuscript: true } : {}),
   ...(mockNoProject ? { projectFolder: '' } : {}),
   ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),
   ...(mockNoRpp ? { tracksCandidates: [] } : {}),

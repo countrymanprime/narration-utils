@@ -82,7 +82,10 @@ function mockAudioSource(): string | undefined {
   return mockAudioUrl;
 }
 
-export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { projectFolder?: string; tracksCandidates?: string[] } = {}): NarrationApi {
+export function createMockApi(
+  overrides: Partial<NarrationApi> = {},
+  initial: { projectFolder?: string; tracksCandidates?: string[]; noManuscript?: boolean } = {},
+): NarrationApi {
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
   let paragraphs = wireClone(WIRE_PARAGRAPHS);
@@ -260,14 +263,16 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
         projectFolder,
         projectName,
         daw,
-        manuscript: {
-          id: 'alice',
-          format: 'docx',
-          sourceName: 'Alice.docx',
-          importedAt: '2026-01-01T00:00:00Z',
-          narratableWordCount: 2672,
-          narratableChapterCount: 3,
-        },
+        manuscript: initial.noManuscript
+          ? null
+          : {
+              id: 'alice',
+              format: 'docx',
+              sourceName: 'Alice.docx',
+              importedAt: '2026-01-01T00:00:00Z',
+              narratableWordCount: 2672,
+              narratableChapterCount: 3,
+            },
         runtime: {},
         transcript: wireClone(transcript),
       }) as Bootstrap,

@@ -24,3 +24,5 @@ When fixing a visual/UI bug in `shared/ui`, do not consider it done from code re
 3. If the bug is about responsive/layout behavior specifically, check it at every viewport in that list, since "responsive" bugs routinely only reproduce below/above one specific breakpoint.
 
 `shared/ui/screenshots/` is gitignored — these are scratch verification artifacts, not committed output.
+
+The suite is also a gate, not just a camera: each `{page, state, viewport}` is its own test (`<page> / <state> / <viewport>`), there are no retries, and a run fails on page errors, failed requests, sideways overflow at any viewport, blank screenshots, and two states that render identically unless the catalog row declares `sameAs`. CI runs it as the `ui-visual` job. If it goes red, fix the UI or the driver — don't add a `sameAs`/`undriven` escape without a real reason. How to reach a state lives in `shared/ui/tests/visual/app.drivers.ts`; the row's metadata (`undriven`, `sameAs`, `pointer`, `mask`) lives in `state-catalog.ts`.
