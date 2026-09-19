@@ -105,7 +105,7 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
     percent: 100,
     elapsed: 42,
     message: 'Comparison complete.',
-    summary: '2 discrepancies found.',
+    summary: `${WIRE_DISCREPANCIES.length} discrepancies found.`,
     logs: WIRE_LOGS.map((entry) => entry.text),
     rows: wireClone(WIRE_DISCREPANCIES),
     trackName: 'Chapter 1',
@@ -202,7 +202,7 @@ export function createMockApi(overrides: Partial<NarrationApi> = {}, initial: { 
           percent: 100,
           elapsed: 42,
           message: 'Comparison complete.',
-          summary: '2 discrepancies found.',
+          summary: `${WIRE_DISCREPANCIES.length} discrepancies found.`,
           logs: WIRE_LOGS.map((entry) => entry.text),
           rows: wireClone(WIRE_DISCREPANCIES),
         };

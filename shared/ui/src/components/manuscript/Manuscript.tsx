@@ -403,10 +403,12 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
       )}
       {pendingNote && <AddNoteDialog anchorText={pendingNote.anchorText} confirm={(text) => void confirmNote(text)} cancel={() => setPendingNote(undefined)} />}
       {sheet && <div className="sheet-backdrop fixed inset-0 z-[45] bg-transparent" onMouseDown={closeSheet} />}
-      <aside
-        className={`overlay-panel ease fixed right-0 top-0 z-50 flex h-screen w-[min(20rem,100vw)] flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)] transition-transform duration-200 ${sheet ? 'translate-x-0' : 'translate-x-full'}`}
-        aria-hidden={!sheet}
-      >
+      {/* .overlay-panel's own CSS (styles.css) already provides position/size/transition
+          and the `.overlay-panel.overlay-open` transform toggle GuideDetail.tsx's review
+          overlay relies on - Tailwind's translate-x-0/translate-x-full utilities on this
+          element were silently overridden by that rule's source-order priority, so the
+          panel never visually opened. Use the same overlay-open toggle instead. */}
+      <aside className={`overlay-panel${sheet ? ' overlay-open' : ''}`} aria-hidden={!sheet}>
         <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
           <h3 className="text-sm font-semibold">{detail?.note ? 'Note' : detail?.entity?.canonical_name || 'Chapters & Search'}</h3>
           <button
