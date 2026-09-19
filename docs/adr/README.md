@@ -43,4 +43,6 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0018](0018-story-bible-entries-read-only-until-edit.md) | Story Bible entries are read-only until Edit is pressed | Accepted |
 | [0019](0019-detected-manuscript-is-offered-not-imported.md) | A manuscript found in the project folder is offered, never imported automatically | Accepted |
 | [0020](0020-entity-extraction-precision-over-recall.md) | Story Bible entity extraction favors precision over recall | Accepted |
-| [0021](0021-visual-suite-capture-contract-and-storybook.md) | The visual suite is a validated capture contract, and Storybook is the component layer | Accepted |
+| [0021](0021-live-speech-engines-behind-one-event-contract.md) | Live speech engines are interchangeable behind one event contract | Accepted |
+| [0022](0022-live-sidecar-events-over-wails-and-stop-file.md) | The host relays live sidecar events over Wails events and stops the sidecar with a stop file | Accepted |
+| [0023](0023-visual-suite-capture-contract-and-storybook.md) | The visual suite is a validated capture contract, and Storybook is the component layer | Accepted |

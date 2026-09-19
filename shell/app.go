@@ -19,6 +19,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
+	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
@@ -29,27 +30,28 @@ import (
 // Keep this in lockstep with shared/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 4
+const hostAPIVersion = 5
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
 type Host struct {
-	mu          sync.RWMutex
-	ctx         context.Context
-	cancel      context.CancelFunc
-	diagnostic  string
-	config      config
-	manuscript  *manuscript.Service
-	sidecars    *process.Supervisor
-	settings    *settings.Store
-	tts         *tts.Manager
-	ttsJobs     map[string]*ttsJob
-	whisper     *whisper.Manager
-	whisperJobs map[string]*whisperJob
-	guide       *guide.Service
-	guideJob    *workJob
-	transcript  *transcript.Service
-	recents     *recents.Store
+	mu           sync.RWMutex
+	ctx          context.Context
+	cancel       context.CancelFunc
+	diagnostic   string
+	config       config
+	manuscript   *manuscript.Service
+	sidecars     *process.Supervisor
+	settings     *settings.Store
+	tts          *tts.Manager
+	ttsJobs      map[string]*ttsJob
+	whisper      *whisper.Manager
+	whisperJobs  map[string]*whisperJob
+	guide        *guide.Service
+	guideJob     *workJob
+	transcript   *transcript.Service
+	teleprompter *teleprompter.Service
+	recents      *recents.Store
 }
 type ttsJob struct {
 	mu                          sync.RWMutex
@@ -70,16 +72,17 @@ type workJob struct {
 }
 
 type config struct {
-	repoRoot          string
-	sessionDir        string
-	projectFolder     string
-	projectName       string
-	daw               string
-	manuscriptPython  string
-	manuscriptBackend string
-	comparePython     string
-	compareBackend    string
-	reaperLauncher    string
+	repoRoot                                string
+	sessionDir                              string
+	projectFolder                           string
+	projectName                             string
+	daw                                     string
+	manuscriptPython                        string
+	manuscriptBackend                       string
+	comparePython                           string
+	compareBackend                          string
+	teleprompterPython, teleprompterBackend string
+	reaperLauncher                          string
 }
 
 func NewHost() *Host {
@@ -123,7 +126,7 @@ func (h *Host) configureLocked(next config) {
 	h.settings = settings.New(h.config.repoRoot, h.config.projectFolder)
 	h.resolveDeveloperSidecars()
 	packagedRoot := ""
-	if h.config.manuscriptPython == "" || h.config.comparePython == "" {
+	if h.config.manuscriptPython == "" || h.config.comparePython == "" || h.config.teleprompterPython == "" {
 		packagedRoot = h.packagedResources()
 	}
 	if h.config.manuscriptPython == "" {
@@ -131,6 +134,9 @@ func (h *Host) configureLocked(next config) {
 	}
 	if h.config.comparePython == "" {
 		h.config.comparePython = sidecarPath(packagedRoot, "transcript-compare")
+	}
+	if h.config.teleprompterPython == "" {
+		h.config.teleprompterPython = sidecarPath(packagedRoot, "manuscript-teleprompter")
 	}
 	if packagedRoot != "" {
 		h.config.reaperLauncher = filepath.Join(packagedRoot, "reaper", "NarrationUtils_Launcher.lua")
@@ -165,6 +171,11 @@ func (h *Host) configureLocked(next config) {
 		client, _ = bridge.New(h.config.sessionDir)
 	}
 	h.transcript = transcript.New(transcript.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir, Python: h.config.comparePython, Backend: h.config.compareBackend}, client, h.settings, h.sidecars, h.emitTranscript)
+	teleprompterDir := h.config.sessionDir
+	if teleprompterDir == "" {
+		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")
+	}
+	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
 }
 
 // packagedSidecar materializes an embedded release resource under the
@@ -315,6 +326,26 @@ func (h *Host) emitTranscript(state map[string]any) {
 	}
 }
 
+// emitTeleprompterEvent relays one sidecar event (script, partial, word,
+// position, segment_end) to the frontend exactly as the sidecar printed it.
+func (h *Host) emitTeleprompterEvent(event json.RawMessage) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "teleprompter:event", event)
+	}
+}
+
+func (h *Host) emitTeleprompterState(state map[string]any) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "teleprompter:state", state)
+	}
+}
+
 func (h *Host) transcriptLoop(ctx context.Context) {
 	ticker := time.NewTicker(150 * time.Millisecond)
 	defer ticker.Stop()
@@ -335,6 +366,16 @@ func (h *Host) transcriptLoop(ctx context.Context) {
 }
 
 func (h *Host) Shutdown(context.Context) {
+	// Stop a live session first, without holding h.mu: the service reports its
+	// phase changes through emitTeleprompterState, which takes h.mu.RLock.
+	h.mu.RLock()
+	live := h.teleprompter
+	h.mu.RUnlock()
+	if live != nil {
+		stopContext, cancelStop := context.WithTimeout(context.Background(), 12*time.Second)
+		_ = live.Close(stopContext)
+		cancelStop()
+	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.cancel != nil {
@@ -397,6 +438,7 @@ func parseConfigArgs(defaultRoot string, arguments []string) config {
 		"--repo-root": &result.repoRoot, "--session-dir": &result.sessionDir, "--project-folder": &result.projectFolder,
 		"--project-name": &result.projectName, "--daw": &result.daw, "--manuscript-python": &result.manuscriptPython,
 		"--manuscript-backend": &result.manuscriptBackend, "--compare-python": &result.comparePython, "--compare-backend": &result.compareBackend,
+		"--teleprompter-python": &result.teleprompterPython, "--teleprompter-backend": &result.teleprompterBackend,
 	}
 	for index := 0; index+1 < len(arguments); index++ {
 		if target, ok := values[arguments[index]]; ok {
@@ -457,6 +499,9 @@ func (h *Host) canAttachLocked() bool {
 			return false
 		}
 	}
+	if h.teleprompter != nil && h.teleprompter.Busy() {
+		return false
+	}
 	return true
 }
 
@@ -499,6 +544,12 @@ func (h *Host) resolveDeveloperSidecars() {
 	}
 	if h.config.compareBackend == "" {
 		h.config.compareBackend = filepath.Join(h.config.repoRoot, "tools", "transcript-compare", "core", "compare.py")
+	}
+	if h.config.teleprompterPython == "" {
+		h.config.teleprompterPython = python
+	}
+	if h.config.teleprompterBackend == "" {
+		h.config.teleprompterBackend = filepath.Join(h.config.repoRoot, "tools", "manuscript-teleprompter", "core", "live_asr.py")
 	}
 }
 
@@ -593,6 +644,25 @@ func (h *Host) resolveWhisperModelID(options map[string]string) string {
 	}
 	value, _ := h.settings.Effective("TranscriptCompare", "model_size", "small")
 	return value
+}
+
+// teleprompterService snapshots the service pointer under the host lock; it is
+// replaced whenever a project is attached (see host-binding-concurrency.md).
+func (h *Host) teleprompterService() *teleprompter.Service {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.teleprompter
+}
+
+// resolveTeleprompterModelID picks the Whisper model for live transcription.
+// It defaults to tiny, not the offline Transcript Compare default: live
+// transcription must keep up with speech (tiny decodes at about 0.03x real
+// time on CPU, larger models are unmeasured).
+func resolveTeleprompterModelID(options map[string]string) string {
+	if value := options["model"]; value != "" {
+		return value
+	}
+	return "tiny"
 }
 
 type fieldSchema struct {

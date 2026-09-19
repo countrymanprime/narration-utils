@@ -7,7 +7,7 @@ description: Use when adding, changing or debugging the CI jobs that run the app
 
 ## Why this exists
 
-A visual suite that runs only when someone remembers is decoration. ADR 0021 records that the suite had no CI job
+A visual suite that runs only when someone remembers is decoration. ADR 0023 records that the suite had no CI job
 and drifted until turning the checks on found real overflow and never-driven states. CI is what makes the capture
 contract a gate. The reference implementation is `.github/workflows/_quality.yml` in this repo, called from
 `ci.yml`; a consuming repo should reproduce the same shape rather than invent one.

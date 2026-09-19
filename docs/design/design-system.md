@@ -14,7 +14,7 @@ Key tokens: `--bg`, `--surface`, `--surface-2`, `--surface-3`, `--border`, `--te
 
 Location: `shared/ui/src/components/primitives/`.
 
-**The component atlas is the source of truth for what each primitive can look like.** Every primitive has a `<Name>.stories.tsx` next to it (one story per variant/state, `play()` for the primary interaction). Browse it with `pnpm --dir shared/ui storybook`; `pnpm --dir shared/ui atlas` builds it and captures every story in light/dark at a wide and a narrow viewport, failing on axe violations, a throwing `play()`, sideways overflow, or console errors. `src/atlasCoverage.test.ts` fails if a primitive has neither a story nor a recorded exemption, and `src/stories.test.tsx` runs every story as a unit test. The table below is a summary; when it and the atlas disagree, the atlas wins. See [ADR 0021](../adr/0021-visual-suite-capture-contract-and-storybook.md).
+**The component atlas is the source of truth for what each primitive can look like.** Every primitive has a `<Name>.stories.tsx` next to it (one story per variant/state, `play()` for the primary interaction). Browse it with `pnpm --dir shared/ui storybook`; `pnpm --dir shared/ui atlas` builds it and captures every story in light/dark at a wide and a narrow viewport, failing on axe violations, a throwing `play()`, sideways overflow, or console errors. `src/atlasCoverage.test.ts` fails if a primitive has neither a story nor a recorded exemption, and `src/stories.test.tsx` runs every story as a unit test. The table below is a summary; when it and the atlas disagree, the atlas wins. See [ADR 0023](../adr/0023-visual-suite-capture-contract-and-storybook.md).
 
 | Component | Purpose | Notes |
 | --- | --- | --- |

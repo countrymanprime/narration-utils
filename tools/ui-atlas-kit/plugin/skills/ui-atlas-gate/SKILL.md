@@ -9,7 +9,7 @@ description: Use before calling any UI change done, to run the required commands
 
 UI changes break things a unit test cannot see: overflow at 390px, a state that stopped rendering what it claims,
 a dark-theme contrast regression, a doc image that no longer matches. The capture suites only protect the UI if they
-are run, read, and reported every time, not "when someone remembers" (ADR 0021). This skill defines "done" for a UI
+are run, read, and reported every time, not "when someone remembers" (ADR 0023). This skill defines "done" for a UI
 change so the answer is the same for every agent and every repo. It succeeds the visual half of
 `full-verification-gate`, which still owns the non-UI checks (Python, Go, Lua and the like).
 

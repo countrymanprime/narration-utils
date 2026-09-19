@@ -7,7 +7,7 @@ description: Use when the same UI state produces different screenshots on identi
 
 ## Why this exists
 
-Measured on identical code, 9 of 244 screenshots differed between two runs of the reference suite (ADR 0021). Noise
+Measured on identical code, 9 of 244 screenshots differed between two runs of the reference suite (ADR 0023). Noise
 is worse than annoying here: duplicates are found by exact bytes, so a capture that jitters can hide two states that
 render the same, and a retry hides the jitter itself. The contract keeps a capture reproducible so that a difference
 means the UI changed.

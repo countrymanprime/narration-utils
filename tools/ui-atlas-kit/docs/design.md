@@ -1,7 +1,7 @@
 # UI Atlas kit: design
 
 A reusable way to test and self-document React UIs through a visual component library, extracted from the
-working implementation in `shared/ui` of this repo (see `docs/adr/0021-visual-suite-capture-contract-and-storybook.md`).
+working implementation in `shared/ui` of this repo (see `docs/adr/0023-visual-suite-capture-contract-and-storybook.md`).
 It ships as one Claude Code plugin (`plugin/`) that is self-contained: skills, agents, commands, hooks, a CLI and
 the templates the CLI copies into a consuming repo.
 

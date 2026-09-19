@@ -15,7 +15,6 @@ export function GuideEdit(arg1:string,arg2:Record<string, string>):Promise<strin
 
 export function GuideEntities():Promise<string>;
 
-
 export function GuideMerge(arg1:string,arg2:string):Promise<string>;
 
 export function GuidePreview(arg1:string,arg2:any):Promise<string>;
@@ -83,6 +82,12 @@ export function SystemReportDiagnostic(arg1:string,arg2:string):Promise<string>;
 export function SystemSaveSettings(arg1:string,arg2:string,arg3:Record<string, any>):Promise<string>;
 
 export function SystemSettingsForScope(arg1:string):Promise<string>;
+
+export function TeleprompterStart(arg1:Record<string, string>):Promise<string>;
+
+export function TeleprompterState():Promise<string>;
+
+export function TeleprompterStop():Promise<string>;
 
 export function TracksDiscover():Promise<string>;
 

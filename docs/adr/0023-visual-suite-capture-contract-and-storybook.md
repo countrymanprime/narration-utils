@@ -1,4 +1,4 @@
-# 0021. The visual suite is a validated capture contract, and Storybook is the component layer
+# 0023. The visual suite is a validated capture contract, and Storybook is the component layer
 
 - Status: accepted
 - Date: 2026-09-19

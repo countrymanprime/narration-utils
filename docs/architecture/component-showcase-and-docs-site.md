@@ -1,6 +1,6 @@
 # Component showcase (Storybook) & public documentation site
 
-**Status: Storybook part implemented (ADR 0021); public docs site and Pages deployment still planned.** The primitive library now has a story per component under `shared/ui/src/components/primitives/`, run in CI as the `ui-atlas` job. Publishing the built `storybook-static/` (for example to GitHub Pages) and the public-facing documentation site remain future work.
+**Status: Storybook part implemented (ADR 0023); public docs site and Pages deployment still planned.** The primitive library now has a story per component under `shared/ui/src/components/primitives/`, run in CI as the `ui-atlas` job. Publishing the built `storybook-static/` (for example to GitHub Pages) and the public-facing documentation site remain future work.
 
 _Original note:_ deliberately deferred while the library had only three components.
 
