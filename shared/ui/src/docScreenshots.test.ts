@@ -3,15 +3,16 @@ import { STATE_CATALOG } from '../tests/visual/state-catalog';
 import { VIEWPORTS } from '../tests/visual/viewports';
 import docScreenshots from '../tests/visual/doc-screenshots.json';
 
-// docs/guides/using-the-app.md embeds a curated subset of STATE_CATALOG,
-// listed in tests/visual/doc-screenshots.json and synced into
+// The docs/guides/using-the-app/ pages embed a curated subset of
+// STATE_CATALOG, listed in tests/visual/doc-screenshots.json and synced into
 // docs/images/ui/ by scripts/sync-doc-screenshots.mjs (see the
 // doc-screenshot-sync skill). This test is the cheap, deterministic half of
 // "keep the docs in sync": if a page/state referenced there is renamed or
 // removed from STATE_CATALOG, this fails loudly instead of leaving the docs
-// silently pointing at a state that no longer exists.
+// silently pointing at a state that no longer exists. docsGuide.test.ts checks
+// the other side: that every manifest entry is embedded on exactly one page.
 
-describe('docs/guides/using-the-app.md screenshot manifest', () => {
+describe('docs/guides/using-the-app screenshot manifest', () => {
   test('every entry points at a real STATE_CATALOG row', () => {
     for (const entry of docScreenshots) {
       const found = STATE_CATALOG.some((row) => row.page === entry.page && row.state === entry.state);

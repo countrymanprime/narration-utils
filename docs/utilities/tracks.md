@@ -8,7 +8,7 @@ A narrator wants to see what a REAPER project actually contains - which tracks e
 
 ## Workflow
 
-Open a project folder. The Tracks page finds the project's `.rpp` file, lists its tracks, and offers play/pause, skip back/forward 30 seconds, and previous/next track. See [Using the app](../guides/using-the-app.md#tracks) for screenshots.
+Open a project folder. The Tracks page finds the project's `.rpp` file, lists its tracks, and offers play/pause, skip back/forward 30 seconds, and previous/next track. See [Using the app: Tracks](../guides/using-the-app/tracks.md) for screenshots.
 
 ## How it works
 

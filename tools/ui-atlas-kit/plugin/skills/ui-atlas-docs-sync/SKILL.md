@@ -45,7 +45,7 @@ showing last month's component. The `ui-atlas docs` command derives the docs fro
      hand-edit these files; assume the next `docs` run overwrites them. Prose that should persist belongs in a
      guide outside `docs/ui/atlas/`.
    - Curate: hand-picked screenshots for a narrative guide (in this repo `tests/visual/doc-screenshots.json` plus
-     `node scripts/sync-doc-screenshots.mjs`, which writes `docs/images/ui/*.webp` for `docs/guides/using-the-app.md`)
+     `node scripts/sync-doc-screenshots.mjs`, which writes `docs/images/ui/*.webp` for the `docs/guides/using-the-app/` pages)
      are a separate, human-selected set. Keep them in their own manifest; refresh an entry only when its source
      `{page, state, viewport}` changed, and re-read the caption and the surrounding text.
 5. If a component or state was removed, confirm its page and images are gone from `docs/ui/` and that no guide still

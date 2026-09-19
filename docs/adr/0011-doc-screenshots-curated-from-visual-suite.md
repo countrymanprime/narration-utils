@@ -19,8 +19,8 @@ viewport, docName, caption}` entries, each required to match a row in the existi
 `STATE_CATALOG` (enforced by `shared/ui/src/docScreenshots.test.ts`, part of `pnpm check`).
 `shared/ui/scripts/sync-doc-screenshots.mjs` copies the matching screenshots out of the gitignored
 `shared/ui/screenshots/` output, downsamples and compresses them to WebP (`sharp`, quality 80,
-max width 1280), and writes them into the committed `docs/images/ui/`. `docs/guides/using-the-app.md`
-embeds those images. Two new skills own keeping this pipeline current: `visual-catalog-sync` (UI
+max width 1280), and writes them into the committed `docs/images/ui/`. The guide under
+`docs/guides/using-the-app/` embeds those images. Two new skills own keeping this pipeline current: `visual-catalog-sync` (UI
 change → `STATE_CATALOG`/`app.spec.ts` drivers stay accurate) and `doc-screenshot-sync` (visual
 suite output → `docs/images/ui/` and the guide's prose stay accurate), both wired into
 `full-verification-gate` and `feature-cleanup` respectively rather than a CLAUDE.md paragraph.
@@ -35,3 +35,7 @@ distinctly rather than fixed at the driver level (that's a separate, pre-existin
 flagged out of scope). Sync is agent/developer-driven — nothing fails CI if a screenshot goes
 stale after a UI change; the two skills are the enforcement, not a hard gate, so relying on them
 being invoked is a real (accepted) gap compared to true automated staleness detection.
+
+Update (2026-09-19): the guide was originally one file, `docs/guides/using-the-app.md`. It is now a
+folder, `docs/guides/using-the-app/`, with an index (`README.md`) and one page per app page or large
+feature, kept consistent by `shared/ui/src/docsGuide.test.ts`. The decision above is unchanged.
