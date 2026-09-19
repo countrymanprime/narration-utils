@@ -48,8 +48,10 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+      # -a forces a rebuild: setup-go restores the Go build cache, and CodeQL only sees code the
+      # compiler actually recompiles ("could not process any code written in Go" otherwise).
       - if: matrix.language == 'go'
-        run: go -C shell build ./...
+        run: go -C shell build -a ./...
       - uses: github/codeql-action/analyze@v4
         with:
           category: /language:${{ matrix.language }}
