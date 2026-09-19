@@ -248,6 +248,24 @@ func TestStopKillsASidecarThatIgnoresTheStopFileAfterTheGracePeriod(t *testing.T
 	waitFor(t, "the stopped phase", func() bool { return phase(f.service) == "stopped" })
 }
 
+func TestCloseReturnsOnlyOnceTheSessionIsMarkedStopped(t *testing.T) {
+	f := newFixture(t, "stream")
+	for round := 0; round < 40; round++ {
+		if err := f.service.Start(validOptions()); err != nil {
+			t.Fatalf("round %d: %v", round, err)
+		}
+		waitFor(t, "the script event", func() bool { return f.recorder.firstEvent("script") != nil })
+
+		if err := f.service.Close(context.Background()); err != nil {
+			t.Fatalf("round %d: %v", round, err)
+		}
+
+		if f.service.Busy() {
+			t.Fatalf("round %d: Close returned while the session was still %q", round, phase(f.service))
+		}
+	}
+}
+
 func TestASidecarThatCrashesLeavesAnErrorWithItsLastStderrLine(t *testing.T) {
 	f := newFixture(t, "crash")
 	if err := f.service.Start(validOptions()); err != nil {
