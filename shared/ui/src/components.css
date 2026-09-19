@@ -1,0 +1,114 @@
+/* Component classes. Imported into Tailwind's utilities layer (ahead of the generated
+   utilities) so specificity decides conflicts between these rules and utility classes,
+   the way it did before Tailwind 4 put components in a layer below all utilities. */
+.f-label,
+.section-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.f-mono {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+.section-label {
+  font-weight: 600;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow);
+}
+.panel-head {
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.panel-body {
+  padding: 1.1rem;
+}
+.label,
+label.field-label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.input,
+input[type='text'],
+select,
+textarea {
+  box-sizing: border-box;
+  min-height: var(--control-height);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+  padding: 0.6rem 0.75rem;
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+.input {
+  width: 100%;
+}
+input[readonly] {
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: default;
+}
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.progressbar {
+  height: 1rem;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.progressbar > div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+table.dtable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+table.dtable th {
+  text-align: left;
+  padding: 0.5rem 0.7rem;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--border);
+}
+table.dtable td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+table.dtable tr.row-selected {
+  background: var(--surface-2);
+}
+table.dtable tr[data-row]:hover td {
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.cat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}

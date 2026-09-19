@@ -45,7 +45,7 @@ export function TooltipTarget({ text, children, className = '', style }: { text:
   const shared = useContext(TooltipContext);
   const [local, setLocal] = useState<ActiveTooltip>();
   const isActiveRef = useRef(false);
-  const timer = useRef<number>();
+  const timer = useRef<number | undefined>(undefined);
   const disabledChild = isValidElement(children) && Boolean((children.props as { disabled?: boolean }).disabled);
   const show = (rect: DOMRect) => {
     isActiveRef.current = true;
@@ -101,7 +101,7 @@ export function Tooltip({ text }: { text: string }) {
     <TooltipTarget text={text} className="ml-1">
       <span
         aria-label="More information"
-        className="inline-flex h-[15px] w-[15px] cursor-help items-center justify-center rounded-full border border-[var(--text-faint)] font-['IBM_Plex_Mono',monospace] text-[0.68rem] text-[var(--text-faint)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+        className="inline-flex size-[15px] cursor-help items-center justify-center rounded-full border border-[var(--text-faint)] font-['IBM_Plex_Mono',monospace] text-[0.68rem] text-[var(--text-faint)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
       >
         i
       </span>

@@ -10,11 +10,14 @@ import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
 
-const MIN_IMPORT_ACTIVITY_MS = 450;
-
-function appendLog(logs: string[], line: string) {
-  return logs.includes(line) ? logs : [...logs, line];
-}
+// Import runs as a host-side job; the UI only ever displays the percent and log
+// lines the host reports while polling (ADR-0015) - it never invents progress.
+const IMPORT_POLL_MS = 200;
+// Candidate manuscripts the user has said no to. Module scope, not storage, so a
+// declined offer stays quiet for the rest of the session and is offered again
+// the next time the app starts (ADR-0019).
+const declinedCandidates = new Set<string>();
+const POLLED_PHASES: WorkJob['phase'][] = ['preparing', 'committing'];
 
 function completedLabel(value?: string) {
   if (!value) return 'completed previously';
@@ -42,6 +45,9 @@ export function Home({
   const [importJob, setImportJob] = useState<WorkJob>();
   const [importSelection, setImportSelection] = useState<ManuscriptImportSelection>({});
   const [headingLevel, setHeadingLevel] = useState(1);
+  const [, setDeclineCount] = useState(0);
+  const candidate = data.manuscriptCandidate;
+  const offerCandidate = !found && candidate && !declinedCandidates.has(candidate.path) && !importJob;
   useEffect(() => {
     void api
       .guideEntities()
@@ -53,7 +59,7 @@ export function Home({
       .catch(() => setLastCompleted(undefined));
   }, [api, data.manuscript?.id, data.manuscript?.importedAt]);
   useEffect(() => {
-    if (!importJob?.id || importJob.phase !== 'preparing') return;
+    if (!importJob?.id || !POLLED_PHASES.includes(importJob.phase)) return;
     let active = true;
     const refresh = () =>
       void api
@@ -64,20 +70,18 @@ export function Home({
         .catch(
           (error) => active && setImportJob((current) => (current ? { ...current, phase: 'error', error: String(error), message: String(error) } : current)),
         );
-    // A picker/import can finish before the browser gets a frame.  Delay the
-    // first read just enough for the progress and activity panel to be useful
-    // rather than flashing past it on local SSDs.
-    let timer: number | undefined;
-    const firstRefresh = window.setTimeout(() => {
-      refresh();
-      timer = window.setInterval(refresh, 250);
-    }, MIN_IMPORT_ACTIVITY_MS);
+    refresh();
+    const timer = window.setInterval(refresh, IMPORT_POLL_MS);
     return () => {
       active = false;
-      window.clearTimeout(firstRefresh);
-      if (timer !== undefined) window.clearInterval(timer);
+      window.clearInterval(timer);
     };
   }, [api, importJob?.id, importJob?.phase]);
+  // The host finishes writing the manuscript before it reports success, so the
+  // shared application state is refreshed exactly once, on that transition.
+  useEffect(() => {
+    if (importJob?.phase === 'success') void refreshBootstrap();
+  }, [importJob?.phase, refreshBootstrap]);
   const beginImportPreview = async (jobId: string) => {
     setHeadingLevel(1);
     setImportJob({ id: jobId, kind: 'manuscript_import', phase: 'preparing', message: 'Preparing manuscript import…', percent: 0, logs: [], elapsed: 0 });
@@ -90,32 +94,17 @@ export function Home({
   };
   const commitImport = async () => {
     if (!importJob?.id) return;
-    const startedAt = Date.now();
-    setImportJob((current) =>
-      current
-        ? {
-            ...current,
-            phase: 'committing',
-            percent: 12,
-            message: 'Writing the project-owned manuscript…',
-            logs: appendLog(current.logs, 'Writing the project-owned manuscript…'),
-          }
-        : current,
-    );
     try {
       const selectedCharacterCandidateIds =
         importSelection.characterCandidateIds ?? importJob.preview?.characterCandidates?.map((candidate) => candidate.id) ?? [];
-      const completed = await api.manuscriptImportCommit(importJob.id, {
-        confirmedReset: Boolean(importJob.requiresReset),
-        selection: { sectionKinds: importSelection.sectionKinds, characterCandidateIds: selectedCharacterCandidateIds },
-      });
-      // Refresh the shared application state as soon as the server confirms
-      // the transaction.  This updates Home and pages reached afterwards
-      // without disrupting the completed activity panel.
-      await refreshBootstrap();
-      const remaining = MIN_IMPORT_ACTIVITY_MS - (Date.now() - startedAt);
-      if (remaining > 0) await new Promise<void>((resolve) => window.setTimeout(resolve, remaining));
-      setImportJob(completed);
+      // Returns at once: the job is 'committing' and polling shows its real
+      // stages, or it is still 'ready' with requiresReset asking for a confirm.
+      setImportJob(
+        await api.manuscriptImportCommit(importJob.id, {
+          confirmedReset: Boolean(importJob.requiresReset),
+          selection: { sectionKinds: importSelection.sectionKinds, characterCandidateIds: selectedCharacterCandidateIds },
+        }),
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setImportJob((current) => (current ? { ...current, phase: 'error', error: message, message } : current));
@@ -195,6 +184,23 @@ export function Home({
           )}
         </div>
       </section>
+      {offerCandidate && (
+        <ConfirmDialog
+          title="Import manuscript?"
+          body={`Found ${candidate.name} in this project folder. Import it now? You can also choose a different file with the import button.`}
+          confirmLabel="Import"
+          confirm={() =>
+            void api
+              .manuscriptBeginImport(candidate.path)
+              .then((result) => (result.selected && result.jobId ? beginImportPreview(result.jobId) : undefined))
+              .catch((error) => notify(String(error)))
+          }
+          cancel={() => {
+            declinedCandidates.add(candidate.path);
+            setDeclineCount((count) => count + 1);
+          }}
+        />
+      )}
       {importJob?.phase === 'ready' && importJob.preview && (
         <ConfirmDialog
           title={`Import ${importJob.preview.sourceName}`}
@@ -236,7 +242,7 @@ export function Home({
           )}
           {importJob.preview.sections && importJob.preview.sections.length > 0 && (
             <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
                 Review imported structure
               </legend>
               <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -268,7 +274,7 @@ export function Home({
           )}
           {importJob.preview.characterCandidates && importJob.preview.characterCandidates.length > 0 && (
             <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
                 Story Bible character suggestions
               </legend>
               <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -300,7 +306,7 @@ export function Home({
             </fieldset>
           )}
           <div className="mt-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-            <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+            <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
               Preview activity
             </div>
             <div className="progressbar h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
@@ -338,11 +344,11 @@ export function Home({
             onClick={() => go('/proofing')}
           >
             <div className="mb-1 flex items-center justify-between">
-              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
                 Proofing
               </span>
               <span
-                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.03em]"
+                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
                 style={
                   lastCompleted ? { background: 'var(--review-soft)', color: 'var(--review)' } : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
                 }
@@ -366,11 +372,11 @@ export function Home({
             onClick={() => go('/story-bible')}
           >
             <div className="mb-1 flex items-center justify-between">
-              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
                 Story Bible
               </span>
               <span
-                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.03em]"
+                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
                 style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}
               >
                 {entities.length} entities · {review ? 1 : 0} review

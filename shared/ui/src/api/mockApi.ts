@@ -32,6 +32,7 @@ import {
   WIRE_LOGS,
   WIRE_NOTES,
   WIRE_PARAGRAPHS,
+  withFormatting,
   WIRE_READER_STATE,
   WIRE_TRACKS_PROJECT,
   WIRE_TRANSCRIPT,
@@ -84,7 +85,9 @@ function mockAudioSource(): string | undefined {
 
 export function createMockApi(
   overrides: Partial<NarrationApi> = {},
-  initial: { projectFolder?: string; tracksCandidates?: string[]; noManuscript?: boolean } = {},
+  // manuscriptCandidate boots a project with no imported manuscript but a
+  // manuscript file waiting in its folder (Home offers to import it, ADR-0019).
+  initial: { projectFolder?: string; tracksCandidates?: string[]; noManuscript?: boolean; manuscriptCandidate?: { path: string; name: string } } = {},
 ): NarrationApi {
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
@@ -113,11 +116,19 @@ export function createMockApi(
   const manuscriptReady = loadAliceManuscript(aliceChapterSeeds).then((loaded) => {
     if (!loaded) return;
     chapters = loaded.chapters;
-    paragraphs = loaded.paragraphs.map((paragraph) => ({
+    // The real text needs the same preserved formatting/line-break sample as
+    // the seed fixture, so the reader shows both in either data source.
+    paragraphs = loaded.paragraphs.map(withFormatting).map((paragraph) => ({
       ...paragraph,
       entityIds: entities
         .filter((entity) => [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)].some((term) => paragraph.text.includes(term)))
         .map((entity) => entity.id),
+    }));
+    // The host's chapter list carries each chapter's paragraph ids/indexes, which
+    // "Go to line" deep links (#p<index>) use to find the owning chapter.
+    chapters = chapters.map((chapter) => ({
+      ...chapter,
+      paragraphIds: paragraphs.filter((paragraph) => paragraph.chapterId === chapter.id).map(({ id, index }) => ({ id, index })),
     }));
     // WIRE_ENTITIES' occurrence paragraph numbers are computed against the
     // small local seed fixture, not the real manuscript text just loaded
@@ -263,20 +274,36 @@ export function createMockApi(
         projectFolder,
         projectName,
         daw,
-        manuscript: initial.noManuscript
-          ? null
-          : {
-              id: 'alice',
-              format: 'docx',
-              sourceName: 'Alice.docx',
-              importedAt: '2026-01-01T00:00:00Z',
-              narratableWordCount: 2672,
-              narratableChapterCount: 3,
-            },
+        manuscript:
+          initial.noManuscript || initial.manuscriptCandidate
+            ? null
+            : {
+                id: 'alice',
+                format: 'docx',
+                sourceName: 'Alice.docx',
+                importedAt: '2026-01-01T00:00:00Z',
+                narratableWordCount: 2672,
+                narratableChapterCount: 3,
+              },
+        manuscriptCandidate: initial.manuscriptCandidate ?? null,
         runtime: {},
         transcript: wireClone(transcript),
       }) as Bootstrap,
     selectManuscript: async () => {
+      importJob = {
+        id: 'mock-import',
+        kind: 'manuscript_import',
+        phase: 'preparing',
+        message: 'Manuscript selected. Choose import options to continue.',
+        percent: 0,
+        logs: ['Selected manuscript'],
+        elapsed: 0,
+        preview: { format: 'docx', sourceName: 'Alice.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] },
+        requiresReset: false,
+      };
+      return { selected: true, jobId: 'mock-import' };
+    },
+    manuscriptBeginImport: async () => {
       importJob = {
         id: 'mock-import',
         kind: 'manuscript_import',
@@ -297,7 +324,14 @@ export function createMockApi(
         phase: 'ready',
         percent: 100,
         message: 'Import preview is ready.',
-        logs: [...importJob.logs, `Parsed chapter heading level ${markdownHeadingLevel}.`],
+        // Mirrors the host's staged import log (shell/internal/importer).
+        logs: [
+          ...importJob.logs,
+          `Reading document structure using H${markdownHeadingLevel} chapter headings`,
+          'Read 240 paragraphs, 12 of them headings',
+          'Classifying front matter, chapters and reference sections',
+          'Preview ready: 240 paragraphs, 3 chapters, 0 character suggestions',
+        ],
       };
       return wireClone(importJob);
     },
@@ -305,7 +339,9 @@ export function createMockApi(
       importJob = {
         ...importJob,
         phase: 'success',
+        percent: 100,
         message: 'Manuscript import complete.',
+        logs: [...importJob.logs, 'Copying Alice.docx (48 KB) into the project and computing its checksum', 'Writing manuscript.json', 'Manuscript imported'],
         result: { id: 'alice', format: 'docx', sourceName: 'Alice.docx', importedAt: '2026-01-01T00:00:00Z' },
       };
       return wireClone(importJob);
@@ -452,7 +488,6 @@ export function createMockApi(
         ...entity,
         relationships: entity.relationships.filter((relationship) => !(relationship.id === otherId && relationship.label === label)),
       })),
-    guideExport: async () => 'C:/Projects/Voltage-and-the-Undercroft/TranscriptCompare/hotwords.txt',
     guidePreview: async () =>
       ttsInstalled
         ? { status: 'ready' as const, audioBase64: '', mimeType: 'audio/wav' }

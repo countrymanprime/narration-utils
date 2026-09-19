@@ -35,8 +35,28 @@ func (s *Store) Effective(tool, key, fallback string) (string, string) {
 	return fallback, "hardcoded"
 }
 
+// builtinDefaults mirrors shared/config/defaults.json. That file only exists in
+// a source checkout; an installed build has no repo root, so without this every
+// effective default read back empty - most visibly the Settings color pickers,
+// which rendered #000000 for every color. store_test.go keeps the two in sync.
+var builtinDefaults = map[string]Values{
+	"General":           {"log_verbosity": "normal"},
+	"ManuscriptGuide":   {"spacy_model": "en_core_web_sm"},
+	"Piper":             {"tts_provider": "piper", "tts_voice_id": "en_US-ljspeech-high"},
+	"Manuscript":        {"color_note": "B85C1E"},
+	"TranscriptCompare": {"chunk_seconds": "60", "model_size": "small", "color_misread": "FF4040", "color_skipped": "FFC000", "color_extra": "40A0FF"},
+}
+
+// Defaults returns the repo file's values for tool, with any key the file does
+// not provide filled from builtinDefaults.
 func (s *Store) Defaults(tool string) Values {
-	return readTool(filepath.Join(s.repoPath(), "shared", "config", "defaults.json"), tool)
+	values := readTool(filepath.Join(s.repoPath(), "shared", "config", "defaults.json"), tool)
+	for key, value := range builtinDefaults[tool] {
+		if _, ok := values[key]; !ok {
+			values[key] = value
+		}
+	}
+	return values
 }
 func (s *Store) Global(tool string) Values { return readTool(globalPath(), tool) }
 func (s *Store) Project(tool string) Values {

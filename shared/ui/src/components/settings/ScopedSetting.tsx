@@ -14,6 +14,16 @@ const optionTip = (field: ScopedSettingField, value: string) =>
     ? `Use ${value} as the saved base color.`
     : `${proofingChoiceLabel(field.key, value)} is the selected ${field.label.toLowerCase()} option.`;
 
+// A native color input can only show a full #rrggbb value. An empty or invalid
+// setting used to be zero-padded to #000000, so every unset color looked like a
+// deliberate black; show a neutral gray instead and let the text field say
+// "Not set".
+const NEUTRAL_PICKER_COLOR = '#808080';
+export const pickerColor = (value: string) => {
+  const hex = value.replace('#', '');
+  return /^[0-9a-f]{6}$/i.test(hex) ? `#${hex}` : NEUTRAL_PICKER_COLOR;
+};
+
 export function ScopedSetting({
   field,
   scope,
@@ -31,7 +41,7 @@ export function ScopedSetting({
   const isColor = field.kind === 'color';
   const isText = field.kind === 'text';
   const controlClass =
-    'min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline focus:outline-2 focus:outline-[var(--accent)] focus:outline-offset-1';
+    'min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-[var(--accent)] focus:outline-offset-1';
   return (
     <div className="grid grid-cols-[minmax(12rem,16rem)_minmax(0,1fr)] items-start gap-5 border-b border-[var(--border)] py-4">
       <div className="pt-2 text-[0.82rem] font-medium text-[var(--text-muted)]">
@@ -43,13 +53,14 @@ export function ScopedSetting({
           <>
             <input
               aria-label={`${field.label} hex`}
-              className="h-[2.35rem] w-[2.35rem] rounded-[0.35rem] border border-[var(--border)] bg-[var(--surface)] p-[0.2rem]"
+              className="size-[2.35rem] rounded-[0.35rem] border border-[var(--border)] bg-[var(--surface)] p-[0.2rem]"
               type="color"
-              value={`#${effective.padStart(6, '0')}`}
+              value={pickerColor(effective)}
               onChange={(event) => change(event.target.value.slice(1).toUpperCase())}
             />
             <input
               className={`${controlClass} font-['IBM_Plex_Mono',ui-monospace,monospace]`}
+              placeholder="Not set"
               value={effective}
               onChange={(event) => change(event.target.value.replace('#', '').toUpperCase())}
             />

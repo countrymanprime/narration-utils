@@ -8,8 +8,11 @@ import { settlePage } from './helpers/settle';
 // tests at import time) so Vitest can check it against the catalog.
 export type Driver = (page: Page) => Promise<void>;
 
-// Stops every page timer (setTimeout, requestAnimationFrame) where it stands.
+// Stops every page timer (setTimeout, requestAnimationFrame) where it stands. Installed only for
+// the states that need it: a fake clock left on for a whole run interferes with React 19's
+// transition scheduling (the mobile nav drawer stops closing after navigation).
 async function freezeClock(page: Page): Promise<void> {
+  await page.clock.install();
   const now = await page.evaluate(() => Date.now());
   await page.clock.pauseAt(new Date(now + 10));
 }
@@ -18,9 +21,17 @@ async function clickVisible(page: Page, role: Parameters<Page['getByRole']>[0], 
   const target = page.getByRole(role, { name, exact: typeof name === 'string' }).and(page.locator(':visible'));
   // At the mobile viewport the nav rail is hidden entirely behind the
   // hamburger menu - AppShell only mounts a visible copy of it inside the
-  // slide-in drawer once opened. If nothing matches yet, open the drawer
-  // and retry before giving up.
-  if ((await target.count()) === 0) {
+  // slide-in drawer once opened. Only reach for the drawer when the target
+  // genuinely never shows up: a page that is merely still rendering (React
+  // schedules route changes a beat later) must not get a drawer opened over it.
+  const appeared = await target
+    .first()
+    .waitFor({ state: 'visible', timeout: 1_500 })
+    .then(
+      () => true,
+      () => false,
+    );
+  if (!appeared) {
     const hamburger = page.getByRole('button', { name: 'Open navigation' });
     if (await hamburger.count()) await hamburger.click();
   }
@@ -48,30 +59,30 @@ async function clickSettingsCategory(page: Page, name: string): Promise<void> {
 // the Range directly and dispatching mouseup ourselves - mirroring how the
 // component's own test does it - is deterministic across viewports.
 async function selectFirstParagraphText(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const paragraph = document.querySelector('#manuscript-text p, .manuscript-reader p');
-    if (!paragraph) return;
-    // The paragraph's own firstChild is often a <mark>/<span> entity
-    // highlight, not a plain text node long enough to slice - walk to the
-    // first real Text node with enough content instead of assuming layout.
-    const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
-    let textNode: Text | null = null;
-    while (walker.nextNode()) {
-      const candidate = walker.currentNode as Text;
-      if ((candidate.textContent?.length ?? 0) >= 20) {
-        textNode = candidate;
-        break;
+  // Chapter paragraphs load after the page mounts; wait for real prose, not just the container.
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-paragraph-text]')].some((node) => (node.textContent?.length ?? 0) >= 20));
+  const selected = await page.evaluate(() => {
+    // The paragraph's own firstChild is often a <mark>/<span> entity highlight, and
+    // the first paragraphs can be short titles - walk every paragraph to the first
+    // real Text node with enough content instead of assuming layout.
+    for (const paragraph of document.querySelectorAll('[data-paragraph-text]')) {
+      const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) {
+        const candidate = walker.currentNode as Text;
+        if ((candidate.textContent?.length ?? 0) < 20) continue;
+        const range = document.createRange();
+        range.setStart(candidate, 0);
+        range.setEnd(candidate, 20);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        paragraph.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        return true;
       }
     }
-    if (!textNode) return;
-    const range = document.createRange();
-    range.setStart(textNode, 0);
-    range.setEnd(textNode, 20);
-    const selection = window.getSelection();
-    selection?.removeAllRanges();
-    selection?.addRange(range);
-    paragraph.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+    return false;
   });
+  if (!selected) throw new Error('no paragraph with enough text to select - did the reader markup change?');
 }
 
 // Some states have no known/safe driver yet (e.g. alias-typeahead, forcing
@@ -112,6 +123,18 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       // TooltipTarget shows its tooltip 1s after hover - wait for it, don't race it.
       await page.getByRole('tooltip').waitFor();
     },
+    'manuscript-candidate-offer': async (page) => {
+      // Reload with the mock's candidate boot seam (see main.tsx), like
+      // project/picker-empty does for the no-project seam.
+      await page.goto('/?mockManuscriptCandidate=1');
+      await settlePage(page);
+      await page.getByRole('dialog', { name: 'Import manuscript?' }).waitFor();
+    },
+    'import-activity-log': async (page) => {
+      await clickVisible(page, 'button', 'Replace manuscript');
+      await clickVisible(page, 'button', 'Import');
+      await page.getByText('Manuscript imported', { exact: true }).first().waitFor();
+    },
     'import-confirm': async (page) => {
       // The default mock state already has a manuscript loaded, so "Import
       // manuscript" isn't visible - "Replace manuscript" drives the same
@@ -141,9 +164,9 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       // The default chapter's seeded note spans a whole paragraph, and an
       // entity <mark> nested inside it calls stopPropagation() on click - a
       // click resolving to that nested mark never reaches the outer note's
-      // handler. Exclude overlays that contain a mark so the click lands on
-      // the note itself.
-      await page.locator('.note-overlay:not(:has(.ms-highlight))').first().click();
+      // handler. Exclude notes that contain another highlight so the click
+      // lands on the note itself.
+      await page.locator('[data-highlight="Note"]:not(:has([data-highlight]))').first().click();
     },
     'detail-sidebar-entity': async (page) => {
       await goToPage(page, 'Manuscript');
@@ -171,6 +194,36 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Manuscript');
       await selectFirstParagraphText(page);
       await clickVisible(page, 'button', '+ Note');
+    },
+    'formatted-text-and-line-breaks': async (page) => {
+      await goToPage(page, 'Manuscript');
+      // The mock seeds an underlined, italic and bold phrase plus a line break
+      // in the rabbit-hole paragraph (mockFixtures.ts withFormatting).
+      await page.locator('[data-paragraph-text] u').first().scrollIntoViewIfNeeded();
+      await page
+        .locator('[data-paragraph-text] u')
+        .first()
+        .evaluate((element) => element.scrollIntoView({ block: 'center' }));
+    },
+    'chapter-bookmarked': async (page) => {
+      await goToPage(page, 'Manuscript');
+      await page.locator('article header button.group').first().click();
+    },
+    'go-to-line-highlight': async (page) => {
+      await goToPage(page, 'Story Bible');
+      await page.locator('tr[data-row]').first().click();
+      await page
+        .getByRole('button', { name: /Go to line/ })
+        .first()
+        .click();
+      await page.locator('[data-jump-target]').first().waitFor();
+    },
+    'reader-dark': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'button', 'Global');
+      await clickSettingsCategory(page, 'Appearance');
+      await clickVisible(page, 'button', 'Dark');
+      await goToPage(page, 'Manuscript');
     },
   },
   proofing: {
@@ -256,7 +309,16 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       // fixture data happens to sort first into the row - findAliasMatches
       // excludes the selected entity by id, not by name, so this can't
       // accidentally match zero results.
+      // Entries open read-only (ADR-0018): unlock if needed, then Edit, before
+      // the alias field accepts input.
+      const unlock = page.getByRole('button', { name: 'Unlock entry' });
+      if (await unlock.count()) await unlock.click();
+      await clickVisible(page, 'button', 'Edit this entry');
       await page.getByPlaceholder('Add an alias or find a matching entry…').fill('at');
+    },
+    'entry-needs-review': async (page) => {
+      await goToPage(page, 'Story Bible');
+      await page.locator('tr[data-row]', { hasText: 'March Hare' }).click();
     },
     'delete-confirm': async (page) => {
       await goToPage(page, 'Story Bible');
@@ -277,6 +339,13 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'entry-unlocked': async (page) => {
       await goToPage(page, 'Story Bible');
       await page.locator('tr[data-row]').first().click();
+    },
+    'entry-editing': async (page) => {
+      await goToPage(page, 'Story Bible');
+      await page.locator('tr[data-row]').first().click();
+      const unlock = page.getByRole('button', { name: 'Unlock entry' });
+      if (await unlock.count()) await unlock.click();
+      await clickVisible(page, 'button', 'Edit this entry');
     },
   },
   tracks: {

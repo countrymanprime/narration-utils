@@ -1,4 +1,4 @@
-# 0013. The visual suite is a validated capture contract, and Storybook is the component layer
+# 0021. The visual suite is a validated capture contract, and Storybook is the component layer
 
 - Status: accepted
 - Date: 2026-09-19
@@ -40,3 +40,5 @@ pixel baselines are not adopted here; if they are added later they must come fro
 developer machine.
 
 The primitives atlas (`pnpm --dir shared/ui atlas`: every story x light/dark x 1024/390px, with `play()`, axe and overflow checks) found three more things immediately. The active `Pill` label (and two copy-pasted equivalents in `Transcript` and `Manuscript`) rendered muted grey on the accent fill because two text colours sat on one element; fixed by choosing one per state. `Dialog` and `WorkDialog` scroll regions were not keyboard reachable; fixed with `tabIndex={0}`. Palette tokens `--text-faint` (and `--text-muted` on `--surface-2`/`--surface-3`) miss WCAG AA 4.5:1; fixing that collapses the faint/muted hierarchy, so it is recorded as explicit, reasoned, ratcheted debt in `shared/ui/tests/atlas/a11y-debt.ts` (WorkDialog, MeterBar) rather than hidden or silently re-coloured. Components also lack some accessibility semantics (no Escape or focus trap in dialogs, no `role=progressbar` on the meters); those are noted in the story files' comments, not fixed here.
+
+Running both suites against `main` after its React 19 / Tailwind 4 / router 7 upgrade found more: the Manuscript deep-link effect looped ("Maximum update depth exceeded") because it re-fired for a `#p...` hash the router had not yet cleared, fixed by consuming each hash once; the capture driver's mobile-drawer helper opened the nav drawer over a page that was merely still rendering; and the selection-popup and add-note states had silently stopped selecting anything after a markup change, which the duplicate-screenshot check caught. The active nav item (accent text on an accent tint, 4.03:1) and `Highlight` (category colours on their own tint, 3.2-3.8:1) join the recorded contrast debt. A page-wide fake clock is not used: it stops React 19 transitions, so only the toast state freezes timers.

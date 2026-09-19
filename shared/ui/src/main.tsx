@@ -31,11 +31,15 @@ const mockNoRpp = mockParams.has('mockNoRpp');
 // `?mockNoManuscript=1` boots a project with no manuscript imported yet, so
 // Home shows its manuscript-not-found banner and Proofing/Story Bible are locked.
 const mockNoManuscript = mockParams.has('mockNoManuscript');
+// `?mockManuscriptCandidate=1` boots a project with no imported manuscript but a
+// manuscript.docx in its folder, so Home shows the import offer.
+const mockManuscriptCandidate = mockParams.has('mockManuscriptCandidate');
 const mockInitial = {
   ...(mockNoManuscript ? { noManuscript: true } : {}),
   ...(mockNoProject ? { projectFolder: '' } : {}),
   ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),
   ...(mockNoRpp ? { tracksCandidates: [] } : {}),
+  ...(mockManuscriptCandidate ? { manuscriptCandidate: { path: 'C:/Projects/Alice-in-Wonderland/manuscript.docx', name: 'manuscript.docx' } } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

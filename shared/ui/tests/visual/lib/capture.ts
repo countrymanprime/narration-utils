@@ -9,10 +9,6 @@ import type { StateEntry } from '../state-catalog';
 import type { Viewport } from '../viewports';
 import { OVERFLOW_TOLERANCE_PX, SIGNATURE_HEIGHT, SIGNATURE_WIDTH, type CaptureRecord } from './validators';
 
-// Every capture starts from the same wall-clock so relative dates and
-// "x minutes ago" text cannot drift between runs or across days.
-const FIXED_NOW = new Date('2026-09-15T15:00:00Z');
-
 function watchForProblems(page: Page): string[] {
   const problems: string[] = [];
   page.on('pageerror', (error) => problems.push(`uncaught error: ${error.message}`));
@@ -52,7 +48,6 @@ function writeRecord(record: CaptureRecord): void {
 export async function captureState(page: Page, entry: StateEntry, viewport: Viewport, driver: Driver): Promise<void> {
   const problems = watchForProblems(page);
 
-  await page.clock.install({ time: FIXED_NOW });
   await page.setViewportSize({ width: viewport.width, height: viewport.height });
   await page.goto('/');
   await settlePage(page);

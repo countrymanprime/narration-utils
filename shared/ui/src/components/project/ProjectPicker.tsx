@@ -106,7 +106,7 @@ export function ProjectPicker() {
   return (
     <div className="grid min-h-screen place-items-center p-6">
       {/* min-w-0: as a grid item the card otherwise grows to its longest nowrap child (a project path) and overflows narrow screens. */}
-      <div className="w-full min-w-0 max-w-2xl rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
+      <div className="w-full max-w-2xl min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
         <div className="text-lg font-semibold">Open a project</div>
         <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
           Choose a recent project, browse to an existing folder, or create a new one.
@@ -118,7 +118,7 @@ export function ProjectPicker() {
         )}
         <section className="mt-5">
           <div
-            className="mb-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]"
+            className="mb-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase"
             tabIndex={-1}
             ref={recentsHeadingRef}
           >
@@ -153,7 +153,7 @@ export function ProjectPicker() {
                       if (node) removeButtonRefs.current.set(entry.path, node);
                       else removeButtonRefs.current.delete(entry.path);
                     }}
-                    className="absolute right-2 top-2 inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold uppercase tracking-[0.03em] disabled:pointer-events-none disabled:opacity-40"
+                    className="absolute top-2 right-2 inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase disabled:pointer-events-none disabled:opacity-40"
                     aria-label={`Remove ${entry.name} from recent projects`}
                     onClick={() => void removeRecent(entry)}
                     disabled={busy}
@@ -172,7 +172,7 @@ export function ProjectPicker() {
           </Button>
           <button
             type="button"
-            className="inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold uppercase tracking-[0.03em] disabled:pointer-events-none disabled:opacity-40"
+            className="inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase disabled:pointer-events-none disabled:opacity-40"
             onClick={() => void createNew()}
             disabled={busy}
           >

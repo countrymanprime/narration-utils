@@ -18,7 +18,7 @@ export function Pill({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`rounded-[0.35rem] border border-[var(--border)] px-[0.65rem] py-[0.3rem] font-['Barlow_Condensed',sans-serif] text-[0.78rem] font-semibold uppercase tracking-[0.03em] disabled:opacity-40 ${active ? 'active border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]' : 'text-[var(--text-muted)]'}`}
+      className={`rounded-[0.35rem] border px-[0.65rem] py-[0.3rem] font-['Barlow_Condensed',sans-serif] text-[0.78rem] font-semibold tracking-[0.03em] uppercase disabled:opacity-40 ${active ? 'active border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]' : 'border-[var(--border)] text-[var(--text-muted)]'}`}
     >
       {label}
     </button>

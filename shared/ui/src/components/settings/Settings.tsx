@@ -144,7 +144,7 @@ export function Settings({
         {(['global', 'project'] as Scope[]).map((option) => (
           <button
             key={option}
-            className={`border-b-2 border-transparent px-[0.9rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold uppercase tracking-[0.03em] text-[var(--text-muted)] hover:text-[var(--text)] ${scope === option ? 'border-[var(--accent)] text-[var(--text)]' : ''}`}
+            className={`border-b-2 px-[0.9rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase hover:text-[var(--text)] ${scope === option ? 'border-[var(--accent)] text-[var(--text)]' : 'border-transparent text-[var(--text-muted)]'}`}
             onClick={() => requestChange(() => setScope(option))}
           >
             {option === 'global' ? 'Global' : 'This Project'}
@@ -156,7 +156,7 @@ export function Settings({
           {categories.map((entry) => (
             <button
               key={entry.key}
-              className={`relative flex items-center gap-[0.6rem] whitespace-nowrap rounded-[0.4rem] border-0 px-[0.8rem] py-[0.55rem] text-left font-['Barlow_Condensed',sans-serif] text-base font-semibold uppercase tracking-[0.03em] text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text)] md:w-full md:whitespace-normal ${category === entry.key ? 'bg-[color-mix(in_srgb,var(--accent)_10%,var(--surface))] text-[var(--accent)]' : ''}`}
+              className={`relative flex items-center gap-[0.6rem] rounded-[0.4rem] border-0 px-[0.8rem] py-[0.55rem] text-left font-['Barlow_Condensed',sans-serif] text-base font-semibold tracking-[0.03em] whitespace-nowrap uppercase hover:bg-[var(--surface-2)] hover:text-[var(--text)] md:w-full md:whitespace-normal ${category === entry.key ? 'bg-[color-mix(in_srgb,var(--accent)_10%,var(--surface))] text-[var(--accent)]' : 'text-[var(--text-muted)]'}`}
               onClick={() => requestChange(() => setCategory(entry.key))}
             >
               {entry.label}
@@ -165,7 +165,7 @@ export function Settings({
         </nav>
         <section className="min-h-0 overflow-visible rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)] md:overflow-auto">
           <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
-            <h2 className="font-['Barlow_Condensed',sans-serif] text-lg uppercase tracking-[0.08em]">{active?.label}</h2>
+            <h2 className="font-['Barlow_Condensed',sans-serif] text-lg tracking-[0.08em] uppercase">{active?.label}</h2>
             <span className="text-xs" style={{ color: 'var(--text-faint)' }}>
               {scope === 'global' ? 'Global defaults' : 'This Project — falls back to Global where unset'}
             </span>
@@ -192,7 +192,7 @@ export function Settings({
                       Import this action once in REAPER. If Narration Utils is moved or updated, re-import this path when prompted; the app never changes REAPER
                       for you.
                     </p>
-                    <code className="mt-2 block break-all rounded p-2 text-xs" style={{ background: 'var(--surface)' }}>
+                    <code className="mt-2 block rounded p-2 text-xs break-all" style={{ background: 'var(--surface)' }}>
                       {reaperLauncher}
                     </code>
                     <Button

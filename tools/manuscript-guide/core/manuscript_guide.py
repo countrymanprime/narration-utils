@@ -14,21 +14,20 @@ import os
 import re
 import sys
 import wave
-from collections import defaultdict
-from datetime import datetime, timezone
+from collections import Counter, defaultdict
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 _SHARED_PYTHON = Path(__file__).resolve().parents[3] / "shared" / "python"
 if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
-from narration_common.config import get_default  # noqa: E402
-from narration_common import manuscript as canonical_manuscript  # noqa: E402
-from narration_common.logging_utils import log, set_log_file  # noqa: E402
-from narration_common.progress import write_progress  # noqa: E402
-from piper.voice import PiperVoice  # noqa: E402
-
+from narration_common import manuscript as canonical_manuscript
+from narration_common.config import get_default
+from narration_common.logging_utils import log, set_log_file
+from narration_common.progress import write_progress
+from piper.voice import PiperVoice
 
 SCHEMA_VERSION = 2
 CAPITALIZED = re.compile(r"\b[A-Z][A-Za-z'’-]*(?:\s+(?:(?:of|the|and)\s+)?[A-Z][A-Za-z'’-]*){0,3}\b")
@@ -78,6 +77,25 @@ STOPWORDS = {
     "You",
     "Your",
 }
+# Story Bible extraction deliberately favours precision over recall - see
+# docs/architecture/story-bible-entity-accuracy.md. Better to miss a few names
+# than to surface half the dictionary.
+FILLER_PREFIXES = {"about", "the", "a", "an", "with", "from", "near", "of", "in", "on", "at", "to", "by"}
+LEADING_FILLER_WORDS = FILLER_PREFIXES | {word.lower() for word in STOPWORDS}
+LEADING_FILLER = re.compile(r"^(?:(?:" + "|".join(sorted(map(re.escape, LEADING_FILLER_WORDS))) + r")\s+)+", re.IGNORECASE)
+POSSESSIVE = re.compile(r"['’]s$", re.IGNORECASE)
+TRAILING_PUNCTUATION = " ,.;:!?\"'”’"
+CAPITAL_TOKEN = re.compile(r"\b[A-Z][A-Za-z'’-]*\b")
+LOWERCASE_TOKEN = re.compile(r"(?<![A-Za-z])[a-z]+(?:[-'’][a-z]+)*(?![A-Za-z])")
+SENTENCE_END_CHARACTERS = ".!?…"
+SENTENCE_START_SKIPPABLE = " \t\r\n\"'“”‘’()[]{}"
+SENTENCE_START_LOOKBEHIND = 16
+SPACY_ENTITY_LABELS = {"PERSON", "ORG", "GPE", "LOC", "FAC"}
+COMMON_WORD_SUFFIXES = ("able", "ible", "ing", "ed", "ly", "ous", "ful", "less", "ive")
+MIN_SUFFIX_STEM_LENGTH = 3  # "Ned" and "Fred" are names, not -ed adjectives.
+MIN_MID_SENTENCE_MENTIONS = 2
+MIN_NEEDS_REVIEW_OCCURRENCES = 3
+MIN_SINGLE_WORD_VOCABULARY_OCCURRENCES = 3
 PERSON_WORDS = {"said", "asked", "replied", "cried", "whispered", "smiled", "walked", "looked", "thought"}
 PLACE_WORDS = {"city", "town", "village", "kingdom", "country", "street", "river", "mountain", "forest", "castle", "planet", "station", "island"}
 ORG_WORDS = {"company", "guild", "order", "society", "council", "army", "agency", "corporation", "clan", "house", "university", "church"}
@@ -243,33 +261,115 @@ def find_occurrences(paragraphs: list[dict[str, str]], name: str) -> list[dict[s
     return found
 
 
-def rule_candidates(paragraphs: list[dict[str, str]]) -> list[dict[str, str]]:
-    found: list[dict[str, str]] = []
-    for para_index, paragraph in enumerate(paragraphs):
+class WordStats(NamedTuple):
+    """Manuscript-wide signals used to tell names from ordinary words without a dictionary."""
+
+    # Every word that appears wholly lowercase somewhere in the manuscript.
+    lowercase_forms: frozenset[str]
+    # Capitalized tokens (normalized) that are NOT the first word of a sentence.
+    mid_sentence_counts: Counter[str]
+
+
+def is_sentence_start(text: str, index: int) -> bool:
+    """True when the word at `index` opens a sentence (or the paragraph)."""
+    prefix = text[max(0, index - SENTENCE_START_LOOKBEHIND) : index].rstrip(SENTENCE_START_SKIPPABLE)
+    if not prefix:
+        return index <= SENTENCE_START_LOOKBEHIND
+    return prefix[-1] in SENTENCE_END_CHARACTERS
+
+
+def word_stats(paragraphs: list[dict[str, str]]) -> WordStats:
+    lowercase_forms: set[str] = set()
+    mid_sentence_counts: Counter[str] = Counter()
+    for paragraph in paragraphs:
         text = paragraph["text"]
-        for match in CAPITALIZED.finditer(text):
-            name = match.group(0).strip(" ,.;:!?\"'”’")
-            name = re.sub(r"^(?:A|An|The)\s+", "", name).strip()
-            words = name.split()
-            if not name or name in STOPWORDS or all(word in STOPWORDS for word in words):
-                continue
-            # A lone capital at the beginning of a normal sentence is usually not a name.
-            if len(words) == 1 and match.start() == 0 and name in STOPWORDS:
-                continue
-            found.append(
-                {
-                    "name": name,
-                    "chapter": paragraph["chapter"],
-                    "chapterId": paragraph.get("chapterId", f"legacy-chapter-{para_index}"),
-                    "paragraph": str(para_index),
-                    "paragraphId": paragraph.get("paragraphId", f"legacy-paragraph-{para_index}"),
-                    "text": text,
-                    "start": str(match.start()),
-                    "end": str(match.end()),
-                    "source": "rule",
-                }
-            )
-    return found
+        for token in LOWERCASE_TOKEN.findall(text):
+            lowercase_forms.add(token)
+            lowercase_forms.update(part for part in re.split(r"[-'’]", token) if len(part) > 1)
+        for match in CAPITAL_TOKEN.finditer(text):
+            if not is_sentence_start(text, match.start()):
+                mid_sentence_counts[normalize_name(POSSESSIVE.sub("", match.group(0)))] += 1
+    return WordStats(frozenset(lowercase_forms), mid_sentence_counts)
+
+
+def is_stopword(word: str) -> bool:
+    return word.lower() in LEADING_FILLER_WORDS
+
+
+def clean_entity_text(raw: str, start: int) -> tuple[str, int, int] | None:
+    """Strip filler ("About S-Dawn" -> "S-Dawn"), possessives and punctuation.
+
+    Returns the cleaned name with its offsets in the source text, or None when
+    nothing name-like is left."""
+    body = raw.lstrip()
+    start += len(raw) - len(body)
+    body = POSSESSIVE.sub("", body.rstrip(TRAILING_PUNCTUATION))
+    name = LEADING_FILLER.sub("", body)
+    start += len(body) - len(name)
+    if not name or all(is_stopword(word) for word in name.split()):
+        return None
+    return name, start, start + len(name)
+
+
+def has_common_suffix(word: str) -> bool:
+    letters = re.sub(r"[^a-z]", "", word.lower())
+    return any(letters.endswith(suffix) and len(letters) >= len(suffix) + MIN_SUFFIX_STEM_LENGTH for suffix in COMMON_WORD_SUFFIXES)
+
+
+def is_common_word(name: str, stats: WordStats, spacy_tagged: bool) -> bool:
+    """A single-word candidate is a common word when it also occurs in lowercase in
+    the manuscript, or looks like an adjective/adverb. Only a spaCy entity tag
+    backed by two capitalized mid-sentence mentions overrides that."""
+    if spacy_tagged and stats.mid_sentence_counts[normalize_name(name)] >= MIN_MID_SENTENCE_MENTIONS:
+        return False
+    return name.lower() in stats.lowercase_forms or has_common_suffix(name)
+
+
+def make_candidate(paragraph: dict[str, str], para_index: int, name: str, start: int, end: int, source: str) -> dict[str, str]:
+    return {
+        "name": name,
+        "chapter": paragraph["chapter"],
+        "chapterId": paragraph.get("chapterId", f"legacy-chapter-{para_index}"),
+        "paragraph": str(para_index),
+        "paragraphId": paragraph.get("paragraphId", f"legacy-paragraph-{para_index}"),
+        "text": paragraph["text"],
+        "start": str(start),
+        "end": str(end),
+        "source": source,
+    }
+
+
+def is_title_prefixed(name: str) -> bool:
+    words = name.split()
+    return len(words) > 1 and words[0].lower().strip(".") in TITLE_WORDS
+
+
+def accept_rule_name(name: str, stats: WordStats, title_aliases: set[str]) -> bool:
+    """Rules-only acceptance: multi-word names pass; a single word must not look
+    like a common word AND must either be the short form of an already accepted
+    "Captain X" style name or be capitalized mid-sentence at least twice."""
+    if len(name.split()) > 1:
+        return True
+    if is_common_word(name, stats, spacy_tagged=False):
+        return False
+    key = normalize_name(name)
+    return key in title_aliases or stats.mid_sentence_counts[key] >= MIN_MID_SENTENCE_MENTIONS
+
+
+def rule_candidates(paragraphs: list[dict[str, str]]) -> list[dict[str, str]]:
+    stats = word_stats(paragraphs)
+    mentions: list[tuple[int, str, int, int]] = []
+    for para_index, paragraph in enumerate(paragraphs):
+        for match in CAPITALIZED.finditer(paragraph["text"]):
+            cleaned = clean_entity_text(match.group(0), match.start())
+            if cleaned is not None:
+                mentions.append((para_index, *cleaned))
+    title_aliases = {normalize_name(name.split()[-1]) for _, name, _, _ in mentions if is_title_prefixed(name)}
+    return [
+        make_candidate(paragraphs[para_index], para_index, name, start, end, "rule")
+        for para_index, name, start, end in mentions
+        if accept_rule_name(name, stats, title_aliases)
+    ]
 
 
 def spacy_candidates(paragraphs: list[dict[str, str]], model_name: str) -> list[dict[str, str]] | None:
@@ -277,28 +377,22 @@ def spacy_candidates(paragraphs: list[dict[str, str]], model_name: str) -> list[
         import spacy
 
         nlp = spacy.load(model_name, disable=["parser", "lemmatizer", "textcat"])
-    except Exception as exc:  # Local rule extraction is a supported fallback.
+    except Exception as exc:  # Local rule extraction is a supported fallback.  # noqa: BLE001
         log(f"WARNING: spaCy model unavailable ({exc}); using lower-quality rules-only extraction.")
         return None
+    stats = word_stats(paragraphs)
     found: list[dict[str, str]] = []
-    allowed = {"PERSON", "ORG", "GPE", "LOC", "FAC"}
     for para_index, (paragraph, doc) in enumerate(zip(paragraphs, nlp.pipe(p["text"] for p in paragraphs))):
         for ent in doc.ents:
-            if ent.label_ not in allowed or not ent.text.strip():
+            if ent.label_ not in SPACY_ENTITY_LABELS:
                 continue
-            found.append(
-                {
-                    "name": ent.text.strip(),
-                    "chapter": paragraph["chapter"],
-                    "chapterId": paragraph.get("chapterId", f"legacy-chapter-{para_index}"),
-                    "paragraph": str(para_index),
-                    "paragraphId": paragraph.get("paragraphId", f"legacy-paragraph-{para_index}"),
-                    "text": paragraph["text"],
-                    "start": str(ent.start_char),
-                    "end": str(ent.end_char),
-                    "source": ent.label_,
-                }
-            )
+            cleaned = clean_entity_text(ent.text, ent.start_char)
+            if cleaned is None:
+                continue
+            name, start, end = cleaned
+            if len(name.split()) == 1 and is_common_word(name, stats, spacy_tagged=True):
+                continue
+            found.append(make_candidate(paragraph, para_index, name, start, end, ent.label_))
     return found
 
 
@@ -317,6 +411,11 @@ def classify(candidate: dict[str, str]) -> str:
         return "Place"
     if name_words & TITLE_WORDS:
         return "Character"
+    # Nothing confident applies to a lone word: a nearby "said" or "river" is not
+    # enough to call it a person or place (e.g. "S-Dawn"), so ask for review
+    # instead of guessing. spaCy-tagged entities already returned above.
+    if len(candidate["name"].split()) < 2:
+        return "Needs Review"
     text = candidate["text"].lower()
     start, end = int(candidate["start"]), int(candidate["end"])
     before = re.findall(r"[a-z]+", text[max(0, start - 28) : start])
@@ -348,7 +447,7 @@ def pronunciation(name: str, espeak_library: str | None) -> dict[str, str]:
         phones = [pronouncing.phones_for_word(word.lower())[0] for word in words if pronouncing.phones_for_word(word.lower())]
         if words and len(phones) == len(words):
             return {"ipa": " ".join(arpabet_to_ipa(phone) for phone in phones), "source": "CMU dictionary", "confidence": "medium"}
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         log(f"CMU pronunciation unavailable ({exc}).")
     try:
         from phonemizer import phonemize
@@ -360,7 +459,7 @@ def pronunciation(name: str, espeak_library: str | None) -> dict[str, str]:
         ipa = phonemize(name, language="en-us", backend="espeak", strip=True, with_stress=True)
         if ipa:
             return {"ipa": ipa, "source": "eSpeak NG", "confidence": "low"}
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         log(f"eSpeak phonetic fallback unavailable ({exc}).")
     return {"ipa": "", "source": "not generated", "confidence": "unknown"}
 
@@ -406,6 +505,19 @@ def direct_description(name: str, occurrences: list[dict[str, str]]) -> dict[str
     return {"text": "", "evidence": {}}
 
 
+def evidence_entries(items: list[dict[str, str]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "chapter": item["chapter"],
+            "chapterId": item["chapterId"],
+            "paragraph": int(item["paragraph"]),
+            "paragraphId": item["paragraphId"],
+            "excerpt": excerpt(item["text"], int(item["start"]), int(item["end"])),
+        }
+        for item in items
+    ]
+
+
 def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_library: str | None) -> list[dict[str, Any]]:
     spacy = spacy_candidates(paragraphs, model_name)
     candidates = rule_candidates(paragraphs) if spacy is None else spacy
@@ -433,15 +545,19 @@ def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_lib
 
     entities: list[dict[str, Any]] = []
     for normalized, occurrences in grouped.items():
-        if all(item["source"] == "rule" for item in occurrences) and len(occurrences) < 2 and classify(occurrences[0]) == "Needs Review":
+        category_counts: dict[str, int] = defaultdict(int)
+        for occurrence in occurrences:
+            category_counts[classify(occurrence)] += 1
+        # A confident category beats "Needs Review" votes (e.g. a bare alias of a
+        # "Captain X" name); only unresolved entities stay in review.
+        confident_counts = {name: count for name, count in category_counts.items() if name != "Needs Review"}
+        category = max(confident_counts, key=confident_counts.get) if confident_counts else "Needs Review"
+        # Ambiguous junk is not surfaced unless it recurs.
+        if category == "Needs Review" and len(occurrences) < MIN_NEEDS_REVIEW_OCCURRENCES:
             continue
         names = sorted({item["name"] for item in occurrences}, key=lambda value: (-len(value), value))
         canonical_name = names[0]
         alias_names = [name for name in names if name != canonical_name]
-        category_counts: dict[str, int] = defaultdict(int)
-        for occurrence in occurrences:
-            category_counts[classify(occurrence)] += 1
-        category = max(category_counts, key=category_counts.get)
 
         # Each literal spelling keeps its OWN evidence list (this is what lets
         # the UI show "alias: X" against the specific occurrences that spelling
@@ -450,24 +566,12 @@ def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_lib
         for item in occurrences:
             by_literal_name[item["name"]].append(item)
 
-        def evidence_for(literal_name: str) -> list[dict[str, Any]]:
-            return [
-                {
-                    "chapter": item["chapter"],
-                    "chapterId": item["chapterId"],
-                    "paragraph": int(item["paragraph"]),
-                    "paragraphId": item["paragraphId"],
-                    "excerpt": excerpt(item["text"], int(item["start"]), int(item["end"])),
-                }
-                for item in by_literal_name.get(literal_name, [])
-            ]
-
-        canonical_evidence = evidence_for(canonical_name)
+        canonical_evidence = evidence_entries(by_literal_name.get(canonical_name, []))
         aliases = [
             {
                 "text": name,
                 "pronunciation": pronunciation(name, espeak_library),
-                "occurrences": evidence_for(name),
+                "occurrences": evidence_entries(by_literal_name.get(name, [])),
             }
             for name in alias_names
         ]
@@ -493,6 +597,21 @@ def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_lib
     return sorted(entities, key=lambda entity: (entity["category"], entity["canonical_name"].lower()))
 
 
+def is_vocabulary_worthy(entity: dict[str, Any]) -> bool:
+    """Needs Review entries and thinly evidenced lone words stay out of the
+    Proofing suggestions; locked and manual entries are the user's own."""
+    if entity.get("category") == "Needs Review":
+        return False
+    if entity.get("locked") or entity.get("manual"):
+        return True
+    if len(entity.get("canonical_name", "").split()) > 1:
+        return True
+    count = entity.get("occurrence_count")
+    if count is None:
+        count = entity_occurrence_count(entity)
+    return count >= MIN_SINGLE_WORD_VOCABULARY_OCCURRENCES
+
+
 def vocabulary_candidates(entities: list[dict[str, Any]]) -> list[str]:
     """Return the durable, narrator-reviewable vocabulary candidate list.
 
@@ -502,6 +621,8 @@ def vocabulary_candidates(entities: list[dict[str, Any]]) -> list[str]:
     """
     values: list[str] = []
     for entity in entities:
+        if not is_vocabulary_worthy(entity):
+            continue
         values.append(entity.get("canonical_name", ""))
         values.extend(alias.get("text", "") for alias in entity.get("aliases", []))
     return sorted({value.strip() for value in values if value and value.strip()}, key=str.casefold)
@@ -629,7 +750,7 @@ def build(args: argparse.Namespace) -> None:
     guide = {
         "schema_version": SCHEMA_VERSION,
         "source": {"path": str(Path(args.manuscript).resolve()), "sha256": source_hash},
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "entities": entities,
         "vocabulary_candidates": vocabulary_candidates(entities),
         "absorbed_names": (previous or {}).get("absorbed_names", {}),
@@ -922,24 +1043,6 @@ def unrelate(args: argparse.Namespace) -> None:
     print("UNRELATED|" + args.entity_id)
 
 
-def export_hotwords(args: argparse.Namespace) -> None:
-    guide = load_json(args.guide) or {"entities": []}
-    selected = set(filter(None, (args.entity_ids or "").split(",")))
-    words: list[str] = []
-    for entity in guide.get("entities", []):
-        if selected and entity["id"] not in selected:
-            continue
-        words.append(entity["canonical_name"])
-        words.extend(alias["text"] for alias in entity.get("aliases", []))
-    deduplicated = list(dict.fromkeys(word for word in words if word.strip()))
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out).write_text(
-        "# Generated by Manuscript Guide. Copy values into another tool if desired.\n" + ", ".join(deduplicated) + "\n",
-        encoding="utf-8",
-    )
-    print(f"EXPORTED|{len(deduplicated)}|{args.out}")
-
-
 def render_audio(args: argparse.Namespace) -> None:
     guide = load_json(args.guide)
     if not guide:
@@ -1017,10 +1120,6 @@ def main() -> None:
     unrelate_parser.add_argument("--entity-id", required=True)
     unrelate_parser.add_argument("--other-id", required=True)
     unrelate_parser.add_argument("--label", required=True)
-    export_parser = command.add_parser("export-hotwords")
-    export_parser.add_argument("--guide", required=True)
-    export_parser.add_argument("--out", required=True)
-    export_parser.add_argument("--entity-ids", default="")
     audio_parser = command.add_parser("render-audio")
     audio_parser.add_argument("--guide", required=True)
     audio_parser.add_argument("--entity-id", required=True)
@@ -1046,10 +1145,9 @@ def main() -> None:
             "delete": delete,
             "relate": relate,
             "unrelate": unrelate,
-            "export-hotwords": export_hotwords,
             "render-audio": render_audio,
         }[args.command](args)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         log(f"ERROR: {exc}")
         if args.command == "build":
             write_progress(getattr(args, "progress", None), "ERROR", 0, str(exc))

@@ -54,7 +54,7 @@ function TrackRow({ track, active, onSelect }: { track: Track; active: boolean; 
         onClick={onSelect}
         className={`flex w-full items-center gap-2.5 rounded-md border px-3 py-2.5 text-left transition ${active ? 'border-[var(--accent)] bg-[var(--surface-2)]' : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)]'}`}
       >
-        <span className="h-[10px] w-[10px] flex-none rounded-full" style={{ backgroundColor: track.color || 'var(--text-faint)' }} aria-hidden="true" />
+        <span className="size-[10px] flex-none rounded-full" style={{ backgroundColor: track.color || 'var(--text-faint)' }} aria-hidden="true" />
         <span className="min-w-0 flex-1 truncate font-medium">{track.name || `Track ${track.index + 1}`}</span>
         {track.muted && <span className="section-label flex-none">Muted</span>}
         {hasIssue && (

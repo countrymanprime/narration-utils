@@ -1,6 +1,22 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import './components.css' layer(utilities);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* Tailwind 3 paired each text-* size with a fixed rem line-height; Tailwind 4 uses a
+   unitless ratio, which children with their own smaller font-size then inherit
+   proportionally (shrinking their line boxes). Keep the fixed values so text-* sizing
+   renders as it did before the upgrade. */
+@theme {
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.25rem;
+}
 
 :root {
   --bg: #f1efea;
@@ -27,6 +43,8 @@
   --warn: #b5871e;
   --info: #3f6ea6;
   --bookmark: #3b6fc4;
+  /* Alternating reader rows: a touch darker than --surface, like banded table rows. */
+  --row-alt: color-mix(in srgb, var(--surface) 94%, var(--text));
   --backdrop: rgba(20, 17, 12, 0.42);
   --shadow: 0 1px 2px rgba(30, 26, 16, 0.06), 0 1px 1px rgba(30, 26, 16, 0.04);
   --shadow-lg: 0 4px 16px rgba(30, 26, 16, 0.14), 0 2px 6px rgba(30, 26, 16, 0.08);
@@ -105,119 +123,6 @@
     cursor: not-allowed;
   }
 }
-@layer components {
-  .f-label,
-  .section-label {
-    font-family: 'Barlow Condensed', sans-serif;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .f-mono {
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  }
-  .section-label {
-    font-weight: 600;
-    font-size: 0.72rem;
-    color: var(--text-faint);
-  }
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 0.5rem;
-    box-shadow: var(--shadow);
-  }
-  .panel-head {
-    padding: 0.85rem 1.1rem;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-  }
-  .panel-body {
-    padding: 1.1rem;
-  }
-  .label,
-  label.field-label {
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: var(--text-muted);
-  }
-  .input,
-  input[type='text'],
-  select,
-  textarea {
-    box-sizing: border-box;
-    min-height: var(--control-height);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--control-radius);
-    padding: 0.6rem 0.75rem;
-    color: var(--text);
-    font-size: 0.88rem;
-    line-height: 1.35;
-  }
-  .input {
-    width: 100%;
-  }
-  input[readonly] {
-    background: var(--surface-2);
-    color: var(--text);
-    cursor: default;
-  }
-  input:focus,
-  select:focus,
-  textarea:focus,
-  button:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
-  }
-  .progressbar {
-    height: 1rem;
-    border-radius: 999px;
-    background: var(--surface-3);
-    overflow: hidden;
-  }
-  .progressbar > div {
-    height: 100%;
-    background: var(--accent);
-    transition: width 0.4s ease;
-  }
-  table.dtable {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.86rem;
-  }
-  table.dtable th {
-    text-align: left;
-    padding: 0.5rem 0.7rem;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    font-size: 0.72rem;
-    color: var(--text-faint);
-    border-bottom: 1px solid var(--border);
-  }
-  table.dtable td {
-    padding: 0.55rem 0.7rem;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-  }
-  table.dtable tr.row-selected {
-    background: var(--surface-2);
-  }
-  table.dtable tr[data-row]:hover td {
-    background: var(--surface-2);
-    cursor: pointer;
-  }
-  .cat-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex: none;
-  }
-}
 @keyframes tooltip-in {
   from {
     opacity: 0;
@@ -231,25 +136,6 @@
   margin: 0 auto;
   max-width: none;
 }
-.overlay-panel {
-  position: fixed;
-  z-index: 50;
-  top: 0;
-  right: 0;
-  display: flex;
-  width: min(23rem, 100vw);
-  height: 100vh;
-  flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.2s ease;
-  border-left: 1px solid var(--border);
-  background: var(--surface);
-  box-shadow: var(--shadow-lg);
-}
-.overlay-panel.overlay-open {
-  transform: translateX(0);
-}
-
 .progress-segment {
   display: block;
   flex: 0 0 auto;
@@ -260,14 +146,6 @@
   width: 100%;
   height: 100%;
 }
-.note-overlay {
-  position: relative;
-  z-index: 2;
-  border-bottom: 2px solid var(--note);
-  border-radius: 0.1rem;
-  color: inherit;
-  cursor: pointer;
-}
 /* Scroll remains available to wheel/keyboard users, but the
    reader/application chrome does not reserve or display a native gutter. */
 .scroll-chrome-hidden {
@@ -277,26 +155,19 @@
   width: 0;
   height: 0;
 }
-.source-flash {
-  animation: source-flash 1.6s ease;
-}
-@keyframes source-flash {
+/* "Go to line" destination: a brief ring that settles into the persistent
+   tint/edge applied by ParagraphView for JUMP_HIGHLIGHT_MS. */
+@keyframes jump-target-pulse {
   0% {
-    box-shadow: 0 0 0 3px var(--accent);
+    box-shadow:
+      0 0 0 3px var(--accent),
+      inset 3px 0 0 var(--accent);
   }
   100% {
-    box-shadow: inset 0 -1.5px 0 currentColor;
+    box-shadow:
+      0 0 0 0 transparent,
+      inset 3px 0 0 var(--accent);
   }
-}
-.sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 45;
-  background: transparent;
-}
-.overlay-panel {
-  z-index: 50;
-  width: min(20rem, 100vw);
 }
 .guide-list-scroll {
   scrollbar-width: none;
@@ -344,13 +215,6 @@
 .reader-page {
   --reader-inline: 1.5rem;
   min-height: 100%;
-}
-.reader-control-band {
-  top: 0;
-  padding: 0;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--text) 10%, transparent);
 }
 .reader-chapters {
   padding-top: 0.75rem;

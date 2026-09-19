@@ -47,6 +47,8 @@ export const STATE_CATALOG: StateEntry[] = [
     description: 'Vocabulary hint chips widget (accepted + pending) - lives on Proofing, catalogued under "home" for historical reasons',
   },
   { page: 'home', state: 'info-tooltip', description: 'Home, info icon tooltip visible', pointer: 'keep' },
+  { page: 'home', state: 'manuscript-candidate-offer', description: 'Home, offer to import a manuscript file found in the project folder' },
+  { page: 'home', state: 'import-activity-log', description: 'Home, manuscript import finished with its live activity log populated' },
   {
     page: 'home',
     state: 'import-confirm',
@@ -71,6 +73,10 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'manuscript', state: 'sticky-header-scrolled', description: 'Manuscript, scrolled with sticky chapter header' },
   { page: 'manuscript', state: 'chapter-collapsed', description: 'Manuscript, a chapter card collapsed' },
   { page: 'manuscript', state: 'add-note-dialog', description: 'Manuscript, Add Note dialog open after selecting text' },
+  { page: 'manuscript', state: 'formatted-text-and-line-breaks', description: 'Manuscript, paragraphs with preserved bold/italic/underline and a line break' },
+  { page: 'manuscript', state: 'chapter-bookmarked', description: 'Manuscript, a chapter bookmarked (blue bookmark icon)' },
+  { page: 'manuscript', state: 'go-to-line-highlight', description: 'Manuscript, arrived via Story Bible "Go to line" with the target line highlighted' },
+  { page: 'manuscript', state: 'reader-dark', description: 'Manuscript, reader in the Dark theme (readable active controls, opaque sticky header)' },
 
   // Proofing
   { page: 'proofing', state: 'setup-default', description: 'Proofing, setup panel default selection' },
@@ -108,9 +114,11 @@ export const STATE_CATALOG: StateEntry[] = [
   {
     page: 'storybible',
     state: 'entry-unlocked',
-    description: 'Story Bible, an unlocked entry',
+    description: 'Story Bible, an unlocked entry (read-only until Edit)',
     sameAs: { of: 'storybible/entity-selected', reason: 'The fixture entity a fresh selection lands on is unlocked, so selecting it is this state.' },
   },
+  { page: 'storybible', state: 'entry-editing', description: 'Story Bible, an unlocked entry in edit mode (Save and Cancel shown)' },
+  { page: 'storybible', state: 'entry-needs-review', description: 'Story Bible, a Needs Review entry with review-colored evidence highlights' },
 
   // Tracks
   {

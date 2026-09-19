@@ -36,15 +36,15 @@ export function WorkDialog({ title, job, close, cancel }: { title: string; job: 
         />
       </div>
       <div className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-        <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+        <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
           Live activity
         </div>
         <div
           tabIndex={0}
-          className="h-36 overflow-y-auto overflow-x-hidden border border-[var(--border)] bg-[var(--surface-2)] font-['IBM_Plex_Mono',ui-monospace,monospace] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--accent)]"
+          className="h-36 overflow-x-hidden overflow-y-auto border border-[var(--border)] bg-[var(--surface-2)] font-['IBM_Plex_Mono',ui-monospace,monospace] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
         >
           {job.logs.map((line, index) => (
-            <div key={`${index}-${line}`} className="break-words border-b border-[var(--border)] px-[0.45rem] py-1">
+            <div key={`${index}-${line}`} className="border-b border-[var(--border)] px-[0.45rem] py-1 break-words">
               {line}
             </div>
           ))}
