@@ -30,6 +30,9 @@ type ImportJob struct {
 	Error         string          `json:"error,omitempty"`
 	Source        string          `json:"-"`
 	Draft         *importer.Draft `json:"-"`
+	started       time.Time
+	ended         time.Time
+	busy          bool
 }
 
 type Service struct {
@@ -69,13 +72,41 @@ func newID() string {
 func copyJob(job *ImportJob) ImportJob {
 	clone := *job
 	clone.Logs = append([]string{}, job.Logs...)
+	switch {
+	case job.started.IsZero():
+	case job.ended.IsZero():
+		clone.Elapsed = time.Since(job.started).Seconds()
+	default:
+		clone.Elapsed = job.ended.Sub(job.started).Seconds()
+	}
 	return clone
+}
+
+// report records a real stage of an import: it moves the progress bar and adds
+// a line to the activity log in one step, so the two can never disagree
+// (ADR-0015). Progress never moves backwards within a job.
+func (s *Service) report(job *ImportJob, percent int, message string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if percent > job.Percent {
+		job.Percent = percent
+	}
+	job.Message = message
+	job.Logs = append(job.Logs, message)
+}
+
+func (s *Service) fail(job *ImportJob, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	job.Phase, job.Error, job.Message = "error", err.Error(), err.Error()
+	job.Logs = append(job.Logs, "Failed: "+err.Error())
+	job.ended = time.Now()
 }
 
 func (s *Service) Begin(source string) ImportJob {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	job := &ImportJob{ID: newID(), Kind: "manuscript_import", Phase: "preparing", Message: "Manuscript selected. Choose import options to continue.", Percent: 0, Logs: []string{}, Source: source}
+	job := &ImportJob{ID: newID(), Kind: "manuscript_import", Phase: "preparing", Message: "Manuscript selected. Choose import options to continue.", Percent: 0, Logs: []string{}, Source: source, started: time.Now()}
 	s.jobs[job.ID] = job
 	return copyJob(job)
 }
@@ -90,23 +121,60 @@ func (s *Service) State(id string) (ImportJob, error) {
 	return copyJob(job), nil
 }
 
-func (s *Service) Preview(id string, heading int) (ImportJob, error) {
+// beginPreview claims the job for a preview run. A second request while one is
+// running (for example a heading-level change) is refused rather than racing.
+func (s *Service) beginPreview(id string) (*ImportJob, error) {
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	job := s.jobs[id]
-	s.mu.Unlock()
 	if job == nil {
-		return ImportJob{}, fmt.Errorf("unknown manuscript import")
+		return nil, fmt.Errorf("unknown manuscript import")
 	}
-	draft, err := importer.BuildDraft(job.Source, heading)
+	if job.busy {
+		return nil, fmt.Errorf("this manuscript import is still working")
+	}
+	job.busy, job.Phase, job.Error, job.RequiresReset = true, "preparing", "", false
+	job.Draft, job.Preview, job.Percent = nil, nil, 0
+	job.ended = time.Time{}
+	return job, nil
+}
+
+// Preview parses the source and blocks until the preview is ready. The desktop
+// host uses StartPreview so the UI can show progress while this runs.
+func (s *Service) Preview(id string, heading int) (ImportJob, error) {
+	job, err := s.beginPreview(id)
 	if err != nil {
+		return ImportJob{}, err
+	}
+	s.runPreview(job, heading)
+	return s.State(id)
+}
+
+// StartPreview runs the preview in the background and returns at once; callers
+// poll State for the staged progress and log.
+func (s *Service) StartPreview(id string, heading int) (ImportJob, error) {
+	job, err := s.beginPreview(id)
+	if err != nil {
+		return ImportJob{}, err
+	}
+	go s.runPreview(job, heading)
+	return s.State(id)
+}
+
+func (s *Service) runPreview(job *ImportJob, heading int) {
+	defer func() {
 		s.mu.Lock()
-		job.Phase = "error"
-		job.Error = err.Error()
-		job.Message = job.Error
+		job.busy = false
 		s.mu.Unlock()
-		return copyJob(job), nil
+	}()
+	s.report(job, 2, fmt.Sprintf("Selected %s", filepath.Base(job.Source)))
+	draft, err := importer.BuildDraftProgress(job.Source, heading, func(percent int, message string) { s.report(job, percent, message) })
+	if err != nil {
+		s.fail(job, err)
+		return
 	}
 	preview := map[string]any{"format": draft.Format, "sourceName": draft.SourceName, "paragraphCount": len(draft.Paragraphs), "chapterTitles": draft.ChapterTitles, "sections": draft.Sections, "characterCandidates": draft.CharacterCandidates}
+	s.report(job, 99, fmt.Sprintf("Preview ready: %d paragraphs, %d chapters, %d character suggestions", len(draft.Paragraphs), len(draft.ChapterTitles), len(draft.CharacterCandidates)))
 	s.mu.Lock()
 	job.Draft = &draft
 	job.Preview = preview
@@ -114,57 +182,109 @@ func (s *Service) Preview(id string, heading int) (ImportJob, error) {
 	job.Message = "Review the import preview before activating it."
 	job.Percent = 100
 	s.mu.Unlock()
-	return copyJob(job), nil
 }
 
+// PostCommit runs after the canonical manuscript is written and before the job
+// reports success (the host seeds the checked character suggestions here). It
+// reports its own 0-100 progress and log lines through report.
+type PostCommit func(report func(percent int, message string)) error
+
+// Commit activates the previewed manuscript and blocks until it finishes.
 func (s *Service) Commit(id string, confirmedReset bool, kinds map[string]string) (ImportJob, error) {
+	job, err := s.beginCommit(id, confirmedReset)
+	if err != nil || job == nil {
+		return s.settled(id, err)
+	}
+	s.runCommit(job, confirmedReset, kinds, nil)
+	return s.State(id)
+}
+
+// StartCommit validates synchronously, then activates the manuscript in the
+// background so the UI can poll real progress instead of guessing.
+func (s *Service) StartCommit(id string, confirmedReset bool, kinds map[string]string, post PostCommit) (ImportJob, error) {
+	job, err := s.beginCommit(id, confirmedReset)
+	if err != nil || job == nil {
+		return s.settled(id, err)
+	}
+	go s.runCommit(job, confirmedReset, kinds, post)
+	return s.State(id)
+}
+
+// settled is the return path when there is nothing to run: a validation error,
+// or a job that needs the user to confirm a reset first.
+func (s *Service) settled(id string, err error) (ImportJob, error) {
+	if err != nil {
+		return ImportJob{}, err
+	}
+	return s.State(id)
+}
+
+func (s *Service) beginCommit(id string, confirmedReset bool) (*ImportJob, error) {
 	s.mu.Lock()
 	job := s.jobs[id]
 	project := s.project
 	s.mu.Unlock()
 	if job == nil {
-		return ImportJob{}, fmt.Errorf("unknown manuscript import")
+		return nil, fmt.Errorf("unknown manuscript import")
 	}
 	if job.Draft == nil {
-		return ImportJob{}, fmt.Errorf("preview the manuscript before committing it")
+		return nil, fmt.Errorf("preview the manuscript before committing it")
 	}
 	if project == "" {
-		return ImportJob{}, fmt.Errorf("save the REAPER project before importing a manuscript")
+		return nil, fmt.Errorf("save the REAPER project before importing a manuscript")
 	}
 	target := filepath.Join(project, "narration-utils", "manuscript", "manuscript.json")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if job.busy {
+		return nil, fmt.Errorf("this manuscript import is still working")
+	}
 	if _, err := os.Stat(target); err == nil && !confirmedReset {
-		s.mu.Lock()
 		job.RequiresReset = true
 		job.Message = "Replacing a manuscript clears its derived review data. Confirm to continue."
-		s.mu.Unlock()
-		return copyJob(job), nil
+		return nil, nil
 	}
+	job.busy, job.Phase, job.Percent, job.Error = true, "committing", 0, ""
+	job.started, job.ended = time.Now(), time.Time{}
+	return job, nil
+}
+
+func (s *Service) runCommit(job *ImportJob, confirmedReset bool, kinds map[string]string, post PostCommit) {
+	defer func() {
+		s.mu.Lock()
+		job.busy = false
+		s.mu.Unlock()
+	}()
 	s.mu.Lock()
-	job.Phase = "committing"
-	job.Message = "Copying the source and activating the canonical manuscript…"
-	job.Percent = 10
+	project := s.project
 	s.mu.Unlock()
+	s.report(job, 3, "Preparing the project's manuscript folder")
 	if confirmedReset {
+		s.report(job, 8, "Clearing derived data: Story Bible, notes, bookmarks, chapter statuses and proofing results")
 		if err := resetDerived(project); err != nil {
-			return ImportJob{}, err
+			s.fail(job, err)
+			return
 		}
 	}
-	canonical, err := commit(project, job.Source, *job.Draft, kinds)
+	report := func(percent int, message string) { s.report(job, percent, message) }
+	canonical, err := commit(project, job.Source, *job.Draft, kinds, report)
 	if err != nil {
-		s.mu.Lock()
-		job.Phase = "error"
-		job.Error = err.Error()
-		job.Message = job.Error
-		s.mu.Unlock()
-		return copyJob(job), nil
+		s.fail(job, err)
+		return
 	}
+	if post != nil {
+		if err := post(func(percent int, message string) { s.report(job, 85+percent*14/100, message) }); err != nil {
+			s.fail(job, err)
+			return
+		}
+	}
+	s.report(job, 100, "Manuscript imported")
 	s.mu.Lock()
 	job.Phase = "success"
-	job.Percent = 100
 	job.Message = "Manuscript imported."
 	job.Result = map[string]any{"id": canonical["documentId"], "format": job.Draft.Format, "sourceName": job.Draft.SourceName, "importedAt": canonical["importedAt"]}
+	job.ended = time.Now()
 	s.mu.Unlock()
-	return copyJob(job), nil
 }
 
 func (s *Service) Cancel(id string) error {
@@ -200,8 +320,14 @@ func (s *Service) Load() (map[string]any, error) {
 	return data, nil
 }
 
-func commit(project, source string, draft importer.Draft, kinds map[string]string) (map[string]any, error) {
+func commit(project, source string, draft importer.Draft, kinds map[string]string, report func(percent int, message string)) (map[string]any, error) {
+	if report == nil {
+		report = func(int, string) {}
+	}
 	name := filepath.Base(source)
+	if info, err := os.Stat(source); err == nil {
+		report(15, fmt.Sprintf("Copying %s (%d KB) into the project and computing its checksum", name, info.Size()/1024))
+	}
 	sourceDir := filepath.Join(project, "narration-utils", "manuscript", "sources", newID())
 	if err := os.MkdirAll(sourceDir, 0o755); err != nil {
 		return nil, fmt.Errorf("could not create manuscript storage: %w", err)
@@ -228,10 +354,14 @@ func commit(project, source string, draft importer.Draft, kinds map[string]strin
 	if err != nil {
 		return nil, fmt.Errorf("could not locate project-owned manuscript storage: %w", err)
 	}
-	canonical, err := canonicalize(draft, name, filepath.ToSlash(relative), hex.EncodeToString(digest.Sum(nil)), kinds)
+	checksum := hex.EncodeToString(digest.Sum(nil))
+	report(40, fmt.Sprintf("Stored the original file (sha256 %s…)", checksum[:12]))
+	report(50, fmt.Sprintf("Building the canonical manuscript: %d paragraphs", len(draft.Paragraphs)))
+	canonical, err := canonicalize(draft, name, filepath.ToSlash(relative), checksum, kinds)
 	if err != nil {
 		return nil, err
 	}
+	report(70, "Writing manuscript.json")
 	target := filepath.Join(project, "narration-utils", "manuscript", "manuscript.json")
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return nil, err
@@ -292,7 +422,11 @@ func canonicalize(draft importer.Draft, name, storedPath, sha string, kinds map[
 			}
 			sectionID = found
 		}
-		paragraphs = append(paragraphs, map[string]any{"id": fmt.Sprintf("p-%06d", len(paragraphs)+1), "index": len(paragraphs), "chapterId": chapterID, "chapterTitle": source.Chapter, "sectionId": sectionID, "text": source.Text, "sourceIndex": source.SourceIndex})
+		paragraph := map[string]any{"id": fmt.Sprintf("p-%06d", len(paragraphs)+1), "index": len(paragraphs), "chapterId": chapterID, "chapterTitle": source.Chapter, "sectionId": sectionID, "text": source.Text, "sourceIndex": source.SourceIndex}
+		if len(source.Spans) > 0 {
+			paragraph["spans"] = source.Spans
+		}
+		paragraphs = append(paragraphs, paragraph)
 	}
 	return map[string]any{"schemaVersion": 1, "documentId": newID(), "importedAt": time.Now().UTC().Format(time.RFC3339Nano), "importer": map[string]any{"format": draft.Format, "version": 1}, "source": map[string]any{"fileName": name, "sha256": sha, "storedPath": storedPath}, "chapters": chapters, "paragraphs": paragraphs}, nil
 }

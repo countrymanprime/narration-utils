@@ -12,7 +12,20 @@ export type ManuscriptChapter = {
   contentKind?: ManuscriptContentKind;
   paragraphIds?: Array<{ id: string; index: number }>;
 };
-export type ManuscriptParagraph = { id: string; chapterId: string; chapter: string; index: number; sourceLine?: number; text: string; entityIds: string[] };
+/** Inline formatting over a paragraph's `text`. Offsets are UTF-16 code units (JS string indexes). */
+export type TextSpan = { start: number; end: number; style: 'bold' | 'italic' | 'underline' };
+export type ManuscriptParagraph = {
+  id: string;
+  chapterId: string;
+  chapter: string;
+  index: number;
+  sourceLine?: number;
+  /** May contain "\n" for author-intended line breaks. */
+  text: string;
+  /** Omitted by manuscripts imported before formatting was preserved. */
+  spans?: TextSpan[];
+  entityIds: string[];
+};
 export type ManuscriptNote = {
   id: string;
   chapter: string;
@@ -77,6 +90,8 @@ export type WorkJob = {
 
 export interface ManuscriptApi {
   selectManuscript(): Promise<ManuscriptFileSelection>;
+  /** Begins an import for the file offered as `Bootstrap.manuscriptCandidate`; the host accepts only that exact path. */
+  manuscriptBeginImport(path: string): Promise<ManuscriptFileSelection>;
   manuscriptImportState(jobId: string): Promise<WorkJob>;
   manuscriptImportPreview(jobId: string, options: { markdownHeadingLevel: number }): Promise<WorkJob>;
   manuscriptImportCommit(jobId: string, options: { confirmedReset: boolean; selection?: ManuscriptImportSelection }): Promise<WorkJob>;

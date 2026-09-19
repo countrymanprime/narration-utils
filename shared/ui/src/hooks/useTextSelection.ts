@@ -26,15 +26,26 @@ function paragraphElement(node: Node | null): HTMLElement | null {
   return el;
 }
 
-function offsetsWithinParagraph(range: Range): { paragraphIndex?: number; anchorStart?: number; anchorEnd?: number } {
-  const start = paragraphElement(range.startContainer);
-  const end = paragraphElement(range.endContainer);
-  if (!start || start !== end) return {};
+// The prose element inside a paragraph row - distinct from the row itself,
+// which also holds the line-number gutter. Offsets must be measured from the
+// prose only: measuring from the row counted the gutter's digits, shifting
+// every note anchor right by the width of its line number.
+function textElement(node: Node | null): HTMLElement | null {
+  let el = node instanceof HTMLElement ? node : (node?.parentElement ?? null);
+  while (el && !el.hasAttribute('data-paragraph-text')) el = el.parentElement;
+  return el;
+}
+
+export function offsetsWithinParagraph(range: Range): { paragraphIndex?: number; anchorStart?: number; anchorEnd?: number } {
+  const start = textElement(range.startContainer);
+  const end = textElement(range.endContainer);
+  const row = start ? paragraphElement(start) : null;
+  if (!start || start !== end || !row) return {};
   const before = document.createRange();
   before.selectNodeContents(start);
   before.setEnd(range.startContainer, range.startOffset);
   const anchorStart = before.toString().length;
-  return { paragraphIndex: Number(start.dataset.paragraph), anchorStart, anchorEnd: anchorStart + range.toString().length };
+  return { paragraphIndex: Number(row.dataset.paragraph), anchorStart, anchorEnd: anchorStart + range.toString().length };
 }
 
 // Selecting text inside the reading pane surfaces a floating "+ Note / + Story Bible"

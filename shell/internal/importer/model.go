@@ -13,6 +13,7 @@ type Paragraph struct {
 	ChapterSubtitle *string `json:"chapterSubtitle,omitempty"`
 	Section         *string `json:"section"`
 	Text            string  `json:"text"`
+	Spans           []Span  `json:"spans,omitempty"`
 	SourceIndex     int     `json:"sourceIndex"`
 }
 
@@ -37,6 +38,9 @@ type Draft struct {
 	Sections            []DraftSection       `json:"sections"`
 	CharacterCandidates []CharacterCandidate `json:"characterCandidates"`
 	ChapterTitles       []string             `json:"chapterTitles"`
+	// Notices are human-readable import-log lines about repairs the importer
+	// made to the source (e.g. splitting a glued heading).
+	Notices []string `json:"notices,omitempty"`
 }
 
 type Error struct{ Message string }
