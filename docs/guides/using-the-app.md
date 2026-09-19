@@ -35,6 +35,12 @@ hovering a locked entry says why. Home and Tracks are always available.
 The landing page after opening a project: manuscript status, audiobook time estimates,
 recording progress, and shortcuts into the latest Proofing comparison and Story Bible review.
 
+If the project folder contains a file named `manuscript.docx` or `manuscript.md` that has not
+been imported yet, Home offers to import it (it is never imported automatically). Importing
+shows the real steps as they happen — reading the document, detecting chapters, copying the
+source, adding Story Bible characters — in a live activity log, and keeps Word line breaks,
+italics, bold and underline.
+
 ![Home, manuscript found](../images/ui/home-default.webp)
 
 The estimate card's per-chapter breakdown is collapsed by default; expanding it lists every
@@ -50,7 +56,10 @@ paragraph count, and proposed chapters before anything changes.
 ## Manuscript
 
 The manuscript reader shows the imported chapter text with characters, places, and other
-entities highlighted inline. Text size is adjustable independently of the rest of the app.
+entities highlighted inline, with alternating row shading and any italics, bold or underline
+from the original document. Clicking a highlighted name or note opens its details in a side
+panel. "Go to line" from the Story Bible keeps the destination line highlighted for a minute.
+Text size is adjustable independently of the rest of the app.
 
 ![Manuscript reader at the medium text size](../images/ui/manuscript-reader.webp)
 
@@ -111,7 +120,10 @@ with pronunciation, aliases, and narration notes. Category tabs filter the list.
 
 ![Story Bible filtered to the Characters category](../images/ui/storybible-characters.webp)
 
-Selecting an entry opens its detail panel for editing pronunciation, aliases, and notes.
+Selecting an entry opens its detail panel, read-only at first. Press Edit to change
+pronunciation, aliases, and notes, then Save (or Cancel). Locked entries can't be edited until
+unlocked. Rebuilding is deliberately strict: it favors missing a name over listing ordinary
+words, so add unusual names by hand with the + button.
 
 ![Story Bible entity detail panel](../images/ui/storybible-entity.webp)
 
