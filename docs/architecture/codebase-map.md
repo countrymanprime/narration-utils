@@ -27,6 +27,8 @@ implementation around the product domain that owns its behavior.
 - `transcript` owns comparison lifecycle, review results, and marker export.
 - `tts` owns the approved voice catalog and install jobs.
 - `tracks` owns reading a project's `.rpp` file (discovery, selection, track/item metadata). `shell/media.go` serves those tracks' audio to the webview through the asset server's `/media` route (see [ADR 0012](../adr/0012-media-route-for-track-playback.md)); it is the only non-frontend content the asset server serves.
+- `findings` implements the [findings contract](findings-contract.md) record (validation, stable IDs, review state); analyzers emit it without importing REAPER APIs.
+- `measure` reads WAV files directly and computes loudness, RMS, peaks, and noise floor, plus `Evaluate` against a caller-supplied profile (see [ADR 0024](../adr/0024-delivery-measurements-in-go-profiles-deferred.md)). Not yet exposed through the Wails binding surface.
 
 `shell/internal/` holds domain services and infrastructure. The Wails binding
 surface is operation-specific; it does not accept arbitrary route names.
