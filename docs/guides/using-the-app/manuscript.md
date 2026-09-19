@@ -1,0 +1,58 @@
+[Using the app](README.md) › Manuscript
+
+# Manuscript
+
+The manuscript reader shows the imported chapter text with characters, places, and other
+entities highlighted inline, with alternating row shading and any italics, bold or underline
+from the original document. Clicking a highlighted name or note opens its details in a side
+panel. "Go to line" from the [Story Bible](story-bible.md) keeps the destination line highlighted for a minute.
+Text size is adjustable independently of the rest of the app.
+
+![Manuscript reader at the medium text size](../../images/ui/manuscript-reader.webp)
+
+![Manuscript reader at the large text size](../../images/ui/manuscript-reader-large.webp)
+
+Importing keeps the storytelling formatting from a Word or Markdown manuscript — italics, bold
+and underline — and line breaks inside a paragraph (verse, addresses), so the reader matches the
+original. Chapter titles and subtitles that Word stores on separate lines are shown as a title
+with its subtitle. Re-import a manuscript (Replace manuscript on [Home](home.md)) to pick this up in an older project.
+
+![Manuscript - italic, bold and underline from the source document, and a preserved line break inside a paragraph](../../images/ui/manuscript-formatting.webp)
+
+Bookmark a chapter with the icon at the left of its header; bookmarks show in blue. Chapter
+headers stay opaque as you scroll so the text never shows through them.
+
+![Manuscript - a chapter bookmarked, shown with a blue bookmark icon](../../images/ui/manuscript-bookmark.webp)
+
+The reader follows the Light, Dark or System theme, with readable controls in both.
+
+![Manuscript reader in the Dark theme - readable controls and an opaque sticky chapter header](../../images/ui/manuscript-reader-dark.webp)
+
+Chapters default to fully expanded inline; collapsing them switches to a compact list for
+jumping between chapters without scrolling through the full text.
+
+![Manuscript, collapsed chapter list](../../images/ui/manuscript-chapter-list.webp)
+
+Selecting a stretch of text offers actions for it — adding a reader note or sending it to the
+Story Bible as a new entry.
+
+![Manuscript - text-selection action popup (+ Note, + Story Bible)](../../images/ui/manuscript-selection-popup.webp)
+
+Choosing "+ Note" opens a dialog to write the note against that selection.
+
+![Manuscript - Add Note dialog open after selecting text](../../images/ui/manuscript-add-note.webp)
+
+Clicking an existing note or a highlighted entity opens a detail sidebar on the right —
+the note's anchored text and content for a note, or pronunciation, description, and evidence
+for an entity.
+
+![Manuscript - detail sidebar open on a reader note](../../images/ui/manuscript-note-sidebar.webp)
+
+Choosing "Go to line" on a [Story Bible](story-bible.md) entry's evidence opens the Manuscript at that line and
+keeps it highlighted for about a minute, so you can see where you landed after the scroll.
+
+![Manuscript - the line reached from the Story Bible stays highlighted so it is easy to find](../../images/ui/manuscript-go-to-line.webp)
+
+---
+
+[← Home](home.md) · [Index](README.md) · [Proofing →](proofing.md)
