@@ -1,6 +1,6 @@
 # Shared Findings Contract
 
-**Status: Planned—foundation.** This contract is the interoperability boundary for all analyzers and the REAPER dashboard.
+**Status: Planned—foundation.** This contract is the interoperability boundary for all analyzers and the REAPER dashboard. The Go record, validation, stable IDs, and review state are implemented in [`shell/internal/findings`](../../shell/internal/findings); the measurement analyzer ([ADR 0025](../adr/0025-delivery-measurements-in-go-profiles-deferred.md)) is its first producer. Existing analyzers (Manuscript Guide, Transcript Compare) do not emit it yet.
 
 ## Required finding shape
 
