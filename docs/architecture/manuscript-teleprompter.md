@@ -1,6 +1,6 @@
 # Manuscript Teleprompter
 
-**Status: Planned. Deferred work item — see [roadmap.md](../roadmap.md#deferred-work) — no implementation exists yet. This brief exists to make the deferred sentence concrete enough to plan tasks from, not to schedule it into a milestone.**
+**Status: Planned. Deferred work item — see [roadmap.md](../roadmap.md#deferred-work). Only a prototype ASR sidecar exists ([`tools/manuscript-teleprompter/core/live_asr.py`](../../tools/manuscript-teleprompter/core/live_asr.py)); there is no UI, Go integration, or shipped feature yet. This brief exists to make the deferred sentence concrete enough to plan tasks from, not to schedule it into a milestone.**
 
 ## Problem
 
@@ -126,6 +126,114 @@ offline and Apple-MLX-specific — irrelevant here — though it confirms the
 UI-rendering piece only needs a `{word, time}` event stream, decoupled from
 whatever produces it.
 
+## Prototype findings and live-engine direction
+
+*Added 2026-09-19 after measuring the prototype on a real mic; supersedes the
+"Port, do not depend on, WhisperLive" plan above wherever they disagree.*
+
+**What was measured.** The first prototype decoded only after a confirmed
+pause, which delivered a whole utterance at once and could not drive a live
+highlight. It was replaced by a rolling re-decode of the open segment every
+0.5s that emits a word only once two consecutive decodes agree on it
+(LocalAgreement-2). On a real mic with `faster-whisper` `tiny` on CPU: word
+lag behind the speaker had a median of about 1.2s (typically 0.5–1.5s, peaks
+about 2.1s), and each decode took about 0.15–0.2s, so decoding keeps up.
+Waiting for agreement puts a floor of roughly 1s on lag regardless of model
+size, which is too slow to follow mid-sentence reading reliably.
+
+**How comparable projects avoid the delay** (surveyed 2026-09-19; their
+claims are unverified by us):
+
+- [Autocue](https://github.com/EdNutting/autocue) (MIT): a streaming Vosk or
+  Sherpa-ONNX engine plus a fuzzy script matcher that runs on every *partial*
+  hypothesis as a speculative "what if" from the last committed position. The
+  display advances but never moves backward on partials, and final results
+  re-anchor it. The author claims sub-250ms.
+- [whisper_streaming](https://github.com/ufal/whisper_streaming)
+  (LocalAgreement): what the prototype adopted; its paper reports about 3.3s
+  latency on long-form speech.
+- [SimulStreaming](https://github.com/ufal/SimulStreaming) (AlignAtt): lower
+  latency, but built on PyTorch and aimed at GPUs (its README calls CPU "too
+  slow for real-time"). Not a fit for this stack.
+- [Moonshine](https://github.com/moonshine-ai/moonshine) (MIT, English
+  streaming models): caches encoder state instead of re-decoding, supports
+  word timestamps in streaming mode and `set_context()` biasing toward the
+  current script text, and ships a Windows wheel. Its accuracy and latency
+  figures are the vendor's own.
+- Browser Web Speech API teleprompters: cloud speech, excluded by the
+  local-first boundary.
+
+The earlier rejection of Vosk above applies only to grammar-constrained
+decoding, which still masks misreads. Unconstrained streaming partials plus
+fuzzy matching against the script is the ordinary open-source pattern.
+
+**Direction, in order.**
+
+1. **Speculative advance.** The cursor advances from the latest unconfirmed
+   hypothesis (never backward on partials) and is corrected by confirmed
+   words. This works with any engine and needs the sidecar to emit partial
+   events in addition to confirmed words. Expected lag with Whisper: about
+   0.5–0.8s.
+2. **Two selectable live engines (decided 2026-09-19).** Support both
+   `faster-whisper` and Moonshine behind one event contract, let the narrator
+   choose in settings, and evaluate both against real manuscript scrolling
+   and animation before picking a default. Engines only produce partial
+   hypotheses (words with timestamps, replaced as the segment grows) and a
+   segment-end signal; one shared layer applies the LocalAgreement rule to
+   turn consecutive partials into append-only confirmed words, and one shared
+   script tracker consumes both. Neither engine is baked into the tracker or
+   the UI.
+3. **Spike results that shaped this** (Moonshine Small and Tiny Streaming, real
+   mic and one synthetic recording, Windows CPU, 16–25 s of reading per run;
+   small samples):
+   processing cost about 0.26x real time (Small) and 0.17x (Tiny); word
+   timestamps present on nearly every partial; partial updates every 0.5s by
+   default; roughly 1 in 7 shown words later revised, worst in the first one
+   or two words of a line; the final line was identical to the last partial in
+   all 27 lines, so **Moonshine's own final result does not correct earlier
+   mistakes**; word error rate 2–6% against the read script; download about
+   215 MB (Small, including the 78 MB attention decoder that timestamps need)
+   or 74 MB (Tiny). Estimated word lag is about 0.3–0.8s, but the probe's own
+   lag metric was unreliable (it matched words by position) and needs fixing
+   before comparing engines. Whisper with speculative partials is expected to
+   land in the same range; Moonshine's expected edge is flat cost as a
+   segment grows, cheaper short update intervals, and `set_context()`.
+4. **Record the default and the rationale** in an ADR once the UI evaluation
+   is done. `faster-whisper` stays for offline Transcript Compare either way.
+
+## Confirming suspected misreads
+
+A live ASR result is never proof of a misread. Even a final, locked result
+only means the engine will not revise that line; a wrong word from the engine
+and a genuine misread by the narrator look identical. Flags stay "suspected".
+The existing Transcript Compare pass over the recorded take remains the
+authoritative review.
+
+**Phase 1 — recheck on click (build first).** When the narrator opens a flag,
+re-decode only that short audio span with `faster-whisper` (a larger model
+than the live path may be used) and show whether it agrees with what the live
+engine heard. No continuous second pass. Needs a source for that span's audio
+(see open items).
+
+**Phase 2 — trailing confirmation pass (deferred; come back to this).** Run
+`faster-whisper` a few seconds *behind* the live engine, over flagged spans or
+over each closed segment, so flags are confirmed or cleared automatically and
+the narrator mostly sees flags that have already been double-checked. Not to be
+scheduled until Phase 1 and the engine spike are done. Questions to resolve
+first:
+
+- CPU budget: the live engine must stay real-time on a CPU-only machine while
+  a second model runs; may force checking only flagged spans, or only when
+  idle.
+- Whether to check only flagged spans or every closed segment.
+- Lag budget (how many seconds behind is acceptable) and which model size.
+- How a flag moves from pending to confirmed or cleared in the UI without
+  flicker.
+- Whether a cleared flag is kept as a dismissed, auditable finding, per the
+  [findings contract](findings-contract.md).
+- Where the audio for a span comes from (rolling buffer vs. REAPER's
+  concurrent recording).
+
 ## Findings and review (resolves decision #4)
 
 Flagged misreads/skips/substitutions use the existing
@@ -182,12 +290,32 @@ Collabora Ltd.`), and this is the first entry of its kind (ported logic, not
 a downloaded dependency) in
 [local-dependency-evaluation.md](../research/local-dependency-evaluation.md).
 This is engineering guidance, not legal advice — recheck upstream terms at
-the exact commit ported from.
+the exact commit ported from. The LocalAgreement policy added later comes from
+[whisper_streaming](https://github.com/ufal/whisper_streaming) (MIT,
+`Copyright (c) 2023 ÚFAL`) and is attributed the same way.
 
 ## Open items for task planning (not resolved here)
 
-- Exact `faster-whisper` model size / latency tradeoff on CPU-only machines —
-  needs a prototype before UI work is finalized.
+- `faster-whisper` model size / latency tradeoff on CPU-only machines:
+  partly answered (`tiny`: median lag about 1.2s, decode keeps up); `base` and
+  `small` are untested, and the engine spike above may supersede this.
+- Event contract for speculative advance: whether partial hypotheses are a
+  second event type alongside confirmed words, and how the frontend tells them
+  apart.
+- Engine evaluation: run both engines against the real scrolling UI and
+  animation, then record the default in an ADR (Sherpa-ONNX stays a fallback
+  candidate only).
+- Moonshine provisioning: its library downloads models from its own servers,
+  but this product provisions models through the hashed, versioned asset
+  catalog. Needs catalog entries (URL and SHA-256 per file, about 9 files) and
+  loading from a pre-placed directory, not the library's own downloader.
+- Moonshine packaging: `moonshine-voice` is not a project dependency yet, and
+  its native wheels would have to bundle correctly with PyInstaller on every
+  supported platform (no macOS Intel wheel is published).
+- Where the script tracker runs (sidecar vs. frontend). Leaning sidecar: it
+  keeps the frontend thin and lets recorded partials be replayed through it in
+  pytest, with no UI needed.
+- Phase 2 trailing confirmation pass (see "Confirming suspected misreads").
 - Mic device selection UX and where device enumeration lives (Go vs. Python).
 - Whether a flagged span needs its own short rolling audio buffer captured
   for playback in the review panel (Results.tsx plays back heard audio for
