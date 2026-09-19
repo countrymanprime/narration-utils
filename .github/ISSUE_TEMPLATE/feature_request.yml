@@ -1,0 +1,46 @@
+name: Feature request
+description: Suggest an improvement or a new utility.
+title: 'feat: '
+labels: [enhancement, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The suite helps a narrator find and review issues faster. It does not automatically edit or comp audio, and it does not require cloud processing.
+        See the [roadmap](https://github.com/countrymanprime/narration-utils/blob/main/docs/roadmap.md) for what is already planned or deferred.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the narration workflow problem, not the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would help
+    validations:
+      required: true
+  - type: dropdown
+    id: milestone
+    attributes:
+      label: Closest roadmap milestone
+      options:
+        - Not sure
+        - 1. Dashboard foundation
+        - 2. Recording and take review
+        - 3. Character continuity
+        - 4. Diagnostics and delivery
+        - None of these
+  - type: textarea
+    id: related
+    attributes:
+      label: Related ADRs, briefs, or issues
+      description: Link anything in docs/ this touches, such as a decision it would change.
+  - type: checkboxes
+    id: boundary
+    attributes:
+      label: Product boundary
+      options:
+        - label: This keeps every result reviewable by the narrator. Nothing edits audio or text automatically.
+          required: true

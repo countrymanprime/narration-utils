@@ -88,6 +88,13 @@ jobs:
           need-stylua: 'false'
           need-linux-native-deps: 'false'
       - run: node --test tools/ui-atlas-kit/test/*.test.mjs
+  github-scripts:
+    # The scripts that keep GitHub metadata (labels, milestones) in step with the repo.
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: node --test scripts/github/*.test.mjs
   python:
     timeout-minutes: 15
     runs-on: ubuntu-latest

@@ -1,0 +1,65 @@
+name: Bug report
+description: Something in Narration Utils is broken or behaves unexpectedly.
+title: 'bug: '
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Narration Utils is local-first. **Do not attach manuscripts, audio, or project files you do not have the right to share.**
+        A short excerpt or a description of its structure is usually enough.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where did it happen?
+      options:
+        - Manuscript Guide
+        - Transcript Compare
+        - Tracks
+        - Manuscript Teleprompter
+        - REAPER scripts
+        - Installer or first run
+        - Other or not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: The release tag you installed, for example v0.2.5-rc, or the commit if you built from source.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Operating system and REAPER version
+      placeholder: Windows 11 23H2, REAPER 7.x
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Click ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+      description: Screenshots are welcome. Say if it happens every time.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or error text
+      render: shell

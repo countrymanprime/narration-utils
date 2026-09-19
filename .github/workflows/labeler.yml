@@ -1,0 +1,16 @@
+name: Label pull requests
+# pull_request_target so labelling also works on pull requests from forks. The
+# job never checks out or runs pull request code: actions/labeler reads
+# .github/labeler.yml from the base branch and the changed-file list from the API.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions: { contents: read, pull-requests: write }
+jobs:
+  label:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/labeler@v7
+        with:
+          sync-labels: true
