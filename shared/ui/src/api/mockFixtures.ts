@@ -387,6 +387,24 @@ export const WIRE_DISCREPANCIES: Discrepancy[] = [
     markerState: 'existing',
     existingMarkerName: "SKIPPED: 'Queen of Hearts'",
   },
+  {
+    id: 'disc-3',
+    kind: 'EXTRA',
+    name: 'oh dear',
+    docText: '(nothing written)',
+    audioText: 'oh dear, oh dear',
+    projectTime: 9.6,
+    itemIndex: 2,
+    srcpos: 0,
+    chapter: titles[0],
+    paragraph: paragraphIndex(0, 2),
+    sourceLine: 18,
+    scriptContext: "...Oh dear! I shall be late!' (when she thought it over afterwards...",
+    audioContext: "...Oh dear, oh dear, I shall be late!' (when she thought it over afterwards...",
+    // 'exported' (not 'pending') so this addition doesn't change the pending
+    // marker count Transcript.test.tsx asserts against for disc-1/disc-2.
+    markerState: 'exported',
+  },
 ];
 export const WIRE_LOGS = [
   { level: 'normal', text: '[00:04] Exported take audio (Track 3)' },
