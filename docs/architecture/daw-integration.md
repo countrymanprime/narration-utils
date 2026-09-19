@@ -5,6 +5,7 @@
 ## REAPER rules
 
 - Keep business logic in Go and user-facing UI in React. The two packaged Python analysis sidecars remain Manuscript Guide and Transcript Compare. Keep only project discovery, manifest construction, marker/take mutations, and cursor navigation in REAPER Lua.
+- Reading a project's track and item metadata does not need REAPER at all: the Go `tracks` package parses the `.rpp` file directly, so the [Tracks](../utilities/tracks.md) page works in a standalone launch. The "project discovery in Lua" rule above applies to state only a running REAPER knows (selection, edit cursor, take markers); anything derivable from the saved project file stays in Go.
 - The installed launcher resolves its adjacent Wails executable and resource bridge; checkout paths are a development-only fallback.
 - The launcher does not read or write ExtState paths. Go resolves the shared layered JSON settings and passes explicit marker colors with the marker-export command.
 - Import `NarrationUtils_Launcher.lua` into REAPER's Action list. It starts the non-blocking native Wails workspace and its file-session bridge for REAPER-only operations. There is no loopback server, REST endpoint, browser tab, or port override.

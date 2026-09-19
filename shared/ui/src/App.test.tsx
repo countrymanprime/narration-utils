@@ -130,6 +130,21 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(screen.queryByRole('button', { name: 'Import legacy Word file' })).toBeNull();
   });
 
+  it('keeps Tracks reachable without a manuscript and lists the mock API tracks on its page', async () => {
+    const source = createMockApi();
+    renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+
+    const tracksButtons = screen.getAllByRole('button', { name: 'Tracks' });
+    expect(tracksButtons.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true);
+    fireEvent.click(tracksButtons[0]);
+
+    await screen.findByRole('heading', { name: 'Tracks' });
+    expect(await screen.findByRole('button', { name: /Chapter 1/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Click Track/ })).toBeTruthy();
+    expect(window.location.pathname).toBe('/tracks');
+  });
+
   it('redirects a direct manuscript-dependent URL to Home when no manuscript exists', async () => {
     window.history.replaceState(null, '', '/proofing');
     const source = createMockApi();

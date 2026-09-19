@@ -15,6 +15,7 @@ This folder records planned work for a local-first audiobook narration toolkit. 
 | --- | --- | --- |
 | [Manuscript Guide](utilities/manuscript-guide.md) | Implemented | Extracts editable characters, places, organizations, pronunciations, evidence, and narration notes from a Word manuscript. |
 | [Transcript Compare](utilities/transcript-compare.md) | Implemented | Locally transcribes a REAPER chapter track, compares it to the manuscript, and adds take markers for discrepancies. |
+| [Tracks](utilities/tracks.md) | Implemented | Reads a project's REAPER `.rpp` file to list its tracks and play their audio (play/pause, skip 30s, previous/next track), with no running REAPER needed. |
 | [REAPER shared helpers](architecture/daw-integration.md) | Implemented | Provides ExtState, path, and hidden-process helpers for ReaScripts. |
 | Audacity adapters | Deferred | Placeholder directories only; no driver has been implemented. |
 

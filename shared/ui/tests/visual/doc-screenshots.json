@@ -21,6 +21,13 @@
     "caption": "Primary navigation - the slide-in drawer opened via the mobile hamburger button"
   },
   {
+    "page": "global",
+    "state": "nav-rail-tooltip",
+    "viewport": "small-desktop",
+    "docName": "nav-rail-tooltip",
+    "caption": "Primary navigation - the icon-only rail shows a page's name when you hover its icon"
+  },
+  {
     "page": "home",
     "state": "default",
     "viewport": "desktop",
@@ -138,6 +145,41 @@
     "viewport": "desktop",
     "docName": "storybible-alias-dropdown",
     "caption": "Story Bible - alias typeahead dropdown matching existing entries"
+  },
+  {
+    "page": "tracks",
+    "state": "default",
+    "viewport": "desktop",
+    "docName": "tracks-default",
+    "caption": "Tracks - project tracks with transport controls, tracks with missing or unsupported items flagged"
+  },
+  {
+    "page": "tracks",
+    "state": "unplayable-track-selected",
+    "viewport": "desktop",
+    "docName": "tracks-unplayable",
+    "caption": "Tracks - a track with a missing source file selected, playback controls disabled"
+  },
+  {
+    "page": "tracks",
+    "state": "rpp-picker",
+    "viewport": "desktop",
+    "docName": "tracks-rpp-picker",
+    "caption": "Tracks - choosing between more than one REAPER project file in the project folder"
+  },
+  {
+    "page": "tracks",
+    "state": "skipped-forward",
+    "viewport": "desktop",
+    "docName": "tracks-playback",
+    "caption": "Tracks - a track playing after skipping forward 30 seconds"
+  },
+  {
+    "page": "tracks",
+    "state": "no-rpp",
+    "viewport": "desktop",
+    "docName": "tracks-no-project-file",
+    "caption": "Tracks - no REAPER project file found in the project folder"
   },
   {
     "page": "settings",
