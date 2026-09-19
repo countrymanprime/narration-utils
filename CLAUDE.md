@@ -4,7 +4,7 @@
 
 New features and bugfixes in this repo have a history of silently breaking unrelated things — this order exists to catch that before it ships, not after. For anything beyond a trivial single-file change:
 
-1. **Plan** the change (`/plan` or the `planner` agent).
+1. **Plan** the change (`/plan` or the `planner` agent). Find or open the tracking issue first (`gh issue list`) and put `Closes #<n>` in the PR; see `docs/operations/github-workflow.md`.
 2. **`change-impact-scan`** — before touching a file shared across tools (`shared/python/narration_common`, `shared/reaper`, `shared/ui/src` components), find every consumer and its existing test coverage. `shared/reaper` Lua has no automated tests — treat every Lua consumer as zero-coverage by default.
 3. Implement with TDD (`tdd-guide` agent / `tdd-workflow` skill).
 4. **`full-verification-gate`** — run `pnpm check` (the full gate, not `check:fast`) before calling anything done. Run the Playwright visual suite when `shared/ui` changed (see below). Require explicit manual verification inside Reaper when `shared/reaper` changed, since nothing automated proves Lua behavior.
