@@ -419,13 +419,7 @@ export function Transcript({
                 </span>
                 <span className="flex gap-1 text-[.65rem] normal-case">
                   {(['Quiet', 'Normal', 'Verbose'] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      className={`rounded-[0.35rem] border border-[var(--border)] px-[0.65rem] py-[0.3rem] font-['Barlow_Condensed',sans-serif] text-[0.78rem] font-semibold tracking-[0.03em] text-[var(--text-muted)] uppercase ${logVerbosity === mode ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]' : ''}`}
-                      onClick={() => setLogVerbosity(mode)}
-                    >
-                      {mode}
-                    </button>
+                    <Pill key={mode} label={mode} active={logVerbosity === mode} onClick={() => setLogVerbosity(mode)} />
                   ))}
                 </span>
               </div>

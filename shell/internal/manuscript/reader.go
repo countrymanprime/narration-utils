@@ -328,7 +328,11 @@ func object(value any) map[string]any {
 }
 func text(value map[string]any, key string) string { result, _ := value[key].(string); return result }
 func paragraphPayload(paragraph map[string]any) map[string]any {
-	return map[string]any{"id": text(paragraph, "id"), "chapterId": text(paragraph, "chapterId"), "chapter": text(paragraph, "chapterTitle"), "index": paragraph["index"], "text": text(paragraph, "text"), "entityIds": []string{}}
+	payload := map[string]any{"id": text(paragraph, "id"), "chapterId": text(paragraph, "chapterId"), "chapter": text(paragraph, "chapterTitle"), "index": paragraph["index"], "text": text(paragraph, "text"), "entityIds": []string{}}
+	if spans, ok := paragraph["spans"]; ok {
+		payload["spans"] = spans
+	}
+	return payload
 }
 func chapterPayload(chapter, notes map[string]any, paragraphs []map[string]any, includeParagraphs bool) map[string]any {
 	status := "not_started"

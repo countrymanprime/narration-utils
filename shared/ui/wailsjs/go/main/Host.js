@@ -30,9 +30,6 @@ export function GuideEntities() {
   return window['go']['main']['Host']['GuideEntities']();
 }
 
-export function GuideExport() {
-  return window['go']['main']['Host']['GuideExport']();
-}
 
 export function GuideMerge(arg1, arg2) {
   return window['go']['main']['Host']['GuideMerge'](arg1, arg2);
@@ -56,6 +53,10 @@ export function GuideSetLocked(arg1, arg2) {
 
 export function GuideUnrelate(arg1, arg2, arg3) {
   return window['go']['main']['Host']['GuideUnrelate'](arg1, arg2, arg3);
+}
+
+export function ManuscriptBeginImport(arg1) {
+  return window['go']['main']['Host']['ManuscriptBeginImport'](arg1);
 }
 
 export function ManuscriptChapters() {
