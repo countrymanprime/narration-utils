@@ -48,10 +48,12 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
-      # -a forces a rebuild: setup-go restores the Go build cache, and CodeQL only sees code the
-      # compiler actually recompiles ("could not process any code written in Go" otherwise).
+      # Two things CodeQL's Go tracer needs: -a, because setup-go restores the build cache and only
+      # recompiled code is seen, and `go build` run from the module directory rather than
+      # `go -C shell build`, whose leading flag stops the tracer recognising the build.
       - if: matrix.language == 'go'
-        run: go -C shell build -a ./...
+        working-directory: shell
+        run: go build -a ./...
       - uses: github/codeql-action/analyze@v4
         with:
           category: /language:${{ matrix.language }}
