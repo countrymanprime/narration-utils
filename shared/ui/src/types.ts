@@ -8,15 +8,17 @@ export * from './api/contracts/tts';
 export * from './api/contracts/whisper';
 export * from './api/contracts/project';
 export * from './api/contracts/tracks';
+export * from './api/contracts/teleprompter';
 
 import type { ManuscriptApi } from './api/contracts/manuscript';
 import type { ProjectApi } from './api/contracts/project';
 import type { StoryBibleApi } from './api/contracts/storyBible';
 import type { SystemApi } from './api/contracts/system';
+import type { TeleprompterApi } from './api/contracts/teleprompter';
 import type { TracksApi } from './api/contracts/tracks';
 import type { TranscriptApi } from './api/contracts/transcript';
 import type { TtsApi } from './api/contracts/tts';
 import type { WhisperApi } from './api/contracts/whisper';
 
 /** The app compatibility facade; domain interfaces remain independently testable. */
-export interface NarrationApi extends SystemApi, ManuscriptApi, StoryBibleApi, TranscriptApi, TtsApi, WhisperApi, ProjectApi, TracksApi {}
+export interface NarrationApi extends SystemApi, ManuscriptApi, StoryBibleApi, TranscriptApi, TtsApi, WhisperApi, ProjectApi, TracksApi, TeleprompterApi {}

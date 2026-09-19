@@ -43,6 +43,9 @@ type Service struct {
 	child    *process.StreamChild
 	stopFile string
 	stopping bool
+	// finished is closed by the watcher once it has recorded the session's
+	// final state, which is later than the child process exiting.
+	finished chan struct{}
 }
 
 // New builds the service. emit receives every JSON line the sidecar prints;
@@ -184,12 +187,13 @@ func (s *Service) Start(options map[string]string) error {
 		s.fail(err.Error())
 		return err
 	}
+	finished := make(chan struct{})
 	s.mu.Lock()
-	s.child = child
+	s.child, s.finished = child, finished
 	s.state["phase"], s.state["message"] = "running", "Listening…"
 	s.mu.Unlock()
 	s.notify()
-	go s.watch(child, cancel)
+	go s.watch(child, cancel, finished)
 	return nil
 }
 
@@ -239,7 +243,7 @@ func failureMessage(code int, stderr string) string {
 	return fmt.Sprintf("The teleprompter stopped unexpectedly (exit code %d).", code)
 }
 
-func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc) {
+func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc, finished chan struct{}) {
 	<-child.Done()
 	cancel()
 	code, _ := child.ExitCode()
@@ -252,6 +256,7 @@ func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc) {
 	}
 	s.child, s.stopping = nil, false
 	s.mu.Unlock()
+	close(finished)
 	_ = os.Remove(stopFile)
 	s.notify()
 }
@@ -287,13 +292,13 @@ func (s *Service) Stop() {
 func (s *Service) Close(ctx context.Context) error {
 	s.Stop()
 	s.mu.RLock()
-	child, grace := s.child, s.grace
+	child, grace, finished := s.child, s.grace, s.finished
 	s.mu.RUnlock()
 	if child == nil {
 		return nil
 	}
 	select {
-	case <-child.Done():
+	case <-finished:
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()

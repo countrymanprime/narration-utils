@@ -129,13 +129,31 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
     await screen.findByRole('heading', { name: 'Welcome back' });
 
-    for (const name of ['Manuscript', 'Proofing', 'Story Bible']) {
+    for (const name of ['Manuscript', 'Proofing', 'Story Bible', 'Teleprompter']) {
       expect(screen.getAllByRole('button', { name }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
     }
     expect((screen.getByRole('button', { name: 'Open Proofing' }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole('button', { name: 'Open Story Bible' }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByRole('button', { name: 'Import manuscript' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Import legacy Word file' })).toBeNull();
+  });
+
+  it('opens the Teleprompter with a manuscript, and sends a direct URL to Home without one', async () => {
+    window.history.replaceState(null, '', '/');
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Teleprompter' })[0]);
+
+    await screen.findByRole('heading', { name: 'Teleprompter' });
+    expect(window.location.pathname).toBe('/teleprompter');
+    cleanup();
+
+    window.history.replaceState(null, '', '/teleprompter');
+    const source = createMockApi();
+    renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    expect(window.location.pathname).toBe('/');
   });
 
   it('keeps Tracks reachable without a manuscript and lists the mock API tracks on its page', async () => {

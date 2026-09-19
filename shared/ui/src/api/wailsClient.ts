@@ -17,6 +17,9 @@ import type {
   RecentProject,
   ScopedSettingField,
   SearchHit,
+  TeleprompterEvent,
+  TeleprompterStartResult,
+  TeleprompterState,
   TracksDiscovery,
   TracksProject,
   TranscriptStartResult,
@@ -41,6 +44,18 @@ const mediaRoute = '/media';
 
 function normalizeTranscriptState(state: TranscriptState): TranscriptState {
   return { ...state, markerExport: state.markerExport ?? { phase: 'idle', message: '', added: 0, skipped: 0 } };
+}
+
+const idleTeleprompter: TeleprompterState = { phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null };
+
+function normalizeTeleprompterState(state: Partial<TeleprompterState>): TeleprompterState {
+  return { ...idleTeleprompter, ...state };
+}
+
+// The host relays each sidecar line as a JSON value; tolerate the string form
+// too so a transport change cannot silently drop the whole stream.
+function teleprompterEvent(payload: unknown): TeleprompterEvent {
+  return (typeof payload === 'string' ? JSON.parse(payload) : payload) as TeleprompterEvent;
 }
 
 async function decode<T>(request: Promise<string>): Promise<T> {
@@ -129,5 +144,11 @@ export const wailsClient: NarrationApi = {
   tracksDiscover: () => decode<TracksDiscovery>(host.TracksDiscover()),
   tracksSelect: (path) => decode<TracksDiscovery>(host.TracksSelect(path)),
   tracksList: () => decode<TracksProject>(host.TracksList()),
+  teleprompterStart: (options) => decode<TeleprompterStartResult>(host.TeleprompterStart(options)),
+  teleprompterStop: () => decode<void>(host.TeleprompterStop()),
+  teleprompterState: () => decode<Partial<TeleprompterState>>(host.TeleprompterState()).then(normalizeTeleprompterState),
+  subscribeTeleprompterEvent: (onEvent) => EventsOn('teleprompter:event', (payload) => onEvent(teleprompterEvent(payload))),
+  subscribeTeleprompterState: (onState) =>
+    EventsOn('teleprompter:state', (payload) => onState(normalizeTeleprompterState(payload as Partial<TeleprompterState>))),
   mediaUrl: (sourceFile) => `${mediaRoute}?path=${encodeURIComponent(sourceFile)}`,
 };

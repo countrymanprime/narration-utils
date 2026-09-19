@@ -1,4 +1,4 @@
-# 0025. Manuscript line identity is stored in REAPER item extension data and read back through the bridge
+# 0026. Manuscript line identity is stored in REAPER item extension data and read back through the bridge
 
 **Status:** Accepted
 **Date:** 2026-09-19

@@ -1,4 +1,4 @@
-# 0024. Delivery measurements are computed in Go, and no distributor profile ships yet
+# 0025. Delivery measurements are computed in Go, and no distributor profile ships yet
 
 **Status:** Accepted
 **Date:** 2026-09-19

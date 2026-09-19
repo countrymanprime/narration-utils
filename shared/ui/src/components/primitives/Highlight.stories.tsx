@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { Highlight, type HighlightKind } from './Highlight';
 
-const KINDS: HighlightKind[] = ['Character', 'Place', 'Organization', 'Lore', 'Item', 'Event', 'Review', 'Note'];
+const KINDS: HighlightKind[] = ['Character', 'Place', 'Organization', 'Lore', 'Item', 'Event', 'Review', 'Note', 'Cursor'];
 
 const meta = {
   title: 'Primitives/Highlight',
@@ -22,6 +22,8 @@ export const Item: Story = { args: { kind: 'Item', children: 'the golden key' } 
 export const Event: Story = { args: { kind: 'Event', children: 'the tea party' } };
 export const Review: Story = { args: { kind: 'Review', children: 'Cheshire' } };
 export const Note: Story = { args: { kind: 'Note', children: 'a note anchored to this sentence' } };
+// The Teleprompter's current word: a solid accent fill (not a tint) that reads as a position marker.
+export const Cursor: Story = { args: { kind: 'Cursor', children: 'beginning' } };
 
 // The highlight sits inside running text: it must paint the whole line height and keep the
 // text baseline, including where it wraps across lines (box-decoration-break: clone).

@@ -34,8 +34,12 @@ const mockNoManuscript = mockParams.has('mockNoManuscript');
 // `?mockManuscriptCandidate=1` boots a project with no imported manuscript but a
 // manuscript.docx in its folder, so Home shows the import offer.
 const mockManuscriptCandidate = mockParams.has('mockManuscriptCandidate');
+// `?mockTeleprompter=listening|waiting|done` boots the teleprompter already part-way
+// through the first chapter, as a session the host kept running.
+const mockTeleprompter = (['listening', 'waiting', 'done'] as const).find((seed) => seed === mockParams.get('mockTeleprompter'));
 const mockInitial = {
   ...(mockNoManuscript ? { noManuscript: true } : {}),
+  ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoProject ? { projectFolder: '' } : {}),
   ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),
   ...(mockNoRpp ? { tracksCandidates: [] } : {}),
