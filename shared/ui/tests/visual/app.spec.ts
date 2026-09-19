@@ -37,10 +37,53 @@ async function clickSettingsCategory(page: Page, name: string): Promise<void> {
   await page.locator('.settings-nav').getByRole('button', { name, exact: true }).click();
 }
 
+// Playwright's synthetic page.mouse.down/move/up drag doesn't reliably
+// produce a non-empty window.getSelection() range for useTextSelection.ts's
+// mouseup listener to pick up (unlike a real Chromium user drag, or RTL's
+// fireEvent.mouseUp against a manually-constructed Range in jsdom). Building
+// the Range directly and dispatching mouseup ourselves - mirroring how the
+// component's own test does it - is deterministic across viewports.
+async function selectFirstParagraphText(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const paragraph = document.querySelector('#manuscript-text p, .manuscript-reader p');
+    if (!paragraph) return;
+    // The paragraph's own firstChild is often a <mark>/<span> entity
+    // highlight, not a plain text node long enough to slice - walk to the
+    // first real Text node with enough content instead of assuming layout.
+    const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
+    let textNode: Text | null = null;
+    while (walker.nextNode()) {
+      const candidate = walker.currentNode as Text;
+      if ((candidate.textContent?.length ?? 0) >= 20) {
+        textNode = candidate;
+        break;
+      }
+    }
+    if (!textNode) return;
+    const range = document.createRange();
+    range.setStart(textNode, 0);
+    range.setEnd(textNode, 20);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    paragraph.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+  });
+}
+
 // Some states have no known/safe driver yet (e.g. alias-typeahead, forcing
 // the manuscript-not-found banner without a mock-data override seam). Those
 // are left out here on purpose - the catalog entry is simply skipped.
 const APP_DRIVERS: Record<string, Record<string, Driver>> = {
+  project: {
+    'picker-empty': async (page) => {
+      // Reload with the mock's no-project boot seam (see main.tsx) instead
+      // of an init-script - the outer loop's default `page.goto('/')` has
+      // already happened by the time a driver runs, so this simply
+      // re-navigates before settling.
+      await page.goto('/?mockNoProject=1');
+      await settlePage(page);
+    },
+  },
   home: {
     default: async () => {},
     'chapter-table-collapsed': async () => {},
@@ -49,9 +92,21 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'hint-chips': async (page) => {
       await goToPage(page, 'Proofing');
+      await clickVisible(page, 'button', /Suggest from manuscript/);
+      // Accept exactly one candidate so accepted (solid pill) and pending
+      // (dashed "+ Term") chips render together, matching this state's
+      // "(accepted + pending)" description - accepting every candidate would
+      // leave nothing pending to show.
+      await clickVisible(page, 'button', '+ Alice');
     },
     'info-tooltip': async (page) => {
       await page.getByLabel('More information').hover();
+    },
+    'import-confirm': async (page) => {
+      // The default mock state already has a manuscript loaded, so "Import
+      // manuscript" isn't visible - "Replace manuscript" drives the same
+      // selectManuscript -> preview -> confirm dialog flow.
+      await clickVisible(page, 'button', 'Replace manuscript');
     },
   },
   manuscript: {
@@ -73,21 +128,20 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'detail-sidebar-note': async (page) => {
       await goToPage(page, 'Manuscript');
-      await page.locator('.note-overlay').first().click();
+      // The default chapter's seeded note spans a whole paragraph, and an
+      // entity <mark> nested inside it calls stopPropagation() on click - a
+      // click resolving to that nested mark never reaches the outer note's
+      // handler. Exclude overlays that contain a mark so the click lands on
+      // the note itself.
+      await page.locator('.note-overlay:not(:has(.ms-highlight))').first().click();
     },
     'detail-sidebar-entity': async (page) => {
       await goToPage(page, 'Manuscript');
-      await page.locator('.ms-highlight').first().click();
+      await page.locator('mark.ms-highlight').first().click();
     },
     'selection-popup': async (page) => {
       await goToPage(page, 'Manuscript');
-      const paragraph = page.locator('#manuscript-text p, .manuscript-reader p').first();
-      const box = await paragraph.boundingBox();
-      if (!box) return;
-      await page.mouse.move(box.x + 4, box.y + box.height / 2);
-      await page.mouse.down();
-      await page.mouse.move(box.x + Math.min(160, box.width - 4), box.y + box.height / 2, { steps: 5 });
-      await page.mouse.up();
+      await selectFirstParagraphText(page);
     },
     'overlapping-highlights': async (page) => {
       await goToPage(page, 'Manuscript');
@@ -100,9 +154,10 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'Collapse all chapters');
     },
-    'chapter-expanded': async (page) => {
+    'add-note-dialog': async (page) => {
       await goToPage(page, 'Manuscript');
-      await clickVisible(page, 'button', 'Expand all chapters');
+      await selectFirstParagraphText(page);
+      await clickVisible(page, 'button', '+ Note');
     },
   },
   proofing: {
@@ -126,6 +181,14 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'button', 'Start comparison');
       await page.waitForTimeout(2_900);
       await page.locator('tr[data-row]').first().click();
+    },
+    'results-extra-row-expanded': async (page) => {
+      await goToPage(page, 'Proofing');
+      await clickVisible(page, 'button', 'Start comparison');
+      await page.waitForTimeout(2_900);
+      // Target the EXTRA (heard but not written) row specifically - .first()
+      // would land on the MISREAD row instead.
+      await page.locator('tr[data-row]').filter({ hasText: 'EXTRA' }).click();
     },
     toast: async (page) => {
       await goToPage(page, 'Proofing');
@@ -158,6 +221,16 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Story Bible');
       await page.locator('tr[data-row]').first().click();
     },
+    'alias-typeahead': async (page) => {
+      await goToPage(page, 'Story Bible');
+      await page.locator('tr[data-row]').first().click();
+      // "at" matches multiple canonical names in the mock fixture set
+      // (Hatter, Caterpillar, Cheshire Cat) regardless of which entity the
+      // fixture data happens to sort first into the row - findAliasMatches
+      // excludes the selected entity by id, not by name, so this can't
+      // accidentally match zero results.
+      await page.getByPlaceholder('Add an alias or find a matching entry…').fill('at');
+    },
     'delete-confirm': async (page) => {
       await goToPage(page, 'Story Bible');
       await page.locator('tr[data-row]').first().click();
@@ -184,6 +257,11 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'button', 'Global');
       await clickSettingsCategory(page, 'General');
+    },
+    'global-manuscript': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'button', 'Global');
+      await clickSettingsCategory(page, 'Manuscript');
     },
     'global-proofing': async (page) => {
       await goToPage(page, 'Settings');
@@ -220,6 +298,11 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'button', 'This Project');
       await clickSettingsCategory(page, 'Story Bible');
     },
+    'project-data': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'button', 'This Project');
+      await clickSettingsCategory(page, 'Project data');
+    },
     'dirty-footer': async (page) => {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'button', 'Global');
@@ -246,6 +329,14 @@ const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   global: {
     tooltip: async (page) => {
       await page.getByLabel('More information').hover();
+    },
+    'nav-drawer-open': async (page) => {
+      // The hamburger button only renders below the `md` breakpoint
+      // (AppShell's `max-md:inline-flex`) - at desktop/small-desktop/tablet
+      // widths the persistent nav rail is already visible, so there's
+      // nothing to open and this is intentionally a no-op there.
+      const hamburger = page.getByRole('button', { name: 'Open navigation' });
+      if (await hamburger.count()) await hamburger.click();
     },
     toast: async (page) => {
       await goToPage(page, 'Proofing');
