@@ -14,7 +14,7 @@ export function Button({ variant = 'primary', className = '', type = 'button', .
   return (
     <button
       type={type}
-      className={`inline-flex items-center gap-1.5 rounded-md border px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase transition disabled:pointer-events-none disabled:opacity-40 ${VARIANT_CLASSES[variant]} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-md border px-4 py-2 font-['Barlow_Condensed',sans-serif] font-semibold tracking-[0.03em] uppercase transition disabled:pointer-events-none disabled:opacity-40 [:where(&)]:text-[0.85rem] ${VARIANT_CLASSES[variant]} ${className}`}
       {...rest}
     />
   );

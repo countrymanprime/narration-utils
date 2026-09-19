@@ -311,7 +311,7 @@ export function Transcript({
                 </div>
               </div>
             </div>
-            <div className="mt-5">
+            <div>
               <label className="mb-1.5 block text-[0.82rem] font-medium text-[var(--text-muted)]">
                 Vocabulary hints
                 <Tooltip text="Unusual names and invented words Whisper is likely to mis-hear. Accepted hints are remembered for this project - you won't need to re-suggest them every run." />
@@ -366,7 +366,7 @@ export function Transcript({
                 </Button>
               </div>
             </div>
-            <div className="mt-5 flex items-center justify-between gap-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex items-center justify-between gap-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
               <Button variant="ghost" onClick={goHome}>
                 <FontAwesomeIcon icon={faArrowLeft} />
                 Back to Home

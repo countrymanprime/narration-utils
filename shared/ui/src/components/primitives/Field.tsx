@@ -14,7 +14,7 @@ export function Field({
   textarea?: boolean;
 }) {
   return (
-    <label className="mt-3 block text-[0.82rem] font-medium text-[var(--text-muted)]">
+    <label className="block text-[0.82rem] font-medium text-[var(--text-muted)] first:mt-3">
       {label}
       {textarea ? (
         <textarea

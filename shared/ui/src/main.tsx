@@ -1,5 +1,4 @@
 import React from 'react';
-import { config } from '@fortawesome/fontawesome-svg-core';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
@@ -7,9 +6,6 @@ import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
 import { ThemeProvider } from './theme/ThemeContext';
 import './styles.css';
-
-// styles.css loads FontAwesome's CSS itself (inside a cascade layer).
-config.autoAddCss = false;
 
 // Mock mode runs the complete UI in a browser without the desktop host.
 //

@@ -366,7 +366,7 @@ export function GuideDetail({
           </div>
         </div>
 
-        <div className="mt-5">
+        <div>
           <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">Aliases</div>
           <table className="dtable">
             <thead>
@@ -552,7 +552,7 @@ export function GuideDetail({
               value={draft.personality}
               onChange={(value) => setDraft({ ...draft, personality: value })}
             />
-            <div className="mt-5">
+            <div>
               <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">Voice samples</div>
               <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
                 No samples yet.
@@ -587,7 +587,7 @@ export function GuideDetail({
           <Field label="Lore context" textarea disabled={editingDisabled} value={draft.context} onChange={(value) => setDraft({ ...draft, context: value })} />
         )}
 
-        <div className="mt-5 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
+        <div className="border-t pt-4" style={{ borderColor: 'var(--border)' }}>
           <div className="mb-2 text-[0.82rem] font-medium text-[var(--text-muted)]">Relationships</div>
           <table className="dtable">
             <thead>
@@ -672,7 +672,7 @@ export function GuideDetail({
           </div>
         </div>
 
-        <div className="mt-5 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
+        <div className="border-t pt-4" style={{ borderColor: 'var(--border)' }}>
           <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">
             Evidence{' '}
             <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
