@@ -24,7 +24,7 @@ jobs:
           - { name: linux-x64, os: ubuntu-latest, args: '-tags webkit2_41' }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-toolchain
         with:
           need-pnpm: 'false'
