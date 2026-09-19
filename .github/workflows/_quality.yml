@@ -49,6 +49,30 @@ jobs:
           path: shared/ui/screenshots
           if-no-files-found: ignore
           retention-days: 7
+  ui-atlas:
+    # The component library: every Storybook story x light/dark x wide/narrow,
+    # with play() interactions, axe accessibility and overflow checks
+    # (shared/ui/tests/atlas). `pnpm atlas` builds Storybook first.
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-go: 'false'
+          need-python: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+          need-linux-native-deps: 'false'
+      - run: pnpm --dir shared/ui exec playwright install --with-deps chromium
+      - run: pnpm --dir shared/ui run atlas
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ui-atlas-screenshots
+          path: shared/ui/screenshots/atlas
+          if-no-files-found: ignore
+          retention-days: 7
   python:
     timeout-minutes: 15
     runs-on: ubuntu-latest

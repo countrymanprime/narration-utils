@@ -421,7 +421,7 @@ export function Transcript({
                   {(['Quiet', 'Normal', 'Verbose'] as const).map((mode) => (
                     <button
                       key={mode}
-                      className={`rounded-[0.35rem] border border-[var(--border)] px-[0.65rem] py-[0.3rem] font-['Barlow_Condensed',sans-serif] text-[0.78rem] font-semibold uppercase tracking-[0.03em] text-[var(--text-muted)] ${logVerbosity === mode ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]' : ''}`}
+                      className={`rounded-[0.35rem] border border-[var(--border)] px-[0.65rem] py-[0.3rem] font-['Barlow_Condensed',sans-serif] text-[0.78rem] font-semibold uppercase tracking-[0.03em] ${logVerbosity === mode ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]' : 'text-[var(--text-muted)]'}`}
                       onClick={() => setLogVerbosity(mode)}
                     >
                       {mode}

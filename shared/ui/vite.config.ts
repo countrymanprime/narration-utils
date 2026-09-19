@@ -9,6 +9,6 @@ export default defineConfig({
     // tests/visual/**/*.spec.ts are Playwright specs (run via `pnpm run
     // screenshots`), not Vitest tests - Vitest's default include pattern
     // matches *.spec.ts too, so it must be excluded explicitly.
-    exclude: ['node_modules/**', 'tests/visual/**'],
+    exclude: ['node_modules/**', 'tests/visual/**', 'tests/atlas/**'],
   },
 });

@@ -39,7 +39,10 @@ export function WorkDialog({ title, job, close, cancel }: { title: string; job: 
         <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
           Live activity
         </div>
-        <div className="h-36 overflow-y-auto overflow-x-hidden border border-[var(--border)] bg-[var(--surface-2)] font-['IBM_Plex_Mono',ui-monospace,monospace]">
+        <div
+          tabIndex={0}
+          className="h-36 overflow-y-auto overflow-x-hidden border border-[var(--border)] bg-[var(--surface-2)] font-['IBM_Plex_Mono',ui-monospace,monospace] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--accent)]"
+        >
           {job.logs.map((line, index) => (
             <div key={`${index}-${line}`} className="break-words border-b border-[var(--border)] px-[0.45rem] py-1">
               {line}

@@ -1,6 +1,8 @@
 # Component showcase (Storybook) & public documentation site
 
-**Status: Planned — not implemented.** Deliberately deferred: the primitive component library (`Dialog`, `Button`, `MeterBar` as of this session) has only three components in it. This is its own follow-up project once there's enough to show off.
+**Status: Storybook part implemented (ADR 0013); public docs site and Pages deployment still planned.** The primitive library now has a story per component under `shared/ui/src/components/primitives/`, run in CI as the `ui-atlas` job. Publishing the built `storybook-static/` (for example to GitHub Pages) and the public-facing documentation site remain future work.
+
+_Original note:_ deliberately deferred while the library had only three components.
 
 ## Problem / goal
 

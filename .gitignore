@@ -33,3 +33,4 @@ release-notes.md
 target/
 .tools/
 .cache/
+shared/ui/storybook-static/
