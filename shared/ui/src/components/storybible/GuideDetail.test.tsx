@@ -68,7 +68,7 @@ describe('Story Bible locked entries', () => {
   });
 });
 
-describe('Story Bible read-only entries (ADR-0017)', () => {
+describe('Story Bible read-only entries (ADR-0018)', () => {
   const unlocked = () => {
     const entity = WIRE_ENTITIES.find((row) => !row.locked);
     if (!entity) throw new Error('fixture must include an unlocked entity');

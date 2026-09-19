@@ -1,4 +1,4 @@
-# 0012. Manuscript import preserves structural whitespace and repairs glued headings
+# 0013. Manuscript import preserves structural whitespace and repairs glued headings
 
 **Status:** Accepted
 **Date:** 2026-09-18
@@ -15,7 +15,7 @@ The importer treats structural whitespace as content, not noise.
 
 - **DOCX** (`shell/internal/importer/docx.go`): `<w:br/>` and `<w:cr/>` become `"\n"`; `<w:tab/>` becomes a space in body text and a title/subtitle separator in headings; `<w:noBreakHyphen/>` becomes `-`. Tab stops declared in paragraph properties are ignored (they are not inside a run).
 - **Markdown** (`markdown.go`, `markdown_inline.go`): hard breaks and `<br>` become `"\n"`; soft-wrapped lines still join with a space; `<br>` in a heading separates title from subtitle.
-- **Normalization** (`richtext.go`): all whitespace collapses to a single space, a break becomes exactly one `"\n"` with no spaces beside it, and leading/trailing whitespace is trimmed — in one pass, so formatting offsets ([ADR-0013](0013-inline-formatting-as-offset-spans.md)) are computed against the final text.
+- **Normalization** (`richtext.go`): all whitespace collapses to a single space, a break becomes exactly one `"\n"` with no spaces beside it, and leading/trailing whitespace is trimmed — in one pass, so formatting offsets ([ADR-0014](0014-inline-formatting-as-offset-spans.md)) are computed against the final text.
 - **Glued headings** (`headings.go`): as a last resort, a heading shaped `<chapter|part|book> <number><Capitalized word>` (number = digits, uppercase roman numeral, or number word) is split at the capital. It fires only on that unambiguous shape, and every repair is reported in `Draft.Notices` so the import log says what was changed.
 
 The catalogue of known formatting hazards and how each is handled lives in [`docs/architecture/docx-import-quirks.md`](../architecture/docx-import-quirks.md). New hazards found in the wild are added there with a test next to the fix.

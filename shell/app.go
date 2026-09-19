@@ -523,7 +523,7 @@ func (h *Host) Bootstrap() map[string]any {
 		}
 	}
 	// A manuscript file sitting in the project folder is offered, never
-	// imported on its own (ADR-0018).
+	// imported on its own (ADR-0019).
 	var manuscriptCandidate any
 	if imported == nil {
 		if path := manuscript.DetectSource(config.projectFolder); path != "" {
@@ -787,7 +787,7 @@ func (h *Host) startGuideBuild() (map[string]any, error) {
 	go func() {
 		// The sidecar writes a stage|pct|message progress file and an
 		// append-only log while it works; tail both so the dialog shows real
-		// activity instead of sitting at 1% until the build finishes (ADR-0014).
+		// activity instead of sitting at 1% until the build finishes (ADR-0015).
 		var logAt int64
 		stop, stopped := make(chan struct{}), make(chan struct{})
 		go func() {

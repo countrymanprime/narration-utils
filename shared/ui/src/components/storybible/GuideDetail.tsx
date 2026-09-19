@@ -105,7 +105,7 @@ export function GuideDetail({
       </section>
     );
   const locked = entity.locked;
-  // Entries open read-only (ADR-0017): Edit reveals the form controls and Save.
+  // Entries open read-only (ADR-0018): Edit reveals the form controls and Save.
   // A locked entry cannot be edited at all, and a brand-new draft is created by
   // choosing its category rather than through the edit form.
   const canEdit = !locked && !isNewDraft;

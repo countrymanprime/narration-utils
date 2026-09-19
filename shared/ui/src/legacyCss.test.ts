@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// ADR-0016: unlayered legacy CSS silently beats Tailwind utilities, and class
+// ADR-0017: unlayered legacy CSS silently beats Tailwind utilities, and class
 // names whose CSS was deleted silently render unstyled. These guards fail the
 // build when either comes back.
 
@@ -50,7 +50,7 @@ function unlayeredCss(css: string): string {
   return out;
 }
 
-describe('legacy CSS guards (ADR-0016)', () => {
+describe('legacy CSS guards (ADR-0017)', () => {
   it('no source file references a removed legacy class name', () => {
     const offenders = sourceFiles(SRC)
       .filter((file) => !file.endsWith('legacyCss.test.ts'))

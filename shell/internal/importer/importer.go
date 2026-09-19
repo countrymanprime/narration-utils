@@ -7,7 +7,7 @@ import (
 )
 
 // Progress receives real stage reports while a draft is built: a percentage
-// in 0-100 and a human-readable line for the import log (ADR-0014). A nil
+// in 0-100 and a human-readable line for the import log (ADR-0015). A nil
 // Progress is valid and reports nothing.
 type Progress func(percent int, message string)
 

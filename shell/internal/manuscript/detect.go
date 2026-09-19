@@ -14,7 +14,7 @@ var detectableExtensions = []string{".docx", ".md", ".markdown"}
 // DetectSource finds a manuscript waiting to be imported: a file named
 // "manuscript" in a supported format sitting directly in the project folder,
 // when no manuscript has been imported yet. It only ever suggests; nothing is
-// imported until the user agrees (ADR-0018).
+// imported until the user agrees (ADR-0019).
 func DetectSource(project string) string {
 	if project == "" {
 		return ""

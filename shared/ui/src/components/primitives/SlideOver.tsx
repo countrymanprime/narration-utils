@@ -6,7 +6,7 @@ import { faXmark } from '@fortawesome/free-solid-svg-icons';
 // mounted so it can slide, and is `invisible` (not just translated) while
 // closed so it can never take focus or clicks. All positioning is Tailwind:
 // an unlayered legacy panel rule used to shadow these utilities and keep the
-// panel permanently off-screen behind a live backdrop (ADR-0016).
+// panel permanently off-screen behind a live backdrop (ADR-0017).
 export function SlideOver({
   open,
   title,

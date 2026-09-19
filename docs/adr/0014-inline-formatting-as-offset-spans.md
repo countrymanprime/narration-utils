@@ -1,4 +1,4 @@
-# 0013. Inline formatting is stored as offset spans over canonical plain text
+# 0014. Inline formatting is stored as offset spans over canonical plain text
 
 **Status:** Accepted
 **Date:** 2026-09-18

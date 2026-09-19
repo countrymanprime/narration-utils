@@ -1,4 +1,4 @@
-# 0017. Story Bible entries are read-only until Edit is pressed
+# 0018. Story Bible entries are read-only until Edit is pressed
 
 **Status:** Accepted
 **Date:** 2026-09-18

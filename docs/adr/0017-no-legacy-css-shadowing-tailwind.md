@@ -1,4 +1,4 @@
-# 0016. No unlayered legacy CSS or contradictory utilities shadow Tailwind
+# 0017. No unlayered legacy CSS or contradictory utilities shadow Tailwind
 
 **Status:** Accepted
 **Date:** 2026-09-18

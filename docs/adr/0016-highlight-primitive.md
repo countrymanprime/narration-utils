@@ -1,4 +1,4 @@
-# 0015. One `Highlight` primitive for entity, note and review highlights
+# 0016. One `Highlight` primitive for entity, note and review highlights
 
 **Status:** Accepted
 **Date:** 2026-09-18

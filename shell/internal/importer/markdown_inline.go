@@ -16,7 +16,7 @@ func isWordRune(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) 
 // appendInline parses one line of Markdown inline syntax into b: *italic*,
 // **bold**, ***both***, <u>underline</u>, <br> line breaks and backslash
 // escapes. It is intentionally not a full CommonMark implementation - only the
-// "normal storytelling formatting" the reader can display (ADR-0013). An
+// "normal storytelling formatting" the reader can display (ADR-0014). An
 // unmatched marker is kept as literal text rather than swallowed.
 func appendInline(b *richBuilder, line string, style Style) {
 	runes := []rune(line)

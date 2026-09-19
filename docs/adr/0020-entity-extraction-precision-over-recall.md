@@ -1,4 +1,4 @@
-# 0019. Story Bible entity extraction favors precision over recall
+# 0020. Story Bible entity extraction favors precision over recall
 
 **Status:** Accepted
 **Date:** 2026-09-18

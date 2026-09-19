@@ -1,4 +1,4 @@
-# 0018. A manuscript found in the project folder is offered, never imported automatically
+# 0019. A manuscript found in the project folder is offered, never imported automatically
 
 **Status:** Accepted
 **Date:** 2026-09-18

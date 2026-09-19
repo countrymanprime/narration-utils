@@ -84,7 +84,7 @@ func copyJob(job *ImportJob) ImportJob {
 
 // report records a real stage of an import: it moves the progress bar and adds
 // a line to the activity log in one step, so the two can never disagree
-// (ADR-0014). Progress never moves backwards within a job.
+// (ADR-0015). Progress never moves backwards within a job.
 func (s *Service) report(job *ImportJob, percent int, message string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

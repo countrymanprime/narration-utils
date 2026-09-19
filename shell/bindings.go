@@ -280,7 +280,7 @@ func (h *Host) ManuscriptImportState(jobID string) (string, error) {
 }
 func (h *Host) ManuscriptImportPreview(jobID string, markdownHeadingLevel int) (string, error) {
 	// Runs in the background; the UI polls ManuscriptImportState for the real
-	// staged progress and log (ADR-0014).
+	// staged progress and log (ADR-0015).
 	return encodeBinding(h.manuscript.StartPreview(jobID, markdownHeadingLevel))
 }
 func (h *Host) ManuscriptImportCommit(jobID string, confirmedReset bool, sectionKinds map[string]string, characterCandidateIDs []string) (string, error) {

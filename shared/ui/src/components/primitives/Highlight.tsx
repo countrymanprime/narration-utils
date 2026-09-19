@@ -5,7 +5,7 @@ export type HighlightKind = 'Character' | 'Place' | 'Organization' | 'Lore' | 'I
 // Story Bible categories arrive under several spellings ("Needs Review",
 // "Location", the transient "Draft"). Every highlight funnels through this one
 // mapping so an unfamiliar category degrades to the review color instead of the
-// browser's default yellow <mark> (ADR-0015).
+// browser's default yellow <mark> (ADR-0016).
 export function highlightKind(category: string): HighlightKind {
   switch (category) {
     case 'Character':

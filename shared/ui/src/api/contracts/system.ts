@@ -18,7 +18,7 @@ export type Bootstrap = {
   projectName: string;
   daw: string;
   manuscript: { id: string; format: string; sourceName: string; importedAt: string; narratableWordCount: number; narratableChapterCount: number } | null;
-  /** A manuscript file found in the project folder that has not been imported yet. Offered, never imported automatically (ADR-0018). */
+  /** A manuscript file found in the project folder that has not been imported yet. Offered, never imported automatically (ADR-0019). */
   manuscriptCandidate?: { path: string; name: string } | null;
   runtime: Record<string, Record<string, string>>;
   transcript: TranscriptState;

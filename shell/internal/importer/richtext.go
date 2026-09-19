@@ -9,7 +9,7 @@ import (
 // Style is a bit set of inline formatting that survives import. Anything the
 // reader cannot show faithfully (fonts, colors, sizes) is deliberately not
 // modelled: the canonical manuscript keeps plain text authoritative and adds
-// only "normal storytelling formatting" on top (ADR-0013).
+// only "normal storytelling formatting" on top (ADR-0014).
 type Style uint8
 
 const (

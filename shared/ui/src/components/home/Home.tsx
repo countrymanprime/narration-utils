@@ -11,11 +11,11 @@ import { WorkDialog } from '../primitives/WorkDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
 
 // Import runs as a host-side job; the UI only ever displays the percent and log
-// lines the host reports while polling (ADR-0014) - it never invents progress.
+// lines the host reports while polling (ADR-0015) - it never invents progress.
 const IMPORT_POLL_MS = 200;
 // Candidate manuscripts the user has said no to. Module scope, not storage, so a
 // declined offer stays quiet for the rest of the session and is offered again
-// the next time the app starts (ADR-0018).
+// the next time the app starts (ADR-0019).
 const declinedCandidates = new Set<string>();
 const POLLED_PHASES: WorkJob['phase'][] = ['preparing', 'committing'];
 

@@ -1,4 +1,4 @@
-# 0014. Progress bars and activity logs show real work only
+# 0015. Progress bars and activity logs show real work only
 
 **Status:** Accepted
 **Date:** 2026-09-18
