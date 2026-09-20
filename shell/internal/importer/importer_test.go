@@ -1,12 +1,13 @@
 package importer
 
 import (
-	"path/filepath"
 	"testing"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 )
 
 func fixture(name string) string {
-	return filepath.Join("..", "..", "..", "shared", "test-fixtures", name)
+	return layout.RepoFile(layout.FixturesDir + "/" + name)
 }
 
 func TestMarkdownFixtureRetainsTitleAndNarrativeChapters(t *testing.T) {

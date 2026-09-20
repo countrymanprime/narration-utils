@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).with_name("prepare-resources.py")
+SCRIPT = Path(__file__).resolve().parents[1] / "prepare-resources.py"
 SIDECARS = {"manuscript-guide", "transcript-compare", "manuscript-teleprompter"}
 
 
@@ -65,9 +65,9 @@ class FakeProcess:
 @pytest.fixture
 def script(tmp_path, monkeypatch):
     module = load_script()
-    (tmp_path / "shared" / "config").mkdir(parents=True)
-    (tmp_path / "shared" / "reaper").mkdir(parents=True)
-    resources = tmp_path / "shell" / "cmd" / "narration-utils" / "resources"
+    (tmp_path / module.CONFIG_DIR).mkdir(parents=True)
+    (tmp_path / module.REAPER_DIR).mkdir(parents=True)
+    resources = tmp_path / module.RESOURCES_DIR
     monkeypatch.setattr(module, "ROOT", tmp_path)
     monkeypatch.setattr(module, "RESOURCES", resources)
     monkeypatch.setattr(module, "RUNTIME", resources / "runtime")

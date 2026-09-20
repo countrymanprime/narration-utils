@@ -4,15 +4,17 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 )
 
 func TestBuiltinDefaultsMatchRepoDefaultsFile(t *testing.T) {
-	document := readDocument(filepath.Join("..", "..", "..", "shared", "config", "defaults.json"))
+	document := readDocument(layout.RepoFile(layout.DefaultsFile))
 	if len(document) == 0 {
-		t.Fatal("could not read shared/config/defaults.json")
+		t.Fatalf("could not read %s", layout.DefaultsFile)
 	}
 	for tool := range document {
-		file := readTool(filepath.Join("..", "..", "..", "shared", "config", "defaults.json"), tool)
+		file := readTool(layout.RepoFile(layout.DefaultsFile), tool)
 		for key, want := range file {
 			if got := builtinDefaults[tool][key]; got != want {
 				t.Errorf("builtinDefaults[%q][%q] = %q, defaults.json has %q", tool, key, got, want)
@@ -36,10 +38,10 @@ func TestDefaultsFallBackToBuiltinsWithoutARepoCheckout(t *testing.T) {
 func TestPreservesLayerPrecedenceAndProjectReset(t *testing.T) {
 	root := t.TempDir()
 	project := filepath.Join(root, "project")
-	if err := os.MkdirAll(filepath.Join(root, "shared", "config"), 0o755); err != nil {
+	if err := os.MkdirAll(layout.Path(root, layout.ConfigDir), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, "shared", "config", "defaults.json"), []byte(`{"Piper":{"tts_voice_id":"default"}}`), 0o600); err != nil {
+	if err := os.WriteFile(layout.Path(root, layout.DefaultsFile), []byte(`{"Piper":{"tts_voice_id":"default"}}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("APPDATA", filepath.Join(root, "appdata"))

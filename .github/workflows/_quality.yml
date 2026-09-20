@@ -84,12 +84,13 @@ jobs:
       - run: node --test tools/ui-atlas-kit/test/*.test.mjs
   repo-scripts:
     # Plain-Node scripts with no dependencies: the ones that keep GitHub metadata (labels,
-    # milestones) in step with the repo, and the release scripts (version sync, asset packaging).
+    # milestones) in step with the repo, the release scripts (version sync, asset packaging), and the
+    # layout guard (scripts/ci/layout.test.mjs: top-level allowlist and retired-path check).
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: node --test scripts/github/*.test.mjs scripts/release/*.test.mjs
+      - run: node --test scripts/ci/*.test.mjs scripts/github/*.test.mjs scripts/release/*.test.mjs
   python:
     timeout-minutes: 15
     runs-on: ubuntu-latest

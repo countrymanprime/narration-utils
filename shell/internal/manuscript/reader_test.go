@@ -1,15 +1,16 @@
 package manuscript
 
 import (
-	"path/filepath"
 	"testing"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 )
 
 func importReaderFixture(t *testing.T) (*Service, string, string) {
 	t.Helper()
 	project := t.TempDir()
 	service := New(project)
-	source := filepath.Join("..", "..", "..", "shared", "test-fixtures", "alice.md")
+	source := layout.RepoFile(layout.FixturesDir + "/alice.md")
 	job := service.Begin(source)
 	preview, err := service.Preview(job.ID, 1)
 	if err != nil || preview.Phase != "ready" {
