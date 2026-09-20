@@ -27,7 +27,8 @@ export function Menu({
   children: ReactNode;
 }) {
   return (
-    <BaseMenu.Root>
+    // Not modal: the page behind stays scrollable and clickable, as with the menu this replaced (a press outside closes it).
+    <BaseMenu.Root modal={false}>
       <BaseMenu.Trigger disabled={disabled} className={triggerClassName} style={triggerStyle}>
         {children}
       </BaseMenu.Trigger>

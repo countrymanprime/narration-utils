@@ -21,8 +21,9 @@ Five primitives on Base UI, each with a story and tests, closed APIs, Tailwind a
 
 ## Consequences
 
-- Every widget in the app that carries state now announces it and works from the keyboard the way the platform documents. Nothing outside `primitives/` imports the library.
-- The visible changes are the token-styled checkbox and the category menu's popup being portalled (same look, positioned by the library). Every visual-suite state that shows a chip, the disclosure or the entry header is pixel-identical.
+- The four converted widgets announce their state and work from the keyboard the way the platform documents, and nothing outside `primitives/` imports the library. What is not converted (the alias combobox, `NavButton`, the lock button, the native selects) is unchanged.
+- `Pill` reports `aria-pressed` on the groups that use it as a single choice (theme, text size, log verbosity), where radio semantics would be more accurate; group semantics are deferred (foundation PRD question 7). The `Menu` popup is not modal, so the page behind stays scrollable and clickable as it was.
+- The visible changes are the token-styled checkbox and the category menu's popup being portalled (same look, positioned by the library). The visual-suite states that show a chip, the disclosure or the entry header were compared pixel by pixel with the state before this work and are identical (the disclosure's top border colour needed an explicit token: Tailwind 4's default is `currentcolor`).
 - `Checkbox` and `Switch` label presses are proved in RTL tests; the Storybook jsdom runner cannot press a label (Base UI builds a `PointerEvent` that its window rejects), so their stories press the control itself.
 - `Switch` is unused code until Settings adopts it; Knip sees it through its story and test.
 - To change any of this, write a new ADR that supersedes this one.
