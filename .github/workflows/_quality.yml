@@ -128,10 +128,12 @@ jobs:
           need-stylua: 'false'
           need-linux-native-deps: 'false'
           pnpm-filter: narration-utils
+      # `always`: the layout and project guards read every tracked file, so a change anywhere can break them.
       - uses: ./.github/actions/nx-run
         with:
           targets: test-node
           projects: repo-scripts
+          always: 'true'
   python:
     # ruff and pytest for libs/python, the sidecars, scripts/ (release tests) and tests/fixtures.
     timeout-minutes: 15

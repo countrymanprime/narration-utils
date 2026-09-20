@@ -9,11 +9,16 @@
 # Environment: ALWAYS, GITHUB_EVENT_NAME, BASE_REF (the pull request's base branch).
 set -euo pipefail
 
-workspace_wide='^(nx\.json|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|pyproject\.toml|uv\.lock|project\.json|scripts/(quality\.mjs|toolchain\.json|ci/nx-scope\.sh)|\.github/(workflows|actions)/)'
+workspace_wide='^(nx\.json|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|pyproject\.toml|uv\.lock|project\.json|stylua\.toml|\.prettierrc\.json|\.prettierignore|\.editorconfig|\.gitattributes|scripts/(quality\.mjs|toolchain\.json|ci/nx-scope\.sh)|\.github/(workflows|actions)/)'
 
 if [ "${ALWAYS:-false}" = "true" ] || [ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]; then
   echo all
-elif git diff --name-only "origin/${BASE_REF}...HEAD" | grep -Eq "$workspace_wide"; then
+  exit 0
+fi
+
+# Captured first: `git diff | grep -q` can take a SIGPIPE under pipefail and print the wrong answer.
+changed=$(git diff --name-only "origin/${BASE_REF}...HEAD")
+if grep -Eq "$workspace_wide" <<<"$changed"; then
   echo all
 else
   echo affected

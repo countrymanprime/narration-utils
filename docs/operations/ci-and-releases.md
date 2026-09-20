@@ -102,11 +102,12 @@ runner called:
   `.github/actions/nx-run`: on a pull request `nx affected` against the base branch, otherwise every selected
   project. `scripts/ci/nx-scope.sh` decides: everything runs when the event is not a pull request, or the change
   touches a file no project owns but all depend on (`nx.json`, `package.json`, `pnpm-lock.yaml`,
-  `pnpm-workspace.yaml`, `pyproject.toml`, `uv.lock`, the root `project.json`, `scripts/quality.mjs`,
-  `scripts/toolchain.json`, anything under `.github/workflows` or `.github/actions`). The two Playwright jobs keep
+  `pnpm-workspace.yaml`, `pyproject.toml`, `uv.lock`, the root `project.json`, `stylua.toml`, `.prettierrc.json`,
+  `.prettierignore`, `.editorconfig`, `.gitattributes`, `scripts/quality.mjs`, `scripts/toolchain.json`, anything under
+  `.github/workflows` or `.github/actions`). The two Playwright jobs keep
   their own `run:` steps (the atlas kit's audit looks for them) and skip them through
   `.github/actions/nx-affected` when the UI is not affected. The atlas-kit job always runs, because its drift check
-  reads `apps/ui`.
+  reads `apps/ui`, and so does the `repo-scripts` job, because the layout and project guards read every tracked file.
 - **Dependencies** are `implicitDependencies` in each `project.json`: the desktop app reads the UI, the sidecars,
   `config`, `fixtures` and `reaper`; the sidecars read `narration-common` and `config`.
   `scripts/ci/projects.test.mjs` fails if a Python, Go, Lua or `apps/` TypeScript file is not covered by a project
