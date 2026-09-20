@@ -63,6 +63,30 @@ describe('SlideOver is a real modal panel', () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Open panel' })));
   });
 
+  it('sends focus into <main> when the opener is gone by the time it closes', async () => {
+    function GoneOpener() {
+      const [open, setOpen] = useState(false);
+      return (
+        <div>
+          <main tabIndex={-1}>
+            {!open && <button onClick={() => setOpen(true)}>Open panel</button>}
+            <button>Other control</button>
+          </main>
+          <SlideOver open={open} title="Entry details" onClose={() => setOpen(false)}>
+            <p>Body</p>
+          </SlideOver>
+        </div>
+      );
+    }
+    const user = userEvent.setup();
+    render(<GoneOpener />);
+    await user.click(screen.getByRole('button', { name: 'Open panel' }));
+    await screen.findByRole('dialog', { name: 'Entry details' });
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(document.querySelector('main')?.contains(document.activeElement)).toBe(true));
+  });
+
   it('closes on its Close button, with the label a caller chose', async () => {
     const onClose = vi.fn();
     const user = userEvent.setup();

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NavDrawer } from './NavDrawer';
 
 afterEach(cleanup);
@@ -56,6 +56,24 @@ describe('NavDrawer', () => {
     await screen.findByRole('dialog', { name: 'Navigation' });
     await user.click(document.querySelector('[data-nav-drawer-backdrop]') as HTMLElement);
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('closes when the window grows into the wide layout, where the menu button no longer exists', async () => {
+    const listeners = new Set<() => void>();
+    const wide = {
+      matches: false,
+      addEventListener: (_: string, listener: () => void) => listeners.add(listener),
+      removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
+    };
+    vi.stubGlobal('matchMedia', () => wide);
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole('button', { name: 'Open navigation' }));
+    await screen.findByRole('dialog', { name: 'Navigation' });
+    wide.matches = true;
+    act(() => listeners.forEach((listener) => listener()));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    vi.unstubAllGlobals();
   });
 
   it('closes when a destination is chosen', async () => {
