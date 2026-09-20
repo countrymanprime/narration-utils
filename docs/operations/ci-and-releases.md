@@ -82,7 +82,7 @@ runner called:
 | Project | Folder | Targets |
 | --- | --- | --- |
 | `narration-utils-ui` | `apps/ui` | `lint`, `format`, `test`, `build`, `visual` (Playwright screenshots), `atlas` |
-| `narration-utils-shell` | `apps/desktop` | `lint` (gofmt, go vet, golangci-lint v2: errcheck, staticcheck, gosec and the `standard` set), `test` (`-race` in the `ci` configuration), `package` (`wails build`, not part of the gate) |
+| `narration-utils-shell` | `apps/desktop` | `lint` (gofmt, go vet, golangci-lint v2: errcheck, staticcheck, gosec and the `standard` set), `test` (`-race` in the `ci` configuration), `test-schedules` (the teleprompter and shutdown tests on one and on four CPUs, five times each; run by the CI `go` job, not by `pnpm check`), `package` (`wails build`, not part of the gate) |
 | `narration-common` | `libs/python` | `lint` (ruff), `test` (pytest) |
 | `manuscript-guide`, `manuscript-teleprompter`, `transcript-compare` | `sidecars/<name>` | `lint`, `test` |
 | `reaper` | `integrations/reaper` | `lint` (StyLua) |
@@ -137,7 +137,7 @@ by deleting the code or dropping the `export`. Add an `ignore`, `ignoreIssues`, 
 `ignoreBinaries` entry only with a written reason in the file (generated code, files another repository receives by
 copy, external tools, byte-identical vendored files). It does not read Go, Python or Lua. The standing exceptions
 are the generated `apps/ui/wailsjs`, the UI atlas kit's `plugin/templates`, the wire-contract types, the exports of the
-byte-identical `apps/ui/tests/visual/lib`, `@nx/js` (loaded by `nx release`) and the binaries `gofmt`, `wails` and
+byte-identical `apps/ui/tests/visual/lib`, `@nx/js` (loaded by `nx release`) and the binaries `go`, `gofmt`, `wails` and
 `playwright`. Scripts and the kit are entries and their exports are reported too (`includeEntryExports`), so a helper
 exported by habit is flagged once nothing imports it. When a dependency that
 Knip cannot see through arrives (a schema library, `@base-ui/react`), run it once and add the false positive with its

@@ -189,7 +189,9 @@ jobs:
   go:
     # Windows only: it is the supported platform, and Linux's native libraries are installed only
     # by the optional Linux build (build-linux.yml). Runs gofmt, go vet and golangci-lint (the lint
-    # target), then the tests with the race detector (the `ci` configuration of the test target).
+    # target), then the tests with the race detector (the `ci` configuration of the test target), then
+    # the teleprompter and shutdown tests on one and on four CPUs (`test-schedules`): an ordering bug
+    # between goroutines that hides on the default scheduler fails there on demand.
     timeout-minutes: 15
     runs-on: windows-latest
     steps:
@@ -204,6 +206,6 @@ jobs:
           pnpm-filter: narration-utils
       - uses: ./.github/actions/nx-run
         with:
-          targets: lint test
+          targets: lint test test-schedules
           projects: narration-utils-shell
           configuration: ci

@@ -231,9 +231,12 @@ func TestStopAsksTheSidecarToFinishAndEndsInStopped(t *testing.T) {
 	if f.service.Busy() {
 		t.Fatal("a stopped session should not be busy")
 	}
-	if leftovers, _ := filepath.Glob(filepath.Join(f.session, "teleprompter_*.stop")); len(leftovers) != 0 {
-		t.Fatalf("stop file left behind: %v", leftovers)
-	}
+	// The watcher publishes "stopped" and only then removes the stop file, so the file is gone shortly after the
+	// phase changes, not at the same instant: wait for it rather than reading it once.
+	waitFor(t, "the stop file to be removed", func() bool {
+		leftovers, _ := filepath.Glob(filepath.Join(f.session, "teleprompter_*.stop"))
+		return len(leftovers) == 0
+	})
 }
 
 func TestStopKillsASidecarThatIgnoresTheStopFileAfterTheGracePeriod(t *testing.T) {

@@ -92,8 +92,39 @@ func TestImportJobReportsRealProgressAndLogs(t *testing.T) {
 			t.Fatalf("log is missing %q:\n%s", want, logs)
 		}
 	}
-	if done.Percent != 100 || done.Elapsed <= 0 {
+	// Elapsed comes from the monotonic clock, which ticks every 0.5 to 15.6 ms on Windows, so a commit of a
+	// two-line file can measure exactly zero. What this test can assert is that the field is reported and sane;
+	// TestElapsedIsTheTimeBetweenStartAndEnd pins the arithmetic with fixed times.
+	if done.Percent != 100 || done.Elapsed < 0 {
 		t.Fatalf("percent %d elapsed %v", done.Percent, done.Elapsed)
+	}
+	// A finished job has recorded its end: its elapsed time no longer grows. This holds whatever the clock's tick,
+	// and it fails if the end time is never set (a running job reports the time since it started).
+	time.Sleep(50 * time.Millisecond)
+	again, err := service.State(job.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again.Elapsed != done.Elapsed {
+		t.Fatalf("elapsed kept growing after the job finished: %v then %v", done.Elapsed, again.Elapsed)
+	}
+}
+
+func TestElapsedIsTheTimeBetweenStartAndEnd(t *testing.T) {
+	started := time.Date(2026, 9, 20, 9, 0, 0, 0, time.UTC)
+
+	finished := copyJob(&ImportJob{started: started, ended: started.Add(1500 * time.Millisecond)})
+	if finished.Elapsed != 1.5 {
+		t.Fatalf("a finished job reports its start-to-end time: got %v want 1.5", finished.Elapsed)
+	}
+
+	running := copyJob(&ImportJob{started: time.Now().Add(-2 * time.Second)})
+	if running.Elapsed < 2 || running.Elapsed > 30 {
+		t.Fatalf("a running job reports the time since it started: got %v want about 2", running.Elapsed)
+	}
+
+	if unstarted := copyJob(&ImportJob{}); unstarted.Elapsed != 0 {
+		t.Fatalf("a job that has not started reports 0, got %v", unstarted.Elapsed)
 	}
 }
 

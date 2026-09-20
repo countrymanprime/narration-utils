@@ -25,6 +25,20 @@
         }
       }
     },
+    "test-schedules": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "parallel": false,
+        "commands": [
+          "go test -cpu 1,4 -count=5 -run \"Teleprompter|Shutdown|CanAttach\" .",
+          "go test -cpu 1,4 -count=5 ./internal/teleprompter/..."
+        ]
+      },
+      "metadata": {
+        "description": "Runs the teleprompter and shutdown tests on one and on four CPUs, five times each. Ordering bugs between the session's goroutines (the one that let Shutdown return while Busy was still true) show up here on demand; on the default scheduler they hid. Run by the go job of _quality.yml."
+      }
+    },
     "package": {
       "executor": "nx:run-commands",
       "options": {
