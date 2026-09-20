@@ -30,6 +30,12 @@ Details, including the Git hooks and CI, are in [CI and releases](docs/operation
    commit and decides the next version. Put `Closes #<issue>` in the description and fill in the template.
 4. If you settled a real design decision, record it as an ADR in `docs/adr/`.
 
+## Licensing of contributions
+
+The project is licensed under AGPL-3.0-or-later ([ADR 0039](docs/adr/0039-the-project-is-licensed-agpl-3-or-later.md)).
+By opening a pull request you agree that your contribution is licensed under the same terms. There is no
+contributor license agreement.
+
 ## Reporting a security problem
 
 Do not open a public issue. Follow [SECURITY.md](SECURITY.md).
