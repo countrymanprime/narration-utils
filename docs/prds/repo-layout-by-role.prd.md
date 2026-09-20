@@ -157,7 +157,7 @@ We believe role-based top-level names, one test rule and per-project Nx targets 
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Cleanup, no moves | Delete `shell/src-tauri/`; resolve `shell/ui/index.html`; move the two outlier Python tests into `tests/` folders; pytest `testpaths` and `--basetemp` out of the repo root | complete | 2 | - | [plan](implementation-plan.md) |
 | 2 | Prep | Guard test (top-level allowlist, old-root check, initially permissive); path constants in Go and `prepare-resources.py`; publish the old-to-new map | complete | 1 | - | [plan](implementation-plan.md) |
-| 3 | The move | Two-commit rename PR for every folder in the target tree; all reference fixes; sidecar and library tests to `<project>/tests/`; lockfile; ADR; docs, README and PRD path updates; guard tightened | pending | - | 1, 2, A1-A5 | - |
+| 3 | The move | Two-commit rename PR for every folder in the target tree; all reference fixes; sidecar and library tests to `<project>/tests/`; lockfile; docs, README and PRD path updates; guard tightened (the ADR is written in phase 5) | complete | - | 1, 2, A1-A5 | [plan](implementation-plan.md) |
 | 4 | Nx per project | `project.json` per project with targets and `implicitDependencies`; `pnpm check` and CI use `nx affected` per A6; shrink `changed-files.mjs` and `quality.mjs` where Nx covers them | pending | - | 3 | - |
 | 5 | Steady state | Move durable rules into `codebase-map.md`, `docs/operations/`, `CONTRIBUTING.md` and the ADR; update local skills (A7); delete this PRD and the research note's plan section | pending | - | 4 | - |
 

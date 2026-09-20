@@ -13,6 +13,7 @@ import (
 // Path or RepoFile.
 const (
 	DesktopDir               = "apps/desktop"
+	DesktopConfigFile        = DesktopDir + "/wails.json"
 	ConfigDir                = "config"
 	DefaultsFile             = ConfigDir + "/defaults.json"
 	TTSCatalogFile           = ConfigDir + "/tts-assets.json"
@@ -31,8 +32,9 @@ func Path(root, rel string) string {
 	return filepath.Join(root, filepath.FromSlash(rel))
 }
 
-// FindRoot walks up from start to the directory that holds DefaultsFile, the
-// marker of a source checkout. It keeps `wails dev` usable from the desktop
+// FindRoot walks up from start to the directory that holds both DefaultsFile
+// and DesktopConfigFile, the markers of a source checkout (DefaultsFile alone
+// is a generic name another project could share). It keeps `wails dev` usable from the desktop
 // directory while release builds stay entirely resource-relative: when no
 // checkout is found it returns the filesystem root, where none of the
 // checkout-relative paths exist.
@@ -42,7 +44,7 @@ func FindRoot(start string) string {
 		return start
 	}
 	for {
-		if _, err := os.Stat(Path(current, DefaultsFile)); err == nil {
+		if isCheckoutRoot(current) {
 			return current
 		}
 		parent := filepath.Dir(current)
@@ -51,6 +53,15 @@ func FindRoot(start string) string {
 		}
 		current = parent
 	}
+}
+
+func isCheckoutRoot(dir string) bool {
+	for _, marker := range []string{DefaultsFile, DesktopConfigFile} {
+		if _, err := os.Stat(Path(dir, marker)); err != nil {
+			return false
+		}
+	}
+	return true
 }
 
 // RepoFile resolves a repo-relative path against the checkout that contains
