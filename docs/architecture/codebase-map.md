@@ -1,18 +1,65 @@
 # Codebase map
 
-Narration Utils keeps its stable launch and integration paths while organizing
-implementation around the product domain that owns its behavior.
+Narration Utils names every top-level folder for the role of what is in it, and keeps its stable launch
+and integration paths while organizing implementation around the product domain that owns its behavior.
+The decision and the old-to-new path map are in
+[ADR 0040](../adr/0040-the-repository-is-laid-out-by-role-and-each-project-is-an-nx-project.md).
+
+## Repository layout
+
+```
+apps/
+  desktop/        Go/Wails desktop host (app.go, bindings.go, internal/, build/ icons)
+  ui/             React + Tailwind app; its tests/ hold the Playwright visual and atlas suites
+sidecars/         Python programs frozen into the app and run on demand
+  manuscript-guide/  manuscript-teleprompter/  transcript-compare/   (each: core/ CLI backend, tests/)
+libs/
+  python/         narration_common, the cross-tool Python contracts
+integrations/
+  reaper/         REAPER launcher and Lua bridge
+  audacity/       placeholder notes for a future Audacity driver
+config/           shipped JSON: defaults, asset catalogs, roadmap
+tests/
+  fixtures/       manuscripts and other data used by tests across projects
+tools/
+  ui-atlas-kit/   the reusable UI-atlas plugin (development tooling only)
+scripts/          repo automation, release and CI tooling
+docs/             documentation, ADRs and PRDs
+```
+
+Only these entries may exist at the repository root. `scripts/ci/layout.test.mjs` runs in `pnpm check` and fails
+on any other top-level entry, or on a tracked file that still names a retired path; the allowlist and the
+old-to-new path map live in `scripts/ci/layout.json`.
+
+### Where tests go
+
+Tests follow the toolchain. Colocate them where the toolchain wants that: Go `_test.go` beside the package,
+Vitest `*.test.tsx` beside the component, Storybook stories beside the primitive, `node:test` files beside
+the script. Otherwise a project has one `tests/` folder at its root (`libs/python/tests`,
+`sidecars/<name>/tests`, `scripts/release/tests`). The Playwright visual and atlas suites stay in
+`apps/ui/tests`, because the atlas kit scaffolds them into the project it serves. Data shared by several
+projects lives in `tests/fixtures`. Go code and tests name repo-relative locations through
+`apps/desktop/internal/layout`, and `scripts/release/prepare-resources.py` keeps its own constants, so the
+next move is a one-line change in each.
+
+### Projects
+
+Every folder above except `docs/` is an Nx project with a `project.json`; `pnpm check` and CI run their
+`lint`, `format`, `test` and `build` targets, and CI runs only the projects a change affects. See
+[Nx projects and the quality gate](../operations/ci-and-releases.md#nx-projects-and-the-quality-gate).
 
 ## Stable boundaries
 
 - `apps/desktop/` is the Go/Wails desktop host. It exposes generated, typed Wails
   bindings and native events only; it has no loopback HTTP surface, port, or
-  browser fallback.
+  browser fallback. Its Go module path is still
+  `github.com/countrymanprime/narration-utils/shell`; nothing imports it.
 - `apps/ui/` is the React application. It communicates only through the
   typed API facade; feature components do not import HTTP transport code.
 - `sidecars/*/core/` remain stable Python CLI entrypoints for DAW integrations.
 - `integrations/reaper/` is the REAPER-only bridge. Its field order and protocol are
-  compatibility contracts.
+  compatibility contracts. A checkout finds the sidecars, catalogs and launcher relative to
+  `integrations/reaper` (two levels up is the repo root); packaged builds use `resources/`.
 - `libs/python/narration_common/` contains only cross-tool contracts such
   as canonical manuscript access, settings, logging, progress, and bridge
   encoding. Feature-specific analysis stays with its tool.
@@ -46,6 +93,6 @@ rendering remain in `GuideDetail.tsx`.
 
 ## Sidecar boundary
 
-The two Python tools retain their stable `core` CLI contracts and are frozen
+The Python sidecars retain their stable `core` CLI contracts and are frozen
 as immutable packaged sidecars. Go supervises them; feature code must not add
 a Python server or a browser transport.

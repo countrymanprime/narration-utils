@@ -37,7 +37,6 @@
   "historical": [
     "docs/adr/",
     "docs/research/repo-layout-alignment.md",
-    "docs/prds/repo-layout-by-role.prd.md",
     "docs/prds/implementation-plan.md",
     "tools/ui-atlas-kit/CHANGELOG.md",
     "pnpm-lock.yaml",

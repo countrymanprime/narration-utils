@@ -1,6 +1,6 @@
 # Repo layout: where we are and what to align
 
-Researched 2026-09-20. Confidence: high for the repo findings (read directly from the tree), medium for the external guidance (several points rest on one source; flagged inline).
+Researched 2026-09-20. **Delivered:** the layout, the test rule and Nx per project are recorded in [ADR 0040](../adr/0040-the-repository-is-laid-out-by-role-and-each-project-is-an-nx-project.md) and [the codebase map](../architecture/codebase-map.md); the plan section that followed the recommendation was removed with the PRD, and the paths below describe the layout before the move. Confidence: high for the repo findings (read directly from the tree), medium for the external guidance (several points rest on one source; flagged inline).
 
 ## Summary
 
@@ -81,18 +81,6 @@ docs/                 stays
 The Go module path (`.../narration-utils/shell`) can stay as is when the directory moves; only `wails.json`, `go -C shell` calls and scripts change. The `apps/desktop` rename has the largest blast radius for the least clarity gain; it is the one to defer if you want a smaller first step (`shell/` reads fine on its own).
 
 At about eight projects Nx would call a flat layout acceptable, so the case for `apps/` + `libs/` is the misleading `shared/` name, not scale. If you would rather keep churn minimal, the smallest useful change is to rename only `shared/ui` to `ui/` (or `apps/ui/`) and `shared/reaper` to `integrations/reaper/`, and leave the rest.
-
-## Plan
-
-1. **Now, small, no moves.**
-   - Delete `shell/src-tauri/`. Confirm with a Windows `wails build` (I checked references statically; I did not run a build).
-   - Decide whether `shell/ui/index.html` is dead (no references found).
-   - Move the two outlier Python tests into `tests/` folders and fix their path lookups.
-   - Point pytest `--basetemp` at an ignored cache folder; `.test-tmp-<pid>` dirs currently pile up in the repo root.
-2. **Write the rule down.** Add the tests-follow-the-toolchain rule and the role names to `docs/architecture/codebase-map.md`, with a short ADR (`adr-author`).
-3. **One mechanical rename PR** (`git mv` only, no content edits besides paths), landed when no other branches are in flight. Update the path-coupled files listed above and run `full-verification-gate` (`pnpm check`, plus the Playwright visual suite since `shared/ui` moves). `shared/reaper` has no automated tests, so verify by hand in REAPER after the move. Leave existing ADR text alone as history; update the PRDs (about 30 mention `shared/ui`).
-4. **Optional: use Nx or drop it.** Give each stack a `project.json` with `build`, `test`, `lint` targets and use `nx affected`, which would replace `changed-files.mjs` and the serial runner in `quality.mjs`. If that is not wanted, keep Nx for release only and say so in `docs/operations/`.
-5. **Add per-path CODEOWNERS** when a second maintainer exists; today it is one `*` rule and that is fine.
 
 ## Gaps
 

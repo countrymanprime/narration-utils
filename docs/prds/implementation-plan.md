@@ -72,7 +72,7 @@ Order is dependency first, then value. `S` = stack. A stack is a PRD delivered a
 | --- | --- | --- |
 | S00 | This plan and the decisions register | Docs only, based on `main`. |
 | S01 | `relicense` (new, one PR) | AGPL-3.0-or-later: `LICENSE`, package metadata, README, CONTRIBUTING (DCO), notices note, ADR. Small and independent, so it goes before the big move. |
-| S02 | [repo-layout-by-role](repo-layout-by-role.prd.md) (1-5) | One atomic move PR (phases 1-3), then Nx per project, then steady state. `wails build` and the launcher must be checked. |
+| S02 | repo-layout-by-role (1-5; delivered, see [ADR 0040](../adr/0040-the-repository-is-laid-out-by-role-and-each-project-is-an-nx-project.md)) | One atomic move PR (phases 1-3), then Nx per project, then steady state. `wails build` and the launcher must be checked. |
 | S03 | [host-binding-data-race](host-binding-data-race.prd.md) (1-4) | Accessor first; later PRDs build on it. |
 | S04 | [story-bible-preview-tts-failures](story-bible-preview-tts-failures.prd.md) P1, [proofing-vocabulary-hints](proofing-vocabulary-hints.prd.md) P1 | The small correctness fixes the README wants before layout changes. |
 | S05 | [verification-and-code-health-tooling](verification-and-code-health-tooling.prd.md) (1-8, 10, 11) | Coverage ratchet (D18) early so later stacks follow it. Phases 9 and 12 are tail phases after S10. |
@@ -105,4 +105,5 @@ Updated by the last PR of each stack. Values: `queued`, `in progress`, `pr open`
 | Stack | Status | PRs |
 | --- | --- | --- |
 | S00 | in progress | this PR |
-| S01-S24 | queued | |
+| S02 | pr open | #55, #56, #57, #58 (issue #54) |
+| S01, S03-S24 | queued | |
