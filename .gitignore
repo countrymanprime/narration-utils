@@ -11,6 +11,9 @@ apps/ui/dist/
 apps/ui/screenshots/
 apps/ui/playwright-report/
 apps/ui/test-results/
+apps/ui/coverage/
+.coverage
+.coverage.*
 logs/
 .claude/
 apps/desktop/cmd/narration-utils/frontend/dist/*

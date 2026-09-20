@@ -104,7 +104,8 @@ runner called:
   `scripts/ci/nx-scope.sh` decides: everything runs when the event is not a pull request, or the change
   touches a file no project owns but all depend on (`nx.json`, `package.json`, `pnpm-lock.yaml`,
   `pnpm-workspace.yaml`, `pyproject.toml`, `uv.lock`, the root `project.json`, `stylua.toml`, `.prettierrc.json`,
-  `.prettierignore`, `.editorconfig`, `.gitattributes`, `scripts/quality.mjs`, `scripts/toolchain.json`, anything under
+  `.prettierignore`, `.editorconfig`, `.gitattributes`, `scripts/quality.mjs`, `scripts/toolchain.json`, `scripts/ci/coverage-gate.mjs`,
+  `scripts/ci/coverage-floors.json`, anything under
   `.github/workflows` or `.github/actions`). The two Playwright jobs keep
   their own `run:` steps (the atlas kit's audit looks for them) and skip them through
   `.github/actions/nx-affected` when the UI is not affected. The atlas-kit job always runs, because its drift check
@@ -120,6 +121,24 @@ runner called:
 - **Adding a project**: add a `project.json` (copy a neighbour), give it `lint` and `test` targets that call the same
   tools, list what it reads under `implicitDependencies`, and add its name to the root project's
   `implicitDependencies` unless it should not count toward the release version.
+
+## Coverage ratchet
+
+Coverage is gated on the logic directories, not everywhere ([ADR 0043](../adr/0043-coverage-is-a-ratchet-on-logic-directories-not-a-blanket-80-percent.md)).
+The `test` target of `narration-utils-shell` (Go statements), `narration-utils-ui` (Vitest v8 lines),
+`narration-common`, `manuscript-teleprompter`, `transcript-compare` and `manuscript-guide` (pytest-cov lines) runs
+`scripts/ci/coverage-gate.mjs`, which runs the tests with coverage on and compares each listed directory or file with its
+floor in `scripts/ci/coverage-floors.json`. A directory below its floor, or one with no data because it was renamed or
+removed, fails the run.
+
+- **Adding a logic directory:** add an entry at 80 or above. A lower floor needs a written `reason`; the gate's test
+  (`scripts/ci/coverage-gate.test.mjs`) rejects one without.
+- **After adding tests:** run `node scripts/ci/coverage-gate.mjs <go|vitest|pytest> <projectRoot> --update` (the same
+  arguments as the project's `test` target) to raise floors to the rounded-down measurement. Floors never go down by
+  `--update`; lowering one is a reviewed edit.
+- **Not gated on purpose:** UI components, host glue and sidecar-launch code (the list is in the floors file's
+  `$comment`).
+- `vitest --coverage` also works by hand and writes `apps/ui/coverage/` (ignored).
 
 ## CI performance
 

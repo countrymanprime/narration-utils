@@ -65,3 +65,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0040](0040-the-repository-is-laid-out-by-role-and-each-project-is-an-nx-project.md) | The repository is laid out by role, and each project is an Nx project | Accepted |
 | [0041](0041-host-bindings-read-project-services-through-one-snapshot-accessor.md) | Host bindings read the project-scoped services through one snapshot accessor | Accepted |
 | [0042](0042-proofing-suggestions-derive-from-current-entities-and-skip-auto-extracted-needs-review.md) | Proofing's "Suggest from manuscript" derives names from the current Story Bible and leaves out auto-extracted Needs Review entries | Proposed |
+| [0043](0043-coverage-is-a-ratchet-on-logic-directories-not-a-blanket-80-percent.md) | Coverage is a ratchet on logic directories, not a blanket 80% | Accepted |

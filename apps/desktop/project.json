@@ -17,11 +17,11 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "go -C {projectRoot} test ./..."
+        "command": "node scripts/ci/coverage-gate.mjs go {projectRoot}"
       },
       "configurations": {
         "ci": {
-          "command": "go -C {projectRoot} test -race ./..."
+          "command": "node scripts/ci/coverage-gate.mjs go {projectRoot} -race"
         }
       }
     },

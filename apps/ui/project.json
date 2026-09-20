@@ -19,7 +19,7 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm --dir {projectRoot} test"
+        "command": "node scripts/ci/coverage-gate.mjs vitest {projectRoot}"
       }
     },
     "build": {
