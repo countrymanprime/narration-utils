@@ -2,6 +2,8 @@
 
 **Source:** user request of 2026-09-20 ("investigate how a repo like ours SHOULD be laid out"; then "go with the full changes from the research doc ... i do want to move shell and some of the other things"). The research and its citations are in [docs/research/repo-layout-alignment.md](../research/repo-layout-alignment.md). Citations here are `file:line` on branch `claude/repo-structure-organization-84ae38` at 155c275. Nothing here is built yet.
 
+**Reconciled 2026-09-20** with owner decision D15 of [implementation-plan.md](implementation-plan.md): one atomic move, `apps/desktop`, the Go module path kept, top-level `sidecars/`, tests in `<project>/tests/`, Nx per project as a follow-up phase. Delivered as stacked PRs (issue #54): phases 1-2, then 3, then 4, then 5. The open questions below carry the decisions; where the body still reads as a proposal, the Decisions Log wins.
+
 ## Problem Statement
 
 The top level of the repo no longer says what is in it. `shared/` holds the React app, a Python library, the REAPER Lua bridge, config JSON, test fixtures and a README; `tools/` mixes product code (three Python sidecars frozen into the app) with one real dev tool; `shell/` is the desktop app but reads like a leftover. Tests follow five different conventions, and a dead Tauri icon folder sits inside the Go host. For a repo that several sessions change at once and that ships often, every new contributor or agent has to learn by grep where things live.
@@ -81,14 +83,22 @@ We believe role-based top-level names, one test rule and per-project Nx targets 
 
 ## Open Questions
 
-- [ ] **A1. One PR or several?** Options: (a) one atomic mechanical PR for all moves, one conflict window (recommended: the repo has many in-flight branches, so a short window matters more than a small diff); (b) five PRs in this order: config, fixtures and audacity; Python and sidecars; REAPER; UI; desktop. Mixed layouts exist between PRs and every PR still runs the full gate.
-- [ ] **A2. Name for the desktop app.** Options: `apps/desktop` (recommended; docs and `wails.json` call it the desktop host), `apps/shell`. The package name stays `narration-utils-shell` either way.
-- [ ] **A3. Go module path.** Options: keep `github.com/countrymanprime/narration-utils/shell` (recommended; nothing imports it, and changing it rewrites every import in about 70 files), or rename it to `.../apps/desktop`.
-- [ ] **A4. `sidecars/` at the top level or `apps/sidecars/`.** They are deployable programs bundled into the desktop app, so `apps/` is defensible and saves one top-level folder (eight instead of nine). Recommendation: top-level `sidecars/`, as in the research, because they are not user-facing apps.
-- [ ] **A5. Where sidecar tests live.** Options: `sidecars/<name>/tests/` (recommended; one `tests/` per project) or keep `core/tests/`. Either needs no source change beyond the file-path lookups.
-- [ ] **A6. How far to take Nx.** Options: (a) per-project `project.json` with `build`/`test`/`lint`, `pnpm check` and CI call `nx affected`, `changed-files.mjs` and the serial runner shrink (recommended, Phase 4); (b) define projects and targets but keep `quality.mjs` as the gate; (c) leave Nx release-only and document that.
-- [ ] **A7. Local skills.** `.claude/skills/*` (six skills) cite these paths but are untracked (`.claude/` is ignored), so no PR can fix them. Who updates them, and do they move into the repo?
-- [ ] **A8. Anything else to move?** The research left `scripts/`, `docs/` and `tools/ui-atlas-kit` in place. Confirm.
+- [x] **A1. One PR or several?** Decided (D15): (a), one atomic PR for the move, in two commits (a pure `git mv` commit at 100% similarity, then the reference fixes). The cleanup and prep (phases 1-2) land first as their own PR; Nx (phase 4) and steady state (phase 5) follow.
+  Options were: (a) one atomic mechanical PR for all moves, one conflict window (recommended: the repo has many in-flight branches, so a short window matters more than a small diff); (b) five PRs in this order: config, fixtures and audacity; Python and sidecars; REAPER; UI; desktop. Mixed layouts exist between PRs and every PR still runs the full gate.
+- [x] **A2. Name for the desktop app.** Decided (D15): `apps/desktop`.
+  Options were: `apps/desktop` (recommended; docs and `wails.json` call it the desktop host), `apps/shell`. The package name stays `narration-utils-shell` either way.
+- [x] **A3. Go module path.** Decided (D15): keep `github.com/countrymanprime/narration-utils/shell`.
+  Options were: keep `github.com/countrymanprime/narration-utils/shell` (recommended; nothing imports it, and changing it rewrites every import in about 70 files), or rename it to `.../apps/desktop`.
+- [x] **A4. `sidecars/` at the top level or `apps/sidecars/`.** Decided (D15): top-level `sidecars/`.
+  Context: They are deployable programs bundled into the desktop app, so `apps/` is defensible and saves one top-level folder (eight instead of nine). Recommendation: top-level `sidecars/`, as in the research, because they are not user-facing apps.
+- [x] **A5. Where sidecar tests live.** Decided (D15): `sidecars/<name>/tests/`.
+  Options were: `sidecars/<name>/tests/` (recommended; one `tests/` per project) or keep `core/tests/`. Either needs no source change beyond the file-path lookups.
+- [x] **A6. How far to take Nx.** Decided (D15): (a), a `project.json` per project with `build`/`test`/`lint`, `pnpm check` and CI calling `nx affected`, in phase 4 after the move is green.
+  Options were: (a) per-project `project.json` with `build`/`test`/`lint`, `pnpm check` and CI call `nx affected`, `changed-files.mjs` and the serial runner shrink (recommended, Phase 4); (b) define projects and targets but keep `quality.mjs` as the gate; (c) leave Nx release-only and document that.
+- [x] **A7. Local skills.** Decided (D15): they stay untracked; the phase 3 author updates them locally after the move (no PR).
+  Question was: `.claude/skills/*` (six skills) cite these paths but are untracked (`.claude/` is ignored), so no PR can fix them. Who updates them, and do they move into the repo?
+- [x] **A8. Anything else to move?** Decided (D22, the recommendation): no. `scripts/`, `docs/` and `tools/ui-atlas-kit` stay. `LICENSE` stays at the repo root and is on the allowlist.
+  Question was: The research left `scripts/`, `docs/` and `tools/ui-atlas-kit` in place. Confirm.
 
 ## Users & Context
 
@@ -145,8 +155,8 @@ We believe role-based top-level names, one test rule and per-project Nx targets 
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Cleanup, no moves | Delete `shell/src-tauri/`; resolve `shell/ui/index.html`; move the two outlier Python tests into `tests/` folders; pytest `testpaths` and `--basetemp` out of the repo root | pending | 2 | - | - |
-| 2 | Prep | Guard test (top-level allowlist, old-root check, initially permissive); path constants in Go and `prepare-resources.py`; publish the old-to-new map | pending | 1 | - | - |
+| 1 | Cleanup, no moves | Delete `shell/src-tauri/`; resolve `shell/ui/index.html`; move the two outlier Python tests into `tests/` folders; pytest `testpaths` and `--basetemp` out of the repo root | complete | 2 | - | [plan](implementation-plan.md) |
+| 2 | Prep | Guard test (top-level allowlist, old-root check, initially permissive); path constants in Go and `prepare-resources.py`; publish the old-to-new map | complete | 1 | - | [plan](implementation-plan.md) |
 | 3 | The move | Two-commit rename PR for every folder in the target tree; all reference fixes; sidecar and library tests to `<project>/tests/`; lockfile; ADR; docs, README and PRD path updates; guard tightened | pending | - | 1, 2, A1-A5 | - |
 | 4 | Nx per project | `project.json` per project with targets and `implicitDependencies`; `pnpm check` and CI use `nx affected` per A6; shrink `changed-files.mjs` and `quality.mjs` where Nx covers them | pending | - | 3 | - |
 | 5 | Steady state | Move durable rules into `codebase-map.md`, `docs/operations/`, `CONTRIBUTING.md` and the ADR; update local skills (A7); delete this PRD and the research note's plan section | pending | - | 4 | - |
@@ -185,6 +195,15 @@ We believe role-based top-level names, one test rule and per-project Nx targets 
 | Nx | Per-project targets (proposed, A6) | Release-only | Replaces hand-rolled affected detection |
 | ADR paths | Leave old text, add a path map | Rewrite ADRs | ADRs are immutable |
 | Python packaging | Stay `package = false` with `pythonpath` | uv workspace | Not needed; no packaged Python libraries |
+| One PR or several (A1) | One atomic move PR of two commits, after a cleanup-and-prep PR | Five PRs | D15; one conflict window matters more than a small diff |
+| Desktop name, module path, sidecars, sidecar tests (A2-A5) | `apps/desktop`; module path kept; top-level `sidecars/`; `sidecars/<name>/tests/` | `apps/shell`; renamed module; `apps/sidecars/`; `core/tests/` | D15 takes the PRD's recommendations |
+| Nx (A6) | Per-project targets, `nx affected` in `pnpm check` and CI | Targets only; release-only | D15; phase 4, after the move is green |
+| Local skills (A7) | Untracked, updated locally by the phase 3 author | Move into the repo | D15 |
+| Audacity notes | `integrations/audacity/README.md`, plus one folder per sidecar that has a placeholder driver note | Keep them under each sidecar | The PRD's target tree names `integrations/audacity/` for both |
+| Repo-relative paths in code | `shell/internal/layout` (Go) and constants at the top of `prepare-resources.py`; Go tests use `layout.RepoFile` instead of counting `..` | Edit each call site | The next move is a one-line change per constant |
+| Codemap | `scripts/ci/layout.json` holds the allowlist and the old-to-new map; `scripts/ci/apply-path-map.mjs` applies it; `scripts/ci/layout.test.mjs` is the guard | A scratch script | Open branches can re-run it; the guard reads the same map |
+| `area:shell` label | Keep the name, point the labeler at `apps/desktop/**` | Rename the label | Renaming a GitHub label is an owner-side change and gains nothing here |
+| `pytest --basetemp` | `.cache/test-tmp-<pid>` (ignored), plus `testpaths` | Leave `.test-tmp-*` in the root | Phase 1 |
 
 ## Research Summary
 
