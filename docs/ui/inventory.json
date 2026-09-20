@@ -34,6 +34,36 @@
       "a11yDebt": false
     },
     {
+      "title": "Primitives/Checkbox",
+      "name": "Checkbox",
+      "source": "src/components/primitives/Checkbox.tsx",
+      "stories": [
+        "Unchecked",
+        "Checked",
+        "Disabled",
+        "Press Toggles",
+        "Space Toggles"
+      ],
+      "consumers": [
+        "src/components/home/Home.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/Collapsible",
+      "name": "Collapsible",
+      "source": "src/components/primitives/Collapsible.tsx",
+      "stories": [
+        "Collapsed",
+        "Expanded",
+        "Opens And Closes With The Keyboard"
+      ],
+      "consumers": [
+        "src/components/home/AudiobookEstimatePanel.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/ConfirmDialog",
       "name": "ConfirmDialog",
       "source": "src/components/primitives/ConfirmDialog.tsx",
@@ -185,6 +215,21 @@
       "a11yDebt": true
     },
     {
+      "title": "Primitives/Menu",
+      "name": "Menu",
+      "source": "src/components/primitives/Menu.tsx",
+      "stories": [
+        "Closed",
+        "Disabled",
+        "Opens On Press",
+        "Keyboard Chooses An Item"
+      ],
+      "consumers": [
+        "src/components/storybible/GuideDetail.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/MeterBar",
       "name": "MeterBar",
       "source": "src/components/primitives/MeterBar.tsx",
@@ -276,7 +321,8 @@
         "Active",
         "Disabled",
         "With Tooltip",
-        "Click Selects"
+        "Click Selects",
+        "Announces Its Pressed State"
       ],
       "consumers": [
         "src/components/manuscript/Manuscript.tsx",
@@ -305,6 +351,20 @@
         "src/components/manuscript/Manuscript.tsx",
         "src/components/storybible/GuideDetail.tsx"
       ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/Switch",
+      "name": "Switch",
+      "source": "src/components/primitives/Switch.tsx",
+      "stories": [
+        "Off",
+        "On",
+        "Disabled",
+        "Press Toggles",
+        "Space Toggles"
+      ],
+      "consumers": [],
       "a11yDebt": false
     },
     {

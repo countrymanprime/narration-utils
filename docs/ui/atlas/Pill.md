@@ -11,6 +11,7 @@ Storybook title: `Primitives/Pill`. Source: `src/components/primitives/Pill.tsx`
 - Disabled
 - With Tooltip
 - Click Selects
+- Announces Its Pressed State
 
 ## Used by
 
