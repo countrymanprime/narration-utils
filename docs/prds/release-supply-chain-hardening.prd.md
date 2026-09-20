@@ -199,11 +199,11 @@ Phases 1, 3, 4 and 8 touch different files and can run in parallel. Phase 2 foll
 | 5a | `prerelease.yml` release job, `_attach-platform.yml`, `build-macos.yml`, `build-linux.yml` | **High**: release Phase 14 (installer changes the asset set), Phase 15 (signing must precede attest), Phase 8 (smoke test step in `build-native`) |
 | 5b | `scripts/release/assets.mjs` and test, `promote-release.yml`, `ci-and-releases.md`, `generate-notes.mjs` | Medium: release Phases 8 and 14 and REAPER automation Phase 4 also edit `assets.mjs`/`verify-installable.mjs` |
 | 6 | `ci.yml`, `ci-and-releases.md`, `github-workflow.md` | **High**: release Phase 13 rewrites both docs; docs PRD Phase 2 adds a Docs section |
-| 7 | docs, `docs/adr/`, later workflows | Low; ADR number checked at merge (0037 when written) |
+| 7 | docs, `docs/adr/`, later workflows | Low; ADR number checked at merge (0039 when written) |
 | 8 | `shared/config/tts-assets.json`, `shell/internal/{whisper,tts}/*_test.go` | Low; release Phases 2, 3 and 5 touch `shell/internal/assets` and catalogs |
 | 9 | new `scorecard.yml`, `README.md` | Low |
 
-Sequencing: land Phase 2 early and alone; ask test-flakiness, docs and release sessions to rebase after it. Release Phase 15 (signing) must sign before Phase 5a's attest step, and Phase 14's installer joins the glob without changes. Cross-cutting: no host API bump; next free ADR is 0037 (`docs/adr/` ends at 0036), re-check at merge; ADR 0027 needs an amendment or superseding ADR only if Phase 7 changes the attach flow; every phase follows `CLAUDE.md` (plan, `change-impact-scan` over the workflows' consumers, `full-verification-gate`, `feature-cleanup`); `shared/ui`, Playwright and Lua gates do not apply. Add this PRD to `docs/prds/README.md`'s index in the first PR.
+Sequencing: land Phase 2 early and alone; ask test-flakiness, docs and release sessions to rebase after it. Release Phase 15 (signing) must sign before Phase 5a's attest step, and Phase 14's installer joins the glob without changes. Cross-cutting: no host API bump; next free ADR is 0039 (`docs/adr/` ends at 0038), re-check at merge; ADR 0027 needs an amendment or superseding ADR only if Phase 7 changes the attach flow; every phase follows `CLAUDE.md` (plan, `change-impact-scan` over the workflows' consumers, `full-verification-gate`, `feature-cleanup`); `shared/ui`, Playwright and Lua gates do not apply. Add this PRD to `docs/prds/README.md`'s index in the first PR.
 
 ## Decisions Log
 

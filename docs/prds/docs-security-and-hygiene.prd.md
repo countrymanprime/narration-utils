@@ -219,7 +219,7 @@ Phases 1, 3, 4, 7 and 8 have no code or file dependency and can run in parallel 
 | 8 | new `docs/architecture/model-provenance.md`, `docs/research/local-dependency-evaluation.md` links, `scripts/quality.mjs` | Release Phase 7 rewrites `local-dependency-evaluation.md`; link to it, do not edit its body |
 | 9 | `.github/workflows/dependency-review.yml`, `docs/operations/github-workflow.md` | Release Phase 13 extends the same settings list |
 
-Cross-cutting: no host API bump, no product change; next free ADR is `0037` (`docs/adr/` ends at 0036, `docs/prds/README.md:100`), re-check at merge; a decision on the GPL packages or a blocking docs check may deserve an ADR. Every phase follows `CLAUDE.md`: plan, `change-impact-scan`, `full-verification-gate` (`pnpm check`), `feature-cleanup`; `shared/ui`, Playwright and Lua gates do not apply unless Open Question 7 is taken up. Add this PRD to the index in `docs/prds/README.md` in the first PR.
+Cross-cutting: no host API bump, no product change; next free ADR is `0039` (`docs/adr/` ends at 0038, `docs/prds/README.md:100`), re-check at merge; a decision on the GPL packages or a blocking docs check may deserve an ADR. Every phase follows `CLAUDE.md`: plan, `change-impact-scan`, `full-verification-gate` (`pnpm check`), `feature-cleanup`; `shared/ui`, Playwright and Lua gates do not apply unless Open Question 7 is taken up. Add this PRD to the index in `docs/prds/README.md` in the first PR.
 
 ## Decisions Log
 

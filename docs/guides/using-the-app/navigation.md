@@ -10,8 +10,6 @@ bottom of the sidebar in every layout.
 
 ![Primary navigation sidebar at desktop width](../../images/ui/nav-sidebar-desktop.webp)
 
-![Primary navigation drawer opened on a narrow window](../../images/ui/nav-drawer-mobile.webp)
-
 In the icon-only layout, hover an icon (or tab to it) to see the page's name.
 
 ![Icon-only navigation rail with a page name shown on hover](../../images/ui/nav-rail-tooltip.webp)

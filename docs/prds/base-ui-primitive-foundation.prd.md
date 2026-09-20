@@ -1,6 +1,6 @@
 # Base UI Primitive Foundation
 
-**Source:** owner decision of 2026-09-20 to stop hand-rolling interactive behaviour in `shared/ui` primitives; reshapes the mechanism in `dialog-modality-and-workdialog-a11y.prd.md` and `component-a11y-meter-tooltip-field-heading-panel.prd.md`
+**Source:** owner decision of 2026-09-20 to stop hand-rolling interactive behaviour in `shared/ui` primitives; reshapes the mechanism in `dialog-modality-and-workdialog-a11y.prd.md` and `component-a11y-meter-tooltip-field-heading-panel.prd.md`, and resolves the library decision (L1, L2) of `ui-primitives-and-headless-library.prd.md`, which keeps the net-new primitives (wrapped natives, menus and disclosure, Table, Combobox) as its Phases 1, 4 and 5 on top of this foundation
 **Supersedes:** Open Question 1 (mechanism, "native `<dialog>`, no library") and the "no new runtime dependency for one primitive" Not-Building bullet of the dialog PRD; the hand-rolled `Tooltip` mechanics (Open Questions 2, 3, 8) and hand-rolled `Field` error wiring of the a11y-components PRD. Those PRDs keep their defect scope, sweeps and success metrics.
 
 Feature PRD. Citations are `file:line` on branch `claude/tech-stack-evaluation-7a3bd8` (main dc9d01a; `shared/ui/src` was unchanged by the last commits) for anything checked in code; Base UI facts were checked on 2026-09-20 against base-ui.com, the npm registry and GitHub raw source, and "TBD - needs research" marks what only a spike can settle. Nothing here changes product behaviour on its own; it changes how primitives are built.
@@ -154,12 +154,12 @@ We believe wrapping Base UI in our primitives gives keyboard and screen-reader n
 | 2 | Dialog family | `Dialog`, `ConfirmDialog`, `WorkDialog`, `AddNoteDialog` verified; absorbs dialog PRD phases 1-2 (mechanism, shared modal behaviour) | pending | 3, 5 | 1 | - |
 | 3 | Tooltip, Field, MeterBar | Tooltip family and info icon, `Field`, MeterBar semantics; absorbs the a11y PRD's mechanism (Phases 1 and 3 for Field) | pending | 2, 5 | 1 | - |
 | 4 | Drawers and nav | `SlideOver` and the mobile nav drawer on Drawer | pending | 5 | 2 | - |
-| 5 | Remaining widgets | `Pill` to Toggle, `Menu`, `Checkbox`, `Collapsible` | pending | 2, 3, 4 | 1 | - |
+| 5 | Remaining widgets | `Pill` to Toggle, `Menu`, `Checkbox`, `Collapsible`; overlaps `ui-primitives-and-headless-library.prd.md` Phase 4 (menus and disclosure), so build each widget once, in whichever PRD reaches it first, and tick it off in both | pending | 2, 3, 4 | 1 | - |
 | 6 | Sweep | `docs/ui` regen, four-viewport PNG review, doc screenshots, `design-system.md`, guide check | pending | No | 2, 3, 4, 5 | - |
 
 ### Phase Details
 
-**Phase 1 - Foundation.** Goal: the boundary, environment and evidence exist before any primitive changes. Scope: `pnpm add @base-ui/react` in `shared/ui`; ESLint block above with a bad-import fixture test; `isolate` on `#root` and the Storybook decorator; `src/test-setup.ts` polyfills; throwaway spike stories (a Base UI Dialog and Tooltip inside a story) run in jsdom and the Chromium atlas, recording answers to: outside content `aria-hidden` vs `inert`, Tab trap in Chromium, focus return without a Trigger, `getAnimations` handling, tooltip layer above the dialog, `dist` size delta, Escape ownership; a "Base UI wrappers" section in `docs/design/design-system.md`. Last commit, after the code above has landed in the PR: the ADR via `adr-author` (rule 4 of `docs/adr/README.md`), numbered at merge time (next free number 0037 today), which amends no ADR and extends ADR 0009 and 0023. Success: lint fails a direct import, `pnpm check` and atlas green, spike answers written in the PR.
+**Phase 1 - Foundation.** Goal: the boundary, environment and evidence exist before any primitive changes. Scope: `pnpm add @base-ui/react` in `shared/ui`; ESLint block above with a bad-import fixture test; `isolate` on `#root` and the Storybook decorator; `src/test-setup.ts` polyfills; throwaway spike stories (a Base UI Dialog and Tooltip inside a story) run in jsdom and the Chromium atlas, recording answers to: outside content `aria-hidden` vs `inert`, Tab trap in Chromium, focus return without a Trigger, `getAnimations` handling, tooltip layer above the dialog, `dist` size delta, Escape ownership; a "Base UI wrappers" section in `docs/design/design-system.md`. Last commit, after the code above has landed in the PR: the ADR via `adr-author` (rule 4 of `docs/adr/README.md`), numbered at merge time (next free number 0039 today), which amends no ADR and extends ADR 0009 and 0023. Success: lint fails a direct import, `pnpm check` and atlas green, spike answers written in the PR.
 
 **Phase 2 - Dialog family.** Goal: dialog defect 2 closed on Base UI. Scope: `Dialog.tsx` (shell, `AlertDialog` variant, policies), `ConfirmDialog.tsx`, `WorkDialog.tsx` (Progress; remaining semantics stay dialog PRD Phase 3), `manuscript/AddNoteDialog.tsx` check, stories with `play()` for Escape, Tab, restore, `ConfirmDialog.test.tsx`, one consumer test (Story Bible delete). Success: Success Metrics rows for dialogs; visuals unchanged at four viewports.
 
@@ -200,7 +200,7 @@ Cross-cutting: every phase follows `CLAUDE.md` (plan, `change-impact-scan`, TDD,
 | One `Dialog` primitive; layout and action placement (prior decisions, ADR 0001, 0002) | Unchanged | - | Wrapper keeps the shell |
 | Tailwind utilities, no new legacy CSS; exclusive state classes; `--backdrop`; atlas gate (prior decisions, ADR 0009, 0017, 0010, 0023) | Keep | - | Guards stay green |
 | Workflow and gates (prior decision, `CLAUDE.md`) | plan, impact scan, TDD, `pnpm check`, atlas, visuals | - | History of silent regressions |
-| ADR timing (proposed) | Written after Phase 1 code lands, next free number at merge (0037 today) | Before code | `docs/adr/README.md` rule 4 |
+| ADR timing (proposed) | Written after Phase 1 code lands, next free number at merge (0039 today) | Before code | `docs/adr/README.md` rule 4 |
 | Wrapper API closed; per-component imports; flat files (proposed) | As stated | Open API; barrel; subfolder | Questions 2 and Solution Detail |
 | Other open questions (proposed) | Recommendations under Open Questions 1 to 9 | See there | Pending the owner |
 

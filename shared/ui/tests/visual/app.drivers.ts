@@ -18,24 +18,13 @@ async function freezeClock(page: Page): Promise<void> {
 }
 
 async function clickVisible(page: Page, role: Parameters<Page['getByRole']>[0], name: string | RegExp): Promise<void> {
-  const target = page.getByRole(role, { name, exact: typeof name === 'string' }).and(page.locator(':visible'));
-  // At the mobile viewport the nav rail is hidden entirely behind the
-  // hamburger menu - AppShell only mounts a visible copy of it inside the
-  // slide-in drawer once opened. Only reach for the drawer when the target
-  // genuinely never shows up: a page that is merely still rendering (React
-  // schedules route changes a beat later) must not get a drawer opened over it.
-  const appeared = await target
+  // The nav rail is visible at every captured viewport (the hamburger drawer only exists below `md`,
+  // which the suite does not capture), so the click's own auto-wait is enough.
+  await page
+    .getByRole(role, { name, exact: typeof name === 'string' })
+    .and(page.locator(':visible'))
     .first()
-    .waitFor({ state: 'visible', timeout: 1_500 })
-    .then(
-      () => true,
-      () => false,
-    );
-  if (!appeared) {
-    const hamburger = page.getByRole('button', { name: 'Open navigation' });
-    if (await hamburger.count()) await hamburger.click();
-  }
-  await target.first().click();
+    .click();
 }
 
 async function goToPage(page: Page, name: 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Settings'): Promise<void> {
@@ -499,8 +488,8 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'nav-rail-tooltip': async (page) => {
       // Only the icon-only rail (small-desktop and tablet widths) wraps its
-      // buttons in a tooltip; the full sidebar and the mobile drawer show
-      // labels already, so hovering there changes nothing visible.
+      // buttons in a tooltip; the full sidebar shows labels already, so
+      // hovering there changes nothing visible.
       // Icon-only buttons are the ones carrying an aria-label; the full
       // sidebar's button has the same accessible name from its text instead.
       const railButton = page.locator('button[aria-label="Tracks"]:visible');
@@ -510,14 +499,6 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
         // immediately), so wait for it rather than screenshotting too early.
         await page.getByRole('tooltip').waitFor({ timeout: 3_000 });
       }
-    },
-    'nav-drawer-open': async (page) => {
-      // The hamburger button only renders below the `md` breakpoint
-      // (AppShell's `max-md:inline-flex`) - at desktop/small-desktop/tablet
-      // widths the persistent nav rail is already visible, so there's
-      // nothing to open and this is intentionally a no-op there.
-      const hamburger = page.getByRole('button', { name: 'Open navigation' });
-      if (await hamburger.count()) await hamburger.click();
     },
     toast: async (page) => {
       await goToPage(page, 'Proofing');

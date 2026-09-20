@@ -132,7 +132,7 @@ Phases 1 to 7 (modal, marks, seek, flags) need no REAPER and are the first shipp
 
 1. On the Manuscript page the narrator presses "Read aloud" on a chapter header. A full-size dialog opens with that chapter's text (taken from the manuscript context, so there is no chapter picker), a status bar, and a side rail (Key, Notes, Story bible).
 2. The modal asks the host about the chapter's track. With a match it shows "Resume at word N ('...the door opened') / Start from the top / Pick a word" and never starts anything by itself.
-3. The narrator confirms, picks a microphone (typed field or picker), and Start listens. The highlight follows the voice; read words dim; suspected flags appear as marks; opening a story bible entry or note in the rail does not move the highlight or scroll.
+3. The narrator confirms, accepts the DAW-detected microphone or picks one from the dropdown (never typed), and Start listens. The highlight follows the voice; read words dim; suspected flags appear as marks; opening a story bible entry or note in the rail does not move the highlight or scroll.
 4. To move, the narrator clicks a word and chooses "Start here" or "Go back to here"; the tracker jumps there without restarting.
 5. After a flub the narrator clicks a flag's "Punch from here" (or a word). The host shows the resolved time and pre-roll, then moves the REAPER edit cursor and view; transport and record arm are untouched. The tracker seeks to the same word in the same step, so the reader and the DAW agree on where the narrator is.
 6. Closing the modal stops the session (subject to the open question) and nothing is written to the manuscript or audio.
@@ -288,7 +288,7 @@ Cross-cutting: every phase re-checks `docs/adr/` numbering immediately before wr
 | Standalone page | Keep until the new feature is built and tested, then remove as its own change (prior decision) | Remove immediately | A nav change regenerates every doc screenshot |
 | Resume point | Run the tracker over the tail audio of the track (prior decision) | Anchors from past live sessions | Works for audio not recorded through the teleprompter; anchors later |
 | First punch scope | Move the edit cursor to word time minus pre-roll only (prior decision) | Arm and record; auto-punch | Smallest safe mutation |
-| Microphone | Detect what REAPER uses if reliable, else list all inputs and let the narrator choose (prior decision) | Typed name only | Typed names are error-prone |
+| Microphone | Detect what REAPER uses if reliable, else list all inputs and let the narrator choose from a dropdown; a typed name is never accepted (prior decision, reaffirmed by the user 2026-09-20) | Typed name | Typed names are error-prone |
 | Local-first, no loopback server, REST or port (prior decision, `daw-integration.md`, ADR 0022) | Sentinel files and Wails events | WhisperLive server, web interface server | Recorded boundary |
 | Findings are suspected; Transcript Compare stays authoritative (prior decision) | Flags labelled "suspected" | Present as errors | Live ASR is never proof (`manuscript-teleprompter.md`) |
 | Never edit text or audio automatically (prior decision) | Read-only plus one narrator-triggered cursor move | Auto-fix | Product boundary |
