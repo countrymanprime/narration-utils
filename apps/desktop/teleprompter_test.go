@@ -104,7 +104,7 @@ func TestShutdownStopsARunningTeleprompterWithoutDeadlocking(t *testing.T) {
 		t.Fatal("Shutdown did not return; the service's state callback needs the host lock while Shutdown waits for it")
 	}
 	if host.teleprompter.Busy() {
-		t.Fatal("the teleprompter session should be stopped after Shutdown")
+		t.Fatal("Shutdown returned while the teleprompter session was still Busy: Service.Close must wait until the watcher has recorded the final stopped state, not only until the child process has exited")
 	}
 }
 

@@ -23,7 +23,9 @@
         "@nx/js"
       ],
       "ignoreBinaries": [
-        // Go toolchain and Wails CLI, called from scripts/quality.mjs and package scripts. They are not npm packages.
+        // Go toolchain and Wails CLI, called from scripts/quality.mjs, package scripts and the desktop project's
+        // Nx targets (`test-schedules` runs `go test`). They are not npm packages.
+        "go",
         "gofmt",
         "wails",
         // Installed by .github/actions/setup-playwright (`playwright install`) from the apps/ui dependency.
