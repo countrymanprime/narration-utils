@@ -2,7 +2,7 @@
 
 **Supersedes:** `docs/design/known-ui-defects.md` (defect 5 [medium], defect 6 [medium], defect 7 [low]; the file's last revision is `b613933`, recover it with `git show b613933:docs/design/known-ui-defects.md`)
 
-**Reshaped by:** [`base-ui-primitive-foundation.prd.md`](base-ui-primitive-foundation.prd.md) (owner decision 2026-09-20: `Tooltip` and `Field` are built on Base UI behind our own wrappers instead of hand-written id wiring and child cloning). `MeterBar`, `Heading` and `Panel` stay custom. Where this PRD's Open Questions describe a hand-rolled mechanism (Q2, Q3, Q7, Q8), the notes marked "Reshaped" below win.
+**Reshaped by:** [`base-ui-primitive-foundation.prd.md`](../adr/0047-the-ui-primitives-wrap-base-ui-and-app-code-never-imports-it.md) (owner decision 2026-09-20: `Tooltip` and `Field` are built on Base UI behind our own wrappers instead of hand-written id wiring and child cloning). `MeterBar`, `Heading` and `Panel` stay custom. Where this PRD's Open Questions describe a hand-rolled mechanism (Q2, Q3, Q7, Q8), the notes marked "Reshaped" below win.
 
 ## Problem Statement
 

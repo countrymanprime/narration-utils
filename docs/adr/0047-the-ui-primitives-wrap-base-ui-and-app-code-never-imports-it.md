@@ -8,7 +8,7 @@
 
 The primitives in `apps/ui/src/components/primitives/` hand-rolled every interactive behaviour, and most of it was missing: `Dialog` declared `aria-modal` but was not modal, the tooltip pointed `aria-describedby` at an id that usually did not exist, `SlideOver` and the mobile nav drawer had no Escape or focus trap, and `Field` had no error slot. Writing a focus trap, layering and id wiring by hand, and proving them in both jsdom and Chromium, is a lot of subtle work for one maintainer, and the same work would come again for every menu, popover and select. The owner decided (implementation plan D1, 2026-09-20) to adopt a maintained headless library for behaviour and accessibility, keep our own Tailwind styling and API, and wrap every part in a primitive so every control is styled one way. Radix and React Aria were considered and rejected. The dialog PRD's earlier recommendation (native `<dialog>`, no library) is reversed. `@base-ui/react` is MIT-licensed, so it is compatible with the project's AGPL-3.0-or-later licence ([ADR 0039](0039-the-project-is-licensed-agpl-3-or-later.md)).
 
-Phase 1 of the [foundation PRD](../prds/base-ui-primitive-foundation.prd.md) ran a spike before any primitive changed (Base UI 1.8.0, Chromium 1208 through Playwright 1.63, jsdom 30.1, 2026-09-20). What it found:
+Phase 1 of the foundation PRD (`docs/prds/base-ui-primitive-foundation.prd.md`, deleted when the work was done; recover it from git history) ran a spike before any primitive changed (Base UI 1.8.0, Chromium 1208 through Playwright 1.63, jsdom 30.1, 2026-09-20). What it found:
 
 | Question | Result |
 | --- | --- |

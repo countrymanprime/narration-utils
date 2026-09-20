@@ -2,7 +2,7 @@
 
 **Supersedes:** `docs/design/known-ui-defects.md` (defect 2 [high], defect 3 [medium], defect 4 [low]; the file's last revision is `b613933`, recover it with `git show b613933:docs/design/known-ui-defects.md`)
 
-**Reshaped by:** [`base-ui-primitive-foundation.prd.md`](base-ui-primitive-foundation.prd.md) (owner decision 2026-09-20: Base UI's Dialog and AlertDialog, behind our own `Dialog`/`ConfirmDialog` wrappers, replace the native `<dialog>` or hand-rolled mechanism this PRD first recommended). Phases 1 and 2 moved into the foundation PRD; Phases 3 to 5 stay here. Notes marked "Reshaped" below win over the original text.
+**Reshaped by:** [`base-ui-primitive-foundation.prd.md`](../adr/0047-the-ui-primitives-wrap-base-ui-and-app-code-never-imports-it.md) (owner decision 2026-09-20: Base UI's Dialog and AlertDialog, behind our own `Dialog`/`ConfirmDialog` wrappers, replace the native `<dialog>` or hand-rolled mechanism this PRD first recommended). Phases 1 and 2 moved into the foundation PRD; Phases 3 to 5 stay here. Notes marked "Reshaped" below win over the original text.
 
 ## Problem Statement
 
