@@ -20,8 +20,8 @@ inputs:
   need-wails-tools:
     description: Install the pinned Wails CLI (implies need-go)
     default: 'true'
-  need-staticcheck:
-    description: Install the pinned staticcheck (implies need-go)
+  need-golangci-lint:
+    description: Install the pinned golangci-lint (implies need-go)
     default: 'false'
   need-stylua:
     description: Install the pinned standalone StyLua binary
@@ -45,7 +45,7 @@ runs:
         node-version: 22
         cache: ${{ inputs.need-pnpm == 'true' && 'pnpm' || '' }}
         cache-dependency-path: pnpm-lock.yaml
-    - if: inputs.need-go == 'true' || inputs.need-wails-tools == 'true' || inputs.need-staticcheck == 'true'
+    - if: inputs.need-go == 'true' || inputs.need-wails-tools == 'true' || inputs.need-golangci-lint == 'true'
       uses: actions/setup-go@v5
       with:
         go-version: '1.27.1'
@@ -73,16 +73,18 @@ runs:
       name: Install pinned Wails CLI
       shell: bash
       run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
-    - if: inputs.need-staticcheck == 'true'
-      id: staticcheck-cache
+    # golangci-lint is built here with the job's Go toolchain (`go install`), not downloaded as a release
+    # binary: a prebuilt binary is compiled with one Go version and refuses to lint a module that targets a newer one.
+    - if: inputs.need-golangci-lint == 'true'
+      id: golangci-lint-cache
       uses: actions/cache@v4
       with:
-        path: ~/go/bin/staticcheck${{ runner.os == 'Windows' && '.exe' || '' }}
-        key: go-tool-staticcheck-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/toolchain.json') }}
-    - if: inputs.need-staticcheck == 'true' && steps.staticcheck-cache.outputs.cache-hit != 'true'
-      name: Install pinned staticcheck
+        path: ~/go/bin/golangci-lint${{ runner.os == 'Windows' && '.exe' || '' }}
+        key: go-tool-golangci-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/toolchain.json') }}
+    - if: inputs.need-golangci-lint == 'true' && steps.golangci-lint-cache.outputs.cache-hit != 'true'
+      name: Install pinned golangci-lint
       shell: bash
-      run: go install honnef.co/go/tools/cmd/staticcheck@v0.8.1
+      run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
     - if: inputs.need-stylua == 'true'
       name: Install pinned standalone StyLua
       uses: JohnnyMorganz/stylua-action@479972f01e665acfcba96ada452c36608bdbbb5e # v4.1.0

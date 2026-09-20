@@ -105,7 +105,7 @@ func AnalyzeFile(path string) (Report, error) {
 	if err != nil {
 		return Report{}, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }() // read-only
 
 	report, err := Analyze(file)
 	if err != nil {

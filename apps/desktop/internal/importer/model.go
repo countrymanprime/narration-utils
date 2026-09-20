@@ -121,7 +121,7 @@ func looksLikeName(value string) bool {
 		return false
 	}
 	for _, r := range value {
-		if !(unicode.IsLetter(r) || unicode.IsSpace(r) || r == '\'' || r == '-' || r == '’') {
+		if !unicode.IsLetter(r) && !unicode.IsSpace(r) && r != '\'' && r != '-' && r != '’' {
 			return false
 		}
 	}

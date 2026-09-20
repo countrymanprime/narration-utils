@@ -57,7 +57,7 @@ func verify(path string, f File) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }() // read-only: a close error cannot change the digest
 	h := sha256.New()
 	if _, err = io.Copy(h, file); err != nil {
 		return err
@@ -115,7 +115,7 @@ func download(ctx context.Context, staging string, file File) error {
 	if err != nil {
 		return fmt.Errorf("could not download approved asset: %w", err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }() // the body was read or abandoned; nothing to report
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return fmt.Errorf("could not download approved asset: %s", response.Status)
 	}

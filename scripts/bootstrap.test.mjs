@@ -12,7 +12,7 @@ import {
   PNPM_VERSION,
   pythonVersionError,
   runBootstrap,
-  STATICCHECK_VERSION,
+  GOLANGCI_LINT_VERSION,
   STYLUA_VERSION,
   UV_VERSION,
   WAILS_VERSION,
@@ -23,7 +23,7 @@ test('reads all pinned Go/Wails quality-tool versions from the toolchain manifes
   assert.equal(UV_VERSION, '0.12.15');
   assert.equal(GO_VERSION, '1.27.1');
   assert.equal(WAILS_VERSION, 'v2.16.0');
-  assert.equal(STATICCHECK_VERSION, 'v0.8.1');
+  assert.equal(GOLANGCI_LINT_VERSION, 'v2.13.2');
   assert.equal(STYLUA_VERSION, 'v2.1.0');
 });
 

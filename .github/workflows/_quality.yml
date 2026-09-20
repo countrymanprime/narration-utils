@@ -173,7 +173,7 @@ jobs:
 
   go:
     # Windows only: it is the supported platform, and Linux's native libraries are installed only
-    # by the optional Linux build (build-linux.yml). Runs gofmt, go vet and Staticcheck (the lint
+    # by the optional Linux build (build-linux.yml). Runs gofmt, go vet and golangci-lint (the lint
     # target), then the tests with the race detector (the `ci` configuration of the test target).
     timeout-minutes: 15
     runs-on: windows-latest
@@ -184,7 +184,7 @@ jobs:
         with:
           need-python: 'false'
           need-wails-tools: 'false'
-          need-staticcheck: 'true'
+          need-golangci-lint: 'true'
           need-stylua: 'false'
           pnpm-filter: narration-utils
       - uses: ./.github/actions/nx-run

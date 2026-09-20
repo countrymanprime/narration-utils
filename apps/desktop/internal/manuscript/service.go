@@ -337,14 +337,14 @@ func commit(project, source string, draft importer.Draft, kinds map[string]strin
 	if err != nil {
 		return nil, fmt.Errorf("could not open the selected manuscript: %w", err)
 	}
-	defer input.Close()
+	defer func() { _ = input.Close() }() // read-only source
 	output, err := os.OpenFile(stored, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("could not store the selected manuscript: %w", err)
 	}
 	digest := sha256.New()
 	if _, err = io.Copy(io.MultiWriter(output, digest), input); err != nil {
-		output.Close()
+		_ = output.Close() // the copy already failed; report that error
 		return nil, fmt.Errorf("could not store the selected manuscript: %w", err)
 	}
 	if err = output.Close(); err != nil {

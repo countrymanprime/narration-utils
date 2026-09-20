@@ -1,0 +1,47 @@
+# golangci-lint v2 for the desktop app (Go module in this folder). Run through
+# `nx run narration-utils-shell:lint` (scripts/quality.mjs go-lint), which also runs gofmt and go vet.
+#
+# `standard` is the v2 default set: errcheck, govet, ineffassign, staticcheck (which in v2 also
+# carries the former gosimple and stylecheck checks) and unused. gosec is added on top. This is
+# equal to or stricter than the standalone staticcheck it replaced (docs/prds/verification-and-code-health-tooling.prd.md).
+#
+# The version is pinned in scripts/toolchain.json; the binary is built with the repo's Go toolchain
+# (`go install`), so it always understands the Go version the module targets.
+version: "2"
+
+issues:
+  # Report everything. The defaults cap identical findings at 3 and each linter at 50, which would
+  # hide how many of a kind exist and let a gate pass on a truncated list.
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+linters:
+  default: standard
+  enable:
+    - gosec
+  settings:
+    gosec:
+      excludes:
+        # G304 flags every os.Open or os.ReadFile whose path is not a constant. This is a local
+        # desktop app whose job is to open the manuscripts, projects, audio and catalogs the person
+        # chose, so a variable path is the design, not a finding. There is no remote caller: paths
+        # are checked where they enter (host bindings require absolute paths and resolve
+        # project-relative ones, see docs/architecture/host-binding-concurrency.md).
+        - G304
+        # G301 wants directories created 0750 or tighter. The app creates its data and the
+        # project's narration-utils folders 0755 on purpose: a REAPER project can live on a share or be
+        # read by a second account, and every file in them is written 0600 (G306 stays on). Windows,
+        # the supported platform, ignores the mode.
+        - G301
+  exclusions:
+    rules:
+      # G204 and its taint-analysis twin G702 in the process supervisor: it exists to launch the sidecar executables (bundled Python
+      # tools, resolved by the host) with arguments the host builds. The program is never text the
+      # user typed into a field.
+      - path: internal/process/
+        linters: [gosec]
+        text: "G204|G702"
+      # Tests write fixtures under t.TempDir and build binary test data, so file-mode, integer
+      # conversion and path rules add noise there and nothing else. errcheck and staticcheck still run.
+      - path: _test\.go
+        linters: [gosec]

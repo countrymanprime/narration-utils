@@ -176,7 +176,8 @@ if (mode === 'go-lint') {
   }
   checkGofmt([dir]);
   run('go', ['-C', dir, 'vet', './...']);
-  run('staticcheck', ['./...'], { cwd: join(root, dir) });
+  // golangci-lint v2 (config: <dir>/.golangci.yml): errcheck, govet, staticcheck, unused, ineffassign and gosec.
+  run('golangci-lint', ['run', './...'], { cwd: join(root, dir) });
   process.exit(0);
 }
 

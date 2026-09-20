@@ -18,7 +18,7 @@ export const UV_VERSION = TOOLCHAIN.uv;
 export const GO_VERSION = TOOLCHAIN.go;
 export const STYLUA_VERSION = TOOLCHAIN.stylua.version;
 export const WAILS_VERSION = TOOLCHAIN.wails.version;
-export const STATICCHECK_VERSION = TOOLCHAIN.staticcheck.version;
+export const GOLANGCI_LINT_VERSION = TOOLCHAIN['golangci-lint'].version;
 
 export function parseOptions(argv) {
   const options = { python: undefined, skipInstall: false, refresh: false, release: false };
@@ -68,7 +68,7 @@ export function bootstrapCommands(root, python, platform = process.platform, pyt
     ['uv', ['sync', '--locked']],
     ['pnpm', ['install', '--frozen-lockfile']],
     ['go', ['install', `${TOOLCHAIN.wails.module}@${WAILS_VERSION}`]],
-    ['go', ['install', `${TOOLCHAIN.staticcheck.module}@${STATICCHECK_VERSION}`]],
+    ['go', ['install', `${TOOLCHAIN['golangci-lint'].module}@${GOLANGCI_LINT_VERSION}`]],
   ];
 }
 
