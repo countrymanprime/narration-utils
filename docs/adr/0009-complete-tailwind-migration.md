@@ -1,6 +1,6 @@
 # 0009. Complete the Tailwind migration; retire the legacy custom-CSS system
 
-**Status:** Accepted
+**Status:** Accepted (its `table.dtable` exception is superseded by [ADR 0056](0056-a-presentational-table-primitive-replaces-the-dtable-class-and-rows-take-the-keyboard.md))
 **Date:** 2026-09-18
 **Supersedes:** ADR-0003
 

@@ -13,6 +13,7 @@ import { WorkDialog } from '../primitives/WorkDialog';
 import { IconButton } from '../primitives/IconButton';
 import { SearchField } from '../primitives/SearchField';
 import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 
 type EntitySort = { key: 'name' | 'occurrences'; dir: 'asc' | 'desc' };
 const TAB_PLURAL: Record<string, string> = {
@@ -121,7 +122,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
   const selected = rows.find((row) => row.id === selectedId);
   const toggleSort = (key: EntitySort['key']) =>
     setSort((current) => (current.key === key ? { key, dir: current.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'occurrences' ? 'desc' : 'asc' }));
-  const sortArrow = (key: EntitySort['key']) => (sort.key !== key ? '' : sort.dir === 'asc' ? '↑' : '↓');
+  const sortedState = (key: EntitySort['key']) => (sort.key !== key ? undefined : sort.dir === 'asc' ? ('ascending' as const) : ('descending' as const));
 
   // No backend record is created here - see GuideDetail's isNewDraft prop.
   // Navigating away or picking a different row just discards this, matching
@@ -184,31 +185,21 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
             <SearchField label="Search entries" value={query} onChange={setQuery} placeholder="Search entries…" />
           </div>
           <div className="guide-list-scroll min-h-0 overflow-y-auto px-2 pb-2">
-            <table className="dtable">
-              <thead className="sticky top-0 z-[2] bg-[var(--surface)]">
-                <tr>
-                  <th>
-                    <button
-                      className={`inline-flex items-center gap-1 text-inherit ${sort.key === 'name' ? 'text-[var(--accent)]' : ''}`}
-                      onClick={() => toggleSort('name')}
-                    >
-                      Name {sortArrow('name')}
-                    </button>
-                  </th>
-                  <th className="text-right">
-                    <button
-                      className={`inline-flex items-center gap-1 text-inherit ${sort.key === 'occurrences' ? 'text-[var(--accent)]' : ''}`}
-                      onClick={() => toggleSort('occurrences')}
-                    >
-                      Occurrences {sortArrow('occurrences')}
-                    </button>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table label="Story Bible entries">
+              <TableHead sticky>
+                <TableRow>
+                  <TableHeader sorted={sortedState('name')} onSort={() => toggleSort('name')}>
+                    Name
+                  </TableHeader>
+                  <TableHeader align="right" sorted={sortedState('occurrences')} onSort={() => toggleSort('occurrences')}>
+                    Occurrences
+                  </TableHeader>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {sorted.map((row) => (
-                  <tr key={row.id} data-row className={!pendingNewEntity && selectedId === row.id ? 'row-selected' : ''} onClick={() => selectRow(row.id)}>
-                    <td>
+                  <TableRow key={row.id} selected={!pendingNewEntity && selectedId === row.id} onActivate={() => selectRow(row.id)}>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(row.category)] }} />
                         <span className="truncate text-sm font-medium">{row.canonical_name}</span>
@@ -217,21 +208,21 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
                       <div className="mt-0.5 text-xs" style={{ color: 'var(--text-faint)' }}>
                         {categoryLabel(row.category)}
                       </div>
-                    </td>
-                    <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-faint)' }}>
+                    </TableCell>
+                    <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-faint)' }}>
                       {row.occurrence_count}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
                 {sorted.length === 0 && (
-                  <tr>
-                    <td colSpan={2} className="text-sm" style={{ color: 'var(--text-faint)' }}>
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-sm" style={{ color: 'var(--text-faint)' }}>
                       No matching entries.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </TabPanel>
         <div className="flex min-h-0 min-w-0">

@@ -1,4 +1,5 @@
 import type { Discrepancy } from '../../types';
+import { TableCell, TableRow } from '../primitives/Table';
 
 export const KIND_STYLES: Record<string, { color: string; soft: string }> = {
   MISREAD: { color: 'var(--review)', soft: 'var(--review-soft)' },
@@ -35,8 +36,8 @@ export function InlineDiffRow({ row }: { row: Discrepancy }) {
       <span style={{ color: 'var(--text-faint)' }}>—</span>
     );
   return (
-    <tr style={{ borderTop: '1px solid var(--border)', background: 'var(--surface-2)' }}>
-      <td colSpan={6} className="p-3 text-sm">
+    <TableRow style={{ borderTop: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+      <TableCell colSpan={6} className="text-sm">
         <div className="space-y-1.5">
           <div>
             <span className="text-xs tracking-wide uppercase" style={{ color: 'var(--text-faint)' }}>
@@ -51,7 +52,7 @@ export function InlineDiffRow({ row }: { row: Discrepancy }) {
             <div className="mt-0.5">{render(diff.heard)}</div>
           </div>
         </div>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }

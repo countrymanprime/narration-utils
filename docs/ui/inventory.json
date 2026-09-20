@@ -434,6 +434,25 @@
       "a11yDebt": false
     },
     {
+      "title": "Primitives/Table",
+      "name": "Table",
+      "source": "src/components/primitives/Table.tsx",
+      "stories": [
+        "Sortable Rows",
+        "Plain",
+        "Announces The Sort",
+        "Rows Activate From The Keyboard"
+      ],
+      "consumers": [
+        "src/components/home/AudiobookEstimatePanel.tsx",
+        "src/components/proofing/InlineDiffRow.tsx",
+        "src/components/proofing/Results.tsx",
+        "src/components/storybible/Guide.tsx",
+        "src/components/storybible/GuideDetail.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/Tabs",
       "name": "Tabs",
       "source": "src/components/primitives/Tabs.tsx",

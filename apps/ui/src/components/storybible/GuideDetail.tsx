@@ -30,6 +30,7 @@ import { CANONICAL_PREVIEW, previewKey, usePreviewAudio } from './usePreviewAudi
 import { IconButton } from '../primitives/IconButton';
 import { Select } from '../primitives/Select';
 import { TextField } from '../primitives/TextField';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 
 export function GuideDetail({
   entity,
@@ -371,20 +372,20 @@ export function GuideDetail({
 
         <div>
           <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">Aliases</div>
-          <table className="dtable">
-            <thead>
-              <tr>
-                <th>Alias</th>
-                <th style={{ minWidth: '9rem' }}>Pronunciation</th>
-                <th>Occurrences</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
+          <Table label="Aliases">
+            <TableHead>
+              <TableRow>
+                <TableHeader>Alias</TableHeader>
+                <TableHeader style={{ minWidth: '9rem' }}>Pronunciation</TableHeader>
+                <TableHeader>Occurrences</TableHeader>
+                <TableHeader hiddenLabel="Actions" />
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {entity.aliases.map((alias, index) => (
-                <tr key={alias.text}>
-                  <td className="align-middle font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm">{alias.text}</td>
-                  <td className="align-middle">
+                <TableRow key={alias.text}>
+                  <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm">{alias.text}</TableCell>
+                  <TableCell>
                     <div style={{ position: 'relative', width: '100%' }}>
                       <div
                         className="min-h-[var(--control-height)] w-full cursor-default rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface-2)] px-3 py-[0.6rem] font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs leading-[1.35] text-[var(--text)]"
@@ -404,9 +405,9 @@ export function GuideDetail({
                         </IconButton>
                       </TooltipTarget>
                     </div>
-                  </td>
-                  <td className="align-middle font-['IBM_Plex_Mono',ui-monospace,monospace]">{alias.occurrences.length}</td>
-                  <td className="text-right align-middle">
+                  </TableCell>
+                  <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace]">{alias.occurrences.length}</TableCell>
+                  <TableCell align="right">
                     <IconButton
                       label={`Remove alias ${alias.text}`}
                       disabled={editingDisabled}
@@ -414,11 +415,11 @@ export function GuideDetail({
                     >
                       <FontAwesomeIcon icon={faXmark} />
                     </IconButton>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
           <div className="mt-3">
             <TextField
               label="Add an alias or find a matching entry"
@@ -573,20 +574,20 @@ export function GuideDetail({
 
         <div className="border-t pt-4" style={{ borderColor: 'var(--border)' }}>
           <div className="mb-2 text-[0.82rem] font-medium text-[var(--text-muted)]">Relationships</div>
-          <table className="dtable">
-            <thead>
-              <tr>
-                <th>Relationship</th>
-                <th>Entry</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
+          <Table label="Relationships">
+            <TableHead>
+              <TableRow>
+                <TableHeader>Relationship</TableHeader>
+                <TableHeader>Entry</TableHeader>
+                <TableHeader hiddenLabel="Remove" />
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {entity.relationships.map((rel) => (
-                <tr key={`${rel.id}-${rel.label}`}>
-                  <td>{rel.label}</td>
-                  <td>{rel.name}</td>
-                  <td className="text-right">
+                <TableRow key={`${rel.id}-${rel.label}`}>
+                  <TableCell>{rel.label}</TableCell>
+                  <TableCell>{rel.name}</TableCell>
+                  <TableCell align="right">
                     <IconButton
                       label="Remove relationship"
                       disabled={editingDisabled}
@@ -601,18 +602,18 @@ export function GuideDetail({
                     >
                       <FontAwesomeIcon icon={faXmark} />
                     </IconButton>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               {entity.relationships.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="text-sm" style={{ color: 'var(--text-faint)' }}>
+                <TableRow>
+                  <TableCell colSpan={3} className="text-sm" style={{ color: 'var(--text-faint)' }}>
                     No related entries yet.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
           <div className="mt-3 grid gap-3" style={{ gridTemplateColumns: '1fr 1fr auto' }}>
             <TextField
               label="Relationship"
