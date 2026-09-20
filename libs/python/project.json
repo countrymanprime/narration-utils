@@ -1,0 +1,22 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "narration-common",
+  "projectType": "library",
+  "tags": ["toolchain:python"],
+  "implicitDependencies": ["config", "transcript-compare"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": ["node scripts/quality.mjs python -m ruff format --check libs/python", "node scripts/quality.mjs python -m ruff check libs/python"],
+        "parallel": false
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node scripts/quality.mjs pytest libs/python/tests"
+      }
+    }
+  }
+}

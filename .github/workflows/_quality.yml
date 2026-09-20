@@ -2,12 +2,19 @@ name: Quality
 on:
   workflow_call: {}
 permissions: { contents: read }
+# Every job runs its Nx targets through .github/actions/nx-run: on a pull request only the projects
+# the change affects (see each project's project.json and `implicitDependencies`), otherwise all of
+# them. The two Playwright jobs keep their own `run:` steps (the atlas kit's audit looks for them) and
+# use .github/actions/nx-affected to decide whether to run. The jobs and their names are unchanged; the required-check names in
+# docs/operations/ci-and-releases.md still apply. Checkouts fetch full history so Nx can diff
+# against the base branch.
 jobs:
   js:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
       - uses: ./.github/actions/setup-toolchain
         with:
           need-go: 'false'
@@ -15,9 +22,10 @@ jobs:
           need-wails-tools: 'false'
           need-stylua: 'false'
           need-linux-native-deps: 'false'
-      - run: pnpm --dir apps/ui run lint:ci
-      - run: pnpm --dir apps/ui run format:check
-      - run: pnpm --dir apps/ui test
+      - uses: ./.github/actions/nx-run
+        with:
+          targets: lint format test
+          projects: narration-utils-ui
 
   ui-visual:
     # Captures every {page, state, viewport} of the mock-backed app and fails on
@@ -27,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
       - uses: ./.github/actions/setup-toolchain
         with:
           need-go: 'false'
@@ -34,8 +43,14 @@ jobs:
           need-wails-tools: 'false'
           need-stylua: 'false'
           need-linux-native-deps: 'false'
-      - uses: ./.github/actions/setup-playwright
-      - run: pnpm --dir apps/ui run screenshots
+      - id: scope
+        uses: ./.github/actions/nx-affected
+        with:
+          projects: narration-utils-ui
+      - if: steps.scope.outputs.affected == 'true'
+        uses: ./.github/actions/setup-playwright
+      - if: steps.scope.outputs.affected == 'true'
+        run: pnpm --dir apps/ui run screenshots
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -51,6 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
       - uses: ./.github/actions/setup-toolchain
         with:
           need-go: 'false'
@@ -58,8 +74,14 @@ jobs:
           need-wails-tools: 'false'
           need-stylua: 'false'
           need-linux-native-deps: 'false'
-      - uses: ./.github/actions/setup-playwright
-      - run: pnpm --dir apps/ui run atlas
+      - id: scope
+        uses: ./.github/actions/nx-affected
+        with:
+          projects: narration-utils-ui
+      - if: steps.scope.outputs.affected == 'true'
+        uses: ./.github/actions/setup-playwright
+      - if: steps.scope.outputs.affected == 'true'
+        run: pnpm --dir apps/ui run atlas
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -69,11 +91,13 @@ jobs:
           retention-days: 7
   ui-atlas-kit:
     # The reusable UI-atlas plugin under tools/ui-atlas-kit: CLI, hooks, and a check that
-    # apps/ui has not drifted from the vendored core files the kit ships.
+    # apps/ui has not drifted from the vendored core files the kit ships. It runs on every pull
+    # request (`always`), because that drift check reads apps/ui but Nx does not see the link.
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
       - uses: ./.github/actions/setup-toolchain
         with:
           need-go: 'false'
@@ -81,7 +105,12 @@ jobs:
           need-wails-tools: 'false'
           need-stylua: 'false'
           need-linux-native-deps: 'false'
-      - run: node --test tools/ui-atlas-kit/test/*.test.mjs
+          pnpm-filter: narration-utils
+      - uses: ./.github/actions/nx-run
+        with:
+          targets: test
+          projects: ui-atlas-kit
+          always: 'true'
   repo-scripts:
     # Plain-Node scripts with no dependencies: the ones that keep GitHub metadata (labels,
     # milestones) in step with the repo, the release scripts (version sync, asset packaging), and the
@@ -90,60 +119,76 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: node --test scripts/ci/*.test.mjs scripts/github/*.test.mjs scripts/release/*.test.mjs
+        with: { fetch-depth: 0 }
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-go: 'false'
+          need-python: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+          need-linux-native-deps: 'false'
+          pnpm-filter: narration-utils
+      # `always`: the layout and project guards read every tracked file, so a change anywhere can break them.
+      - uses: ./.github/actions/nx-run
+        with:
+          targets: test-node
+          projects: repo-scripts
+          always: 'true'
   python:
+    # ruff and pytest for libs/python, the sidecars, scripts/ (release tests) and tests/fixtures.
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
       - uses: ./.github/actions/setup-toolchain
         with:
-          need-node: 'false'
-          need-pnpm: 'false'
           need-go: 'false'
           need-wails-tools: 'false'
           need-stylua: 'false'
           need-linux-native-deps: 'false'
-      - run: uv run ruff format --check .
-      - run: uv run ruff check .
-      - run: uv run pytest -q
+          pnpm-filter: narration-utils
+      - uses: ./.github/actions/nx-run
+        with:
+          targets: lint test
+          projects: tag:toolchain:python,fixtures
 
   lua:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: JohnnyMorganz/stylua-action@76fd70c03e6340ceaf673366712db9b20560b402 # v5.0.0
+        with: { fetch-depth: 0 }
+      - uses: ./.github/actions/setup-toolchain
         with:
-          token: ${{ github.token }}
-          version: v2.1.0
-          args: --check integrations/reaper
+          need-go: 'false'
+          need-python: 'false'
+          need-wails-tools: 'false'
+          need-linux-native-deps: 'false'
+          pnpm-filter: narration-utils
+      - uses: ./.github/actions/nx-run
+        with:
+          targets: lint
+          projects: reaper
 
   go:
     # Windows only: it is the supported platform, and Linux's native libraries are installed only
-    # by the optional Linux build (build-linux.yml).
+    # by the optional Linux build (build-linux.yml). Runs gofmt, go vet and Staticcheck (the lint
+    # target), then the tests with the race detector (the `ci` configuration of the test target).
     timeout-minutes: 15
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
       - uses: ./.github/actions/setup-toolchain
         with:
-          need-node: 'false'
-          need-pnpm: 'false'
           need-python: 'false'
           need-wails-tools: 'false'
           need-staticcheck: 'true'
           need-stylua: 'false'
-      - name: gofmt check
-        shell: bash
-        run: |
-          files=$(gofmt -l ./apps/desktop)
-          if [ -n "$files" ]; then
-            echo "Run gofmt on:"
-            echo "$files"
-            exit 1
-          fi
-      - run: go -C apps/desktop vet ./...
-      - run: go -C apps/desktop test -race ./...
-      - run: staticcheck ./...
-        working-directory: apps/desktop
+          pnpm-filter: narration-utils
+      - uses: ./.github/actions/nx-run
+        with:
+          targets: lint test
+          projects: narration-utils-shell
+          configuration: ci

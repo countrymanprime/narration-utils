@@ -8,6 +8,9 @@ inputs:
   need-pnpm:
     description: Install pnpm and run `pnpm install --frozen-lockfile` (implies need-node)
     default: 'true'
+  pnpm-filter:
+    description: Limit the install to one workspace project (for example `narration-utils` for the root tooling, enough to run Nx); empty installs every workspace project
+    default: ''
   need-python:
     description: Install Python and uv, and sync the locked environment
     default: 'true'
@@ -90,7 +93,9 @@ runs:
     - if: inputs.need-pnpm == 'true'
       name: Install pnpm dependencies
       shell: bash
-      run: pnpm install --frozen-lockfile
+      env:
+        PNPM_FILTER: ${{ inputs.pnpm-filter }}
+      run: pnpm install --frozen-lockfile ${PNPM_FILTER:+--filter "$PNPM_FILTER"}
     - if: inputs.need-python == 'true'
       name: Sync Python dependencies
       shell: bash

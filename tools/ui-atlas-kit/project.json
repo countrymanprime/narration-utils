@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "ui-atlas-kit",
+  "projectType": "library",
+  "tags": ["toolchain:node"],
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --test tools/ui-atlas-kit/test/*.test.mjs"
+      }
+    }
+  }
+}

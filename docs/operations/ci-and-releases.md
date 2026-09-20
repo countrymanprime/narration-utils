@@ -5,7 +5,9 @@
 Run `pnpm run bootstrap` once after cloning. It installs the root release
 tooling and Husky hooks in addition to the existing application dependencies.
 The hooks enforce Conventional Commit messages and check staged TypeScript,
-Python, Go, and Lua files. Use `pnpm run check` for the full quality suite.
+Python, Go, and Lua files. Use `pnpm run check` for the full quality suite (every Nx
+project's lint, format, test and build targets; see [Nx projects and the quality
+gate](#nx-projects-and-the-quality-gate)).
 
 ## Repository settings to configure once
 
@@ -70,6 +72,54 @@ stable tag and GitHub release from the exact same downloaded assets and never
 rebuilds an approved candidate. Release candidates
 published before per-asset checksums (they carry `SHA256SUMS.txt`) cannot be
 promoted this way.
+
+## Nx projects and the quality gate
+
+Every folder of the [role-based layout](../architecture/codebase-map.md) is an Nx project with its own
+`project.json`; Nx runs the commands, it does not replace them. The targets are the ones the old serial
+runner called:
+
+| Project | Folder | Targets |
+| --- | --- | --- |
+| `narration-utils-ui` | `apps/ui` | `lint`, `format`, `test`, `build`, `visual` (Playwright screenshots), `atlas` |
+| `narration-utils-shell` | `apps/desktop` | `lint` (gofmt, go vet, Staticcheck), `test` (`-race` in the `ci` configuration), `package` (`wails build`, not part of the gate) |
+| `narration-common` | `libs/python` | `lint` (ruff), `test` (pytest) |
+| `manuscript-guide`, `manuscript-teleprompter`, `transcript-compare` | `sidecars/<name>` | `lint`, `test` |
+| `reaper` | `integrations/reaper` | `lint` (StyLua) |
+| `repo-scripts` | `scripts` | `lint`, `test` (pytest), `test-node` (`node --test`) |
+| `ui-atlas-kit` | `tools/ui-atlas-kit` | `test` |
+| `config`, `fixtures` | `config`, `tests/fixtures` | none (fixtures: `lint`); they exist so a change to them affects the projects that read them |
+| `narration-utils` | the repo root | none; the `nx release` project |
+
+- **`pnpm check`** runs `nx run-many` over `lint format test test-node build`, one project at a time and never from
+  the Nx cache, so a green gate means every check ran. `check:fast` and the Git hooks still use
+  `scripts/quality.mjs` on staged files.
+- **Look around** with `pnpm exec nx show projects`, `pnpm exec nx graph`, and
+  `pnpm exec nx show projects --affected --files=<path>`. Run one project's check with, for example,
+  `pnpm exec nx run manuscript-guide:test`.
+- **CI** keeps its job names (`js`, `ui-visual`, `ui-atlas`, `ui-atlas-kit`, `repo-scripts`, `python`, `lua`, `go`), so
+  the required-check names above are unchanged. Each job runs its targets through
+  `.github/actions/nx-run`: on a pull request `nx affected` against the base branch, otherwise every selected
+  project, one task at a time (parallel tasks starve the two-vCPU runners and trip the UI tests' timeouts).
+  `scripts/ci/nx-scope.sh` decides: everything runs when the event is not a pull request, or the change
+  touches a file no project owns but all depend on (`nx.json`, `package.json`, `pnpm-lock.yaml`,
+  `pnpm-workspace.yaml`, `pyproject.toml`, `uv.lock`, the root `project.json`, `stylua.toml`, `.prettierrc.json`,
+  `.prettierignore`, `.editorconfig`, `.gitattributes`, `scripts/quality.mjs`, `scripts/toolchain.json`, anything under
+  `.github/workflows` or `.github/actions`). The two Playwright jobs keep
+  their own `run:` steps (the atlas kit's audit looks for them) and skip them through
+  `.github/actions/nx-affected` when the UI is not affected. The atlas-kit job always runs, because its drift check
+  reads `apps/ui`, and so does the `repo-scripts` job, because the layout and project guards read every tracked file.
+- **Dependencies** are `implicitDependencies` in each `project.json`: the desktop app reads the UI, the sidecars,
+  `config`, `fixtures` and `reaper`; the sidecars read `narration-common` and `config`.
+  `scripts/ci/projects.test.mjs` fails if a Python, Go, Lua or `apps/` TypeScript file is not covered by a project
+  lint target, because the repo-wide `ruff .`, `staticcheck ./...` and `stylua --check` runs are gone.
+- **Releases** are unchanged: `nx release version` still versions the root project. `nx release` counts a commit
+  when it affects the root project or a project the root depends on, so `narration-utils` lists every project except
+  the UI and desktop projects (they were already separate projects that never counted); the guard test keeps that
+  list complete when you add a project.
+- **Adding a project**: add a `project.json` (copy a neighbour), give it `lint` and `test` targets that call the same
+  tools, list what it reads under `implicitDependencies`, and add its name to the root project's
+  `implicitDependencies` unless it should not count toward the release version.
 
 ## CI performance
 

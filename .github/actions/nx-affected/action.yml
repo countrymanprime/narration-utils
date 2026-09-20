@@ -1,0 +1,33 @@
+name: Are Nx projects affected
+description: Sets `affected` to true when the change affects any of the given projects, or when everything should run (see scripts/ci/nx-scope.sh). For jobs that keep their own `run:` steps, such as the visual suite. Run after setup-toolchain, on a checkout with full history.
+
+inputs:
+  projects:
+    description: Comma-separated project names or `tag:` selectors
+    required: true
+  always:
+    description: Set to `true` to report affected whatever the change
+    default: 'false'
+
+outputs:
+  affected:
+    description: 'true or false'
+    value: ${{ steps.scope.outputs.affected }}
+
+runs:
+  using: composite
+  steps:
+    - id: scope
+      shell: bash
+      env:
+        PROJECTS: ${{ inputs.projects }}
+        ALWAYS: ${{ inputs.always }}
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        set -euo pipefail
+        affected=true
+        if [ "$(bash scripts/ci/nx-scope.sh)" = "affected" ]; then
+          hit=$(pnpm exec nx show projects --affected --projects="$PROJECTS" --base="origin/$BASE_REF" --head=HEAD)
+          if [ -z "$hit" ]; then affected=false; fi
+        fi
+        echo "affected=$affected" >> "$GITHUB_OUTPUT"

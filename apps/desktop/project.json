@@ -1,0 +1,41 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "narration-utils-shell",
+  "projectType": "application",
+  "tags": ["toolchain:go"],
+  "implicitDependencies": ["narration-utils-ui", "manuscript-guide", "manuscript-teleprompter", "transcript-compare", "reaper", "config", "fixtures"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node scripts/quality.mjs go-lint {projectRoot}"
+      },
+      "configurations": {
+        "ci": {}
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go -C {projectRoot} test ./..."
+      },
+      "configurations": {
+        "ci": {
+          "command": "go -C {projectRoot} test -race ./..."
+        }
+      }
+    },
+    "package": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm --dir {projectRoot} run build"
+      }
+    },
+    "build": {
+      "executor": "nx:noop",
+      "metadata": {
+        "description": "Deliberately empty: `pnpm check` runs every project's build target, and the native app is built by the Build (Windows) CI job. Run `package` (wails build) to build it."
+      }
+    }
+  }
+}

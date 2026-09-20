@@ -1,0 +1,45 @@
+name: Run Nx targets
+description: Run Nx targets for the projects a pull request affects (`nx show projects --affected`, then `nx run-many`). Runs every selected project on a manual run, when the change touches a workspace-wide file, or when `always` is true. Run after setup-toolchain, on a checkout with full history (fetch-depth 0).
+
+inputs:
+  targets:
+    description: Space-separated Nx targets, for example `lint format test`
+    required: true
+  projects:
+    description: Comma-separated project names or `tag:` selectors that limit the run
+    required: true
+  configuration:
+    description: Nx configuration to apply to targets that define it (for example `ci`)
+    default: ''
+  always:
+    description: Set to `true` to run the selected projects even when the change does not affect them (the atlas kit's drift check reads apps/ui, which is not one of its Nx dependencies)
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Run ${{ inputs.targets }} for ${{ inputs.projects }}
+      shell: bash
+      env:
+        TARGETS: ${{ inputs.targets }}
+        PROJECTS: ${{ inputs.projects }}
+        CONFIGURATION: ${{ inputs.configuration }}
+        ALWAYS: ${{ inputs.always }}
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        set -euo pipefail
+        # Never the Nx cache: a green check must mean the checks ran. One task at a time, as the separate
+        # steps ran: lint, format and vitest side by side starve a 2-vCPU runner and trip vitest's 5 s timeouts.
+        args=(-t $TARGETS --parallel=1 --skip-nx-cache --output-style=stream)
+        if [ -n "$CONFIGURATION" ]; then args+=(--configuration="$CONFIGURATION"); fi
+        # Everything when not a pull request, when asked, or when a workspace-wide file changed.
+        selected="$PROJECTS"
+        if [ "$(bash scripts/ci/nx-scope.sh)" = "affected" ]; then
+          # `nx affected` forwards --projects to the commands, so intersect the selection with the affected set first.
+          selected=$(pnpm exec nx show projects --affected --projects="$PROJECTS" --base="origin/$BASE_REF" --head=HEAD --json             | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync(0, 'utf8')).join(','))")
+          if [ -z "$selected" ]; then
+            echo "None of $PROJECTS is affected by this change; nothing to run."
+            exit 0
+          fi
+        fi
+        pnpm exec nx run-many "${args[@]}" --projects="$selected"
