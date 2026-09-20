@@ -214,12 +214,12 @@ describe('the ratchet of known failures', () => {
 describe('the text ramp keeps its order', () => {
   // Contrast against the same surface must step down text, then muted, then the non-text mark: equal levels would mean the
   // hierarchy the palette exists to give the eye has collapsed.
-  it('text is stronger than muted on every surface, in both themes', () => {
+  it('text is stronger than muted, and muted stronger than the non-text mark, on every surface, in both themes', () => {
     for (const theme of THEME_NAMES) {
       for (const over of SURFACES) {
-        const strong = resolveContrast(THEMES[theme], { fg: 'var(--text)', over });
-        const muted = resolveContrast(THEMES[theme], { fg: 'var(--text-muted)', over });
-        expect(strong, `--text vs --text-muted over --${over} (${theme})`).toBeGreaterThan(muted);
+        const contrast = (token: string) => resolveContrast(THEMES[theme], { fg: `var(--${token})`, over });
+        expect(contrast('text'), `--text vs --text-muted over --${over} (${theme})`).toBeGreaterThan(contrast('text-muted'));
+        expect(contrast('text-muted'), `--text-muted vs --non-text over --${over} (${theme})`).toBeGreaterThan(contrast('non-text'));
       }
     }
   });
@@ -229,6 +229,7 @@ describe('the text ramp keeps its order', () => {
 // unmeasured. `text-[var(--x)]`, `color: 'var(--x)'` and a `color:` declaration in a stylesheet all count.
 const NO_TEXT_PAIR: Record<string, string> = {
   bookmark: 'a bookmark icon colour, not text',
+  'non-text': 'the colour of icons, status dots and decorative glyphs, held to 3:1 as a mark and never the colour of text that carries information',
 };
 
 function sourceFiles(directory: string): string[] {
@@ -252,7 +253,10 @@ function tokensUsedAsText(): Set<string> {
 
 describe('no text colour ships without a declared pair', () => {
   it('measures every token the source draws text with', () => {
-    const measured = new Set(PAIRS.flatMap((spec) => [...spec.fg.matchAll(/var\(--([a-z0-9-]+)\)/g)].map((match) => match[1])));
+    // Only a text pair (4.5:1) measures a text colour: a mark pair (3:1) does not make its token safe to read.
+    const measured = new Set(
+      PAIRS.filter((spec) => spec.min === TEXT_MIN).flatMap((spec) => [...spec.fg.matchAll(/var\(--([a-z0-9-]+)\)/g)].map((match) => match[1])),
+    );
     const unmeasured = [...tokensUsedAsText()].filter((token) => !measured.has(token) && !(token in NO_TEXT_PAIR));
     expect(unmeasured, 'declare a pair for each of these in PAIRS, or list it in NO_TEXT_PAIR with a reason').toEqual([]);
   });
