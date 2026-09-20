@@ -70,6 +70,7 @@ Phase counts are the rows of each PRD's phase table.
 | [Project Workspace: Projects Directory, New Project Dialog and DAW Project Link](project-workspace-and-daw-link.prd.md) | Feature | 8 | None; amends the create and recents decisions of [ADR 0030](../adr/0030-the-app-starts-without-a-project-and-picks-one-from-recents.md) and `docs/architecture/standalone-launch.md` when delivered |
 | [Import Review Redesign](import-review-redesign.prd.md) | Feature | 3 | None; takes the subtitle-display half out of Phase 5 of [Story Bible and Import UX Briefs](story-bible-and-import-ux-briefs.prd.md) |
 | [Import Structure: Table of Contents and Characters](import-structure-toc-and-characters.prd.md) | Feature (with defects) | 4 | None |
+| [TXT and EPUB Manuscript Import](txt-and-epub-import.prd.md) | Feature | 4 | None; its Phase 4 amends the extension list of [ADR 0019](../adr/0019-detected-manuscript-is-offered-not-imported.md) with a new ADR |
 | [Manuscript Reader: Search and Controls](manuscript-reader-search-and-controls.prd.md) | Feature (with defects) | 5 | None; its Phase 5 reverses the reader half of [ADR 0005](../adr/0005-reference-material-excluded-from-chapter-nav.md) |
 | [Story Bible Entries: Properties, Actions and Pronunciation](story-bible-entries-and-actions.prd.md) | Feature | 3 | None; supersedes the "actions regardless of mode" clause of [ADR 0018](../adr/0018-story-bible-entries-read-only-until-edit.md) |
 | [Story Bible Preview: TTS Failures](story-bible-preview-tts-failures.prd.md) | Defect | 3 | None |
