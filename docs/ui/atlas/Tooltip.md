@@ -7,9 +7,12 @@ Storybook title: `Primitives/Tooltip`. Source: `src/components/primitives/Toolti
 ## Stories
 
 - Info Icon
-- Info Icon Shows Tooltip
+- Info Icon Shows Tooltip On Keyboard Focus
+- Info Icon Toggles On Press
+- Info Icon Popup Takes Pointer Events
 - On Button
 - Shows Tooltip On Focus
+- Escape Hides Tooltip
 - Hides Tooltip On Blur
 - On Disabled Button
 - Disabled Button Explains Why On Focus

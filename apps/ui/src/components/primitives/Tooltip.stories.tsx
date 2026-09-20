@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { faFileLines } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { expect, fireEvent, userEvent, waitFor, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { Tooltip, TooltipTarget } from './Tooltip';
 
 const iconButtonClass =
@@ -26,13 +26,46 @@ type Story = StoryObj<typeof meta>;
 
 export const InfoIcon: Story = {};
 
-// The "i" icon is a plain span, not a tab stop, so a keyboard cannot reach it and
-// focusin is dispatched directly. Focus shows the tooltip at once; hover waits 1000 ms.
-export const InfoIconShowsTooltip: Story = {
+// The "i" is a real button: the keyboard reaches it, it shows its text at once on keyboard focus (hover waits 1000 ms),
+// Escape hides it, and the text is also its accessible description, so a screen reader hears it without the popup.
+export const InfoIconShowsTooltipOnKeyboardFocus: Story = {
   play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    fireEvent.focusIn(canvas.getByLabelText('More information'));
+    const icon = within(canvasElement).getByRole('button', { name: 'More information' });
+    await expect(icon).toHaveAccessibleDescription(args.text);
+    await userEvent.tab();
+    await expect(icon).toHaveFocus();
     await expect(await within(document.body).findByRole('tooltip')).toHaveTextContent(args.text);
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(within(document.body).queryByRole('tooltip')).toBeNull());
+    await expect(icon).toHaveFocus();
+  },
+};
+
+// A press opens it and a second press closes it; nothing it names is missing from the page.
+export const InfoIconTogglesOnPress: Story = {
+  play: async ({ args, canvasElement }) => {
+    const icon = within(canvasElement).getByRole('button', { name: 'More information' });
+    await userEvent.click(icon);
+    await expect(await within(document.body).findByRole('tooltip')).toHaveTextContent(args.text);
+    await expect(icon).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.click(icon);
+    await waitFor(() => expect(within(document.body).queryByRole('tooltip')).toBeNull());
+  },
+};
+
+// WCAG 1.4.13: content shown on hover must be hoverable (the pointer can move onto it without it vanishing) and persistent
+// (it stays until dismissed). The popup therefore takes pointer events; the pointer path is proved in a real browser by the
+// visual suite's tooltip states and by hand, because a scripted pointer teleports and never travels the gap.
+export const InfoIconPopupTakesPointerEvents: Story = {
+  play: async ({ canvasElement }) => {
+    const icon = within(canvasElement).getByRole('button', { name: 'More information' });
+    await userEvent.click(icon);
+    const tooltip = await within(document.body).findByRole('tooltip');
+    await expect(getComputedStyle(tooltip).pointerEvents).not.toBe('none');
+    // Close it again: while a popover opened by a press is showing, Base UI's invisible focus guards trip axe's
+    // aria-hidden-focus, and the atlas runs axe after play().
+    await userEvent.click(icon);
+    await waitFor(() => expect(within(document.body).queryByRole('tooltip')).toBeNull());
   },
 };
 
@@ -50,26 +83,36 @@ export const OnButton: Story = {
 export const ShowsTooltipOnFocus: Story = {
   render: OnButton.render,
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    canvas.getByRole('button', { name: 'View manuscript' }).focus();
+    await userEvent.tab();
+    await expect(within(canvasElement).getByRole('button', { name: 'View manuscript' })).toHaveFocus();
     await expect(await within(document.body).findByRole('tooltip')).toHaveTextContent('View manuscript');
+  },
+};
+
+// Escape dismisses a hint without moving focus or the pointer.
+export const EscapeHidesTooltip: Story = {
+  render: OnButton.render,
+  play: async ({ canvasElement }) => {
+    await userEvent.tab();
+    await within(document.body).findByRole('tooltip');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(within(document.body).queryByRole('tooltip')).toBeNull());
+    await expect(within(canvasElement).getByRole('button', { name: 'View manuscript' })).toHaveFocus();
   },
 };
 
 export const HidesTooltipOnBlur: Story = {
   render: OnButton.render,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const button = canvas.getByRole('button', { name: 'View manuscript' });
-    button.focus();
+  play: async () => {
+    await userEvent.tab();
     await within(document.body).findByRole('tooltip');
-    button.blur();
+    await userEvent.tab();
     await waitFor(() => expect(within(document.body).queryByRole('tooltip')).toBeNull());
   },
 };
 
 // A disabled button never receives focus or hover events of its own, so the
-// wrapper span becomes the tab stop (tabIndex 0) and carries the explanation.
+// wrapper span becomes the tab stop (tabIndex 0) and carries the explanation as its name (role group).
 export const OnDisabledButton: Story = {
   render: () => (
     <TooltipTarget text="Import a manuscript to unlock Proofing." className="max-w-sm">
@@ -89,6 +132,7 @@ export const DisabledButtonExplainsWhyOnFocus: Story = {
     await expect(button).toBeDisabled();
     await userEvent.tab();
     await expect(button.parentElement).toHaveFocus();
+    await expect(canvas.getByRole('group', { name: 'Import a manuscript to unlock Proofing.' })).toBe(button.parentElement);
     await expect(await within(document.body).findByRole('tooltip')).toHaveTextContent('Import a manuscript to unlock Proofing.');
   },
 };
