@@ -240,7 +240,7 @@ describe('TeleprompterPage', () => {
     renderPage({ teleprompterStart, whisperInstall });
     await startReading(user);
 
-    const dialog = await screen.findByRole('dialog', { name: 'Download local Whisper model?' });
+    const dialog = await screen.findByRole('alertdialog', { name: 'Download local Whisper model?' });
     await user.click(within(dialog).getByRole('button', { name: 'Download model' }));
 
     await waitFor(() => expect(teleprompterStart).toHaveBeenCalledTimes(2));

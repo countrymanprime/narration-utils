@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { useState } from 'react';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
+import { insidePortal, screen } from './portalScreen';
 
 const meta = {
   title: 'Primitives/Dialog',
@@ -63,10 +65,9 @@ export const LongUnbrokenToken: Story = {
       </p>
     ),
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
+  play: async () => {
     // The body is the scrolling container that wraps the children.
-    const body = canvas.getByText(/chapter_twenty_seven/).parentElement as HTMLElement;
+    const body = (await screen.findByText(/chapter_twenty_seven/)).parentElement as HTMLElement;
     await expect(body.scrollWidth).toBeLessThanOrEqual(body.clientWidth);
   },
 };
@@ -86,21 +87,114 @@ export const LongScrollingContent: Story = {
       </div>
     ),
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const dialog = canvas.getByRole('dialog', { name: 'Import manuscript' });
+  play: async () => {
+    const dialog = await screen.findByRole('dialog', { name: 'Import manuscript' });
     await expect(within(dialog).getByRole('button', { name: 'Add note' })).toBeVisible();
     await expect(within(dialog).getByRole('button', { name: 'Close' })).toBeVisible();
   },
 };
 
-// The dialog is a labelled modal and its close button reports back exactly once.
+// The dialog is a labelled modal (named by its visible title) and its close button reports back exactly once.
 export const CloseButtonInvokesOnClose: Story = {
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const dialog = canvas.getByRole('dialog', { name: 'Add note' });
-    await expect(dialog).toHaveAttribute('aria-modal', 'true');
+  play: async ({ args }) => {
+    const dialog = await screen.findByRole('dialog', { name: 'Add note' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     await expect(args.onClose).toHaveBeenCalledOnce();
+  },
+};
+
+// Modality: the page behind the dialog is hidden from assistive technology while it is open.
+export const HidesThePageBehindIt: Story = {
+  play: async ({ canvasElement }) => {
+    await expect(await screen.findByRole('dialog', { name: 'Add note' })).toBeVisible();
+    await expect(canvasElement.closest('[aria-hidden="true"]')).not.toBeNull();
+  },
+};
+
+// Focus starts on the body region so a screen reader reads the message before any control.
+export const FocusStartsOnTheBody: Story = {
+  play: async () => {
+    await screen.findByRole('dialog', { name: 'Add note' });
+    const body = screen.getByText(/Note for:/).parentElement as HTMLElement;
+    await waitFor(() => expect(document.activeElement).toBe(body));
+  },
+};
+
+// Escape closes a dialog that has an onClose.
+export const EscapeInvokesOnClose: Story = {
+  play: async ({ args }) => {
+    await screen.findByRole('dialog', { name: 'Add note' });
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onClose).toHaveBeenCalledOnce();
+  },
+};
+
+// Without onClose (a job that is still running) there is nowhere to go, so Escape does nothing.
+export const EscapeIsIgnoredWithoutOnClose: Story = {
+  args: { onClose: undefined },
+  play: async () => {
+    await screen.findByRole('dialog', { name: 'Add note' });
+    await userEvent.keyboard('{Escape}');
+    await expect(screen.getByRole('dialog', { name: 'Add note' })).toBeVisible();
+  },
+};
+
+// A press on the scrim never dismisses: an accidental click must not discard a confirm.
+export const BackdropPressDoesNotClose: Story = {
+  play: async ({ args }) => {
+    await screen.findByRole('dialog', { name: 'Add note' });
+    await userEvent.click(document.querySelector('[data-dialog-backdrop]') as HTMLElement);
+    await expect(args.onClose).not.toHaveBeenCalled();
+    await expect(screen.getByRole('dialog', { name: 'Add note' })).toBeVisible();
+  },
+};
+
+// Tab and Shift+Tab loop inside the dialog; the page behind is never reached.
+export const TabStaysInsideTheDialog: Story = {
+  play: async ({ canvasElement }) => {
+    await screen.findByRole('dialog', { name: 'Add note' });
+    for (let press = 0; press < 10; press += 1) {
+      await userEvent.tab({ shift: press % 3 === 2 });
+      await waitFor(() => expect(insidePortal(document.activeElement)).toBe(true));
+      await expect(canvasElement.contains(document.activeElement)).toBe(false);
+    }
+  },
+};
+
+function WithOpener() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button className="rounded border px-3 py-1 text-sm" onClick={() => setOpen(true)}>
+        Open dialog
+      </button>
+      {open && (
+        <Dialog title="Add note" onClose={() => setOpen(false)} actions={<Button variant="ghost">Cancel</Button>}>
+          <p className="text-sm">Note body</p>
+        </Dialog>
+      )}
+    </div>
+  );
+}
+
+// The dialog is mounted on demand, like every consumer's, and gives focus back to the button that opened it.
+export const ReturnsFocusToTheOpener: Story = {
+  render: () => <WithOpener />,
+  play: async ({ canvasElement }) => {
+    const opener = within(canvasElement).getByRole('button', { name: 'Open dialog' });
+    await userEvent.click(opener);
+    await screen.findByRole('dialog', { name: 'Add note' });
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(opener));
+  },
+};
+
+// An autoFocus child (the note field) wins over the body region.
+export const AutoFocusChildWins: Story = {
+  args: { children: <textarea aria-label="Note" autoFocus className="w-full rounded border p-2 text-sm" /> },
+  play: async () => {
+    const note = await screen.findByRole('textbox', { name: 'Note' });
+    await waitFor(() => expect(document.activeElement).toBe(note));
   },
 };

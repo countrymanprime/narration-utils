@@ -775,6 +775,7 @@ export function GuideDetail({
             confirmLabel={ttsJob?.phase === 'downloading' ? 'Downloading…' : 'Download voice'}
             confirm={() => void installPreviewVoice()}
             cancel={() => void cancelVoiceInstall()}
+            escapeCancels={ttsJob?.phase !== 'downloading'}
           >
             {ttsJob?.phase === 'downloading' && (
               <div className="progressbar mt-3 h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
@@ -822,6 +823,7 @@ export function GuideDetail({
             title="Delete entry"
             body={`Delete “${entity.canonical_name}” and its aliases, evidence, and relationships? This cannot be undone.`}
             confirmLabel="Delete entry"
+            confirmVariant="danger"
             confirm={() => {
               setConfirmation(undefined);
               void api
@@ -840,6 +842,7 @@ export function GuideDetail({
             title="Merge entries"
             body={`Merge “${selectedAliasMatch.canonical_name}” into “${entity.canonical_name}”? The source entry will be deleted.`}
             confirmLabel="Merge & delete source"
+            confirmVariant="danger"
             confirm={() => {
               setConfirmation(undefined);
               void api

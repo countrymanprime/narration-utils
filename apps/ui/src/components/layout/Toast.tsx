@@ -16,6 +16,9 @@ export function Toast({ text, dismiss }: { text: string; dismiss: () => void }) 
     <div
       className={`ease fixed right-5 bottom-5 z-50 flex items-center gap-[0.6rem] rounded-[0.4rem] bg-[var(--text)] px-4 py-[0.65rem] text-[0.85rem] text-[var(--bg)] shadow-[var(--shadow)] transition-[opacity,transform] duration-150 ${leaving ? 'translate-y-1 opacity-0' : 'opacity-100'}`}
       role="status"
+      // Explicit aria-live: Base UI hides everything outside an open dialog from assistive technology except live
+      // regions marked with the attribute, and an error raised from inside a dialog is announced through this toast.
+      aria-live="polite"
     >
       {text}
       <button aria-label="Dismiss message" onClick={dismiss}>

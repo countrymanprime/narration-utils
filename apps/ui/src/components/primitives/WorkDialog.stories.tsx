@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent } from 'storybook/test';
 import type { WorkJob } from '../../types';
+import { screen } from './portalScreen';
 import { WorkDialog } from './WorkDialog';
 
 const runningJob: WorkJob = {
@@ -30,12 +31,22 @@ export const Preparing: Story = {
   args: { job: { ...runningJob, phase: 'preparing', message: 'Reading source file', percent: 5, elapsed: 1.2, logs: ['Reading source file'] } },
 };
 
-// percent 0 while running is the indeterminate state: the bar slides instead of filling.
+// percent 0 while running is the indeterminate state: the bar slides instead of filling, and no value is announced.
 export const RunningIndeterminate: Story = {
   args: { job: { ...runningJob, message: 'Starting', percent: 0, elapsed: 0.4, logs: [] } },
+  play: async () => {
+    const bar = await screen.findByRole('progressbar', { name: 'Import manuscript progress' });
+    await expect(bar).not.toHaveAttribute('aria-valuenow');
+  },
 };
 
-export const RunningWithProgress: Story = {};
+// A determinate job announces its value, and its message is a live region.
+export const RunningWithProgress: Story = {
+  play: async () => {
+    await expect(await screen.findByRole('progressbar', { name: 'Import manuscript progress' })).toHaveAttribute('aria-valuenow', '35');
+    await expect(screen.getByRole('status')).toHaveTextContent('Parsing chapter 4 of 12');
+  },
+};
 
 export const Committing: Story = {
   args: { job: { ...runningJob, phase: 'committing', message: 'Writing manuscript to project', percent: 92, elapsed: 20.1 } },
@@ -50,10 +61,13 @@ export const Success: Story = {
   },
 };
 
-// A failed job shows the error text in place of the progress message.
+// A failed job shows the error text in place of the progress message, announced as an alert.
 export const ErrorState: Story = {
   args: {
     job: { ...runningJob, phase: 'error', error: 'Could not read chapter 4: unsupported encoding', elapsed: 13.2 },
+  },
+  play: async () => {
+    await expect(await screen.findByRole('alert')).toHaveTextContent('Could not read chapter 4');
   },
 };
 
@@ -74,22 +88,43 @@ export const LongLogs: Story = {
 
 // While a job runs only Cancel is offered; Close appears once it finishes.
 export const CancelInvokesCancel: Story = {
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.queryByRole('button', { name: 'Close' })).toBeNull();
-    await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }));
+  play: async ({ args }) => {
+    await screen.findByRole('button', { name: 'Cancel' });
+    await expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await expect(args.cancel).toHaveBeenCalledOnce();
     await expect(args.close).not.toHaveBeenCalled();
   },
 };
 
+// Escape does not stop a running job (Cancel is a deliberate action) and is not the way out of it either.
+export const EscapeIsIgnoredWhileRunning: Story = {
+  play: async ({ args }) => {
+    await screen.findByRole('dialog', { name: 'Import manuscript' });
+    await userEvent.keyboard('{Escape}');
+    await expect(args.cancel).not.toHaveBeenCalled();
+    await expect(args.close).not.toHaveBeenCalled();
+    await expect(screen.getByRole('dialog', { name: 'Import manuscript' })).toBeVisible();
+  },
+};
+
 export const CloseInvokesCloseWhenFinished: Story = {
   args: { job: { ...runningJob, phase: 'success', message: 'Imported 12 chapters', percent: 100, elapsed: 24.9 } },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.queryByRole('button', { name: 'Cancel' })).toBeNull();
-    await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+  play: async ({ args }) => {
+    await screen.findByRole('button', { name: 'Close' });
+    await expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
     await expect(args.close).toHaveBeenCalledOnce();
     await expect(args.cancel).not.toHaveBeenCalled();
+  },
+};
+
+// Once the job has finished Escape works as Close.
+export const EscapeClosesWhenFinished: Story = {
+  args: { job: { ...runningJob, phase: 'success', message: 'Imported 12 chapters', percent: 100, elapsed: 24.9 } },
+  play: async ({ args }) => {
+    await screen.findByRole('dialog', { name: 'Import manuscript' });
+    await userEvent.keyboard('{Escape}');
+    await expect(args.close).toHaveBeenCalledOnce();
   },
 };

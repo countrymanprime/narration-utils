@@ -488,6 +488,7 @@ export function Transcript({
           confirmLabel={whisperJob?.phase === 'running' ? 'Downloading…' : 'Download model'}
           confirm={() => void installWhisperModel()}
           cancel={() => void cancelWhisperModelInstall()}
+          escapeCancels={whisperJob?.phase !== 'running'}
         >
           <dl className="mt-3 space-y-1 text-xs" style={{ color: 'var(--text-muted)' }}>
             <div>

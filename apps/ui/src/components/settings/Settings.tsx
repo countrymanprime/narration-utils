@@ -360,6 +360,7 @@ export function Settings({
           title="Clear derived project data?"
           body="This permanently removes the imported manuscript and stored source, Story Bible and proofing data, reader notes/bookmarks, and saved comparison results for this project. Settings will remain."
           confirmLabel="Clear project data"
+          confirmVariant="danger"
           confirm={async () => {
             try {
               await api.clearProjectData();
@@ -378,6 +379,7 @@ export function Settings({
           title="Remove local preview voice?"
           body={`Remove ${selectedTtsVoice.displayName} from this computer? Your settings and project preview WAVs remain; requesting a new preview will ask to download the voice again.`}
           confirmLabel="Remove voice"
+          confirmVariant="danger"
           confirm={() =>
             void api
               .ttsRemove(selectedTtsVoice.id)
@@ -396,6 +398,7 @@ export function Settings({
           title="Remove local Whisper model?"
           body={`Remove ${selectedWhisperModel.displayName} from this computer? Starting a comparison with this model selected will ask to download it again.`}
           confirmLabel="Remove model"
+          confirmVariant="danger"
           confirm={() =>
             void api
               .whisperRemove(selectedWhisperModel.id)

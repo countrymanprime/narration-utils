@@ -206,6 +206,7 @@ export function Home({
           title={`Import ${importJob.preview.sourceName}`}
           body={`${importJob.preview.format.toUpperCase()} · ${importJob.preview.paragraphCount} paragraphs · ${importJob.preview.chapterTitles.length || 1} proposed chapters.${importJob.requiresReset ? ' This replaces the active manuscript and clears Story Bible, notes, bookmarks, statuses, and saved comparison results.' : ''}`}
           confirmLabel={importJob.requiresReset ? 'Replace and reset' : 'Import'}
+          confirmVariant={importJob.requiresReset ? 'danger' : 'primary'}
           confirm={() => void commitImport()}
           cancel={() =>
             void api
