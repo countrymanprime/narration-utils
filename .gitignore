@@ -15,6 +15,7 @@ apps/ui/coverage/
 .coverage
 .coverage.*
 .hypothesis/
+*.tsbuildinfo
 logs/
 .claude/
 apps/desktop/cmd/narration-utils/frontend/dist/*
