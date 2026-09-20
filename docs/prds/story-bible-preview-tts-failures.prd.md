@@ -1,6 +1,6 @@
 # Story Bible Preview: TTS Failures
 
-**Source:** user report of 2026-09-20 ("I got an error trying to run TTS for a record"). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. The exact error text was not captured, and nothing was run; every cause below is from reading code, except one reproduced in memory (cause 2). Related: [story-bible-entries-and-actions.prd.md](story-bible-entries-and-actions.prd.md) (gating the play button), [release-readiness-provisioning-and-docs-site.prd.md](release-readiness-provisioning-and-docs-site.prd.md) Phase 1 (install flow), [interaction-feedback-audit.prd.md](interaction-feedback-audit.prd.md).
+**Source:** user report of 2026-09-20 ("I got an error trying to run TTS for a record"). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. The exact error text was not captured, and nothing was run; every cause below is from reading code, except one reproduced in memory (cause 2). Phase 1 was delivered by stack S04 of [implementation-plan.md](implementation-plan.md) (issue #65), which reproduced the causes on a dev build (see Reproduction results below). Related: [story-bible-entries-and-actions.prd.md](story-bible-entries-and-actions.prd.md) (gating the play button), [release-readiness-provisioning-and-docs-site.prd.md](release-readiness-provisioning-and-docs-site.prd.md) Phase 1 (install flow), [interaction-feedback-audit.prd.md](interaction-feedback-audit.prd.md).
 
 ## Problem Statement
 
@@ -24,6 +24,21 @@ Pressing play on a Story Bible entry or alias ("run TTS") can fail, and the narr
 - **Latency.** `tts.Paths` runs `assets.State`, which SHA-256 hashes the whole 114 MB model on every preview click (`assets/store.go:35-65`).
 - **Coverage.** Python: only the happy path (`test_preview_uses_bundled_piper_api_not_a_checkout_executable`, `tests/test_manuscript_guide.py:247-274`); no failure test for `render_audio`, none for `pronunciation()`. Go: no `Preview` test (`service_test.go`), no `GuidePreview` test (`bindings_test.go`; the Whisper `asset_required` pattern is at `:50-112`). UI: `GuideDetail.test.tsx:99-157` covers the mock happy path; `usePreviewAudio.test.tsx` covers stale request and unmount only, with no error case; the mock returns `audioBase64: ''` (`mockApi.ts:509-512`) so it cannot show any real failure.
 - **Not testable without running the app:** real Piper synthesis on real names and WebView2 audio decoding. Preview of a name with no pronunciation is a separate UI gating change (entries PRD Phase 3).
+
+## Reproduction results (Phase 1, dev build)
+
+The reporter's toast text and entry (T1, T2) were never supplied, so Phase 1 diagnosed every candidate cause instead of guessing. The dev build ran the real Go host code, the real Python sidecar from `.venv` and the real installed `en_US-ljspeech-high` voice. The tests named below failed first and now pass.
+
+| # | Cause | Result on the dev build | Test |
+| --- | --- | --- | --- |
+| 1 | Install flow reports `running`, UI keys on `downloading` | **Confirmed by reading** (`startTtsInstall` sets `phase: "running"`, and `GuideDetail.tsx` only loops on `downloading`, so a fresh install shows a "Downloading..." toast and no progress). It needs no synthesis, so it is the most likely reporter case on a first run. **Not fixed here:** Phase 2, owned by release-readiness Phase 1. | Phase 2 |
+| 2 | Synthesis failure masked as "# channels not specified" | **Confirmed.** Names that phonemize to nothing (`...`, `---`, an em dash, a lone space) exit 1 with that message; names with letters, digits, Cyrillic and CJK all speak. | `test_a_synthesis_error_is_reported_not_masked_by_the_wave_writer`, `test_a_name_that_produces_no_audio_says_so` |
+| 3 | Failure leaves a 0-byte cached file that later attempts reuse | **Confirmed.** The failed run above leaves a 0-byte `.wav`, and the old `os.Stat` cache check trusted it. | `test_a_failed_render_leaves_no_file_behind`, `TestPreviewIgnoresAZeroByteCachedFileAndReplacesIt`, `TestPreviewRejectsAnEmptyResultAndDoesNotKeepIt` |
+| 4 | Frozen build lacks piper data | **Not testable on a dev build.** Left for Phase 3. | Phase 3 |
+| 5 | Non-cp1252 project path | **Confirmed.** A project folder with CJK and accented characters wrote the WAV, then exited 1 with `'charmap' codec can't encode characters`; the second click hit the cache and worked. | `test_main_writes_utf8_to_a_legacy_codepage_pipe` |
+| 6 | Cache key ignores the voice | **Confirmed by reading and by test** (the hash used a constant provider and version). | `TestPreviewCacheIsKeyedOnTheVoice` |
+
+After the fix, the same real setup (real host code, real sidecar, real voice, non-ASCII project path) was run again: an unspeakable name fails with `"..." could not be spoken: the voice produced no audio for it.` every time and leaves no file, the next name speaks, and a repeated preview is served from the cache in about 1 ms.
 
 ## Proposed Solution
 
@@ -55,13 +70,13 @@ We believe surfacing real errors and removing the poisoned-cache and masking pat
 
 ## Open Questions
 
-- [ ] **T1. What was the exact error?** Ask for the toast text and whether it was the first preview after a fresh install. This selects among causes 1, 2, 4 and 5.
-- [ ] **T2. Which entry?** A name that phonemizes to nothing (cause 2 variant) versus every entry (causes 1, 3, 4).
-- [ ] **T3. Write to a temp file and rename, or catch the exception before `wave` closes?** Recommendation: render to a temp file next to the target and rename on success; remove on failure.
-- [ ] **T4. Timeout value** for `render-audio` and where to enforce it (context with deadline in `Run`). Recommendation: a named constant, generous for a cold start.
-- [ ] **T5. Cache the model hash?** Verify once per install, or key on size and mtime. Recommendation: hash at install and on change of size or mtime.
-- [ ] **T6. Frozen build data.** Add piper's `espeak-ng-data` through `collect_data` and a smoke test in the release workflow? Recommendation: yes; sequence with the release-readiness provisioning phases.
-- [ ] **T7. Message wording** for each failure (voice missing, name not speakable, sidecar unavailable). Recommendation: one short cause line plus the raw error in the details, per the interaction-audit conventions.
+- [ ] **T1. What was the exact error?** Still unanswered by the owner. Phase 1 reproduced every cause it could on a dev build instead (see Reproduction results): causes 2, 3, 5 and 6 are confirmed and fixed, cause 1 is confirmed by reading and waits for Phase 2. If the reporter's error was the first preview after a fresh install, cause 1 is the likely one.
+- [ ] **T2. Which entry?** Still unanswered. Both variants are now handled: a name that phonemizes to nothing fails legibly, and an entry that failed before no longer poisons the cache.
+- [x] **T3. Write to a temp file and rename, or catch the exception before `wave` closes?** Answered (recommendation adopted, D22): render to `<name>.<pid>.part` next to the target, rename on success, remove on failure. The wave writer is closed by hand so its own error cannot replace the real one.
+- [x] **T4. Timeout value** for `render-audio` and where to enforce it (context with deadline in `Run`). Answered: `previewTimeout` is 2 minutes in `guide/service.go`, enforced by a context deadline around the sidecar run in `Preview`. `Run` itself is unchanged and unbounded for the other commands.
+- [ ] **T5. Cache the model hash?** Recommendation adopted (hash at install and on change of size or mtime); it is a Phase 3 item and not built yet.
+- [ ] **T6. Frozen build data.** Recommendation adopted (yes: `collect_data` plus a release smoke test, sequenced with the release-readiness provisioning phases); Phase 3, not built yet.
+- [x] **T7. Message wording** for each failure (voice missing, name not speakable, sidecar unavailable). Answered: one cause line with the raw reason inside it, because the toast has no details area yet (the interaction audit owns that). Messages: `"<name>" could not be spoken: <reason>`; `The preview voice could not be loaded (<reason>). If its files are damaged, remove it in Settings and install it again.`; `The preview could not be saved (<reason>). Close anything that has the file open and try again.`; `the preview took longer than 2m0s and was stopped; try again, and restart the app if it keeps happening`; and the existing asset-required prompt for a missing voice. The UI drops any `Error:` prefix and capitalizes the first letter.
 
 ## Users & Context
 
@@ -115,9 +130,9 @@ We believe surfacing real errors and removing the poisoned-cache and masking pat
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Correct and legible failures | Real errors, temp-and-rename, zero-byte and voice-keyed cache, timeout, tests, messages | pending | - | T1 (answer first) | - |
-| 2 | Install flow honesty | `running` phase handling, single job, tests | pending | 1 | release-readiness Phase 1 (owner) | - |
-| 3 | Frozen build and latency | Piper data files, release smoke test, model verification cache | pending | - | 1 | - |
+| 1 | Correct and legible failures | Real errors, temp-and-rename, zero-byte and voice-keyed cache, timeout, tests, messages | complete | - | T1 (diagnosed instead) | [plan](implementation-plan.md) (S04) |
+| 2 | Install flow honesty | `running` phase handling, single job, tests | pending (folded into release-readiness Phase 1, stack S16) | 1 | release-readiness Phase 1 (owner) | - |
+| 3 | Frozen build and latency | Piper data files, release smoke test, model verification cache | pending (release-readiness stack, S16) | - | 1 | - |
 
 **Phase 1.** Goal: a failed preview never poisons later attempts and always says why. Success: tests for causes 2, 3, 5, 6; a manual retry after a forced failure works.
 **Phase 2.** Goal: first-use install works end to end in the UI. Success: Vitest with `phase:'running'`; a Go test for `startTtsInstall`.
@@ -142,7 +157,11 @@ Cross-cutting: `hostAPIVersion` unchanged unless a binding changes; each phase f
 | Short clips return base64 (prior, ADR 0012) | Kept | `/media` route | Standing decision |
 | Real progress only (prior, ADR 0015) | Install and preview show real state | Faked spinner | Standing decision |
 | Error handling | Temp file, rename on success (proposed) | Catch and delete | No partial file can exist |
-| Zero-byte cache | Treated as a miss (proposed) | Trust the cache | Poisoned-cache fix |
+| Zero-byte cache | Treated as a miss; a file no larger than a WAV header is a miss (delivered) | Trust the cache | Poisoned-cache fix |
+| Cache key | Hash input is the version tag, voice id, provider, version and text; the tag moved to `v2` so files rendered under the old key are never trusted (delivered) | Keep `v1` and add the voice | Old files may be zero-byte or belong to another voice |
+| Diagnosis without T1/T2 | Reproduce every cause on a dev build with the real sidecar and voice, and fix what is proven (S04) | Wait for the toast text | The owner was unavailable; causes 2, 3, 5 and 6 are confirmed, 1 by reading, 4 unproven |
+| Output encoding | The guide sidecar writes UTF-8 to stdout and stderr (`use_utf8_stdio`), the encoding the Go host reads | Encode the path to cp1252 | The host reads UTF-8; the fix stays local to the guide sidecar |
+| Timeout | 2 minutes, enforced in `Preview` only (delivered) | Time out every sidecar command | Other commands (build) are long-running by design |
 
 ## Research Summary
 
@@ -152,4 +171,4 @@ Cross-cutting: `hostAPIVersion` unchanged unless a binding changes; each phase f
 ---
 
 *Generated: 2026-09-20*
-*Status: DRAFT - needs validation*
+*Status: IN DELIVERY - Phase 1 complete (stack S04); Phases 2 and 3 pending*

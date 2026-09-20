@@ -31,6 +31,20 @@ belongs to instead of creating a duplicate.
 
 ![Story Bible alias field with a matching-entries dropdown open](../../images/ui/storybible-alias-dropdown.webp)
 
+## Hearing a name
+
+The play button beside a name, or beside one of its aliases, speaks it with the local preview
+voice. The first time, the app asks before it downloads the voice. If the preview fails, the
+message says why, and pressing play again tries again; a failed run never leaves a broken
+recording behind.
+
+| Message | What it means | What to do |
+| --- | --- | --- |
+| "... could not be spoken: the voice produced no audio for it" | The name is only punctuation or symbols, so the voice has nothing to say. | Preview an alias that has letters in it, or ignore the preview for this name. |
+| "The preview voice could not be loaded" | The downloaded voice is damaged or missing files. | In Settings, under TTS, choose "Remove local voice", then press play to download it again. |
+| "The preview took longer than 2m0s and was stopped" | The helper that speaks the name did not finish. | Try again. If it keeps happening, restart the app. |
+| "configure the Manuscript Guide executable" | The helper that builds the Story Bible was not found. | Reinstall the app. A build run from source needs its Manuscript Guide sidecar built first. |
+
 ---
 
 [← Proofing](proofing.md) · [Index](README.md) · [Teleprompter →](teleprompter.md)

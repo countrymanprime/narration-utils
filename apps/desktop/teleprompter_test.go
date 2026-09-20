@@ -23,6 +23,9 @@ const fakeTeleprompterEnv = "SHELL_FAKE_TELEPROMPTER"
 // before Go parses flags, so it can accept the host's --engine/--chapter/...
 // arguments. Like the real sidecar it exits once its --stop-file appears.
 func TestMain(m *testing.M) {
+	if os.Getenv(fakeGuideRenderEnv) != "" {
+		os.Exit(runFakeGuideRender())
+	}
 	if os.Getenv(fakeTeleprompterEnv) != "" {
 		runFakeTeleprompter()
 		os.Exit(0)

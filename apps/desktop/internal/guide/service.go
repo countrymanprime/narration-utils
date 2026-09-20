@@ -5,11 +5,14 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
@@ -19,10 +22,13 @@ type Service struct {
 	project, python, backend string
 	settings                 *settings.Store
 	sidecars                 *process.Supervisor
+	previewTimeout           time.Duration
+	previewLocksMu           sync.Mutex
+	previewLocks             map[string]*sync.Mutex
 }
 
 func New(project, python, backend string, store *settings.Store, sidecars *process.Supervisor) *Service {
-	return &Service{project: project, python: python, backend: backend, settings: store, sidecars: sidecars}
+	return &Service{project: project, python: python, backend: backend, settings: store, sidecars: sidecars, previewTimeout: previewTimeout}
 }
 func (s *Service) guidePath() string {
 	return filepath.Join(s.project, "ManuscriptGuide", "manuscript_guide.json")
@@ -105,6 +111,12 @@ func normalizeEntity(entity map[string]any) error {
 	return nil
 }
 func (s *Service) Run(args ...string) (string, error) {
+	return s.runContext(context.Background(), args...)
+}
+
+// runContext is Run with a caller-owned deadline: when ctx ends the supervisor
+// kills the sidecar and the call returns.
+func (s *Service) runContext(ctx context.Context, args ...string) (string, error) {
 	if s.project == "" {
 		return "", fmt.Errorf("save the REAPER project and import a manuscript first")
 	}
@@ -115,7 +127,7 @@ func (s *Service) Run(args ...string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	code, out, failure, e := s.sidecars.Run(context.Background(), program, fullArgs...)
+	code, out, failure, e := s.sidecars.Run(ctx, program, fullArgs...)
 	if e != nil {
 		return "", e
 	}
@@ -261,38 +273,152 @@ func (s *Service) VocabularyCandidates() ([]string, error) {
 	sort.Slice(values, func(left, right int) bool { return strings.ToLower(values[left]) < strings.ToLower(values[right]) })
 	return values, nil
 }
-func (s *Service) Preview(id string, alias *int, model, provider, version string) ([]byte, error) {
+
+const (
+	// previewTimeout bounds one render-audio run. A cold start of the frozen
+	// sidecar loads onnxruntime and a 114 MB voice model before it speaks, so
+	// this is generous; it exists so a hung sidecar cannot leave the play
+	// button spinning forever.
+	previewTimeout = 2 * time.Minute
+	// previewCacheTag versions the cache key. Bump it when the key's inputs
+	// change so files rendered under the old key are never trusted again (v1
+	// ignored the voice id).
+	previewCacheTag = "narration-utils-tts-preview-v2"
+	// wavHeaderBytes is the size of a canonical WAV header. A file no larger
+	// than that holds no samples, so it is never a usable preview.
+	wavHeaderBytes = 44
+)
+
+// PreviewVoice is the voice a preview is rendered with. Every field is part of
+// the cache key except Model, which is the path the sidecar loads.
+type PreviewVoice struct{ ID, Model, Provider, Version string }
+
+// previewFileName is the cache file for one voice speaking one text.
+func previewFileName(voice PreviewVoice, spoken string) string {
+	key := strings.Join([]string{previewCacheTag, voice.ID, voice.Provider, voice.Version, spoken}, "\x00")
+	hash := sha256.Sum256([]byte(key))
+	return hex.EncodeToString(hash[:]) + ".wav"
+}
+
+// spokenName returns the text a preview speaks: the entity's name, or one of
+// its aliases when alias is set. It is empty when the entry no longer exists.
+func spokenName(entities []map[string]any, id string, alias *int) string {
+	for _, entity := range entities {
+		if entity["id"] != id {
+			continue
+		}
+		if alias == nil {
+			spoken, _ := entity["canonical_name"].(string)
+			return strings.TrimSpace(spoken)
+		}
+		values, _ := entity["aliases"].([]any)
+		if *alias < 0 || *alias >= len(values) {
+			return ""
+		}
+		value, _ := values[*alias].(map[string]any)
+		spoken, _ := value["text"].(string)
+		return strings.TrimSpace(spoken)
+	}
+	return ""
+}
+
+// cachedPreview returns a previously rendered WAV. A file with no samples
+// (a run that failed before this check existed) is a miss, not audio.
+func cachedPreview(path string) ([]byte, bool) {
+	audio, err := os.ReadFile(path)
+	if err != nil || len(audio) <= wavHeaderBytes {
+		return nil, false
+	}
+	return audio, true
+}
+
+// discardPreview removes what a failed run left behind so it cannot be mistaken
+// for a cached preview: the file itself when it holds no samples (a valid one is
+// never deleted), and the sidecar's "<name>.<pid>.part" temp files. The temp
+// files are found by listing the directory, because the project path may hold
+// characters filepath.Glob treats as a pattern.
+func discardPreview(path string) {
+	if _, ok := cachedPreview(path); !ok {
+		_ = os.Remove(path)
+	}
+	dir, name := filepath.Dir(path), filepath.Base(path)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), name+".") && strings.HasSuffix(entry.Name(), ".part") {
+			_ = os.Remove(filepath.Join(dir, entry.Name()))
+		}
+	}
+}
+
+// previewLock returns the lock for one cache file. Two clicks (or an alias and a
+// voice change) can ask for the same file while the first render is running; the
+// second waits and then finds the cache filled instead of racing the first
+// sidecar's rename and cleanup.
+func (s *Service) previewLock(name string) *sync.Mutex {
+	s.previewLocksMu.Lock()
+	defer s.previewLocksMu.Unlock()
+	if s.previewLocks == nil {
+		s.previewLocks = map[string]*sync.Mutex{}
+	}
+	if s.previewLocks[name] == nil {
+		s.previewLocks[name] = &sync.Mutex{}
+	}
+	return s.previewLocks[name]
+}
+
+// sidecarReason reduces a sidecar failure to the reason it logged: the text
+// after its last "ERROR: " line, without the log lines that came before it.
+func sidecarReason(err error) error {
+	lines := strings.Split(strings.TrimSpace(err.Error()), "\n")
+	for index := len(lines) - 1; index >= 0; index-- {
+		if reason, found := strings.CutPrefix(strings.TrimSpace(lines[index]), "ERROR: "); found && reason != "" {
+			return errors.New(reason)
+		}
+	}
+	return err
+}
+
+// Preview returns a WAV of the voice speaking the entry's name or alias, reusing
+// a cached render when one exists. A failed, empty or timed-out render leaves no
+// file behind, so the next attempt always starts clean.
+func (s *Service) Preview(id string, alias *int, voice PreviewVoice) ([]byte, error) {
 	entities, err := s.Entities()
 	if err != nil {
 		return nil, err
 	}
-	var spoken string
-	for _, entity := range entities {
-		if entity["id"] == id {
-			if alias == nil {
-				spoken, _ = entity["canonical_name"].(string)
-			} else if values, ok := entity["aliases"].([]any); ok && *alias >= 0 && *alias < len(values) {
-				if value, ok := values[*alias].(map[string]any); ok {
-					spoken, _ = value["text"].(string)
-				}
-			}
-		}
-	}
-	if strings.TrimSpace(spoken) == "" {
+	spoken := spokenName(entities, id, alias)
+	if spoken == "" {
 		return nil, fmt.Errorf("the requested Story Bible name no longer exists")
 	}
-	hash := sha256.Sum256([]byte("narration-utils-tts-preview-v1\x00" + provider + "\x00" + version + "\x00" + spoken))
-	name := hex.EncodeToString(hash[:]) + ".wav"
+	name := previewFileName(voice, spoken)
 	dir := filepath.Join(s.project, "ManuscriptGuide", "audio", "tts")
 	out := filepath.Join(dir, name)
-	if _, err := os.Stat(out); err != nil {
-		args := []string{"render-audio", "--guide", s.guidePath(), "--entity-id", id, "--audio-dir", dir, "--piper-model", model, "--output-name", name}
-		if alias != nil {
-			args = append(args, "--alias-index", fmt.Sprint(*alias))
-		}
-		if _, err = s.Run(args...); err != nil {
-			return nil, err
-		}
+	lock := s.previewLock(name)
+	lock.Lock()
+	defer lock.Unlock()
+	if audio, ok := cachedPreview(out); ok {
+		return audio, nil
 	}
-	return os.ReadFile(out)
+	args := []string{"render-audio", "--guide", s.guidePath(), "--entity-id", id, "--audio-dir", dir, "--piper-model", voice.Model, "--output-name", name}
+	if alias != nil {
+		args = append(args, "--alias-index", fmt.Sprint(*alias))
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), s.previewTimeout)
+	defer cancel()
+	if _, err = s.runContext(ctx, args...); err != nil {
+		discardPreview(out)
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return nil, fmt.Errorf("the preview took longer than %s and was stopped; try again, and restart the app if it keeps happening", s.previewTimeout.Round(time.Second))
+		}
+		return nil, sidecarReason(err)
+	}
+	audio, ok := cachedPreview(out)
+	if !ok {
+		discardPreview(out)
+		return nil, fmt.Errorf("the preview voice produced no audio for %q", spoken)
+	}
+	return audio, nil
 }

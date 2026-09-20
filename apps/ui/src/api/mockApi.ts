@@ -50,6 +50,13 @@ function basename(path: string): string {
   return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 }
 
+/**
+ * A real, silent 22.05 kHz mono WAV (a 44-byte header and 200 bytes of samples). The Story Bible preview hook
+ * rejects an empty payload (the host never sends one), so the mock must send audio.
+ */
+const MOCK_PREVIEW_WAV_BASE64 =
+  'UklGRuwAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YcgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
+
 const MOCK_AUDIO_SECONDS = 600;
 let mockAudioUrl: string | undefined;
 
@@ -95,6 +102,8 @@ export function createMockApi(
     noManuscript?: boolean;
     manuscriptCandidate?: { path: string; name: string };
     teleprompter?: TeleprompterSeed;
+    /** Makes every Story Bible preview fail with this text once the voice is installed. */
+    previewError?: string;
   } = {},
 ): NarrationApi {
   let entities = wireClone(WIRE_ENTITIES);
@@ -506,10 +515,14 @@ export function createMockApi(
         ...entity,
         relationships: entity.relationships.filter((relationship) => !(relationship.id === otherId && relationship.label === label)),
       })),
-    guidePreview: async () =>
-      ttsInstalled
-        ? { status: 'ready' as const, audioBase64: '', mimeType: 'audio/wav' }
-        : { status: 'asset_required' as const, voice: mockVoice, installState: 'not_installed' as const, downloadSize: mockVoice.downloadSize },
+    guidePreview: async () => {
+      if (!ttsInstalled) {
+        return { status: 'asset_required' as const, voice: mockVoice, installState: 'not_installed' as const, downloadSize: mockVoice.downloadSize };
+      }
+      // The failing seam behind ?mockPreviewError=<text>, so a real host failure can be seen without a host.
+      if (initial.previewError) throw new Error(initial.previewError);
+      return { status: 'ready' as const, audioBase64: MOCK_PREVIEW_WAV_BASE64, mimeType: 'audio/wav' };
+    },
     ttsCatalog: async () =>
       ({
         catalogVersion: 1,

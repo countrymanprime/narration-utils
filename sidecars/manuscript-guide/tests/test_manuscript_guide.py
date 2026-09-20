@@ -1,7 +1,9 @@
 import argparse
 import importlib.util
+import io
 import json
 import re
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -272,6 +274,176 @@ class ManuscriptGuideTests(unittest.TestCase):
             load.assert_called_once_with(str(root / "voice.onnx"))
             voice.synthesize_wav.assert_called_once()
             self.assertTrue((root / "ManuscriptGuide" / "audio" / "preview.wav").is_file())
+
+    def _render(self, root: Path, voice, name: str = "Dawnspire", output_name: str = "preview.wav") -> Path:
+        """Runs render_audio with a fake Piper voice against a one-entity guide and
+        returns the audio directory so a test can inspect what was left behind."""
+        guide_file = root / "ManuscriptGuide" / "manuscript_guide.json"
+        guide.write_json(str(guide_file), {"entities": [{"id": "entity-1", "canonical_name": name, "aliases": []}]})
+        audio_dir = root / "ManuscriptGuide" / "audio"
+        args = argparse.Namespace(
+            guide=str(guide_file),
+            entity_id="entity-1",
+            audio_dir=str(audio_dir),
+            piper_model=str(root / "voice.onnx"),
+            alias_index=None,
+            output_name=output_name,
+        )
+        with patch.object(guide.PiperVoice, "load", return_value=voice):
+            guide.render_audio(args)
+        return audio_dir
+
+    @staticmethod
+    def _speaking_voice(frames: int = 100) -> MagicMock:
+        def synthesize(_spoken, wav_file):
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(22050)
+            wav_file.writeframes(b"\0\0" * frames)
+
+        voice = MagicMock()
+        voice.synthesize_wav.side_effect = synthesize
+        return voice
+
+    def test_a_synthesis_error_is_reported_not_masked_by_the_wave_writer(self):
+        # Piper initialises espeak lazily inside synthesize_wav, before it has set the
+        # WAV format. Closing that writer raises "# channels not specified", which used
+        # to replace the real error (reproduced against the real voice on a dev build).
+        voice = MagicMock()
+        voice.synthesize_wav.side_effect = RuntimeError("espeak-ng data directory not found")
+        with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError) as caught:
+            self._render(Path(temporary), voice)
+        self.assertIn("could not be spoken", str(caught.exception))
+        self.assertIn("espeak-ng data directory not found", str(caught.exception))
+        self.assertNotIn("channels", str(caught.exception))
+
+    def test_a_name_that_produces_no_audio_says_so(self):
+        # "..." phonemizes to nothing, so synthesize_wav never sets a format or writes a frame.
+        voice = MagicMock()
+        voice.synthesize_wav.side_effect = lambda _spoken, _wav: None
+        with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError) as caught:
+            self._render(Path(temporary), voice, name="...")
+        self.assertIn("could not be spoken", str(caught.exception))
+        self.assertIn("no audio", str(caught.exception))
+
+    def test_a_failed_render_leaves_no_file_behind(self):
+        # A zero-byte WAV at the cache path was trusted by every later preview.
+        failing = MagicMock()
+        failing.synthesize_wav.side_effect = RuntimeError("boom")
+        silent = MagicMock()
+        silent.synthesize_wav.side_effect = lambda _spoken, _wav: None
+        for label, voice in (("raises", failing), ("silent", silent)):
+            with self.subTest(label), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                with self.assertRaises(ValueError):
+                    self._render(root, voice)
+                audio_dir = root / "ManuscriptGuide" / "audio"
+                self.assertEqual([], sorted(path.name for path in audio_dir.iterdir()))
+
+    def test_a_render_appears_at_the_target_only_once_it_is_complete(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target_dir = root / "ManuscriptGuide" / "audio"
+            during_synthesis: list[bool] = []
+            inner = self._speaking_voice()
+
+            def synthesize(spoken, wav_file):
+                during_synthesis.append((target_dir / "preview.wav").exists())
+                inner.synthesize_wav(spoken, wav_file)
+
+            voice = MagicMock()
+            voice.synthesize_wav.side_effect = synthesize
+            audio_dir = self._render(root, voice)
+            self.assertEqual([False], during_synthesis)
+            self.assertEqual(["preview.wav"], sorted(path.name for path in audio_dir.iterdir()))
+            self.assertGreater((audio_dir / "preview.wav").stat().st_size, 44)
+
+    def test_an_error_with_no_message_still_names_itself(self):
+        voice = MagicMock()
+        voice.synthesize_wav.side_effect = RuntimeError()
+        with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError) as caught:
+            self._render(Path(temporary), voice)
+        self.assertTrue(str(caught.exception).endswith("could not be spoken: RuntimeError"), str(caught.exception))
+
+    def test_a_render_that_cannot_be_moved_into_place_leaves_nothing_and_says_so(self):
+        # On Windows os.replace fails while another program (antivirus, a player) holds the target open.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            real_replace = guide.os.replace
+
+            def replace(source, target):
+                if str(target).endswith("preview.wav"):
+                    raise PermissionError(5, "Access is denied")
+                real_replace(source, target)  # the guide file itself is also written with os.replace
+
+            with patch.object(guide.os, "replace", side_effect=replace), self.assertRaises(ValueError) as caught:
+                self._render(root, self._speaking_voice())
+            self.assertIn("could not be saved", str(caught.exception))
+            self.assertIn("Access is denied", str(caught.exception))
+            self.assertEqual([], sorted(path.name for path in (root / "ManuscriptGuide" / "audio").iterdir()))
+
+    def test_partial_files_left_by_a_killed_run_are_swept_up_by_the_next_render(self):
+        # The host kills a render at its timeout, so no cleanup runs and the pid in the name means nothing overwrites it.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            audio_dir = root / "ManuscriptGuide" / "audio"
+            audio_dir.mkdir(parents=True)
+            (audio_dir / "preview.wav.4242.part").write_bytes(b"partial")
+            (audio_dir / "other.wav.4242.part").write_bytes(b"another output's file")
+            self._render(root, self._speaking_voice())
+            self.assertEqual(["other.wav.4242.part", "preview.wav"], sorted(path.name for path in audio_dir.iterdir()))
+
+    def test_a_voice_that_cannot_be_loaded_is_reported_as_the_voice(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            guide_file = root / "guide.json"
+            guide.write_json(str(guide_file), {"entities": [{"id": "entity-1", "canonical_name": "Dawnspire", "aliases": []}]})
+            args = argparse.Namespace(
+                guide=str(guide_file),
+                entity_id="entity-1",
+                audio_dir=str(root / "audio"),
+                piper_model=str(root / "missing.onnx"),
+                alias_index=None,
+                output_name="preview.wav",
+            )
+            missing = FileNotFoundError(2, "No such file or directory", "missing.onnx.json")
+            with patch.object(guide.PiperVoice, "load", side_effect=missing), self.assertRaises(ValueError) as caught:
+                guide.render_audio(args)
+        self.assertIn("preview voice could not be loaded", str(caught.exception))
+        self.assertIn("missing.onnx.json", str(caught.exception))
+
+    def test_main_writes_utf8_to_a_legacy_codepage_pipe(self):
+        # A project path with characters outside cp1252 made the sidecar exit 1 after it
+        # had written the WAV (reproduced on Windows, where a pipe defaults to cp1252).
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "项目"
+            guide_file = root / "ManuscriptGuide" / "manuscript_guide.json"
+            guide.write_json(str(guide_file), {"entities": [{"id": "entity-1", "canonical_name": "Dawnspire", "aliases": []}]})
+            out_pipe, err_pipe = io.BytesIO(), io.BytesIO()
+            legacy_out = io.TextIOWrapper(out_pipe, encoding="cp1252", write_through=True)
+            legacy_err = io.TextIOWrapper(err_pipe, encoding="cp1252", write_through=True)
+            argv = [
+                "manuscript_guide.py",
+                "render-audio",
+                "--guide",
+                str(guide_file),
+                "--entity-id",
+                "entity-1",
+                "--audio-dir",
+                str(root / "audio"),
+                "--piper-model",
+                "v.onnx",
+            ]
+            with (
+                patch.object(guide.PiperVoice, "load", return_value=self._speaking_voice(10)),
+                patch.object(sys, "argv", argv),
+                patch.object(sys, "stdout", legacy_out),
+                patch.object(sys, "stderr", legacy_err),
+            ):
+                guide.main()
+            printed = out_pipe.getvalue().decode("utf-8")
+            self.assertTrue(printed.startswith("AUDIO|"), printed)
+            self.assertIn("项目", printed)
 
 
 def _paragraphs(*texts: str) -> list[dict[str, str]]:
