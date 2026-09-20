@@ -24,7 +24,7 @@ import { SlideOver } from '../primitives/SlideOver';
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
-import { TooltipTarget } from '../primitives/Tooltip';
+import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { CANONICAL_PREVIEW, previewKey, usePreviewAudio } from './usePreviewAudio';
 
 export function GuideDetail({
@@ -375,12 +375,8 @@ export function GuideDetail({
           </div>
           <div>
             <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">
-              Pronunciation{' '}
-              <TooltipTarget text="Generated pronunciation; the waveform button plays an audio preview.">
-                <span className="inline-flex size-[15px] cursor-help items-center justify-center rounded-full border border-[var(--text-faint)] font-['IBM_Plex_Mono',monospace] text-[0.68rem] text-[var(--text-faint)] hover:border-[var(--accent)] hover:text-[var(--accent)]">
-                  i
-                </span>
-              </TooltipTarget>
+              Pronunciation
+              <Tooltip text="Generated pronunciation; the waveform button plays an audio preview." />
             </div>
             <div style={{ position: 'relative', width: '100%' }}>
               <div

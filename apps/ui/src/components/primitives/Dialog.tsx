@@ -3,6 +3,7 @@ import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useRef, useState, type ReactNode } from 'react';
+import { HINT_POPUP_SELECTOR } from './hintLayer';
 
 type DialogProps = {
   title: string;
@@ -75,7 +76,8 @@ export function Dialog({
       disablePointerDismissal
       onOpenChange={(_open, details) => {
         if (details.reason !== 'escape-key') return;
-        if (!dismiss || details.event.defaultPrevented) details.cancel();
+        // Escape belongs to a hint that is showing (a tooltip inside the dialog), and to a handler that already took it.
+        if (!dismiss || details.event.defaultPrevented || document.querySelector(HINT_POPUP_SELECTOR)) details.cancel();
         else dismiss();
       }}
     >
