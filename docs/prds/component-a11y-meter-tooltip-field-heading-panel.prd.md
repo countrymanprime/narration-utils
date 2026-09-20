@@ -2,6 +2,8 @@
 
 **Supersedes:** `docs/design/known-ui-defects.md` (defect 5 [medium], defect 6 [medium], defect 7 [low]; the file's last revision is `b613933`, recover it with `git show b613933:docs/design/known-ui-defects.md`)
 
+**Reshaped by:** [`base-ui-primitive-foundation.prd.md`](base-ui-primitive-foundation.prd.md) (owner decision 2026-09-20: `Tooltip` and `Field` are built on Base UI behind our own wrappers instead of hand-written id wiring and child cloning). `MeterBar`, `Heading` and `Panel` stay custom. Where this PRD's Open Questions describe a hand-rolled mechanism (Q2, Q3, Q7, Q8), the notes marked "Reshaped" below win.
+
 ## Problem Statement
 
 Five shared primitives have accessibility gaps that every page inherits: `MeterBar` means nothing to a screen reader, the `Tooltip` info icon and every tooltip target point at an element id that does not exist (and the icon is unreachable by keyboard), and `Field`, `Heading` and `Panel` cannot express an error, a heading level or a named region. Narrators who navigate by keyboard or screen reader miss the explanatory text behind the info icons and the recording-progress breakdown; developers keep working around the gaps page by page. The `Tooltip` fix is also a hard prerequisite for the planned teleprompter flagged-word review, which is designed around `TooltipTarget`.
@@ -30,6 +32,7 @@ We believe giving these primitives correct semantics at the source will let keyb
 
 ## What We're NOT Building
 
+- Hand-written id wiring, child cloning or focus code for `Tooltip` and `Field`: those come from Base UI behind the wrappers (owner decision 2026-09-20; see the foundation PRD). `MeterBar` stays custom because Base UI's Meter is single-value.
 - Focusable `MeterBar` segments (many tab stops for information the text alternative already carries).
 - Migrating `ScopedSetting`/`AddNoteDialog` raw inputs to `Field` - separate refactor.
 - A motion-token system (`motion-and-animation.md` stays a proposal); only the `motion-safe:` guard.
@@ -52,12 +55,12 @@ We believe giving these primitives correct semantics at the source will let keyb
 ## Open Questions
 
 - [ ] **1. What is a `MeterBar` semantically?** Options: (a) `role="meter"` with a single value (a segmented multi-status bar has no single scalar, so it under-describes); (b) `role="img"` with an `aria-label` composed from a required `label` prop plus the segment tooltip strings; (c) a visually hidden list of segments. Recommendation: (b). Segments stay pointer-only tooltips because the text alternative carries the same information.
-- [ ] **2. How does a tooltip attach its description?** Options: (a) clone the single child element and inject `aria-describedby` (and use the child's rect); keep a wrapper only for non-element children and disabled buttons; (b) keep the wrapper and add `role="group"`; (c) wrap with `display: contents` (breaks `getBoundingClientRect`). Recommendation: (a). It is also what inline flagged words need.
-- [ ] **3. Info icon as a real button?** Options: (a) `<button type="button" aria-label>` (adds a tab stop per icon; Settings has one per field); (b) keep a span and expose the text with `aria-description`/`title`. Recommendation: (a); one extra tab stop per explanation is the price of keyboard access. Confirm the user accepts longer tab order on Settings.
-- [ ] **4. How far to go on WCAG 1.4.13?** Options: (a) Escape dismiss only; (b) also make the tooltip hoverable and persistent (remove `pointer-events-none`, keep open while the pointer is over it); (c) neither. Recommendation: (a) now; (b) only if the user wants formal 1.4.13 conformance.
+- [ ] **2. How does a tooltip attach its description?** Options: (a) clone the single child element and inject `aria-describedby` (and use the child's rect); keep a wrapper only for non-element children and disabled buttons; (b) keep the wrapper and add `role="group"`; (c) wrap with `display: contents` (breaks `getBoundingClientRect`). Recommendation: (a). It is also what inline flagged words need. **Reshaped (2026-09-20):** Base UI `Tooltip.Trigger` with `render` attaches the description and handles the id wiring, so there is no hand-written cloning; the `Tooltip` wrapper exposes it. Inline flagged words use `render={<mark />}` (also covers Q8).
+- [ ] **3. Info icon as a real button?** Options: (a) `<button type="button" aria-label>` (adds a tab stop per icon; Settings has one per field); (b) keep a span and expose the text with `aria-description`/`title`. Recommendation: (a); one extra tab stop per explanation is the price of keyboard access. Confirm the user accepts longer tab order on Settings. **Reshaped (2026-09-20):** Base UI's docs treat Tooltip as sighted-only and recommend Popover for info icons; the foundation PRD's Q4 recommends a real button opening a Base UI Popover, keeping `aria-label="More information"`. The tab-stop trade-off is unchanged.
+- [ ] **4. How far to go on WCAG 1.4.13?** Options: (a) Escape dismiss only; (b) also make the tooltip hoverable and persistent (remove `pointer-events-none`, keep open while the pointer is over it); (c) neither. Recommendation: (a) now; (b) only if the user wants formal 1.4.13 conformance. **Reshaped:** check Base UI's hoverable-popup default (TBD - needs research, tracked in the foundation PRD) before choosing; it may already satisfy (b).
 - [ ] **5. `Heading` level API.** Options: (a) `level?: 1 | 2 | 3` (default 1) that changes the tag only, visuals unchanged; (b) tag plus a `size` prop; (c) a separate `SectionHeading`. Recommendation: (a); add `size` only when a caller needs a different look.
 - [ ] **6. `Panel` API.** Options: (a) `title?: string` renders an `<h2>` linked with `aria-labelledby`, plus `actions?: ReactNode` in a header row; (b) `label` (aria-label only); (c) no change. Recommendation: (a), additive, adoption at call sites deferred.
-- [ ] **7. `Field` error/hint now or on first need?** Options: (a) add `hint`, `error`, `aria-invalid`, `aria-describedby` now (cheap, listed defect); (b) wait for a consumer (YAGNI). Recommendation: (a) at Could priority in the last phase, so it can be dropped if scope tightens.
+- [ ] **7. `Field` error/hint now or on first need?** Options: (a) add `hint`, `error`, `aria-invalid`, `aria-describedby` now (cheap, listed defect); (b) wait for a consumer (YAGNI). Recommendation: (a) at Could priority in the last phase, so it can be dropped if scope tightens. **Reshaped (2026-09-20):** build `Field` on Base UI `Field` (Root, Label, Control, Description, Error); `aria-invalid` and `aria-describedby` come from the library, so this stops being hand-wiring and moves to foundation Phase 3.
 - [ ] **8. Inline mode for flowing text.** Options: (a) `TooltipTarget` supports `as="span"` with `display: inline` and measures the child; (b) leave inline use to the teleprompter phase. Recommendation: (a) in this PRD's Phase 1, because it is the same code path as Q2.
 
 ## Users & Context
@@ -110,25 +113,24 @@ Phases 1-3; Phase 4 is sweep and adoption.
 
 | Risk | Likelihood | Mitigation |
 | --- | --- | --- |
-| Cloning the child breaks children that do not forward props/refs | Medium | Restrict to single element children; fall back to the wrapper for anything else; cover NavButton, Pill, MeterBar, GuideDetail, Results in tests |
+| Base UI `Tooltip.Trigger` `render` prop needs children that forward props/refs | Medium | Cover NavButton, Pill, MeterBar, GuideDetail, Results in tests; keep the disabled-child wrapper the `proofing/disabled-button` driver selects (replaces the hand-rolled cloning risk) |
 | Visual drivers or PNGs shift (icon becomes a button, focus ring) | Medium | Reset button styles to the current look; run the visual suite for `home/info-tooltip`, `global/tooltip`, `proofing/disabled-button`, `global/nav-rail-tooltip` at all viewports |
 | More tab stops lengthen Settings navigation | Low | Accept per Q3, or revisit |
 | Composed meter label too long for a screen reader | Low | Cap to segment count (5 statuses) |
 | Escape handler fights dialog Escape (dialog PRD) | Low | Tooltip handles Escape only while shown and stops propagation only in that case |
-| Top-layer dialog hides the body-level tooltip layer | Medium (latent; no tooltip is inside a dialog today) | Track as a follow-up if the dialog PRD chooses native `<dialog>`; a portal-container option belongs to `Tooltip.tsx`, which this PRD owns |
 
 ## Implementation Phases
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Tooltip reachability | Focusable icon button, unique ids, describedby on the child, Escape, inline mode, drop `key`, tests and stories; closes defect 6 | pending | 2, 3 | - | - |
-| 2 | MeterBar semantics | `label` + composed `role="img"`, `motion-safe:` transition, `AudiobookEstimatePanel` wiring, stories; closes defect 5 | pending | 1, 3 | - | - |
-| 3 | Field / Heading / Panel | `level`, `title`/`actions`, `hint`/`error`/`aria-invalid`; additive, stories and tests; closes defect 7 | pending | 1, 2 | - | - |
+| 1 | Tooltip reachability | Delivered by foundation Phase 3 (Tooltip on Base UI: focusable info button/Popover, unique ids, Escape, inline mode via `render`, drop `key`, tests and stories); closes defect 6 | pending | 2, 3 | Foundation 1 | - |
+| 2 | MeterBar semantics | `label` + composed `role="img"`, `motion-safe:` transition, `AudiobookEstimatePanel` wiring, stories; closes defect 5 (stays custom; no Base UI dependency) | pending | 1, 3 | - | - |
+| 3 | Field / Heading / Panel | `Heading` `level` and `Panel` `title`/`actions` as written; `Field` `hint`/`error`/`aria-invalid` delivered by foundation Phase 3 on Base UI `Field`; additive, stories and tests; closes defect 7 | pending | 1, 2 | Foundation 1 (Field only) | - |
 | 4 | Sweep and adoption | PNG review of all Tooltip consumers, `docs/ui` regen, `design-system.md`, optional `Panel` title adoption at 4 call sites | pending | No | 1, 2, 3 | - |
 
 ### Phase Details
 
-**Phase 1 - Tooltip reachability.** Goal: defect 6 gone and the teleprompter prerequisite met. Scope: `Tooltip.tsx`, `Tooltip.test.tsx`, `Tooltip.stories.tsx`; verify (change-impact-scan) `NavButton`, `Pill`, `MeterBar`, `EntitySummary`, `Manuscript`, `Home`, `Results`, `Transcript`, `Guide`, `GuideDetail`, `ScopedSetting`, `AudiobookEstimatePanel`. Success signal: no dangling ids, Tab shows the tooltip, the two drivers still work, PNGs unchanged at four viewports. Also write a short ADR (the next free ADR number at merge time; 0027 at d5cc994, and other PRDs plan ADRs too) recording Q2 (description attaches to the cloned child) and Q3 (the info icon becomes a tab stop): 12 consumers and the teleprompter flagged-word design rely on the `TooltipTarget` contract.
+**Phase 1 - Tooltip reachability.** Goal: defect 6 gone and the teleprompter prerequisite met. Scope: `Tooltip.tsx`, `Tooltip.test.tsx`, `Tooltip.stories.tsx`; verify (change-impact-scan) `NavButton`, `Pill`, `MeterBar`, `EntitySummary`, `Manuscript`, `Home`, `Results`, `Transcript`, `Guide`, `GuideDetail`, `ScopedSetting`, `AudiobookEstimatePanel`. Success signal: no dangling ids, Tab shows the tooltip, the two drivers still work, PNGs unchanged at four viewports. **Reshaped:** no ADR here; the single Base UI ADR is written by foundation Phase 1. The Q3 tab-stop decision (the info icon becomes a tab stop) is still recorded, in that Phase 3 PR's description and `design-system.md`, because 12 consumers and the teleprompter flagged-word design rely on the `TooltipTarget` contract.
 
 **Phase 2 - MeterBar.** Goal: defect 5 gone. Scope: `MeterBar.tsx`, `MeterBar.stories.tsx`, `AudiobookEstimatePanel.tsx` (pass `label`). Success signal: `getByRole('img', { name: /Recording progress/ })`, reduced-motion assertion, `home` states unchanged visually.
 
@@ -144,7 +146,7 @@ Phases 1-3 touch disjoint files and can be developed concurrently; merge order p
 
 Files owned: `primitives/Tooltip.tsx` (+test, stories), `MeterBar.tsx` (+stories), `Field.tsx`, `Heading.tsx`, `Panel.tsx` (+stories), `home/AudiobookEstimatePanel.tsx` (Phase 2 wiring; Phase 4 optional `Panel` title), optionally `TracksPage.tsx`, `Transcript.tsx`, `TeleprompterPage.tsx` (Phase 4 adoption only), the Status cells of this PRD's phase table. Does NOT touch `styles.css`, `Dialog*`, `WorkDialog`, `ConfirmDialog`, `NavButton.tsx`, `Highlight.tsx`, `ScopedSetting.tsx`, `tests/visual/*`, the ui-atlas-kit.
 - Can run concurrently with: the dialog PRD (disjoint; only the Tooltip-in-dialog stacking follow-up crosses over), the palette PRD (disjoint files; both regenerate `docs/ui/**`), the settings-layout PRD (`ScopedSetting.tsx` renders `Tooltip` but is not edited here), the test-stability PRD's Go/frontend-test phases.
-- Sequencing with other work: `teleprompter-manuscript-integration.prd.md` Phase 7 (flags UI) must start after Phase 1 here; `review-dashboard-and-findings-adoption.prd.md` new primitives should use the fixed Tooltip. Phase 4's `Panel` adoption edits `TeleprompterPage.tsx`, which teleprompter phases also edit; keep it optional and rebase.
+- Sequencing with other work: `teleprompter-manuscript-integration.prd.md` Phase 7 (flags UI) must start after Phase 1 here, which is delivered by foundation Phase 3 (`base-ui-primitive-foundation.prd.md`); Phases 1 and 3 here collide with foundation Phase 3 on `Tooltip.tsx` and `Field.tsx`, so run them as one stream; `review-dashboard-and-findings-adoption.prd.md` new primitives should use the fixed Tooltip. Phase 4's `Panel` adoption edits `TeleprompterPage.tsx`, which teleprompter phases also edit; keep it optional and rebase.
 - Generated/shared files that always conflict: `docs/ui/**`, `docs/images/ui/*.webp`, `docs/design/design-system.md` (Phase 4 edits the primitives table; the dialog and palette PRDs edit other rows).
 
 ## Decisions Log
@@ -159,8 +161,9 @@ Files owned: `primitives/Tooltip.tsx` (+test, stories), `MeterBar.tsx` (+stories
 | Reduced motion for MeterBar is wanted but unbuilt (prior decision, `motion-and-animation.md`) | Do it with `motion-safe:` now | Wait for a motion system | Cheapest correct step |
 | Nothing merges without the user (prior decision, CLAUDE.md) | One PR per phase | - | - |
 | MeterBar is `role="img"` with a composed label (proposed) | (b) | `role="meter"`, hidden list | Q1 |
-| Description attaches to the cloned child (proposed) | (a) | Wrapper, `display: contents` | Q2 |
-| Info icon is a button (proposed) | (a) | span + `aria-description` | Q3 |
+| Description attaches through Base UI `Tooltip.Trigger` `render` (owner decision 2026-09-20; was: cloned child) | Base UI behind our `Tooltip` wrapper | Hand-written cloning, wrapper, `display: contents` | Q2; hand-rolling is extra work for behaviour and accessibility |
+| Info icon is a real button opening a Base UI Popover (proposed in foundation Q4; was: button + tooltip) | Button + Popover | span + `aria-description` | Q3; Base UI documents Tooltip as sighted-only |
+| Mechanism for `Tooltip` and `Field` is Base UI (owner decision 2026-09-20) | See `base-ui-primitive-foundation.prd.md` | Radix, React Aria, hand-rolled | One library behind our own primitives |
 
 ## Research Summary
 

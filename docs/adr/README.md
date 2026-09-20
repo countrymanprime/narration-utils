@@ -4,9 +4,9 @@
 
 This folder is the fix for a recurring problem: agentic refactoring sessions have silently reverted deliberate decisions (styling, naming, behavior) because too much code and too many commits pile up between when a decision was made and when a later agent "cleans up" without knowing it was deliberate. An ADR is the durable record that a future agent — or person — checks *before* changing something, not after.
 
-## Format: MADR (Markdown Architectural Decision Records)
+## Format: lightweight Nygard-style ADRs
 
-We use [MADR](https://adr.github.io/madr/), a widely-adopted lightweight format. Each ADR is one file: `NNNN-short-title.md`, numbered sequentially starting at `0001`. Use [`template.md`](template.md) for the section structure.
+We use a lightweight, Nygard-style format: Status, Date, Context, Decision, Consequences. It is deliberately not [MADR](https://adr.github.io/madr/) (no YAML front matter, no Decision Drivers or Considered Options sections): for one maintainer the extra sections are overhead, so the alternatives that mattered are named in Context. Each ADR is one file: `NNNN-short-title.md`, numbered sequentially starting at `0001`. Use [`template.md`](template.md) for the section structure.
 
 ## Rules
 
