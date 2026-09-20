@@ -232,6 +232,38 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(saveSettings).toHaveBeenCalledWith('General', 'global', expect.objectContaining({ log_verbosity: 'verbose' }));
   });
 
+  it('names the Settings tabs and keeps the selected one while unsaved changes ask before a switch', async () => {
+    renderApp();
+    await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    expect(screen.getByRole('tablist', { name: 'Settings scope' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Global' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tablist', { name: 'Settings categories' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'General' }).getAttribute('aria-selected')).toBe('true');
+
+    // A clean switch of scope happens at once, and the categories of that scope follow (General is Global only).
+    fireEvent.click(screen.getByRole('tab', { name: 'This Project' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'This Project' }).getAttribute('aria-selected')).toBe('true'));
+    await waitFor(() => expect(screen.queryByRole('tab', { name: 'General' })).toBeNull());
+    expect(
+      within(screen.getByRole('tablist', { name: 'Settings categories' }))
+        .getAllByRole('tab')
+        .filter((tab) => tab.getAttribute('aria-selected') === 'true'),
+    ).toHaveLength(1);
+    fireEvent.click(screen.getByRole('tab', { name: 'Global' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Global' }).getAttribute('aria-selected')).toBe('true'));
+
+    fireEvent.click(screen.getByRole('tab', { name: 'General' }));
+    // With an unsaved change, a switch asks first and the selection does not move until it is confirmed.
+    fireEvent.change(await screen.findByDisplayValue('normal'), { target: { value: 'verbose' } });
+    fireEvent.click(screen.getByRole('tab', { name: 'This Project' }));
+    expect(await screen.findByText('Save or discard changes before continuing?')).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Global', hidden: true }).getAttribute('aria-selected')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Discard & continue' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'This Project' }).getAttribute('aria-selected')).toBe('true'));
+  });
+
   it('keeps fast manuscript-import activity visible and refreshes the Home state without a browser reload', async () => {
     const source = createMockApi();
     const readyJob = {

@@ -9,7 +9,7 @@ import { useApi } from '../../api/ApiContext';
 import { useTextSelection } from '../../hooks/useTextSelection';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
-import { Pill } from '../primitives/Pill';
+import { ToggleGroup } from '../primitives/ToggleGroup';
 import { SlideOver } from '../primitives/SlideOver';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { ChapterNav } from './ChapterNav';
@@ -21,6 +21,7 @@ import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from './EntitySummary';
 import { IconButton } from '../primitives/IconButton';
 
 const TEXT_SIZES = ['small', 'medium', 'large'] as const;
+const TEXT_SIZE_OPTIONS = TEXT_SIZES.map((value) => ({ value, label: value }));
 // --hl-pad-y sizes a highlight's vertical padding so its background fills the
 // full line height at each text size (see primitives/Highlight.tsx).
 const READER_TEXT_CLASSES = {
@@ -305,11 +306,13 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
             <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
               Text size <Tooltip text="The manuscript always uses the full reading width - adjust text size instead." />
             </span>
-            <div className="flex gap-1">
-              {TEXT_SIZES.map((value) => (
-                <Pill key={value} label={value} active={textSize === value} onClick={() => setTextSize(value)} />
-              ))}
-            </div>
+            <ToggleGroup
+              label="Text size"
+              className="gap-1"
+              value={textSize}
+              onChange={(value) => setTextSize(value as (typeof TEXT_SIZES)[number])}
+              options={TEXT_SIZE_OPTIONS}
+            />
             <TooltipTarget text="Expand all chapters">
               <IconButton
                 label="Expand all chapters"

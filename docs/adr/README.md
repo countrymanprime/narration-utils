@@ -76,3 +76,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0051](0051-the-slide-over-and-the-navigation-drawer-are-modal-base-ui-drawers.md) | The slide-over and the navigation drawer are modal Base UI drawers | Accepted |
 | [0052](0052-toggle-menu-checkbox-collapsible-and-switch-replace-the-hand-rolled-widgets.md) | Toggle, Menu, Checkbox, Collapsible and Switch replace the hand-rolled widgets | Accepted |
 | [0053](0053-icon-buttons-text-fields-and-selects-wrap-the-native-controls.md) | Icon buttons, text fields and selects wrap the native controls, and pages may not write them | Accepted |
+| [0054](0054-tabs-and-toggle-groups-name-and-link-what-the-hand-built-strips-left-anonymous.md) | Tabs and toggle groups name and link what the hand-built strips left anonymous | Accepted |

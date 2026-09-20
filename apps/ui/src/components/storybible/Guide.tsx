@@ -12,6 +12,7 @@ import { GuideDetail } from './GuideDetail';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { IconButton } from '../primitives/IconButton';
 import { SearchField } from '../primitives/SearchField';
+import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
 
 type EntitySort = { key: 'name' | 'occurrences'; dir: 'asc' | 'desc' };
 const TAB_PLURAL: Record<string, string> = {
@@ -136,7 +137,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
   };
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-6.5rem)] max-w-6xl flex-col gap-4 overflow-hidden max-md:h-auto">
+    <Tabs value={tab} onChange={setTab} className="mx-auto flex h-[calc(100dvh-6.5rem)] max-w-6xl flex-col gap-4 overflow-hidden max-md:h-auto">
       <div className="flex-none space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <Heading title="Story Bible" />
@@ -166,20 +167,19 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
             </TooltipTarget>
           </div>
         </div>
-        <div className="flex gap-1 overflow-x-auto border-b" style={{ borderColor: 'var(--border)' }}>
+        <TabList label="Story Bible categories" activation="automatic">
           {STORY_BIBLE_TABS.map((name) => (
-            <button
-              key={name}
-              onClick={() => setTab(name)}
-              className={`border-b-2 px-[0.9rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] whitespace-nowrap uppercase hover:text-[var(--text)] ${tab === name ? 'border-[var(--accent)] text-[var(--text)]' : 'border-transparent text-[var(--text-muted)]'}`}
-            >
+            <Tab key={name} value={name}>
               {name === 'All' ? `All · ${visible.length}` : `${TAB_PLURAL[name]} · ${visible.filter((row) => categoryLabel(row.category) === name).length}`}
-            </button>
+            </Tab>
           ))}
-        </div>
+        </TabList>
       </div>
       <div className="grid min-h-0 flex-1 gap-4 max-md:h-auto lg:grid-cols-[18rem_minmax(0,1fr)] [&>*]:max-md:min-h-96">
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
+        <TabPanel
+          value={tab}
+          className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]"
+        >
           <div className="p-[1.1rem] pb-2">
             <SearchField label="Search entries" value={query} onChange={setQuery} placeholder="Search entries…" />
           </div>
@@ -233,7 +233,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
               </tbody>
             </table>
           </div>
-        </section>
+        </TabPanel>
         <div className="flex min-h-0 min-w-0">
           <GuideDetail
             entity={newEntityDraft ?? selected}
@@ -251,6 +251,6 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
         </div>
       </div>
       {buildJob && <WorkDialog title="Rebuild Story Bible" job={buildJob} close={() => setBuildJob(undefined)} />}
-    </div>
+    </Tabs>
   );
 }

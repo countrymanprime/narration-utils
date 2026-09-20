@@ -8,7 +8,7 @@ import { Button } from '../primitives/Button';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
-import { Pill } from '../primitives/Pill';
+import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TextField } from '../primitives/TextField';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { Results } from './Results';
@@ -42,6 +42,7 @@ const WORKER_LIMITS: Record<string, string[]> = {
   'large-v3': ['1'],
 };
 const CHUNK_OPTIONS: number[] = PROOFING_CHUNK_OPTIONS.map((option) => option.seconds);
+const LOG_VERBOSITY_OPTIONS = ['Quiet', 'Normal', 'Verbose'].map((mode) => ({ value: mode, label: mode }));
 const CHUNK_LABELS = PROOFING_CHUNK_OPTIONS.map((option) => option.label);
 const CHUNK_LIMIT_INDEX: Record<string, number> = { tiny: 3, small: 3, medium: 2, 'large-v3-turbo': 2, 'large-v3': 1 };
 const CHUNK_LENGTH_TOOLTIP = [
@@ -264,60 +265,56 @@ export function Transcript({
           <div className="space-y-4 p-[1.1rem]">
             <div className="grid gap-5 md:grid-cols-3">
               <div>
-                <label className="text-[0.82rem] font-medium text-[var(--text-muted)]">
+                <span className="text-[0.82rem] font-medium text-[var(--text-muted)]">
                   Whisper model
                   <Tooltip text="Bigger models catch more misreads but run slower and use more memory per instance. Chunk length and worker count are capped automatically once you pick a model." />
-                </label>
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {MODEL_OPTIONS.map((option) => (
-                    <Pill
-                      key={option.value}
-                      label={option.label}
-                      active={model === option.value}
-                      title={option.caption}
-                      onClick={() => selectModel(option.value)}
-                    />
-                  ))}
-                </div>
+                </span>
+                <ToggleGroup
+                  label="Whisper model"
+                  className="mt-1.5 flex-wrap gap-1.5"
+                  value={model}
+                  onChange={selectModel}
+                  options={MODEL_OPTIONS.map((option) => ({ value: option.value, label: option.label, title: option.caption }))}
+                />
               </div>
               <div>
-                <label className="text-[0.82rem] font-medium text-[var(--text-muted)]">
+                <span className="text-[0.82rem] font-medium text-[var(--text-muted)]">
                   Chunk length
                   <Tooltip text={CHUNK_LENGTH_TOOLTIP} />
-                </label>
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {CHUNK_LABELS.map((label, index) => (
-                    <Pill
-                      key={label}
-                      label={label}
-                      active={chunkIndex === index}
-                      disabled={index > CHUNK_LIMIT_INDEX[model]}
-                      title={index > CHUNK_LIMIT_INDEX[model] ? `Not available for ${modelLabel(model)}` : undefined}
-                      onClick={() => setChunkIndex(index)}
-                    />
-                  ))}
-                </div>
+                </span>
+                <ToggleGroup
+                  label="Chunk length"
+                  className="mt-1.5 flex-wrap gap-1.5"
+                  value={CHUNK_LABELS[chunkIndex]}
+                  onChange={(label) => setChunkIndex(CHUNK_LABELS.findIndex((item) => item === label))}
+                  options={CHUNK_LABELS.map((label, index) => ({
+                    value: label,
+                    label,
+                    disabled: index > CHUNK_LIMIT_INDEX[model],
+                    title: index > CHUNK_LIMIT_INDEX[model] ? `Not available for ${modelLabel(model)}` : undefined,
+                  }))}
+                />
               </div>
               <div>
-                <label className="text-[0.82rem] font-medium text-[var(--text-muted)]">
+                <span className="text-[0.82rem] font-medium text-[var(--text-muted)]">
                   Parallel workers
                   <Tooltip text="Each worker loads its own full copy of the Whisper model, so memory use multiplies with worker count. Auto picks a safe count for this machine." />
-                </label>
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {['Auto', '1', '2', '4'].map((option) => {
+                </span>
+                <ToggleGroup
+                  label="Parallel workers"
+                  className="mt-1.5 flex-wrap gap-1.5"
+                  value={workers}
+                  onChange={setWorkers}
+                  options={['Auto', '1', '2', '4'].map((option) => {
                     const allowed = WORKER_LIMITS[model].includes(option);
-                    return (
-                      <Pill
-                        key={option}
-                        label={option}
-                        active={workers === option}
-                        disabled={!allowed}
-                        title={allowed ? undefined : `${modelLabel(model)} needs the full model in memory per worker — not available`}
-                        onClick={() => setWorkers(option)}
-                      />
-                    );
+                    return {
+                      value: option,
+                      label: option,
+                      disabled: !allowed,
+                      title: allowed ? undefined : `${modelLabel(model)} needs the full model in memory per worker — not available`,
+                    };
                   })}
-                </div>
+                />
               </div>
             </div>
             <div>
@@ -428,11 +425,13 @@ export function Transcript({
                 <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
                   Live activity
                 </span>
-                <span className="flex gap-1 text-[.65rem] normal-case">
-                  {(['Quiet', 'Normal', 'Verbose'] as const).map((mode) => (
-                    <Pill key={mode} label={mode} active={logVerbosity === mode} onClick={() => setLogVerbosity(mode)} />
-                  ))}
-                </span>
+                <ToggleGroup
+                  label="Log detail"
+                  className="gap-1"
+                  value={logVerbosity}
+                  onChange={(mode) => setLogVerbosity(mode as typeof logVerbosity)}
+                  options={LOG_VERBOSITY_OPTIONS}
+                />
               </div>
               <div className="h-36 overflow-y-auto border border-[var(--border)] bg-[var(--surface-2)] font-['IBM_Plex_Mono',ui-monospace,monospace]">
                 {(logVerbosity === 'Verbose'
