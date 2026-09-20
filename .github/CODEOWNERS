@@ -1,3 +1,4 @@
-# The solo maintainer is notified for all changes. This is intentionally
-# advisory until a second maintainer can approve changes made by the owner.
+# The solo maintainer is the code owner of every path. The `Pull Request` ruleset requires a code-owner
+# review, and the owner is exempt from it, so the owner merges their own pull requests; a second
+# contributor's pull request needs the owner's approval (docs/operations/ci-and-releases.md).
 * @countrymanprime

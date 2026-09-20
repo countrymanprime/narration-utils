@@ -9,20 +9,47 @@ Python, Go, and Lua files. Use `pnpm run check` for the full quality suite (ever
 project's lint, format, test and build targets; see [Nx projects and the quality
 gate](#nx-projects-and-the-quality-gate)).
 
-## Repository settings to configure once
+## What the repository enforces, and what CI is for
 
-GitHub Actions cannot configure these repository settings from a workflow. As of
-2026-09-19 neither `main` ruleset requires a status check. To make Windows the
-merge gate, add required checks for `CI / Build (Windows)` and the quality jobs
-(for example `CI / quality / js` and `CI / quality / go`);
-macOS and Linux are deliberately not built on pull requests (see
-[ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)). The `CI`
-workflow skips documentation-only changes, so a required check would stay
-pending on those pull requests; drop `paths-ignore` from `ci.yml` before
-requiring checks if that matters. Conventional Commit titles are enforced by the
-local commitlint hook, not by CI. `CODEOWNERS` requests `@countrymanprime` for
-review but is intentionally not a required review while the repository has a
-solo maintainer.
+GitHub Actions cannot configure repository settings from a workflow, so this section records what is set on the
+repository (read with `gh api repos/countrymanprime/narration-utils/rulesets` on 2026-09-20) and what that means for
+CI. The docs follow the settings, not the other way round (owner decision D11 of the [implementation plan](../prds/implementation-plan.md)).
+
+- **`Main Protection` ruleset** (active): deleting `main`, force-pushing to it and re-creating it are blocked. The
+  admin role and the owner bypass it.
+- **`Pull Request` ruleset** (active): squash merges only; one approval; **code-owner review is required**
+  (`.github/CODEOWNERS` names `@countrymanprime` for every path); a new push dismisses stale approvals; the last push
+  must be approved; every review thread must be resolved. The admin role can bypass it through a pull request, and the
+  owner `@countrymanprime` is exempt, so the solo maintainer merges their own pull requests.
+- **No ruleset requires a status check.** CI is advisory: a red job does not block a merge and a green one does not
+  permit it, so the maintainer reads the run before merging (the table below says what each check is). Requiring
+  checks is an owner-only setting. If it is ever turned on, the names to require are the ones in the table, and two
+  things need a decision first: `ci.yml` skips documentation-only pull requests (`paths-ignore: docs/**, **/*.md`),
+  which would leave a required check pending on them, and the visual and atlas jobs have to have stopped failing
+  without a code change (see [Keeping a red run meaningful](#keeping-a-red-run-meaningful)).
+- Conventional Commit titles are enforced by the local commitlint hook, not by CI. macOS and Linux are deliberately
+  not built on pull requests (see [ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)), so `Build (Windows)`
+  is the only native build a pull request runs.
+
+The checks a pull request shows, by the name GitHub displays (`ci.yml` calls `_quality.yml` as `quality` and
+`_ui-dist.yml` as `ui-dist`):
+
+| Check | What it runs |
+| --- | --- |
+| `quality / js` | `lint`, `format` and `test` of `narration-utils-ui` (Vitest with the coverage ratchet), then Knip over the whole repository |
+| `quality / ui-visual` | the Playwright visual suite of the mock-backed app (`pnpm --dir apps/ui run screenshots`); uploads screenshots, and traces when it fails |
+| `quality / ui-atlas` | the Storybook component atlas: every story in light and dark at a wide and a narrow viewport, with axe |
+| `quality / ui-atlas-kit` | the tests of `tools/ui-atlas-kit` and its drift check against `apps/ui` |
+| `quality / repo-scripts` | the plain-Node tests of `scripts/` (labels, milestones, release tooling, the layout and project guards) |
+| `quality / python` | ruff and pytest for `libs/python`, the sidecars, `scripts/` and `tests/fixtures` |
+| `quality / lua` | StyLua on `integrations/reaper` (Lua has no automated tests yet) |
+| `quality / go` | Windows: gofmt, go vet, golangci-lint, the tests with the race detector, then `test-schedules` |
+| `ui-dist / build` | builds the UI bundle the Windows build reuses |
+| `Build (Windows)` | the native Windows build, starting as soon as `ui-dist / build` finishes |
+
+`codeql.yml` and `dependency-review.yml` run their own checks (`Analyze (<language>)`, `review`) and are advisory too
+([Tracking work on GitHub](github-workflow.md)). A pull request that changes only `docs/**` or Markdown runs none of
+the `CI` checks, so a docs-only change is reviewed by reading.
 
 Create a `production` environment with `@countrymanprime` as a required
 reviewer. Leave **Prevent self-review** disabled and leave administrator bypass
@@ -97,8 +124,8 @@ runner called:
 - **Look around** with `pnpm exec nx show projects`, `pnpm exec nx graph`, and
   `pnpm exec nx show projects --affected --files=<path>`. Run one project's check with, for example,
   `pnpm exec nx run manuscript-guide:test`.
-- **CI** keeps its job names (`js`, `ui-visual`, `ui-atlas`, `ui-atlas-kit`, `repo-scripts`, `python`, `lua`, `go`), so
-  the required-check names above are unchanged. Each job runs its targets through
+- **CI** keeps the job names it had before the Nx move (`js`, `ui-visual`, `ui-atlas`, `ui-atlas-kit`, `repo-scripts`,
+  `python`, `lua`, `go`; the table above lists them as GitHub shows them). Each job runs its targets through
   `.github/actions/nx-run`: on a pull request `nx affected` against the base branch, otherwise every selected
   project, one task at a time (parallel tasks starve the two-vCPU runners and trip the UI tests' timeouts).
   `scripts/ci/nx-scope.sh` decides: everything runs when the event is not a pull request, or the change
@@ -127,6 +154,41 @@ runner called:
 - **Adding a project**: add a `project.json` (copy a neighbour), give it `lint` and `test` targets that call the same
   tools, list what it reads under `implicitDependencies`, and add its name to the root project's
   `implicitDependencies` unless it should not count toward the release version.
+
+## Keeping a red run meaningful
+
+A red check has to mean something is wrong, so nothing is retried and nothing is quarantined ([ADR 0023](../adr/0023-visual-suite-capture-contract-and-storybook.md)).
+A test that fails without a code change is a bug in the test, and it is fixed at its cause; "re-run it once" hides
+exactly that. What the suites do so that timing is not a variable:
+
+- **Frontend tests** (Vitest and Testing Library in `apps/ui`) wait for the state they assert: `findBy*`, or `waitFor`
+  on the thing itself, never a synchronous read straight after waiting for something else (a component can settle in a
+  later commit than the one the test waited for). Two limits are set once and never per test: `testTimeout` 15 s in
+  `vite.config.ts` (Vitest's 5 s default is a unit-test value) and Testing Library's `asyncUtilTimeout` 5 s in
+  `src/test-setup.ts` (its 1 s default failed 2 of 25 consecutive full runs on a quiet machine). A wait ends when its
+  condition holds, so the limits cost nothing on a passing run. `slowTestThreshold` is left alone so a test that gets
+  slow stays visible. Under heavy CPU oversubscription the two Story Bible tests of `App.test.tsx` can still reach
+  the 15 s limit; that is the render cost of the whole app in jsdom, not a timing bug.
+- **Visual drivers** (`apps/ui/tests/visual/app.drivers.ts`) reach a state through real UI interaction and wait for a
+  condition, never a sleep and never a page-wide fake clock. `goToPage` clicks inside the navigation, then waits for the
+  destination's heading and, for Home, Manuscript and Proofing, for their content; a state with content of its own waits
+  for it; a confirm dialog is awaited by name through `confirmDialog`, which accepts `dialog` or `alertdialog`. A driver
+  that photographs the page it just left shows up as `identical screenshots` and a stale `sameAs` in the run's validation:
+  fix the driver, do not add a `sameAs`. To prove a new or changed driver, run the suite with a slowed page CPU:
+  `UI_CPU_THROTTLE=20 pnpm --dir apps/ui run screenshots` (any factor of 1 or more; a mistyped value is an error). A
+  racing driver fails or photographs the wrong page there on demand instead of once in twenty CI runs. At 20x the two
+  Story Bible confirm states exceed Playwright's 30 s test timeout inside the capture's own steps: they fail loudly, they
+  do not photograph the wrong page. The reusable version of this lives in the kit's scaffold (`clickNav`, `beforeCapture`).
+- **Go tests** that guard an ordering between goroutines run on one and on four CPUs (`test-schedules`), because the
+  default scheduler hid the shutdown bug that failed four CI runs. Tests do not assert a wall-clock duration: the
+  monotonic clock ticks every 0.5 to 15.6 ms on Windows, so a fast operation can measure exactly zero.
+- **Classifying a red run**: `gh run view <id> --log-failed`. `identical screenshots` or `sameAs no longer holds` is a
+  driver (or a real duplicate); `Unable to find` or `Test timed out` in a frontend test is a wait that does not match the
+  state, or a genuinely slow test; a Go failure that comes and goes with the CPU count is an ordering bug.
+
+The known limits of the gates are stated in [Design system](../design/design-system.md#what-the-suites-do-not-prove): axe
+runs on stories only (measuring it on app states is queued behind the palette work), and pixel baselines are not adopted
+(a spike, after the suite has been stable for 50 runs).
 
 ## Dead-code check (Knip)
 
