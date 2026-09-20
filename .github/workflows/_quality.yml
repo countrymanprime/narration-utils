@@ -5,9 +5,9 @@ permissions: { contents: read }
 # Every job runs its Nx targets through .github/actions/nx-run: on a pull request only the projects
 # the change affects (see each project's project.json and `implicitDependencies`), otherwise all of
 # them. The two Playwright jobs keep their own `run:` steps (the atlas kit's audit looks for them) and
-# use .github/actions/nx-affected to decide whether to run. The jobs and their names are unchanged; the required-check names in
-# docs/operations/ci-and-releases.md still apply. Checkouts fetch full history so Nx can diff
-# against the base branch.
+# use .github/actions/nx-affected to decide whether to run. The jobs and their names are unchanged
+# (docs/operations/ci-and-releases.md lists them as GitHub shows them; no ruleset requires any of them). Checkouts
+# fetch full history so Nx can diff against the base branch.
 jobs:
   js:
     timeout-minutes: 15

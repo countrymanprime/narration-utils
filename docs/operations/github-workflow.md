@@ -81,11 +81,11 @@ These live outside the repository, so a pull request cannot enforce them:
 | --- | --- |
 | Wiki | Disabled (`gh repo edit --enable-wiki=false`) |
 | Squash-only merges, delete branch on merge | On |
-| `Main Protection` ruleset | Active; see [CI and releases](ci-and-releases.md) |
+| `Main Protection` and `Pull Request` rulesets | Active: no force-push or deletion of `main`; squash only, one approval with code-owner review (the owner is exempt). Neither requires a status check. See [CI and releases](ci-and-releases.md#what-the-repository-enforces-and-what-ci-is-for) |
 | Secret scanning and push protection | On |
 | Private vulnerability reporting (what [`SECURITY.md`](../../SECURITY.md) points reporters to) | `gh api -X PUT repos/countrymanprime/narration-utils/private-vulnerability-reporting` |
 | Dependabot alerts (also turns on the dependency graph that `dependency-review.yml` needs) | `gh api -X PUT repos/countrymanprime/narration-utils/vulnerability-alerts` |
 | Dependabot security updates | `gh api -X PUT repos/countrymanprime/narration-utils/automated-security-fixes` |
 
 `codeql.yml` and `dependency-review.yml` are advisory: their results show under **Security** and on pull requests, but
-they are not in the `Main Protection` ruleset's required checks. Add them there only after a few clean runs.
+they are not required checks, because no check is (see [CI and releases](ci-and-releases.md#what-the-repository-enforces-and-what-ci-is-for)). If the owner ever requires checks, add these only after a few clean runs.
