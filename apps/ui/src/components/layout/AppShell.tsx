@@ -11,9 +11,9 @@ import {
   faMicrophone,
   faScroll,
   faWaveSquare,
-  faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { NavButton } from '../primitives/NavButton';
+import { NavDrawer } from '../primitives/NavDrawer';
 
 // alwaysEnabled items don't depend on an imported manuscript - Tracks reads
 // the project's REAPER file directly, independent of the manuscript feature.
@@ -108,23 +108,9 @@ export function AppShell({
           </NavButton>
         </div>
       </aside>
-      {drawerOpen && (
-        <div className="fixed inset-0 z-[70] bg-[var(--backdrop)]" onMouseDown={() => setDrawerOpen(false)}>
-          <aside
-            className="flex h-full w-[min(17rem,86vw)] flex-col bg-[var(--surface)] shadow-[var(--shadow-lg)]"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <button
-              className="absolute top-3 right-3 inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-              aria-label="Close navigation"
-              onClick={() => setDrawerOpen(false)}
-            >
-              <FontAwesomeIcon icon={faXmark} />
-            </button>
-            {navigation}
-          </aside>
-        </div>
-      )}
+      <NavDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+        {navigation}
+      </NavDrawer>
       {/* tabIndex -1: a dialog that closes with nothing to give focus back to (its opener is gone) sends focus into <main> (its first control, or <main> itself), not to <body>. */}
       <main tabIndex={-1} className="flex min-w-0 flex-1 flex-col overflow-hidden focus:outline-none">
         <header className="flex h-14 flex-none items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 text-sm md:px-5">

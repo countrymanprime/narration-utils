@@ -15,7 +15,6 @@ Storybook title: `Primitives/MeterBar`. Source: `src/components/primitives/Meter
 - Thin Segments
 - With Caption And Legend
 - Is Named By Its Label And Segments
-- Does Not Animate Under Reduced Motion
 - Segments Render In Caller Order
 - Chronological Order Is The Mirror Image
 - Empty Draws No Segments
