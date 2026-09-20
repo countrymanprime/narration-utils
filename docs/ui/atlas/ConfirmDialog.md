@@ -8,12 +8,15 @@ Storybook title: `Primitives/ConfirmDialog`. Source: `src/components/primitives/
 
 - Default
 - Destructive Confirm
+- Rich Body
 - With Danger Action
 - With Children
 - Long Unbroken Body
 - Long Scrolling Children
+- Is An Alert Dialog Described By Its Body
 - Confirm Invokes Handler
 - Cancel And Close Invoke Cancel
+- Escape Declines But Backdrop Does Not
 - Danger Invokes Only Danger
 
 ## Used by

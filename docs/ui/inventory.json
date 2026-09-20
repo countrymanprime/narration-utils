@@ -1,5 +1,5 @@
 {
-  "generatedBy": "ui-atlas 0.3.1",
+  "generatedBy": "ui-atlas 0.3.2",
   "components": [
     {
       "title": "Primitives/Button",
@@ -40,12 +40,15 @@
       "stories": [
         "Default",
         "Destructive Confirm",
+        "Rich Body",
         "With Danger Action",
         "With Children",
         "Long Unbroken Body",
         "Long Scrolling Children",
+        "Is An Alert Dialog Described By Its Body",
         "Confirm Invokes Handler",
         "Cancel And Close Invoke Cancel",
+        "Escape Declines But Backdrop Does Not",
         "Danger Invokes Only Danger"
       ],
       "consumers": [
@@ -69,7 +72,15 @@
         "Without Close Button",
         "Long Unbroken Token",
         "Long Scrolling Content",
-        "Close Button Invokes On Close"
+        "Close Button Invokes On Close",
+        "Hides The Page Behind It",
+        "Focus Starts On The Body",
+        "Escape Invokes On Close",
+        "Escape Is Ignored Without On Close",
+        "Backdrop Press Does Not Close",
+        "Tab Stays Inside The Dialog",
+        "Returns Focus To The Opener",
+        "Auto Focus Child Wins"
       ],
       "consumers": [
         "src/components/manuscript/AddNoteDialog.tsx",
@@ -317,7 +328,9 @@
         "Cancelled",
         "Long Logs",
         "Cancel Invokes Cancel",
-        "Close Invokes Close When Finished"
+        "Escape Is Ignored While Running",
+        "Close Invokes Close When Finished",
+        "Escape Closes When Finished"
       ],
       "consumers": [
         "src/components/home/Home.tsx",

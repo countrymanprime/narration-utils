@@ -289,7 +289,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(screen.getByText(/No imported manuscript/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Import manuscript' }));
-    await screen.findByRole('dialog', { name: 'Import Alice.docx' });
+    await screen.findByRole('alertdialog', { name: 'Import Alice.docx' });
     expect(preview).toHaveBeenCalledWith('mock-import', { markdownHeadingLevel: 1 });
     expect(screen.getByText('Preview activity')).toBeTruthy();
     expect(document.querySelector('.progressbar')).toBeTruthy();
@@ -315,22 +315,22 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
   it('offers to import a manuscript file found in the project folder, and stays quiet once declined', async () => {
     const candidate = { path: 'C:/Projects/Voltage/manuscript.docx', name: 'manuscript.docx' };
     renderApp({ bootstrap: bootstrapWithCandidate(candidate) });
-    expect(await screen.findByRole('dialog', { name: 'Import manuscript?' })).toBeTruthy();
+    expect(await screen.findByRole('alertdialog', { name: 'Import manuscript?' })).toBeTruthy();
     expect(screen.getByText(/Found manuscript.docx in this project folder/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(screen.queryByRole('dialog', { name: 'Import manuscript?' })).toBeNull();
+    expect(screen.queryByRole('alertdialog', { name: 'Import manuscript?' })).toBeNull();
   });
 
   it('imports the offered manuscript file through the host when accepted', async () => {
     const candidate = { path: 'C:/Projects/Voltage/notes/manuscript.md', name: 'manuscript.md' };
     const api = renderApp({ bootstrap: bootstrapWithCandidate(candidate) });
     const beginImport = vi.spyOn(api, 'manuscriptBeginImport');
-    await screen.findByRole('dialog', { name: 'Import manuscript?' });
+    await screen.findByRole('alertdialog', { name: 'Import manuscript?' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
     await waitFor(() => expect(beginImport).toHaveBeenCalledWith(candidate.path));
-    expect(await screen.findByRole('dialog', { name: 'Import Alice.docx' })).toBeTruthy();
+    expect(await screen.findByRole('alertdialog', { name: 'Import Alice.docx' })).toBeTruthy();
   });
 
   it('shows the project picker instead of the routed app when a standalone launch has no attached project folder', async () => {

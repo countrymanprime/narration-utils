@@ -2,29 +2,32 @@ import type { ReactNode } from 'react';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
 
-export function ConfirmDialog({
-  title,
-  body,
-  confirmLabel,
-  confirm,
-  dangerLabel,
-  danger,
-  cancel,
-  children,
-}: {
+// A third action (Discard & continue) needs both its label and its handler: a button without a name is unusable to a
+// screen reader, so the type refuses one without the other.
+type DangerAction = { danger?: undefined; dangerLabel?: undefined } | { danger: () => void; dangerLabel: string };
+
+type ConfirmDialogProps = {
   title: string;
-  body: string;
+  // What the dialog asks. A string or richer content; it is the dialog's accessible description.
+  body: ReactNode;
   confirmLabel: string;
   confirm: () => void;
-  dangerLabel?: string;
-  danger?: () => void;
+  // 'danger' draws the confirm button red for an action that destroys data (D12: clear project data, remove a local
+  // voice or model, delete an entry, merge and delete the source, replace and reset).
+  confirmVariant?: 'primary' | 'danger';
   cancel: () => void;
   children?: ReactNode;
-}) {
+} & DangerAction;
+
+// Every confirm interrupts and needs an answer, so it is an alertdialog: Escape and Cancel decline, a press on the
+// backdrop does nothing (ADR 0048).
+export function ConfirmDialog({ title, body, confirmLabel, confirm, confirmVariant = 'primary', dangerLabel, danger, cancel, children }: ConfirmDialogProps) {
   return (
     <Dialog
       title={title}
+      variant="alert"
       onClose={cancel}
+      description={body}
       actions={
         <>
           <Button variant="ghost" onClick={cancel}>
@@ -36,16 +39,13 @@ export function ConfirmDialog({
                 {dangerLabel}
               </Button>
             )}
-            <Button variant="primary" onClick={confirm}>
+            <Button variant={confirmVariant} onClick={confirm}>
               {confirmLabel}
             </Button>
           </div>
         </>
       }
     >
-      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-        {body}
-      </p>
       {children}
     </Dialog>
   );

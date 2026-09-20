@@ -16,7 +16,9 @@ Storybook title: `Primitives/WorkDialog`. Source: `src/components/primitives/Wor
 - Cancelled
 - Long Logs
 - Cancel Invokes Cancel
+- Escape Is Ignored While Running
 - Close Invokes Close When Finished
+- Escape Closes When Finished
 
 ## Used by
 

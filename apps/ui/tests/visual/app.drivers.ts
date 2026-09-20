@@ -93,8 +93,8 @@ async function homeLoaded(page: Page): Promise<void> {
   await PAGE_CONTENT.Home?.(page).first().waitFor();
 }
 
-// ConfirmDialog is a role="dialog" today. The Base UI foundation (owner decision D1) makes it an alertdialog, so wait
-// for either role: the driver then survives that change unchanged.
+// ConfirmDialog is an alertdialog (Base UI AlertDialog, ADR 0048) and every other dialog is a role="dialog". Wait for
+// either, so a state driver does not care which family its dialog is in.
 function confirmDialog(page: Page, name: string | RegExp) {
   return page.getByRole('dialog', { name }).or(page.getByRole('alertdialog', { name }));
 }
@@ -188,7 +188,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       // project/picker-empty does for the no-project seam.
       await page.goto('/?mockManuscriptCandidate=1');
       await settlePage(page);
-      await page.getByRole('dialog', { name: 'Import manuscript?' }).waitFor();
+      await confirmDialog(page, 'Import manuscript?').waitFor();
     },
     'import-activity-log': async (page) => {
       await clickVisible(page, 'button', 'Replace manuscript');

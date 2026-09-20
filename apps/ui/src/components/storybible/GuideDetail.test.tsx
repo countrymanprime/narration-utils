@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
@@ -218,5 +219,26 @@ describe('Story Bible local TTS preview', () => {
 
     previews[1].onended?.();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Play alias pronunciation' })).toBeTruthy());
+  });
+});
+
+describe('Story Bible delete confirmation', () => {
+  it('is a red alertdialog that keeps focus inside and hands it back to Delete entity on Escape', async () => {
+    const entity = WIRE_ENTITIES.find((row) => !row.locked);
+    if (!entity) throw new Error('fixture must include an unlocked entity');
+    const user = userEvent.setup();
+    renderDetail(entity);
+    const opener = screen.getByRole('button', { name: 'Delete entity' });
+    await user.click(opener);
+
+    const dialog = await screen.findByRole('alertdialog', { name: 'Delete entry' });
+    expect(within(dialog).getByRole('button', { name: 'Delete entry' }).className).toContain('text-[var(--danger)]');
+    // The page behind is out of the accessibility tree while the dialog is open.
+    expect(screen.queryByRole('button', { name: 'Edit this entry' })).toBeNull();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(document.activeElement).toBe(opener);
+    expect(screen.getByRole('button', { name: 'Edit this entry' })).toBeTruthy();
   });
 });

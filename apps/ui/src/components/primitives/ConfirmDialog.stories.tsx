@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { ConfirmDialog } from './ConfirmDialog';
+import { screen } from './portalScreen';
 
 const meta = {
   title: 'Primitives/ConfirmDialog',
@@ -19,12 +20,27 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-// Overwriting existing work is spelled out in the body and the confirm label.
+// Overwriting existing work is spelled out in the body and the confirm label, and the confirm button is red.
 export const DestructiveConfirm: Story = {
   args: {
     title: 'Clear derived project data?',
     body: 'This permanently removes the imported manuscript and stored source, Story Bible and proofing data, reader notes/bookmarks, and saved comparison results for this project. Settings will remain.',
     confirmLabel: 'Clear project data',
+    confirmVariant: 'danger',
+  },
+};
+
+// The body may be richer than a string.
+export const RichBody: Story = {
+  args: {
+    title: 'Merge entries',
+    body: (
+      <span>
+        Merge <b>“Cheshire Cat”</b> into <b>“Hatter”</b>? The source entry will be deleted.
+      </span>
+    ),
+    confirmLabel: 'Merge & delete source',
+    confirmVariant: 'danger',
   },
 };
 
@@ -77,17 +93,23 @@ export const LongScrollingChildren: Story = {
       </div>
     ),
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByRole('button', { name: 'Import' })).toBeVisible();
-    await expect(canvas.getByRole('button', { name: 'Cancel' })).toBeVisible();
+  play: async () => {
+    await expect(await screen.findByRole('button', { name: 'Import' })).toBeVisible();
+    await expect(screen.getByRole('button', { name: 'Cancel' })).toBeVisible();
+  },
+};
+
+// A confirm is an alertdialog: it interrupts, and its body is the accessible description.
+export const IsAnAlertDialogDescribedByItsBody: Story = {
+  play: async () => {
+    const dialog = await screen.findByRole('alertdialog', { name: 'Import chapter-01.md' });
+    await expect(dialog).toHaveAccessibleDescription('MARKDOWN · 214 paragraphs · 12 proposed chapters.');
   },
 };
 
 export const ConfirmInvokesHandler: Story = {
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const dialog = canvas.getByRole('dialog', { name: 'Import chapter-01.md' });
+  play: async ({ args }) => {
+    const dialog = await screen.findByRole('alertdialog', { name: 'Import chapter-01.md' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Import' }));
     await expect(args.confirm).toHaveBeenCalledOnce();
     await expect(args.cancel).not.toHaveBeenCalled();
@@ -96,12 +118,23 @@ export const ConfirmInvokesHandler: Story = {
 
 // Both the Cancel button and the header close button dismiss via the same `cancel` handler.
 export const CancelAndCloseInvokeCancel: Story = {
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Cancel' }));
+  play: async ({ args }) => {
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
     await expect(args.cancel).toHaveBeenCalledTimes(1);
-    await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
     await expect(args.cancel).toHaveBeenCalledTimes(2);
+    await expect(args.confirm).not.toHaveBeenCalled();
+  },
+};
+
+// Escape declines, exactly like Cancel; a press on the backdrop does nothing.
+export const EscapeDeclinesButBackdropDoesNot: Story = {
+  play: async ({ args }) => {
+    await screen.findByRole('alertdialog', { name: 'Import chapter-01.md' });
+    await userEvent.click(document.querySelector('[data-dialog-backdrop]') as HTMLElement);
+    await expect(args.cancel).not.toHaveBeenCalled();
+    await userEvent.keyboard('{Escape}');
+    await expect(args.cancel).toHaveBeenCalledOnce();
     await expect(args.confirm).not.toHaveBeenCalled();
   },
 };
@@ -114,9 +147,8 @@ export const DangerInvokesOnlyDanger: Story = {
     dangerLabel: 'Discard & continue',
     danger: fn(),
   },
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Discard & continue' }));
+  play: async ({ args }) => {
+    await userEvent.click(await screen.findByRole('button', { name: 'Discard & continue' }));
     await expect(args.danger).toHaveBeenCalledOnce();
     await expect(args.confirm).not.toHaveBeenCalled();
     await expect(args.cancel).not.toHaveBeenCalled();
