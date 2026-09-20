@@ -62,3 +62,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0037](0037-visual-suite-captures-no-phone-viewport.md) | The visual suite captures no phone viewport | Accepted (amends ADR-0023) |
 | [0038](0038-visual-suite-captures-the-production-build.md) | The visual suite captures the production build, not the dev server | Accepted (amends ADR-0023) |
 | [0039](0039-the-project-is-licensed-agpl-3-or-later.md) | The project is licensed AGPL-3.0-or-later | Accepted |
+| [0040](0040-the-repository-is-laid-out-by-role-and-each-project-is-an-nx-project.md) | The repository is laid out by role, and each project is an Nx project | Accepted |
