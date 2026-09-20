@@ -1,8 +1,9 @@
 # Rollout ledger
 
 One row per React UI repository. Tier meanings are in [design.md](design.md). Each PR vendors the kit's core files
-(`ui-atlas sync` refreshes them). All six were upgraded 0.1.0 to 0.2.0 to 0.3.0 to 0.3.1 as the rollouts fed back, and are
-on 0.3.1 now (see [CHANGELOG](../CHANGELOG.md)). Each repo's unfixed defects are documented in its own
+(`ui-atlas sync` refreshes them). All six were upgraded 0.1.0 to 0.2.0 to 0.3.0 to 0.3.1 as the rollouts fed back. Five are on 0.3.1;
+narration-utils is on 0.3.2, which changed only the scaffold, so the others have nothing to sync and one
+"Adopt by hand" item (see [CHANGELOG](../CHANGELOG.md)). Each repo's unfixed defects are documented in its own
 `docs/FLAWS_AND_ENHANCEMENTS.md`; this repo's are planned as PRDs in `docs/prds/`, indexed in `docs/prds/README.md`.
 
 | Repository | Stack | Tier | PR | Coverage | Escape hatches | Audit |

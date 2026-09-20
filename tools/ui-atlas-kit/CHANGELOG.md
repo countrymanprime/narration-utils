@@ -3,6 +3,23 @@
 `ui-atlas sync` refreshes the vendored core files (`plugin/templates/core`) and stamps the version. It does NOT touch
 scaffold files (yours after `init`), so the **Adopt by hand** lines below are what to copy across on upgrade.
 
+## 0.3.2
+
+- **Scaffold only** (the vendored core files are unchanged, so `ui-atlas sync` has nothing to refresh and their
+  headers still say 0.3.1): `clickVisible` no longer waits 1.5 s and then opens the mobile menu. That heuristic opened
+  the drawer over a page that was merely slow, and the drawer's `fixed inset-0` backdrop then intercepted the click
+  (measured: a control that renders after 2.5 s at 375 px timed out with "subtree intercepts pointer events"). It is now
+  a plain auto-waiting click. New `clickNav(page, name, role = 'link')` is the one helper that opens the drawer, and
+  only when the layout shows the menu button instead of the item: it waits for whichever is visible first (no timeout).
+  `beforeCapture` is now real code and carries `UI_CPU_THROTTLE=<factor>`, a stress mode that slows the page's CPU so a
+  driver that races the render fails on demand (a bare navigation photographed the wrong page at 20x in the reference
+  repo, the same failure a busy CI runner produced once in twenty runs); a mistyped value throws.
+- **Skills:** `ui-state-catalog` describes the two helpers, the destination wait every navigation needs, and the stress mode.
+- **Adopt by hand:** in your `app.drivers.ts` replace `clickVisible`, add `clickNav` and switch every call that clicks a
+  navigation item to it (a nav `clickVisible` no longer opens the drawer, so at a phone width it now times out), make each
+  `goToPage`-style helper wait for the destination (heading, then content), and add the `UI_CPU_THROTTLE` body to
+  `beforeCapture` (keep your `page.route` stubs in it). Then run the suite once with `UI_CPU_THROTTLE=20`.
+
 ## 0.3.1
 
 - **Core:** the atlas ignores fixed layers when sizing a tall story to its content and ignores off-canvas fixed layers

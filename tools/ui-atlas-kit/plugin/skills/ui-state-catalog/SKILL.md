@@ -29,7 +29,7 @@ that was merely still rendering, and a 63 px overflow at 390 px, all only after 
    selectors of live regions painted over) and `pointer: 'keep'` (the shot needs the hover or focus the driver left).
 2. Add the driver to `APP_DRIVERS[page][state]` in `app.drivers.ts`: `async (page) => {...}` reaching the state
    through real interaction with accessible-name selectors. The runner has already done `goto('/')` and
-   `settlePage`. Reuse `clickVisible` and `freezeClock` (scaffolded in `app.drivers.ts`) and write repo-specific helpers
+   `settlePage`. Reuse `clickVisible`, `clickNav` and `freezeClock` (scaffolded in `app.drivers.ts`) and write repo-specific helpers
    beside them (the reference has `goToPage`, `selectFirstParagraphText`). A driver that reloads with
    `page.goto('/?mockNoManuscript=1')` must import `settlePage` from `helpers/settle` and call it again.
 3. Boot alternate data through URL-param seams read at startup and honoured only in the mock build (reference: `main.tsx`
@@ -39,8 +39,14 @@ that was merely still rendering, and a 63 px overflow at 390 px, all only after 
    row (`tr[data-row]`), or a value (`getByText(/^0:0\d \/ 10:00$/)`). Freeze timers only inside the one driver whose
    timer races the shot (the toast fades on a real 2.25 s timer); a page-wide fake clock breaks React 19 transitions.
 5. Apply the lessons written into the drivers:
-   - `clickVisible` waits up to 1.5 s for the target before opening the mobile drawer; opening it earlier puts the
-     drawer over a page that is still rendering. At mobile the rail exists only inside the drawer.
+   - `clickVisible` is a plain auto-waiting click and never opens a menu; `clickNav` is the one helper that opens the
+     mobile drawer, and only when the layout shows the menu button instead of the item (no timeout to tune). A
+     "wait 1.5 s, then open the menu" heuristic opens the drawer over a page that is merely slow, and the drawer's
+     backdrop then intercepts the click. At mobile the rail exists only inside the drawer.
+   - End every navigation with a wait for the destination: its heading, then its content (the heading renders before the
+     data). A click returns when it is dispatched, so a bare navigation photographs the page it just left, which shows up
+     as `identical screenshots` and a stale `sameAs`. Prove a new driver with `UI_CPU_THROTTLE=20` (the scaffolded
+     `beforeCapture` slows the page's CPU 20 times): a driver that races the render fails there on demand.
    - Select text by building a `Range` on a Text node of 20+ characters and dispatching `mouseup` yourself; synthetic
      Playwright drags do not reliably produce a selection. Wait for real prose first.
    - Tooltips show after 1 s on hover and at once on focus: wait for `getByRole('tooltip')` and set `pointer: 'keep'`.
