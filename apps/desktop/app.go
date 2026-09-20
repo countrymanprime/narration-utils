@@ -808,7 +808,8 @@ func snapshotWhisper(job *whisperJob) map[string]any {
 	return map[string]any{"id": job.id, "modelId": job.modelID, "phase": job.phase, "message": job.message}
 }
 func (h *Host) startGuideBuild() (map[string]any, error) {
-	if h.guide == nil {
+	svc := h.services()
+	if svc.guide == nil {
 		return nil, fmt.Errorf("the Story Bible is unavailable")
 	}
 	h.mu.Lock()
@@ -823,10 +824,11 @@ func (h *Host) startGuideBuild() (map[string]any, error) {
 	}
 	job := &workJob{id: fmt.Sprintf("guide-%d", time.Now().UnixNano()), kind: "story_bible", phase: "running", message: "Story Bible rebuild started.", percent: 1, started: time.Now()}
 	h.guideJob = job
-	config := h.config
 	h.mu.Unlock()
-	progress := filepath.Join(config.sessionDir, "guide_progress_"+job.id+".txt")
-	log := filepath.Join(config.sessionDir, "guide_log_"+job.id+".txt")
+	// The build runs on the snapshot's Story Bible and session directory, which
+	// belong to one project; the goroutine never re-reads h.guide.
+	progress := filepath.Join(svc.config.sessionDir, "guide_progress_"+job.id+".txt")
+	log := filepath.Join(svc.config.sessionDir, "guide_log_"+job.id+".txt")
 	go func() {
 		// The sidecar writes a stage|pct|message progress file and an
 		// append-only log while it works; tail both so the dialog shows real
@@ -846,7 +848,7 @@ func (h *Host) startGuideBuild() (map[string]any, error) {
 				}
 			}
 		}()
-		_, err := h.guide.Build(progress, log)
+		_, err := svc.guide.Build(progress, log)
 		close(stop)
 		<-stopped
 		pollWorkJob(job, progress, log, &logAt)

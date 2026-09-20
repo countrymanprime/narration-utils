@@ -43,7 +43,7 @@ type hostServices struct {
 // hold h.mu across a service call: the emit callbacks re-enter h.mu.RLock, and a
 // recursive read lock behind a queued writer (a project switch) deadlocks. For
 // the same reason never call services() while holding h.mu yourself: with the
-// write lock held (configureLocked and everything named ...Locked, ProjectSwitch
+// write lock held (configureLocked and every unexported ...Locked function, ProjectSwitch
 // and onSecondInstance between Lock and Unlock) it deadlocks on itself; use
 // h.config there, or take the snapshot before locking.
 //

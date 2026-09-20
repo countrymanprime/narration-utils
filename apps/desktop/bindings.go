@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -95,80 +96,90 @@ func (h *Host) GuideBuildState() (string, error) {
 	return encodeBinding(h.guideBuildState(), nil)
 }
 func (h *Host) GuideEntities() (string, error) {
-	if h.guide == nil {
+	service := h.services().guide
+	if service == nil {
 		return "", fmt.Errorf("the Story Bible is unavailable")
 	}
-	entities, err := h.guide.Entities()
+	entities, err := service.Entities()
 	return encodeBinding(entities, err)
 }
 func (h *Host) GuideEdit(id string, values map[string]string) (string, error) {
-	if h.guide == nil {
+	service := h.services().guide
+	if service == nil {
 		return "", fmt.Errorf("the Story Bible is unavailable")
 	}
 	for field, value := range values {
-		if err := h.guide.Edit(id, field, value); err != nil {
+		if err := service.Edit(id, field, value); err != nil {
 			return "", err
 		}
 	}
 	return encodeBinding(nil, nil)
 }
 func (h *Host) GuideSetLocked(id string, locked bool) (string, error) {
-	if h.guide == nil {
+	service := h.services().guide
+	if service == nil {
 		return "", fmt.Errorf("the Story Bible is unavailable")
 	}
-	return encodeBinding(nil, h.guide.Edit(id, "locked", fmt.Sprint(locked)))
+	return encodeBinding(nil, service.Edit(id, "locked", fmt.Sprint(locked)))
 }
 func (h *Host) GuideRescan(id string) (string, error) {
-	if h.guide == nil {
+	service := h.services().guide
+	if service == nil {
 		return "", fmt.Errorf("the Story Bible is unavailable")
 	}
-	return encodeBinding(nil, h.guide.Rescan(id))
+	return encodeBinding(nil, service.Rescan(id))
 }
 func (h *Host) GuideCreate(name, category string, aliases []string) (string, error) {
-	if h.guide == nil {
+	service := h.services().guide
+	if service == nil {
 		return "", fmt.Errorf("the Story Bible is unavailable")
 	}
-	id, err := h.guide.Create(name, category, aliases)
+	id, err := service.Create(name, category, aliases)
 	return encodeBinding(map[string]any{"id": id}, err)
 }
 func (h *Host) GuideMerge(sourceID, targetID string) (string, error) {
-	if h.guide == nil {
+	service := h.services().guide
+	if service == nil {
 		return "", fmt.Errorf("the Story Bible is unavailable")
 	}
-	return encodeBinding(nil, h.guide.Merge(sourceID, targetID))
+	return encodeBinding(nil, service.Merge(sourceID, targetID))
 }
 func (h *Host) GuideDelete(id string) (string, error) {
-	if h.guide == nil {
+	service := h.services().guide
+	if service == nil {
 		return "", fmt.Errorf("the Story Bible is unavailable")
 	}
-	return encodeBinding(nil, h.guide.Delete(id))
+	return encodeBinding(nil, service.Delete(id))
 }
 func (h *Host) GuideRelate(id, otherID, label string) (string, error) {
-	if h.guide == nil {
+	service := h.services().guide
+	if service == nil {
 		return "", fmt.Errorf("the Story Bible is unavailable")
 	}
-	return encodeBinding(nil, h.guide.Relate(id, otherID, label))
+	return encodeBinding(nil, service.Relate(id, otherID, label))
 }
 func (h *Host) GuideUnrelate(id, otherID, label string) (string, error) {
-	if h.guide == nil {
+	service := h.services().guide
+	if service == nil {
 		return "", fmt.Errorf("the Story Bible is unavailable")
 	}
-	return encodeBinding(nil, h.guide.Unrelate(id, otherID, label))
+	return encodeBinding(nil, service.Unrelate(id, otherID, label))
 }
 func (h *Host) GuidePreview(id string, aliasIndex *int) (string, error) {
-	if h.guide == nil || h.tts == nil {
+	svc := h.services()
+	if svc.guide == nil || svc.tts == nil {
 		return "", fmt.Errorf("story Bible preview is unavailable")
 	}
-	voiceID, _ := h.settings.Effective("Piper", "tts_voice_id", "en_US-ljspeech-high")
-	voice, knownVoice := h.tts.Voice(voiceID)
+	voiceID, _ := svc.settings.Effective("Piper", "tts_voice_id", "en_US-ljspeech-high")
+	voice, knownVoice := svc.tts.Voice(voiceID)
 	if !knownVoice {
 		return "", fmt.Errorf("the selected preview voice is not in the approved catalog")
 	}
-	model, _, err := h.tts.Paths(voiceID)
+	model, _, err := svc.tts.Paths(voiceID)
 	if err != nil {
-		return encodeBinding(map[string]any{"status": "asset_required", "voice": previewVoice(voice), "installState": h.tts.State(voice), "downloadSize": voiceDownloadSize(voice)}, nil)
+		return encodeBinding(map[string]any{"status": "asset_required", "voice": previewVoice(voice), "installState": svc.tts.State(voice), "downloadSize": voiceDownloadSize(voice)}, nil)
 	}
-	audio, err := h.guide.Preview(id, aliasIndex, model, voice.Provider, voice.Version)
+	audio, err := svc.guide.Preview(id, aliasIndex, model, voice.Provider, voice.Version)
 	return encodeBinding(map[string]any{"status": "ready", "audioBase64": base64.StdEncoding.EncodeToString(audio), "mimeType": "audio/wav"}, err)
 }
 
@@ -262,37 +273,43 @@ func (h *Host) ManuscriptSelectFile() (string, error) {
 	if path == "" {
 		return encodeBinding(map[string]any{"selected": false}, nil)
 	}
-	job := h.manuscript.Begin(path)
+	// Read the manuscript service after the dialog returns: the user can take
+	// their time in the picker, and the import belongs to the project that is
+	// open when a file was chosen.
+	job := h.services().manuscript.Begin(path)
 	return encodeBinding(map[string]any{"selected": true, "jobId": job.ID}, nil)
 }
 
 // ManuscriptBeginImport starts an import for the manuscript file Bootstrap
 // offered in the project folder. Only that exact file is accepted.
 func (h *Host) ManuscriptBeginImport(path string) (string, error) {
-	job, err := h.manuscript.BeginDetected(path)
+	job, err := h.services().manuscript.BeginDetected(path)
 	if err != nil {
 		return "", err
 	}
 	return encodeBinding(map[string]any{"selected": true, "jobId": job.ID}, nil)
 }
 func (h *Host) ManuscriptImportState(jobID string) (string, error) {
-	return encodeBinding(h.manuscript.State(jobID))
+	return encodeBinding(h.services().manuscript.State(jobID))
 }
 func (h *Host) ManuscriptImportPreview(jobID string, markdownHeadingLevel int) (string, error) {
 	// Runs in the background; the UI polls ManuscriptImportState for the real
 	// staged progress and log (ADR-0015).
-	return encodeBinding(h.manuscript.StartPreview(jobID, markdownHeadingLevel))
+	return encodeBinding(h.services().manuscript.StartPreview(jobID, markdownHeadingLevel))
 }
 func (h *Host) ManuscriptImportCommit(jobID string, confirmedReset bool, sectionKinds map[string]string, characterCandidateIDs []string) (string, error) {
+	svc := h.services()
 	var post manuscript.PostCommit
-	if state, err := h.manuscript.State(jobID); err == nil && state.Draft != nil && h.guide != nil {
-		candidates := state.Draft.CharacterCandidates
+	if state, err := svc.manuscript.State(jobID); err == nil && state.Draft != nil && svc.guide != nil {
+		candidates, seeding := state.Draft.CharacterCandidates, svc.guide
+		// The commit runs in the background; seed the Story Bible of the project
+		// the import belongs to, even if the user switches projects meanwhile.
 		post = func(report func(int, string)) error {
-			h.seedCharacterCandidates(candidates, characterCandidateIDs, report)
+			seedCharacterCandidates(seeding, candidates, characterCandidateIDs, report)
 			return nil
 		}
 	}
-	return encodeBinding(h.manuscript.StartCommit(jobID, confirmedReset, sectionKinds, post))
+	return encodeBinding(svc.manuscript.StartCommit(jobID, confirmedReset, sectionKinds, post))
 }
 
 // seedCharacterCandidates writes the user's checked character suggestions
@@ -302,7 +319,7 @@ func (h *Host) ManuscriptImportCommit(jobID string, confirmedReset bool, section
 // failed candidate is skipped and logged, not fatal: the manuscript import
 // itself has already been written by this point. Each candidate reports its
 // own progress, since these Python launches are the slow part of an import.
-func (h *Host) seedCharacterCandidates(candidates []importer.CharacterCandidate, selectedIDs []string, report func(percent int, message string)) {
+func seedCharacterCandidates(service *guide.Service, candidates []importer.CharacterCandidate, selectedIDs []string, report func(percent int, message string)) {
 	selected := make(map[string]bool, len(selectedIDs))
 	for _, id := range selectedIDs {
 		selected[id] = true
@@ -315,13 +332,13 @@ func (h *Host) seedCharacterCandidates(candidates []importer.CharacterCandidate,
 	}
 	for index, candidate := range chosen {
 		report(index*100/len(chosen), fmt.Sprintf("Adding Story Bible character %d of %d: %s", index+1, len(chosen), candidate.Name))
-		entityID, err := h.guide.Create(candidate.Name, "Character", nil)
+		entityID, err := service.Create(candidate.Name, "Character", nil)
 		if err != nil {
 			report(index*100/len(chosen), fmt.Sprintf("Skipped %s: %v", candidate.Name, err))
 			continue
 		}
 		if candidate.Description != "" {
-			_ = h.guide.Edit(entityID, "description", candidate.Description)
+			_ = service.Edit(entityID, "description", candidate.Description)
 		}
 	}
 	if len(chosen) > 0 {
@@ -329,45 +346,49 @@ func (h *Host) seedCharacterCandidates(candidates []importer.CharacterCandidate,
 	}
 }
 func (h *Host) ManuscriptImportCancel(jobID string) (string, error) {
-	return encodeBinding(nil, h.manuscript.Cancel(jobID))
+	return encodeBinding(nil, h.services().manuscript.Cancel(jobID))
 }
 func (h *Host) ManuscriptClearProjectData(confirmed bool) (string, error) {
 	if !confirmed {
 		return "", fmt.Errorf("project data clear requires confirmation")
 	}
-	return encodeBinding(nil, h.manuscript.Clear())
+	return encodeBinding(nil, h.services().manuscript.Clear())
 }
-func (h *Host) ManuscriptChapters() (string, error) { return encodeBinding(h.manuscript.Chapters()) }
+func (h *Host) ManuscriptChapters() (string, error) {
+	return encodeBinding(h.services().manuscript.Chapters())
+}
 func (h *Host) ManuscriptParagraphs(chapter string) (string, error) {
-	return encodeBinding(h.manuscript.Paragraphs(chapter))
+	return encodeBinding(h.services().manuscript.Paragraphs(chapter))
 }
-func (h *Host) ManuscriptReader() (string, error) { return encodeBinding(h.manuscript.Reader()) }
+func (h *Host) ManuscriptReader() (string, error) {
+	return encodeBinding(h.services().manuscript.Reader())
+}
 func (h *Host) ManuscriptSearch(query string) (string, error) {
-	return encodeBinding(h.manuscript.Search(query))
+	return encodeBinding(h.services().manuscript.Search(query))
 }
 func (h *Host) ManuscriptSetChapterStatus(chapter, status string) (string, error) {
-	return encodeBinding(h.manuscript.SetChapterStatus(chapter, status))
+	return encodeBinding(h.services().manuscript.SetChapterStatus(chapter, status))
 }
 func (h *Host) ManuscriptNotes(chapter string) (string, error) {
-	return encodeBinding(h.manuscript.Notes(chapter), nil)
+	return encodeBinding(h.services().manuscript.Notes(chapter), nil)
 }
 func (h *Host) ManuscriptCreateNote(chapterID, paragraphID, text, anchorText string, anchorStart, anchorEnd *int) (string, error) {
-	return encodeBinding(h.manuscript.CreateNote(chapterID, paragraphID, text, anchorStart, anchorEnd, anchorText))
+	return encodeBinding(h.services().manuscript.CreateNote(chapterID, paragraphID, text, anchorStart, anchorEnd, anchorText))
 }
 func (h *Host) ManuscriptDeleteNote(id string) (string, error) {
-	return encodeBinding(nil, h.manuscript.DeleteNote(id))
+	return encodeBinding(nil, h.services().manuscript.DeleteNote(id))
 }
 func (h *Host) ManuscriptReaderState() (string, error) {
-	return encodeBinding(h.manuscript.ReaderState(), nil)
+	return encodeBinding(h.services().manuscript.ReaderState(), nil)
 }
 func (h *Host) ManuscriptSaveReaderState(activeChapter string, activeSourceLine *int, expandedChapters []string) (string, error) {
-	return encodeBinding(h.manuscript.SaveReaderState(activeChapter, activeSourceLine, expandedChapters, expandedChapters != nil))
+	return encodeBinding(h.services().manuscript.SaveReaderState(activeChapter, activeSourceLine, expandedChapters, expandedChapters != nil))
 }
 func (h *Host) ManuscriptCreateBookmark(values map[string]any) (string, error) {
-	return encodeBinding(h.manuscript.CreateBookmark(values))
+	return encodeBinding(h.services().manuscript.CreateBookmark(values))
 }
 func (h *Host) ManuscriptDeleteBookmark(id string) (string, error) {
-	return encodeBinding(nil, h.manuscript.DeleteBookmark(id))
+	return encodeBinding(nil, h.services().manuscript.DeleteBookmark(id))
 }
 
 func (h *Host) TranscriptStart(options map[string]string) (string, error) {
