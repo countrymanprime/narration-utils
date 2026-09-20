@@ -119,6 +119,7 @@ export function AudiobookEstimatePanel({
             </span>
           </div>
           <MeterBar
+            label="Recording progress"
             segments={[...STATUS_ORDER]
               .reverse()
               .filter((status) => statusTotals[status].count > 0)
