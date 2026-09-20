@@ -30,7 +30,7 @@ const (
 // command: it writes a small WAV where the host asked for it, or fails.
 func runFakeGuideRender() int {
 	if os.Getenv(fakeGuideRenderEnv) == "fail" {
-		os.Stderr.WriteString("ERROR: \"Dawnspire\" could not be spoken: the voice produced no audio for it.\n")
+		_, _ = os.Stderr.WriteString("ERROR: \"Dawnspire\" could not be spoken: the voice produced no audio for it.\n")
 		return 1
 	}
 	var dir, name string

@@ -44,7 +44,7 @@ func looksLikeChunkID(b []byte) bool {
 	}
 	for _, c := range b[:4] {
 		letter := (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
-		if !letter && c != ' ' && !(c >= '0' && c <= '9') {
+		if !letter && c != ' ' && (c < '0' || c > '9') {
 			return false
 		}
 	}
@@ -114,9 +114,10 @@ func NewWAVReader(r io.Reader) (*WAVReader, error) {
 				return nil, errors.New("WAV data chunk appears before the fmt chunk")
 			}
 			remaining := int64(size)
-			if size == wavUnfinishedSize {
+			switch size {
+			case wavUnfinishedSize:
 				remaining = -1
-			} else if size == 0 {
+			case 0:
 				// Zero means either an unfinished header (audio follows) or a
 				// genuinely empty take (another chunk follows). Real audio
 				// essentially never begins with four chunk-ID characters.
@@ -249,10 +250,10 @@ func (w *WAVReader) sample(b []byte) float64 {
 	case w.format.Float:
 		return math.Float64frombits(binary.LittleEndian.Uint64(b))
 	case w.format.BitsPerSample == 16:
-		return float64(int16(binary.LittleEndian.Uint16(b))) / 32768
+		return float64(int16(binary.LittleEndian.Uint16(b))) / 32768 //nolint:gosec // G115: reinterprets the PCM bits as two's complement on purpose
 	case w.format.BitsPerSample == 24:
-		return float64(int32(uint32(b[0])<<8|uint32(b[1])<<16|uint32(b[2])<<24)>>8) / 8388608
+		return float64(int32(uint32(b[0])<<8|uint32(b[1])<<16|uint32(b[2])<<24)>>8) / 8388608 //nolint:gosec // G115: 24-bit PCM sign extension
 	default:
-		return float64(int32(binary.LittleEndian.Uint32(b))) / 2147483648
+		return float64(int32(binary.LittleEndian.Uint32(b))) / 2147483648 //nolint:gosec // G115: reinterprets the PCM bits as two's complement on purpose
 	}
 }

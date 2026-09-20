@@ -22,7 +22,7 @@ func docxEntry(archive *zip.ReadCloser, name string) ([]byte, bool) {
 			if err != nil {
 				return nil, false
 			}
-			defer reader.Close()
+			defer func() { _ = reader.Close() }() // read-only
 			bytes, err := io.ReadAll(reader)
 			return bytes, err == nil
 		}
@@ -212,7 +212,7 @@ func docxWithProgress(path string, progress Progress) (Draft, error) {
 	if err != nil {
 		return Draft{}, &Error{"Could not read this Word document: " + err.Error()}
 	}
-	defer archive.Close()
+	defer func() { _ = archive.Close() }() // read-only
 	styles, _ := docxEntry(archive, "word/styles.xml")
 	document, ok := docxEntry(archive, "word/document.xml")
 	if !ok {

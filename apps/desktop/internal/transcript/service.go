@@ -240,8 +240,12 @@ func (s *Service) AddEquivalence(rowID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
 	if _, err = fmt.Fprintf(file, "%s, %s\n", doc, audio); err != nil {
+		_ = file.Close() // the write already failed; report that error
+		return "", err
+	}
+	// A failed close can be a deferred write failure (full disk, a synced folder), so report it.
+	if err = file.Close(); err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("Added equivalence: %s = %s", doc, audio), nil

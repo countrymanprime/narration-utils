@@ -82,7 +82,7 @@ runner called:
 | Project | Folder | Targets |
 | --- | --- | --- |
 | `narration-utils-ui` | `apps/ui` | `lint`, `format`, `test`, `build`, `visual` (Playwright screenshots), `atlas` |
-| `narration-utils-shell` | `apps/desktop` | `lint` (gofmt, go vet, Staticcheck), `test` (`-race` in the `ci` configuration), `package` (`wails build`, not part of the gate) |
+| `narration-utils-shell` | `apps/desktop` | `lint` (gofmt, go vet, golangci-lint v2: errcheck, staticcheck, gosec and the `standard` set), `test` (`-race` in the `ci` configuration), `package` (`wails build`, not part of the gate) |
 | `narration-common` | `libs/python` | `lint` (ruff), `test` (pytest) |
 | `manuscript-guide`, `manuscript-teleprompter`, `transcript-compare` | `sidecars/<name>` | `lint`, `test` |
 | `reaper` | `integrations/reaper` | `lint` (StyLua) |
@@ -112,7 +112,7 @@ runner called:
 - **Dependencies** are `implicitDependencies` in each `project.json`: the desktop app reads the UI, the sidecars,
   `config`, `fixtures` and `reaper`; the sidecars read `narration-common` and `config`.
   `scripts/ci/projects.test.mjs` fails if a Python, Go, Lua or `apps/` TypeScript file is not covered by a project
-  lint target, because the repo-wide `ruff .`, `staticcheck ./...` and `stylua --check` runs are gone.
+  lint target, because the repo-wide `ruff .`, `staticcheck ./...` (now golangci-lint) and `stylua --check` runs are gone.
 - **Releases** are unchanged: `nx release version` still versions the root project. `nx release` counts a commit
   when it affects the root project or a project the root depends on, so `narration-utils` lists every project except
   the UI and desktop projects (they were already separate projects that never counted); the guard test keeps that
@@ -128,12 +128,12 @@ Windows native build needs only the UI bundle, so it starts as soon as that
 finishes instead of waiting for lint and tests. macOS and Linux are not built on
 pull requests, and the Go quality job runs on Windows only. pnpm's
 content-addressable store, uv's package cache, Go's module/build caches, the
-compiled Wails and Staticcheck binaries (keyed on `scripts/toolchain.json`), and
+compiled Wails and golangci-lint binaries (keyed on `scripts/toolchain.json`), and
 Playwright's Chromium download (keyed on the Playwright version) are restored by
 the workflows; they never cache `node_modules`, `.venv`, or release artifacts.
 `setup-node`, `setup-python`, and `setup-go` provision the exact pinned Node,
 Python, and Go versions. Wails v2.16.0 is installed only in jobs that run a
-native build, Staticcheck v0.8.1 only in the Go quality job, and the standalone
+native build, golangci-lint v2.13.2 (built with the pinned Go, config in `apps/desktop/.golangci.yml`) only in the Go quality job, and the standalone
 StyLua v2.1.0 binary where needed, as declared in `scripts/toolchain.json`; none
 of them use Cargo. Platform-specific sidecars must be built on their target OS,
 so the built UI bundle is shared between jobs as a one-day artifact rather than

@@ -223,7 +223,8 @@ func (h *Host) packagedResources() string {
 		if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
 			return err
 		}
-		return os.WriteFile(destination, bytes, 0o700)
+		// 0o700: the extracted sidecar executables need their owner execute bit outside Windows.
+		return os.WriteFile(destination, bytes, 0o700) //nolint:gosec // G306: executable resources
 	}); err != nil {
 		_ = os.RemoveAll(staging)
 		return ""
@@ -940,7 +941,7 @@ func contains(values []string, wanted string) bool {
 }
 func isHex(value string) bool {
 	for _, rune := range value {
-		if !(rune >= '0' && rune <= '9' || rune >= 'a' && rune <= 'f' || rune >= 'A' && rune <= 'F') {
+		if (rune < '0' || rune > '9') && (rune < 'a' || rune > 'f') && (rune < 'A' || rune > 'F') {
 			return false
 		}
 	}

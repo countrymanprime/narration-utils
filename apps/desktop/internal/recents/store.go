@@ -131,7 +131,7 @@ func (s *Store) writeLocked(entries []Entry) error {
 		return err
 	}
 	if err := os.Rename(temporary, s.path); err != nil {
-		os.Remove(temporary)
+		_ = os.Remove(temporary)
 		return err
 	}
 	return nil

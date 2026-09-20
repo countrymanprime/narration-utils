@@ -32,7 +32,7 @@ func (h *Host) mediaMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }() // read-only
 		info, err := file.Stat()
 		if err != nil {
 			http.Error(w, "not found", http.StatusNotFound)

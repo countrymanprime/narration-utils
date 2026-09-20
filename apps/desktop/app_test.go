@@ -107,7 +107,7 @@ func TestPollWorkJobTailsSidecarProgressAndLogOnce(t *testing.T) {
 	if _, err := file.WriteString("Merging generated entries\n"); err != nil {
 		t.Fatal(err)
 	}
-	file.Close()
+	_ = file.Close()
 	pollWorkJob(job, progress, logPath, &logAt)
 	if job.percent != 30 {
 		t.Fatalf("progress moved backwards to %d", job.percent)
