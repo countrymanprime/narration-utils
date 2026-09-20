@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
+import { Field } from './Field';
 import { insidePortal, screen } from './portalScreen';
 
 const meta = {
@@ -192,7 +193,7 @@ export const ReturnsFocusToTheOpener: Story = {
 
 // An autoFocus child (the note field) wins over the body region.
 export const AutoFocusChildWins: Story = {
-  args: { children: <textarea aria-label="Note" autoFocus className="w-full rounded border p-2 text-sm" /> },
+  args: { children: <Field label="Note" textarea autoFocus value="" onChange={() => undefined} /> },
   play: async () => {
     const note = await screen.findByRole('textbox', { name: 'Note' });
     await waitFor(() => expect(document.activeElement).toBe(note));

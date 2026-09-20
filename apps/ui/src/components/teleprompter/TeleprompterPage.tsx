@@ -7,6 +7,8 @@ import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { Pill } from '../primitives/Pill';
+import { Select } from '../primitives/Select';
+import { TextField } from '../primitives/TextField';
 import { ReaderText } from './ReaderText';
 import { buildRows, hydrateSession, initialSession, previewRows, reduceEvent, type Session } from './readerModel';
 import { usePacedCursor } from './usePacedCursor';
@@ -31,8 +33,6 @@ const DEVICE_KEY = 'narration.teleprompter.device';
 const ACTIVE_PHASES: TeleprompterPhase[] = ['starting', 'running', 'stopping'];
 const IDLE_STATE: TeleprompterState = { phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null };
 
-const FIELD_CLASS =
-  'mt-1 min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]';
 const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
 
 function sessionReducer(session: Session, action: SessionAction): Session {
@@ -257,25 +257,26 @@ export function TeleprompterPage() {
                   <label className={LABEL_CLASS} htmlFor="teleprompter-chapter">
                     Chapter
                   </label>
-                  <select id="teleprompter-chapter" className={FIELD_CLASS} value={chapterId} onChange={(event) => selectChapter(event.target.value)}>
-                    {chapters.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.subtitle ? `${item.title}: ${item.subtitle}` : item.title}
-                      </option>
-                    ))}
-                  </select>
+                  <Select
+                    id="teleprompter-chapter"
+                    className="mt-1"
+                    fullWidth
+                    value={chapterId}
+                    onChange={selectChapter}
+                    options={chapters.map((item) => ({ value: item.id, label: item.subtitle ? `${item.title}: ${item.subtitle}` : item.title }))}
+                  />
                 </div>
                 <div>
                   <label className={LABEL_CLASS} htmlFor="teleprompter-device">
                     Microphone
                   </label>
-                  <input
+                  <TextField
                     id="teleprompter-device"
                     aria-describedby="teleprompter-device-hint"
-                    className={FIELD_CLASS}
+                    className="mt-1"
                     value={device}
                     placeholder="Microphone (USB Audio Device)"
-                    onChange={(event) => changeDevice(event.target.value)}
+                    onChange={changeDevice}
                   />
                   <span id="teleprompter-device-hint" className="mt-1 block text-xs" style={{ color: 'var(--text-faint)' }}>
                     The device name exactly as Windows lists it under Sound settings.

@@ -141,6 +141,7 @@
       "stories": [
         "Text Input",
         "Text Input Empty",
+        "With Placeholder",
         "Text Input Long Value",
         "Textarea",
         "Textarea Empty",
@@ -155,9 +156,11 @@
         "Textarea Disabled Is Inert",
         "With Hint",
         "With Error",
-        "Textarea With Hint And Error"
+        "Textarea With Hint And Error",
+        "Focused On Mount"
       ],
       "consumers": [
+        "src/components/manuscript/AddNoteDialog.tsx",
         "src/components/storybible/GuideDetail.tsx"
       ],
       "a11yDebt": false
@@ -235,6 +238,7 @@
         "src/components/primitives/Collapsible.tsx",
         "src/components/primitives/Dialog.tsx",
         "src/components/primitives/NavDrawer.tsx",
+        "src/components/primitives/SearchField.tsx",
         "src/components/primitives/SlideOver.tsx",
         "src/components/proofing/Results.tsx",
         "src/components/storybible/Guide.tsx",
@@ -361,6 +365,42 @@
       "a11yDebt": false
     },
     {
+      "title": "Primitives/SearchField",
+      "name": "SearchField",
+      "source": "src/components/primitives/SearchField.tsx",
+      "stories": [
+        "Empty",
+        "With Text",
+        "Clear Empties And Keeps Focus"
+      ],
+      "consumers": [
+        "src/components/manuscript/SearchBar.tsx",
+        "src/components/storybible/Guide.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/Select",
+      "name": "Select",
+      "source": "src/components/primitives/Select.tsx",
+      "stories": [
+        "Default",
+        "Full Width",
+        "Disabled",
+        "With Placeholder Option",
+        "Choosing Reports The Value",
+        "Keyboard Reaches It"
+      ],
+      "consumers": [
+        "src/components/home/AudiobookEstimatePanel.tsx",
+        "src/components/home/Home.tsx",
+        "src/components/settings/ScopedSetting.tsx",
+        "src/components/storybible/GuideDetail.tsx",
+        "src/components/teleprompter/TeleprompterPage.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/SlideOver",
       "name": "SlideOver",
       "source": "src/components/primitives/SlideOver.tsx",
@@ -396,6 +436,28 @@
       "a11yDebt": false
     },
     {
+      "title": "Primitives/TextField",
+      "name": "TextField",
+      "source": "src/components/primitives/TextField.tsx",
+      "stories": [
+        "Empty",
+        "Filled",
+        "Disabled",
+        "Monospace",
+        "Colour Picker",
+        "Typing Reports The Text",
+        "Disabled Takes No Input"
+      ],
+      "consumers": [
+        "src/components/primitives/SearchField.tsx",
+        "src/components/proofing/Transcript.tsx",
+        "src/components/settings/ScopedSetting.tsx",
+        "src/components/storybible/GuideDetail.tsx",
+        "src/components/teleprompter/TeleprompterPage.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/Tooltip",
       "name": "Tooltip",
       "source": "src/components/primitives/Tooltip.tsx",
@@ -423,6 +485,7 @@
         "src/components/primitives/MeterBar.tsx",
         "src/components/primitives/NavButton.tsx",
         "src/components/primitives/Pill.tsx",
+        "src/components/primitives/SearchField.tsx",
         "src/components/proofing/Results.tsx",
         "src/components/proofing/Transcript.tsx",
         "src/components/settings/ScopedSetting.tsx",

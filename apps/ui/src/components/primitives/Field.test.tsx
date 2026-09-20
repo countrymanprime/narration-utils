@@ -54,4 +54,11 @@ describe('Field', () => {
     expect(input.getAttribute('aria-invalid')).toBeNull();
     expect(input.getAttribute('aria-describedby')).toBeNull();
   });
+
+  it('shows a placeholder and takes focus on mount when asked', () => {
+    render(<Field label="Note" textarea autoFocus placeholder="Say what to change" value="" onChange={() => undefined} />);
+    const control = screen.getByRole('textbox', { name: 'Note' });
+    expect(control.getAttribute('placeholder')).toBe('Say what to change');
+    expect(document.activeElement).toBe(control);
+  });
 });

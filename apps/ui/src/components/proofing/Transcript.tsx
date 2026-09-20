@@ -9,6 +9,7 @@ import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { Pill } from '../primitives/Pill';
+import { TextField } from '../primitives/TextField';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { Results } from './Results';
 import { hasHint, splitHintTerms, suggestionMessage } from './hints';
@@ -353,18 +354,20 @@ export function Transcript({
                 )}
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <input
-                  className="min-h-[var(--control-height)] w-48 rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
-                  value={manualHint}
-                  placeholder="Add a term…"
-                  onChange={(event) => setManualHint(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      addManualHint();
-                    }
-                  }}
-                />
+                <div className="w-48">
+                  <TextField
+                    label="Add a vocabulary term"
+                    value={manualHint}
+                    placeholder="Add a term…"
+                    onChange={setManualHint}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        addManualHint();
+                      }
+                    }}
+                  />
+                </div>
                 <Button variant="ghost" onClick={addManualHint}>
                   Add
                 </Button>

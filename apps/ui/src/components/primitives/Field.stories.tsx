@@ -34,6 +34,7 @@ type Story = StoryObj<typeof meta>;
 
 export const TextInput: Story = {};
 export const TextInputEmpty: Story = { args: { value: '' } };
+export const WithPlaceholder: Story = { args: { value: '', placeholder: 'Microphone (USB Audio Device)' } };
 // A value wider than the field: the input scrolls, the layout must not grow.
 export const TextInputLongValue: Story = {
   args: { value: 'Late autumn, roughly forty days after the harbour fire and three winters after the siege of the lower city' },
@@ -149,5 +150,13 @@ export const TextareaWithHintAndError: Story = {
     const textarea = within(canvasElement).getByRole('textbox', { name: 'Description' });
     await expect(textarea).toBeInvalid();
     await expect(textarea).toHaveAccessibleDescription('One or two sentences A description is required');
+  },
+};
+
+// A dialog whose one job is this field opens with the cursor in it.
+export const FocusedOnMount: Story = {
+  args: { label: 'Note', textarea: true, value: '', autoFocus: true },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('textbox', { name: 'Note' })).toHaveFocus();
   },
 };

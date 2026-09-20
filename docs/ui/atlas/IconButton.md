@@ -23,6 +23,7 @@ Storybook title: `Primitives/IconButton`. Source: `src/components/primitives/Ico
 - `src/components/primitives/Collapsible.tsx`
 - `src/components/primitives/Dialog.tsx`
 - `src/components/primitives/NavDrawer.tsx`
+- `src/components/primitives/SearchField.tsx`
 - `src/components/primitives/SlideOver.tsx`
 - `src/components/proofing/Results.tsx`
 - `src/components/storybible/Guide.tsx`

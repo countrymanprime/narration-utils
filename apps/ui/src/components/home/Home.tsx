@@ -11,6 +11,7 @@ import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { IconButton } from '../primitives/IconButton';
+import { Select } from '../primitives/Select';
 
 // Import runs as a host-side job; the UI only ever displays the percent and log
 // lines the host reports while polling (ADR-0015) - it never invents progress.
@@ -20,6 +21,11 @@ const IMPORT_POLL_MS = 200;
 // the next time the app starts (ADR-0019).
 const declinedCandidates = new Set<string>();
 const POLLED_PHASES: WorkJob['phase'][] = ['preparing', 'committing'];
+const SECTION_KIND_OPTIONS = [
+  { value: 'narration', label: 'Narration chapter' },
+  { value: 'opening', label: 'Front Matter' },
+  { value: 'reference', label: 'Reference material' },
+];
 
 function completedLabel(value?: string) {
   if (!value) return 'completed previously';
@@ -214,10 +220,12 @@ export function Home({
           {importJob.preview.format === 'markdown' && (
             <label className="mt-4 flex items-center gap-2 text-sm">
               Markdown chapter heading level
-              <select
-                value={headingLevel}
-                onChange={(event) => {
-                  const level = Number(event.target.value);
+              <Select
+                label="Markdown chapter heading level"
+                value={String(headingLevel)}
+                options={[1, 2, 3, 4, 5, 6].map((level) => ({ value: String(level), label: `H${level}` }))}
+                onChange={(value) => {
+                  const level = Number(value);
                   setHeadingLevel(level);
                   setImportSelection({});
                   void api
@@ -225,13 +233,7 @@ export function Home({
                     .then(setImportJob)
                     .catch((error) => notify(error.message));
                 }}
-              >
-                {[1, 2, 3, 4, 5, 6].map((level) => (
-                  <option key={level} value={level}>
-                    H{level}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
           )}
           {importJob.preview.format === 'pdf' && importJob.preview.chapterTitles.length > 0 && (
@@ -249,21 +251,18 @@ export function Home({
                 {importJob.preview.sections.map((section) => (
                   <label key={section.id} className="flex items-center justify-between gap-3 text-sm">
                     <span className="min-w-0 truncate">{section.title}</span>
-                    <select
-                      aria-label={`${section.title} content type`}
+                    <Select
+                      label={`${section.title} content type`}
                       className="flex-none"
                       value={importSelection.sectionKinds?.[section.id] ?? section.contentKind}
-                      onChange={(event) =>
+                      options={SECTION_KIND_OPTIONS}
+                      onChange={(value) =>
                         setImportSelection((current) => ({
                           ...current,
-                          sectionKinds: { ...current.sectionKinds, [section.id]: event.target.value as 'narration' | 'opening' | 'reference' },
+                          sectionKinds: { ...current.sectionKinds, [section.id]: value as 'narration' | 'opening' | 'reference' },
                         }))
                       }
-                    >
-                      <option value="narration">Narration chapter</option>
-                      <option value="opening">Front Matter</option>
-                      <option value="reference">Reference material</option>
-                    </select>
+                    />
                   </label>
                 ))}
               </div>
