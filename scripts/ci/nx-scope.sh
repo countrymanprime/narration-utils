@@ -9,7 +9,7 @@
 # Environment: ALWAYS, GITHUB_EVENT_NAME, BASE_REF (the pull request's base branch).
 set -euo pipefail
 
-workspace_wide='^(nx\.json|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|pyproject\.toml|uv\.lock|project\.json|stylua\.toml|\.prettierrc\.json|\.prettierignore|\.editorconfig|\.gitattributes|scripts/(quality\.mjs|toolchain\.json|ci/nx-scope\.sh)|\.github/(workflows|actions)/)'
+workspace_wide='^(nx\.json|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|pyproject\.toml|uv\.lock|project\.json|stylua\.toml|\.prettierrc\.json|\.prettierignore|\.editorconfig|\.gitattributes|scripts/(quality\.mjs|toolchain\.json|ci/(nx-scope\.sh|coverage-gate\.mjs|coverage-floors\.json))|\.github/(workflows|actions)/)'
 
 if [ "${ALWAYS:-false}" = "true" ] || [ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]; then
   echo all

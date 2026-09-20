@@ -18,7 +18,7 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node scripts/quality.mjs pytest sidecars/manuscript-guide/tests"
+        "command": "node scripts/ci/coverage-gate.mjs pytest sidecars/manuscript-guide sidecars/manuscript-guide/tests"
       }
     }
   }

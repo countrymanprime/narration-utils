@@ -15,7 +15,7 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node scripts/quality.mjs pytest libs/python/tests"
+        "command": "node scripts/ci/coverage-gate.mjs pytest libs/python libs/python/tests"
       }
     }
   }

@@ -1,3 +1,13 @@
+import { configure } from '@testing-library/react';
+
+// Testing Library's findBy* and waitFor give up after 1 s by default. Vitest runs test files in parallel workers, and a
+// page that mounts the whole app or a long chapter in jsdom can take longer than that when the machine is busy: two of 25
+// consecutive full runs on a quiet 32-core machine failed with "Unable to find ..." at about 1.1 s while the same
+// tests take a few hundred milliseconds alone. A wait ends the moment its condition holds, so a longer limit costs nothing
+// on a passing run and only lets a slow one finish; it stays below `testTimeout` (15 s, vite.config.ts) so a real
+// hang still fails on the wait's own message rather than as a bare test timeout.
+configure({ asyncUtilTimeout: 5_000 });
+
 // Vitest 4's jsdom compat layer wraps URL.createObjectURL and reads a private
 // `_buffer` field off jsdom's Blob implementation, which jsdom 30 no longer
 // has, so the real call throws. No test needs a real blob URL - the audio

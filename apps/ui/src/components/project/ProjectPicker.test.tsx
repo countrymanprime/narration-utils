@@ -123,7 +123,8 @@ describe('ProjectPicker', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Remove Alice’s Adventures in Wonderland from recent projects' }));
 
     await waitFor(() => expect(screen.queryByText('Alice’s Adventures in Wonderland')).toBeNull());
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Remove Voltage and the Undercroft from recent projects' }));
+    // The row disappears in one commit and focus moves in a later one (once `busy` is false again), so wait for focus itself.
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Remove Voltage and the Undercroft from recent projects' })));
   });
 
   it('moves focus to the recent-projects heading when the last recent project is removed', async () => {
@@ -131,11 +132,15 @@ describe('ProjectPicker', () => {
     await waitFor(() => expect(screen.getByText('Alice’s Adventures in Wonderland')).toBeTruthy());
     fireEvent.click(screen.getByRole('button', { name: 'Remove Alice’s Adventures in Wonderland from recent projects' }));
     await waitFor(() => expect(screen.queryByText('Alice’s Adventures in Wonderland')).toBeNull());
+    // Every control stays disabled until the removal settles (`busy`), and a click on a disabled button is dropped: wait
+    // for focus to land on the next remove button, which happens only once it is enabled again.
+    const removeVoltage = () => screen.getByRole('button', { name: 'Remove Voltage and the Undercroft from recent projects' });
+    await waitFor(() => expect(document.activeElement).toBe(removeVoltage()));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove Voltage and the Undercroft from recent projects' }));
+    fireEvent.click(removeVoltage());
 
     await waitFor(() => expect(screen.queryByText('Voltage and the Undercroft')).toBeNull());
-    expect(document.activeElement).toBe(screen.getByText('Open recent'));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByText('Open recent')));
   });
 
   it('renders the refusal reason when a switch is rejected', async () => {
