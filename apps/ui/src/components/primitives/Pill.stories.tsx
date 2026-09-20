@@ -24,3 +24,18 @@ export const ClickSelects: Story = {
     await expect(args.onClick).toHaveBeenCalledOnce();
   },
 };
+
+// Base UI's Toggle gives the chip aria-pressed, so a screen reader hears which chip is selected.
+export const AnnouncesItsPressedState: Story = {
+  render: (args) => (
+    <div className="flex gap-2">
+      <Pill {...args} label="small" active={false} />
+      <Pill {...args} label="medium" active />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: 'small', pressed: false })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'medium', pressed: true })).toBeVisible();
+  },
+};

@@ -24,6 +24,7 @@ import { SlideOver } from '../primitives/SlideOver';
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
+import { Menu } from '../primitives/Menu';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { CANONICAL_PREVIEW, previewKey, usePreviewAudio } from './usePreviewAudio';
 
@@ -53,7 +54,6 @@ export function GuideDetail({
   const api = useApi();
   const [draft, setDraft] = useState({ name: '', description: '', personality: '', context: '' });
   const [editing, setEditing] = useState(false);
-  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const [aliasQuery, setAliasQuery] = useState('');
   const [aliasSelectedId, setAliasSelectedId] = useState<string>();
   const [aliasActiveIndex, setAliasActiveIndex] = useState(0);
@@ -83,7 +83,6 @@ export function GuideDetail({
   // entry (after Save, an alias change, ...) keeps its mode.
   useEffect(() => setEditing(false), [entity?.id]);
   useEffect(() => {
-    setCategoryMenuOpen(false);
     setAliasQuery('');
     setAliasSelectedId(undefined);
     setAliasActiveIndex(0);
@@ -227,37 +226,22 @@ export function GuideDetail({
           <h2 className="truncate font-semibold">{entity.canonical_name || 'New entity'}</h2>
           <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
             <div style={{ position: 'relative' }}>
-              <button
-                type="button"
-                className={BADGE_CLASS}
-                style={BADGE_STYLE[entity.category]}
+              <Menu
+                triggerClassName={BADGE_CLASS}
+                triggerStyle={BADGE_STYLE[entity.category]}
                 disabled={locked || !(editing || isNewDraft)}
-                onClick={() => setCategoryMenuOpen((value) => !value)}
+                items={CREATABLE_CATEGORIES.map((label) => ({
+                  key: label,
+                  label,
+                  leading: <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryValue(label)] }} />,
+                  onSelect: () => {
+                    if (isNewDraft) void createNewEntity(categoryValue(label));
+                    else void save({ category: categoryValue(label) }, `Category changed to ${label}.`);
+                  },
+                }))}
               >
                 {categoryLabel(entity.category)} <FontAwesomeIcon icon={faChevronDown} />
-              </button>
-              {categoryMenuOpen && (
-                <div
-                  className="absolute top-[calc(100%+0.4rem)] left-0 z-10 w-44 rounded-[0.4rem] border border-[var(--border)] bg-[var(--surface)] p-[0.35rem] shadow-[var(--shadow-lg)]"
-                  role="menu"
-                >
-                  {CREATABLE_CATEGORIES.map((label) => (
-                    <button
-                      key={label}
-                      role="menuitem"
-                      className="flex w-full items-center gap-2 rounded-[0.3rem] px-[0.55rem] py-[0.45rem] text-left text-[0.82rem] hover:bg-[var(--surface-2)]"
-                      onClick={() => {
-                        setCategoryMenuOpen(false);
-                        if (isNewDraft) void createNewEntity(categoryValue(label));
-                        else void save({ category: categoryValue(label) }, `Category changed to ${label}.`);
-                      }}
-                    >
-                      <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryValue(label)] }} />
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              </Menu>
             </div>
           </div>
         </div>

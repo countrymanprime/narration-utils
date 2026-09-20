@@ -5,6 +5,7 @@ import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import type { ChapterStatus, ManuscriptChapter } from '../../types';
 import { estimateFinishedHours } from '../../state';
 import { useApi } from '../../api/ApiContext';
+import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '../primitives/Collapsible';
 import { MeterBar } from '../primitives/MeterBar';
 import { Panel } from '../primitives/Panel';
 import { STATUS_COLOR, STATUS_LABELS, STATUS_ORDER } from '../manuscript/ChapterNav';
@@ -78,7 +79,11 @@ export function AudiobookEstimatePanel({
   const statusTotals = rollupChapterStatuses(narrationChapters);
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
+    <Collapsible
+      open={breakdownOpen}
+      onOpenChange={setBreakdownOpen}
+      className="rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]"
+    >
       <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
         <div>
           <h2 className="text-sm font-semibold">Audiobook estimate</h2>
@@ -88,14 +93,12 @@ export function AudiobookEstimatePanel({
           </div>
         </div>
         <TooltipTarget text={breakdownOpen ? 'Hide per-chapter breakdown' : 'Show per-chapter breakdown'}>
-          <button
-            aria-label={breakdownOpen ? 'Hide per-chapter breakdown' : 'Show per-chapter breakdown'}
-            aria-expanded={breakdownOpen}
+          <CollapsibleTrigger
+            label={breakdownOpen ? 'Hide per-chapter breakdown' : 'Show per-chapter breakdown'}
             className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-            onClick={() => setBreakdownOpen((value) => !value)}
           >
             <FontAwesomeIcon icon={breakdownOpen ? faChevronUp : faChevronDown} />
-          </button>
+          </CollapsibleTrigger>
         </TooltipTarget>
       </div>
       <div className="space-y-4 p-[1.1rem]">
@@ -139,86 +142,84 @@ export function AudiobookEstimatePanel({
             ))}
           </div>
         </div>
-        {breakdownOpen && (
-          <div className="overflow-x-auto border-t pt-1" style={{ borderColor: 'var(--border)' }}>
-            <table className="dtable">
-              <thead>
-                <tr>
-                  <th>Chapter</th>
-                  <th className="text-right">Words</th>
-                  <th className="text-right">Est. finished length</th>
-                  <th className="text-right">Actual recorded</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {narrationChapters.map((chapter) => {
-                  const finished = estimateFinishedHours(chapter.wordCount);
-                  return (
-                    <tr key={chapter.id}>
-                      <td>
-                        <div>
-                          <Link
-                            className="font-medium hover:underline"
-                            to={`/manuscript#c${encodeURIComponent(chapter.id)}`}
-                            aria-label={chapter.subtitle ? `${chapter.title} — ${chapter.subtitle}` : chapter.title}
-                            onClick={(event) => {
-                              if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                              event.preventDefault();
-                              goToManuscript(chapter.id);
-                            }}
-                          >
-                            {chapter.title}
-                            {chapter.subtitle && (
-                              <span style={{ color: 'var(--text-faint)' }}>
-                                {' — '}
-                                {chapter.subtitle}
-                              </span>
-                            )}
-                          </Link>
-                        </div>
-                      </td>
-                      <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]">{chapter.wordCount.toLocaleString()}</td>
-                      <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]">{fmtHours(finished)}</td>
-                      <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]">
-                        {(chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status]) > 0
-                          ? fmtHours(finished * (chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status]))
-                          : '—'}
-                      </td>
-                      <td>
-                        <select
-                          aria-label={`${chapter.title} status`}
-                          value={chapter.status}
-                          onChange={async (event) => {
-                            try {
-                              const updated = await api.manuscriptSetChapterStatus(chapter.id, event.target.value as ChapterStatus);
-                              setChapters((current) =>
-                                current?.map((c) =>
-                                  c.id === chapter.id
-                                    ? { ...c, ...updated, wordCount: c.wordCount, subtitle: c.subtitle, recordedFraction: c.recordedFraction }
-                                    : c,
-                                ),
-                              );
-                            } catch (error) {
-                              notify(String(error));
-                            }
+        <CollapsiblePanel className="overflow-x-auto border-t border-[var(--border)] pt-1">
+          <table className="dtable">
+            <thead>
+              <tr>
+                <th>Chapter</th>
+                <th className="text-right">Words</th>
+                <th className="text-right">Est. finished length</th>
+                <th className="text-right">Actual recorded</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {narrationChapters.map((chapter) => {
+                const finished = estimateFinishedHours(chapter.wordCount);
+                return (
+                  <tr key={chapter.id}>
+                    <td>
+                      <div>
+                        <Link
+                          className="font-medium hover:underline"
+                          to={`/manuscript#c${encodeURIComponent(chapter.id)}`}
+                          aria-label={chapter.subtitle ? `${chapter.title} — ${chapter.subtitle}` : chapter.title}
+                          onClick={(event) => {
+                            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                            event.preventDefault();
+                            goToManuscript(chapter.id);
                           }}
                         >
-                          {STATUS_ORDER.map((status) => (
-                            <option key={status} value={status}>
-                              {STATUS_LABELS[status]}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                          {chapter.title}
+                          {chapter.subtitle && (
+                            <span style={{ color: 'var(--text-faint)' }}>
+                              {' — '}
+                              {chapter.subtitle}
+                            </span>
+                          )}
+                        </Link>
+                      </div>
+                    </td>
+                    <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]">{chapter.wordCount.toLocaleString()}</td>
+                    <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]">{fmtHours(finished)}</td>
+                    <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]">
+                      {(chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status]) > 0
+                        ? fmtHours(finished * (chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status]))
+                        : '—'}
+                    </td>
+                    <td>
+                      <select
+                        aria-label={`${chapter.title} status`}
+                        value={chapter.status}
+                        onChange={async (event) => {
+                          try {
+                            const updated = await api.manuscriptSetChapterStatus(chapter.id, event.target.value as ChapterStatus);
+                            setChapters((current) =>
+                              current?.map((c) =>
+                                c.id === chapter.id
+                                  ? { ...c, ...updated, wordCount: c.wordCount, subtitle: c.subtitle, recordedFraction: c.recordedFraction }
+                                  : c,
+                              ),
+                            );
+                          } catch (error) {
+                            notify(String(error));
+                          }
+                        }}
+                      >
+                        {STATUS_ORDER.map((status) => (
+                          <option key={status} value={status}>
+                            {STATUS_LABELS[status]}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </CollapsiblePanel>
       </div>
-    </section>
+    </Collapsible>
   );
 }

@@ -6,6 +6,7 @@ import type { GuideEntity, ManuscriptImportSelection, TranscriptState, WorkJob }
 import type { Bootstrap } from '../../types';
 import { Heading } from '../primitives/Heading';
 import { AudiobookEstimatePanel } from './AudiobookEstimatePanel';
+import { Checkbox } from '../primitives/Checkbox';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
@@ -286,22 +287,19 @@ export function Home({
                   candidate.id,
                 );
                 return (
-                  <label key={candidate.id} className="flex items-start gap-2 py-0.5 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(event) => {
-                        const selected = new Set(importSelection.characterCandidateIds ?? importJob.preview!.characterCandidates!.map((item) => item.id));
-                        if (event.target.checked) selected.add(candidate.id);
-                        else selected.delete(candidate.id);
-                        setImportSelection((current) => ({ ...current, characterCandidateIds: [...selected] }));
-                      }}
-                    />
-                    <span>
-                      {candidate.name}
-                      {candidate.description && <span style={{ color: 'var(--text-muted)' }}> — {candidate.description}</span>}
-                    </span>
-                  </label>
+                  <Checkbox
+                    key={candidate.id}
+                    checked={checked}
+                    onChange={(next) => {
+                      const selected = new Set(importSelection.characterCandidateIds ?? importJob.preview!.characterCandidates!.map((item) => item.id));
+                      if (next) selected.add(candidate.id);
+                      else selected.delete(candidate.id);
+                      setImportSelection((current) => ({ ...current, characterCandidateIds: [...selected] }));
+                    }}
+                  >
+                    {candidate.name}
+                    {candidate.description && <span style={{ color: 'var(--text-muted)' }}> — {candidate.description}</span>}
+                  </Checkbox>
                 );
               })}
             </fieldset>
