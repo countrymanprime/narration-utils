@@ -7,7 +7,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -22,14 +22,17 @@ function requireInBin(binDir, name) {
 // `required` platforms must be on a release before it can be promoted; the others ship when their
 // (separate, re-runnable) build succeeds and are simply absent when it did not.
 export const PLATFORMS = {
-  // The NSIS installer is the deliverable; the raw exe is only meaningful inside an install.
+  // The runner has no NSIS, so `wails build -nsis` only warns and the raw self-contained exe is the
+  // real output. It is zipped (about 400 MB otherwise) and keeps the name the REAPER launcher looks for.
   'windows-x64': {
-    extension: '.exe',
+    extension: '.zip',
     required: true,
-    archive({ binDir, target }) {
-      const installers = readdirSync(binDir).filter((name) => name.endsWith('-installer.exe'));
-      if (installers.length !== 1) throw new Error(`Expected exactly one NSIS installer in ${binDir}, found ${installers.length}.`);
-      copyFileSync(join(binDir, installers[0]), target);
+    archive({ binDir, outDir, target }) {
+      requireInBin(binDir, `${SHELL_BINARY}.exe`);
+      // Windows' bsdtar writes zips (-a picks the format from the name). Git Bash's GNU tar comes
+      // first on PATH there and cannot, so call the system one by path.
+      const tar = join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe');
+      execFileSync(tar, ['-a', '-cf', basename(target), '-C', binDir, `${SHELL_BINARY}.exe`], { cwd: outDir, stdio: 'inherit' });
     },
   },
   // A .app is a directory, so it has to be archived. -y keeps symlinks inside the bundle.

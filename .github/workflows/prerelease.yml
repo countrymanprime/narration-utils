@@ -93,7 +93,7 @@ jobs:
         run: |
           git tag "$TAG"
           node scripts/release/generate-notes.mjs "$TAG"
-      - name: Create the prerelease with the Windows installer
+      - name: Create the prerelease with the Windows zip
         run: gh release create "$TAG" release-assets/* --target "$GITHUB_SHA" --prerelease --title "$TAG" --notes-file release-notes.md
       # Each starts its own run, so a failed macOS or Linux build neither turns this run red nor
       # blocks promotion. Retry one by re-running its workflow, or dispatching it with the tag.

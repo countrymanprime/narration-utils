@@ -38,7 +38,8 @@ uses the squash commit title to calculate the synchronized application version:
 `chore`, and `revert` are patch. Pre-1.0 breaking changes are handled as the
 next minor release. The workflow tags `v<version>-rc`, builds the Windows
 package, and in that same job creates the GitHub pre-release with the Windows
-installer. The last step starts the optional **Build macOS** and **Build Linux**
+zip. There is no installer: the Windows runner has no NSIS, so Wails only warns
+and the self-contained `narration-utils-shell.exe` is the real output. The last step starts the optional **Build macOS** and **Build Linux**
 workflows, which build the release tag and attach their asset
 ([ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)). They are
 separate runs, so a failed non-Windows build never delays or reddens the Windows
@@ -52,7 +53,7 @@ Each platform ships one asset named `narration-utils-<platform>.<ext>`, with a
 
 | Platform | Asset | Contents |
 | --- | --- | --- |
-| `windows-x64` | `narration-utils-windows-x64.exe` | NSIS installer |
+| `windows-x64` | `narration-utils-windows-x64.zip` | `narration-utils-shell.exe` |
 | `macos-arm64` | `narration-utils-macos-arm64.zip` | `Narration Utils.app` |
 | `linux-x64` | `narration-utils-linux-x64.tar.gz` | `narration-utils-shell` binary |
 
