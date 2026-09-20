@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faPlay, faWandMagicSparkles, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faPlay, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons';
 import type { Discrepancy, TranscriptState, TranscriptStartResult, WhisperInstallJob } from '../../types';
 import { isTranscriptActive } from '../../state';
 import { useApi } from '../../api/ApiContext';
@@ -9,8 +9,8 @@ import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { ToggleGroup } from '../primitives/ToggleGroup';
-import { TextField } from '../primitives/TextField';
-import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
+import { TagInput } from '../primitives/TagInput';
+import { Tooltip } from '../primitives/Tooltip';
 import { Results } from './Results';
 import { hasHint, splitHintTerms, suggestionMessage } from './hints';
 import { PROOFING_CHUNK_OPTIONS } from './options';
@@ -71,7 +71,6 @@ export function Transcript({
   // The suggestion request is asynchronous: read the lists as they are when it resolves, not as they were at the click.
   const hintsRef = useRef({ accepted: acceptedHints, pending: pendingHints });
   hintsRef.current = { accepted: acceptedHints, pending: pendingHints };
-  const [manualHint, setManualHint] = useState('');
   const [logVerbosity, setLogVerbosity] = useState<'Quiet' | 'Normal' | 'Verbose'>('Normal');
   const [selected, setSelected] = useState<Discrepancy>();
   const [lastCompleted, setLastCompleted] = useState<TranscriptState>();
@@ -147,9 +146,8 @@ export function Transcript({
     if (!hasHint(acceptedHints, term)) void saveHints([...acceptedHints, term]);
   };
   const removeHint = (term: string) => void saveHints(acceptedHints.filter((item) => item !== term));
-  const addManualHint = () => {
-    const terms = splitHintTerms(manualHint);
-    setManualHint('');
+  const addManualHint = (text: string) => {
+    const terms = splitHintTerms(text);
     const next = terms.reduce((hints, term) => (hasHint(hints, term) ? hints : [...hints, term]), acceptedHints);
     if (next.length > acceptedHints.length) void saveHints(next);
   };
@@ -318,61 +316,27 @@ export function Transcript({
               </div>
             </div>
             <div>
-              <label className="mb-1.5 block text-[0.82rem] font-medium text-[var(--text-muted)]">
+              <span className="mb-1.5 block text-[0.82rem] font-medium text-[var(--text-muted)]">
                 Vocabulary hints
                 <Tooltip text="Unusual names and invented words Whisper is likely to mis-hear. Accepted hints are remembered for this project - you won't need to re-suggest them every run." />
-              </label>
-              <div className="flex min-h-11 flex-wrap gap-2 rounded-md p-2" style={{ border: '1px solid var(--border)', background: 'var(--surface-2)' }}>
-                {acceptedHints.map((term) => (
-                  <span
-                    key={term}
-                    className="inline-flex items-center gap-[0.35rem] rounded-full border border-[var(--accent)] bg-[var(--accent-soft)] px-[0.55rem] py-[0.3rem] font-['IBM_Plex_Mono',monospace] text-[0.8rem] text-[var(--accent-strong)]"
-                  >
-                    {term}
-                    <button aria-label={`Remove ${term}`} onClick={() => removeHint(term)}>
-                      <FontAwesomeIcon icon={faXmark} />
-                    </button>
-                  </span>
-                ))}
-                {pendingHints.map((term) => (
-                  <TooltipTarget key={term} text="Suggested — click to accept">
-                    <button
-                      className="inline-flex items-center gap-[0.35rem] rounded-full border border-dashed border-[var(--border)] bg-transparent px-[0.55rem] py-[0.3rem] font-['IBM_Plex_Mono',monospace] text-[0.8rem] text-[var(--text-muted)]"
-                      onClick={() => acceptHint(term)}
-                    >
-                      + {term}
-                    </button>
-                  </TooltipTarget>
-                ))}
-                {acceptedHints.length === 0 && pendingHints.length === 0 && (
-                  <span className="text-xs" style={{ color: 'var(--text-faint)' }}>
-                    No hints yet — add one, or suggest from the manuscript.
-                  </span>
-                )}
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <div className="w-48">
-                  <TextField
-                    label="Add a vocabulary term"
-                    value={manualHint}
-                    placeholder="Add a term…"
-                    onChange={setManualHint}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        addManualHint();
-                      }
-                    }}
-                  />
-                </div>
-                <Button variant="ghost" onClick={addManualHint}>
-                  Add
-                </Button>
-                <Button variant="ghost" onClick={() => void suggestHints()}>
-                  <FontAwesomeIcon icon={faWandMagicSparkles} />
-                  Suggest from manuscript
-                </Button>
-              </div>
+              </span>
+              <TagInput
+                label="Vocabulary hints"
+                inputLabel="Add a vocabulary term"
+                placeholder="Add a term…"
+                tags={acceptedHints}
+                suggestions={pendingHints}
+                emptyText="No hints yet — add one, or suggest from the manuscript."
+                onAdd={addManualHint}
+                onRemove={removeHint}
+                onAcceptSuggestion={acceptHint}
+                actions={
+                  <Button variant="ghost" onClick={() => void suggestHints()}>
+                    <FontAwesomeIcon icon={faWandMagicSparkles} />
+                    Suggest from manuscript
+                  </Button>
+                }
+              />
             </div>
             <div className="flex items-center justify-between gap-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
               <Button variant="ghost" onClick={goHome}>

@@ -25,7 +25,7 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     'src/components/manuscript/ChapterNav.tsx': 4,
     'src/components/manuscript/Manuscript.tsx': 2,
     'src/components/project/ProjectPicker.tsx': 3,
-    'src/components/proofing/Transcript.tsx': 3,
+    'src/components/proofing/Transcript.tsx': 1,
     'src/components/settings/ScopedSetting.tsx': 1,
     'src/components/storybible/Guide.tsx': 2,
     'src/components/storybible/GuideDetail.tsx': 1,

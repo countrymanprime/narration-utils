@@ -31,6 +31,7 @@ Storybook title: `Primitives/Tooltip`. Source: `src/components/primitives/Toolti
 - `src/components/primitives/NavButton.tsx`
 - `src/components/primitives/Pill.tsx`
 - `src/components/primitives/SearchField.tsx`
+- `src/components/primitives/TagInput.tsx`
 - `src/components/proofing/Results.tsx`
 - `src/components/proofing/Transcript.tsx`
 - `src/components/settings/ScopedSetting.tsx`
