@@ -18,7 +18,7 @@ PRDs never replace ADRs. A PRD names the decisions it expects to make and links 
 2. **In delivery:** each phase becomes a PRP plan and a pull request. The PR that delivers a phase sets that phase's `Status` to `complete` in the PRD's phase table (and links the plan in `PRP Plan`). Work in flight is tracked on GitHub issues per [Tracking work on GitHub](../operations/github-workflow.md), with `Closes #<n>` in the PR.
 3. **Done:** once the work is implemented and has become steady state, the PRD is deleted in favor of steady-state documentation: `docs/architecture/`, `docs/utilities/`, `docs/guides/` and the ADRs record how it works and why. Delete the PRD in the PR that completes its last phase, and make sure that PR also writes the steady-state docs first. Git history keeps the PRD (`git show <commit>:docs/prds/<name>.prd.md`).
 
-Nothing in a PRD that is still true and useful after delivery is lost by deleting it: move durable rules to the steady-state doc, decisions to an ADR, and the rest to git history. The decision is recorded in [ADR 0027](../adr/0027-planned-work-is-specified-as-prds-and-deleted-when-built.md).
+Nothing in a PRD that is still true and useful after delivery is lost by deleting it: move durable rules to the steady-state doc, decisions to an ADR, and the rest to git history. The decision is recorded in [ADR 0028](../adr/0028-planned-work-is-specified-as-prds-and-deleted-when-built.md).
 
 ## PRD template
 
@@ -97,7 +97,7 @@ Three planned-work documents stay because they hold rules or design records that
 These serialization points are named inside the PRDs themselves. Several PRDs run in parallel sessions, so check each before starting a phase that touches one.
 
 - **Host API version.** `hostAPIVersion` lives in three places, all `5` at the time the PRDs were written: `shell/app.go`, `shell/app_test.go` and `shared/ui/src/hostApi.ts`. Every phase that adds a binding bumps it (and regenerates `Host.{js,d.ts}`), so it is a merge-time serialization point: the later pull request rebases and bumps again. The host binding data race PRD is the exception; it changes no signatures and does not bump.
-- **Next free ADR number.** `0027` when the PRDs were written. Numbers can collide with open pull requests, so re-check `docs/adr/` at merge time before numbering.
+- **Next free ADR number.** `0027` when the PRDs were written; `0037` once ADRs 0027-0036 had merged. Numbers can collide with open pull requests, so re-check `docs/adr/` at merge time before numbering.
 - **Adding a nav item.** A new page adds an entry to `AppShell.tsx` NAV, which regenerates every doc screenshot under `docs/images/ui/`. Land nav additions one at a time (Review dashboard, Delivery, character continuity and take review pages, and the teleprompter PRD's final phase that retires the standalone page).
 - **Lua dispatcher.** `shared/reaper/narration_ui_bridge.lua` dispatches every bridge command through one `if/elseif` chain, and `shared/reaper` has no automated tests. The review dashboard, take review, diagnostics, teleprompter integration and REAPER automation PRDs all add commands there. The REAPER automation PRD's registry phase (Phase 4, conditional) is meant to run alone and early.
 - **`shell/bindings.go` and the host binding fix.** The host binding data race PRD rewrites nearly every binding body, so its Phase 1 (the `h.services()` accessor and guard test) merges first, Phases 2 and 3 follow back to back, and PRDs that add bindings meanwhile build on the accessor or rebase onto those phases.

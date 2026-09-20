@@ -14,7 +14,8 @@
     "release:sync": "node scripts/release/sync-version.mjs",
     "release:check": "node scripts/release/sync-version.mjs --check",
     "release:notes": "node scripts/release/generate-notes.mjs",
-    "release:assets": "node scripts/release/collect-assets.mjs",
+    "release:package": "node scripts/release/assets.mjs package",
+    "release:verify-assets": "node scripts/release/assets.mjs verify",
     "release:verify-installable": "node scripts/release/verify-installable.mjs",
     "release:promote": "node scripts/release/promote.mjs"
   },

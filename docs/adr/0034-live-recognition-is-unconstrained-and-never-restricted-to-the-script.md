@@ -1,4 +1,4 @@
-# 0033. Live recognition is unconstrained and is never restricted to the script's words
+# 0034. Live recognition is unconstrained and is never restricted to the script's words
 
 **Status:** Proposed
 **Date:** 2026-09-19
@@ -9,7 +9,7 @@ The teleprompter knows exactly what the narrator should say, which makes a close
 
 ## Decision
 
-Live recognition decodes the narrator's speech without a restricting grammar, and matching against the script happens afterwards, in the tracker ([ADR 0032](0032-the-teleprompter-follows-speech-with-continuous-alignment-and-pause-resume.md)). Biasing is allowed only as a nudge: the `--hotwords` option passes `faster-whisper` `hotwords` (`tools/manuscript-teleprompter/core/live_asr.py:355-368`), and the Moonshine engine can take the chapter text as context (`live_asr.py:679`). No engine is given a closed vocabulary, and Vosk or any other grammar-constrained decoder is not used for the live signal. The project does not depend on Vosk (`pyproject.toml`, `uv.lock` and the sidecar sources contain no reference to it).
+Live recognition decodes the narrator's speech without a restricting grammar, and matching against the script happens afterwards, in the tracker ([ADR 0033](0033-the-teleprompter-follows-speech-with-continuous-alignment-and-pause-resume.md)). Biasing is allowed only as a nudge: the `--hotwords` option passes `faster-whisper` `hotwords` (`tools/manuscript-teleprompter/core/live_asr.py:355-368`), and the Moonshine engine can take the chapter text as context (`live_asr.py:679`). No engine is given a closed vocabulary, and Vosk or any other grammar-constrained decoder is not used for the live signal. The project does not depend on Vosk (`pyproject.toml`, `uv.lock` and the sidecar sources contain no reference to it).
 
 ## Consequences
 

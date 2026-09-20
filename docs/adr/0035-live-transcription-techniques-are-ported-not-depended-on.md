@@ -1,4 +1,4 @@
-# 0034. Live transcription techniques are ported into the sidecar, not taken as dependencies
+# 0035. Live transcription techniques are ported into the sidecar, not taken as dependencies
 
 **Status:** Proposed
 **Date:** 2026-09-19
@@ -16,6 +16,6 @@ Two open-source projects solve parts of live transcription with `faster-whisper`
 - No new runtime dependency, server or port, and model integrity is checked by the same catalog as every other model.
 - The port freezes a snapshot of two upstream designs. Improvements to either project are not picked up unless someone re-reads them and ports them deliberately.
 - MIT requires the notice to travel with copied code. Because this is a clean-room re-implementation of the design, there is no upstream commit to pin, and the attribution is of the technique; if any upstream source is ever copied verbatim, the exact commit and full notice must be added at that point.
-- The tracker's design also follows Autocue (MIT), credited in `script_tracker.py`'s docstring ([ADR 0032](0032-the-teleprompter-follows-speech-with-continuous-alignment-and-pause-resume.md)). It is not recorded in `docs/research/local-dependency-evaluation.md`, unlike the two above.
+- The tracker's design also follows Autocue (MIT), credited in `script_tracker.py`'s docstring ([ADR 0033](0033-the-teleprompter-follows-speech-with-continuous-alignment-and-pause-resume.md)). It is not recorded in `docs/research/local-dependency-evaluation.md`, unlike the two above.
 - We own the streaming loop's bugs and its CPU cost, which grows with segment length because each decode re-reads the whole open segment (bounded by `MAX_BUFFER_SECONDS`).
 - Adopting a package or server for live transcription, or a different streaming framework, would need a new ADR that supersedes this one.

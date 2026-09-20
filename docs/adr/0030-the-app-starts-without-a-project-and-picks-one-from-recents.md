@@ -1,4 +1,4 @@
-# 0029. The app can start without a project and picks one from a per-user recents list
+# 0030. The app can start without a project and picks one from a per-user recents list
 
 **Status:** Proposed
 **Date:** 2026-09-19

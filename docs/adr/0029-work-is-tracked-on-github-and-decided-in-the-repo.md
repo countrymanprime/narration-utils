@@ -1,4 +1,4 @@
-# 0028. Work is tracked on GitHub, generated from files in the repo, and decisions and docs stay in the repo
+# 0029. Work is tracked on GitHub, generated from files in the repo, and decisions and docs stay in the repo
 
 **Status:** Proposed
 **Date:** 2026-09-19

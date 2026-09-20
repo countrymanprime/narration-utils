@@ -1,4 +1,4 @@
-# 0031. Analyzers report findings and never change the narrator's audio or manuscript on their own
+# 0032. Analyzers report findings and never change the narrator's audio or manuscript on their own
 
 **Status:** Proposed
 **Date:** 2026-09-19

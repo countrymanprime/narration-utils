@@ -1,4 +1,4 @@
-# 0030. REAPER integration stays a Lua file bridge, and Lua changes are verified by hand
+# 0031. REAPER integration stays a Lua file bridge, and Lua changes are verified by hand
 
 **Status:** Proposed
 **Date:** 2026-09-19

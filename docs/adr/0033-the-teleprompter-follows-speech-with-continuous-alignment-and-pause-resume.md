@@ -1,4 +1,4 @@
-# 0032. The teleprompter follows what was said, with continuous alignment and pause/resume
+# 0033. The teleprompter follows what was said, with continuous alignment and pause/resume
 
 **Status:** Proposed
 **Date:** 2026-09-19

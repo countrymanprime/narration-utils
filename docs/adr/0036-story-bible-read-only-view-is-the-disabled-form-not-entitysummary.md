@@ -1,4 +1,4 @@
-# 0035. The Story Bible's read-only view is the same form with disabled controls, not `EntitySummary`
+# 0036. The Story Bible's read-only view is the same form with disabled controls, not `EntitySummary`
 
 **Status:** Proposed
 **Date:** 2026-09-19

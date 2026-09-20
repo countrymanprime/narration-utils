@@ -1,4 +1,4 @@
-# 0027. Planned work is specified as PRDs, kept apart from ADRs, and a PRD is deleted once its work is built
+# 0028. Planned work is specified as PRDs, kept apart from ADRs, and a PRD is deleted once its work is built
 
 **Status:** Proposed
 **Date:** 2026-09-19
@@ -13,7 +13,7 @@ Planned work used to live in per-feature briefs scattered across `docs/architect
 2. The 20 per-feature briefs are removed and replaced by 16 PRDs, indexed with a "Replaces" column and a "Replaced briefs" table in `docs/prds/README.md`. Each removed file is recoverable from git, for example `git show d5cc994:docs/utilities/review-dashboard.md`.
 3. PRDs and ADRs stay separate. An ADR records a decision that was made and applied ([`docs/adr/README.md`](README.md) rule 4). A PRD names the decisions it expects to make and links the ADR once it is written; it never stands in for one.
 4. A PRD is deleted when its work is implemented and steady-state documentation exists. Steady-state documentation is `docs/architecture/`, `docs/utilities/`, `docs/guides/` and the ADRs. The PRD's evidence and history stay recoverable from git; the docs that remain describe the code as it is.
-5. PRDs specify, issues track. Work in flight is an issue or pull request on GitHub ([ADR 0028](0028-work-is-tracked-on-github-and-decided-in-the-repo.md)), not a PRD checklist.
+5. PRDs specify, issues track. Work in flight is an issue or pull request on GitHub ([ADR 0029](0029-work-is-tracked-on-github-and-decided-in-the-repo.md)), not a PRD checklist.
 
 ## Consequences
 
