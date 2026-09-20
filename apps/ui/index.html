@@ -30,7 +30,8 @@
     <title>Narration Console</title>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- isolate: the app is one stacking context, so the popups the primitives portal to <body> (dialogs, tooltips, popovers, drawers) always stack above page content. -->
+    <div id="root" class="isolate"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

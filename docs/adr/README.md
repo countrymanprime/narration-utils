@@ -69,3 +69,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0044](0044-property-and-fuzz-tests-are-deterministic-in-the-gate.md) | Property and fuzz tests are deterministic in the gate | Accepted |
 | [0045](0045-dead-code-is-gated-at-zero-with-reasoned-ignores.md) | Dead code is gated at zero, and every ignore says why | Accepted |
 | [0046](0046-architecture-rules-taken-from-adrs-are-lint-and-test-rules.md) | Mechanically checkable ADR rules are lint and test rules that name their ADR | Accepted |
+| [0047](0047-the-ui-primitives-wrap-base-ui-and-app-code-never-imports-it.md) | The UI primitives wrap Base UI, and app code never imports it | Accepted |

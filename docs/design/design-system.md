@@ -25,6 +25,17 @@ Location: `apps/ui/src/components/primitives/`.
 | `Pill` | Toggle chip | Active/inactive classes are mutually exclusive so text stays readable in dark mode |
 | `MeterBar` | Segmented horizontal meter | Caller controls segment order — see [ADR 0006](../adr/0006-chapter-progress-bar-ordering.md) for why the chapter-progress usage reverses it |
 
+### Base UI wrappers
+
+Interactive behaviour (focus trap, Escape, focus return, id wiring, roving focus) comes from Base UI (`@base-ui/react`), and only the primitives import it ([ADR 0047](../adr/0047-the-ui-primitives-wrap-base-ui-and-app-code-never-imports-it.md)). To build a widget:
+
+- **One flat file per primitive** in `primitives/`, with a `<Name>.stories.tsx` next to it. Import per component (`@base-ui/react/dialog`), never the package root.
+- **A closed API.** Keep the props call sites already use, add only explicit new ones, never spread Base UI props and never export a Base UI type. `className` and standard DOM attributes are fine. A part that renders a button is composed with our `Button` through `render`.
+- **Style with Tailwind and tokens only:** `var(--token)` values and data-attribute variants on the parts (`data-open:`, `data-starting-style:`, `data-disabled:`, `data-invalid:`), mutually exclusive states ([ADR 0017](../adr/0017-no-legacy-css-shadowing-tailwind.md)), no new class in `styles.css`, none of the library's example CSS.
+- **Stacking.** `#root` and the Storybook decorator are `isolate`, so a popup the library portals to `<body>` stacks above the page. Dialogs and drawers keep their layer; tooltips and popovers stay above them.
+- **Prove behaviour in a story.** A keyboard behaviour (Escape, Tab trap, focus return) is a `play()` in the wrapper's story, checked in the Chromium atlas; `stories.test.tsx` runs the same story in jsdom, which needs no polyfill for Base UI. Stories find portalled popups on `document.body`, not inside the story canvas.
+- **The boundary is a test.** `src/baseUiBoundary.test.ts` fails on any `@base-ui/*` import outside `primitives/`, so a page that needs a new behaviour gets a new primitive first.
+
 The custom-CSS system (`.btn`, `.panel-head`/`.panel-body`, `.progressbar`, etc.) that ADR 0003 deliberately left in place for not-yet-migrated consumers has since been fully migrated to Tailwind utilities — see [ADR 0009](../adr/0009-complete-tailwind-migration.md), which supersedes ADR 0003. New UI work should reach for Tailwind utilities directly rather than adding to `styles.css`. ADR 0009 also lists the small set of deliberate exceptions still in `styles.css` (a generic `table.dtable` style, scrollbar-hiding rules, keyframe animations, and a handful of unstyled "marker" classes kept only because visual/unit tests select by CSS class).
 
 ## Conventions
