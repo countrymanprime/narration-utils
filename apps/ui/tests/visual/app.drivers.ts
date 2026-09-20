@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { settlePage } from './helpers/settle';
 
 // How to reach each {page, state} in STATE_CATALOG. Driven entirely through
@@ -7,6 +7,22 @@ import { settlePage } from './helpers/settle';
 // in React, not globals. Kept apart from app.spec.ts (which registers Playwright
 // tests at import time) so Vitest can check it against the catalog.
 export type Driver = (page: Page) => Promise<void>;
+
+// Stress mode for the drivers: UI_CPU_THROTTLE=<factor> makes the page's CPU that many times slower (a busy CI runner is
+// often 3 to 5 times slower than a developer machine), so a driver that races the render photographs the wrong page or
+// times out here, on demand, instead of once in a while on CI. Off by default. The vendored lib/capture.ts calls this by name
+// before every capture (a namespace import Knip cannot follow, hence @public).
+/** @public */
+export async function beforeCapture(page: Page): Promise<void> {
+  const requested = process.env.UI_CPU_THROTTLE;
+  if (!requested) return;
+  const rate = Number(requested);
+  // A mistyped value must not turn into an unthrottled green run that looks like a stress test.
+  if (!Number.isFinite(rate) || rate < 1) throw new Error(`UI_CPU_THROTTLE must be a number of at least 1, got "${requested}"`);
+  if (rate === 1) return;
+  const session = await page.context().newCDPSession(page);
+  await session.send('Emulation.setCPUThrottlingRate', { rate });
+}
 
 // Stops every page timer (setTimeout, requestAnimationFrame) where it stands. Installed only for
 // the states that need it: a fake clock left on for a whole run interferes with React 19's
@@ -27,9 +43,60 @@ async function clickVisible(page: Page, role: Parameters<Page['getByRole']>[0], 
     .click();
 }
 
-async function goToPage(page: Page, name: 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Settings'): Promise<void> {
-  if (name === 'Home') return; // App boots on Home.
-  await clickVisible(page, 'button', name);
+type AppPage = 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Settings';
+
+// Every page opens with the shared `Heading` primitive, an <h1>: it is what proves the page has arrived. Home's is "Welcome back".
+const PAGE_HEADING: Record<AppPage, string> = {
+  Home: 'Welcome back',
+  Manuscript: 'Manuscript',
+  Proofing: 'Proofing',
+  'Story Bible': 'Story Bible',
+  Teleprompter: 'Teleprompter',
+  Tracks: 'Tracks',
+  Settings: 'Settings',
+};
+
+// The heading renders before the page's data does (chapters, the track list and the chapter estimate load after mount),
+// so a page whose main content is the same in every state also gets a wait for that content. Pages left out (Story Bible,
+// Teleprompter, Tracks, Settings) show different content per state, so their drivers wait for their own.
+const PAGE_CONTENT: Partial<Record<AppPage, (page: Page) => Locator>> = {
+  Home: (page) => page.getByRole('button', { name: /Show per-chapter breakdown/ }),
+  Manuscript: (page) => page.locator('[data-paragraph-text]'),
+  Proofing: (page) => page.getByRole('button', { name: 'Start comparison' }),
+};
+
+// Clicks an item of the app's own navigation, and only that: the Settings category rail reuses the labels "Proofing"
+// and "Story Bible", so an unscoped query can land on the wrong control. The shell renders one of two navigation asides
+// per width (the full sidebar from 1400 px, the icon rail below), the other is display:none, and both come before <main>
+// in the DOM, so the first visible aside is the navigation.
+async function clickNav(page: Page, name: AppPage): Promise<void> {
+  // The navigation collapses behind an "Open navigation" button below `md`, which the suite does not capture (ADR 0037).
+  // If a phone viewport is ever added, teach this helper to open the drawer; do not guess with a timeout.
+  if (await page.getByRole('button', { name: 'Open navigation' }).isVisible()) {
+    throw new Error('the navigation is collapsed behind its menu button at this viewport; clickNav does not open the drawer (ADR 0037)');
+  }
+  await page.locator('aside:visible').first().getByRole('button', { name, exact: true }).click();
+}
+
+// Navigates through the nav and waits until the destination has arrived (its heading, and its content where that is the
+// same in every state), so a driver can never photograph the page it just left or one still loading: a click returns as
+// soon as it is dispatched, not when the next page has rendered.
+async function goToPage(page: Page, name: AppPage): Promise<void> {
+  await clickNav(page, name);
+  await page.getByRole('heading', { level: 1, name: PAGE_HEADING[name], exact: true }).waitFor();
+  await PAGE_CONTENT[name]?.(page).first().waitFor();
+}
+
+// Home's chapter breakdown control exists only once the chapter list has loaded, so it is the proof that the whole page
+// (not just its heading) is there before a state that adds nothing of its own is photographed.
+async function homeLoaded(page: Page): Promise<void> {
+  await PAGE_CONTENT.Home?.(page).first().waitFor();
+}
+
+// ConfirmDialog is a role="dialog" today. The Base UI foundation (owner decision D1) makes it an alertdialog, so wait
+// for either role: the driver then survives that change unchanged.
+function confirmDialog(page: Page, name: string | RegExp) {
+  return page.getByRole('dialog', { name }).or(page.getByRole('alertdialog', { name }));
 }
 
 // Settings' own category rail (.settings-nav) reuses the same labels as the
@@ -89,12 +156,16 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
   },
   home: {
-    default: async () => {},
+    default: async (page) => {
+      await homeLoaded(page);
+    },
     'manuscript-not-found': async (page) => {
       await page.goto('/?mockNoManuscript=1');
       await settlePage(page);
     },
-    'chapter-table-collapsed': async () => {},
+    'chapter-table-collapsed': async (page) => {
+      await homeLoaded(page);
+    },
     'chapter-table-expanded': async (page) => {
       await clickVisible(page, 'button', /Show per-chapter breakdown/);
     },
@@ -129,6 +200,8 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       // manuscript" isn't visible - "Replace manuscript" drives the same
       // selectManuscript -> preview -> confirm dialog flow.
       await clickVisible(page, 'button', 'Replace manuscript');
+      // The progress dialog that precedes it is titled "Import manuscript"; the confirm names the file.
+      await confirmDialog(page, 'Import Alice.docx').waitFor();
     },
   },
   manuscript: {
@@ -167,6 +240,10 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'overlapping-highlights': async (page) => {
       await goToPage(page, 'Manuscript');
+      // The state is an entity highlight overlapping a note: wait for both (a Note is a `mark.ms-highlight` too, so the
+      // entity is any highlight that is not a Note).
+      await page.locator('mark[data-highlight]:not([data-highlight="Note"])').first().waitFor();
+      await page.locator('[data-highlight="Note"]').first().waitFor();
     },
     'sticky-header-scrolled': async (page) => {
       await goToPage(page, 'Manuscript');
@@ -318,6 +395,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const unlock = page.getByRole('button', { name: 'Unlock entry' });
       if (await unlock.count()) await unlock.click();
       await clickVisible(page, 'button', 'Delete entity');
+      await confirmDialog(page, 'Delete entry').waitFor();
     },
     'entry-locked': async (page) => {
       await goToPage(page, 'Story Bible');
@@ -340,6 +418,8 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   tracks: {
     default: async (page) => {
       await goToPage(page, 'Tracks');
+      // The heading renders before the track list does.
+      await page.getByRole('button', { name: 'Play', exact: true }).first().waitFor();
     },
     'unplayable-track-selected': async (page) => {
       await goToPage(page, 'Tracks');
@@ -352,11 +432,13 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.goto('/?mockMultipleRpp=1');
       await settlePage(page);
       await goToPage(page, 'Tracks');
+      await page.getByText('Choose a REAPER project file').waitFor();
     },
     'no-rpp': async (page) => {
       await page.goto('/?mockNoRpp=1');
       await settlePage(page);
       await goToPage(page, 'Tracks');
+      await page.getByText('No REAPER project file found').waitFor();
     },
     playing: async (page) => {
       await goToPage(page, 'Tracks');
@@ -470,7 +552,9 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'button', 'Global');
       await clickSettingsCategory(page, 'Proofing');
       await page.getByRole('combobox').first().selectOption('large-v3');
-      await clickVisible(page, 'button', 'Home');
+      // Leaving with unsaved changes asks first, so this click does not arrive at Home: it opens the confirm dialog.
+      await clickNav(page, 'Home');
+      await confirmDialog(page, 'Unsaved settings').waitFor();
     },
     'reset-override': async (page) => {
       await goToPage(page, 'Settings');
@@ -513,20 +597,21 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const unlock = page.getByRole('button', { name: 'Unlock entry' });
       if (await unlock.count()) await unlock.click();
       await clickVisible(page, 'button', 'Delete entity');
+      await confirmDialog(page, 'Delete entry').waitFor();
     },
     'theme-light': async (page) => {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'button', 'Global');
       await clickSettingsCategory(page, 'Appearance');
       await clickVisible(page, 'button', 'Light');
-      await clickVisible(page, 'button', 'Home');
+      await goToPage(page, 'Home');
     },
     'theme-dark': async (page) => {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'button', 'Global');
       await clickSettingsCategory(page, 'Appearance');
       await clickVisible(page, 'button', 'Dark');
-      await clickVisible(page, 'button', 'Home');
+      await goToPage(page, 'Home');
     },
   },
 };
