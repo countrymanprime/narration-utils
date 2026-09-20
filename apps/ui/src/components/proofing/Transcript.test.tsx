@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Transcript } from './Transcript';
 import { ApiProvider } from '../../api/ApiContext';
@@ -8,6 +8,25 @@ import { WIRE_TRANSCRIPT } from '../../api/mockFixtures';
 import { WIRE_DISCREPANCIES } from '../../api/mockFixtures';
 
 afterEach(cleanup);
+
+describe('Transcript chapter choice', () => {
+  it('asks which chapter the track belongs to in a named region under the page heading', () => {
+    render(
+      <ApiProvider api={createMockApi()}>
+        <Transcript
+          state={{ ...WIRE_TRANSCRIPT, phase: 'need_chapter', chapters: ['Chapter 1', 'Chapter 2'] }}
+          notify={vi.fn()}
+          goHome={vi.fn()}
+          goToManuscript={vi.fn()}
+        />
+      </ApiProvider>,
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Proofing' })).toBeTruthy();
+    const region = screen.getByRole('region', { name: 'Choose manuscript chapter' });
+    expect(within(region).getByRole('heading', { level: 2 })).toBeTruthy();
+    expect(within(region).getByRole('button', { name: 'Chapter 2' })).toBeTruthy();
+  });
+});
 
 describe('Transcript vocabulary suggestions', () => {
   it('does not show candidates until requested, then accepts manifest candidates once', async () => {
