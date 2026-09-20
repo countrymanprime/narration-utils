@@ -129,7 +129,8 @@ describe('Story Bible local TTS preview', () => {
     expect(previews[0].src).toBe('blob:preview');
     expect(previews[0].play).toHaveBeenCalledTimes(1);
     expect(document.querySelector('audio')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Pause preview' })).toBeTruthy();
+    // The button flips to Pause only after the audio's play() promise settles, one step after the Audio object exists.
+    expect(await screen.findByRole('button', { name: 'Pause preview' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Pause preview' }));
     expect(previews[0].pause).toHaveBeenCalledTimes(1);
@@ -213,7 +214,7 @@ describe('Story Bible local TTS preview', () => {
 
     expect(previews[0].pause).toHaveBeenCalledTimes(1);
     expect(previews[1].play).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: 'Pause alias pronunciation' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Pause alias pronunciation' })).toBeTruthy();
 
     previews[1].onended?.();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Play alias pronunciation' })).toBeTruthy());
