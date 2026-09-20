@@ -15,6 +15,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
+	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
@@ -87,7 +88,7 @@ type config struct {
 
 func NewHost() *Host {
 	workingDirectory, _ := os.Getwd()
-	repoRoot := discoverRepoRoot(workingDirectory)
+	repoRoot := layout.FindRoot(workingDirectory)
 	return &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), config: config{repoRoot: repoRoot}, manuscript: manuscript.New(""), sidecars: process.NewSupervisor(), settings: settings.New(repoRoot, ""), ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recents.New(recentProjectsPath())}
 }
 
@@ -121,7 +122,7 @@ func (h *Host) Startup(ctx context.Context) {
 // be displaced. Release resources are materialized only when the launcher did
 // not explicitly name development sidecars.
 func (h *Host) configureLocked(next config) {
-	next.repoRoot = discoverRepoRoot(next.repoRoot)
+	next.repoRoot = layout.FindRoot(next.repoRoot)
 	h.config = next
 	h.settings = settings.New(h.config.repoRoot, h.config.projectFolder)
 	h.resolveDeveloperSidecars()
@@ -141,7 +142,7 @@ func (h *Host) configureLocked(next config) {
 	if packagedRoot != "" {
 		h.config.reaperLauncher = filepath.Join(packagedRoot, "reaper", "NarrationUtils_Launcher.lua")
 	} else {
-		h.config.reaperLauncher = filepath.Join(h.config.repoRoot, "shared", "reaper", "NarrationUtils_Launcher.lua")
+		h.config.reaperLauncher = layout.Path(h.config.repoRoot, layout.LauncherFile)
 	}
 	h.manuscript = manuscript.New(h.config.projectFolder)
 	h.settings.SetProject(h.config.projectFolder)
@@ -151,7 +152,7 @@ func (h *Host) configureLocked(next config) {
 		cacheBase = os.TempDir()
 	}
 	cacheRoot := filepath.Join(cacheBase, "narration-utils", "assets", "tts")
-	catalog := filepath.Join(h.config.repoRoot, "shared", "config", "tts-assets.json")
+	catalog := layout.Path(h.config.repoRoot, layout.TTSCatalogFile)
 	if _, err := os.Stat(catalog); err != nil && packagedRoot != "" {
 		catalog = filepath.Join(packagedRoot, "config", "tts-assets.json")
 	}
@@ -159,7 +160,7 @@ func (h *Host) configureLocked(next config) {
 		h.tts = manager
 	}
 	whisperCacheRoot := filepath.Join(cacheBase, "narration-utils", "assets", "whisper")
-	whisperCatalog := filepath.Join(h.config.repoRoot, "shared", "config", "whisper-assets.json")
+	whisperCatalog := layout.Path(h.config.repoRoot, layout.WhisperCatalogFile)
 	if _, err := os.Stat(whisperCatalog); err != nil && packagedRoot != "" {
 		whisperCatalog = filepath.Join(packagedRoot, "config", "whisper-assets.json")
 	}
@@ -505,26 +506,6 @@ func (h *Host) canAttachLocked() bool {
 	return true
 }
 
-// discoverRepoRoot keeps `wails dev` usable from shell/ while release builds
-// stay entirely resource-relative. A caller-provided --repo-root still wins
-// whenever it names a checkout root.
-func discoverRepoRoot(start string) string {
-	current, err := filepath.Abs(start)
-	if err != nil {
-		return start
-	}
-	for {
-		if _, err := os.Stat(filepath.Join(current, "shared", "config", "defaults.json")); err == nil {
-			return current
-		}
-		parent := filepath.Dir(current)
-		if parent == current {
-			return current
-		}
-		current = parent
-	}
-}
-
 func (h *Host) resolveDeveloperSidecars() {
 	python := filepath.Join(h.config.repoRoot, ".venv", "Scripts", "python.exe")
 	if os.PathSeparator != '\\' {
@@ -537,19 +518,19 @@ func (h *Host) resolveDeveloperSidecars() {
 		h.config.manuscriptPython = python
 	}
 	if h.config.manuscriptBackend == "" {
-		h.config.manuscriptBackend = filepath.Join(h.config.repoRoot, "tools", "manuscript-guide", "core", "manuscript_guide.py")
+		h.config.manuscriptBackend = layout.Path(h.config.repoRoot, layout.ManuscriptGuideBackend)
 	}
 	if h.config.comparePython == "" {
 		h.config.comparePython = python
 	}
 	if h.config.compareBackend == "" {
-		h.config.compareBackend = filepath.Join(h.config.repoRoot, "tools", "transcript-compare", "core", "compare.py")
+		h.config.compareBackend = layout.Path(h.config.repoRoot, layout.TranscriptCompareBackend)
 	}
 	if h.config.teleprompterPython == "" {
 		h.config.teleprompterPython = python
 	}
 	if h.config.teleprompterBackend == "" {
-		h.config.teleprompterBackend = filepath.Join(h.config.repoRoot, "tools", "manuscript-teleprompter", "core", "live_asr.py")
+		h.config.teleprompterBackend = layout.Path(h.config.repoRoot, layout.TeleprompterBackend)
 	}
 }
 

@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 )
 
 type Values map[string]string
@@ -50,7 +52,7 @@ var builtinDefaults = map[string]Values{
 // Defaults returns the repo file's values for tool, with any key the file does
 // not provide filled from builtinDefaults.
 func (s *Store) Defaults(tool string) Values {
-	values := readTool(filepath.Join(s.repoPath(), "shared", "config", "defaults.json"), tool)
+	values := readTool(layout.Path(s.repoPath(), layout.DefaultsFile), tool)
 	for key, value := range builtinDefaults[tool] {
 		if _, ok := values[key]; !ok {
 			values[key] = value

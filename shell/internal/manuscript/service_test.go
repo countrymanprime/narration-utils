@@ -6,12 +6,14 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 )
 
 func TestCommitCreatesProjectOwnedCanonicalManuscript(t *testing.T) {
 	project := t.TempDir()
 	service := New(project)
-	job := service.Begin(filepath.Join("..", "..", "..", "shared", "test-fixtures", "alice.md"))
+	job := service.Begin(layout.RepoFile(layout.FixturesDir + "/alice.md"))
 	preview, err := service.Preview(job.ID, 1)
 	if err != nil || preview.Phase != "ready" {
 		t.Fatalf("preview = %#v, %v", preview, err)
@@ -121,14 +123,14 @@ func waitForJob(t *testing.T, service *Service, id, phase string) ImportJob {
 func TestReplacementRequiresExplicitConfirmation(t *testing.T) {
 	project := t.TempDir()
 	service := New(project)
-	first := service.Begin(filepath.Join("..", "..", "..", "shared", "test-fixtures", "alice.md"))
+	first := service.Begin(layout.RepoFile(layout.FixturesDir + "/alice.md"))
 	if _, err := service.Preview(first.ID, 1); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := service.Commit(first.ID, false, nil); err != nil {
 		t.Fatal(err)
 	}
-	second := service.Begin(filepath.Join("..", "..", "..", "shared", "test-fixtures", "alice.md"))
+	second := service.Begin(layout.RepoFile(layout.FixturesDir + "/alice.md"))
 	if _, err := service.Preview(second.ID, 1); err != nil {
 		t.Fatal(err)
 	}

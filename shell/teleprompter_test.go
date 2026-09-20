@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 )
@@ -227,7 +228,7 @@ func TestTheDeveloperSidecarPathsIncludeTheTeleprompter(t *testing.T) {
 
 	host.resolveDeveloperSidecars()
 
-	want := filepath.Join(root, "tools", "manuscript-teleprompter", "core", "live_asr.py")
+	want := layout.Path(root, layout.TeleprompterBackend)
 	if host.config.teleprompterPython != python || host.config.teleprompterBackend != want {
 		t.Fatalf("teleprompter sidecar = %q %q", host.config.teleprompterPython, host.config.teleprompterBackend)
 	}

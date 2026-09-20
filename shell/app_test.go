@@ -124,19 +124,6 @@ func TestVoiceDownloadSizeIncludesEveryVerifiedFile(t *testing.T) {
 	}
 }
 
-func TestDiscoverRepoRootFindsCheckoutFromShellDirectory(t *testing.T) {
-	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, "shared", "config"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(root, "shared", "config", "defaults.json"), []byte("{}"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if got := discoverRepoRoot(filepath.Join(root, "shell", "nested")); got != root {
-		t.Fatalf("repo root = %q, want %q", got, root)
-	}
-}
-
 func TestResolveDeveloperSidecarsUsesCheckoutVirtualEnvironment(t *testing.T) {
 	root := t.TempDir()
 	python := filepath.Join(root, ".venv", "Scripts", "python.exe")

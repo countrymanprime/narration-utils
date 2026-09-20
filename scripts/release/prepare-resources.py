@@ -19,7 +19,16 @@ from pathlib import Path
 from typing import NamedTuple
 
 ROOT = Path(__file__).resolve().parents[2]
-RESOURCES = ROOT / "shell" / "cmd" / "narration-utils" / "resources"
+
+# Repo-relative locations of everything this script reads or writes. A layout change edits these
+# lines and nothing else (see docs/architecture/codebase-map.md).
+PYTHON_LIB_DIR = Path("shared/python")
+CONFIG_DIR = Path("shared/config")
+REAPER_DIR = Path("shared/reaper")
+SIDECARS_DIR = Path("tools")
+RESOURCES_DIR = Path("shell/cmd/narration-utils/resources")
+
+RESOURCES = ROOT / RESOURCES_DIR
 RUNTIME = RESOURCES / "runtime"
 REAPER = RESOURCES / "reaper"
 
@@ -97,20 +106,21 @@ def main() -> None:
         shutil.rmtree(RESOURCES, ignore_errors=True)
     if not args.sidecar:
         shutil.rmtree(RUNTIME, ignore_errors=True)
-    shared_python = ROOT / "shared" / "python"
+    shared_python = ROOT / PYTHON_LIB_DIR
+    sidecars_root = ROOT / SIDECARS_DIR
     sidecars = [
         Sidecar(
             "manuscript-guide",
-            ROOT / "tools" / "manuscript-guide" / "core" / "manuscript_guide.py",
-            [shared_python, ROOT / "tools" / "manuscript-guide" / "core"],
+            sidecars_root / "manuscript-guide" / "core" / "manuscript_guide.py",
+            [shared_python, sidecars_root / "manuscript-guide" / "core"],
         ),
         # faster-whisper ships its Silero VAD model (assets/silero_vad_v6.onnx) as
         # package data and PyInstaller has no hook for it. Without collecting it, a
         # frozen sidecar that uses vad_filter=True fails with NoSuchFile at runtime.
         Sidecar(
             "transcript-compare",
-            ROOT / "tools" / "transcript-compare" / "core" / "compare.py",
-            [shared_python, ROOT / "tools" / "transcript-compare" / "core"],
+            sidecars_root / "transcript-compare" / "core" / "compare.py",
+            [shared_python, sidecars_root / "transcript-compare" / "core"],
             ("faster_whisper",),
         ),
         # live_asr.py imports script_tracker and chapter_script (siblings) inside
@@ -119,8 +129,8 @@ def main() -> None:
         # bundled: it is not a project dependency yet.
         Sidecar(
             "manuscript-teleprompter",
-            ROOT / "tools" / "manuscript-teleprompter" / "core" / "live_asr.py",
-            [shared_python, ROOT / "tools" / "manuscript-teleprompter" / "core"],
+            sidecars_root / "manuscript-teleprompter" / "core" / "live_asr.py",
+            [shared_python, sidecars_root / "manuscript-teleprompter" / "core"],
             ("faster_whisper",),
         ),
     ]
@@ -134,11 +144,11 @@ def main() -> None:
     if failures:
         emit(f"Freeze failed for: {', '.join(failures)}\n")
         raise next(iter(failures.values()))
-    shutil.copytree(ROOT / "shared" / "config", RESOURCES / "config", dirs_exist_ok=True)
+    shutil.copytree(ROOT / CONFIG_DIR, RESOURCES / "config", dirs_exist_ok=True)
     # The action package is embedded with the desktop host.  At first launch
     # the host materializes it in its per-user cache and writes the installed
     # executable path beside it.  REAPER imports only when the narrator asks.
-    shutil.copytree(ROOT / "shared" / "reaper", REAPER, dirs_exist_ok=True)
+    shutil.copytree(ROOT / REAPER_DIR, REAPER, dirs_exist_ok=True)
 
 
 if __name__ == "__main__":

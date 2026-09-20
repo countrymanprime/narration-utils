@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -164,10 +164,12 @@ run(python(), ['-m', 'ruff', 'format', '--check', '.']);
 run(python(), ['-m', 'ruff', 'check', '.']);
 // A fixed pytest base directory is prone to Windows file-handle races after a
 // previous test process exits. Keep every quality run isolated; the directory
-// is ignored and pytest owns its own cleanup within that run.
-run(python(), ['-m', 'pytest', '-q', '--basetemp', `.test-tmp-${process.pid}`]);
+// lives under the ignored .cache/ folder (not the repo root) and pytest owns its
+// own cleanup within that run. pytest creates the directory but not its parent.
+mkdirSync(join(root, '.cache'), { recursive: true });
+run(python(), ['-m', 'pytest', '-q', '--basetemp', `.cache/test-tmp-${process.pid}`]);
 run('go', ['-C', 'shell', 'vet', './...']);
 run('go', ['-C', 'shell', 'test', './...']);
 run('staticcheck', ['./...'], { cwd: join(root, 'shell') });
 run('stylua', ['--check', 'shared/reaper']);
-run('node', ['--test', 'scripts/github/*.test.mjs', 'scripts/release/*.test.mjs']);
+run('node', ['--test', 'scripts/ci/*.test.mjs', 'scripts/github/*.test.mjs', 'scripts/release/*.test.mjs']);

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-PROBE_PATH = Path(__file__).resolve().parent / "moonshine_probe.py"
+PROBE_PATH = Path(__file__).resolve().parents[1] / "spikes" / "moonshine_probe.py"
 SPEC = importlib.util.spec_from_file_location("moonshine_probe", PROBE_PATH)
 probe = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
