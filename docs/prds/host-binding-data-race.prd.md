@@ -138,7 +138,7 @@ Developer-facing only: a binding calls `svc := h.services()`, uses `svc.guide` a
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Accessor, guard and stress harness | `services()`, AST guard with the full current violation list as allowlist, stress test over already-converted bindings, convert the already-safe sites, one-off flake stress run | complete | - | - | - |
-| 2 | Convert Manuscript and Guide | `Manuscript*`, `Guide*` bindings, `startGuideBuild`, import-commit closure; shrink allowlist; extend stress test | pending | 3 | 1 | - |
+| 2 | Convert Manuscript and Guide | `Manuscript*`, `Guide*` bindings, `startGuideBuild`, import-commit closure; shrink allowlist; extend stress test | complete | 3 | 1 | - |
 | 3 | Convert Tts, Whisper, Settings, Transcript, Bootstrap | Remaining bindings and `app.go` helpers including install goroutines; shrink allowlist; extend stress test | pending | 2 | 1 | - |
 | 4 | Small items and cleanup | `ProjectCreate` ordering and path check, remove the allowlist (empty), point the two code comments at the `services()` doc comment (they cite this PRD today), `feature-cleanup` | pending | - | 2, 3 | - |
 
@@ -154,6 +154,7 @@ Developer-facing only: a binding calls `svc := h.services()`, uses `svc.guide` a
 - **Goal**: the two largest groups (about 29 bindings) read through the accessor.
 - **Scope**: `bindings.go` Manuscript* (`:251-371`) and Guide* (`:93-173`), `seedCharacterCandidates` (`:305-330`), `startGuideBuild` (`app.go:837-893`), import-commit closure (`:286-296`); allowlist entries removed; stress test binding list extended.
 - **Success signal**: allowlist shrinks by those functions; existing tests pass unchanged; empty `Host.*` regeneration diff.
+- **Delivered**: all 19 `Manuscript*` and 10 `Guide*` bindings plus `startGuideBuild` and `seedCharacterCandidates` (now a plain function that takes the Story Bible service) read through `h.services()`; the allowlist lost those 31 entries and stands at 20. `ManuscriptSelectFile` takes its snapshot after the file dialog returns, so an import belongs to the project open when the file was chosen. `ManuscriptImportCommit` seeds the Story Bible from the same snapshot as the commit, even if the user switches projects while it runs. `startGuideBuild` takes its session directory from the snapshot (it read `h.config` under a second lock before). The stress test gained the Manuscript and Guide read bindings and now points every per-user location at a temp directory. The `Host.{js,d.ts}` regeneration is unchanged by construction (no signature moved; `go build` and the UI type check pass).
 
 **Phase 3 - Convert Tts, Whisper, Settings, Transcript, Bootstrap** (`TeleprompterStart` moved to Phase 1)
 - **Goal**: the rest.

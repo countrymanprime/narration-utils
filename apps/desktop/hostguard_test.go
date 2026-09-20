@@ -44,35 +44,6 @@ var permanentDirectReaders = map[string]string{
 // edits rebase cleanly.
 var directReadAllowlist = []allowedReads{
 	{"Bootstrap", 2},
-	{"GuideCreate", 2},
-	{"GuideDelete", 2},
-	{"GuideEdit", 2},
-	{"GuideEntities", 2},
-	{"GuideMerge", 2},
-	{"GuidePreview", 7},
-	{"GuideRelate", 2},
-	{"GuideRescan", 2},
-	{"GuideSetLocked", 2},
-	{"GuideUnrelate", 2},
-	{"ManuscriptBeginImport", 1},
-	{"ManuscriptChapters", 1},
-	{"ManuscriptClearProjectData", 1},
-	{"ManuscriptCreateBookmark", 1},
-	{"ManuscriptCreateNote", 1},
-	{"ManuscriptDeleteBookmark", 1},
-	{"ManuscriptDeleteNote", 1},
-	{"ManuscriptImportCancel", 1},
-	{"ManuscriptImportCommit", 3},
-	{"ManuscriptImportPreview", 1},
-	{"ManuscriptImportState", 1},
-	{"ManuscriptNotes", 1},
-	{"ManuscriptParagraphs", 1},
-	{"ManuscriptReader", 1},
-	{"ManuscriptReaderState", 1},
-	{"ManuscriptSaveReaderState", 1},
-	{"ManuscriptSearch", 1},
-	{"ManuscriptSelectFile", 1},
-	{"ManuscriptSetChapterStatus", 1},
 	{"TranscriptAddEquivalence", 2},
 	{"TranscriptCancel", 2},
 	{"TranscriptExportMarkers", 2},
@@ -89,9 +60,7 @@ var directReadAllowlist = []allowedReads{
 	{"WhisperRemove", 2},
 	{"resolveWhisperModelID", 1},
 	{"saveSettings", 1},
-	{"seedCharacterCandidates", 2},
 	{"settingsForScope", 3},
-	{"startGuideBuild", 2},
 	{"startTtsInstall", 3},
 	{"startWhisperInstall", 3},
 }
@@ -219,15 +188,16 @@ func directHostReads(fset *token.FileSet, file *ast.File) []directRead {
 	return reads
 }
 
-// servicesCallsInLocked lists the h.services() calls made from functions whose
-// name ends in "Locked". Their caller already holds h.mu, so the accessor's
-// RLock would self-deadlock (a write lock is held) or deadlock behind a queued
-// writer (a read lock is held).
+// servicesCallsInLocked lists the h.services() calls made from unexported
+// functions whose name ends in "Locked" (configureLocked, attachProjectLocked;
+// the exported GuideSetLocked binding is not one). Their caller already holds
+// h.mu, so the accessor's RLock would self-deadlock (a write lock is held) or
+// deadlock behind a queued writer (a read lock is held).
 func servicesCallsInLocked(fset *token.FileSet, file *ast.File) []string {
 	var calls []string
 	for _, declaration := range file.Decls {
 		function, ok := declaration.(*ast.FuncDecl)
-		if !ok || function.Body == nil || !strings.HasSuffix(function.Name.Name, "Locked") {
+		if !ok || function.Body == nil || !strings.HasSuffix(function.Name.Name, "Locked") || function.Name.IsExported() {
 			continue
 		}
 		hosts := map[string]bool{}
@@ -489,6 +459,7 @@ func TestLockedGuardFlagsServicesCalledUnderTheLock(t *testing.T) {
 func (h *Host) configureLocked() { _ = h.services() }
 func (h *Host) attachLocked() { svc := h.services(); _ = svc }
 func (h *Host) Binding() { _ = h.services() }
+func (h *Host) GuideSetLocked() { _ = h.services() }
 func (h *Host) canAttachLocked() bool { return h.config.projectFolder != "" }
 `
 	fset := token.NewFileSet()
