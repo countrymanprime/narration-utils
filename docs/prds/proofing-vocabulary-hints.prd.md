@@ -161,7 +161,7 @@ Cross-cutting: `hostAPIVersion` unchanged (no binding change); each phase follow
 ## Research Summary
 
 **Technical Context**: verified in code on this branch: the full Suggest trace, both empty-list paths, the UI and handlers, hint storage and use, primitives, tests and drivers, and PRD/doc coverage (none).
-**Not verified**: the user's actual data or toast text, and whether the mock's `addManualHint` toast is what `global/toast` shows.
+**Verified in Phase 1**: the `global/toast` and `proofing/toast` states show no toast at all (`addManualHint` never calls `notify`; the PNGs at every viewport show only the added pill), so that visual row and its `sameAs` describe a flow that does not produce a toast. Phase 2 owns the drivers and should fix the row. **Not verified**: the user's actual data or toast text.
 
 ---
 
