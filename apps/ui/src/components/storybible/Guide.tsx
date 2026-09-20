@@ -203,20 +203,20 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
                       <div className="flex items-center gap-2">
                         <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(row.category)] }} />
                         <span className="truncate text-sm font-medium">{row.canonical_name}</span>
-                        {row.locked && <FontAwesomeIcon icon={faLock} className="text-[10px]" style={{ color: 'var(--text-faint)' }} />}
+                        {row.locked && <FontAwesomeIcon icon={faLock} className="text-[10px]" style={{ color: 'var(--non-text)' }} />}
                       </div>
-                      <div className="mt-0.5 text-xs" style={{ color: 'var(--text-faint)' }}>
+                      <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
                         {categoryLabel(row.category)}
                       </div>
                     </TableCell>
-                    <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-faint)' }}>
+                    <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-muted)' }}>
                       {row.occurrence_count}
                     </TableCell>
                   </TableRow>
                 ))}
                 {sorted.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={2} className="text-sm" style={{ color: 'var(--text-faint)' }}>
+                    <TableCell colSpan={2} className="text-sm" style={{ color: 'var(--text-muted)' }}>
                       No matching entries.
                     </TableCell>
                   </TableRow>
