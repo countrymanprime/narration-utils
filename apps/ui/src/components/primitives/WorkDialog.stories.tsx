@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent } from 'storybook/test';
+import { expect, fn, userEvent, waitFor } from 'storybook/test';
 import type { WorkJob } from '../../types';
 import { screen } from './portalScreen';
 import { WorkDialog } from './WorkDialog';
@@ -48,12 +48,27 @@ export const RunningWithProgress: Story = {
   },
 };
 
+// The import while it writes to the project has no Cancel, so it shows the notice.
 export const Committing: Story = {
-  args: { job: { ...runningJob, phase: 'committing', message: 'Writing manuscript to project', percent: 92, elapsed: 20.1 } },
+  args: {
+    cancel: undefined,
+    job: { ...runningJob, phase: 'committing', message: 'Writing manuscript to project', percent: 92, elapsed: 20.1 },
+  },
 };
 
-// Some callers (Story Bible rebuild) pass no cancel handler, so a running job has no actions at all.
-export const RunningWithoutCancel: Story = { args: { title: 'Rebuild Story Bible', cancel: undefined } };
+// Some callers (Story Bible rebuild, an import that is writing) pass no cancel handler. The dialog stays blocking and says
+// why nothing can be pressed: the notice describes the dialog, no empty action row is drawn, and focus rests on the body region.
+export const RunningWithoutCancel: Story = {
+  args: { title: 'Rebuild Story Bible', cancel: undefined },
+  play: async () => {
+    const dialog = await screen.findByRole('dialog', { name: 'Rebuild Story Bible' });
+    await expect(dialog).toHaveAccessibleDescription('This step cannot be cancelled. Close appears when it finishes.');
+    await expect(screen.queryAllByRole('button')).toHaveLength(0);
+    await expect(document.querySelector('[data-dialog-actions]')).toBeNull();
+    // The body region is the only focus target, so focus is never lost.
+    await waitFor(() => expect(document.activeElement).toBe(dialog.querySelector('[tabindex="0"]')));
+  },
+};
 
 export const Success: Story = {
   args: {
