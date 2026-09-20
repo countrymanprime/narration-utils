@@ -5,9 +5,10 @@ import { describe, expect, test } from 'vitest';
 
 // ADR 0059: `--text-faint` is retired as a text colour. Every place that drew text with it is being triaged by area into
 // muted text (it reads as text) or the non-text token (an icon, a status dot, a decorative glyph), and the token is deleted
-// with the last slice. This scan counts the mentions of it per file and holds them to a ceiling that may only go down: a
-// ceiling higher than the real count fails, so the entry is lowered (or deleted at zero) in the same change, and a file with
-// no entry may have none. Nothing new may start using it.
+// with the last slice. This scan counts the mentions of it per file and pins the count, so it can only go down: a file with
+// more mentions than its entry fails, an entry higher than the real count fails (lower it, or delete it at zero, in the same
+// change), and a file with no entry may have none. Swapping one mention for another in the same file keeps the count, so
+// that part is the reviewer's.
 const RETIRED = '--text-faint';
 
 // Mentions per file, after the primitives, the app shell and the stylesheet were migrated (slice 2a). Each later slice

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { countRootRules, parseThemes, resolveContrast, rootRules, type Theme, type TokenMap } from './tokenContrast';
 
@@ -240,16 +240,31 @@ function sourceFiles(directory: string): string[] {
   });
 }
 
-function tokensUsedAsText(): Set<string> {
-  const used = new Set<string>();
+// `text-[var(--x)]`, `text-[color:var(--x)]`, `text-(--x)`, and a `color:` that is not `background-color:` or `border-color:`.
+const TEXT_COLOUR = /text-\[(?:color:)?var\(--([a-z0-9-]+)\)\]|text-\(--([a-z0-9-]+)\)|(?<![-\w])color:\s*['"`]?var\(--([a-z0-9-]+)\)/g;
+
+// How many times each source file draws a `color` with each token, keyed by the path under src/.
+function textColourUses(): Map<string, Record<string, number>> {
+  const uses = new Map<string, Record<string, number>>();
   for (const file of sourceFiles(__dirname)) {
-    const source = readFileSync(file, 'utf8');
-    // `text-[var(--x)]`, `text-[color:var(--x)]`, `text-(--x)`, and a `color:` that is not `background-color:` or `border-color:`.
-    for (const match of source.matchAll(/text-\[(?:color:)?var\(--([a-z0-9-]+)\)\]|text-\(--([a-z0-9-]+)\)|(?<![-\w])color:\s*['"`]?var\(--([a-z0-9-]+)\)/g))
-      used.add(match[1] ?? match[2] ?? match[3]);
+    const perFile: Record<string, number> = {};
+    for (const match of readFileSync(file, 'utf8').matchAll(TEXT_COLOUR)) {
+      const token = match[1] ?? match[2] ?? match[3];
+      perFile[token] = (perFile[token] ?? 0) + 1;
+    }
+    if (Object.keys(perFile).length > 0) uses.set(relative(__dirname, file).split(sep).join('/'), perFile);
   }
-  return used;
+  return uses;
 }
+
+const tokensUsedAsText = (): Set<string> => new Set([...textColourUses().values()].flatMap((perFile) => Object.keys(perFile)));
+
+// `--non-text` (3:1) is the colour of what is seen and not read, so it has no text pair. It is drawn as a `color` only on the
+// icons and glyphs listed here, per file: a label or a count that lands on it would read at 3:1, so it fails this list until
+// it moves to --text-muted. Each slice of the `--text-faint` migration adds the icons it triaged.
+const NON_TEXT_COLOUR_USES: Record<string, { count: number; what: string }> = {
+  'components/layout/AppShell.tsx': { count: 1, what: 'the folder icon beside the project name' },
+};
 
 describe('no text colour ships without a declared pair', () => {
   it('measures every token the source draws text with', () => {
@@ -267,5 +282,13 @@ describe('no text colour ships without a declared pair', () => {
       expect(reason.length, token).toBeGreaterThan(10);
       expect(used.has(token), `${token} is no longer used as text: delete it from NO_TEXT_PAIR`).toBe(true);
     }
+  });
+
+  it('draws --non-text as a colour only on the icons and glyphs listed', () => {
+    const drawn = Object.fromEntries(
+      [...textColourUses()].filter(([, perFile]) => 'non-text' in perFile).map(([file, perFile]) => [file, perFile['non-text']]),
+    );
+    const listed = Object.fromEntries(Object.entries(NON_TEXT_COLOUR_USES).map(([file, use]) => [file, use.count]));
+    expect(drawn, 'a label or a count belongs on --text-muted; list only an icon or a glyph, with what it is').toEqual(listed);
   });
 });
