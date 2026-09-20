@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
+import { tabInsideTrap } from './tabInsideTrap';
 
 afterEach(cleanup);
 
@@ -79,11 +80,10 @@ describe('Dialog is a real modal', () => {
     const user = userEvent.setup();
     const page = screen.getByRole('button', { name: 'Behind the dialog', hidden: true });
     // Tab may stop for a moment on one of the invisible focus guards that bracket the dialog, and it wraps from there;
-    // what must never happen is focus reaching the page behind it.
+    // `tabInsideTrap` waits for it to settle. What must never happen is focus reaching the page behind it.
     for (let press = 0; press < 14; press += 1) {
-      await user.tab({ shift: press % 3 === 2 });
-      expect(document.activeElement, `press ${press}`).not.toBe(page);
-      expect(document.activeElement?.closest('[data-base-ui-portal]'), `press ${press}`).not.toBeNull();
+      const focused = await tabInsideTrap(user, { shift: press % 3 === 2 });
+      expect(focused, `press ${press}`).not.toBe(page);
     }
   });
 

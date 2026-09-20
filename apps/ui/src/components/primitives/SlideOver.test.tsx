@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SlideOver } from './SlideOver';
+import { tabInsideTrap } from './tabInsideTrap';
 
 afterEach(cleanup);
 
@@ -110,9 +111,8 @@ describe('SlideOver is a real modal panel', () => {
     const { user } = await openPanel();
     const behind = screen.getByRole('button', { name: 'Behind the panel', hidden: true });
     for (let press = 0; press < 8; press += 1) {
-      await user.tab();
-      expect(document.activeElement).not.toBe(behind);
-      expect(document.activeElement?.closest('[data-base-ui-portal]')).not.toBeNull();
+      const focused = await tabInsideTrap(user);
+      expect(focused, `press ${press}`).not.toBe(behind);
     }
   });
 });
