@@ -15,7 +15,7 @@ New features and bugfixes in this repo have a history of silently breaking unrel
 
 When fixing a visual/UI bug in `shared/ui`, do not consider it done from code review or a single manual screenshot alone. Before reporting a visual fix as complete:
 
-1. Run the Playwright visual suite for the affected page/state across all viewports in `shared/ui/tests/visual/viewports.ts` (desktop, small-desktop, tablet, mobile):
+1. Run the Playwright visual suite for the affected page/state across all viewports in `shared/ui/tests/visual/viewports.ts` (desktop, small-desktop, tablet; there is no phone viewport, ADR 0037):
    ```bash
    cd shared/ui
    npx playwright test tests/visual/app.spec.ts -g "<page>.*<state>"

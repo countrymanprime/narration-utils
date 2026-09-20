@@ -59,3 +59,5 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0034](0034-live-recognition-is-unconstrained-and-never-restricted-to-the-script.md) | Live recognition is unconstrained and is never restricted to the script's words | Proposed |
 | [0035](0035-live-transcription-techniques-are-ported-not-depended-on.md) | Live transcription techniques are ported into the sidecar, not taken as dependencies | Proposed |
 | [0036](0036-story-bible-read-only-view-is-the-disabled-form-not-entitysummary.md) | The Story Bible's read-only view is the same form with disabled controls, not `EntitySummary` | Proposed (amends ADR-0018) |
+| [0037](0037-visual-suite-captures-no-phone-viewport.md) | The visual suite captures no phone viewport | Accepted (amends ADR-0023) |
+| [0038](0038-visual-suite-captures-the-production-build.md) | The visual suite captures the production build, not the dev server | Accepted (amends ADR-0023) |
