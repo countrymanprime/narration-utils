@@ -10,6 +10,7 @@ import { Checkbox } from '../primitives/Checkbox';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
+import { IconButton } from '../primitives/IconButton';
 
 // Import runs as a host-side job; the UI only ever displays the percent and log
 // lines the host reports while polling (ADR-0015) - it never invents progress.
@@ -141,20 +142,15 @@ export function Home({
         <div className="flex gap-2">
           {found && (
             <TooltipTarget text="View manuscript">
-              <button
-                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                aria-label="View manuscript"
-                onClick={() => go('/manuscript')}
-              >
+              <IconButton label="View manuscript" onClick={() => go('/manuscript')}>
                 <FontAwesomeIcon icon={faFileLines} />
-              </button>
+              </IconButton>
             </TooltipTarget>
           )}
           {found ? (
             <TooltipTarget text="Replace manuscript — confirmation clears Story Bible, notes, bookmarks, chapter statuses, and saved proofing results.">
-              <button
-                aria-label="Replace manuscript"
-                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              <IconButton
+                label="Replace manuscript"
                 onClick={async () => {
                   const result = await api.selectManuscript();
                   if (result.selected && result.jobId) {
@@ -164,13 +160,12 @@ export function Home({
                 }}
               >
                 <FontAwesomeIcon icon={faFileArrowUp} />
-              </button>
+              </IconButton>
             </TooltipTarget>
           ) : (
             <TooltipTarget text="Import manuscript">
-              <button
-                aria-label="Import manuscript"
-                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              <IconButton
+                label="Import manuscript"
                 onClick={async () => {
                   const result = await api.selectManuscript();
                   if (result.selected && result.jobId) {
@@ -180,7 +175,7 @@ export function Home({
                 }}
               >
                 <FontAwesomeIcon icon={faFileArrowUp} />
-              </button>
+              </IconButton>
             </TooltipTarget>
           )}
         </div>

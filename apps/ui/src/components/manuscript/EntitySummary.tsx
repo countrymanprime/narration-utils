@@ -5,6 +5,7 @@ import type { GuideEntity } from '../../types';
 import { allEvidence, categoryLabel, highlightTerms } from '../../state';
 import { Highlight, highlightKind } from '../primitives/Highlight';
 import { TooltipTarget } from '../primitives/Tooltip';
+import { IconButton } from '../primitives/IconButton';
 
 export const BADGE_STYLE: Record<string, CSSProperties> = {
   Character: { background: 'var(--character-soft)', color: 'var(--character)' },
@@ -148,13 +149,9 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
                 </p>
               </div>
               <TooltipTarget text="Go to this line in Manuscript">
-                <button
-                  className="inline-flex size-8 flex-none items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                  aria-label="Go to line in Manuscript"
-                  onClick={() => jumpToLine(item.chapter, item.paragraph)}
-                >
+                <IconButton label="Go to line in Manuscript" onClick={() => jumpToLine(item.chapter, item.paragraph)} className="flex-none">
                   <FontAwesomeIcon icon={faFileLines} />
-                </button>
+                </IconButton>
               </TooltipTarget>
             </div>
           ))

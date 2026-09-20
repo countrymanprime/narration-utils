@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useRef, useState, type ReactNode } from 'react';
 import { HINT_POPUP_SELECTOR } from './hintLayer';
+import { IconButton } from './IconButton';
 
 type DialogProps = {
   title: string;
@@ -94,14 +95,9 @@ export function Dialog({
             <div className="flex flex-none items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
               <Parts.Title className="font-semibold">{title}</Parts.Title>
               {onClose && (
-                <button
-                  type="button"
-                  className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                  aria-label="Close"
-                  onClick={onClose}
-                >
+                <IconButton label="Close" onClick={onClose}>
                   <FontAwesomeIcon icon={faXmark} />
-                </button>
+                </IconButton>
               )}
             </div>
             {/* tabIndex: the body scrolls when content is tall, and a scrolling region must be reachable by keyboard. */}

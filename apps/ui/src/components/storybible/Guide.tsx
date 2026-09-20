@@ -10,6 +10,7 @@ import { TooltipTarget } from '../primitives/Tooltip';
 import { CAT_DOT_BG, CAT_DOT_CLASS } from '../manuscript/EntitySummary';
 import { GuideDetail } from './GuideDetail';
 import { WorkDialog } from '../primitives/WorkDialog';
+import { IconButton } from '../primitives/IconButton';
 
 type EntitySort = { key: 'name' | 'occurrences'; dir: 'asc' | 'desc' };
 const TAB_PLURAL: Record<string, string> = {
@@ -140,18 +141,13 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
           <Heading title="Story Bible" />
           <div className="flex gap-2">
             <TooltipTarget text="Add entity">
-              <button
-                aria-label="Add entity"
-                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                onClick={addEntity}
-              >
+              <IconButton label="Add entity" onClick={addEntity}>
                 <FontAwesomeIcon icon={faPlus} />
-              </button>
+              </IconButton>
             </TooltipTarget>
             <TooltipTarget text="Build / refresh Story Bible">
-              <button
-                aria-label="Build / refresh Story Bible"
-                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              <IconButton
+                label="Build / refresh Story Bible"
                 onClick={async () => {
                   try {
                     const job = await api.guideBuild();
@@ -165,7 +161,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
                 }}
               >
                 <FontAwesomeIcon icon={faRotate} />
-              </button>
+              </IconButton>
             </TooltipTarget>
           </div>
         </div>
@@ -195,13 +191,9 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
               />
               {query && (
                 <TooltipTarget text="Clear search" style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}>
-                  <button
-                    aria-label="Clear search"
-                    className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                    onClick={() => setQuery('')}
-                  >
+                  <IconButton label="Clear search" onClick={() => setQuery('')}>
                     <FontAwesomeIcon icon={faXmark} />
-                  </button>
+                  </IconButton>
                 </TooltipTarget>
               )}
             </div>

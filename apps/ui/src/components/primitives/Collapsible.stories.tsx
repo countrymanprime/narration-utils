@@ -11,10 +11,7 @@ function Section({ startOpen = false }: { startOpen?: boolean }) {
     <Collapsible open={open} onOpenChange={setOpen} className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">Audiobook estimate</h2>
-        <CollapsibleTrigger
-          label={open ? 'Hide per-chapter breakdown' : 'Show per-chapter breakdown'}
-          className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)]"
-        >
+        <CollapsibleTrigger label={open ? 'Hide per-chapter breakdown' : 'Show per-chapter breakdown'}>
           <FontAwesomeIcon icon={open ? faChevronUp : faChevronDown} />
         </CollapsibleTrigger>
       </div>
