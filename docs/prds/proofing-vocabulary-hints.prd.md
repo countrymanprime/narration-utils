@@ -1,6 +1,6 @@
 # Proofing Vocabulary Hints
 
-**Source:** user requests of 2026-09-20 (items 13, 14, 15). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. Nothing here is built yet. Note: the user described these as Story Bible items, but the Suggest button, the pills box and the hint input all live on the **Proofing** page (`apps/ui/src/components/proofing/Transcript.tsx`); the Story Bible (`GuideDetail.tsx`, `Guide.tsx`) has none of them. The visual catalog files the hint-chips state under `home` "for historical reasons" (`apps/ui/tests/visual/state-catalog.ts:29-32`). Related: [ui-primitives-and-headless-library.prd.md](ui-primitives-and-headless-library.prd.md) (a tag-input primitive and `IconButton`).
+**Source:** user requests of 2026-09-20 (items 13, 14, 15). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. Nothing here is built yet. Note: the user described these as Story Bible items, but the Suggest button, the pills box and the hint input all live on the **Proofing** page (`apps/ui/src/components/proofing/Transcript.tsx`); the Story Bible (`GuideDetail.tsx`, `Guide.tsx`) has none of them. The visual catalog files the hint-chips state under `home` "for historical reasons" (`apps/ui/tests/visual/state-catalog.ts:29-32`). Phase 1 was delivered by stack S04 of [implementation-plan.md](implementation-plan.md) (issue #66), which reproduced the causes with the real sidecar (see Reproduction results below); Phase 2 waits for the UI primitives stack. Related: [ui-primitives-and-headless-library.prd.md](ui-primitives-and-headless-library.prd.md) (a tag-input primitive and `IconButton`).
 
 ## Problem Statement
 
@@ -23,6 +23,19 @@
 - **Primitives.** `Pill` (`primitives/Pill.tsx`) is a toggle button (`label, active, disabled, title, onClick`), not a removable chip; there is no Chip or Tag primitive; `Field` has only `label, value, onChange, onBlur, disabled, textarea` (no `onKeyDown`, `placeholder`, `ref`, `children`), so it cannot host an inline chip input; input classes are duplicated in `ScopedSetting` and `AddNoteDialog` (`component-a11y...prd.md:17`).
 - **Test and driver coupling.** `Transcript.test.tsx:23,28` and `app.drivers.ts:114` find the button by `/Suggest from manuscript/`; the drivers click `Add` (`:276`, `:527`) and use `getByPlaceholder('Add a term…')` (`:273`, `:524`); `global/toast` is `sameAs proofing/toast` (`state-catalog.ts:191-196`); `addManualHint` never calls `notify`, so what the toast state actually shows should be verified first. Docs and screenshots: `docs/guides/using-the-app/proofing.md:17-21`, `proofing-hint-chips` (`doc-screenshots.json:94`).
 - **Design notes for the chip input.** The input already keeps focus after Enter, so "cursor after the pill" is just placing the input inline after the last pill. Blur-commit interacts with clicks on Remove, the Suggest icon and Start comparison: Start reads `acceptedHints` from its closure (`:160`), so the blur-driven state update must land before the click. `faWandMagicSparkles` is already imported (`:3`).
+
+## Reproduction results (Phase 1, dev build)
+
+The reporter's `vocabulary_candidates` value and toast text (V1) were never supplied, so Phase 1 reproduced the candidate causes with the real Python sidecar (`create` and `build` on a small manuscript of invented names, rules-only because the spaCy model is not installed here) and the real Go host code. The tests named below failed first and now pass.
+
+| # | Cause | Result | Test |
+| --- | --- | --- | --- |
+| 1 | Empty stored list short-circuits the entity fallback | **Confirmed.** After `create` (what import does for checked characters) the guide holds `"vocabulary_candidates": []` and a manual Character `Juno`; the old Go read the empty list and offered nothing. A name created after a build (`Zeph`) was also absent from the stored list. | `TestVocabularyCandidatesDeriveFromEntitiesWhenTheStoredListIsEmpty`, `TestVocabularyCandidatesAddNamesCreatedAfterTheLastBuild` |
+| 2 | Precision filter empties the list in rules-only mode | **Confirmed.** On the real rules-only build the lone-word invented names `Dawnspire` (5 occurrences) and `Zephyra` (3) were filed Needs Review and are absent from the sidecar's list. V3 (adopted) offers locked and manual entries but still leaves auto-extracted Needs Review names out, so these two remain unsuggested; recorded for the owner as [ADR 0042](../adr/0042-proofing-suggestions-derive-from-current-entities-and-skip-auto-extracted-needs-review.md) (Proposed). | `TestVocabularyCandidatesRelaxNeedsReviewForLockedAndManualEntries` |
+| 3 | Weak feedback | **Confirmed by reading and by test.** An empty result said "everything found is already accepted" even when nothing was found; the toast was keyed by its text, so a repeated message did not restart. | `Transcript vocabulary hints feedback`, `hints.test.ts`, `App` "shows a repeated message as a fresh toast" |
+| 4 | Minor: comma round trip, unlocked reads, missing guide, swallowed load errors | Comma round trip **confirmed and fixed** (terms are split on commas, and names with a comma are not suggested). Unlocked reads were fixed by the host binding work. The missing-guide message is accurate. A load error was swallowed twice (Go returned an empty list for an unreadable file, and the UI ignored a rejection); both fixed (V8). | `TestSuggestHintsStillWorksWhenTheSavedHintsFileIsUnreadable`, `TestLoadHintsDistinguishesNoFileFromAnUnreadableOne` |
+
+After the fix, the same real guide file gives `Arelian`, `Captain Arelian`, `Council of Ash`, `Juno`, `Kestrel and Zephyra` and `Zeph` (the last two were absent before for the seeded and post-build cases).
 
 ## Proposed Solution
 
@@ -55,14 +68,14 @@ We believe reliable suggestions plus a single tag-input box will make vocabulary
 
 ## Open Questions
 
-- [ ] **V1. What is in `vocabulary_candidates` for the user's project, and what did the toast say?** This selects among the causes. Ask before building.
-- [ ] **V2. Where to fix the empty list.** Options: (a) Go always derives candidates from entities and the stored list is only additive (recommended); (b) Python recomputes `vocabulary_candidates` in `create`, `edit`, `merge`, `delete` and `rescan`; (c) both.
-- [ ] **V3. Needs Review rule for Suggest.** Relax for locked, manual and character entities, or when spaCy is absent? Recommendation: include locked and manual entities and characters; keep the exclusion for auto-extracted Needs Review non-characters.
-- [ ] **V4. Icon placement.** Inside the box at the trailing edge (recommended) or inline after the pills? At 390 px the box wraps; the icon must not cover text.
-- [ ] **V5. Tag-input keyboard.** Backspace on empty removes the last pill, comma also commits, paste splits on commas and newlines. Recommendation: yes to all three, and a length limit (Q: 64 characters).
-- [ ] **V6. Pending suggestions** stay dashed pills inside the same box, or become a "Suggested" row? Recommendation: stay inside the box.
-- [ ] **V7. Primitive or local component?** A `TagInput` primitive (with stories and an atlas entry) versus a local component. Recommendation: the primitive, per the primitives PRD, since Pill groups and tag inputs recur.
-- [ ] **V8. Load errors** are swallowed (`:75-83`); surface them? Recommendation: yes, a non-blocking message.
+- [ ] **V1. What is in `vocabulary_candidates` for the user's project, and what did the toast say?** Still unanswered by the owner. Phase 1 reproduced causes 1 and 2 with the real sidecar instead (see Reproduction results); both are real, and cause 1 is fixed outright.
+- [x] **V2. Where to fix the empty list.** Answered: (a), per D22. Go always derives candidates from the entities and merges them with the stored list. The Python commands are unchanged.
+- [x] **V3. Needs Review rule for Suggest.** Answered: the recommendation, per D22. Locked and manual entities are always offered (whatever their category); Characters are already outside Needs Review; auto-extracted Needs Review and Draft entities stay out. The real rules-only run shows this leaves lone-word invented names out, so the alternative (offer them, since each already has 3 or more occurrences) is recorded as the Proposed [ADR 0042](../adr/0042-proofing-suggestions-derive-from-current-entities-and-skip-auto-extracted-needs-review.md) for the owner.
+- [ ] **V4. Icon placement.** (Phase 2; recommendation adopted per D22, not built yet.) Inside the box at the trailing edge (recommended) or inline after the pills? At 390 px the box wraps; the icon must not cover text.
+- [ ] **V5. Tag-input keyboard.** (Phase 2; recommendation adopted per D22, not built yet. Phase 1 already splits a typed list on commas and line breaks.) Backspace on empty removes the last pill, comma also commits, paste splits on commas and newlines. Recommendation: yes to all three, and a length limit (Q: 64 characters).
+- [ ] **V6. Pending suggestions** (Phase 2; recommendation adopted per D22, not built yet.) stay dashed pills inside the same box, or become a "Suggested" row? Recommendation: stay inside the box.
+- [ ] **V7. Primitive or local component?** (Phase 2; recommendation adopted per D22 and waits for the primitives stack.) A `TagInput` primitive (with stories and an atlas entry) versus a local component. Recommendation: the primitive, per the primitives PRD, since Pill groups and tag inputs recur.
+- [x] **V8. Load errors** are swallowed (`:75-83`); surface them? Answered: yes, delivered in Phase 1 as a toast (not blocking; the page stays usable). `transcript.Service.LoadHints` now returns an error for an unreadable or invalid `vocab_hints.json` (no file is still an empty list), and the page says the hints could not be loaded and that hints added now replace them (the host keeps the old file as `vocab_hints.json.corrupt`).
 
 ## Users & Context
 
@@ -113,8 +126,8 @@ We believe reliable suggestions plus a single tag-input box will make vocabulary
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Make Suggest work and honest | Source fix, messages, duplicate check, tests | pending | - | V1 | - |
-| 2 | Tag-input box and Suggest icon | Pills box as input, Suggest icon, removed Add row, drivers and docs | pending | - | 1 | - |
+| 1 | Make Suggest work and honest | Source fix, messages, duplicate check, load errors, tests | complete | - | V1 (diagnosed instead) | [plan](implementation-plan.md) (S04) |
+| 2 | Tag-input box and Suggest icon | Pills box as input, Suggest icon, removed Add row, drivers and docs | pending (waits for the primitives stack, S10) | - | 1 | - |
 
 **Phase 1.** Goal: Suggest returns useful names and reports truthfully. Success: Go and Vitest tests for the empty-list, rules-only and message cases.
 **Phase 2.** Goal: one control. Success: Vitest for Enter, blur, Backspace, races and duplicates; PNGs reviewed at four viewports.
@@ -137,14 +150,20 @@ Cross-cutting: `hostAPIVersion` unchanged (no binding change); each phase follow
 | Precision over recall for Story Bible entities (prior, ADR 0020) | Kept for the Story Bible; Suggest may include locked, manual and character entities (proposed) | Relax everywhere | Suggest is user-reviewed |
 | Local-first, no cloud (prior) | Suggestions come from local project data only | - | Standing scope |
 | Where Suggest sources names | Go merges stored list and entities (proposed) | Python recompute | One place, no sidecar cost |
-| Input model | Tag input (proposed) | Separate input row | Requested |
+| Input model | Tag input (proposed; Phase 2) | Separate input row | Requested |
+| Diagnosis without V1 | Reproduce the causes with the real sidecar and fix what is proven (S04) | Wait for the user's file | The owner was unavailable; causes 1 and 3 are fixed, cause 2 is fixed for locked and manual entries and left open by V3 (ADR 0042 Proposed) |
+| Suggest wire shape | `TranscriptSuggestHints` returns `{ terms, found }` instead of `{ value }` (delivered); the Go signature is unchanged, so `hostAPIVersion` stays 5 | Keep the comma-joined string and add a count field | A list cannot be corrupted by a comma, and `found` lets the page tell "nothing found" from "all accepted" |
+| Derived names | The sidecar's rule (`is_vocabulary_worthy`, ADR 0020) with locked and manual checked first, so the 3-occurrence threshold for lone words stays; names with a comma or line break are skipped; legacy string aliases are read (delivered) | Drop the threshold | Found in review: dropping it would defeat ADR 0020's precision rule for auto-extracted singletons |
+| Replacing an unreadable hints file | `SaveHints` keeps the old file as `vocab_hints.json.corrupt` before writing the new list (delivered) | Overwrite it | The page tells the narrator that hints added now replace the unreadable ones; nothing should be lost silently |
+| Toast identity | Each message gets a new id in `App`, so a repeated message remounts the toast and restarts its timer (delivered); the 2.4 s duration is unchanged | A per-page workaround | One small change fixes every page; the audit's toast queue can replace it later |
+| Load errors | Moved from Phase 2 to Phase 1 (V8) | Wait for the tag input | It needed a Go change and is independent of the input model |
 
 ## Research Summary
 
 **Technical Context**: verified in code on this branch: the full Suggest trace, both empty-list paths, the UI and handlers, hint storage and use, primitives, tests and drivers, and PRD/doc coverage (none).
-**Not verified**: the user's actual data or toast text, and whether the mock's `addManualHint` toast is what `global/toast` shows.
+**Verified in Phase 1**: the `global/toast` and `proofing/toast` states show no toast at all (`addManualHint` never calls `notify`; the PNGs at every viewport show only the added pill), so that visual row and its `sameAs` describe a flow that does not produce a toast. Phase 2 owns the drivers and should fix the row. **Not verified**: the user's actual data or toast text.
 
 ---
 
 *Generated: 2026-09-20*
-*Status: DRAFT - needs validation*
+*Status: IN DELIVERY - Phase 1 complete (stack S04); Phase 2 pending the primitives stack*

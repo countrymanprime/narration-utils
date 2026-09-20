@@ -100,3 +100,56 @@ func TestEquivalenceRejectsMultiwordAndHintsAreCanonicalized(t *testing.T) {
 		t.Fatalf("hints = %#v", hints)
 	}
 }
+
+// A missing file is an empty list, but a file that cannot be read or parsed is a load error the
+// Proofing page can show; Hints() used to return an empty list for both.
+func TestLoadHintsDistinguishesNoFileFromAnUnreadableOne(t *testing.T) {
+	service, _ := testService(t)
+	if hints, err := service.LoadHints(); err != nil || len(hints) != 0 {
+		t.Fatalf("no file: hints = %#v, err = %v", hints, err)
+	}
+	path := filepath.Join(service.config.Project, "TranscriptCompare", "vocab_hints.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(`{"not":"a list"`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	hints, err := service.LoadHints()
+	if err == nil || !strings.Contains(err.Error(), "vocabulary hints") {
+		t.Fatalf("corrupt file: hints = %#v, err = %v, want a vocabulary hints error", hints, err)
+	}
+	if len(service.Hints()) != 0 {
+		t.Fatal("Hints must stay best-effort: an unreadable file is an empty list")
+	}
+}
+
+// The Proofing page tells the narrator that hints added now replace an unreadable saved list, so the
+// replaced file is kept beside it instead of being destroyed.
+func TestSaveHintsKeepsAnUnreadableFileAsCorruptBeforeReplacingIt(t *testing.T) {
+	service, _ := testService(t)
+	path := filepath.Join(service.config.Project, "TranscriptCompare", "vocab_hints.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(`["Alice", `), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.SaveHints([]string{"Zeph"}); err != nil {
+		t.Fatal(err)
+	}
+	if hints, err := service.LoadHints(); err != nil || len(hints) != 1 || hints[0] != "Zeph" {
+		t.Fatalf("hints = %#v, err = %v", hints, err)
+	}
+	kept, err := os.ReadFile(path + ".corrupt")
+	if err != nil || string(kept) != `["Alice", ` {
+		t.Fatalf("the unreadable file was not kept: %q, %v", kept, err)
+	}
+}
+
+func TestLoadHintsWithNoProjectIsEmptyNotACwdRead(t *testing.T) {
+	service := New(Config{}, nil, nil, nil, nil)
+	if hints, err := service.LoadHints(); err != nil || len(hints) != 0 {
+		t.Fatalf("hints = %#v, err = %v", hints, err)
+	}
+}

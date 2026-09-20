@@ -107,4 +107,5 @@ Updated by the last PR of each stack. Values: `queued`, `in progress`, `pr open`
 | S00 | in progress | this PR |
 | S02 | pr open | #55, #56, #57, #58 (issue #54) |
 | S03 | pr open | #61, #62, #63, #64 (issue #59; follow-up #60) |
-| S01, S04-S24 | queued | |
+| S04 | partial | #67 (TTS preview P1), #68 (vocabulary hints P1); issues #65, #66. Delivered: [story-bible-preview-tts-failures](story-bible-preview-tts-failures.prd.md) Phase 1 and [proofing-vocabulary-hints](proofing-vocabulary-hints.prd.md) Phase 1. Remaining: TTS Phase 2 (install flow, folded into release-readiness Phase 1, stack S16) and Phase 3 (frozen piper data and the model-hash cache, also S16); vocabulary Phase 2 (the tag-input box, after the primitives stack S10). Open [ADR 0042](../adr/0042-proofing-suggestions-derive-from-current-entities-and-skip-auto-extracted-needs-review.md) awaits the owner. |
+| S01, S05-S24 | queued | |

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faPlay, faWandMagicSparkles, faXmark } from '@fortawesome/free-solid-svg-icons';
 import type { Discrepancy, TranscriptState, TranscriptStartResult, WhisperInstallJob } from '../../types';
@@ -11,7 +11,11 @@ import { Panel } from '../primitives/Panel';
 import { Pill } from '../primitives/Pill';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { Results } from './Results';
+import { hasHint, splitHintTerms, suggestionMessage } from './hints';
 import { PROOFING_CHUNK_OPTIONS } from './options';
+
+/** The host rejects with its error text as a plain string; an Error carries it in `message`. */
+const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 const seconds = (value: number) =>
   `${Math.floor(value / 60)
@@ -62,6 +66,9 @@ export function Transcript({
   const [workers, setWorkers] = useState('Auto');
   const [acceptedHints, setAcceptedHints] = useState<string[]>([]);
   const [pendingHints, setPendingHints] = useState<string[]>([]);
+  // The suggestion request is asynchronous: read the lists as they are when it resolves, not as they were at the click.
+  const hintsRef = useRef({ accepted: acceptedHints, pending: pendingHints });
+  hintsRef.current = { accepted: acceptedHints, pending: pendingHints };
   const [manualHint, setManualHint] = useState('');
   const [logVerbosity, setLogVerbosity] = useState<'Quiet' | 'Normal' | 'Verbose'>('Normal');
   const [selected, setSelected] = useState<Discrepancy>();
@@ -73,14 +80,21 @@ export function Transcript({
   const running = isTranscriptActive(state.phase);
 
   useEffect(() => {
+    let active = true;
     (async () => {
       try {
-        setAcceptedHints(await api.transcriptHints());
-      } catch {
-        /* no manuscript selected yet */
+        const saved = await api.transcriptHints();
+        if (active) setAcceptedHints(saved);
+      } catch (error) {
+        // Non-blocking: the page stays usable. Adding a hint saves a fresh list over the unreadable file
+        // (the host keeps the old one as vocab_hints.json.corrupt).
+        if (active) notify(`The saved vocabulary hints could not be loaded: ${errorText(error)}. Hints you add now will replace them.`);
       }
     })();
-  }, [api]);
+    return () => {
+      active = false;
+    };
+  }, [api, notify]);
   useEffect(() => {
     (async () => {
       try {
@@ -127,31 +141,25 @@ export function Transcript({
     }
   };
   const acceptHint = (term: string) => {
-    setPendingHints((current) => current.filter((item) => item !== term));
-    if (!acceptedHints.includes(term)) void saveHints([...acceptedHints, term]);
+    setPendingHints((current) => current.filter((item) => item.toLowerCase() !== term.toLowerCase()));
+    if (!hasHint(acceptedHints, term)) void saveHints([...acceptedHints, term]);
   };
   const removeHint = (term: string) => void saveHints(acceptedHints.filter((item) => item !== term));
   const addManualHint = () => {
-    const value = manualHint.trim();
-    if (!value) return;
+    const terms = splitHintTerms(manualHint);
     setManualHint('');
-    if (!acceptedHints.includes(value)) void saveHints([...acceptedHints, value]);
+    const next = terms.reduce((hints, term) => (hasHint(hints, term) ? hints : [...hints, term]), acceptedHints);
+    if (next.length > acceptedHints.length) void saveHints(next);
   };
   const suggestHints = async () => {
     try {
-      const suggested = (await api.transcriptSuggestHints())
-        .split(',')
-        .map((term) => term.trim())
-        .filter(Boolean);
-      const fresh = suggested.filter((term) => !acceptedHints.includes(term));
-      setPendingHints((current) => Array.from(new Set([...current, ...fresh])));
-      notify(
-        fresh.length > 0
-          ? `Found ${fresh.length} new suggestion${fresh.length === 1 ? '' : 's'}.`
-          : 'No new suggestions — everything found is already accepted.',
-      );
+      const { terms, found } = await api.transcriptSuggestHints();
+      const fresh = terms.filter((term) => !hasHint(hintsRef.current.accepted, term));
+      const added = fresh.filter((term) => !hasHint(hintsRef.current.pending, term));
+      setPendingHints((current) => [...current, ...added.filter((term) => !hasHint(current, term))]);
+      notify(suggestionMessage(found, fresh.length, added.length));
     } catch (error) {
-      notify(String(error));
+      notify(errorText(error));
     }
   };
 

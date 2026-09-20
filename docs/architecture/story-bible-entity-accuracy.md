@@ -32,6 +32,8 @@
 
 **Proofing vocabulary (`vocabulary_candidates`).** Excludes every `"Needs Review"` entity and any single-word entity that is neither locked nor manual and has fewer than 3 occurrences, so "Suggest from manuscript" is not polluted.
 
+**What Suggest actually offers (`guide.VocabularyCandidates`, Go).** The stored `vocabulary_candidates` list is only an addition: only `build()` writes it (`create()` seeds it empty, and `edit`, `merge`, `delete` and `rescan` never refresh it), so choosing it whenever it existed made Suggest return nothing on a freshly imported project and miss every name added after the last build. The host therefore always derives names from the current entities and merges them with the stored list, one spelling per case-insensitive name. Derived names follow the rule above with one relaxation: a locked or manual entity is always offered, whatever its category, because it is the narrator's own. Auto-extracted Needs Review and Draft entities stay out, and a lone word that is neither locked nor manual still needs 3 occurrences (an entity from a guide too old to carry occurrence data is kept). Whether auto-extracted Needs Review entities should also be offered is an open question recorded in the Proposed [ADR 0042](../adr/0042-proofing-suggestions-derive-from-current-entities-and-skip-auto-extracted-needs-review.md). Names containing a comma or a line break are skipped, because the hints reach the recognizer as one comma-joined string.
+
 **Unchanged.** Locked and manual entities are never touched by these rules: `merge_locked` still preserves them (including ones a rebuild would no longer extract), and `edit()` still rejects field changes on locked entities (ADR-0007).
 
 ## Known trade-offs
