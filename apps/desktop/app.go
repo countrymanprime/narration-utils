@@ -355,11 +355,17 @@ func (h *Host) transcriptLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if service := h.services().transcript; service != nil {
-				_ = service.Drain()
-				service.Poll()
-			}
+			h.pollTranscript()
 		}
+	}
+}
+
+// pollTranscript is one tick of transcriptLoop: drain and poll the current
+// project's transcript service, if it has one.
+func (h *Host) pollTranscript() {
+	if service := h.services().transcript; service != nil {
+		_ = service.Drain()
+		service.Poll()
 	}
 }
 

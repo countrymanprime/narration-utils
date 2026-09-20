@@ -14,7 +14,8 @@ import (
 // the launch config and the seven service pointers that configureLocked
 // replaces whenever a project is attached (the picker, "open recent", and a
 // REAPER second launch). A service can legitimately be nil, for example tts
-// when its catalog is missing, so callers keep their nil checks.
+// when its catalog could not be loaded (configureLocked keeps the previous
+// manager if a rebuild fails), so callers keep their nil checks.
 type hostServices struct {
 	config       config
 	guide        *guide.Service
@@ -40,7 +41,11 @@ type hostServices struct {
 //
 // The lock is taken to copy and released before the snapshot is returned. Never
 // hold h.mu across a service call: the emit callbacks re-enter h.mu.RLock, and a
-// recursive read lock behind a queued writer (a project switch) deadlocks.
+// recursive read lock behind a queued writer (a project switch) deadlocks. For
+// the same reason never call services() while holding h.mu yourself: with the
+// write lock held (configureLocked and everything named ...Locked, ProjectSwitch
+// and onSecondInstance between Lock and Unlock) it deadlocks on itself; use
+// h.config there, or take the snapshot before locking.
 //
 // hostguard_test.go fails `go test` on any other read of these fields, so a new
 // binding cannot regress this by accident. h.recents and h.sidecars are set once

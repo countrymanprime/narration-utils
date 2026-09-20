@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -25,72 +26,79 @@ var swappableHostFields = map[string]bool{
 }
 
 // permanentDirectReaders may touch the swappable fields directly because the
-// lock is already held (or nothing else can see the Host yet). This list does
-// not shrink: it is the reasoning, not a debt.
+// lock is already held. This list does not shrink: it is the reasoning, not a
+// debt. (NewHost builds its fields with a composite literal before any other
+// goroutine can see the Host, which the guard cannot flag, so it needs no entry.)
 var permanentDirectReaders = map[string]string{
-	"NewHost":         "builds the Host before any other goroutine can see it",
 	"configureLocked": "the only writer of the fields; its caller holds h.mu",
 	"canAttachLocked": "runs inside attachProjectLocked, whose caller holds h.mu",
 	"services":        "the accessor: the one place that reads the fields under the lock",
 }
 
-// directReadAllowlist is the ratchet: functions that still read a swappable
-// field directly, and so still race with a project switch. It can only shrink.
-// A function that no longer reads a field must be removed (the guard fails
-// on a stale entry), and adding one needs a written reason in the pull request.
-// Keep it sorted, one name per line, so concurrent edits rebase cleanly.
-var directReadAllowlist = []string{
-	"Bootstrap",
-	"GuideCreate",
-	"GuideDelete",
-	"GuideEdit",
-	"GuideEntities",
-	"GuideMerge",
-	"GuidePreview",
-	"GuideRelate",
-	"GuideRescan",
-	"GuideSetLocked",
-	"GuideUnrelate",
-	"ManuscriptBeginImport",
-	"ManuscriptChapters",
-	"ManuscriptClearProjectData",
-	"ManuscriptCreateBookmark",
-	"ManuscriptCreateNote",
-	"ManuscriptDeleteBookmark",
-	"ManuscriptDeleteNote",
-	"ManuscriptImportCancel",
-	"ManuscriptImportCommit",
-	"ManuscriptImportPreview",
-	"ManuscriptImportState",
-	"ManuscriptNotes",
-	"ManuscriptParagraphs",
-	"ManuscriptReader",
-	"ManuscriptReaderState",
-	"ManuscriptSaveReaderState",
-	"ManuscriptSearch",
-	"ManuscriptSelectFile",
-	"ManuscriptSetChapterStatus",
-	"TranscriptAddEquivalence",
-	"TranscriptCancel",
-	"TranscriptExportMarkers",
-	"TranscriptHints",
-	"TranscriptJump",
-	"TranscriptLastCompleted",
-	"TranscriptReset",
-	"TranscriptSaveHints",
-	"TranscriptStart",
-	"TranscriptSuggestHints",
-	"TtsCatalog",
-	"TtsRemove",
-	"WhisperCatalog",
-	"WhisperRemove",
-	"resolveWhisperModelID",
-	"saveSettings",
-	"seedCharacterCandidates",
-	"settingsForScope",
-	"startGuideBuild",
-	"startTtsInstall",
-	"startWhisperInstall",
+// directReadAllowlist is the ratchet: functions that still read swappable
+// fields directly, with how many reads each has, and so still race with a
+// project switch. It can only shrink. Converting a read must lower its count
+// (the guard fails on a count that is too high, and on one that is too low), a
+// function with no reads left must be removed, and a new entry needs a written
+// reason in the pull request. Keep it sorted, one name per line, so concurrent
+// edits rebase cleanly.
+var directReadAllowlist = []allowedReads{
+	{"Bootstrap", 2},
+	{"GuideCreate", 2},
+	{"GuideDelete", 2},
+	{"GuideEdit", 2},
+	{"GuideEntities", 2},
+	{"GuideMerge", 2},
+	{"GuidePreview", 7},
+	{"GuideRelate", 2},
+	{"GuideRescan", 2},
+	{"GuideSetLocked", 2},
+	{"GuideUnrelate", 2},
+	{"ManuscriptBeginImport", 1},
+	{"ManuscriptChapters", 1},
+	{"ManuscriptClearProjectData", 1},
+	{"ManuscriptCreateBookmark", 1},
+	{"ManuscriptCreateNote", 1},
+	{"ManuscriptDeleteBookmark", 1},
+	{"ManuscriptDeleteNote", 1},
+	{"ManuscriptImportCancel", 1},
+	{"ManuscriptImportCommit", 3},
+	{"ManuscriptImportPreview", 1},
+	{"ManuscriptImportState", 1},
+	{"ManuscriptNotes", 1},
+	{"ManuscriptParagraphs", 1},
+	{"ManuscriptReader", 1},
+	{"ManuscriptReaderState", 1},
+	{"ManuscriptSaveReaderState", 1},
+	{"ManuscriptSearch", 1},
+	{"ManuscriptSelectFile", 1},
+	{"ManuscriptSetChapterStatus", 1},
+	{"TranscriptAddEquivalence", 2},
+	{"TranscriptCancel", 2},
+	{"TranscriptExportMarkers", 2},
+	{"TranscriptHints", 2},
+	{"TranscriptJump", 2},
+	{"TranscriptLastCompleted", 2},
+	{"TranscriptReset", 2},
+	{"TranscriptSaveHints", 2},
+	{"TranscriptStart", 6},
+	{"TranscriptSuggestHints", 4},
+	{"TtsCatalog", 4},
+	{"TtsRemove", 2},
+	{"WhisperCatalog", 3},
+	{"WhisperRemove", 2},
+	{"resolveWhisperModelID", 1},
+	{"saveSettings", 1},
+	{"seedCharacterCandidates", 2},
+	{"settingsForScope", 3},
+	{"startGuideBuild", 2},
+	{"startTtsInstall", 3},
+	{"startWhisperInstall", 3},
+}
+
+type allowedReads struct {
+	function string
+	reads    int
 }
 
 type directRead struct {
@@ -99,56 +107,137 @@ type directRead struct {
 	position token.Position
 }
 
-// hostNames returns the names a function uses for a Host: its receiver and any
-// parameter whose type is Host or *Host.
-func hostNames(function *ast.FuncDecl) map[string]bool {
-	names := map[string]bool{}
-	collect := func(fields *ast.FieldList) {
-		if fields == nil {
-			return
-		}
-		for _, field := range fields.List {
-			typeExpr := field.Type
-			if star, ok := typeExpr.(*ast.StarExpr); ok {
-				typeExpr = star.X
-			}
-			if ident, ok := typeExpr.(*ast.Ident); ok && ident.Name == "Host" {
-				for _, name := range field.Names {
-					names[name.Name] = true
-				}
-			}
+// closureName attributes reads inside a package-level function literal.
+const closureName = "(package-level closure)"
+
+// unwrapHost returns the identifier under parentheses and dereferences, so
+// (*h).guide is seen as h.guide.
+func unwrapHost(expression ast.Expr) (string, bool) {
+	for {
+		switch typed := expression.(type) {
+		case *ast.ParenExpr:
+			expression = typed.X
+		case *ast.StarExpr:
+			expression = typed.X
+		case *ast.Ident:
+			return typed.Name, true
+		default:
+			return "", false
 		}
 	}
-	collect(function.Recv)
-	collect(function.Type.Params)
-	return names
 }
 
-// directHostReads lists every selection of a swappable field on a Host inside
-// file's functions, closures included.
-func directHostReads(fset *token.FileSet, file *ast.File) []directRead {
-	var reads []directRead
-	for _, declaration := range file.Decls {
-		function, ok := declaration.(*ast.FuncDecl)
-		if !ok || function.Body == nil {
-			continue
+// addHostParams records the names in fields whose type is Host or *Host.
+func addHostParams(names map[string]bool, fields *ast.FieldList) {
+	if fields == nil {
+		return
+	}
+	for _, field := range fields.List {
+		typeExpr := field.Type
+		if star, ok := typeExpr.(*ast.StarExpr); ok {
+			typeExpr = star.X
 		}
-		hosts := hostNames(function)
-		if len(hosts) == 0 {
-			continue
+		if ident, ok := typeExpr.(*ast.Ident); ok && ident.Name == "Host" {
+			for _, name := range field.Names {
+				names[name.Name] = true
+			}
 		}
-		ast.Inspect(function.Body, func(node ast.Node) bool {
-			selector, ok := node.(*ast.SelectorExpr)
-			if !ok || !swappableHostFields[selector.Sel.Name] {
+	}
+}
+
+// producesHost reports whether expression evaluates to a Host the function
+// already tracks: another name for it, NewHost(), or a &Host{} literal.
+func producesHost(expression ast.Expr, hosts map[string]bool) bool {
+	if name, ok := unwrapHost(expression); ok {
+		return hosts[name]
+	}
+	switch typed := expression.(type) {
+	case *ast.CallExpr:
+		callee, ok := typed.Fun.(*ast.Ident)
+		return ok && callee.Name == "NewHost"
+	case *ast.UnaryExpr:
+		literal, ok := typed.X.(*ast.CompositeLit)
+		if !ok || typed.Op != token.AND {
+			return false
+		}
+		ident, ok := literal.Type.(*ast.Ident)
+		return ok && ident.Name == "Host"
+	}
+	return false
+}
+
+// scanHostUse walks one function body (closures included) and reports each
+// selection of a swappable field on a Host, and each h.services() call.
+// Hosts are found by receiver, by parameter type (closure parameters too) and
+// by simple aliases (x := h, x := NewHost(), x := &Host{}).
+func scanHostUse(fset *token.FileSet, name string, body ast.Node, hosts map[string]bool, onRead func(directRead), onServices func(token.Position)) {
+	ast.Inspect(body, func(node ast.Node) bool {
+		switch typed := node.(type) {
+		case *ast.FuncLit:
+			addHostParams(hosts, typed.Type.Params)
+		case *ast.AssignStmt:
+			for index, right := range typed.Rhs {
+				if left, ok := typed.Lhs[min(index, len(typed.Lhs)-1)].(*ast.Ident); ok && producesHost(right, hosts) {
+					hosts[left.Name] = true
+				}
+			}
+		case *ast.SelectorExpr:
+			owner, ok := unwrapHost(typed.X)
+			if !ok || !hosts[owner] {
 				return true
 			}
-			if owner, ok := selector.X.(*ast.Ident); ok && hosts[owner.Name] {
-				reads = append(reads, directRead{function.Name.Name, selector.Sel.Name, fset.Position(selector.Pos())})
+			if swappableHostFields[typed.Sel.Name] {
+				onRead(directRead{name, typed.Sel.Name, fset.Position(typed.Pos())})
 			}
-			return true
-		})
+			if typed.Sel.Name == "services" && onServices != nil {
+				onServices(fset.Position(typed.Pos()))
+			}
+		}
+		return true
+	})
+}
+
+// directHostReads lists every selection of a swappable field on a Host in
+// file's functions and package-level function literals.
+func directHostReads(fset *token.FileSet, file *ast.File) []directRead {
+	var reads []directRead
+	collect := func(read directRead) { reads = append(reads, read) }
+	for _, declaration := range file.Decls {
+		switch typed := declaration.(type) {
+		case *ast.FuncDecl:
+			if typed.Body == nil {
+				continue
+			}
+			hosts := map[string]bool{}
+			addHostParams(hosts, typed.Recv)
+			addHostParams(hosts, typed.Type.Params)
+			scanHostUse(fset, typed.Name.Name, typed.Body, hosts, collect, nil)
+		case *ast.GenDecl:
+			scanHostUse(fset, closureName, typed, map[string]bool{}, collect, nil)
+		}
 	}
 	return reads
+}
+
+// servicesCallsInLocked lists the h.services() calls made from functions whose
+// name ends in "Locked". Their caller already holds h.mu, so the accessor's
+// RLock would self-deadlock (a write lock is held) or deadlock behind a queued
+// writer (a read lock is held).
+func servicesCallsInLocked(fset *token.FileSet, file *ast.File) []string {
+	var calls []string
+	for _, declaration := range file.Decls {
+		function, ok := declaration.(*ast.FuncDecl)
+		if !ok || function.Body == nil || !strings.HasSuffix(function.Name.Name, "Locked") {
+			continue
+		}
+		hosts := map[string]bool{}
+		addHostParams(hosts, function.Recv)
+		addHostParams(hosts, function.Type.Params)
+		scanHostUse(fset, function.Name.Name, function.Body, hosts, func(directRead) {}, func(position token.Position) {
+			calls = append(calls, fmt.Sprintf("%s: %s calls services() but its caller holds h.mu", position, function.Name.Name))
+		})
+	}
+	return calls
 }
 
 func parseHostSources(t *testing.T) (*token.FileSet, []*ast.File) {
@@ -184,36 +273,55 @@ func TestHostReadsSwappableServicesOnlyThroughTheAccessor(t *testing.T) {
 		}
 	}
 
-	allowed := map[string]bool{}
-	for index, name := range directReadAllowlist {
-		if index > 0 && name <= directReadAllowlist[index-1] {
-			t.Errorf("directReadAllowlist must be sorted with no duplicates: %q follows %q", name, directReadAllowlist[index-1])
+	allowed := map[string]int{}
+	for index, entry := range directReadAllowlist {
+		if index > 0 && entry.function <= directReadAllowlist[index-1].function {
+			t.Errorf("directReadAllowlist must be sorted with no duplicates: %q follows %q", entry.function, directReadAllowlist[index-1].function)
 		}
-		allowed[name] = true
+		if entry.reads < 1 {
+			t.Errorf("directReadAllowlist entry %q has %d reads; remove an entry with none", entry.function, entry.reads)
+		}
+		allowed[entry.function] = entry.reads
 	}
 
-	var unexpected, stale []string
+	var problems []string
 	for name, reads := range violations {
-		if _, permanent := permanentDirectReaders[name]; permanent || allowed[name] {
+		if _, permanent := permanentDirectReaders[name]; permanent {
+			continue
+		}
+		budget, listed := allowed[name]
+		if listed && len(reads) == budget {
 			continue
 		}
 		first := reads[0]
-		unexpected = append(unexpected, first.position.String()+": "+name+" reads h."+first.field+" directly; take a snapshot with h.services() instead")
+		switch {
+		case !listed:
+			problems = append(problems, fmt.Sprintf("%s: %s reads h.%s directly (%d reads); take a snapshot with h.services() instead", first.position, name, first.field, len(reads)))
+		case len(reads) > budget:
+			problems = append(problems, fmt.Sprintf("%s: %s has %d direct reads, more than its allowlist count of %d; use h.services() for the new one", reads[budget].position, name, len(reads), budget))
+		default:
+			problems = append(problems, fmt.Sprintf("%s now has %d direct reads; lower its directReadAllowlist count from %d to %d", name, len(reads), budget, len(reads)))
+		}
 	}
 	for name := range allowed {
 		if _, permanent := permanentDirectReaders[name]; permanent {
-			stale = append(stale, name+" is permanently allowed; remove it from directReadAllowlist")
+			problems = append(problems, name+" is permanently allowed; remove it from directReadAllowlist")
 		} else if len(violations[name]) == 0 {
-			stale = append(stale, name+" no longer reads a swappable field directly; remove it from directReadAllowlist")
+			problems = append(problems, name+" no longer reads a swappable field directly; remove it from directReadAllowlist")
 		}
 	}
-	sort.Strings(unexpected)
-	sort.Strings(stale)
-	for _, message := range unexpected {
-		t.Error(message)
+	sort.Strings(problems)
+	for _, problem := range problems {
+		t.Error(problem)
 	}
-	for _, message := range stale {
-		t.Error(message)
+}
+
+func TestServicesIsNeverCalledWhileTheHostLockIsHeld(t *testing.T) {
+	fset, files := parseHostSources(t)
+	for _, file := range files {
+		for _, call := range servicesCallsInLocked(fset, file) {
+			t.Error(call)
+		}
 	}
 }
 
@@ -234,6 +342,105 @@ func TestPermanentDirectReadersStillExist(t *testing.T) {
 	}
 }
 
+// structFieldNames returns the field names of the named struct type in files.
+func structFieldNames(files []*ast.File, typeName string) map[string]bool {
+	for _, file := range files {
+		for _, declaration := range file.Decls {
+			general, ok := declaration.(*ast.GenDecl)
+			if !ok {
+				continue
+			}
+			for _, spec := range general.Specs {
+				typeSpec, ok := spec.(*ast.TypeSpec)
+				if !ok || typeSpec.Name.Name != typeName {
+					continue
+				}
+				structType, ok := typeSpec.Type.(*ast.StructType)
+				if !ok {
+					continue
+				}
+				names := map[string]bool{}
+				for _, field := range structType.Fields.List {
+					for _, name := range field.Names {
+						names[name.Name] = true
+					}
+				}
+				return names
+			}
+		}
+	}
+	return nil
+}
+
+// configureLockedAssignments returns the Host fields configureLocked assigns
+// (h.x = ..., including h.config.y = ...).
+func configureLockedAssignments(files []*ast.File) map[string]bool {
+	assigned := map[string]bool{}
+	for _, file := range files {
+		for _, declaration := range file.Decls {
+			function, ok := declaration.(*ast.FuncDecl)
+			if !ok || function.Name.Name != "configureLocked" || function.Recv == nil || len(function.Recv.List[0].Names) == 0 {
+				continue
+			}
+			receiver := function.Recv.List[0].Names[0].Name
+			ast.Inspect(function.Body, func(node ast.Node) bool {
+				assignment, ok := node.(*ast.AssignStmt)
+				if !ok {
+					return true
+				}
+				for _, left := range assignment.Lhs {
+					selector, ok := left.(*ast.SelectorExpr)
+					for ok {
+						if owner, isIdent := selector.X.(*ast.Ident); isIdent && owner.Name == receiver {
+							assigned[selector.Sel.Name] = true
+							break
+						}
+						selector, ok = selector.X.(*ast.SelectorExpr)
+					}
+				}
+				return true
+			})
+		}
+	}
+	return assigned
+}
+
+// The field list exists in four places that must agree: what configureLocked
+// assigns, swappableHostFields, the Host struct and the hostServices snapshot
+// (which also copies config). A field added to one and not the others would
+// silently escape the guard or the snapshot.
+func TestSwappableFieldsAgreeAcrossTheHostConfigureLockedAndTheSnapshot(t *testing.T) {
+	_, files := parseHostSources(t)
+	assigned := configureLockedAssignments(files)
+	hostFields := structFieldNames(files, "Host")
+	snapshotFields := structFieldNames(files, "hostServices")
+	if len(assigned) == 0 || hostFields == nil || snapshotFields == nil {
+		t.Fatalf("could not read configureLocked (%d assignments), Host (%v) or hostServices (%v)", len(assigned), hostFields != nil, snapshotFields != nil)
+	}
+
+	for field := range swappableHostFields {
+		if !hostFields[field] {
+			t.Errorf("swappableHostFields names %q, which is not a Host field", field)
+		}
+		if !snapshotFields[field] {
+			t.Errorf("hostServices has no %q field; copy it in services()", field)
+		}
+	}
+	if !snapshotFields["config"] {
+		t.Error("hostServices must carry config")
+	}
+	for field := range assigned {
+		if field != "config" && !swappableHostFields[field] {
+			t.Errorf("configureLocked assigns h.%s, which is not in swappableHostFields; add it to the guard and to hostServices, or make it a set-once field", field)
+		}
+	}
+	for field := range snapshotFields {
+		if field != "config" && !swappableHostFields[field] {
+			t.Errorf("hostServices carries %q, which is not in swappableHostFields", field)
+		}
+	}
+}
+
 // The guard is only worth having if it fires. These fixtures are parsed the
 // same way as the real sources.
 func TestHostGuardFlagsDirectReadsAndIgnoresSnapshots(t *testing.T) {
@@ -243,6 +450,12 @@ func (h *Host) Bad() { _ = h.guide }
 func (host *Host) BadAlias() { host.settings.Global("x") }
 func BadParam(target *Host) { target.tts = nil }
 func (h *Host) BadClosure() { go func() { h.transcript.Poll() }() }
+func (h *Host) BadDereference() { _ = (*h).whisper }
+func (h *Host) BadLocalAlias() { other := h; _ = other.manuscript }
+func BadConstructed() { app := NewHost(); _ = app.teleprompter }
+func BadLiteral() { app := &Host{}; _ = app.guide }
+func BadClosureParam() { func(x *Host) { _ = x.guide }(nil) }
+var packageLevel = func(h *Host) { _ = h.settings }
 func (h *Host) Good() { svc := h.services(); _ = svc.guide; _ = h.config; _ = h.recents }
 func Unrelated(other *Other) { _ = other.guide }
 `
@@ -255,7 +468,11 @@ func Unrelated(other *Other) { _ = other.guide }
 	for _, read := range directHostReads(fset, file) {
 		flagged[read.function] = read.field
 	}
-	want := map[string]string{"Bad": "guide", "BadAlias": "settings", "BadParam": "tts", "BadClosure": "transcript"}
+	want := map[string]string{
+		"Bad": "guide", "BadAlias": "settings", "BadParam": "tts", "BadClosure": "transcript",
+		"BadDereference": "whisper", "BadLocalAlias": "manuscript", "BadConstructed": "teleprompter",
+		"BadLiteral": "guide", "BadClosureParam": "guide", closureName: "settings",
+	}
 	if len(flagged) != len(want) {
 		t.Fatalf("flagged = %v, want %v", flagged, want)
 	}
@@ -263,5 +480,24 @@ func Unrelated(other *Other) { _ = other.guide }
 		if flagged[name] != field {
 			t.Errorf("%s: flagged %q, want %q (all flagged: %v)", name, flagged[name], field, flagged)
 		}
+	}
+}
+
+func TestLockedGuardFlagsServicesCalledUnderTheLock(t *testing.T) {
+	const source = `package main
+
+func (h *Host) configureLocked() { _ = h.services() }
+func (h *Host) attachLocked() { svc := h.services(); _ = svc }
+func (h *Host) Binding() { _ = h.services() }
+func (h *Host) canAttachLocked() bool { return h.config.projectFolder != "" }
+`
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "fixture.go", source, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls := servicesCallsInLocked(fset, file)
+	if len(calls) != 2 || !strings.Contains(calls[0], "configureLocked") || !strings.Contains(calls[1], "attachLocked") {
+		t.Fatalf("calls = %v, want configureLocked and attachLocked only", calls)
 	}
 }

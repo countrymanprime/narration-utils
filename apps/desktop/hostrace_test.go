@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -11,15 +12,18 @@ import (
 )
 
 // The stress test flips the project while goroutines call the read bindings.
-// It only proves something under `go test -race` (CI runs that on both OSes;
-// the Windows developer machine has no cgo, so locally it is a plain smoke
-// test and hostguard_test.go is what protects the pattern). A binding that
-// reads a service pointer without h.services() is reported by the detector the
-// moment it is added to stressReaders, even though the two calls never overlap
-// in time: nothing orders them.
+// It only proves something under `go test -race` (CI's go job runs that on
+// Windows; a developer machine without cgo runs it as a plain smoke test, and
+// hostguard_test.go is what protects the pattern there). A binding that reads a
+// service pointer without h.services() is reported by the detector the moment
+// it is added to stressReaders, even though the two calls never overlap in
+// time: nothing orders them.
 //
 // Add a binding here in the same change that converts it (see
-// directReadAllowlist in hostguard_test.go). Keep one row per line, sorted.
+// directReadAllowlist in hostguard_test.go). Keep one row per line.
+// Rows for bindings that only read job maps or the set-once recents store
+// (GuideBuildState, ProjectRecents, the install-state calls) are smoke tests
+// for lock ordering; the rows that read a service pointer are the probes.
 const (
 	stressSwitches = 40
 	stressReads    = 300
@@ -36,6 +40,7 @@ var stressReaders = []stressReader{
 	{"ProjectRecents", func(h *Host) { _, _ = h.ProjectRecents() }},
 	{"TeleprompterState", func(h *Host) { _, _ = h.TeleprompterState() }},
 	{"TeleprompterStop", func(h *Host) { _, _ = h.TeleprompterStop() }},
+	{"pollTranscript (one transcriptLoop tick)", func(h *Host) { h.pollTranscript() }},
 	{"TracksDiscover", func(h *Host) { _, _ = h.TracksDiscover() }},
 	{"TracksList", func(h *Host) { _, _ = h.TracksList() }},
 	{"TracksSelect", func(h *Host) { _, _ = h.TracksSelect("not-a-project-file.rpp") }},
@@ -68,6 +73,17 @@ func TestBindingsSurviveProjectSwitchesUnderLoad(t *testing.T) {
 	host := newStressHost(t)
 	projects := []string{t.TempDir(), t.TempDir()}
 
+	// Failures are collected, not reported with t.Errorf from the goroutines: on
+	// a timeout the test returns while they may still be running, and a late
+	// t.Errorf would panic.
+	var failures []string
+	var failuresMu sync.Mutex
+	fail := func(format string, args ...any) {
+		failuresMu.Lock()
+		defer failuresMu.Unlock()
+		failures = append(failures, fmt.Sprintf(format, args...))
+	}
+
 	start := make(chan struct{})
 	var running sync.WaitGroup
 	for _, reader := range stressReaders {
@@ -87,12 +103,12 @@ func TestBindingsSurviveProjectSwitchesUnderLoad(t *testing.T) {
 		for index := range stressSwitches {
 			raw, err := host.ProjectSwitch(projects[index%len(projects)], "")
 			if err != nil {
-				t.Errorf("ProjectSwitch %d: %v", index, err)
+				fail("ProjectSwitch %d: %v", index, err)
 				return
 			}
 			var result map[string]any
 			if err := json.Unmarshal([]byte(raw), &result); err != nil || result["switched"] != true {
-				t.Errorf("ProjectSwitch %d = %s (%v), want switched", index, raw, err)
+				fail("ProjectSwitch %d = %s (%v), want switched", index, raw, err)
 				return
 			}
 		}
@@ -110,6 +126,11 @@ func TestBindingsSurviveProjectSwitchesUnderLoad(t *testing.T) {
 		t.Fatal("readers and project switches did not finish; a lock is held across a callback that needs it")
 	}
 
+	failuresMu.Lock()
+	defer failuresMu.Unlock()
+	for _, message := range failures {
+		t.Error(message)
+	}
 	final := host.services().config.projectFolder
 	if final != projects[(stressSwitches-1)%len(projects)] {
 		t.Fatalf("final project = %q, want the last one switched to", final)
