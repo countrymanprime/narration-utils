@@ -125,7 +125,7 @@ export function AppShell({
           </aside>
         </div>
       )}
-      {/* tabIndex -1: a dialog that closes with nothing to give focus back to (its opener is gone) lands here, not on <body>. */}
+      {/* tabIndex -1: a dialog that closes with nothing to give focus back to (its opener is gone) sends focus into <main> (its first control, or <main> itself), not to <body>. */}
       <main tabIndex={-1} className="flex min-w-0 flex-1 flex-col overflow-hidden focus:outline-none">
         <header className="flex h-14 flex-none items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 text-sm md:px-5">
           <button

@@ -97,6 +97,22 @@ describe('ConfirmDialog', () => {
     expect(confirm).not.toHaveBeenCalled();
   });
 
+  it('ignores Escape while it is a running download (escapeCancels false), but Cancel still declines', async () => {
+    const cancel = vi.fn();
+    const user = userEvent.setup();
+    render(<ConfirmDialog title="Downloading" body="Halfway" confirmLabel="Downloading…" escapeCancels={false} confirm={() => {}} cancel={cancel} />);
+    await screen.findByRole('alertdialog', { name: 'Downloading' });
+    await user.keyboard('{Escape}');
+    expect(cancel).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it('describes itself by nothing rather than an empty node while its body is empty', () => {
+    render(<ConfirmDialog title="Downloading" body="" confirmLabel="Downloading…" confirm={() => {}} cancel={() => {}} />);
+    expect(screen.getByRole('alertdialog', { name: 'Downloading' }).getAttribute('aria-describedby')).toBeNull();
+  });
+
   it('refuses a danger action without its label at the type level', () => {
     // A third action needs both its handler and its label.
     // @ts-expect-error dangerLabel is required with danger

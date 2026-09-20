@@ -16,17 +16,32 @@ type ConfirmDialogProps = {
   // voice or model, delete an entry, merge and delete the source, replace and reset).
   confirmVariant?: 'primary' | 'danger';
   cancel: () => void;
+  // false: Escape does not decline. For a confirm that has turned into a running download, where declining aborts the
+  // download: the header button and Cancel stay as the deliberate ways out.
+  escapeCancels?: boolean;
   children?: ReactNode;
 } & DangerAction;
 
 // Every confirm interrupts and needs an answer, so it is an alertdialog: Escape and Cancel decline, a press on the
 // backdrop does nothing (ADR 0048).
-export function ConfirmDialog({ title, body, confirmLabel, confirm, confirmVariant = 'primary', dangerLabel, danger, cancel, children }: ConfirmDialogProps) {
+export function ConfirmDialog({
+  title,
+  body,
+  confirmLabel,
+  confirm,
+  confirmVariant = 'primary',
+  dangerLabel,
+  danger,
+  cancel,
+  escapeCancels = true,
+  children,
+}: ConfirmDialogProps) {
   return (
     <Dialog
       title={title}
       variant="alert"
       onClose={cancel}
+      escapeCloses={escapeCancels}
       description={body}
       actions={
         <>

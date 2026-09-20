@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -56,7 +56,8 @@ describe('Dialog is a real modal', () => {
   it('puts focus on the body region so a screen reader reads the message first', async () => {
     const { dialog } = await openDialog();
     const body = within(dialog).getByText('Body text').parentElement;
-    expect(document.activeElement).toBe(body);
+    // Base UI applies the initial focus a frame after the dialog mounts.
+    await waitFor(() => expect(document.activeElement).toBe(body));
   });
 
   it('lets an autoFocus child win over the body region', async () => {
@@ -64,7 +65,7 @@ describe('Dialog is a real modal', () => {
     render(<Harness withAutofocus />);
     await user.click(screen.getByRole('button', { name: 'Open dialog' }));
     await screen.findByRole('dialog', { name: 'Add note' });
-    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Note text' }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Note text' })));
   });
 
   it('hides the page behind it from assistive technology while open', async () => {
@@ -90,13 +91,13 @@ describe('Dialog is a real modal', () => {
     const { user } = await openDialog();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Open dialog' }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Open dialog' })));
   });
 
   it('returns focus to the opener when a button closes it', async () => {
     const { user, dialog } = await openDialog();
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Open dialog' }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Open dialog' })));
   });
 
   it('falls back into the main landmark when the opener is gone', async () => {
@@ -106,7 +107,7 @@ describe('Dialog is a real modal', () => {
     await screen.findByRole('dialog', { name: 'Add note' });
     await user.keyboard('{Escape}');
     // The opener was removed while the dialog was open, so focus goes to the landmark (or its first control), not <body>.
-    expect(document.querySelector('main')?.contains(document.activeElement)).toBe(true);
+    await waitFor(() => expect(document.querySelector('main')?.contains(document.activeElement)).toBe(true));
   });
 
   it('ignores Escape when the dialog has no way to be dismissed', async () => {
@@ -150,6 +151,40 @@ describe('Dialog is a real modal', () => {
     expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
     await user.keyboard('{Escape}');
     expect(onEscape).toHaveBeenCalledOnce();
+  });
+
+  it('ignores Escape when escapeCloses is false, but the header Close button still works', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Dialog title="Downloading" onClose={onClose} escapeCloses={false} actions={<Button variant="primary">Cancel</Button>}>
+        <p>Body</p>
+      </Dialog>,
+    );
+    await screen.findByRole('dialog', { name: 'Downloading' });
+    await user.keyboard('{Escape}');
+    expect(onClose).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('keeps a live region reachable while a dialog hides the rest of the page', async () => {
+    const user = userEvent.setup();
+    render(
+      <div>
+        <button onClick={() => undefined}>Behind</button>
+        <div role="status" aria-live="polite">
+          Saved
+        </div>
+        <Dialog title="Add note" onClose={() => undefined} actions={<Button variant="primary">Save</Button>}>
+          <p>Body</p>
+        </Dialog>
+      </div>,
+    );
+    await screen.findByRole('dialog', { name: 'Add note' });
+    await user.tab();
+    expect(screen.queryByRole('button', { name: 'Behind' })).toBeNull();
+    expect(screen.getByRole('status').textContent).toBe('Saved');
   });
 
   it('is an alertdialog described by its text when it is the alert variant', async () => {

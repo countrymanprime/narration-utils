@@ -4,48 +4,58 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useRef, useState, type ReactNode } from 'react';
 
-// The one modal shell (ADR 0001, 0002, 0047). Base UI supplies the behaviour: the page behind is hidden from assistive
-// technology and unreachable by Tab, Tab loops inside, focus moves in on open and comes back on close. This wrapper owns
-// the policy on top of it:
+type DialogProps = {
+  title: string;
+  // Shows the header Close button and lets Escape close the dialog.
+  onClose?: () => void;
+  // Escape only, for a dialog whose header has no Close button (WorkDialog closes from its action row once the job ends).
+  onEscape?: () => void;
+  // false: Escape is ignored even though there is an `onClose`. For a dialog whose close would abort work in flight (a
+  // running download): the header button and Cancel are the deliberate ways out, a stray key is not.
+  escapeCloses?: boolean;
+  actions: ReactNode;
+  // WorkDialog only ever shows one action at a time - 'between' would strand
+  // it on the left, so it opts into 'end' instead.
+  actionsAlign?: 'between' | 'end';
+  children: ReactNode;
+} & (
+  | { variant?: 'dialog'; description?: ReactNode }
+  // 'alert' is an alertdialog: it interrupts and wants an answer (every ConfirmDialog). What it asks is what
+  // `aria-describedby` points at, so an alert without a description is refused at the type level.
+  | { variant: 'alert'; description: ReactNode }
+);
+
+// An empty description (a job message that has not arrived yet) would leave `aria-describedby` pointing at nothing.
+const hasText = (node: ReactNode): boolean => node !== undefined && node !== null && node !== false && node !== '';
+
+// The one modal shell (ADR 0001, 0002, 0047, 0048). Base UI supplies the behaviour: the page behind is hidden from
+// assistive technology and unreachable by Tab, Tab loops inside, focus moves in on open and comes back on close. This
+// wrapper owns the policy on top of it:
 // - Escape closes a dialog that has somewhere to go (`onClose`, or `onEscape` when there is no header button) and is
-//   ignored otherwise, so a job that is still running is never dismissed by a stray key.
+//   ignored otherwise or when `escapeCloses` is false, so work in flight is never dismissed by a stray key.
 // - A press on the backdrop never closes it: an accidental click on the scrim must not discard a confirm.
 // - Focus lands on the body region (so a screen reader reads the message first) unless a child asked for focus with
-//   `autoFocus`, and returns to the element that opened the dialog, or to the page's <main> when that is gone.
+//   `autoFocus`, and returns to the element that opened the dialog, or into the page's <main> when that is gone.
 // Dialogs are mounted conditionally (`{open && <Dialog />}`), so `open` is always true here and the parent's unmount is
 // the close; no exit animation exists to wait for.
 export function Dialog({
   title,
   onClose,
   onEscape,
+  escapeCloses = true,
   description,
   variant = 'dialog',
   actions,
   actionsAlign = 'between',
   children,
-}: {
-  title: string;
-  // Shows the header Close button and lets Escape close the dialog.
-  onClose?: () => void;
-  // Escape only, for a dialog whose header has no Close button (WorkDialog closes from its action row once the job ends).
-  onEscape?: () => void;
-  // What the dialog asks, shown first in the body. It is what `aria-describedby` points at, which an alert dialog needs.
-  description?: ReactNode;
-  // 'alert' is an alertdialog: it interrupts and wants an answer (every ConfirmDialog).
-  variant?: 'dialog' | 'alert';
-  actions: ReactNode;
-  // WorkDialog only ever shows one action at a time - 'between' would strand
-  // it on the left, so it opts into 'end' instead.
-  actionsAlign?: 'between' | 'end';
-  children: ReactNode;
-}) {
+}: DialogProps) {
   // Both families share their parts; typing them as one keeps the wrapper a single shell.
   const Parts = (variant === 'alert' ? AlertDialog : BaseDialog) as typeof BaseDialog;
   const popupRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   // What had focus when the dialog mounted: the button that opened it.
   const [opener] = useState(() => (document.activeElement instanceof HTMLElement ? document.activeElement : null));
-  const dismiss = onClose ?? onEscape;
+  const dismiss = escapeCloses ? (onClose ?? onEscape) : undefined;
 
   const initialFocus = () => {
     const focused = document.activeElement;
@@ -98,7 +108,7 @@ export function Dialog({
               tabIndex={0}
               className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-[1.1rem] break-words focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
             >
-              {description !== undefined && (
+              {hasText(description) && (
                 <Parts.Description render={typeof description === 'string' ? <p /> : <div />} className="text-sm text-[var(--text-muted)]">
                   {description}
                 </Parts.Description>

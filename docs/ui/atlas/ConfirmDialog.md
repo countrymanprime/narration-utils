@@ -18,6 +18,7 @@ Storybook title: `Primitives/ConfirmDialog`. Source: `src/components/primitives/
 - Cancel And Close Invoke Cancel
 - Escape Declines But Backdrop Does Not
 - Danger Invokes Only Danger
+- Escape Is Ignored While Work Runs
 
 ## Used by
 

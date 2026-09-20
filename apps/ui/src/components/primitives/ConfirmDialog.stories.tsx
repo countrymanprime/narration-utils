@@ -154,3 +154,16 @@ export const DangerInvokesOnlyDanger: Story = {
     await expect(args.cancel).not.toHaveBeenCalled();
   },
 };
+
+// A confirm that has turned into a running download does not decline on Escape (that would abort the download);
+// Cancel and the header button still do.
+export const EscapeIsIgnoredWhileWorkRuns: Story = {
+  args: { title: 'Downloading Whisper model', body: 'Downloading… 40%', confirmLabel: 'Downloading…', escapeCancels: false },
+  play: async ({ args }) => {
+    await screen.findByRole('alertdialog', { name: 'Downloading Whisper model' });
+    await userEvent.keyboard('{Escape}');
+    await expect(args.cancel).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await expect(args.cancel).toHaveBeenCalledOnce();
+  },
+};

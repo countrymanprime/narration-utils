@@ -775,6 +775,7 @@ export function GuideDetail({
             confirmLabel={ttsJob?.phase === 'downloading' ? 'Downloading…' : 'Download voice'}
             confirm={() => void installPreviewVoice()}
             cancel={() => void cancelVoiceInstall()}
+            escapeCancels={ttsJob?.phase !== 'downloading'}
           >
             {ttsJob?.phase === 'downloading' && (
               <div className="progressbar mt-3 h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">

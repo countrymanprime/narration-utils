@@ -87,6 +87,7 @@ function ModelDownloadDialog({ prompt, job, confirm, cancel }: { prompt: ModelPr
       confirmLabel={downloading ? 'Downloading…' : 'Download model'}
       confirm={confirm}
       cancel={cancel}
+      escapeCancels={!downloading}
     >
       <p className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
         {Math.ceil(prompt.downloadSize / (1024 * 1024))} MB · {prompt.model.publisher} ·{' '}
