@@ -215,6 +215,34 @@
       "a11yDebt": true
     },
     {
+      "title": "Primitives/IconButton",
+      "name": "IconButton",
+      "source": "src/components/primitives/IconButton.tsx",
+      "stories": [
+        "Default",
+        "Primary",
+        "Danger",
+        "Disabled",
+        "With Hint",
+        "Press Reports Click",
+        "Disabled Does Nothing"
+      ],
+      "consumers": [
+        "src/components/home/Home.tsx",
+        "src/components/layout/AppShell.tsx",
+        "src/components/manuscript/EntitySummary.tsx",
+        "src/components/manuscript/Manuscript.tsx",
+        "src/components/primitives/Collapsible.tsx",
+        "src/components/primitives/Dialog.tsx",
+        "src/components/primitives/NavDrawer.tsx",
+        "src/components/primitives/SlideOver.tsx",
+        "src/components/proofing/Results.tsx",
+        "src/components/storybible/Guide.tsx",
+        "src/components/storybible/GuideDetail.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/Menu",
       "name": "Menu",
       "source": "src/components/primitives/Menu.tsx",

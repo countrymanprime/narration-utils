@@ -18,6 +18,7 @@ import { ParagraphView } from './ParagraphView';
 import { SelectionMenu } from './SelectionMenu';
 import { AddNoteDialog } from './AddNoteDialog';
 import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from './EntitySummary';
+import { IconButton } from '../primitives/IconButton';
 
 const TEXT_SIZES = ['small', 'medium', 'large'] as const;
 // --hl-pad-y sizes a highlight's vertical padding so its background fills the
@@ -280,16 +281,15 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
             <div className="flex items-center gap-3">
               <Heading title="Manuscript" />
               <TooltipTarget text="Chapters & Search">
-                <button
-                  aria-label="Chapters & Search"
-                  className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                <IconButton
+                  label="Chapters & Search"
                   onClick={() => {
                     setDetail(undefined);
                     setSheet('chapters');
                   }}
                 >
                   <FontAwesomeIcon icon={faList} />
-                </button>
+                </IconButton>
               </TooltipTarget>
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] tracking-wider text-[var(--text-muted)] uppercase">
@@ -311,22 +311,17 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
               ))}
             </div>
             <TooltipTarget text="Expand all chapters">
-              <button
-                aria-label="Expand all chapters"
-                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              <IconButton
+                label="Expand all chapters"
                 onClick={() => void saveState({ ...readerState, expandedChapters: chapters.map((chapter) => chapter.id) })}
               >
                 <FontAwesomeIcon icon={faAnglesDown} />
-              </button>
+              </IconButton>
             </TooltipTarget>
             <TooltipTarget text="Collapse all chapters">
-              <button
-                aria-label="Collapse all chapters"
-                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                onClick={() => void saveState({ ...readerState, expandedChapters: [] })}
-              >
+              <IconButton label="Collapse all chapters" onClick={() => void saveState({ ...readerState, expandedChapters: [] })}>
                 <FontAwesomeIcon icon={faAnglesUp} />
-              </button>
+              </IconButton>
             </TooltipTarget>
           </div>
         </div>

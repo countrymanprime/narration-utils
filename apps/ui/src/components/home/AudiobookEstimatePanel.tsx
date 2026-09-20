@@ -93,10 +93,7 @@ export function AudiobookEstimatePanel({
           </div>
         </div>
         <TooltipTarget text={breakdownOpen ? 'Hide per-chapter breakdown' : 'Show per-chapter breakdown'}>
-          <CollapsibleTrigger
-            label={breakdownOpen ? 'Hide per-chapter breakdown' : 'Show per-chapter breakdown'}
-            className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-          >
+          <CollapsibleTrigger label={breakdownOpen ? 'Hide per-chapter breakdown' : 'Show per-chapter breakdown'}>
             <FontAwesomeIcon icon={breakdownOpen ? faChevronUp : faChevronDown} />
           </CollapsibleTrigger>
         </TooltipTarget>

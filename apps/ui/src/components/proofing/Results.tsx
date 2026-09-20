@@ -7,6 +7,7 @@ import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { InlineDiffRow, KIND_STYLES } from './InlineDiffRow';
+import { IconButton } from '../primitives/IconButton';
 
 const TYPE_CHIP_BG: Record<string, string> = {
   MISREAD: 'bg-[var(--review-soft)]',
@@ -148,30 +149,19 @@ export function Results({
                       <td className="align-middle">
                         <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
                           <TooltipTarget className="flex-none" text={row.chapter ? 'Jump to script in Manuscript' : 'No manuscript source is available'}>
-                            <button
-                              aria-label="Jump to manuscript"
-                              className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                              disabled={!row.chapter}
-                              onClick={() => goToManuscript(row)}
-                            >
+                            <IconButton label="Jump to manuscript" disabled={!row.chapter} onClick={() => goToManuscript(row)}>
                               <FontAwesomeIcon icon={faFileLines} />
-                            </button>
+                            </IconButton>
                           </TooltipTarget>
                           <TooltipTarget className="flex-none" text={`Play heard audio at ${seconds(row.projectTime)}`}>
-                            <button
-                              aria-label="Play recorded audio"
-                              className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                              disabled={!row.projectTime}
-                              onClick={() => void api.transcriptJump(row.id)}
-                            >
+                            <IconButton label="Play recorded audio" disabled={!row.projectTime} onClick={() => void api.transcriptJump(row.id)}>
                               <FontAwesomeIcon icon={faHeadphones} />
-                            </button>
+                            </IconButton>
                           </TooltipTarget>
                           <TooltipTarget className="flex-none" text={eligible ? 'Add pronunciation equivalence' : 'Only available for single-word misreads'}>
-                            <button
-                              aria-label="Add pronunciation equivalence"
+                            <IconButton
+                              label="Add pronunciation equivalence"
                               disabled={!eligible}
-                              className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
                               onClick={async () => {
                                 try {
                                   notify(await api.transcriptAddEquivalence(row.id));
@@ -181,7 +171,7 @@ export function Results({
                               }}
                             >
                               <FontAwesomeIcon icon={faPlus} />
-                            </button>
+                            </IconButton>
                           </TooltipTarget>
                         </div>
                       </td>

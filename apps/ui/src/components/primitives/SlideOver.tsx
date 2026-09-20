@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import type { ReactNode } from 'react';
 import { useReturnFocusTarget } from './focusReturn';
+import { IconButton } from './IconButton';
 
 // Right-edge panel with a transparent click-away backdrop, on Base UI's Drawer (ADR 0047, 0051). It is a real modal
 // panel: the page behind is hidden and unreachable, Tab loops inside, Escape and a press on the backdrop close it, and
@@ -47,14 +48,9 @@ export function SlideOver({
                 <Drawer.Title render={<h3 />} className="text-sm font-semibold">
                   {title}
                 </Drawer.Title>
-                <button
-                  type="button"
-                  className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                  aria-label={closeLabel}
-                  onClick={onClose}
-                >
+                <IconButton label={closeLabel} onClick={onClose}>
                   <FontAwesomeIcon icon={faXmark} />
-                </button>
+                </IconButton>
               </div>
               {/* tabIndex: the body scrolls when content is tall, and a scrolling region must be reachable by keyboard. */}
               <div

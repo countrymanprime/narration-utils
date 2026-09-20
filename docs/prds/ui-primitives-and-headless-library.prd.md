@@ -1,6 +1,6 @@
 # UI Primitives and a Headless Library
 
-**Reconciled 2026-09-20:** the owner decided the library question in another session: **Base UI, styled with Tailwind, every part wrapped in our own primitive, app code never importing it** (L1 and L2 below are resolved; the Radix analysis stays as the record of what was compared). That decision and its Dialog, Tooltip, Field and drawer work live in [base-ui-primitive-foundation.prd.md](../adr/0047-the-ui-primitives-wrap-base-ui-and-app-code-never-imports-it.md). This PRD keeps the net-new primitives: Phase 1 (wrapped natives), Phase 4 (menus and disclosure, on Base UI parts) and Phase 5 (Table, Combobox). Its Phases 0, 2 and 3 are absorbed by the foundation PRD's Phases 1 to 3. Where the text below says Radix, read Base UI.
+**Reconciled 2026-09-20 (stack S10b, tracking issue #104):** the owner decided the library in [implementation-plan.md](implementation-plan.md) D1: **Base UI, wrapped in our own Tailwind primitives so every control is styled one way, and app code never imports it**. The foundation stack S10a delivered it ([ADR 0047](../adr/0047-the-ui-primitives-wrap-base-ui-and-app-code-never-imports-it.md) to [ADR 0052](../adr/0052-toggle-menu-checkbox-collapsible-and-switch-replace-the-hand-rolled-widgets.md)) and its PRD is deleted. Its Dialog family, Tooltip and info icon, Field, MeterBar, SlideOver, NavDrawer, Pill (a Base UI Toggle), Menu, Checkbox, Collapsible and Switch are done, so Phases 0, 2 and 3 below are moved and what remains is Phase 1 (wrapped natives), Phase 4 (what is left of menus and disclosure: Tabs, ToggleGroup, TagInput) and Phase 5 (Table). Where the text below says Radix, read Base UI: the Radix analysis stays only as the record of what was compared. The answers to L3 to L10 are ticked in Open Questions and recorded in the Decisions Log.
 
 **Source:** user request of 2026-09-20 (item 25): "we need more primitives and slightly larger reusable components like a datatable or dropdown (with options). Native browser elements should probably all be wrapped. Can we look at bringing in something like Radix?" Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a; npm and vendor facts were read on 2026-09-20 (sources marked). Nothing here is built yet. **This PRD reopens Q1 of [dialog-modality-and-workdialog-a11y.prd.md](dialog-modality-and-workdialog-a11y.prd.md), which recommends no library.** Several other PRDs need the primitives below: [manuscript-reader-search-and-controls.prd.md](manuscript-reader-search-and-controls.prd.md), [story-bible-entries-and-actions.prd.md](story-bible-entries-and-actions.prd.md), [proofing-vocabulary-hints.prd.md](proofing-vocabulary-hints.prd.md), [import-review-redesign.prd.md](import-review-redesign.prd.md).
 
@@ -21,52 +21,52 @@ The UI has only 14 primitives and none of them is a form control other than a te
 
 ## Proposed Solution
 
-Own the primitive API and hide any library behind it:
+Own the primitive API and hide the library (Base UI) behind it:
 
 1. **Wrap natives first, zero dependencies:** `IconButton`, `TextField`, `SearchField` (with clear), `Select`, `Checkbox`, `Textarea`, and a presentational `Table`, keeping native `<select>`, `<input>`, `<textarea>` under the hood so existing `fireEvent.change` and Playwright `selectOption` keep working.
-2. **Adopt one headless library for behavior-heavy pieces** through the unified `radix-ui` package: Dialog family, Tooltip, DropdownMenu, Popover, Tabs, Collapsible/Disclosure, ToggleGroup, Switch. Call sites never import the library; ESLint and a ratchet test enforce that.
-3. **Custom where the library has no answer:** combobox (alias picker) and tag input.
-4. **Decide the Dialog mechanism first**, because native `<dialog>` and Radix Dialog cannot be mixed with Radix portals without a container decision.
+2. **Behavior-heavy pieces come from Base UI** (`@base-ui/react`): Dialog family, Tooltip, Menu, Popover, Collapsible, Switch (delivered by S10a) and Tabs (Phase 4). Call sites never import the library; `baseUiBoundary.test.ts` enforces that (ADR 0047).
+3. **Custom where the library has no clean answer:** the alias combobox stays bespoke (S10a, ADR 0052) and the tag input is a wrapped input plus chips.
+4. **The Dialog mechanism is decided and built** (Base UI Dialog, ADR 0048), so no top-layer clash is left to design around.
 
-Base UI is the named fallback; the wrapper layer makes a swap cheap.
+The wrapper layer keeps a later swap of the library to the `primitives/` folder alone.
 
 ## Key Hypothesis
 
-We believe a small in-house primitive set (natives wrapped, behavior from one headless library) will give consistent styling and accessible behavior while removing about 30 pasted class strings and the hand-built menus. We'll know we're right when no page imports the library or renders a raw `select`, `input`, `textarea`, `table` or icon `button` outside `primitives/`, axe stays clean in the atlas, and every primitive has stories.
+We believe a small in-house primitive set (natives wrapped, behavior from Base UI) will give consistent styling and accessible behavior while removing about 30 pasted class strings and the hand-built menus. We'll know we're right when no page imports the library or renders a raw `select`, `input`, `textarea`, `table` or icon `button` outside `primitives/`, axe stays clean in the atlas, and every primitive has stories.
 
 ## What We're NOT Building
 
-- Radix Themes or any pre-styled layer, or a second styling system beside Tailwind tokens (ADR 0009).
+- Any pre-styled component layer, or a second styling system beside Tailwind tokens (ADR 0009).
 - A general design-system rewrite or new visual design; primitives adopt the existing tokens.
 - TanStack Table now (only when sort, filter or selection needs multiply beyond the presentational `Table`).
-- Native `<dialog>` and Radix together, and migrations of SlideOver or the nav drawer unless the decision in L1 says so.
-- A CI bundle-size gate unless the owner asks (Q4).
+- Native `<dialog>` (Base UI Dialog was chosen), a general `Popover` primitive with no caller (the info icon already is a Base UI Popover inside `Tooltip`), and a Base UI `Select` (L3: native-wrapped).
+- A CI bundle-size gate (L4: the budget is a documented number, not a gate).
 
 ## Success Metrics
 
 | Metric | Target | How Measured |
 | --- | --- | --- |
-| Raw natives outside `primitives/` | `<select>`, `<input>`, `<textarea>`, `<table>` and icon `<button>` counts monotonically decrease to 0 | A ratchet test (pattern: `legacyCss.test.ts`) or ESLint `no-restricted-syntax` |
-| Library imports outside `primitives/` | 0 | ESLint `no-restricted-imports` on `@base-ui/*` (owned by foundation Phase 1; was `radix-ui`) |
+| Raw natives outside `primitives/` | `<select>`, `<input>`, `<textarea>`, `<table>` and the pasted icon-button look reach 0; the remaining raw `<button>` count only goes down | `rawNatives.test.ts`, a Vitest scan with a per-file ceiling ([ADR 0053](../adr/0053-icon-buttons-text-fields-and-selects-wrap-the-native-controls.md)), in the pattern of `baseUiBoundary.test.ts` |
+| Library imports outside `primitives/` | 0 | `baseUiBoundary.test.ts` (delivered by S10a, ADR 0047) |
 | Stories | Every new primitive has a `.stories.tsx` with a `play()`; `A11Y_DEBT` does not grow | `atlasCoverage.test.ts`, atlas axe |
 | Existing tests | `fireEvent.change` and `selectOption` on wrapped selects still pass unchanged | `pnpm check`, visual suite |
 | Keyboard | Menu, Select, Tabs and Dialog operable with keyboard only; Escape and focus return work | Storybook `play()` plus `userEvent` tests |
-| Bundle | Measured before and after each library step; recorded in the PR | Build output sizes |
-| jsdom | Radix components render and open in Vitest with documented shims | `stories.test.tsx` runs all stories |
+| Bundle | Under the 800,000-byte raw budget S10a recorded (L4); each PR records the size | `pnpm --dir apps/ui build` output |
+| jsdom | Base UI components render and open in Vitest with no polyfill (proved by S10a) | `stories.test.tsx` runs all stories |
 | Visual | No sideways overflow; open menus and selects visible and not clipped at four viewports | Playwright suite, atlas |
 
 ## Open Questions
 
 - [x] **L1 - RESOLVED 2026-09-20 (owner decision): a library Dialog, Base UI, behind our `Dialog` wrapper; supersedes the dialog PRD's "no library" recommendation (delivered by foundation Phase 2).** Original question: does this reopen the dialog PRD's Q1? Options: (a) Radix Dialog (consistent behavior in jsdom and Chromium, portals just work); (b) native `<dialog>`, with every Radix layer opened inside it portaled to the dialog element; (c) hand-rolled. Recommendation: (a), superseding the dialog PRD's "no library" recommendation. This needs the owner's decision first.
 - [x] **L2 - RESOLVED 2026-09-20 (owner decision): Base UI, wrapped in our own primitives, styled with Tailwind; Radix and React Aria not adopted.** Original question, which library? Radix (`radix-ui`, best-known Dialog, Menu, Tooltip, Popover, Tabs, Collapsible; data-attribute styling suits Tailwind 4; no combobox) versus Base UI (younger, MUI-maintained, reportedly has Combobox and Autocomplete) versus React Aria Components (heaviest, best a11y). Recommendation: Radix, Base UI as the fallback behind the wrapper.
-- [ ] **L3. Select strategy.** Native-wrapped (recommended: keeps tests, mobile pickers and forms) or Radix Select (rich option content, no `selectOption` testing)? Recommendation: native-wrapped by default, Radix Select only where option content must be rich.
-- [ ] **L4. Bundle budget.** Is a size budget wanted, and should it gate CI? Recommendation: measure now, decide after Phase 2.
-- [ ] **L5. Keyboard and screen-reader users.** The dialog PRD lists this as an unvalidated assumption. Recommendation: treat accessibility as required regardless.
-- [ ] **L6. License notice.** Is a NOTICE or license manifest expected for npm dependencies? Recommendation: add the library to the dependency review notes; MIT needs the notice retained.
-- [ ] **L7. Tooltip behavior.** Accept Radix's 700 ms default or keep 1000 ms (`Tooltip.tsx:57`)? Recommendation: keep 1000 ms through props and confirm with the owner.
-- [ ] **L8. Table now.** A presentational `Table` (superseding ADR 0009's `table.dtable` exception) now, with row keyboard activation and `aria-sort`, and TanStack Table later? Recommendation: yes.
-- [ ] **L9. Ownership order with the Tooltip PRD.** The Tooltip PRD's Phase 1 rewrites `Tooltip.tsx`; should the Radix Tooltip replace that plan? Recommendation: implement the Tooltip PRD's contract (button-based info icon, `aria-describedby` on the focusable child, Escape) on Radix instead of by hand.
-- [ ] **L10. Scope of "all native elements".** Include every `<button>` (57) or only icon buttons and unlabeled controls? Recommendation: icon buttons and form controls; text buttons already have `Button`.
+- [x] **L3. Select strategy - RESOLVED 2026-09-20 (owner, plan D22): native-wrapped.** A `Select` around the native `<select>` keeps `fireEvent.change` and Playwright `selectOption`, the platform pickers and forms working (S10a question 5 kept the six selects native for the same reason). A Base UI `Select` is not built.
+- [x] **L4. Bundle budget - RESOLVED 2026-09-20 (owner: use the number S10a recorded).** 800,000 bytes raw for `dist/assets/index-*.js` (S10a measured 787,619 with every wrapper in it). It is a documented budget in `docs/design/design-system.md`, not a CI gate; a change that takes the bundle past it says why in its pull request, and each PR of this stack records the size.
+- [x] **L5. Keyboard and screen-reader users - RESOLVED (plan D22, adopts the recommendation): accessibility is required regardless.** Every primitive here has a keyboard `play()` in its story and a role, name and state a screen reader announces.
+- [x] **L6. License notice - RESOLVED (plan D22): nothing new to add.** This stack adds no npm dependency: `@base-ui/react` (MIT) is already a dependency and its licence is compatible with the project's AGPL-3.0-or-later ([ADR 0039](../adr/0039-the-project-is-licensed-agpl-3-or-later.md)); the MIT notice is retained by the package.
+- [x] **L7. Tooltip behavior - RESOLVED and built (plan D6): 1000 ms stays.** Delivered by S10a ([ADR 0049](../adr/0049-hints-are-base-ui-tooltips-that-meet-wcag-1-4-13-and-info-icons-are-buttons.md)), which also meets WCAG 1.4.13 formally.
+- [x] **L8. Table now - RESOLVED 2026-09-20 (owner): yes.** A presentational `Table` with row keyboard activation and `aria-sort` in Phase 5, superseding ADR 0009's `table.dtable` exception through a new ADR; TanStack Table stays a later option.
+- [x] **L9. Ownership order with the Tooltip PRD - RESOLVED and built:** the Tooltip contract (button-based info icon, Escape, the hint text as the accessible description) is implemented on Base UI by S10a (ADR 0049).
+- [x] **L10. Scope of "all native elements" - RESOLVED 2026-09-20 (owner): icon buttons and form controls only.** Text buttons already have `Button`. The raw `<button>` count is a ratchet, not a ban ([ADR 0053](../adr/0053-icon-buttons-text-fields-and-selects-wrap-the-native-controls.md)).
 
 ## Users & Context
 
@@ -86,16 +86,16 @@ Candidate primitives, with the call sites that motivate each:
 | Must | `IconButton` (required label, optional tooltip, disabled and danger states) | 28 pasted copies in 10 files; Toast `layout/Toast.tsx:21`, `ChapterNav.tsx:92`, `Transcript.tsx:326` | 1 |
 | Must | `Select` (native-wrapped) | The 6 selects | 1 |
 | Must | `TextField`, `SearchField` (with clear), `Textarea`, `Checkbox` | 11 inputs; `Guide.tsx:188-205`, `SearchBar.tsx:7-15`; `Home.tsx:289` | 1 |
-| Must | `Tooltip` on the library (contract from the Tooltip PRD) | 12 consumer files | 2 |
-| Must | Dialog family (Dialog, ConfirmDialog, WorkDialog, SlideOver optional) | Dialog PRD | 3 |
-| Should | `DropdownMenu` | `GuideDetail.tsx:229-261`; overflow menus (speculative, not verified as needed) | 4 |
-| Should | `Disclosure/Collapsible`, `Tabs`, `ToggleGroup` (exclusive Pill groups), `Popover` | `AudiobookEstimatePanel.tsx:91-99`, import review; `Guide.tsx:172-180`, `Settings.tsx:145,157`; `Transcript.tsx:263-311`; `SelectionMenu.tsx` | 4 |
+| Must | `Tooltip` on the library (contract from the Tooltip PRD) | 12 consumer files | 2 (delivered by S10a) |
+| Must | Dialog family (Dialog, ConfirmDialog, WorkDialog, SlideOver optional) | Dialog PRD | 3 (delivered by S10a) |
+| Should | `DropdownMenu` (built as `Menu`) | `GuideDetail.tsx:229-261` | 4 (delivered by S10a) |
+| Should | `Disclosure/Collapsible` (delivered by S10a), `Tabs`, `ToggleGroup` (exclusive Pill groups), `Popover` (not built: no caller) | `AudiobookEstimatePanel.tsx:91-99`, import review; `Guide.tsx:172-180`, `Settings.tsx:145,157`; `Transcript.tsx:263-311`; `SelectionMenu.tsx` | 4 |
 | Should | `Table` (presentational, keyboard rows, `aria-sort`) | The 5 tables; `Guide.tsx:233`, `Results.tsx:113` | 5 |
 | Should | `TagInput` | `Transcript.tsx:319-367` | 4 |
-| Could | `Switch` | None today; planned settings boolean and "master switch" (`chapter-stage-recommendations.prd.md:212`) | 4 |
-| Could | Custom `Combobox` | `GuideDetail.tsx:465-556`, relation picker `:687` | 5 |
+| Could | `Switch` (delivered by S10a) | None today; planned settings boolean and "master switch" (`chapter-stage-recommendations.prd.md:212`) | 4 |
+| Could | Custom `Combobox` (stays bespoke, S10a; its input is a `TextField`) | `GuideDetail.tsx:465-556`, relation picker `:687` | 5 |
 | Could | `DataTable` on TanStack Table | Future sort/filter/selection needs | later |
-| Won't | Radix Themes, second styling system | - | - |
+| Won't | A pre-styled component layer, a second styling system | - | - |
 
 **Migration strategy:** wrap, then replace call sites behind the same primitive API; add ESLint `no-restricted-imports` (library outside `primitives/`) and either `no-restricted-syntax` or a ratchet test for raw `select`, `input`, `textarea`, `table` and icon `button` outside `primitives/` (ESLint currently has no restriction rules, `eslint.config.js`).
 
@@ -104,7 +104,7 @@ Candidate primitives, with the call sites that motivate each:
 **Feasibility**: HIGH for wrapped natives; MEDIUM for the library steps (jsdom shims, portal and top-layer decisions, atlas capture of open layers).
 
 **Architecture notes**
-- **Tests:** add jsdom shims in `src/test-setup.ts` (already loaded via `vite.config.ts:16`); move open/close tests from `fireEvent.click` to `userEvent`; query portaled content from `document.body` (as `Tooltip.stories.tsx` does); open-portal stories must work in `stories.test.tsx` or be flagged Chromium-only (dialog PRD Q2 contemplates this).
+- **Tests:** Base UI needs no jsdom polyfill (S10a); open and close tests use `userEvent`, and portaled content is queried from `document.body` (as `Tooltip.stories.tsx` does). A native-wrapped control keeps `fireEvent.change`.
 - **Atlas:** `contentClip` and `fitViewportToContent` capture portaled open states but exclude fixed layers from height sizing, so an open menu near the bottom may be clipped; modal layers set `aria-hidden` on siblings and lock scroll, so re-check axe and screenshots. Each primitive needs a story per variant with `play()`, and `docs/ui/` regenerated (`node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir apps/ui`).
 - **Styling:** Tailwind utilities and `var(--token)` values, `data-[state=...]` variants, mutually exclusive state classes (ADR 0017); move the global `select`/`input`/`textarea` rules out of `components.css` as each wrapper lands (legacy CSS guard).
 - **Sequencing rule for helper files:** a helper at the top level of `primitives/` needs its own story; place multi-part primitives in a subfolder only with an explicit atlas exemption decision.
@@ -115,26 +115,26 @@ Candidate primitives, with the call sites that motivate each:
 
 | Risk | Likelihood | Mitigation |
 | --- | --- | --- |
-| Dialog decision (native vs library) blocks or splits the work | High | Decide L1 first; ADR |
-| Top-layer clash hides portaled layers if native `<dialog>` is chosen | Medium | Radix Dialog (a) or portal `container` (b) |
-| Radix cadence or acquisition concerns | Low-Medium | Wrapper layer; Base UI fallback |
-| Wrapped and library primitives change test semantics (`selectOption`, `fireEvent`) | Medium | Native-wrapped selects; `userEvent` for library layers |
-| Bundle growth (unmeasured) | Medium | Measure per step; tree-shaken imports |
+| Dialog decision (native vs library) blocks or splits the work | Resolved | Base UI Dialog, ADR 0048 |
+| Top-layer clash hides portaled layers if native `<dialog>` is chosen | Resolved | Base UI Dialog does not use the top layer (ADR 0047) |
+| Base UI is 1.x with monthly minors | Low-Medium | The wrapper layer confines a breaking change to `primitives/` (ADR 0047) |
+| Wrapped and library primitives change test semantics (`selectOption`, `fireEvent`) | Low | Native-wrapped selects; `userEvent` for library layers |
+| Bundle growth | Low | 800,000-byte budget (L4); measured each PR |
 | Many PRDs edit `Dialog.tsx`, `Tooltip.tsx`, `Field.tsx` | High | Sequence: this PRD's Phase 1-2 first or fold those PRDs' phases into it |
 | Visual and doc-screenshot churn from replacing widespread controls | High | Land per primitive; `doc-screenshot-sync` per PR |
 | Portaled layers clipped in atlas captures | Medium | Verify capture; adjust stories, not the vendored kit |
-| jsdom shims fragile | Medium | Spike first; document shims in `test-setup.ts` |
+| jsdom shims fragile | Resolved | None needed (S10a) |
 
 ## Implementation Phases
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Decision and spike | **Absorbed.** L1 and L2 are decided (Base UI); the spike, bundle measurement and ADR are foundation Phase 1. L3 and L4 remain open | moved | - | - | - |
-| 1 | Wrapped natives | `IconButton`, `Select`, `TextField`, `SearchField`, `Textarea`, `Checkbox`; migrate call sites; lint ratchet | pending | 2 | 0 | - |
+| 1 | Wrapped natives | **1a** `IconButton` and the sweep of the pasted icon-button look, plus the `rawNatives.test.ts` ratchet; **1b** `TextField`, `SearchField`, `Select` and `Field` (covers the textarea), the sweep, the global form CSS removed. `Checkbox` was delivered by S10a | in progress: 1a complete ([ADR 0053](../adr/0053-icon-buttons-text-fields-and-selects-wrap-the-native-controls.md)), 1b pending | - | 0 | - |
 | 2 | Library setup and Tooltip | **Moved.** Delivered by foundation Phases 1 and 3 (Base UI dependency, jsdom shims, ESLint import rule, Tooltip and Field on the library) | moved | 1 | Foundation 1 | - |
 | 3 | Dialog family | **Moved.** Delivered by foundation Phase 2 (Dialog, ConfirmDialog, WorkDialog) and Phase 4 (SlideOver, nav drawer) | moved | - | Foundation 1 | - |
-| 4 | Menus and disclosure | `DropdownMenu`, `Popover`, `Tabs`, `Disclosure`, `ToggleGroup`, `TagInput`, `Switch` | pending | 5 | 2 | - |
-| 5 | Tables and combobox | Presentational `Table`, keyboard rows, `aria-sort`; custom `Combobox`; supersede the ADR 0009 table exception | pending | 4 | 1 | - |
+| 4 | Menus and disclosure | `DropdownMenu` (`Menu`), `Disclosure` (`Collapsible`) and `Switch` were delivered by S10a; **4a** `Tabs` and `ToggleGroup`; **4b** `TagInput`. `Popover` is not built (no caller) | pending | 5 | 2 | - |
+| 5 | Tables and combobox | Presentational `Table`, keyboard rows, `aria-sort`; supersede the ADR 0009 table exception. The alias combobox stays bespoke (S10a): only its input is wrapped | pending | 4 | 1 | - |
 
 **Phase 0.** Goal: the decision and evidence. Scope: owner answers L1-L3, an ADR draft, a spike branch measuring shims and bundle. Success: a written decision.
 **Phase 1.** Goal: no raw form controls or pasted icon buttons. Scope: primitives with stories and `play()`, call-site migration in slices, ratchet test. Success: counts drop; `selectOption` drivers unchanged; PNGs reviewed.
@@ -143,7 +143,7 @@ Candidate primitives, with the call sites that motivate each:
 **Phase 4.** Goal: replace hand-built menus and disclosure widgets. Success: category menu keyboard-operable; no dangling tooltip ids.
 **Phase 5.** Goal: accessible tables and the alias picker. Success: rows keyboard-activatable; sorted headers announce sort.
 
-**Parallelism Notes**: Phases 1 and 2 can run together (different files); 4 and 5 are independent after 2 and 1; Phase 3 is the largest coordination point with the dialog PRD.
+**Parallelism Notes**: after S10a the remaining phases run in the order 1a, 1b, 4a, 4b, 5 as one stacked train, each branching from the last.
 
 **Parallel-session compatibility**
 
@@ -168,13 +168,22 @@ Cross-cutting: `hostAPIVersion` unaffected; ADR numbering re-checked at merge; e
 | Wrapper layer | Call sites never import the library (proposed) | Direct imports | Cheap swap, one lint rule |
 | Select | Native-wrapped by default (proposed) | Radix Select | Keeps `selectOption` and mobile pickers |
 | Library | Base UI (owner decision 2026-09-20; was: `radix-ui` proposed, Base UI fallback) | Radix, React Aria, Ark, Headless UI | Owner choice; hand-rolling is extra work for behaviour and accessibility; wrappers keep a swap cheap |
+| L3 Select | Native-wrapped `Select`; no Base UI `Select` (2026-09-20, plan D22) | Base UI Select | Keeps `fireEvent.change`, `selectOption`, platform pickers and forms |
+| L4 Bundle | Budget 800,000 bytes raw, documented, not a CI gate (2026-09-20, owner) | A gate; no budget | S10a's number; measured each PR |
+| L8 Table | A presentational `Table` now, superseding ADR 0009's `table.dtable` exception (2026-09-20, owner) | Wait for TanStack Table | Five tables share one look and no keyboard access |
+| L10 Scope | Icon buttons and form controls only (2026-09-20, owner) | Wrap all 57 `<button>`s | Text buttons already have `Button`; raw `<button>` is a ratchet |
+| Hint on an icon button | Composed, `<TooltipTarget><IconButton/></TooltipTarget>`, not a prop of `IconButton` (2026-09-20) | A `hint` prop | The hint often says more than the label and its wrapper sometimes needs a layout class |
+| Textarea | `Field` with `textarea`; no separate `Textarea` primitive (2026-09-20) | A `Textarea` beside `Field` | One labelled control, one wiring of label, hint and error |
+| Popover | Not built (2026-09-20) | A general `Popover` | No caller; the info icon already is a Base UI Popover in `Tooltip` |
+| ToggleGroup | A named `role="group"` of `Pill`s, no library part (2026-09-20) | Base UI ToggleGroup, RadioGroup | Keeps every chip a tab stop and the look unchanged; radio semantics deferred (ADR 0052) |
+| Combobox | Bespoke alias combobox stays (2026-09-20, follows S10a question 7) | A Base UI Combobox wrap | Domain matching and an active index are the riskiest to regress; its input is a `TextField` |
 
 ## Research Summary
 
 **Market and Technical Context**: primitive inventory, raw native counts, hand-built widgets, atlas and ADR rules, PRD overlaps, dependency and embedding constraints were verified in code and docs on this branch. Library facts come from npm metadata and vendor docs read 2026-09-20 (links above); comparisons of alternatives and jsdom shim lists partly come from secondary sources and are marked.
-**Not verified**: bundle-size effect (nothing was built), behavior in Linux and macOS webviews, jsdom shims against this repo's setup, Radix maintenance cadence, and whether an overflow menu is actually needed.
+**Not verified**: behavior in Linux and macOS webviews. Settled by S10a: the bundle effect (787,619 bytes raw with every wrapper), and that no jsdom shim is needed. An overflow menu has no caller and is not built.
 
 ---
 
 *Generated: 2026-09-20*
-*Status: DRAFT - needs validation*
+*Status: IN DELIVERY (stack S10b) - phases 0, 2 and 3 moved to S10a*

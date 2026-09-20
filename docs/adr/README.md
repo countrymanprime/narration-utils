@@ -75,3 +75,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0050](0050-the-segmented-meter-is-an-image-named-by-its-segments-and-field-wires-its-hint-and-error.md) | The segmented meter is an image named by its segments, and Field wires its hint and error through Base UI | Accepted |
 | [0051](0051-the-slide-over-and-the-navigation-drawer-are-modal-base-ui-drawers.md) | The slide-over and the navigation drawer are modal Base UI drawers | Accepted |
 | [0052](0052-toggle-menu-checkbox-collapsible-and-switch-replace-the-hand-rolled-widgets.md) | Toggle, Menu, Checkbox, Collapsible and Switch replace the hand-rolled widgets | Accepted |
+| [0053](0053-icon-buttons-text-fields-and-selects-wrap-the-native-controls.md) | Icon buttons, text fields and selects wrap the native controls, and pages may not write them | Accepted |

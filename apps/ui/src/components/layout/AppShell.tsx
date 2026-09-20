@@ -14,6 +14,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { NavButton } from '../primitives/NavButton';
 import { NavDrawer } from '../primitives/NavDrawer';
+import { IconButton } from '../primitives/IconButton';
 
 // alwaysEnabled items don't depend on an imported manuscript - Tracks reads
 // the project's REAPER file directly, independent of the manuscript feature.
@@ -114,13 +115,9 @@ export function AppShell({
       {/* tabIndex -1: a dialog that closes with nothing to give focus back to (its opener is gone) sends focus into <main> (its first control, or <main> itself), not to <body>. */}
       <main tabIndex={-1} className="flex min-w-0 flex-1 flex-col overflow-hidden focus:outline-none">
         <header className="flex h-14 flex-none items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 text-sm md:px-5">
-          <button
-            className="hidden size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] max-md:inline-flex"
-            aria-label="Open navigation"
-            onClick={() => setDrawerOpen(true)}
-          >
+          <IconButton label="Open navigation" onClick={() => setDrawerOpen(true)} className="hidden max-md:inline-flex">
             <FontAwesomeIcon icon={faBars} />
-          </button>
+          </IconButton>
           <div className="flex min-w-0 items-center gap-2">
             <span className="section-label">Project</span>
             <FontAwesomeIcon icon={faFolder} style={{ color: 'var(--text-faint)' }} />

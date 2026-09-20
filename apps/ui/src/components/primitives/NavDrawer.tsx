@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useEffect, type ReactNode } from 'react';
 import { useReturnFocusTarget } from './focusReturn';
+import { IconButton } from './IconButton';
 
 // The navigation drawer of the narrow layout (AppShell's hamburger), on Base UI's Drawer (ADR 0047, 0051): a modal panel
 // from the left edge with the app's scrim, so the page behind is hidden and unreachable, Tab loops inside, Escape, the
@@ -38,14 +39,9 @@ export function NavDrawer({ open, onClose, children }: { open: boolean; onClose:
             className="relative flex h-full w-[min(17rem,86vw)] [transform:translateX(var(--drawer-swipe-movement-x,0px))] flex-col bg-[var(--surface)] shadow-[var(--shadow-lg)] outline-none"
           >
             <Drawer.Title className="sr-only">Navigation</Drawer.Title>
-            <button
-              type="button"
-              className="absolute top-3 right-3 inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-              aria-label="Close navigation"
-              onClick={onClose}
-            >
+            <IconButton label="Close navigation" onClick={onClose} className="absolute top-3 right-3">
               <FontAwesomeIcon icon={faXmark} />
-            </button>
+            </IconButton>
             {children}
           </Drawer.Popup>
         </Drawer.Viewport>

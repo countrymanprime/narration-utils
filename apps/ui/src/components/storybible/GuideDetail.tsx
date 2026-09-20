@@ -27,6 +27,7 @@ import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Menu } from '../primitives/Menu';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { CANONICAL_PREVIEW, previewKey, usePreviewAudio } from './usePreviewAudio';
+import { IconButton } from '../primitives/IconButton';
 
 export function GuideDetail({
   entity,
@@ -251,9 +252,8 @@ export function GuideDetail({
           </span>
           {!isNewDraft && (
             <TooltipTarget text={locked ? 'Unlock entry' : 'Lock entry'}>
-              <button
-                aria-label={locked ? 'Unlock entry' : 'Lock entry'}
-                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              <IconButton
+                label={locked ? 'Unlock entry' : 'Lock entry'}
                 onClick={async () => {
                   try {
                     await api.guideSetLocked(entity.id, !locked);
@@ -265,26 +265,21 @@ export function GuideDetail({
                 }}
               >
                 <FontAwesomeIcon icon={locked ? faLock : faLockOpen} />
-              </button>
+              </IconButton>
             </TooltipTarget>
           )}
           {canEdit && !editing && (
             <TooltipTarget text="Edit this entry">
-              <button
-                aria-label="Edit this entry"
-                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                onClick={() => setEditing(true)}
-              >
+              <IconButton label="Edit this entry" onClick={() => setEditing(true)}>
                 <FontAwesomeIcon icon={faPen} />
-              </button>
+              </IconButton>
             </TooltipTarget>
           )}
           {canEdit && editing && (
             <>
               <TooltipTarget text="Save changes to this entry">
-                <button
-                  aria-label="Save changes to this entry"
-                  className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-strong)]"
+                <IconButton
+                  label="Save changes to this entry"
                   onClick={() =>
                     void save(
                       {
@@ -296,41 +291,30 @@ export function GuideDetail({
                       'Entry saved.',
                     ).then((saved) => saved && setEditing(false))
                   }
+                  variant="primary"
                 >
                   <FontAwesomeIcon icon={faFloppyDisk} />
-                </button>
+                </IconButton>
               </TooltipTarget>
               <TooltipTarget text="Discard changes and stop editing">
-                <button
-                  aria-label="Cancel editing"
-                  className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                  onClick={stopEditing}
-                >
+                <IconButton label="Cancel editing" onClick={stopEditing}>
                   <FontAwesomeIcon icon={faXmark} />
-                </button>
+                </IconButton>
               </TooltipTarget>
             </>
           )}
           {!locked && !isNewDraft && (
             <TooltipTarget text="Delete entity">
-              <button
-                aria-label="Delete entity"
-                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                onClick={() => setConfirmation('delete')}
-              >
+              <IconButton label="Delete entity" onClick={() => setConfirmation('delete')}>
                 <FontAwesomeIcon icon={faTrash} />
-              </button>
+              </IconButton>
             </TooltipTarget>
           )}
           {isNewDraft && (
             <TooltipTarget text="Discard this new entry">
-              <button
-                aria-label="Discard this new entry"
-                className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                onClick={() => onDiscardNewDraft?.()}
-              >
+              <IconButton label="Discard this new entry" onClick={() => onDiscardNewDraft?.()}>
                 <FontAwesomeIcon icon={faXmark} />
-              </button>
+              </IconButton>
             </TooltipTarget>
           )}
         </div>
@@ -373,14 +357,13 @@ export function GuideDetail({
                 text={playingPreview === CANONICAL_PREVIEW ? 'Pause pronunciation preview' : 'Play provider-generated pronunciation'}
                 style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}
               >
-                <button
-                  aria-label={playingPreview === CANONICAL_PREVIEW ? 'Pause preview' : 'Play preview'}
-                  className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                <IconButton
+                  label={playingPreview === CANONICAL_PREVIEW ? 'Pause preview' : 'Play preview'}
                   disabled={isNewDraft}
                   onClick={() => void playPreview()}
                 >
                   <FontAwesomeIcon icon={playingPreview === CANONICAL_PREVIEW ? faPause : faWaveSquare} />
-                </button>
+                </IconButton>
               </TooltipTarget>
             </div>
             <p className="mt-1 text-xs" style={{ color: 'var(--text-faint)' }}>
@@ -416,26 +399,24 @@ export function GuideDetail({
                         text={playingPreview === previewKey(index) ? 'Pause alias pronunciation preview' : 'Play this alias pronunciation'}
                         style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}
                       >
-                        <button
-                          aria-label={playingPreview === previewKey(index) ? 'Pause alias pronunciation' : 'Play alias pronunciation'}
-                          className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                        <IconButton
+                          label={playingPreview === previewKey(index) ? 'Pause alias pronunciation' : 'Play alias pronunciation'}
                           onClick={() => void playPreview(index)}
                         >
                           <FontAwesomeIcon icon={playingPreview === previewKey(index) ? faPause : faWaveSquare} />
-                        </button>
+                        </IconButton>
                       </TooltipTarget>
                     </div>
                   </td>
                   <td className="align-middle font-['IBM_Plex_Mono',ui-monospace,monospace]">{alias.occurrences.length}</td>
                   <td className="text-right align-middle">
-                    <button
-                      className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                      aria-label={`Remove alias ${alias.text}`}
+                    <IconButton
+                      label={`Remove alias ${alias.text}`}
                       disabled={editingDisabled}
                       onClick={() => void setAliasTexts(entity.aliases.filter((other) => other.text !== alias.text).map((other) => other.text))}
                     >
                       <FontAwesomeIcon icon={faXmark} />
-                    </button>
+                    </IconButton>
                   </td>
                 </tr>
               ))}
@@ -513,48 +494,28 @@ export function GuideDetail({
                 )}
                 <div data-alias-actions className="flex items-center justify-between p-2">
                   <TooltipTarget text="Add alias">
-                    <button
-                      aria-label="Add alias"
-                      className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                      disabled={editingDisabled}
-                      onClick={addAliasFromQuery}
-                    >
+                    <IconButton label="Add alias" disabled={editingDisabled} onClick={addAliasFromQuery}>
                       <FontAwesomeIcon icon={faPlus} />
-                    </button>
+                    </IconButton>
                   </TooltipTarget>
                   <TooltipTarget text="Rescan occurrences for this entry">
-                    <button
-                      aria-label="Rescan occurrences"
-                      className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                      disabled={isNewDraft}
-                      onClick={() => void rescanOccurrences()}
-                    >
+                    <IconButton label="Rescan occurrences" disabled={isNewDraft} onClick={() => void rescanOccurrences()}>
                       <FontAwesomeIcon icon={faRotate} />
-                    </button>
+                    </IconButton>
                   </TooltipTarget>
                 </div>
               </div>
             ) : (
               <div data-alias-actions className="mt-2 flex items-center justify-between">
                 <TooltipTarget text="Add alias">
-                  <button
-                    aria-label="Add alias"
-                    className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                    disabled={editingDisabled}
-                    onClick={addAliasFromQuery}
-                  >
+                  <IconButton label="Add alias" disabled={editingDisabled} onClick={addAliasFromQuery}>
                     <FontAwesomeIcon icon={faPlus} />
-                  </button>
+                  </IconButton>
                 </TooltipTarget>
                 <TooltipTarget text="Rescan occurrences for this entry">
-                  <button
-                    aria-label="Rescan occurrences"
-                    className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                    disabled={isNewDraft}
-                    onClick={() => void rescanOccurrences()}
-                  >
+                  <IconButton label="Rescan occurrences" disabled={isNewDraft} onClick={() => void rescanOccurrences()}>
                     <FontAwesomeIcon icon={faRotate} />
-                  </button>
+                  </IconButton>
                 </TooltipTarget>
               </div>
             )}
@@ -629,9 +590,8 @@ export function GuideDetail({
                   <td>{rel.label}</td>
                   <td>{rel.name}</td>
                   <td className="text-right">
-                    <button
-                      className="inline-flex size-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                      aria-label="Remove relationship"
+                    <IconButton
+                      label="Remove relationship"
                       disabled={editingDisabled}
                       onClick={async () => {
                         try {
@@ -643,7 +603,7 @@ export function GuideDetail({
                       }}
                     >
                       <FontAwesomeIcon icon={faXmark} />
-                    </button>
+                    </IconButton>
                   </td>
                 </tr>
               ))}
