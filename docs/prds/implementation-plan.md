@@ -106,5 +106,5 @@ Updated by the last PR of each stack. Values: `queued`, `in progress`, `pr open`
 | --- | --- | --- |
 | S00 | in progress | this PR |
 | S02 | pr open | #55, #56, #57, #58 (issue #54) |
-| S03 | pr open | #61, #62, #63, this PR (issue #59; follow-up #60) |
+| S03 | pr open | #61, #62, #63, #64 (issue #59; follow-up #60) |
 | S01, S04-S24 | queued | |
