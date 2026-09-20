@@ -1,0 +1,33 @@
+name: UI dist
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Branch, tag or SHA to build; empty builds the triggering commit
+        type: string
+        default: ''
+permissions: { contents: read }
+jobs:
+  build:
+    # Its own job so the native build can start as soon as the UI is built, in parallel with the
+    # lint/test jobs in _quality.yml, instead of waiting for all of them.
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-go: 'false'
+          need-python: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+          need-linux-native-deps: 'false'
+      - run: pnpm --dir shared/ui run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ui-dist
+          path: shared/ui/dist
+          if-no-files-found: error
+          retention-days: 1

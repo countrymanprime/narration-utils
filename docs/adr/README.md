@@ -49,3 +49,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0024](0024-teleprompter-highlight-follows-the-sidecars-spans.md) | The teleprompter highlight follows the sidecar's spans and only ever catches up to the real position | Accepted (amends ADR-0016) |
 | [0025](0025-delivery-measurements-in-go-profiles-deferred.md) | Delivery measurements are computed in Go, and no distributor profile ships yet | Accepted |
 | [0026](0026-manuscript-line-identity-in-item-extension-data.md) | Manuscript line identity is stored in REAPER item extension data and read back through the bridge | Accepted |
+| [0027](0027-windows-gates-and-creates-the-release.md) | Windows gates pull requests and creates the release; macOS and Linux are optional, separate builds | Accepted |

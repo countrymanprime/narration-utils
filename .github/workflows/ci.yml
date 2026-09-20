@@ -12,9 +12,18 @@ concurrency:
 jobs:
   quality:
     uses: ./.github/workflows/_quality.yml
-  build:
-    needs: quality
-    uses: ./.github/workflows/_build-native.yml
-    with:
-      upload: false
-      artifact-prefix: ci
+  ui-dist:
+    uses: ./.github/workflows/_ui-dist.yml
+  # Windows is the supported platform, so it is the only native build a pull request waits on.
+  # macOS and Linux build after the Windows release is published (see prerelease.yml).
+  # This job needs only the UI bundle, so it runs alongside the quality jobs rather than after them.
+  build-windows:
+    name: Build (Windows)
+    needs: ui-dist
+    timeout-minutes: 30
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/build-native
+        with:
+          platform: windows-x64

@@ -15,8 +15,11 @@ inputs:
     description: Install Go
     default: 'true'
   need-wails-tools:
-    description: Install the pinned Wails CLI and staticcheck (implies need-go)
+    description: Install the pinned Wails CLI (implies need-go)
     default: 'true'
+  need-staticcheck:
+    description: Install the pinned staticcheck (implies need-go)
+    default: 'false'
   need-stylua:
     description: Install the pinned standalone StyLua binary
     default: 'true'
@@ -39,7 +42,7 @@ runs:
         node-version: 22
         cache: ${{ inputs.need-pnpm == 'true' && 'pnpm' || '' }}
         cache-dependency-path: pnpm-lock.yaml
-    - if: inputs.need-go == 'true' || inputs.need-wails-tools == 'true'
+    - if: inputs.need-go == 'true' || inputs.need-wails-tools == 'true' || inputs.need-staticcheck == 'true'
       uses: actions/setup-go@v5
       with:
         go-version: '1.27.1'
@@ -55,12 +58,28 @@ runs:
         cache-dependency-glob: |
           pyproject.toml
           uv.lock
+    # `go install` compiles each tool from source (about a minute apiece), so the binaries are cached.
+    # The key hashes scripts/toolchain.json, which pins the versions installed below (keep them in step).
     - if: inputs.need-wails-tools == 'true'
-      name: Install pinned Go tools
+      id: wails-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/go/bin/wails${{ runner.os == 'Windows' && '.exe' || '' }}
+        key: go-tool-wails-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/toolchain.json') }}
+    - if: inputs.need-wails-tools == 'true' && steps.wails-cache.outputs.cache-hit != 'true'
+      name: Install pinned Wails CLI
       shell: bash
-      run: |
-        go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
-        go install honnef.co/go/tools/cmd/staticcheck@v0.8.1
+      run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
+    - if: inputs.need-staticcheck == 'true'
+      id: staticcheck-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/go/bin/staticcheck${{ runner.os == 'Windows' && '.exe' || '' }}
+        key: go-tool-staticcheck-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/toolchain.json') }}
+    - if: inputs.need-staticcheck == 'true' && steps.staticcheck-cache.outputs.cache-hit != 'true'
+      name: Install pinned staticcheck
+      shell: bash
+      run: go install honnef.co/go/tools/cmd/staticcheck@v0.8.1
     - if: inputs.need-stylua == 'true'
       name: Install pinned standalone StyLua
       uses: JohnnyMorganz/stylua-action@479972f01e665acfcba96ada452c36608bdbbb5e # v4.1.0
