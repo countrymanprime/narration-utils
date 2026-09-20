@@ -1,6 +1,6 @@
 import { Popover } from '@base-ui/react/popover';
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip';
-import { isValidElement, useState, type CSSProperties, type ReactNode } from 'react';
+import { isValidElement, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { HINT_POPUP_ATTRIBUTE, HINT_POPUP_CLASSES } from './hintLayer';
 import { lastInputWasKeyboard } from './inputModality';
 
@@ -9,18 +9,15 @@ import { lastInputWasKeyboard } from './inputModality';
 // content that appears on hover or focus (ADR 0049).
 const HOVER_DELAY_MS = 1000;
 
-// The popup sits 5 px clear of its target when it is above it and 14 px when it flipped below, which is where the previous
-// hand-placed tooltip ended up (a 10 px offset and a 4 px nudge). Base UI measures the popup, so it flips on its own.
+// The popup sits 5 px clear of its target when it is above it and 13 px when it flipped below, within a pixel of where the
+// previous hand-placed tooltip ended up. Base UI measures the popup, so it flips on its own.
 const hintOffset = ({ side }: { side: string }): number => (side === 'top' ? 5 : 13);
 
-// The provider is kept so the app and Storybook mount one place for tooltip behaviour. `timeout={0}` turns off the
-// library's "a neighbouring tooltip opens at once" grouping: every hint waits its own second, as it always has.
+// The provider stays as the one place the app and Storybook mount for tooltips, but it adds no Base UI provider: the
+// library's provider groups neighbouring tooltips so the next one opens at once while another is showing, and every hint
+// here waits its own second (each trigger carries the delay itself).
 export function TooltipProvider({ children }: { children: ReactNode }) {
-  return (
-    <BaseTooltip.Provider delay={HOVER_DELAY_MS} timeout={0}>
-      {children}
-    </BaseTooltip.Provider>
-  );
+  return <>{children}</>;
 }
 
 // A hint for a control that carries its own label: the tooltip is for sighted users (the library documents it that way),
@@ -54,17 +51,39 @@ export function TooltipTarget({ text, children, className = '', style }: { text:
 // second), keyboard focus and a press open the popup; Escape closes it.
 export function Tooltip({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
+  const openedByFocus = useRef(false);
+  const popupRef = useRef<HTMLDivElement>(null);
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Root
+      open={open}
+      onOpenChange={(next, details) => {
+        // Enter or Space on an icon that keyboard focus has just opened would close it again: keep it open, and let the
+        // next press close it.
+        if (!next && details.reason === 'trigger-press' && openedByFocus.current) {
+          openedByFocus.current = false;
+          details.cancel();
+          return;
+        }
+        if (!next) openedByFocus.current = false;
+        setOpen(next);
+      }}
+    >
       <Popover.Trigger
         openOnHover
         delay={HOVER_DELAY_MS}
         aria-label="More information"
         aria-description={text}
         onFocus={() => {
-          if (lastInputWasKeyboard()) setOpen(true);
+          if (!lastInputWasKeyboard()) return;
+          openedByFocus.current = true;
+          setOpen(true);
         }}
-        onBlur={() => setOpen(false)}
+        onBlur={(event) => {
+          // Focus moving onto the popup itself (a press on its text) is not leaving.
+          if (popupRef.current?.contains(event.relatedTarget as Node | null)) return;
+          openedByFocus.current = false;
+          setOpen(false);
+        }}
         className="ml-1 inline-flex size-[15px] cursor-help items-center justify-center rounded-full border border-[var(--text-faint)] font-['IBM_Plex_Mono',monospace] text-[0.68rem] text-[var(--text-faint)] [text-transform:inherit] hover:border-[var(--accent)] hover:text-[var(--accent)]"
       >
         i
@@ -72,7 +91,14 @@ export function Tooltip({ text }: { text: string }) {
       <Popover.Portal>
         <Popover.Positioner side="top" sideOffset={hintOffset} collisionPadding={8} className="z-[1000]">
           {/* The text is a description, not something to move into: focus stays on the button. */}
-          <Popover.Popup role="tooltip" initialFocus={false} finalFocus={false} {...{ [HINT_POPUP_ATTRIBUTE]: '' }} className={HINT_POPUP_CLASSES}>
+          <Popover.Popup
+            ref={popupRef}
+            role="tooltip"
+            initialFocus={false}
+            finalFocus={false}
+            {...{ [HINT_POPUP_ATTRIBUTE]: '' }}
+            className={HINT_POPUP_CLASSES}
+          >
             {text}
           </Popover.Popup>
         </Popover.Positioner>

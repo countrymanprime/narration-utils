@@ -41,6 +41,35 @@ export const InfoIconShowsTooltipOnKeyboardFocus: Story = {
   },
 };
 
+// Enter on an icon that keyboard focus has just opened keeps it open (it does not toggle it shut); the next Enter closes it.
+export const InfoIconKeepsOpenOnEnterAfterFocus: Story = {
+  play: async () => {
+    await userEvent.tab();
+    await within(document.body).findByRole('tooltip');
+    await userEvent.keyboard('{Enter}');
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await expect(within(document.body).getByRole('tooltip')).toBeVisible();
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(within(document.body).queryByRole('tooltip')).toBeNull());
+  },
+};
+
+// Tabbing away from an open icon closes it and focus lands on the next control, not on something inside the popup.
+export const InfoIconLetsTabMoveOn: Story = {
+  render: (args) => (
+    <p className="text-sm">
+      Text size <Tooltip {...args} /> <button className="rounded border px-2 text-sm">Next</button>
+    </p>
+  ),
+  play: async ({ canvasElement }) => {
+    await userEvent.tab();
+    await within(document.body).findByRole('tooltip');
+    await userEvent.tab();
+    await waitFor(() => expect(within(document.body).queryByRole('tooltip')).toBeNull());
+    await expect(within(canvasElement).getByRole('button', { name: 'Next' })).toHaveFocus();
+  },
+};
+
 // A press opens it and a second press closes it; nothing it names is missing from the page.
 export const InfoIconTogglesOnPress: Story = {
   play: async ({ args, canvasElement }) => {

@@ -36,7 +36,7 @@ describe('the info icon (Tooltip)', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'More information' }));
   });
 
-  it('hides the tooltip again when focus leaves', async () => {
+  it('hides the tooltip again when focus leaves, and focus lands on the next control', async () => {
     const user = userEvent.setup();
     render(
       <>
@@ -48,6 +48,27 @@ describe('the info icon (Tooltip)', () => {
     await screen.findByRole('tooltip');
     await user.tab();
     expect(screen.queryByRole('tooltip')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Next' }));
+  });
+
+  it('keeps the tooltip open when Enter is pressed on an icon the keyboard just opened, and a second Enter closes it', async () => {
+    const user = userEvent.setup();
+    render(<Tooltip text={TEXT} />);
+    await user.tab();
+    await screen.findByRole('tooltip');
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('tooltip')).toBeTruthy();
+    await user.keyboard('{Enter}');
+    expect(screen.queryByRole('tooltip')).toBeNull();
+  });
+
+  it('stays open when focus moves onto its own popup', async () => {
+    const user = userEvent.setup();
+    render(<Tooltip text={TEXT} />);
+    await user.tab();
+    const popup = await screen.findByRole('tooltip');
+    popup.focus();
+    expect(screen.getByRole('tooltip')).toBeTruthy();
   });
 
   it('opens on a press and closes on a second press', async () => {
@@ -156,6 +177,31 @@ describe('TooltipTarget', () => {
     await user.tab();
     expect(document.activeElement).toBe(wrapper);
     expect((await screen.findByRole('tooltip')).textContent).toBe('Import a manuscript to unlock Proofing.');
+  });
+
+  it('Escape dismisses a hint without moving focus, and a click closes it', async () => {
+    const user = userEvent.setup();
+    render(target);
+    const button = screen.getByRole('button', { name: 'View manuscript' });
+    await user.tab();
+    await screen.findByRole('tooltip');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('tooltip')).toBeNull();
+    expect(document.activeElement).toBe(button);
+    await user.tab({ shift: true });
+    await user.tab();
+    await screen.findByRole('tooltip');
+    await user.click(button);
+    expect(screen.queryByRole('tooltip')).toBeNull();
+  });
+
+  it('clears the hint on unmount instead of leaving it stuck', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(target);
+    await user.tab();
+    await screen.findByRole('tooltip');
+    unmount();
+    expect(screen.queryByRole('tooltip')).toBeNull();
   });
 
   it('gives an enabled child no wrapper role or tab stop', () => {

@@ -8,6 +8,8 @@ Storybook title: `Primitives/Tooltip`. Source: `src/components/primitives/Toolti
 
 - Info Icon
 - Info Icon Shows Tooltip On Keyboard Focus
+- Info Icon Keeps Open On Enter After Focus
+- Info Icon Lets Tab Move On
 - Info Icon Toggles On Press
 - Info Icon Popup Takes Pointer Events
 - On Button
