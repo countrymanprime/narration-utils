@@ -62,7 +62,7 @@ We believe selectable, provisioned engines plus a real device picker will let th
 
 | Metric | Target | How Measured |
 | --- | --- | --- |
-| Sessions started with zero typing | The mic is chosen from a list; typed name only via "Other..." | Manual acceptance run on the user's machine |
+| Sessions started with zero typing | The mic is detected from the DAW or chosen from a list; there is no free-text microphone field anywhere | Manual acceptance run on the user's machine |
 | Listed devices that actually open | 100% of listed devices open and close cleanly with the capture path (or are marked unavailable) | A test that opens each listed device once, run on the user's machine |
 | Engine and model persistence | Choice survives an app restart | Settings unit test plus manual check |
 | Cursor lag per engine | Median at or below 0.8 s, p90 at or below 1.5 s for the chosen default (proposal; docs expect 0.3-0.8 s, unmeasured) | Sidecar `--timing` log on a live mic, same chapter, same reader, both engines (Phase 8 adds a way to capture it when launched from the host) |
@@ -112,7 +112,7 @@ When I sit down to read a chapter, I want to choose my microphone from a list an
 
 | Priority | Capability | Phase |
 | --- | --- | --- |
-| Must | List input devices with the names the capture path accepts; picker with typed "Other..." fallback; remembered choice | 1, 2 |
+| Must | List input devices with the names the capture path accepts; dropdown-only picker (no typed name, no "Other..." entry); remembered choice | 1, 2 |
 | Must | Persisted Teleprompter settings (engine, model, device), global scope | 3, 7 |
 | Must | Moonshine catalog with pinned URL and SHA-256 per file; first-use download gate; load from a pre-placed directory | 5, 6 |
 | Must | Moonshine packaged for Windows in the frozen sidecar and covered by the release smoke check | 6 |
@@ -134,7 +134,7 @@ Phases 1 to 3 (device picker and settings, Whisper only) are shippable on their 
 ### User Flow
 
 1. Settings > Teleprompter: choose engine and model. Choosing never downloads.
-2. On the Teleprompter page the microphone control lists devices (with a refresh), preselects the remembered one, and offers "Other...". A remembered device that is no longer present is shown as not found and must be re-picked; it is never silently replaced.
+2. On the Teleprompter page the microphone control lists devices (with a refresh), and preselects the remembered one; it never accepts a typed name. A remembered device that is no longer present is shown as not found and must be re-picked; it is never silently replaced.
 3. Start: if the chosen engine's model is missing, the same first-use dialog as today names the engine, size, publisher and license; the narrator confirms or cancels; progress is real (ADR 0015).
 4. The narrator reads; a manual scroll pauses following with a visible "Follow" control; at the end of the chapter the session stops itself and says so.
 
@@ -159,8 +159,8 @@ Phases 1 to 3 (device picker and settings, Whisper only) are shippable on their 
 
 | Risk | Likelihood | Mitigation |
 | --- | --- | --- |
-| PyAV cannot list `dshow` devices without brittle log scraping | Medium | Spike first; fall back to the typed "Other..." field; ship the picker only if names are provably openable |
-| Listed device is held exclusively by REAPER (ASIO) so opening fails | Medium | Detect a failed open and explain it; never steal the device; keep the typed fallback |
+| PyAV cannot list `dshow` devices without brittle log scraping | Medium | Spike first; find another listing route (ffmpeg `-list_devices` output, Windows audio endpoint enumeration); typing a name is never the fallback, so if no route yields provably openable names the phase is blocked and the owner decides |
+| Listed device is held exclusively by REAPER (ASIO) so opening fails | Medium | Detect a failed open and explain it; never steal the device; show the device as busy in the dropdown and never offer typing |
 | Moonshine model layout does not fit a flat `assets.File` list | Medium | Extend `download` for nested paths with path-escape tests, or record the constraint and adjust the catalog schema |
 | PyInstaller misses Moonshine native libraries or grows the installer too much | Medium | Phase 6 spike with `--sidecar manuscript-teleprompter`; fall back to a second frozen executable |
 | Per-model Moonshine license text cannot be confirmed permissive | Low | Keep Moonshine developer-only; policy forbids unclear terms |
@@ -176,7 +176,7 @@ Phases 1 to 3 (device picker and settings, Whisper only) are shippable on their 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Device enumeration in the sidecar | Spike, then `--list-devices` in a new `devices.py`, tests, findings recorded in `manuscript-teleprompter.md` | pending | 4, 5, 9, 10 | - | - |
-| 2 | Host device binding and microphone picker | Binding, contract, mock, picker with "Other..." fallback and remembered choice on the Teleprompter page | pending | 5, 9, 10 | 1; PRD 1 phase 2 (soft, see Open Questions) | - |
+| 2 | Host device binding and microphone picker | Binding, contract, mock, dropdown-only picker (no free text) and remembered choice on the Teleprompter page | pending | 5, 9, 10 | 1; PRD 1 phase 2 (soft, see Open Questions) | - |
 | 3 | Teleprompter settings section | `Teleprompter` schema (engine list limited to Whisper until phase 7), model and device, defaults, Settings category, mock, mobile layout | pending | 5, 9, 10 | 2 | - |
 | 4 | Shared asset-install hook | `useAssetInstall` extracted from Transcript Compare and the Teleprompter; unmount behavior unified | pending | 1, 5, 9, 10 | - | - |
 | 5 | Moonshine catalog and provisioning | `moonshine-assets.json`, manager, install/state/cancel/remove, engine-aware bindings, dependency record completed | pending | 1, 2, 3, 4, 9, 10 | release-readiness Phase 3 (soft: aggregated catalog) | - |
@@ -193,11 +193,11 @@ Phases 1 to 3 (device picker and settings, Whisper only) are shippable on their 
 **Phase 1 - Device enumeration in the sidecar**
 - **Goal**: prove and provide a list of names the capture path accepts.
 - **Scope**: `tools/manuscript-teleprompter/core/devices.py`, argument wiring in `live_asr.py`, tests with a fake lister, the spike outcome and duplicate-name handling written into `manuscript-teleprompter.md`. No UI.
-- **Success signal**: on the user's machine every listed name opens with the capture code and closes cleanly; if listing is not possible without an ffmpeg call the phase records that and the picker plan changes to the typed fallback.
+- **Success signal**: on the user's machine every listed name opens with the capture code and closes cleanly; if listing is not possible without an ffmpeg call the phase records that and looks for another listing route; typing a name is not an accepted fallback (see Decisions Log).
 
 **Phase 2 - Host device binding and microphone picker**
 - **Goal**: choose a microphone from a list.
-- **Scope**: Go binding running the sidecar `--list-devices` with a timeout (host API bump in three places, regenerate `Host.{js,d.ts}`), contract and `wailsClient.ts` and `mockApi.ts`, picker component with refresh, "Other..." and "not found" state, remembered choice (browser storage until phase 3), `state-catalog.ts` rows and drivers, doc screenshot, atlas story if a primitive is added.
+- **Scope**: Go binding running the sidecar `--list-devices` with a timeout (host API bump in three places, regenerate `Host.{js,d.ts}`), contract and `wailsClient.ts` and `mockApi.ts`, picker component with refresh and a "not found" state (no free-text entry), remembered choice (browser storage until phase 3), `state-catalog.ts` rows and drivers, doc screenshot, atlas story if a primitive is added.
 - **Success signal**: page tests pass; PNGs reviewed at four viewports; a session starts with the chosen device.
 
 **Phase 3 - Teleprompter settings section**
@@ -295,6 +295,7 @@ Cross-cutting: every phase re-checks `docs/adr/` numbering immediately before wr
 | Confirmation rule (prior decision) | LocalAgreement-2 from whisper_streaming; the tracker also follows partials speculatively | SimulStreaming (AlignAtt) | It needs PyTorch and a GPU (its README calls CPU too slow for real time); LocalAgreement alone adds about 1 s of lag |
 | Fallback engine (prior decision) | Sherpa-ONNX stays a fallback candidate only | Adopt it now | Never prototyped here; only Whisper and Moonshine were measured |
 | Shared microphone seam with PRD 1 | Recommendation: one `MicrophoneField` component | Picker built by either PRD alone | Pending the user's answer |
+| Microphone is never typed (user, 2026-09-20) | The microphone is detected from the DAW (PRD 1 phase 11) or chosen from a dropdown of listed devices; no free-text field or "Other..." entry exists, and a failed listing blocks the phase instead of falling back to typing | Typed "Other..." fallback (earlier draft) | Typed names are error-prone and were the original failure this initiative exists to remove |
 | Device enumeration backend, settings home, packaging shape, binding shape, auto-stop trigger, scroll behavior | Recommendations under Open Questions | See there | Pending the user's answers |
 
 ## Research Summary

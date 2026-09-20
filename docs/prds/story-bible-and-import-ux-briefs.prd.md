@@ -214,6 +214,7 @@ Phases 1 to 3 (N and B) plus the three docs-only phases 4, 6 and 9 that de-risk 
 - **Success signal**: a counted list, or a recorded "no failures, defer".
 
 **Phase 5 - Import subtitle override**
+- **Note**: showing each section's subtitle in the review needs no binding change and is specified separately in [import-review-redesign.prd.md](import-review-redesign.prd.md) (Phase 2). This phase keeps only the override, still gated on Phase 4.
 - **Goal**: correct wrong splits before commit.
 - **Scope**: subtitle in the preview payload; `subtitleOverrides`; apply in commit before canonicalization; `ManuscriptImportCommit` signature change; contract, client, mock; review UI extending the existing dialog (no second settings step); API bump.
 - **Success signal**: each Phase 4 misread fixable; importer fixtures unchanged for correct headings.
