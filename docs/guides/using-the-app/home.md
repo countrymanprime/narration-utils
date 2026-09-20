@@ -23,7 +23,9 @@ message, outlined when you opened it with the keyboard), Tab and Shift+Tab stay 
 page behind is hidden from a screen reader until it closes. Escape declines a confirm, and focus
 returns to the button that opened it. Clicking the dimmed background never dismisses a dialog,
 so a stray click cannot discard a decision, and a running job (such as an import) ignores Escape
-until it has finished. The red confirm button marks an action that destroys data.
+until it has finished. The red confirm button marks an action that destroys data. A step that
+cannot be cancelled (rebuilding the Story Bible, or an import while it writes to the project) says
+so at the top of its dialog, offers no button while it runs, and shows Close when it finishes.
 
 If the project folder contains a file named `manuscript.docx` or `manuscript.md` and nothing has
 been imported yet, Home asks whether to import it. It is only ever an offer — nothing is

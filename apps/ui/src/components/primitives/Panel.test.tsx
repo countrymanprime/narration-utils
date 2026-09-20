@@ -51,9 +51,11 @@ describe('Panel', () => {
       </Panel>,
     );
     const region = screen.getByRole('region', { name: 'Choose a REAPER project file' });
-    within(region).getByRole('button', { name: 'Use this file' }).click();
+    const headerRow = within(region).getByRole('heading', { level: 2 }).parentElement!;
+    // The buttons share the row the title is in, beside it, and stay clickable.
+    expect(within(headerRow).getByRole('button', { name: 'Rescan folder' })).toBeTruthy();
+    within(headerRow).getByRole('button', { name: 'Use this file' }).click();
     expect(used).toBe(1);
-    expect(within(region).getByRole('button', { name: 'Rescan folder' })).toBeTruthy();
   });
 
   it('keeps the surface look whether or not it has a title', () => {
