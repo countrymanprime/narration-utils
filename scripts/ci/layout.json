@@ -18,6 +18,7 @@
     "config",
     "docs",
     "integrations",
+    "knip.jsonc",
     "libs",
     "lint-staged.config.mjs",
     "nx.json",
