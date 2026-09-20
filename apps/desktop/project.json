@@ -30,6 +30,12 @@
       "options": {
         "command": "pnpm --dir {projectRoot} run build"
       }
+    },
+    "build": {
+      "executor": "nx:noop",
+      "metadata": {
+        "description": "Deliberately empty: `pnpm check` runs every project's build target, and the native app is built by the Build (Windows) CI job. Run `package` (wails build) to build it."
+      }
     }
   }
 }

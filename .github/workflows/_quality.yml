@@ -4,7 +4,8 @@ on:
 permissions: { contents: read }
 # Every job runs its Nx targets through .github/actions/nx-run: on a pull request only the projects
 # the change affects (see each project's project.json and `implicitDependencies`), otherwise all of
-# them. The jobs and their names are unchanged; the required-check names in
+# them. The two Playwright jobs keep their own `run:` steps (the atlas kit's audit looks for them) and
+# use .github/actions/nx-affected to decide whether to run. The jobs and their names are unchanged; the required-check names in
 # docs/operations/ci-and-releases.md still apply. Checkouts fetch full history so Nx can diff
 # against the base branch.
 jobs:
@@ -42,11 +43,14 @@ jobs:
           need-wails-tools: 'false'
           need-stylua: 'false'
           need-linux-native-deps: 'false'
-      - uses: ./.github/actions/setup-playwright
-      - uses: ./.github/actions/nx-run
+      - id: scope
+        uses: ./.github/actions/nx-affected
         with:
-          targets: visual
           projects: narration-utils-ui
+      - if: steps.scope.outputs.affected == 'true'
+        uses: ./.github/actions/setup-playwright
+      - if: steps.scope.outputs.affected == 'true'
+        run: pnpm --dir apps/ui run screenshots
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -70,11 +74,14 @@ jobs:
           need-wails-tools: 'false'
           need-stylua: 'false'
           need-linux-native-deps: 'false'
-      - uses: ./.github/actions/setup-playwright
-      - uses: ./.github/actions/nx-run
+      - id: scope
+        uses: ./.github/actions/nx-affected
         with:
-          targets: atlas
           projects: narration-utils-ui
+      - if: steps.scope.outputs.affected == 'true'
+        uses: ./.github/actions/setup-playwright
+      - if: steps.scope.outputs.affected == 'true'
+        run: pnpm --dir apps/ui run atlas
       - uses: actions/upload-artifact@v7
         if: always()
         with:
