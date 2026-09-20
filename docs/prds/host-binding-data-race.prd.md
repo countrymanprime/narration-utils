@@ -139,7 +139,7 @@ Developer-facing only: a binding calls `svc := h.services()`, uses `svc.guide` a
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Accessor, guard and stress harness | `services()`, AST guard with the full current violation list as allowlist, stress test over already-converted bindings, convert the already-safe sites, one-off flake stress run | complete | - | - | - |
 | 2 | Convert Manuscript and Guide | `Manuscript*`, `Guide*` bindings, `startGuideBuild`, import-commit closure; shrink allowlist; extend stress test | complete | 3 | 1 | - |
-| 3 | Convert Tts, Whisper, Settings, Transcript, Bootstrap | Remaining bindings and `app.go` helpers including install goroutines; shrink allowlist; extend stress test | pending | 2 | 1 | - |
+| 3 | Convert Tts, Whisper, Settings, Transcript, Bootstrap | Remaining bindings and `app.go` helpers including install goroutines; shrink allowlist; extend stress test | complete | 2 | 1 | - |
 | 4 | Small items and cleanup | `ProjectCreate` ordering and path check, remove the allowlist (empty), point the two code comments at the `services()` doc comment (they cite this PRD today), `feature-cleanup` | pending | - | 2, 3 | - |
 
 ### Phase Details
@@ -160,6 +160,7 @@ Developer-facing only: a binding calls `svc := h.services()`, uses `svc.guide` a
 - **Goal**: the rest.
 - **Scope**: `TtsCatalog/Remove`, `WhisperCatalog/Remove`, `Transcript*` (`:373-506`), `settingsForScope`, `saveSettings`, `startTtsInstall`, `startWhisperInstall`, `resolveWhisperModelID`, `Bootstrap`; install goroutines use the captured snapshot.
 - **Success signal**: allowlist reaches zero for these; stress test covers them.
+- **Delivered**: `TtsCatalog/Remove`, `WhisperCatalog/Remove`, the ten `Transcript*` bindings (including `TranscriptSuggestHints`, which reads the guide and transcript services from one snapshot), `settingsForScope`, `saveSettings`, `Bootstrap`, `startTtsInstall` and `startWhisperInstall` (the install goroutines run on the manager captured before they start) read through `h.services()`. `resolveWhisperModelID` became a plain function that takes the settings store. `directReadAllowlist` is now empty, so every swappable read goes through the accessor; Phase 4 deletes the mechanism. The stress test gained the Tts, Whisper, Settings, Transcript and `Bootstrap` rows, including the first-use asset gates (`TranscriptStart` and the install calls with unknown ids, which return before doing any work). `wails generate module` was re-run: `Host.{js,d.ts}` are byte-identical.
 
 **Phase 4 - Small items and cleanup**
 - **Goal**: close the two smaller items and finish the ratchet.

@@ -40,12 +40,13 @@ func (h *Host) SystemReportDiagnostic(kind, message string) (string, error) {
 }
 
 func (h *Host) TtsCatalog() (string, error) {
-	if h.tts == nil {
+	svc := h.services()
+	if svc.tts == nil {
 		return "", fmt.Errorf("the approved TTS catalog is unavailable")
 	}
-	catalog := h.tts.Catalog()
-	provider, providerSource := h.settings.Effective("Piper", "tts_provider", "piper")
-	voice, voiceSource := h.settings.Effective("Piper", "tts_voice_id", "en_US-ljspeech-high")
+	catalog := svc.tts.Catalog()
+	provider, providerSource := svc.settings.Effective("Piper", "tts_provider", "piper")
+	voice, voiceSource := svc.settings.Effective("Piper", "tts_voice_id", "en_US-ljspeech-high")
 	catalog["provider"] = map[string]any{"id": provider, "effectiveSource": providerSource}
 	catalog["voice"] = map[string]any{"id": voice, "effectiveSource": voiceSource}
 	return encodeBinding(catalog, nil)
@@ -60,18 +61,20 @@ func (h *Host) TtsInstallCancel(jobID string) (string, error) {
 	return encodeBinding(h.cancelTtsInstall(jobID))
 }
 func (h *Host) TtsRemove(voiceID string) (string, error) {
-	if h.tts == nil {
+	service := h.services().tts
+	if service == nil {
 		return "", fmt.Errorf("the approved TTS catalog is unavailable")
 	}
-	return encodeBinding(nil, h.tts.Remove(voiceID))
+	return encodeBinding(nil, service.Remove(voiceID))
 }
 
 func (h *Host) WhisperCatalog() (string, error) {
-	if h.whisper == nil {
+	svc := h.services()
+	if svc.whisper == nil {
 		return "", fmt.Errorf("the approved Whisper catalog is unavailable")
 	}
-	catalog := h.whisper.Catalog()
-	modelID, modelSource := h.settings.Effective("TranscriptCompare", "model_size", "small")
+	catalog := svc.whisper.Catalog()
+	modelID, modelSource := svc.settings.Effective("TranscriptCompare", "model_size", "small")
 	catalog["model"] = map[string]any{"id": modelID, "effectiveSource": modelSource}
 	return encodeBinding(catalog, nil)
 }
@@ -85,10 +88,11 @@ func (h *Host) WhisperInstallCancel(jobID string) (string, error) {
 	return encodeBinding(h.cancelWhisperInstall(jobID))
 }
 func (h *Host) WhisperRemove(modelID string) (string, error) {
-	if h.whisper == nil {
+	service := h.services().whisper
+	if service == nil {
 		return "", fmt.Errorf("the approved Whisper catalog is unavailable")
 	}
-	return encodeBinding(nil, h.whisper.Remove(modelID))
+	return encodeBinding(nil, service.Remove(modelID))
 }
 
 func (h *Host) GuideBuild() (string, error) { return encodeBinding(h.startGuideBuild()) }
@@ -392,27 +396,28 @@ func (h *Host) ManuscriptDeleteBookmark(id string) (string, error) {
 }
 
 func (h *Host) TranscriptStart(options map[string]string) (string, error) {
-	if h.transcript == nil {
+	svc := h.services()
+	if svc.transcript == nil {
 		return "", fmt.Errorf("the Transcript Compare service is unavailable")
 	}
-	if h.whisper == nil {
+	if svc.whisper == nil {
 		return "", fmt.Errorf("the approved Whisper catalog is unavailable")
 	}
-	modelID := h.resolveWhisperModelID(options)
-	model, knownModel := h.whisper.Model(modelID)
+	modelID := resolveWhisperModelID(svc.settings, options)
+	model, knownModel := svc.whisper.Model(modelID)
 	if !knownModel {
 		return "", fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
-	modelDir, err := h.whisper.Dir(modelID)
+	modelDir, err := svc.whisper.Dir(modelID)
 	if err != nil {
-		return encodeBinding(map[string]any{"status": "asset_required", "model": previewModel(model), "installState": h.whisper.State(model), "downloadSize": modelDownloadSize(model)}, nil)
+		return encodeBinding(map[string]any{"status": "asset_required", "model": previewModel(model), "installState": svc.whisper.State(model), "downloadSize": modelDownloadSize(model)}, nil)
 	}
 	started := map[string]string{}
 	for key, value := range options {
 		started[key] = value
 	}
 	started["modelDir"] = modelDir
-	return encodeBinding(map[string]any{"status": "started"}, h.transcript.Start(started))
+	return encodeBinding(map[string]any{"status": "started"}, svc.transcript.Start(started))
 }
 
 // TeleprompterStart begins a live teleprompter session for one manuscript
@@ -457,52 +462,58 @@ func (h *Host) TeleprompterState() (string, error) {
 	return encodeBinding(map[string]any{"phase": "idle", "script": nil, "position": nil}, nil)
 }
 func (h *Host) TranscriptCancel() (string, error) {
-	if h.transcript != nil {
-		h.transcript.Cancel()
+	if service := h.services().transcript; service != nil {
+		service.Cancel()
 	}
 	return encodeBinding(nil, nil)
 }
 func (h *Host) TranscriptReset() (string, error) {
-	if h.transcript == nil {
+	service := h.services().transcript
+	if service == nil {
 		return encodeBinding(nil, nil)
 	}
-	return encodeBinding(nil, h.transcript.Reset())
+	return encodeBinding(nil, service.Reset())
 }
 func (h *Host) TranscriptLastCompleted() (string, error) {
-	if h.transcript == nil {
+	service := h.services().transcript
+	if service == nil {
 		return encodeBinding(nil, nil)
 	}
-	return encodeBinding(h.transcript.LastCompleted(), nil)
+	return encodeBinding(service.LastCompleted(), nil)
 }
 func (h *Host) TranscriptAddEquivalence(id string) (string, error) {
-	if h.transcript == nil {
+	service := h.services().transcript
+	if service == nil {
 		return "", fmt.Errorf("the Transcript Compare service is unavailable")
 	}
-	message, err := h.transcript.AddEquivalence(id)
+	message, err := service.AddEquivalence(id)
 	return encodeBinding(map[string]any{"message": message}, err)
 }
 func (h *Host) TranscriptJump(id string) (string, error) {
-	if h.transcript == nil {
+	service := h.services().transcript
+	if service == nil {
 		return "", fmt.Errorf("the Transcript Compare service is unavailable")
 	}
-	return encodeBinding(nil, h.transcript.Jump(id))
+	return encodeBinding(nil, service.Jump(id))
 }
 func (h *Host) TranscriptExportMarkers() (string, error) {
-	if h.transcript == nil {
+	service := h.services().transcript
+	if service == nil {
 		return "", fmt.Errorf("the Transcript Compare service is unavailable")
 	}
-	return encodeBinding(nil, h.transcript.Export())
+	return encodeBinding(nil, service.Export())
 }
 func (h *Host) TranscriptSuggestHints() (string, error) {
-	if h.guide == nil || h.transcript == nil {
+	svc := h.services()
+	if svc.guide == nil || svc.transcript == nil {
 		return "", fmt.Errorf("build the Story Bible before requesting vocabulary suggestions")
 	}
-	values, err := h.guide.VocabularyCandidates()
+	values, err := svc.guide.VocabularyCandidates()
 	if err != nil {
 		return "", err
 	}
 	accepted := map[string]bool{}
-	for _, value := range h.transcript.Hints() {
+	for _, value := range svc.transcript.Hints() {
 		accepted[strings.ToLower(value)] = true
 	}
 	suggested := []string{}
@@ -514,16 +525,18 @@ func (h *Host) TranscriptSuggestHints() (string, error) {
 	return encodeBinding(map[string]any{"value": strings.Join(suggested, ", ")}, nil)
 }
 func (h *Host) TranscriptHints() (string, error) {
-	if h.transcript == nil {
+	service := h.services().transcript
+	if service == nil {
 		return encodeBinding([]string{}, nil)
 	}
-	return encodeBinding(h.transcript.Hints(), nil)
+	return encodeBinding(service.Hints(), nil)
 }
 func (h *Host) TranscriptSaveHints(accepted []string) (string, error) {
-	if h.transcript == nil {
+	service := h.services().transcript
+	if service == nil {
 		return "", fmt.Errorf("the Transcript Compare service is unavailable")
 	}
-	return encodeBinding(nil, h.transcript.SaveHints(accepted))
+	return encodeBinding(nil, service.SaveHints(accepted))
 }
 
 func (h *Host) TracksDiscover() (string, error) { return encodeBinding(h.tracksDiscover()) }
