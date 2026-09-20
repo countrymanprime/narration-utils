@@ -28,8 +28,9 @@ runs:
         BASE_REF: ${{ github.base_ref }}
       run: |
         set -euo pipefail
-        # Never the Nx cache: a green check must mean the checks ran.
-        args=(-t $TARGETS --skip-nx-cache --output-style=stream)
+        # Never the Nx cache: a green check must mean the checks ran. One task at a time, as the separate
+        # steps ran: lint, format and vitest side by side starve a 2-vCPU runner and trip vitest's 5 s timeouts.
+        args=(-t $TARGETS --parallel=1 --skip-nx-cache --output-style=stream)
         if [ -n "$CONFIGURATION" ]; then args+=(--configuration="$CONFIGURATION"); fi
         # Everything when not a pull request, when asked, or when a workspace-wide file changed.
         selected="$PROJECTS"

@@ -100,7 +100,8 @@ runner called:
 - **CI** keeps its job names (`js`, `ui-visual`, `ui-atlas`, `ui-atlas-kit`, `repo-scripts`, `python`, `lua`, `go`), so
   the required-check names above are unchanged. Each job runs its targets through
   `.github/actions/nx-run`: on a pull request `nx affected` against the base branch, otherwise every selected
-  project. `scripts/ci/nx-scope.sh` decides: everything runs when the event is not a pull request, or the change
+  project, one task at a time (parallel tasks starve the two-vCPU runners and trip the UI tests' timeouts).
+  `scripts/ci/nx-scope.sh` decides: everything runs when the event is not a pull request, or the change
   touches a file no project owns but all depend on (`nx.json`, `package.json`, `pnpm-lock.yaml`,
   `pnpm-workspace.yaml`, `pyproject.toml`, `uv.lock`, the root `project.json`, `stylua.toml`, `.prettierrc.json`,
   `.prettierignore`, `.editorconfig`, `.gitattributes`, `scripts/quality.mjs`, `scripts/toolchain.json`, anything under
