@@ -110,6 +110,8 @@ Three planned-work documents stay because they hold rules or design records that
 
 ## Cross-PRD sequencing
 
+The order the PRDs are delivered in, the owner's answers to their open questions and the rules every stack follows are in [implementation-plan.md](implementation-plan.md); it is deleted with the last PRD.
+
 These serialization points are named inside the PRDs themselves. Several PRDs run in parallel sessions, so check each before starting a phase that touches one.
 
 - **Host API version.** `hostAPIVersion` lives in three places, all `5` at the time the PRDs were written: `shell/app.go`, `shell/app_test.go` and `shared/ui/src/hostApi.ts`. Every phase that adds a binding bumps it (and regenerates `Host.{js,d.ts}`), so it is a merge-time serialization point: the later pull request rebases and bumps again. The host binding data race PRD is the exception; it changes no signatures and does not bump.
