@@ -71,7 +71,7 @@ from pathlib import Path
 
 import numpy as np
 
-_SHARED_PYTHON = Path(__file__).resolve().parents[3] / "shared" / "python"
+_SHARED_PYTHON = Path(__file__).resolve().parents[3] / "libs" / "python"
 if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
@@ -639,7 +639,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument(
         "--model-dir",
         default=None,
-        help="Local, already-verified model directory from the whisper asset catalog (shell/internal/whisper); omit to let faster-whisper resolve --model itself for direct/manual CLI use",
+        help="Local, already-verified model directory from the whisper asset catalog (apps/desktop/internal/whisper); omit to let faster-whisper resolve --model itself for direct/manual CLI use",
     )
     ap.add_argument("--language", default=None, help="Force language code, e.g. 'en' (default: auto-detect)")
     ap.add_argument("--hotwords", default=None, help="Comma-separated vocabulary hints (faster-whisper hotwords, or Moonshine key terms)")

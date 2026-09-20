@@ -49,11 +49,11 @@ test('build plan installs locked dependencies and creates a production-like work
   assert.deepEqual(commands[1], ['uv', ['sync', '--locked']]);
   assert.ok(commands.some(([command, args]) => command === 'pnpm' && args.join(' ') === 'install --frozen-lockfile'));
   const builds = buildCommands();
-  assert.ok(builds.some(([command, args]) => command === 'go' && args.join(' ') === '-C shell test ./...'));
-  assert.ok(builds.some(([command, args]) => command === 'pnpm' && args.join(' ') === '--dir shell run build'));
+  assert.ok(builds.some(([command, args]) => command === 'go' && args.join(' ') === '-C apps/desktop test ./...'));
+  assert.ok(builds.some(([command, args]) => command === 'pnpm' && args.join(' ') === '--dir apps/desktop run build'));
   assert.ok(builds.every(([, args]) => !args.includes('-debug')));
   const releaseBuilds = buildCommands({ release: true });
-  assert.ok(releaseBuilds.some(([command, args]) => command === 'pnpm' && args.join(' ') === '--dir shell run build'));
+  assert.ok(releaseBuilds.some(([command, args]) => command === 'pnpm' && args.join(' ') === '--dir apps/desktop run build'));
   assert.ok([...commands, ...builds].every(([, args]) => !args.join(' ').includes('prepare-resources')));
   assert.ok([...commands, ...builds].every(([, args]) => !args.join(' ').includes('cargo')));
 });

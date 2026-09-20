@@ -28,11 +28,11 @@ REAPER has no native transcription feature (changelog checked through 7.80), so 
 
 ## 1. Baseline: what the repo uses today
 
-From `shared/reaper/*.lua` and `docs/architecture/daw-integration.md`:
+From `integrations/reaper/*.lua` and `docs/architecture/daw-integration.md`:
 
 - **Used:** `EnumProjects`, `CountSelectedMediaItems`, `GetSelectedMediaItem`, `GetMediaItemInfo_Value`, `GetMediaItemTakeInfo_Value`, `GetActiveTake`, `GetMediaSourceFileName`, `TakeIsMIDI`, `GetNumTakeMarkers`, `GetTakeMarker`, `SetTakeMarker`, `SetEditCurPos`, `SetMediaItemSelected`, `SelectAllMediaItems`, `Undo_OnStateChange`, `UpdateArrange`, `defer`, `ExecProcess`, `GetExtState`, `get_action_context`, `GetUserInputs`.
 - **Boundary rules to respect:** mutations are narrator-triggered and wrapped in undo blocks. Findings carry GUIDs with time ranges only as fallbacks. Go owns settings and process lifecycle. Lua owns only state a running REAPER alone knows.
-- **Test gap:** `shared/reaper` Lua has no automated tests. Every change needs manual verification inside REAPER.
+- **Test gap:** `integrations/reaper` Lua has no automated tests. Every change needs manual verification inside REAPER.
 - **Teleprompter design today:** a Python sidecar captures the mic; Lua is not involved in the live loop. The design doc lists "where the audio for a span comes from (rolling buffer vs. REAPER's concurrent recording)" and how a live flag anchors to a take as open questions. Sections 3 to 5 bear directly on both.
 - **Machine note (reported by the ecosystem agent, not re-checked):** SWS and ReaPack are installed here, and ReaImGui was not seen in `UserPlugins`.
 
@@ -296,7 +296,7 @@ None push events. Design lesson from the mature ones: keep the bridge a thin exe
 - One-time user setup for the web interface and OSC. Automating it by editing `reaper.ini` while REAPER runs is unverified and risky (silent overwrite).
 - No documented web-interface auth defaults; set a password if enabled. UDP is lossy.
 - Native extension means recurring cross-platform build cost.
-- `shared/reaper` Lua has no automated tests: manual verification in REAPER for every Lua change (per CLAUDE.md).
+- `integrations/reaper` Lua has no automated tests: manual verification in REAPER for every Lua change (per CLAUDE.md).
 - `daw-integration.md` needs an ADR if we adopt the web or OSC client approach.
 - Licensing: mavriq-lua-sockets is GPL-3.0 (don't bundle); don't copy thenarratorUK code (no license); ReaSpeech (GPL-3.0) and ReaSpeech Lite (AGPL-3.0) can be called but not embedded.
 
@@ -328,4 +328,4 @@ Narration ecosystem
 
 ## Methodology
 
-Four parallel research passes, each returning cited findings: (1) core ReaScript API, (2) external control and IPC transports, (3) narration workflows and ecosystem, (4) audio access, analysis and render. The repo's `shared/reaper` Lua, `docs/architecture/daw-integration.md` and `docs/architecture/manuscript-teleprompter.md` were read to establish the baseline. One cross-check was done directly: `GetPlayPosition` vs. `GetPlayPosition2` descriptions were confirmed against the downloaded official API page. Nothing in this report was executed or tested against a running REAPER. Every (U) item is a candidate spike, not a fact. Forum and Reddit sources were unreachable, and the ecosystem "gaps" conclusions rest on absence in search results.
+Four parallel research passes, each returning cited findings: (1) core ReaScript API, (2) external control and IPC transports, (3) narration workflows and ecosystem, (4) audio access, analysis and render. The repo's `integrations/reaper` Lua, `docs/architecture/daw-integration.md` and `docs/architecture/manuscript-teleprompter.md` were read to establish the baseline. One cross-check was done directly: `GetPlayPosition` vs. `GetPlayPosition2` descriptions were confirmed against the downloaded official API page. Nothing in this report was executed or tested against a running REAPER. Every (U) item is a candidate spike, not a fact. Forum and Reddit sources were unreachable, and the ecosystem "gaps" conclusions rest on absence in search results.

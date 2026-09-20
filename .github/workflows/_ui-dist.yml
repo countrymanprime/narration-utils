@@ -24,10 +24,10 @@ jobs:
           need-wails-tools: 'false'
           need-stylua: 'false'
           need-linux-native-deps: 'false'
-      - run: pnpm --dir shared/ui run build
+      - run: pnpm --dir apps/ui run build
       - uses: actions/upload-artifact@v7
         with:
           name: ui-dist
-          path: shared/ui/dist
+          path: apps/ui/dist
           if-no-files-found: error
           retention-days: 1

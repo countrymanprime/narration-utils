@@ -6,7 +6,7 @@ repo's Python environment: run it in an ephemeral environment so
 pyproject.toml / uv.lock stay untouched:
 
     uv run --no-project --python 3.12 --with moonshine-voice==0.1.5 --with av==18.1.0 \\
-        python tools/manuscript-teleprompter/spikes/moonshine_probe.py --list-devices
+        python sidecars/manuscript-teleprompter/spikes/moonshine_probe.py --list-devices
     uv run ... python .../moonshine_probe.py --wav reading.wav --reference script.txt
     uv run ... python .../moonshine_probe.py --mic "Realtek" --arch small --context script.txt
 

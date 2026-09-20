@@ -14,13 +14,13 @@ fixture wouldn't exercise.
 
 `alice.docx` also has a "Contents" Heading-1 paragraph inserted before
 Chapter II specifically to exercise the `NON_CHAPTER_HEADINGS` skip path
-(see `shared/python/narration_common/docx_chapters.py`) against a real
+(see `libs/python/narration_common/docx_chapters.py`) against a real
 heading, not just a synthetic unit-test one.
 
 Regenerate with:
 
 ```powershell
-cd shared/test-fixtures
+cd tests/fixtures
 python generate_alice.py alice_raw.txt
 ```
 
@@ -38,6 +38,5 @@ trigger one), so the whole document is one block for the
 many chapters it has. This is a real, pre-existing characteristic of PDF
 import generally - any manuscript PDF from a similarly simple generator
 (not Word/LibreOffice's PDF export, which does preserve blank lines) hits
-the same ceiling. See `shared/manuscript-import/src/pdf.rs`'s module
-comment for the Rust side's own (different, also unresolved) issue on this
-same file.
+the same ceiling. The Go importer (`apps/desktop/internal/importer`) reads the same file
+through its own PDF path.

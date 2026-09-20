@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-COMPARE_PATH = Path(__file__).resolve().parents[1] / "compare.py"
+COMPARE_PATH = Path(__file__).resolve().parents[1] / "core" / "compare.py"
 SPEC = importlib.util.spec_from_file_location("transcript_compare", COMPARE_PATH)
 compare = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader

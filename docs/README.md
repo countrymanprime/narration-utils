@@ -4,7 +4,7 @@ This folder documents a local-first audiobook narration toolkit: how it is built
 
 ## Status legend
 
-- **Implemented**: usable code exists in `tools/`.
+- **Implemented**: usable code exists in the code folders (`apps/`, `sidecars/`, `libs/`, `integrations/`).
 - **Planned—foundation**: required before dependent utilities can start.
 - **Planned**: intentionally specified future work.
 - **Deferred**: valuable work held outside the current milestone sequence.
@@ -25,7 +25,7 @@ This folder documents a local-first audiobook narration toolkit: how it is built
 
 1. Start with the [roadmap](roadmap.md).
 1. For a screenshot walkthrough of the app itself, see [Using the app](guides/using-the-app/README.md).
-1. Before changing anything in `shared/ui/src/components/primitives/`, `shared/ui/src/styles.css`, or a behavior an ADR names, read the [ADR index](adr/README.md) and the [design system reference](design/design-system.md) — see the `design-spec-guard` skill.
+1. Before changing anything in `apps/ui/src/components/primitives/`, `apps/ui/src/styles.css`, or a behavior an ADR names, read the [ADR index](adr/README.md) and the [design system reference](design/design-system.md) — see the `design-spec-guard` skill.
 2. Read the [findings contract](architecture/findings-contract.md) before adding any analyzer or dashboard action.
 3. Use the workflow documents to understand how utilities combine: [manuscript/editorial](workflows/manuscript-and-editorial-review.md), [recording/comping](workflows/recording-and-comping.md), [character continuity](workflows/character-continuity.md), and [technical QC/handoff](workflows/technical-qc-and-handoff.md).
 4. Planned utilities and known defects are specified as PRDs in [prds/](prds/README.md), which indexes them; [utilities/](utilities/) keeps the docs for implemented tools ([Manuscript Guide](utilities/manuscript-guide.md), [Transcript Compare](utilities/transcript-compare.md), [Tracks](utilities/tracks.md)).

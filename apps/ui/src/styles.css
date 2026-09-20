@@ -67,7 +67,7 @@
   color-scheme: light;
 }
 /* Single source of truth for dark values - set via ThemeProvider
-   (shared/ui/src/theme/ThemeContext.tsx), which also handles the "system"
+   (apps/ui/src/theme/ThemeContext.tsx), which also handles the "system"
    preference and writes this attribute, plus an inline bootstrap script in
    index.html that sets it before first paint to avoid a flash of the wrong
    theme. Previously duplicated under a `prefers-color-scheme` media query;

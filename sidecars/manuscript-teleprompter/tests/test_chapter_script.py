@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-MODULE_PATH = Path(__file__).resolve().parents[1] / "chapter_script.py"
+MODULE_PATH = Path(__file__).resolve().parents[1] / "core" / "chapter_script.py"
 SPEC = importlib.util.spec_from_file_location("chapter_script", MODULE_PATH)
 chapter_script = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader

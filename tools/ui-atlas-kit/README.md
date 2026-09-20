@@ -1,7 +1,7 @@
 # ui-atlas kit
 
 Test and self-document a React UI through a validated visual capture contract and a Storybook component atlas.
-Extracted from the working implementation in [`shared/ui`](../../shared/ui) of this repository; that directory is
+Extracted from the working implementation in [`apps/ui`](../../apps/ui) of this repository; that directory is
 the upstream of the kit's vendored files, and `test/dogfood.test.mjs` fails if the two drift apart.
 
 Read [docs/design.md](docs/design.md) for the design (tiers, folder structure, capture contract, rubric) and
@@ -15,7 +15,7 @@ Read [docs/design.md](docs/design.md) for the design (tiers, folder structure, c
 | `plugin/cli/ui-atlas.mjs` | Dependency-free CLI: `init`, `audit`, `docs`, `sync`. |
 | `plugin/templates/` | `core/` (vendored, refreshed by `sync`), `scaffold/` (copied once, then yours), `ci/`, a CLAUDE.md snippet. |
 | `test/` | `node:test` suites for the CLI, the hooks, and the dogfood drift check. |
-| `scripts/refresh-core.mjs` | Copies `shared/ui`'s vendored files into `plugin/templates/core` after you change them. |
+| `scripts/refresh-core.mjs` | Copies `apps/ui`'s vendored files into `plugin/templates/core` after you change them. |
 
 ## Use it
 
@@ -48,7 +48,7 @@ node --test tools/ui-atlas-kit/test/*.test.mjs
 
 ## Moving it to its own repository
 
-Everything the kit needs is under this directory (plus `shared/ui` as the dogfood upstream). To extract it:
+Everything the kit needs is under this directory (plus `apps/ui` as the dogfood upstream). To extract it:
 `git subtree split --prefix tools/ui-atlas-kit -b ui-atlas-kit`, push that branch to a new repository, and change
 `test/dogfood.test.mjs` to point at a checkout of this repo (or drop it there). It lives here for now so it can be
 reviewed and versioned together with the implementation it was extracted from.

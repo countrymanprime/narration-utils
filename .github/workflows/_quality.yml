@@ -15,14 +15,14 @@ jobs:
           need-wails-tools: 'false'
           need-stylua: 'false'
           need-linux-native-deps: 'false'
-      - run: pnpm --dir shared/ui run lint:ci
-      - run: pnpm --dir shared/ui run format:check
-      - run: pnpm --dir shared/ui test
+      - run: pnpm --dir apps/ui run lint:ci
+      - run: pnpm --dir apps/ui run format:check
+      - run: pnpm --dir apps/ui test
 
   ui-visual:
     # Captures every {page, state, viewport} of the mock-backed app and fails on
     # errors, sideways overflow, blank or duplicate screenshots (see
-    # shared/ui/tests/visual/global-setup.ts). Not a pixel-diff gate.
+    # apps/ui/tests/visual/global-setup.ts). Not a pixel-diff gate.
     timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
@@ -35,18 +35,18 @@ jobs:
           need-stylua: 'false'
           need-linux-native-deps: 'false'
       - uses: ./.github/actions/setup-playwright
-      - run: pnpm --dir shared/ui run screenshots
+      - run: pnpm --dir apps/ui run screenshots
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ui-visual-screenshots
-          path: shared/ui/screenshots
+          path: apps/ui/screenshots
           if-no-files-found: ignore
           retention-days: 7
   ui-atlas:
     # The component library: every Storybook story x light/dark x wide/narrow,
     # with play() interactions, axe accessibility and overflow checks
-    # (shared/ui/tests/atlas). `pnpm atlas` builds Storybook first.
+    # (apps/ui/tests/atlas). `pnpm atlas` builds Storybook first.
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
@@ -59,17 +59,17 @@ jobs:
           need-stylua: 'false'
           need-linux-native-deps: 'false'
       - uses: ./.github/actions/setup-playwright
-      - run: pnpm --dir shared/ui run atlas
+      - run: pnpm --dir apps/ui run atlas
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ui-atlas-screenshots
-          path: shared/ui/screenshots/atlas
+          path: apps/ui/screenshots/atlas
           if-no-files-found: ignore
           retention-days: 7
   ui-atlas-kit:
     # The reusable UI-atlas plugin under tools/ui-atlas-kit: CLI, hooks, and a check that
-    # shared/ui has not drifted from the vendored core files the kit ships.
+    # apps/ui has not drifted from the vendored core files the kit ships.
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
@@ -117,7 +117,7 @@ jobs:
         with:
           token: ${{ github.token }}
           version: v2.1.0
-          args: --check shared/reaper
+          args: --check integrations/reaper
 
   go:
     # Windows only: it is the supported platform, and Linux's native libraries are installed only
@@ -137,13 +137,13 @@ jobs:
       - name: gofmt check
         shell: bash
         run: |
-          files=$(gofmt -l ./shell)
+          files=$(gofmt -l ./apps/desktop)
           if [ -n "$files" ]; then
             echo "Run gofmt on:"
             echo "$files"
             exit 1
           fi
-      - run: go -C shell vet ./...
-      - run: go -C shell test -race ./...
+      - run: go -C apps/desktop vet ./...
+      - run: go -C apps/desktop test -race ./...
       - run: staticcheck ./...
-        working-directory: shell
+        working-directory: apps/desktop

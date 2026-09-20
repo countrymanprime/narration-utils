@@ -10,14 +10,14 @@ Every modal in the app (`Dialog`, `ConfirmDialog`, `WorkDialog`, and `AddNoteDia
 
 ## Evidence
 
-Verified against `b9d348d` (main at PR #34) and re-checked at `d5cc994` (main after #42): `Dialog`, `ConfirmDialog`, `WorkDialog`, their stories and every consumer below are unchanged; the only `shared/ui` changes since are the docs-guide tests. Re-verify file paths at the start of each phase.
+Verified against `b9d348d` (main at PR #34) and re-checked at `d5cc994` (main after #42): `Dialog`, `ConfirmDialog`, `WorkDialog`, their stories and every consumer below are unchanged; the only `apps/ui` changes since are the docs-guide tests. Re-verify file paths at the start of each phase.
 
 - **Reproduce (from the retired register):** open any confirm dialog (Story Bible delete), press Tab repeatedly, or press Escape. The register's severity scale, kept here so the ratings stay comparable: **high** blocks a user or fails an accessibility standard outright, **medium** degrades an experience, **low** is polish or hygiene. Defect 2 was high, defect 3 medium, defect 4 low. Its "caught by" notes: the atlas asserts roles and names but its stories cannot prove a focus trap (add a `play()` that tabs past the last control); the `RunningWithoutCancel` story shows the empty action row but nothing asserts progress semantics.
 
 - `primitives/Dialog.tsx`: a `fixed inset-0 z-[60]` div with `role="dialog" aria-modal="true" aria-label={title}`. No key handler, no focus call, no `inert`, no portal. The only keyboard work in it is `tabIndex={0}` on the scroll body (ADR 0023). Confirmed defect 2.
 - `ConfirmDialog.tsx`: `danger` renders `{dangerLabel}` and `dangerLabel` is optional, so `danger` without a label is an unnamed button. The confirm button is always `variant="primary"`. `body: string` only. Confirmed defect 4.
 - `WorkDialog.tsx`: the bar is `div.progressbar` with no role or `aria-valuenow`; the indeterminate state is `animate-[work-progress-slide_1.15s_ease-in-out_infinite]` with no `motion-safe:` guard; the message is not in a live region. Confirmed defect 3.
-- **The empty action row is wider than the old register said.** `WorkDialog` renders Cancel only if `cancel && running` and Close only if `close && !running`. `Guide.tsx:276` (Story Bible rebuild) passes no `cancel`, and `Home.tsx:328` (manuscript import) passes `cancel` only while `phase === 'preparing'`, so the import dialog also has an empty action row in `running` and `committing`. I found no Story Bible build cancel endpoint in `api/contracts/` or `types.ts` (TBD - confirm in `shell/bindings.go`).
+- **The empty action row is wider than the old register said.** `WorkDialog` renders Cancel only if `cancel && running` and Close only if `close && !running`. `Guide.tsx:276` (Story Bible rebuild) passes no `cancel`, and `Home.tsx:328` (manuscript import) passes `cancel` only while `phase === 'preparing'`, so the import dialog also has an empty action row in `running` and `committing`. I found no Story Bible build cancel endpoint in `api/contracts/` or `types.ts` (TBD - confirm in `apps/desktop/bindings.go`).
 - Consumers (change-impact-scan input): `ConfirmDialog` 12 usages in 6 files (`App.tsx`, `Home.tsx` x2, `Transcript.tsx`, `Settings.tsx` x4, `GuideDetail.tsx` x3, `TeleprompterPage.tsx`); `WorkDialog` in `Home.tsx` and `Guide.tsx`; `Dialog` directly in `manuscript/AddNoteDialog.tsx` (the old register omitted this fourth consumer; `docs/ui/atlas/Dialog.md` lists it). Existing tests: `ConfirmDialog.test.tsx` and stories only; nothing exercises the keyboard.
 - Stories assert `aria-modal="true"` (`Dialog.stories.tsx` `CloseButtonInvokesOnClose`) but no story presses Escape or Tab.
 - **jsdom 30.1.0 has no dialog API.** `HTMLDialogElementImpl` is an empty class (no `showModal`, `close`) and there is no `inert` handling. `src/stories.test.tsx` runs every story's `play()` in jsdom through `composeStories`, and `vite.config.ts` has no `setupFiles`. A native `<dialog>` approach therefore needs a polyfill for unit tests, or its keyboard proof must live only in the Chromium atlas.
@@ -55,7 +55,7 @@ We believe making the shared dialog genuinely modal and its progress dialog sema
 | Progress semantics | `role="progressbar"`, `aria-valuenow` when determinate, none when indeterminate | Story `play()` + RTL |
 | Reduced motion | No running animation on `RunningIndeterminate` | Atlas (already `reducedMotion: 'reduce'`) computed-style assertion |
 | Empty action rows | 0 dialog states with no focusable control | Story assertion over every WorkDialog phase |
-| Visual regressions | 0 unintended diffs across dialog states at 4 viewports | `pnpm --dir shared/ui screenshots` + PNG review |
+| Visual regressions | 0 unintended diffs across dialog states at 4 viewports | `pnpm --dir apps/ui screenshots` + PNG review |
 | Defects closed | Defects 2, 3, 4 closed: Phases 2, 3, 4 marked `complete` in this PRD | Review |
 
 ## Open Questions
@@ -150,7 +150,7 @@ Phases 1-4 below. Phase 5 is the sweep and docs.
 
 **Phase 4 - ConfirmDialog.** Goal: defect 4 gone. Scope: `ConfirmDialog.tsx`, tests (type-level via `// @ts-expect-error`), callers in `Settings.tsx`, `GuideDetail.tsx`, `Home.tsx`. Success signal: `pnpm check` type-checks all 12 call sites; destructive confirms use the danger style.
 
-**Phase 5 - Sweep and docs.** Goal: leave nothing stale. Scope: PNG review at desktop, small-desktop, tablet, mobile for `home/import-confirm`, `home/manuscript-candidate-offer`, `manuscript/add-note-dialog`, `storybible/delete-confirm`, `settings/navigate-away-confirm`, `global/confirm-dialog`; `node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir shared/ui`; doc-screenshot-sync (the guide is now the multi-page `docs/guides/using-the-app/`, whose index, links and screenshot embeds `shared/ui/src/docsGuide.test.ts` guards); `visual-catalog-sync` if states changed.
+**Phase 5 - Sweep and docs.** Goal: leave nothing stale. Scope: PNG review at desktop, small-desktop, tablet, mobile for `home/import-confirm`, `home/manuscript-candidate-offer`, `manuscript/add-note-dialog`, `storybible/delete-confirm`, `settings/navigate-away-confirm`, `global/confirm-dialog`; `node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir apps/ui`; doc-screenshot-sync (the guide is now the multi-page `docs/guides/using-the-app/`, whose index, links and screenshot embeds `apps/ui/src/docsGuide.test.ts` guards); `visual-catalog-sync` if states changed.
 
 ### Parallelism Notes
 
@@ -184,7 +184,7 @@ Files owned: `primitives/Dialog.tsx`, `ConfirmDialog.tsx`, `WorkDialog.tsx` and 
 
 **Market Context**: the WAI-ARIA Authoring Practices "Dialog (Modal)" pattern requires initial focus inside, a Tab loop, Escape to close, and focus return to the invoker; `aria-modal` alone is inconsistently honoured by screen readers, which is why a native modal or `inert` is preferred. Native `<dialog>` and `inert` are baseline in current evergreen engines; the desktop webview versions bundled with Wails per platform are TBD - needs research in Phase 1. React 19 accepts `inert` as a boolean prop.
 
-**Technical Context**: primitives in `shared/ui/src/components/primitives/`; consumers listed under Evidence; verification per CLAUDE.md (plan, change-impact-scan on every `Dialog` consumer, TDD, `pnpm check`, `pnpm --dir shared/ui atlas`, Playwright visual suite with PNG review at all four viewports, design-spec-guard, feature-cleanup); `docs/ui/` regenerated with `node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir shared/ui`; mark each phase `complete` in the same PR that lands it.
+**Technical Context**: primitives in `apps/ui/src/components/primitives/`; consumers listed under Evidence; verification per CLAUDE.md (plan, change-impact-scan on every `Dialog` consumer, TDD, `pnpm check`, `pnpm --dir apps/ui atlas`, Playwright visual suite with PNG review at all four viewports, design-spec-guard, feature-cleanup); `docs/ui/` regenerated with `node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir apps/ui`; mark each phase `complete` in the same PR that lands it.
 
 ---
 

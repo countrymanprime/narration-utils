@@ -7,7 +7,7 @@ import { resolve } from 'node:path';
 // Python. A release must provide platform-native equivalents before it can be
 // advertised as installable. This guard deliberately blocks publication until
 // the runtime build places both executables in Wails embedded resources.
-const runtime = resolve(process.env.NARRATION_UTILS_RUNTIME_DIR ?? 'shell/cmd/narration-utils/resources/runtime');
+const runtime = resolve(process.env.NARRATION_UTILS_RUNTIME_DIR ?? 'apps/desktop/cmd/narration-utils/resources/runtime');
 const resources = resolve(runtime, '..');
 const executable = (name) => process.platform === 'win32' ? `${name}.exe` : name;
 const missing = ['manuscript-guide', 'transcript-compare', 'manuscript-teleprompter']

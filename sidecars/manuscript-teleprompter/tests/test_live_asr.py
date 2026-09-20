@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-LIVE_ASR_PATH = Path(__file__).resolve().parents[1] / "live_asr.py"
+LIVE_ASR_PATH = Path(__file__).resolve().parents[1] / "core" / "live_asr.py"
 SPEC = importlib.util.spec_from_file_location("live_asr", LIVE_ASR_PATH)
 live_asr = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
@@ -394,7 +394,7 @@ def test_moonshine_hypotheses_feed_the_shared_event_layer_like_any_other_engine(
 
 
 def test_the_cli_accepts_exactly_the_flags_the_desktop_host_passes():
-    """shell/internal/teleprompter/service.go builds these arguments by hand;
+    """apps/desktop/internal/teleprompter/service.go builds these arguments by hand;
     this fails if a flag is renamed here without updating it."""
     parser = live_asr.build_parser()
 

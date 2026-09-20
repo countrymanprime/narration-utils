@@ -8,9 +8,9 @@ The design tokens for secondary text (`--text-faint`, `--text-muted` on the dark
 
 ## Evidence
 
-Ratios computed with a one-off WCAG 2.x script over the values in `shared/ui/src/styles.css` at `b9d348d` (script kept in the session scratchpad, not in the repo; the fix phase should add a permanent test). Re-checked at `d5cc994` (main after #42): `styles.css`, the four primitives and `tests/atlas/a11y-debt.ts` are unchanged, so the numbers stand.
+Ratios computed with a one-off WCAG 2.x script over the values in `apps/ui/src/styles.css` at `b9d348d` (script kept in the session scratchpad, not in the repo; the fix phase should add a permanent test). Re-checked at `d5cc994` (main after #42): `styles.css`, the four primitives and `tests/atlas/a11y-debt.ts` are unchanged, so the numbers stand.
 
-**Reproduce (from the retired defects register):** run `pnpm --dir shared/ui atlas` with the four entries in `tests/atlas/a11y-debt.ts` removed; axe reports `color-contrast` for `Primitives/WorkDialog`, `MeterBar`, `NavButton` and `Highlight`. The `WorkDialog` and `MeterBar` entries share one reason (`TOKEN_CONTRAST`, the faint/muted text ramp); `NavButton` is `ACCENT_ON_TINT`; `Highlight` is `HIGHLIGHT_CONTRAST`. The register's "caught by" note: the atlas fails on any new violation and the debt list cannot grow (`src/atlasCoverage.test.ts`), so nothing regresses silently while the decision is pending. `row-alt` is `--row-alt` (94% surface + 6% text). Highlight tint is `color-mix(category 20%, transparent)` over the row background.
+**Reproduce (from the retired defects register):** run `pnpm --dir apps/ui atlas` with the four entries in `tests/atlas/a11y-debt.ts` removed; axe reports `color-contrast` for `Primitives/WorkDialog`, `MeterBar`, `NavButton` and `Highlight`. The `WorkDialog` and `MeterBar` entries share one reason (`TOKEN_CONTRAST`, the faint/muted text ramp); `NavButton` is `ACCENT_ON_TINT`; `Highlight` is `HIGHLIGHT_CONTRAST`. The register's "caught by" note: the atlas fails on any new violation and the debt list cannot grow (`src/atlasCoverage.test.ts`), so nothing regresses silently while the decision is pending. `row-alt` is `--row-alt` (94% surface + 6% text). Highlight tint is `color-mix(category 20%, transparent)` over the row background.
 
 **Text ramp** (bg / surface / surface-2 / surface-3):
 
@@ -37,7 +37,7 @@ Ratios computed with a one-off WCAG 2.x script over the values in `shared/ui/src
 
 **Findings the old defects register did not have:**
 - `--lore`, `--item`, `--event`, `--note` are defined once, in an unlayered `:root` block at the bottom of `styles.css`, with **no dark override**, so dark mode reuses the light hexes. Dark Highlight for Lore/Item/Event is 2.2-2.9:1, well below the register's "3.2-3.8". The atlas debt entry masks it. As non-text (the 1.5px underline, category dots), dark Event is 2.96:1 against `--surface` (3:1 needed); dark Lore 3.65, Item 3.34.
-- The category colours are **user-configurable**: `App.tsx` (~line 118) and `Settings.tsx` (~line 65) write `color_character`/`color_location`/`color_organization`/`color_lore`/`color_item`/`color_event`/`color_needs_review`/`color_note` settings as inline styles on `<html>`, which beat both theme blocks. `shared/config/defaults.json` ships only `color_note` (`B85C1E`). Any fix that hardcodes a per-category text colour is bypassed by a user override.
+- The category colours are **user-configurable**: `App.tsx` (~line 118) and `Settings.tsx` (~line 65) write `color_character`/`color_location`/`color_organization`/`color_lore`/`color_item`/`color_event`/`color_needs_review`/`color_note` settings as inline styles on `<html>`, which beat both theme blocks. `config/defaults.json` ships only `color_note` (`B85C1E`). Any fix that hardcodes a per-category text colour is bypassed by a user override.
 - Entity **badges** (`BADGE_STYLE` in `EntitySummary.tsx`: category colour on `-soft` tint or an 18% mix) fail too: light 3.70-4.44, dark Lore/Item/Event 3.00/2.80/2.53. No story covers them, so axe never sees them.
 - `--warn` used as text (`Settings.tsx:322`; `Results.tsx:142` on an 18% warn tint; `InlineDiffRow.tsx` `SKIPPED` colour is probably text too, TBD verify; `ChapterNav` uses it as a fill, which is a non-text 3:1 question): light 3.26 on surface and 2.70 on its own tint. Also unmeasured by the atlas.
 - Passing but tight: primary button `--accent-contrast` on `--accent` 4.58 light; the "Reset" link accent on surface 4.58.
@@ -132,7 +132,7 @@ Phases 1-4 and 6. Phase 5 (warn text) is Should.
 - Active nav: swap `text-[var(--accent)]` for `text-[var(--accent-strong)]` in the active branch of `NavButton.tsx` and `Settings.tsx:159` (a ternary, so ADR 0017's mutual-exclusivity rule holds).
 - The test computes WCAG luminance, composites `color-mix(... transparent)` over the row backgrounds (surface and `--row-alt`), and asserts ordering `text > muted > faint`.
 - Reduced blast radius by avoiding component edits for the ramp: a token change reaches the 73 + 116 references.
-- Per-phase documentation refresh: the doc-screenshot set (`shared/ui/tests/visual/doc-screenshots.json`, 42 images) regenerates on visual change (doc-screenshot-sync skill); do it once in the final phase to avoid binary conflicts. Note main moved the guide to `docs/guides/using-the-app/`; `shared/ui/src/docsGuide.test.ts` checks that every manifest entry is embedded on exactly one page.
+- Per-phase documentation refresh: the doc-screenshot set (`apps/ui/tests/visual/doc-screenshots.json`, 42 images) regenerates on visual change (doc-screenshot-sync skill); do it once in the final phase to avoid binary conflicts. Note main moved the guide to `docs/guides/using-the-app/`; `apps/ui/src/docsGuide.test.ts` checks that every manifest entry is embedded on exactly one page.
 
 **Technical Risks**
 
@@ -169,7 +169,7 @@ Phases 1-4 and 6. Phase 5 (warn text) is Should.
 
 **Phase 5 - Warn text.** Goal: no unmeasured text pair below AA. Scope: token plus four call sites. Success signal: token test covers warn pairs and passes.
 
-**Phase 6 - Sweep and docs.** Goal: leave nothing stale. Scope: both ratchets to zero, `docs/design/design-system.md` (key tokens list), `docs/ui` regen (`node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir shared/ui`), doc-screenshot-sync (regenerates the 42 images; `pnpm --dir shared/ui test` for `docScreenshots.test.ts`), full-verification-gate. Success signal: `pnpm check` and atlas green.
+**Phase 6 - Sweep and docs.** Goal: leave nothing stale. Scope: both ratchets to zero, `docs/design/design-system.md` (key tokens list), `docs/ui` regen (`node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir apps/ui`), doc-screenshot-sync (regenerates the 42 images; `pnpm --dir apps/ui test` for `docScreenshots.test.ts`), full-verification-gate. Success signal: `pnpm check` and atlas green.
 
 ### Parallelism Notes
 
@@ -177,7 +177,7 @@ Phases 2 and 3 touch disjoint files. Phase 4 also edits `styles.css`, so sequenc
 
 ### Parallel-session compatibility
 
-Files owned: `shared/ui/src/styles.css` (token blocks only), `primitives/NavButton.tsx`, `primitives/Highlight.tsx`, `manuscript/EntitySummary.tsx` (`BADGE_STYLE`), the active-tab line in `settings/Settings.tsx` (~159), `Results.tsx:142` and `InlineDiffRow.tsx` (Phase 5), `tests/atlas/a11y-debt.ts`, `src/atlasCoverage.test.ts` (`MAX_DEBT_ENTRIES`), the new token test, `docs/design/design-system.md`, the ADR, all 42 doc images (final phase only), the Status cells of this PRD's phase table.
+Files owned: `apps/ui/src/styles.css` (token blocks only), `primitives/NavButton.tsx`, `primitives/Highlight.tsx`, `manuscript/EntitySummary.tsx` (`BADGE_STYLE`), the active-tab line in `settings/Settings.tsx` (~159), `Results.tsx:142` and `InlineDiffRow.tsx` (Phase 5), `tests/atlas/a11y-debt.ts`, `src/atlasCoverage.test.ts` (`MAX_DEBT_ENTRIES`), the new token test, `docs/design/design-system.md`, the ADR, all 42 doc images (final phase only), the Status cells of this PRD's phase table.
 - Can run concurrently with: the a11y-components PRD (disjoint; both regenerate `docs/ui/**`), the dialog PRD's early phases, the settings-layout PRD (both edit `Settings.tsx`, different regions; second to merge rebases), the test-stability PRD's Go and frontend-test phases.
 - Do not run concurrently with: the dialog PRD's Phase 3 while its `WorkDialog` markup is still changing (this PRD's Phase 2 deletes the `WorkDialog` debt entry; merge this after the dialog PRD's Phase 3, or keep the entry until then); `teleprompter-manuscript-integration.prd.md` Phase 7 (new `Highlight` kinds and the atlas debt list; sequence after Phase 4 here); any PRD that also regenerates `docs/images/ui/*.webp`.
 - Generated/shared files that always conflict: `docs/ui/**`, `docs/images/ui/*.webp`, `docs/design/design-system.md`.
@@ -200,7 +200,7 @@ Files owned: `shared/ui/src/styles.css` (token blocks only), `primitives/NavButt
 
 **Market Context**: WCAG 2.2 SC 1.4.3 requires 4.5:1 for normal text and SC 1.4.11 requires 3:1 for meaningful non-text marks; large text (>= 24px, or 18.66px bold) needs 3:1, but the faint labels are 11.5px, so no large-text exemption applies. CSS `contrast-color()` and APCA are not settled in the target webviews (TBD - needs research).
 
-**Technical Context**: tokens in `shared/ui/src/styles.css`; debt list `shared/ui/tests/atlas/a11y-debt.ts` and ratchet `shared/ui/src/atlasCoverage.test.ts` (`MAX_DEBT_ENTRIES = 4`); Highlight in `primitives/Highlight.tsx` (ADR 0016), badges in `manuscript/EntitySummary.tsx`; user colours applied in `App.tsx` and `Settings.tsx`; verification per CLAUDE.md (plan, change-impact-scan, TDD, `pnpm check`, `pnpm --dir shared/ui atlas`, Playwright visual suite with PNG review at all four viewports, design-spec-guard because this edits `styles.css` and primitives, feature-cleanup); `docs/ui/` via `node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir shared/ui`; mark each phase `complete` in the same PR that lands it.
+**Technical Context**: tokens in `apps/ui/src/styles.css`; debt list `apps/ui/tests/atlas/a11y-debt.ts` and ratchet `apps/ui/src/atlasCoverage.test.ts` (`MAX_DEBT_ENTRIES = 4`); Highlight in `primitives/Highlight.tsx` (ADR 0016), badges in `manuscript/EntitySummary.tsx`; user colours applied in `App.tsx` and `Settings.tsx`; verification per CLAUDE.md (plan, change-impact-scan, TDD, `pnpm check`, `pnpm --dir apps/ui atlas`, Playwright visual suite with PNG review at all four viewports, design-spec-guard because this edits `styles.css` and primitives, feature-cleanup); `docs/ui/` via `node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir apps/ui`; mark each phase `complete` in the same PR that lands it.
 
 ---
 

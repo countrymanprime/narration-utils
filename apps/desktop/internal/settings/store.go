@@ -37,7 +37,7 @@ func (s *Store) Effective(tool, key, fallback string) (string, string) {
 	return fallback, "hardcoded"
 }
 
-// builtinDefaults mirrors shared/config/defaults.json. That file only exists in
+// builtinDefaults mirrors config/defaults.json. That file only exists in
 // a source checkout; an installed build has no repo root, so without this every
 // effective default read back empty - most visibly the Settings color pickers,
 // which rendered #000000 for every color. store_test.go keeps the two in sync.

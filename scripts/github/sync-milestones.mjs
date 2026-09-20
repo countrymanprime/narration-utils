@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 import { ghList, ghSend } from './gh.mjs';
 
-const ROADMAP_FILE = new URL('../../shared/config/roadmap.json', import.meta.url);
+const ROADMAP_FILE = new URL('../../config/roadmap.json', import.meta.url);
 const NUMBERED_TITLE = /^(\d+)\.\s/;
 
 /** Turns roadmap.json into GitHub milestones titled "<number>. <title>", with the summary as the description. */

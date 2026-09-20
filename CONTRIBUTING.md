@@ -23,8 +23,8 @@ Details, including the Git hooks and CI, are in [CI and releases](docs/operation
 ## Making a change
 
 1. Work on a branch and write tests first; the repository expects them alongside behaviour changes.
-2. Run `pnpm run check` before you push. If you changed `shared/ui`, also review the visual-suite screenshots at every
-   viewport and run `pnpm --dir shared/ui atlas`. If you changed `shared/reaper` (Lua), verify it by hand inside
+2. Run `pnpm run check` before you push. If you changed `apps/ui`, also review the visual-suite screenshots at every
+   viewport and run `pnpm --dir apps/ui atlas`. If you changed `integrations/reaper` (Lua), verify it by hand inside
    REAPER, because nothing automated covers it.
 3. Open a pull request whose **title is a Conventional Commit** (`feat: …`, `fix(scope): …`). It becomes the squash
    commit and decides the next version. Put `Closes #<issue>` in the description and fill in the template.

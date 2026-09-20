@@ -2,7 +2,7 @@
 
 Not implemented yet. The shared React workspace plus REAPER integration bridge are the reference
 implementation for what an adapter needs to do: locate the selected audio for a chapter, run
-`core/compare.py` as a subprocess, and turn its `MARKER|...` output lines into visible
+`sidecars/transcript-compare/core/compare.py` as a subprocess, and turn its `MARKER|...` output lines into visible
 discrepancy markers in the host, plus surface the saved diff file.
 
 Audacity has no take-marker equivalent — its closest analog is a

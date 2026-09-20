@@ -12,17 +12,17 @@ import (
 // Repo-relative locations, slash separated. Join them onto a checkout root with
 // Path or RepoFile.
 const (
-	DesktopDir               = "shell"
-	ConfigDir                = "shared/config"
+	DesktopDir               = "apps/desktop"
+	ConfigDir                = "config"
 	DefaultsFile             = ConfigDir + "/defaults.json"
 	TTSCatalogFile           = ConfigDir + "/tts-assets.json"
 	WhisperCatalogFile       = ConfigDir + "/whisper-assets.json"
-	ReaperDir                = "shared/reaper"
+	ReaperDir                = "integrations/reaper"
 	LauncherFile             = ReaperDir + "/NarrationUtils_Launcher.lua"
-	FixturesDir              = "shared/test-fixtures"
-	ManuscriptGuideBackend   = "tools/manuscript-guide/core/manuscript_guide.py"
-	TranscriptCompareBackend = "tools/transcript-compare/core/compare.py"
-	TeleprompterBackend      = "tools/manuscript-teleprompter/core/live_asr.py"
+	FixturesDir              = "tests/fixtures"
+	ManuscriptGuideBackend   = "sidecars/manuscript-guide/core/manuscript_guide.py"
+	TranscriptCompareBackend = "sidecars/transcript-compare/core/compare.py"
+	TeleprompterBackend      = "sidecars/manuscript-teleprompter/core/live_asr.py"
 )
 
 // Path joins a slash-separated repo-relative path onto root using the

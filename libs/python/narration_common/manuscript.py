@@ -1,8 +1,8 @@
 """Canonical, project-owned manuscript storage: the read side.
 
 Importing a source file into ``narration-utils/manuscript/manuscript.json``
-is Rust-only now (see ``shared/manuscript-import`` and
-``shell/internal/manuscript``). This module keeps
+is Go-only now (see ``apps/desktop/internal/importer`` and
+``apps/desktop/internal/manuscript``). This module keeps
 only the read side, because ``manuscript_guide.py`` and ``compare.py``
 still need to load that file as plain data.
 """

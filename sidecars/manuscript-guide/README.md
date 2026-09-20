@@ -32,7 +32,7 @@ either scope from the workspace's corner **Settings** button.
   are used here; it's a plain CLI invoked by whichever DAW driver below is running it. Its
   dependencies are declared in the repo-root `pyproject.toml` and pinned in `uv.lock`.
 - `daws/reaper/` — reserved for a future dedicated adapter; current REAPER integration is
-  centralized in `shared/reaper/narration_ui_bridge.lua`.
+  centralized in `integrations/reaper/narration_ui_bridge.lua`.
 - `daws/audacity/` — placeholder for a future Audacity driver.
 
 ## Install (Reaper)
@@ -45,7 +45,7 @@ pnpm run bootstrap
 ```
 
 In REAPER, use **Actions → Show action list → New action → Load ReaScript...** and load just
-one file, `shared/reaper/NarrationUtils_Launcher.lua` — it's the only script either tool needs
+one file, `integrations/reaper/NarrationUtils_Launcher.lua` — it's the only script either tool needs
 imported into REAPER's Action list. Running it opens the persistent, centered
 **Narration Utils** workspace. Select the manuscript, open either utility, or
 use the corner **Settings** button without leaving that window.

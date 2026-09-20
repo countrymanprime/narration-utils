@@ -67,6 +67,6 @@ test('applyMilestonePlan POSTs new milestones open and PATCHes drifted ones by G
 });
 
 test('the committed roadmap.json yields valid milestones', () => {
-  const roadmapFile = JSON.parse(readFileSync(new URL('../../shared/config/roadmap.json', import.meta.url), 'utf8'));
+  const roadmapFile = JSON.parse(readFileSync(new URL('../../config/roadmap.json', import.meta.url), 'utf8'));
   assert.ok(desiredMilestones(roadmapFile).length >= 1);
 });

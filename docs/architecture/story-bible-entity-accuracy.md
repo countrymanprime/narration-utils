@@ -1,6 +1,6 @@
 # Story Bible entity-extraction accuracy
 
-**Status: Implemented** in `tools/manuscript-guide/core/manuscript_guide.py`, with regression tests in `tools/manuscript-guide/core/tests/test_manuscript_guide.py` (`StrictEntityExtractionTests`).
+**Status: Implemented** in `sidecars/manuscript-guide/core/manuscript_guide.py`, with regression tests in `sidecars/manuscript-guide/tests/test_manuscript_guide.py` (`StrictEntityExtractionTests`).
 
 **Policy: precision over recall, chosen deliberately by the user.** Direct quote: "i would rather miss a few due to being stricter than picking up half the dictionary in single words because we let anything in." Every rule below trades missed names for fewer junk entries. A real name that gets missed can be added by hand (manual entities); junk that floods the Story Bible cannot be reviewed away one entry at a time.
 

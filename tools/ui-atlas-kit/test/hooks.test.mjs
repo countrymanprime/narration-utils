@@ -119,13 +119,13 @@ describe('mark-ui-dirty', () => {
 
   test('when the config lives in a sub-folder UI root, only files under it count', () => {
     rmSync(join(projectDir, 'ui-atlas.config.json'));
-    mkdirSync(join(projectDir, 'shared', 'ui'), { recursive: true });
-    writeFileSync(join(projectDir, 'shared', 'ui', 'ui-atlas.config.json'), '{}');
+    mkdirSync(join(projectDir, 'apps', 'ui'), { recursive: true });
+    writeFileSync(join(projectDir, 'apps', 'ui', 'ui-atlas.config.json'), '{}');
 
-    run(MARK, edit(join(projectDir, 'shared', 'ui', 'src', 'Pill.tsx')));
+    run(MARK, edit(join(projectDir, 'apps', 'ui', 'src', 'Pill.tsx')));
     run(MARK, edit(join(projectDir, 'other', 'Widget.tsx')));
 
-    assert.deepEqual(dirtyLines(), ['shared/ui/src/Pill.tsx']);
+    assert.deepEqual(dirtyLines(), ['apps/ui/src/Pill.tsx']);
   });
 
   test('falls back to the hook input cwd when CLAUDE_PROJECT_DIR is unset', () => {

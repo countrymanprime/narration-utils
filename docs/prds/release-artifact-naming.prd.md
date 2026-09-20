@@ -9,14 +9,14 @@ A narrator downloading a release sees an unversioned file name, and the program 
 ## Evidence
 
 - **Release asset names already have no "shell" in them.** `scripts/release/assets.mjs:66-67` builds `narration-utils-<platform>.<ext>` plus `.sha256`: `narration-utils-windows-x64.zip`, `narration-utils-macos-arm64.zip`, `narration-utils-linux-x64.tar.gz`. The version is not in the name. The older RC assets that did contain "shell" (`narration-utils-shell.exe`, `narration-utils-shell-macos-arm64.zip`, `narration-utils-shell-linux-x64.tar.gz`) are recorded as history in `release-readiness-provisioning-and-docs-site.prd.md:35`.
-- **"Shell" survives inside the archives.** The Windows zip holds `narration-utils-shell.exe`, the Linux tarball holds an ELF named `narration-utils-shell`, and macOS holds `Narration Utils.app` (named from `shell/wails.json:3`). The binary name comes from `shell/wails.json:4` (`"outputfilename": "narration-utils-shell"`); CI runs `wails build -s` with no `-o` (`.github/actions/build-native/action.yml:49`). `shell/package.json:7` separately hardcodes `wails build -o narration-utils-shell.exe` for local builds, and forces `.exe` on every OS.
+- **"Shell" survives inside the archives.** The Windows zip holds `narration-utils-shell.exe`, the Linux tarball holds an ELF named `narration-utils-shell`, and macOS holds `Narration Utils.app` (named from `apps/desktop/wails.json:3`). The binary name comes from `apps/desktop/wails.json:4` (`"outputfilename": "narration-utils-shell"`); CI runs `wails build -s` with no `-o` (`.github/actions/build-native/action.yml:49`). `apps/desktop/package.json:7` separately hardcodes `wails build -o narration-utils-shell.exe` for local builds, and forces `.exe` on every OS.
 - **Where names are set and consumed.**
   - Name construction and packaging: `scripts/release/assets.mjs:14` (`SHELL_BINARY`), `:31,33,53,55` (binary lookup), `:66-77` (`assetName`, `checksumName`, `packageAsset`), `:88-105` (`verifyAssets`, which takes no version).
   - Upload: `prerelease.yml:96-97` (`gh release create ... release-assets/*`), `_attach-platform.yml:173-174` (`gh release upload`), `promote-release.yml:46-63` (downloads, verifies, re-creates the stable release with the same files; nothing renames).
   - Tests: `scripts/release/assets.test.mjs:38-90` stage and assert `narration-utils-shell[.exe]` and `.../Contents/MacOS/narration-utils-shell`.
-- **The version is available at every packaging point.** `prerelease.yml:37-53` outputs the bare semver (no `-rc`) and passes it to the build action (`:76-79`); `_attach-platform.yml:134-144` derives it from the tag (`${TAG#v}` minus `-rc`); `build-native/action.yml:21-28` stamps it into `package.json`, `shell/package.json` and `wails.json` `info.productVersion` before building (`sync-version.mjs:51-57`). The PR build has no version input and uses the checked-in `0.1.0`.
-- **One consumer of the exe name would break.** `shared/reaper/NarrationUtils_Launcher.lua:60-62` builds `shell_name` (`narration-utils-shell[.exe]`) for its bundle-root fallback and for the checkout path `shell/build/bin/<name>`. The path recorded in `narration-utils-app-path.txt` (`:37`, written from `os.Executable()` at `shell/app.go:251-269`) is name-independent. `shared/reaper` has no automated tests.
-- **Not tied to the name:** single-instance GUID (`shell/main.go:38`), app data folder `narration-utils/` (`shell/app.go:102-161`), and installer registry keys (no installer exists; `shell/build/windows/` holds only `icon.ico`). The Windows toast identity is the executable base name (open item N4 in `story-bible-and-import-ux-briefs.prd.md:85`), so a rename changes it cosmetically.
+- **The version is available at every packaging point.** `prerelease.yml:37-53` outputs the bare semver (no `-rc`) and passes it to the build action (`:76-79`); `_attach-platform.yml:134-144` derives it from the tag (`${TAG#v}` minus `-rc`); `build-native/action.yml:21-28` stamps it into `package.json`, `apps/desktop/package.json` and `wails.json` `info.productVersion` before building (`sync-version.mjs:51-57`). The PR build has no version input and uses the checked-in `0.1.0`.
+- **One consumer of the exe name would break.** `integrations/reaper/NarrationUtils_Launcher.lua:60-62` builds `shell_name` (`narration-utils-shell[.exe]`) for its bundle-root fallback and for the checkout path `apps/desktop/build/bin/<name>`. The path recorded in `narration-utils-app-path.txt` (`:37`, written from `os.Executable()` at `apps/desktop/app.go:251-269`) is name-independent. `integrations/reaper` has no automated tests.
+- **Not tied to the name:** single-instance GUID (`apps/desktop/main.go:38`), app data folder `narration-utils/` (`apps/desktop/app.go:102-161`), and installer registry keys (no installer exists; `apps/desktop/build/windows/` holds only `icon.ico`). The Windows toast identity is the executable base name (open item N4 in `story-bible-and-import-ux-briefs.prd.md:85`), so a rename changes it cosmetically.
 - **Docs that state the current names:** `docs/operations/ci-and-releases.md:42,51,56-58`; `docs/adr/0027-windows-gates-and-creates-the-release.md:16` ("One asset per platform"); the README does not name assets.
 
 ## Proposed Solution
@@ -33,7 +33,7 @@ We believe a versioned asset name and a program named for the product will make 
 ## What We're NOT Building
 
 - A versioned executable name inside the archive; the launcher and user shortcuts would break on every upgrade. The version is already stamped into the exe's file properties (`wails.json` `info.productVersion`).
-- Renaming the nx project or the `shell/` directory (`shell/package.json:2`); it is not user-visible and would churn `pnpm-lock.yaml` and nx caches.
+- Renaming the nx project or the `apps/desktop/` directory (`apps/desktop/package.json:2`); it is not user-visible and would churn `pnpm-lock.yaml` and nx caches.
 - An NSIS installer or its naming (specified in `release-readiness-provisioning-and-docs-site.prd.md`, Phase 14).
 - Changing the macOS bundle name `Narration Utils.app`.
 - Renaming past releases' assets.
@@ -54,7 +54,7 @@ We believe a versioned asset name and a program named for the product will make 
 - [ ] **A2. Name of the program.** Options: `narration-utils` (recommended, matches the assets and the docs), `Narration Utils` (matches the macOS bundle; a space in the exe name complicates the Lua launcher and shell quoting). Recommendation: `narration-utils`.
 - [ ] **A3. Version position and form.** Options: `narration-utils-<version>-<platform>` (recommended, sorts by product then version), or `<platform>-<version>`. Whether RC assets say `-rc`: the RC and stable versions are the same bare semver today, and `promote-release` re-publishes the RC files unchanged (`promote-release.yml:46-63`). Options: (a) same names for RC and stable, distinguished by the release (recommended, no rebuild or rename at promotion); (b) `-rc` in the RC name, which forces a rename or rebuild at promotion and changes the checksum text.
 - [ ] **A4. Is the ADR 0027 asset line a decision?** ADR 0027 says "one asset per platform". Options: (a) update `ci-and-releases.md` and leave the ADR; (b) a new ADR (next free number, 0037 at dc9d01a) recording the naming rule and superseding that line. Recommendation: (b) only if the ADR text states the pattern; check in Phase 2.
-- [ ] **A5. Local builds.** `shell/package.json:7` forces `.exe`. Recommendation: drop `-o` and follow `wails.json`, so local and CI names agree.
+- [ ] **A5. Local builds.** `apps/desktop/package.json:7` forces `.exe`. Recommendation: drop `-o` and follow `wails.json`, so local and CI names agree.
 
 ## Users & Context
 
@@ -67,7 +67,7 @@ We believe a versioned asset name and a program named for the product will make 
 
 | Priority | Capability |
 | --- | --- |
-| Must | Program built as `narration-utils[.exe]` (`wails.json`, `assets.mjs` `SHELL_BINARY`, the `shell/package.json` build script) |
+| Must | Program built as `narration-utils[.exe]` (`wails.json`, `assets.mjs` `SHELL_BINARY`, the `apps/desktop/package.json` build script) |
 | Must | `assetName`, `checksumName` and `verifyAssets` take the version; `packageAsset` and the workflows pass it |
 | Must | REAPER launcher fallback and checkout paths use the new name, verified in REAPER |
 | Must | `assets.test.mjs` and `ci-and-releases.md` updated |
@@ -91,14 +91,14 @@ We believe a versioned asset name and a program named for the product will make 
 | --- | --- | --- |
 | Launcher cannot find the renamed program | Medium | Change `NarrationUtils_Launcher.lua:60` in the same PR; manual REAPER check of both the bundle fallback and a checkout run; the app-path file path is unaffected |
 | Windows and macOS/Linux assets get different versions | Low | One shared derivation and a `verify` step that asserts all three names share a version |
-| Old local build output confuses the launcher | Low | Say in the PR that `shell/build/bin` should be cleaned |
+| Old local build output confuses the launcher | Low | Say in the PR that `apps/desktop/build/bin` should be cleaned |
 | Users' shortcuts point at the old exe name | Low | Only affects installs of pre-release builds; note it in the release notes |
 
 ## Implementation Phases
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Rename the program | `wails.json`, `assets.mjs` constant, `shell/package.json` build script, Lua launcher name, tests, docs; manual REAPER verification | pending | 2 | - | - |
+| 1 | Rename the program | `wails.json`, `assets.mjs` constant, `apps/desktop/package.json` build script, Lua launcher name, tests, docs; manual REAPER verification | pending | 2 | - | - |
 | 2 | Version in asset names | `assetName`/`checksumName`/`verifyAssets` take the version; workflows pass it; tests; `ci-and-releases.md`; ADR if A4 says so | pending | 1 | - | - |
 
 **Phase 1 - Rename the program.** Goal: no user-visible file is named `*-shell*`. Scope: the spellings above plus `assets.test.mjs` and `docs/operations/ci-and-releases.md:42`. Success signal: `pnpm check`; the Windows zip holds `narration-utils.exe`; a manual REAPER launch works through both launcher paths.
@@ -111,7 +111,7 @@ We believe a versioned asset name and a program named for the product will make 
 
 | Phase | Files touched | Collision risk |
 | --- | --- | --- |
-| 1 | `shell/wails.json`, `shell/package.json`, `scripts/release/assets.mjs` and test, `shared/reaper/NarrationUtils_Launcher.lua`, `docs/operations/ci-and-releases.md` | The REAPER automation and project-workspace PRDs edit the launcher; `release-readiness` phases touch the same workflows and docs |
+| 1 | `apps/desktop/wails.json`, `apps/desktop/package.json`, `scripts/release/assets.mjs` and test, `integrations/reaper/NarrationUtils_Launcher.lua`, `docs/operations/ci-and-releases.md` | The REAPER automation and project-workspace PRDs edit the launcher; `release-readiness` phases touch the same workflows and docs |
 | 2 | `scripts/release/assets.mjs` and test, `.github/workflows/{prerelease,_attach-platform,promote-release}.yml`, ADR | `release-readiness-provisioning-and-docs-site.prd.md` (release pipeline phases), ADR numbering |
 
 ## Decisions Log
@@ -125,7 +125,7 @@ We believe a versioned asset name and a program named for the product will make 
 
 ## Research Summary
 
-Everything above was read from the workflows, `scripts/release/`, `shell/wails.json`, `shell/package.json` and the launcher on this branch. Not verified: the exact toast identity after the rename, and whether the macOS/Linux attach jobs can ever produce a different version than the Windows job for the same tag.
+Everything above was read from the workflows, `scripts/release/`, `apps/desktop/wails.json`, `apps/desktop/package.json` and the launcher on this branch. Not verified: the exact toast identity after the rename, and whether the macOS/Linux attach jobs can ever produce a different version than the Windows job for the same tag.
 
 ---
 

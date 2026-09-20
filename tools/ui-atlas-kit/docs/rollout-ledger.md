@@ -7,7 +7,7 @@ on 0.3.1 now (see [CHANGELOG](../CHANGELOG.md)). Each repo's unfixed defects are
 
 | Repository | Stack | Tier | PR | Coverage | Escape hatches | Audit |
 | --- | --- | --- | --- | --- | --- | --- |
-| narration-utils (`shared/ui`) | React 19, Vite 8, Tailwind 4, pnpm | 2 | [#28](https://github.com/countrymanprime/narration-utils/pull/28) | 14 primitives, 119 stories, 71 app states x 4 viewports | 4 a11y debt (palette tokens), 10 sameAs | 95 |
+| narration-utils (`apps/ui`) | React 19, Vite 8, Tailwind 4, pnpm | 2 | [#28](https://github.com/countrymanprime/narration-utils/pull/28) | 14 primitives, 119 stories, 71 app states x 4 viewports | 4 a11y debt (palette tokens), 10 sameAs | 95 |
 | shelby-theatres | React 18, Tailwind 3, Vite 5, npm | 2 | [#7](https://github.com/countrymanprime/shelby-theatres/pull/7) | 4 components, 23 stories, 9 app states | 1 debt, 1 sameAs | 100 |
 | sandbox-childcare-center | React 18, Tailwind 3, Vite 5, npm | 2 | [#18](https://github.com/countrymanprime/sandbox-childcare-center/pull/18) | 10 components (3 exempt), 44 stories, 20 app states x 5 viewports | 5 debt (brand contrast), 1 sameAs | 95 |
 | sensational-styles | React 19, Tailwind 3, Vite 6, npm | 1 | [#8](https://github.com/countrymanprime/sensational-styles/pull/8) | 7 components (extracted from a 400-line `App.tsx`), 32 stories, 8 app states | 0 debt, 1 sameAs | 100 |

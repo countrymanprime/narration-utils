@@ -39,7 +39,7 @@ declare global {
   }
 }
 
-// Matches shell/media.go's mediaRoute constant.
+// Matches apps/desktop/media.go's mediaRoute constant.
 const mediaRoute = '/media';
 
 function normalizeTranscriptState(state: TranscriptState): TranscriptState {

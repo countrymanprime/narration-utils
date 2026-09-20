@@ -9,7 +9,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
 
-// cmd/narration-utils/frontend/dist is populated from shared/ui/dist by the shell build script.
+// cmd/narration-utils/frontend/dist is populated from apps/ui/dist by the shell build script.
 // Keeping the copy inside the Go module makes release artifacts independent
 // of a checkout path.
 //

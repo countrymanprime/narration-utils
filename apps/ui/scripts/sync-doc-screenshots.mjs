@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* global console, process */
 // Copies the curated screenshots listed in tests/visual/doc-screenshots.json
-// out of shared/ui/screenshots/ (gitignored Playwright scratch output) into
+// out of apps/ui/screenshots/ (gitignored Playwright scratch output) into
 // the committed docs/images/ui/, compressing each one to WebP so the repo
 // doesn't carry full-size PNG screenshots. Run this after `pnpm screenshots`
 // has (re)generated the source PNGs for any changed page/state - see the

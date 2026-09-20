@@ -114,7 +114,7 @@ func TestMediaMiddlewarePassesThroughEverythingElse(t *testing.T) {
 }
 
 // rppFixture returns a minimal REAPER project with one track whose item
-// sources relativeFile, matching the grammar shell/internal/tracks parses.
+// sources relativeFile, matching the grammar apps/desktop/internal/tracks parses.
 func rppFixture(relativeFile string) string {
 	return "<REAPER_PROJECT 0.1 \"6.13/win64\" 1\n" +
 		"  <TRACK {0E4D1D7F-D039-674D-87E6-719376DE95EC}\n" +

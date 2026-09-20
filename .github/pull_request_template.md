@@ -12,6 +12,6 @@ Closes #
 
 - [ ] I ran the relevant local quality checks (`pnpm check`).
 - [ ] This change does not add unreviewed runtime/model artifacts.
-- [ ] If `shared/ui` changed: I looked at the visual-suite screenshots at every viewport, and ran `pnpm --dir shared/ui atlas` if a primitive or `styles.css` changed.
-- [ ] If `shared/reaper` changed: I verified it by hand inside REAPER (Lua has no automated tests).
+- [ ] If `apps/ui` changed: I looked at the visual-suite screenshots at every viewport, and ran `pnpm --dir apps/ui atlas` if a primitive or `styles.css` changed.
+- [ ] If `integrations/reaper` changed: I verified it by hand inside REAPER (Lua has no automated tests).
 - [ ] If this settles or changes a decision: I added or updated an ADR in `docs/adr/`.

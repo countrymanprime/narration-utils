@@ -14,7 +14,7 @@ test('bootstrap inputs run the bootstrap matrix and retain package coverage', ()
 });
 
 test('runtime and unknown paths retain native package coverage', () => {
-  assert.deepEqual(classifyFiles(['shell/app.go']), { bootstrap: false, package: true });
+  assert.deepEqual(classifyFiles(['apps/desktop/app.go']), { bootstrap: false, package: true });
   assert.deepEqual(classifyFiles(['new-runtime-area/config.json']), { bootstrap: false, package: true });
 });
 

@@ -8,7 +8,7 @@ The features that follow from the [REAPER automation research](../research/reape
 
 ## What exists
 
-Three commands in [`shared/reaper/narration_ui_bridge.lua`](../../shared/reaper/narration_ui_bridge.lua), sent over the same file protocol as Transcript Compare (`1|<command>|<args>` in `commands/NNNNNNNN.cmd`). Payloads travel as files because the command line carries at most eight fields.
+Three commands in [`integrations/reaper/narration_ui_bridge.lua`](../../integrations/reaper/narration_ui_bridge.lua), sent over the same file protocol as Transcript Compare (`1|<command>|<args>` in `commands/NNNNNNNN.cmd`). Payloads travel as files because the command line carries at most eight fields.
 
 | Command | Fields after the command name | Payload file | Events |
 | --- | --- | --- | --- |
@@ -26,7 +26,7 @@ Behaviour that is deliberate:
 
 ## Manual verification checklist
 
-`shared/reaper` has no automated tests, so run this in REAPER before relying on the commands. The session folder is `<REAPER resource path>/NarrationUtils/sessions/hub_<id>/`; start it by running `NarrationUtils_Launcher.lua`. To drive a command by hand, save a one-line file such as `00000001.cmd` in that folder's `commands/` directory and read `events.log` beside it.
+`integrations/reaper` has no automated tests, so run this in REAPER before relying on the commands. The session folder is `<REAPER resource path>/NarrationUtils/sessions/hub_<id>/`; start it by running `NarrationUtils_Launcher.lua`. To drive a command by hand, save a one-line file such as `00000001.cmd` in that folder's `commands/` directory and read `events.log` beside it.
 
 1. Use a scratch project with a few audio items. Note one item's GUID (right-click item, Copy item GUID, or read it from the `.rpp`).
 2. **Stamp.** Payload `{GUID}|line-000001|First line.`, command `1|stamp_item_lines|t1|<payload path>|0`. Expect `LINES_STAMPED|t1|1|0|0|0`, an Edit menu entry "Narration Utils: stamp manuscript line IDs", and Undo removing it.
@@ -41,7 +41,7 @@ Behaviour that is deliberate:
 
 ## Later phases
 
-1. **Go client.** Add bridge methods and payload writers in `shell/internal`, with tests that mirror `transcript/service_test.go`, and a UI trigger. Decide where line IDs come from: the natural source is the item-to-manuscript-span alignment Transcript Compare already computes.
+1. **Go client.** Add bridge methods and payload writers in `apps/desktop/internal`, with tests that mirror `transcript/service_test.go`, and a UI trigger. Decide where line IDs come from: the natural source is the item-to-manuscript-span alignment Transcript Compare already computes.
 2. **Chapter regions from the manuscript.** Regions need project-time bounds; derive them from the `tracks` package's item extents per chapter track.
 3. **Static read (optional).** Once a REAPER-saved sample project exists, check how item `P_EXT` appears in the `.rpp`. If it is stable, `tracks` could read line IDs without a running REAPER; until then use `read_line_ids`.
 4. **Lua test harness.** A stub `reaper` table with a Lua interpreter in CI, so these commands and the existing ones stop depending on manual checks.

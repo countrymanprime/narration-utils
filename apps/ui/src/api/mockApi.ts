@@ -342,7 +342,7 @@ export function createMockApi(
         phase: 'ready',
         percent: 100,
         message: 'Import preview is ready.',
-        // Mirrors the host's staged import log (shell/internal/importer).
+        // Mirrors the host's staged import log (apps/desktop/internal/importer).
         logs: [
           ...importJob.logs,
           `Reading document structure using H${markdownHeadingLevel} chapter headings`,

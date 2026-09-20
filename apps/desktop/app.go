@@ -28,7 +28,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// Keep this in lockstep with shared/ui/src/hostApi.ts.  The frontend rejects
+// Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
 const hostAPIVersion = 5
@@ -95,7 +95,7 @@ func NewHost() *Host {
 // recentProjectsPath resolves the per-user recent-projects file. Recent
 // projects are not project-scoped, so this is constructed exactly once in
 // NewHost and never rebuilt by configureLocked. Mirrors the %APPDATA%-with-
-// %USERPROFILE%-fallback chain in shell/internal/settings/store.go's
+// %USERPROFILE%-fallback chain in apps/desktop/internal/settings/store.go's
 // globalPath(), duplicated inline rather than shared since it is only a few
 // lines.
 func recentProjectsPath() string {

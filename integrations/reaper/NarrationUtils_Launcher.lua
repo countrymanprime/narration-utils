@@ -51,15 +51,15 @@ end
 -- explicit development paths. Neither mode starts a browser server.
 local is_windows = reaper.GetOS():find('Win') ~= nil
 local shared_python = is_windows and join(join(join(REPO_ROOT, '.venv'), 'Scripts'), 'python.exe') or join(join(REPO_ROOT, '.venv'), 'bin/python')
-local manuscript_core = join(join(join(REPO_ROOT, 'tools'), 'manuscript-guide'), 'core')
-local compare_core = join(join(join(REPO_ROOT, 'tools'), 'transcript-compare'), 'core')
+local manuscript_core = join(join(join(REPO_ROOT, 'sidecars'), 'manuscript-guide'), 'core')
+local compare_core = join(join(join(REPO_ROOT, 'sidecars'), 'transcript-compare'), 'core')
 local manuscript_python = shared_python
 local manuscript_backend = join(manuscript_core, 'manuscript_guide.py')
 local compare_python = shared_python
 local compare_backend = join(compare_core, 'compare.py')
 local shell_name = is_windows and 'narration-utils-shell.exe' or 'narration-utils-shell'
 local bundled_shell = configured_shell ~= '' and configured_shell or join(BUNDLE_ROOT, shell_name)
-local checkout_shell = join(join(join(REPO_ROOT, 'shell'), 'build/bin'), shell_name)
+local checkout_shell = join(join(join(join(REPO_ROOT, 'apps'), 'desktop'), 'build/bin'), shell_name)
 local release_mode = common.file_exists(bundled_shell)
 local shell_exe = release_mode and bundled_shell or checkout_shell
 

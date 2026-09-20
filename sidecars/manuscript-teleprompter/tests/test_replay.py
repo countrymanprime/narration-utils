@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-REPLAY_PATH = Path(__file__).resolve().parents[1] / "replay.py"
+REPLAY_PATH = Path(__file__).resolve().parents[1] / "core" / "replay.py"
 SPEC = importlib.util.spec_from_file_location("replay", REPLAY_PATH)
 replay = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader

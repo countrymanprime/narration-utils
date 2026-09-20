@@ -5,7 +5,7 @@ own scripting language, so a future non-REAPER adapter (Audacity has no
 ExtState equivalent) gets this for free instead of needing its own port.
 
 Three tiers, each a JSON file shaped {"<ToolName>": {"<key>": value, ...}}:
-  1. shared/config/defaults.json   - hand-authored, read-only, checked in.
+  1. config/defaults.json   - hand-authored, read-only, checked in.
   2. %APPDATA%/narration-utils/global-settings.json - per-user, machine-wide.
   3. <project folder>/narration-utils/settings.json - per-project override.
 Lookup order for get() is project -> global -> repo default -> the caller's
@@ -26,8 +26,8 @@ _REPO_DEFAULTS_CACHE = None
 
 
 def _repo_defaults_path() -> Path:
-    # shared/python/narration_common/config.py -> shared/config/defaults.json
-    return Path(__file__).resolve().parent.parent.parent / "config" / "defaults.json"
+    # libs/python/narration_common/config.py -> config/defaults.json
+    return Path(__file__).resolve().parents[3] / "config" / "defaults.json"
 
 
 def _read_json_file(path: Path) -> dict:
@@ -56,7 +56,7 @@ def _update_tool_section(path: Path, tool: str, mutate) -> None:
 
 
 def load_repo_defaults(tool: str) -> dict:
-    """shared/config/defaults.json[tool], memoized (it's checked-in and
+    """config/defaults.json[tool], memoized (it's checked-in and
     read-only for the life of the process). {} if missing/malformed."""
     global _REPO_DEFAULTS_CACHE
     if _REPO_DEFAULTS_CACHE is None:

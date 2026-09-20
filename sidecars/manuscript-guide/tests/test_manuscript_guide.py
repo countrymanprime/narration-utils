@@ -8,7 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-MODULE_PATH = Path(__file__).parents[1] / "manuscript_guide.py"
+MODULE_PATH = Path(__file__).parents[1] / "core" / "manuscript_guide.py"
 SPEC = importlib.util.spec_from_file_location("manuscript_guide", MODULE_PATH)
 guide = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -20,7 +20,7 @@ def _write_manuscript(root: Path, chapter_title: str, paragraph_texts: list[str]
     manuscript_guide.py reads via canonical_manuscript.load_file.
 
     Import (turning a .docx/.md source into this file) is Go-host-only now -
-    see shell/cmd/manuscript-import and shell/internal/manuscript.
+    see apps/desktop/cmd/manuscript-import and apps/desktop/internal/manuscript.
     These tests only need a real, valid canonical file to build a Story
     Bible from, not the import step itself.
     """
@@ -223,7 +223,7 @@ class ManuscriptGuideTests(unittest.TestCase):
 
     def test_create_initializes_a_guide_file_when_none_exists_yet(self):
         # A manuscript import can seed manual character candidates before the
-        # Story Bible has ever been Built - see shell/bindings.go's
+        # Story Bible has ever been Built - see apps/desktop/bindings.go's
         # ManuscriptImportCommit - so create() must not require a prior build.
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

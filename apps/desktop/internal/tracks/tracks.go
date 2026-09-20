@@ -1,7 +1,7 @@
 // Package tracks reads REAPER project (.rpp) files directly from disk to
 // list a project's tracks and the media each track's items reference. It
 // does not depend on a running REAPER instance or the file-session Lua
-// bridge (shared/reaper/narration_ui_bridge.lua): that bridge only works
+// bridge (integrations/reaper/narration_ui_bridge.lua): that bridge only works
 // while REAPER has NarrationUtils_Launcher.lua active for the current
 // session, whereas a standalone-launched app (docs/architecture/
 // standalone-launch.md) must be able to read tracks from a project folder

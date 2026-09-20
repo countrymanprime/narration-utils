@@ -1,7 +1,7 @@
 # UI Atlas kit: design
 
 A reusable way to test and self-document React UIs through a visual component library, extracted from the
-working implementation in `shared/ui` of this repo (see `docs/adr/0023-visual-suite-capture-contract-and-storybook.md`).
+working implementation in `apps/ui` of this repo (see `docs/adr/0023-visual-suite-capture-contract-and-storybook.md`).
 It ships as one Claude Code plugin (`plugin/`) that is self-contained: skills, agents, commands, hooks, a CLI and
 the templates the CLI copies into a consuming repo.
 
@@ -22,7 +22,7 @@ and makes the component library the repo's living documentation (`docs/ui/`), re
 ## Folder structure in a consuming repo
 
 ```
-<ui-root>/                          # e.g. shared/ui, src/, or the repo root
+<ui-root>/                          # e.g. apps/ui, src/, or the repo root
   .storybook/{main.ts, preview.tsx, preview-head.html}
   playwright.config.ts              # app capture (tier 0+)
   playwright.atlas.config.ts        # atlas capture (tier 1+)

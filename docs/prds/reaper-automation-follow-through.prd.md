@@ -1,6 +1,6 @@
 # REAPER Automation Follow-Through
 
-The unbuilt, high-value items from `docs/research/reaper-automation-surface.md` section 9 that the teleprompter integration does not own. Owned elsewhere: timeline-anchored live flags, punch-and-roll and resume from tail audio (`teleprompter-manuscript-integration.prd.md`); an ACX-style check per chapter (item 6, `diagnostics-delivery-and-cleanup-tools.prd.md`); pickup and duplicate detection (`take-review-pickups-duplicates-take-intelligence.prd.md`). Citations are `file:line` on worktree HEAD `b9d348d` for anything checked in code; "per docs" marks a claim taken from a document and not verified. `origin/main` is now at `d5cc994`. Since `b9d348d` it gained documentation (the teleprompter integration plan, the split guide `docs/guides/using-the-app/*.md` with its index and `shared/ui/src/docsGuide.test.ts` guard, `docs/operations/github-workflow.md`), GitHub metadata and CI files (a `github-scripts` job in `_quality.yml`, so the `lua` job cited below moved to `:115-123`), and two dependency bumps. No other source file cited here changed, so its line cites still hold. The next free ADR number is whatever is free at merge time (0027 at `d5cc994`). `docs/architecture/manuscript-line-identity.md` is kept as the shipped spec and manual checklist; this PRD is the plan for its "Later phases".
+The unbuilt, high-value items from `docs/research/reaper-automation-surface.md` section 9 that the teleprompter integration does not own. Owned elsewhere: timeline-anchored live flags, punch-and-roll and resume from tail audio (`teleprompter-manuscript-integration.prd.md`); an ACX-style check per chapter (item 6, `diagnostics-delivery-and-cleanup-tools.prd.md`); pickup and duplicate detection (`take-review-pickups-duplicates-take-intelligence.prd.md`). Citations are `file:line` on worktree HEAD `b9d348d` for anything checked in code; "per docs" marks a claim taken from a document and not verified. `origin/main` is now at `d5cc994`. Since `b9d348d` it gained documentation (the teleprompter integration plan, the split guide `docs/guides/using-the-app/*.md` with its index and `apps/ui/src/docsGuide.test.ts` guard, `docs/operations/github-workflow.md`), GitHub metadata and CI files (a `github-scripts` job in `_quality.yml`, so the `lua` job cited below moved to `:115-123`), and two dependency bumps. No other source file cited here changed, so its line cites still hold. The next free ADR number is whatever is free at merge time (0027 at `d5cc994`). `docs/architecture/manuscript-line-identity.md` is kept as the shipped spec and manual checklist; this PRD is the plan for its "Later phases".
 
 ## Problem Statement
 
@@ -10,19 +10,19 @@ A solo narrator recording in REAPER repeats manual chores around the app: markin
 
 Verified in code (HEAD `b9d348d`):
 
-- **The three line-identity commands exist and nothing calls them.** `stamp_item_lines` (`shared/reaper/narration_ui_bridge.lua:380`), `read_line_ids` (`:408`) and `create_chapter_regions` (`:476`) are dispatched at `:544-549`. `bridge.Client.Send` is called only by the transcript service (`shell/internal/transcript/service.go:100,236,274,519`); a grep for the command names in Go finds nothing.
+- **The three line-identity commands exist and nothing calls them.** `stamp_item_lines` (`integrations/reaper/narration_ui_bridge.lua:380`), `read_line_ids` (`:408`) and `create_chapter_regions` (`:476`) are dispatched at `:544-549`. `bridge.Client.Send` is called only by the transcript service (`apps/desktop/internal/transcript/service.go:100,236,274,519`); a grep for the command names in Go finds nothing.
 - **The manual verification checklist has never been run** (`docs/architecture/manuscript-line-identity.md` status line; project memory). The `.rpp` serialisation of item `P_EXT` is unverified (same doc, ADR 0026 context).
-- **The Go bridge has one event cursor.** `Client.ReadEvents` advances a single `eventOffset` over `events.log` (`shell/internal/bridge/bridge.go:82-105`). The host's `transcriptLoop` drains that client every 150 ms (`shell/app.go:349-364`), and the transcript service handles every event, ignoring any whose run ID is not its own (`transcript/service.go:282-312`). So `LINES_*` and `REGIONS_CREATED` events emitted today would be consumed and ignored within 150 ms, and a second consumer (line identity, teleprompter live state) reading the same client would lose events or steal the transcript service's.
-- **The bridge exists only when launched from REAPER.** The client is created only when a session directory is supplied (`shell/app.go:169-171`); a standalone launch has none. Anything that needs the bridge is REAPER-launched only; the static `.rpp` reader (`shell/internal/tracks`) works standalone.
+- **The Go bridge has one event cursor.** `Client.ReadEvents` advances a single `eventOffset` over `events.log` (`apps/desktop/internal/bridge/bridge.go:82-105`). The host's `transcriptLoop` drains that client every 150 ms (`apps/desktop/app.go:349-364`), and the transcript service handles every event, ignoring any whose run ID is not its own (`transcript/service.go:282-312`). So `LINES_*` and `REGIONS_CREATED` events emitted today would be consumed and ignored within 150 ms, and a second consumer (line identity, teleprompter live state) reading the same client would lose events or steal the transcript service's.
+- **The bridge exists only when launched from REAPER.** The client is created only when a session directory is supplied (`apps/desktop/app.go:169-171`); a standalone launch has none. Anything that needs the bridge is REAPER-launched only; the static `.rpp` reader (`apps/desktop/internal/tracks`) works standalone.
 - **Lua has no automated tests and no local interpreter.** CI's `lua` job is `stylua --check` (`.github/workflows/_quality.yml:115-123`); `pnpm exec stylua --check` doubles as a syntax check because no Lua interpreter is installed on the development machine (project memory). Every Lua change needs manual REAPER verification (CLAUDE.md).
 - **One 563-line file holds all bridge behavior**, dispatched by one `if/elseif` chain (`narration_ui_bridge.lua:523-552`). Four PRDs (this one, the teleprompter integration, take review, diagnostics) plan new commands there.
-- **Line IDs do not exist yet.** The doc example uses `line-000001`, but the manuscript's paragraph IDs are positional, `p-%06d` (`shell/internal/manuscript/service.go:425`), chapter IDs `c-%04d` (`:403`), and `documentId` changes on every import (`:431`). A re-import of an edited manuscript renumbers paragraphs, so stamps would drift silently unless the stored `line_text` (already written, `narration_ui_bridge.lua:395`) is used to detect it.
-- **The `.rpp` reader cannot see line identity or item GUIDs.** `parseItem` reads position, length, name and source only (`shell/internal/tracks/parse.go:68-97`) though the fixture has `GUID` (`testdata/basic.rpp:14`); it also skips `SOFFS` and `PLAYRATE`.
+- **Line IDs do not exist yet.** The doc example uses `line-000001`, but the manuscript's paragraph IDs are positional, `p-%06d` (`apps/desktop/internal/manuscript/service.go:425`), chapter IDs `c-%04d` (`:403`), and `documentId` changes on every import (`:431`). A re-import of an edited manuscript renumbers paragraphs, so stamps would drift silently unless the stored `line_text` (already written, `narration_ui_bridge.lua:395`) is used to detect it.
+- **The `.rpp` reader cannot see line identity or item GUIDs.** `parseItem` reads position, length, name and source only (`apps/desktop/internal/tracks/parse.go:68-97`) though the fixture has `GUID` (`testdata/basic.rpp:14`); it also skips `SOFFS` and `PLAYRATE`.
 - **Pickup-style markers have a convention to reuse.** Compare markers use a `PREFIX:` name with a 0.15 s duplicate tolerance (`narration_ui_bridge.lua:174-186`; `daw-integration.md`).
 - **`create_chapter_regions` uses the index-based API** (`AddProjectMarker2`, `:503`) and dedupes by title and bounds within 0.01 s (`:456-458`), not by a stable region ID. Research (per docs) marks the index API discouraged in favor of `AddRegionOrMarker` (7.72) with a GUID.
-- **Packaging.** `scripts/release/prepare-resources.py` copies the whole `shared/reaper` folder, but `scripts/release/verify-installable.mjs:23` lists four required Lua files by name; any new Lua file must be added there and loaded by `dofile` relative to the script path.
+- **Packaging.** `scripts/release/prepare-resources.py` copies the whole `integrations/reaper` folder, but `scripts/release/verify-installable.mjs:23` lists four required Lua files by name; any new Lua file must be added there and loaded by `dofile` relative to the script path.
 - **Recorded rule:** "There is no loopback server, REST endpoint, browser tab, or port override" (`docs/architecture/daw-integration.md`); a web-interface or OSC client needs an ADR (research doc section 4).
-- **Host API version** is in three places, all `5`: `shell/app.go:33`, `shell/app_test.go:40`, `shared/ui/src/hostApi.ts:2`. The next free ADR number is whatever is free at merge time (0027 at `d5cc994`).
+- **Host API version** is in three places, all `5`: `apps/desktop/app.go:33`, `apps/desktop/app_test.go:40`, `apps/ui/src/hostApi.ts:2`. The next free ADR number is whatever is free at merge time (0027 at `d5cc994`).
 
 Per docs (not verified in code; nothing in the research was run against a live REAPER):
 
@@ -71,7 +71,7 @@ We believe a verified, tested line-identity and pickup-list loop between the app
 | No unreviewed edits | Only narrator-triggered, undo-wrapped REAPER mutations; 0 writes to notes or take names | Code review of Lua plus checklist |
 | Every spike closes | Each ends with a written result, the decision it unblocks, and the fixture or script kept | One entry per spike in `docs/research/` |
 | Coverage of new Go code | At least 80% | `go test -cover` |
-| UI verification | Every new state reviewed as PNG at desktop, small-desktop, tablet and mobile | `shared/ui/screenshots/app/<page>/<state>/<viewport>.png` |
+| UI verification | Every new state reviewed as PNG at desktop, small-desktop, tablet and mobile | `apps/ui/screenshots/app/<page>/<state>/<viewport>.png` |
 
 ## Open Questions
 
@@ -225,12 +225,12 @@ Every spike phase below is marked **requires user approval to launch REAPER**; n
 
 **Phase 2 - Bridge event fan-out**
 - **Goal**: two consumers can use one bridge without losing events.
-- **Scope**: `shell/internal/bridge` (reader plus subscription), `shell/internal/transcript/service.go` migration, `ERROR` events with a run ID in `narration_ui_bridge.lua` (small Lua change, manual check), tests.
+- **Scope**: `apps/desktop/internal/bridge` (reader plus subscription), `apps/desktop/internal/transcript/service.go` migration, `ERROR` events with a run ID in `narration_ui_bridge.lua` (small Lua change, manual check), tests.
 - **Success signal**: transcript service tests unchanged and green; fan-out test with two subscribers and unrelated run IDs; Transcript Compare still runs end to end in REAPER (checklist step 10).
 
 **Phase 3 - Lua stub-`reaper` harness (conditional)**
 - **Goal**: Lua behavior is tested in CI without REAPER.
-- **Scope**: a Lua 5.4 job in `_quality.yml`, a `shared/reaper/tests/` (or similar) folder with the fake `reaper`, a driver that writes `.cmd` files, ticks the stubbed `defer`, reads `events.log`; tests for compare, jump and the three line commands (idempotent, conflict, stale, malformed payload). No change to bridge source.
+- **Scope**: a Lua 5.4 job in `_quality.yml`, a `integrations/reaper/tests/` (or similar) folder with the fake `reaper`, a driver that writes `.cmd` files, ticks the stubbed `defer`, reads `events.log`; tests for compare, jump and the three line commands (idempotent, conflict, stale, malformed payload). No change to bridge source.
 - **Success signal**: CI runs it; the harness fails when a command's stale-GUID guard is removed (mutation check).
 
 **Phase 4 - Lua command registry (conditional)**
@@ -240,7 +240,7 @@ Every spike phase below is marked **requires user approval to launch REAPER**; n
 
 **Phase 5 - Spike S0: item `P_EXT` in a saved project (requires user approval to launch REAPER)**
 - **Goal**: learn the `.rpp` representation and how split and copy treat item extension data.
-- **Scope**: only after the user approves: an isolated REAPER instance (candidate flags per research section 4.5, to be verified: `-cfgfile`, `-nosplash`, `-newinst`, project plus script on the command line), a scratch project in a temp folder, a script that stamps, splits, copies, saves and exits; save the resulting `.rpp` as a fixture under `shell/internal/tracks/testdata/`; document the exact command run and REAPER version. The user's own projects and resource directory are not touched.
+- **Scope**: only after the user approves: an isolated REAPER instance (candidate flags per research section 4.5, to be verified: `-cfgfile`, `-nosplash`, `-newinst`, project plus script on the command line), a scratch project in a temp folder, a script that stamps, splits, copies, saves and exits; save the resulting `.rpp` as a fixture under `apps/desktop/internal/tracks/testdata/`; document the exact command run and REAPER version. The user's own projects and resource directory are not touched.
 - **Success signal**: a written result answering serialisation, split, copy and save-reload; a real REAPER-saved fixture the `tracks` parser tests can use.
 
 **Phase 6 - Line-identity Go client**
@@ -250,7 +250,7 @@ Every spike phase below is marked **requires user approval to launch REAPER**; n
 
 **Phase 7 - Line-identity UI and chapter regions**
 - **Goal**: a narrator links chapters and creates regions with preview and approval.
-- **Scope**: UI flow (which page: decided at planning; the Tracks page is a candidate), preview of items and conflicts, chapter regions with bounds from `tracks` extents, `state-catalog.ts` rows and drivers, doc screenshots, a guide page under `docs/guides/using-the-app/` (listed in its `README.md` index; breadcrumb and Previous / Index / Next footer enforced by `shared/ui/src/docsGuide.test.ts`), `design-spec-guard`.
+- **Scope**: UI flow (which page: decided at planning; the Tracks page is a candidate), preview of items and conflicts, chapter regions with bounds from `tracks` extents, `state-catalog.ts` rows and drivers, doc screenshots, a guide page under `docs/guides/using-the-app/` (listed in its `README.md` index; breadcrumb and Previous / Index / Next footer enforced by `apps/ui/src/docsGuide.test.ts`), `design-spec-guard`.
 - **Success signal**: PNGs at four viewports reviewed; second run adds 0 regions and 0 stamps; conflicts and stale GUIDs shown, nothing written until approved.
 
 **Phase 8 - Pickup list: Lua commands**
@@ -325,7 +325,7 @@ Every spike phase below is marked **requires user approval to launch REAPER**; n
 
 ### Standing gates for every phase
 
-CLAUDE.md workflow: plan (find or open the tracking issue first with `gh issue list`, and put `Closes #<n>` in the PR; see `docs/operations/github-workflow.md`), `change-impact-scan` (treat every Lua consumer as zero-coverage; `shared/reaper` has no automated tests), TDD with at least 80% coverage on new Go, `full-verification-gate` (`pnpm check`, not `check:fast`), `design-spec-guard` when primitives or `styles.css` change, `feature-cleanup`. Any Lua change needs the user's manual REAPER verification and sign-off before it counts as verified; a green `pnpm check` proves formatting only. `shared/ui` changes run `visual-catalog-sync`, the Playwright visual suite with PNGs opened at desktop, small-desktop, tablet and mobile, `doc-screenshot-sync`, and the atlas when a primitive or `styles.css` changes. Binding changes bump the host API version in `shell/app.go`, `shell/app_test.go`, `shared/ui/src/hostApi.ts` and regenerate Wails bindings. Re-check `docs/adr/` numbering immediately before writing an ADR. Update `docs/roadmap.md` and `shared/config/roadmap.json` together when a milestone changes (the GitHub milestones are generated from `roadmap.json` by `scripts/github/sync-milestones.mjs`, so never edit them by hand). Update `docs/architecture/manuscript-line-identity.md` "Later phases" as each lands.
+CLAUDE.md workflow: plan (find or open the tracking issue first with `gh issue list`, and put `Closes #<n>` in the PR; see `docs/operations/github-workflow.md`), `change-impact-scan` (treat every Lua consumer as zero-coverage; `integrations/reaper` has no automated tests), TDD with at least 80% coverage on new Go, `full-verification-gate` (`pnpm check`, not `check:fast`), `design-spec-guard` when primitives or `styles.css` change, `feature-cleanup`. Any Lua change needs the user's manual REAPER verification and sign-off before it counts as verified; a green `pnpm check` proves formatting only. `apps/ui` changes run `visual-catalog-sync`, the Playwright visual suite with PNGs opened at desktop, small-desktop, tablet and mobile, `doc-screenshot-sync`, and the atlas when a primitive or `styles.css` changes. Binding changes bump the host API version in `apps/desktop/app.go`, `apps/desktop/app_test.go`, `apps/ui/src/hostApi.ts` and regenerate Wails bindings. Re-check `docs/adr/` numbering immediately before writing an ADR. Update `docs/roadmap.md` and `config/roadmap.json` together when a milestone changes (the GitHub milestones are generated from `roadmap.json` by `scripts/github/sync-milestones.mjs`, so never edit them by hand). Update `docs/architecture/manuscript-line-identity.md` "Later phases" as each lands.
 
 ### Parallelism Notes
 
@@ -336,11 +336,11 @@ Phases 1, 2 and 3 have no dependencies and touch different areas (a doc plus the
 | Phase | Files and areas touched | Collision risk |
 | --- | --- | --- |
 | 1 | `docs/architecture/manuscript-line-identity.md` | Any doc edit to that file |
-| 2 | `shell/internal/bridge/*`, `shell/internal/transcript/service.go` (+tests), `shared/reaper/narration_ui_bridge.lua` (error events) | Transcript work; `teleprompter-manuscript-integration.prd.md` Phase 11 (bridge client): agree who lands first (Open Question 12) |
+| 2 | `apps/desktop/internal/bridge/*`, `apps/desktop/internal/transcript/service.go` (+tests), `integrations/reaper/narration_ui_bridge.lua` (error events) | Transcript work; `teleprompter-manuscript-integration.prd.md` Phase 11 (bridge client): agree who lands first (Open Question 12) |
 | 3 | `.github/workflows/_quality.yml`, new Lua test folder | Release-readiness PRD adding CI jobs to `_quality.yml` (`release-readiness-provisioning-and-docs-site.prd.md`) |
 | 4 | `narration_ui_bridge.lua` (whole dispatch chain), `scripts/release/verify-installable.mjs` | Every Lua-touching PRD (take review, teleprompter Phases 11 and 12, diagnostics Phase 10); do this alone and early. `verify-installable.mjs` is also edited by `release-readiness-provisioning-and-docs-site.prd.md` Phase 8 (packaged-app smoke check) and `teleprompter-engines-and-input-devices.prd.md` Phase 6 (Moonshine sidecar check): each adds independent checks to the same file, so rebase and keep them separate |
-| 5 | `shell/internal/tracks/testdata/` (new fixture), `docs/research/` | Teleprompter Phase 8 also adds `tracks` testdata |
-| 6 | new Go files, `shell/{app.go,bindings.go,app_test.go}`, `shared/ui/src/{hostApi.ts,api/*}`, `Host.{js,d.ts}` | Every session adding a binding: host API version, `app.go` `Host` struct |
+| 5 | `apps/desktop/internal/tracks/testdata/` (new fixture), `docs/research/` | Teleprompter Phase 8 also adds `tracks` testdata |
+| 6 | new Go files, `apps/desktop/{app.go,bindings.go,app_test.go}`, `apps/ui/src/{hostApi.ts,api/*}`, `Host.{js,d.ts}` | Every session adding a binding: host API version, `app.go` `Host` struct |
 | 7 | `components/tracks/*` or new component folder, `AppShell.tsx` NAV (if a new page), `tests/visual/*`, `docs/images/ui/*`, `docs/guides/using-the-app/*` | Any PRD adding a nav item or page: a nav change regenerates every doc screenshot, so land nav changes serially |
 | 8 | Lua (new file), `verify-installable.mjs` | `take-review-pickups-duplicates-take-intelligence.prd.md` pickup markers (agree convention first, Open Question 6) |
 | 9 | new Go files, pickups UI, bindings and version | Phase 6 and 7 bindings |
@@ -348,7 +348,7 @@ Phases 1, 2 and 3 have no dependencies and touch different areas (a doc plus the
 | 12 to 14 | new Go files; `tracks` parser | Teleprompter Phase 8 (same parser) |
 | 15 to 25 | `docs/research/`, ADR, later Go/Lua | ADR number (the next free number at merge time; 0027 at `d5cc994`) |
 
-Cross-cutting: `docs/roadmap.md` and `shared/config/roadmap.json` change together; ADR numbers and the host API version are merge-time serialization points (the later PR takes the next number and rebases; whichever PR lands second increments again; check `hostAPIVersion` at merge time); `docs/README.md` and `docs/architecture/codebase-map.md` are edited by most feature PRDs.
+Cross-cutting: `docs/roadmap.md` and `config/roadmap.json` change together; ADR numbers and the host API version are merge-time serialization points (the later PR takes the next number and rebases; whichever PR lands second increments again; check `hostAPIVersion` at merge time); `docs/README.md` and `docs/architecture/codebase-map.md` are edited by most feature PRDs.
 
 ## Decisions Log
 
@@ -379,7 +379,7 @@ Cross-cutting: `docs/roadmap.md` and `shared/config/roadmap.json` change togethe
 - No surveyed REAPER bridge pushes events; the mature ones keep the bridge a thin executor and report "uncertain outcome" on timeout rather than guessing (research section 4.6), a design lesson applied here.
 
 **Technical Context**
-- Reused, verified: the file bridge and its command protocol (`shell/internal/bridge`, `narration_ui_bridge.lua`), the three line-identity commands, the `PREFIX:` marker convention, the `tracks` parser, the layered settings, the job and binding patterns, the visual suite and atlas.
+- Reused, verified: the file bridge and its command protocol (`apps/desktop/internal/bridge`, `narration_ui_bridge.lua`), the three line-identity commands, the `PREFIX:` marker convention, the `tracks` parser, the layered settings, the job and binding patterns, the visual suite and atlas.
 - Unverified and gated on spikes (each launches REAPER, needs the user's go-ahead): `.rpp` serialisation of item `P_EXT` (S0); render keys, `RENDER_STATS`, chapter mapping and action IDs (S5); play-position anchor, accessors during recording, ReaStream, OSC and web-interface behavior (S4, S3, S1, S2, S6); fixed-lane behavior (S7, added here).
 - Doc and code discrepancies found while writing this PRD are listed in the hand-off message.
 

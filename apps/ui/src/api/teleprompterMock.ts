@@ -1,5 +1,5 @@
 // The browser mock's teleprompter. It replays a stream recorded from the real
-// ScriptTracker (see tools/manuscript-teleprompter/spikes/record_mock_stream.py),
+// ScriptTracker (see sidecars/manuscript-teleprompter/spikes/record_mock_stream.py),
 // rescaled onto whichever chapter is being read, so the highlight moves the way
 // it does against the live sidecar: it leads the confirmed words, pauses, and
 // re-reads an earlier sentence.

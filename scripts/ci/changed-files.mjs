@@ -9,8 +9,8 @@ const BOOTSTRAP_INPUTS = new Set([
   'pnpm-lock.yaml',
   'pyproject.toml',
   'uv.lock',
-  'shell/package.json',
-  'shared/ui/package.json',
+  'apps/desktop/package.json',
+  'apps/ui/package.json',
   'pnpm-workspace.yaml',
 ]);
 
@@ -20,8 +20,8 @@ export function needsBootstrap(files) {
   return files.some(
     (file) =>
       BOOTSTRAP_INPUTS.has(file) ||
-	  file === 'shell/go.mod' ||
-	  file === 'shell/go.sum' ||
+	  file === 'apps/desktop/go.mod' ||
+	  file === 'apps/desktop/go.sum' ||
       file === 'scripts/bootstrap.mjs' ||
       file === 'scripts/bootstrap.test.mjs',
   );

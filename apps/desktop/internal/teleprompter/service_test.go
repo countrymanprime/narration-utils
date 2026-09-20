@@ -348,14 +348,14 @@ func TestADeveloperCanReplayARecordingInsteadOfUsingAMicrophone(t *testing.T) {
 
 func TestADeveloperSidecarRunsItsBackendScriptAsTheFirstArgument(t *testing.T) {
 	f := newFixture(t, "stream")
-	f.service.config.Backend = "C:/repo/tools/manuscript-teleprompter/core/live_asr.py"
+	f.service.config.Backend = "C:/repo/sidecars/manuscript-teleprompter/core/live_asr.py"
 
 	if err := f.service.Start(validOptions()); err != nil {
 		t.Fatal(err)
 	}
 
 	args := echoedArgs(t, f)
-	if len(args) == 0 || args[0] != "C:/repo/tools/manuscript-teleprompter/core/live_asr.py" {
+	if len(args) == 0 || args[0] != "C:/repo/sidecars/manuscript-teleprompter/core/live_asr.py" {
 		t.Fatalf("args = %v", args)
 	}
 }

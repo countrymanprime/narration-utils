@@ -108,7 +108,7 @@ function main([command, argument]) {
   if (command === 'package' && argument) {
     const asset = packageAsset({
       platform: argument,
-      binDir: process.env.WAILS_BIN_DIR ?? 'shell/build/bin',
+      binDir: process.env.WAILS_BIN_DIR ?? 'apps/desktop/build/bin',
       outDir: process.env.RELEASE_ASSETS_DIR ?? 'release-assets',
     });
     console.log(`Packaged ${asset}`);

@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     paths:
-      - shared/config/roadmap.json
+      - config/roadmap.json
       - .github/workflows/sync-milestones.yml
       - scripts/github/**
   workflow_dispatch: {}

@@ -45,7 +45,7 @@ from pathlib import Path
 
 import numpy as np
 
-_SHARED_PYTHON = Path(__file__).resolve().parents[3] / "shared" / "python"
+_SHARED_PYTHON = Path(__file__).resolve().parents[3] / "libs" / "python"
 if str(_SHARED_PYTHON) not in sys.path:
     sys.path.insert(0, str(_SHARED_PYTHON))
 
@@ -489,7 +489,7 @@ def transcribe(audio_array, model_size, language, device="cpu", progress_path=No
 
     # model_dir is a Narration Utils asset-cache directory whose contents were
     # already hash-verified before this process was started (see
-    # shell/internal/whisper). Passing it with local_files_only=True stops
+    # apps/desktop/internal/whisper). Passing it with local_files_only=True stops
     # faster-whisper/huggingface_hub from ever reaching the network here -
     # without it, only a bare model_size falls back to that legacy download
     # path, kept for direct/manual CLI use outside the desktop host.

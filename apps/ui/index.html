@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
       // Sets data-theme before first paint so the correct palette (see
-      // shared/ui/src/styles.css's :root[data-theme='dark'] block) applies
+      // apps/ui/src/styles.css's :root[data-theme='dark'] block) applies
       // immediately, instead of flashing light and then swapping to dark
-      // once ThemeProvider (shared/ui/src/theme/ThemeContext.tsx) mounts.
+      // once ThemeProvider (apps/ui/src/theme/ThemeContext.tsx) mounts.
       // Mirrors that module's readStoredPreference()/resolveTheme() logic;
       // kept duplicated here since inline scripts can't import it.
       (function () {

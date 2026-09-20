@@ -4,17 +4,17 @@
 
 ## Tokens
 
-Design tokens are CSS custom properties defined in `shared/ui/src/styles.css`'s `:root` block, with dark-mode overrides in a single `:root[data-theme='dark']` block. New Tailwind-based components reference them via arbitrary-value syntax — `bg-[var(--surface)]`, `border-[var(--border)]`, `text-[var(--text-muted)]` — rather than duplicating values into `tailwind.config.js`. See [ADR 0003](../adr/0003-tailwind-tokenized-primitives.md).
+Design tokens are CSS custom properties defined in `apps/ui/src/styles.css`'s `:root` block, with dark-mode overrides in a single `:root[data-theme='dark']` block. New Tailwind-based components reference them via arbitrary-value syntax — `bg-[var(--surface)]`, `border-[var(--border)]`, `text-[var(--text-muted)]` — rather than duplicating values into `tailwind.config.js`. See [ADR 0003](../adr/0003-tailwind-tokenized-primitives.md).
 
 Key tokens: `--bg`, `--surface`, `--surface-2`, `--surface-3`, `--border`, `--text`, `--text-muted`, `--text-faint`, `--accent`, `--accent-strong`, `--accent-soft`, `--accent-contrast`, `--danger`, `--character`/`--place`/`--org`/`--review` (category colors), `--backdrop` (modal/drawer scrim), `--shadow`, `--shadow-lg`. `--space-*`/`--font-size-*` are additive spacing/type-size steps, grounded in values already repeated across the file — not a full scale, for new/touched code to converge on rather than picking another one-off rem value.
 
-**Theme switching:** `data-theme` on `<html>` is set by `ThemeProvider`/`useTheme` (`shared/ui/src/theme/`), a tri-state Light/Dark/System preference persisted to `localStorage`, exposed via a new "Appearance" category in `Settings.tsx`. An inline bootstrap script in `index.html` sets the attribute before first paint to avoid a flash of the wrong theme. See [ADR 0010](../adr/0010-theme-switching.md).
+**Theme switching:** `data-theme` on `<html>` is set by `ThemeProvider`/`useTheme` (`apps/ui/src/theme/`), a tri-state Light/Dark/System preference persisted to `localStorage`, exposed via a new "Appearance" category in `Settings.tsx`. An inline bootstrap script in `index.html` sets the attribute before first paint to avoid a flash of the wrong theme. See [ADR 0010](../adr/0010-theme-switching.md).
 
 ## Primitive components
 
-Location: `shared/ui/src/components/primitives/`.
+Location: `apps/ui/src/components/primitives/`.
 
-**The component atlas is the source of truth for what each primitive can look like.** Every primitive has a `<Name>.stories.tsx` next to it (one story per variant/state, `play()` for the primary interaction). Browse it with `pnpm --dir shared/ui storybook`; `pnpm --dir shared/ui atlas` builds it and captures every story in light/dark at a wide and a narrow viewport, failing on axe violations, a throwing `play()`, sideways overflow, or console errors. `src/atlasCoverage.test.ts` fails if a primitive has neither a story nor a recorded exemption, and `src/stories.test.tsx` runs every story as a unit test. The table below is a summary; when it and the atlas disagree, the atlas wins. See [ADR 0023](../adr/0023-visual-suite-capture-contract-and-storybook.md).
+**The component atlas is the source of truth for what each primitive can look like.** Every primitive has a `<Name>.stories.tsx` next to it (one story per variant/state, `play()` for the primary interaction). Browse it with `pnpm --dir apps/ui storybook`; `pnpm --dir apps/ui atlas` builds it and captures every story in light/dark at a wide and a narrow viewport, failing on axe violations, a throwing `play()`, sideways overflow, or console errors. `src/atlasCoverage.test.ts` fails if a primitive has neither a story nor a recorded exemption, and `src/stories.test.tsx` runs every story as a unit test. The table below is a summary; when it and the atlas disagree, the atlas wins. See [ADR 0023](../adr/0023-visual-suite-capture-contract-and-storybook.md).
 
 | Component | Purpose | Notes |
 | --- | --- | --- |
@@ -53,6 +53,6 @@ See [`motion-and-animation.md`](motion-and-animation.md) — not yet a formal sy
 
 ## What the suites do not prove
 
-The visual suite is a gate on errors, not on appearance: it fails on page errors, failed requests, sideways overflow, blank screenshots and two states that render identically without a declared `sameAs`, and it says nothing about whether a layout looks right ([ADR 0023](../adr/0023-visual-suite-capture-contract-and-storybook.md)). Axe runs on Storybook stories only (`shared/ui/tests/atlas/atlas.spec.ts`), never on app states, so page-level contrast and labels are checked only by looking at the PNGs; it also cannot judge gradients or low-contrast text over semi-transparent overlays. Pixel baselines are not adopted: sub-pixel anti-aliasing still differs between runs on a Windows machine, so a diff would be noise, and baselines would need a pinned Linux container.
+The visual suite is a gate on errors, not on appearance: it fails on page errors, failed requests, sideways overflow, blank screenshots and two states that render identically without a declared `sameAs`, and it says nothing about whether a layout looks right ([ADR 0023](../adr/0023-visual-suite-capture-contract-and-storybook.md)). Axe runs on Storybook stories only (`apps/ui/tests/atlas/atlas.spec.ts`), never on app states, so page-level contrast and labels are checked only by looking at the PNGs; it also cannot judge gradients or low-contrast text over semi-transparent overlays. Pixel baselines are not adopted: sub-pixel anti-aliasing still differs between runs on a Windows machine, so a diff would be noise, and baselines would need a pinned Linux container.
 
 Defects these suites have found that are not fixed yet, and the planned work to close the gaps above, are specified as PRDs in [docs/prds/](../prds/README.md).

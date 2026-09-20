@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-TRACKER_PATH = Path(__file__).resolve().parents[1] / "script_tracker.py"
+TRACKER_PATH = Path(__file__).resolve().parents[1] / "core" / "script_tracker.py"
 SPEC = importlib.util.spec_from_file_location("script_tracker", TRACKER_PATH)
 tracker_module = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader

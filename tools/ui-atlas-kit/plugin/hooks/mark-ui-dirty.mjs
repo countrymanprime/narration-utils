@@ -8,7 +8,7 @@
 //
 // Only active for a file under a UI root that opted in: a directory between the file and the project
 // root that holds ui-atlas.config.json (written by `ui-atlas init`, which may be the project root
-// itself or a subfolder such as shared/ui). Everything else is ignored, so the plugin is inert in
+// itself or a subfolder such as apps/ui). Everything else is ignored, so the plugin is inert in
 // unrelated repos. Never blocks and never prints: it always exits 0.
 //
 // The project root is CLAUDE_PROJECT_DIR, else the hook input's cwd, else the process cwd. .ui-atlas/

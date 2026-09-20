@@ -9,6 +9,6 @@
     "DEV_COMMAND": "pnpm run dev:mock",
     "PM_RUN": "pnpm run",
     "PM_EXEC": "pnpm exec",
-    "UI_ROOT": "shared/ui"
+    "UI_ROOT": "apps/ui"
   }
 }

@@ -21,7 +21,7 @@ The Stop hook of this plugin blocks ending a turn when UI files were edited and 
 
 ## What to do
 
-1. Run these from the UI root (for example `shared/ui`; use the repo's package manager). All must exit 0:
+1. Run these from the UI root (for example `apps/ui`; use the repo's package manager). All must exit 0:
    ```bash
    pnpm test              # unit tests, every story via composeStories, atlas coverage and catalog integrity
    pnpm run lint:ci
