@@ -75,6 +75,7 @@ Phase counts are the rows of each PRD's phase table.
 | [Story Bible Entries: Properties, Actions and Pronunciation](story-bible-entries-and-actions.prd.md) | Feature | 3 | None; supersedes the "actions regardless of mode" clause of [ADR 0018](../adr/0018-story-bible-entries-read-only-until-edit.md) |
 | [Story Bible Preview: TTS Failures](story-bible-preview-tts-failures.prd.md) | Defect | 3 | None |
 | [Proofing Vocabulary Hints](proofing-vocabulary-hints.prd.md) | Defect, then feature | 2 | None |
+| [Proofing Preview Suggestion](proofing-preview-suggestion.prd.md) | Feature | 8 | None; unscheduled like the chapter stage recommendations set |
 | [Audiobook Credits Templates](audiobook-credits-templates.prd.md) | Feature | 5 | None |
 | [UI Primitives and a Headless Library](ui-primitives-and-headless-library.prd.md) | Feature (infrastructure) | 6 (including a phase 0 decision) | None; reopens Q1 of [Dialog Modality and WorkDialog Accessibility](dialog-modality-and-workdialog-a11y.prd.md) |
 
