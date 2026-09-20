@@ -11,5 +11,6 @@ export default defineConfig({
     // screenshots`), not Vitest tests - Vitest's default include pattern
     // matches *.spec.ts too, so it must be excluded explicitly.
     exclude: ['node_modules/**', 'tests/visual/**', 'tests/atlas/**'],
+    setupFiles: ['./src/test-setup.ts'],
   },
 });

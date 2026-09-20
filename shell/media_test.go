@@ -84,6 +84,22 @@ func TestMediaMiddlewareRefusesAFileNotReferencedByAnyTrack(t *testing.T) {
 	}
 }
 
+func TestMediaMiddlewareRefusesTraversalOutOfTheProjectFolder(t *testing.T) {
+	folder := t.TempDir()
+	writeFile(t, filepath.Join(folder, "Book.rpp"), rppFixture("media/take1.wav"))
+	writeFile(t, filepath.Join(filepath.Dir(folder), "secret.txt"), "not a track source")
+	host := newTestHostForMedia(t, folder)
+	handler := host.mediaMiddleware(passthrough(t))
+
+	request := httptest.NewRequest(http.MethodGet, mediaRoute+"?path="+filepath.Join(folder, "media", "..", "..", "secret.txt"), nil)
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404 for a traversal path that resolves outside the project's track sources", recorder.Code)
+	}
+}
+
 func TestMediaMiddlewarePassesThroughEverythingElse(t *testing.T) {
 	host := newTestHostForMedia(t, t.TempDir())
 	handler := host.mediaMiddleware(passthrough(t))
