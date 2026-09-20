@@ -1,0 +1,70 @@
+name: Attach platform build
+# Builds one platform from an existing release tag and uploads its asset to that release. The
+# caller decides which platform; see build-macos.yml and build-linux.yml.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag to build and attach to, for example v0.2.1-rc
+        type: string
+        required: true
+      platform:
+        description: macos-arm64 or linux-x64 (the table lives in scripts/release/assets.mjs)
+        type: string
+        required: true
+      runner:
+        type: string
+        required: true
+permissions: { contents: read }
+jobs:
+  check:
+    name: Check the release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - id: check
+        run: |
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-rc)?$'; then
+            echo "::error::The tag must look like v0.2.1-rc or v0.2.1."
+            exit 1
+          fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null
+          # The version bump is applied at build time and never committed, so the tag's tree still
+          # carries the previous version; derive the one to stamp from the tag itself.
+          version="${TAG#v}"
+          echo "version=${version%-rc}" >> "$GITHUB_OUTPUT"
+
+  # Built here rather than reused from the prerelease run: this workflow can start later, on its
+  # own, when that run's artifacts are gone.
+  ui-dist:
+    needs: check
+    uses: ./.github/workflows/_ui-dist.yml
+    with:
+      ref: ${{ inputs.tag }}
+
+  attach:
+    name: Build and attach ${{ inputs.platform }}
+    needs: [check, ui-dist]
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: ./.github/actions/build-native
+        with:
+          platform: ${{ inputs.platform }}
+          version: ${{ needs.check.outputs.version }}
+      # --clobber makes re-running this workflow for the same tag safe.
+      - name: Attach to the release
+        run: gh release upload "$TAG" release-assets/* --clobber

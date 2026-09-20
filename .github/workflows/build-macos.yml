@@ -1,0 +1,25 @@
+name: Build macOS
+# Optional. Builds the macOS app for a release and attaches it. The Windows release job starts this
+# once the release exists; it is a separate run, so a failure here never blocks the release or its
+# promotion. Re-run it, or dispatch it again with the tag, to retry.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to attach to, for example v0.2.1-rc
+        type: string
+        required: true
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+permissions:
+  contents: write
+jobs:
+  build:
+    uses: ./.github/workflows/_attach-platform.yml
+    with:
+      tag: ${{ inputs.tag }}
+      platform: macos-arm64
+      runner: macos-14

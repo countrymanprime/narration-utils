@@ -18,12 +18,6 @@ jobs:
       - run: pnpm --dir shared/ui run lint:ci
       - run: pnpm --dir shared/ui run format:check
       - run: pnpm --dir shared/ui test
-      - run: pnpm --dir shared/ui run build
-      - uses: actions/upload-artifact@v7
-        with:
-          name: ui-dist
-          path: shared/ui/dist
-          if-no-files-found: error
 
   ui-visual:
     # Captures every {page, state, viewport} of the mock-backed app and fails on
@@ -40,7 +34,7 @@ jobs:
           need-wails-tools: 'false'
           need-stylua: 'false'
           need-linux-native-deps: 'false'
-      - run: pnpm --dir shared/ui exec playwright install --with-deps chromium
+      - uses: ./.github/actions/setup-playwright
       - run: pnpm --dir shared/ui run screenshots
       - uses: actions/upload-artifact@v7
         if: always()
@@ -64,7 +58,7 @@ jobs:
           need-wails-tools: 'false'
           need-stylua: 'false'
           need-linux-native-deps: 'false'
-      - run: pnpm --dir shared/ui exec playwright install --with-deps chromium
+      - uses: ./.github/actions/setup-playwright
       - run: pnpm --dir shared/ui run atlas
       - uses: actions/upload-artifact@v7
         if: always()
@@ -88,13 +82,14 @@ jobs:
           need-stylua: 'false'
           need-linux-native-deps: 'false'
       - run: node --test tools/ui-atlas-kit/test/*.test.mjs
-  github-scripts:
-    # The scripts that keep GitHub metadata (labels, milestones) in step with the repo.
+  repo-scripts:
+    # Plain-Node scripts with no dependencies: the ones that keep GitHub metadata (labels,
+    # milestones) in step with the repo, and the release scripts (version sync, asset packaging).
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: node --test scripts/github/*.test.mjs
+      - run: node --test scripts/github/*.test.mjs scripts/release/*.test.mjs
   python:
     timeout-minutes: 15
     runs-on: ubuntu-latest
@@ -116,7 +111,7 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: JohnnyMorganz/stylua-action@76fd70c03e6340ceaf673366712db9b20560b402 # v5.0.0
         with:
           token: ${{ github.token }}
@@ -124,12 +119,10 @@ jobs:
           args: --check shared/reaper
 
   go:
+    # Windows only: it is the supported platform, and Linux's native libraries are installed only
+    # by the optional Linux build (build-linux.yml).
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-toolchain
@@ -137,6 +130,8 @@ jobs:
           need-node: 'false'
           need-pnpm: 'false'
           need-python: 'false'
+          need-wails-tools: 'false'
+          need-staticcheck: 'true'
           need-stylua: 'false'
       - name: gofmt check
         shell: bash

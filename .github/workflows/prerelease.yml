@@ -13,6 +13,8 @@ concurrency:
 jobs:
   quality:
     uses: ./.github/workflows/_quality.yml
+  ui-dist:
+    uses: ./.github/workflows/_ui-dist.yml
 
   version:
     runs-on: ubuntu-latest
@@ -25,15 +27,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: ./.github/actions/setup-toolchain
         with:
-          version: 11.27.0
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+          need-go: 'false'
+          need-python: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+          need-linux-native-deps: 'false'
       - id: compute
         name: Compute the next release candidate from conventional commits
         run: |
@@ -52,21 +52,20 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v${VERSION}-rc" >> "$GITHUB_OUTPUT"
 
-  package:
-    needs: [quality, version]
+  # Windows is the supported platform: its build creates the GitHub prerelease, and that is the only
+  # build a release needs. macOS and Linux are optional extras started at the end of this job.
+  release:
+    name: Windows build and release
+    needs: [quality, ui-dist, version]
     if: needs.version.outputs.release == 'true'
-    uses: ./.github/workflows/_build-native.yml
-    with:
-      upload: true
-      artifact-prefix: unsigned-rc
-      version: ${{ needs.version.outputs.version }}
-
-  publish:
-    needs: [version, package]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: windows-latest
+    timeout-minutes: 45
     permissions:
       contents: write
+      actions: write # to dispatch the optional macOS and Linux builds
+    defaults:
+      run:
+        shell: bash
     env:
       GH_TOKEN: ${{ github.token }}
       TAG: ${{ needs.version.outputs.tag }}
@@ -74,10 +73,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/build-native
         with:
-          pattern: unsigned-rc-*
-          path: dist
+          platform: windows-x64
+          version: ${{ needs.version.outputs.version }}
       # Keep the newest 10 RCs including the one being published, so nx still
       # finds the latest RC tag and bumps past it instead of re-stamping the same version.
       - name: Prune old release candidates
@@ -88,17 +87,18 @@ jobs:
           for old in $stale; do
             gh release delete "$old" --cleanup-tag -y
           done
-      - name: Tag this release candidate
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "$TAG"
-          git push origin "$TAG"
-      - name: Collect and checksum installers
-        env:
-          BUNDLE_DIRS: dist/unsigned-rc-windows-x64:dist/unsigned-rc-macos-arm64:dist/unsigned-rc-linux-x64
-        run: node scripts/release/collect-assets.mjs
+      # The notes script diffs against the previous stable tag, so it needs the candidate as a
+      # local tag; `gh release create --target` then creates the remote tag in the same request.
       - name: Generate release notes
-        run: node scripts/release/generate-notes.mjs "$TAG"
-      - name: Publish the prerelease
-        run: gh release create "$TAG" release-assets/* --prerelease --title "$TAG" --notes-file release-notes.md
+        run: |
+          git tag "$TAG"
+          node scripts/release/generate-notes.mjs "$TAG"
+      - name: Create the prerelease with the Windows zip
+        run: gh release create "$TAG" release-assets/* --target "$GITHUB_SHA" --prerelease --title "$TAG" --notes-file release-notes.md
+      # Each starts its own run, so a failed macOS or Linux build neither turns this run red nor
+      # blocks promotion. Retry one by re-running its workflow, or dispatching it with the tag.
+      - name: Start the optional macOS and Linux builds
+        continue-on-error: true
+        run: |
+          gh workflow run build-macos.yml --ref "$GITHUB_REF_NAME" -f tag="$TAG"
+          gh workflow run build-linux.yml --ref "$GITHUB_REF_NAME" -f tag="$TAG"
