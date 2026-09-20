@@ -539,9 +539,8 @@ func (h *Host) Ready() map[string]any {
 }
 
 func (h *Host) Bootstrap() map[string]any {
-	h.mu.RLock()
-	config := h.config
-	h.mu.RUnlock()
+	svc := h.services()
+	config := svc.config
 	var imported any
 	if config.projectFolder != "" {
 		if bytes, err := os.ReadFile(filepath.Join(config.projectFolder, "narration-utils", "manuscript", "manuscript.json")); err == nil {
@@ -563,8 +562,8 @@ func (h *Host) Bootstrap() map[string]any {
 		}
 	}
 	transcriptState := emptyTranscript()
-	if h.transcript != nil {
-		transcriptState = h.transcript.Snapshot()
+	if svc.transcript != nil {
+		transcriptState = svc.transcript.Snapshot()
 	}
 	return map[string]any{"apiVersion": hostAPIVersion, "diagnosticId": h.diagnostic, "projectFolder": config.projectFolder, "projectName": config.projectName, "daw": config.daw, "manuscript": imported, "manuscriptCandidate": manuscriptCandidate, "runtime": map[string]any{"ManuscriptGuide": map[string]string{"python_exe": config.manuscriptPython, "backend": config.manuscriptBackend}, "TranscriptCompare": map[string]string{"python_exe": config.comparePython, "compare_script": config.compareBackend}, "Reaper": map[string]string{"launcherPath": config.reaperLauncher}}, "transcript": transcriptState}
 }
@@ -619,11 +618,11 @@ func modelDownloadSize(model whisper.Model) int64 {
 // resolveWhisperModelID mirrors the "model" option fallback already used to
 // build the compare.py --model argument in transcript.Service, so the
 // first-use gate checks the exact model that would otherwise be requested.
-func (h *Host) resolveWhisperModelID(options map[string]string) string {
+func resolveWhisperModelID(store *settings.Store, options map[string]string) string {
 	if value := options["model"]; value != "" {
 		return value
 	}
-	value, _ := h.settings.Effective("TranscriptCompare", "model_size", "small")
+	value, _ := store.Effective("TranscriptCompare", "model_size", "small")
 	return value
 }
 
@@ -655,15 +654,16 @@ func (h *Host) settingsForScope(scope string) (map[string]any, error) {
 	if scope != "global" && scope != "project" {
 		return nil, fmt.Errorf("unsupported settings scope")
 	}
+	store := h.services().settings
 	result := map[string]any{}
 	for tool, schemas := range fieldSchemas {
 		values := []map[string]any{}
-		scoped := h.settings.Global(tool)
+		scoped := store.Global(tool)
 		if scope == "project" {
-			scoped = h.settings.Project(tool)
+			scoped = store.Project(tool)
 		}
 		for _, schema := range schemas {
-			effective, source := h.settings.Effective(tool, schema.key, "")
+			effective, source := store.Effective(tool, schema.key, "")
 			current, set := scoped[schema.key]
 			values = append(values, map[string]any{"key": schema.key, "label": schema.label, "kind": schema.kind, "choices": schema.choices, "value": current, "isSet": set, "effectiveValue": effective, "effectiveSource": source})
 		}
@@ -695,13 +695,14 @@ func (h *Host) saveSettings(tool, scope string, values map[string]*string) error
 			return fmt.Errorf("unsupported value for %s", key)
 		}
 	}
-	return h.settings.Save(tool, scope, values)
+	return h.services().settings.Save(tool, scope, values)
 }
 func (h *Host) startTtsInstall(voiceID string) (map[string]any, error) {
-	if h.tts == nil {
+	manager := h.services().tts
+	if manager == nil {
 		return nil, fmt.Errorf("the approved TTS catalog is unavailable")
 	}
-	if _, ok := h.tts.Voice(voiceID); !ok {
+	if _, ok := manager.Voice(voiceID); !ok {
 		return nil, fmt.Errorf("the selected voice is not in the approved catalog")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -710,7 +711,7 @@ func (h *Host) startTtsInstall(voiceID string) (map[string]any, error) {
 	h.ttsJobs[job.id] = job
 	h.mu.Unlock()
 	go func() {
-		err := h.tts.Install(ctx, voiceID)
+		err := manager.Install(ctx, voiceID)
 		job.mu.Lock()
 		defer job.mu.Unlock()
 		if err != nil {
@@ -753,10 +754,11 @@ func snapshotTts(job *ttsJob) map[string]any {
 	return map[string]any{"id": job.id, "voiceId": job.voiceID, "phase": job.phase, "message": job.message}
 }
 func (h *Host) startWhisperInstall(modelID string) (map[string]any, error) {
-	if h.whisper == nil {
+	manager := h.services().whisper
+	if manager == nil {
 		return nil, fmt.Errorf("the approved Whisper catalog is unavailable")
 	}
-	if _, ok := h.whisper.Model(modelID); !ok {
+	if _, ok := manager.Model(modelID); !ok {
 		return nil, fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -765,7 +767,7 @@ func (h *Host) startWhisperInstall(modelID string) (map[string]any, error) {
 	h.whisperJobs[job.id] = job
 	h.mu.Unlock()
 	go func() {
-		err := h.whisper.Install(ctx, modelID)
+		err := manager.Install(ctx, modelID)
 		job.mu.Lock()
 		defer job.mu.Unlock()
 		if err != nil {

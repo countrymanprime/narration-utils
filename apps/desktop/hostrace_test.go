@@ -21,7 +21,7 @@ import (
 // time: nothing orders them.
 //
 // Add a binding here in the same change that converts it (see
-// directReadAllowlist in hostguard_test.go). Keep one row per line.
+// directReadAllowlist in hostguard_test.go). Keep one row per line, sorted by name.
 // Rows for bindings that only read job maps or the set-once recents store
 // (GuideBuildState, ProjectRecents, the install-state calls) are smoke tests
 // for lock ordering; the rows that read a service pointer are the probes.
@@ -42,6 +42,7 @@ type stressReader struct {
 }
 
 var stressReaders = []stressReader{
+	{"Bootstrap", func(h *Host) { _ = h.Bootstrap() }},
 	{"GuideBuildState", func(h *Host) { _, _ = h.GuideBuildState() }},
 	{"GuideEntities", func(h *Host) { _, _ = h.GuideEntities() }},
 	{"GuidePreview", func(h *Host) { _, _ = h.GuidePreview("missing", nil) }},
@@ -53,14 +54,28 @@ var stressReaders = []stressReader{
 	{"ManuscriptReaderState", func(h *Host) { _, _ = h.ManuscriptReaderState() }},
 	{"ManuscriptSearch", func(h *Host) { _, _ = h.ManuscriptSearch("word") }},
 	{"ProjectRecents", func(h *Host) { _, _ = h.ProjectRecents() }},
+	{"SystemSettingsForScope global", func(h *Host) { _, _ = h.SystemSettingsForScope("global") }},
+	{"SystemSettingsForScope project", func(h *Host) { _, _ = h.SystemSettingsForScope("project") }},
 	{"TeleprompterState", func(h *Host) { _, _ = h.TeleprompterState() }},
 	{"TeleprompterStop", func(h *Host) { _, _ = h.TeleprompterStop() }},
-	{"pollTranscript (one transcriptLoop tick)", func(h *Host) { h.pollTranscript() }},
 	{"TracksDiscover", func(h *Host) { _, _ = h.TracksDiscover() }},
 	{"TracksList", func(h *Host) { _, _ = h.TracksList() }},
 	{"TracksSelect", func(h *Host) { _, _ = h.TracksSelect("not-a-project-file.rpp") }},
+	{"TranscriptCancel", func(h *Host) { _, _ = h.TranscriptCancel() }},
+	{"TranscriptHints", func(h *Host) { _, _ = h.TranscriptHints() }},
+	{"TranscriptLastCompleted", func(h *Host) { _, _ = h.TranscriptLastCompleted() }},
+	{"TranscriptReset", func(h *Host) { _, _ = h.TranscriptReset() }},
+	{"TranscriptStart (asset gate)", func(h *Host) { _, _ = h.TranscriptStart(map[string]string{"model": "tiny"}) }},
+	{"TranscriptSuggestHints", func(h *Host) { _, _ = h.TranscriptSuggestHints() }},
+	{"TtsCatalog", func(h *Host) { _, _ = h.TtsCatalog() }},
+	{"TtsInstall (unknown voice)", func(h *Host) { _, _ = h.TtsInstall("missing") }},
 	{"TtsInstallState", func(h *Host) { _, _ = h.TtsInstallState("missing") }},
+	{"TtsRemove (unknown voice)", func(h *Host) { _, _ = h.TtsRemove("missing") }},
+	{"WhisperCatalog", func(h *Host) { _, _ = h.WhisperCatalog() }},
+	{"WhisperInstall (unknown model)", func(h *Host) { _, _ = h.WhisperInstall("missing") }},
 	{"WhisperInstallState", func(h *Host) { _, _ = h.WhisperInstallState("missing") }},
+	{"WhisperRemove (unknown model)", func(h *Host) { _, _ = h.WhisperRemove("missing") }},
+	{"pollTranscript (one transcriptLoop tick)", func(h *Host) { h.pollTranscript() }},
 	{"emit callbacks", func(h *Host) {
 		h.emitTranscript(emptyTranscript())
 		h.emitTeleprompterState(map[string]any{"phase": "idle"})

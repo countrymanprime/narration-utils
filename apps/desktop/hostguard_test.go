@@ -42,28 +42,7 @@ var permanentDirectReaders = map[string]string{
 // function with no reads left must be removed, and a new entry needs a written
 // reason in the pull request. Keep it sorted, one name per line, so concurrent
 // edits rebase cleanly.
-var directReadAllowlist = []allowedReads{
-	{"Bootstrap", 2},
-	{"TranscriptAddEquivalence", 2},
-	{"TranscriptCancel", 2},
-	{"TranscriptExportMarkers", 2},
-	{"TranscriptHints", 2},
-	{"TranscriptJump", 2},
-	{"TranscriptLastCompleted", 2},
-	{"TranscriptReset", 2},
-	{"TranscriptSaveHints", 2},
-	{"TranscriptStart", 6},
-	{"TranscriptSuggestHints", 4},
-	{"TtsCatalog", 4},
-	{"TtsRemove", 2},
-	{"WhisperCatalog", 3},
-	{"WhisperRemove", 2},
-	{"resolveWhisperModelID", 1},
-	{"saveSettings", 1},
-	{"settingsForScope", 3},
-	{"startTtsInstall", 3},
-	{"startWhisperInstall", 3},
-}
+var directReadAllowlist = []allowedReads{}
 
 type allowedReads struct {
 	function string
