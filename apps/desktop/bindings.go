@@ -184,7 +184,7 @@ func (h *Host) GuidePreview(id string, aliasIndex *int) (string, error) {
 	if err != nil {
 		return encodeBinding(map[string]any{"status": "asset_required", "voice": previewVoice(voice), "installState": svc.tts.State(voice), "downloadSize": voiceDownloadSize(voice)}, nil)
 	}
-	audio, err := svc.guide.Preview(id, aliasIndex, model, voice.Provider, voice.Version)
+	audio, err := svc.guide.Preview(id, aliasIndex, guide.PreviewVoice{ID: voiceID, Model: model, Provider: voice.Provider, Version: voice.Version})
 	return encodeBinding(map[string]any{"status": "ready", "audioBase64": base64.StdEncoding.EncodeToString(audio), "mimeType": "audio/wav"}, err)
 }
 

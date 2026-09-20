@@ -1065,13 +1065,75 @@ def render_audio(args: argparse.Namespace) -> None:
     # Piper is bundled into this existing sidecar by PyInstaller.  Calling its
     # supported Python API avoids relying on a checkout-local piper.exe or
     # adding a third Python sidecar to the native host.
-    voice = PiperVoice.load(args.piper_model)
-    with wave.open(str(destination), "wb") as wav_file:
-        voice.synthesize_wav(spoken, wav_file)
+    try:
+        voice = PiperVoice.load(args.piper_model)
+    except Exception as exc:
+        raise ValueError(f"The preview voice could not be loaded ({exc}). If its files are damaged, remove it in Settings and install it again.") from exc
+    synthesize_to_file(voice, spoken, destination)
     print("AUDIO|" + str(destination))
 
 
+def synthesize_to_file(voice: PiperVoice, spoken: str, destination: Path) -> None:
+    """Synthesizes ``spoken`` and moves the WAV to ``destination`` only once it is complete.
+
+    The host trusts any file at ``destination`` as a cached preview, so a failed run must
+    leave nothing there.  Piper initialises espeak lazily inside ``synthesize_wav``, before
+    it sets the WAV format; closing a wave writer in that state raises "# channels not
+    specified", which would replace the real error.  So the writer is closed by hand and the
+    original failure is what gets reported.
+    """
+    temporary = destination.with_name(f"{destination.name}.{os.getpid()}.part")
+    remove_stale_partials(destination, keep=temporary)
+    wav_file = wave.open(str(temporary), "wb")  # noqa: SIM115 - a with block would close it mid-error and mask the failure
+    try:
+        try:
+            voice.synthesize_wav(spoken, wav_file)
+            frames = wav_file.getnframes()
+        except Exception as exc:
+            raise ValueError(f'"{spoken}" could not be spoken: {str(exc) or type(exc).__name__}') from exc
+        if frames == 0:
+            raise ValueError(f'"{spoken}" could not be spoken: the voice produced no audio for it.')
+        try:
+            wav_file.close()
+            os.replace(temporary, destination)
+        except OSError as exc:
+            raise ValueError(f"The preview could not be saved ({exc}). Close anything that has the file open and try again.") from exc
+    except BaseException:
+        try:
+            wav_file.close()
+        except (wave.Error, OSError):
+            pass
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+def remove_stale_partials(destination: Path, keep: Path) -> None:
+    """Deletes ``<name>.<pid>.part`` files that earlier runs left for this output.
+
+    A run the host stopped at its timeout is killed without running any cleanup, and the
+    pid in the name means no later run would overwrite its file.  The host serializes
+    renders of one output, so no live run owns these.
+    """
+    for entry in destination.parent.iterdir():
+        if entry != keep and entry.name.startswith(destination.name + ".") and entry.name.endswith(".part"):
+            entry.unlink(missing_ok=True)
+
+
+def use_utf8_stdio() -> None:
+    """Writes UTF-8 to the pipes the host reads.
+
+    On Windows a pipe defaults to the ANSI code page, so a project path outside it made
+    ``print("AUDIO|" + path)`` raise after the WAV was written and the sidecar exit 1.
+    The Go host reads both streams as UTF-8 (strings are bytes there).
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
+
+
 def main() -> None:
+    use_utf8_stdio()
     parser = argparse.ArgumentParser(description=__doc__)
     command = parser.add_subparsers(dest="command", required=True)
     build_parser = command.add_parser("build")

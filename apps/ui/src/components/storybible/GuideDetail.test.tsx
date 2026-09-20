@@ -24,7 +24,7 @@ class PreviewAudio {
 
 function readyPreviewApi() {
   const api = createMockApi();
-  vi.spyOn(api, 'guidePreview').mockResolvedValue({ status: 'ready', audioBase64: '', mimeType: 'audio/wav' });
+  vi.spyOn(api, 'guidePreview').mockResolvedValue({ status: 'ready', audioBase64: 'UklGRg==', mimeType: 'audio/wav' });
   return api;
 }
 
@@ -137,6 +137,70 @@ describe('Story Bible local TTS preview', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Play preview' }));
     await waitFor(() => expect(previews[0].play).toHaveBeenCalledTimes(2));
+  });
+
+  it('says why a preview failed and leaves Play usable for another try', async () => {
+    const previews: PreviewAudio[] = [];
+    vi.stubGlobal('URL', { createObjectURL: vi.fn(() => 'blob:preview'), revokeObjectURL: vi.fn() });
+    vi.stubGlobal(
+      'Audio',
+      class extends PreviewAudio {
+        constructor(src: string) {
+          super(src);
+          previews.push(this);
+        }
+      },
+    );
+    const api = createMockApi();
+    const guidePreview = vi
+      .spyOn(api, 'guidePreview')
+      .mockRejectedValueOnce('"Dawnspire" could not be spoken: the voice produced no audio for it.')
+      .mockResolvedValue({ status: 'ready', audioBase64: 'UklGRg==', mimeType: 'audio/wav' });
+    const notify = vi.fn();
+    render(
+      <ApiProvider api={api}>
+        <GuideDetail
+          entity={WIRE_ENTITIES[1]}
+          entities={WIRE_ENTITIES}
+          reload={vi.fn().mockResolvedValue(undefined)}
+          notify={notify}
+          goToManuscript={vi.fn()}
+        />
+      </ApiProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play preview' }));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('"Dawnspire" could not be spoken: the voice produced no audio for it.'));
+    const play = screen.getByRole('button', { name: 'Play preview' });
+    expect((play as HTMLButtonElement).disabled).toBe(false);
+
+    fireEvent.click(play);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Pause preview' })).toBeTruthy());
+    expect(guidePreview).toHaveBeenCalledTimes(2);
+    expect(previews).toHaveLength(1);
+  });
+
+  it('shows the host failure the mock preview-error seam simulates once the voice is installed', async () => {
+    vi.stubGlobal('Audio', PreviewAudio);
+    const api = createMockApi({}, { previewError: 'the preview voice could not be loaded (missing file)' });
+    await api.ttsInstall('en_US-ljspeech-high');
+    const notify = vi.fn();
+    render(
+      <ApiProvider api={api}>
+        <GuideDetail
+          entity={WIRE_ENTITIES[1]}
+          entities={WIRE_ENTITIES}
+          reload={vi.fn().mockResolvedValue(undefined)}
+          notify={notify}
+          goToManuscript={vi.fn()}
+        />
+      </ApiProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play preview' }));
+
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('The preview voice could not be loaded (missing file)'));
+    expect(screen.getByRole('button', { name: 'Play preview' })).toBeTruthy();
   });
 
   it('stops the active preview when switching to an alias and clears playback when it ends', async () => {
