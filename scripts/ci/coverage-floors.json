@@ -1,54 +1,24 @@
 {
   "$comment": "Coverage floors for logic directories (ADR 0043). Read by scripts/ci/coverage-gate.mjs, which the go, vitest and pytest test targets run. A floor is the rounded-down coverage measured on 2026-09-20 (Go statements, Vitest and pytest lines) and only goes up: run the gate with --update after adding tests. Any new logic directory starts at 80; a lower floor needs a written reason. UI components, host glue and sidecar-launch code are not listed on purpose: Go packages root, cmd, assets, guide, process, settings, transcript, tts, whisper; apps/ui components and the Wails client; the teleprompter live_asr engines; release scripts.",
   "entries": [
-    { "tool": "go", "project": "apps/desktop", "path": "internal/bridge", "floor": 85 },
-    { "tool": "go", "project": "apps/desktop", "path": "internal/findings", "floor": 100 },
-    { "tool": "go", "project": "apps/desktop", "path": "internal/importer", "floor": 85 },
-    { "tool": "go", "project": "apps/desktop", "path": "internal/layout", "floor": 93 },
-    {
-      "tool": "go",
-      "project": "apps/desktop",
-      "path": "internal/manuscript",
-      "floor": 73,
-      "reason": "Baseline of 2026-09-20 (73.2%). The service and reader carry file and progress plumbing that is exercised end to end, not unit by unit; the ratchet stops it falling and each change here should raise it."
-    },
-    { "tool": "go", "project": "apps/desktop", "path": "internal/measure", "floor": 96 },
-    { "tool": "go", "project": "apps/desktop", "path": "internal/recents", "floor": 85 },
-    { "tool": "go", "project": "apps/desktop", "path": "internal/teleprompter", "floor": 90 },
-    { "tool": "go", "project": "apps/desktop", "path": "internal/tracks", "floor": 94 },
-    { "tool": "vitest", "project": "apps/ui", "path": "src/hooks", "floor": 100 },
-    { "tool": "vitest", "project": "apps/ui", "path": "src/state.ts", "floor": 100 },
-    { "tool": "vitest", "project": "apps/ui", "path": "src/theme", "floor": 96 },
-    {
-      "tool": "vitest",
-      "project": "apps/ui",
-      "path": "src/api",
-      "floor": 69,
-      "reason": "Baseline of 2026-09-20 (69.2%). The directory mixes the mock API (test infrastructure, 65%), the Wails client glue (34%) and client/http.ts, which is dead code the Knip cleanup removes. It is gated so the tested part cannot decay; the floor rises once those are resolved."
-    },
-    {
-      "tool": "pytest",
-      "project": "libs/python",
-      "path": "libs/python/narration_common",
-      "floor": 61,
-      "reason": "Baseline of 2026-09-20 (61%). manuscript.py validation is 37% and progress.py 12%: the Hypothesis properties (phase 4) are what lift it, and the floor rises with them."
-    },
-    { "tool": "pytest", "project": "sidecars/manuscript-teleprompter", "path": "sidecars/manuscript-teleprompter/core/chapter_script.py", "floor": 98 },
-    { "tool": "pytest", "project": "sidecars/manuscript-teleprompter", "path": "sidecars/manuscript-teleprompter/core/replay.py", "floor": 83 },
-    { "tool": "pytest", "project": "sidecars/manuscript-teleprompter", "path": "sidecars/manuscript-teleprompter/core/script_tracker.py", "floor": 99 },
-    {
-      "tool": "pytest",
-      "project": "sidecars/transcript-compare",
-      "path": "sidecars/transcript-compare/core/compare.py",
-      "floor": 14,
-      "reason": "Baseline of 2026-09-20 (14%). The tokenizing, number merging and alignment logic is nearly untested; the Hypothesis properties (phase 4) start to cover it and the floor rises with them."
-    },
-    {
-      "tool": "pytest",
-      "project": "sidecars/manuscript-guide",
-      "path": "sidecars/manuscript-guide/core/manuscript_guide.py",
-      "floor": 71,
-      "reason": "Baseline of 2026-09-20 (71%). The entity and pronunciation logic sits beside Piper and spaCy calls that need the real models; the ratchet stops it falling."
-    }
+    {"tool":"go","project":"apps/desktop","path":"internal/bridge","floor":85},
+    {"tool":"go","project":"apps/desktop","path":"internal/findings","floor":100},
+    {"tool":"go","project":"apps/desktop","path":"internal/importer","floor":85},
+    {"tool":"go","project":"apps/desktop","path":"internal/layout","floor":93},
+    {"tool":"go","project":"apps/desktop","path":"internal/manuscript","floor":73,"reason":"Baseline of 2026-09-20 (73.2%). The service and reader carry file and progress plumbing that is exercised end to end, not unit by unit; the ratchet stops it falling and each change here should raise it."},
+    {"tool":"go","project":"apps/desktop","path":"internal/measure","floor":96},
+    {"tool":"go","project":"apps/desktop","path":"internal/recents","floor":85},
+    {"tool":"go","project":"apps/desktop","path":"internal/teleprompter","floor":90},
+    {"tool":"go","project":"apps/desktop","path":"internal/tracks","floor":94},
+    {"tool":"vitest","project":"apps/ui","path":"src/hooks","floor":100},
+    {"tool":"vitest","project":"apps/ui","path":"src/state.ts","floor":100},
+    {"tool":"vitest","project":"apps/ui","path":"src/theme","floor":96},
+    {"tool":"vitest","project":"apps/ui","path":"src/api","floor":69,"reason":"Baseline of 2026-09-20 (69.2%). The directory mixes the mock API (test infrastructure, 65%), the Wails client glue (34%) and client/http.ts, which is dead code the Knip cleanup removes. It is gated so the tested part cannot decay; the floor rises once those are resolved."},
+    {"tool":"pytest","project":"libs/python","path":"libs/python/narration_common","floor":69,"reason":"Baseline of 2026-09-20 was 61%; the Hypothesis properties of phase 4 lifted it to 69%. config.py (69%), logging_utils.py (50%) and progress.py (12%) still have little coverage; the floor rises as they get tests."},
+    {"tool":"pytest","project":"sidecars/manuscript-teleprompter","path":"sidecars/manuscript-teleprompter/core/chapter_script.py","floor":98},
+    {"tool":"pytest","project":"sidecars/manuscript-teleprompter","path":"sidecars/manuscript-teleprompter/core/replay.py","floor":83},
+    {"tool":"pytest","project":"sidecars/manuscript-teleprompter","path":"sidecars/manuscript-teleprompter/core/script_tracker.py","floor":99},
+    {"tool":"pytest","project":"sidecars/transcript-compare","path":"sidecars/transcript-compare/core/compare.py","floor":20,"reason":"Baseline of 2026-09-20 was 14%; the Hypothesis properties of phase 4 (tokenizing, number merging, sentence splitting) lifted it to 20%. The alignment, diffing and CLI paths of this 900-statement module are still largely untested; the floor rises as they get tests."},
+    {"tool":"pytest","project":"sidecars/manuscript-guide","path":"sidecars/manuscript-guide/core/manuscript_guide.py","floor":71,"reason":"Baseline of 2026-09-20 (71%). The entity and pronunciation logic sits beside Piper and spaCy calls that need the real models; the ratchet stops it falling."}
   ]
 }

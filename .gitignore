@@ -14,6 +14,7 @@ apps/ui/test-results/
 apps/ui/coverage/
 .coverage
 .coverage.*
+.hypothesis/
 logs/
 .claude/
 apps/desktop/cmd/narration-utils/frontend/dist/*

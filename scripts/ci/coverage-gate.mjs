@@ -109,6 +109,13 @@ export function raiseFloors(doc, measure) {
   return { ...doc, entries: doc.entries.map((entry) => ({ ...entry, floor: Math.max(entry.floor, Math.floor(measure(entry) ?? 0)) })) };
 }
 
+/** The floors file as it is checked in: the comment, then one entry per line so a raised floor is a one-line diff. */
+export function formatFloors(doc) {
+  const entries = doc.entries.map((entry) => `    ${JSON.stringify(entry)}`).join(',\n');
+  const comment = doc.$comment === undefined ? '' : `  "$comment": ${JSON.stringify(doc.$comment)},\n`;
+  return `{\n${comment}  "entries": [\n${entries}\n  ]\n}\n`;
+}
+
 function readFloors() {
   const doc = JSON.parse(readFileSync(FLOORS_PATH, 'utf8'));
   const problems = validateFloors(doc);
@@ -125,7 +132,7 @@ export function report(doc, entries, measure, { update = false, floorsPath = FLO
   for (const note of notes) log(`coverage: ${note}`);
   if (update) {
     const next = raiseFloors(doc, (entry) => (entries.includes(entry) ? measure(entry) : entry.floor));
-    writeFileSync(floorsPath, `${JSON.stringify(next, null, 2)}\n`);
+    writeFileSync(floorsPath, formatFloors(next));
     log('coverage: floors raised where coverage had risen.');
   }
   if (failures.length) {

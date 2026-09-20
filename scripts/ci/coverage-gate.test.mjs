@@ -11,6 +11,7 @@ import {
   aggregatePackages,
   evaluate,
   FLOORS_PATH,
+  formatFloors,
   normalizePytestReport,
   normalizeVitestSummary,
   parseGoCover,
@@ -138,10 +139,12 @@ test('normalizes a coverage.py json report', () => {
   ]);
 });
 
-test('the checked-in floors file is valid', () => {
-  const doc = JSON.parse(readFileSync(FLOORS_PATH, 'utf8'));
+test('the checked-in floors file is valid and is exactly what --update would write', () => {
+  const text = readFileSync(FLOORS_PATH, 'utf8');
+  const doc = JSON.parse(text);
   assert.deepEqual(validateFloors(doc), []);
   assert.ok(doc.entries.length > 0);
+  assert.equal(formatFloors(doc), text.replaceAll('\r\n', '\n'), 'run the gate with --update, or format the file the same way, so raising a floor stays a one-line diff');
 });
 
 const quiet = { log: () => {}, error: () => {} };
