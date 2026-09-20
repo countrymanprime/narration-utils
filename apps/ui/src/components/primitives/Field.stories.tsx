@@ -123,3 +123,31 @@ export const TextareaDisabledIsInert: Story = {
     await expect(args.onChange).not.toHaveBeenCalled();
   },
 };
+
+// A hint describes the control; the control is wired to it, not just placed near it.
+export const WithHint: Story = {
+  args: { hint: 'As it appears in the manuscript' },
+  play: async ({ args, canvasElement }) => {
+    const input = within(canvasElement).getByRole('textbox', { name: 'Timeline context' });
+    await expect(input).toHaveAccessibleDescription(String(args.hint));
+  },
+};
+
+// An error marks the control invalid and is read with it.
+export const WithError: Story = {
+  args: { value: '', error: 'A timeline context is required' },
+  play: async ({ args, canvasElement }) => {
+    const input = within(canvasElement).getByRole('textbox', { name: 'Timeline context' });
+    await expect(input).toBeInvalid();
+    await expect(input).toHaveAccessibleDescription(String(args.error));
+  },
+};
+
+export const TextareaWithHintAndError: Story = {
+  args: { label: 'Description', textarea: true, value: '', hint: 'One or two sentences', error: 'A description is required' },
+  play: async ({ canvasElement }) => {
+    const textarea = within(canvasElement).getByRole('textbox', { name: 'Description' });
+    await expect(textarea).toBeInvalid();
+    await expect(textarea).toHaveAccessibleDescription('One or two sentences A description is required');
+  },
+};

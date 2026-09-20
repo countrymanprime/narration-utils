@@ -26,7 +26,8 @@ Location: `apps/ui/src/components/primitives/`.
 | `Highlight` | Highlighted text (entity / note / review, plus the Teleprompter's `Cursor` word) | One category→color mapping; fills the line height; `Cursor` is a solid accent fill, not a tint ([ADR 0016](../adr/0016-highlight-primitive.md), [ADR 0024](../adr/0024-teleprompter-highlight-follows-the-sidecars-spans.md)) |
 | `SlideOver` | Right-edge panel with click-away backdrop | Pure Tailwind; `invisible translate-x-full` when closed ([ADR 0017](../adr/0017-no-legacy-css-shadowing-tailwind.md)) |
 | `Pill` | Toggle chip | Active/inactive classes are mutually exclusive so text stays readable in dark mode |
-| `MeterBar` | Segmented horizontal meter | Caller controls segment order — see [ADR 0006](../adr/0006-chapter-progress-bar-ordering.md) for why the chapter-progress usage reverses it |
+| `MeterBar` | Segmented horizontal meter | Caller controls segment order — see [ADR 0006](../adr/0006-chapter-progress-bar-ordering.md) for why the chapter-progress usage reverses it. Required `label`: it is an image named by the label plus every segment's tooltip text, and the width transition is `motion-safe:` only ([ADR 0050](../adr/0050-the-segmented-meter-is-an-image-named-by-its-segments-and-field-wires-its-hint-and-error.md)) |
+| `Field` | Labelled text control (input or textarea) on Base UI Field | Optional `hint` and `error`: the library wires the label, the hint and the error to the control and sets `aria-invalid` ([ADR 0050](../adr/0050-the-segmented-meter-is-an-image-named-by-its-segments-and-field-wires-its-hint-and-error.md)) |
 
 ### Base UI wrappers
 

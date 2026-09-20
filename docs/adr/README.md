@@ -72,3 +72,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0047](0047-the-ui-primitives-wrap-base-ui-and-app-code-never-imports-it.md) | The UI primitives wrap Base UI, and app code never imports it | Accepted |
 | [0048](0048-every-dialog-is-one-modal-shell-and-confirms-are-alert-dialogs.md) | Every dialog is one modal shell, confirms are alert dialogs, and Escape, the backdrop and focus follow one policy | Accepted |
 | [0049](0049-hints-are-base-ui-tooltips-that-meet-wcag-1-4-13-and-info-icons-are-buttons.md) | Hints are Base UI tooltips that meet WCAG 1.4.13, and info icons are buttons that open a popover | Accepted |
+| [0050](0050-the-segmented-meter-is-an-image-named-by-its-segments-and-field-wires-its-hint-and-error.md) | The segmented meter is an image named by its segments, and Field wires its hint and error through Base UI | Accepted |

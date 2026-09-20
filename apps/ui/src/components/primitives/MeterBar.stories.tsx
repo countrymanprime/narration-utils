@@ -33,7 +33,7 @@ function segmentWidths(canvasElement: HTMLElement): number[] {
 const meta = {
   title: 'Primitives/MeterBar',
   component: MeterBar,
-  args: { segments: segmentsFor(MID_PRODUCTION, FINISHED_FIRST) },
+  args: { label: 'Chapter progress', segments: segmentsFor(MID_PRODUCTION, FINISHED_FIRST) },
 } satisfies Meta<typeof MeterBar>;
 
 export default meta;
@@ -88,6 +88,14 @@ export const WithCaptionAndLegend: Story = {
   ),
 };
 
+// A screen reader hears the label and every segment's breakdown; the bar is one image, not a row of unnamed boxes.
+export const IsNamedByItsLabelAndSegments: Story = {
+  play: async ({ args, canvasElement }) => {
+    const meter = within(canvasElement).getByRole('img', { name: /^Chapter progress: / });
+    for (const segment of args.segments) await expect(meter).toHaveAccessibleName(expect.stringContaining(segment.tooltip));
+  },
+};
+
 export const SegmentsRenderInCallerOrder: Story = {
   play: async ({ canvasElement }) => {
     await expect(segmentWidths(canvasElement)).toEqual([40, 15, 10, 5, 30]);
@@ -115,7 +123,7 @@ function LiveMeter() {
   const segments = segmentsFor({ finalized, not_started: 100 - finalized }, FINISHED_FIRST);
   return (
     <div className="space-y-3">
-      <MeterBar segments={segments} />
+      <MeterBar label="Chapter progress" segments={segments} />
       <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
         {finalizedChapters} of {totalChapters} chapters finalized
       </p>
