@@ -1,7 +1,12 @@
 {
-  "kit": "0.3.1",
+  "kit": "0.3.2",
   "tier": 2,
-  "stack": { "pm": "pnpm", "react": 19, "vite": 8, "tailwind": 4 },
+  "stack": {
+    "pm": "pnpm",
+    "react": 19,
+    "vite": 8,
+    "tailwind": 4
+  },
   "vars": {
     "THEME_ATTR": "data-theme",
     "PRIMITIVES_DIR": "components/primitives",

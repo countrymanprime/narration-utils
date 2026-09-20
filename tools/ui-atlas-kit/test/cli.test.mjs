@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, before, describe, test } from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { audit, detectStack, docs, init, sync } from '../plugin/cli/ui-atlas.mjs';
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'plugin', 'cli', 'ui-atlas.mjs');
@@ -366,5 +366,103 @@ describe('v0.3.1: what the second upgrade round taught', () => {
     writeIndex(dir, { a: story('a--x', 'Primitives/Button', 'Only', './src/Button.tsx') });
     await docs(dir);
     assert.match(readFileSync(join(dir, 'docs', 'ui', 'atlas', 'index.md'), 'utf8'), /1 story\b/);
+  });
+});
+
+describe('v0.3.2: the scaffolded driver helpers cannot open a menu over a slow page', () => {
+  const SCAFFOLD = join(dirname(fileURLToPath(import.meta.url)), '..', 'plugin', 'templates', 'scaffold', 'tests', 'visual', 'app.drivers.ts');
+  const scaffolded = () => {
+    const dir = fixture();
+    init(dir, {});
+    return readFileSync(join(dir, 'tests/visual/app.drivers.ts'), 'utf8');
+  };
+
+  test('the scaffold ships the helpers and clickVisible has no timed wait that opens the mobile menu', () => {
+    const source = scaffolded();
+    assert.match(source, /^export async function clickNav\(/m);
+    assert.match(source, /^export async function beforeCapture\(/m, 'beforeCapture is real code, not a commented example');
+    const start = source.indexOf('export async function clickVisible');
+    const body = source.slice(start, source.indexOf('\n}\n', start));
+    assert.doesNotMatch(body, /timeout|MOBILE_MENU_BUTTON|menu\.click/, 'clickVisible must not open the drawer');
+  });
+
+  // The behaviour below runs the scaffold itself (Node strips its type annotations) against a fake Playwright page.
+  const canRunTypeScript = process.features.typescript !== false;
+
+  // A locator that reports what the layout currently shows and records what was clicked.
+  function fakePage(layout) {
+    const clicks = [];
+    const locator = (kind) => ({
+      and: () => locator(kind),
+      first: () => locator(kind),
+      or: () => ({
+        first: () => ({
+          waitFor: async () => {
+            if (!layout.item() && !layout.menu()) throw new Error('timed out');
+          },
+        }),
+      }),
+      isVisible: async () => layout[kind](),
+      click: async () => {
+        clicks.push(kind);
+        layout.onClick?.(kind);
+      },
+    });
+    const page = {
+      getByRole: (role, options) => locator(role === 'button' && options.name === 'Open navigation' ? 'menu' : 'item'),
+      locator: () => ({}),
+    };
+    return { page, clicks };
+  }
+
+  test('clickNav clicks the item at a wide layout and never touches the menu', { skip: !canRunTypeScript }, async () => {
+    const { clickNav } = await import(pathToFileURL(SCAFFOLD).href);
+    const { page, clicks } = fakePage({ item: () => true, menu: () => false });
+    await clickNav(page, 'Menu');
+    assert.deepEqual(clicks, ['item']);
+  });
+
+  test('clickNav opens the menu first at a narrow layout, and only then clicks the item', { skip: !canRunTypeScript }, async () => {
+    const { clickNav } = await import(pathToFileURL(SCAFFOLD).href);
+    let open = false;
+    const { page, clicks } = fakePage({
+      item: () => open,
+      menu: () => !open,
+      onClick: (kind) => {
+        if (kind === 'menu') open = true;
+      },
+    });
+    await clickNav(page, 'Menu');
+    assert.deepEqual(clicks, ['menu', 'item']);
+  });
+
+  test('clickNav says what was missing when neither the item nor the menu button ever shows', { skip: !canRunTypeScript }, async () => {
+    const { clickNav } = await import(pathToFileURL(SCAFFOLD).href);
+    const { page } = fakePage({ item: () => false, menu: () => false });
+    await assert.rejects(() => clickNav(page, 'Menu'), /neither the navigation item Menu nor a button named "Open navigation"/);
+  });
+
+  test('beforeCapture does nothing unless UI_CPU_THROTTLE is set, slows the CPU when it is, and rejects a mistyped value', { skip: !canRunTypeScript }, async () => {
+    const { beforeCapture } = await import(pathToFileURL(SCAFFOLD).href);
+    const sent = [];
+    const page = { context: () => ({ newCDPSession: async () => ({ send: async (method, params) => sent.push([method, params]) }) }) };
+    const previous = process.env.UI_CPU_THROTTLE;
+    try {
+      delete process.env.UI_CPU_THROTTLE;
+      await beforeCapture(page);
+      process.env.UI_CPU_THROTTLE = '1';
+      await beforeCapture(page);
+      assert.deepEqual(sent, [], 'unset and 1 leave the page alone');
+      process.env.UI_CPU_THROTTLE = '20';
+      await beforeCapture(page);
+      assert.deepEqual(sent, [['Emulation.setCPUThrottlingRate', { rate: 20 }]]);
+      for (const bad of ['abc', '4x', '0.5', '-3']) {
+        process.env.UI_CPU_THROTTLE = bad;
+        await assert.rejects(() => beforeCapture(page), /UI_CPU_THROTTLE must be a number of at least 1/, `"${bad}" must not run unthrottled`);
+      }
+    } finally {
+      if (previous === undefined) delete process.env.UI_CPU_THROTTLE;
+      else process.env.UI_CPU_THROTTLE = previous;
+    }
   });
 });

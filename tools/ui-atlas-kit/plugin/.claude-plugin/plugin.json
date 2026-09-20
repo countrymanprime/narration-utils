@@ -1,6 +1,6 @@
 {
   "name": "ui-atlas",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Test and self-document a React UI through a validated visual capture contract and a Storybook component atlas: skills, agents, commands, hooks and a dependency-free CLI.",
   "author": {
     "name": "Count"
