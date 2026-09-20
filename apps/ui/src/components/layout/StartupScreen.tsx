@@ -31,7 +31,7 @@ export function StartupScreen({ state, error, diagnosticId, retry }: { state: St
           {detail}
         </p>
         {diagnosticId && (
-          <p className="mt-3 font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
+          <p className="mt-3 font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
             Diagnostic: {diagnosticId}
           </p>
         )}

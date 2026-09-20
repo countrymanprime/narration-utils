@@ -48,6 +48,7 @@ const PAIRS: PairSpec[] = [
   text('text', 'body text', 'var(--text)', SURFACES),
   text('text-muted', 'secondary text, labels, helper text', 'var(--text-muted)', SURFACES),
   text('text-faint', 'section labels, counts, placeholders (Option B retires this as text)', 'var(--text-faint)', SURFACES),
+  mark('non-text', 'icons, status dots, the info icon border and decorative glyphs: the one colour for what is seen and not read', 'var(--non-text)', SURFACES),
   text('toast', 'Toast: page colour on the text colour', 'var(--bg)', ['surface'], 'var(--text)'),
   text('on-accent', 'primary button and logo: accent-contrast on accent', 'var(--accent-contrast)', ['surface'], 'var(--accent)'),
   text('on-accent-strong', 'primary button hover: accent-contrast on accent-strong', 'var(--accent-contrast)', ['surface'], 'var(--accent-strong)'),
@@ -112,7 +113,6 @@ const lightOnly: Theme[] = ['light'];
 const known = (fixedBy: string, themes: Theme[], ids: string[]): Record<string, KnownFailure> => Object.fromEntries(ids.map((id) => [id, { themes, fixedBy }]));
 
 const KNOWN_FAILURES: Record<string, KnownFailure> = {
-  ...known('phase 2 (text ramp)', lightOnly, ['text-muted']),
   ...known('phase 2 (--text-faint is retired as text)', both, ['text-faint']),
   ...known('phase 3 (active navigation)', lightOnly, ['nav-active']),
   ...known('phase 4 (derived on-tint text and the dark category tokens)', both, [
@@ -134,7 +134,7 @@ const KNOWN_FAILURES: Record<string, KnownFailure> = {
   ]),
 };
 // Counted per pair and theme: `text-muted` failing in dark as well would be a second failure, not the same one.
-const MAX_KNOWN_FAILURES = 37;
+const MAX_KNOWN_FAILURES = 36;
 
 interface Measured {
   ratio: number;

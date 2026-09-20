@@ -25,8 +25,9 @@
   --surface-3: #dcd8cd;
   --border: #d3cfc3;
   --text: #211e17;
-  --text-muted: #6e6959;
+  --text-muted: #625e52;
   --text-faint: #96907e;
+  --non-text: #7e796a;
   --accent: #b85c1e;
   --accent-strong: #96490f;
   --accent-soft: #f1dcc4;
@@ -83,6 +84,7 @@
   --text: #f1ece1;
   --text-muted: #b0a891;
   --text-faint: #786f5a;
+  --non-text: #817966;
   --accent: #e2903f;
   --accent-strong: #f2a75a;
   --accent-soft: #3a2a16;

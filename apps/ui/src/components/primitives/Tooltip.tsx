@@ -84,7 +84,7 @@ export function Tooltip({ text }: { text: string }) {
           openedByFocus.current = false;
           setOpen(false);
         }}
-        className="ml-1 inline-flex size-[15px] cursor-help items-center justify-center rounded-full border border-[var(--text-faint)] font-['IBM_Plex_Mono',monospace] text-[0.68rem] text-[var(--text-faint)] [text-transform:inherit] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+        className="ml-1 inline-flex size-[15px] cursor-help items-center justify-center rounded-full border border-[var(--non-text)] font-['IBM_Plex_Mono',monospace] text-[0.68rem] text-[var(--text-muted)] [text-transform:inherit] hover:border-[var(--accent)] hover:text-[var(--accent)]"
       >
         i
       </Popover.Trigger>
