@@ -13,7 +13,7 @@ We use [MADR](https://adr.github.io/madr/), a widely-adopted lightweight format.
 1. **Immutable once Accepted.** Never edit an accepted ADR's Decision or Consequences to reflect a change of mind. If a decision changes, write a **new** ADR that supersedes the old one.
 2. **Superseding, not deleting.** The old ADR's `Status` line becomes `Superseded by ADR-NNNN`, and the new ADR's front matter links back (`Supersedes ADR-NNNN`). The old file stays — it's still useful history.
 3. **One decision per ADR.** Don't bundle unrelated decisions; a future agent needs to be able to supersede one without touching the others.
-4. **Concrete, not aspirational.** An ADR records a decision that was actually made and applied to the code, with a pointer to where. It is not a proposal — proposals for future work belong in `docs/architecture/*.md` (see that folder's own docs for the format).
+4. **Concrete, not aspirational.** An ADR records a decision that was actually made and applied to the code, with a pointer to where. It is not a proposal — proposals for future work belong in `docs/prds/` (see its [README](../prds/README.md) for the format).
 
 ## How this is enforced
 
@@ -50,3 +50,12 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0025](0025-delivery-measurements-in-go-profiles-deferred.md) | Delivery measurements are computed in Go, and no distributor profile ships yet | Accepted |
 | [0026](0026-manuscript-line-identity-in-item-extension-data.md) | Manuscript line identity is stored in REAPER item extension data and read back through the bridge | Accepted |
 | [0027](0027-windows-gates-and-creates-the-release.md) | Windows gates pull requests and creates the release; macOS and Linux are optional, separate builds | Accepted |
+| [0028](0028-planned-work-is-specified-as-prds-and-deleted-when-built.md) | Planned work is specified as PRDs, kept apart from ADRs, and a PRD is deleted once its work is built | Proposed |
+| [0029](0029-work-is-tracked-on-github-and-decided-in-the-repo.md) | Work is tracked on GitHub, generated from files in the repo, and decisions and docs stay in the repo | Proposed |
+| [0030](0030-the-app-starts-without-a-project-and-picks-one-from-recents.md) | The app can start without a project and picks one from a per-user recents list | Proposed |
+| [0031](0031-reaper-integration-is-a-lua-file-bridge-verified-by-hand.md) | REAPER integration stays a Lua file bridge, and Lua changes are verified by hand | Proposed |
+| [0032](0032-analyzers-report-findings-and-never-change-audio-or-manuscript-on-their-own.md) | Analyzers report findings and never change the narrator's audio or manuscript on their own | Proposed |
+| [0033](0033-the-teleprompter-follows-speech-with-continuous-alignment-and-pause-resume.md) | The teleprompter follows what was said, with continuous alignment and pause/resume | Proposed |
+| [0034](0034-live-recognition-is-unconstrained-and-never-restricted-to-the-script.md) | Live recognition is unconstrained and is never restricted to the script's words | Proposed |
+| [0035](0035-live-transcription-techniques-are-ported-not-depended-on.md) | Live transcription techniques are ported into the sidecar, not taken as dependencies | Proposed |
+| [0036](0036-story-bible-read-only-view-is-the-disabled-form-not-entitysummary.md) | The Story Bible's read-only view is the same form with disabled controls, not `EntitySummary` | Proposed (amends ADR-0018) |

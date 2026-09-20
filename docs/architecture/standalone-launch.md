@@ -1,32 +1,20 @@
 # Standalone app startup & project picker
 
-**Status: Planned — not implemented.**
+**Status: Implemented** (project picker and recent projects). The OS-level entry points (installer, Start Menu entry, desktop shortcut) are not built; see [Packaging](#packaging-not-built).
 
 ## Problem
 
-The app has **never** launched without a project. `shared/reaper/NarrationUtils_Launcher.lua` always resolves the current REAPER project's folder/name and passes `--project-folder`/`--project-name`/`--daw REAPER` when spawning the Wails executable (`project_context()`, `NarrationUtils_Launcher.lua`). The frontend's `StartupScreen.tsx` only has states for connecting-to-host (opening/timeout/error/disconnected) — there is no "no project selected" state, even partial. On the Go side, `shell/app.go`'s config parsing already treats `--project-folder` as optional and `Bootstrap()` degrades gracefully (empty `projectFolder`/`projectName`, no crash) if it's missing — but nothing in the frontend or the OS-level packaging expects or handles that case today. No recent-projects list, no open/create-project dialog, and no OS-level launch path (start-menu/desktop icon, packaging metadata) exist anywhere in the repo.
+The app was originally launched only from REAPER: `shared/reaper/NarrationUtils_Launcher.lua` resolves the current REAPER project's folder and name and passes them as `--project-folder`/`--project-name`/`--daw REAPER` when spawning the Wails executable, so the frontend never had a "no project selected" state. This document records how a launch without a project is handled.
 
-## Proposal
+## What shipped
 
-### 1. Standalone launch path
+- **Empty project folder is a first-class state.** `Bootstrap()` (`shell/app.go:560`) already tolerated an empty `projectFolder`. The frontend shows `ProjectPicker` instead of the app whenever `data.projectFolder` is empty (`shared/ui/src/App.tsx:156`); it is a separate screen from `StartupScreen.tsx`, which is only about connecting to the host.
+- **Bindings** (`shell/bindings.go`): `ProjectSelectFolder` (`:175`, a native folder dialog that can create directories), `ProjectSwitch` (`:195`), `ProjectCreate` (`:219`), `ProjectRecents` (`:229`) and `ProjectRemoveRecent` (`:240`). `ProjectSwitch` is the one place a picker-chosen project is attached: it sets the DAW to `"Standalone"` (`:202`), goes through the same in-flight-work guard as the REAPER second-launch path (`attachProjectLocked`, `shell/app.go:394`, which refuses with "busy" while work is running), records the project in recents, and emits `system:attached`, which `App.tsx` turns into a bootstrap refresh.
+- **Recent projects** live in `%APPDATA%\narration-utils\recent-projects.json` (falling back to `%USERPROFILE%\AppData\Roaming\...`, `shell/app.go:100`), not in the project, because the list is per user. The store (`shell/internal/recents/store.go`) keeps at most 10 entries (`:18`), dedupes by path case-insensitively, and drops entries whose folder no longer exists both when adding (`Touch`, `:38`) and when listing (`List`, `:85`). A missing or corrupt file reads as an empty list.
+- **Picker actions** (`shared/ui/src/components/project/ProjectPicker.tsx`): open a recent project or remove one from the list, "Browse..." to an existing folder (`:92`), and "Create new..." (`:99`).
+- **"Create new" only makes the folder.** `ProjectCreate` runs `os.MkdirAll` on the chosen path and then `ProjectSwitch`. The `narration-utils/` sidecar folders (`manuscript/`, settings and so on) are created lazily by whichever service first writes to them (for example `shell/internal/manuscript/service.go:332,366`), and nothing scaffolds anything in REAPER: the DAW is `Standalone`.
+- **The REAPER launcher is unchanged** and still always passes `--project-folder`, `--project-name` and `--daw REAPER` (`shared/reaper/NarrationUtils_Launcher.lua:104-109`), so the embedded launch path behaves as before.
 
-An OS-level entrypoint (desktop shortcut, Start Menu / Applications entry) that launches the Wails executable with no `--project-folder` argument at all — this already technically works at the Go level (`Bootstrap()` won't crash), it just has nowhere useful to go in the UI today.
+## Packaging (not built)
 
-### 2. Project picker / creation screen
-
-When `Bootstrap()` reports an empty `projectFolder`, the frontend should show a dedicated screen (not `StartupScreen.tsx`'s connection-status states, which are about a different failure mode) offering:
-- **Open recent** — a small persisted list of previously-attached project folders (needs a new small local store; there is no existing "project" concept as an app-owned, browsable unit today — see research below).
-- **Browse for a folder** — using Wails' `runtime.OpenDirectoryDialog` (the app already uses `runtime.OpenFileDialog` for `ManuscriptSelectFile`, so the binding pattern is established).
-- **Create new** — scaffold a new project folder with the `narration-utils/` sidecar structure the rest of the app already expects (`<project>/narration-utils/manuscript/`, `settings.json`, etc. — see `docs/architecture/daw-integration.md`'s Project-sidecar rules).
-
-### 3. Packaging
-
-No icon, shortcut, or Start Menu registration exists in `shell/wails.json` or the release scripts (`scripts/release/`) today — Wails' default build output is used as-is. This needs platform-specific packaging additions (Windows: an installer that registers a Start Menu entry and optionally a desktop shortcut; the existing PyInstaller-based Python sidecar bundling in `pyproject.toml` is a separate, already-solved concern and not part of this).
-
-## Compatibility constraint
-
-The REAPER-embedded launch path (`NarrationUtils_Launcher.lua` → `--project-folder` always supplied) must keep working unchanged — this is purely additive. `Bootstrap()`'s already-optional `projectFolder` handling means the Go side needs no changes; this is almost entirely frontend (the new picker screen) plus packaging work.
-
-## Out of scope for this doc
-
-The exact on-disk format for a "recent projects" list, and whether "Create new" needs any REAPER-specific scaffolding when created outside a REAPER session — both need product decisions once this is scheduled.
+No installer definition, Start Menu entry or desktop shortcut exists yet. Windows needs an installer that registers a Start Menu entry and optionally a desktop shortcut so the app can be launched with no `--project-folder` at all, which the picker above already handles. This is planned in [release-readiness-provisioning-and-docs-site.prd.md](../prds/release-readiness-provisioning-and-docs-site.prd.md) (Windows installer phase). The PyInstaller sidecar bundling is a separate, already-solved concern.

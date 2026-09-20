@@ -1,6 +1,6 @@
 # Narration Utilities Documentation
 
-This folder records planned work for a local-first audiobook narration toolkit. It is a product and implementation roadmap, not a claim that the described utilities already exist.
+This folder documents a local-first audiobook narration toolkit: how it is built (architecture, design and decision records), how it is used (guides and workflows), and what is planned next. Planned work is specified as PRDs under [prds/](prds/README.md). The roadmap and the PRDs describe intent, not a claim that the planned utilities already exist.
 
 ## Status legend
 
@@ -16,8 +16,8 @@ This folder records planned work for a local-first audiobook narration toolkit. 
 | [Manuscript Guide](utilities/manuscript-guide.md) | Implemented | Extracts editable characters, places, organizations, pronunciations, evidence, and narration notes from a Word manuscript. |
 | [Transcript Compare](utilities/transcript-compare.md) | Implemented | Locally transcribes a REAPER chapter track, compares it to the manuscript, and adds take markers for discrepancies. |
 | [Tracks](utilities/tracks.md) | Implemented | Reads a project's REAPER `.rpp` file to list its tracks and play their audio (play/pause, skip 30s, previous/next track), with no running REAPER needed. |
-| [Manuscript Teleprompter](architecture/manuscript-teleprompter.md) | Implemented (first cut) | Listens to a microphone with a local Whisper model and highlights the current word of a chosen manuscript chapter as it is read. Microphone is typed by name and only Whisper is wired up; misread findings, Moonshine, and a device picker are still open in the brief. |
-| [Teleprompter–Manuscript integration](architecture/teleprompter-manuscript-integration.md) | Planned | Plans the teleprompter as a reading mode of the Manuscript page: modal, story bible and notes, misread marks, seek to a word, resume from the DAW track's last audio, and punch-and-roll cursor moves. |
+| [Manuscript Teleprompter](architecture/manuscript-teleprompter.md) | Implemented (first cut) | Listens to a microphone with a local Whisper model and highlights the current word of a chosen manuscript chapter as it is read. Microphone is typed by name and only Whisper is wired up; misread findings, Moonshine, and a device picker are planned in the [engines and input devices PRD](prds/teleprompter-engines-and-input-devices.prd.md) and the integration PRD below. |
+| [Teleprompter–Manuscript integration](prds/teleprompter-manuscript-integration.prd.md) | Planned | Plans the teleprompter as a reading mode of the Manuscript page: modal, story bible and notes, misread marks, seek to a word, resume from the DAW track's last audio, and punch-and-roll cursor moves. |
 | [REAPER shared helpers](architecture/daw-integration.md) | Implemented | Provides ExtState, path, and hidden-process helpers for ReaScripts. |
 | Audacity adapters | Deferred | Placeholder directories only; no driver has been implemented. |
 
@@ -28,7 +28,7 @@ This folder records planned work for a local-first audiobook narration toolkit. 
 1. Before changing anything in `shared/ui/src/components/primitives/`, `shared/ui/src/styles.css`, or a behavior an ADR names, read the [ADR index](adr/README.md) and the [design system reference](design/design-system.md) — see the `design-spec-guard` skill.
 2. Read the [findings contract](architecture/findings-contract.md) before adding any analyzer or dashboard action.
 3. Use the workflow documents to understand how utilities combine: [manuscript/editorial](workflows/manuscript-and-editorial-review.md), [recording/comping](workflows/recording-and-comping.md), [character continuity](workflows/character-continuity.md), and [technical QC/handoff](workflows/technical-qc-and-handoff.md).
-4. Each planned utility has a dedicated implementation brief in [utilities/](utilities/).
+4. Planned utilities and known defects are specified as PRDs in [prds/](prds/README.md), which indexes them; [utilities/](utilities/) keeps the docs for implemented tools ([Manuscript Guide](utilities/manuscript-guide.md), [Transcript Compare](utilities/transcript-compare.md), [Tracks](utilities/tracks.md)).
 5. Before adding a local model, executable, or model pack, use the [local dependency evaluation and license plan](research/local-dependency-evaluation.md).
 6. For the planned move from developer bootstrap downloads to packaged-release
    first-use downloads, use the [first-use dependency provisioning brief](architecture/first-use-dependency-provisioning.md).

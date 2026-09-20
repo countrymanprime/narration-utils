@@ -21,7 +21,7 @@ Open a project folder. The Tracks page finds the project's `.rpp` file, lists it
 
 ## Non-goals and review boundary
 
-Read-only: nothing edits the `.rpp`, moves media, or changes REAPER state. Track-to-chapter matching, measured recorded duration, and transcript/waveform views belong to [DAW Project Scan](daw-project-scan.md), which can build on this parser instead of a new bridge action.
+Read-only: nothing edits the `.rpp`, moves media, or changes REAPER state. Track-to-chapter matching and measured recorded duration are planned in [diagnostics-delivery-and-cleanup-tools.prd.md](../prds/diagnostics-delivery-and-cleanup-tools.prd.md) (Phase 8); transcript and waveform views are recorded there as later work. Both can build on this parser instead of a new bridge action.
 
 ## Known limits
 
