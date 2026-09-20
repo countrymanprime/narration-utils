@@ -15,7 +15,7 @@ export const canAddEquivalence = (row?: Discrepancy): boolean =>
 // (nothing in rule/spaCy extraction can guess them), and Needs Review/Draft
 // are system states a user can never pick for themselves - see
 // CREATABLE_CATEGORIES below and manuscript_guide.py's SYSTEM_CATEGORIES.
-export const CATEGORY_LABELS: Record<string, string> = {
+const CATEGORY_LABELS: Record<string, string> = {
   Character: 'Character',
   Place: 'Location',
   Organization: 'Organization',
@@ -88,7 +88,7 @@ export const highlightEntitiesInText = (text: string, entities: { name: string; 
 // Fixed industry rule of thumb used by the Home audiobook-estimate panel:
 // ~150 spoken words/minute narrated, ~9,300 words per finished audio hour.
 // Record/edit/proof phases use standard multipliers of that finished length.
-export const WORDS_PER_FINISHED_HOUR = 9300;
+const WORDS_PER_FINISHED_HOUR = 9300;
 export const estimateFinishedHours = (wordCount: number): number => wordCount / WORDS_PER_FINISHED_HOUR;
 
 // The reader numbers each paragraph 1, 2, 3... within its own chapter (see

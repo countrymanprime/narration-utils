@@ -149,7 +149,7 @@ Developer: change a Go payload, run the Go test that rewrites the golden file, s
 | 4 | Binding results, part 1 | `decode(schema, ...)` for Manuscript, Story Bible and Project bindings; replace `normalizeGuideEntity`; audit page error handling | pending | 5, 6 | 1, 3 | - |
 | 5 | Binding results, part 2 | Same for Transcript, Tts, Whisper, Tracks, Settings, Teleprompter start | pending | 4, 6 | 1, 3 | - |
 | 6 | Persisted files and sidecar outputs (Go) | Version policy, logged fallbacks and corrupt-file handling; `guide.json` `schema_version` check; progress line parsing | pending | 4, 5 | 1 | - |
-| 7 | REAPER events and cleanup | Table-driven `events.log` parsing in Go; remove dead `api/client/http.ts` and superseded `normalize*`; final cast sweep; `feature-cleanup` | pending | - | 2, 4, 5, 6 | - |
+| 7 | REAPER events and cleanup | Table-driven `events.log` parsing in Go; remove superseded `normalize*` (the dead `api/client/http.ts` was already deleted by the Knip cleanup, verification PRD phase 8); final cast sweep; `feature-cleanup` | pending | - | 2, 4, 5, 6 | - |
 
 ### Phase Details
 
@@ -175,7 +175,7 @@ Developer: change a Go payload, run the Go test that rewrites the golden file, s
 - **Goal**: no silent fallback. **Scope**: per Open Question 6, log or preserve-and-notify for settings, recents, notes, last comparison, hints, guide; check `guide.json` `schema_version` 2; typed parse of `STAGE|pct|message`. **Success signal**: table-driven Go tests with corrupt and future-version files; `go -C apps/desktop test ./...` green.
 
 **Phase 7 - REAPER events and cleanup**
-- **Goal**: the pipe protocol fails loudly without touching Lua. **Scope**: event table in `apps/desktop/internal/bridge` with minimum field counts and types, logged and surfaced errors, tests using recorded `events.log` lines; delete `api/client/http.ts` if still unreferenced; remove superseded normalizers; docs and ADR bookkeeping. **Success signal**: a truncated `COMPARE_MARKER` line produces a visible, logged error, not a zero-filled row.
+- **Goal**: the pipe protocol fails loudly without touching Lua. **Scope**: event table in `apps/desktop/internal/bridge` with minimum field counts and types, logged and surfaced errors, tests using recorded `events.log` lines; `api/client/http.ts` is already gone (deleted by the Knip cleanup, verification PRD phase 8); remove superseded normalizers; docs and ADR bookkeeping. **Success signal**: a truncated `COMPARE_MARKER` line produces a visible, logged error, not a zero-filled row.
 
 ### Parallelism Notes
 

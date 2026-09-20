@@ -3,6 +3,9 @@
 // Workspaces come from pnpm-workspace.yaml (apps/ui, apps/desktop); the root workspace covers scripts/ and tools/.
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  // The scripts and the kit are entries (nothing imports them), and an entry's exports are normally never reported.
+  // Reporting them keeps a helper exported by habit from outliving its last importer.
+  "includeEntryExports": true,
   "workspaces": {
     ".": {
       // Plain Node scripts run by hand, by package.json scripts, by workflows and by Nx targets, and their

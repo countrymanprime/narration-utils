@@ -89,9 +89,9 @@ runner called:
 | `repo-scripts` | `scripts` | `lint`, `test` (pytest), `test-node` (`node --test`) |
 | `ui-atlas-kit` | `tools/ui-atlas-kit` | `test` |
 | `config`, `fixtures` | `config`, `tests/fixtures` | none (fixtures: `lint`); they exist so a change to them affects the projects that read them |
-| `narration-utils` | the repo root | none; the `nx release` project |
+| `narration-utils` | the repo root | `knip` (unused files, exports and dependencies, gated at zero: see below); also the `nx release` project |
 
-- **`pnpm check`** runs `nx run-many` over `lint format test test-node build`, one project at a time and never from
+- **`pnpm check`** runs `nx run-many` over `lint format knip test test-node build`, one project at a time and never from
   the Nx cache, so a green gate means every check ran. `check:fast` and the Git hooks still use
   `scripts/quality.mjs` on staged files.
 - **Look around** with `pnpm exec nx show projects`, `pnpm exec nx graph`, and
@@ -121,6 +121,21 @@ runner called:
 - **Adding a project**: add a `project.json` (copy a neighbour), give it `lint` and `test` targets that call the same
   tools, list what it reads under `implicitDependencies`, and add its name to the root project's
   `implicitDependencies` unless it should not count toward the release version.
+
+## Dead-code check (Knip)
+
+`nx run narration-utils:knip` (also `pnpm knip`) runs [Knip](https://knip.dev) over `apps/ui`, `apps/desktop`, `scripts/`
+and `tools/`, configured in `knip.jsonc`. It fails on an unused file, export or dependency, and on an unlisted
+dependency or binary; the repository is at zero, and CI runs it on every pull request in the `js` job. Fix a finding
+by deleting the code or dropping the `export`. Add an `ignore`, `ignoreIssues`, `ignoreDependencies` or
+`ignoreBinaries` entry only with a written reason in the file (generated code, files another repository receives by
+copy, external tools, byte-identical vendored files). It does not read Go, Python or Lua. The standing exceptions
+are the generated `apps/ui/wailsjs`, the UI atlas kit's `plugin/templates`, the wire-contract types, the exports of the
+byte-identical `apps/ui/tests/visual/lib`, `@nx/js` (loaded by `nx release`) and the binaries `gofmt`, `wails` and
+`playwright`. Scripts and the kit are entries and their exports are reported too (`includeEntryExports`), so a helper
+exported by habit is flagged once nothing imports it. When a dependency that
+Knip cannot see through arrives (a schema library, `@base-ui/react`), run it once and add the false positive with its
+reason rather than the whole package to an ignore list.
 
 ## Coverage ratchet
 

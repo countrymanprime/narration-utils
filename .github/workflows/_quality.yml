@@ -26,6 +26,12 @@ jobs:
         with:
           targets: lint format test
           projects: narration-utils-ui
+      # Knip reads every workspace, so a change anywhere can leave an unused file or export: `always`.
+      - uses: ./.github/actions/nx-run
+        with:
+          targets: knip
+          projects: narration-utils
+          always: 'true'
 
   ui-visual:
     # Captures every {page, state, viewport} of the mock-backed app and fails on
