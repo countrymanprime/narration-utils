@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { THEME_STORAGE_KEY } from '../../src/theme/theme';
 import { settlePage } from './helpers/settle';
 
 // How to reach each {page, state} in STATE_CATALOG. Driven entirely through
@@ -16,8 +17,8 @@ export type Driver = (page: Page) => Promise<void>;
 // of once in a while on CI.
 //
 // UI_THEME=dark (or light) starts every capture in that theme, so the whole suite can be looked at in dark: the app reads the
-// same localStorage key the theme picker writes (theme/theme.ts). The suite still fails at its end on `theme-dark` looking
-// like `home/default`: that check is for the default run, so copy `screenshots/app` aside and use the PNGs.
+// same localStorage key the theme picker writes (theme/theme.ts). The suite still fails at its end on `theme-dark` and
+// `reader-dark` matching their default states: that check is for the default run, so copy `screenshots/app` aside and use the PNGs.
 /** @public */
 export async function beforeCapture(page: Page): Promise<void> {
   await startInRequestedTheme(page);
@@ -29,7 +30,7 @@ async function startInRequestedTheme(page: Page): Promise<void> {
   if (!theme) return;
   // A mistyped value must not turn into a light run that gets filed as the dark one.
   if (theme !== 'light' && theme !== 'dark') throw new Error(`UI_THEME must be "light" or "dark", got "${theme}"`);
-  await page.addInitScript((value) => window.localStorage.setItem('narration-ui-theme', value), theme);
+  await page.addInitScript(([key, value]) => window.localStorage.setItem(key, value), [THEME_STORAGE_KEY, theme]);
 }
 
 async function throttleRequestedCpu(page: Page): Promise<void> {

@@ -133,7 +133,8 @@ const KNOWN_FAILURES: Record<string, KnownFailure> = {
     'review-on-soft',
   ]),
 };
-const MAX_KNOWN_FAILURES = 26;
+// Counted per pair and theme: `text-muted` failing in dark as well would be a second failure, not the same one.
+const MAX_KNOWN_FAILURES = 37;
 
 interface Measured {
   ratio: number;
@@ -143,7 +144,11 @@ interface Measured {
 function worstOf(tokens: TokenMap, spec: PairSpec): Measured {
   return spec.over
     .map((over) => ({ over, ratio: resolveContrast(tokens, { fg: spec.fg, bg: spec.bg, over }) }))
-    .reduce((worst, next) => (next.ratio < worst.ratio ? next : worst));
+    .reduce((worst, next) => {
+      // A ratio that is not a number must fail, not lose the comparison and let the pair pass.
+      if (Number.isNaN(next.ratio)) throw new Error(`${spec.id}: the contrast over --${next.over} is not a number`);
+      return next.ratio < worst.ratio ? next : worst;
+    });
 }
 
 const failing = (spec: PairSpec, theme: Theme) => worstOf(THEMES[theme], spec).ratio < spec.min;
@@ -194,9 +199,15 @@ describe('the ratchet of known failures', () => {
     expect(fixed, 'these pairs now pass: delete them from KNOWN_FAILURES and lower MAX_KNOWN_FAILURES').toEqual([]);
   });
 
-  it('never grows', () => {
-    // Each phase that deletes entries lowers MAX_KNOWN_FAILURES by the same number, so a deleted entry cannot be replaced.
-    expect(Object.keys(KNOWN_FAILURES).length).toBeLessThanOrEqual(MAX_KNOWN_FAILURES);
+  it('is exactly as long as MAX_KNOWN_FAILURES says, so a deleted entry cannot be replaced by a new one', () => {
+    // Each phase that deletes entries lowers MAX_KNOWN_FAILURES by the same number.
+    const failures = Object.values(KNOWN_FAILURES).reduce((total, entry) => total + entry.themes.length, 0);
+    expect(failures).toBe(MAX_KNOWN_FAILURES);
+  });
+
+  it('declares every pair once', () => {
+    const ids = PAIRS.map((spec) => spec.id);
+    expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
   });
 });
 
@@ -218,7 +229,6 @@ describe('the text ramp keeps its order', () => {
 // unmeasured. `text-[var(--x)]`, `color: 'var(--x)'` and a `color:` declaration in a stylesheet all count.
 const NO_TEXT_PAIR: Record<string, string> = {
   bookmark: 'a bookmark icon colour, not text',
-  bg: 'the page colour used as text only on the toast, which the toast pair measures',
 };
 
 function sourceFiles(directory: string): string[] {
@@ -233,7 +243,9 @@ function tokensUsedAsText(): Set<string> {
   const used = new Set<string>();
   for (const file of sourceFiles(__dirname)) {
     const source = readFileSync(file, 'utf8');
-    for (const match of source.matchAll(/text-\[var\(--([a-z0-9-]+)\)\]|color:\s*'?var\(--([a-z0-9-]+)\)/g)) used.add(match[1] ?? match[2]);
+    // `text-[var(--x)]`, `text-[color:var(--x)]`, `text-(--x)`, and a `color:` that is not `background-color:` or `border-color:`.
+    for (const match of source.matchAll(/text-\[(?:color:)?var\(--([a-z0-9-]+)\)\]|text-\(--([a-z0-9-]+)\)|(?<![-\w])color:\s*['"`]?var\(--([a-z0-9-]+)\)/g))
+      used.add(match[1] ?? match[2] ?? match[3]);
   }
   return used;
 }

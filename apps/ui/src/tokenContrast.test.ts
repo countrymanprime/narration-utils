@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { contrastRatio, parseColor, parseThemes, resolveContrast } from './tokenContrast';
+import { contrastRatio, countRootRules, parseColor, parseThemes, resolveContrast, rootRules } from './tokenContrast';
 
 // The palette guard (paletteContrast.test.ts) is only as good as its arithmetic, so the arithmetic is checked against
 // values that can be verified by hand or against a browser: the WCAG extremes, CSS's own colour-mix rules, and the
@@ -31,6 +31,9 @@ describe('parseColor', () => {
     expect(() => parseColor('oklch(0.5 0.1 200)', () => '')).toThrow(/oklch/);
     expect(() => parseColor('var(--missing)', () => undefined as unknown as string)).toThrow(/missing/);
     expect(() => parseColor('color-mix(in oklab, #000 50%, #fff)', () => '')).toThrow(/srgb/);
+    expect(() => parseColor('rgb(0 0 0 / 40%)', () => '')).toThrow(/plain numbers/);
+    expect(() => parseColor('rgba(0, 0, 0, 40%)', () => '')).toThrow(/plain numbers/);
+    expect(() => parseColor('color-mix(in srgb, #000 0%, #fff 0%)', () => '')).toThrow(/positive/);
   });
 });
 
@@ -69,6 +72,18 @@ describe('parseThemes', () => {
     const { light, dark } = parseThemes(css);
     expect(light).toEqual({ a: '#111111', b: 'var(--a)', c: '#222222' });
     expect(dark).toEqual({ a: '#eeeeee', b: 'var(--a)', c: '#222222' });
+  });
+
+  it('keeps a last declaration that has no trailing semicolon, and reads either quote in the dark selector', () => {
+    const { light, dark } = parseThemes(':root { --a: #111111 } :root[data-theme="dark"] { --a: #eeeeee }');
+    expect(light).toEqual({ a: '#111111' });
+    expect(dark).toEqual({ a: '#eeeeee' });
+  });
+
+  it('counts a root rule the parser cannot read, so the guard fails instead of measuring stale tokens', () => {
+    const css = ":root { --a: #111; } :root:not([data-theme='light']) { --a: #eee; } html:root { --b: #222; }";
+    expect(rootRules(css)).toHaveLength(1);
+    expect(countRootRules(css)).toBe(3);
   });
 
   it('resolves a token through the theme it is read in', () => {

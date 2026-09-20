@@ -25,7 +25,7 @@ function stripComments(css: string): string {
 
 function declarations(block: string): TokenMap {
   const tokens: TokenMap = {};
-  for (const match of block.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) tokens[match[1].slice(2)] = match[2].trim();
+  for (const match of block.matchAll(/(--[\w-]+)\s*:\s*([^;]+)(?:;|$)/g)) tokens[match[1].slice(2)] = match[2].trim();
   return tokens;
 }
 
@@ -36,7 +36,7 @@ export interface RootRule {
 
 // The `:root` and `:root[data-theme='dark']` rules the parser can see, in source order.
 export function rootRules(css: string): RootRule[] {
-  return [...stripComments(css).matchAll(/(?<=^|\})\s*(:root(?:\[data-theme='dark'\])?)\s*\{([^}]*)\}/g)].map((match) => ({
+  return [...stripComments(css).matchAll(/(?<=^|\})\s*(:root(?:\[data-theme=['"]dark['"]\])?)\s*\{([^}]*)\}/g)].map((match) => ({
     dark: match[1] !== ':root',
     tokens: declarations(match[2]),
   }));
@@ -52,10 +52,11 @@ export function parseThemes(css: string): Record<Theme, TokenMap> {
   return { light, dark: { ...light, ...darkOverrides } };
 }
 
-// The number of `:root` rules in the file, so a rule the parser above cannot see (nested in a layer, say) fails a test
-// instead of quietly dropping its tokens.
+// The number of rules in the file whose selector mentions `:root`, whatever the rest of it says, so a rule the parser above
+// cannot see (nested in a layer, `:root:not([data-theme='light'])`, `html:root`) fails a test instead of quietly dropping
+// its tokens.
 export function countRootRules(css: string): number {
-  return (stripComments(css).match(/:root(\[data-theme='dark'\])?\s*\{/g) ?? []).length;
+  return (stripComments(css).match(/:root[^{}]*\{/g) ?? []).length;
 }
 
 function splitTopLevel(text: string): string[] {
@@ -101,6 +102,7 @@ function mixColors(argumentText: string, lookup: (name: string) => string, depth
   const p1 = first.percent ?? (second.percent === undefined ? 50 : 100 - second.percent);
   const p2 = second.percent ?? 100 - p1;
   const sum = p1 + p2;
+  if (p1 < 0 || p2 < 0 || sum <= 0) throw new Error(`color-mix percentages must be positive, got: ${argumentText}`);
   const w1 = p1 / sum;
   const w2 = p2 / sum;
   const alpha = first.color.a * w1 + second.color.a * w2;
@@ -123,7 +125,10 @@ export function parseColor(expression: string, lookup: (name: string) => string,
   }
   const rgba = functionArguments(text, 'rgba') ?? functionArguments(text, 'rgb');
   if (rgba !== undefined) {
-    const [r, g, b, a] = splitTopLevel(rgba).map(Number);
+    const channels = splitTopLevel(rgba).map(Number);
+    if (channels.length < 3 || channels.length > 4 || channels.some((channel) => !Number.isFinite(channel)))
+      throw new Error(`only rgb(r, g, b) and rgba(r, g, b, a) with plain numbers can be evaluated, got: ${expression}`);
+    const [r, g, b, a] = channels;
     return { r, g, b, a: a ?? 1 };
   }
   const mix = functionArguments(text, 'color-mix');
