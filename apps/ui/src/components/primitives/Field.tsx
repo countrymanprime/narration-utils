@@ -2,7 +2,7 @@ import { Field as BaseField } from '@base-ui/react/field';
 import type { ReactNode } from 'react';
 
 const CONTROL_CLASSES =
-  'mt-1 w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)] data-[invalid]:border-[var(--danger)]';
+  'mt-1 w-full rounded-[var(--control-radius)] font-medium border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)] data-[invalid]:border-[var(--danger)]';
 
 // A labelled text control. Base UI's Field wires the label, the hint and the error to the control (`for`, `aria-invalid`,
 // `aria-describedby`), so none of that is written by hand here (ADR 0047). The control stays controlled: it never holds
@@ -29,7 +29,7 @@ export function Field({
   error?: string;
 }) {
   return (
-    <BaseField.Root invalid={Boolean(error)} disabled={disabled} className="first:mt-3">
+    <BaseField.Root invalid={Boolean(error)} disabled={disabled} className="text-[0.82rem] font-medium text-[var(--text-muted)] first:mt-3">
       <BaseField.Label className="block text-[0.82rem] font-medium text-[var(--text-muted)]">{label}</BaseField.Label>
       <BaseField.Control
         render={textarea ? <textarea className={`min-h-20 ${CONTROL_CLASSES}`} /> : <input className={`min-h-[var(--control-height)] ${CONTROL_CLASSES}`} />}

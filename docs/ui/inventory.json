@@ -122,7 +122,10 @@
         "Textarea Typing Keeps Newlines",
         "Blur Commits Draft",
         "Disabled Is Inert",
-        "Textarea Disabled Is Inert"
+        "Textarea Disabled Is Inert",
+        "With Hint",
+        "With Error",
+        "Textarea With Hint And Error"
       ],
       "consumers": [
         "src/components/storybible/GuideDetail.tsx"
@@ -194,6 +197,8 @@
         "Full",
         "Thin Segments",
         "With Caption And Legend",
+        "Is Named By Its Label And Segments",
+        "Does Not Animate Under Reduced Motion",
         "Segments Render In Caller Order",
         "Chronological Order Is The Mirror Image",
         "Empty Draws No Segments",
