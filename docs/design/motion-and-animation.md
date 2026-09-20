@@ -20,4 +20,4 @@ State changes and page loads currently "pop in" with no transition in most place
 
 ## Out of scope for this doc
 
-Actually building the token set or auditing every existing interaction for missing transitions — this is a proposal, not a design system yet. See `docs/architecture/interaction-feedback-backlog.md` for the related (but distinct) concern of missing *feedback*, as opposed to missing *animation*.
+Actually building the token set or auditing every existing interaction for missing transitions — this is a proposal, not a design system yet. See [interaction-feedback-audit.prd.md](../prds/interaction-feedback-audit.prd.md) for the related (but distinct) concern of missing *feedback*, as opposed to missing *animation*.

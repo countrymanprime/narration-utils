@@ -2,6 +2,8 @@
 
 **Status: Partially implemented — Piper preview voices and Whisper transcription models.**
 
+Remaining work is planned in [release-readiness-provisioning-and-docs-site.prd.md](../prds/release-readiness-provisioning-and-docs-site.prd.md).
+
 ## Problem
 
 `pnpm run bootstrap` is a developer-checkout bootstrapper. It creates the local
@@ -94,24 +96,6 @@ testing or packaging verification.
 Existing caches created by retired Windows bootstrap scripts should be detected only by an explicit,
 documented migration/repair path. Do not silently adopt files whose version or
 hash cannot be verified against the asset catalog.
-
-## Delivery slices
-
-1. Define the release packaging boundary and the versioned asset-catalog/cache
-   manifest format; package a launchable application without developer bootstrap.
-2. Add an asset manager owned by the application backend, including hash
-   verification, temporary downloads, atomic install, cancellation, repair,
-   removal, and diagnostics.
-3. Add install-state APIs and UI for Settings and the first-use gate. Convert
-   spaCy choices from the current installed-only filter to catalog-backed
-   compatible choices.
-4. Piper preview voices and Whisper transcription models now use the shared
-   catalog/cache manager (`shell/internal/assets`, backing both
-   `shell/internal/tts` and `shell/internal/whisper`). Move the spaCy Story
-   Bible path and every subsequently approved optional asset through the same
-   manager.
-5. Change bootstrap and release documentation, migrate or deliberately reject
-   legacy caches, and add release-install smoke coverage.
 
 ## Acceptance criteria
 

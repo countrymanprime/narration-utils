@@ -11,7 +11,8 @@ decisions and documentation; GitHub is where work is tracked and discussed.
 | Label set | [`.github/labels.json`](../../.github/labels.json) | Repository labels, applied by `scripts/github/sync-labels.mjs` |
 | Which paths map to which area | [`.github/labeler.yml`](../../.github/labeler.yml) | `area:*` labels on pull requests |
 | Decisions | [`docs/adr/`](../adr/README.md) | Linked from issues and pull requests, never copied |
-| Documentation | `docs/` | Not mirrored anywhere. The **wiki is disabled** on purpose: it is an unreviewed second copy that drifts from the docs that change with the code. A published docs site is a separate, planned item ([component showcase and docs site](../architecture/component-showcase-and-docs-site.md)). |
+| Documentation | `docs/` | Not mirrored anywhere. The **wiki is disabled** on purpose: it is an unreviewed second copy that drifts from the docs that change with the code. A published docs site is a separate, planned item ([release readiness PRD, Phases 9 to 12](../prds/release-readiness-provisioning-and-docs-site.prd.md)). |
+| Planned work | [`docs/prds/`](../prds/README.md) | Issues link the PRD and phase they deliver; the PRD is deleted once the work is steady state |
 | Work in flight | Issues and pull requests | The **Narration Utils** project board |
 
 Never edit milestones or labels by hand in the GitHub UI: the next sync reverts a label or milestone that is
@@ -23,7 +24,7 @@ milestones that the files do not list are left alone.
 Use the forms: **Bug report** or **Feature request**. Blank issues are off. New issues carry `needs-triage`;
 remove it when a maintainer has looked at the issue.
 
-- Keep one problem per issue. Link the ADR or brief it touches instead of pasting it.
+- Keep one problem per issue. Link the ADR, PRD or brief it touches instead of pasting it.
 - A feature that changes a recorded decision should say so; the resulting change adds or supersedes an ADR (see
   the `adr-author` skill).
 - Set the milestone when the work belongs to a roadmap milestone. Unscheduled work has none.

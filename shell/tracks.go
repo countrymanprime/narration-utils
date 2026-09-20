@@ -8,7 +8,7 @@ import (
 )
 
 // tracksDiscover snapshots the project folder and settings pointer under
-// h.mu (see docs/architecture/host-binding-concurrency.md - configureLocked
+// h.mu (see docs/prds/host-binding-data-race.prd.md - configureLocked
 // reassigns both on every project switch) and lists every *.rpp file
 // discovered in it, along with a resolved "selected" path when the choice
 // isn't ambiguous: the narrator's previously saved choice if it still

@@ -418,8 +418,9 @@ def iter_wav_chunks(path: str, chunk_seconds: float = CHUNK_SECONDS) -> Iterator
 def iter_microphone_chunks(device_name: str, chunk_seconds: float = CHUNK_SECONDS) -> Iterator[np.ndarray]:
     """Capture live mic audio via PyAV's Windows dshow input, resampled the
     same way as iter_wav_chunks. Manual-testing path only (device
-    enumeration/selection UX is an explicit open item in the architecture
-    brief, not resolved here) - not exercised by the automated test suite.
+    enumeration/selection UX is planned in
+    docs/prds/teleprompter-engines-and-input-devices.prd.md, not resolved
+    here) - not exercised by the automated test suite.
     Ctrl+C ends the stream so buffered audio is still decoded."""
     import av
 

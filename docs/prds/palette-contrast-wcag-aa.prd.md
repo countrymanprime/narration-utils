@@ -1,0 +1,208 @@
+# Palette Contrast to WCAG AA
+
+**Supersedes:** `docs/design/known-ui-defects.md` (defect 1 [medium, a design decision]; the file's last revision is `b613933`, recover it with `git show b613933:docs/design/known-ui-defects.md`)
+
+## Problem Statement
+
+The design tokens for secondary text (`--text-faint`, `--text-muted` on the darker surfaces), the active navigation item, and the `Highlight` category colours fall below WCAG AA 4.5:1, in the light theme and, for three category colours, badly in the dark theme. Narrators with low vision or in bright rooms cannot reliably read section labels, helper text, the active nav item or highlighted entities, and the failing pairs are hidden behind four ratcheted entries in `tests/atlas/a11y-debt.ts`. Fixing it is a palette decision, not a bug fix: darkening the tokens naively collapses the faint/muted hierarchy, so it needs the user to choose a strategy first.
+
+## Evidence
+
+Ratios computed with a one-off WCAG 2.x script over the values in `shared/ui/src/styles.css` at `b9d348d` (script kept in the session scratchpad, not in the repo; the fix phase should add a permanent test). Re-checked at `d5cc994` (main after #42): `styles.css`, the four primitives and `tests/atlas/a11y-debt.ts` are unchanged, so the numbers stand.
+
+**Reproduce (from the retired defects register):** run `pnpm --dir shared/ui atlas` with the four entries in `tests/atlas/a11y-debt.ts` removed; axe reports `color-contrast` for `Primitives/WorkDialog`, `MeterBar`, `NavButton` and `Highlight`. The `WorkDialog` and `MeterBar` entries share one reason (`TOKEN_CONTRAST`, the faint/muted text ramp); `NavButton` is `ACCENT_ON_TINT`; `Highlight` is `HIGHLIGHT_CONTRAST`. The register's "caught by" note: the atlas fails on any new violation and the debt list cannot grow (`src/atlasCoverage.test.ts`), so nothing regresses silently while the decision is pending. `row-alt` is `--row-alt` (94% surface + 6% text). Highlight tint is `color-mix(category 20%, transparent)` over the row background.
+
+**Text ramp** (bg / surface / surface-2 / surface-3):
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| `--text` | 14.47 / 16.63 / 13.09 / 11.68 | 15.58 / 14.39 / 12.92 / 11.11 |
+| `--text-muted` | 4.77 / 5.49 / **4.32** / **3.85** | 7.74 / 7.15 / 6.42 / 5.52 |
+| `--text-faint` | **2.77 / 3.19 / 2.51 / 2.24** | **3.69 / 3.41 / 3.06 / 2.63** |
+
+**Active nav** (accent text on `color-mix(accent 10%, surface)`): light accent 4.03 (fails), `--accent-strong` 5.67; dark accent 5.70 (passes), accent-strong 7.18. The same copy-pasted class is in `Settings.tsx:159` (category rail), not only `NavButton.tsx`.
+
+**Highlight text** (category colour on its own 20% tint; over surface / over row-alt):
+
+| Kind | Light | Dark |
+| --- | --- | --- |
+| Character | 3.90 / 3.52 | 4.54 / 3.90 |
+| Place | 4.02 / 3.62 | 4.44 / 3.81 |
+| Organization | 4.04 / 3.64 | 4.43 / 3.80 |
+| Review | 4.01 / 3.61 | 4.16 / 3.58 |
+| Lore | 3.60 / 3.25 | **2.93 / 2.53** |
+| Item | 3.90 / 3.51 | **2.74 / 2.37** |
+| Event | 4.31 / 3.88 | **2.48 / 2.16** |
+| Note | text inherits `--text`: 12.79 / 11.54 | 11.62 / 10.07 |
+
+**Findings the old defects register did not have:**
+- `--lore`, `--item`, `--event`, `--note` are defined once, in an unlayered `:root` block at the bottom of `styles.css`, with **no dark override**, so dark mode reuses the light hexes. Dark Highlight for Lore/Item/Event is 2.2-2.9:1, well below the register's "3.2-3.8". The atlas debt entry masks it. As non-text (the 1.5px underline, category dots), dark Event is 2.96:1 against `--surface` (3:1 needed); dark Lore 3.65, Item 3.34.
+- The category colours are **user-configurable**: `App.tsx` (~line 118) and `Settings.tsx` (~line 65) write `color_character`/`color_location`/`color_organization`/`color_lore`/`color_item`/`color_event`/`color_needs_review`/`color_note` settings as inline styles on `<html>`, which beat both theme blocks. `shared/config/defaults.json` ships only `color_note` (`B85C1E`). Any fix that hardcodes a per-category text colour is bypassed by a user override.
+- Entity **badges** (`BADGE_STYLE` in `EntitySummary.tsx`: category colour on `-soft` tint or an 18% mix) fail too: light 3.70-4.44, dark Lore/Item/Event 3.00/2.80/2.53. No story covers them, so axe never sees them.
+- `--warn` used as text (`Settings.tsx:322`; `Results.tsx:142` on an 18% warn tint; `InlineDiffRow.tsx` `SKIPPED` colour is probably text too, TBD verify; `ChapterNav` uses it as a fill, which is a non-text 3:1 question): light 3.26 on surface and 2.70 on its own tint. Also unmeasured by the atlas.
+- Passing but tight: primary button `--accent-contrast` on `--accent` 4.58 light; the "Reset" link accent on surface 4.58.
+- Axe runs only on stories, not app states (the retired register's tooling limits; now in `test-flakiness-and-visual-suite-stability.prd.md`), so page-level pairs are checked only by eye today.
+- The retired register's numbers verified: faint 2.2-3.2 light and 2.6-3.7 dark, muted on surface-2 4.32 and surface-3 3.85, active nav 4.03. Its Highlight range (3.2-3.8) matches the light theme only.
+- Blast radius of the ramp: `--text-faint` is referenced 73 times across 23 files and `--text-muted` 116 times (113 in `.tsx`); a token-only change reaches all of them without editing those files.
+- Recorded constraints: ADR 0010 (dark values live only in `:root[data-theme='dark']`; tokens consumed via `var(--x)`), ADR 0016 (entities tint text in the kind colour; notes keep the text colour; tint mixes with `transparent`), ADR 0023 (contrast was deliberately ratcheted as reasoned debt rather than silently recoloured; the four entries are the ones to delete).
+
+## Proposed Solution
+
+Decide the palette in an ADR first, then land it in small visual PRs guarded by a permanent token-pair contrast test. Recommended shape: keep three text levels but make all three AA on every surface (light muted `#454238`, faint `#625e52`; dark muted `#c4bead`, faint `#9e9788`); use the existing `--accent-strong` for the active nav text; derive Highlight and badge text by mixing the category colour toward `--text` (50%) so hue survives and AA holds for the shipped colours; add dark overrides for the four category tokens that lack them. Delete the four `A11Y_DEBT` entries and set `MAX_DEBT_ENTRIES` to 0.
+
+## Key Hypothesis
+
+We believe a darker three-level text ramp, an on-tint accent text token, and derived on-tint category text will make every text pair in the app meet 4.5:1 in both themes without flattening the visual hierarchy, for narrators who read in varied lighting or with low vision. We'll know we're right when the token-pair test passes for every declared pair in both themes, the atlas passes with zero debt entries, the user signs off the PNGs at all four viewports (light and dark), and defect 1 is closed (Phase 6 `complete`).
+
+## What We're NOT Building
+
+- A new theme, a high-contrast mode, or a colour-blind palette - out of scope; this only reaches AA for the current design.
+- Changes to the accent hue, surfaces or borders - non-text border contrast (`--border` is 1.56:1 on white) is a separate WCAG 1.4.11 question, not decided here.
+- Contrast enforcement for arbitrary user-chosen category colours - not guaranteeable with a coloured-text design (see Open Questions 3-4).
+- Axe on app states - owned by the test-stability PRD; this PRD ships a token-level guard instead.
+- A CSS `contrast-color()`/APCA approach - TBD - needs research on webview support; not needed for AA.
+
+## Success Metrics
+
+| Metric | Target | How Measured |
+| --- | --- | --- |
+| Text pairs at AA | 100% of declared pairs >= 4.5:1, light and dark | New Vitest token-contrast test over `styles.css` |
+| Non-text category marks | >= 3:1 vs `--surface` in both themes (underline, dots) | Same test |
+| Debt entries | `A11Y_DEBT` empty; `MAX_DEBT_ENTRIES = 0` | `src/atlasCoverage.test.ts`; atlas |
+| Hierarchy preserved | Text : muted : faint on surface-3 step down by roughly x0.6 each (11.7 / 7.1 / 4.55 proposed), not equal | Test asserts strict ordering by ratio |
+| No unreviewed visual change | User-approved PNGs at 4 viewports, light and dark | Playwright suite + PNG review |
+| Docs current | 42 doc images and `design-system.md` regenerated once | doc-screenshot-sync; `docScreenshots.test.ts` |
+| Defect closed | Defect 1 closed: Phase 6 marked `complete` in this PRD | Review |
+
+## Open Questions
+
+- [ ] **1. Text ramp strategy.** Options: (A) keep three levels, all AA everywhere: light muted `#454238` (7.06 on surface-3), faint `#625e52` (4.55); dark muted `#c4bead` (7.06), faint `#9e9788` (4.51); (B) two text levels plus a non-text token: muted `#635f50` (4.5 on surface-3), retire faint as text, migrate 73 usages, add a 3:1 icon/decoration token (`#7e796a` light, `#817966` dark); (C) keep faint as is and forbid it as text (not viable: faint carries real labels such as section labels, "Global defaults", "Live activity"). Recommendation: (A) for the smallest diff and a preserved hierarchy (light on surface: 16.6 / 10.1 / 6.5; dark: 14.4 / 9.1 / 5.8). Tradeoff: muted becomes much darker than today (5.49 to 10.05 on white).
+- [ ] **2. How dark should muted be?** Options: 7:1 on surface-3 (`#454238`, wide separation from faint) or 6:1 (`#4f4c40`) or 5.5:1 (`#555145`, closest to today but only 1:1 above faint). Recommendation: 7:1; the user should confirm by eye in the Phase 2 PNGs, and the value is one line to change.
+- [ ] **3. Highlight and badge text.** Options: (A) text = `color-mix(category 50%, --text)`: light 6.30-6.87, dark 5.15-5.96 with today's tokens, hue retained, underline stays the pure category colour; (B) neutral `--text` on the tint (note-style): 11-12:1 in both themes and robust to any user colour, but drops coloured text, which ADR 0016 chose for entities; (C) fixed darker/lighter per-category text tokens (breaks user overrides). Recommendation: (A). It keeps ADR 0016's look and fixes every shipped colour. Caveat measured for user colours at 50%: `#00ff00` 3.80, `#ffff00` 3.35, `#00ffff` 3.65 still fail; (B) is the only design that guarantees AA for any user colour. Choose (B) if guaranteed compliance beats coloured text.
+- [ ] **4. User-chosen category colours.** Options: (a) accept, document it; (b) show the computed ratio beside the colour picker in Settings; (c) clamp or auto-adjust. Recommendation: (a) now, (b) as a Could follow-up (touches `Settings.tsx`/`ScopedSetting.tsx`, coordinate with the settings-layout PRD). Moot if Q3 = (B).
+- [ ] **5. Dark overrides for `--lore/--item/--event/--note`.** Options: add them (needed for the 3:1 non-text bar; computed safe values for 4.5:1 on dark surface: lore `#a67d4c`, item `#608b9d`, event `#af7389`, note `#c17039`; the true values are TBD by eye) or leave dark as light. Recommendation: add, with hexes chosen in the Phase 4 PNG review. Note `--note` also gets an inline override from `color_note`'s default.
+- [ ] **6. Scope beyond the four debt entries.** Options: (a) only the four atlas entries; (b) also entity badges and `--warn` text (introduce `--warn-text`: light `#967019` gives 4.5 on surface, `#866416` on its 18% tint). Recommendation: (b), because they are the same failure and invisible to the atlas; badges ride on Phase 4, warn text is its own Should phase.
+- [ ] **7. Guard mechanism.** Options: (a) a permanent Vitest token-pair contrast test (node env like `legacyCss.test.ts`, parses both theme blocks, computes `color-mix`, asserts declared pairs); (b) rely on the atlas only; (c) wait for axe on app states. Recommendation: (a) first in Phase 1, initially listing today's failures as an explicit ratchet so each fix phase deletes entries.
+- [ ] **8. ADR.** One new ADR before any recolouring ("AA text tokens and derived on-tint text"), amending ADR 0016 (entity text colour) and citing 0010. Confirm, and re-check `docs/adr/` numbering when writing it (0027 at d5cc994, but the dialog, a11y-components and settings-layout PRDs also plan ADRs, so take the next free number at merge time).
+
+## Users & Context
+
+**Primary User**
+- **Who**: a narrator with low vision, or reading in bright or dim rooms, on the desktop app in either theme.
+- **Current behavior**: strains to read faint labels and helper text, misses the active nav state in light mode, cannot read Lore/Item/Event highlights in dark mode.
+- **Trigger**: any screen; the reader and Story Bible most.
+- **Success state**: all text is legible in both themes and the faint/muted/text hierarchy still guides the eye.
+
+**Job to Be Done**: When I read the app in my normal lighting, I want every label and highlight legible without losing the visual hierarchy.
+
+**Non-Users**: developers benefit from a guard test; no behaviour change for anyone else.
+
+## Solution Detail
+
+### Core Capabilities (MoSCoW)
+
+| Priority | Capability |
+| --- | --- |
+| Must | Token-pair contrast test with a ratchet; ADR |
+| Must | Muted/faint AA on all surfaces, light and dark |
+| Must | Active nav text AA (`NavButton` and the `Settings.tsx` category rail) |
+| Must | Highlight text AA for shipped colours; dark overrides for the four missing tokens; delete the four debt entries |
+| Should | Entity badges AA; `--warn` text AA; 3:1 for the underline and dots |
+| Could | Contrast hint next to user colour pickers |
+| Won't (here) | High-contrast mode; border contrast; axe on app states |
+
+### MVP Scope
+
+Phases 1-4 and 6. Phase 5 (warn text) is Should.
+
+### User Flow
+
+1. The user answers the Open Questions; an ADR records the choice.
+2. A guard test lands that fails on any new low-contrast pair.
+3. Each recolouring PR flips its pairs green, deletes its debt entry, and is reviewed as PNGs at desktop, small-desktop, tablet and mobile in light and dark.
+4. A final docs pass regenerates the documentation images once.
+
+## Technical Approach
+
+**Feasibility**: HIGH for tokens (one file, all consumers inherit); MEDIUM overall because visual sign-off is subjective and the change reaches every screen.
+
+**Architecture Notes**
+- Tokens stay in `styles.css` (ADR 0010): light in `:root`, dark only in `:root[data-theme='dark']`. The four category tokens now living in a second unlayered `:root` block at the bottom should move next to the others when their dark overrides are added; `legacyCss.test.ts` ignores `:root`, so this is allowed.
+- Derived text: add tokens such as `--character-text: color-mix(in srgb, var(--character) 50%, var(--text))` (one per kind) in the same blocks, and have `highlightStyle()` and `BADGE_STYLE` reference them. Because user overrides replace `--character`, the derived token follows the user's hue automatically. `color-mix` is already used throughout (`NavButton`, `Highlight`), so webview support is proven.
+- Active nav: swap `text-[var(--accent)]` for `text-[var(--accent-strong)]` in the active branch of `NavButton.tsx` and `Settings.tsx:159` (a ternary, so ADR 0017's mutual-exclusivity rule holds).
+- The test computes WCAG luminance, composites `color-mix(... transparent)` over the row backgrounds (surface and `--row-alt`), and asserts ordering `text > muted > faint`.
+- Reduced blast radius by avoiding component edits for the ramp: a token change reaches the 73 + 116 references.
+- Per-phase documentation refresh: the doc-screenshot set (`shared/ui/tests/visual/doc-screenshots.json`, 42 images) regenerates on visual change (doc-screenshot-sync skill); do it once in the final phase to avoid binary conflicts. Note main moved the guide to `docs/guides/using-the-app/`; `shared/ui/src/docsGuide.test.ts` checks that every manifest entry is embedded on exactly one page.
+
+**Technical Risks**
+
+| Risk | Likelihood | Mitigation |
+| --- | --- | --- |
+| Darker muted flattens the hierarchy or feels heavy | Medium | Three concrete levels proposed; user PNG sign-off; one-line tuning |
+| Derived text colours look muddy on some user colours | Medium | 50% mix is tunable; Q3 fallback (B) |
+| User-chosen colours still fail | High (by design) | Q4; documented; Q3 (B) removes it |
+| Regenerating 42 doc images collides with other PRs | High | Regenerate only in the final phase, after rebase; never merge binaries |
+| Tint over `--row-alt` is worse than over `--surface` | Certain (up to 0.7 lower) | Test uses the worst case |
+| Missed pairs outside the declared list | Medium | Test enumerates every `text-*`/`color:` token usage class; axe on app states is the long-term catch (test-stability PRD) |
+| Two ratchets drift (test vs `A11Y_DEBT`) | Low | Phase 6 sets both to empty in one review |
+
+## Implementation Phases
+
+| # | Phase | Description | Status | Parallel | Depends | PRP Plan |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Decision, ADR and guard test | Answer Q1-Q8; ADR; token-pair contrast test with explicit current-failure ratchet; no visual change | pending | No | - | - |
+| 2 | Text ramp | Light and dark `--text-muted`/`--text-faint` per the ADR; delete `WorkDialog` and `MeterBar` debt entries; PNG review light and dark at 4 viewports | pending | 3 | 1 | - |
+| 3 | Active nav on tint | `--accent-strong` text in `NavButton.tsx` and `Settings.tsx:159`; delete `NavButton` debt entry | pending | 2 | 1 | - |
+| 4 | Highlight, badges, dark category tokens | Derived `--<kind>-text` tokens, dark overrides for lore/item/event/note, `Highlight.tsx`, `EntitySummary.tsx` badges; delete `Highlight` debt entry | pending | No | 1, 2 | - |
+| 5 | Warn text | `--warn-text` for `Settings.tsx:322`, `Results.tsx:142`, `InlineDiffRow.tsx` (after verifying it is text) | pending | No | 2 | - |
+| 6 | Sweep and docs | Close defect 1 (mark this PRD complete); `MAX_DEBT_ENTRIES = 0`; `design-system.md` tokens; regenerate `docs/ui` and the 42 doc images once; final PNG pass | pending | No | 2, 3, 4, 5 | - |
+
+### Phase Details
+
+**Phase 1 - Decision, ADR and guard test.** Goal: settle the palette on paper and make regression impossible. Scope: `docs/adr/<next free number>-*.md` (via `adr-author`; the next free number at merge time, 0027 at d5cc994), a new `src/tokens.contrast.test.ts` (or similar), no CSS change. Success signal: the test runs green with the known failures listed, and any new failing pair turns it red.
+
+**Phase 2 - Text ramp.** Goal: muted and faint AA on every surface. Scope: `styles.css` `:root` and dark blocks only; `tests/atlas/a11y-debt.ts` (two entries). Success signal: atlas passes for `WorkDialog` and `MeterBar` with the entries removed; PNGs approved at all four viewports in both themes (CLAUDE.md screenshot rule).
+
+**Phase 3 - Active nav.** Goal: active item AA in light. Scope: `NavButton.tsx`, `Settings.tsx` active tab class, debt entry. Success signal: atlas `NavButton` passes; `settings/*` and `global/nav-*` PNGs reviewed.
+
+**Phase 4 - Highlight, badges, dark tokens.** Goal: highlights and badges AA and the dark palette complete. Scope: `styles.css` token blocks, `Highlight.tsx`, `EntitySummary.tsx`, stories, debt entry. Change-impact-scan: `ParagraphView`, `EntitySummary`, `GuideDetail`, `ReaderText` (teleprompter) consume `Highlight`. Success signal: dark Lore/Item/Event highlights legible, `manuscript/*` and `storybible/*` PNGs approved.
+
+**Phase 5 - Warn text.** Goal: no unmeasured text pair below AA. Scope: token plus four call sites. Success signal: token test covers warn pairs and passes.
+
+**Phase 6 - Sweep and docs.** Goal: leave nothing stale. Scope: both ratchets to zero, `docs/design/design-system.md` (key tokens list), `docs/ui` regen (`node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir shared/ui`), doc-screenshot-sync (regenerates the 42 images; `pnpm --dir shared/ui test` for `docScreenshots.test.ts`), full-verification-gate. Success signal: `pnpm check` and atlas green.
+
+### Parallelism Notes
+
+Phases 2 and 3 touch disjoint files. Phase 4 also edits `styles.css`, so sequence it after 2 (or rebase). Phase 5 also edits `styles.css` and follows 2.
+
+### Parallel-session compatibility
+
+Files owned: `shared/ui/src/styles.css` (token blocks only), `primitives/NavButton.tsx`, `primitives/Highlight.tsx`, `manuscript/EntitySummary.tsx` (`BADGE_STYLE`), the active-tab line in `settings/Settings.tsx` (~159), `Results.tsx:142` and `InlineDiffRow.tsx` (Phase 5), `tests/atlas/a11y-debt.ts`, `src/atlasCoverage.test.ts` (`MAX_DEBT_ENTRIES`), the new token test, `docs/design/design-system.md`, the ADR, all 42 doc images (final phase only), the Status cells of this PRD's phase table.
+- Can run concurrently with: the a11y-components PRD (disjoint; both regenerate `docs/ui/**`), the dialog PRD's early phases, the settings-layout PRD (both edit `Settings.tsx`, different regions; second to merge rebases), the test-stability PRD's Go and frontend-test phases.
+- Do not run concurrently with: the dialog PRD's Phase 3 while its `WorkDialog` markup is still changing (this PRD's Phase 2 deletes the `WorkDialog` debt entry; merge this after the dialog PRD's Phase 3, or keep the entry until then); `teleprompter-manuscript-integration.prd.md` Phase 7 (new `Highlight` kinds and the atlas debt list; sequence after Phase 4 here); any PRD that also regenerates `docs/images/ui/*.webp`.
+- Generated/shared files that always conflict: `docs/ui/**`, `docs/images/ui/*.webp`, `docs/design/design-system.md`.
+
+## Decisions Log
+
+| Decision | Choice | Alternatives | Rationale |
+| --- | --- | --- | --- |
+| Dark values live only in `:root[data-theme='dark']`; tokens consumed as `var(--x)` (prior decision, ADR 0010) | Keep; add the missing dark overrides there | Media-query copy | Single source of truth |
+| Entities tint their text in the kind colour; notes keep text colour; tint mixes with `transparent` (prior decision, ADR 0016) | Keep unless Q3 = (B), which needs a superseding/amending ADR | Solid fills | Reads on alternating rows |
+| Mutually exclusive state classes (prior decision, ADR 0017) | Ternary for the active nav colour | Base + override | Stylesheet-order bugs |
+| Contrast is recorded, reasoned, ratcheted debt, not silently recoloured (prior decision, ADR 0023) | Fix via ADR, then delete entries | Silent recolour | This PRD |
+| Custom colours come from user settings (prior decision, existing behaviour) | Derived tokens follow user hue | Hardcoded per-category text | Overrides must keep working |
+| Nothing merges without the user (prior decision, CLAUDE.md) | One PR per phase | - | - |
+| Three-level ramp, all AA (proposed) | Option A | B (two levels), C | Q1 |
+| `--accent-strong` for active nav text (proposed) | Existing token | Darken `--accent` | No new token; keeps buttons unchanged |
+| Derived on-tint text (proposed) | 50% mix toward `--text` | Neutral text; fixed tokens | Q3 |
+
+## Research Summary
+
+**Market Context**: WCAG 2.2 SC 1.4.3 requires 4.5:1 for normal text and SC 1.4.11 requires 3:1 for meaningful non-text marks; large text (>= 24px, or 18.66px bold) needs 3:1, but the faint labels are 11.5px, so no large-text exemption applies. CSS `contrast-color()` and APCA are not settled in the target webviews (TBD - needs research).
+
+**Technical Context**: tokens in `shared/ui/src/styles.css`; debt list `shared/ui/tests/atlas/a11y-debt.ts` and ratchet `shared/ui/src/atlasCoverage.test.ts` (`MAX_DEBT_ENTRIES = 4`); Highlight in `primitives/Highlight.tsx` (ADR 0016), badges in `manuscript/EntitySummary.tsx`; user colours applied in `App.tsx` and `Settings.tsx`; verification per CLAUDE.md (plan, change-impact-scan, TDD, `pnpm check`, `pnpm --dir shared/ui atlas`, Playwright visual suite with PNG review at all four viewports, design-spec-guard because this edits `styles.css` and primitives, feature-cleanup); `docs/ui/` via `node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir shared/ui`; mark each phase `complete` in the same PR that lands it.
+
+---
+
+*Generated: 2026-09-19*
+*Status: DRAFT - needs validation*

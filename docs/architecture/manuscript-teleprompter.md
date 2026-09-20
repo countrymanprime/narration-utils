@@ -1,6 +1,6 @@
 # Manuscript Teleprompter
 
-**Status: Planned. Deferred work item — see [roadmap.md](../roadmap.md#deferred-work). The ASR sidecar ([`tools/manuscript-teleprompter/core/live_asr.py`](../../tools/manuscript-teleprompter/core/live_asr.py)) and its Go host integration (streaming supervisor, teleprompter service, bindings and events) exist; the Teleprompter page follows a chapter with the Whisper engine (see [UI](#ui-what-shipped-and-what-is-still-open) below), but microphone choice, Moonshine and misread findings are still open. This brief exists to make the deferred sentence concrete enough to plan tasks from, not to schedule it into a milestone.**
+**Status: Shipped (first cut).** The ASR sidecar, its Go host relay and the Teleprompter page exist. This document is the design record; open and planned work is specified in [teleprompter-engines-and-input-devices.prd.md](../prds/teleprompter-engines-and-input-devices.prd.md) and [teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md).
 
 ## Problem
 
@@ -9,8 +9,9 @@ microphone listening with karaoke-style manuscript highlighting and
 reviewable suspected word-level substitutions, skips, or misreads; it never
 edits text or audio automatically. Everything else — how position tracking
 behaves, which ASR approach is realistic in real time, how flags surface for
-review, and how the UI renders — was undefined. This brief resolves those
-open questions so implementation can be task-planned.
+review, and how the UI renders — was undefined. This document records how
+those questions were resolved for the shipped first cut; the flag and review
+questions are now specified in the PRDs linked above.
 
 ## Intended experience
 
@@ -28,14 +29,9 @@ continuously and needs no manual scrolling:
   next word, a restart a sentence back, or a skip ahead — the highlight jumps
   to that point and resumes. The skipped or repeated span is not silently
   discarded; it becomes a flagged item.
-- A suspected misread, skip, or substitution renders as a clickable flagged
-  word (visually consistent with `InlineDiffRow`'s existing mismatch marks).
-  Hovering shows what was actually heard via the existing `Tooltip` /
-  `TooltipTarget` primitive. Clicking opens the same kind of detail/action
-  panel a Story Bible entity or a Transcript Compare result row already
-  opens, offering actions such as **Open in review**, **Add pronunciation
-  equivalence** (reusing the existing single-word-misread action from
-  Transcript Compare's `Results.tsx`), or dismissing the flag.
+Flagged words (hover to see what was heard, click for review actions) are not
+built; they are specified in
+[teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md).
 
 Nothing about this view edits the manuscript or the audio. It only tracks
 position and produces reviewable flags, same as every other analyzer in this
@@ -229,51 +225,18 @@ fuzzy matching against the script is the ordinary open-source pattern.
    before comparing engines. Whisper with speculative partials is expected to
    land in the same range; Moonshine's expected edge is flat cost as a
    segment grows, cheaper short update intervals, and `set_context()`.
-4. **Record the default and the rationale** in an ADR once the UI evaluation
-   is done. `faster-whisper` stays for offline Transcript Compare either way.
+4. **Default engine.** Evaluating both engines in the real UI and recording
+   the default and its rationale in an ADR is planned in
+   [teleprompter-engines-and-input-devices.prd.md](../prds/teleprompter-engines-and-input-devices.prd.md).
+   `faster-whisper` stays for offline Transcript Compare either way.
 
-## Confirming suspected misreads
+## Flags, confirmation and review (planned, not built)
 
-A live ASR result is never proof of a misread. Even a final, locked result
-only means the engine will not revise that line; a wrong word from the engine
-and a genuine misread by the narrator look identical. Flags stay "suspected".
-The existing Transcript Compare pass over the recorded take remains the
-authoritative review.
-
-**Phase 1 — recheck on click (build first).** When the narrator opens a flag,
-re-decode only that short audio span with `faster-whisper` (a larger model
-than the live path may be used) and show whether it agrees with what the live
-engine heard. No continuous second pass. Needs a source for that span's audio
-(see open items).
-
-**Phase 2 — trailing confirmation pass (deferred; come back to this).** Run
-`faster-whisper` a few seconds *behind* the live engine, over flagged spans or
-over each closed segment, so flags are confirmed or cleared automatically and
-the narrator mostly sees flags that have already been double-checked. Not to be
-scheduled until Phase 1 and the engine spike are done. Questions to resolve
-first:
-
-- CPU budget: the live engine must stay real-time on a CPU-only machine while
-  a second model runs; may force checking only flagged spans, or only when
-  idle.
-- Whether to check only flagged spans or every closed segment.
-- Lag budget (how many seconds behind is acceptable) and which model size.
-- How a flag moves from pending to confirmed or cleared in the UI without
-  flicker.
-- Whether a cleared flag is kept as a dismissed, auditable finding, per the
-  [findings contract](findings-contract.md).
-- Where the audio for a span comes from (rolling buffer vs. REAPER's
-  concurrent recording).
-
-## Findings and review (resolves decision #4)
-
-Flagged misreads/skips/substitutions use the existing
-[shared finding contract](findings-contract.md), the same way Transcript
-Compare's results already do — not a parallel data model. A live flag needs
-a project-time or take-relative anchor the same way an offline finding does;
-if REAPER is recording concurrently, the anchor should point at the take
-being recorded so **Open in review** can jump straight to it later, exactly
-like `Results.tsx` already does for offline findings today.
+Suspected misreads, how a live flag is confirmed later (recheck on click, a
+trailing confirmation pass) and how live flags become findings under the
+[shared finding contract](findings-contract.md) are specified in
+[teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md).
+No flags are emitted today.
 
 ## Streaming subprocess support (resolves decision #5)
 
@@ -342,27 +305,14 @@ browser mock mode Start replays a position stream recorded from the real tracker
 (`spikes/record_mock_stream.py`), and `?mockTeleprompter=listening|waiting|done`
 boots part-way through a chapter for the visual suite.
 
-**Still open here:** a microphone picker (the name is typed, remembered in the
-browser, and Windows-only), an engine choice, stopping automatically at the end of
-the chapter (today the narrator presses Stop after Done), letting the narrator
-scroll by hand without being pulled back, and everything under "Findings and
-review" and the flagged-word design below, which is the intended shape of
-that later work:
-
-Reuse the existing paragraph gutter+text grid layout from
-`shared/ui/src/components/manuscript/ParagraphView.tsx` for flagged words: the
-current paragraph's row gets a background tint
-(`--bg-accent-muted`/local equivalent) and a
-flagged word renders as a clickable `<mark role="button" tabIndex>` wrapped
-in the existing `TooltipTarget` primitive (`shared/ui/src/components/
-primitives/Tooltip.tsx`) showing what was heard, with `onClick` opening a
-detail panel — the same interaction `ParagraphView.tsx` already wires for
-entity annotations (`openEntity`) and notes (`openNote`). The detail panel's
-actions reuse existing Transcript Compare review actions
-(`Results.tsx`: open in review, add pronunciation equivalence) rather than
-inventing a new action set.
-
-**Planned next:** turning this page into a reading mode of the Manuscript (modal, story bible and notes, misread marks, seek to a word, DAW resume and punch-and-roll) is planned in [teleprompter-manuscript-integration.md](teleprompter-manuscript-integration.md).
+**Still open:** a microphone picker, an engine choice, stopping automatically
+at the end of the chapter, and letting the narrator scroll by hand without being
+pulled back are specified in
+[teleprompter-engines-and-input-devices.prd.md](../prds/teleprompter-engines-and-input-devices.prd.md).
+Flagged words and turning this page into a reading mode of the Manuscript (modal,
+story bible and notes, misread marks, seek to a word, DAW resume and
+punch-and-roll) are specified in
+[teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md).
 
 ## Third-party license note
 
@@ -378,21 +328,15 @@ the exact commit ported from. The LocalAgreement policy added later comes from
 [whisper_streaming](https://github.com/ufal/whisper_streaming) (MIT,
 `Copyright (c) 2023 ÚFAL`) and is attributed the same way.
 
-## Open items for task planning (not resolved here)
+## Tracker placement and limits
 
-- `faster-whisper` model size / latency tradeoff on CPU-only machines:
-  partly answered (`tiny`: median lag about 1.2s, decode keeps up); `base` and
-  `small` are untested, and the engine spike above may supersede this.
-- Engine evaluation: run both engines against the real scrolling UI and
-  animation, then record the default in an ADR (Sherpa-ONNX stays a fallback
-  candidate only).
-- Moonshine provisioning: its library downloads models from its own servers,
-  but this product provisions models through the hashed, versioned asset
-  catalog. Needs catalog entries (URL and SHA-256 per file, about 10 files) and
-  loading from a pre-placed directory, not the library's own downloader.
-- Moonshine packaging: `moonshine-voice` is not a project dependency yet, and
-  its native wheels would have to bundle correctly with PyInstaller on every
-  supported platform (no macOS Intel wheel is published).
+The remaining open items (engine choice and default, Moonshine provisioning and
+packaging, microphone selection, and the audio source for reviewing a flag) are
+specified in
+[teleprompter-engines-and-input-devices.prd.md](../prds/teleprompter-engines-and-input-devices.prd.md)
+and
+[teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md).
+
 - Script tracker placement and source: decided. The sidecar hosts it and reads
   the script from a chapter of the project's canonical `manuscript.json`
   (`--manuscript FILE --chapter ID_OR_TITLE`, narration chapters only): the
@@ -411,22 +355,3 @@ the exact commit ported from. The LocalAgreement policy added later comes from
   and hyphenation handling; invented names and spoken numbers are the likely
   misses. No flags are emitted yet (skipped or misread words feed the findings
   contract in a later step).
-- Phase 2 trailing confirmation pass (see "Confirming suspected misreads").
-- Mic device selection UX and where device enumeration lives (Go vs. Python).
-  Today the page takes the device name as text.
-- Whether a flagged span needs its own short rolling audio buffer captured
-  for playback in the review panel (Results.tsx plays back heard audio for
-  offline findings; the live case doesn't yet have an obvious source for
-  that unless REAPER's concurrent recording is used as the anchor).
-
-## Acceptance criteria
-
-- The teleprompter view advances only in response to recognized speech,
-  never a timer.
-- Pausing, ad-libbing, or restarting never blocks the view and never
-  requires an exact retry.
-- Every flagged word is reviewable (tooltip + click-through actions) and
-  none is auto-corrected in text or audio.
-- No loopback server, REST endpoint, or browser tab is introduced.
-- The existing batch sidecar behavior (Manuscript Guide, Transcript Compare)
-  is unchanged.

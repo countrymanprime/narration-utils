@@ -51,6 +51,8 @@ The custom-CSS system (`.btn`, `.panel-head`/`.panel-body`, `.progressbar`, etc.
 
 See [`motion-and-animation.md`](motion-and-animation.md) — not yet a formal system, currently one considered instance (`MeterBar`'s segment transition).
 
-## Known defects
+## What the suites do not prove
 
-Defects the atlas and visual suite have found and that are not fixed yet live in [known-ui-defects.md](known-ui-defects.md), each with severity, reproduction and a suggested fix.
+The visual suite is a gate on errors, not on appearance: it fails on page errors, failed requests, sideways overflow, blank screenshots and two states that render identically without a declared `sameAs`, and it says nothing about whether a layout looks right ([ADR 0023](../adr/0023-visual-suite-capture-contract-and-storybook.md)). Axe runs on Storybook stories only (`shared/ui/tests/atlas/atlas.spec.ts`), never on app states, so page-level contrast and labels are checked only by looking at the PNGs; it also cannot judge gradients or low-contrast text over semi-transparent overlays. Pixel baselines are not adopted: sub-pixel anti-aliasing still differs between runs on a Windows machine, so a diff would be noise, and baselines would need a pinned Linux container.
+
+Defects these suites have found that are not fixed yet, and the planned work to close the gaps above, are specified as PRDs in [docs/prds/](../prds/README.md).

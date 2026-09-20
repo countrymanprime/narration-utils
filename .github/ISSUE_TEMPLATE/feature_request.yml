@@ -35,7 +35,7 @@ body:
   - type: textarea
     id: related
     attributes:
-      label: Related ADRs, briefs, or issues
+      label: Related ADRs, PRDs, briefs, or issues
       description: Link anything in docs/ this touches, such as a decision it would change.
   - type: checkboxes
     id: boundary

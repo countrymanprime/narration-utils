@@ -647,7 +647,7 @@ func (h *Host) resolveWhisperModelID(options map[string]string) string {
 }
 
 // teleprompterService snapshots the service pointer under the host lock; it is
-// replaced whenever a project is attached (see host-binding-concurrency.md).
+// replaced whenever a project is attached (see docs/prds/host-binding-data-race.prd.md).
 func (h *Host) teleprompterService() *teleprompter.Service {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
