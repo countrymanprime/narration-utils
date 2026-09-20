@@ -64,6 +64,15 @@ jobs:
           path: apps/ui/screenshots
           if-no-files-found: ignore
           retention-days: 7
+      # Playwright keeps a trace only for a failing test (`trace: 'retain-on-failure'`), so a green run has nothing
+      # to upload and a red one ships a trace.zip per failing test. Open it with `playwright show-trace`.
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: ui-visual-traces
+          path: apps/ui/test-results
+          if-no-files-found: ignore
+          retention-days: 3
   ui-atlas:
     # The component library: every Storybook story x light/dark x wide/narrow,
     # with play() interactions, axe accessibility and overflow checks

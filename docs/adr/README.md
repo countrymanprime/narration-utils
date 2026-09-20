@@ -66,3 +66,6 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0041](0041-host-bindings-read-project-services-through-one-snapshot-accessor.md) | Host bindings read the project-scoped services through one snapshot accessor | Accepted |
 | [0042](0042-proofing-suggestions-derive-from-current-entities-and-skip-auto-extracted-needs-review.md) | Proofing's "Suggest from manuscript" derives names from the current Story Bible and leaves out auto-extracted Needs Review entries | Proposed |
 | [0043](0043-coverage-is-a-ratchet-on-logic-directories-not-a-blanket-80-percent.md) | Coverage is a ratchet on logic directories, not a blanket 80% | Accepted |
+| [0044](0044-property-and-fuzz-tests-are-deterministic-in-the-gate.md) | Property and fuzz tests are deterministic in the gate | Accepted |
+| [0045](0045-dead-code-is-gated-at-zero-with-reasoned-ignores.md) | Dead code is gated at zero, and every ignore says why | Accepted |
+| [0046](0046-architecture-rules-taken-from-adrs-are-lint-and-test-rules.md) | Mechanically checkable ADR rules are lint and test rules that name their ADR | Accepted |

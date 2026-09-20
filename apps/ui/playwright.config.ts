@@ -28,7 +28,10 @@ export default defineConfig({
   use: {
     baseURL: ORIGIN,
     launchOptions: LAUNCH,
-    trace: 'off',
+    // Nothing is kept for a passing test. A failing one leaves test-results/<test>/trace.zip (DOM snapshots,
+    // network and console for every action), which CI uploads with the run: `pnpm exec playwright show-trace <zip>`.
+    // `retain-on-failure` records every test but keeps the trace only on failure, so it needs no retry (ADR 0023: no retries).
+    trace: 'retain-on-failure',
     video: 'off',
     screenshot: 'off',
   },
