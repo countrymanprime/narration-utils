@@ -18,8 +18,34 @@ issues:
 linters:
   default: standard
   enable:
+    - depguard
     - gosec
   settings:
+    # Architecture rules taken from accepted or proposed ADRs, so they fail the build instead of relying on review.
+    # Each `desc` says which rule it is and where it comes from.
+    depguard:
+      rules:
+        http-only-in-the-download-flow:
+          # ADR 0032 point 4 (analysis is local; models are fetched only through the explicit first-use flow) and
+          # ADR 0012 (the media route). The only HTTP the host makes is the asset download in internal/assets, and
+          # the only HTTP it serves is media.go's track-audio route. Tests may use httptest servers.
+          files: ["$all", "!$test", "!**/internal/assets/**", "!**/media.go"]
+          deny:
+            - pkg: net/http
+              desc: "net/http is allowed only in internal/assets (the first-use download flow) and media.go (the track media route); see ADR 0032 point 4 and ADR 0012"
+        analyzers-report-they-do-not-write:
+          # ADR 0032 point 1: an analyzer's output is a finding and it does not edit the manuscript, the project's
+          # settings or the recents list. Keeping the analyzers free of the packages that write those keeps that true.
+          files: ["**/internal/measure/**", "**/internal/findings/**"]
+          deny:
+            - pkg: github.com/countrymanprime/narration-utils/shell/internal/manuscript
+              desc: "analyzers report findings and do not touch the manuscript store (ADR 0032 point 1)"
+            - pkg: github.com/countrymanprime/narration-utils/shell/internal/guide
+              desc: "analyzers report findings and do not touch the Story Bible (ADR 0032 point 1)"
+            - pkg: github.com/countrymanprime/narration-utils/shell/internal/settings
+              desc: "analyzers report findings and do not write settings (ADR 0032 point 1)"
+            - pkg: github.com/countrymanprime/narration-utils/shell/internal/recents
+              desc: "analyzers report findings and do not write the recents list (ADR 0032 point 1)"
     gosec:
       excludes:
         # G304 flags every os.Open or os.ReadFile whose path is not a constant. This is a local
