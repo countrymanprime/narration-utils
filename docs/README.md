@@ -33,7 +33,9 @@ This folder documents a local-first audiobook narration toolkit: how it is built
 6. For the planned move from developer bootstrap downloads to packaged-release
    first-use downloads, use the [first-use dependency provisioning brief](architecture/first-use-dependency-provisioning.md).
 7. For developer checks, GitHub Actions, release promotion, and the required
-   one-time repository settings, use [CI and releases](operations/ci-and-releases.md).
+   one-time repository settings, use [CI and releases](operations/ci-and-releases.md);
+   for coverage, property tests, fuzzing, dead-code and import checks, use
+   [Verification and code-health tooling](operations/verification-tooling.md).
 8. For issues, labels, milestones, and the project board, use
    [Tracking work on GitHub](operations/github-workflow.md).
 

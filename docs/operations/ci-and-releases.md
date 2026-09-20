@@ -110,6 +110,12 @@ runner called:
   their own `run:` steps (the atlas kit's audit looks for them) and skip them through
   `.github/actions/nx-affected` when the UI is not affected. The atlas-kit job always runs, because its drift check
   reads `apps/ui`, and so does the `repo-scripts` job, because the layout and project guards read every tracked file.
+- **Failure diagnostics.** A failing visual test leaves `apps/ui/test-results/<test>/trace.zip` (Playwright
+  `trace: 'retain-on-failure'`: DOM snapshots, network and console for every action; a passing test keeps nothing,
+  and no retry is involved, [ADR 0023](../adr/0023-visual-suite-capture-contract-and-storybook.md)). When a step of the
+  `ui-visual` job fails, the job uploads that folder as the `ui-visual-traces` artifact for three days. Open a trace
+  with `pnpm exec playwright show-trace <trace.zip>` from `apps/ui`, or drop it on trace.playwright.dev. The atlas
+  config is vendored from `tools/ui-atlas-kit`, so it keeps no trace until a kit release adds one.
 - **Dependencies** are `implicitDependencies` in each `project.json`: the desktop app reads the UI, the sidecars,
   `config`, `fixtures` and `reaper`; the sidecars read `narration-common` and `config`.
   `scripts/ci/projects.test.mjs` fails if a Python, Go, Lua or `apps/` TypeScript file is not covered by a project
