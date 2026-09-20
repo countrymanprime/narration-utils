@@ -34,14 +34,17 @@ def validate(data: dict[str, Any]) -> dict[str, Any]:
         raise ManuscriptError("This manuscript data uses an unsupported schema version.")
     if not isinstance(data.get("documentId"), str) or not isinstance(data.get("chapters"), list) or not isinstance(data.get("paragraphs"), list):
         raise ManuscriptError("The canonical manuscript data is invalid.")
-    chapter_ids = {item.get("id") for item in data["chapters"] if isinstance(item, dict)}
+    # Ids are strings (the Go importer writes them that way). Anything else is corrupt data, and a
+    # list or object id would also make the set lookups below raise TypeError instead of ManuscriptError.
+    chapter_ids = {item["id"] for item in data["chapters"] if isinstance(item, dict) and isinstance(item.get("id"), str)}
     paragraph_ids = set()
     for paragraph in data["paragraphs"]:
         if (
             not isinstance(paragraph, dict)
             or not isinstance(paragraph.get("id"), str)
             or paragraph["id"] in paragraph_ids
-            or paragraph.get("chapterId") not in chapter_ids
+            or not isinstance(paragraph.get("chapterId"), str)
+            or paragraph["chapterId"] not in chapter_ids
             or not isinstance(paragraph.get("text"), str)
         ):
             raise ManuscriptError("The canonical manuscript has invalid paragraph records.")
@@ -54,9 +57,13 @@ def load_file(path: str | Path) -> dict[str, Any]:
     if not path.is_file():
         raise ManuscriptError("Import a manuscript first.")
     try:
-        return validate(json.loads(path.read_text(encoding="utf-8")))
-    except (OSError, json.JSONDecodeError) as exc:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, RecursionError) as exc:
+        # ValueError covers JSONDecodeError and UnicodeDecodeError (a file that is not UTF-8);
+        # RecursionError is a pathologically nested file. validate() stays outside the try so its
+        # own, more specific ManuscriptError messages are not replaced by this one.
         raise ManuscriptError("The canonical manuscript data could not be read.") from exc
+    return validate(data)
 
 
 def exists(project_folder: str | Path) -> bool:
