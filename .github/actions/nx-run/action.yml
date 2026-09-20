@@ -1,5 +1,5 @@
 name: Run Nx targets
-description: Run Nx targets for the projects a pull request affects (every selected project on a manual run). Run after setup-toolchain, on a checkout with full history (fetch-depth 0).
+description: Run Nx targets for the projects a pull request affects. Runs every selected project on a manual run, when the change touches a workspace-wide file, or when `always` is true. Run after setup-toolchain, on a checkout with full history (fetch-depth 0).
 
 inputs:
   targets:
@@ -11,6 +11,9 @@ inputs:
   configuration:
     description: Nx configuration to apply to targets that define it (for example `ci`)
     default: ''
+  always:
+    description: Set to `true` to run the selected projects even when the change does not affect them (the atlas kit's drift check reads apps/ui, which is not one of its Nx dependencies)
+    default: 'false'
 
 runs:
   using: composite
@@ -21,14 +24,23 @@ runs:
         TARGETS: ${{ inputs.targets }}
         PROJECTS: ${{ inputs.projects }}
         CONFIGURATION: ${{ inputs.configuration }}
+        ALWAYS: ${{ inputs.always }}
         BASE_REF: ${{ github.base_ref }}
       run: |
         set -euo pipefail
         # Never the Nx cache: a green check must mean the checks ran.
         args=(-t $TARGETS --projects="$PROJECTS" --skip-nx-cache --output-style=stream)
         if [ -n "$CONFIGURATION" ]; then args+=(--configuration="$CONFIGURATION"); fi
-        if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-          pnpm exec nx affected "${args[@]}" --base="origin/$BASE_REF" --head=HEAD
-        else
+        # Files every project depends on but no project owns: a change to one runs everything.
+        workspace_wide='^(nx\.json|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|pyproject\.toml|uv\.lock|project\.json|scripts/(quality\.mjs|toolchain\.json)|\.github/(workflows|actions)/)'
+        run_all=false
+        if [ "$ALWAYS" = "true" ] || [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
+          run_all=true
+        elif git diff --name-only "origin/$BASE_REF...HEAD" | grep -Eq "$workspace_wide"; then
+          run_all=true
+        fi
+        if [ "$run_all" = "true" ]; then
           pnpm exec nx run-many "${args[@]}"
+        else
+          pnpm exec nx affected "${args[@]}" --base="origin/$BASE_REF" --head=HEAD
         fi

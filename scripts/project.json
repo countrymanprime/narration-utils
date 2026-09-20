@@ -3,7 +3,6 @@
   "name": "repo-scripts",
   "projectType": "library",
   "tags": ["toolchain:node", "toolchain:python"],
-  "implicitDependencies": ["narration-utils"],
   "targets": {
     "lint": {
       "executor": "nx:run-commands",

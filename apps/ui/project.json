@@ -3,7 +3,6 @@
   "name": "narration-utils-ui",
   "projectType": "application",
   "tags": ["toolchain:node"],
-  "implicitDependencies": ["narration-utils"],
   "targets": {
     "lint": {
       "executor": "nx:run-commands",

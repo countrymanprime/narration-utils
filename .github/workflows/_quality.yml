@@ -84,8 +84,8 @@ jobs:
           retention-days: 7
   ui-atlas-kit:
     # The reusable UI-atlas plugin under tools/ui-atlas-kit: CLI, hooks, and a check that
-    # apps/ui has not drifted from the vendored core files the kit ships. The kit project depends
-    # on the UI project, so a UI change runs it too.
+    # apps/ui has not drifted from the vendored core files the kit ships. It runs on every pull
+    # request (`always`), because that drift check reads apps/ui but Nx does not see the link.
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
@@ -103,6 +103,7 @@ jobs:
         with:
           targets: test
           projects: ui-atlas-kit
+          always: 'true'
   repo-scripts:
     # Plain-Node scripts with no dependencies: the ones that keep GitHub metadata (labels,
     # milestones) in step with the repo, the release scripts (version sync, asset packaging), and the

@@ -3,7 +3,7 @@
   "name": "manuscript-guide",
   "projectType": "application",
   "tags": ["toolchain:python"],
-  "implicitDependencies": ["narration-utils", "narration-common", "config"],
+  "implicitDependencies": ["narration-common", "config"],
   "targets": {
     "lint": {
       "executor": "nx:run-commands",

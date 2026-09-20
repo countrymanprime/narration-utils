@@ -3,6 +3,5 @@
   "name": "config",
   "projectType": "library",
   "tags": ["data"],
-  "implicitDependencies": ["narration-utils"],
   "targets": {}
 }

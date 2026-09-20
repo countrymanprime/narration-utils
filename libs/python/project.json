@@ -3,7 +3,7 @@
   "name": "narration-common",
   "projectType": "library",
   "tags": ["toolchain:python"],
-  "implicitDependencies": ["narration-utils", "config", "transcript-compare"],
+  "implicitDependencies": ["config", "transcript-compare"],
   "targets": {
     "lint": {
       "executor": "nx:run-commands",

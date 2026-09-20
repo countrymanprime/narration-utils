@@ -3,7 +3,6 @@
   "name": "ui-atlas-kit",
   "projectType": "library",
   "tags": ["toolchain:node"],
-  "implicitDependencies": ["narration-utils", "narration-utils-ui"],
   "targets": {
     "test": {
       "executor": "nx:run-commands",

@@ -3,16 +3,7 @@
   "name": "narration-utils-shell",
   "projectType": "application",
   "tags": ["toolchain:go"],
-  "implicitDependencies": [
-    "narration-utils",
-    "narration-utils-ui",
-    "manuscript-guide",
-    "manuscript-teleprompter",
-    "transcript-compare",
-    "reaper",
-    "config",
-    "fixtures"
-  ],
+  "implicitDependencies": ["narration-utils-ui", "manuscript-guide", "manuscript-teleprompter", "transcript-compare", "reaper", "config", "fixtures"],
   "targets": {
     "lint": {
       "executor": "nx:run-commands",

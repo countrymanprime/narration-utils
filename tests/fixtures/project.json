@@ -3,7 +3,6 @@
   "name": "fixtures",
   "projectType": "library",
   "tags": ["data"],
-  "implicitDependencies": ["narration-utils"],
   "targets": {
     "lint": {
       "executor": "nx:run-commands",
