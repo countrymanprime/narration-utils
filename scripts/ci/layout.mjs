@@ -1,6 +1,11 @@
 // The repository layout contract: which top-level entries may exist, and the old-to-new path
 // map that migrates text (docs, scripts, configs, open branches) when a directory moves.
 // The data lives in layout.json; docs/architecture/codebase-map.md explains the layout itself.
+//
+// applyPathMap rewrites only slash-joined paths (`shared/ui/x`, `../shell/app.go`). The guard also
+// reports forms a mechanical rewrite cannot do safely, from the `patterns` in layout.json: bare
+// directory names (`go -C shell`), quoted path segments (`join(root, 'shared', 'ui')`) and
+// backslash paths. Fix those by hand.
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -30,10 +35,20 @@ export function trackedFiles() {
 export function readTrackedText(files) {
   const result = new Map();
   for (const file of files) {
-    const buffer = readFileSync(join(REPO_ROOT, file));
-    if (!buffer.includes(0)) result.set(file, buffer.toString('utf8'));
+    // A file that is listed but not readable (deleted in the working tree, say) has no text to check.
+    const buffer = readOrNull(join(REPO_ROOT, file));
+    if (buffer && !buffer.includes(0)) result.set(file, buffer.toString('utf8'));
   }
   return result;
+}
+
+function readOrNull(path) {
+  try {
+    return readFileSync(path);
+  } catch (error) {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  }
 }
 
 function escapeRegExp(text) {
@@ -41,6 +56,7 @@ function escapeRegExp(text) {
 }
 
 function buildPattern(renames, flags) {
+  if (renames.length === 0) return new RegExp('(?!)', flags); // nothing retired, nothing matches
   const froms = renames.map((rename) => rename.from).sort((a, b) => b.length - a.length);
   const alternatives = froms.map((from) => (from.endsWith('/') ? escapeRegExp(from) : `${escapeRegExp(from)}${NAME_END}`));
   return new RegExp(`${PATH_START}(?:${alternatives.join('|')})`, flags);
@@ -57,9 +73,11 @@ export function isHistorical(file, historical) {
 }
 
 /** Lines that still name a retired path, in files that are not historical records. */
-export function findStaleReferences(filesByPath, renames, historical) {
+export function findStaleReferences(filesByPath, renames, historical, patterns = []) {
   const stale = [];
-  const retired = buildPattern(renames, '');
+  const slashForms = buildPattern(renames, '');
+  const otherForms = patterns.map((source) => new RegExp(source));
+  const retired = { test: (line) => slashForms.test(line) || otherForms.some((pattern) => pattern.test(line)) };
   for (const [file, text] of filesByPath) {
     if (isHistorical(file, historical)) continue;
     text.split(/\r?\n/).forEach((line, index) => {

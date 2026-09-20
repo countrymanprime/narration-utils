@@ -45,6 +45,20 @@ test('findStaleReferences reports each retired path with its file and line', () 
   assert.deepEqual(stale, [{ file: 'README.md', line: 2, text: 'see shared/ui here' }]);
 });
 
+test('findStaleReferences also reports bare names, quoted segments and backslash paths from the patterns', () => {
+  const { patterns } = loadLayout();
+  const files = new Map([
+    ['ci.yml', ['run: go -C shell test ./...', 'working-directory: shell', '- run: pnpm --dir shell run build'].join('\n')],
+    ['a.mjs', ["join(root, 'shared', 'ui')", "join(dir, 'shell')"].join('\n')],
+    ['b.md', String.raw`open shared\python\x.py and shared/* too`],
+    ['ok.md', 'the shell is a program; narration-utils-shell; shellcheck; go -C apps/desktop test'],
+  ]);
+
+  const flagged = findStaleReferences(files, [], [], patterns).map((hit) => `${hit.file}:${hit.line}`);
+
+  assert.deepEqual(flagged, ['ci.yml:1', 'ci.yml:2', 'ci.yml:3', 'a.mjs:1', 'a.mjs:2', 'b.md:1']);
+});
+
 test('unexpectedRoots lists tracked top-level entries outside the allowlist', () => {
   const tracked = ['README.md', 'docs/a.md', 'apps/ui/x.ts', 'stray/file.txt', 'LICENSE'];
 
@@ -66,6 +80,6 @@ test('the repository matches its layout contract', () => {
 
   assert.deepEqual(unexpectedRoots(tracked, layout.roots), [], 'a top-level entry is not in scripts/ci/layout.json roots; add it there only with a reason');
   if (!layout.enforceRetired) return;
-  const stale = findStaleReferences(readTrackedText(tracked), layout.renames, layout.historical);
+  const stale = findStaleReferences(readTrackedText(tracked), layout.renames, layout.historical, layout.patterns);
   assert.deepEqual(stale, [], 'tracked files still name a retired path; run node scripts/ci/apply-path-map.mjs');
 });

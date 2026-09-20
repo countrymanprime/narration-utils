@@ -30,7 +30,15 @@
     "uv.lock"
   ],
   "enforceRetired": false,
-  "historical": ["docs/adr/", "pnpm-lock.yaml", "scripts/ci/layout.json"],
+  "historical": ["docs/adr/", "pnpm-lock.yaml", "scripts/ci/layout.json", "scripts/ci/layout.test.mjs"],
+  "patterns": [
+    "(?<![A-Za-z0-9_.-])shared[\\/]",
+    "(?<![A-Za-z0-9_.-])shell\\\\",
+    "(?:-C|--dir|working-directory:|directory:)\\s+/?shell(?![A-Za-z0-9_./-])",
+    "['\"]shared['\"]",
+    "['\"]shell['\"]\\s*[,)]",
+    "['\"]tools['\"]\\s*,\\s*['\"](?:manuscript-|transcript-)"
+  ],
   "renames": [
     { "from": "tools/manuscript-guide/daws/audacity", "to": "integrations/audacity/manuscript-guide" },
     { "from": "tools/transcript-compare/daws/audacity", "to": "integrations/audacity/transcript-compare" },
