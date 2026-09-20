@@ -105,7 +105,7 @@ We believe composable properties, mode-appropriate actions and an honest pronunc
 **Architecture notes**
 - **Properties**: additive, so no `schema_version` bump and old files stay valid (readers default `[]`); Python `edit()` takes a JSON value and inherits the lock guard; `create` gains `--properties`; `merge()` unions by key (pattern `:971-975`); `merge_locked` carries them (`:682-685`); host API probably unchanged if properties ride the existing `values` map. Frozen sidecars rebuild for the new arguments.
 - **Actions**: split the header into a read-only action set and an edit action set in `GuideDetail.tsx`; reset `editing` on Unlock; add tests for the lock/edit interaction and keep the server-side lock guards.
-- **Pronunciation**: a Python subcommand (or `edit` field) `pronounce <name> [--source ...]` reusing `pronunciation()`; `guide.Service` method; binding `GuidePronounce` (a `hostAPIVersion` bump 5 to 6 in `apps/desktop/app.go:33`, `apps/desktop/app_test.go:40-41`, `apps/ui/src/hostApi.ts:2`, regenerate `Host.{js,d.ts}`), contracts, `wailsClient.ts`, `mockApi.ts`; locked entries rejected (ADR 0007); real in-flight state (ADR 0015; cold start is at least 0.3 s, briefs PRD evidence); write the binding on the host accessor (`host-binding-data-race.prd.md`).
+- **Pronunciation**: a Python subcommand (or `edit` field) `pronounce <name> [--source ...]` reusing `pronunciation()`; `guide.Service` method; binding `GuidePronounce` (a `hostAPIVersion` bump 5 to 6 in `apps/desktop/app.go:33`, `apps/desktop/app_test.go:40-41`, `apps/ui/src/hostApi.ts:2`, regenerate `Host.{js,d.ts}`), contracts, `wailsClient.ts`, `mockApi.ts`; locked entries rejected (ADR 0007); real in-flight state (ADR 0015; cold start is at least 0.3 s, briefs PRD evidence); write the binding on the host accessor (`h.services()`, see `docs/architecture/host-binding-concurrency.md`).
 - Gating: `GuideDetail.tsx:399,439-446` disable states, with `IconButton`'s disabled look and a tooltip on a disabled child (`Tooltip.tsx:49`).
 - Tests: Python, Go `service_test.go`, Vitest (`GuideDetail.test.tsx`, drivers), visual rows for properties, missing pronunciation, edit actions; docs `story-bible.md` and screenshots (`doc-screenshot-sync`).
 
@@ -139,9 +139,9 @@ We believe composable properties, mode-appropriate actions and an honest pronunc
 
 | Phase | Files and areas touched | Collision risk |
 | --- | --- | --- |
-| 1 | `manuscript_guide.py` and tests, `apps/desktop/internal/guide/service.go`, `apps/desktop/bindings.go`, `contracts/storyBible.ts`, `GuideDetail.tsx`, `EntitySummary.tsx`, `mockApi.ts`/`mockFixtures.ts` | Import-structure Phase 3 (`create --properties`), briefs PRD Phases 10-11 (`edit()`, `merge_locked`), host-binding PRD Phase 2 (Guide bindings) |
+| 1 | `manuscript_guide.py` and tests, `apps/desktop/internal/guide/service.go`, `apps/desktop/bindings.go`, `contracts/storyBible.ts`, `GuideDetail.tsx`, `EntitySummary.tsx`, `mockApi.ts`/`mockFixtures.ts` | Import-structure Phase 3 (`create --properties`), briefs PRD Phases 10-11 (`edit()`, `merge_locked`), the delivered host accessor (Guide bindings now on `h.services()`) |
 | 2 | `GuideDetail.tsx`, `EntitySummary.tsx`, `Button.tsx`, ADR 0018, drivers, catalog, `story-bible.md`, screenshots | Interaction audit Phase 4, dialog PRD (`ConfirmDialog`), Tooltip PRD, palette PRD (`--danger`) |
-| 3 | `manuscript_guide.py`, `service.go`, `bindings.go`, `app.go`, `hostApi.ts`, `Host.*`, contracts, `GuideDetail.tsx` | Every binding-adding phase (API version), host-binding PRD, briefs Phase 9-11 |
+| 3 | `manuscript_guide.py`, `service.go`, `bindings.go`, `app.go`, `hostApi.ts`, `Host.*`, contracts, `GuideDetail.tsx` | Every binding-adding phase (API version), the delivered host accessor, briefs Phase 9-11 |
 
 Cross-cutting: ADR numbering and `hostAPIVersion` re-checked at merge time; `visual-catalog-sync`, the Playwright suite with PNG review at four viewports, `doc-screenshot-sync`, `design-spec-guard`; each phase follows `CLAUDE.md`: plan, `change-impact-scan`, TDD, `full-verification-gate`, `feature-cleanup`.
 

@@ -137,7 +137,7 @@ Standard and ADR, latency baseline, catalog with ratchet, and Story Bible action
 - **Install flows**: not built here; release-readiness Phase 1 owns the job contract, progress callback and mock. This PRD's Phase 5 (completion events) should reuse its unified job snapshot when it lands, so the job-end events carry one shape.
 - **Host-to-UI completion**: host emits an event when a job ends (pattern: `transcript:state`, `app.go:320-327`); an App-level subscriber shows the toast; page pollers can then stop owning completion.
 - **Host API**: bump `hostAPIVersion` (`apps/desktop/app.go:33`, `apps/desktop/app_test.go:40-41`, `apps/ui/src/hostApi.ts:2`) and regenerate `apps/ui/wailsjs/go/main/Host.*` only when a binding's signature or required payload changes (a new event alone does not; a changed `GuideEdit` signature would).
-- **Locking**: any Go changes to bindings snapshot service pointers under `h.mu.RLock` and release before calling into services (`host-binding-data-race.prd.md`).
+- **Locking**: any Go changes to bindings snapshot service pointers under `h.mu.RLock` and release before calling into services (`h.services()`, see `docs/architecture/host-binding-concurrency.md`).
 
 **Technical Risks**
 
@@ -212,7 +212,7 @@ Coupling with the dialog PRD (`dialog-modality-and-workdialog-a11y`): its Open Q
 | 1 | new harness file under `apps/desktop/` (build-tagged test) or `scripts/`, `docs/research/` | Low; additive |
 | 2 | new catalog and ratchet test in `apps/ui/src/`, new ADR | ADR numbering; any session adding an API call site (catalog rows) |
 | 3 | `GuideDetail.tsx`, `Guide.tsx`, `usePreviewAudio.ts`, possibly `primitives/Button.tsx` and stories, visual catalog | release-readiness Phase 1 (`GuideDetail.tsx` install loop), story-bible-and-import-ux-briefs phases 3 (`Guide.tsx` hook extraction) and 11 (`GuideDetail.tsx`), dialog PRD, any `Button` consumer |
-| 4 | `apps/desktop/bindings.go` (`GuideEdit`), `apps/desktop/internal/guide/service.go`, `sidecars/manuscript-guide/core/manuscript_guide.py` and tests, possibly `hostApi.ts` and Wails bindings | host-binding-data-race phase 2 (same functions), briefs phase 10 (`edit()`), any API bump |
+| 4 | `apps/desktop/bindings.go` (`GuideEdit`), `apps/desktop/internal/guide/service.go`, `sidecars/manuscript-guide/core/manuscript_guide.py` and tests, possibly `hostApi.ts` and Wails bindings | the delivered host accessor (same functions, now on `h.services()`), briefs phase 10 (`edit()`), any API bump |
 | 5 | `App.tsx`, `layout/Toast.tsx`, `Guide.tsx`, `Home.tsx`, `Transcript.tsx`, `apps/desktop/app.go` (events), `api/wailsClient.ts` | briefs phases 2 and 3 (they consume or share the hook), release-readiness Phase 1 (job snapshot shape), dialog PRD, `App.tsx` editors (teleprompter PRDs) |
 | 6 | many components per catalog row | Everything above; do in small PRs |
 | 7 | docs (`motion-and-animation.md`, ADR index, guide pages) | Low |

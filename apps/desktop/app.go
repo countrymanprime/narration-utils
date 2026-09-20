@@ -387,6 +387,19 @@ func (h *Host) Shutdown(context.Context) {
 	}
 }
 
+// attachBusyReason is what the UI is told when an attach is refused because
+// in-flight work would be displaced.
+const attachBusyReason = "Narration Utils is busy, so the current project was left unchanged."
+
+// canAttach reports, under a read lock, whether a project switch would be
+// accepted right now. It is only a pre-check: attachProjectLocked asks again
+// under the write lock.
+func (h *Host) canAttach() bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.canAttachLocked()
+}
+
 // attachProjectLocked applies next onto the running host, subject to the same
 // in-flight-work guard shared by the REAPER second-instance attach path and
 // the picker-driven UI bindings. The caller holds h.mu and builds next itself
@@ -397,7 +410,7 @@ func (h *Host) attachProjectLocked(next config) (bool, string) {
 		return false, "No project folder was provided."
 	}
 	if !h.canAttachLocked() {
-		return false, "Narration Utils is busy, so the current project was left unchanged."
+		return false, attachBusyReason
 	}
 	h.configureLocked(next)
 	return true, ""

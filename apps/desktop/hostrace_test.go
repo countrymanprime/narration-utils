@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -20,18 +21,23 @@ import (
 // it is added to stressReaders, even though the two calls never overlap in
 // time: nothing orders them.
 //
-// Add a binding here in the same change that converts it (see
-// directReadAllowlist in hostguard_test.go). Keep one row per line, sorted by name.
+// Add a row for every new binding that reads a service, in the same change that
+// adds it, using arguments that fail fast (an unknown id, an uninstalled model)
+// so the row does no real work. Keep one row per line.
 // Rows for bindings that only read job maps or the set-once recents store
 // (GuideBuildState, ProjectRecents, the install-state calls) are smoke tests
 // for lock ordering; the rows that read a service pointer are the probes.
 //
 // Readers keep calling for as long as the switcher runs (and at least
-// stressMinReads times), so every switch overlaps reads; a fixed count alone
-// let a fast reader finish before the first switch and the detector missed the
-// race in about 60% of runs on the unconverted code.
+// stressMinReads times), so every switch overlaps reads. Measured on the
+// unconverted code (all of its direct-read bindings in stressReaders) in CI with
+// -race: 20 of 20 separate test processes reported the race, naming
+// TranscriptCancel, TtsCatalog, GuidePreview, SystemSettingsForScope, Bootstrap
+// and others. Run the processes separately when measuring: the detector
+// reports each racing pair once per process, so `-count=20` in one process
+// makes most runs look clean.
 const (
-	stressSwitches = 40
+	stressSwitches = 200
 	stressMinReads = 100
 	stressTimeout  = 2 * time.Minute
 )
@@ -76,6 +82,7 @@ var stressReaders = []stressReader{
 	{"WhisperInstallState", func(h *Host) { _, _ = h.WhisperInstallState("missing") }},
 	{"WhisperRemove (unknown model)", func(h *Host) { _, _ = h.WhisperRemove("missing") }},
 	{"pollTranscript (one transcriptLoop tick)", func(h *Host) { h.pollTranscript() }},
+	{"canAttach (ProjectCreate's pre-check)", func(h *Host) { _ = h.canAttach() }},
 	{"emit callbacks", func(h *Host) {
 		h.emitTranscript(emptyTranscript())
 		h.emitTeleprompterState(map[string]any{"phase": "idle"})
@@ -131,6 +138,7 @@ func TestBindingsSurviveProjectSwitchesUnderLoad(t *testing.T) {
 			<-start
 			for calls := 0; calls < stressMinReads || switching.Load(); calls++ {
 				reader.call(host)
+				runtime.Gosched()
 			}
 		}(reader)
 	}

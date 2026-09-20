@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -61,11 +62,11 @@ func (h *Host) TtsInstallCancel(jobID string) (string, error) {
 	return encodeBinding(h.cancelTtsInstall(jobID))
 }
 func (h *Host) TtsRemove(voiceID string) (string, error) {
-	service := h.services().tts
-	if service == nil {
+	manager := h.services().tts
+	if manager == nil {
 		return "", fmt.Errorf("the approved TTS catalog is unavailable")
 	}
-	return encodeBinding(nil, service.Remove(voiceID))
+	return encodeBinding(nil, manager.Remove(voiceID))
 }
 
 func (h *Host) WhisperCatalog() (string, error) {
@@ -88,11 +89,11 @@ func (h *Host) WhisperInstallCancel(jobID string) (string, error) {
 	return encodeBinding(h.cancelWhisperInstall(jobID))
 }
 func (h *Host) WhisperRemove(modelID string) (string, error) {
-	service := h.services().whisper
-	if service == nil {
+	manager := h.services().whisper
+	if manager == nil {
 		return "", fmt.Errorf("the approved Whisper catalog is unavailable")
 	}
-	return encodeBinding(nil, service.Remove(modelID))
+	return encodeBinding(nil, manager.Remove(modelID))
 }
 
 func (h *Host) GuideBuild() (string, error) { return encodeBinding(h.startGuideBuild()) }
@@ -221,6 +222,12 @@ func (h *Host) ProjectSwitch(path, name string) (string, error) {
 		// Best-effort: a recents-write hiccup must not fail the switch itself.
 		_ = h.recents.Touch(path, name)
 	}
+	return reportAttach(ctx, attached, reason)
+}
+
+// reportAttach tells the window how an attach ended (the system:attached event)
+// and returns the binding's result. ctx is nil before Startup.
+func reportAttach(ctx context.Context, attached bool, reason string) (string, error) {
 	if ctx != nil {
 		if attached {
 			runtime.EventsEmit(ctx, "system:attached", map[string]any{"attached": true})
@@ -231,9 +238,23 @@ func (h *Host) ProjectSwitch(path, name string) (string, error) {
 	return encodeBinding(map[string]any{"switched": attached, "reason": reason}, nil)
 }
 
+// ProjectCreate makes the folder and attaches it. The busy check comes first,
+// so a refused create leaves no empty folder behind, and the path must be
+// absolute: a relative one would be created under the working directory of
+// whatever launched the app. The check is a pre-check only; ProjectSwitch asks
+// again under the write lock, so a lost race at worst leaves an empty folder.
 func (h *Host) ProjectCreate(path, name string) (string, error) {
 	if path == "" {
 		return "", fmt.Errorf("a folder path is required")
+	}
+	if !filepath.IsAbs(path) {
+		return "", fmt.Errorf("the project folder must be an absolute path")
+	}
+	if !h.canAttach() {
+		h.mu.RLock()
+		ctx := h.ctx
+		h.mu.RUnlock()
+		return reportAttach(ctx, false, attachBusyReason)
 	}
 	if err := os.MkdirAll(path, 0o755); err != nil {
 		return "", fmt.Errorf("could not create the project folder: %w", err)

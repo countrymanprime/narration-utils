@@ -133,7 +133,7 @@ We believe a Contents section that never reaches the recording, reader or Story 
 | --- | --- | --- |
 | 1 | `apps/desktop/internal/importer/{docx,model,markdown}.go` and tests, `tests/fixtures/*` | Briefs PRD Phase 5 (importer), import-review Phase 2 (`model.go` `DraftSection`) |
 | 2 | `state.ts`, `Manuscript.tsx`, ADR | Reader PRD Phase 5, ADR 0005 |
-| 3 | `model.go`, `apps/desktop/bindings.go`, `sidecars/manuscript-guide/core/manuscript_guide.py`, `apps/desktop/internal/guide/service.go`, contracts, mock | Story Bible entries PRD, host-binding-data-race PRD (`bindings.go`), API bump if a signature changes |
+| 3 | `model.go`, `apps/desktop/bindings.go`, `sidecars/manuscript-guide/core/manuscript_guide.py`, `apps/desktop/internal/guide/service.go`, contracts, mock | Story Bible entries PRD, the delivered host accessor (`bindings.go`, `docs/architecture/host-binding-concurrency.md`), API bump if a signature changes |
 | 4 | `docx.go`, `markdown.go`, `model.go`, notices in the preview payload | Import-review PRD (Notices display), Phase 1 |
 
 Cross-cutting: ADR numbering and `hostAPIVersion` re-checked at merge; each phase follows `CLAUDE.md`: plan, `change-impact-scan`, TDD, `full-verification-gate`, `feature-cleanup`; UI-visible changes add `visual-catalog-sync` and `doc-screenshot-sync`; sidecar changes rebuild the frozen sidecars. No Lua.

@@ -185,7 +185,7 @@ Phase 1 lands first. Phases 2 and 3 are independent (streams versus fixtures). P
 
 | Phase | Files and areas touched | Collision risk |
 | --- | --- | --- |
-| 1 | `apps/ui/package.json` and lockfile, `apps/ui/src/api/wailsClient.ts`, `App.tsx`, `apps/desktop/bindings.go` (`SystemReportDiagnostic` body only), new `apps/ui/src/api/schemas/` | Medium: `App.tsx` and `wailsClient.ts` are edited by most feature PRDs; `apps/desktop/bindings.go` body edit sits beside the host binding data race PRD's rewrite (see Cross-PRD notes) |
+| 1 | `apps/ui/package.json` and lockfile, `apps/ui/src/api/wailsClient.ts`, `App.tsx`, `apps/desktop/bindings.go` (`SystemReportDiagnostic` body only), new `apps/ui/src/api/schemas/` | Medium: `App.tsx` and `wailsClient.ts` are edited by most feature PRDs; `apps/desktop/bindings.go` body edit builds on the delivered host accessor rewrite (see Cross-PRD notes) |
 | 2 | `wailsClient.ts` subscriptions, `contracts/teleprompter.ts`, `apps/desktop/internal/teleprompter/service.go` | High: `teleprompter-manuscript-integration` and `teleprompter-engines-and-input-devices` PRDs add events and state fields |
 | 3 | `apps/ui/src/api/mockApi.ts`, `mockFixtures.ts`, new Go and Python tests, ESLint config | Medium: every PRD that adds a binding also edits the mock |
 | 4, 5 | `wailsClient.ts` (each domain's lines), `contracts/*.ts` | High: same file as every new binding; land one domain per PR |
@@ -196,7 +196,7 @@ Cross-cutting: `hostAPIVersion` is not bumped by this PRD; a phase that tightens
 
 ### Cross-PRD notes
 
-- **Host binding data race** (`host-binding-data-race.prd.md`): rewrites nearly every binding body to use `h.services()`, changes no signatures and does not bump. This PRD's Go-side edits to `bindings.go` are limited to `SystemReportDiagnostic`; do not start Phase 6 or 7 edits in the same regions before its Phases 2 and 3 merge. Choosing typed Wails structs (Not Building) would conflict directly.
+- **Host binding concurrency** (`docs/architecture/host-binding-concurrency.md`, delivered by stack S03): every binding body now reads through `h.services()`; it changed no signatures and did not bump. This PRD's Go-side edits to `bindings.go` are limited to `SystemReportDiagnostic`, and any new binding uses the accessor. Choosing typed Wails structs (Not Building) would conflict directly.
 - **Analysis evidence ledger**: proposes schema versions with "unknown version is treated as absent, never an error" (`analysis-evidence-ledger.prd.md:154`). Compatible with Open Question 6 if "absent" also logs; align both PRDs on the same persisted-file version policy.
 - **Base UI primitive foundation** (`base-ui-primitive-foundation.prd.md`, untracked when this was written): its Phase 1 also edits `apps/ui/package.json`, the lockfile, `eslint.config.js` and takes an ADR number. Land the two dependency changes one at a time (lockfile and ESLint flat-config conflicts) and re-check the next free ADR number at merge time; it sets the precedent this PRD relies on for accepting a runtime dependency where it buys behavior.
 - **REAPER automation follow-through**: keeps the file protocol, one dispatcher, single event cursor, and plans a stub-`reaper` harness. Phase 7's event table is the Go half of that; new events (`LINES_*`, `REGIONS_CREATED`) must be added to it.
