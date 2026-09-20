@@ -1,5 +1,7 @@
 # UI Primitives and a Headless Library
 
+**Reconciled 2026-09-20:** the owner decided the library question in another session: **Base UI, styled with Tailwind, every part wrapped in our own primitive, app code never importing it** (L1 and L2 below are resolved; the Radix analysis stays as the record of what was compared). That decision and its Dialog, Tooltip, Field and drawer work live in [base-ui-primitive-foundation.prd.md](base-ui-primitive-foundation.prd.md). This PRD keeps the net-new primitives: Phase 1 (wrapped natives), Phase 4 (menus and disclosure, on Base UI parts) and Phase 5 (Table, Combobox). Its Phases 0, 2 and 3 are absorbed by the foundation PRD's Phases 1 to 3. Where the text below says Radix, read Base UI.
+
 **Source:** user request of 2026-09-20 (item 25): "we need more primitives and slightly larger reusable components like a datatable or dropdown (with options). Native browser elements should probably all be wrapped. Can we look at bringing in something like Radix?" Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a; npm and vendor facts were read on 2026-09-20 (sources marked). Nothing here is built yet. **This PRD reopens Q1 of [dialog-modality-and-workdialog-a11y.prd.md](dialog-modality-and-workdialog-a11y.prd.md), which recommends no library.** Several other PRDs need the primitives below: [manuscript-reader-search-and-controls.prd.md](manuscript-reader-search-and-controls.prd.md), [story-bible-entries-and-actions.prd.md](story-bible-entries-and-actions.prd.md), [proofing-vocabulary-hints.prd.md](proofing-vocabulary-hints.prd.md), [import-review-redesign.prd.md](import-review-redesign.prd.md).
 
 ## Problem Statement
@@ -45,7 +47,7 @@ We believe a small in-house primitive set (natives wrapped, behavior from one he
 | Metric | Target | How Measured |
 | --- | --- | --- |
 | Raw natives outside `primitives/` | `<select>`, `<input>`, `<textarea>`, `<table>` and icon `<button>` counts monotonically decrease to 0 | A ratchet test (pattern: `legacyCss.test.ts`) or ESLint `no-restricted-syntax` |
-| Library imports outside `primitives/` | 0 | ESLint `no-restricted-imports` on `radix-ui` and `@radix-ui/*` |
+| Library imports outside `primitives/` | 0 | ESLint `no-restricted-imports` on `@base-ui/*` (owned by foundation Phase 1; was `radix-ui`) |
 | Stories | Every new primitive has a `.stories.tsx` with a `play()`; `A11Y_DEBT` does not grow | `atlasCoverage.test.ts`, atlas axe |
 | Existing tests | `fireEvent.change` and `selectOption` on wrapped selects still pass unchanged | `pnpm check`, visual suite |
 | Keyboard | Menu, Select, Tabs and Dialog operable with keyboard only; Escape and focus return work | Storybook `play()` plus `userEvent` tests |
@@ -55,8 +57,8 @@ We believe a small in-house primitive set (natives wrapped, behavior from one he
 
 ## Open Questions
 
-- [ ] **L1. Does this reopen the dialog PRD's Q1?** Options: (a) Radix Dialog (consistent behavior in jsdom and Chromium, portals just work); (b) native `<dialog>`, with every Radix layer opened inside it portaled to the dialog element; (c) hand-rolled. Recommendation: (a), superseding the dialog PRD's "no library" recommendation. This needs the owner's decision first.
-- [ ] **L2. Which library?** Radix (`radix-ui`, best-known Dialog, Menu, Tooltip, Popover, Tabs, Collapsible; data-attribute styling suits Tailwind 4; no combobox) versus Base UI (younger, MUI-maintained, reportedly has Combobox and Autocomplete) versus React Aria Components (heaviest, best a11y). Recommendation: Radix, Base UI as the fallback behind the wrapper.
+- [x] **L1 - RESOLVED 2026-09-20 (owner decision): a library Dialog, Base UI, behind our `Dialog` wrapper; supersedes the dialog PRD's "no library" recommendation (delivered by foundation Phase 2).** Original question: does this reopen the dialog PRD's Q1? Options: (a) Radix Dialog (consistent behavior in jsdom and Chromium, portals just work); (b) native `<dialog>`, with every Radix layer opened inside it portaled to the dialog element; (c) hand-rolled. Recommendation: (a), superseding the dialog PRD's "no library" recommendation. This needs the owner's decision first.
+- [x] **L2 - RESOLVED 2026-09-20 (owner decision): Base UI, wrapped in our own primitives, styled with Tailwind; Radix and React Aria not adopted.** Original question, which library? Radix (`radix-ui`, best-known Dialog, Menu, Tooltip, Popover, Tabs, Collapsible; data-attribute styling suits Tailwind 4; no combobox) versus Base UI (younger, MUI-maintained, reportedly has Combobox and Autocomplete) versus React Aria Components (heaviest, best a11y). Recommendation: Radix, Base UI as the fallback behind the wrapper.
 - [ ] **L3. Select strategy.** Native-wrapped (recommended: keeps tests, mobile pickers and forms) or Radix Select (rich option content, no `selectOption` testing)? Recommendation: native-wrapped by default, Radix Select only where option content must be rich.
 - [ ] **L4. Bundle budget.** Is a size budget wanted, and should it gate CI? Recommendation: measure now, decide after Phase 2.
 - [ ] **L5. Keyboard and screen-reader users.** The dialog PRD lists this as an unvalidated assumption. Recommendation: treat accessibility as required regardless.
@@ -106,7 +108,7 @@ Candidate primitives, with the call sites that motivate each:
 - **Atlas:** `contentClip` and `fitViewportToContent` capture portaled open states but exclude fixed layers from height sizing, so an open menu near the bottom may be clipped; modal layers set `aria-hidden` on siblings and lock scroll, so re-check axe and screenshots. Each primitive needs a story per variant with `play()`, and `docs/ui/` regenerated (`node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir shared/ui`).
 - **Styling:** Tailwind utilities and `var(--token)` values, `data-[state=...]` variants, mutually exclusive state classes (ADR 0017); move the global `select`/`input`/`textarea` rules out of `components.css` as each wrapper lands (legacy CSS guard).
 - **Sequencing rule for helper files:** a helper at the top level of `primitives/` needs its own story; place multi-part primitives in a subfolder only with an explicit atlas exemption decision.
-- **ADRs and docs:** one ADR for the library choice and the wrapper rule (next free number, 0037 at dc9d01a; it supersedes the "no library" line of the dialog PRD and the `table.dtable` exception of ADR 0009 when the Table lands); update `design-system.md` (also fixing the 6-of-14 drift); `design-spec-guard` on every primitive change.
+- **ADRs and docs:** one ADR for the library choice and the wrapper rule, written once by foundation Phase 1 (next free number, 0039 at 155c275; it supersedes the "no library" line of the dialog PRD and the `table.dtable` exception of ADR 0009 when the Table lands); update `design-system.md` (also fixing the 6-of-14 drift); `design-spec-guard` on every primitive change.
 - **Gates:** `change-impact-scan` (about 12 tooltip consumers, 10 files of icon buttons), the Playwright suite with PNG review at four viewports, `doc-screenshot-sync`.
 
 **Technical Risks**
@@ -127,10 +129,10 @@ Candidate primitives, with the call sites that motivate each:
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0 | Decision and spike | L1-L3; ADR; a throwaway Radix spike proving jsdom, atlas and Tailwind data-attribute styling; measure bundle | pending | - | owner answers | - |
+| 0 | Decision and spike | **Absorbed.** L1 and L2 are decided (Base UI); the spike, bundle measurement and ADR are foundation Phase 1. L3 and L4 remain open | moved | - | - | - |
 | 1 | Wrapped natives | `IconButton`, `Select`, `TextField`, `SearchField`, `Textarea`, `Checkbox`; migrate call sites; lint ratchet | pending | 2 | 0 | - |
-| 2 | Library setup and Tooltip | Add `radix-ui`, jsdom shims, ESLint import rule, Tooltip on the library (Tooltip PRD contract) | pending | 1 | 0 | - |
-| 3 | Dialog family | Dialog, ConfirmDialog, WorkDialog (and optionally SlideOver), focus, Escape, inert; supersede the dialog PRD's Q1 | pending | - | 2; dialog PRD phases | - |
+| 2 | Library setup and Tooltip | **Moved.** Delivered by foundation Phases 1 and 3 (Base UI dependency, jsdom shims, ESLint import rule, Tooltip and Field on the library) | moved | 1 | Foundation 1 | - |
+| 3 | Dialog family | **Moved.** Delivered by foundation Phase 2 (Dialog, ConfirmDialog, WorkDialog) and Phase 4 (SlideOver, nav drawer) | moved | - | Foundation 1 | - |
 | 4 | Menus and disclosure | `DropdownMenu`, `Popover`, `Tabs`, `Disclosure`, `ToggleGroup`, `TagInput`, `Switch` | pending | 5 | 2 | - |
 | 5 | Tables and combobox | Presentational `Table`, keyboard rows, `aria-sort`; custom `Combobox`; supersede the ADR 0009 table exception | pending | 4 | 1 | - |
 
@@ -165,7 +167,7 @@ Cross-cutting: `hostAPIVersion` unaffected; ADR numbering re-checked at merge; e
 | The dialog PRD recommends native `<dialog>` and no library (prior, draft) | Reopened; proposed to supersede with Radix Dialog (L1) | Native or hand-rolled | Tooltip/Select/Menu inside a top-layer dialog conflict |
 | Wrapper layer | Call sites never import the library (proposed) | Direct imports | Cheap swap, one lint rule |
 | Select | Native-wrapped by default (proposed) | Radix Select | Keeps `selectOption` and mobile pickers |
-| Library | `radix-ui` unified package (proposed), Base UI fallback | React Aria, Ark, Headless UI | Coverage, Tailwind fit, MIT |
+| Library | Base UI (owner decision 2026-09-20; was: `radix-ui` proposed, Base UI fallback) | Radix, React Aria, Ark, Headless UI | Owner choice; hand-rolling is extra work for behaviour and accessibility; wrappers keep a swap cheap |
 
 ## Research Summary
 

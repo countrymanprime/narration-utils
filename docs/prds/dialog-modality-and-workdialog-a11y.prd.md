@@ -2,6 +2,8 @@
 
 **Supersedes:** `docs/design/known-ui-defects.md` (defect 2 [high], defect 3 [medium], defect 4 [low]; the file's last revision is `b613933`, recover it with `git show b613933:docs/design/known-ui-defects.md`)
 
+**Reshaped by:** [`base-ui-primitive-foundation.prd.md`](base-ui-primitive-foundation.prd.md) (owner decision 2026-09-20: Base UI's Dialog and AlertDialog, behind our own `Dialog`/`ConfirmDialog` wrappers, replace the native `<dialog>` or hand-rolled mechanism this PRD first recommended). Phases 1 and 2 moved into the foundation PRD; Phases 3 to 5 stay here. Notes marked "Reshaped" below win over the original text.
+
 ## Problem Statement
 
 Every modal in the app (`Dialog`, `ConfirmDialog`, `WorkDialog`, and `AddNoteDialog` built on `Dialog`) declares `aria-modal="true"` but is not modal: Escape does nothing, focus is neither moved in nor trapped nor restored, and the page behind stays focusable and readable. A keyboard-only or screen-reader narrator confirming "Delete entry", importing a manuscript or rebuilding the Story Bible can tab out into the page behind the dialog, lose their place, and cannot dismiss the dialog from the keyboard. This was the only high-severity entry in the retired defects register (`docs/design/known-ui-defects.md`, defect 2). The same primitives also have three smaller gaps (progress bar semantics, empty action row, ConfirmDialog API) that are cheapest to fix in the same pass because they share files.
@@ -27,7 +29,7 @@ Verified against `b9d348d` (main at PR #34) and re-checked at `d5cc994` (main af
 
 ## Proposed Solution
 
-Give `Dialog` one shared modal behaviour that all four consumers inherit: focus moves in on open (an `autoFocus` child wins, otherwise the body region), Tab is trapped, Escape calls `onClose` when one exists, the page behind is inert to focus and to assistive technology, and focus returns to the opener on unmount. Choose the mechanism (native `<dialog>.showModal()` recommended, hand-rolled trap plus `inert` as fallback) in a short spike recorded as an ADR. Then fix `WorkDialog` (progressbar semantics, status announcement, reduced motion, never an empty action row) and `ConfirmDialog` (danger label required with `danger`, `confirmVariant`, `body` as `ReactNode`) and mark the destructive confirms.
+Give `Dialog` one shared modal behaviour that all four consumers inherit: focus moves in on open (an `autoFocus` child wins, otherwise the body region), Tab is trapped, Escape calls `onClose` when one exists, the page behind is inert to focus and to assistive technology, and focus returns to the opener on unmount. The mechanism is Base UI's Dialog behind our `Dialog` wrapper (owner decision 2026-09-20, delivered by the foundation PRD's Phase 2; the original native `<dialog>` spike is dropped). Then fix `WorkDialog` (progressbar semantics, status announcement, reduced motion, never an empty action row) and `ConfirmDialog` (danger label required with `danger`, `confirmVariant`, `body` as `ReactNode`) and mark the destructive confirms.
 
 ## Key Hypothesis
 
@@ -35,12 +37,12 @@ We believe making the shared dialog genuinely modal and its progress dialog sema
 
 ## What We're NOT Building
 
-- Modality for the mobile nav drawer and `SlideOver` - same class of gap but a different surface and not listed as a defect; design the mechanism so a follow-up can reuse it.
+- Modality for the mobile nav drawer and `SlideOver` in this PRD - **Reshaped:** they move to Base UI Drawer in foundation Phase 4, not here.
 - A cancel endpoint for the Story Bible rebuild - Go/Python work; this PRD only makes the UI honest about it.
 - Backdrop-click dismissal (see Open Questions; recommended off).
 - A stacked-dialog manager - no dialogs stack today; the mechanism only has to not corrupt state if two mount.
 - Open/close animation, new visual design, width or overflow changes - ADR 0001/0002 stand.
-- A new runtime dependency for one primitive (see Open Questions).
+- Hand-rolling modal behaviour. **Reshaped:** the earlier "no new runtime dependency for one primitive" stance is reversed; the mechanism is Base UI Dialog/AlertDialog behind our wrappers, per the foundation PRD.
 
 ## Success Metrics
 
@@ -58,14 +60,14 @@ We believe making the shared dialog genuinely modal and its progress dialog sema
 
 ## Open Questions
 
-- [ ] **1. Mechanism.** Options: (a) native `<dialog>` + `showModal()` (browser-provided inertness, Escape via `cancel`, top layer; needs a jsdom polyfill and a Wails webview floor check); (b) hand-rolled: portal to `body`, `inert` on siblings, Tab-wrap keydown, focus restore (identical behaviour in jsdom and Chromium, roughly 100 lines to own); (c) a library (Radix Dialog, react-aria FocusScope, focus-trap-react; a new dependency in a repo that has almost none). Recommendation: (a), after a one-day spike (Phase 1) that confirms the webview floor, the jsdom polyfill and Tooltip stacking; fall back to (b) if any fails; no library. Rationale: native gives the accessibility tree a real modal, which `aria-modal` alone does not on every screen reader.
-- [ ] **2. Where is the keyboard behaviour proven?** Options: (a) the Chromium atlas `play()` is the proof and the jsdom run skips it (a story parameter) while a minimal polyfill only lets dialogs render; (b) make the jsdom run exercise a JS trap (only possible with mechanism b). Recommendation: (a) with the skip flagged in the story, because CLAUDE.md wants behaviour proven in a real browser anyway.
-- [ ] **3. Escape on a running `WorkDialog` with a `cancel` (manuscript import `preparing`).** Options: ignore; act as Cancel; close and keep running. Recommendation: ignore while running (cancel is a deliberate action), work as Close once finished. Note `teleprompter-manuscript-integration.prd.md` has a related "Escape must not silently stop a live session" question; keep the same rule.
+- [x] **1. Mechanism - RESOLVED 2026-09-20 (owner decision): (c) a library, Base UI, wrapped in `Dialog`; no spike between native and hand-rolled.** Original analysis kept for the record. Options: (a) native `<dialog>` + `showModal()` (browser-provided inertness, Escape via `cancel`, top layer; needs a jsdom polyfill and a Wails webview floor check); (b) hand-rolled: portal to `body`, `inert` on siblings, Tab-wrap keydown, focus restore (identical behaviour in jsdom and Chromium, roughly 100 lines to own); (c) a library (Radix Dialog, react-aria FocusScope, focus-trap-react; a new dependency in a repo that has almost none). Recommendation: (a), after a one-day spike (Phase 1) that confirms the webview floor, the jsdom polyfill and Tooltip stacking; fall back to (b) if any fails; no library. Rationale: native gives the accessibility tree a real modal, which `aria-modal` alone does not on every screen reader.
+- [ ] **2. Where is the keyboard behaviour proven?** Options: (a) the Chromium atlas `play()` is the proof and the jsdom run skips it (a story parameter) while a minimal polyfill only lets dialogs render; (b) make the jsdom run exercise a JS trap (only possible with mechanism b). Recommendation: (a) with the skip flagged in the story, because CLAUDE.md wants behaviour proven in a real browser anyway. **Reshaped:** jsdom polyfills for Base UI live in `src/test-setup.ts` (foundation Phase 1).
+- [ ] **3. Escape on a running `WorkDialog` with a `cancel` (manuscript import `preparing`).** Options: ignore; act as Cancel; close and keep running. Recommendation: ignore while running (cancel is a deliberate action), work as Close once finished. Note `teleprompter-manuscript-integration.prd.md` has a related "Escape must not silently stop a live session" question; keep the same rule. **Reshaped:** Q3, Q5 and Q6 stand; the `Dialog` wrapper configures Base UI to match (Escape decided via `onOpenChange` reason, backdrop dismissal disabled, initial focus on the body region).
 - [ ] **4. Running job with no cancel (Story Bible rebuild, import `running`/`committing`).** Options: (a) keep it blocking, show an explicit non-cancellable status line, focus lands on the body/status region so the dialog is never a focus dead end; (b) offer Close and let the job continue in the background (needs the Guide polling loop to survive an unmounted dialog and a non-modal progress indicator); (c) add a real cancel endpoint (Go/Python, out of scope). Recommendation: (a) now, (c) as a separate PRD if wanted. This narrows the old register's "always offer Close or Cancel".
 - [ ] **5. Initial focus target.** Options: (a) first tabbable (the header Close X); (b) the dismissive action (Cancel); (c) the body region (already `tabIndex={0}`), so screen readers read the message first; an `autoFocus` child (AddNoteDialog's textarea) always wins. Recommendation: (c). (The old register's suggested fix said "focus the first control"; this is a deliberate change.)
 - [ ] **6. Backdrop click.** Options: none; only plain `Dialog` with `onClose`; all but `WorkDialog`. Recommendation: none. Escape, Close and Cancel are the dismissal paths; an accidental click on a scrim should not discard a destructive confirm. (The old register listed the missing backdrop click as a gap; this is a deliberate reversal.)
-- [ ] **7. Scope of the modal mechanism.** Options: (a) Dialog family only; (b) also `SlideOver` and the nav drawer in the same PRs. Recommendation: (a); write the behaviour so it is reusable, open a follow-up phase for (b).
-- [ ] **8. `ConfirmDialog` API and which confirms are destructive.** Options: discriminated union (`danger` requires `dangerLabel`) plus `confirmVariant?: 'primary' | 'danger'`. Recommendation: yes; set `danger` on "Clear derived project data", "Remove local preview voice", "Remove local Whisper model", "Delete entry", "Merge & delete source", "Replace and reset". Confirm the list with the user.
+- [ ] **7. Scope of the modal mechanism.** Options: (a) Dialog family only; (b) also `SlideOver` and the nav drawer in the same PRs. Recommendation: (a); write the behaviour so it is reusable, open a follow-up phase for (b). **Reshaped:** (b) is now foundation Phase 4 (`SlideOver` and the nav drawer on Base UI Drawer); this PRD stays Dialog family only.
+- [ ] **8. `ConfirmDialog` API and which confirms are destructive.** Options: discriminated union (`danger` requires `dangerLabel`) plus `confirmVariant?: 'primary' | 'danger'`. Recommendation: yes; set `danger` on "Clear derived project data", "Remove local preview voice", "Remove local Whisper model", "Delete entry", "Merge & delete source", "Replace and reset". Confirm the list with the user. **Reshaped:** `ConfirmDialog` is built on Base UI AlertDialog (foundation Q3), which also covers the Could item `role="alertdialog"`.
 - [ ] **9. Ownership overlap.** `teleprompter-manuscript-integration.prd.md` Phase 1 also plans Dialog modality plus a `size="full"` variant. Options: (a) this PRD owns modality and that Phase 1 shrinks to the `size` variant and depends on this PRD's Phase 2; (b) the teleprompter PRD owns it. Recommendation: (a), because modality is a defect fix for all consumers, not a feature. `teleprompter-manuscript-integration.prd.md` already assumes (a): its Phase 1 is now only the `size="full"` variant, it plans no modality ADR, and it depends on this PRD's Phase 2; the user confirms.
 
 ## Users & Context
@@ -121,9 +123,8 @@ Phases 1-4 below. Phase 5 is the sweep and docs.
 
 | Risk | Likelihood | Mitigation |
 | --- | --- | --- |
-| jsdom lacks `showModal`/`inert`; `stories.test.tsx` runs `play()` in jsdom | High | Minimal setup-file polyfill for rendering; keyboard stories flagged atlas-only (Q2); or mechanism (b) |
-| Top-layer dialog hides the body-level Tooltip layer | Medium (latent) | Spike; if needed portal the tooltip layer into the open dialog (touches `Tooltip.tsx`, owned by the a11y-components PRD, so file a follow-up rather than edit here: new defects are GitHub issues, Bug report form with the `area:ui` label, per `docs/operations/github-workflow.md`) |
-| WebKitGTK / WKWebView lower `<dialog>`/`inert` floor than WebView2 | Low-Medium | TBD - needs research: Wails webview versions per platform in the spike; fallback (b) |
+| **Reshaped:** jsdom gaps for Base UI; `stories.test.tsx` runs `play()` in jsdom | High | Polyfills in `src/test-setup.ts` (foundation Phase 1); keyboard stories flagged atlas-only (Q2) |
+| **Reshaped:** webview floor for Base UI's browser support | Low-Medium | Tracked in the foundation PRD (Base UI browser policy per Wails webview, TBD - needs research). The original top-layer Tooltip stacking risk no longer applies: Base UI's Dialog is a `div`, not a top-layer `<dialog>` |
 | Focus restore target unmounted (opener disappears after the action) | Medium | Fallback to `main`; covered by a test |
 | Many dialog screenshots change (UA `<dialog>` styles, `::backdrop`) | Medium | Four-viewport PNG review; doc images `home-import-confirm`, `manuscript-add-note`, `home-manuscript-offer`, `home-import-activity` regenerate |
 | Screen readers behave differently in WebView2 (UIA) | Medium | One manual NVDA pass; record result in the ADR |
@@ -133,11 +134,11 @@ Phases 1-4 below. Phase 5 is the sweep and docs.
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Mechanism spike and ADR | Prototype native vs hand-rolled in a scratch story; check webview floor, jsdom polyfill, Tooltip stacking; write the ADR (the next free ADR number at merge time; 0027 at d5cc994, but other PRDs also plan ADRs) | pending | Yes (docs-only) | - | - |
-| 2 | Shared modal behaviour in `Dialog` | Escape, initial focus, trap, inert, focus restore, aria-labelledby; stories `play()`; RTL tests; AddNoteDialog verified; closes defect 2 | pending | No | 1 | - |
-| 3 | `WorkDialog` semantics | progressbar role/value, status live region, `motion-safe`, no empty action row per Q4; stories per phase; closes defect 3 | pending | 4 | 2 | - |
-| 4 | `ConfirmDialog` API | Discriminated `danger`/`dangerLabel`, `confirmVariant`, `body: ReactNode`; mark destructive callers; closes defect 4 | pending | 3 | 2 | - |
-| 5 | Sweep and docs | Four-viewport PNG review of every dialog state, `docs/ui` regen, doc-screenshot refresh, `design-system.md` row, manual NVDA pass | pending | No | 3, 4 | - |
+| 1 | Mechanism spike and ADR | **Moved.** Superseded by foundation Phase 1 (dependency, wrapper convention, jsdom polyfills, spike stories, the single Base UI ADR written after the code lands) | moved | - | - | - |
+| 2 | Shared modal behaviour in `Dialog` | **Moved.** Delivered by foundation Phase 2 (Dialog family on Base UI: Escape, initial focus, trap, inert or aria-hidden, focus restore, aria-labelledby; stories `play()`; RTL tests; AddNoteDialog verified); closes defect 2 | moved | No | Foundation 1 | - |
+| 3 | `WorkDialog` semantics | progressbar role/value (Base UI `Progress`), status live region, `motion-safe`, no empty action row per Q4; stories per phase; closes defect 3 | pending | 4 | Foundation 2 | - |
+| 4 | `ConfirmDialog` API | Discriminated `danger`/`dangerLabel`, `confirmVariant`, `body: ReactNode`; mark destructive callers; closes defect 4 | pending | 3 | Foundation 2 | - |
+| 5 | Sweep and docs | Four-viewport PNG review of every dialog state, `docs/ui` regen, doc-screenshot refresh, `design-system.md` row, manual NVDA pass | pending | No | 3, 4, Foundation 2 | - |
 
 ### Phase Details
 
@@ -159,7 +160,7 @@ Phases 3 and 4 are disjoint files and can run concurrently after 2 (both touch `
 
 Files owned: `primitives/Dialog.tsx`, `ConfirmDialog.tsx`, `WorkDialog.tsx` and their `.stories.tsx`/`.test.tsx`; `manuscript/AddNoteDialog.tsx`; call-site edits in `Home.tsx` (Phase 3/4), `Guide.tsx`, `GuideDetail.tsx`, `Settings.tsx` (Phase 4, only `ConfirmDialog` props); optional new `vitest` setup file; the ADR; the Status cells of this PRD's phase table. Does NOT touch `styles.css`, `Tooltip.tsx`, `MeterBar.tsx`, `NavButton.tsx`, `Highlight.tsx`, `ScopedSetting.tsx`, `tests/visual/*` or the ui-atlas-kit.
 - Can run concurrently with: the a11y-components PRD (`Tooltip`/`MeterBar`/`Field`/`Heading`/`Panel`; disjoint), the settings-layout PRD (only overlap is `Settings.tsx`, different regions; second to merge rebases), the test-stability PRD's Go and frontend-test phases.
-- Do not run concurrently with: the palette PRD's debt-removal phase if it has not waited for Phase 3 (WorkDialog's `A11Y_DEBT` entry and its markup both change; the palette PRD's final phase lands after this one), and `teleprompter-manuscript-integration.prd.md` Phase 1 (same `Dialog.tsx`; resolve ownership per Q9 first).
+- Do not run concurrently with: foundation Phase 2 (`base-ui-primitive-foundation.prd.md`, same `Dialog.tsx`, `ConfirmDialog.tsx`, `WorkDialog.tsx`; Phases 3 and 4 here follow it), the palette PRD's debt-removal phase if it has not waited for Phase 3 (WorkDialog's `A11Y_DEBT` entry and its markup both change; the palette PRD's final phase lands after this one), and `teleprompter-manuscript-integration.prd.md` Phase 1 (same `Dialog.tsx`; resolve ownership per Q9 first).
 - Generated/shared files that always conflict: `docs/ui/**` (re-run the generator on rebase), `docs/images/ui/*.webp` (regenerate after rebase, never merge binaries).
 
 ## Decisions Log
@@ -174,7 +175,8 @@ Files owned: `primitives/Dialog.tsx`, `ConfirmDialog.tsx`, `WorkDialog.tsx` and 
 | Mutually exclusive state classes (prior decision, ADR 0017) | Keep | Base + override | Stylesheet-order bugs |
 | Atlas is the gate; debt list may only shrink; keyboard gaps were noted, not fixed (prior decision, ADR 0023) | Fix them and add `play()` proof | Leave noted | This PRD |
 | Nothing merges without the user (prior decision, CLAUDE.md) | Each phase is a PR for review | - | - |
-| Mechanism (proposed) | Native `<dialog>` after spike; hand-rolled fallback | Library | Q1 |
+| Mechanism (owner decision 2026-09-20; was: native `<dialog>` after a spike) | Base UI Dialog/AlertDialog behind our `Dialog`/`ConfirmDialog` wrappers | Native `<dialog>`, hand-rolled trap plus `inert`, Radix, React Aria | Q1; hand-rolling is extra work to get behaviour and accessibility right |
+| ADR for the mechanism | Written by foundation Phase 1 after the code lands, not by this PRD | One ADR per PRD | One decision, one ADR (docs/adr/README.md rule 3) |
 | Escape ignored while a cancellable job runs; backdrop click off (proposed) | As stated | Escape cancels; backdrop dismiss | Q3, Q6 |
 | Non-cancellable jobs stay blocking with an honest status (proposed) | Blocking + status | Close-and-continue | Q4 |
 
