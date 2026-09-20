@@ -61,7 +61,7 @@ Nothing below blocks the train; each phase starts with the path that needs no in
 7. **ADRs.** A real decision gets an ADR through the `adr-author` skill after the code lands. If a decision needs the owner and cannot be settled from D1-D22, write the ADR with `Status: Proposed`, follow the recommended path, and add a **"New ADRs for review"** section to the PR body naming each one. Never edit an Accepted ADR: supersede it.
 8. **Last PR of a stack** writes the steady-state docs (`docs/architecture/`, `docs/utilities/`, `docs/guides/`, ADRs), deletes the PRD, updates the README index and this plan's status table, and closes the issue. Delete a PRD only when every phase is `complete` or explicitly deferred with an issue filed.
 9. **Blocked.** If a gate cannot go green after a real attempt, open the PR as a draft with the failure output, mark the row `blocked` here, and continue with any phase that does not depend on it. Never weaken a test, skip a gate or add an escape hatch (`sameAs`, `undriven`, ratchet entries) without a reason written in the PR.
-10. **Serialization points** ([README](README.md#cross-prd-sequencing)) hold: `hostAPIVersion` bumps three files and regenerates `Host.{js,d.ts}`; new bindings use `h.services()` once it exists; one nav item per PR; primitives before the features that use them.
+10. **Serialization points** ([README](README.md#cross-prd-sequencing)) hold: `hostAPIVersion` bumps three files and regenerates `Host.{js,d.ts}`; new bindings use `h.services()` (delivered by S03); one nav item per PR; primitives before the features that use them.
 11. **Honest reporting.** A phase is `complete` only when its acceptance evidence exists. Report failures, skips and pending manual steps in the PR.
 
 ## 4. The train
@@ -73,7 +73,7 @@ Order is dependency first, then value. `S` = stack. A stack is a PRD delivered a
 | S00 | This plan and the decisions register | Docs only, based on `main`. |
 | S01 | `relicense` (new, one PR) | AGPL-3.0-or-later: `LICENSE`, package metadata, README, CONTRIBUTING (DCO), notices note, ADR. Small and independent, so it goes before the big move. |
 | S02 | repo-layout-by-role (1-5; delivered, see [ADR 0040](../adr/0040-the-repository-is-laid-out-by-role-and-each-project-is-an-nx-project.md)) | One atomic move PR (phases 1-3), then Nx per project, then steady state. `wails build` and the launcher must be checked. |
-| S03 | [host-binding-data-race](host-binding-data-race.prd.md) (1-4) | Accessor first; later PRDs build on it. |
+| S03 | host-binding-data-race (1-4; delivered, see [host-binding-concurrency](../architecture/host-binding-concurrency.md) and [ADR 0041](../adr/0041-host-bindings-read-project-services-through-one-snapshot-accessor.md)) | Accessor first; later PRDs build on it. |
 | S04 | [story-bible-preview-tts-failures](story-bible-preview-tts-failures.prd.md) P1, [proofing-vocabulary-hints](proofing-vocabulary-hints.prd.md) P1 | The small correctness fixes the README wants before layout changes. |
 | S05 | [verification-and-code-health-tooling](verification-and-code-health-tooling.prd.md) (1-8, 10, 11) | Coverage ratchet (D18) early so later stacks follow it. Phases 9 and 12 are tail phases after S10. |
 | S06 | [release-supply-chain-hardening](release-supply-chain-hardening.prd.md) (1-5b, 6 as docs, 8) | Pins every workflow action: land alone. 7 and 9 deferred or Could. |
@@ -106,4 +106,5 @@ Updated by the last PR of each stack. Values: `queued`, `in progress`, `pr open`
 | --- | --- | --- |
 | S00 | in progress | this PR |
 | S02 | pr open | #55, #56, #57, #58 (issue #54) |
-| S01, S03-S24 | queued | |
+| S03 | pr open | #61, #62, #63, #64 (issue #59; follow-up #60) |
+| S01, S04-S24 | queued | |

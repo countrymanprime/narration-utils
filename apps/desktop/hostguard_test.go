@@ -26,27 +26,15 @@ var swappableHostFields = map[string]bool{
 }
 
 // permanentDirectReaders may touch the swappable fields directly because the
-// lock is already held. This list does not shrink: it is the reasoning, not a
-// debt. (NewHost builds its fields with a composite literal before any other
-// goroutine can see the Host, which the guard cannot flag, so it needs no entry.)
+// lock is already held. There is no other exception: the ratchet allowlist that
+// carried the not-yet-converted functions through the migration was emptied and
+// deleted, and a new entry here needs a written reason. (NewHost builds its
+// fields with a composite literal before any other goroutine can see the Host,
+// which the guard cannot flag, so it needs no entry.)
 var permanentDirectReaders = map[string]string{
 	"configureLocked": "the only writer of the fields; its caller holds h.mu",
 	"canAttachLocked": "runs inside attachProjectLocked, whose caller holds h.mu",
 	"services":        "the accessor: the one place that reads the fields under the lock",
-}
-
-// directReadAllowlist is the ratchet: functions that still read swappable
-// fields directly, with how many reads each has, and so still race with a
-// project switch. It can only shrink. Converting a read must lower its count
-// (the guard fails on a count that is too high, and on one that is too low), a
-// function with no reads left must be removed, and a new entry needs a written
-// reason in the pull request. Keep it sorted, one name per line, so concurrent
-// edits rebase cleanly.
-var directReadAllowlist = []allowedReads{}
-
-type allowedReads struct {
-	function string
-	reads    int
 }
 
 type directRead struct {
@@ -218,46 +206,16 @@ func TestHostReadsSwappableServicesOnlyThroughTheAccessor(t *testing.T) {
 	violations := map[string][]directRead{}
 	for _, file := range files {
 		for _, read := range directHostReads(fset, file) {
-			violations[read.function] = append(violations[read.function], read)
+			if _, permanent := permanentDirectReaders[read.function]; !permanent {
+				violations[read.function] = append(violations[read.function], read)
+			}
 		}
-	}
-
-	allowed := map[string]int{}
-	for index, entry := range directReadAllowlist {
-		if index > 0 && entry.function <= directReadAllowlist[index-1].function {
-			t.Errorf("directReadAllowlist must be sorted with no duplicates: %q follows %q", entry.function, directReadAllowlist[index-1].function)
-		}
-		if entry.reads < 1 {
-			t.Errorf("directReadAllowlist entry %q has %d reads; remove an entry with none", entry.function, entry.reads)
-		}
-		allowed[entry.function] = entry.reads
 	}
 
 	var problems []string
 	for name, reads := range violations {
-		if _, permanent := permanentDirectReaders[name]; permanent {
-			continue
-		}
-		budget, listed := allowed[name]
-		if listed && len(reads) == budget {
-			continue
-		}
 		first := reads[0]
-		switch {
-		case !listed:
-			problems = append(problems, fmt.Sprintf("%s: %s reads h.%s directly (%d reads); take a snapshot with h.services() instead", first.position, name, first.field, len(reads)))
-		case len(reads) > budget:
-			problems = append(problems, fmt.Sprintf("%s: %s has %d direct reads, more than its allowlist count of %d; use h.services() for the new one", reads[budget].position, name, len(reads), budget))
-		default:
-			problems = append(problems, fmt.Sprintf("%s now has %d direct reads; lower its directReadAllowlist count from %d to %d", name, len(reads), budget, len(reads)))
-		}
-	}
-	for name := range allowed {
-		if _, permanent := permanentDirectReaders[name]; permanent {
-			problems = append(problems, name+" is permanently allowed; remove it from directReadAllowlist")
-		} else if len(violations[name]) == 0 {
-			problems = append(problems, name+" no longer reads a swappable field directly; remove it from directReadAllowlist")
-		}
+		problems = append(problems, fmt.Sprintf("%s: %s reads h.%s directly (%d reads); take a snapshot with h.services() instead", first.position, name, first.field, len(reads)))
 	}
 	sort.Strings(problems)
 	for _, problem := range problems {

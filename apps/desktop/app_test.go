@@ -275,6 +275,46 @@ func TestProjectCreateMakesDirectoryAndAttaches(t *testing.T) {
 	}
 }
 
+func TestProjectCreateRefusesWithoutCreatingTheFolderWhenBusy(t *testing.T) {
+	host := NewHost()
+	host.manuscript.Begin("draft.md")
+	before := host.config
+	project := filepath.Join(t.TempDir(), "Busy Book")
+	raw, err := host.ProjectCreate(project, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result map[string]any
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result["switched"] != false {
+		t.Fatalf("result = %#v, want switched:false", result)
+	}
+	if reason, _ := result["reason"].(string); reason != attachBusyReason {
+		t.Fatalf("reason = %q, want the busy reason", reason)
+	}
+	if _, err := os.Stat(project); !os.IsNotExist(err) {
+		t.Fatalf("a refused create must not leave the folder behind (stat error: %v)", err)
+	}
+	if host.config != before {
+		t.Fatalf("config changed on a refused create: %#v", host.config)
+	}
+}
+
+func TestProjectCreateRequiresAnAbsolutePath(t *testing.T) {
+	host := NewHost()
+	relative := filepath.Join("relative-project-folder-that-must-not-exist", "Book")
+	t.Cleanup(func() { _ = os.RemoveAll("relative-project-folder-that-must-not-exist") })
+	_, err := host.ProjectCreate(relative, "")
+	if err == nil || !strings.Contains(err.Error(), "absolute") {
+		t.Fatalf("err = %v, want an error saying the path must be absolute", err)
+	}
+	if _, statErr := os.Stat(relative); !os.IsNotExist(statErr) {
+		t.Fatalf("a relative path must not create a folder under the working directory (stat error: %v)", statErr)
+	}
+}
+
 func TestProjectSwitchRefusesWhenBusy(t *testing.T) {
 	host := NewHost()
 	host.manuscript.Begin("draft.md")

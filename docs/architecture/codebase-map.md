@@ -68,6 +68,8 @@ Every folder above except `docs/` is an Nx project with a `project.json`; `pnpm 
 
 `apps/desktop/bindings.go` is the auditable generated-Wails binding index. The native app does not expose HTTP routes.
 
+Every binding reads the project-scoped services (manuscript, Story Bible, settings, TTS, Whisper, transcript, teleprompter) through `h.services()` in `apps/desktop/services.go`, never off the `Host` directly, because a project switch replaces them; `hostguard_test.go` fails `go test` otherwise. See [host binding concurrency](host-binding-concurrency.md).
+
 - `system` owns health, bootstrap, settings, diagnostics, and shutdown.
 - `manuscript` owns canonical text, reader state, notes, and import jobs.
 - `story_bible` owns guide entities, relationships, audio preview, and build jobs.

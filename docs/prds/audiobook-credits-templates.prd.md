@@ -100,7 +100,7 @@ We believe templated credits filled from project data, previewed as they will be
 **Architecture notes**
 - **One renderer in Go** (new small package, for example `apps/desktop/internal/credits`): parse `[Token]` and optional segments, look up values, return `{text, words, unresolved[]}`. Whitespace word counting matches the teleprompter tokenizer contract. The estimate, the preview and the teleprompter file all call it.
 - **Storage** per C7: a versioned JSON list for templates with atomic writes; values in the manifest or a dedicated project file behind one accessor; a flat `General.narrator_name` `text` setting for the narrator default. Add a `Credits` category to Settings (`Settings.tsx:13-21`), with a textarea and live preview, which needs a `Field`/textarea with more props (primitives and a11y PRDs) or a local component.
-- **Bindings** (new): list/save/delete templates, get/set project values, render preview; a `hostAPIVersion` bump (5 in `apps/desktop/app.go:33`, `apps/desktop/app_test.go:39-41`, `apps/ui/src/hostApi.ts:2`), regenerate `Host.{js,d.ts}`; write on the host accessor (`host-binding-data-race.prd.md`).
+- **Bindings** (new): list/save/delete templates, get/set project values, render preview; a `hostAPIVersion` bump (5 in `apps/desktop/app.go:33`, `apps/desktop/app_test.go:39-41`, `apps/ui/src/hostApi.ts:2`), regenerate `Host.{js,d.ts}`; write on the host accessor (`h.services()`, see `docs/architecture/host-binding-concurrency.md`).
 - **Estimate**: a separate `creditsSeconds` beside `Est. finished audio`, never folded into `narratableWordCount`; `fmtHours` shows seconds below one minute.
 - **Manuscript view**: read-only synthetic entries (not chapters, not in `manuscript.json`), excluded from `isListableChapter` logic and search; reader PRD coordination.
 - **Teleprompter**: extend the sidecar so `--script` emits spans (or load credits as a pseudo-chapter), and the Go service accepts a credits source instead of a chapter id; teleprompter PRDs own the live-recognition work (`teleprompter-manuscript-integration.prd.md`).
@@ -142,7 +142,7 @@ We believe templated credits filled from project data, previewed as they will be
 
 | Phase | Files and areas touched | Collision risk |
 | --- | --- | --- |
-| 1 | new `apps/desktop/internal/credits`, `apps/desktop/{app.go,bindings.go,app_test.go}`, `apps/ui/src/{hostApi.ts,api/*,components/settings/*}`, `Host.*`, `config/defaults.json` and `builtinDefaults`, `docs/architecture/` | Every binding phase (API version), `fieldSchemas`/Settings editors, project manifest (project-workspace Phase 3), host-binding PRD |
+| 1 | new `apps/desktop/internal/credits`, `apps/desktop/{app.go,bindings.go,app_test.go}`, `apps/ui/src/{hostApi.ts,api/*,components/settings/*}`, `Host.*`, `config/defaults.json` and `builtinDefaults`, `docs/architecture/` | Every binding phase (API version), `fieldSchemas`/Settings editors, project manifest (project-workspace Phase 3), the delivered host accessor |
 | 2 | `AudiobookEstimatePanel.tsx`, `state.ts` | Chapter-stage-recommendations, interaction audit, import-review (Home.tsx) |
 | 3 | `Manuscript.tsx`, `ChapterNav.tsx` | Reader search and controls PRD (all phases) |
 | 4 | `apps/desktop/internal/teleprompter`, `sidecars/manuscript-teleprompter/core/*`, `TeleprompterPage.tsx`, `readerModel.ts` | Both teleprompter PRDs (Phases 2-8) |

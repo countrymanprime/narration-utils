@@ -96,7 +96,7 @@ We believe surfacing real errors and removing the poisoned-cache and masking pat
 **Architecture notes**
 - `manuscript_guide.py`: build the WAV in memory or a temp file, call `synthesize_wav`, write only on success; catch and re-raise the real exception; print the `AUDIO|` path through a UTF-8-safe stream (encoding test).
 - `service.go`: treat `size == 0` as a miss; add the voice id to the hash input; run with `context.WithTimeout`; add `Preview` tests with a fake process supervisor (as the Whisper tests do).
-- `bindings.go`: a `GuidePreview` test for each failure class and for `asset_required`; snapshot service pointers under the host lock (host-binding PRD).
+- `bindings.go`: a `GuidePreview` test for each failure class and for `asset_required`; read services through `h.services()` (`docs/architecture/host-binding-concurrency.md`).
 - UI: the hook already resets on error; add tests and distinct messages; the mock gains a failing-preview seam (`?mockPreviewError=`) and an install job with `phase:'running'`.
 - Frozen sidecar: `prepare-resources.py` gains `collect_data` for piper (the comment at `:74-76` is the pattern); a release smoke test synthesizes one word.
 - Docs: a troubleshooting note in `docs/guides/using-the-app/story-bible.md`; no ADR unless the cache contract changes ADR 0012.

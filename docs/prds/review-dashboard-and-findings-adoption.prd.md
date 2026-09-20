@@ -188,7 +188,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 
 **Phase 4 - Host bindings for review**
 - **Goal**: The UI can read and decide findings through typed bindings.
-- **Scope**: `FindingsList(query)`, `FindingsReview(id, status, note)` (and a summary count for the nav badge), guarded like the other bindings (snapshot the service pointer under `h.mu.RLock`, the pattern owned by `host-binding-data-race.prd.md`); wailsjs regenerated; mock fixtures; `wailsClient.test.ts`; host API 5 to 6.
+- **Scope**: `FindingsList(query)`, `FindingsReview(id, status, note)` (and a summary count for the nav badge), guarded like the other bindings (snapshot the service pointer under `h.mu.RLock`, the `h.services()` pattern of `docs/architecture/host-binding-concurrency.md`); wailsjs regenerated; mock fixtures; `wailsClient.test.ts`; host API 5 to 6.
 - **Success signal**: Go binding tests, UI contract and mock tests, `app_test.go` version test updated, no UI page yet.
 
 **Phase 5 - Review page**
