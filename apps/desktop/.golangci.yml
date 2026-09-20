@@ -18,8 +18,49 @@ issues:
 linters:
   default: standard
   enable:
+    - depguard
     - gosec
   settings:
+    # Architecture rules taken from accepted or proposed ADRs, so they fail the build instead of relying on review.
+    # Each `desc` says which rule it is and where it comes from.
+    depguard:
+      rules:
+        no-network-outside-the-download-flow:
+          # ADR 0032 point 4 (analysis is local; models are fetched only through the explicit first-use flow) and
+          # ADR 0012 (the media route). The only networking the host itself imports is the asset download in
+          # internal/assets and the track-audio route in the root media.go. Tests may use httptest servers.
+          # This is a fence on the Go host's imports, not proof that analysis is local: it does not see a sidecar's
+          # own network use (the ephemeral uv environment of ADR 0021 point 5 downloads packages), os/exec, or a
+          # third-party client added under another name. `net` also covers its subpackages such as net/url and net/http.
+          files: ["$all", "!$test", "!**/internal/assets/**", "!**/apps/desktop/media.go"]
+          deny:
+            - pkg: net
+              desc: "the Go host imports networking only in internal/assets (the first-use download flow) and the root media.go (the track media route); see ADR 0032 point 4 and ADR 0012"
+            - pkg: crypto/tls
+              desc: "the Go host imports networking only in internal/assets and the root media.go; see ADR 0032 point 4"
+            - pkg: golang.org/x/net
+              desc: "the Go host imports networking only in internal/assets and the root media.go; see ADR 0032 point 4"
+        analyzers-report-they-do-not-write:
+          # ADR 0032 point 1: an analyzer's output is a finding; it does not edit audio or the manuscript, and the
+          # REAPER adapter owns execution. The list extends that to what would let an analyzer act: the manuscript
+          # store, the Story Bible, settings, the recents list, the REAPER bridge, the process supervisor and the
+          # Transcript Compare service (which exports markers). It checks direct imports only.
+          files: ["**/internal/measure/**", "**/internal/findings/**"]
+          deny:
+            - pkg: github.com/countrymanprime/narration-utils/shell/internal/manuscript
+              desc: "analyzers report findings and do not touch the manuscript store (ADR 0032 point 1)"
+            - pkg: github.com/countrymanprime/narration-utils/shell/internal/guide
+              desc: "analyzers report findings and do not edit the Story Bible (ADR 0032 point 1, extended)"
+            - pkg: github.com/countrymanprime/narration-utils/shell/internal/settings
+              desc: "analyzers report findings and do not write settings (ADR 0032 point 1, extended)"
+            - pkg: github.com/countrymanprime/narration-utils/shell/internal/recents
+              desc: "analyzers report findings and do not write the recents list (ADR 0032 point 1, extended)"
+            - pkg: github.com/countrymanprime/narration-utils/shell/internal/bridge
+              desc: "the REAPER bridge executes project actions; an analyzer must not reach it (ADR 0032 point 1)"
+            - pkg: github.com/countrymanprime/narration-utils/shell/internal/process
+              desc: "analyzers do not launch sidecars or other processes (ADR 0032 point 1, extended)"
+            - pkg: github.com/countrymanprime/narration-utils/shell/internal/transcript
+              desc: "Transcript Compare exports markers into the project; an analyzer must not depend on it (ADR 0032 point 1)"
     gosec:
       excludes:
         # G304 flags every os.Open or os.ReadFile whose path is not a constant. This is a local
