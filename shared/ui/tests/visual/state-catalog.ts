@@ -204,23 +204,12 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'global',
     state: 'nav-rail-tooltip',
     description:
-      "Primary navigation - hovering an enabled icon in the icon-only rail shows that page's name; at desktop and mobile widths there is no icon-only rail, so this is a no-op there",
+      "Primary navigation - hovering an enabled icon in the icon-only rail shows that page's name; at desktop width there is no icon-only rail, so this is a no-op there",
     pointer: 'keep',
     sameAs: {
       of: 'home/default',
-      reason: 'Only the icon-only rail shows tooltips; the full sidebar and mobile view have nothing to hover.',
-      viewports: ['desktop', 'mobile'],
-    },
-  },
-  {
-    page: 'global',
-    state: 'nav-drawer-open',
-    description:
-      'Primary navigation - the mobile slide-in drawer opened via the hamburger button; a no-op at desktop/small-desktop/tablet widths where the persistent nav rail is already visible',
-    sameAs: {
-      of: 'home/default',
-      reason: 'Above the md breakpoint the nav rail is always visible, so there is no drawer to open.',
-      viewports: ['desktop', 'small-desktop', 'tablet'],
+      reason: 'Only the icon-only rail shows tooltips; the full sidebar has nothing to hover.',
+      viewports: ['desktop'],
     },
   },
 

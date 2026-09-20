@@ -7,18 +7,11 @@
     "caption": "No project open yet - recent projects, browse, and create actions"
   },
   {
-    "page": "global",
-    "state": "nav-drawer-open",
+    "page": "home",
+    "state": "default",
     "viewport": "desktop",
     "docName": "nav-sidebar-desktop",
     "caption": "Primary navigation - the persistent sidebar shown at desktop widths"
-  },
-  {
-    "page": "global",
-    "state": "nav-drawer-open",
-    "viewport": "mobile",
-    "docName": "nav-drawer-mobile",
-    "caption": "Primary navigation - the slide-in drawer opened via the mobile hamburger button"
   },
   {
     "page": "global",
