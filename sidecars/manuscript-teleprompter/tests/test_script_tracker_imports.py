@@ -5,6 +5,10 @@ model, audio or the rest of the sidecar, so it imports the standard library and 
 `live_asr` (or numpy, or faster_whisper) import would make the tracker depend on an engine and
 break the swap-an-engine-with-one-adapter promise. This is checked by reading the source, not by
 importing it, so the rule also holds where the optional engine packages are not installed.
+
+It sees `import` statements (also inside functions and under `if TYPE_CHECKING:`, which counts, on
+purpose) and direct calls to `__import__` and `importlib.import_module`. It cannot see a module
+name built at run time and passed some other way: that is a limit of reading source, not a promise.
 """
 
 import ast
@@ -12,6 +16,10 @@ import sys
 from pathlib import Path
 
 TRACKER_PATH = Path(__file__).resolve().parents[1] / "core" / "script_tracker.py"
+
+
+def _is_dynamic_import(function: ast.expr) -> bool:
+    return (isinstance(function, ast.Name) and function.id == "__import__") or (isinstance(function, ast.Attribute) and function.attr == "import_module")
 
 
 def non_stdlib_imports(source: str) -> list[str]:
@@ -25,6 +33,9 @@ def non_stdlib_imports(source: str) -> list[str]:
             names = [alias.name for alias in node.names]
         elif isinstance(node, ast.ImportFrom):
             names = ["." * node.level + (node.module or "")]
+        elif isinstance(node, ast.Call) and _is_dynamic_import(node.func):
+            found.append("<dynamic import>")
+            continue
         else:
             continue
         for name in names:
@@ -42,6 +53,9 @@ def test_the_rule_flags_engine_and_third_party_imports_and_accepts_the_standard_
     assert non_stdlib_imports("from . import live_asr") == ["."]
     assert non_stdlib_imports("from .live_asr import x") == [".live_asr"]
     assert non_stdlib_imports("def late():\n    import moonshine_onnx\n") == ["moonshine_onnx"]
+    assert non_stdlib_imports("if TYPE_CHECKING:\n    from live_asr import Hypothesis\n") == ["live_asr"]
+    assert non_stdlib_imports("import importlib\nengine = importlib.import_module('live_asr')\n") == ["<dynamic import>"]
+    assert non_stdlib_imports("engine = __import__('live_asr')\n") == ["<dynamic import>"]
 
 
 def test_the_script_tracker_imports_only_the_standard_library():
