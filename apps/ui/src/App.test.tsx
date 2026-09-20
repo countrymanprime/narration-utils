@@ -104,6 +104,20 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect((screen.getByDisplayValue('Alice (editing)') as HTMLInputElement).value).toBe('Alice (editing)');
   });
 
+  it('shows a repeated message as a fresh toast, so a second click on the same action gives a new signal', async () => {
+    renderApp({ transcriptSuggestHints: async () => ({ terms: [], found: 0 }) });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Proofing' })[0]);
+    await screen.findByRole('heading', { name: 'Proofing' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Suggest from manuscript/ }));
+    const first = await screen.findByRole('status');
+    fireEvent.click(screen.getByRole('button', { name: /Suggest from manuscript/ }));
+
+    await waitFor(() => expect(screen.getByRole('status')).not.toBe(first));
+    expect(screen.getByRole('status').textContent).toBe(first.textContent);
+  });
+
   it('wires every primary page through the application router', async () => {
     renderApp();
     await screen.findByRole('heading', { name: 'Welcome back' });

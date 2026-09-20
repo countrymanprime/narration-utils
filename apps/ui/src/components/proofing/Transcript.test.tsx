@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Transcript } from './Transcript';
 import { ApiProvider } from '../../api/ApiContext';
@@ -107,5 +107,136 @@ describe('Transcript vocabulary suggestions', () => {
 
     fireEvent.click(screen.getByText('White Rabbit'));
     expect(document.querySelector('td[colspan="6"]')).toBeTruthy();
+  });
+});
+
+describe('Transcript vocabulary hints feedback', () => {
+  function renderHints(overrides: Parameters<typeof createMockApi>[0] = {}) {
+    const notify = vi.fn();
+    const api = createMockApi(overrides);
+    render(
+      <ApiProvider api={api}>
+        <Transcript state={WIRE_TRANSCRIPT} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} />
+      </ApiProvider>,
+    );
+    return notify;
+  }
+  const suggest = () => fireEvent.click(screen.getByRole('button', { name: /Suggest from manuscript/ }));
+
+  it('says nothing was found when the Story Bible offers no names', async () => {
+    const notify = renderHints({ transcriptSuggestHints: async () => ({ terms: [], found: 0 }) });
+    await screen.findByText('Vocabulary hints');
+
+    suggest();
+
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('No names found in the Story Bible yet. Build it or add entries, then try again.'));
+  });
+
+  it('says everything found is already accepted, and how many that is', async () => {
+    const notify = renderHints({ transcriptSuggestHints: async () => ({ terms: [], found: 3 }) });
+    await screen.findByText('Vocabulary hints');
+
+    suggest();
+
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('No new suggestions: all 3 names found are already accepted.'));
+  });
+
+  it('counts the new suggestions, and says so when a second click finds only ones already shown', async () => {
+    const notify = renderHints({ transcriptSuggestHints: async () => ({ terms: ['Alice', 'Zeph'], found: 2 }) });
+    await screen.findByText('Vocabulary hints');
+
+    suggest();
+    await waitFor(() => expect(notify).toHaveBeenLastCalledWith('Found 2 new suggestions.'));
+    suggest();
+
+    await waitFor(() => expect(notify).toHaveBeenLastCalledWith('The 2 suggestions found are already shown. Click one to accept it.'));
+    expect(screen.getAllByRole('button', { name: /^\+ / })).toHaveLength(2);
+  });
+
+  it('matches suggestions against accepted hints regardless of case', async () => {
+    const notify = renderHints({ transcriptHints: async () => ['alice'], transcriptSuggestHints: async () => ({ terms: ['Alice', 'Zeph'], found: 2 }) });
+    await screen.findByText('alice');
+
+    suggest();
+
+    await waitFor(() => expect(notify).toHaveBeenLastCalledWith('Found 1 new suggestion.'));
+    expect(screen.queryByRole('button', { name: '+ Alice' })).toBeNull();
+    expect(screen.getByRole('button', { name: '+ Zeph' })).toBeTruthy();
+  });
+
+  it('reports the host reason when Suggest fails', async () => {
+    const notify = renderHints({ transcriptSuggestHints: () => Promise.reject('build the Story Bible before requesting vocabulary suggestions') });
+    await screen.findByText('Vocabulary hints');
+
+    suggest();
+
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('build the Story Bible before requesting vocabulary suggestions'));
+  });
+
+  it('says when the saved hints could not be loaded instead of showing an empty box', async () => {
+    const notify = renderHints({ transcriptHints: () => Promise.reject('the saved vocabulary hints file is not a valid list') });
+
+    await waitFor(() =>
+      expect(notify).toHaveBeenCalledWith(
+        'The saved vocabulary hints could not be loaded: the saved vocabulary hints file is not a valid list. Hints you add now will replace them.',
+      ),
+    );
+    expect(screen.getByText('Vocabulary hints')).toBeTruthy();
+  });
+
+  it('adds a typed term once, whatever its case', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    renderHints({ transcriptHints: async () => ['Alice'], transcriptSaveHints: save });
+    await screen.findByText('Alice');
+
+    const input = screen.getByPlaceholderText('Add a term…');
+    fireEvent.change(input, { target: { value: 'alice' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.change(input, { target: { value: 'Zeph' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(save).toHaveBeenCalledWith(['Alice', 'Zeph']);
+  });
+
+  it('does not offer a name accepted while the suggestion request was still in flight', async () => {
+    let resolveSuggest: (value: { terms: string[]; found: number }) => void = () => {};
+    const save = vi.fn().mockResolvedValue(undefined);
+    const notify = renderHints({
+      transcriptSaveHints: save,
+      transcriptSuggestHints: () => new Promise((resolve) => (resolveSuggest = resolve)),
+    });
+    await screen.findByText('Vocabulary hints');
+
+    suggest();
+    const input = screen.getByPlaceholderText('Add a term…');
+    fireEvent.change(input, { target: { value: 'Alice' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(() => expect(save).toHaveBeenCalledWith(['Alice']));
+    await act(async () => resolveSuggest({ terms: ['Alice', 'Zeph'], found: 2 }));
+
+    expect(screen.queryByRole('button', { name: '+ Alice' })).toBeNull();
+    expect(screen.getByRole('button', { name: '+ Zeph' })).toBeTruthy();
+    expect(notify).toHaveBeenLastCalledWith('Found 1 new suggestion.');
+  });
+
+  it('loads the saved hints once and reports a load failure once', async () => {
+    const hints = vi.fn().mockRejectedValue('the saved vocabulary hints file is not a valid list');
+    const notify = renderHints({ transcriptHints: hints });
+
+    await waitFor(() => expect(notify).toHaveBeenCalledTimes(1));
+    expect(hints).toHaveBeenCalledTimes(1);
+  });
+
+  it('splits a typed or pasted list on commas so no term can hold one', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    renderHints({ transcriptSaveHints: save });
+    await screen.findByText('Vocabulary hints');
+
+    const input = screen.getByPlaceholderText('Add a term…');
+    fireEvent.change(input, { target: { value: ' Juno,  Zeph , ,juno ' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await waitFor(() => expect(save).toHaveBeenCalledWith(['Juno', 'Zeph']));
   });
 });

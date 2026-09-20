@@ -216,8 +216,22 @@ func (s *Service) Unrelate(id, other, label string) error {
 	return err
 }
 
-// VocabularyCandidates mirrors the Python Guide's reviewed vocabulary
-// suggestions. It preserves the first spelling of each case-insensitive name.
+// VocabularyCandidates returns the names Proofing's "Suggest from manuscript"
+// offers: the Guide's stored vocabulary_candidates list plus every name derived
+// from the current entities, one spelling per case-insensitive name (the first
+// seen wins, stored list first), sorted.
+//
+// The stored list is only an addition. The sidecar writes it at build time, so
+// create() seeds it empty and only build() ever refreshes it: choosing the
+// stored list whenever it exists made Suggest return nothing on a freshly
+// imported project and miss every name added after the last build.
+//
+// Derived names follow the sidecar's own rule (is_vocabulary_worthy, ADR 0020)
+// with one relaxation: an entity the narrator locked or added by hand is always
+// offered, whatever its category, because it is theirs (the sidecar checks
+// Needs Review first, so it drops such an entity). Auto-extracted Needs Review
+// and Draft entities stay out, and a lone word the build is not sure of still
+// needs three occurrences.
 func (s *Service) VocabularyCandidates() ([]string, error) {
 	b, err := os.ReadFile(s.guidePath())
 	if err != nil {
@@ -230,40 +244,32 @@ func (s *Service) VocabularyCandidates() ([]string, error) {
 	seen := map[string]string{}
 	add := func(text string) {
 		text = strings.TrimSpace(text)
-		if text == "" {
+		// Hints are joined with commas for the recognizer, so a name holding a
+		// comma or a line break could not survive the round trip.
+		if text == "" || strings.ContainsAny(text, ",\r\n") {
 			return
 		}
 		if _, exists := seen[strings.ToLower(text)]; !exists {
 			seen[strings.ToLower(text)] = text
 		}
 	}
-	if raw, ok := document["vocabulary_candidates"].([]any); ok {
-		for _, value := range raw {
-			if text, ok := value.(string); ok {
-				add(text)
-			}
+	stored, _ := document["vocabulary_candidates"].([]any)
+	for _, value := range stored {
+		if text, ok := value.(string); ok {
+			add(text)
 		}
-	} else if entities, ok := document["entities"].([]any); ok {
-		// A guide built before the sidecar wrote vocabulary_candidates would
-		// otherwise return nothing and make "Suggest from manuscript" look dead;
-		// derive the list from the reviewed entities instead. Needs Review
-		// entries are excluded, matching the sidecar's own list.
-		for _, item := range entities {
-			entity, _ := item.(map[string]any)
-			if entity == nil || entity["category"] == "Needs Review" || entity["category"] == "Draft" {
-				continue
-			}
-			if name, ok := entity["canonical_name"].(string); ok {
-				add(name)
-			}
-			aliases, _ := entity["aliases"].([]any)
-			for _, raw := range aliases {
-				if alias, ok := raw.(map[string]any); ok {
-					if text, ok := alias["text"].(string); ok {
-						add(text)
-					}
-				}
-			}
+	}
+	entities, _ := document["entities"].([]any)
+	for _, item := range entities {
+		entity, _ := item.(map[string]any)
+		if entity == nil || !vocabularyWorthy(entity) {
+			continue
+		}
+		if name, ok := entity["canonical_name"].(string); ok {
+			add(name)
+		}
+		for _, alias := range entityAliasTexts(entity) {
+			add(alias)
 		}
 	}
 	values := make([]string, 0, len(seen))
@@ -272,6 +278,70 @@ func (s *Service) VocabularyCandidates() ([]string, error) {
 	}
 	sort.Slice(values, func(left, right int) bool { return strings.ToLower(values[left]) < strings.ToLower(values[right]) })
 	return values, nil
+}
+
+// minSingleWordVocabularyOccurrences mirrors MIN_SINGLE_WORD_VOCABULARY_OCCURRENCES
+// in the sidecar.
+const minSingleWordVocabularyOccurrences = 3
+
+// vocabularyWorthy reports whether an entity's names are offered as vocabulary
+// hints. It is the sidecar's is_vocabulary_worthy with locked and manual entities
+// checked first.
+func vocabularyWorthy(entity map[string]any) bool {
+	if locked, _ := entity["locked"].(bool); locked {
+		return true
+	}
+	if manual, _ := entity["manual"].(bool); manual {
+		return true
+	}
+	if entity["category"] == "Needs Review" || entity["category"] == "Draft" {
+		return false
+	}
+	name, _ := entity["canonical_name"].(string)
+	if len(strings.Fields(name)) > 1 {
+		return true
+	}
+	count, known := entityOccurrenceCount(entity)
+	return !known || count >= minSingleWordVocabularyOccurrences
+}
+
+// entityOccurrenceCount is the entity's occurrence_count, or its own occurrences
+// plus its aliases' when the guide predates that field. known is false when the
+// entity carries no occurrence data at all (an old schema), so it cannot be judged.
+func entityOccurrenceCount(entity map[string]any) (count int, known bool) {
+	if number, ok := entity["occurrence_count"].(float64); ok {
+		return int(number), true
+	}
+	own, hasOwn := entity["occurrences"].([]any)
+	count, known = len(own), hasOwn
+	aliases, _ := entity["aliases"].([]any)
+	for _, raw := range aliases {
+		if alias, ok := raw.(map[string]any); ok {
+			if list, ok := alias["occurrences"].([]any); ok {
+				count, known = count+len(list), true
+			}
+		}
+	}
+	return count, known
+}
+
+// entityAliasTexts returns the alias spellings of an entity. Guides from an
+// earlier schema store an alias as a plain string; the sidecar normalizes them
+// on load, but the host reads the file directly.
+func entityAliasTexts(entity map[string]any) []string {
+	aliases, _ := entity["aliases"].([]any)
+	texts := make([]string, 0, len(aliases))
+	for _, raw := range aliases {
+		switch alias := raw.(type) {
+		case string:
+			texts = append(texts, alias)
+		case map[string]any:
+			if text, ok := alias["text"].(string); ok {
+				texts = append(texts, text)
+			}
+		}
+	}
+	return texts
 }
 
 const (

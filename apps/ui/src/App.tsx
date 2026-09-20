@@ -31,7 +31,13 @@ function AppRoutes() {
   const navigate = useNavigate();
   const location = useLocation();
   const [data, setData] = useState<Bootstrap>();
-  const [notice, setNotice] = useState('');
+  // Each message gets a new id, so repeating the same text remounts the toast and restarts its timer:
+  // a second click on the same action gives a new signal instead of looking like nothing happened.
+  const [notice, setNoticeState] = useState({ text: '', id: 0 });
+  const setNotice = useCallback((text: string) => setNoticeState((current) => ({ text, id: current.id + 1 })), []);
+  // A stable dismiss: Toast restarts its timers whenever this changes, so an inline arrow would keep a toast
+  // on screen for as long as the app kept re-rendering (transcript updates during a run).
+  const dismissNotice = useCallback(() => setNotice(''), [setNotice]);
   const [startup, setStartup] = useState<StartupState>('connecting');
   const [startupError, setStartupError] = useState('');
   const [diagnosticId, setDiagnosticId] = useState('');
@@ -109,7 +115,7 @@ function AppRoutes() {
       if (state.attached) void refreshBootstrap();
       else if (state.reason) setNotice(state.reason);
     });
-  }, [api, hasBootstrap, refreshBootstrap]);
+  }, [api, hasBootstrap, refreshBootstrap, setNotice]);
 
   useEffect(() => {
     if (!hasBootstrap) return;
@@ -233,7 +239,7 @@ function AppRoutes() {
               />
             </Routes>
           </ErrorBoundary>
-          {notice && <Toast key={notice} text={notice} dismiss={() => setNotice('')} />}
+          {notice.text && <Toast key={notice.id} text={notice.text} dismiss={dismissNotice} />}
         </AppShell>
       </TooltipProvider>
       {pendingPath && (

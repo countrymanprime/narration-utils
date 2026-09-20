@@ -533,24 +533,28 @@ func (h *Host) TranscriptSuggestHints() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// A saved-hints file that cannot be read must not stop Suggest; TranscriptHints
+	// reports that error when the page loads the hints.
 	accepted := map[string]bool{}
 	for _, value := range svc.transcript.Hints() {
 		accepted[strings.ToLower(value)] = true
 	}
-	suggested := []string{}
+	terms := []string{}
 	for _, value := range values {
 		if !accepted[strings.ToLower(value)] {
-			suggested = append(suggested, value)
+			terms = append(terms, value)
 		}
 	}
-	return encodeBinding(map[string]any{"value": strings.Join(suggested, ", ")}, nil)
+	// found counts every name the Story Bible offers, so the page can tell "nothing
+	// found" from "everything found is already accepted".
+	return encodeBinding(map[string]any{"terms": terms, "found": len(values)}, nil)
 }
 func (h *Host) TranscriptHints() (string, error) {
 	service := h.services().transcript
 	if service == nil {
 		return encodeBinding([]string{}, nil)
 	}
-	return encodeBinding(service.Hints(), nil)
+	return encodeBinding(service.LoadHints())
 }
 func (h *Host) TranscriptSaveHints(accepted []string) (string, error) {
 	service := h.services().transcript

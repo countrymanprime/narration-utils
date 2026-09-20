@@ -6,7 +6,9 @@ package transcript
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -141,16 +143,36 @@ func (s *Service) LastCompleted() map[string]any {
 	}
 	return result
 }
-func (s *Service) Hints() []string {
+
+// LoadHints reads the accepted vocabulary hints. No file yet is an empty list;
+// a file that cannot be read or is not a JSON list of strings is an error, so
+// the Proofing page can say the saved hints were not loaded instead of showing
+// an empty box as if none had ever been saved.
+func (s *Service) LoadHints() ([]string, error) {
+	if s.config.Project == "" {
+		return []string{}, nil
+	}
 	bytes, err := os.ReadFile(filepath.Join(s.config.Project, "TranscriptCompare", "vocab_hints.json"))
+	if errors.Is(err, fs.ErrNotExist) {
+		return []string{}, nil
+	}
 	if err != nil {
-		return []string{}
+		return []string{}, fmt.Errorf("could not read the saved vocabulary hints: %w", err)
 	}
 	var result []string
-	if json.Unmarshal(bytes, &result) != nil {
-		return []string{}
+	if err := json.Unmarshal(bytes, &result); err != nil {
+		return []string{}, fmt.Errorf("the saved vocabulary hints file is not a valid list: %w", err)
 	}
-	return result
+	if result == nil {
+		result = []string{}
+	}
+	return result, nil
+}
+
+// Hints is LoadHints for callers that can carry on without the saved list.
+func (s *Service) Hints() []string {
+	hints, _ := s.LoadHints()
+	return hints
 }
 func (s *Service) SaveHints(values []string) error {
 	if s.config.Project == "" {
@@ -173,6 +195,11 @@ func (s *Service) SaveHints(values []string) error {
 	path := filepath.Join(s.config.Project, "TranscriptCompare", "vocab_hints.json")
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
+	}
+	// The page tells the narrator that saving replaces a list that could not be loaded,
+	// so keep that file beside the new one rather than destroying it.
+	if _, loadErr := s.LoadHints(); loadErr != nil {
+		_ = os.Rename(path, path+".corrupt")
 	}
 	bytes, _ := json.Marshal(result)
 	tmp := path + ".tmp"

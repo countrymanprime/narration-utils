@@ -18,6 +18,13 @@ export type Discrepancy = {
   existingMarkerName?: string;
 };
 
+/**
+ * What "Suggest from manuscript" found. `terms` are the names not yet accepted (compared
+ * case-insensitively); `found` counts every name the Story Bible offered, so the page can
+ * tell "nothing found" from "everything found is already accepted".
+ */
+export type HintSuggestions = { terms: string[]; found: number };
+
 export type MarkerExport = { phase: 'idle' | 'exporting' | 'complete' | 'error'; message: string; added: number; skipped: number };
 
 export type TranscriptStartResult =
@@ -50,7 +57,7 @@ export interface TranscriptApi {
   transcriptAddEquivalence(id: string): Promise<string>;
   transcriptJump(id: string): Promise<void>;
   transcriptExportMarkers(): Promise<void>;
-  transcriptSuggestHints(): Promise<string>;
+  transcriptSuggestHints(): Promise<HintSuggestions>;
   transcriptHints(): Promise<string[]>;
   transcriptSaveHints(accepted: string[]): Promise<void>;
   subscribeTranscript(onUpdate: (state: TranscriptState) => void): () => void;

@@ -608,10 +608,12 @@ export function createMockApi(
         publish();
       }, 250);
     },
-    transcriptSuggestHints: async () =>
-      vocabularyCandidates
-        .filter((candidate) => !hints.some((accepted) => accepted.localeCompare(candidate, undefined, { sensitivity: 'accent' }) === 0))
-        .join(', '),
+    transcriptSuggestHints: async () => ({
+      terms: vocabularyCandidates.filter(
+        (candidate) => !hints.some((accepted) => accepted.localeCompare(candidate, undefined, { sensitivity: 'accent' }) === 0),
+      ),
+      found: vocabularyCandidates.length,
+    }),
     transcriptHints: async () => [...hints],
     transcriptSaveHints: async (accepted) => {
       hints = [...accepted];
