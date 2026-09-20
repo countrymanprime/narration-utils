@@ -264,6 +264,7 @@ const tokensUsedAsText = (): Set<string> => new Set([...textColourUses().values(
 // it moves to --text-muted. Each slice of the `--text-faint` migration adds the icons it triaged.
 const NON_TEXT_COLOUR_USES: Record<string, { count: number; what: string }> = {
   'components/layout/AppShell.tsx': { count: 1, what: 'the folder icon beside the project name' },
+  'components/manuscript/Manuscript.tsx': { count: 1, what: 'the idle chapter bookmark icon' },
 };
 
 describe('no text colour ships without a declared pair', () => {
