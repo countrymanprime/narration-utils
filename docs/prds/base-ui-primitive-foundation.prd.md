@@ -155,7 +155,7 @@ We believe wrapping Base UI in our primitives gives keyboard and screen-reader n
 | 1 | Foundation | Dependency, convention doc, import boundary test, `isolate` root, jsdom check, spike (Dialog, Tooltip, Popover in jsdom and Chromium), bundle measurement, ADR | complete | - | - | - |
 | 2 | Dialog family | `Dialog`, `ConfirmDialog`, `WorkDialog`, `AddNoteDialog` verified; absorbs dialog PRD phases 1-2 (mechanism, shared modal behaviour); also delivers dialog PRD phase 4 (`ConfirmDialog` API, the six danger confirms) and the progress semantics of its phase 3, [ADR 0048](../adr/0048-every-dialog-is-one-modal-shell-and-confirms-are-alert-dialogs.md) | complete | 3, 5 | 1 | - |
 | 3 | Tooltip, Field, MeterBar | Tooltip family and info icon, `Field`, MeterBar semantics; absorbs the a11y PRD's mechanism (Phases 1 and 3 for Field). Delivered in two pull requests: 3a Tooltip and info icon ([ADR 0049](../adr/0049-hints-are-base-ui-tooltips-that-meet-wcag-1-4-13-and-info-icons-are-buttons.md)), 3b `Field` and `MeterBar` | complete | 2, 5 | 1 | - |
-| 4 | Drawers and nav | `SlideOver` and the mobile nav drawer on Drawer | pending | 5 | 2 | - |
+| 4 | Drawers and nav | `SlideOver` and the mobile nav drawer on Drawer ([ADR 0051](../adr/0051-the-slide-over-and-the-navigation-drawer-are-modal-base-ui-drawers.md)) | complete | 5 | 2 | - |
 | 5 | Remaining widgets | `Pill` to Toggle, `Menu`, `Checkbox`, `Collapsible`, `Switch`; overlaps `ui-primitives-and-headless-library.prd.md` Phase 4 (menus and disclosure), so build each widget once, in whichever PRD reaches it first, and tick it off in both | pending | 2, 3, 4 | 1 | - |
 | 6 | Sweep | `docs/ui` regen, three-viewport PNG review, doc screenshots, `design-system.md`, guide check | pending | No | 2, 3, 4, 5 | - |
 

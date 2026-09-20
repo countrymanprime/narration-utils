@@ -73,3 +73,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0048](0048-every-dialog-is-one-modal-shell-and-confirms-are-alert-dialogs.md) | Every dialog is one modal shell, confirms are alert dialogs, and Escape, the backdrop and focus follow one policy | Accepted |
 | [0049](0049-hints-are-base-ui-tooltips-that-meet-wcag-1-4-13-and-info-icons-are-buttons.md) | Hints are Base UI tooltips that meet WCAG 1.4.13, and info icons are buttons that open a popover | Accepted |
 | [0050](0050-the-segmented-meter-is-an-image-named-by-its-segments-and-field-wires-its-hint-and-error.md) | The segmented meter is an image named by its segments, and Field wires its hint and error through Base UI | Accepted |
+| [0051](0051-the-slide-over-and-the-navigation-drawer-are-modal-base-ui-drawers.md) | The slide-over and the navigation drawer are modal Base UI drawers | Accepted |
