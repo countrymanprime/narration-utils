@@ -2,10 +2,16 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AlertDialog } from '@base-ui/react/alert-dialog';
+import { Checkbox } from '@base-ui/react/checkbox';
+import { Collapsible } from '@base-ui/react/collapsible';
 import { Dialog } from '@base-ui/react/dialog';
+import { Drawer } from '@base-ui/react/drawer';
 import { Field } from '@base-ui/react/field';
+import { Menu } from '@base-ui/react/menu';
 import { Popover } from '@base-ui/react/popover';
 import { Progress } from '@base-ui/react/progress';
+import { Switch } from '@base-ui/react/switch';
+import { Toggle } from '@base-ui/react/toggle';
 import { Tooltip } from '@base-ui/react/tooltip';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -160,5 +166,97 @@ describe('Base UI tooltips, popovers and fields under jsdom', () => {
     );
     const bar = screen.getByRole('progressbar');
     expect(bar.getAttribute('aria-valuenow')).toBeNull();
+  });
+});
+
+describe('the remaining Base UI widgets under jsdom', () => {
+  it('closes a modal drawer on Escape', async () => {
+    const user = userEvent.setup();
+    function Harness() {
+      const [open, setOpen] = useState(true);
+      return open ? (
+        <Drawer.Root open modal onOpenChange={(next) => !next && setOpen(false)}>
+          <Drawer.Portal>
+            <Drawer.Backdrop />
+            <Drawer.Viewport>
+              <Drawer.Popup>
+                <Drawer.Title>Drawer title</Drawer.Title>
+                <button>inside</button>
+              </Drawer.Popup>
+            </Drawer.Viewport>
+          </Drawer.Portal>
+        </Drawer.Root>
+      ) : null;
+    }
+    render(<Harness />);
+    expect(await screen.findByRole('dialog', { name: 'Drawer title' })).toBeTruthy();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('opens a menu, moves with the arrow keys and closes on Escape', async () => {
+    const user = userEvent.setup();
+    render(
+      <Menu.Root>
+        <Menu.Trigger>Categories</Menu.Trigger>
+        <Menu.Portal>
+          <Menu.Positioner>
+            <Menu.Popup>
+              <Menu.Item>Alpha</Menu.Item>
+              <Menu.Item>Beta</Menu.Item>
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.Root>,
+    );
+    await user.click(screen.getByText('Categories'));
+    expect(await screen.findAllByRole('menuitem')).toHaveLength(2);
+    await user.keyboard('{ArrowDown}');
+    expect(document.activeElement?.textContent).toBe('Alpha');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menuitem')).toBeNull();
+  });
+
+  it('exposes checkbox, switch and toggle state to assistive technology', async () => {
+    const user = userEvent.setup();
+    render(
+      <div>
+        <Checkbox.Root aria-label="Agree">
+          <Checkbox.Indicator>x</Checkbox.Indicator>
+        </Checkbox.Root>
+        <Switch.Root aria-label="Notifications">
+          <Switch.Thumb />
+        </Switch.Root>
+        <Toggle aria-label="Bold">B</Toggle>
+      </div>,
+    );
+    for (const [role, name] of [
+      ['checkbox', 'Agree'],
+      ['switch', 'Notifications'],
+    ] as const) {
+      const control = screen.getByRole(role, { name });
+      expect(control.getAttribute('aria-checked')).toBe('false');
+      await user.click(control);
+      expect(control.getAttribute('aria-checked')).toBe('true');
+    }
+    const toggle = screen.getByRole('button', { name: 'Bold' });
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+    await user.click(toggle);
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('shows and hides a collapsible panel', async () => {
+    const user = userEvent.setup();
+    render(
+      <Collapsible.Root>
+        <Collapsible.Trigger>Details</Collapsible.Trigger>
+        <Collapsible.Panel>Panel text</Collapsible.Panel>
+      </Collapsible.Root>,
+    );
+    const trigger = screen.getByRole('button', { name: 'Details' });
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    await user.click(trigger);
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByText('Panel text')).toBeTruthy();
   });
 });
