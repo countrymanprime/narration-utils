@@ -56,8 +56,8 @@ const PAIRS: PairSpec[] = [
   text('accent-strong-on-soft', 'notice and chip text: accent-strong on accent-soft', 'var(--accent-strong)', ['surface'], 'var(--accent-soft)'),
   text(
     'nav-active',
-    'active navigation item: accent on a 10% accent tint',
-    'var(--accent)',
+    'active navigation item: accent-strong on a 10% accent tint',
+    'var(--accent-strong)',
     ['surface'],
     'color-mix(in srgb, var(--accent) 10%, var(--surface))',
   ),
@@ -112,7 +112,6 @@ const lightOnly: Theme[] = ['light'];
 const known = (fixedBy: string, themes: Theme[], ids: string[]): Record<string, KnownFailure> => Object.fromEntries(ids.map((id) => [id, { themes, fixedBy }]));
 
 const KNOWN_FAILURES: Record<string, KnownFailure> = {
-  ...known('phase 3 (active navigation)', lightOnly, ['nav-active']),
   ...known('phase 4 (derived on-tint text and the dark category tokens)', both, [
     ...KINDS.map((kind) => `highlight-${kind}`),
     'badge-lore',
@@ -132,7 +131,7 @@ const KNOWN_FAILURES: Record<string, KnownFailure> = {
   ]),
 };
 // Counted per pair and theme: `text-muted` failing in dark as well would be a second failure, not the same one.
-const MAX_KNOWN_FAILURES = 34;
+const MAX_KNOWN_FAILURES = 33;
 
 interface Measured {
   ratio: number;
