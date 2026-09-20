@@ -11,6 +11,10 @@ const markdownEscapable = "\\`*_{}[]()#+-.!<>~|"
 
 var markdownTag = regexp.MustCompile(`(?i)^<(/?)(br|u)\s*/?>`)
 
+// markdownUnderlineClose finds </u> in the original text. Searching a lower-cased copy would return offsets in that
+// copy, which are wrong for characters whose lower-case form has a different byte length (U+0130 becomes a shorter one).
+var markdownUnderlineClose = regexp.MustCompile(`(?i)</u>`)
+
 func isWordRune(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) }
 
 // appendInline parses one line of Markdown inline syntax into b: *italic*,
@@ -54,12 +58,12 @@ func appendTag(b *richBuilder, runes []rune, index int, style Style) int {
 		if match[1] != "" {
 			break
 		}
-		close := strings.Index(strings.ToLower(rest), "</u>")
-		if close < 0 {
+		closer := markdownUnderlineClose.FindStringIndex(rest)
+		if closer == nil {
 			break
 		}
-		appendInline(b, rest[len(match[0]):close], style|styleUnderline)
-		return index + utf8.RuneCountInString(rest[:close+len("</u>")])
+		appendInline(b, rest[len(match[0]):closer[0]], style|styleUnderline)
+		return index + utf8.RuneCountInString(rest[:closer[1]])
 	}
 	return index + consumed
 }
