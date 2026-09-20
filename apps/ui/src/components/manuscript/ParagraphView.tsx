@@ -22,16 +22,22 @@ const layerRank = (item: Annotation) => (item.kind === 'format' ? 1 : 0);
 // One deterministic interval compositor powers every overlapping annotation:
 // boundaries preserve all layers and shorter annotations become the inner,
 // therefore visually and interactively topmost, layer.
+// Offsets outside the text are clamped to it and an annotation that is then empty
+// (or has a non-numeric offset) is dropped, so the pieces always rebuild the text:
+// `String.slice` counts a negative index from the end, which would repeat characters.
 export function composeAnnotationPieces(text: string, annotations: Annotation[]): Piece[] {
-  const points = Array.from(new Set([0, text.length, ...annotations.flatMap((item) => [item.start, item.end])])).sort((a, b) => a - b);
+  const clamp = (offset: number) => Math.min(Math.max(offset, 0), text.length);
+  const inside = annotations.map((item) => ({ item, start: clamp(item.start), end: clamp(item.end) })).filter(({ start, end }) => start < end);
+  const points = Array.from(new Set([0, text.length, ...inside.flatMap(({ start, end }) => [start, end])])).sort((a, b) => a - b);
   return points
     .slice(0, -1)
     .map((start, index) => {
       const end = points[index + 1];
       return {
         text: text.slice(start, end),
-        annotations: annotations
-          .filter((item) => item.start <= start && item.end >= end)
+        annotations: inside
+          .filter((bounds) => bounds.start <= start && bounds.end >= end)
+          .map((bounds) => bounds.item)
           .sort((a, b) => layerRank(a) - layerRank(b) || b.length - a.length || a.id.localeCompare(b.id)),
       };
     })
@@ -45,7 +51,9 @@ export function composeAnnotationPieces(text: string, annotations: Annotation[])
 // kept as-is, so a note never silently disappears.
 export function resolveNoteAnchor(note: ManuscriptNote, text: string): { start: number; end: number } | undefined {
   const { anchorStart: start, anchorEnd: end, anchorText } = note;
-  const stored = start !== undefined && end !== undefined && start < end && start < text.length ? { start, end: Math.min(end, text.length) } : undefined;
+  // A negative stored start is clamped to the top of the text (String.slice would count it from the end).
+  const from = start === undefined ? undefined : Math.max(start, 0);
+  const stored = from !== undefined && end !== undefined && from < end && from < text.length ? { start: from, end: Math.min(end, text.length) } : undefined;
   if (stored && (!anchorText || text.slice(stored.start, stored.end) === anchorText)) return stored;
   return (anchorText ? relocate(text, anchorText, start ?? 0) : undefined) ?? stored;
 }
