@@ -28,7 +28,7 @@ const READER_TEXT_CLASSES = {
   large: 'text-xl leading-7 [--hl-pad-y:0.07em]',
 } as const;
 // How long "Go to line" keeps its destination highlighted.
-export const JUMP_HIGHLIGHT_MS = 60_000;
+const JUMP_HIGHLIGHT_MS = 60_000;
 const LINE_NUMBER_PADDING_CLASSES = { small: '!pt-2', medium: '!pt-2.5', large: '!pt-3' } as const;
 const defaultState: ReaderState = { expandedChapters: [], bookmarks: [] };
 const escapeSelector = (value: string) =>

@@ -10,9 +10,9 @@ import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 
-export const TOOLCHAIN = JSON.parse(readFileSync(new URL('./toolchain.json', import.meta.url), 'utf8'));
-export const NODE_MAJOR = 22;
-export const PYTHON_VERSION = '3.12';
+const TOOLCHAIN = JSON.parse(readFileSync(new URL('./toolchain.json', import.meta.url), 'utf8'));
+const NODE_MAJOR = 22;
+const PYTHON_VERSION = '3.12';
 export const PNPM_VERSION = TOOLCHAIN.pnpm;
 export const UV_VERSION = TOOLCHAIN.uv;
 export const GO_VERSION = TOOLCHAIN.go;

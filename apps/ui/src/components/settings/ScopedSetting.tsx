@@ -19,7 +19,7 @@ const optionTip = (field: ScopedSettingField, value: string) =>
 // deliberate black; show a neutral gray instead and let the text field say
 // "Not set".
 const NEUTRAL_PICKER_COLOR = '#808080';
-export const pickerColor = (value: string) => {
+const pickerColor = (value: string) => {
   const hex = value.replace('#', '');
   return /^[0-9a-f]{6}$/i.test(hex) ? `#${hex}` : NEUTRAL_PICKER_COLOR;
 };

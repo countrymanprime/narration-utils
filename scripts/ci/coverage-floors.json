@@ -10,7 +10,7 @@
     {"tool":"go","project":"apps/desktop","path":"internal/recents","floor":85},
     {"tool":"go","project":"apps/desktop","path":"internal/teleprompter","floor":90},
     {"tool":"go","project":"apps/desktop","path":"internal/tracks","floor":94},
-    {"tool":"vitest","project":"apps/ui","path":"src/api","floor":69,"reason":"Baseline of 2026-09-20 (69.2%). The directory mixes the mock API (test infrastructure, 65%), the Wails client glue (34%) and client/http.ts, which is dead code the Knip cleanup removes. It is gated so the tested part cannot decay; the floor rises once those are resolved."},
+    {"tool":"vitest","project":"apps/ui","path":"src/api","floor":71,"reason":"Baseline of 2026-09-20 was 69.2%; deleting the dead client/http.ts (0%) in the Knip cleanup lifted it to 71%. The directory still mixes the mock API (test infrastructure, 65%) and the Wails client glue (34%), so it is gated to stop the tested part decaying and the floor rises with tests."},
     {"tool":"vitest","project":"apps/ui","path":"src/components/manuscript/ParagraphView.tsx","floor":98},
     {"tool":"vitest","project":"apps/ui","path":"src/components/primitives/Highlight.tsx","floor":100},
     {"tool":"vitest","project":"apps/ui","path":"src/hooks","floor":100},

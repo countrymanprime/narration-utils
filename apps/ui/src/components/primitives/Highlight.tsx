@@ -41,7 +41,7 @@ const TOKEN: Record<HighlightKind, string> = {
 // reads correctly on the reader's alternating row backgrounds. Vertical padding
 // on an inline box paints without changing line layout, which is how the
 // background fills the whole line height rather than just the glyph box.
-export function highlightStyle(kind: HighlightKind): CSSProperties {
+function highlightStyle(kind: HighlightKind): CSSProperties {
   const token = `var(${TOKEN[kind]})`;
   // The negative margin cancels the mark's horizontal padding, so moving the cursor never changes where a line wraps.
   if (kind === 'Cursor') return { background: token, color: 'var(--accent-contrast)', margin: '0 -0.05em' };

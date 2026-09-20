@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 
 /** Runs `gh` and returns stdout. Tests and dry runs inject their own runner instead. */
-export function gh(args) {
+function gh(args) {
   return execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] });
 }
 

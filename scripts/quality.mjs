@@ -186,7 +186,7 @@ if (mode !== 'check') {
   process.exit(2);
 }
 
-// The full gate: every project's lint, format, test, test-node and build target, one at a time, never from
+// The full gate: every project's lint, format, knip, test, test-node and build target, one at a time, never from
 // the Nx cache (a green gate must mean the checks ran). CI runs the same targets with
 // `nx affected` (see .github/actions/nx-run).
-run('pnpm', ['exec', 'nx', 'run-many', '-t', 'lint', 'format', 'test', 'test-node', 'build', '--skip-nx-cache', '--parallel=1', '--nx-bail', '--output-style=stream']);
+run('pnpm', ['exec', 'nx', 'run-many', '-t', 'lint', 'format', 'knip', 'test', 'test-node', 'build', '--skip-nx-cache', '--parallel=1', '--nx-bail', '--output-style=stream']);

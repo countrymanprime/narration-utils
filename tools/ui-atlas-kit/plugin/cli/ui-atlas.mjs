@@ -97,7 +97,7 @@ function templateFiles(kind, tierOf) {
 const COMPONENT_DIR_CANDIDATES = ['components/primitives', 'components/ui', 'components', '../components'];
 
 // Path of the components directory relative to <ui-root>/src (the base the coverage test resolves from).
-export function detectComponentsDir(dir) {
+function detectComponentsDir(dir) {
   return COMPONENT_DIR_CANDIDATES.find((rel) => existsSync(join(dir, 'src', rel))) ?? 'components/primitives';
 }
 

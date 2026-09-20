@@ -16,7 +16,7 @@ const BOOTSTRAP_INPUTS = new Set([
 
 const NON_RUNTIME_FILES = new Set(['.editorconfig', '.gitattributes', '.gitignore', '.github/pull_request_template.md', 'LICENSE', 'LICENSE.md']);
 
-export function needsBootstrap(files) {
+function needsBootstrap(files) {
   return files.some(
     (file) =>
       BOOTSTRAP_INPUTS.has(file) ||
@@ -27,7 +27,7 @@ export function needsBootstrap(files) {
   );
 }
 
-export function isNonRuntimeMetadata(file) {
+function isNonRuntimeMetadata(file) {
   return NON_RUNTIME_FILES.has(file) || file.startsWith('docs/') || file.startsWith('.github/ISSUE_TEMPLATE/') || file.endsWith('.md');
 }
 
@@ -42,7 +42,7 @@ export function classifyFiles(files, { exhaustive = false } = {}) {
   };
 }
 
-export function changedFiles(base, head) {
+function changedFiles(base, head) {
   return execFileSync('git', ['diff', '--name-only', base, head], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
 }
 
