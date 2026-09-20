@@ -10,7 +10,8 @@ const withTheme: Decorator = (Story, context) => {
   const theme: ResolvedTheme = context.globals.theme === 'dark' ? 'dark' : 'light';
   applyResolvedTheme(theme);
   return (
-    <div className="min-h-screen bg-[var(--bg)] p-4 text-[var(--text)]">
+    // isolate: same reason as `#root` in index.html - popups portal to <body> and must stack above the story.
+    <div className="isolate min-h-screen bg-[var(--bg)] p-4 text-[var(--text)]">
       <TooltipProvider>
         <Story />
       </TooltipProvider>
