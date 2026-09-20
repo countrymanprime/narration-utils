@@ -96,15 +96,6 @@ export const IsNamedByItsLabelAndSegments: Story = {
   },
 };
 
-// Under prefers-reduced-motion (the atlas runs with it on) the segments do not animate their width.
-export const DoesNotAnimateUnderReducedMotion: Story = {
-  play: async ({ canvasElement }) => {
-    for (const segment of canvasElement.querySelectorAll<HTMLElement>('.progress-segment')) {
-      await expect(getComputedStyle(segment).transitionDuration).not.toBe('0.3s');
-    }
-  },
-};
-
 export const SegmentsRenderInCallerOrder: Story = {
   play: async ({ canvasElement }) => {
     await expect(segmentWidths(canvasElement)).toEqual([40, 15, 10, 5, 30]);

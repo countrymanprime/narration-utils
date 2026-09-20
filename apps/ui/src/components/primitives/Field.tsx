@@ -25,7 +25,8 @@ export function Field({
   textarea?: boolean;
   // Help that belongs to the field; the control is described by it.
   hint?: ReactNode;
-  // What is wrong with the value: shows under the field, marks it `aria-invalid` and describes it.
+  // What is wrong with the value: shows under the field, marks it `aria-invalid` and describes it (a disabled field shows
+  // the error but is not marked invalid: Base UI leaves `aria-invalid` off a disabled control).
   error?: string;
 }) {
   return (
@@ -38,7 +39,9 @@ export function Field({
         onChange={(event) => onChange(event.target.value)}
         onBlur={onBlur}
       />
-      {hint && <BaseField.Description className="mt-1 block text-xs text-[var(--text-muted)]">{hint}</BaseField.Description>}
+      {hint != null && hint !== false && hint !== '' && (
+        <BaseField.Description className="mt-1 block text-xs text-[var(--text-muted)]">{hint}</BaseField.Description>
+      )}
       {error && (
         <BaseField.Error match className="mt-1 block text-xs text-[var(--danger)]">
           {error}
