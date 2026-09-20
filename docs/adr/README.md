@@ -61,3 +61,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0036](0036-story-bible-read-only-view-is-the-disabled-form-not-entitysummary.md) | The Story Bible's read-only view is the same form with disabled controls, not `EntitySummary` | Proposed (amends ADR-0018) |
 | [0037](0037-visual-suite-captures-no-phone-viewport.md) | The visual suite captures no phone viewport | Accepted (amends ADR-0023) |
 | [0038](0038-visual-suite-captures-the-production-build.md) | The visual suite captures the production build, not the dev server | Accepted (amends ADR-0023) |
+| [0039](0039-the-project-is-licensed-agpl-3-or-later.md) | The project is licensed AGPL-3.0-or-later | Accepted |
