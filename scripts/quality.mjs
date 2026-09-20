@@ -48,11 +48,11 @@ function rootRelative(file) {
 }
 
 function uiFormattingFiles(files) {
-  return files.filter((file) => file.startsWith('shared/ui/') && !file.startsWith('shared/ui/wailsjs/') && /\.(?:[cm]?[jt]sx?|json|css)$/.test(file));
+  return files.filter((file) => file.startsWith('apps/ui/') && !file.startsWith('apps/ui/wailsjs/') && /\.(?:[cm]?[jt]sx?|json|css)$/.test(file));
 }
 
 function uiLintFiles(files) {
-  return files.filter((file) => file.startsWith('shared/ui/') && !file.startsWith('shared/ui/wailsjs/') && /\.(?:[cm]?[jt]sx?)$/.test(file));
+  return files.filter((file) => file.startsWith('apps/ui/') && !file.startsWith('apps/ui/wailsjs/') && /\.(?:[cm]?[jt]sx?)$/.test(file));
 }
 
 function fixStaged(files, fixer) {
@@ -60,11 +60,11 @@ function fixStaged(files, fixer) {
   const ui = uiFormattingFiles(rootFiles);
   const uiLint = uiLintFiles(rootFiles);
   const pythonFiles = rootFiles.filter((file) => file.endsWith('.py'));
-  const goFiles = rootFiles.filter((file) => file.startsWith('shell/') && file.endsWith('.go'));
+  const goFiles = rootFiles.filter((file) => file.startsWith('apps/desktop/') && file.endsWith('.go'));
   const luaFiles = rootFiles.filter((file) => file.endsWith('.lua'));
 
   if (fixer === 'ui' && ui.length) {
-    const uiRoot = join(root, 'shared', 'ui');
+    const uiRoot = join(root, 'apps', 'ui');
     const uiFiles = ui.map((file) => relative(uiRoot, join(root, file)));
     run(uiBinary('prettier'), ['--write', ...uiFiles], { cwd: uiRoot });
     if (uiLint.length) {
@@ -76,7 +76,7 @@ function fixStaged(files, fixer) {
     run(python(), ['-m', 'ruff', 'format', ...pythonFiles]);
     run(python(), ['-m', 'ruff', 'check', '--fix', ...pythonFiles]);
   }
-  if (fixer === 'go' && goFiles.length) run('go', ['-C', 'shell', 'fmt', './...']);
+  if (fixer === 'go' && goFiles.length) run('go', ['-C', 'apps/desktop', 'fmt', './...']);
   if (fixer === 'lua' && luaFiles.length) run(executable('stylua'), [...luaFiles]);
 }
 
@@ -85,11 +85,11 @@ function checkStagedFiles(files, checker) {
   const ui = uiFormattingFiles(rootFiles);
   const uiLint = uiLintFiles(rootFiles);
   const pythonFiles = rootFiles.filter((file) => file.endsWith('.py'));
-  const goFiles = rootFiles.filter((file) => file.startsWith('shell/') && file.endsWith('.go'));
+  const goFiles = rootFiles.filter((file) => file.startsWith('apps/desktop/') && file.endsWith('.go'));
   const luaFiles = rootFiles.filter((file) => file.endsWith('.lua'));
 
   if (checker === 'ui' && ui.length) {
-    const uiRoot = join(root, 'shared', 'ui');
+    const uiRoot = join(root, 'apps', 'ui');
     const uiFiles = ui.map((file) => relative(uiRoot, join(root, file)));
     run(uiBinary('prettier'), ['--check', ...uiFiles], { cwd: uiRoot });
     if (uiLint.length) {
@@ -103,7 +103,7 @@ function checkStagedFiles(files, checker) {
   }
   if (checker === 'go' && goFiles.length) {
     checkGofmt(goFiles);
-    run('go', ['-C', 'shell', 'vet', './...']);
+    run('go', ['-C', 'apps/desktop', 'vet', './...']);
   }
   if (checker === 'lua' && luaFiles.length) run(executable('stylua'), ['--check', ...luaFiles]);
 }
@@ -112,15 +112,15 @@ function runStaged(files) {
   const ui = uiFormattingFiles(files);
   const uiLint = uiLintFiles(files);
   const pythonFiles = files.filter((file) => file.endsWith('.py'));
-  const goFiles = files.filter((file) => file.startsWith('shell/') && file.endsWith('.go'));
+  const goFiles = files.filter((file) => file.startsWith('apps/desktop/') && file.endsWith('.go'));
   const luaFiles = files.filter((file) => file.endsWith('.lua'));
 
   if (ui.length) {
-    const uiRoot = join(root, 'shared', 'ui');
-    const uiFiles = ui.map((file) => relative('shared/ui', file));
+    const uiRoot = join(root, 'apps', 'ui');
+    const uiFiles = ui.map((file) => relative('apps/ui', file));
     run(uiBinary('prettier'), ['--check', ...uiFiles], { cwd: uiRoot });
     if (uiLint.length) {
-      const uiLintFiles = uiLint.map((file) => relative('shared/ui', file));
+      const uiLintFiles = uiLint.map((file) => relative('apps/ui', file));
       run(uiBinary('eslint'), ['--max-warnings', '0', ...uiLintFiles], { cwd: uiRoot });
     }
   }
@@ -130,8 +130,8 @@ function runStaged(files) {
   }
   if (goFiles.length) {
     checkGofmt(goFiles);
-    run('go', ['-C', 'shell', 'vet', './...']);
-    run('go', ['-C', 'shell', 'test', './...']);
+    run('go', ['-C', 'apps/desktop', 'vet', './...']);
+    run('go', ['-C', 'apps/desktop', 'test', './...']);
   }
   if (luaFiles.length) run(executable('stylua'), ['--check', ...luaFiles]);
 }
@@ -156,10 +156,10 @@ if (mode !== 'check') {
   process.exit(2);
 }
 
-run('pnpm', ['--dir', 'shared/ui', 'run', 'lint:ci']);
-run('pnpm', ['--dir', 'shared/ui', 'run', 'format:check']);
-run('pnpm', ['--dir', 'shared/ui', 'test']);
-run('pnpm', ['--dir', 'shared/ui', 'run', 'build']);
+run('pnpm', ['--dir', 'apps/ui', 'run', 'lint:ci']);
+run('pnpm', ['--dir', 'apps/ui', 'run', 'format:check']);
+run('pnpm', ['--dir', 'apps/ui', 'test']);
+run('pnpm', ['--dir', 'apps/ui', 'run', 'build']);
 run(python(), ['-m', 'ruff', 'format', '--check', '.']);
 run(python(), ['-m', 'ruff', 'check', '.']);
 // A fixed pytest base directory is prone to Windows file-handle races after a
@@ -168,8 +168,8 @@ run(python(), ['-m', 'ruff', 'check', '.']);
 // own cleanup within that run. pytest creates the directory but not its parent.
 mkdirSync(join(root, '.cache'), { recursive: true });
 run(python(), ['-m', 'pytest', '-q', '--basetemp', `.cache/test-tmp-${process.pid}`]);
-run('go', ['-C', 'shell', 'vet', './...']);
-run('go', ['-C', 'shell', 'test', './...']);
-run('staticcheck', ['./...'], { cwd: join(root, 'shell') });
-run('stylua', ['--check', 'shared/reaper']);
+run('go', ['-C', 'apps/desktop', 'vet', './...']);
+run('go', ['-C', 'apps/desktop', 'test', './...']);
+run('staticcheck', ['./...'], { cwd: join(root, 'apps', 'desktop') });
+run('stylua', ['--check', 'integrations/reaper']);
 run('node', ['--test', 'scripts/ci/*.test.mjs', 'scripts/github/*.test.mjs', 'scripts/release/*.test.mjs']);

@@ -21,7 +21,7 @@ showing last month's component. The `ui-atlas docs` command derives the docs fro
 
 ## What to do
 
-1. Rebuild the atlas so its inputs are current. From the UI root (for example `shared/ui`):
+1. Rebuild the atlas so its inputs are current. From the UI root (for example `apps/ui`):
    ```bash
    pnpm atlas
    ```
@@ -35,7 +35,7 @@ showing last month's component. The `ui-atlas docs` command derives the docs fro
    error. It writes `docs/ui/atlas/<Component>.md` (stories, consumers, recorded a11y debt), `docs/ui/atlas/index.md`,
    `docs/ui/inventory.json`, and one WebP per component (its first story, light theme, wide viewport) into
    `docs/ui/images/`. `docs/ui` lands at the repo root when the git root is two levels above the UI root (as in
-   `shared/ui`), otherwise under `<ui-root>/docs/ui`. Without `sharp` installed, the pages are written but images
+   `apps/ui`), otherwise under `<ui-root>/docs/ui`. Without `sharp` installed, the pages are written but images
    are skipped.
 3. Read the git diff of `docs/ui/`. A changed page should correspond to a component you touched. An image or page
    that changed for a component you did not touch means the capture is not deterministic (hand it to the

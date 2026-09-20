@@ -1,7 +1,7 @@
 # Product Roadmap
 
 The in-app Narration Utils roadmap reads the matching machine-readable
-[`shared/config/roadmap.json`](../shared/config/roadmap.json) data. Update both
+[`config/roadmap.json`](../config/roadmap.json) data. Update both
 files together when a milestone changes so the shipped workspace and this
 documentation describe the same product direction.
 

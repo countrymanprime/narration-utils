@@ -80,7 +80,7 @@ Do not add it as a runtime dependency or run its WebSocket client/server:
   server, REST endpoint, or port for this app's Wails workspace — running
   WhisperLive's server component would reintroduce exactly that.
 - It manages its own model cache, bypassing the existing versioned/hashed
-  asset catalog in `shell/internal/whisper/catalog.go` and the
+  asset catalog in `apps/desktop/internal/whisper/catalog.go` and the
   [first-use dependency provisioning](first-use-dependency-provisioning.md)
   flow.
 - Its own audio-capture client is redundant — mic capture and inference are
@@ -240,7 +240,7 @@ No flags are emitted today.
 
 ## Streaming subprocess support (resolves decision #5)
 
-`shell/internal/process.Supervisor.Start` drains stdout/stderr to `io.Discard`
+`apps/desktop/internal/process.Supervisor.Start` drains stdout/stderr to `io.Discard`
 for the two batch sidecars (Manuscript Guide, Transcript Compare) — see
 `supervisor.go`. A live sidecar needs a second, additive code path, so
 `stream.go` adds `Supervisor.StartStream`: it hands each stdout line to a
@@ -250,7 +250,7 @@ and can be very long), and returns a `StreamChild` with `Done`, `Kill` and
 `StderrTail`. The batch path is untouched.
 
 **Implemented in the desktop host (2026-09-19).**
-`shell/internal/teleprompter.Service` owns one session: it builds the sidecar
+`apps/desktop/internal/teleprompter.Service` owns one session: it builds the sidecar
 arguments (`--engine`, `--model`, `--model-dir`, `--manuscript`, `--chapter`,
 `--mic` or a developer `--wav`, `--stop-file`), relays every valid JSON line
 verbatim as the Wails event `teleprompter:event`, publishes phase changes as
@@ -289,7 +289,7 @@ integration doc already draws for take/marker mutation.
 
 ## UI: what shipped and what is still open
 
-**Shipped (Teleprompter page, `shared/ui/src/components/teleprompter/`).** Pick a
+**Shipped (Teleprompter page, `apps/ui/src/components/teleprompter/`).** Pick a
 narration chapter, type the microphone's name, choose Tiny or Small, and Start.
 The setup fields collapse to a sticky status bar (Listening, Waiting for you to
 return to the script, Done) with Stop, and the chapter text below highlights the

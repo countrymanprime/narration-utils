@@ -21,7 +21,7 @@ Every user setting is resolved by the Go host through the same layered rules aga
 
 1. Project override - `<project folder>/narration-utils/settings.json` (see Project-sidecar rules below).
 2. Per-user global - `%APPDATA%/narration-utils/global-settings.json`.
-3. Repo default - `shared/config/defaults.json`, checked in.
+3. Repo default - `config/defaults.json`, checked in.
 
 REAPER never parses this JSON. The Wails host owns setting resolution and passes marker colors with the explicit marker-export command.
 

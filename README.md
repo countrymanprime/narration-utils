@@ -3,9 +3,9 @@
 A group of utilities and plugins to assist with audio narration workflows. Each tool's business
 logic is DAW-agnostic; a thin per-DAW driver wires it into a specific host.
 
-- [`tools/manuscript-guide/`](tools/manuscript-guide/README.md) — builds a narrator reference
+- [`sidecars/manuscript-guide/`](sidecars/manuscript-guide/README.md) — builds a narrator reference
   (characters, places, organizations, pronunciations) from a Word manuscript.
-- [`tools/transcript-compare/`](tools/transcript-compare/README.md) — transcribes a recorded
+- [`sidecars/transcript-compare/`](sidecars/transcript-compare/README.md) — transcribes a recorded
   chapter and diffs it against the manuscript, dropping take markers at every discrepancy.
 
 Both tools share one native UI, shown below on the Home page. See
@@ -17,46 +17,46 @@ Both tools share one native UI, shown below on the Home page. See
 
 ```
 narration-utils/
-  shell/
-    app.go, bindings.go        Native Go/Wails shell and generated binding boundary
-  shared/
-    (Go importer lives under shell/cmd/manuscript-import)
-    python/narration_common/   DAW-agnostic helpers shared by both tools' backends
-    reaper/                    REAPER launcher and non-UI integration bridge
-    ui/                        React + Tailwind workspace (built static assets)
-    audacity/                  placeholder for future Audacity-specific shared helpers
-  tools/
-    manuscript-guide/
-      core/                    DAW-agnostic Python backend, requirements, tests
-      daws/reaper/             reserved for future REAPER tool-specific adapters
-      daws/audacity/           placeholder
-    transcript-compare/
-      core/                    DAW-agnostic Python backend, requirements
-      daws/reaper/             REAPER ReaScript driver
-      daws/audacity/           placeholder
+  apps/
+    desktop/                   Go/Wails desktop host: app.go, bindings.go, internal/, build/ icons
+    ui/                        React + Tailwind workspace (built static assets); its tests/ hold the visual and atlas suites
+  sidecars/                    Python programs frozen into the app and run on demand
+    manuscript-guide/          core/ CLI backend, tests/
+    manuscript-teleprompter/   core/ CLI backend, tests/, spikes/
+    transcript-compare/        core/ CLI backend, tests/
+  libs/
+    python/narration_common/   DAW-agnostic helpers shared by the sidecars
+  integrations/
+    reaper/                    REAPER launcher and Lua bridge
+    audacity/                  placeholder notes for a future Audacity driver
+  config/                      shipped JSON: defaults, asset catalogs, roadmap
+  tests/fixtures/              manuscripts used by tests across projects
+  tools/ui-atlas-kit/          the reusable UI-atlas plugin (development tooling)
+  scripts/                     repo automation, release and CI tooling
+  docs/                        documentation, ADRs and PRDs
 ```
 
-Each tool's `core/` has zero DAW-API calls — it's a plain CLI backend (docx parsing, NLP,
-diffing, transcription) invoked by whichever `daws/<daw>/` driver is running it. All DAW
-coupling lives under `daws/`. Path resolution throughout (`shared/` lookup, backend location)
-is derived from each script's own location at runtime, so a checkout works unmodified at any
-install path.
+Each sidecar's `core/` has zero DAW-API calls: it is a plain CLI backend (docx parsing, NLP,
+diffing, transcription) that the desktop host runs. All REAPER coupling lives in
+`integrations/reaper/`. Path resolution throughout (config lookup, backend location) is derived
+from each script's own location at runtime, so a checkout works unmodified at any install path.
+The layout and its test rule are recorded in
+[`docs/architecture/codebase-map.md`](docs/architecture/codebase-map.md).
 
 ## Supported DAWs
 
-- **Reaper** — supported. Load `shared/reaper/NarrationUtils_Launcher.lua` as
+- **Reaper** — supported. Load `integrations/reaper/NarrationUtils_Launcher.lua` as
   the one action; it opens the centered Narration Utils workspace for both
   utilities and their global/project settings.
 - **Audacity** — planned, not yet implemented. Audacity's scripting model
   (mod-script-pipe, label tracks instead of take markers, no ExtState-equivalent settings
   store) is different enough from Reaper's that it needs its own driver design rather than a
-  port of the Reaper one. Placeholder folders exist under `daws/audacity/` in each tool and
-  under `shared/audacity/`.
+  port of the Reaper one. Placeholder notes live under `integrations/audacity/`.
 
 ## Developer bootstrap
 
 The UI is a local React + Tailwind workspace, shown in its own native window
-(`shell/`, a Go/Wails app) with generated native bindings. Python is
+(`apps/desktop/`, a Go/Wails app) with generated native bindings. Python is
 used only for the two analysis tools the shell starts on demand. From the
 checkout root, run:
 
@@ -90,7 +90,7 @@ Legacy `.runtime` and `.bootstrap` directories created by the retired Windows
 bootstrap are ignored but unused. After a successful bootstrap, review and
 remove them manually if no older checkout still needs them.
 
-While iterating on the shell without a full release build, `pnpm --dir shell run
+While iterating on the shell without a full release build, `pnpm --dir apps/desktop run
 dev` runs the native Wails window directly. The shipped Go importer accepts
 Markdown and DOCX; PDF remains intentionally disabled pending corpus parity.
 
@@ -107,11 +107,11 @@ Both tools retain their own DAW-agnostic Python backends. What they share:
   their preserved source copies are provenance only and are never reparsed. Existing v1
   PDF-derived canonical data remains readable, but new PDF import is fail-closed pending corpus
   parity.
-- **`shared/reaper/`** — `reaper_common_core.lua` (ExtState access, file/path helpers) and
+- **`integrations/reaper/`** — `reaper_common_core.lua` (ExtState access, file/path helpers) and
   `reaper_common_process.lua` (hidden-subprocess launching, the pipe-delimited protocol used by
   each tool's Python backend). Every reascript loads these via `dofile`, resolved relative to
   its own script path.
-- **`shared/python/narration_common/`** — cross-tool contracts including canonical manuscript,
+- **`libs/python/narration_common/`** — cross-tool contracts including canonical manuscript,
   settings, bridge, logging, and `progress.py` (the `stage|pct|message` progress-file writer,
   retry-hardened against Windows sharing violations), and `logging_utils.py` (stderr[+file]
   logging). Each backend adds this to `sys.path` relative to its own file.

@@ -10,7 +10,7 @@ Five shared primitives have accessibility gaps that every page inherits: `MeterB
 
 ## Evidence
 
-Verified against `b9d348d` and re-checked at `d5cc994` (main after #42): the five primitives, `Tooltip.test.tsx`, the stories and the visual drivers are unchanged; the only `shared/ui` changes since are the docs-guide tests. Severity in the retired defects register (scale: high blocks a user or fails a standard outright, medium degrades an experience, low is polish or hygiene): `MeterBar` medium, `Tooltip` medium, `Field`/`Heading`/`Panel` low.
+Verified against `b9d348d` and re-checked at `d5cc994` (main after #42): the five primitives, `Tooltip.test.tsx`, the stories and the visual drivers are unchanged; the only `apps/ui` changes since are the docs-guide tests. Severity in the retired defects register (scale: high blocks a user or fails a standard outright, medium degrades an experience, low is polish or hygiene): `MeterBar` medium, `Tooltip` medium, `Field`/`Heading`/`Panel` low.
 
 - `MeterBar.tsx`: wrapper `div` with no role/label; each segment is a `TooltipTarget` span (so it carries `aria-describedby="tooltip-layer"`), never focusable; `transition-[flex-basis] duration-300` has no `motion-safe:` guard (also called out in `docs/design/motion-and-animation.md`). Single consumer: `home/AudiobookEstimatePanel.tsx`. That call site already renders a visible caption ("N of M chapters finalized") and a legend, and each segment's `tooltip` string already holds the breakdown ("Finalized: 4 chapters · ~2h 10m finished audio"), so a text alternative can be composed without new copy.
 - `Tooltip.tsx`: `TooltipTarget` sets `aria-describedby={shared || local ? 'tooltip-layer' : undefined}` on its wrapper span. With `TooltipProvider` mounted (`App.tsx:183`, and the Storybook decorator) `shared` is always defined, so every target permanently references `tooltip-layer`, which exists only while one tooltip shows, and all targets share that id. The reference sits on the wrapper span, not on the focusable child, so even while shown it is not associated with the button that has focus. `Tooltip`'s info icon is `<span aria-label="More information">` with no `tabIndex` or role. A disabled child gets a wrapper with `tabIndex=0` but no role or name. `ActiveTooltip.key = Date.now()` is written in three places and never read. Confirmed defect 6. `Tooltip.test.tsx` asserts `id === 'tooltip-layer'`, so it changes with the fix.
@@ -48,7 +48,7 @@ We believe giving these primitives correct semantics at the source will let keyb
 | Info icon reachability | Tab reaches it, tooltip shows on focus, Escape hides it | Story `play()` with `userEvent.tab()`; Tooltip test |
 | `MeterBar` accessible name and value | Announced as the composed label | RTL `getByRole` assertion; axe |
 | Reduced motion | No `flex-basis` transition under `prefers-reduced-motion: reduce` | Computed-style assertion in atlas (`reducedMotion: 'reduce'`) |
-| Existing call sites unchanged | 0 visual diffs at 4 viewports for the 12 Tooltip consumers | `pnpm --dir shared/ui screenshots` + PNG review; the two Tooltip drivers still pass |
+| Existing call sites unchanged | 0 visual diffs at 4 viewports for the 12 Tooltip consumers | `pnpm --dir apps/ui screenshots` + PNG review; the two Tooltip drivers still pass |
 | Atlas health | No new `A11Y_DEBT` entries; existing entries not extended | `src/atlasCoverage.test.ts` |
 | Defects closed | Defects 5, 6, 7 closed: Phases 1, 2, 3 marked `complete` in this PRD | Review |
 
@@ -136,7 +136,7 @@ Phases 1-3; Phase 4 is sweep and adoption.
 
 **Phase 3 - Field / Heading / Panel.** Goal: defect 7 gone, additively. Scope: the three primitives, stories (add an unbroken-token subtitle story to prove or disprove the overflow claim), tests. Success signal: all 7 `Heading`, 4 `Panel`, 1 `Field` consumers compile and render identically.
 
-**Phase 4 - Sweep and adoption.** Goal: nothing stale. Scope: visual suite PNG review, atlas docs regen (`node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir shared/ui`), `docs/design/design-system.md` primitives table (add Tooltip, WorkDialog, note reduced motion in `motion-and-animation.md`), doc-screenshot-sync only if a doc image changed. Success signal: `pnpm check` and atlas green.
+**Phase 4 - Sweep and adoption.** Goal: nothing stale. Scope: visual suite PNG review, atlas docs regen (`node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir apps/ui`), `docs/design/design-system.md` primitives table (add Tooltip, WorkDialog, note reduced motion in `motion-and-animation.md`), doc-screenshot-sync only if a doc image changed. Success signal: `pnpm check` and atlas green.
 
 ### Parallelism Notes
 
@@ -169,7 +169,7 @@ Files owned: `primitives/Tooltip.tsx` (+test, stories), `MeterBar.tsx` (+stories
 
 **Market Context**: WAI-ARIA describes `aria-describedby` as an id reference that must resolve; the tooltip pattern requires the trigger to be focusable and the tip dismissible with Escape; WCAG 1.4.13 (content on hover or focus) asks for dismissible, hoverable, persistent. `role="meter"` models a scalar within a range, which is why a segmented status bar fits `role="img"` better.
 
-**Technical Context**: consumers are listed under Evidence (run `change-impact-scan` before each phase); atlas and story tests in `shared/ui/src/components/primitives/*.stories.tsx`; drivers at `shared/ui/tests/visual/app.drivers.ts` lines ~122, ~235, ~496; verification per CLAUDE.md (plan, change-impact-scan, TDD, `pnpm check`, `pnpm --dir shared/ui atlas`, Playwright visual suite with PNG review at all four viewports, design-spec-guard, feature-cleanup); `docs/ui/` regenerated with `node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir shared/ui`.
+**Technical Context**: consumers are listed under Evidence (run `change-impact-scan` before each phase); atlas and story tests in `apps/ui/src/components/primitives/*.stories.tsx`; drivers at `apps/ui/tests/visual/app.drivers.ts` lines ~122, ~235, ~496; verification per CLAUDE.md (plan, change-impact-scan, TDD, `pnpm check`, `pnpm --dir apps/ui atlas`, Playwright visual suite with PNG review at all four viewports, design-spec-guard, feature-cleanup); `docs/ui/` regenerated with `node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir apps/ui`.
 
 ---
 

@@ -28,11 +28,11 @@ runs:
         node scripts/release/sync-version.mjs
     - name: Clear frontend dist placeholder
       shell: bash
-      run: rm -rf shell/cmd/narration-utils/frontend/dist
+      run: rm -rf apps/desktop/cmd/narration-utils/frontend/dist
     - uses: actions/download-artifact@v4
       with:
         name: ui-dist
-        path: shell/cmd/narration-utils/frontend/dist
+        path: apps/desktop/cmd/narration-utils/frontend/dist
     - name: Build native package
       shell: bash
       env:
@@ -44,7 +44,7 @@ runs:
         esac
         uv run python scripts/release/prepare-resources.py --clean
         node scripts/release/verify-installable.mjs
-        cd shell
+        cd apps/desktop
         wails doctor
         wails build -s "${wails_args[@]}"
     - name: Package the release asset

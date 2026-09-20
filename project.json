@@ -5,13 +5,13 @@
   "sourceRoot": ".",
   "targets": {
     "build": {
-      "command": "pnpm --dir shared/ui run build && pnpm --dir shell run build"
+      "command": "pnpm --dir apps/ui run build && pnpm --dir apps/desktop run build"
     },
     "test": {
-      "command": "pnpm --dir shared/ui test"
+      "command": "pnpm --dir apps/ui test"
     },
     "lint": {
-      "command": "pnpm --dir shared/ui run lint:ci"
+      "command": "pnpm --dir apps/ui run lint:ci"
     }
   }
 }

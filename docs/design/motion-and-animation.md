@@ -9,7 +9,7 @@ State changes and page loads currently "pop in" with no transition in most place
 ## What exists today
 
 - `.progressbar > div` (the linear progress bar used in `WorkDialog`) already has `transition: width 0.4s ease` in `styles.css` — this was already correct before this session's work.
-- The new `MeterBar` primitive (`shared/ui/src/components/primitives/MeterBar.tsx`) adds `transition-[flex-basis] duration-300 ease-out` on each segment — a first, minimal, low-risk instance of considered motion, added alongside the reordering fix rather than as a separate project.
+- The new `MeterBar` primitive (`apps/ui/src/components/primitives/MeterBar.tsx`) adds `transition-[flex-basis] duration-300 ease-out` on each segment — a first, minimal, low-risk instance of considered motion, added alongside the reordering fix rather than as a separate project.
 - Beyond these two spots, no other state transition in the app is animated — most updates (data reload, dialog open/close beyond the existing CSS `transform: translateX` on `.overlay-panel`, toast appearance) are instant.
 
 ## Proposed lightweight motion system (not built)

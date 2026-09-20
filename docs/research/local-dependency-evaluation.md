@@ -31,10 +31,10 @@ recheck all upstream terms at the exact version being offered.
 
 | Capability | Current implementation | Consequence for evaluation |
 | --- | --- | --- |
-| DOCX parsing | `python-docx` is already in both tool environments. `shared/python/narration_common/docx_chapters.py` is the shared paragraph walker. | Do not add a second document parser. Test only improvements to structure heuristics. |
+| DOCX parsing | `python-docx` is already in both tool environments. `libs/python/narration_common/docx_chapters.py` is the shared paragraph walker. | Do not add a second document parser. Test only improvements to structure heuristics. |
 | Story Bible extraction | Local spaCy plus conservative name/context rules. | BookNLP and GLiNER must improve a reviewed entity, quote, or continuity task over this baseline. |
 | Transcript comparison | Local `faster-whisper`, word timestamps, hotwords, normalizations, and a word diff. | Alignment tests must improve marker placement or reduce false discrepancy review, not merely produce another transcript. |
-| Voice activity detection | `tools/transcript-compare/core/compare.py` calls faster-whisper with `vad_filter=True`. Faster-whisper's VAD path uses Silero VAD to omit non-speech before ASR. | Standalone VAD is justified only if exposing its time ranges creates useful review/recording actions. |
+| Voice activity detection | `sidecars/transcript-compare/core/compare.py` calls faster-whisper with `vad_filter=True`. Faster-whisper's VAD path uses Silero VAD to omit non-speech before ASR. | Standalone VAD is justified only if exposing its time ranges creates useful review/recording actions. |
 | Audio import | PyAV decodes audio inside Transcript Compare. No direct `ffmpeg`/`ffprobe` executable dependency is currently configured. | FFmpeg is an optional post-render inspection/export tool, not a replacement for the DAW. |
 
 ### Faster-Whisper model weights — dependency record
@@ -51,7 +51,7 @@ flow, per the required record below.
 - **Exact version**: each model is pinned to an upstream Hugging Face commit
   SHA, not a moving `main`/`latest` alias. **Immutable URL and SHA-256**: one
   entry per file, all in
-  [`shared/config/whisper-assets.json`](../../shared/config/whisper-assets.json).
+  [`config/whisper-assets.json`](../../config/whisper-assets.json).
 - **Code/weight license**: MIT for every listed model repository (see each
   entry's `licenseUrl`); no separate training-data license applies beyond the
   repository's own MIT terms.
@@ -60,14 +60,14 @@ flow, per the required record below.
 - **Runtime dependency**: none beyond the already-approved `faster-whisper`
   Python package; no additional network calls beyond the pinned download URLs.
 - **Invocation**: downloaded and hash-verified by the Go host
-  (`shell/internal/whisper`, sharing `shell/internal/assets` with Piper
+  (`apps/desktop/internal/whisper`, sharing `apps/desktop/internal/assets` with Piper
   voices), then loaded in-process by `faster-whisper`'s `WhisperModel` with
-  `local_files_only=True` (`tools/transcript-compare/core/compare.py`).
+  `local_files_only=True` (`sidecars/transcript-compare/core/compare.py`).
 - **Removal/update policy**: removable from Settings ("Remove local model…");
   no automatic updates — a new pinned commit requires a reviewed catalog
   change.
-- **Test result**: covered by `shell/internal/assets`, `shell/internal/whisper`,
-  and `shell/bindings_test.go` (install/verify/remove and the
+- **Test result**: covered by `apps/desktop/internal/assets`, `apps/desktop/internal/whisper`,
+  and `apps/desktop/bindings_test.go` (install/verify/remove and the
   `TranscriptStart` first-use gate); every catalog URL/hash was verified
   against the live upstream repository before being recorded.
 - **Feature enabled**: Transcript Compare's ASR backend.
@@ -415,7 +415,7 @@ its improvements. Record the exact commit ported from so a future
 re-sync is a deliberate, reviewed action rather than silent drift.
 
 **Implementation status (day-1 prototype).**
-[`tools/manuscript-teleprompter/core/live_asr.py`](../../tools/manuscript-teleprompter/core/live_asr.py)
+[`sidecars/manuscript-teleprompter/core/live_asr.py`](../../sidecars/manuscript-teleprompter/core/live_asr.py)
 implements the VAD-gated-window / rolling-decode / word-timestamp shape
 described above. This is a clean-room re-implementation against this
 repository's own already-pinned `faster-whisper`/`onnxruntime` stack (reusing
@@ -447,7 +447,7 @@ segment length (capped by `MAX_BUFFER_SECONDS`).
 
 **Status: candidate under evaluation. Not a project dependency.** It is
 imported only by the optional `--engine moonshine` path of
-[`live_asr.py`](../../tools/manuscript-teleprompter/core/live_asr.py) and run in
+[`live_asr.py`](../../sidecars/manuscript-teleprompter/core/live_asr.py) and run in
 an ephemeral `uv` environment; `pyproject.toml` and `uv.lock` are untouched.
 It cannot ship until the record below is completed.
 

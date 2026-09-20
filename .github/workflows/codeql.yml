@@ -50,9 +50,9 @@ jobs:
           build-mode: ${{ matrix.build-mode }}
       # Two things CodeQL's Go tracer needs: -a, because setup-go restores the build cache and only
       # recompiled code is seen, and `go build` run from the module directory rather than
-      # `go -C shell build`, whose leading flag stops the tracer recognising the build.
+      # `go -C apps/desktop build`, whose leading flag stops the tracer recognising the build.
       - if: matrix.language == 'go'
-        working-directory: shell
+        working-directory: apps/desktop
         run: go build -a ./...
       - uses: github/codeql-action/analyze@v4
         with:

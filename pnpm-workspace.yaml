@@ -1,6 +1,6 @@
 packages:
-  - shared/ui
-  - shell
+  - apps/ui
+  - apps/desktop
 
 allowBuilds:
   esbuild: true

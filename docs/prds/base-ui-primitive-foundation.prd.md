@@ -1,9 +1,9 @@
 # Base UI Primitive Foundation
 
-**Source:** owner decision of 2026-09-20 to stop hand-rolling interactive behaviour in `shared/ui` primitives; reshapes the mechanism in `dialog-modality-and-workdialog-a11y.prd.md` and `component-a11y-meter-tooltip-field-heading-panel.prd.md`, and resolves the library decision (L1, L2) of `ui-primitives-and-headless-library.prd.md`, which keeps the net-new primitives (wrapped natives, menus and disclosure, Table, Combobox) as its Phases 1, 4 and 5 on top of this foundation
+**Source:** owner decision of 2026-09-20 to stop hand-rolling interactive behaviour in `apps/ui` primitives; reshapes the mechanism in `dialog-modality-and-workdialog-a11y.prd.md` and `component-a11y-meter-tooltip-field-heading-panel.prd.md`, and resolves the library decision (L1, L2) of `ui-primitives-and-headless-library.prd.md`, which keeps the net-new primitives (wrapped natives, menus and disclosure, Table, Combobox) as its Phases 1, 4 and 5 on top of this foundation
 **Supersedes:** Open Question 1 (mechanism, "native `<dialog>`, no library") and the "no new runtime dependency for one primitive" Not-Building bullet of the dialog PRD; the hand-rolled `Tooltip` mechanics (Open Questions 2, 3, 8) and hand-rolled `Field` error wiring of the a11y-components PRD. Those PRDs keep their defect scope, sweeps and success metrics.
 
-Feature PRD. Citations are `file:line` on branch `claude/tech-stack-evaluation-7a3bd8` (main dc9d01a; `shared/ui/src` was unchanged by the last commits) for anything checked in code; Base UI facts were checked on 2026-09-20 against base-ui.com, the npm registry and GitHub raw source, and "TBD - needs research" marks what only a spike can settle. Nothing here changes product behaviour on its own; it changes how primitives are built.
+Feature PRD. Citations are `file:line` on branch `claude/tech-stack-evaluation-7a3bd8` (main dc9d01a; `apps/ui/src` was unchanged by the last commits) for anything checked in code; Base UI facts were checked on 2026-09-20 against base-ui.com, the npm registry and GitHub raw source, and "TBD - needs research" marks what only a spike can settle. Nothing here changes product behaviour on its own; it changes how primitives are built.
 
 ## Problem Statement
 
@@ -13,7 +13,7 @@ The two open UI-defect PRDs plan to hand-write the hard parts of dialogs, toolti
 
 Verified in code (branch above):
 
-- **Primitives today** are 14 hand-written files in `shared/ui/src/components/primitives/`, none with a runtime dependency beyond React and FontAwesome (`shared/ui/package.json:22-30`: React ^19.3.0, react-router-dom, four FontAwesome packages; Tailwind ^4.3.3 and jsdom ^30.0.1 are dev-only). No Radix, React Aria or Headless UI in the lockfile.
+- **Primitives today** are 14 hand-written files in `apps/ui/src/components/primitives/`, none with a runtime dependency beyond React and FontAwesome (`apps/ui/package.json:22-30`: React ^19.3.0, react-router-dom, four FontAwesome packages; Tailwind ^4.3.3 and jsdom ^30.0.1 are dev-only). No Radix, React Aria or Headless UI in the lockfile.
 - **`Dialog.tsx:21`** is a `fixed inset-0 z-[60]` div with `role="dialog" aria-modal="true"`, no key handler, no focus call, no portal; the only keyboard work is `tabIndex={0}` on the body (`:39-41`, ADR 0023). **`SlideOver.tsx:25`** and **`AppShell.tsx:111-112`** (mobile nav drawer, `z-[70]`) close only on backdrop `onMouseDown`, with no Escape or trap.
 - **`Tooltip.tsx:16-23`** portals to `document.body` at `z-[1000]` with `id="tooltip-layer"`; `:87` points every target's `aria-describedby` at that one id; `:102-103` the info icon is a `span` with `aria-label` and no tab stop; `:4,:31` write `key: Date.now()` that nothing reads. `:root` defines `--z-tooltip: 1000` (`styles.css:53`) but no source file uses it.
 - **`Pill.tsx:17-24`** is a toggle chip with no `aria-pressed`; `MeterBar.tsx:12-27` has no role or label; `WorkDialog.tsx:32` builds its bar as a bare `div.progressbar`; `Field.tsx:16-37` has no error or description slot.
@@ -21,8 +21,8 @@ Verified in code (branch above):
 - **Consumer counts (JSX opening tags outside stories, tests and the primitive itself):** `Button` 43 in 14 files; `TooltipTarget` 41 in 13 (`Tooltip` icon 7 in 4); `ConfirmDialog` 12 in 6; `Panel` 8 in 4; `Heading` 7 in 7; `Pill` 7 in 4; `Field` 6 (all `GuideDetail.tsx`); `Highlight` 5 in 4; `NavButton` 4 (`AppShell.tsx`); `Dialog` 3 (`ConfirmDialog`, `WorkDialog`, `AddNoteDialog`); `SlideOver` 2 (`Manuscript.tsx`, `GuideDetail.tsx`); `WorkDialog` 2 (`Home.tsx`, `Guide.tsx`); `ErrorBoundary`, `TooltipProvider`, `MeterBar` 1 each. Visual drivers depend on markup: `getByRole('dialog', { name })` (`tests/visual/app.drivers.ts:131`), `getByLabel('More information')`, the `tabindex="0"` disabled-button wrapper, `[data-slide-over]` (ADR 0017).
 - **Test environment.** `vite.config.ts` loads `src/test-setup.ts` for every Vitest file; today it only stubs `URL.createObjectURL` (`:36-37`). `src/stories.test.tsx:11-30` runs every story's `play()` in jsdom through `composeStories`. jsdom 30.1.0 has no dialog API (dialog PRD Evidence). The Chromium atlas (`playwright.atlas.config.ts`, `reducedMotion: 'reduce'`) runs axe, `play()`, overflow and console checks on every story, light and dark, two viewports; `atlasCoverage.test.ts` caps `A11Y_DEBT` at 4 entries and requires a story file per primitive.
 - **Guards that constrain styling.** ADR 0009 (Tailwind utilities with `var(--token)`, no new legacy CSS), ADR 0017 (`legacyCss.test.ts` fails on new unlayered class rules; state classes mutually exclusive), ADR 0010 (`--backdrop` scrim, `data-theme` on `<html>`), `styles.css:1-5` fixes the layer order. `eslint.config.js:11-37` has no `no-restricted-imports` rule today.
-- **Runtime target:** Wails v2.16.0 (`shell/go.mod:7`), so WebView2 (Chromium) on Windows, WKWebView and WebKitGTK on the optional macOS and Linux builds (ADR 0027).
-- **Baseline size:** `shared/ui/dist/assets/index-*.js` is 570,212 bytes raw (local build of 2026-09-19; treat as approximate).
+- **Runtime target:** Wails v2.16.0 (`apps/desktop/go.mod:7`), so WebView2 (Chromium) on Windows, WKWebView and WebKitGTK on the optional macOS and Linux builds (ADR 0027).
+- **Baseline size:** `apps/ui/dist/assets/index-*.js` is 570,212 bytes raw (local build of 2026-09-19; treat as approximate).
 
 Verified about Base UI (2026-09-20):
 
@@ -34,7 +34,7 @@ Verified about Base UI (2026-09-20):
 
 ## Proposed Solution
 
-Add `@base-ui/react` to `shared/ui` and wrap every part we use inside our own primitive in `components/primitives/`, so app code (`components/`, pages) never imports it. Each wrapper keeps or improves the current prop API, applies Tailwind classes with `var(--token)` values and data-attribute variants over the Base UI parts, and owns the policies chosen elsewhere (for example dialog Escape and backdrop rules). Enforce the boundary with an ESLint `no-restricted-imports` rule. Deliver in phases: foundation, the Dialog family, Tooltip/Field/MeterBar, drawers, the remaining widgets, then a sweep. The mechanism work in the two defect PRDs is replaced by this; the defect fixes themselves (WorkDialog semantics, ConfirmDialog API, MeterBar label, Heading/Panel props) stay where they are.
+Add `@base-ui/react` to `apps/ui` and wrap every part we use inside our own primitive in `components/primitives/`, so app code (`components/`, pages) never imports it. Each wrapper keeps or improves the current prop API, applies Tailwind classes with `var(--token)` values and data-attribute variants over the Base UI parts, and owns the policies chosen elsewhere (for example dialog Escape and backdrop rules). Enforce the boundary with an ESLint `no-restricted-imports` rule. Deliver in phases: foundation, the Dialog family, Tooltip/Field/MeterBar, drawers, the remaining widgets, then a sweep. The mechanism work in the two defect PRDs is replaced by this; the defect fixes themselves (WorkDialog semantics, ConfirmDialog API, MeterBar label, Heading/Panel props) stay where they are.
 
 ## Key Hypothesis
 
@@ -58,11 +58,11 @@ We believe wrapping Base UI in our primitives gives keyboard and screen-reader n
 | Dialog keyboard contract | Escape closes where `onClose` exists, Tab and Shift+Tab stay inside, focus returns to the opener, on 100% of Dialog/ConfirmDialog/WorkDialog/AddNote stories | Chromium atlas `play()`; RTL test for one real consumer flow |
 | Page behind a dialog | Not reachable by Tab and hidden from assistive tech while open | `play()` asserting attributes plus axe on the open story; TBD - which of `aria-hidden` or `inert` Base UI applies (Research Summary) |
 | A11y debt | `A11Y_DEBT` entries not above 4 and none added by these phases | `atlasCoverage.test.ts`, atlas run |
-| Story unit tests | `stories.test.tsx` green in jsdom; count of atlas-only keyboard stories recorded and not growing after Phase 2 | `pnpm --dir shared/ui test` |
-| Visual regressions | 0 unintended diffs across affected states at 4 viewports | `pnpm --dir shared/ui screenshots` and PNG review per `CLAUDE.md` |
+| Story unit tests | `stories.test.tsx` green in jsdom; count of atlas-only keyboard stories recorded and not growing after Phase 2 | `pnpm --dir apps/ui test` |
+| Visual regressions | 0 unintended diffs across affected states at 4 viewports | `pnpm --dir apps/ui screenshots` and PNG review per `CLAUDE.md` |
 | Consumer stability | Call-site edits only where a planned API change forces them (ConfirmDialog `danger`, MeterBar `label`) | `git diff --stat` outside `primitives/` per phase |
-| Bundle impact | Delta recorded at Phase 1 and after each phase; budget agreed after the spike | `pnpm --dir shared/ui build`, compare `dist/assets` raw and gzip to 570,212 B raw; Open Question 9 |
-| Upgrade churn | A Base UI minor bump passes `pnpm check` and atlas or is held with a reason | Dependabot PR for `/shared/ui` |
+| Bundle impact | Delta recorded at Phase 1 and after each phase; budget agreed after the spike | `pnpm --dir apps/ui build`, compare `dist/assets` raw and gzip to 570,212 B raw; Open Question 9 |
+| Upgrade churn | A Base UI minor bump passes `pnpm check` and atlas or is held with a reason | Dependabot PR for `/apps/ui` |
 
 ## Open Questions
 
@@ -129,7 +129,7 @@ We believe wrapping Base UI in our primitives gives keyboard and screen-reader n
 - **Layout:** one flat file per primitive in `primitives/` (`Dialog.tsx`, `Tooltip.tsx`, new `Menu.tsx`, `Popover.tsx`, `Drawer.tsx`), each with `<Name>.stories.tsx`, which keeps `atlasCoverage.test.ts` and the generated `docs/ui` working unchanged. Import per component (`import { Dialog } from '@base-ui/react/dialog'`), never the barrel, so `sideEffects: false` tree-shaking is not defeated. A Base UI type never appears in a wrapper's exported props.
 - **Styling:** Tailwind utilities with `var(--token)` classes on each part; state via data variants (`data-open:`, `data-starting-style:`, `data-ending-style:`, `data-disabled:`, `data-invalid:`), chosen mutually exclusively per ADR 0017, no new class in `styles.css`. Popups and backdrops portal to `body`, so the root needs the `isolate` utility (`index.html:33` `#root` and the Storybook decorator, `.storybook/preview.tsx`); z-index tokens become named (`--z-tooltip` exists unused) so the order is dialog under tooltip, drawer under dialog.
 - **Stable API for consumers:** conditional rendering (`{open && <ConfirmDialog />}`) is kept by rendering Root with `open` on mount and calling the existing callback from `onOpenChange` only for the reasons the wrapper allows (`escape-key` when `onClose` exists and the job is dismissible; `outside-press` never).
-- **Enforcement:** flat-config block in `shared/ui/eslint.config.js` for `src/**` and `tests/**` excluding `src/components/primitives/**`: `no-restricted-imports` with a pattern group `['@base-ui/*']` and a message pointing at the primitive convention, `allowTypeImports` false. Optional second guard: a dependency-cruiser rule `not-to-base-ui-outside-primitives`, owned by `verification-and-code-health-tooling.prd.md` (being written in parallel), so this PRD depends only on the ESLint rule.
+- **Enforcement:** flat-config block in `apps/ui/eslint.config.js` for `src/**` and `tests/**` excluding `src/components/primitives/**`: `no-restricted-imports` with a pattern group `['@base-ui/*']` and a message pointing at the primitive convention, `allowTypeImports` false. Optional second guard: a dependency-cruiser rule `not-to-base-ui-outside-primitives`, owned by `verification-and-code-health-tooling.prd.md` (being written in parallel), so this PRD depends only on the ESLint rule.
 - **Verification:** the wrapper's story `play()` proves keyboard behaviour in the Chromium atlas; `stories.test.tsx` renders it in jsdom with polyfills added to `src/test-setup.ts` for what Base UI touches (`getAnimations`, `ResizeObserver`, layout-dependent focus checks; jsdom lacks the first two, TBD for the third), keyboard-only assertions flagged atlas-only as dialog PRD Q2 already decided.
 
 **Technical Risks**
@@ -159,7 +159,7 @@ We believe wrapping Base UI in our primitives gives keyboard and screen-reader n
 
 ### Phase Details
 
-**Phase 1 - Foundation.** Goal: the boundary, environment and evidence exist before any primitive changes. Scope: `pnpm add @base-ui/react` in `shared/ui`; ESLint block above with a bad-import fixture test; `isolate` on `#root` and the Storybook decorator; `src/test-setup.ts` polyfills; throwaway spike stories (a Base UI Dialog and Tooltip inside a story) run in jsdom and the Chromium atlas, recording answers to: outside content `aria-hidden` vs `inert`, Tab trap in Chromium, focus return without a Trigger, `getAnimations` handling, tooltip layer above the dialog, `dist` size delta, Escape ownership; a "Base UI wrappers" section in `docs/design/design-system.md`. Last commit, after the code above has landed in the PR: the ADR via `adr-author` (rule 4 of `docs/adr/README.md`), numbered at merge time (next free number 0039 today), which amends no ADR and extends ADR 0009 and 0023. Success: lint fails a direct import, `pnpm check` and atlas green, spike answers written in the PR.
+**Phase 1 - Foundation.** Goal: the boundary, environment and evidence exist before any primitive changes. Scope: `pnpm add @base-ui/react` in `apps/ui`; ESLint block above with a bad-import fixture test; `isolate` on `#root` and the Storybook decorator; `src/test-setup.ts` polyfills; throwaway spike stories (a Base UI Dialog and Tooltip inside a story) run in jsdom and the Chromium atlas, recording answers to: outside content `aria-hidden` vs `inert`, Tab trap in Chromium, focus return without a Trigger, `getAnimations` handling, tooltip layer above the dialog, `dist` size delta, Escape ownership; a "Base UI wrappers" section in `docs/design/design-system.md`. Last commit, after the code above has landed in the PR: the ADR via `adr-author` (rule 4 of `docs/adr/README.md`), numbered at merge time (next free number 0039 today), which amends no ADR and extends ADR 0009 and 0023. Success: lint fails a direct import, `pnpm check` and atlas green, spike answers written in the PR.
 
 **Phase 2 - Dialog family.** Goal: dialog defect 2 closed on Base UI. Scope: `Dialog.tsx` (shell, `AlertDialog` variant, policies), `ConfirmDialog.tsx`, `WorkDialog.tsx` (Progress; remaining semantics stay dialog PRD Phase 3), `manuscript/AddNoteDialog.tsx` check, stories with `play()` for Escape, Tab, restore, `ConfirmDialog.test.tsx`, one consumer test (Story Bible delete). Success: Success Metrics rows for dialogs; visuals unchanged at four viewports.
 
@@ -169,7 +169,7 @@ We believe wrapping Base UI in our primitives gives keyboard and screen-reader n
 
 **Phase 5 - Remaining widgets.** Goal: replace hand-rolled widgets. Scope: `Pill.tsx` (Toggle), new `Menu.tsx`, `Checkbox.tsx`, `Collapsible.tsx`; call sites `GuideDetail.tsx`, `Home.tsx`, `AudiobookEstimatePanel.tsx` edited only to use the new primitives. Success: keyboard `play()` per widget; Pill tests select by role and pressed state.
 
-**Phase 6 - Sweep.** Goal: nothing stale. Scope: `pnpm --dir shared/ui atlas` and Playwright suite; PNGs at all four viewports in `tests/visual/viewports.ts` for every dialog, drawer and tooltip state; `node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir shared/ui`; `doc-screenshot-sync`; `visual-catalog-sync` if states changed; `design-system.md` table; delete this PRD when steady-state docs cover it.
+**Phase 6 - Sweep.** Goal: nothing stale. Scope: `pnpm --dir apps/ui atlas` and Playwright suite; PNGs at all four viewports in `tests/visual/viewports.ts` for every dialog, drawer and tooltip state; `node tools/ui-atlas-kit/plugin/cli/ui-atlas.mjs docs --dir apps/ui`; `doc-screenshot-sync`; `visual-catalog-sync` if states changed; `design-system.md` table; delete this PRD when steady-state docs cover it.
 
 ### Parallelism Notes
 
@@ -179,14 +179,14 @@ Phase 1 first. Phases 2, 3 and 5 touch disjoint primitive files and can run conc
 
 | Phase | Files and areas touched | Collision risk |
 | --- | --- | --- |
-| 1 | `shared/ui/package.json`, `pnpm-lock.yaml`, `eslint.config.js`, `index.html`, `.storybook/preview.tsx`, `src/test-setup.ts`, `docs/design/design-system.md`, `docs/adr/` | Medium: the verification-tooling PRD also edits lint and config; lockfile conflicts rebase; ADR number checked at merge |
+| 1 | `apps/ui/package.json`, `pnpm-lock.yaml`, `eslint.config.js`, `index.html`, `.storybook/preview.tsx`, `src/test-setup.ts`, `docs/design/design-system.md`, `docs/adr/` | Medium: the verification-tooling PRD also edits lint and config; lockfile conflicts rebase; ADR number checked at merge |
 | 2 | `Dialog*`, `ConfirmDialog*`, `WorkDialog*`, `AddNoteDialog.tsx` | High with the dialog PRD phases 3-4 and teleprompter Phase 1 (`size="full"`): serialize, or land Phase 2 first |
 | 3 | `Tooltip*`, `Field*`, `MeterBar*`, `Popover.tsx`, `AudiobookEstimatePanel.tsx` | Medium with the a11y PRD and teleprompter Phase 7 (needs the tooltip contract) |
 | 4 | `SlideOver*`, `AppShell.tsx`, new nav primitive | High if a nav-item PRD lands (`AppShell` NAV regenerates screenshots); one at a time |
 | 5 | `Pill*`, new primitives, three call sites | Medium with settings-mobile-layout (`Settings.tsx`) |
 | 6 | `docs/ui/**`, `docs/images/ui/*`, `design-system.md` | Always conflicts; regenerate, never merge binaries |
 
-Cross-cutting: every phase follows `CLAUDE.md` (plan, `change-impact-scan`, TDD, `pnpm check`, atlas, Playwright visual suite with PNG review, `design-spec-guard`, `feature-cleanup`); no `shared/reaper` change; no `hostAPIVersion` bump; the ADR is not written before Phase 1's code exists.
+Cross-cutting: every phase follows `CLAUDE.md` (plan, `change-impact-scan`, TDD, `pnpm check`, atlas, Playwright visual suite with PNG review, `design-spec-guard`, `feature-cleanup`); no `integrations/reaper` change; no `hostAPIVersion` bump; the ADR is not written before Phase 1's code exists.
 
 ## Decisions Log
 

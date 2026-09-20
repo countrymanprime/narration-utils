@@ -4,9 +4,9 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { audit, sync } from '../plugin/cli/ui-atlas.mjs';
 
-const UI = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'shared', 'ui');
+const UI = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'apps', 'ui');
 
-test('shared/ui is the upstream of the kit core files and has not drifted', () => {
+test('apps/ui is the upstream of the kit core files and has not drifted', () => {
   const { drift } = sync(UI, { check: true });
   assert.deepEqual(drift, [], `run: node tools/ui-atlas-kit/scripts/refresh-core.mjs (drifted: ${drift.join(', ')})`);
 });

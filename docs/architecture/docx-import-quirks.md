@@ -2,7 +2,7 @@
 
 **Status: living catalogue.** Word and Markdown documents encode the same visible text in many ways. Several import regressions ("CHAPTER ONEBad Ideas Look Great in Neon", paragraphs that lost their line breaks) came from one of these encodings, were fixed, and came back because the reason was never written down. Each row below is a known hazard, what the document looks like, what the importer does, and where the test lives. Add a row (and a test) whenever a new one is found. The governing decision is [ADR-0013](../adr/0013-import-preserves-structural-whitespace.md); formatting spans are [ADR-0014](../adr/0014-inline-formatting-as-offset-spans.md).
 
-Code: `shell/internal/importer/` (`docx.go`, `markdown.go`, `markdown_inline.go`, `richtext.go`, `headings.go`). Tests: `docx_test.go`, `markdown_test.go`.
+Code: `apps/desktop/internal/importer/` (`docx.go`, `markdown.go`, `markdown_inline.go`, `richtext.go`, `headings.go`). Tests: `docx_test.go`, `markdown_test.go`.
 
 ## DOCX
 

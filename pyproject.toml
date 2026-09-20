@@ -36,8 +36,8 @@ target-version = "py311"
 extend-exclude = [".venv", ".runtime", ".bootstrap"]
 
 [tool.pytest.ini_options]
-pythonpath = ["shared/python"]
+pythonpath = ["libs/python"]
 # Only the folders that hold tests: a bare `pytest` would otherwise walk every worktree and
 # scratch directory under the repo root.
-testpaths = ["shared/python/tests", "tools", "scripts"]
+testpaths = ["libs/python/tests", "sidecars", "scripts"]
 addopts = "-p no:cacheprovider"

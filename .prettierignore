@@ -3,5 +3,5 @@ bin/
 obj/
 dist/
 logs/
-shared/ui/tests/visual/fixtures/
+apps/ui/tests/visual/fixtures/
 tools/ui-atlas-kit/plugin/templates/
