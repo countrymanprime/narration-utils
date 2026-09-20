@@ -22,8 +22,8 @@ func (h *Host) mediaMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		path := filepath.Clean(r.URL.Query().Get("path"))
-		if !h.authorizedMediaPath(path) {
+		path, ok := h.authorizedMediaSource(filepath.Clean(r.URL.Query().Get("path")))
+		if !ok {
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
@@ -42,23 +42,25 @@ func (h *Host) mediaMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// authorizedMediaPath refuses to serve anything that is not a source file
+// authorizedMediaSource refuses to serve anything that is not a source file
 // the current project's currently selected .rpp actually references -
 // otherwise the media route would be an arbitrary local file read. It
 // re-resolves the project's tracks on every request rather than trusting a
 // cache, so a project switch or an .rpp re-selection takes effect
-// immediately instead of leaving a stale file servable.
-func (h *Host) authorizedMediaPath(path string) bool {
+// immediately instead of leaving a stale file servable. It returns the
+// project's own copy of the matched path, never the requested string, so
+// the file that gets opened is always one the parsed project vouched for.
+func (h *Host) authorizedMediaSource(requested string) (string, bool) {
 	project, err := h.tracksList()
 	if err != nil {
-		return false
+		return "", false
 	}
 	for _, track := range project.Tracks {
 		for _, item := range track.Items {
-			if item.SourceFile != "" && item.SourceFile == path {
-				return true
+			if item.SourceFile != "" && item.SourceFile == requested {
+				return item.SourceFile, true
 			}
 		}
 	}
-	return false
+	return "", false
 }
