@@ -8,6 +8,7 @@ Storybook title: `Primitives/Field`. Source: `src/components/primitives/Field.ts
 
 - Text Input
 - Text Input Empty
+- With Placeholder
 - Text Input Long Value
 - Textarea
 - Textarea Empty
@@ -23,7 +24,9 @@ Storybook title: `Primitives/Field`. Source: `src/components/primitives/Field.ts
 - With Hint
 - With Error
 - Textarea With Hint And Error
+- Focused On Mount
 
 ## Used by
 
+- `src/components/manuscript/AddNoteDialog.tsx`
 - `src/components/storybible/GuideDetail.tsx`

@@ -1,4 +1,6 @@
 import type { Scope, ScopedSettingField } from '../../types';
+import { Select } from '../primitives/Select';
+import { TextField } from '../primitives/TextField';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { proofingChoiceLabel } from '../proofing/options';
 
@@ -40,8 +42,6 @@ export function ScopedSetting({
   const effective = value || field.effectiveValue;
   const isColor = field.kind === 'color';
   const isText = field.kind === 'text';
-  const controlClass =
-    'min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-[var(--accent)] focus:outline-offset-1';
   return (
     <div className="grid grid-cols-[minmax(12rem,16rem)_minmax(0,1fr)] items-start gap-5 border-b border-[var(--border)] py-4">
       <div className="pt-2 text-[0.82rem] font-medium text-[var(--text-muted)]">
@@ -51,31 +51,20 @@ export function ScopedSetting({
       <div className="flex items-center gap-[0.6rem]">
         {isColor ? (
           <>
-            <input
-              aria-label={`${field.label} hex`}
-              className="size-[2.35rem] rounded-[0.35rem] border border-[var(--border)] bg-[var(--surface)] p-[0.2rem]"
-              type="color"
-              value={pickerColor(effective)}
-              onChange={(event) => change(event.target.value.slice(1).toUpperCase())}
-            />
-            <input
-              className={`${controlClass} font-['IBM_Plex_Mono',ui-monospace,monospace]`}
-              placeholder="Not set"
-              value={effective}
-              onChange={(event) => change(event.target.value.replace('#', '').toUpperCase())}
-            />
+            <TextField label={`${field.label} hex`} type="color" value={pickerColor(effective)} onChange={(value) => change(value.slice(1).toUpperCase())} />
+            <TextField label={field.label} mono placeholder="Not set" value={effective} onChange={(value) => change(value.replace('#', '').toUpperCase())} />
           </>
         ) : isText ? (
-          <input className={controlClass} value={effective} onChange={(event) => change(event.target.value)} />
+          <TextField label={field.label} value={effective} onChange={change} />
         ) : (
           <TooltipTarget text={optionTip(field, effective)}>
-            <select className={controlClass} value={effective} onChange={(event) => change(event.target.value)}>
-              {field.choices.map((choice) => (
-                <option key={choice} value={choice}>
-                  {proofingChoiceLabel(field.key, choice)}
-                </option>
-              ))}
-            </select>
+            <Select
+              label={field.label}
+              fullWidth
+              value={effective}
+              onChange={change}
+              options={field.choices.map((choice) => ({ value: choice, label: proofingChoiceLabel(field.key, choice) }))}
+            />
           </TooltipTarget>
         )}
         {scope === 'project' && field.isSet && (

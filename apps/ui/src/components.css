@@ -38,31 +38,6 @@ label.field-label {
   font-weight: 500;
   color: var(--text-muted);
 }
-.input,
-input[type='text'],
-select,
-textarea {
-  box-sizing: border-box;
-  min-height: var(--control-height);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--control-radius);
-  padding: 0.6rem 0.75rem;
-  color: var(--text);
-  font-size: 0.88rem;
-  line-height: 1.35;
-}
-.input {
-  width: 100%;
-}
-input[readonly] {
-  background: var(--surface-2);
-  color: var(--text);
-  cursor: default;
-}
-input:focus,
-select:focus,
-textarea:focus,
 button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;

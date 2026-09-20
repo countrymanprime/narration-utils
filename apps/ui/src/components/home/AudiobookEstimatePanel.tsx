@@ -8,6 +8,7 @@ import { useApi } from '../../api/ApiContext';
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '../primitives/Collapsible';
 import { MeterBar } from '../primitives/MeterBar';
 import { Panel } from '../primitives/Panel';
+import { Select } from '../primitives/Select';
 import { STATUS_COLOR, STATUS_LABELS, STATUS_ORDER } from '../manuscript/ChapterNav';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 
@@ -185,12 +186,13 @@ export function AudiobookEstimatePanel({
                         : '—'}
                     </td>
                     <td>
-                      <select
-                        aria-label={`${chapter.title} status`}
+                      <Select
+                        label={`${chapter.title} status`}
                         value={chapter.status}
-                        onChange={async (event) => {
+                        options={STATUS_ORDER.map((status) => ({ value: status, label: STATUS_LABELS[status] }))}
+                        onChange={async (value) => {
                           try {
-                            const updated = await api.manuscriptSetChapterStatus(chapter.id, event.target.value as ChapterStatus);
+                            const updated = await api.manuscriptSetChapterStatus(chapter.id, value as ChapterStatus);
                             setChapters((current) =>
                               current?.map((c) =>
                                 c.id === chapter.id
@@ -202,13 +204,7 @@ export function AudiobookEstimatePanel({
                             notify(String(error));
                           }
                         }}
-                      >
-                        {STATUS_ORDER.map((status) => (
-                          <option key={status} value={status}>
-                            {STATUS_LABELS[status]}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </td>
                   </tr>
                 );

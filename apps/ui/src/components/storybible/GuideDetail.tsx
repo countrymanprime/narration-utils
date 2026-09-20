@@ -28,6 +28,8 @@ import { Menu } from '../primitives/Menu';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { CANONICAL_PREVIEW, previewKey, usePreviewAudio } from './usePreviewAudio';
 import { IconButton } from '../primitives/IconButton';
+import { Select } from '../primitives/Select';
+import { TextField } from '../primitives/TextField';
 
 export function GuideDetail({
   entity,
@@ -334,12 +336,7 @@ export function GuideDetail({
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">Name</div>
-            <input
-              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
-              disabled={editingDisabled}
-              value={draft.name}
-              onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-            />
+            <TextField label="Name" disabled={editingDisabled} value={draft.name} onChange={(name) => setDraft({ ...draft, name })} />
           </div>
           <div>
             <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">
@@ -423,14 +420,14 @@ export function GuideDetail({
             </tbody>
           </table>
           <div className="mt-3">
-            <input
-              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
+            <TextField
+              label="Add an alias or find a matching entry"
               role="combobox"
               aria-expanded={aliasMatches.length > 0}
               disabled={editingDisabled}
               value={aliasQuery}
-              onChange={(event) => {
-                setAliasQuery(event.target.value);
+              onChange={(value) => {
+                setAliasQuery(value);
                 setAliasSelectedId(undefined);
                 setAliasActiveIndex(0);
               }}
@@ -617,26 +614,21 @@ export function GuideDetail({
             </tbody>
           </table>
           <div className="mt-3 grid gap-3" style={{ gridTemplateColumns: '1fr 1fr auto' }}>
-            <input
-              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
+            <TextField
+              label="Relationship"
               disabled={editingDisabled}
               value={relationLabel}
-              onChange={(event) => setRelationLabel(event.target.value)}
+              onChange={setRelationLabel}
               placeholder="Relationship, e.g. located in"
             />
-            <select
-              className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
+            <Select
+              label="Related entry"
+              fullWidth
               disabled={editingDisabled}
               value={relationOtherId}
-              onChange={(event) => setRelationOtherId(event.target.value)}
-            >
-              <option value="">Choose entry…</option>
-              {otherEntities.map((row) => (
-                <option key={row.id} value={row.id}>
-                  {row.canonical_name}
-                </option>
-              ))}
-            </select>
+              onChange={setRelationOtherId}
+              options={[{ value: '', label: 'Choose entry…' }, ...otherEntities.map((row) => ({ value: row.id, label: row.canonical_name }))]}
+            />
             <Button
               variant="ghost"
               className="text-xs"

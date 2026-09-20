@@ -17,7 +17,7 @@ import { describe, expect, test } from 'vitest';
 const NATIVE_TAGS = ['button', 'select', 'input', 'textarea', 'table'] as const;
 type NativeTag = (typeof NATIVE_TAGS)[number];
 
-// Native elements written in JSX per file, outside the primitives, at the time of ADR 0053 (phase 1a).
+// Native elements written in JSX per file, outside the primitives, at the time of ADR 0053 (phase 1b: no native select, input or textarea is left).
 const CEILING: Record<NativeTag, Record<string, number>> = {
   button: {
     'src/components/home/Home.tsx': 2,
@@ -32,22 +32,9 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     'src/components/storybible/GuideDetail.tsx': 1,
     'src/components/tracks/TracksPage.tsx': 2,
   },
-  select: {
-    'src/components/home/AudiobookEstimatePanel.tsx': 1,
-    'src/components/home/Home.tsx': 2,
-    'src/components/settings/ScopedSetting.tsx': 1,
-    'src/components/storybible/GuideDetail.tsx': 1,
-    'src/components/teleprompter/TeleprompterPage.tsx': 1,
-  },
-  input: {
-    'src/components/manuscript/SearchBar.tsx': 1,
-    'src/components/proofing/Transcript.tsx': 1,
-    'src/components/settings/ScopedSetting.tsx': 3,
-    'src/components/storybible/Guide.tsx': 1,
-    'src/components/storybible/GuideDetail.tsx': 3,
-    'src/components/teleprompter/TeleprompterPage.tsx': 1,
-  },
-  textarea: { 'src/components/manuscript/AddNoteDialog.tsx': 1 },
+  select: {},
+  input: {},
+  textarea: {},
   table: {
     'src/components/home/AudiobookEstimatePanel.tsx': 1,
     'src/components/proofing/Results.tsx': 1,

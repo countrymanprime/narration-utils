@@ -14,6 +14,8 @@ export function Field({
   onBlur,
   disabled,
   textarea = false,
+  placeholder,
+  autoFocus,
   hint,
   error,
 }: {
@@ -23,6 +25,9 @@ export function Field({
   onBlur?: () => void;
   disabled?: boolean;
   textarea?: boolean;
+  placeholder?: string;
+  // Focus the control when it mounts: a dialog whose one job is this field opens with it ready (see Dialog's initial focus).
+  autoFocus?: boolean;
   // Help that belongs to the field; the control is described by it.
   hint?: ReactNode;
   // What is wrong with the value: shows under the field, marks it `aria-invalid` and describes it (a disabled field shows
@@ -35,6 +40,8 @@ export function Field({
       <BaseField.Control
         render={textarea ? <textarea className={`min-h-20 ${CONTROL_CLASSES}`} /> : <input className={`min-h-[var(--control-height)] ${CONTROL_CLASSES}`} />}
         disabled={disabled}
+        placeholder={placeholder}
+        autoFocus={autoFocus}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onBlur={onBlur}

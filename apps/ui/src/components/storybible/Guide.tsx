@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faLock, faPlus, faRotate, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faLock, faPlus, faRotate } from '@fortawesome/free-solid-svg-icons';
 import { normalizeGuideEntity, type GuideEntity, type WorkJob } from '../../types';
 import { categoryCssName, categoryLabel, sortEntities, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
@@ -11,6 +11,7 @@ import { CAT_DOT_BG, CAT_DOT_CLASS } from '../manuscript/EntitySummary';
 import { GuideDetail } from './GuideDetail';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { IconButton } from '../primitives/IconButton';
+import { SearchField } from '../primitives/SearchField';
 
 type EntitySort = { key: 'name' | 'occurrences'; dir: 'asc' | 'desc' };
 const TAB_PLURAL: Record<string, string> = {
@@ -180,23 +181,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
       <div className="grid min-h-0 flex-1 gap-4 max-md:h-auto lg:grid-cols-[18rem_minmax(0,1fr)] [&>*]:max-md:min-h-96">
         <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
           <div className="p-[1.1rem] pb-2">
-            <div style={{ position: 'relative', width: '100%' }}>
-              <input
-                className="min-h-[var(--control-height)] w-full rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-[0.6rem] text-[0.88rem] leading-[1.35] text-[var(--text)] focus:outline-2 focus:outline-offset-1 focus:outline-[var(--accent)]"
-                aria-label="Search entries"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search entries…"
-                style={query ? { paddingRight: '2.25rem' } : undefined}
-              />
-              {query && (
-                <TooltipTarget text="Clear search" style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}>
-                  <IconButton label="Clear search" onClick={() => setQuery('')}>
-                    <FontAwesomeIcon icon={faXmark} />
-                  </IconButton>
-                </TooltipTarget>
-              )}
-            </div>
+            <SearchField label="Search entries" value={query} onChange={setQuery} placeholder="Search entries…" />
           </div>
           <div className="guide-list-scroll min-h-0 overflow-y-auto px-2 pb-2">
             <table className="dtable">
