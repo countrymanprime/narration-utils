@@ -3,7 +3,7 @@
   "entries": [
     {"tool":"go","project":"apps/desktop","path":"internal/bridge","floor":85},
     {"tool":"go","project":"apps/desktop","path":"internal/findings","floor":100},
-    {"tool":"go","project":"apps/desktop","path":"internal/importer","floor":85},
+    {"tool":"go","project":"apps/desktop","path":"internal/importer","floor":88},
     {"tool":"go","project":"apps/desktop","path":"internal/layout","floor":93},
     {"tool":"go","project":"apps/desktop","path":"internal/manuscript","floor":73,"reason":"Baseline of 2026-09-20 (73.2%). The service and reader carry file and progress plumbing that is exercised end to end, not unit by unit; the ratchet stops it falling and each change here should raise it."},
     {"tool":"go","project":"apps/desktop","path":"internal/measure","floor":96},

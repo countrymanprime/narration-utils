@@ -28,7 +28,7 @@ func pdfDraft(path string) (Draft, error) {
 	if err != nil {
 		return Draft{}, &Error{"Could not read this PDF: " + err.Error()}
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }() // read-only
 	info, err := file.Stat()
 	if err != nil {
 		return Draft{}, &Error{"Could not read this PDF: " + err.Error()}
