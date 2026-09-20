@@ -355,24 +355,24 @@ func (h *Host) transcriptLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			h.mu.RLock()
-			service := h.transcript
-			h.mu.RUnlock()
-			if service != nil {
-				_ = service.Drain()
-				service.Poll()
-			}
+			h.pollTranscript()
 		}
+	}
+}
+
+// pollTranscript is one tick of transcriptLoop: drain and poll the current
+// project's transcript service, if it has one.
+func (h *Host) pollTranscript() {
+	if service := h.services().transcript; service != nil {
+		_ = service.Drain()
+		service.Poll()
 	}
 }
 
 func (h *Host) Shutdown(context.Context) {
 	// Stop a live session first, without holding h.mu: the service reports its
 	// phase changes through emitTeleprompterState, which takes h.mu.RLock.
-	h.mu.RLock()
-	live := h.teleprompter
-	h.mu.RUnlock()
-	if live != nil {
+	if live := h.services().teleprompter; live != nil {
 		stopContext, cancelStop := context.WithTimeout(context.Background(), 12*time.Second)
 		_ = live.Close(stopContext)
 		cancelStop()
@@ -625,14 +625,6 @@ func (h *Host) resolveWhisperModelID(options map[string]string) string {
 	}
 	value, _ := h.settings.Effective("TranscriptCompare", "model_size", "small")
 	return value
-}
-
-// teleprompterService snapshots the service pointer under the host lock; it is
-// replaced whenever a project is attached (see docs/prds/host-binding-data-race.prd.md).
-func (h *Host) teleprompterService() *teleprompter.Service {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-	return h.teleprompter
 }
 
 // resolveTeleprompterModelID picks the Whisper model for live transcription.

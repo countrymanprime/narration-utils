@@ -400,37 +400,37 @@ func (h *Host) TranscriptStart(options map[string]string) (string, error) {
 // sidecar's events arrive as "teleprompter:event" and phase changes as
 // "teleprompter:state".
 func (h *Host) TeleprompterStart(options map[string]string) (string, error) {
-	service := h.teleprompterService()
-	if service == nil {
+	svc := h.services()
+	if svc.teleprompter == nil {
 		return "", fmt.Errorf("the teleprompter service is unavailable")
 	}
-	if h.whisper == nil {
+	if svc.whisper == nil {
 		return "", fmt.Errorf("the approved Whisper catalog is unavailable")
 	}
 	modelID := resolveTeleprompterModelID(options)
-	model, knownModel := h.whisper.Model(modelID)
+	model, knownModel := svc.whisper.Model(modelID)
 	if !knownModel {
 		return "", fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
-	modelDir, err := h.whisper.Dir(modelID)
+	modelDir, err := svc.whisper.Dir(modelID)
 	if err != nil {
-		return encodeBinding(map[string]any{"status": "asset_required", "model": previewModel(model), "installState": h.whisper.State(model), "downloadSize": modelDownloadSize(model)}, nil)
+		return encodeBinding(map[string]any{"status": "asset_required", "model": previewModel(model), "installState": svc.whisper.State(model), "downloadSize": modelDownloadSize(model)}, nil)
 	}
 	started := map[string]string{}
 	for key, value := range options {
 		started[key] = value
 	}
 	started["model"], started["modelDir"] = modelID, modelDir
-	return encodeBinding(map[string]any{"status": "started"}, service.Start(started))
+	return encodeBinding(map[string]any{"status": "started"}, svc.teleprompter.Start(started))
 }
 func (h *Host) TeleprompterStop() (string, error) {
-	if service := h.teleprompterService(); service != nil {
+	if service := h.services().teleprompter; service != nil {
 		service.Stop()
 	}
 	return encodeBinding(nil, nil)
 }
 func (h *Host) TeleprompterState() (string, error) {
-	if service := h.teleprompterService(); service != nil {
+	if service := h.services().teleprompter; service != nil {
 		return encodeBinding(service.Snapshot(), nil)
 	}
 	return encodeBinding(map[string]any{"phase": "idle", "script": nil, "position": nil}, nil)
