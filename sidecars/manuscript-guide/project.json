@@ -1,0 +1,25 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "manuscript-guide",
+  "projectType": "application",
+  "tags": ["toolchain:python"],
+  "implicitDependencies": ["narration-utils", "narration-common", "config"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "node scripts/quality.mjs python -m ruff format --check sidecars/manuscript-guide",
+          "node scripts/quality.mjs python -m ruff check sidecars/manuscript-guide"
+        ],
+        "parallel": false
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node scripts/quality.mjs pytest sidecars/manuscript-guide/tests"
+      }
+    }
+  }
+}

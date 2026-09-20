@@ -1,0 +1,16 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "fixtures",
+  "projectType": "library",
+  "tags": ["data"],
+  "implicitDependencies": ["narration-utils"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": ["node scripts/quality.mjs python -m ruff format --check {projectRoot}", "node scripts/quality.mjs python -m ruff check {projectRoot}"],
+        "parallel": false
+      }
+    }
+  }
+}

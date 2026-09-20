@@ -151,25 +151,41 @@ if (mode.startsWith('check-')) {
   process.exit(0);
 }
 
+// Modes the Nx targets call (see each project's project.json). They exist so that every project
+// runs the repo's own interpreter and formatting rules, wherever Nx starts the command.
+if (mode === 'python') {
+  run(python(), process.argv.slice(3));
+  process.exit(0);
+}
+
+if (mode === 'pytest') {
+  // A fixed pytest base directory is prone to Windows file-handle races after a previous test
+  // process exits. Keep every run isolated; the directory lives under the ignored .cache/ folder
+  // (not the repo root) and pytest owns its own cleanup within that run. pytest creates the
+  // directory but not its parent.
+  mkdirSync(join(root, '.cache'), { recursive: true });
+  run(python(), ['-m', 'pytest', '-q', '--basetemp', `.cache/test-tmp-${process.pid}`, ...process.argv.slice(3)]);
+  process.exit(0);
+}
+
+if (mode === 'go-lint') {
+  const dir = process.argv[3];
+  if (!dir) {
+    console.error('go-lint needs the Go module directory.');
+    process.exit(2);
+  }
+  checkGofmt([dir]);
+  run('go', ['-C', dir, 'vet', './...']);
+  run('staticcheck', ['./...'], { cwd: join(root, dir) });
+  process.exit(0);
+}
+
 if (mode !== 'check') {
   console.error(`Unknown quality mode: ${mode}`);
   process.exit(2);
 }
 
-run('pnpm', ['--dir', 'apps/ui', 'run', 'lint:ci']);
-run('pnpm', ['--dir', 'apps/ui', 'run', 'format:check']);
-run('pnpm', ['--dir', 'apps/ui', 'test']);
-run('pnpm', ['--dir', 'apps/ui', 'run', 'build']);
-run(python(), ['-m', 'ruff', 'format', '--check', '.']);
-run(python(), ['-m', 'ruff', 'check', '.']);
-// A fixed pytest base directory is prone to Windows file-handle races after a
-// previous test process exits. Keep every quality run isolated; the directory
-// lives under the ignored .cache/ folder (not the repo root) and pytest owns its
-// own cleanup within that run. pytest creates the directory but not its parent.
-mkdirSync(join(root, '.cache'), { recursive: true });
-run(python(), ['-m', 'pytest', '-q', '--basetemp', `.cache/test-tmp-${process.pid}`]);
-run('go', ['-C', 'apps/desktop', 'vet', './...']);
-run('go', ['-C', 'apps/desktop', 'test', './...']);
-run('staticcheck', ['./...'], { cwd: join(root, 'apps', 'desktop') });
-run('stylua', ['--check', 'integrations/reaper']);
-run('node', ['--test', 'scripts/ci/*.test.mjs', 'scripts/github/*.test.mjs', 'scripts/release/*.test.mjs']);
+// The full gate: every project's lint, format, test, test-node and build target, one at a time, never from
+// the Nx cache (a green gate must mean the checks ran). CI runs the same targets with
+// `nx affected` (see .github/actions/nx-run).
+run('pnpm', ['exec', 'nx', 'run-many', '-t', 'lint', 'format', 'test', 'test-node', 'build', '--skip-nx-cache', '--parallel=1', '--nx-bail', '--output-style=stream']);

@@ -1,0 +1,15 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "reaper",
+  "projectType": "library",
+  "tags": ["toolchain:lua"],
+  "implicitDependencies": ["narration-utils"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "stylua --check {projectRoot}"
+      }
+    }
+  }
+}

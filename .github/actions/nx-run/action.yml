@@ -1,0 +1,34 @@
+name: Run Nx targets
+description: Run Nx targets for the projects a pull request affects (every selected project on a manual run). Run after setup-toolchain, on a checkout with full history (fetch-depth 0).
+
+inputs:
+  targets:
+    description: Space-separated Nx targets, for example `lint format test`
+    required: true
+  projects:
+    description: Comma-separated project names or `tag:` selectors that limit the run
+    required: true
+  configuration:
+    description: Nx configuration to apply to targets that define it (for example `ci`)
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Run ${{ inputs.targets }} for ${{ inputs.projects }}
+      shell: bash
+      env:
+        TARGETS: ${{ inputs.targets }}
+        PROJECTS: ${{ inputs.projects }}
+        CONFIGURATION: ${{ inputs.configuration }}
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        set -euo pipefail
+        # Never the Nx cache: a green check must mean the checks ran.
+        args=(-t $TARGETS --projects="$PROJECTS" --skip-nx-cache --output-style=stream)
+        if [ -n "$CONFIGURATION" ]; then args+=(--configuration="$CONFIGURATION"); fi
+        if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+          pnpm exec nx affected "${args[@]}" --base="origin/$BASE_REF" --head=HEAD
+        else
+          pnpm exec nx run-many "${args[@]}"
+        fi

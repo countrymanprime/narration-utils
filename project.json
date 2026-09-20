@@ -3,15 +3,6 @@
   "$schema": "./node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": ".",
-  "targets": {
-    "build": {
-      "command": "pnpm --dir apps/ui run build && pnpm --dir apps/desktop run build"
-    },
-    "test": {
-      "command": "pnpm --dir apps/ui test"
-    },
-    "lint": {
-      "command": "pnpm --dir apps/ui run lint:ci"
-    }
-  }
+  "tags": ["root"],
+  "$comment": "The workspace root and the nx release project. Every other project depends on it, so a change to a root-owned file (root config, docs, .github) affects them all. Per-project lint, format, test and build targets live in each project.json."
 }

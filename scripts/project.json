@@ -1,0 +1,28 @@
+{
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "name": "repo-scripts",
+  "projectType": "library",
+  "tags": ["toolchain:node", "toolchain:python"],
+  "implicitDependencies": ["narration-utils"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": ["node scripts/quality.mjs python -m ruff format --check {projectRoot}", "node scripts/quality.mjs python -m ruff check {projectRoot}"],
+        "parallel": false
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node scripts/quality.mjs pytest {projectRoot}/release/tests"
+      }
+    },
+    "test-node": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --test scripts/ci/*.test.mjs scripts/github/*.test.mjs scripts/release/*.test.mjs"
+      }
+    }
+  }
+}
