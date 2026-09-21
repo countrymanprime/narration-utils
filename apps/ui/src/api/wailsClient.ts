@@ -18,24 +18,14 @@ import {
 } from './schemas/manuscript';
 import { projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
 import { guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
+import { settingsForScopeSchema } from './schemas/settings';
+import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
+import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
+import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
 import { bootstrapSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { TELEPROMPTER_EVENT_TYPES, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
-import { transcriptStateSchema } from './schemas/transcript';
-import type {
-  Bootstrap,
-  HintSuggestions,
-  NarrationApi,
-  ScopedSettingField,
-  TeleprompterStartResult,
-  TracksDiscovery,
-  TracksProject,
-  TranscriptStartResult,
-  TranscriptState,
-  TtsCatalog,
-  TtsInstallJob,
-  WhisperCatalog,
-  WhisperInstallJob,
-} from '../types';
+import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
+import type { NarrationApi } from '../types';
 import * as host from '../../wailsjs/go/main/Host';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
 
@@ -47,10 +37,6 @@ declare global {
 
 // Matches apps/desktop/media.go's mediaRoute constant.
 const mediaRoute = '/media';
-
-function normalizeTranscriptState(state: TranscriptState): TranscriptState {
-  return { ...state, markerExport: state.markerExport ?? { phase: 'idle', message: '', added: 0, skipped: 0 } };
-}
 
 // A payload that fails its schema is reported to the host log (kind `wire_invalid`: boundary, payload and failing paths,
 // never values) before it is rethrown to whoever asked, so a bad payload leaves a trace even when the caller swallows
@@ -136,12 +122,6 @@ async function decodeObject<S extends StandardSchemaV1>(schema: S, payload: stri
   return checked(() => parseWire(schema, value, bindingContext(payload)));
 }
 
-// Bindings whose result schema has not been written yet (phases 4 and 5 of the boundary PRD replace each with `decode`).
-async function decodeUnchecked<T>(request: Promise<string>): Promise<T> {
-  const value = await request;
-  return value ? (JSON.parse(value) as T) : (undefined as T);
-}
-
 // This is intentionally an adapter, not a second component-facing API. The
 // TypeScript contracts and mock client remain stable while transport moves
 // from REST/SSE to Wails' generated Go binding and runtime events.
@@ -165,8 +145,8 @@ export const wailsClient: NarrationApi = {
       ),
     ),
   manuscriptImportCancel: (jobId) => decode(voidResult, 'ManuscriptImportCancel', host.ManuscriptImportCancel(jobId)),
-  saveSettings: (tool, scope, values) => decodeUnchecked<Bootstrap>(host.SystemSaveSettings(tool, scope, values)),
-  settingsForScope: (scope) => decodeUnchecked<Record<string, ScopedSettingField[]>>(host.SystemSettingsForScope(scope)),
+  saveSettings: (tool, scope, values) => decode(bootstrapSchema, 'SystemSaveSettings', host.SystemSaveSettings(tool, scope, values)),
+  settingsForScope: (scope) => decode(settingsForScopeSchema, 'SystemSettingsForScope', host.SystemSettingsForScope(scope)),
   guideBuild: () => decode(workJobSchema, 'GuideBuild', host.GuideBuild()),
   guideBuildState: () => decode(workJobSchema, 'GuideBuildState', host.GuideBuildState()),
   clearProjectData: () => decode(voidResult, 'ManuscriptClearProjectData', host.ManuscriptClearProjectData(true)),
@@ -180,27 +160,26 @@ export const wailsClient: NarrationApi = {
   guideRelate: (id, otherId, label) => decode(voidResult, 'GuideRelate', host.GuideRelate(id, otherId, label)),
   guideUnrelate: (id, otherId, label) => decode(voidResult, 'GuideUnrelate', host.GuideUnrelate(id, otherId, label)),
   guidePreview: (id, aliasIndex) => decode(guidePreviewSchema, 'GuidePreview', host.GuidePreview(id, aliasIndex)),
-  ttsCatalog: () => decodeUnchecked<TtsCatalog>(host.TtsCatalog()),
-  ttsInstall: (voiceId) => decodeUnchecked<TtsInstallJob>(host.TtsInstall(voiceId)),
-  ttsInstallState: (jobId) => decodeUnchecked<TtsInstallJob>(host.TtsInstallState(jobId)),
-  ttsInstallCancel: (jobId) => decodeUnchecked<TtsInstallJob>(host.TtsInstallCancel(jobId)),
-  ttsRemove: (voiceId) => decodeUnchecked<void>(host.TtsRemove(voiceId)),
-  whisperCatalog: () => decodeUnchecked<WhisperCatalog>(host.WhisperCatalog()),
-  whisperInstall: (modelId) => decodeUnchecked<WhisperInstallJob>(host.WhisperInstall(modelId)),
-  whisperInstallState: (jobId) => decodeUnchecked<WhisperInstallJob>(host.WhisperInstallState(jobId)),
-  whisperInstallCancel: (jobId) => decodeUnchecked<WhisperInstallJob>(host.WhisperInstallCancel(jobId)),
-  whisperRemove: (modelId) => decodeUnchecked<void>(host.WhisperRemove(modelId)),
-  transcriptStart: (options) => decodeUnchecked<TranscriptStartResult>(host.TranscriptStart(options)),
-  transcriptCancel: () => decodeUnchecked<void>(host.TranscriptCancel()),
-  transcriptReset: () => decodeUnchecked<void>(host.TranscriptReset()),
-  transcriptLastCompleted: () =>
-    decodeUnchecked<TranscriptState | null>(host.TranscriptLastCompleted()).then((value) => (value ? normalizeTranscriptState(value) : undefined)),
-  transcriptAddEquivalence: (id) => decodeUnchecked<{ message: string }>(host.TranscriptAddEquivalence(id)).then((value) => value.message),
-  transcriptJump: (id) => decodeUnchecked<void>(host.TranscriptJump(id)),
-  transcriptExportMarkers: () => decodeUnchecked<void>(host.TranscriptExportMarkers()),
-  transcriptSuggestHints: () => decodeUnchecked<HintSuggestions>(host.TranscriptSuggestHints()),
-  transcriptHints: () => decodeUnchecked<string[]>(host.TranscriptHints()),
-  transcriptSaveHints: (accepted) => decodeUnchecked<void>(host.TranscriptSaveHints(accepted)),
+  ttsCatalog: () => decode(ttsCatalogSchema, 'TtsCatalog', host.TtsCatalog()),
+  ttsInstall: (voiceId) => decode(ttsInstallJobSchema, 'TtsInstall', host.TtsInstall(voiceId)),
+  ttsInstallState: (jobId) => decode(ttsInstallJobSchema, 'TtsInstallState', host.TtsInstallState(jobId)),
+  ttsInstallCancel: (jobId) => decode(ttsInstallJobSchema, 'TtsInstallCancel', host.TtsInstallCancel(jobId)),
+  ttsRemove: (voiceId) => decode(voidResult, 'TtsRemove', host.TtsRemove(voiceId)),
+  whisperCatalog: () => decode(whisperCatalogSchema, 'WhisperCatalog', host.WhisperCatalog()),
+  whisperInstall: (modelId) => decode(whisperInstallJobSchema, 'WhisperInstall', host.WhisperInstall(modelId)),
+  whisperInstallState: (jobId) => decode(whisperInstallJobSchema, 'WhisperInstallState', host.WhisperInstallState(jobId)),
+  whisperInstallCancel: (jobId) => decode(whisperInstallJobSchema, 'WhisperInstallCancel', host.WhisperInstallCancel(jobId)),
+  whisperRemove: (modelId) => decode(voidResult, 'WhisperRemove', host.WhisperRemove(modelId)),
+  transcriptStart: (options) => decode(startResultSchema, 'TranscriptStart', host.TranscriptStart(options)),
+  transcriptCancel: () => decode(voidResult, 'TranscriptCancel', host.TranscriptCancel()),
+  transcriptReset: () => decode(voidResult, 'TranscriptReset', host.TranscriptReset()),
+  transcriptLastCompleted: () => decode(lastCompletedSchema, 'TranscriptLastCompleted', host.TranscriptLastCompleted()),
+  transcriptAddEquivalence: (id) => decode(equivalenceSchema, 'TranscriptAddEquivalence', host.TranscriptAddEquivalence(id)).then((value) => value.message),
+  transcriptJump: (id) => decode(voidResult, 'TranscriptJump', host.TranscriptJump(id)),
+  transcriptExportMarkers: () => decode(voidResult, 'TranscriptExportMarkers', host.TranscriptExportMarkers()),
+  transcriptSuggestHints: () => decode(hintSuggestionsSchema, 'TranscriptSuggestHints', host.TranscriptSuggestHints()),
+  transcriptHints: () => decode(hintsSchema, 'TranscriptHints', host.TranscriptHints()),
+  transcriptSaveHints: (accepted) => decode(voidResult, 'TranscriptSaveHints', host.TranscriptSaveHints(accepted)),
   reportClientDiagnostic: (kind, message) => decode(voidResult, 'SystemReportDiagnostic', host.SystemReportDiagnostic(kind, message)),
   subscribeProjectAttach: (onUpdate) => subscribeChecked('system:attached', projectAttachStateSchema, onUpdate),
   subscribeLiveUpdateHealth: (onDegraded) => liveHealth.subscribe(onDegraded),
@@ -228,11 +207,11 @@ export const wailsClient: NarrationApi = {
   switchProject: (path, name) => decode(projectSwitchResultSchema, 'ProjectSwitch', host.ProjectSwitch(path, name ?? '')),
   createProject: (path, name) => decode(projectSwitchResultSchema, 'ProjectCreate', host.ProjectCreate(path, name ?? '')),
   removeRecentProject: (path) => decode(recentProjectsSchema, 'ProjectRemoveRecent', host.ProjectRemoveRecent(path)),
-  tracksDiscover: () => decodeUnchecked<TracksDiscovery>(host.TracksDiscover()),
-  tracksSelect: (path) => decodeUnchecked<TracksDiscovery>(host.TracksSelect(path)),
-  tracksList: () => decodeUnchecked<TracksProject>(host.TracksList()),
-  teleprompterStart: (options) => decodeUnchecked<TeleprompterStartResult>(host.TeleprompterStart(options)),
-  teleprompterStop: () => decodeUnchecked<void>(host.TeleprompterStop()),
+  tracksDiscover: () => decode(tracksDiscoverySchema, 'TracksDiscover', host.TracksDiscover()),
+  tracksSelect: (path) => decode(tracksDiscoverySchema, 'TracksSelect', host.TracksSelect(path)),
+  tracksList: () => decode(tracksProjectSchema, 'TracksList', host.TracksList()),
+  teleprompterStart: (options) => decode(startResultSchema, 'TeleprompterStart', host.TeleprompterStart(options)),
+  teleprompterStop: () => decode(voidResult, 'TeleprompterStop', host.TeleprompterStop()),
   teleprompterState: () => decode(teleprompterStateSchema, 'TeleprompterState', host.TeleprompterState()),
   subscribeTeleprompterEvent: subscribeTeleprompterEvents,
   subscribeTeleprompterState: (onState) => subscribeChecked('teleprompter:state', teleprompterStateSchema, onState),

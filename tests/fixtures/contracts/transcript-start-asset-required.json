@@ -1,0 +1,17 @@
+{
+  "downloadSize": 486212372,
+  "installState": "not_installed",
+  "model": {
+    "attribution": "CTranslate2 conversion of OpenAI Whisper small, published by Systran.",
+    "displayName": "Small",
+    "id": "small",
+    "license": "MIT",
+    "licenseUrl": "https://huggingface.co/Systran/faster-whisper-small",
+    "modelCardUrl": "https://huggingface.co/Systran/faster-whisper-small",
+    "provenanceUrl": "https://huggingface.co/Systran/faster-whisper-small/tree/536b0662742c02347bc0e980a01041f333bce120",
+    "provider": "faster-whisper",
+    "publisher": "Systran",
+    "version": "536b0662742c02347bc0e980a01041f333bce120"
+  },
+  "status": "asset_required"
+}

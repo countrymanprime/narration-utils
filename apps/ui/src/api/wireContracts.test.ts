@@ -17,11 +17,15 @@ import {
   searchHitsSchema,
   workJobSchema,
 } from './schemas/manuscript';
+import { settingsForScopeSchema } from './schemas/settings';
+import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
+import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
+import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
 import { projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
 import { guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { bootstrapSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
-import { transcriptStateSchema } from './schemas/transcript';
+import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
 import { unknownKeys } from './schemas/strictness';
 import { parseWire, type WireContext } from './wire/parseWire';
 import { WireError } from './wire/WireError';
@@ -74,6 +78,22 @@ const GOLDEN: Record<string, z.ZodType> = {
   'project-recents-empty.json': recentProjectsSchema,
   'project-switch-attached.json': projectSwitchResultSchema,
   'project-switch-refused.json': projectSwitchResultSchema,
+  'tts-catalog.json': ttsCatalogSchema,
+  'tts-install-downloading.json': ttsInstallJobSchema,
+  'tts-install-success.json': ttsInstallJobSchema,
+  'tts-install-error.json': ttsInstallJobSchema,
+  'tts-install-cancelled.json': ttsInstallJobSchema,
+  'whisper-catalog.json': whisperCatalogSchema,
+  'whisper-install-running.json': whisperInstallJobSchema,
+  'whisper-install-success.json': whisperInstallJobSchema,
+  'transcript-start-asset-required.json': startResultSchema,
+  'transcript-start-started.json': startResultSchema,
+  'settings-global.json': settingsForScopeSchema,
+  'settings-project.json': settingsForScopeSchema,
+  'tracks-project.json': tracksProjectSchema,
+  'tracks-discovery-none.json': tracksDiscoverySchema,
+  'tracks-discovery-several.json': tracksDiscoverySchema,
+  'tracks-discovery-selected.json': tracksDiscoverySchema,
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -235,6 +255,142 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(projectFolderSelectionSchema, await api.selectProjectFolder(), 'mock folder selection');
     expectMatches(projectSwitchResultSchema, await api.switchProject('C:/Projects/Other', 'Other'), 'mock switch');
     expectMatches(projectSwitchResultSchema, await api.createProject('C:/Projects/New', 'New'), 'mock create');
+  });
+});
+
+describe('answers of the mock client for the settings, voice, model, transcript and tracks bindings', () => {
+  it('the Settings fields of both scopes, and a saved setting', async () => {
+    const api = createMockApi();
+    expectMatches(settingsForScopeSchema, await api.settingsForScope('global'), 'mock global settings');
+    expectMatches(settingsForScopeSchema, await api.settingsForScope('project'), 'mock project settings');
+    expectMatches(bootstrapSchema, await api.saveSettings('General', 'global', { log_verbosity: 'verbose' }), 'mock saved settings');
+  });
+
+  it('the voice and model catalogs and their install jobs', async () => {
+    const api = createMockApi();
+    expectMatches(ttsCatalogSchema, await api.ttsCatalog(), 'mock voice catalog');
+    const voice = (await api.ttsCatalog()).voices[0]?.id ?? '';
+    for (const job of [await api.ttsInstall(voice), await api.ttsInstallState('tts-1'), await api.ttsInstallCancel('tts-1')]) {
+      expectMatches(ttsInstallJobSchema, job, 'mock voice install job');
+    }
+    expectMatches(whisperCatalogSchema, await api.whisperCatalog(), 'mock model catalog');
+    const model = (await api.whisperCatalog()).models[0]?.id ?? '';
+    for (const job of [await api.whisperInstall(model), await api.whisperInstallState('w-1'), await api.whisperInstallCancel('w-1')]) {
+      expectMatches(whisperInstallJobSchema, job, 'mock model install job');
+    }
+  });
+
+  it('the first-use gates for a model that is not installed, and a start that goes ahead', async () => {
+    const api = createMockApi();
+    const model = (await api.whisperCatalog()).models[0]?.id ?? '';
+    expectMatches(startResultSchema, await api.transcriptStart({ model, chunk: '60', workers: '1', hints: '' }), 'mock transcript start');
+    await api.whisperRemove(model);
+    const gate = await api.transcriptStart({ model, chunk: '60', workers: '1', hints: '' });
+    expect(gate.status).toBe('asset_required');
+    expectMatches(startResultSchema, gate, 'mock transcript first-use gate');
+    const chapter = (await api.manuscriptChapters())[0]?.id ?? '';
+    expectMatches(startResultSchema, await api.teleprompterStart({ chapter, device: 'Microphone' }), 'mock teleprompter first-use gate');
+  });
+
+  it('the last completed run, the hints and the equivalence answer', async () => {
+    const api = createMockApi();
+    expectMatches(lastCompletedSchema, (await api.transcriptLastCompleted()) ?? null, 'mock last completed run');
+    expectMatches(hintSuggestionsSchema, await api.transcriptSuggestHints(), 'mock hint suggestions');
+    expectMatches(hintsSchema, await api.transcriptHints(), 'mock hints');
+    expectMatches(equivalenceSchema, { message: await api.transcriptAddEquivalence('row-1') }, 'mock equivalence');
+  });
+
+  it('the Tracks answers', async () => {
+    const api = createMockApi();
+    expectMatches(tracksDiscoverySchema, await api.tracksDiscover(), 'mock tracks discovery');
+    expectMatches(tracksProjectSchema, await api.tracksList(), 'mock tracks project');
+    const several = createMockApi({}, { tracksCandidates: ['C:/A/A.rpp', 'C:/A/B.rpp'] });
+    expectMatches(tracksDiscoverySchema, await several.tracksSelect('C:/A/B.rpp'), 'mock tracks selection');
+    expectMatches(tracksDiscoverySchema, await createMockApi({}, { tracksCandidates: [] }).tracksDiscover(), 'mock tracks discovery, none found');
+  });
+
+  it('every method of the API is either checked in this file, void, or not a request', () => {
+    // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
+    const CHECKED = [
+      'ready',
+      'bootstrap',
+      'saveSettings',
+      'settingsForScope',
+      'selectManuscript',
+      'manuscriptBeginImport',
+      'manuscriptImportState',
+      'manuscriptImportPreview',
+      'manuscriptImportCommit',
+      'manuscriptChapters',
+      'manuscriptParagraphs',
+      'manuscriptSearch',
+      'manuscriptSetChapterStatus',
+      'noteList',
+      'noteCreate',
+      'manuscriptReader',
+      'readerState',
+      'readerStateSave',
+      'readerBookmarkCreate',
+      'guideBuild',
+      'guideBuildState',
+      'guideEntities',
+      'guideCreate',
+      'guidePreview',
+      'ttsCatalog',
+      'ttsInstall',
+      'ttsInstallState',
+      'ttsInstallCancel',
+      'whisperCatalog',
+      'whisperInstall',
+      'whisperInstallState',
+      'whisperInstallCancel',
+      'transcriptStart',
+      'transcriptLastCompleted',
+      'transcriptAddEquivalence',
+      'transcriptSuggestHints',
+      'transcriptHints',
+      'projectRecents',
+      'selectProjectFolder',
+      'switchProject',
+      'createProject',
+      'removeRecentProject',
+      'tracksDiscover',
+      'tracksSelect',
+      'tracksList',
+      'teleprompterStart',
+      'teleprompterState',
+    ];
+    const VOID = [
+      'manuscriptImportCancel',
+      'clearProjectData',
+      'readerBookmarkDelete',
+      'noteDelete',
+      'guideEdit',
+      'guideSetLocked',
+      'guideRescan',
+      'guideMerge',
+      'guideDelete',
+      'guideRelate',
+      'guideUnrelate',
+      'ttsRemove',
+      'whisperRemove',
+      'transcriptCancel',
+      'transcriptReset',
+      'transcriptJump',
+      'transcriptExportMarkers',
+      'transcriptSaveHints',
+      'teleprompterStop',
+      'reportClientDiagnostic',
+    ];
+    const NOT_A_REQUEST = [
+      'mediaUrl',
+      'subscribeProjectAttach',
+      'subscribeLiveUpdateHealth',
+      'subscribeTranscript',
+      'subscribeTeleprompterEvent',
+      'subscribeTeleprompterState',
+    ];
+    expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());
   });
 });
 

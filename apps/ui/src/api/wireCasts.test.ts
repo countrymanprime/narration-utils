@@ -56,17 +56,6 @@ const ALLOWED: Array<{ file: string; text: string; reason: string }> = [
     text: 'JSON.parse(payload)',
     reason: 'the string form of a teleprompter event; the result is checked by liveEvent on the next line',
   },
-  // Removed with the bindings still on decodeUnchecked (phases 4 and 5 of the boundary PRD).
-  { file: 'wailsClient.ts', text: 'JSON.parse(value)', reason: 'decodeUnchecked, replaced binding by binding in phases 4 and 5' },
-  { file: 'wailsClient.ts', text: 'as T', reason: 'decodeUnchecked, replaced binding by binding in phases 4 and 5' },
-  { file: 'wailsClient.ts', text: 'as T', reason: 'decodeUnchecked (the undefined branch), replaced in phases 4 and 5' },
-  // The mock client builds its own answers; the contract tests validate them, and phase 5 gives the casts below a schema.
-  { file: 'mockApi.ts', text: 'as HostReady', reason: 'mock answer; validated by wireContracts.test.ts, removed in phase 5' },
-  { file: 'mockApi.ts', text: 'as Bootstrap', reason: 'mock answer; validated by wireContracts.test.ts, removed in phase 5' },
-  { file: 'mockApi.ts', text: 'as TtsCatalog', reason: 'mock answer; removed when the TTS schemas land in phase 5' },
-  { file: 'mockApi.ts', text: 'as TtsInstallJob', reason: 'mock answer; removed when the TTS schemas land in phase 5' },
-  { file: 'mockApi.ts', text: 'as WhisperCatalog', reason: 'mock answer; removed when the Whisper schemas land in phase 5' },
-  { file: 'mockApi.ts', text: 'as WhisperInstallJob', reason: 'mock answer; removed when the Whisper schemas land in phase 5' },
   { file: 'schemas/strictness.ts', text: 'as { _zod: { def: Def } }', reason: 'test tooling that reads the schema definition; it never sees a payload' },
   { file: 'schemas/strictness.ts', text: 'as Record<string, unknown>', reason: 'test tooling that reads the schema definition; it never sees a payload' },
   { file: 'schemas/strictness.ts', text: 'as unknown[]', reason: 'test tooling that reads the schema definition; it never sees a payload' },

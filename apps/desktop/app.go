@@ -56,6 +56,11 @@ type Host struct {
 	recents      *recents.Store
 	log          *hostlog.Log
 }
+
+// ttsPhaseDownloading is the phase of a voice install that is running. It is the word the UI polls for (contracts/tts.ts), and the
+// project-attach guard (canAttachLocked) waits on it too, so both use this name.
+const ttsPhaseDownloading = "downloading"
+
 type ttsJob struct {
 	mu                          sync.RWMutex
 	id, voiceID, phase, message string
@@ -496,7 +501,7 @@ func (h *Host) canAttachLocked() bool {
 	}
 	for _, job := range h.ttsJobs {
 		job.mu.RLock()
-		running := job.phase == "running"
+		running := job.phase == ttsPhaseDownloading
 		job.mu.RUnlock()
 		if running {
 			return false
@@ -744,7 +749,7 @@ func (h *Host) startTtsInstall(voiceID string) (map[string]any, error) {
 		return nil, fmt.Errorf("the selected voice is not in the approved catalog")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	job := &ttsJob{id: fmt.Sprintf("tts-%d", time.Now().UnixNano()), voiceID: voiceID, phase: "running", message: "Downloading and verifying the approved voice…", cancel: cancel}
+	job := &ttsJob{id: fmt.Sprintf("tts-%d", time.Now().UnixNano()), voiceID: voiceID, phase: ttsPhaseDownloading, message: "Downloading and verifying the approved voice…", cancel: cancel}
 	h.mu.Lock()
 	h.ttsJobs[job.id] = job
 	h.mu.Unlock()
@@ -789,7 +794,16 @@ func (h *Host) cancelTtsInstall(id string) (map[string]any, error) {
 func snapshotTts(job *ttsJob) map[string]any {
 	job.mu.RLock()
 	defer job.mu.RUnlock()
-	return map[string]any{"id": job.id, "voiceId": job.voiceID, "phase": job.phase, "message": job.message}
+	// The contract (contracts/tts.ts) has a phase of "downloading", a percent and an error; the install reports no byte progress yet, so
+	// percent is 0 until it ends and 100 once it succeeded, and error carries the failure text.
+	percent, failure := 0, ""
+	switch job.phase {
+	case "success":
+		percent = 100
+	case "error":
+		failure = job.message
+	}
+	return map[string]any{"id": job.id, "voiceId": job.voiceID, "phase": job.phase, "message": job.message, "percent": percent, "error": failure}
 }
 func (h *Host) startWhisperInstall(modelID string) (map[string]any, error) {
 	manager := h.services().whisper

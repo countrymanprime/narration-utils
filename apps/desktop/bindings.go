@@ -13,6 +13,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
+	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -45,16 +46,20 @@ func (h *Host) SystemReportDiagnostic(kind, message string) (string, error) {
 }
 
 func (h *Host) TtsCatalog() (string, error) {
-	svc := h.services()
+	return encodeBinding(ttsCatalogPayload(h.services()))
+}
+
+// ttsCatalogPayload is the approved voices plus which provider and voice are selected and where that choice comes from.
+func ttsCatalogPayload(svc hostServices) (map[string]any, error) {
 	if svc.tts == nil {
-		return "", fmt.Errorf("the approved TTS catalog is unavailable")
+		return nil, fmt.Errorf("the approved TTS catalog is unavailable")
 	}
 	catalog := svc.tts.Catalog()
 	provider, providerSource := svc.settings.Effective("Piper", "tts_provider", "piper")
 	voice, voiceSource := svc.settings.Effective("Piper", "tts_voice_id", "en_US-ljspeech-high")
 	catalog["provider"] = map[string]any{"id": provider, "effectiveSource": providerSource}
 	catalog["voice"] = map[string]any{"id": voice, "effectiveSource": voiceSource}
-	return encodeBinding(catalog, nil)
+	return catalog, nil
 }
 func (h *Host) TtsInstall(voiceID string) (string, error) {
 	return encodeBinding(h.startTtsInstall(voiceID))
@@ -74,14 +79,18 @@ func (h *Host) TtsRemove(voiceID string) (string, error) {
 }
 
 func (h *Host) WhisperCatalog() (string, error) {
-	svc := h.services()
+	return encodeBinding(whisperCatalogPayload(h.services()))
+}
+
+// whisperCatalogPayload is the approved models plus which one is selected and where that choice comes from.
+func whisperCatalogPayload(svc hostServices) (map[string]any, error) {
 	if svc.whisper == nil {
-		return "", fmt.Errorf("the approved Whisper catalog is unavailable")
+		return nil, fmt.Errorf("the approved Whisper catalog is unavailable")
 	}
 	catalog := svc.whisper.Catalog()
 	modelID, modelSource := svc.settings.Effective("TranscriptCompare", "model_size", "small")
 	catalog["model"] = map[string]any{"id": modelID, "effectiveSource": modelSource}
-	return encodeBinding(catalog, nil)
+	return catalog, nil
 }
 func (h *Host) WhisperInstall(modelID string) (string, error) {
 	return encodeBinding(h.startWhisperInstall(modelID))
@@ -440,7 +449,7 @@ func (h *Host) TranscriptStart(options map[string]string) (string, error) {
 	}
 	modelDir, err := svc.whisper.Dir(modelID)
 	if err != nil {
-		return encodeBinding(map[string]any{"status": "asset_required", "model": previewModel(model), "installState": svc.whisper.State(model), "downloadSize": modelDownloadSize(model)}, nil)
+		return encodeBinding(modelAssetRequired(model, svc.whisper.State(model)), nil)
 	}
 	started := map[string]string{}
 	for key, value := range options {
@@ -470,7 +479,7 @@ func (h *Host) TeleprompterStart(options map[string]string) (string, error) {
 	}
 	modelDir, err := svc.whisper.Dir(modelID)
 	if err != nil {
-		return encodeBinding(map[string]any{"status": "asset_required", "model": previewModel(model), "installState": svc.whisper.State(model), "downloadSize": modelDownloadSize(model)}, nil)
+		return encodeBinding(modelAssetRequired(model, svc.whisper.State(model)), nil)
 	}
 	started := map[string]string{}
 	for key, value := range options {
@@ -583,4 +592,10 @@ func (h *Host) TracksList() (string, error) { return encodeBinding(h.tracksList(
 // download size, so the UI can offer to install it. The UI validates it as `GuidePreview` (ADR 0069).
 func voiceAssetRequired(voice tts.Voice, installState string) map[string]any {
 	return map[string]any{"status": "asset_required", "voice": previewVoice(voice), "installState": installState, "downloadSize": voiceDownloadSize(voice)}
+}
+
+// modelAssetRequired is the answer to a start that needs a Whisper model that is not installed yet, as TranscriptStart and
+// TeleprompterStart give it (the first-use gate). The UI validates it as `TranscriptStartResult` (ADR 0069).
+func modelAssetRequired(model whisper.Model, installState string) map[string]any {
+	return map[string]any{"status": "asset_required", "model": previewModel(model), "installState": installState, "downloadSize": modelDownloadSize(model)}
 }

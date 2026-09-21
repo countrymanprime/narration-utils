@@ -1,0 +1,134 @@
+{
+  "General": [
+    {
+      "choices": [
+        "quiet",
+        "normal",
+        "verbose"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "normal",
+      "isSet": false,
+      "key": "log_verbosity",
+      "kind": "choice",
+      "label": "Log verbosity",
+      "value": ""
+    }
+  ],
+  "Manuscript": [
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "B85C1E",
+      "isSet": false,
+      "key": "color_note",
+      "kind": "color",
+      "label": "Note color",
+      "value": ""
+    }
+  ],
+  "ManuscriptGuide": [
+    {
+      "choices": [
+        "en_core_web_sm",
+        "en_core_web_lg"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "en_core_web_sm",
+      "isSet": false,
+      "key": "spacy_model",
+      "kind": "choice",
+      "label": "spaCy model",
+      "value": ""
+    }
+  ],
+  "Piper": [
+    {
+      "choices": [
+        "piper"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "piper",
+      "isSet": false,
+      "key": "tts_provider",
+      "kind": "choice",
+      "label": "TTS provider",
+      "value": ""
+    },
+    {
+      "choices": [
+        "en_US-ljspeech-high"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "en_US-ljspeech-high",
+      "isSet": false,
+      "key": "tts_voice_id",
+      "kind": "choice",
+      "label": "Preview voice",
+      "value": ""
+    }
+  ],
+  "TranscriptCompare": [
+    {
+      "choices": [
+        "tiny",
+        "small",
+        "medium",
+        "large-v3-turbo",
+        "large-v3"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "small",
+      "isSet": false,
+      "key": "model_size",
+      "kind": "choice",
+      "label": "Default Whisper model",
+      "value": ""
+    },
+    {
+      "choices": [
+        "30",
+        "60",
+        "300",
+        "600"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "60",
+      "isSet": false,
+      "key": "chunk_seconds",
+      "kind": "choice",
+      "label": "Default chunk length",
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "FF4040",
+      "isSet": false,
+      "key": "color_misread",
+      "kind": "color",
+      "label": "Misread marker color",
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "FFC000",
+      "isSet": false,
+      "key": "color_skipped",
+      "kind": "color",
+      "label": "Skipped marker color",
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "40A0FF",
+      "isSet": false,
+      "key": "color_extra",
+      "kind": "color",
+      "label": "Extra marker color",
+      "value": ""
+    }
+  ]
+}
