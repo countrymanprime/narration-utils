@@ -87,5 +87,7 @@ These live outside the repository, so a pull request cannot enforce them:
 | Dependabot alerts (also turns on the dependency graph that `dependency-review.yml` needs) | `gh api -X PUT repos/countrymanprime/narration-utils/vulnerability-alerts` |
 | Dependabot security updates | `gh api -X PUT repos/countrymanprime/narration-utils/automated-security-fixes` |
 
+`security.yml` (govulncheck and OSV-Scanner) is advisory in the same way: look under **Security > Code scanning**, or in the run log (see [Vulnerability scanning](ci-and-releases.md#vulnerability-scanning)).
+
 `codeql.yml` and `dependency-review.yml` are advisory: their results show under **Security** and on pull requests, but
 they are not required checks, because no check is (see [CI and releases](ci-and-releases.md#what-the-repository-enforces-and-what-ci-is-for)). If the owner ever requires checks, add these only after a few clean runs.

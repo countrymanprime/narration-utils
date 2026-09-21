@@ -108,6 +108,27 @@ Install-time settings are written in the repository so a default that changes up
 - **Python:** `uv sync --locked` installs only what `uv.lock` pins, and Dependabot's cooldown covers uv updates, so
   `exclude-newer` is not set. `uv audit` is a preview command and stays a local, non-gating check.
 
+## Vulnerability scanning
+
+`security.yml` runs two scanners on every pull request, on pushes to `main` and weekly (Tuesday). Both are **advisory**:
+neither fails the run on a finding, neither is a required check, and the first month is a baseline (owner decision
+D22, question 12). Findings show under **Security > Code scanning** (categories `govulncheck` and `osv-scanner`) and in
+the run log; a fork or Dependabot pull request scans but does not upload, because its token is read-only.
+
+- **govulncheck** (Windows, the version pinned in `scripts/toolchain.json`) reports only Go vulnerabilities the code can
+  reach, so it is the low-noise one. Run it by hand with `govulncheck -C apps/desktop ./...`.
+- **OSV-Scanner** (`google/osv-scanner-action`, pinned by SHA) checks `pnpm-lock.yaml`, `uv.lock` and
+  `apps/desktop/go.mod` against the OSV database; `uv.lock` is read natively, so Python is covered without `pip-audit`
+  (which does not read it). On a pull request it reports only advisories the pull request adds; on `main` and weekly it
+  reports all of them. A lockfile added later has to be listed in `scan-args`. Run it by hand with
+  `osv-scanner scan source --lockfile pnpm-lock.yaml --lockfile uv.lock --lockfile apps/desktop/go.mod`.
+- `uv audit --preview-features audit-command` is a preview command and stays a local, non-gating check.
+- **Baseline (2026-09-21):** govulncheck reports nothing; OSV-Scanner reports two advisories in `pnpm-lock.yaml`
+  (`esbuild` 0.21.5, GHSA-67mh-4wv8-2f99, and `smol-toml` 1.6.1, GHSA-7w5x-hrqm-74c2), none in Go or Python.
+  Dependabot proposes the fixes.
+- **Moving to blocking** is a decision after a clean month: the pull-request mode of OSV (`fail-on-vuln: true`) fails
+  only on what the pull request adds, and govulncheck stays advisory.
+
 ## Version lifecycle
 
 The pre-release workflow runs after each non-release push to `main`. Nx Release
