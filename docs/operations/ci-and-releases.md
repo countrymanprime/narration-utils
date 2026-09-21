@@ -85,6 +85,20 @@ The permission model, so a change can be judged against it:
 - `labeler.yml` uses `pull_request_target` so forks can be labelled; it checks out nothing and runs no pull request
   code (the comment at its top says why that is safe).
 
+Install-time settings are written in the repository so a default that changes upstream cannot change them silently:
+
+- **`pnpm-workspace.yaml`:** `minimumReleaseAge: 4320` (a version must be three days old before pnpm resolves it),
+  `strictDepBuilds: true` (an install fails on a dependency build script that `allowBuilds` does not name) and
+  `blockExoticSubdeps: true` (no transitive dependency from a git repository or tarball URL). pnpm 11 checks the age
+  of every lockfile entry even under `--frozen-lockfile` ("Lockfile passes supply-chain policies"), so a lockfile that
+  holds a version younger than three days fails CI. That can happen with a Dependabot **security** update, which skips
+  the Dependabot cooldown; list that one `name@version` in `minimumReleaseAgeExclude` in the same pull request, and
+  remove it once the version is three days old.
+- **`.github/dependabot.yml`:** a `cooldown` on every ecosystem, so Dependabot waits before proposing a new release:
+  7 days for `npm` and `github-actions`, 3 days for `uv` and `gomod`. Security updates ignore the cooldown.
+- **Python:** `uv sync --locked` installs only what `uv.lock` pins, and Dependabot's cooldown covers uv updates, so
+  `exclude-newer` is not set. `uv audit` is a preview command and stays a local, non-gating check.
+
 ## Version lifecycle
 
 The pre-release workflow runs after each non-release push to `main`. Nx Release

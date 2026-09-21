@@ -5,3 +5,17 @@ packages:
 allowBuilds:
   esbuild: true
   nx: true
+
+# Install-time supply-chain settings, written out so a pnpm default that changes cannot change them silently
+# (docs/operations/ci-and-releases.md, "Workflow security"). They matter most in a session that runs `pnpm add`
+# or `pnpm update`; CI installs with --frozen-lockfile and takes exactly what the lockfile pins.
+#
+# A version must be at least three days old (in minutes) before pnpm resolves it, so a freshly published malicious
+# release is not picked up. Matches the Dependabot cooldown for npm's minor and patch updates. To take an urgent
+# security fix sooner, add `name@version` to minimumReleaseAgeExclude for that one install and remove it after.
+minimumReleaseAge: 4320
+minimumReleaseAgeExclude: []
+# Fail the install when a dependency has a build script that allowBuilds above does not name.
+strictDepBuilds: true
+# Refuse a transitive dependency that comes from a git repository or a tarball URL instead of the registry.
+blockExoticSubdeps: true
