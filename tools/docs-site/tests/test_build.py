@@ -109,3 +109,50 @@ def test_a_raw_text_tag_in_prose_does_not_swallow_the_rest_of_the_page(tiny):
     assert "&lt;title&gt; progress" in html
     assert 'id="consequences"' in html
     assert check_site.check_site(tiny / "site", base="/tiny/") == []
+
+
+def test_a_mermaid_fence_becomes_a_diagram_that_loads_no_script_from_another_site(tiny):
+    """Material loads mermaid from unpkg.com unless a `mermaid` global exists, so the site ships the bundle itself (a visitor's browser asks no third party)."""
+    bundle = tiny / "vendor" / "mermaid.min.js"
+    bundle.parent.mkdir()
+    bundle.write_text("/* a stand-in for the mermaid bundle */ window.mermaid = {};\n", encoding="utf-8")
+    (bundle.parent / "LICENSE").write_text("MIT License (a stand-in)\n", encoding="utf-8")
+    config = (tiny / "mkdocs.yml").read_text(encoding="utf-8")
+    config = config.replace(
+        "theme:\n",
+        "markdown_extensions:\n  - pymdownx.superfences:\n      custom_fences:\n        - name: mermaid\n          class: mermaid\n          format: !!python/name:pymdownx.superfences.fence_code_format\nextra_javascript:\n  - assets/vendor/mermaid.min.js\ntheme:\n",
+        1,
+    )
+    config = config.replace("extra:\n", "extra:\n  mermaid_bundle: vendor/mermaid.min.js\n", 1)
+    (tiny / "mkdocs.yml").write_text(config, encoding="utf-8")
+    (tiny / "docs" / "guide.md").write_text("# Guide\n\n```mermaid\nflowchart LR\n  A[one] --> B[two]\n```\n", encoding="utf-8")
+
+    result = mkdocs(tiny / "mkdocs.yml")
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    html = (tiny / "site" / "guide" / "index.html").read_text(encoding="utf-8")
+    assert '<pre class="mermaid"><code>' in html
+    assert "assets/vendor/mermaid.min.js" in html
+    assert (tiny / "site" / "assets" / "vendor" / "mermaid.min.js").is_file()
+    assert (tiny / "site" / "assets" / "vendor" / "LICENSE-mermaid.txt").is_file()
+    assert check_site.check_site(tiny / "site", base="/tiny/") == []
+
+
+def test_a_missing_mermaid_bundle_fails_the_build_and_says_how_to_get_it(tiny):
+    config = (tiny / "mkdocs.yml").read_text(encoding="utf-8").replace("extra:\n", "extra:\n  mermaid_bundle: vendor/mermaid.min.js\n", 1)
+    (tiny / "mkdocs.yml").write_text(config, encoding="utf-8")
+
+    result = mkdocs(tiny / "mkdocs.yml")
+
+    assert result.returncode != 0
+    assert "pnpm install" in result.stderr + result.stdout
+
+
+def test_the_real_site_ships_mermaid_itself_and_never_asks_unpkg(tmp_path):
+    site = tmp_path / "site"
+    result = mkdocs(SITE_PROJECT / "mkdocs.yml", "-d", str(site))
+    assert result.returncode == 0, result.stderr + result.stdout
+    page = (site / "architecture" / "codebase-map" / "index.html").read_text(encoding="utf-8")
+    assert '<pre class="mermaid"><code>' in page
+    assert (site / "assets" / "vendor" / "mermaid.min.js").stat().st_size > 100_000
+    assert "unpkg.com" not in page

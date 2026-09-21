@@ -20,7 +20,10 @@
       ],
       "ignoreDependencies": [
         // Loaded by `nx release version` (nx.json "release"), not imported anywhere.
-        "@nx/js"
+        "@nx/js",
+        // Its browser bundle is copied into the docs site by tools/docs-site/hooks.py (`extra.mermaid_bundle` in mkdocs.yml), so the
+        // public pages draw their diagrams without loading a script from another site. Nothing imports it.
+        "mermaid"
       ],
       "ignoreBinaries": [
         // Go toolchain and Wails CLI, called from scripts/quality.mjs, package scripts and the desktop project's

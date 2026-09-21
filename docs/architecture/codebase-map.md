@@ -66,6 +66,79 @@ Every folder above except `docs/` is an Nx project with a `project.json`; `pnpm 
   as canonical manuscript access, settings, logging, progress, and bridge
   encoding. Feature-specific analysis stays with its tool.
 
+## How the parts connect
+
+Everything runs on the narrator's machine. The only things that leave it are the three boxes at the bottom, and each is a request the narrator can see and switch off, except the fonts, which are a known finding ([#238](https://github.com/countrymanprime/narration-utils/issues/238)). The diagram is a container view: one box per running thing or store, one arrow per call that crosses a boundary; the table under it says what each arrow is. The [threat model](threat-model.md) walks the same boundaries one by one, and the flows that need a sequence are drawn beside the doc that owns them.
+
+```mermaid
+flowchart LR
+  ui["apps/ui<br/>React app in the<br/>WebView2 webview"]
+  subgraph host["narration-utils.exe: apps/desktop (Go, Wails)"]
+    bindings["bindings*.go<br/>typed bindings"]
+    services["h.services()<br/>manuscript, guide,<br/>settings, transcript,<br/>teleprompter"]
+    assets["internal/assets"]
+    update["internal/update"]
+    supervisor["internal/process<br/>Supervisor"]
+    bridgeclient["internal/bridge"]
+    media["media.go<br/>/media route"]
+  end
+  subgraph sidecars["sidecars/ (frozen Python)"]
+    guide["manuscript-guide"]
+    compare["transcript-compare"]
+    teleprompter["manuscript-teleprompter"]
+  end
+  lua["integrations/reaper<br/>Lua bridge inside REAPER"]
+  rpp[("REAPER project<br/>.rpp and its audio")]
+  project[("project folder<br/>narration-utils/")]
+  cache[("user cache<br/>assets/, update/, runtime/")]
+  session[("session folder<br/>commands/, events.log")]
+  huggingface["Hugging Face"]
+  github["GitHub"]
+  fonts["Google Fonts"]
+  ui --> bindings
+  ui --> media
+  ui -.-> fonts
+  bindings --> services
+  bindings --> assets
+  bindings --> update
+  services --> supervisor
+  services --> bridgeclient
+  supervisor --> guide
+  supervisor --> compare
+  supervisor --> teleprompter
+  guide --> project
+  compare --> project
+  compare --> cache
+  teleprompter --> cache
+  bridgeclient --> session
+  lua --> session
+  media --> rpp
+  lua --> rpp
+  services --> rpp
+  assets --> cache
+  assets --> huggingface
+  assets --> github
+  update --> github
+  update --> cache
+  services --> project
+  classDef offmachine stroke-dasharray: 5 5
+  class huggingface,github,fonts offmachine
+```
+
+| Arrow | What it is | Read more |
+| --- | --- | --- |
+| `apps/ui` to `bindings*.go` | One Wails binding call per action, a JSON string back; events (`teleprompter:event`, `teleprompter:state`, `transcript:state`, `job:ended`, `update:status`, `system:*`) go the other way | [wire contracts](wire-contracts.md) |
+| `apps/ui` to `media.go` | The webview asks `/media` for a track's audio (Range requests); the route serves only a source file that the current project's `.rpp` names | [ADR 0012](../adr/0012-media-route-for-track-playback.md) |
+| `services` and `media.go` to the project file | The host reads the `.rpp` (tracks, items, source files) and never writes it; REAPER's own Lua bridge changes the project (markers, regions, item data), one undo block per command | [Tracks](../utilities/tracks.md) |
+| `services` to `internal/process` to a sidecar | `exec.CommandContext` with an argv slice, no shell, inside a Windows Job Object; results come back on stdout (NDJSON for the teleprompter) and in files | [ADR 0022](../adr/0022-live-sidecar-events-over-wails-and-stop-file.md) |
+| sidecars to the stores | Read the manuscript and write results in the project folder; load a model with `--model-dir` from the user cache, local files only | [first-use provisioning](first-use-dependency-provisioning.md) |
+| `internal/bridge` and `integrations/reaper` to the session folder | The host writes `commands/NNNNNNNN.cmd` atomically; the Lua bridge appends `events.log`; nothing listens on a socket | [the REAPER bridge](reaper-bridge.md) |
+| `internal/assets` to Hugging Face and GitHub | Pinned URLs, size and SHA-256, staging then rename, only after the narrator confirms | [first-use provisioning](first-use-dependency-provisioning.md) |
+| `internal/update` to GitHub | The release list once a day at most; a download only after two clicks; the program is replaced on Windows | [in-app update](in-app-update.md) |
+| `apps/ui` to Google Fonts | The webview loads fonts on every launch: the one request nobody asked for | [threat model](threat-model.md) row 3a |
+
+The settings, the recents list and the host log live in `%APPDATA%/narration-utils`, beside the user cache (`%LOCALAPPDATA%/narration-utils`); `services` reads and writes them and no arrow is drawn for it. *Verified 2026-09-21 against `apps/desktop/app.go` (`configureLocked`, `packagedResources`), `bindings.go`, `bindings_assets.go`, `media.go`, `internal/process/`, `internal/bridge/`, `internal/assets/`, `internal/update/`, `integrations/reaper/NarrationUtils_Launcher.lua` and `apps/ui/index.html`. A box names the folder or file that owns it, a dashed arrow or box is a request the narrator did not ask for or a host that is not ours, and a label names the mechanism, not the intent.*
+
 ## Go host ownership
 
 `apps/desktop/bindings.go` is the auditable generated-Wails binding index. The native app does not expose HTTP routes.

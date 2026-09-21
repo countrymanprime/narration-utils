@@ -185,7 +185,7 @@ Phases 1, 3, 4, 5, 7 and 8. Phase 2 follows once the baseline is clean; 9 and 10
 | 1 | Link check, advisory | `docs.yml` (offline on every PR, weekly online), `.lychee.toml`, `.lycheeignore`, fix dead links, PRD-path grep test | complete | 3, 4, 7, 8 | - | - |
 | 2 | Link check blocking | Flip offline job to fail, document in `ci-and-releases.md`, owner may require the check | complete | 3-9 | 1 | - |
 | 3 | Threat model | `docs/architecture/threat-model.md`, `SECURITY.md` cross-links, issues for findings (fonts, `--` options) | complete | 1, 4, 7, 8 | - | - |
-| 4 | Container view | Flowchart in `codebase-map.md`, caption and conventions | pending | 1, 3, 7, 8 | - | - |
+| 4 | Container view | Flowchart in `codebase-map.md`, caption and conventions | complete | 1, 3, 7, 8 | - | - |
 | 5 | Sequence diagrams | First-use download, live teleprompter, REAPER bridge, each in its owning doc | pending | 1, 3, 7, 8 | 4 | - |
 | 6 | Diagram parse check (Could) | Parser or mermaid-cli check per Open Question 9 | pending | 7-9 | 4, 5 | - |
 | 7 | Notices tooling | Spike then `scripts/licenses/` and generated report for the Windows package | pending | 1, 3-6, 8 | - | - |
