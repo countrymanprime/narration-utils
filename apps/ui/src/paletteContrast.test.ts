@@ -127,8 +127,8 @@ interface KnownFailure {
   fixedBy: string;
 }
 
-// Every entry names the phase of docs/prds/palette-contrast-wcag-aa.prd.md that fixes it. Empty since the status text phase:
-// a new entry is a new known failure and needs the same review as an `A11Y_DEBT` entry.
+// Empty since the status text phase (docs/design/colour-and-contrast.md): an entry is a known failure, names how and when it
+// gets fixed, and needs the same review as an `A11Y_DEBT` entry.
 const KNOWN_FAILURES: Record<string, KnownFailure> = {};
 // Counted per pair and theme: a pair failing in both themes is two failures, not one.
 const MAX_KNOWN_FAILURES = 0;

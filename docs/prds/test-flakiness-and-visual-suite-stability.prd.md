@@ -142,7 +142,7 @@ Phases 1, 2 and 4. Phases 3, 5, 6, 7 follow.
 | 3 | Kit scaffold parity | `clickVisible` is a plain click, `clickNav` opens the drawer only when the menu button is showing, `beforeCapture` carries `UI_CPU_THROTTLE`; skill wording, changelog, kit 0.3.2 | complete | No | 2 | [plan](implementation-plan.md) |
 | 4 | Go flake guard and wall-clock test | `test-schedules` Nx target (`-cpu 1,4 -count=5`) run by the `go` job, clearer shutdown test message, manuscript `Elapsed` assertion fix and a fixed-time arithmetic test | complete | Yes | - | [plan](implementation-plan.md) |
 | 5 | CI docs truthfulness | Rewrite the CI section of `ci-and-releases.md` to match the live settings (no required status check, code-owner review required, D11) and the job names that exist, add the flake policy, keep the suite-limits statement in `design-system.md` current (axe on stories only until Phase 6; no pixel baselines until Phase 7) | complete | Yes | 1, 2, 4 | [plan](implementation-plan.md) |
-| 6 | Axe on app states | Report-only measured run, then a gate with an app-state debt ratchet if the user agrees | pending (tail: after the palette stack S12 and a kit slot, the S13 tail) | No | 2, 3 | - |
+| 6 | Axe on app states | Report-only measured run, then a gate with an app-state debt ratchet if the user agrees | pending (tail: unblocked, the palette stack is delivered and every app state is at 0 axe colour-contrast violations in both themes; needs a kit slot, the S13 tail) | No | 2, 3 | - |
 | 7 | Pixel baseline spike | Timeboxed spike in a pinned container; ADR adopt or defer | deferred (starts only after 50 consecutive stable CI runs, counted from the merge of this stack) | Yes (docs-only) | 1, 2, 4 plus 50 stable runs | - |
 
 ### Phase Details
@@ -209,4 +209,4 @@ Files owned: `apps/ui/tests/visual/app.drivers.ts`, `apps/ui/src/components/proj
 ---
 
 *Generated: 2026-09-19*
-*Status: in delivery (stack S07, issue #80). Phases 1 to 5 are complete (stack S07). Phase 6 (axe on app states) waits for the palette stack (S12) and a kit slot and runs in the S13 tail; phase 7 (pixel baseline spike) stays deferred until 50 consecutive stable CI runs after this stack merges. The issue stays open and this PRD stays until those two are done or dropped.*
+*Status: in delivery (stack S07, issue #80). Phases 1 to 5 are complete (stack S07). Phase 6 (axe on app states) is unblocked (the palette stack S12a is delivered, and a scratch axe pass over every app state at desktop and tablet in both themes is at 0 `color-contrast` violations) and needs a kit slot in the S13 tail; phase 7 (pixel baseline spike) stays deferred until 50 consecutive stable CI runs after this stack merges. The issue stays open and this PRD stays until those two are done or dropped.*

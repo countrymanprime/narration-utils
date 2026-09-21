@@ -21,7 +21,3 @@ Storybook title: `Primitives/NavButton`. Source: `src/components/primitives/NavB
 ## Used by
 
 - `src/components/layout/AppShell.tsx`
-
-## Known accessibility debt
-
-This component has a recorded, reasoned exemption in `tests/atlas/a11y-debt.ts`.

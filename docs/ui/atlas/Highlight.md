@@ -27,7 +27,3 @@ Storybook title: `Primitives/Highlight`. Source: `src/components/primitives/High
 - `src/components/manuscript/ParagraphView.tsx`
 - `src/components/storybible/GuideDetail.tsx`
 - `src/components/teleprompter/ReaderText.tsx`
-
-## Known accessibility debt
-
-This component has a recorded, reasoned exemption in `tests/atlas/a11y-debt.ts`.

@@ -62,7 +62,7 @@ We believe a debounced, left-aligned, highlighted search with correct line numbe
 - [ ] **R1. Debounce length.** The request says line options should not appear for "about 2s at least". Options: 2 s flat; 2 s but Enter fires immediately; shorter (500 ms) with the chapter subset in between. Recommendation: 2 s constant `SEARCH_DEBOUNCE_MS`, Enter fires now, and a visible "Searching..." hint so "No matches" never flashes.
 - [ ] **R2. Pre-debounce subset.** Chapter titles and subtitles filtered client-side from `chapters` state (free, no request). Recommendation: yes, immediately per keystroke.
 - [ ] **R3. Windowing.** Character budget (approximate, no measuring) or pixel measurement (`canvas.measureText`, or a `ResizeObserver` on the row)? The request shows ASCII `...`. Recommendation: character budget from the measured row width, `...` on either or both ends only when text is cut, first match only, and the match term alone wider than the row truncates the term.
-- [ ] **R4. Match highlight.** Add a `Search` kind to `Highlight` (union, `TOKEN`, story) or reuse an existing kind? Collides with palette PRD Phase 4 (`Highlight.tsx`). Recommendation: a dedicated kind after that phase, or a local `<mark>` style until then.
+- [ ] **R4. Match highlight.** Add a `Search` kind to `Highlight` (union, `TOKEN`, story) or reuse an existing kind? The palette work is delivered: a new kind needs a colour with a dark value, a derived `--<kind>-text` and pairs in `paletteContrast.test.ts` ([colour and contrast](../design/colour-and-contrast.md)), and the tint nests with other highlights. Recommendation: a dedicated kind with those, or a local `<mark>` style.
 - [ ] **R5. Line number source.** `paragraphIds` position (recommended) versus loading paragraphs.
 - [ ] **R6. Result types and icons.** Line (`faParagraph`?), chapter title, note, bookmark: which icon each, and are notes searchable? Recommendation: line, chapter-title hits only in this PRD.
 - [ ] **R7. Jump highlight scope.** Halve the 60 s tint only, or also the 1.6 s pulse? "Halve it for now" reads as the tint. Recommendation: 30 s tint, pulse unchanged.
@@ -122,7 +122,7 @@ We believe a debounced, left-aligned, highlighted search with correct line numbe
 | Debounce breaks two existing tests and slow visual states | High | Fake timers or an injected delay; a driver that advances the clock only where safe |
 | Renaming accessible names breaks tests and drivers | High | Keep `Chapters & Search`, `small/medium/large`, `Collapse all chapters` and the result aria-label shape |
 | Control-bar change regenerates about 10 doc screenshots | High | `doc-screenshot-sync` in the same PR |
-| Highlight kind collides with the palette PRD | Medium | Sequence after palette Phase 4 or use a local style |
+| A new Highlight kind needs the palette pairs | Low | Add the tokens and pairs (colour-and-contrast) or use a local style |
 | Reader filter reverses part of an accepted ADR | Certain | New superseding ADR; do not edit ADR 0005 |
 | Tooltip inside the panel or controls hidden after the dialog/tooltip PRDs land | Medium | Verify in the same PR; Tooltip PRD Phase 1 first |
 | Mock search does not mirror the real payload | Medium | Fixture with `chapterId`, in-chapter positions and long paragraphs |
