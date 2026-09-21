@@ -56,7 +56,6 @@ Phase counts are the rows of each PRD's phase table.
 | [Story Bible and Import UX Briefs](story-bible-and-import-ux-briefs.prd.md) | Feature | 11 | `docs/architecture/native-notifications.md`, `story-bible-concurrent-build.md`, `import-settings-workflow.md`, `dictionary-thesaurus-integration.md`, `pronunciation-provider-selection.md` |
 | [Release Readiness: Provisioning, Docs Site and Release Pipeline](release-readiness-provisioning-and-docs-site.prd.md) | Feature | 16 | `docs/architecture/component-showcase-and-docs-site.md`, and the "Delivery slices" plan of `first-use-dependency-provisioning.md` |
 | [Interaction Feedback Audit](interaction-feedback-audit.prd.md) | Defect (audit, then fixes) | 7 | `docs/architecture/interaction-feedback-backlog.md` |
-| [Runtime Schema Validation at the Data Boundaries](boundary-schema-validation.prd.md) | Feature (hardening) | 7 | None |
 | [Release Supply-Chain Hardening](release-supply-chain-hardening.prd.md) | Feature (CI and security) | 10 | None; the signing question stays in the release-readiness PRD |
 | [Docs Security and Hygiene](docs-security-and-hygiene.prd.md) | Feature (docs) | 11 | None |
 | [Release Artifact Naming](release-artifact-naming.prd.md) | Feature | 2 | None; the "one asset per platform" line of [ADR 0027](../adr/0027-windows-gates-and-creates-the-release.md) may need an ADR |
