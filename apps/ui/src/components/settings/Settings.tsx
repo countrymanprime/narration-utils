@@ -10,6 +10,7 @@ import { ToggleGroup } from '../primitives/ToggleGroup';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useTheme } from '../../theme/ThemeContext';
 import type { ThemePreference } from '../../theme/theme';
+import { AboutPanel } from './AboutPanel';
 import { ScopedSetting } from './ScopedSetting';
 
 type SettingsCategory = { key: string; label: string; tool?: string; scopes: Scope[]; filter?: (field: ScopedSettingField) => boolean };
@@ -22,6 +23,7 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'Daw', label: 'DAW Integration', scopes: ['global'] },
   { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global', 'project'] },
   { key: 'ProjectData', label: 'Project data', scopes: ['project'] },
+  { key: 'About', label: 'About', scopes: ['global'] },
 ];
 const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -237,6 +239,8 @@ export function Settings({
                     </div>
                   )}
                 </div>
+              ) : category === 'About' ? (
+                <AboutPanel version={data.version} />
               ) : category === 'Appearance' ? (
                 <div className="space-y-3 text-sm">
                   <div className="font-medium">Theme</div>

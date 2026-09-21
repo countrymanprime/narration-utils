@@ -15,6 +15,8 @@ export type ScopedSettingField = {
 export type Bootstrap = {
   apiVersion: number;
   diagnosticId: string;
+  /** The application's own version, bare semver (`0.2.7`); a development build reports `0.0.0-dev`. */
+  version: string;
   projectFolder: string;
   projectName: string;
   daw: string;

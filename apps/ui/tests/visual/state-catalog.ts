@@ -203,6 +203,7 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'settings', state: 'global-daw', description: 'Settings, Global scope / DAW Integration category', ...REFLOW },
   { page: 'settings', state: 'global-manuscript', description: 'Settings, Global scope / Manuscript category (note color picker)', ...REFLOW },
   { page: 'settings', state: 'global-tts', description: 'Settings, Global scope / TTS category', ...REFLOW },
+  { page: 'settings', state: 'global-about', description: 'Settings, Global scope / About category (the application version)', ...REFLOW },
   { page: 'settings', state: 'project-proofing', description: 'Settings, Project scope / Proofing category', ...REFLOW },
   { page: 'settings', state: 'project-storybible', description: 'Settings, Project scope / Story Bible category', ...REFLOW },
   { page: 'settings', state: 'project-data', description: 'Settings, Project scope / Project data category (clear derived project data)', ...REFLOW },

@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { z } from 'zod';
+import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import { createMockApi } from './mockApi';
 import { WIRE_TRANSCRIPT } from './mockFixtures';
 import {
@@ -112,7 +113,7 @@ describe('golden payloads written by the Go host and the Python sidecars', () =>
   });
 
   it('the golden Bootstrap carries the API version this UI is built for', () => {
-    expect(parseWire(bootstrapSchema, readGolden('bootstrap-manuscript.json'), ctx('bootstrap')).apiVersion).toBe(5);
+    expect(parseWire(bootstrapSchema, readGolden('bootstrap-manuscript.json'), ctx('bootstrap')).apiVersion).toBe(DESKTOP_HOST_API_VERSION);
   });
 
   it('the golden completed run keeps its rows and marker states through the schema', () => {

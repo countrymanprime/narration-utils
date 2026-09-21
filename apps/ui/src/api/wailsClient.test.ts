@@ -40,8 +40,9 @@ describe('wailsClient', () => {
       elapsed: 0,
     };
     const bootstrap = {
-      apiVersion: 5,
+      apiVersion: 6,
       diagnosticId: 'go-1',
+      version: '0.2.7',
       projectFolder: 'C:/P',
       projectName: 'P',
       daw: 'reaper',
@@ -62,7 +63,10 @@ describe('wailsClient', () => {
     const report = vi.fn().mockResolvedValue('null');
     window.go = {
       main: {
-        Host: { Bootstrap: () => Promise.resolve({ apiVersion: 5, projectName: 'A SECRET TITLE', transcript: 'nope' }), SystemReportDiagnostic: report },
+        Host: {
+          Bootstrap: () => Promise.resolve({ apiVersion: 6, version: '0.2.7', projectName: 'A SECRET TITLE', transcript: 'nope' }),
+          SystemReportDiagnostic: report,
+        },
       },
     };
 

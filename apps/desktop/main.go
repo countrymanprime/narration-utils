@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"log"
+	"os"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -24,6 +25,10 @@ var assets embed.FS
 var resources embed.FS
 
 func main() {
+	if isVersionRequest(os.Args[1:]) {
+		printVersion()
+		return
+	}
 	app := NewHost()
 	err := wails.Run(&options.App{
 		Title:              "Narration Utils",

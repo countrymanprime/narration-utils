@@ -5,7 +5,7 @@
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "dev": "wails dev",
-    "build": "wails build -o narration-utils-shell.exe",
+    "build": "node ../../scripts/release/wails-build.mjs",
     "build:windows": "pnpm run build -- -platform windows/amd64 -nsis",
     "build:macos": "pnpm run build -- -platform darwin/universal",
     "build:linux": "pnpm run build -- -platform linux/amd64"

@@ -95,3 +95,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0070](0070-workflow-actions-are-pinned-to-a-commit-and-zizmor-gates-the-workflows.md) | Workflow actions are pinned to a commit, and zizmor gates the workflows | Accepted |
 | [0071](0071-releases-carry-build-provenance-and-promote-refuses-a-file-the-release-workflows-did-not-build.md) | Releases carry build provenance, and promote refuses a file the release workflows did not build | Accepted |
 | [0072](0072-the-app-updates-itself-from-this-repositorys-releases-and-never-installs-without-a-click.md) | The app updates itself from this repository's releases and never installs without a click | Proposed |
+| [0073](0073-the-executable-is-named-narration-utils-and-carries-its-version.md) | The executable is named `narration-utils` and carries its own version | Accepted |

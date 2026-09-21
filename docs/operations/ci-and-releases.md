@@ -145,7 +145,7 @@ uses the squash commit title to calculate the synchronized application version:
 next minor release. The workflow tags `v<version>-rc`, builds the Windows
 package, and in that same job creates the GitHub pre-release with the Windows
 zip. There is no installer: the Windows runner has no NSIS, so Wails only warns
-and the self-contained `narration-utils-shell.exe` is the real output. The last step starts the optional **Build macOS** and **Build Linux**
+and the self-contained `narration-utils.exe` is the real output. The last step starts the optional **Build macOS** and **Build Linux**
 workflows, which build the release tag and attach their asset
 ([ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)). They are
 separate runs, so a failed non-Windows build never delays or reddens the Windows
@@ -159,9 +159,13 @@ Each platform ships one asset named `narration-utils-<platform>.<ext>`, with a
 
 | Platform | Asset | Contents |
 | --- | --- | --- |
-| `windows-x64` | `narration-utils-windows-x64.zip` | `narration-utils-shell.exe` |
+| `windows-x64` | `narration-utils-windows-x64.zip` | `narration-utils.exe` |
 | `macos-arm64` | `narration-utils-macos-arm64.zip` | `Narration Utils.app` |
-| `linux-x64` | `narration-utils-linux-x64.tar.gz` | `narration-utils-shell` binary |
+| `linux-x64` | `narration-utils-linux-x64.tar.gz` | `narration-utils` binary |
+
+The asset names carry no version and the program inside carries no version in its name: the version is stamped **into** the
+program ([The version inside the program](#the-version-inside-the-program)), where the app can show it and compare it with a
+newer release ([ADR 0073](../adr/0073-the-executable-is-named-narration-utils-and-carries-its-version.md)).
 
 `scripts/release/assets.mjs` owns that table, packages each asset in CI
 (`pnpm release:package <platform>`), and checks a downloaded release
@@ -177,6 +181,23 @@ rebuilds an approved candidate. Release candidates
 published before per-asset checksums (they carry `SHA256SUMS.txt`), and ones published before attestations, cannot
 be promoted this way.
 
+## The version inside the program
+
+The root `package.json` version is the single source: `sync-version.mjs` copies it to the two `package.json` files and to
+`apps/desktop/wails.json` (`info.productVersion`, the Windows file version), and `scripts/release/wails-build.mjs` stamps it
+into the Go variable `main.version` with `-ldflags "-X main.version=<version>"`. CI (`.github/actions/build-native`) and a local
+build (`pnpm --dir apps/desktop run build`, or the Nx `package` target) both go through that script, so a build never reports a
+version that depends on who built it. `Bootstrap` returns it and Settings > About shows it.
+
+- The version is **bare semver** (`0.2.7`). A release candidate and its promotion are the same bytes, so they report the same
+  version; `wails-build.mjs` refuses a version with a suffix, and refuses caller-supplied `-ldflags` that would replace the stamp.
+- A build with no stamp (`go run`, `go test`, `wails dev`) reports `0.0.0-dev`.
+- `narration-utils --version` prints the stamped version and exits without opening a window. On Windows the program is a GUI
+  application, so a console shows nothing; a program that reads its standard output (a test, the update flow) gets the text.
+- The program is named by `wails.json` `outputfilename` (`narration-utils`, `.exe` on Windows). Clean old build output before you
+  test the REAPER launcher: `apps/desktop/build/bin/narration-utils-shell.exe` from a build before the rename is no longer
+  looked for.
+
 ## Build provenance
 
 Every release asset is attested: `actions/attest` records, in GitHub's attestation store, which workflow, commit and
@@ -185,9 +206,9 @@ level 3). The subjects are identified by digest:
 
 | Platform | Signed by (the workflow the certificate names) | Subjects |
 | --- | --- | --- |
-| Windows | `.github/workflows/prerelease.yml`, the `release` job | `narration-utils-windows-x64.zip`, its `.sha256`, and `narration-utils-shell.exe` (so the executable can be checked after the zip is extracted, which an in-app update can do) |
+| Windows | `.github/workflows/prerelease.yml`, the `release` job | `narration-utils-windows-x64.zip`, its `.sha256`, and `narration-utils.exe` (so the executable can be checked after the zip is extracted, which an in-app update can do) |
 | macOS | `.github/workflows/_attach-platform.yml` (the reusable workflow, not `build-macos.yml`) | the zip and its `.sha256` |
-| Linux | `.github/workflows/_attach-platform.yml` | the archive, its `.sha256`, and `narration-utils-shell` |
+| Linux | `.github/workflows/_attach-platform.yml` | the archive, its `.sha256`, and `narration-utils` |
 
 - The step runs in the same job as the build and before anything is published. Windows attests before the prune and
   `gh release create`; macOS and Linux attest before `gh release upload`. If it fails the job fails and nothing

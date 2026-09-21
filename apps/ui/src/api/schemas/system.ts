@@ -20,6 +20,7 @@ const importedManuscriptSchema = z.object({
 export const bootstrapSchema = z.object({
   apiVersion: z.number(),
   diagnosticId: z.string(),
+  version: z.string(),
   projectFolder: z.string(),
   projectName: z.string(),
   daw: z.string(),

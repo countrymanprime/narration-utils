@@ -37,8 +37,30 @@ func TestResourceKeyChangesWithEmbeddedContent(t *testing.T) {
 }
 
 func TestHostAPIVersionMatchesTheCurrentDesktopContract(t *testing.T) {
-	if hostAPIVersion != 5 {
-		t.Fatalf("host API version = %d, want 5; update it with apps/ui/src/hostApi.ts", hostAPIVersion)
+	if hostAPIVersion != 6 {
+		t.Fatalf("host API version = %d, want 6; update it with apps/ui/src/hostApi.ts", hostAPIVersion)
+	}
+}
+
+// The application's own version is stamped at build time (scripts/release/wails-build.mjs, -X main.version); a build without the
+// stamp is a development build, and Bootstrap carries whichever it is so Settings can show it.
+func TestBootstrapReportsTheApplicationVersion(t *testing.T) {
+	host := NewHost()
+	if got := host.Bootstrap()["version"]; got != version {
+		t.Fatalf("bootstrap version = %#v, want the stamped variable %q", got, version)
+	}
+	host.version = "9.8.7"
+	if got := host.Bootstrap()["version"]; got != "9.8.7" {
+		t.Fatalf("bootstrap version = %#v, want the host's version 9.8.7", got)
+	}
+}
+
+func TestAnUnstampedBuildIsADevelopmentBuild(t *testing.T) {
+	if version != developmentVersion {
+		t.Skipf("this test binary was stamped with %q", version)
+	}
+	if developmentVersion != "0.0.0-dev" {
+		t.Fatalf("development version = %q, want 0.0.0-dev", developmentVersion)
 	}
 }
 
