@@ -206,7 +206,7 @@ describe('wailsClient', () => {
 
   it('starts, stops and reads the teleprompter through the native bindings', async () => {
     const start = vi.fn().mockResolvedValue(JSON.stringify({ status: 'started' }));
-    const stop = vi.fn().mockResolvedValue('');
+    const stop = vi.fn().mockResolvedValue('null');
     const state = vi.fn().mockResolvedValue(JSON.stringify({ phase: 'idle', script: null, position: null }));
     window.go = { main: { Host: { TeleprompterStart: start, TeleprompterStop: stop, TeleprompterState: state } } };
     const options = { chapter: 'chapter-1', device: 'Microphone (USB)', model: 'tiny' };

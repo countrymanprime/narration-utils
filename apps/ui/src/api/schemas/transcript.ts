@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import type { Discrepancy, MarkerExport, TranscriptState } from '../contracts/transcript';
-import { optionalFromNull } from './base';
+import type { Discrepancy, HintSuggestions, MarkerExport, TranscriptState } from '../contracts/transcript';
+import { listFromNull, optionalFromNull } from './base';
 
 const discrepancySchema = z.object({
   id: z.string(),
@@ -50,3 +50,13 @@ export const transcriptStateSchema = z.object({
   elapsed: z.number(),
   markerExport: markerExportSchema.default(() => ({ ...idleMarkerExport })),
 }) satisfies z.ZodType<TranscriptState>;
+
+/** The last completed comparison saved in the project: null when there is none, which the contract calls undefined. */
+export const lastCompletedSchema = transcriptStateSchema.nullable().transform((state) => state ?? undefined);
+
+export const hintSuggestionsSchema = z.object({ terms: listFromNull(z.string()), found: z.number() }) satisfies z.ZodType<HintSuggestions>;
+
+/** The saved vocabulary hints. */
+export const hintsSchema = listFromNull(z.string());
+
+export const equivalenceSchema = z.object({ message: z.string() });

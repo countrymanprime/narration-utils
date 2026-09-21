@@ -1,0 +1,62 @@
+{
+  "path": "C:/Projects/Alice/basic.rpp",
+  "tracks": [
+    {
+      "color": "#0BCB11",
+      "guid": "{0E4D1D7F-D039-674D-87E6-719376DE95EC}",
+      "index": 0,
+      "items": [
+        {
+          "length": 12.5,
+          "name": "ch1_take1.wav",
+          "position": 0,
+          "sourceAvailable": true,
+          "sourceFile": "C:/Projects/Alice/media/ch1_take1.wav",
+          "sourceKind": "WAVE",
+          "supported": true
+        }
+      ],
+      "muted": false,
+      "name": "Chapter 1",
+      "soloed": false
+    },
+    {
+      "color": "",
+      "guid": "{DA2D209F-D10F-5E46-93E7-098D96499ED0}",
+      "index": 1,
+      "items": [
+        {
+          "length": 4,
+          "name": "click MIDI item",
+          "position": 0,
+          "sourceAvailable": false,
+          "sourceFile": "",
+          "sourceKind": "MIDI",
+          "supported": false
+        }
+      ],
+      "muted": true,
+      "name": "Click Track",
+      "soloed": false
+    },
+    {
+      "color": "",
+      "guid": "{C33A3BE7-8F84-7940-9610-65C6ED6CED7A}",
+      "index": 2,
+      "items": [
+        {
+          "length": 8,
+          "name": "ch2_take1.wav",
+          "position": 0,
+          "sourceAvailable": false,
+          "sourceFile": "C:/Projects/Alice/media/missing.wav",
+          "sourceKind": "WAVE",
+          "supported": true
+        }
+      ],
+      "muted": false,
+      "name": "Chapter 2",
+      "soloed": false
+    }
+  ]
+}

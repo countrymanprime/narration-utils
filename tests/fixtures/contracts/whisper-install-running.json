@@ -1,0 +1,6 @@
+{
+  "id": "whisper-1",
+  "message": "Downloading and verifying the approved Whisper model…",
+  "modelId": "small",
+  "phase": "running"
+}

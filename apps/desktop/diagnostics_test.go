@@ -1,12 +1,15 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
+	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 )
 
 func TestSystemReportDiagnosticWritesTheClientReportToTheHostLog(t *testing.T) {
@@ -40,5 +43,32 @@ func TestSystemReportDiagnosticNeverFailsTheCaller(t *testing.T) {
 	}
 	if _, err := (&Host{}).SystemReportDiagnostic("window_error", "boom"); err != nil {
 		t.Fatalf("a host without a log failed the binding: %v", err)
+	}
+}
+
+// A voice install reports the phase the UI polls for ("downloading", contracts/tts.ts), with a percent and an error, from the
+// moment it starts (ADR 0069: the schema found the host sending "running", which the Story Bible's download prompt never matched).
+func TestStartTtsInstallReportsTheDownloadingPhaseTheUIPollsFor(t *testing.T) {
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-release }))
+	defer server.Close()
+	defer close(release)
+	catalogPath := filepath.Join(t.TempDir(), "tts.json")
+	catalog := `{"catalogVersion":1,"voices":[{"id":"v1","provider":"piper","displayName":"V","files":[{"name":"v.onnx","url":"` + server.URL + `","sha256":"00","size":10}]}]}`
+	if err := os.WriteFile(catalogPath, []byte(catalog), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	manager, err := tts.New(catalogPath, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	host := &Host{tts: manager, ttsJobs: map[string]*ttsJob{}}
+
+	started, err := host.startTtsInstall("v1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if started["phase"] != "downloading" || started["percent"] != 0 || started["error"] != "" {
+		t.Fatalf("started job = %#v, want phase downloading, percent 0 and no error", started)
 	}
 }

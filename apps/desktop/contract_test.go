@@ -8,7 +8,10 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
+	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
+	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 )
 
 // The Bootstrap payloads the UI receives (ADR 0069). The UI's contract tests validate these files against its schemas and
@@ -101,4 +104,102 @@ func TestContractPreviewNeedsAVoice(t *testing.T) {
 		Attribution: "LJ Speech dataset", Files: []tts.File{{Name: "voice.onnx", Size: 114_000_000}, {Name: "voice.onnx.json", Size: 4_800}},
 	}
 	contractfile.Check(t, "guide-preview-asset-required", voiceAssetRequired(voice, "not_installed"))
+}
+
+// The approved catalogs, built from the repository's real config files with nothing installed (ADR 0069), and the install jobs.
+func contractServices(t *testing.T) hostServices {
+	t.Helper()
+	t.Setenv("APPDATA", t.TempDir())
+	voices, err := tts.New(layout.RepoFile(layout.TTSCatalogFile), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	models, err := whisper.New(layout.RepoFile(layout.WhisperCatalogFile), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return hostServices{tts: voices, whisper: models, settings: settings.New(layout.FindRoot("."), "")}
+}
+
+func TestContractCatalogsAndInstallJobs(t *testing.T) {
+	svc := contractServices(t)
+	voices, err := ttsCatalogPayload(svc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "tts-catalog", voices)
+	models, err := whisperCatalogPayload(svc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "whisper-catalog", models)
+
+	for name, job := range map[string]*ttsJob{
+		"tts-install-downloading": {id: "tts-1", voiceID: "en_US-ljspeech-high", phase: "downloading", message: "Downloading and verifying the approved voice…"},
+		"tts-install-success":     {id: "tts-1", voiceID: "en_US-ljspeech-high", phase: "success", message: "Voice installed and verified."},
+		"tts-install-error":       {id: "tts-1", voiceID: "en_US-ljspeech-high", phase: "error", message: "the download failed its checksum"},
+		"tts-install-cancelled":   {id: "tts-1", voiceID: "en_US-ljspeech-high", phase: "cancelled", message: "Voice download cancelled."},
+	} {
+		contractfile.Check(t, name, snapshotTts(job))
+	}
+	for name, job := range map[string]*whisperJob{
+		"whisper-install-running": {id: "whisper-1", modelID: "small", phase: "running", message: "Downloading and verifying the approved Whisper model…"},
+		"whisper-install-success": {id: "whisper-1", modelID: "small", phase: "success", message: "Whisper model installed and verified."},
+	} {
+		contractfile.Check(t, name, snapshotWhisper(job))
+	}
+}
+
+func TestContractAFirstUseGateForAModel(t *testing.T) {
+	svc := contractServices(t)
+	model, ok := svc.whisper.Model("small")
+	if !ok {
+		t.Fatal("the approved catalog has no small model")
+	}
+	contractfile.Check(t, "transcript-start-asset-required", modelAssetRequired(model, svc.whisper.State(model)))
+	contractfile.Check(t, "transcript-start-started", map[string]any{"status": "started"})
+}
+
+// The Settings page's fields for both scopes, from the real field schemas and the repository's defaults.
+func TestContractSettingsForEachScope(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	project := t.TempDir()
+	host := NewHost()
+	host.settings = settings.New(layout.FindRoot("."), project)
+	for _, scope := range []string{"global", "project"} {
+		fields, err := host.settingsForScope(scope)
+		if err != nil {
+			t.Fatal(err)
+		}
+		contractfile.Check(t, "settings-"+scope, fields)
+	}
+}
+
+// The Tracks page's discovery as TracksDiscover and TracksSelect send it: nothing found (a nil list, sent as null), several files and
+// no choice yet, and one file that is selected on its own.
+func TestContractTracksDiscovery(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	pin := func(name, folder string) {
+		discovery, err := discoverTracks(hostServices{config: config{projectFolder: folder}, settings: settings.New(layout.FindRoot("."), folder)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		stable, err := contractfile.PortablePaths(discovery, folder, "C:/Projects/Alice")
+		if err != nil {
+			t.Fatal(err)
+		}
+		contractfile.Check(t, name, stable)
+	}
+	write := func(folder, file string) {
+		if err := os.WriteFile(filepath.Join(folder, file), []byte("x"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	none, several, one := t.TempDir(), t.TempDir(), t.TempDir()
+	write(several, "Alice.rpp")
+	write(several, "Alice-alt-mix.rpp")
+	write(one, "Alice.rpp")
+	pin("tracks-discovery-none", none)
+	pin("tracks-discovery-several", several)
+	pin("tracks-discovery-selected", one)
 }
