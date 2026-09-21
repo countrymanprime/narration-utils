@@ -1,5 +1,6 @@
-// ui-atlas-kit 0.3.1 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
-import type { SameAsDeclaration } from './validators';
+// ui-atlas-kit 0.3.3 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+import type { Viewport } from '../viewports';
+import type { NarrowControlsDeclaration, SameAsDeclaration } from './validators';
 
 export interface StateEntry {
   page: string;
@@ -19,4 +20,11 @@ export interface StateEntry {
   pointer?: 'keep';
   // Show the whole scrollable page by growing the viewport to its height (long pages, full-height routes).
   fullPage?: boolean;
+  // Capture this state at these viewports as well as the default matrix in viewports.ts (a width the whole suite does not
+  // pay for, such as a phone width where only one page's layout changes). Each needs a name of its own, and a driver
+  // that can reach the state there.
+  extraViewports?: Viewport[];
+  // Text boxes and selects that are allowed to be narrower than the minimum control width on purpose (a two-digit
+  // number box). Checked, not trusted: it fails when the control stops being narrow. Any other collapsed control fails.
+  narrowControls?: NarrowControlsDeclaration;
 }

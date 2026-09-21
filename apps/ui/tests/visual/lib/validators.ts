@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.3.1 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.3 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 // Pure checks over what one visual-suite run captured. Kept free of Playwright
 // and Node APIs so they are unit-tested by Vitest (src/visualSuite.test.ts) and
 // reused unchanged by global-setup.ts's post-run teardown.
@@ -18,6 +18,9 @@ export interface CaptureRecord {
   maxChannelStdev: number;
   // documentElement.scrollWidth - clientWidth at capture time.
   overflowPx: number;
+  // Width of the narrowest text-like control on screen at capture time, or null when there was none. Not a check on
+  // its own (checkControlWidths is); it is what a threshold is calibrated from, and the teardown prints the run's minimum.
+  narrowestControlPx: number | null;
 }
 
 export interface SameAsDeclaration {
@@ -25,6 +28,26 @@ export interface SameAsDeclaration {
   of: string;
   reason: string;
   // Viewports the equivalence holds at; omitted means every viewport.
+  viewports?: string[];
+}
+
+// A visible control a person types into or picks from, as measured in the page.
+export interface ControlMeasurement {
+  // Its accessible name (aria-label, label text, placeholder, name), so a failure says which control.
+  label: string;
+  // "select", "textarea" or "input[<type>]".
+  kind: string;
+  // getBoundingClientRect().width in CSS px.
+  width: number;
+}
+
+// Controls a row declares narrow on purpose (a two-digit number box). Checked, not trusted: it fails when the control is
+// no longer narrow, like sameAs. Needs a reason.
+export interface NarrowControlsDeclaration {
+  // Accessible names (ControlMeasurement.label) of the controls that may be narrower than the minimum.
+  labels: string[];
+  reason: string;
+  // Viewports the allowance covers; omitted means every viewport the row is captured at.
   viewports?: string[];
 }
 
@@ -52,6 +75,12 @@ export const SIGNATURE_HEIGHT = 36;
 export const SIGNATURE_TOLERANCE = 3;
 export const BLANK_STDEV_THRESHOLD = 1;
 export const OVERFLOW_TOLERANCE_PX = 1;
+// Narrower than this, a text box or select cannot show a value or be operated (a hex colour is six characters and a
+// select needs its arrow). Flat, not a fraction of the container: the failure it exists for is a control squeezed to a
+// sliver by a layout, and the smallest legitimate control (a colour hex box beside its swatch) is more than twice this.
+export const MIN_CONTROL_WIDTH_PX = 64;
+// <input> types that are not text-like: a swatch, a check box or a slider is small by design (it is not measured).
+export const NON_TEXT_INPUT_TYPES: readonly string[] = ['color', 'checkbox', 'radio', 'range', 'file', 'hidden', 'button', 'submit', 'reset', 'image'];
 
 const stateKey = (page: string, state: string): string => `${page}/${state}`;
 
@@ -121,4 +150,61 @@ export function findStaleSameAs(records: readonly CaptureRecord[], declared: rea
     }
   }
   return stale;
+}
+
+// A control in the layout but narrower than the minimum has collapsed: it shrinks rather than overflows, so the sideways-
+// overflow check never sees it. A width of 0 counts (it is still in the layout); a control that is not rendered at all
+// is never measured in the first place.
+export function findCollapsedControls(
+  controls: readonly ControlMeasurement[],
+  allowed: readonly string[] = [],
+  minWidth: number = MIN_CONTROL_WIDTH_PX,
+): ControlMeasurement[] {
+  return controls.filter((control) => control.width < minWidth && !allowed.includes(control.label));
+}
+
+// Two controls with one name (a repeated row of fields, or unlabelled inputs that fall back to their tag) would share an
+// allowance and hide each other's collapse. The second and later ones are numbered ("Model (2)") so a failure and a
+// narrowControls entry each address one control.
+export function disambiguateLabels(controls: readonly ControlMeasurement[]): ControlMeasurement[] {
+  const seen = new Map<string, number>();
+  return controls.map((control) => {
+    const count = (seen.get(control.label) ?? 0) + 1;
+    seen.set(control.label, count);
+    return count === 1 ? control : { ...control, label: `${control.label} (${count})` };
+  });
+}
+
+// What to report for one capture: each collapsed control, and each declared-narrow control that is not narrow any more
+// (or is no longer on the page). A declaration limited to other viewports is neither applied nor checked here.
+export function checkControlWidths(
+  controls: readonly ControlMeasurement[],
+  declared: NarrowControlsDeclaration | undefined,
+  viewport: string,
+  minWidth: number = MIN_CONTROL_WIDTH_PX,
+): string[] {
+  const applies = declared !== undefined && (!declared.viewports || declared.viewports.includes(viewport));
+  const allowed = applies ? declared.labels : [];
+  const problems = findCollapsedControls(controls, allowed, minWidth).map(
+    (control) =>
+      `collapsed control: "${control.label}" (${control.kind}) is ${control.width}px wide at ${viewport}, under the ${minWidth}px minimum - fix the layout, or declare narrowControls (labels and a reason) on the row in state-catalog.ts`,
+  );
+  if (!applies) return problems;
+  for (const label of declared.labels) {
+    const stillNarrow = controls.some((control) => control.label === label && control.width < minWidth);
+    if (!stillNarrow)
+      problems.push(`narrowControls no longer holds at ${viewport}: "${label}" is not narrower than ${minWidth}px any more - remove it from the declaration`);
+  }
+  return problems;
+}
+
+// The capture whose narrowest control is the narrowest of the run (undefined when no capture had one): what the
+// threshold is calibrated against, printed once by the teardown.
+export function findNarrowestControl(records: readonly CaptureRecord[]): (CaptureRecord & { narrowestControlPx: number }) | undefined {
+  let narrowest: (CaptureRecord & { narrowestControlPx: number }) | undefined;
+  for (const record of records) {
+    if (record.narrowestControlPx === null) continue;
+    if (!narrowest || record.narrowestControlPx < narrowest.narrowestControlPx) narrowest = { ...record, narrowestControlPx: record.narrowestControlPx };
+  }
+  return narrowest;
 }

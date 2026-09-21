@@ -1,4 +1,5 @@
 import type { StateEntry } from './lib/types';
+import { REFLOW_VIEWPORT } from './viewports';
 
 export type { StateEntry };
 
@@ -7,6 +8,10 @@ export type { StateEntry };
 // screenshots/app/<page>/<state>/<viewport>.png. app.spec.ts supplies its
 // own driver (how to reach the state) keyed by page+state - see
 // APP_DRIVERS in app.spec.ts.
+// The Settings row stacks below `md`, so every Settings state is also captured at the reflow width (ADR 0061) and the
+// collapsed-control check runs there.
+const REFLOW = { extraViewports: [REFLOW_VIEWPORT] };
+
 export const STATE_CATALOG: StateEntry[] = [
   // Project (pre-app: no project folder attached yet)
   {
@@ -166,23 +171,24 @@ export const STATE_CATALOG: StateEntry[] = [
   },
 
   // Settings
-  { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category' },
-  { page: 'settings', state: 'global-appearance', description: 'Settings, Global scope / Appearance category (theme switcher)' },
-  { page: 'settings', state: 'global-proofing', description: 'Settings, Global scope / Proofing category' },
-  { page: 'settings', state: 'global-storybible', description: 'Settings, Global scope / Story Bible category' },
-  { page: 'settings', state: 'global-daw', description: 'Settings, Global scope / DAW Integration category' },
-  { page: 'settings', state: 'global-manuscript', description: 'Settings, Global scope / Manuscript category (note color picker)' },
-  { page: 'settings', state: 'global-tts', description: 'Settings, Global scope / TTS category' },
-  { page: 'settings', state: 'project-proofing', description: 'Settings, Project scope / Proofing category' },
-  { page: 'settings', state: 'project-storybible', description: 'Settings, Project scope / Story Bible category' },
-  { page: 'settings', state: 'project-data', description: 'Settings, Project scope / Project data category (clear derived project data)' },
-  { page: 'settings', state: 'dirty-footer', description: 'Settings, unsaved-changes footer visible' },
-  { page: 'settings', state: 'navigate-away-confirm', description: 'Settings, navigate-away-while-dirty confirm dialog' },
+  { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category', ...REFLOW },
+  { page: 'settings', state: 'global-appearance', description: 'Settings, Global scope / Appearance category (theme switcher)', ...REFLOW },
+  { page: 'settings', state: 'global-proofing', description: 'Settings, Global scope / Proofing category', ...REFLOW },
+  { page: 'settings', state: 'global-storybible', description: 'Settings, Global scope / Story Bible category', ...REFLOW },
+  { page: 'settings', state: 'global-daw', description: 'Settings, Global scope / DAW Integration category', ...REFLOW },
+  { page: 'settings', state: 'global-manuscript', description: 'Settings, Global scope / Manuscript category (note color picker)', ...REFLOW },
+  { page: 'settings', state: 'global-tts', description: 'Settings, Global scope / TTS category', ...REFLOW },
+  { page: 'settings', state: 'project-proofing', description: 'Settings, Project scope / Proofing category', ...REFLOW },
+  { page: 'settings', state: 'project-storybible', description: 'Settings, Project scope / Story Bible category', ...REFLOW },
+  { page: 'settings', state: 'project-data', description: 'Settings, Project scope / Project data category (clear derived project data)', ...REFLOW },
+  { page: 'settings', state: 'dirty-footer', description: 'Settings, unsaved-changes footer visible', ...REFLOW },
+  { page: 'settings', state: 'navigate-away-confirm', description: 'Settings, navigate-away-while-dirty confirm dialog', ...REFLOW },
   {
     page: 'settings',
     state: 'reset-override',
     description: 'Settings, reset/clear-override control on a field',
     pointer: 'keep',
+    ...REFLOW,
   },
 
   // Global overlays (captured once against Home, not per-page)

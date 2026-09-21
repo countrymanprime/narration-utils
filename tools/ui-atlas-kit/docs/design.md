@@ -40,8 +40,10 @@ ui-atlas.config.json                # detected settings + kit version stamp
 
 1. One test per `{page, state, viewport}` (app) or `{story, theme, viewport}` (atlas). No retries.
 2. Conditions, never sleeps. Timers are frozen only in the one state that needs it, never page-wide.
-3. Fails on: page error, failed request, console.error, sideways overflow, blank image, axe violation, a throwing
-   `play()`, and two states that render byte-identically unless a catalog row declares `sameAs` (checked).
+3. Fails on: page error, failed request, console.error, sideways overflow, a collapsed control (a visible text box,
+   select or textarea narrower than 64px, unless the row declares it in `narrowControls`, checked), blank image, axe
+   violation, a throwing `play()`, and two states that render byte-identically unless a catalog row declares `sameAs`
+   (checked). A row may add capture widths of its own with `extraViewports`.
 4. No silent skips: a row with no driver needs an `undriven` reason and the count can only shrink.
 5. Known problems are explicit debt (`tests/atlas/a11y-debt.ts`: rule, reason, count ratchet), never hidden.
 6. Duplicates are found by exact bytes; a coarse signature only forgives anti-aliasing jitter on declared pairs.

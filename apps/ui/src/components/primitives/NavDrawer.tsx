@@ -8,7 +8,7 @@ import { IconButton } from './IconButton';
 // The navigation drawer of the narrow layout (AppShell's hamburger), on Base UI's Drawer (ADR 0047, 0051): a modal panel
 // from the left edge with the app's scrim, so the page behind is hidden and unreachable, Tab loops inside, Escape, the
 // scrim and the Close button close it, and focus returns to the menu button. It was inline markup in AppShell with none of
-// that. The suite captures no phone viewport (ADR 0037), so the atlas stories are its visual record.
+// that. The suite captures no phone viewport (ADR 0037) but the Settings states at 390 px (ADR 0061), where the drawer only opens to navigate, so the atlas stories are its visual record.
 export function NavDrawer({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
   const finalFocus = useReturnFocusTarget(open);
   // The drawer exists only in the narrow layout (below Tailwind's `md`, 48rem). If the window grows past it while the drawer

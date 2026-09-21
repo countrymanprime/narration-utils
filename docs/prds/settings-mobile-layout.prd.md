@@ -7,7 +7,7 @@
 Applied by the first pull request of the stack, so the text below is read with these corrections ([implementation plan](implementation-plan.md) sections 1 and 3).
 
 - **Paths and primitives.** The UI lives in `apps/ui` (layout stack, [ADR 0040](../adr/0040-the-repository-is-laid-out-by-role-and-each-project-is-an-nx-project.md)) and every control in a Settings row is now a wrapped primitive (`TextField`, `Select`; D1, [ADR 0053](../adr/0053-icon-buttons-text-fields-and-selects-wrap-the-native-controls.md)), and the info icon is a real button (D6, [ADR 0049](../adr/0049-hints-are-base-ui-tooltips-that-meet-wcag-1-4-13-and-info-icons-are-buttons.md)). The `TooltipTarget` wrapper of the select takes a `className`, so no primitive changes.
-- **Viewports.** [ADR 0037](../adr/0037-the-visual-suite-captures-no-phone-viewport.md) removed the 390 px viewport, so the suite captures desktop (1440), small-desktop (1024) and tablet (768), 222 tests, and the desktop shell cannot go below 960 px wide. The bug is still real (below 768 px, and at a high browser zoom, WCAG 1.4.10 Reflow), so Phase 1 was verified with a scratch run at 390 px and Phase 2 records how the check reaches that width (see its Decisions Log row). Every "four viewports" and "300 captures" below means the captured viewports plus 390 px.
+- **Viewports.** [ADR 0037](../adr/0037-visual-suite-captures-no-phone-viewport.md) removed the 390 px viewport, so the suite captures desktop (1440), small-desktop (1024) and tablet (768), 222 tests, and the desktop shell cannot go below 960 px wide. The bug is still real (below 768 px, and at a high browser zoom, WCAG 1.4.10 Reflow), so Phase 1 was verified with a scratch run at 390 px and Phase 2 records how the check reaches that width (see its Decisions Log row). Every "four viewports" and "300 captures" below means the captured viewports plus 390 px.
 - **Boolean kind (D8).** Notifications and Build Story Bible after import default to on and need a Switch. The `bool` Settings kind is delivered as its own small pull request in this stack, before Phase 2; the check exempts checkboxes and switches by type (Q2).
 - **`settings/reset-override`.** S10b declared it `sameAs` `settings/project-proofing` because the mock had no project override. It is a real state now: the driver saves one override and shows Reset on that row. Getting there exposed that Save sent every field of the category (unset ones as empty strings, which the host rejects), fixed first in its own pull request.
 - **Open questions.** Every question adopts its recommendation (D22); see the ticked list and the Decisions Log.
@@ -129,7 +129,7 @@ Phases 1 and 2. Phase 3 is the bounded sweep.
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Responsive Settings row | Stack below `md`, `min-w-0 w-full` controls, select wrapper width, wrapping colour row, Reset placement; PNG review of all Settings states at 4 viewports; closes defect 8 | complete | No | - | - |
-| 2 | Collapsed-control check | Kit core check + unit tests + optional per-row opt-out + ADR amending 0023 + kit version bump + `ui-atlas sync`; demonstrate red on the pre-fix commit | pending | No | 1 | - |
+| 2 | Collapsed-control check | Kit core check + unit tests + optional per-row opt-out + ADR amending 0023 + kit version bump + `ui-atlas sync`; demonstrate red on the pre-fix commit | complete | No | 1 | - |
 | 3 | Sweep | Fix or record whatever else the check flags across all states and viewports | pending | No | 2 | - |
 
 ### Phase Details
@@ -165,7 +165,10 @@ Files owned: `settings/ScopedSetting.tsx` (Phase 1), the row wrappers in `settin
 | Between `md` and `lg` the label column is 12rem, from `lg` it is `minmax(12rem,16rem)` (Phase 1) | Two templates | One template from `md` | At 768 px the panel is about 490 px wide beside the category list; the 16rem label left the control 127 px and clipped "English - small (fast)". 191 px fits; 1024 px and up are unchanged |
 | A control takes the free width up to `max-w-md` and wraps below 10rem; the hex box has a 4.5rem minimum (Phase 1) | `flex-[1_1_10rem]` on selects and text, `flex-[1_1_0%]` on the hex box | Fixed widths; `w-full` per control | Q4, Q5: Reset shares the line unless it cannot; the swatch and the hex box never separate |
 | Save sends only the fields the narrator changed (its own pull request) | `changedValues` | Fix in the host | The host rejects an empty choice or colour, and an unset field is an empty string in the form |
-| Generic check in the kit with a reasoned opt-out (proposed) | Option (a) | Project-local hook; Settings-only | Q1 |
+| Generic check in the kit with a reasoned opt-out (Q1, D22; ADR 0060) | Option (a) | Project-local hook; Settings-only | Q1 |
+| The check runs at the captured viewports plus a 390 px `reflow` viewport that only the 13 Settings rows opt into with `extraViewports` (Phase 2; Proposed ADR 0061, amends ADR 0037) | `REFLOW_VIEWPORT`, `clickNav` opens the drawer | Add `mobile` back to the whole matrix (ADR 0037 dropped it); check only at the three widths | At the three widths the pre-fix layout passes (127 px at tablet), so the check could not have caught its own bug; 13 more captures cost about 5 s |
+| 64 px minimum, calibrated (Phase 2) | Narrowest control of a full run: 119 px (Home), 143.6 px (Settings, tablet), 273.6 px (Settings, reflow); collapsed layout 44.8 px and 26 px | 96 px; a fraction of the container | Q2: leaves 1.5 to 2.5 times either side |
+| Class-contract tests of `ScopedSetting` removed (Phase 2) | The collapsed-control check proves the layout in a browser | Keep the jsdom class-string tests | A review found they pin strings, not layout, and stay green if the parent changes the width |
 
 ## Research Summary
 

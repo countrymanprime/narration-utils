@@ -37,8 +37,8 @@ The Stop hook of this plugin blocks ending a turn when UI files were edited and 
 3. Open the screenshots for every state you touched at every viewport (and both themes for the atlas) using
    `ui-visual-review`. For a fix to a reported visual bug, also do the affected `{page, state}` first with
    `npx playwright test tests/visual/app.spec.ts -g "<page> / <state>"`.
-4. Debt and exemptions. If the change adds or edits `ATLAS_EXEMPT`, an `A11Y_DEBT` entry, a catalog `sameAs`, an
-   `undriven` reason, or raises a ratchet constant (for example `MAX_DEBT_ENTRIES`), the PR description must name each
+4. Debt and exemptions. If the change adds or edits `ATLAS_EXEMPT`, an `A11Y_DEBT` entry, a catalog `sameAs`, a `narrowControls`
+   allowance, an `undriven` reason, or raises a ratchet constant (for example `MAX_DEBT_ENTRIES`), the PR description must name each
    one with: the rule or state, the reason it is not fixed now, and where the fix is tracked. These lists may only
    shrink, so a raised ratchet needs an explicit maintainer decision, not just a green run. An unexplained
    escape is a failed gate.

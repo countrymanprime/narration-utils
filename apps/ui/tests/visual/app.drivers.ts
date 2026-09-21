@@ -54,8 +54,8 @@ async function freezeClock(page: Page): Promise<void> {
 }
 
 async function clickVisible(page: Page, role: Parameters<Page['getByRole']>[0], name: string | RegExp): Promise<void> {
-  // The nav rail is visible at every captured viewport (the hamburger drawer only exists below `md`,
-  // which the suite does not capture), so the click's own auto-wait is enough.
+  // The nav rail is visible at every captured viewport except the reflow one, where only Settings states are captured
+  // and they navigate through clickNav, so the click's own auto-wait is enough.
   await page
     .getByRole(role, { name, exact: typeof name === 'string' })
     .and(page.locator(':visible'))
@@ -90,10 +90,16 @@ const PAGE_CONTENT: Partial<Record<AppPage, (page: Page) => Locator>> = {
 // per width (the full sidebar from 1400 px, the icon rail below), the other is display:none, and both come before <main>
 // in the DOM, so the first visible aside is the navigation.
 async function clickNav(page: Page, name: AppPage): Promise<void> {
-  // The navigation collapses behind an "Open navigation" button below `md`, which the suite does not capture (ADR 0037).
-  // If a phone viewport is ever added, teach this helper to open the drawer; do not guess with a timeout.
-  if (await page.getByRole('button', { name: 'Open navigation' }).isVisible()) {
-    throw new Error('the navigation is collapsed behind its menu button at this viewport; clickNav does not open the drawer (ADR 0037)');
+  // Below `md` the navigation is behind an "Open navigation" button (the reflow viewport, ADR 0061): open the drawer, pick
+  // the item, and wait for the drawer to close so the page behind it is the one photographed. Only when the menu button
+  // is what the layout shows, never on a timeout guess (ADR 0037).
+  const menuButton = page.getByRole('button', { name: 'Open navigation' });
+  if (await menuButton.isVisible()) {
+    await menuButton.click();
+    const drawer = page.getByRole('dialog', { name: 'Navigation' });
+    await drawer.getByRole('button', { name, exact: true }).click();
+    await drawer.waitFor({ state: 'hidden' });
+    return;
   }
   await page.locator('aside:visible').first().getByRole('button', { name, exact: true }).click();
 }

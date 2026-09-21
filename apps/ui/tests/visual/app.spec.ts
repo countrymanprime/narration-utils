@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.3.1 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.3 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { test } from '@playwright/test';
 import { APP_DRIVERS } from './app.drivers';
 import { captureState } from './lib/capture';
@@ -12,7 +12,7 @@ import { VIEWPORTS } from './viewports';
 // capture lives in lib/capture.ts and, across the whole run, global-setup.ts.
 for (const entry of STATE_CATALOG) {
   const driver = APP_DRIVERS[entry.page]?.[entry.state];
-  for (const viewport of VIEWPORTS) {
+  for (const viewport of [...VIEWPORTS, ...(entry.extraViewports ?? [])]) {
     const title = `${entry.page} / ${entry.state} / ${viewport.name}`;
     if (!driver) {
       // Allowed only with a stated reason (src/visualSuite.test.ts enforces it).
