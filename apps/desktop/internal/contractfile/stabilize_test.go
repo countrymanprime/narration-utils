@@ -1,6 +1,7 @@
 package contractfile
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -52,6 +53,32 @@ func TestStabilizeRoundTripsThroughJSONSoTheValueIsWhatTheUIReceives(t *testing.
 
 func TestStabilizeReportsAValueThatCannotBeEncoded(t *testing.T) {
 	if _, err := Stabilize(make(chan int)); err == nil {
+		t.Fatal("expected an error")
+	}
+}
+
+func TestPortablePathsReplacesTheFolderAndUsesForwardSlashes(t *testing.T) {
+	folder := filepath.Join(t.TempDir(), "Alice")
+	got, err := PortablePaths(map[string]any{
+		"selected":   filepath.Join(folder, "Novel.rpp"),
+		"candidates": []string{filepath.Join(folder, "Novel.rpp"), filepath.Join(folder, "Sub", "Alt.rpp")},
+		"name":       "unchanged",
+	}, folder, "C:/Projects/Alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]any{
+		"selected":   "C:/Projects/Alice/Novel.rpp",
+		"candidates": []any{"C:/Projects/Alice/Novel.rpp", "C:/Projects/Alice/Sub/Alt.rpp"},
+		"name":       "unchanged",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("PortablePaths = %#v, want %#v", got, want)
+	}
+}
+
+func TestPortablePathsReportsAValueThatCannotBeEncoded(t *testing.T) {
+	if _, err := PortablePaths(make(chan int), "x", "y"); err == nil {
 		t.Fatal("expected an error")
 	}
 }

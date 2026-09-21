@@ -6,10 +6,8 @@ import { chaptersSchema } from './schemas/manuscript';
 import { guideEntitiesSchema } from './schemas/storyBible';
 import { bootstrapSchema } from './schemas/system';
 import type {
-  Bootstrap,
   GuideEntity,
   GuideEvidence,
-  HostReady,
   ManuscriptNote,
   NarrationApi,
   ProjectAttachState,
@@ -21,10 +19,6 @@ import type {
   TracksDiscovery,
   TranscriptState,
   WorkJob,
-  TtsCatalog,
-  TtsInstallJob,
-  WhisperCatalog,
-  WhisperInstallJob,
 } from '../types';
 import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import {
@@ -315,29 +309,28 @@ export function createMockApi(
     );
   };
   const base: NarrationApi = {
-    ready: async () => ({ apiVersion: DESKTOP_HOST_API_VERSION, diagnosticId: 'mock' }) as HostReady,
-    bootstrap: async () =>
-      ({
-        apiVersion: DESKTOP_HOST_API_VERSION,
-        diagnosticId: 'mock',
-        projectFolder,
-        projectName,
-        daw,
-        manuscript:
-          initial.noManuscript || initial.manuscriptCandidate
-            ? null
-            : {
-                id: 'alice',
-                format: 'docx',
-                sourceName: 'Alice.docx',
-                importedAt: '2026-01-01T00:00:00Z',
-                narratableWordCount: 2672,
-                narratableChapterCount: 3,
-              },
-        manuscriptCandidate: initial.manuscriptCandidate ?? null,
-        runtime: {},
-        transcript: wireClone(transcript),
-      }) as Bootstrap,
+    ready: async () => ({ apiVersion: DESKTOP_HOST_API_VERSION, diagnosticId: 'mock' }),
+    bootstrap: async () => ({
+      apiVersion: DESKTOP_HOST_API_VERSION,
+      diagnosticId: 'mock',
+      projectFolder,
+      projectName,
+      daw,
+      manuscript:
+        initial.noManuscript || initial.manuscriptCandidate
+          ? null
+          : {
+              id: 'alice',
+              format: 'docx',
+              sourceName: 'Alice.docx',
+              importedAt: '2026-01-01T00:00:00Z',
+              narratableWordCount: 2672,
+              narratableChapterCount: 3,
+            },
+      manuscriptCandidate: initial.manuscriptCandidate ?? null,
+      runtime: {},
+      transcript: wireClone(transcript),
+    }),
     selectManuscript: async () => {
       importJob = {
         id: 'mock-import',
@@ -545,17 +538,16 @@ export function createMockApi(
       if (initial.previewError) throw new Error(initial.previewError);
       return { status: 'ready' as const, audioBase64: MOCK_PREVIEW_WAV_BASE64, mimeType: 'audio/wav' };
     },
-    ttsCatalog: async () =>
-      ({
-        catalogVersion: 1,
-        provider: { id: 'piper', effectiveSource: 'repo_default' },
-        voice: { id: mockVoice.id, effectiveSource: 'repo_default' },
-        voices: [{ ...mockVoice, installState: ttsInstalled ? 'installed' : 'not_installed' }],
-      }) as TtsCatalog,
+    ttsCatalog: async () => ({
+      catalogVersion: 1,
+      provider: { id: 'piper', effectiveSource: 'repo_default' },
+      voice: { id: mockVoice.id, effectiveSource: 'repo_default' },
+      voices: [{ ...mockVoice, installState: ttsInstalled ? 'installed' : 'not_installed' }],
+    }),
     ttsInstall: async (voiceId) => {
       if (voiceId !== mockVoice.id) throw new Error('Unknown approved TTS voice.');
       ttsInstalled = true;
-      return { id: null, voiceId, phase: 'success', percent: 100, message: 'Voice installed and verified.', error: '' } as TtsInstallJob;
+      return { id: null, voiceId, phase: 'success', percent: 100, message: 'Voice installed and verified.', error: '' };
     },
     ttsInstallState: async (jobId) => ({
       id: jobId,
@@ -569,16 +561,15 @@ export function createMockApi(
     ttsRemove: async (voiceId) => {
       if (voiceId === mockVoice.id) ttsInstalled = false;
     },
-    whisperCatalog: async () =>
-      ({
-        catalogVersion: 1,
-        model: { id: mockWhisperModel.id, effectiveSource: 'repo_default' },
-        models: [{ ...mockWhisperModel, installState: whisperInstalled ? 'installed' : 'not_installed' }],
-      }) as WhisperCatalog,
+    whisperCatalog: async () => ({
+      catalogVersion: 1,
+      model: { id: mockWhisperModel.id, effectiveSource: 'repo_default' },
+      models: [{ ...mockWhisperModel, installState: whisperInstalled ? 'installed' : 'not_installed' }],
+    }),
     whisperInstall: async (modelId) => {
       if (modelId !== mockWhisperModel.id) throw new Error('Unknown approved Whisper model.');
       whisperInstalled = true;
-      return { id: null, modelId, phase: 'success', message: 'Whisper model installed and verified.' } as WhisperInstallJob;
+      return { id: null, modelId, phase: 'success', message: 'Whisper model installed and verified.' };
     },
     whisperInstallState: async (jobId) => ({ id: jobId, modelId: mockWhisperModel.id, phase: 'success', message: 'Whisper model installed and verified.' }),
     whisperInstallCancel: async (jobId) => ({ id: jobId, modelId: mockWhisperModel.id, phase: 'cancelled', message: 'Whisper model download cancelled.' }),

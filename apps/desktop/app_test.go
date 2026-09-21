@@ -453,3 +453,15 @@ func TestWriteReaperLauncherPathRefreshesMovedExecutable(t *testing.T) {
 		t.Fatalf("launcher target = %q, want %q", got, want)
 	}
 }
+
+// A voice download blocks a project attach for as long as it is downloading (the UI's phase name, not "running").
+func TestAVoiceDownloadInProgressBlocksAProjectAttach(t *testing.T) {
+	host := &Host{ttsJobs: map[string]*ttsJob{"tts-1": {id: "tts-1", voiceID: "v", phase: ttsPhaseDownloading}}}
+	if host.canAttachLocked() {
+		t.Fatal("a project attach must wait for a voice download")
+	}
+	host.ttsJobs["tts-1"].phase = "success"
+	if !host.canAttachLocked() {
+		t.Fatal("a finished voice download must not block an attach")
+	}
+}

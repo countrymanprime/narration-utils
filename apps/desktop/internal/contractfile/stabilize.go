@@ -3,7 +3,9 @@ package contractfile
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 var (
@@ -55,6 +57,37 @@ func stabilize(value any, names map[string]string) any {
 		// Keys are visited in sorted order so the numbering does not depend on map iteration order.
 		for _, key := range sortedKeys(typed) {
 			typed[key] = stabilize(typed[key], names)
+		}
+		return typed
+	}
+	return value
+}
+
+// PortablePaths replaces a machine-specific folder (a temp directory) with a fixed one in every string of a payload and writes the
+// paths that were under it with forward slashes, so the contract file reads the same on every machine.
+func PortablePaths(value any, folder, replacement string) (any, error) {
+	stable, err := Stabilize(value)
+	if err != nil {
+		return nil, err
+	}
+	return portable(stable, folder, replacement), nil
+}
+
+func portable(value any, folder, replacement string) any {
+	switch typed := value.(type) {
+	case string:
+		if strings.Contains(typed, folder) {
+			return filepath.ToSlash(strings.ReplaceAll(typed, folder, replacement))
+		}
+		return typed
+	case []any:
+		for index, item := range typed {
+			typed[index] = portable(item, folder, replacement)
+		}
+		return typed
+	case map[string]any:
+		for key, item := range typed {
+			typed[key] = portable(item, folder, replacement)
 		}
 		return typed
 	}

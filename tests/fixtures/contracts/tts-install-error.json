@@ -1,0 +1,8 @@
+{
+  "error": "the download failed its checksum",
+  "id": "tts-1",
+  "message": "the download failed its checksum",
+  "percent": 0,
+  "phase": "error",
+  "voiceId": "en_US-ljspeech-high"
+}

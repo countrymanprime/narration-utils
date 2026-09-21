@@ -1,0 +1,28 @@
+{
+  "catalogVersion": 1,
+  "provider": {
+    "effectiveSource": "repo_default",
+    "id": "piper"
+  },
+  "voice": {
+    "effectiveSource": "repo_default",
+    "id": "en_US-ljspeech-high"
+  },
+  "voices": [
+    {
+      "attribution": "LJ Speech Dataset (public domain); Piper voice model by rhasspy contributors.",
+      "displayName": "LJ Speech (U.S. English)",
+      "downloadSize": 114203981,
+      "id": "en_US-ljspeech-high",
+      "installState": "not_installed",
+      "license": "Public domain training data; Piper Voices repository MIT",
+      "licenseUrl": "https://keithito.com/LJ-Speech-Dataset/",
+      "locale": "en_US",
+      "modelCardUrl": "https://huggingface.co/rhasspy/piper-voices/blob/v1.0.0/en/en_US/ljspeech/high/MODEL_CARD",
+      "provenanceUrl": "https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0/en/en_US/ljspeech/high",
+      "provider": "piper",
+      "publisher": "rhasspy",
+      "version": "1.0.0"
+    }
+  ]
+}
