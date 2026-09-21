@@ -314,6 +314,44 @@ export const STATE_CATALOG: StateEntry[] = [
     description: 'Settings, About and updates in a development build, which has no release to compare with (?mockUpdate=development)',
     ...REFLOW,
   },
+  {
+    page: 'settings',
+    state: 'local-assets',
+    description:
+      'Settings, Global scope / Local assets category: every voice and model with its sizes, licence and state, the folder and the total on disk (the voice is not installed, the others are)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'local-assets-downloading',
+    description:
+      'Settings, Local assets with a download that was already running when the page opened, followed through activeJobId: real bytes, 39 percent and Cancel (?mockAssets=installing)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'local-assets-verifying',
+    description: 'Settings, Local assets with a download at its check: a busy button, no Cancel (?mockAssets=checking)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'local-assets-needs-repair',
+    description: 'Settings, Local assets with a model that failed its verification: Needs repair, with Repair and Remove (?mockAssets=damaged)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'local-assets-failed',
+    description: 'Settings, Local assets after a download failed: the reason is written in the row and Download stays (?mockAssets=download-fails)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'local-assets-remove-confirm',
+    description: 'Settings, Local assets: the danger confirm before a model is removed, with what it frees and what asks again',
+    ...REFLOW,
+  },
   { page: 'settings', state: 'project-proofing', description: 'Settings, Project scope / Proofing category', ...REFLOW },
   { page: 'settings', state: 'project-storybible', description: 'Settings, Project scope / Story Bible category', ...REFLOW },
   { page: 'settings', state: 'project-data', description: 'Settings, Project scope / Project data category (clear derived project data)', ...REFLOW },

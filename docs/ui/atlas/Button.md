@@ -21,6 +21,8 @@ Storybook title: `Primitives/Button`. Source: `src/components/primitives/Button.
 
 ## Used by
 
+- `src/components/assets/LocalAssetRow.tsx`
+- `src/components/assets/LocalAssets.tsx`
 - `src/components/layout/LoadError.tsx`
 - `src/components/layout/StartupScreen.tsx`
 - `src/components/manuscript/AddNoteDialog.tsx`

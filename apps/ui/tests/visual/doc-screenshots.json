@@ -225,6 +225,13 @@
   },
   {
     "page": "settings",
+    "state": "local-assets",
+    "viewport": "desktop",
+    "docName": "settings-local-assets",
+    "caption": "Settings - Global scope, Local assets category: a voice not installed, a Whisper model and a language model installed"
+  },
+  {
+    "page": "settings",
     "state": "project-data",
     "viewport": "desktop",
     "docName": "settings-project-data",

@@ -3,9 +3,7 @@ import type { AssetInstall } from '../../hooks/useAssetInstall';
 import type { AssetInstallJob, WorkJob } from '../../types';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { WorkDialog } from '../primitives/WorkDialog';
-
-const BYTES_PER_MB = 1024 * 1024;
-const megabytes = (bytes: number) => Math.round(bytes / BYTES_PER_MB);
+import { bytesProgress } from './AssetFacts';
 
 const WORK_PHASE: Record<AssetInstallJob['phase'], WorkJob['phase']> = {
   downloading: 'running',
@@ -14,12 +12,6 @@ const WORK_PHASE: Record<AssetInstallJob['phase'], WorkJob['phase']> = {
   cancelled: 'cancelled',
   error: 'error',
 };
-
-/** While it downloads, the real bytes so far, so the narrator sees it move and knows how far it has to go. */
-function bytesDetail(job: AssetInstallJob): string | undefined {
-  if (job.phase !== 'downloading' || job.bytesTotal <= 0) return undefined;
-  return `${megabytes(job.bytesDone)} of ${megabytes(job.bytesTotal)} MB`;
-}
 
 function workJob(install: AssetInstall): WorkJob {
   const { job, failure, cancelFailure, log, seconds } = install;
@@ -30,7 +22,7 @@ function workJob(install: AssetInstall): WorkJob {
     kind: 'asset_install',
     phase: WORK_PHASE[job.phase],
     message: cancelFailure ? `The download could not be stopped: ${cancelFailure}` : job.message,
-    detail: bytesDetail(job),
+    detail: bytesProgress(job),
     percent: job.percent,
     logs: log,
     elapsed: seconds,

@@ -43,9 +43,12 @@ export function useAssetInstall<J extends AssetInstallJob>(options: Options<J>) 
 
   const running = starting || (job !== undefined && isInstallRunning(job));
 
+  // Leaving stops the loop in flight. It also gives the guard back: an effect that ran `begin` and was torn down before it answered (StrictMode does
+  // that on every mount, and a page that follows a download already running begins from an effect) must not leave the next `begin` refused.
   useEffect(
     () => () => {
       generation.current += 1;
+      active.current = false;
     },
     [],
   );
@@ -107,7 +110,14 @@ export function useAssetInstall<J extends AssetInstallJob>(options: Options<J>) 
     setCancelFailure('');
     try {
       const answer = await latest.current.cancel(running.id);
-      if (generation.current === mine) show(answer);
+      if (generation.current !== mine) return;
+      show(answer);
+      // The download ended with the Cancel: stop the poll loop (it would only notice at its next tick) and give the guard back, so a Download
+      // pressed at once starts a new install and is not refused for the length of one poll.
+      if (!isInstallRunning(answer)) {
+        generation.current += 1;
+        active.current = false;
+      }
     } catch (error) {
       if (generation.current === mine) setCancelFailure(apiErrorMessage(error));
     }

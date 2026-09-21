@@ -1,7 +1,7 @@
-import { Progress } from '@base-ui/react/progress';
 import type { WorkJob } from '../../types';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
+import { ProgressBar } from './ProgressBar';
 
 const active = new Set<WorkJob['phase']>(['preparing', 'committing', 'running']);
 
@@ -71,16 +71,7 @@ export function WorkDialog({
         </span>
         <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs">{Math.floor(job.elapsed)}s</span>
       </div>
-      {/* Progress carries the semantics (role, aria-valuenow only when determinate); the fill below keeps the current look. */}
-      <Progress.Root value={indeterminate ? null : job.percent} aria-label={`${title} progress`} aria-valuetext={job.detail} className="mt-3">
-        <Progress.Track className="progressbar h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
-          <div
-            // motion-safe: the fill neither eases nor slides for people who have asked for reduced motion.
-            className={`h-full bg-[var(--accent)] motion-safe:transition-[width] motion-safe:duration-[0.4s] motion-safe:ease-in-out ${indeterminate ? 'motion-safe:animate-[work-progress-slide_1.15s_ease-in-out_infinite]' : ''}`}
-            style={{ width: `${Math.max(job.percent, running ? 4 : 0)}%` }}
-          />
-        </Progress.Track>
-      </Progress.Root>
+      <ProgressBar label={`${title} progress`} value={indeterminate ? null : job.percent} running={running} valueText={job.detail} className="mt-3" />
       <div className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
         <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] uppercase">Live activity</div>
         <div

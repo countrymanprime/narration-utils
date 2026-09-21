@@ -56,7 +56,11 @@ const mockUpdate = (
 ).find((seed) => seed === mockParams.get('mockUpdate'));
 // `?mockAssets=missing|downloading|verifying|download-fails` boots without the voice, model and language model installed (so the first-use questions show) and makes the next voice or model download hold at 40 percent, hold at the check, or fail after 40
 // percent, so the download dialogs can be seen without a host or a 114 MB transfer. Unset, a download runs through its steps to the end.
-const mockAssets = (['missing', 'downloading', 'verifying', 'download-fails'] as const).find((seed) => seed === mockParams.get('mockAssets'));
+// `installing|checking|damaged` are for Settings > Local assets: they boot with the Whisper model and the language model installed, and
+// `installing` / `checking` with the voice download already running (held at 40 percent, or at the check), `damaged` with the Whisper model failing its check.
+const mockAssets = (['missing', 'downloading', 'verifying', 'download-fails', 'installing', 'checking', 'damaged'] as const).find(
+  (seed) => seed === mockParams.get('mockAssets'),
+);
 const mockInitial = {
   ...(mockAssets ? { assets: mockAssets } : {}),
   ...(mockUpdate ? { update: mockUpdate } : {}),

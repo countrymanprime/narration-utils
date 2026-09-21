@@ -24,6 +24,31 @@ leaving its settings in place.
 
 ![Settings - Project scope, Project data category (clear derived project data)](../../images/ui/settings-project-data.webp)
 
+## Local assets
+
+The **Local assets** category of the Global scope lists every optional download Narration Utils can keep on this computer: preview
+voices, Whisper models for proofing comparisons and the language model the Story Bible uses. Nothing here downloads by itself, and
+removing one never touches your settings or projects. The page also shows how much disk the installed ones use and the folder they
+are kept in.
+
+![Settings - Global scope, Local assets category](../../images/ui/settings-local-assets.webp)
+
+Each entry says what it is, its exact version, who publishes it, its download and disk sizes, and links to its license, model
+card and provenance. Its state is one of:
+
+- **Not installed**: **Download** starts the download. A bar shows the real bytes so far and **Cancel** stops it while bytes are
+  arriving; the checks after the last byte cannot be cancelled. A download that is already running when you open the page
+  (started by a Story Bible build, a preview or a comparison) is shown here too, and leaving the page does not stop it.
+- **Downloading** and **Verifying**: the download itself, then the check of every file against its approved size and checksum.
+- **Installed**: **Verify** reads every file again and checks it (it can take a few seconds for a large model, and the button shows it
+  is working), and **Remove** deletes that one asset after you confirm. The confirm says how much space it frees and what will ask
+  to download it again.
+- **Needs repair**: some files are missing or no longer match the approved ones, so the app will not use the asset. **Repair**
+  downloads it again and checks it; **Remove** deletes it instead.
+
+If a download, a check or a removal fails, the reason is written in that entry, and the entry keeps its buttons so you can try
+again.
+
 ## About and updates
 
 The last category of the Global scope, **About & updates**, shows which version of Narration Utils you are running and looks

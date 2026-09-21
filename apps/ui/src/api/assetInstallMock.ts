@@ -1,10 +1,26 @@
 import type { AssetInstallJob } from '../types';
 
 /**
- * How the mock's next install behaves. Unset, it runs to the end: half the bytes, the check, success. Any seed also boots the mock without the
- * downloadable assets installed, so the first-use question shows; `missing` is that and nothing else (the downloads then run to the end).
+ * How the mock's next install behaves. Unset, it runs to the end: half the bytes, the check, success. The first four seeds also boot the mock
+ * without the downloadable assets installed, so the first-use question shows; `missing` is that and nothing else (the downloads then run to the
+ * end). The last three are for the Local assets page (`LOCAL_ASSETS_SEEDS`).
  */
-export type MockAssetSeed = 'missing' | 'downloading' | 'verifying' | 'download-fails';
+export type MockAssetSeed = 'missing' | 'downloading' | 'verifying' | 'download-fails' | 'installing' | 'checking' | 'damaged';
+
+/**
+ * The three seeds for the "Local assets" page rather than for a download dialog. Each boots with the Whisper model and the language model
+ * installed, so the page shows a mix: `installing` and `checking` boot with the voice download already running (held at 40 percent, or at the
+ * check), which a page opened mid-download follows through the asset's `activeJobId`; `damaged` boots with the Whisper model failing its
+ * verification (Needs repair), and a repair runs to the end.
+ */
+export const LOCAL_ASSETS_SEEDS: readonly MockAssetSeed[] = ['installing', 'checking', 'damaged'];
+
+/** The seed the scripted install itself follows: a download already running is held where the seed says, and a repair is not held at all. */
+export function installSeedFor(seed: MockAssetSeed | undefined): 'missing' | 'downloading' | 'verifying' | 'download-fails' | undefined {
+  if (seed === 'installing') return 'downloading';
+  if (seed === 'checking') return 'verifying';
+  return seed === 'damaged' ? undefined : seed;
+}
 
 const FAILURE =
   'The downloaded file did not match the approved one, so it was not installed. Try again; if it keeps happening, the file may have changed at its source.';
@@ -75,6 +91,8 @@ export function createInstallMock<Extra extends Pick<AssetInstallJob, 'kind' | '
       current = advance(current);
       return { ...current };
     },
+    /** The id of the running install, or empty: what `assetsList` reports as `activeJobId`. */
+    activeId: (): string => (current && running(current) ? current.id : ''),
     cancel: async (jobId: string): Promise<AssetInstallJob & Extra> => {
       if (!current || current.id !== jobId) throw new Error(`unknown ${noun} install job`);
       if (running(current)) current = { ...current, phase: 'cancelled', message: `${capital} download cancelled.` };
