@@ -84,3 +84,5 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0059](0059-text-colours-meet-wcag-aa-with-two-text-levels-a-non-text-token-and-derived-on-tint-text.md) | Text colours meet WCAG AA: two text levels, a non-text token, and derived on-tint text | Accepted (amends ADR-0016) |
 | [0060](0060-the-visual-suite-fails-a-collapsed-control-and-a-row-may-declare-one-narrow-on-purpose.md) | The visual suite fails a collapsed control, and a row may declare one narrow on purpose | Accepted (amends ADR-0023) |
 | [0061](0061-settings-states-are-also-captured-at-a-390px-reflow-width.md) | Settings states are also captured at a 390 px reflow width | Proposed (amends ADR-0037) |
+| [0062](0062-ui-import-rules-are-a-dependency-cruiser-config-and-a-mark-scan-that-name-their-adr.md) | UI import rules are a dependency-cruiser config and a `<mark>` scan that name their ADR | Accepted |
+| [0063](0063-the-proofing-diff-marks-its-own-words-and-adr-0016-covers-entry-highlights.md) | The proofing diff marks its own words, and ADR 0016 covers entry highlights | Proposed (amends ADR-0016) |

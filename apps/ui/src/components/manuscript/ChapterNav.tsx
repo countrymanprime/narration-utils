@@ -1,17 +1,8 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBookmark, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { STATUS_COLOR } from '../../chapterStatus';
 import { isListableChapter } from '../../state';
 import type { ManuscriptChapter, ReaderBookmark, SearchHit } from '../../types';
-
-export const STATUS_LABELS = { not_started: 'Not Started', recording: 'Recording', editing: 'Editing', proofing: 'Proofing', finalized: 'Finalized' } as const;
-export const STATUS_ORDER = ['not_started', 'recording', 'editing', 'proofing', 'finalized'] as const;
-export const STATUS_COLOR: Record<keyof typeof STATUS_LABELS, string> = {
-  not_started: 'var(--non-text)',
-  recording: 'var(--info)',
-  editing: 'var(--warn)',
-  proofing: 'var(--org)',
-  finalized: 'var(--character)',
-};
 
 export function ChapterNav({
   chapters,

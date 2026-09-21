@@ -24,7 +24,7 @@ jobs:
           need-linux-native-deps: 'false'
       - uses: ./.github/actions/nx-run
         with:
-          targets: lint format test
+          targets: lint format architecture test
           projects: narration-utils-ui
       # Knip reads every workspace, so a change anywhere can leave an unused file or export: `always`.
       - uses: ./.github/actions/nx-run

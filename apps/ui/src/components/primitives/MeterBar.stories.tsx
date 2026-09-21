@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
-import { STATUS_COLOR, STATUS_LABELS, STATUS_ORDER } from '../manuscript/ChapterNav';
+import { STATUS_COLOR, STATUS_LABELS, STATUS_ORDER } from '../../chapterStatus';
 import { Button } from './Button';
 import { MeterBar, type MeterSegment } from './MeterBar';
 

@@ -9,7 +9,7 @@ import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '../primitives
 import { MeterBar } from '../primitives/MeterBar';
 import { Panel } from '../primitives/Panel';
 import { Select } from '../primitives/Select';
-import { STATUS_COLOR, STATUS_LABELS, STATUS_ORDER } from '../manuscript/ChapterNav';
+import { STATUS_COLOR, STATUS_LABELS, STATUS_ORDER } from '../../chapterStatus';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 

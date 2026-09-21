@@ -108,7 +108,7 @@ runner called:
 
 | Project | Folder | Targets |
 | --- | --- | --- |
-| `narration-utils-ui` | `apps/ui` | `lint`, `format`, `test`, `build`, `visual` (Playwright screenshots), `atlas` |
+| `narration-utils-ui` | `apps/ui` | `lint`, `format`, `architecture` (the import rules of [ADR 0062](../adr/0062-ui-import-rules-are-a-dependency-cruiser-config-and-a-mark-scan-that-name-their-adr.md)), `test`, `build`, `visual` (Playwright screenshots), `atlas` |
 | `narration-utils-shell` | `apps/desktop` | `lint` (gofmt, go vet, golangci-lint v2: errcheck, staticcheck, gosec and the `standard` set), `test` (`-race` in the `ci` configuration), `test-schedules` (the teleprompter and shutdown tests on one and on four CPUs, five times each; run by the CI `go` job, not by `pnpm check`), `package` (`wails build`, not part of the gate) |
 | `narration-common` | `libs/python` | `lint` (ruff), `test` (pytest) |
 | `manuscript-guide`, `manuscript-teleprompter`, `transcript-compare` | `sidecars/<name>` | `lint`, `test` |
@@ -118,7 +118,7 @@ runner called:
 | `config`, `fixtures` | `config`, `tests/fixtures` | none (fixtures: `lint`); they exist so a change to them affects the projects that read them |
 | `narration-utils` | the repo root | `knip` (unused files, exports and dependencies, gated at zero: see below); also the `nx release` project |
 
-- **`pnpm check`** runs `nx run-many` over `lint format knip test test-node build`, one project at a time and never from
+- **`pnpm check`** runs `nx run-many` over `lint format architecture knip test test-node build`, one project at a time and never from
   the Nx cache, so a green gate means every check ran. `check:fast` and the Git hooks still use
   `scripts/quality.mjs` on staged files.
 - **Look around** with `pnpm exec nx show projects`, `pnpm exec nx graph`, and
