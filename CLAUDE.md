@@ -11,6 +11,10 @@ New features and bugfixes in this repo have a history of silently breaking unrel
 5. **`design-spec-guard`** — if the change touches `apps/ui/src/components/primitives/` or `apps/ui/src/styles.css`, check it doesn't silently contradict a recorded ADR.
 6. **`feature-cleanup`** — dead code, stale docs, scratch artifacts, ADR bookkeeping (`adr-author` if a real decision was made), final `git status` review. Re-run `full-verification-gate` after any cleanup edits.
 
+## Wire contracts
+
+Anything that crosses into the UI (a Wails binding result, a live event) or that the host reads back from disk is checked where it crosses, and a new one brings its checks with it: a Zod schema in `apps/ui/src/api/schemas/`, a golden payload written by a Go or Python test (`tests/fixtures/contracts/`, regenerated with `UPDATE_CONTRACTS=1`, never edited by hand), a row in `apps/ui/src/api/wireContracts.test.ts` and a mock that passes the schema. A new REAPER event goes in the table in `apps/desktop/internal/bridge/wire.go`. No `as` cast or bare `JSON.parse` on a payload. See `docs/architecture/wire-contracts.md`.
+
 ## Visual bug fixes require screenshot verification
 
 When fixing a visual/UI bug in `apps/ui`, do not consider it done from code review or a single manual screenshot alone. Before reporting a visual fix as complete:

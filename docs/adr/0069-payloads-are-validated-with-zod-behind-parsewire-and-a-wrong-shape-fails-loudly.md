@@ -8,7 +8,7 @@
 
 Data crosses four boundaries in this app and, until now, none of them was checked at runtime. The UI called `JSON.parse(value) as T` on 65 of the 67 Wails bindings (they return a string, so Wails generates no model), cast every live event, and read `Bootstrap` and `Ready` with `as`. The Go host built payloads as `map[string]any`, read sidecar output and REAPER events by field index with helpers that turn a parse error into `0`, and read six persisted files that fell back to "empty" without saying so. The result was drift that showed up far from its cause: `TranscriptState` declares `runId?: string` while Go sends `null`, the `normalize*` helpers each patch one field, and the mock client and fixtures could diverge from what the real host sends because nothing compared them. The client also had no host log to write to: `SystemReportDiagnostic` discarded its arguments.
 
-The owner approved runtime validation at the boundaries and answered the open questions of the [boundary schema validation PRD](../prds/boundary-schema-validation.prd.md) (owner decisions D16 and D22). A fifth boundary, the in-app update manifest (D14), is coming and is remote JSON.
+The owner approved runtime validation at the boundaries and answered the open questions of the runtime schema validation PRD (`docs/prds/boundary-schema-validation.prd.md`, deleted when the work was done; recover it from git history; the steady state is [wire contracts](../architecture/wire-contracts.md)) (owner decisions D16 and D22). A fifth boundary, the in-app update manifest (D14), is coming and is remote JSON.
 
 ## Decision
 
