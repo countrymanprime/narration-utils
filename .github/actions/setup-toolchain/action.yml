@@ -40,21 +40,21 @@ runs:
       shell: bash
       run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
     - if: inputs.need-pnpm == 'true'
-      uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
       with: { version: 11.27.0 }
     - if: inputs.need-node == 'true'
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version: 22
         cache: ${{ inputs.need-pnpm == 'true' && 'pnpm' || '' }}
         cache-dependency-path: pnpm-lock.yaml
     - if: inputs.need-go == 'true' || inputs.need-wails-tools == 'true' || inputs.need-golangci-lint == 'true'
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
       with:
         go-version: '1.27.1'
         cache-dependency-path: apps/desktop/go.sum
     - if: inputs.need-python == 'true'
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
       with: { python-version: '3.12' }
     - if: inputs.need-python == 'true'
       uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
@@ -68,7 +68,7 @@ runs:
     # The key hashes scripts/toolchain.json, which pins the versions installed below (keep them in step).
     - if: inputs.need-wails-tools == 'true'
       id: wails-cache
-      uses: actions/cache@v4
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: ~/go/bin/wails${{ runner.os == 'Windows' && '.exe' || '' }}
         key: go-tool-wails-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/toolchain.json') }}
@@ -80,7 +80,7 @@ runs:
     # binary: a prebuilt binary is compiled with one Go version and refuses to lint a module that targets a newer one.
     - if: inputs.need-golangci-lint == 'true'
       id: golangci-lint-cache
-      uses: actions/cache@v4
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: ~/go/bin/golangci-lint${{ runner.os == 'Windows' && '.exe' || '' }}
         key: go-tool-golangci-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/toolchain.json') }}

@@ -12,7 +12,7 @@
   },
   "stylua": {
     "version": "v2.1.0",
-    "provisioner": "JohnnyMorganz/stylua-action@v4.1.0"
+    "provisioner": "JohnnyMorganz/stylua-action v4.1.0, pinned by commit SHA in .github/actions/setup-toolchain/action.yml"
   },
   "lua": {
     "version": "5.4",

@@ -65,9 +65,18 @@ The workflows build and publish an unsigned executable, so they are treated as c
 [zizmor](https://docs.zizmor.sh) reads every workflow, composite action and `dependabot.yml` on every pull request
 (`zizmor.yml`, no path filter) and reports unpinned actions, credentials left in `.git/config`, template injection,
 excessive permissions and dangerous triggers. Its configuration is `.github/zizmor.yml`; every suppression there
-names its reason. It is advisory (a finding does not fail the job) until every action is pinned to a commit SHA.
-Run it locally with `uvx zizmor --persona regular .` (add `--gh-token "$(gh auth token)"` for the
-online audits).
+names its reason. The check is blocking: a finding at the `regular` persona fails it. Run it locally with
+`uvx zizmor --persona regular .` (add `--gh-token "$(gh auth token)"` for the online audits).
+
+**Every action is pinned to a commit.** A `uses:` line that names another repository is a full 40-character commit SHA
+with a comment holding the full release tag, for example `actions/checkout@3d3c42e5… # v7.0.1`; a tag such as `@v7` can
+be moved to different code after the fact, a SHA cannot. References to this repository's own composite actions and
+reusable workflows (`./.github/...`) stay as they are. zizmor's `unpinned-uses` audit is the gate, so an unpinned line
+fails the `zizmor` check and names the line. To pin a new action run `pinact run` (the `pinact` Go tool, `go install
+github.com/suzuki-shunsuke/pinact/v3/cmd/pinact@latest`, with `GITHUB_TOKEN` set; it converts the tag to its SHA and
+writes the comment); `pinact run --verify --check` re-checks that every SHA matches its comment. Dependabot
+(`github-actions`, weekly, with a 7-day cooldown) proposes the newer SHA and rewrites the comment. A new action needs
+a reason: it runs with the job's token, so prefer a script in `scripts/` or a tool the toolchain already installs.
 
 The permission model, so a change can be judged against it:
 
