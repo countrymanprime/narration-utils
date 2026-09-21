@@ -12,13 +12,7 @@ export interface A11yDebt {
 const HIGHLIGHT_CONTRAST =
   'Category colours (--character, --place, ...) used as text on a 20% tint of themselves reach only 3.2-3.8:1. Fixing it changes the highlight design (ADR-0016) - a design decision, tracked separately.';
 
-const ACCENT_ON_TINT =
-  'Active nav item is --accent text on a 10% accent tint: 4.03:1 in the light theme. Fixing it means a darker accent for text (--accent-strong), a design decision, tracked separately.';
-
-export const A11Y_DEBT: A11yDebt[] = [
-  { title: 'Primitives/NavButton', rules: ['color-contrast'], reason: ACCENT_ON_TINT },
-  { title: 'Primitives/Highlight', rules: ['color-contrast'], reason: HIGHLIGHT_CONTRAST },
-];
+export const A11Y_DEBT: A11yDebt[] = [{ title: 'Primitives/Highlight', rules: ['color-contrast'], reason: HIGHLIGHT_CONTRAST }];
 
 export function allowedRules(title: string): string[] {
   return A11Y_DEBT.filter((debt) => debt.title === title).flatMap((debt) => debt.rules);

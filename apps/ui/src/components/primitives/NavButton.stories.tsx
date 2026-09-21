@@ -20,7 +20,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Inactive: Story = {};
-// The current page: accent text on a tinted fill, exposed as aria-current="page".
+// The current page: accent-strong text on a tinted fill (ADR 0059), exposed as aria-current="page".
 export const Active: Story = { args: { active: true } };
 export const Disabled: Story = { args: { icon: faFileLines, children: 'Manuscript', disabled: true, disabledReason: MANUSCRIPT_REQUIRED_REASON } };
 
