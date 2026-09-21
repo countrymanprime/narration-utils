@@ -1,6 +1,6 @@
 # TXT and EPUB Manuscript Import
 
-**Source:** user request of 2026-09-20 ("add a PRD to support TXT and EPUB imports"). Citations are `file:line` on branch `claude/reverent-dijkstra-d02b07` at 6c037d3f. Nothing here is built yet. Related: [import-structure-toc-and-characters.prd.md](import-structure-toc-and-characters.prd.md) (shares `model.go`; its Phase 4 reads a docx TOC, which an EPUB gives us structurally), [import-review-redesign.prd.md](import-review-redesign.prd.md) (the dialog and `Home.tsx`), [verification-and-code-health-tooling.prd.md](verification-and-code-health-tooling.prd.md) Phase 6 (fuzz targets).
+**Source:** user request of 2026-09-20 ("add a PRD to support TXT and EPUB imports"). Citations are `file:line` on branch `claude/reverent-dijkstra-d02b07` at 6c037d3f. Nothing here is built yet. Related: [import-structure-toc-and-characters.prd.md](import-structure-toc-and-characters.prd.md) (shares `model.go`; its Phase 4 reads a docx TOC, which an EPUB gives us structurally), [import-review-redesign.prd.md](import-review-redesign.prd.md) (the dialog and `Home.tsx`), verification-and-code-health-tooling.prd.md (PRD deleted, delivered) Phase 6 (fuzz targets).
 
 ## Problem Statement
 

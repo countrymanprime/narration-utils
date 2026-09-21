@@ -1,6 +1,6 @@
 # Story Bible Entries: Properties, Actions and Pronunciation
 
-**Source:** user requests of 2026-09-20 (items 20, 21, 22, 24). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. Nothing here is built yet. Related: [import-structure-toc-and-characters.prd.md](import-structure-toc-and-characters.prd.md) (properties captured at import), [story-bible-preview-tts-failures.prd.md](story-bible-preview-tts-failures.prd.md) (the preview error), [story-bible-and-import-ux-briefs.prd.md](story-bible-and-import-ux-briefs.prd.md) phases 9-11 (pronunciation provider), the delivered primitives (`IconButton`, `Menu`, `TextField`, `Select`, `Table`; see [design-system.md](../design/design-system.md)).
+**Source:** user requests of 2026-09-20 (items 20, 21, 22, 24). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. Nothing here is built yet. Related: [import-structure-toc-and-characters.prd.md](import-structure-toc-and-characters.prd.md) (properties captured at import), [the Story Bible preview](../architecture/story-bible-preview.md) (the preview error, delivered), [story-bible-and-import-ux-briefs.prd.md](story-bible-and-import-ux-briefs.prd.md) phases 9-11 (pronunciation provider), the delivered primitives (`IconButton`, `Menu`, `TextField`, `Select`, `Table`; see [design-system.md](../design/design-system.md)).
 
 ## Problem Statement
 
