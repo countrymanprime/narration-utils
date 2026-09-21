@@ -100,5 +100,17 @@
     "file": "narration_bridge_core.lua",
     "find": "if commands[name] then\n      error(",
     "replace": "if false then\n      error("
+  },
+  {
+    "name": "an unsupported command's error loses the run it belongs to",
+    "file": "narration_ui_bridge.lua",
+    "find": "ctx.event('ERROR', command[3] or '', 'Unsupported workspace command')",
+    "replace": "ctx.event('ERROR', '', 'Unsupported workspace command')"
+  },
+  {
+    "name": "the command listing is not refreshed (REAPER caches it)",
+    "file": "narration_bridge_core.lua",
+    "find": "reaper.EnumerateFiles(directory, -1)\n  local names",
+    "replace": "local names"
   }
 ]

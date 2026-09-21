@@ -90,12 +90,12 @@ end
 -- reported as stale; no adjacent item is ever used in its place.
 local function stamp_item_lines(session_dir, run_id, path, overwrite)
   if not reaper.APIExists('GetSetMediaItemInfo_String') then
-    event(session_dir, 'ERROR', 'This REAPER version cannot store item extension data.')
+    event(session_dir, 'ERROR', run_id, 'This REAPER version cannot store item extension data.')
     return
   end
   local rows = read_stamp_payload(path)
   if not rows then
-    event(session_dir, 'ERROR', 'The manuscript line list was not found.')
+    event(session_dir, 'ERROR', run_id, 'The manuscript line list was not found.')
     return
   end
   local plan = plan_stamps(rows, items_by_guid(), overwrite)
@@ -119,7 +119,7 @@ end
 local function read_line_ids(session_dir, run_id, path)
   local output = io.open(path, 'w')
   if not output then
-    event(session_dir, 'ERROR', 'Could not write the manuscript line report.')
+    event(session_dir, 'ERROR', run_id, 'Could not write the manuscript line report.')
     return
   end
   local count = 0
@@ -186,12 +186,12 @@ end
 -- title and bounds within a hundredth of a second), so re-running is safe.
 local function create_chapter_regions(session_dir, run_id, path, hex)
   if not reaper.APIExists('AddProjectMarker2') then
-    event(session_dir, 'ERROR', 'This REAPER version cannot add regions.')
+    event(session_dir, 'ERROR', run_id, 'This REAPER version cannot add regions.')
     return
   end
   local rows, invalid = read_region_payload(path)
   if not rows then
-    event(session_dir, 'ERROR', 'The chapter region list was not found.')
+    event(session_dir, 'ERROR', run_id, 'The chapter region list was not found.')
     return
   end
   local known, pending, existing_count = project_regions(), {}, 0

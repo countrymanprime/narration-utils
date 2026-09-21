@@ -36,8 +36,27 @@ type Service struct {
 	logAt             int64
 }
 
+// New builds the service. When there is a bridge it subscribes to the events Transcript Compare owns: the
+// COMPARE_* family, and ERROR events for its own run (or with no run, a session-level problem). Other consumers of
+// the same client subscribe for their own events; nobody reads the log directly.
 func New(config Config, client *bridge.Client, store *settings.Store, sidecars *process.Supervisor, changed func(map[string]any)) *Service {
-	return &Service{config: config, bridge: client, settings: store, sidecars: sidecars, changed: changed, state: empty()}
+	s := &Service{config: config, bridge: client, settings: store, sidecars: sidecars, changed: changed, state: empty()}
+	if client != nil {
+		client.Subscribe(bridge.Subscription{
+			Tags:   []string{"COMPARE_*", "ERROR"},
+			Owns:   s.ownsRun,
+			Handle: func(event bridge.Event) { s.Handle(event.Fields) },
+		})
+	}
+	return s
+}
+
+// ownsRun reports whether runID is the run this service is tracking.
+func (s *Service) ownsRun(runID string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	current, _ := s.state["runId"].(string)
+	return runID != "" && runID == current
 }
 func empty() map[string]any {
 	return map[string]any{
@@ -310,21 +329,13 @@ func (s *Service) Export() error {
 	return nil
 }
 
+// Drain delivers the events REAPER has appended since the last call, to this service and to every other consumer
+// subscribed to the same bridge.
 func (s *Service) Drain() error {
 	if s.bridge == nil {
 		return nil
 	}
-	lines, err := s.bridge.ReadEvents()
-	if err != nil {
-		return err
-	}
-	for _, line := range lines {
-		fields, err := bridge.DecodeFields(line)
-		if err == nil {
-			s.Handle(fields)
-		}
-	}
-	return nil
+	return s.bridge.Dispatch()
 }
 func (s *Service) Handle(fields []string) {
 	if len(fields) == 0 {
@@ -335,8 +346,7 @@ func (s *Service) Handle(fields []string) {
 		return
 	}
 	s.mu.Lock()
-	runID, _ := s.state["runId"].(string)
-	if len(fields) > 1 && fields[1] != runID {
+	if !s.acceptsLocked(fields) {
 		s.mu.Unlock()
 		return
 	}
@@ -378,8 +388,8 @@ func (s *Service) Handle(fields []string) {
 		}
 	case "ERROR":
 		message := "REAPER integration failed."
-		if len(fields) > 1 {
-			message = fields[1]
+		if len(fields) > 2 {
+			message = fields[2]
 		}
 		if exportPhase(s.state) == "exporting" {
 			s.state["markerExport"] = map[string]any{"phase": "error", "message": message, "added": 0, "skipped": 0}
@@ -399,6 +409,33 @@ func (s *Service) Handle(fields []string) {
 		}
 	}
 }
+
+// acceptsLocked says whether an event belongs to the run in progress. Every event carries its run ID as its first
+// argument and is ignored when that is not this run's. An ERROR is ERROR|run|message; with an empty run (a
+// session-level problem, such as an unsupported protocol) it belongs to whatever run is in progress, and an ERROR
+// without a message is the older, unattributed shape and is ignored.
+func (s *Service) acceptsLocked(fields []string) bool {
+	runID, _ := s.state["runId"].(string)
+	if fields[0] == "ERROR" {
+		if len(fields) < 3 {
+			return false
+		}
+		if fields[1] == "" {
+			return runInProgress(s.state)
+		}
+		return fields[1] == runID
+	}
+	return len(fields) <= 1 || fields[1] == runID
+}
+
+func runInProgress(state map[string]any) bool {
+	switch state["phase"] {
+	case "preparing", "running", "need_chapter", "inspecting":
+		return true
+	}
+	return exportPhase(state) == "exporting"
+}
+
 func (s *Service) handlePrepared(fields []string) {
 	if len(fields) < 6 {
 		return

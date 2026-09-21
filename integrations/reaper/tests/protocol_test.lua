@@ -5,20 +5,20 @@ local H = require('harness')
 H.test('an unsupported protocol version is reported and the command is consumed', function()
   local s = H.session()
   s:send_raw('2|prepare_compare|run1')
-  H.eq(s:events(), { { 'ERROR', 'Unsupported hub protocol' } })
+  H.eq(s:events(), { { 'ERROR', '', 'Unsupported hub protocol' } })
   H.eq(s:pending_commands(), {})
 end)
 
 H.test('an empty command file is an unsupported protocol', function()
   local s = H.session()
   s:send_raw('')
-  H.eq(s:events(), { { 'ERROR', 'Unsupported hub protocol' } })
+  H.eq(s:events(), { { 'ERROR', '', 'Unsupported hub protocol' } })
 end)
 
 H.test('an unknown command name is reported', function()
   local s = H.session()
   s:send('frobnicate', 'run1')
-  H.eq(s:events(), { { 'ERROR', 'Unsupported workspace command' } })
+  H.eq(s:events(), { { 'ERROR', 'run1', 'Unsupported workspace command' } })
 end)
 
 H.test('percent-encoded fields are decoded before dispatch', function()
@@ -91,5 +91,32 @@ H.test('a command with more than eight fields keeps the surplus in the last fiel
   local s = H.session()
   -- stamp_item_lines reads fields 3..5; the eighth absorbs the rest and must not break the split.
   s:send_raw('1|stamp_item_lines|run1|missing.txt|0|x|y|z|extra|fields')
-  H.eq(s:events(), { { 'ERROR', 'The manuscript line list was not found.' } })
+  H.eq(s:events(), { { 'ERROR', 'run1', 'The manuscript line list was not found.' } })
+end)
+
+H.test('an error for a command sent without a run ID carries an empty one, so the host can still route it', function()
+  local s = H.session()
+  s:send('read_line_ids')
+  H.eq(s:events(), { { 'ERROR', '', 'Could not write the manuscript line report.' } })
+end)
+
+-- REAPER caches a directory listing until EnumerateFiles(dir, -1) clears it. A command that was already read and
+-- removed can still be listed; that must not be reported to the host as a protocol error.
+H.test('a listed command file that has already been removed is skipped silently', function()
+  local s = H.session()
+  s.fake:add_stale_listing(H.join(s.dir, 'commands'), '00000000.cmd')
+  s:send('read_line_ids', 'run1', s:path('lines.txt'))
+  H.eq(s:events(), { { 'LINES_READ', 'run1', s:path('lines.txt'), '0' } })
+end)
+
+H.test('a command written after an earlier one is picked up: the listing is refreshed on every tick', function()
+  local s = H.session()
+  s:send('read_line_ids', 'first', s:path('a.txt'))
+  s:send('read_line_ids', 'second', s:path('b.txt'))
+  s:send('read_line_ids', 'third', s:path('c.txt'))
+  local runs = {}
+  for _, event in ipairs(s:events()) do
+    runs[#runs + 1] = event[2]
+  end
+  H.eq(runs, { 'first', 'second', 'third' })
 end)

@@ -7,18 +7,18 @@ local join, dirname, file_exists, safe_name, color, pipe_fields, event =
 
 local function prepare_compare(session_dir, runs, run_id)
   if not reaper.APIExists('SetTakeMarker') then
-    event(session_dir, 'ERROR', 'This REAPER version cannot add take markers.')
+    event(session_dir, 'ERROR', run_id, 'This REAPER version cannot add take markers.')
     return
   end
   local _, rpp = reaper.EnumProjects(-1, '')
   local project_folder = rpp and dirname(rpp) or ''
   if project_folder == '' then
-    event(session_dir, 'ERROR', 'Save the REAPER project before starting Transcript Compare.')
+    event(session_dir, 'ERROR', run_id, 'Save the REAPER project before starting Transcript Compare.')
     return
   end
   local manuscript = join(join(join(project_folder, 'narration-utils'), 'manuscript'), 'manuscript.json')
   if not file_exists(manuscript) then
-    event(session_dir, 'ERROR', 'Import a manuscript in Narration Utils before starting Transcript Compare.')
+    event(session_dir, 'ERROR', run_id, 'Import a manuscript in Narration Utils before starting Transcript Compare.')
     return
   end
 
@@ -39,11 +39,11 @@ local function prepare_compare(session_dir, runs, run_id)
       raw_items[#raw_items + 1] = { item = item, pos = reaper.GetMediaItemInfo_Value(item, 'D_POSITION') }
     end
   else
-    event(session_dir, 'ERROR', 'Select audio item(s), or select a track, then start Transcript Compare.')
+    event(session_dir, 'ERROR', run_id, 'Select audio item(s), or select a track, then start Transcript Compare.')
     return
   end
   if #raw_items == 0 then
-    event(session_dir, 'ERROR', 'The selected track has no audio items.')
+    event(session_dir, 'ERROR', run_id, 'The selected track has no audio items.')
     return
   end
   table.sort(raw_items, function(a, b)
@@ -69,13 +69,13 @@ local function prepare_compare(session_dir, runs, run_id)
     end
   end
   if #manifest == 0 then
-    event(session_dir, 'ERROR', 'No resolvable audio sources were found in the selection.')
+    event(session_dir, 'ERROR', run_id, 'No resolvable audio sources were found in the selection.')
     return
   end
   local manifest_path = join(session_dir, 'manifest_' .. run_id .. '.txt')
   local output = io.open(manifest_path, 'w')
   if not output then
-    event(session_dir, 'ERROR', 'Could not write the REAPER audio manifest.')
+    event(session_dir, 'ERROR', run_id, 'Could not write the REAPER audio manifest.')
     return
   end
   output:write(table.concat(manifest, '\n') .. '\n')
@@ -104,12 +104,12 @@ end
 local function inspect_results(session_dir, runs, run_id, path)
   local run = runs[run_id]
   if not run then
-    event(session_dir, 'ERROR', 'Transcript Compare context expired; prepare a new comparison.')
+    event(session_dir, 'ERROR', run_id, 'Transcript Compare context expired; prepare a new comparison.')
     return
   end
   local input = io.open(path, 'r')
   if not input then
-    event(session_dir, 'ERROR', 'Transcript results were not found.')
+    event(session_dir, 'ERROR', run_id, 'Transcript results were not found.')
     return
   end
   local summary, total, duplicates = '', 0, 0
@@ -164,12 +164,12 @@ end
 local function export_results(session_dir, runs, run_id, path, misread, skipped, extra)
   local run = runs[run_id]
   if not run then
-    event(session_dir, 'ERROR', 'Transcript Compare context expired; prepare a new comparison.')
+    event(session_dir, 'ERROR', run_id, 'Transcript Compare context expired; prepare a new comparison.')
     return
   end
   local input = io.open(path, 'r')
   if not input then
-    event(session_dir, 'ERROR', 'Transcript results were not found.')
+    event(session_dir, 'ERROR', run_id, 'Transcript results were not found.')
     return
   end
   local colors = { MISREAD = color(misread), SKIPPED = color(skipped), EXTRA = color(extra) }
@@ -232,7 +232,7 @@ return function(registry)
       reaper.SetEditCurPos(row.project_time, true, false)
       reaper.UpdateArrange()
     else
-      event(ctx.session_dir, 'ERROR', 'Marker location is no longer available.')
+      event(ctx.session_dir, 'ERROR', args[1] or '', 'Marker location is no longer available.')
     end
   end)
 end

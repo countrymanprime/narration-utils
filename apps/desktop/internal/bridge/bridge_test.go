@@ -39,12 +39,12 @@ func TestCommandsAreAtomicallyActivatedAndEventsAreReadOnce(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(filepath.Dir(filepath.Dir(path)), "events.log"), []byte("one\ntwo\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	events, err := client.ReadEvents()
-	if err != nil || len(events) != 2 {
-		t.Fatalf("events = %#v, %v", events, err)
+	var seen []string
+	client.Subscribe(Subscription{Tags: []string{"*"}, Handle: func(event Event) { seen = append(seen, event.Tag) }})
+	if err := client.Dispatch(); err != nil || len(seen) != 2 {
+		t.Fatalf("events = %#v, %v", seen, err)
 	}
-	events, err = client.ReadEvents()
-	if err != nil || len(events) != 0 {
-		t.Fatalf("events = %#v, %v", events, err)
+	if err := client.Dispatch(); err != nil || len(seen) != 2 {
+		t.Fatalf("a second Dispatch must not replay events: %#v, %v", seen, err)
 	}
 }

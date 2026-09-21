@@ -1,7 +1,7 @@
 {
   "$comment": "Coverage floors for logic directories (ADR 0043). Read by scripts/ci/coverage-gate.mjs, which the go, vitest and pytest test targets run. A floor is the rounded-down coverage measured on 2026-09-20 (Go statements, Vitest and pytest lines) and only goes up: run the gate with --update after adding tests. Any new logic directory starts at 80; a lower floor needs a written reason. UI components, host glue and sidecar-launch code are not listed on purpose: Go packages root, cmd, assets, guide, process, settings, transcript, tts, whisper; apps/ui components and the Wails client; the teleprompter live_asr engines; release scripts.",
   "entries": [
-    {"tool":"go","project":"apps/desktop","path":"internal/bridge","floor":85},
+    {"tool":"go","project":"apps/desktop","path":"internal/bridge","floor":94},
     {"tool":"go","project":"apps/desktop","path":"internal/findings","floor":100},
     {"tool":"go","project":"apps/desktop","path":"internal/importer","floor":88},
     {"tool":"go","project":"apps/desktop","path":"internal/layout","floor":93},

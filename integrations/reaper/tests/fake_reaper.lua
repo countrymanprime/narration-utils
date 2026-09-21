@@ -32,6 +32,8 @@ function Fake.new(host)
   self.cursor = 0
   self.undo = {}
   self.arrange_updates = 0
+  self.listing_cache = {}
+  self.stale_names = {}
   self.open_undo_blocks = 0
   self.deferred = {}
   self.missing_api = {}
@@ -116,6 +118,12 @@ function Fake:split_item(item, at)
     right.ext[key] = value
   end
   return right
+end
+
+-- Lists `name` in `directory` although the file is gone, the way a cached REAPER listing does after a file was removed.
+function Fake:add_stale_listing(directory, name)
+  self.stale_names[directory] = self.stale_names[directory] or {}
+  table.insert(self.stale_names[directory], name)
 end
 
 -- Makes `APIExists(name)` answer false, the way an older REAPER lacks a newer function.
@@ -213,11 +221,28 @@ function Fake:add_project_api(api)
     fake.deferred[#fake.deferred + 1] = fn
     return true
   end
-  -- REAPER promises no order here (and lists files only), so the fake hands names back newest-name-first: a bridge
-  -- that relies on the listing being sorted must sort it itself.
+  -- Like REAPER: the listing is CACHED per directory and only `EnumerateFiles(dir, -1)` re-reads it (seen in REAPER
+  -- 7.80: a file created after the first call stays invisible, and a removed one stays listed, until it is cleared).
+  -- REAPER promises no order and lists files only, so the fake hands names back last-name-first: a bridge that relies
+  -- on the listing being sorted must sort it itself.
   function api.EnumerateFiles(directory, index)
-    local names = fake.host.listdir(directory)
-    return names[#names - index]
+    if index == -1 then
+      fake.listing_cache[directory] = nil
+      return nil
+    end
+    local names = fake.listing_cache[directory]
+    if not names then
+      names = {}
+      local listed = fake.host.listdir(directory)
+      for position = #listed, 1, -1 do
+        names[#names + 1] = listed[position]
+      end
+      for _, stale in ipairs(fake.stale_names[directory] or {}) do
+        names[#names + 1] = stale
+      end
+      fake.listing_cache[directory] = names
+    end
+    return names[index + 1]
   end
   function api.RecursiveCreateDirectory(path, _)
     return fake.host.makedirs(path)

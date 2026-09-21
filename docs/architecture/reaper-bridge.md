@@ -18,10 +18,28 @@
 The Go host (`apps/desktop/internal/bridge`) and the Lua bridge share one session directory, `<REAPER resource path>/NarrationUtils/sessions/hub_<id>/`, created by the launcher.
 
 - **Commands** go one way. `Client.Send` writes `commands/NNNNNNNN.cmd` atomically (a `.tmp` file, then a rename) holding one line of percent-encoded, `|`-separated fields: protocol version `1`, the command name, then its arguments. The bridge reads the first line of each `.cmd` file in name order, deletes it, and dispatches. It splits at most eight fields; a payload that needs more travels as a file whose path is an argument.
-- **Events** come back through the append-only `events.log`, one percent-encoded, `|`-separated line per event with the tag first. On Windows Lua writes CRLF in text mode, so a reader trims a trailing carriage return (the Go client does).
-- **Errors** are `ERROR|<message>` events; an unsupported protocol version or command name is reported the same way.
+- **Events** come back through the append-only `events.log`, one percent-encoded, `|`-separated line per event with the tag first. **The first argument of every event is the run ID of the command that caused it** (the command's own first argument), so a consumer can tell its events from another's. On Windows Lua writes CRLF in text mode, so a reader trims a trailing carriage return (the Go client does).
+- **Errors** are `ERROR|<run_id>|<message>` events. The run ID is the failing command's first argument, or empty when there is none: an unsupported protocol version is `ERROR||Unsupported hub protocol`, an unknown command is `ERROR|<its first argument>|Unsupported workspace command`. An empty run ID marks a session-level problem, delivered to every consumer that handles errors.
+
+The bridge polls the commands folder with `reaper.EnumerateFiles`, which **caches a directory's listing** (REAPER 7.80: a file created after the first call stays invisible and a removed one stays listed, for seconds, until the listing is cleared with index `-1`). Every listing therefore starts with `EnumerateFiles(dir, -1)`, and a listed file that cannot be opened is skipped without an event. Before this, each command left a ghost in the stale listing that was reported as `ERROR|Unsupported hub protocol`, and a new command could wait for the cache to expire; both were only visible in a real REAPER (found by the scripted run recorded in [docs/research](../research/)), and the harness's fake now caches the listing the same way.
 
 Every command that writes to the project is one undo block, writes nothing when there is nothing to change, and is safe to send twice.
+
+## Reading events in the host: the fan-out
+
+`bridge.Client` (`apps/desktop/internal/bridge/events.go`) is the one reader of `events.log` and feeds every consumer, so two features can use one session without stealing each other's events (the old single `ReadEvents` cursor could not).
+
+```go
+client.Subscribe(bridge.Subscription{
+	Tags:   []string{"COMPARE_*", "ERROR"}, // exact tags, or a prefix ending in "*"
+	Owns:   func(runID string) bool { ... }, // does this consumer track that run?
+	Handle: func(event bridge.Event) { ... }, // event.Tag, event.RunID, event.Fields (tag first)
+})
+```
+
+- **Routing.** An event goes to each consumer whose `Tags` match it and, when it carries a run ID, whose `Owns` is nil or true for that run. An event with an empty run ID goes to every consumer whose tags match. An event nobody accepts (an unowned run, an unwanted tag) is dropped and counted (`Undelivered()`); a line that does not decode is skipped and counted (`Malformed()`).
+- **Delivery.** `Dispatch()` reads the lines appended since the last call and delivers them in log order, once, on the calling goroutine, serialised across callers; the host's 150 ms loop already calls it through `transcript.Service.Drain`, so a second consumer only subscribes. Only whole lines are consumed: a line REAPER is still writing waits for the next call.
+- **Consumers today:** the Transcript Compare service subscribes to `COMPARE_*` and `ERROR` for its own run. Line identity and the teleprompter integration subscribe the same way when they land.
 
 ## The command registry
 
