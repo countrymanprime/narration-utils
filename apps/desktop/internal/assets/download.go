@@ -29,18 +29,30 @@ func (e *StatusError) Missing() bool {
 	return e.Code == http.StatusNotFound || e.Code == http.StatusForbidden || e.Code == http.StatusGone
 }
 
-// download brings one catalog file into staging. A file that is already there and right is kept (an earlier attempt got that far), the
-// bytes of an earlier attempt that stopped short are continued with an HTTP Range request, and a host that does not honour the range is
-// started from the top. Whatever the route, the finished file must match its size and SHA-256.
+// download brings one catalog file into staging. A file that is already there and right is kept (an earlier attempt got that far), a part
+// file that already holds every byte is checked as it is, the bytes of an earlier attempt that stopped short are continued with an HTTP
+// Range request, and a host that does not honour the range is started from the top. Whatever the route, the finished file must match its
+// size and SHA-256; if a file that was resumed does not, it is fetched again from the top once (the part may have been a stale prefix of
+// an older file), and only a file that is wrong from the top is reported as wrong.
 func download(ctx context.Context, staging string, file File, options Options) error {
 	final := filepath.Join(staging, file.Name)
+	part := final + partSuffix
 	if info, err := os.Stat(final); err == nil && info.Size() == file.Size && verify(final, file) == nil {
 		reportProgress(options, file, file.Size)
 		return nil
 	}
 	_ = os.Remove(final)
-	part := final + partSuffix
 	offset := partialSize(part, file.Size)
+	if offset == file.Size {
+		// An earlier attempt fetched every byte and stopped before it could rename the file (a crash, a sharing violation).
+		if os.Rename(part, final) == nil && verify(final, file) == nil {
+			reportProgress(options, file, file.Size)
+			return nil
+		}
+		_ = os.Remove(final)
+		_ = os.Remove(part)
+		offset = 0
+	}
 	for attempt := 0; ; attempt++ {
 		restart, err := fetch(ctx, part, file, offset, options)
 		if err != nil {
@@ -62,21 +74,26 @@ func download(ctx context.Context, staging string, file File, options Options) e
 	if options.OnVerify != nil {
 		options.OnVerify(file)
 	}
-	if err := verify(final, file); err != nil {
-		_ = os.Remove(final)
-		return err
+	err := verify(final, file)
+	if err == nil {
+		return nil
 	}
-	return nil
+	_ = os.Remove(final)
+	if offset > 0 && errors.Is(err, ErrChecksumMismatch) {
+		return download(ctx, staging, file, Options{Client: options.Client, OnProgress: options.OnProgress, OnVerify: options.OnVerify})
+	}
+	return err
 }
 
 // partialSize is how many bytes of a file an earlier attempt left, or 0 when there is nothing to continue (none, or more than the file
-// should have, which cannot be a prefix of it).
+// should have, which cannot be a prefix of it). A part as long as the whole file is returned as it is: it is complete, and download
+// checks it.
 func partialSize(part string, want int64) int64 {
 	info, err := os.Stat(part)
 	if err != nil {
 		return 0
 	}
-	if info.Size() >= want {
+	if info.Size() > want {
 		_ = os.Remove(part)
 		return 0
 	}

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -56,8 +57,9 @@ func pruneStaging(staging string, files []File) error {
 }
 
 // CleanStale removes what an interrupted install or repair left under root that nothing will resume or restore: a staging folder older
-// than a week and the aside copy of a repair older than an hour. An installed asset is never touched, and neither is a folder young
-// enough to belong to a download that is still going or could still be resumed. It returns what it removed.
+// than a week, and the old copy a repair renamed aside once it is an hour old. If the install an old copy belonged to is missing (a crash
+// between the two renames) the old copy is put back instead, since it is the only copy there is. An installed asset is never touched, and
+// neither is a folder young enough to belong to a download that is still going or could still be resumed. It returns what it removed.
 func CleanStale(root string) []string {
 	var removed []string
 	providers, _ := os.ReadDir(root)
@@ -67,11 +69,16 @@ func CleanStale(root string) []string {
 			dir := filepath.Join(root, provider.Name(), id.Name())
 			entries, _ := os.ReadDir(dir)
 			for _, entry := range entries {
-				if !stale(entry) {
-					continue
-				}
-				if os.RemoveAll(filepath.Join(dir, entry.Name())) == nil {
-					removed = append(removed, filepath.Join(dir, entry.Name()))
+				path := filepath.Join(dir, entry.Name())
+				switch {
+				case strings.HasSuffix(entry.Name(), stagingSuffix):
+					if info, err := entry.Info(); err == nil && time.Since(info.ModTime()) > stagingMaxAge && os.RemoveAll(path) == nil {
+						removed = append(removed, path)
+					}
+				case strings.Contains(entry.Name(), asideMarker):
+					if cleanAside(dir, entry.Name()) {
+						removed = append(removed, path)
+					}
 				}
 			}
 		}
@@ -80,17 +87,22 @@ func CleanStale(root string) []string {
 	return removed
 }
 
-func stale(entry os.DirEntry) bool {
-	name := entry.Name()
-	var limit time.Duration
-	switch {
-	case strings.HasSuffix(name, stagingSuffix):
-		limit = stagingMaxAge
-	case strings.Contains(name, asideMarker):
-		limit = asideMaxAge
-	default:
+// cleanAside restores or removes one old copy and reports whether it removed it. How old it is comes from its name, which holds the time it
+// was renamed aside: renaming a folder does not change its own modification time, so the folder's time is the old install's.
+func cleanAside(dir, name string) bool {
+	base, stamp, ok := strings.Cut(name, asideMarker)
+	if !ok {
 		return false
 	}
-	info, err := entry.Info()
-	return err == nil && time.Since(info.ModTime()) > limit
+	aside := filepath.Join(dir, name)
+	target := filepath.Join(dir, base)
+	if _, err := os.Stat(target); os.IsNotExist(err) {
+		_ = os.Rename(aside, target)
+		return false
+	}
+	nanos, err := strconv.ParseInt(stamp, 10, 64)
+	if err != nil || time.Since(time.Unix(0, nanos)) <= asideMaxAge {
+		return false
+	}
+	return os.RemoveAll(aside) == nil
 }

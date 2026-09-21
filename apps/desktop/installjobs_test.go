@@ -183,6 +183,8 @@ func TestStartingTheSameInstallTwiceJoinsTheRunningJob(t *testing.T) {
 	if third["id"] == first["id"] {
 		t.Fatal("a finished install is not joined: a later start is a new job")
 	}
+	// The new job has nothing to fetch (the voice is installed) but it is still a goroutine: let it end before the temporary folder goes.
+	waitForPhase(t, voiceState(f, third["id"].(string)), "success")
 }
 
 func TestAWhisperInstallUsesTheSameVocabularyAsAVoiceInstall(t *testing.T) {

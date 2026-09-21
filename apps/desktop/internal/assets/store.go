@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 )
 
@@ -62,7 +63,13 @@ func State(root, provider, id, version string, files []File) string {
 			return "installed"
 		}
 	}
-	return hashState(dir, files)
+	state := hashState(dir, files)
+	if state == "installed" {
+		// An asset installed before the manifest held its files (or whose files were touched) has just been read in full: write down
+		// what was found, so the next listing is free.
+		_ = recordVerified(dir, provider, id, version, files)
+	}
+	return state
 }
 
 // hashState is the state of every file after reading every byte of it.
@@ -82,6 +89,14 @@ func hashState(dir string, files []File) string {
 // it (which also upgrades an asset installed before manifests held files), a failure marks the asset damaged.
 func Verify(root, provider, id, version string, files []File) string {
 	dir := Dir(root, provider, id, version)
+	lock := lockFor(dir)
+	lock.Lock()
+	defer lock.Unlock()
+	return verifyLocked(dir, provider, id, version, files)
+}
+
+// verifyLocked is Verify for a caller that holds the directory's lock.
+func verifyLocked(dir, provider, id, version string, files []File) string {
 	state := hashState(dir, files)
 	switch state {
 	case "installed":
@@ -92,7 +107,11 @@ func Verify(root, provider, id, version string, files []File) string {
 	return state
 }
 
+// filesHashed counts the files verify has read, so a test can see that a cost is paid once.
+var filesHashed atomic.Int64
+
 func verify(path string, f File) error {
+	filesHashed.Add(1)
 	info, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -181,7 +200,11 @@ func InstallWith(ctx context.Context, root, provider, id, version string, files 
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return fail(err)
 	}
-	if err := swapIn(staging, target); err != nil {
+	lock := lockFor(target)
+	lock.Lock()
+	err := swapIn(staging, target)
+	lock.Unlock()
+	if err != nil {
 		return fail(err)
 	}
 	Forget(root, provider, id, version)
@@ -205,7 +228,10 @@ func swapIn(staging, target string) error {
 		return err
 	}
 	if err := os.Rename(staging, target); err != nil {
-		_ = os.Rename(aside, target)
+		if restoreErr := os.Rename(aside, target); restoreErr != nil {
+			// Neither is in place. The aside copy is still there and CleanStale puts it back at the next start.
+			return fmt.Errorf("%w (and the previous copy could not be put back: %v)", err, restoreErr)
+		}
 		return err
 	}
 	_ = os.RemoveAll(aside) // a leftover is cleaned up at the next start (CleanStale)

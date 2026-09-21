@@ -151,9 +151,9 @@ func TestARangeTheServerRefusesStartsOverInsteadOfFailing(t *testing.T) {
 	}
 }
 
-// Resumed bytes are still checked: whatever the part file held, the finished file must match the catalog hash, and if it does not the whole
-// staging folder goes so the next attempt starts from nothing.
-func TestAResumedFileThatFailsItsHashLeavesNothingToResume(t *testing.T) {
+// A part file that was a stale prefix (the file changed upstream, or a crash left a bad tail) does not fail the install for good: the bytes
+// that were resumed fail their hash, so the file is fetched again from the top once, and that copy is what is checked.
+func TestAResumedFileThatFailsItsHashIsFetchedAgainFromTheTop(t *testing.T) {
 	body := []byte(strings.Repeat("abcdefghij", 5000))
 	server := newRangeServer(t, body, 0, true)
 	root := t.TempDir()
@@ -164,6 +164,24 @@ func TestAResumedFileThatFailsItsHashLeavesNothingToResume(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(stagingDir(root), "payload.bin.part"), []byte(strings.Repeat("Z", 1000)), 0o600); err != nil { // not a prefix
 		t.Fatal(err)
 	}
+	if err := Install(context.Background(), root, "p", "id", "1", files); err != nil {
+		t.Fatalf("a bad resume must be retried from the top: %v", err)
+	}
+	if State(root, "p", "id", "1", files) != "installed" {
+		t.Fatal("not installed")
+	}
+	if server.ranges[0] != "bytes=1000-" || server.ranges[1] != "" {
+		t.Fatalf("requests asked for %q: the resume first, then the whole file", server.ranges)
+	}
+}
+
+// A file that is wrong from the top is wrong: nothing is kept to resume from, and the narrator is told it did not match.
+func TestAFileThatIsWrongFromTheTopLeavesNothingToResume(t *testing.T) {
+	body := []byte(strings.Repeat("abcdefghij", 5000))
+	wrong := []byte(strings.Repeat("ZZZZZZZZZZ", 5000))
+	server := newRangeServer(t, wrong, 0, true)
+	root := t.TempDir()
+	files := []File{fileFor(server.URL, body)}
 	err := Install(context.Background(), root, "p", "id", "1", files)
 	if !errors.Is(err, ErrChecksumMismatch) {
 		t.Fatalf("err = %v, want a checksum mismatch", err)
@@ -171,8 +189,25 @@ func TestAResumedFileThatFailsItsHashLeavesNothingToResume(t *testing.T) {
 	if _, statErr := os.Stat(stagingDir(root)); !os.IsNotExist(statErr) {
 		t.Fatal("a file that failed its hash must not be kept to resume from")
 	}
+}
+
+// A part that already holds every byte (the earlier attempt died before it could rename it) is checked and used, not fetched again.
+func TestACompletePartFileIsCheckedAndUsedWithoutAnotherDownload(t *testing.T) {
+	body := []byte(strings.Repeat("abcdefghij", 5000))
+	server := newRangeServer(t, body, 0, true)
+	root := t.TempDir()
+	files := []File{fileFor(server.URL, body)}
+	if err := os.MkdirAll(stagingDir(root), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(stagingDir(root), "payload.bin.part"), body, 0o600); err != nil {
+		t.Fatal(err)
+	}
 	if err := Install(context.Background(), root, "p", "id", "1", files); err != nil {
-		t.Fatalf("the next attempt starts clean and succeeds: %v", err)
+		t.Fatal(err)
+	}
+	if server.requests != 0 {
+		t.Fatalf("%d requests: a complete part file needs none", server.requests)
 	}
 }
 

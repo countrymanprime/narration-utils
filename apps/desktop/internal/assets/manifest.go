@@ -75,11 +75,16 @@ func writeManifest(dir string, manifest Manifest) error {
 	if err != nil {
 		return err
 	}
-	temp := filepath.Join(dir, manifestName+".tmp")
+	// A temp name of its own, so two writers never share a file and one cannot rename the other's away.
+	temp := filepath.Join(dir, fmt.Sprintf("%s.%d.tmp", manifestName, time.Now().UnixNano()))
 	if err := os.WriteFile(temp, bytes, 0o600); err != nil {
 		return err
 	}
-	return os.Rename(temp, filepath.Join(dir, manifestName))
+	if err := os.Rename(temp, filepath.Join(dir, manifestName)); err != nil {
+		_ = os.Remove(temp)
+		return err
+	}
+	return nil
 }
 
 // manifestFor records every catalog file with the modification time it has in dir now.

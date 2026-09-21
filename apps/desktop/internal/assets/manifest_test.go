@@ -2,12 +2,12 @@ package assets
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -114,6 +114,10 @@ func TestAnOldManifestIsHashedAndVerifyUpgradesIt(t *testing.T) {
 	if got := State(root, "p", "id", "1.2", files); got != "installed" {
 		t.Fatalf("State = %s", got)
 	}
+	// State read the asset in full and wrote down what it found: the next listing is free.
+	if upgraded, err := ReadManifest(dir); err != nil || len(upgraded.Files) != 1 {
+		t.Fatalf("State did not upgrade the old manifest: %+v (%v)", upgraded, err)
+	}
 	if got := Verify(root, "p", "id", "1.2", files); got != "installed" {
 		t.Fatalf("Verify = %s", got)
 	}
@@ -164,8 +168,25 @@ func TestReadNeverSucceedsOnADamagedManifestFile(t *testing.T) {
 	if _, err := ReadManifest(dir); err == nil {
 		t.Fatal("a damaged manifest must be an error, not an empty one")
 	}
-	var probe map[string]any
-	if json.Unmarshal([]byte("{}"), &probe) != nil {
-		t.Fatal("unreachable")
+}
+
+// Callers that arrive together for the first use of an asset wait for one read of it; they do not each read 3 GB.
+func TestReadyReadsAnAssetOnceWhenManyCallersArriveTogether(t *testing.T) {
+	root, files, _ := installOne(t, "the payload")
+	Forget(root, "p", "id", "1.2")
+	before := filesHashed.Load()
+	var group sync.WaitGroup
+	for range 8 {
+		group.Add(1)
+		go func() {
+			defer group.Done()
+			if got := Ready(root, "p", "id", "1.2", files); got != "installed" {
+				t.Errorf("Ready = %s", got)
+			}
+		}()
+	}
+	group.Wait()
+	if read := filesHashed.Load() - before; read != 1 {
+		t.Fatalf("the file was read %d times, want once", read)
 	}
 }

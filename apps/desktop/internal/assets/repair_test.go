@@ -3,6 +3,7 @@ package assets
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -162,11 +163,16 @@ func TestCleanStaleRemovesOldLeftoversAndKeepsWhatCouldStillBeResumed(t *testing
 			t.Fatal(err)
 		}
 	}
+	// The old copy carries the old install's modification time (a rename does not change it): its age is in its name.
+	staleAside := fmt.Sprintf("1.old-%d", time.Now().Add(-3*time.Hour).UnixNano())
+	freshAside := fmt.Sprintf("1.old-%d", time.Now().Add(-time.Minute).UnixNano())
 	must(filepath.Join(root, "p", "a", "1.installing"), old)
 	must(filepath.Join(root, "p", "b", "1.installing"), fresh)
-	must(filepath.Join(root, "p", "c", "1.old-123"), time.Now().Add(-3*time.Hour))
-	must(filepath.Join(root, "p", "d", "1.old-456"), time.Now().Add(-time.Minute))
-	must(filepath.Join(root, "p", "e", "1"), old) // an installed asset is never touched, however old
+	must(filepath.Join(root, "p", "c", "1"), old)
+	must(filepath.Join(root, "p", "c", staleAside), old)
+	must(filepath.Join(root, "p", "d", "1"), old)
+	must(filepath.Join(root, "p", "d", freshAside), old) // a minute old by its name, months old by its time: it must be kept
+	must(filepath.Join(root, "p", "e", "1"), old)        // an installed asset is never touched, however old
 	removed := CleanStale(root)
 	if len(removed) != 2 {
 		t.Fatalf("removed %v, want the week-old staging folder and the three-hour-old aside copy", removed)
@@ -174,8 +180,9 @@ func TestCleanStaleRemovesOldLeftoversAndKeepsWhatCouldStillBeResumed(t *testing
 	for path, want := range map[string]bool{
 		filepath.Join(root, "p", "a", "1.installing"): false,
 		filepath.Join(root, "p", "b", "1.installing"): true,
-		filepath.Join(root, "p", "c", "1.old-123"):    false,
-		filepath.Join(root, "p", "d", "1.old-456"):    true,
+		filepath.Join(root, "p", "c", staleAside):     false,
+		filepath.Join(root, "p", "c", "1"):            true,
+		filepath.Join(root, "p", "d", freshAside):     true,
 		filepath.Join(root, "p", "e", "1"):            true,
 	} {
 		if _, err := os.Stat(path); (err == nil) != want {
@@ -184,5 +191,24 @@ func TestCleanStaleRemovesOldLeftoversAndKeepsWhatCouldStillBeResumed(t *testing
 	}
 	if len(CleanStale(filepath.Join(root, "nothing-here"))) != 0 {
 		t.Fatal("a root that does not exist has nothing to clean")
+	}
+}
+
+// A crash between the two renames of a swap leaves the old copy aside and nothing in place: it is the only copy there is, so it is put back.
+func TestCleanStalePutsBackTheOnlyCopyWhenTheInstallIsMissing(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "p", "a")
+	name := fmt.Sprintf("1.old-%d", time.Now().Add(-5*time.Hour).UnixNano())
+	if err := os.MkdirAll(filepath.Join(dir, name), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, name, "model.bin"), []byte("only copy"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if removed := CleanStale(root); len(removed) != 0 {
+		t.Fatalf("removed %v: nothing may be deleted when it is the only copy", removed)
+	}
+	if bytes, err := os.ReadFile(filepath.Join(dir, "1", "model.bin")); err != nil || string(bytes) != "only copy" {
+		t.Fatalf("the old copy was not put back: %v", err)
 	}
 }
