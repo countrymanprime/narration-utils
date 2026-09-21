@@ -1,0 +1,71 @@
+# The public docs site (ADR 0083): MkDocs and the Material theme, built from the repository's own docs/ folder.
+# Nothing under tools/docs-site is content: `docs_dir` is docs/ itself, `include.txt` says which of its pages are published,
+# and hooks.py rewrites the links that leave the published set. Build it with `pnpm exec nx run docs-site:build`.
+site_name: narration-utils
+site_description: Documentation for narration-utils, a local-first toolkit for audiobook narration.
+site_url: https://countrymanprime.github.io/narration-utils/
+
+docs_dir: ../../docs
+site_dir: build/site
+strict: true
+
+hooks:
+  - hooks.py
+
+theme:
+  name: material
+  # System fonts: no request to Google Fonts. (`repo_url` is not set for the same reason: Material would ask api.github.com for the
+  # repository's stars and latest release on every page; the link is in the footer and in `extra.repo_url` for hooks.py.)
+  font: false
+  features:
+    - navigation.indexes
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+  palette:
+    - media: '(prefers-color-scheme)'
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: '(prefers-color-scheme: light)'
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: '(prefers-color-scheme: dark)'
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+
+# Every warning fails the build (strict). Links that leave docs/ or that name a page the include list leaves out never
+# reach these checks: hooks.py rewrites them to the GitHub file view first, so anything reported here is really dead.
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+extra:
+  repo_url: https://github.com/countrymanprime/narration-utils
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/countrymanprime/narration-utils
+      name: narration-utils on GitHub
+  # Read by hooks.py. Paths are relative to this file.
+  include_manifest: include.txt
+  # Section titles for the folders of docs/ (relative path from docs/) that the navigation generator would otherwise name after the folder,
+  # and the order of the top level. A page's own title is its first heading.
+  nav_titles:
+    adr: Decision records (ADRs)
+    architecture: Architecture
+    design: Design
+    guides: Guides
+    guides/using-the-app: Using the app
+    ui: Component atlas
+    utilities: Tools
+  nav_order: [guides, utilities, roadmap, ui, architecture, design, adr]
+  # Where the Storybook build is published beside this site (pages.yml copies it to <site>/storybook/).
+  storybook_path: storybook/
+  storybook_page: ui/atlas/index.md
+

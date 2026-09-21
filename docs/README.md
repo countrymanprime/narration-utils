@@ -1,6 +1,6 @@
 # Narration Utilities Documentation
 
-This folder documents a local-first audiobook narration toolkit: how it is built (architecture, design and decision records), how it is used (guides and workflows), and what is planned next. Planned work is specified as PRDs under [prds/](prds/README.md). The roadmap and the PRDs describe intent, not a claim that the planned utilities already exist.
+This folder documents a local-first audiobook narration toolkit: how it is built (architecture, design and decision records), how it is used (guides and workflows), and what is planned next. Planned work is specified as PRDs under [prds/](prds/README.md). The roadmap and the PRDs describe intent, not a claim that the planned utilities already exist. A curated part of this folder (the user guide, the roadmap, the component atlas, the tool pages, selected architecture and every ADR) is published as a website, generated from these files on every build ([how](operations/ci-and-releases.md#the-public-docs-site)); to publish another page, list it in `tools/docs-site/include.txt`.
 
 ## Status legend
 

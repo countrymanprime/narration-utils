@@ -18,6 +18,7 @@
   "$comment": "The workspace root and the nx release project. `nx release version` counts a commit toward the version when it affects a release project or a project one depends on, so this list keeps every commit that counted before the per-project split counting (the UI and desktop projects were already separate and stay out). scripts/ci/projects.test.mjs keeps the list complete. Per-project targets live in each project.json.",
   "implicitDependencies": [
     "config",
+    "docs-site",
     "fixtures",
     "manuscript-guide",
     "manuscript-teleprompter",

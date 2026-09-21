@@ -44,3 +44,4 @@ target/
 .tools/
 .cache/
 apps/ui/storybook-static/
+tools/docs-site/build/

@@ -29,11 +29,16 @@ dependencies = [
 # the Python runner. lupa is MIT and ships the interpreter inside its wheels, so uv.lock pins and hashes it on
 # Linux and Windows. Keep the ruff pin equal to the one in [project] above.
 lua = ["lupa==2.8", "ruff==0.16.8"]
+# The public docs site (tools/docs-site, ADR 0083): MkDocs and the Material theme, exact versions. Both are build-time tools, imported by nothing in the app
+# or the sidecars. pytest and ruff are here so the docs CI job installs this group alone; keep their pins equal to [project] above.
+# Material pins mkdocs<2 (MkDocs 2.0 will not run it); do not raise either pin without re-running the spike (docs/research/docs-site-generator-spike.md).
+docs = ["mkdocs==1.6.1", "mkdocs-material==9.7.7", "pytest==9.1.1", "ruff==0.16.8"]
 
 [tool.uv]
 package = false
-# `uv sync` installs the lua group too; the Lua CI job installs only it (`uv sync --locked --only-group lua`).
-default-groups = ["lua"]
+# `uv sync` installs the lua and docs groups too, so `pnpm check` can build the docs site; the Lua CI job installs only its group
+# (`uv sync --locked --only-group lua`) and the docs job only its own (`--only-group docs`).
+default-groups = ["lua", "docs"]
 
 [tool.ruff]
 line-length = 160
