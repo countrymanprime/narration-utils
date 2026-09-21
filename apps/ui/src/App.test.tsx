@@ -228,6 +228,59 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Rebuild Story Bible' })).toBeNull(), { timeout: 3000 });
   });
 
+  it('says so when refreshing the project after an attach fails, instead of an unhandled rejection', async () => {
+    let attach: (state: { attached: boolean }) => void = () => {};
+    const source = createMockApi();
+    let calls = 0;
+    renderApp({
+      bootstrap: async () => {
+        if (++calls > 1) throw new Error('the host is busy');
+        return source.bootstrap();
+      },
+      subscribeProjectAttach: (listener) => {
+        attach = listener;
+        return () => {};
+      },
+    });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    act(() => attach({ attached: true }));
+    expect(await screen.findByText(/the host is busy/)).toBeTruthy();
+    expect(within(screen.getByRole('alert')).getByText(/the host is busy/)).toBeTruthy();
+  });
+
+  it('choosing a manuscript file: busy while the host dialog is open, one dialog, and a failure is a toast', async () => {
+    const selectManuscript = vi.fn(() => new Promise<never>(() => {}));
+    renderApp({ selectManuscript });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    const choose = screen.getByRole('button', { name: 'Replace manuscript' });
+    fireEvent.click(choose);
+    fireEvent.click(choose);
+    await waitFor(() => expect(choose.getAttribute('aria-busy')).toBe('true'));
+    expect(selectManuscript).toHaveBeenCalledTimes(1);
+    cleanup();
+
+    renderApp({ selectManuscript: () => Promise.reject(new Error('the file dialog could not open')) });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getByRole('button', { name: 'Replace manuscript' }));
+    expect(await within(await screen.findByRole('alert')).findByText(/the file dialog could not open/)).toBeTruthy();
+  });
+
+  it('Clear derived project data stays open and busy while it runs and cannot be confirmed twice', async () => {
+    const clearProjectData = vi.fn(() => new Promise<void>(() => {}));
+    renderApp({ clearProjectData });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    fireEvent.click(await screen.findByRole('tab', { name: 'This Project' }));
+    fireEvent.click(await screen.findByRole('tab', { name: /Project data/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Clear derived project data/ }));
+    const confirm = await screen.findByRole('button', { name: 'Clear project data' });
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    await waitFor(() => expect(confirm.getAttribute('aria-busy')).toBe('true'));
+    expect(clearProjectData).toHaveBeenCalledTimes(1);
+    expect((screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('says the rebuild was heard and starts only one when the button is pressed twice', async () => {
     const guideBuild = vi.fn(() => new Promise<WorkJob>(() => {}));
     renderApp({ guideBuild });

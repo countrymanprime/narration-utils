@@ -2,6 +2,7 @@ import { describeApiError } from '../../api/errorMessage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Bootstrap, Scope, ScopedSettingField, TtsCatalog, WhisperCatalog } from '../../types';
 import { useApi } from '../../api/ApiContext';
+import { usePendingAction } from '../../hooks/usePendingAction';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
@@ -66,6 +67,8 @@ export function Settings({
   const [values, setValues] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState(false);
   const [pendingChange, setPendingChange] = useState<() => void>();
+  // The three destructive confirms below stay open and busy until their call ends, and cannot be confirmed twice (ADR 0075).
+  const destructive = usePendingAction();
   const [confirmClearProjectData, setConfirmClearProjectData] = useState(false);
   const [ttsCatalog, setTtsCatalog] = useState<TtsCatalog>();
   const [confirmRemoveVoice, setConfirmRemoveVoice] = useState(false);
@@ -402,16 +405,19 @@ export function Settings({
           body="This permanently removes the imported manuscript and stored source, Story Bible and proofing data, reader notes/bookmarks, and saved comparison results for this project. Settings will remain."
           confirmLabel="Clear project data"
           confirmVariant="danger"
-          confirm={async () => {
-            try {
-              await api.clearProjectData();
-              setConfirmClearProjectData(false);
-              notify('Derived project data cleared.');
-              await onProjectDataCleared();
-            } catch (error) {
-              notify(describeApiError(error), 'error');
-            }
-          }}
+          pending={destructive.isPending('clear')}
+          confirm={() =>
+            void destructive.run('clear', async () => {
+              try {
+                await api.clearProjectData();
+                setConfirmClearProjectData(false);
+                notify('Derived project data cleared.');
+                await onProjectDataCleared();
+              } catch (error) {
+                notify(describeApiError(error), 'error');
+              }
+            })
+          }
           cancel={() => setConfirmClearProjectData(false)}
         />
       )}
@@ -421,15 +427,18 @@ export function Settings({
           body={`Remove ${selectedTtsVoice.displayName} from this computer? Your settings and project preview WAVs remain; requesting a new preview will ask to download the voice again.`}
           confirmLabel="Remove voice"
           confirmVariant="danger"
+          pending={destructive.isPending('remove-voice')}
           confirm={() =>
-            void api
-              .ttsRemove(selectedTtsVoice.id)
-              .then(async () => {
+            void destructive.run('remove-voice', async () => {
+              try {
+                await api.ttsRemove(selectedTtsVoice.id);
                 setConfirmRemoveVoice(false);
                 notify('Local preview voice removed.');
                 await load();
-              })
-              .catch((error) => notify(describeApiError(error), 'error'))
+              } catch (error) {
+                notify(describeApiError(error), 'error');
+              }
+            })
           }
           cancel={() => setConfirmRemoveVoice(false)}
         />
@@ -440,15 +449,18 @@ export function Settings({
           body={`Remove ${selectedWhisperModel.displayName} from this computer? Starting a comparison with this model selected will ask to download it again.`}
           confirmLabel="Remove model"
           confirmVariant="danger"
+          pending={destructive.isPending('remove-model')}
           confirm={() =>
-            void api
-              .whisperRemove(selectedWhisperModel.id)
-              .then(async () => {
+            void destructive.run('remove-model', async () => {
+              try {
+                await api.whisperRemove(selectedWhisperModel.id);
                 setConfirmRemoveModel(false);
                 notify('Local Whisper model removed.');
                 await load();
-              })
-              .catch((error) => notify(describeApiError(error), 'error'))
+              } catch (error) {
+                notify(describeApiError(error), 'error');
+              }
+            })
           }
           cancel={() => setConfirmRemoveModel(false)}
         />
