@@ -4,7 +4,7 @@ import { contrastRatio, countRootRules, parseColor, parseThemes, resolveContrast
 
 // The palette guard (paletteContrast.test.ts) is only as good as its arithmetic, so the arithmetic is checked against
 // values that can be verified by hand or against a browser: the WCAG extremes, CSS's own colour-mix rules, and the
-// numbers the palette PRD measured with an independent script.
+// numbers measured with an independent script when the palette guard was written (ADR 0059).
 
 describe('parseColor', () => {
   it('reads hex, transparent and rgba', () => {
@@ -46,7 +46,7 @@ describe('contrastRatio', () => {
     expect(contrastRatio(white, white)).toBeCloseTo(1, 5);
   });
 
-  it('matches the ratios the palette PRD measured for the shipped light tokens', () => {
+  it('matches the ratios measured independently for the light tokens as they stood when the guard was written', () => {
     const tokens = { text: '#211e17', muted: '#6e6959', surface: '#ffffff', 'surface-3': '#dcd8cd' };
     const ratio = (fg: string, bg: string) =>
       contrastRatio(

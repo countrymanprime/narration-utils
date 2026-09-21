@@ -137,7 +137,7 @@ Sequential by design: the check needs the fix to be green, and the sweep needs t
 ### Parallel-session compatibility
 
 Files owned: `settings/ScopedSetting.tsx` (Phase 1), the row wrappers in `settings/Settings.tsx` (Phase 1, minimal), `tools/ui-atlas-kit/plugin/templates/core/tests/visual/lib/*`, `tools/ui-atlas-kit/CHANGELOG.md` and its version files, vendored `apps/ui/tests/visual/lib/*` and `apps/ui/ui-atlas.config.json` (Phase 2, via sync), `apps/ui/src/visualSuite.test.ts`, `apps/ui/tests/visual/state-catalog.ts` (only the opt-out type), the ADR, the Status cells of this PRD's phase table. Does NOT touch `styles.css` or any primitive.
-- Can run concurrently with: the dialog PRD and the a11y-components PRD (disjoint), the palette PRD (both edit `Settings.tsx`, different regions), the test-stability PRD's Go and frontend-test phases.
+- Can run concurrently with: the dialog PRD and the a11y-components PRD (disjoint), the test-stability PRD's Go and frontend-test phases.
 - Do not run concurrently with: the test-stability PRD's kit phases (driver waits in the scaffold, axe on app states): both bump the kit version and edit `capture.ts`/scaffold, so serialize them or bundle one kit release; the teleprompter-engines and diagnostics PRDs' Settings phases (rebase; Phase 1 should merge first).
 - Generated/shared files that always conflict: the kit version files and `CHANGELOG.md`, any regenerated vendored file.
 
