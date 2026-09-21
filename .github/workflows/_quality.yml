@@ -173,21 +173,28 @@ jobs:
           projects: tag:toolchain:python,fixtures
 
   lua:
-    timeout-minutes: 5
-    runs-on: ubuntu-latest
+    # stylua, then the bridge harness (integrations/reaper/tests): Lua 5.4 from the lupa wheel in uv.lock, a fake
+    # `reaper` driven through the file protocol, and the mutation checks. Linux and Windows both run it: the bridge
+    # builds paths from package.config, and REAPER's own Lua writes CRLF on Windows.
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
       - uses: ./.github/actions/setup-toolchain
         with:
           need-go: 'false'
-          need-python: 'false'
           need-wails-tools: 'false'
           need-linux-native-deps: 'false'
+          python-sync-args: --only-group lua
           pnpm-filter: narration-utils
       - uses: ./.github/actions/nx-run
         with:
-          targets: lint
+          targets: lint test
           projects: reaper
 
   go:

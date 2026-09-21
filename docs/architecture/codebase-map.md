@@ -60,6 +60,7 @@ Every folder above except `docs/` is an Nx project with a `project.json`; `pnpm 
 - `integrations/reaper/` is the REAPER-only bridge. Its field order and protocol are
   compatibility contracts. A checkout finds the sidecars, catalogs and launcher relative to
   `integrations/reaper` (two levels up is the repo root); packaged builds use `resources/`.
+  `integrations/reaper/tests/` is the Lua bridge harness (see [the REAPER bridge](reaper-bridge.md)).
 - `libs/python/narration_common/` contains only cross-tool contracts such
   as canonical manuscript access, settings, logging, progress, and bridge
   encoding. Feature-specific analysis stays with its tool.
