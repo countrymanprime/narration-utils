@@ -226,6 +226,7 @@ A narrator installs from `narration-utils-windows-x64-setup.exe`, an NSIS instal
   `apps/desktop/build/windows/installer/project.nsi`; `wails_tools.nsh` beside it is regenerated on every build and is not checked in. The
   publisher, product name and version come from `apps/desktop/wails.json` (`info`), whose version `sync-version.mjs` keeps equal to the
   release version.
+- **What CI showed** (the `Build (Windows)` job of pull request 224, 2026-09-21): `makensis` was not on the runner; the pinned step installed `nsis.install` 3.11.0 and printed `makensis version: v3.11`; Wails printed `Building 'amd64' installer: Done.`; the setup program was 196,676,207 bytes and the zip 195,290,110; the bootstrapper check printed `Valid, CN=Microsoft Corporation`. The NSIS step adds about 15 seconds and the installer build about a minute.
 - **Why per user.** The in-app updater renames the running program in its folder and never asks for elevation; under Program Files
   it would answer that it cannot replace itself. Per machine is not offered.
 - **The WebView2 bootstrapper** Wails embeds is downloaded from Microsoft while the installer is built and nothing pins it, so the build

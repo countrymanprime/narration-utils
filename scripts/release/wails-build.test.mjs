@@ -34,6 +34,9 @@ test('the caller may not replace the version stamp with ldflags of its own', () 
 test('an installer is expected exactly when the build was asked for one', () => {
   assert.equal(installerRequested(['-s', '-nsis']), true);
   assert.equal(installerRequested(['-nsis=true']), true);
+  assert.equal(installerRequested(['--nsis']), true);
+  assert.equal(installerRequested(['-nsis=1']), true);
+  assert.equal(installerRequested(['-nsis=0']), false);
   assert.equal(installerRequested(['-s']), false);
   assert.equal(installerRequested(['-nsis=false']), false);
   assert.equal(installerRequested(['-tags', 'nsis']), false);

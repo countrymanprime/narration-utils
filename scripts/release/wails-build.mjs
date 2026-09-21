@@ -39,7 +39,8 @@ export function buildArguments(version, extra) {
 const BIN_DIR = resolve('build', 'bin');
 
 export function installerRequested(extra) {
-  return extra.some((argument) => argument === '-nsis' || argument === '-nsis=true');
+  // Go's flag package takes -nsis, --nsis and a boolean value after =.
+  return extra.some((argument) => /^--?nsis(=(true|t|1))?$/i.test(argument));
 }
 
 export function removeStaleInstaller(extra, binDir = BIN_DIR) {

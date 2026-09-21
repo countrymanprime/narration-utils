@@ -76,7 +76,7 @@ runs:
         $signature = Get-AuthenticodeSignature -FilePath $file
         $subject = "$($signature.SignerCertificate.Subject)"
         Write-Host "WebView2 bootstrapper signature: $($signature.Status), $subject"
-        if ($signature.Status -ne 'Valid' -or $subject -notlike '*O=Microsoft Corporation*') {
+        if ($signature.Status -ne 'Valid' -or $subject -notmatch '(^|, )O=Microsoft Corporation(,|$)') {
           throw "The embedded WebView2 bootstrapper is not validly signed by Microsoft Corporation."
         }
     # The packaged app proves it can start: `--smoke` unpacks the embedded resources, starts every frozen sidecar, checks that the frozen
