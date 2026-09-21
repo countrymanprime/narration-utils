@@ -401,6 +401,26 @@ What it does not see: a path in a code comment (`docs/prds/<name>.prd.md` in a G
 
 The baseline on 2026-09-21 (S17 phase 1): 0 dead repository links; 7 external links rotted or unreachable, six of them pull requests of the owner's private repositories cited as history in `tools/ui-atlas-kit/docs/rollout-ledger.md` (now ignored, with the reason, in `.lycheeignore`) and one real finding, the README's link to the published site `https://countrymanprime.github.io/narration-utils/`, which answers 404 until the owner enables GitHub Pages ([#231](https://github.com/countrymanprime/narration-utils/issues/231)). To add a link the checker should not chase, add a regular expression to `.lycheeignore` with its reason; to run the check locally, install lychee (`cargo install lychee --locked`) and run `lychee --config .lychee.toml --offline .` (drop `--offline` for the online run).
 
+## Third-party notices
+
+`scripts/licenses/notices.py` writes `THIRD-PARTY-NOTICES.txt`: the licence and licence text of every third-party component the Windows release contains, the AGPL-3.0-or-later text of the program itself, and the **source offer** that AGPL and the GPL-family packages in the frozen Story Bible sidecar ask for (this repository, at the release's tag). Owner decision D17 ([ADR 0039](../adr/0039-the-project-is-licensed-agpl-3-or-later.md)) makes bundling Piper, `phonemizer` and eSpeak NG fine, so the job of the file is to carry their notices, not to avoid them. Run it after `scripts/release/prepare-resources.py` has frozen the sidecars:
+
+```bash
+uv run python scripts/licenses/notices.py --version 0.1.0 --tag v0.1.0-rc --out THIRD-PARTY-NOTICES.txt
+```
+
+Each part is read from the thing the release is built from, so nobody keeps a list that can drift (this answers Open Question 11 of the PRD: **derive the shipped Python set from the frozen bundle**, proven on the local build):
+
+| Ecosystem | Source of truth | Notes |
+| --- | --- | --- |
+| Python | The `Analysis-00.toc` and `PYZ-00.toc` PyInstaller writes for each of the three freezes (`.release-build/<sidecar>/work/<sidecar>/`): every module, binary and data file it took, with its source path. The `site-packages` ones are the shipped packages; `importlib.metadata` of the same environment gives their licences and licence files | 74 distributions on the local build. The freeze takes more than the runtime needs (`hypothesis`, `pytest`, `setuptools`, `fastapi`: [#245](https://github.com/countrymanprime/narration-utils/issues/245)); the report lists what is really there rather than what `pyproject.toml` says |
+| npm | `pnpm licenses list --prod --json` in `apps/ui`, with each package's licence file | 44 packages |
+| Go | `go list -deps` of the desktop program for `windows/amd64` with the Wails build tags, minus the main module and the standard library, with each module's licence file classified by its text | 18 modules; `giraffesyo/pdf` is behind the `pdf_candidate` tag and not in a build |
+| By hand | `scripts/licenses/manual.json`: the Python runtime, the PyInstaller bootloader, OpenSSL, libffi, the Visual C++ runtime, the FFmpeg libraries and the OpenBLAS and GCC runtime vendored inside the PyAV and numpy wheels, eSpeak NG's data inside Piper, the Silero VAD model, WebView2 | What no package manager knows. The FFmpeg entry records what was measured (`avutil_license()` reports LGPL v3 or later) and what is not verified (whether libx264 and libx265 make the build GPL, and libx265's exact licence) |
+| Models and voices | `config/*-assets.json` | Not in the package; listed as downloaded on request, with their licence and source |
+
+The run **fails, and writes nothing**, rather than guess: when a licence cannot be named (`UNKNOWN`, or pnpm's `Unknown`; a person decides and records it under `licenses` in `scripts/licenses/reviewed.json`, as for PyInstaller, and an entry that names a component whose licence is known, or one that is not shipped, is itself an error so a stale decision cannot hide a change); when a component ships no licence text (MIT, BSD and Apache ask for it to travel: three are recorded with their reason under `noText`, [#246](https://github.com/countrymanprime/narration-utils/issues/246)); when a frozen module no installed distribution owns, or a vendored native folder (`av.libs`) has no entry in `manual.json`; when the environment is not the one that was frozen (a different version of a package, or one that is not installed); when a table of contents is missing or is not one; or when the report lacks a direct dependency: the eight Python packages the sidecars import, every production dependency in `apps/ui/package.json` and every direct requirement of `apps/desktop/go.mod` that the Windows build links. A GNU licence text is classified by its title at the top, not by the licences it quotes (GPL-3.0 names the Affero licence in section 13). `scripts/licenses/tests/test_notices.py` pins each reader and each of those refusals on fixtures and, where `go` and the UI's `node_modules` exist, runs the real npm and Go readers against the tree. Phase 10 of the PRD attaches the file to the release and copies it into the update zip.
+
 ## The Pages workflow
 
 `pages.yml` publishes the public site to GitHub Pages, at `https://countrymanprime.github.io/narration-utils/`, on every push to `main` and on

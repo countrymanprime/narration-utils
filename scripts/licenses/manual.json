@@ -1,0 +1,82 @@
+[
+  {
+    "name": "CPython runtime (python312.dll and the standard library)",
+    "version": "3.12",
+    "license": "PSF-2.0",
+    "homepage": "https://docs.python.org/3.12/license.html",
+    "source": "the three frozen sidecars",
+    "note": "Each frozen sidecar carries the Python 3.12 interpreter and standard library that PyInstaller bundles. Licence: the Python Software Foundation License Version 2, https://docs.python.org/3.12/license.html. Source: https://www.python.org/downloads/source/."
+  },
+  {
+    "name": "PyInstaller bootloader",
+    "version": "6.22.3",
+    "license": "GPL-2.0-or-later WITH Bootloader-exception",
+    "homepage": "https://pyinstaller.org",
+    "source": "the three frozen sidecars",
+    "note": "Every frozen sidecar executable is PyInstaller's bootloader followed by the program's archive. The bootloader is GPL-2.0-or-later with a special exception that allows the frozen program to be distributed under any licence: https://github.com/pyinstaller/pyinstaller/blob/develop/COPYING.txt. Source: https://github.com/pyinstaller/pyinstaller."
+  },
+  {
+    "name": "OpenSSL 3 (libcrypto-3.dll, libssl-3.dll)",
+    "version": "3",
+    "license": "Apache-2.0",
+    "homepage": "https://www.openssl.org",
+    "source": "the three frozen sidecars",
+    "note": "Bundled with the Python runtime for its ssl and hashlib modules. Licence: Apache License 2.0, https://www.openssl.org/source/license.html. Source: https://github.com/openssl/openssl."
+  },
+  {
+    "name": "libffi (libffi-8.dll)",
+    "version": "8",
+    "license": "MIT",
+    "homepage": "https://sourceware.org/libffi/",
+    "source": "the three frozen sidecars",
+    "note": "Bundled with the Python runtime for ctypes. Licence: MIT, https://github.com/libffi/libffi/blob/master/LICENSE."
+  },
+  {
+    "name": "Microsoft Visual C++ runtime (msvcp140.dll, vcruntime140.dll and companions)",
+    "version": "14",
+    "license": "LicenseRef-Microsoft-VC-Redistributable",
+    "homepage": "https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files",
+    "source": "the three frozen sidecars",
+    "note": "Redistributed as the Visual C++ Redistributable files that the Python runtime and the native wheels link to, under Microsoft's redistribution terms: https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files. Not open source; not modified."
+  },
+  {
+    "name": "FFmpeg libraries vendored in the PyAV wheel (av.libs: avcodec, avformat, avutil, avfilter, avdevice, swscale, swresample and the codecs beside them)",
+    "version": "8.1.2",
+    "license": "LGPL-3.0-or-later",
+    "homepage": "https://ffmpeg.org",
+    "source": "transcript-compare, manuscript-teleprompter (through PyAV 18.1.0, which faster-whisper uses to decode audio)",
+    "note": "PyAV's wheel carries its own build of FFmpeg 8.1.2 and the libraries it links: libdav1d (BSD-2-Clause), libmp3lame (LGPL-2.0-or-later), opencore-amr (Apache-2.0), libopus (BSD-3-Clause), SVT-AV1 (BSD-3-Clause-Clear), libvpx (BSD-3-Clause), libwebp (BSD-3-Clause), libvpl (MIT), libx264 and libx265 (GPL, per their projects), zlib (Zlib), libiconv (LGPL-2.1-or-later), and the MinGW runtime (libgcc, libstdc++, libwinpthread; GPL-3.0-or-later with the GCC Runtime Library Exception, and MIT). Measured on 2026-09-21 by calling avutil_license() in the PyAV 18.1.0 wheel: FFmpeg reports 'LGPL version 3 or later'. NOT verified: whether enabling libx264 and libx265 makes this build GPL, and the exact licence of libx265; both are compatible with AGPL-3.0-or-later unless a component is GPL-2.0-only. Sources: https://github.com/PyAV-Org/PyAV (build scripts) and https://ffmpeg.org/download.html; each component's own site has its source. Only decoding is used by Narration Utils."
+  },
+  {
+    "name": "OpenBLAS and the MinGW runtime vendored in the numpy wheel (numpy.libs)",
+    "version": "",
+    "license": "BSD-3-Clause AND GPL-3.0-or-later WITH GCC-exception-3.1",
+    "homepage": "https://github.com/OpenMathLib/OpenBLAS",
+    "source": "the three frozen sidecars (through numpy)",
+    "note": "numpy's wheel carries OpenBLAS (BSD-3-Clause) and the GCC runtime libraries it links (libgfortran, libquadmath, libgcc: GPL-3.0-or-later with the GCC Runtime Library Exception). The numpy entry above carries numpy's own bundled licence file (LICENSES_bundled.txt) with the full texts. Source: https://github.com/OpenMathLib/OpenBLAS and https://gcc.gnu.org."
+  },
+  {
+    "name": "eSpeak NG data and library inside piper-tts (piper/espeak-ng-data)",
+    "version": "1.52",
+    "license": "GPL-3.0-or-later",
+    "homepage": "https://github.com/espeak-ng/espeak-ng",
+    "source": "manuscript-guide",
+    "note": "The piper-tts wheel bundles eSpeak NG and its data to phonemize text. Licence: GPL-3.0-or-later (with parts under other licences named in the eSpeak NG repository's COPYING files). Source: https://github.com/espeak-ng/espeak-ng and https://github.com/OHF-voice/piper1-gpl. Narration Utils is AGPL-3.0-or-later (ADR 0039), which is compatible."
+  },
+  {
+    "name": "Silero VAD model (silero_vad_v6.onnx) inside the faster-whisper wheel",
+    "version": "6",
+    "license": "MIT",
+    "homepage": "https://github.com/snakers4/silero-vad",
+    "source": "transcript-compare, manuscript-teleprompter",
+    "note": "A voice-activity-detection model that faster-whisper ships as package data and the sidecars collect (ADR 0022). Licence: MIT, https://github.com/snakers4/silero-vad/blob/master/LICENSE."
+  },
+  {
+    "name": "Microsoft Edge WebView2 Runtime (not in this package)",
+    "version": "",
+    "license": "LicenseRef-Microsoft-WebView2",
+    "homepage": "https://developer.microsoft.com/en-us/microsoft-edge/webview2/",
+    "source": "the setup program and the interface",
+    "note": "The interface is drawn by the WebView2 runtime that Windows 11 includes (or that Microsoft's evergreen bootstrapper installs when the setup program finds it missing). It is Microsoft's software, distributed under Microsoft's terms (https://developer.microsoft.com/en-us/microsoft-edge/webview2/), and is not part of this package's files."
+  }
+]
