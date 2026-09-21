@@ -45,3 +45,4 @@ target/
 .cache/
 apps/ui/storybook-static/
 tools/docs-site/build/
+.lycheecache
