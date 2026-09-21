@@ -22,6 +22,7 @@
         "src/components/manuscript/SelectionMenu.tsx",
         "src/components/primitives/ConfirmDialog.tsx",
         "src/components/primitives/ErrorBoundary.tsx",
+        "src/components/primitives/TagInput.tsx",
         "src/components/primitives/WorkDialog.tsx",
         "src/components/project/ProjectPicker.tsx",
         "src/components/proofing/Results.tsx",
@@ -451,6 +452,25 @@
       "a11yDebt": false
     },
     {
+      "title": "Primitives/TagInput",
+      "name": "TagInput",
+      "source": "src/components/primitives/TagInput.tsx",
+      "stories": [
+        "Default",
+        "Empty",
+        "Only Suggestions",
+        "Enter Adds A Term",
+        "Add Button Adds A Term",
+        "Blank Is Not Added",
+        "Removing Keeps The Cursor In The Page",
+        "Accepting A Suggestion"
+      ],
+      "consumers": [
+        "src/components/proofing/Transcript.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/TextField",
       "name": "TextField",
       "source": "src/components/primitives/TextField.tsx",
@@ -465,7 +485,7 @@
       ],
       "consumers": [
         "src/components/primitives/SearchField.tsx",
-        "src/components/proofing/Transcript.tsx",
+        "src/components/primitives/TagInput.tsx",
         "src/components/settings/ScopedSetting.tsx",
         "src/components/storybible/GuideDetail.tsx",
         "src/components/teleprompter/TeleprompterPage.tsx"
@@ -519,6 +539,7 @@
         "src/components/primitives/NavButton.tsx",
         "src/components/primitives/Pill.tsx",
         "src/components/primitives/SearchField.tsx",
+        "src/components/primitives/TagInput.tsx",
         "src/components/proofing/Results.tsx",
         "src/components/proofing/Transcript.tsx",
         "src/components/settings/ScopedSetting.tsx",

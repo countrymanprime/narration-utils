@@ -77,3 +77,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0052](0052-toggle-menu-checkbox-collapsible-and-switch-replace-the-hand-rolled-widgets.md) | Toggle, Menu, Checkbox, Collapsible and Switch replace the hand-rolled widgets | Accepted |
 | [0053](0053-icon-buttons-text-fields-and-selects-wrap-the-native-controls.md) | Icon buttons, text fields and selects wrap the native controls, and pages may not write them | Accepted |
 | [0054](0054-tabs-and-toggle-groups-name-and-link-what-the-hand-built-strips-left-anonymous.md) | Tabs and toggle groups name and link what the hand-built strips left anonymous | Accepted |
+| [0055](0055-the-tag-input-is-a-wrapped-text-field-and-chips-that-report-and-never-edit-the-list.md) | The tag input is a wrapped text field and chips that report and never edit the list | Accepted |

@@ -17,7 +17,7 @@ Storybook title: `Primitives/TextField`. Source: `src/components/primitives/Text
 ## Used by
 
 - `src/components/primitives/SearchField.tsx`
-- `src/components/proofing/Transcript.tsx`
+- `src/components/primitives/TagInput.tsx`
 - `src/components/settings/ScopedSetting.tsx`
 - `src/components/storybible/GuideDetail.tsx`
 - `src/components/teleprompter/TeleprompterPage.tsx`
