@@ -8,9 +8,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 )
 
 type Values map[string]string
@@ -19,10 +24,17 @@ type Store struct {
 	mu      sync.Mutex
 	repo    string
 	project string
+	persist atomic.Pointer[persist.Reporter]
 }
 
 func New(repo, project string) *Store      { return &Store{repo: repo, project: project} }
 func (s *Store) SetProject(project string) { s.mu.Lock(); defer s.mu.Unlock(); s.project = project }
+
+// SetPersist says where to report a settings file that cannot be read (ADR 0069). Without it a corrupt file is still kept aside.
+func (s *Store) SetPersist(reporter *persist.Reporter) { s.persist.Store(reporter) }
+
+// reporter is read without s.mu: Save holds it while it reads the file it is about to change.
+func (s *Store) reporter() *persist.Reporter { return s.persist.Load() }
 
 func (s *Store) Effective(tool, key, fallback string) (string, string) {
 	if value, ok := s.Project(tool)[key]; ok {
@@ -52,7 +64,7 @@ var builtinDefaults = map[string]Values{
 // Defaults returns the repo file's values for tool, with any key the file does
 // not provide filled from builtinDefaults.
 func (s *Store) Defaults(tool string) Values {
-	values := readTool(layout.Path(s.repoPath(), layout.DefaultsFile), tool)
+	values := s.readTool(layout.Path(s.repoPath(), layout.DefaultsFile), tool, persist.Disposable)
 	for key, value := range builtinDefaults[tool] {
 		if _, ok := values[key]; !ok {
 			values[key] = value
@@ -60,13 +72,15 @@ func (s *Store) Defaults(tool string) Values {
 	}
 	return values
 }
-func (s *Store) Global(tool string) Values { return readTool(globalPath(), tool) }
+func (s *Store) Global(tool string) Values {
+	return s.readTool(globalPath(), tool, persist.NarratorData)
+}
 func (s *Store) Project(tool string) Values {
 	project := s.projectPath()
 	if project == "" {
 		return Values{}
 	}
-	return readTool(project, tool)
+	return s.readTool(project, tool, persist.NarratorData)
 }
 
 func (s *Store) Fields(scope string) map[string]map[string]any {
@@ -110,7 +124,10 @@ func (s *Store) Save(tool, scope string, changes map[string]*string) error {
 	} else if scope != "global" {
 		return fmt.Errorf("unsupported settings scope")
 	}
-	document := readDocument(path)
+	document := s.readDocument(path, persist.NarratorData)
+	if err := persist.CanOverwrite(path, "settings"); err != nil {
+		return err
+	}
 	section, _ := document[tool].(map[string]any)
 	if section == nil {
 		section = map[string]any{}
@@ -149,24 +166,52 @@ func globalPath() string {
 	}
 	return filepath.Join("AppData", "Roaming", "narration-utils", "global-settings.json")
 }
-func readTool(path, tool string) Values {
-	raw := readDocument(path)
+
+// readTool reads one tool's section of a settings file as text. Every setting is stored as a string, but a hand-edited file may hold
+// a boolean or a number (a bool setting written as true, for one): those are read as their text. An object or a list is not a
+// setting value: it is ignored, and the log names the key (never the value). A null is the explicit global reset that Save writes,
+// so it is ignored without a log line.
+func (s *Store) readTool(path, tool string, class persist.Class) Values {
+	raw := s.readDocument(path, class)
 	section, _ := raw[tool].(map[string]any)
 	result := Values{}
+	var ignored []string
 	for key, value := range section {
-		if text, ok := value.(string); ok {
-			result[key] = text
+		switch typed := value.(type) {
+		case string:
+			result[key] = typed
+		case bool:
+			result[key] = strconv.FormatBool(typed)
+		case float64:
+			result[key] = strconv.FormatFloat(typed, 'f', -1, 64)
+		case nil:
+		default:
+			ignored = append(ignored, key)
 		}
+	}
+	if len(ignored) > 0 {
+		sort.Strings(ignored)
+		s.reporter().Warn("settings_value_ignored", fmt.Sprintf("%s section %s has values that are not text, numbers or booleans and were ignored: %s", filepath.Base(path), tool, strings.Join(ignored, ", ")))
 	}
 	return result
 }
-func readDocument(path string) map[string]any {
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		return map[string]any{}
-	}
+
+// readDocument reads a settings file. A file that cannot be decoded is handled by class (kept aside and reported for the narrator's
+// own settings), so the Save that follows never replaces it without a trace.
+func (s *Store) readDocument(path string, class persist.Class) map[string]any {
 	var document map[string]any
-	if json.Unmarshal(bytes, &document) != nil || document == nil {
+	s.reporter().ReadJSON(path, "settings", class, func(bytes []byte) error {
+		var decoded map[string]any
+		if err := json.Unmarshal(bytes, &decoded); err != nil {
+			return err
+		}
+		if decoded == nil {
+			return fmt.Errorf("not a JSON object")
+		}
+		document = decoded
+		return nil
+	})
+	if document == nil {
 		return map[string]any{}
 	}
 	return document

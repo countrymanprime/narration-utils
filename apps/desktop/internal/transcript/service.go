@@ -15,9 +15,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 )
@@ -34,6 +36,7 @@ type Service struct {
 	child             *process.Child
 	progress, logPath string
 	logAt             int64
+	files             atomic.Pointer[persist.Reporter]
 }
 
 // New builds the service. When there is a bridge it subscribes to the events Transcript Compare owns: the
@@ -50,6 +53,9 @@ func New(config Config, client *bridge.Client, store *settings.Store, sidecars *
 	}
 	return s
 }
+
+// SetPersist says where to log a last-comparison file that cannot be read (ADR 0069). It is derived data and heals.
+func (s *Service) SetPersist(reporter *persist.Reporter) { s.files.Store(reporter) }
 
 // ownsRun reports whether runID is the run this service is tracking.
 func (s *Service) ownsRun(runID string) bool {
@@ -152,14 +158,13 @@ func (s *Service) Reset() error {
 	return nil
 }
 func (s *Service) LastCompleted() map[string]any {
-	bytes, err := os.ReadFile(filepath.Join(s.config.Project, ".narration-last-comparison.json"))
-	if err != nil || len(bytes) == 0 {
-		return nil
-	}
 	var result map[string]any
-	if json.Unmarshal(bytes, &result) != nil {
-		return nil
-	}
+	s.files.Load().ReadJSON(filepath.Join(s.config.Project, ".narration-last-comparison.json"), "last comparison", persist.Disposable, func(bytes []byte) error {
+		if len(bytes) == 0 {
+			return nil
+		}
+		return json.Unmarshal(bytes, &result)
+	})
 	return result
 }
 
@@ -495,26 +500,27 @@ func (s *Service) Poll() {
 	}
 	changed := false
 	if bytes, err := os.ReadFile(progress); err == nil {
-		if lines := strings.Split(strings.TrimSpace(string(bytes)), "\n"); len(lines) > 0 {
-			if parts := strings.SplitN(lines[len(lines)-1], "|", 3); len(parts) >= 2 {
-				s.mu.Lock()
-				pct, _ := strconv.ParseFloat(parts[1], 64)
-				s.state["percent"] = pct
-				if len(parts) == 3 && parts[2] != "" {
-					s.state["message"] = parts[2]
-				} else {
-					s.state["message"] = parts[0]
-				}
-				if parts[0] == "CANCELLED" || parts[0] == "ERROR" {
-					if parts[0] == "CANCELLED" {
-						s.state["phase"] = "cancelled"
-					} else {
-						s.state["phase"] = "error"
-					}
-				}
-				s.mu.Unlock()
-				changed = true
+		lines := strings.Split(strings.TrimSpace(string(bytes)), "\n")
+		stage, pct, message, parseErr := process.ParseProgress(lines[len(lines)-1])
+		if parseErr != nil {
+			// Keep the last good progress: the old code read a bad percent as 0 and moved the bar back.
+			s.files.Load().Warn("progress_line_ignored", fmt.Sprintf("Transcript Compare progress line ignored: %v", parseErr))
+		} else {
+			s.mu.Lock()
+			s.state["percent"] = pct
+			if message != "" {
+				s.state["message"] = message
+			} else {
+				s.state["message"] = stage
 			}
+			switch stage {
+			case "CANCELLED":
+				s.state["phase"] = "cancelled"
+			case "ERROR":
+				s.state["phase"] = "error"
+			}
+			s.mu.Unlock()
+			changed = true
 		}
 	}
 	if bytes, err := os.ReadFile(logPath); err == nil {

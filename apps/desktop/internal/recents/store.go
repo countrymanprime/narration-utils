@@ -6,11 +6,15 @@ package recents
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 )
 
 // maxEntries caps the recent-projects list per the product decision to show
@@ -24,11 +28,15 @@ type Entry struct {
 }
 
 type Store struct {
-	mu   sync.Mutex
-	path string
+	mu      sync.Mutex
+	path    string
+	persist atomic.Pointer[persist.Reporter]
 }
 
 func New(path string) *Store { return &Store{path: path} }
+
+// SetPersist says where to log a recents file that cannot be read (ADR 0069). It is disposable: it heals and is not shown to the narrator.
+func (s *Store) SetPersist(reporter *persist.Reporter) { s.persist.Store(reporter) }
 
 // Touch records path/name as the most recently opened project, deduping any
 // existing entry for the same path (case-insensitively, since Windows
@@ -104,18 +112,17 @@ func (s *Store) List() ([]Entry, error) {
 // so self-healing from corruption beats permanently disabling the feature
 // until someone manually deletes the file.
 func (s *Store) readLocked() ([]Entry, error) {
-	bytes, err := os.ReadFile(s.path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return []Entry{}, nil
-		}
-		return nil, err
-	}
 	var entries []Entry
-	if err := json.Unmarshal(bytes, &entries); err != nil {
-		return []Entry{}, nil
+	outcome := s.persist.Load().ReadJSON(s.path, "recent projects", persist.Disposable, func(bytes []byte) error {
+		return json.Unmarshal(bytes, &entries)
+	})
+	switch outcome {
+	case persist.Unreadable:
+		return nil, fmt.Errorf("could not read the recent projects list")
+	case persist.Loaded:
+		return entries, nil
 	}
-	return entries, nil
+	return []Entry{}, nil
 }
 
 func (s *Store) writeLocked(entries []Entry) error {

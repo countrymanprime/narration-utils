@@ -203,3 +203,8 @@ func TestContractTracksDiscovery(t *testing.T) {
 	pin("tracks-discovery-several", several)
 	pin("tracks-discovery-selected", one)
 }
+
+// The system:notice event: something the app did for the narrator that they should read (ADR 0069).
+func TestContractNarratorNotice(t *testing.T) {
+	contractfile.Check(t, "system-notice", noticePayload("Your notes file could not be read. It was kept as manuscript-notes.json.corrupt-20260921-101530 next to the original, and a fresh one was started."))
+}
