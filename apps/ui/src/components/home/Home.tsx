@@ -241,7 +241,7 @@ export function Home({
           )}
           {importJob.preview.sections && importJob.preview.sections.length > 0 && (
             <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 Review imported structure
               </legend>
               <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -270,7 +270,7 @@ export function Home({
           )}
           {importJob.preview.characterCandidates && importJob.preview.characterCandidates.length > 0 && (
             <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 Story Bible character suggestions
               </legend>
               <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -299,7 +299,7 @@ export function Home({
             </fieldset>
           )}
           <div className="mt-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-            <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+            <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
               Preview activity
             </div>
             <div className="progressbar h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
@@ -337,7 +337,7 @@ export function Home({
             onClick={() => go('/proofing')}
           >
             <div className="mb-1 flex items-center justify-between">
-              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 Proofing
               </span>
               <span
@@ -365,7 +365,7 @@ export function Home({
             onClick={() => go('/story-bible')}
           >
             <div className="mb-1 flex items-center justify-between">
-              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 Story Bible
               </span>
               <span

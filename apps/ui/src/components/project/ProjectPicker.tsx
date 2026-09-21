@@ -118,7 +118,7 @@ export function ProjectPicker() {
         )}
         <section className="mt-5">
           <div
-            className="mb-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase"
+            className="mb-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase"
             tabIndex={-1}
             ref={recentsHeadingRef}
           >

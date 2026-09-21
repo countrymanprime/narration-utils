@@ -89,7 +89,7 @@ export function AudiobookEstimatePanel({
       <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
         <div>
           <h2 className="text-sm font-semibold">Audiobook estimate</h2>
-          <div className="mt-0.5 flex items-center text-xs" style={{ color: 'var(--text-faint)' }}>
+          <div className="mt-0.5 flex items-center text-xs" style={{ color: 'var(--text-muted)' }}>
             {totalWords.toLocaleString()} words · {narrationChapters.length} chapters · ~150 words/min narrated{' '}
             <Tooltip text="Fixed industry rule of thumb (~9,300 words per finished hour). Record, edit, and proof use standard multipliers of that finished length." />
           </div>
@@ -104,7 +104,7 @@ export function AudiobookEstimatePanel({
         <div className="grid grid-cols-5 gap-4">
           {stats.map((stat) => (
             <div key={stat.label}>
-              <div className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+              <div className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 {stat.label}
               </div>
               <div className="mt-1 font-['IBM_Plex_Mono',ui-monospace,monospace] text-2xl font-semibold">{stat.value}</div>
@@ -113,7 +113,7 @@ export function AudiobookEstimatePanel({
         </div>
         <div>
           <div className="mb-1.5 flex justify-between text-xs">
-            <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+            <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
               Recording progress
             </span>
             <span className="font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-muted)' }}>
@@ -171,7 +171,7 @@ export function AudiobookEstimatePanel({
                         >
                           {chapter.title}
                           {chapter.subtitle && (
-                            <span style={{ color: 'var(--text-faint)' }}>
+                            <span style={{ color: 'var(--text-muted)' }}>
                               {' — '}
                               {chapter.subtitle}
                             </span>

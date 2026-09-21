@@ -11,25 +11,21 @@ import { describe, expect, test } from 'vitest';
 // that part is the reviewer's.
 const RETIRED = '--text-faint';
 
-// Mentions per file, after the primitives, the app shell and the stylesheet were migrated (slice 2a). Each later slice
-// deletes its files' entries; the last one deletes the `styles.css` entry with the token itself.
+// Mentions per file, after the primitives, the app shell, the stylesheet (slice 2a), Home, the project picker, Settings and
+// Tracks (slice 2b) were migrated. Each later slice deletes its files' entries; the last one deletes the `styles.css` entry
+// with the token itself.
 const CEILING: Record<string, number> = {
-  'src/components/home/AudiobookEstimatePanel.tsx': 4,
-  'src/components/home/Home.tsx': 5,
   'src/components/manuscript/ChapterNav.tsx': 4,
   'src/components/manuscript/EntitySummary.tsx': 8,
   'src/components/manuscript/Manuscript.tsx': 7,
   'src/components/manuscript/ParagraphView.tsx': 2,
-  'src/components/project/ProjectPicker.tsx': 1,
   'src/components/proofing/InlineDiffRow.tsx': 3,
   'src/components/proofing/Results.tsx': 1,
   'src/components/proofing/Transcript.tsx': 4,
-  'src/components/settings/Settings.tsx': 1,
   'src/components/storybible/Guide.tsx': 4,
   'src/components/storybible/GuideDetail.tsx': 9,
   'src/components/teleprompter/ReaderText.tsx': 1,
   'src/components/teleprompter/TeleprompterPage.tsx': 2,
-  'src/components/tracks/TracksPage.tsx': 2,
   'src/styles.css': 2,
 };
 
