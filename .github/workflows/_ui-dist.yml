@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          persist-credentials: false
           ref: ${{ inputs.ref }}
       - uses: ./.github/actions/setup-toolchain
         with:

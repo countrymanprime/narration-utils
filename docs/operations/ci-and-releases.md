@@ -59,6 +59,32 @@ environment to `main` and tags matching `v*`.
 Issues, labels, milestones, and the project board are covered in
 [Tracking work on GitHub](github-workflow.md).
 
+## Workflow security
+
+The workflows build and publish an unsigned executable, so they are treated as code that needs its own checks.
+[zizmor](https://docs.zizmor.sh) reads every workflow, composite action and `dependabot.yml` on every pull request
+(`zizmor.yml`, no path filter) and reports unpinned actions, credentials left in `.git/config`, template injection,
+excessive permissions and dangerous triggers. Its configuration is `.github/zizmor.yml`; every suppression there
+names its reason. It is advisory (a finding does not fail the job) until every action is pinned to a commit SHA.
+Run it locally with `uvx zizmor --persona regular .` (add `--gh-token "$(gh auth token)"` for the
+online audits).
+
+The permission model, so a change can be judged against it:
+
+- Every workflow declares `permissions` at the top, and a job that needs more raises it for that job only. The
+  top-level default is `contents: read` (`zizmor.yml` and `promote-release.yml` use `{}`). The one exception is
+  `build-macos.yml` and `build-linux.yml`, whose `contents: write` is a workflow-level grant because a caller must
+  grant everything the reusable `_attach-platform.yml` holds; only its `attach` job uses it.
+- The release job of `prerelease.yml` holds `contents: write` (create the release) and `actions: write` (start the
+  optional macOS and Linux builds); `promote-release.yml`'s one job holds `contents: write` (create the stable tag and
+  release), behind the `production` environment.
+- Every `actions/checkout` sets `persist-credentials: false`, so the token is not left in `.git/config` for later steps.
+  Promote therefore creates the stable tag through the API (`gh api .../git/refs`) instead of `git push`.
+- Values an outsider can influence (a tag input, a branch name) reach a shell through `env:`, never straight into a
+  `run:` body.
+- `labeler.yml` uses `pull_request_target` so forks can be labelled; it checks out nothing and runs no pull request
+  code (the comment at its top says why that is safe).
+
 ## Version lifecycle
 
 The pre-release workflow runs after each non-release push to `main`. Nx Release

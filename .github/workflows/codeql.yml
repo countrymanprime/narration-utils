@@ -36,6 +36,8 @@ jobs:
           - { language: python, build-mode: none }
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - if: matrix.language == 'go'
         uses: ./.github/actions/setup-toolchain
         with:
