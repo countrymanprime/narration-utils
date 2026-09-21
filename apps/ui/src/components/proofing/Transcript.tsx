@@ -1,3 +1,4 @@
+import { apiErrorMessage, describeApiError } from '../../api/errorMessage';
 import { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faPlay, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons';
@@ -16,7 +17,7 @@ import { hasHint, splitHintTerms, suggestionMessage } from './hints';
 import { PROOFING_CHUNK_OPTIONS } from './options';
 
 /** The host rejects with its error text as a plain string; an Error carries it in `message`. */
-const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
+const errorText = apiErrorMessage;
 
 const seconds = (value: number) =>
   `${Math.floor(value / 60)
@@ -138,7 +139,7 @@ export function Transcript({
     try {
       await api.transcriptSaveHints(next);
     } catch (error) {
-      notify(String(error));
+      notify(describeApiError(error));
     }
   };
   const acceptHint = (term: string) => {
@@ -172,7 +173,7 @@ export function Transcript({
         setPendingChapterTitle(chapterTitle);
       }
     } catch (error) {
-      notify(String(error));
+      notify(describeApiError(error));
     }
   };
   const installWhisperModel = async () => {
@@ -193,7 +194,7 @@ export function Transcript({
         await start(chapterTitle);
       } else if (job.phase !== 'cancelled') notify(job.message);
     } catch (error) {
-      notify(String(error));
+      notify(describeApiError(error));
     }
   };
   const cancelWhisperModelInstall = async () => {
@@ -201,7 +202,7 @@ export function Transcript({
       try {
         setWhisperJob(await api.whisperInstallCancel(whisperJob.id));
       } catch (error) {
-        notify(String(error));
+        notify(describeApiError(error));
       }
       return;
     }

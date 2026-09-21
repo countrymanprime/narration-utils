@@ -1,0 +1,18 @@
+{
+  "downloadSize": 114004800,
+  "installState": "not_installed",
+  "status": "asset_required",
+  "voice": {
+    "attribution": "LJ Speech dataset",
+    "displayName": "LJSpeech (high)",
+    "id": "en_US-ljspeech-high",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://example.test/license",
+    "locale": "en_US",
+    "modelCardUrl": "https://example.test/card",
+    "provenanceUrl": "https://example.test/source",
+    "provider": "piper",
+    "publisher": "rhasspy",
+    "version": "1.0"
+  }
+}

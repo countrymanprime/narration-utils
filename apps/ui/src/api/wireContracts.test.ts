@@ -4,6 +4,21 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { z } from 'zod';
 import { createMockApi } from './mockApi';
 import { WIRE_TRANSCRIPT } from './mockFixtures';
+import {
+  bookmarkSchema,
+  chapterSchema,
+  chaptersSchema,
+  fileSelectionSchema,
+  noteSchema,
+  notesSchema,
+  paragraphsSchema,
+  readerSchema,
+  readerStateSchema,
+  searchHitsSchema,
+  workJobSchema,
+} from './schemas/manuscript';
+import { projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
+import { guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { bootstrapSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
 import { transcriptStateSchema } from './schemas/transcript';
@@ -33,6 +48,32 @@ const GOLDEN: Record<string, z.ZodType> = {
   'teleprompter-state-idle.json': teleprompterStateSchema,
   'teleprompter-state-running.json': teleprompterStateSchema,
   'teleprompter-events.json': teleprompterEventSchema.array(),
+  'manuscript-import-selected.json': workJobSchema,
+  'manuscript-import-preview.json': workJobSchema,
+  'manuscript-import-success.json': workJobSchema,
+  'manuscript-chapters.json': chaptersSchema,
+  'manuscript-chapter-status.json': chapterSchema,
+  'manuscript-paragraphs.json': paragraphsSchema,
+  'manuscript-search.json': searchHitsSchema,
+  'manuscript-note.json': noteSchema,
+  'manuscript-notes.json': notesSchema,
+  'manuscript-notes-empty.json': notesSchema,
+  'manuscript-bookmark.json': bookmarkSchema,
+  'manuscript-reader-state.json': readerStateSchema,
+  'manuscript-reader-state-empty.json': readerStateSchema,
+  'manuscript-reader.json': readerSchema,
+  'guide-entities-sidecar.json': guideEntitiesSchema,
+  'guide-entities.json': guideEntitiesSchema,
+  'guide-entities-legacy.json': guideEntitiesSchema,
+  'guide-entities-empty.json': guideEntitiesSchema,
+  'guide-build-idle.json': workJobSchema,
+  'guide-build-starting.json': workJobSchema,
+  'guide-build-failed.json': workJobSchema,
+  'guide-preview-asset-required.json': guidePreviewSchema,
+  'project-recents.json': recentProjectsSchema,
+  'project-recents-empty.json': recentProjectsSchema,
+  'project-switch-attached.json': projectSwitchResultSchema,
+  'project-switch-refused.json': projectSwitchResultSchema,
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -128,6 +169,72 @@ describe('answers of the mock client (it must pass the schemas the real host ans
     void api.switchProject('C:/Projects/Other', 'Other');
     expect(attached).toHaveLength(1);
     expectMatches(projectAttachStateSchema, attached[0], 'mock system:attached');
+  });
+});
+
+describe('answers of the mock client for the manuscript, Story Bible and project bindings', () => {
+  it('the reader, its chapters, paragraphs, notes, search and saved state', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    expectMatches(chaptersSchema, chapters, 'mock chapters');
+    expectMatches(readerSchema, await api.manuscriptReader(), 'mock reader');
+    expectMatches(readerStateSchema, await api.readerState(), 'mock reader state');
+    expectMatches(paragraphsSchema, await api.manuscriptParagraphs(chapters[0]?.id ?? ''), 'mock paragraphs');
+    expectMatches(searchHitsSchema, await api.manuscriptSearch('alice'), 'mock search');
+    expectMatches(notesSchema, await api.noteList(), 'mock notes');
+    expectMatches(
+      readerStateSchema,
+      await api.readerStateSave({ activeChapter: chapters[0]?.id, activeSourceLine: 3, expandedChapters: [] }),
+      'mock saved state',
+    );
+    expectMatches(chapterSchema, await api.manuscriptSetChapterStatus(chapters[0]?.id ?? '', 'recording'), 'mock chapter status');
+  });
+
+  it('a created note and bookmark', async () => {
+    const api = createMockApi();
+    const chapter = (await api.manuscriptChapters())[0];
+    const paragraph = (await api.manuscriptParagraphs(chapter?.id ?? ''))[0];
+    expectMatches(noteSchema, await api.noteCreate(chapter?.id ?? '', paragraph?.id ?? '', 'A note', 0, 4, 'Alic'), 'mock note');
+    expectMatches(
+      bookmarkSchema,
+      await api.readerBookmarkCreate({
+        kind: 'line',
+        chapter: chapter?.title ?? '',
+        chapterId: chapter?.id,
+        paragraphId: paragraph?.id,
+        paragraph: paragraph?.index,
+      }),
+      'mock bookmark',
+    );
+  });
+
+  it('the manuscript import jobs from file selection to a committed import', async () => {
+    const api = createMockApi();
+    const selection = await api.selectManuscript();
+    expectMatches(fileSelectionSchema, selection, 'mock file selection');
+    const jobId = selection.jobId ?? '';
+    expectMatches(workJobSchema, await api.manuscriptImportState(jobId), 'mock import state');
+    expectMatches(workJobSchema, await api.manuscriptImportPreview(jobId, { markdownHeadingLevel: 1 }), 'mock import preview');
+    expectMatches(workJobSchema, await api.manuscriptImportCommit(jobId, { confirmedReset: true }), 'mock import commit');
+  });
+
+  it('the Story Bible entities, build job, created id and preview answers', async () => {
+    const api = createMockApi();
+    expectMatches(guideEntitiesSchema, await api.guideEntities(), 'mock entities');
+    expectMatches(workJobSchema, await api.guideBuildState(), 'mock guide state');
+    expectMatches(workJobSchema, await api.guideBuild(), 'mock guide build');
+    expectMatches(guideCreatedSchema, { id: await api.guideCreate('New', 'Character', []) }, 'mock guide create');
+    const entity = (await api.guideEntities())[0];
+    expectMatches(guidePreviewSchema, await api.guidePreview(entity?.id ?? ''), 'mock preview');
+  });
+
+  it('the project picker answers', async () => {
+    const api = createMockApi({}, { projectFolder: '' });
+    expectMatches(recentProjectsSchema, await api.projectRecents(), 'mock recents');
+    expectMatches(recentProjectsSchema, await api.removeRecentProject('C:/Projects/Voltage-and-the-Undercroft'), 'mock recents after remove');
+    expectMatches(projectFolderSelectionSchema, await api.selectProjectFolder(), 'mock folder selection');
+    expectMatches(projectSwitchResultSchema, await api.switchProject('C:/Projects/Other', 'Other'), 'mock switch');
+    expectMatches(projectSwitchResultSchema, await api.createProject('C:/Projects/New', 'New'), 'mock create');
   });
 });
 

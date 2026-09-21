@@ -1,3 +1,4 @@
+import { describeApiError } from '../../api/errorMessage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Bootstrap, Scope, ScopedSettingField, TtsCatalog, WhisperCatalog } from '../../types';
 import { useApi } from '../../api/ApiContext';
@@ -102,7 +103,7 @@ export function Settings({
       setValues(Object.fromEntries(currentFields.map((field) => [field.key, field.value])));
       setDirty(false);
     } catch (error) {
-      const message = String(error);
+      const message = describeApiError(error);
       setLoadError(message);
       notify(message);
     }
@@ -128,7 +129,7 @@ export function Settings({
       }
       await load();
     } catch (error) {
-      notify(String(error));
+      notify(describeApiError(error));
     }
   }, [active?.tool, api, load, notify, scope, settings, values]);
   const discard = useCallback(async () => {
@@ -148,7 +149,7 @@ export function Settings({
       notify('Project override cleared.');
       await load();
     } catch (error) {
-      notify(String(error));
+      notify(describeApiError(error));
     }
   };
   const selectedTtsVoice = ttsCatalog?.voices.find((voice) => voice.id === ttsCatalog.voice.id);
@@ -396,7 +397,7 @@ export function Settings({
               notify('Derived project data cleared.');
               await onProjectDataCleared();
             } catch (error) {
-              notify(String(error));
+              notify(describeApiError(error));
             }
           }}
           cancel={() => setConfirmClearProjectData(false)}
@@ -416,7 +417,7 @@ export function Settings({
                 notify('Local preview voice removed.');
                 await load();
               })
-              .catch((error) => notify(String(error)))
+              .catch((error) => notify(describeApiError(error)))
           }
           cancel={() => setConfirmRemoveVoice(false)}
         />
@@ -435,7 +436,7 @@ export function Settings({
                 notify('Local Whisper model removed.');
                 await load();
               })
-              .catch((error) => notify(String(error)))
+              .catch((error) => notify(describeApiError(error)))
           }
           cancel={() => setConfirmRemoveModel(false)}
         />

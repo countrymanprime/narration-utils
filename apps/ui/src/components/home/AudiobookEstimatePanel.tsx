@@ -1,3 +1,4 @@
+import { describeApiError } from '../../api/errorMessage';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -206,7 +207,7 @@ export function AudiobookEstimatePanel({
                               ),
                             );
                           } catch (error) {
-                            notify(String(error));
+                            notify(describeApiError(error));
                           }
                         }}
                       />

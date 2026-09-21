@@ -1,0 +1,25 @@
+[
+  {
+    "aliases": [
+      {
+        "occurrences": [],
+        "pronunciation": {},
+        "text": "Mad Hatter"
+      }
+    ],
+    "canonical_name": "Hatter",
+    "category": "Character",
+    "description": {
+      "evidence": {},
+      "text": ""
+    },
+    "id": "entity-legacy",
+    "locked": false,
+    "occurrence_count": 0,
+    "occurrences": [],
+    "personality_notes": [],
+    "pronunciation": {},
+    "relationships": [],
+    "review_state": "generated"
+  }
+]

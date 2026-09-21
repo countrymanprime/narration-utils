@@ -10,6 +10,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 )
 
@@ -83,4 +84,13 @@ func checkIn(t testing.TB, dir, name string, value any) {
 	if string(committed) != string(encoded) {
 		t.Fatalf("%s no longer matches what the host sends.\ncommitted:\n%s\nnow:\n%s\nRun the test with %s=1, then update the schema and the mock together.", path, committed, encoded, UpdateEnv)
 	}
+}
+
+func sortedKeys(values map[string]any) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }

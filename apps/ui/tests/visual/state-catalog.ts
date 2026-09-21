@@ -80,6 +80,12 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'manuscript', state: 'go-to-line-highlight', description: 'Manuscript, arrived via Story Bible "Go to line" with the target line highlighted' },
   { page: 'manuscript', state: 'reader-dark', description: 'Manuscript, reader in the Dark theme (readable active controls, opaque sticky header)' },
 
+  {
+    page: 'manuscript',
+    state: 'invalid-payload',
+    description: 'Manuscript, the inline error with Retry when the data it loads could not be read; navigation still works (ADR 0069)',
+  },
+
   // Proofing
   { page: 'proofing', state: 'setup-default', description: 'Proofing, setup panel default selection' },
   { page: 'proofing', state: 'setup-alt-selection', description: 'Proofing, setup panel alternate model/worker/chunk selection' },
@@ -121,6 +127,12 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   { page: 'storybible', state: 'entry-editing', description: 'Story Bible, an unlocked entry in edit mode (Save and Cancel shown)' },
   { page: 'storybible', state: 'entry-needs-review', description: 'Story Bible, a Needs Review entry with review-colored evidence highlights' },
+
+  {
+    page: 'storybible',
+    state: 'invalid-payload',
+    description: 'Story Bible, the inline error with Retry when the entities could not be read; navigation still works (ADR 0069)',
+  },
 
   // Tracks
   {

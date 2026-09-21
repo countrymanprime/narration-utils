@@ -1,0 +1,41 @@
+{
+  "elapsed": 1.5,
+  "id": "id-1",
+  "kind": "manuscript_import",
+  "logs": [
+    "Selected book.md",
+    "Reading Markdown file book.md",
+    "Parsing 0 KB using H1 as the chapter heading level",
+    "Read 3 paragraphs under 2 chapter headings",
+    "Classifying front matter, chapters and reference sections",
+    "Found 2 chapters in 2 sections",
+    "Preview ready: 3 paragraphs, 2 chapters, 0 character suggestions"
+  ],
+  "message": "Review the import preview before activating it.",
+  "percent": 100,
+  "phase": "ready",
+  "preview": {
+    "chapterTitles": [
+      "Chapter One",
+      "Chapter Two"
+    ],
+    "characterCandidates": [],
+    "format": "markdown",
+    "paragraphCount": 3,
+    "sections": [
+      {
+        "contentKind": "narration",
+        "id": "section-0001",
+        "paragraphCount": 2,
+        "title": "Chapter One"
+      },
+      {
+        "contentKind": "narration",
+        "id": "section-0002",
+        "paragraphCount": 1,
+        "title": "Chapter Two"
+      }
+    ],
+    "sourceName": "book.md"
+  }
+}

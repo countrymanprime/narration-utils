@@ -1,0 +1,13 @@
+{
+  "elapsed": 2.5,
+  "error": "python exited with code 1",
+  "id": "guide-1",
+  "kind": "story_bible",
+  "logs": [
+    "Reading canonical manuscript",
+    "Loaded 120 paragraphs"
+  ],
+  "message": "The Story Bible build failed.",
+  "percent": 40,
+  "phase": "error"
+}
