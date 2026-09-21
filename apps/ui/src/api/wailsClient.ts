@@ -1,9 +1,12 @@
 import { normalizeGuideEntity } from '../types';
 import { parseWire, parseWireJson, type WireContext } from './wire/parseWire';
-import { isWireError, type WireError } from './wire/WireError';
+import { isWireError, WireError } from './wire/WireError';
+import { createLiveHealth } from './wire/liveHealth';
 import type { InferOutput, StandardSchemaV1 } from './wire/standardSchema';
 import { voidResult } from './schemas/base';
-import { bootstrapSchema, readySchema } from './schemas/system';
+import { bootstrapSchema, projectAttachStateSchema, readySchema } from './schemas/system';
+import { TELEPROMPTER_EVENT_TYPES, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
+import { transcriptStateSchema } from './schemas/transcript';
 import type {
   Bootstrap,
   GuideEntity,
@@ -22,9 +25,7 @@ import type {
   RecentProject,
   ScopedSettingField,
   SearchHit,
-  TeleprompterEvent,
   TeleprompterStartResult,
-  TeleprompterState,
   TracksDiscovery,
   TracksProject,
   TranscriptStartResult,
@@ -51,27 +52,19 @@ function normalizeTranscriptState(state: TranscriptState): TranscriptState {
   return { ...state, markerExport: state.markerExport ?? { phase: 'idle', message: '', added: 0, skipped: 0 } };
 }
 
-const idleTeleprompter: TeleprompterState = { phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null };
-
-function normalizeTeleprompterState(state: Partial<TeleprompterState>): TeleprompterState {
-  return { ...idleTeleprompter, ...state };
-}
-
-// The host relays each sidecar line as a JSON value; tolerate the string form
-// too so a transport change cannot silently drop the whole stream.
-function teleprompterEvent(payload: unknown): TeleprompterEvent {
-  return (typeof payload === 'string' ? JSON.parse(payload) : payload) as TeleprompterEvent;
-}
-
 // A payload that fails its schema is reported to the host log (kind `wire_invalid`: boundary, payload and failing paths,
 // never values) before it is rethrown to whoever asked, so a bad payload leaves a trace even when the caller swallows
 // the rejection. Best effort: a missing binding or a failed write must not hide the error being reported.
-function reportWireError(error: WireError): void {
+function reportDiagnostic(kind: string, message: string): void {
   try {
-    void host.SystemReportDiagnostic('wire_invalid', error.details()).catch(() => {});
+    void host.SystemReportDiagnostic(kind, message).catch(() => {});
   } catch {
     // The host is not there to report to.
   }
+}
+
+function reportWireError(error: WireError, prefix = ''): void {
+  reportDiagnostic('wire_invalid', `${prefix}${error.details()}`);
 }
 
 function checked<T>(check: () => T): T {
@@ -84,6 +77,52 @@ function checked<T>(check: () => T): T {
 }
 
 const bindingContext = (payload: string): WireContext => ({ boundary: 'host.binding', payload });
+
+// Live events (ADR 0069, failure class "live event"): one counter for the whole client. An event that does not match is dropped
+// and counted, and the host log hears about the first few and then one in fifty; a run of them tells the app (`subscribeLiveUpdateHealth`).
+const liveHealth = createLiveHealth({
+  onDropped: (error, count) => reportWireError(error, `live update ${count} dropped: `),
+  onIgnored: (type) => reportDiagnostic('wire_unknown_event', `host.event: ignoring events of the type "${type.slice(0, 40)}", which this UI does not know`),
+});
+
+/** Checks one event against its schema; a bad one is dropped and counted, never thrown inside the event callback. */
+function liveEvent<S extends StandardSchemaV1>(schema: S, payload: string, value: unknown, onValid: (event: InferOutput<S>) => void): void {
+  try {
+    onValid(parseWire(schema, value, { boundary: 'host.event', payload }));
+  } catch (error) {
+    if (!isWireError(error)) throw error;
+    liveHealth.dropped(error);
+  }
+}
+
+function subscribeChecked<S extends StandardSchemaV1>(event: string, schema: S, onValid: (value: InferOutput<S>) => void): () => void {
+  return EventsOn(event, (value) => liveEvent(schema, event, value, onValid));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+// The host relays each sidecar line as a JSON value; tolerate the string form too so a transport change cannot silently drop the
+// whole stream. A type the UI does not know is a newer sidecar: ignored and named once, not counted as a failure.
+function subscribeTeleprompterEvents(onEvent: (event: InferOutput<typeof teleprompterEventSchema>) => void): () => void {
+  return EventsOn('teleprompter:event', (payload) => {
+    let value: unknown = payload;
+    if (typeof payload === 'string') {
+      try {
+        value = JSON.parse(payload);
+      } catch {
+        liveHealth.dropped(new WireError('host.event', 'teleprompter:event', [{ path: '(root)', message: 'not valid JSON' }]));
+        return;
+      }
+    }
+    if (isRecord(value) && typeof value.type === 'string' && !TELEPROMPTER_EVENT_TYPES.has(value.type)) {
+      liveHealth.ignored(value.type);
+      return;
+    }
+    liveEvent(teleprompterEventSchema, 'teleprompter:event', value, onEvent);
+  });
+}
 
 /** A Wails string binding: the host sends JSON text, and it is checked against `schema` before anything reads it. */
 async function decode<S extends StandardSchemaV1>(schema: S, payload: string, request: Promise<string>): Promise<InferOutput<S>> {
@@ -160,7 +199,8 @@ export const wailsClient: NarrationApi = {
   transcriptHints: () => decodeUnchecked<string[]>(host.TranscriptHints()),
   transcriptSaveHints: (accepted) => decodeUnchecked<void>(host.TranscriptSaveHints(accepted)),
   reportClientDiagnostic: (kind, message) => decode(voidResult, 'SystemReportDiagnostic', host.SystemReportDiagnostic(kind, message)),
-  subscribeProjectAttach: (onUpdate) => EventsOn('system:attached', (payload) => onUpdate(payload as { attached: boolean; reason?: string })),
+  subscribeProjectAttach: (onUpdate) => subscribeChecked('system:attached', projectAttachStateSchema, onUpdate),
+  subscribeLiveUpdateHealth: (onDegraded) => liveHealth.subscribe(onDegraded),
   manuscriptChapters: () => decodeUnchecked<ManuscriptChapter[]>(host.ManuscriptChapters()),
   manuscriptReader: () => decodeUnchecked<ManuscriptReader>(host.ManuscriptReader()),
   readerState: () => decodeUnchecked<ReaderState>(host.ManuscriptReaderState()),
@@ -175,7 +215,7 @@ export const wailsClient: NarrationApi = {
   noteCreate: (chapterId, paragraphId, text, anchorStart, anchorEnd, anchorText) =>
     decodeUnchecked<ManuscriptNote>(host.ManuscriptCreateNote(chapterId, paragraphId, text, anchorText ?? '', anchorStart, anchorEnd)),
   noteDelete: (id) => decodeUnchecked<void>(host.ManuscriptDeleteNote(id)),
-  subscribeTranscript: (onUpdate) => EventsOn('transcript:state', (payload) => onUpdate(normalizeTranscriptState(payload as TranscriptState))),
+  subscribeTranscript: (onUpdate) => subscribeChecked('transcript:state', transcriptStateSchema, onUpdate),
   projectRecents: () => decodeUnchecked<RecentProject[]>(host.ProjectRecents()),
   selectProjectFolder: () => decodeUnchecked<ProjectFolderSelection>(host.ProjectSelectFolder()),
   switchProject: (path, name) => decodeUnchecked<ProjectSwitchResult>(host.ProjectSwitch(path, name ?? '')),
@@ -186,9 +226,8 @@ export const wailsClient: NarrationApi = {
   tracksList: () => decodeUnchecked<TracksProject>(host.TracksList()),
   teleprompterStart: (options) => decodeUnchecked<TeleprompterStartResult>(host.TeleprompterStart(options)),
   teleprompterStop: () => decodeUnchecked<void>(host.TeleprompterStop()),
-  teleprompterState: () => decodeUnchecked<Partial<TeleprompterState>>(host.TeleprompterState()).then(normalizeTeleprompterState),
-  subscribeTeleprompterEvent: (onEvent) => EventsOn('teleprompter:event', (payload) => onEvent(teleprompterEvent(payload))),
-  subscribeTeleprompterState: (onState) =>
-    EventsOn('teleprompter:state', (payload) => onState(normalizeTeleprompterState(payload as Partial<TeleprompterState>))),
+  teleprompterState: () => decode(teleprompterStateSchema, 'TeleprompterState', host.TeleprompterState()),
+  subscribeTeleprompterEvent: subscribeTeleprompterEvents,
+  subscribeTeleprompterState: (onState) => subscribeChecked('teleprompter:state', teleprompterStateSchema, onState),
   mediaUrl: (sourceFile) => `${mediaRoute}?path=${encodeURIComponent(sourceFile)}`,
 };

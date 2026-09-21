@@ -199,6 +199,11 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     default: async (page) => {
       await homeLoaded(page);
     },
+    'live-updates-degraded': async (page) => {
+      await page.goto('/?mockLiveDegraded=1');
+      await settlePage(page);
+      await page.getByText(/live updates from the desktop host could not be read/).waitFor();
+    },
     'manuscript-not-found': async (page) => {
       await page.goto('/?mockNoManuscript=1');
       await settlePage(page);
