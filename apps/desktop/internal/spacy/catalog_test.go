@@ -155,7 +155,8 @@ func lockedSpacyVersion(t *testing.T) []int {
 	if err != nil {
 		t.Fatal(err)
 	}
-	match := regexp.MustCompile(`(?m)^name = "spacy"\nversion = "(\d+)\.(\d+)\.(\d+)"`).FindSubmatch(bytes)
+	// \r?\n: a Windows checkout with autocrlf turns the lock file's line ends into CRLF.
+	match := regexp.MustCompile(`(?m)^name = "spacy"\r?\nversion = "(\d+)\.(\d+)\.(\d+)"`).FindSubmatch(bytes)
 	if match == nil {
 		t.Fatal("uv.lock has no spacy entry")
 	}
