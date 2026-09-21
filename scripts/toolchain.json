@@ -10,6 +10,10 @@
     "module": "github.com/golangci/golangci-lint/v2/cmd/golangci-lint",
     "version": "v2.13.2"
   },
+  "govulncheck": {
+    "module": "golang.org/x/vuln/cmd/govulncheck",
+    "version": "v1.8.0"
+  },
   "stylua": {
     "version": "v2.1.0",
     "provisioner": "JohnnyMorganz/stylua-action v4.1.0, pinned by commit SHA in .github/actions/setup-toolchain/action.yml"

@@ -1,0 +1,96 @@
+name: Security scan
+# Advisory: neither scanner is a required check, and neither fails the run on a finding (no ruleset requires a status
+# check, and the first month is a baseline: docs/operations/ci-and-releases.md, "Vulnerability scanning"). Findings show under
+# Security > Code scanning and in the run log.
+#   - govulncheck: Go vulnerabilities that the code can actually reach (the Go module in apps/desktop).
+#   - OSV-Scanner: every known advisory in the three lockfiles (Go, npm, Python). On a pull request it reports only
+#     what the pull request adds; on main and weekly it reports everything.
+# No path filter: a new advisory can land against an unchanged lockfile, so the weekly run is what catches it.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '41 6 * * 2'
+  workflow_dispatch: {}
+permissions: { contents: read }
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  # Never cancel a run on main: it is the baseline shown in the Security tab.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  govulncheck:
+    name: govulncheck
+    timeout-minutes: 15
+    # Windows, like the `go` quality job: it is the supported platform and Linux's native libraries are not installed on
+    # pull requests. The module builds without cgo, so no native library is needed to type-check it.
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      security-events: write # to upload the SARIF results
+    defaults:
+      run:
+        shell: bash
+    env:
+      # A fork or Dependabot pull request gets a read-only token, so the upload below would fail: scan, but do not upload.
+      CAN_UPLOAD: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-node: 'false'
+          need-pnpm: 'false'
+          need-python: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+      # Installed from the Go module proxy at the version scripts/toolchain.json pins (keep them in step), rather than
+      # through the golang/govulncheck-action wrapper, which installs `@latest`.
+      - name: Install the pinned govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+      # SARIF output never fails the run; the text run below prints the findings for the log.
+      - name: Scan the Go module (SARIF)
+        run: govulncheck -C apps/desktop -format sarif ./... > govulncheck.sarif
+      - name: Upload the results to Code scanning
+        if: env.CAN_UPLOAD == 'true'
+        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        with:
+          sarif_file: govulncheck.sarif
+          category: govulncheck
+      - name: Print the findings
+        continue-on-error: true
+        run: govulncheck -C apps/desktop ./...
+
+  # Only what the pull request adds is reported; it needs the base branch's results to compare with. Skipped for a
+  # fork or Dependabot pull request, whose token cannot upload the results (main's scan covers a merged update).
+  osv-scanner-pr:
+    name: osv-scanner (pull request)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    with:
+      # A lockfile added later has to be listed here. uv.lock and pnpm-lock.yaml are read natively.
+      scan-args: |-
+        --lockfile=pnpm-lock.yaml
+        --lockfile=uv.lock
+        --lockfile=apps/desktop/go.mod
+      fail-on-vuln: false
+
+  osv-scanner:
+    name: osv-scanner
+    if: github.event_name != 'pull_request'
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    with:
+      scan-args: |-
+        --lockfile=pnpm-lock.yaml
+        --lockfile=uv.lock
+        --lockfile=apps/desktop/go.mod
+      fail-on-vuln: false
