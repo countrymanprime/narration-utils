@@ -58,9 +58,10 @@
   --warn: #b5871e;
   --info: #3f6ea6;
   /* Text-safe companions of the status colours, for text on the page and on their soft fills (ADR 0059): --danger, --warn and
-     --info stay for borders, dots and fills. Light darkens the colour toward --text; in dark the fill colour already passes. */
+     --info stay for borders, dots and fills. Light darkens the colour: danger and info toward --text, warn to an explicit dark
+     amber (a mix toward the olive text desaturated it to a grey-brown); in dark the fill colour already passes. */
   --danger-text: color-mix(in srgb, var(--danger) 85%, var(--text));
-  --warn-text: color-mix(in srgb, var(--warn) 50%, var(--text));
+  --warn-text: #755507;
   --info-text: color-mix(in srgb, var(--info) 90%, var(--text));
   --bookmark: #3b6fc4;
   /* Alternating reader rows: a touch darker than --surface, like banded table rows. */
