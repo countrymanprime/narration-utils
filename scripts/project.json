@@ -20,7 +20,7 @@
     "test-node": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node --test scripts/ci/*.test.mjs scripts/github/*.test.mjs scripts/release/*.test.mjs"
+        "command": "node --test scripts/ci/*.test.mjs scripts/github/*.test.mjs scripts/licenses/*.test.mjs scripts/release/*.test.mjs"
       }
     }
   }

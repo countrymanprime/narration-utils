@@ -1,0 +1,70 @@
+{
+  "catalogued": {
+    "faster-whisper/tiny": {
+      "commercialUse": "Yes (MIT)",
+      "status": "In the catalog",
+      "note": "CTranslate2 conversion of OpenAI Whisper by Systran."
+    },
+    "faster-whisper/small": {
+      "commercialUse": "Yes (MIT)",
+      "status": "In the catalog",
+      "note": "CTranslate2 conversion of OpenAI Whisper by Systran."
+    },
+    "faster-whisper/medium": {
+      "commercialUse": "Yes (MIT)",
+      "status": "In the catalog",
+      "note": "CTranslate2 conversion of OpenAI Whisper by Systran."
+    },
+    "faster-whisper/large-v3-turbo": {
+      "commercialUse": "Yes (MIT)",
+      "status": "In the catalog",
+      "note": "A community conversion by deepdml of OpenAI's model, tagged MIT on its Hugging Face page (re-read 2026-09-20); pinned by commit and per-file hash, so the bytes are the ones reviewed."
+    },
+    "faster-whisper/large-v3": {
+      "commercialUse": "Yes (MIT)",
+      "status": "In the catalog",
+      "note": "CTranslate2 conversion of OpenAI Whisper by Systran."
+    },
+    "piper/en_US-ljspeech-high": {
+      "commercialUse": "The model card is silent; the LJ Speech data is public domain and the Piper Voices repository is MIT",
+      "status": "In the catalog",
+      "note": "The card's silence on commercial use is a residual, recorded in the local dependency evaluation. The Piper program and eSpeak NG that speak it are GPL-3.0-or-later and are bundled (owner decision D17), not downloaded."
+    },
+    "spacy/en_core_web_sm": {
+      "commercialUse": "Yes (MIT, ExplosionAI)",
+      "status": "In the catalog, cleared from the wheel's own notices",
+      "note": "The wheel's LICENSES_SOURCES records the training data: OntoNotes 5 (\"commercial (licensed by Explosion)\"), the ClearNLP dependency conversion (a citation, no code), WordNet 3.0 (its licence, which travels with the model). Read by the S16 spike; the corpora's terms beyond Explosion's statement are not independently verified. The owner may withdraw the model."
+    },
+    "spacy/en_core_web_lg": {
+      "commercialUse": "Yes (MIT, ExplosionAI)",
+      "status": "In the catalog, cleared from the wheel's own notices",
+      "note": "As en_core_web_sm, plus the Explosion Vectors (OSCAR 2109, Wikipedia, OpenSubtitles, WMT News Crawl) recorded in the same file. Same residual."
+    }
+  },
+  "uncatalogued": [
+    {
+      "name": "Silero VAD (silero_vad_v6.onnx)",
+      "source": "snakers4/silero-vad, inside the faster-whisper wheel",
+      "license": "MIT",
+      "commercialUse": "Yes",
+      "status": "Ships inside two sidecars (ADR 0022), listed in the notices",
+      "note": "Package data, not a download."
+    },
+    {
+      "name": "Moonshine (moonshine-voice 0.1.5 and its English streaming models)",
+      "source": "moonshine-ai/moonshine, fetched from Moonshine's own servers by the library",
+      "license": "unclear",
+      "commercialUse": "unclear",
+      "status": "Unclear: kept out of the catalog (owner decision, Q13 b)",
+      "note": "The package is MIT. The project says its English streaming models are MIT and that a non-commercial Moonshine Community License covers only legacy non-streaming models, but GitHub's detector calls the repository's licence unrecognized and no per-model text is confirmed at a pinned artifact. It needs a URL, a SHA-256 and a model card for every file before it can be catalogued; the app never lets the library download it. Not a project dependency."
+    },
+    {
+      "name": "Other Piper voices",
+      "source": "rhasspy/piper-voices",
+      "license": "per voice",
+      "commercialUse": "unclear until each model card is read",
+      "status": "Unclear: none is in the catalog",
+      "note": "Each voice is trained on its own dataset, and some datasets restrict commercial use. A voice is added only with its card read and a catalog entry that pins it."
+    }
+  ]
+}
