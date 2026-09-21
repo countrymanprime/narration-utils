@@ -128,7 +128,6 @@ the run log; a fork or Dependabot pull request scans but does not upload, becaus
   Dependabot proposes the fixes.
 - **Moving to blocking** is a decision after a clean month: the pull-request mode of OSV (`fail-on-vuln: true`) fails
   only on what the pull request adds, and govulncheck stays advisory.
-
 ## Version lifecycle
 
 The pre-release workflow runs after each non-release push to `main`. Nx Release
