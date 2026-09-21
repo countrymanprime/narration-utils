@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -51,6 +52,16 @@ func (r *recorder) handle(event Event) {
 	r.events = append(r.events, event)
 }
 
+func (r *recorder) tags() []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	tags := []string{}
+	for _, event := range r.events {
+		tags = append(tags, event.Tag)
+	}
+	return tags
+}
+
 func (r *recorder) tagsAndRuns() [][2]string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -79,7 +90,7 @@ func TestTwoConsumersEachGetTheirOwnEventsWithInterleavedRuns(t *testing.T) {
 	client.Subscribe(Subscription{Tags: []string{"LINES_*", "REGIONS_CREATED", "ERROR"}, Owns: owns("l1", "l2"), Handle: lines.handle})
 	log.append("COMPARE_PREPARED|c1|m|n|t|d|3\n" +
 		"LINES_STAMPED|l1|2|0|0|0\n" +
-		"COMPARE_MARKER|c1|row|MISREAD\n" +
+		"COMPARE_EXPORT_MARKER|c1|row|exported\n" +
 		"LINES_STALE|l2|%7BAAA%7D\n" +
 		"REGIONS_CREATED|l1|1|0|0\n" +
 		"COMPARE_INSPECTED|c1|1 discrepancy|1|0\n")
@@ -88,7 +99,7 @@ func TestTwoConsumersEachGetTheirOwnEventsWithInterleavedRuns(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantCompare := [][2]string{{"COMPARE_PREPARED", "c1"}, {"COMPARE_MARKER", "c1"}, {"COMPARE_INSPECTED", "c1"}}
+	wantCompare := [][2]string{{"COMPARE_PREPARED", "c1"}, {"COMPARE_EXPORT_MARKER", "c1"}, {"COMPARE_INSPECTED", "c1"}}
 	wantLines := [][2]string{{"LINES_STAMPED", "l1"}, {"LINES_STALE", "l2"}, {"REGIONS_CREATED", "l1"}}
 	if got := compare.tagsAndRuns(); !reflect.DeepEqual(got, wantCompare) {
 		t.Fatalf("compare consumer got %v, want %v", got, wantCompare)
@@ -107,7 +118,7 @@ func TestAConsumerNeverStealsAnotherConsumersEventsAcrossDispatches(t *testing.T
 	client.Subscribe(Subscription{Tags: []string{"COMPARE_*"}, Handle: first.handle})
 	client.Subscribe(Subscription{Tags: []string{"COMPARE_*"}, Handle: second.handle})
 	for round := 0; round < 3; round++ {
-		log.append("COMPARE_MARKER|c1|row\n")
+		log.append("COMPARE_EXPORT_MARKER|c1|row|exported\n")
 		if err := client.Dispatch(); err != nil {
 			t.Fatal(err)
 		}
@@ -259,7 +270,7 @@ func TestDispatchWithoutALogOrAHandlerIsHarmless(t *testing.T) {
 func TestConcurrentDispatchWhileREAPERWritesDeliversEachEventExactlyOnceInOrder(t *testing.T) {
 	client, log := newSession(t)
 	recorded := &recorder{}
-	client.Subscribe(Subscription{Tags: []string{"COMPARE_MARKER"}, Handle: recorded.handle})
+	client.Subscribe(Subscription{Tags: []string{"COMPARE_EXPORT_MARKER"}, Handle: recorded.handle})
 	const total = 300
 
 	var writing, dispatching sync.WaitGroup
@@ -267,7 +278,7 @@ func TestConcurrentDispatchWhileREAPERWritesDeliversEachEventExactlyOnceInOrder(
 	go func() {
 		defer writing.Done()
 		for index := 0; index < total; index++ {
-			log.append("COMPARE_MARKER|c1|row-" + strconv.Itoa(index) + "\n")
+			log.append("COMPARE_EXPORT_MARKER|c1|row-" + strconv.Itoa(index) + "|exported\n")
 		}
 	}()
 	stop := make(chan struct{})
@@ -324,5 +335,76 @@ func TestAReplacedShorterLogIsReadFromItsStart(t *testing.T) {
 	}
 	if got, want := recorded.tagsAndRuns()[3], [2]string{"REGIONS_CREATED", "l2"}; got != want {
 		t.Fatalf("the replacement log's event = %v, want %v", got, want)
+	}
+}
+
+func TestAnEventThatFailsItsTableIsReportedToTheOwnerLoggedAndNeverDeliveredAsData(t *testing.T) {
+	client, log := newSession(t)
+	var delivered, invalid recorder
+	var reasons []string
+	var logged []string
+	client.SetLog(func(kind, message string) { logged = append(logged, kind+" "+message) })
+	client.Subscribe(Subscription{
+		Tags:   []string{"COMPARE_*"},
+		Owns:   func(run string) bool { return run == "r1" },
+		Handle: delivered.handle,
+		Invalid: func(event Event, reason error) {
+			invalid.handle(event)
+			reasons = append(reasons, reason.Error())
+		},
+	})
+	var otherOwner recorder
+	client.Subscribe(Subscription{Tags: []string{"COMPARE_*"}, Owns: func(run string) bool { return run == "other" }, Invalid: func(event Event, _ error) { otherOwner.handle(event) }})
+
+	// A marker cut after the audio text, then a good one.
+	log.append("COMPARE_MARKER|r1|0%4012.5|MISREAD|n|d|SECRET WORDS\n")
+	log.append("COMPARE_EXPORTED|r1|2|1\n")
+	if err := client.Dispatch(); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := delivered.tags(); !reflect.DeepEqual(got, []string{"COMPARE_EXPORTED"}) {
+		t.Fatalf("delivered %v: the truncated marker must not reach Handle", got)
+	}
+	if got := invalid.tags(); !reflect.DeepEqual(got, []string{"COMPARE_MARKER"}) {
+		t.Fatalf("invalid %v", got)
+	}
+	if len(otherOwner.events) != 0 {
+		t.Fatal("a consumer that does not own the run is not told")
+	}
+	if len(reasons) != 1 || !strings.Contains(reasons[0], "COMPARE_MARKER") {
+		t.Fatalf("reasons = %v", reasons)
+	}
+	if client.Invalid() != 1 || len(logged) != 1 || !strings.HasPrefix(logged[0], "reaper_event_invalid ") || strings.Contains(logged[0], "SECRET") {
+		t.Fatalf("invalid %d, logged %v", client.Invalid(), logged)
+	}
+}
+
+func TestAnInvalidEventWithNoOneToTellIsStillCountedAndLogged(t *testing.T) {
+	client, log := newSession(t)
+	var logged []string
+	client.SetLog(func(kind, message string) { logged = append(logged, kind) })
+	log.append("REGIONS_CREATED|t1|4|0|many\n")
+	if err := client.Dispatch(); err != nil {
+		t.Fatal(err)
+	}
+	if client.Invalid() != 1 || len(logged) != 1 {
+		t.Fatalf("invalid %d, logged %v", client.Invalid(), logged)
+	}
+}
+
+func TestInvalidEventLoggingIsThrottled(t *testing.T) {
+	client, log := newSession(t)
+	var logged int
+	client.SetLog(func(string, string) { logged++ })
+	for i := 0; i < 250; i++ {
+		log.append("REGIONS_CREATED|t1|x|0|0\n")
+	}
+	if err := client.Dispatch(); err != nil {
+		t.Fatal(err)
+	}
+	// The first three, then the 100th and the 200th.
+	if client.Invalid() != 250 || logged != 5 {
+		t.Fatalf("invalid %d, logged %d, want 250 and 5", client.Invalid(), logged)
 	}
 }

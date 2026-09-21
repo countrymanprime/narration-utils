@@ -151,7 +151,7 @@ Developer: change a Go payload, run the Go test that rewrites the golden file, s
 | 4 | Binding results, part 1 | `decode(schema, ...)` for Manuscript, Story Bible and Project bindings; replace `normalizeGuideEntity`; audit page error handling | complete | 5, 6 | 1, 3 | - |
 | 5 | Binding results, part 2 | Same for Transcript, Tts, Whisper, Tracks, Settings, Teleprompter start | complete | 4, 6 | 1, 3 | - |
 | 6 | Persisted files and sidecar outputs (Go) | Version policy, logged fallbacks and corrupt-file handling; `guide.json` `schema_version` check; progress line parsing | complete | 4, 5 | 1 | - |
-| 7 | REAPER events and cleanup | Table-driven `events.log` parsing in Go; remove superseded `normalize*` (the dead `api/client/http.ts` was already deleted by the Knip cleanup, verification PRD phase 8); final cast sweep; `feature-cleanup` | pending | - | 2, 4, 5, 6 | - |
+| 7 | REAPER events and cleanup | Table-driven `events.log` parsing in Go; remove superseded `normalize*` (the dead `api/client/http.ts` was already deleted by the Knip cleanup, verification PRD phase 8); final cast sweep; `feature-cleanup` | complete | - | 2, 4, 5, 6 | - |
 
 ### Phase Details
 
