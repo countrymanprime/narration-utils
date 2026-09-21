@@ -250,6 +250,13 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
   },
   manuscript: {
+    'invalid-payload': async (page) => {
+      await page.goto('/?mockInvalidPayload=manuscript');
+      await settlePage(page);
+      // The page's own content never loads here, so goToPage (which waits for it) is not used: the inline error is the proof.
+      await clickNav(page, 'Manuscript');
+      await page.getByText('The app received data it could not read.').waitFor();
+    },
     'reader-text-small': async (page) => {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'small');
@@ -388,6 +395,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
   },
   storybible: {
+    'invalid-payload': async (page) => {
+      await page.goto('/?mockInvalidPayload=storybible');
+      await settlePage(page);
+      await clickNav(page, 'Story Bible');
+      await page.getByText('The app received data it could not read.').waitFor();
+    },
     'category-all': async (page) => {
       await goToPage(page, 'Story Bible');
       await clickVisible(page, 'tab', /^All · \d+$/);

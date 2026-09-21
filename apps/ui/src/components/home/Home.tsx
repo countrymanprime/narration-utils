@@ -1,3 +1,4 @@
+import { apiErrorMessage, describeApiError } from '../../api/errorMessage';
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileArrowUp, faFileLines } from '@fortawesome/free-solid-svg-icons';
@@ -76,7 +77,9 @@ export function Home({
           if (active) setImportJob(next);
         })
         .catch(
-          (error) => active && setImportJob((current) => (current ? { ...current, phase: 'error', error: String(error), message: String(error) } : current)),
+          (error) =>
+            active &&
+            setImportJob((current) => (current ? { ...current, phase: 'error', error: describeApiError(error), message: describeApiError(error) } : current)),
         );
     refresh();
     const timer = window.setInterval(refresh, IMPORT_POLL_MS);
@@ -96,7 +99,7 @@ export function Home({
     try {
       setImportJob(await api.manuscriptImportPreview(jobId, { markdownHeadingLevel: 1 }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = apiErrorMessage(error);
       setImportJob((current) => (current ? { ...current, phase: 'error', error: message, message } : current));
     }
   };
@@ -114,7 +117,7 @@ export function Home({
         }),
       );
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = apiErrorMessage(error);
       setImportJob((current) => (current ? { ...current, phase: 'error', error: message, message } : current));
     }
   };
@@ -195,7 +198,7 @@ export function Home({
             void api
               .manuscriptBeginImport(candidate.path)
               .then((result) => (result.selected && result.jobId ? beginImportPreview(result.jobId) : undefined))
-              .catch((error) => notify(String(error)))
+              .catch((error) => notify(describeApiError(error)))
           }
           cancel={() => {
             declinedCandidates.add(candidate.path);

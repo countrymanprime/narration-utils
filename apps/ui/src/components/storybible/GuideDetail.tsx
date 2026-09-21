@@ -1,3 +1,4 @@
+import { describeApiError } from '../../api/errorMessage';
 import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -136,7 +137,7 @@ export function GuideDetail({
       await reload(entity.id);
       return true;
     } catch (error) {
-      notify(String(error));
+      notify(describeApiError(error));
       return false;
     }
   };
@@ -170,7 +171,7 @@ export function GuideDetail({
         await playPreview(aliasIndex);
       } else if (job.phase !== 'cancelled') notify(job.error || job.message);
     } catch (error) {
-      notify(String(error));
+      notify(describeApiError(error));
     }
   };
   const cancelVoiceInstall = async () => {
@@ -178,7 +179,7 @@ export function GuideDetail({
       try {
         setTtsJob(await api.ttsInstallCancel(ttsJob.id));
       } catch (error) {
-        notify(String(error));
+        notify(describeApiError(error));
       }
       return;
     }
@@ -191,7 +192,7 @@ export function GuideDetail({
       notify('Entity created.');
       onCreatedNewDraft?.(id);
     } catch (error) {
-      notify(String(error));
+      notify(describeApiError(error));
     }
   };
   const rescanOccurrences = async () => {
@@ -200,7 +201,7 @@ export function GuideDetail({
       notify('Occurrences rescanned.');
       await reload(entity.id);
     } catch (error) {
-      notify(String(error));
+      notify(describeApiError(error));
     }
   };
   const onAliasKeyDown = (event: React.KeyboardEvent) => {
@@ -263,7 +264,7 @@ export function GuideDetail({
                     notify(locked ? 'Entry unlocked.' : 'Entry locked.');
                     await reload(entity.id);
                   } catch (error) {
-                    notify(String(error));
+                    notify(describeApiError(error));
                   }
                 }}
               >
@@ -596,7 +597,7 @@ export function GuideDetail({
                           await api.guideUnrelate(entity.id, rel.id, rel.label);
                           await reload(entity.id);
                         } catch (error) {
-                          notify(String(error));
+                          notify(describeApiError(error));
                         }
                       }}
                     >
@@ -642,7 +643,7 @@ export function GuideDetail({
                   setRelationLabel('');
                   await reload(entity.id);
                 } catch (error) {
-                  notify(String(error));
+                  notify(describeApiError(error));
                 }
               }}
             >
@@ -765,7 +766,7 @@ export function GuideDetail({
                   notify('Entity deleted.');
                   return reload();
                 })
-                .catch((error) => notify(String(error)));
+                .catch((error) => notify(describeApiError(error)));
             }}
             cancel={() => setConfirmation(undefined)}
           />
@@ -785,7 +786,7 @@ export function GuideDetail({
                   notify(`Merged ${selectedAliasMatch.canonical_name} into ${entity.canonical_name}.`);
                   return reload(entity.id);
                 })
-                .catch((error) => notify(String(error)));
+                .catch((error) => notify(describeApiError(error)));
             }}
             cancel={() => setConfirmation(undefined)}
           />

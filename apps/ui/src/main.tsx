@@ -40,9 +40,9 @@ const mockTeleprompter = (['listening', 'waiting', 'done'] as const).find((seed)
 // `?mockPreviewError=<text>` makes the Story Bible preview fail with that text once the
 // preview voice is installed, so the failure toast can be seen without a real host.
 const mockPreviewError = mockParams.get('mockPreviewError');
-// `?mockInvalidPayload=bootstrap` makes the Bootstrap arrive in the wrong shape (through the real `parseWire`), so the
-// startup error screen for a payload the app could not read can be seen without a host.
-const mockInvalidPayload = mockParams.get('mockInvalidPayload') === 'bootstrap' ? ('bootstrap' as const) : undefined;
+// `?mockInvalidPayload=bootstrap|manuscript|storybible` makes that payload arrive in the wrong shape (through the real `parseWire`),
+// so the startup error screen and the inline page errors for a payload the app could not read can be seen without a host.
+const mockInvalidPayload = (['bootstrap', 'manuscript', 'storybible'] as const).find((which) => which === mockParams.get('mockInvalidPayload'));
 // `?mockLiveDegraded=1` tells the app at once that live updates are degraded, so the notice can be seen without a failing host.
 const mockLiveDegraded = mockParams.has('mockLiveDegraded');
 const mockInitial = {

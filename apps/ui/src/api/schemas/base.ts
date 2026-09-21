@@ -7,5 +7,12 @@ import { z } from 'zod';
 /** A field the contract declares `?: T` but the host may send as `null`: both become `undefined`. */
 export const optionalFromNull = <T extends z.ZodType>(schema: T) => schema.nullish().transform((value) => value ?? undefined);
 
+/** A list the host may send as `null` (a nil Go slice, or an older sidecar record): both become an empty list. */
+export const listFromNull = <T extends z.ZodType>(item: T) =>
+  z
+    .array(item)
+    .nullish()
+    .transform((value): Array<z.output<T>> => value ?? []);
+
 /** The result of a binding that returns nothing: the host marshals `nil` to `null`. */
 export const voidResult = z.null().transform((): void => undefined);

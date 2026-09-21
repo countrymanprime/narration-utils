@@ -78,6 +78,18 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(await screen.findByRole('button', { name: /Copied/ })).toBeTruthy();
   });
 
+  it('shows the Story Bible page an inline error with Retry when its entities cannot be read, and keeps navigation', async () => {
+    renderApp({}, { invalidPayload: 'storybible' });
+    await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
+    fireEvent.click(screen.getByRole('button', { name: /Open Story Bible/ }));
+    expect(await screen.findByText('This page could not be loaded')).toBeTruthy();
+    expect(screen.getByText('The app received data it could not read.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+    // The rest of the app still works: the navigation is there and leads on.
+    fireEvent.click(screen.getAllByRole('button', { name: /Home/ })[0]);
+    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeTruthy();
+  });
+
   it('tells the narrator once when live updates from the host have been failing', async () => {
     renderApp({}, { liveUpdatesDegraded: true });
     expect(await screen.findByText(/live updates from the desktop host could not be read/)).toBeTruthy();

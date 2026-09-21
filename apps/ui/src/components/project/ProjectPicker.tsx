@@ -1,3 +1,4 @@
+import { describeApiError } from '../../api/errorMessage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolderOpen, faFolderPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
@@ -45,7 +46,7 @@ export function ProjectPicker() {
     try {
       await action();
     } catch (error) {
-      setReason(String(error));
+      setReason(describeApiError(error));
     } finally {
       setBusy(false);
     }

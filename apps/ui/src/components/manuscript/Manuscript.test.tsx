@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Manuscript } from './Manuscript';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
+import { WireError } from '../../api/wire/WireError';
 
 afterEach(cleanup);
 
@@ -234,5 +235,30 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     await screen.findByLabelText(/Search result in Chapter 2/);
     resolveOld([{ chapter: 'Chapter 1', paragraph: 0, sourceLine: 10, excerpt: 'old result' }]);
     await waitFor(() => expect(screen.queryByLabelText(/Search result in Chapter 1/)).toBeNull());
+  });
+
+  describe('when the data it loads cannot be read (ADR 0069)', () => {
+    const unreadable = () =>
+      new WireError('host.binding', 'ManuscriptChapters', [{ path: '[0].index', message: 'Invalid input: expected number, received string' }]);
+
+    it('shows an inline error with Retry, in plain words and without the technical text', async () => {
+      renderManuscript({ manuscriptChapters: () => Promise.reject(unreadable()) });
+      expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'The app received data it could not read.');
+      expect(screen.getByRole('heading', { name: 'Manuscript' })).toBeTruthy();
+      expect(document.body.textContent).not.toContain('index');
+    });
+
+    it('loads the page when Retry succeeds', async () => {
+      const real = createMockApi();
+      const chapters = vi
+        .fn()
+        .mockRejectedValueOnce(unreadable())
+        .mockImplementation(() => real.manuscriptChapters());
+      renderManuscript({ manuscriptChapters: chapters });
+      fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
+      await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+      expect(await screen.findByText('Text size')).toBeTruthy();
+      expect(chapters).toHaveBeenCalledTimes(2);
+    });
   });
 });

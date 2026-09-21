@@ -1,11 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
+	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 )
 
 // The Bootstrap payloads the UI receives (ADR 0069). The UI's contract tests validate these files against its schemas and
@@ -58,4 +61,44 @@ func TestContractBootstrapOfAStandaloneLaunchWithNoProject(t *testing.T) {
 	host := contractHost(t, "")
 	host.config.projectName, host.config.daw = "", "Standalone"
 	contractfile.Check(t, "bootstrap-standalone", host.Bootstrap())
+}
+
+// The Story Bible build job as GuideBuildState sends it (ADR 0069). Elapsed time is the only value that varies.
+func TestContractStoryBibleBuildJob(t *testing.T) {
+	host := contractHost(t, "")
+	pinBinding := func(name string, job map[string]any) {
+		job["elapsed"] = 2.5
+		contractfile.Check(t, name, job)
+	}
+	pinBinding("guide-build-idle", host.guideBuildState())
+	// A job just started has no log lines yet: its `logs` is a nil slice, which the host sends as null.
+	pinBinding("guide-build-starting", snapshotWork(&workJob{id: "guide-1", kind: "story_bible", phase: "running", message: "Preparing…", started: time.Now()}))
+	pinBinding("guide-build-failed", snapshotWork(&workJob{id: "guide-1", kind: "story_bible", phase: "error", message: "The Story Bible build failed.", errorText: "python exited with code 1", percent: 40, logs: []string{"Reading canonical manuscript", "Loaded 120 paragraphs"}, started: time.Now()}))
+}
+
+// How a project attach ends, as ProjectSwitch and ProjectCreate answer it, and the Story Bible answer that needs a voice.
+func TestContractProjectAttachResults(t *testing.T) {
+	for name, attached := range map[string]struct {
+		ok     bool
+		reason string
+	}{"project-switch-attached": {true, ""}, "project-switch-refused": {false, attachBusyReason}} {
+		encoded, err := attachResult(attached.ok, attached.reason)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var decoded any
+		if err := json.Unmarshal([]byte(encoded), &decoded); err != nil {
+			t.Fatal(err)
+		}
+		contractfile.Check(t, name, decoded)
+	}
+}
+
+func TestContractPreviewNeedsAVoice(t *testing.T) {
+	voice := tts.Voice{
+		ID: "en_US-ljspeech-high", Provider: "piper", DisplayName: "LJSpeech (high)", Locale: "en_US", Version: "1.0", Publisher: "rhasspy",
+		License: "CC0-1.0", LicenseURL: "https://example.test/license", ModelCardURL: "https://example.test/card", ProvenanceURL: "https://example.test/source",
+		Attribution: "LJ Speech dataset", Files: []tts.File{{Name: "voice.onnx", Size: 114_000_000}, {Name: "voice.onnx.json", Size: 4_800}},
+	}
+	contractfile.Check(t, "guide-preview-asset-required", voiceAssetRequired(voice, "not_installed"))
 }

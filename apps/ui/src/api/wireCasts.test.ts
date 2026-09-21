@@ -9,7 +9,7 @@ import { describe, expect, test } from 'vitest';
 // list can only shrink: an entry that no longer matches anything fails, so a removed cast has to be removed from it too.
 //
 // A test and not an ESLint `no-restricted-syntax` rule, because the tooling's config-protection hook refuses edits to
-// eslint.config.js (recorded in ADR 0069); like baseUiBoundary.test.ts it reads the TypeScript syntax tree and proves itself
+// eslint.config.js (recorded in docs/architecture/wire-contracts.md); like baseUiBoundary.test.ts it reads the TypeScript syntax tree and proves itself
 // on the deliberately bad fixtures below.
 const apiRoot = __dirname;
 const SOURCE = /\.tsx?$/;
@@ -67,7 +67,6 @@ const ALLOWED: Array<{ file: string; text: string; reason: string }> = [
   { file: 'mockApi.ts', text: 'as TtsInstallJob', reason: 'mock answer; removed when the TTS schemas land in phase 5' },
   { file: 'mockApi.ts', text: 'as WhisperCatalog', reason: 'mock answer; removed when the Whisper schemas land in phase 5' },
   { file: 'mockApi.ts', text: 'as WhisperInstallJob', reason: 'mock answer; removed when the Whisper schemas land in phase 5' },
-  { file: 'mockApi.ts', text: 'as ChapterStatus', reason: 'a status the mock UI passes in, narrowed by hand; removed in phase 4' },
   { file: 'schemas/strictness.ts', text: 'as { _zod: { def: Def } }', reason: 'test tooling that reads the schema definition; it never sees a payload' },
   { file: 'schemas/strictness.ts', text: 'as Record<string, unknown>', reason: 'test tooling that reads the schema definition; it never sees a payload' },
   { file: 'schemas/strictness.ts', text: 'as unknown[]', reason: 'test tooling that reads the schema definition; it never sees a payload' },

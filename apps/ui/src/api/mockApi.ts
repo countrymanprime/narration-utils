@@ -2,10 +2,11 @@
 // everywhere so visual review never silently exercises placeholder
 // content instead of the screen we are trying to match.
 import { parseWire } from './wire/parseWire';
+import { chaptersSchema } from './schemas/manuscript';
+import { guideEntitiesSchema } from './schemas/storyBible';
 import { bootstrapSchema } from './schemas/system';
 import type {
   Bootstrap,
-  ChapterStatus,
   GuideEntity,
   GuideEvidence,
   HostReady,
@@ -93,6 +94,22 @@ function mockAudioSource(): string | undefined {
   return mockAudioUrl;
 }
 
+const wireContext = (payload: string) => ({ boundary: 'host.binding', payload });
+
+/** Answers that go through the real `parseWire` with a payload of the wrong shape, so the failure screens can be seen without a host. */
+function invalidPayloadOverrides(which: 'bootstrap' | 'manuscript' | 'storybible', base: NarrationApi): Partial<NarrationApi> {
+  switch (which) {
+    case 'bootstrap':
+      return { bootstrap: async () => parseWire(bootstrapSchema, { ...(await base.bootstrap()), projectName: null }, wireContext('Bootstrap')) };
+    case 'manuscript':
+      return {
+        manuscriptChapters: async () => parseWire(chaptersSchema, [{ id: 'c-0001', title: 'Chapter One', index: 'first' }], wireContext('ManuscriptChapters')),
+      };
+    case 'storybible':
+      return { guideEntities: async () => parseWire(guideEntitiesSchema, [{ id: 7, canonical_name: 'Alice' }], wireContext('GuideEntities')) };
+  }
+}
+
 export function createMockApi(
   overrides: Partial<NarrationApi> = {},
   // manuscriptCandidate boots a project with no imported manuscript but a
@@ -107,7 +124,7 @@ export function createMockApi(
     /** Makes every Story Bible preview fail with this text once the voice is installed. */
     previewError?: string;
     /** Makes that payload arrive in the wrong shape, through the real `parseWire`, so the failure screens can be seen without a host. */
-    invalidPayload?: 'bootstrap';
+    invalidPayload?: 'bootstrap' | 'manuscript' | 'storybible';
     /** Tells the app at once that live updates from the host are degraded, so the notice can be seen without a failing host. */
     liveUpdatesDegraded?: boolean;
   } = {},
@@ -204,7 +221,8 @@ export function createMockApi(
   let importJob: WorkJob = { id: null, kind: 'manuscript_import', phase: 'idle', message: 'Ready to import.', percent: 0, logs: [], elapsed: 0 };
   let storyBibleJob: WorkJob = { id: null, kind: 'story_bible', phase: 'idle', message: 'Ready to build.', percent: 0, logs: [], elapsed: 0 };
   let ttsInstalled = false;
-  const mockVoice = {
+  // What the host says about a voice that is not installed yet (Go's previewVoice); the install state and download size are separate keys.
+  const mockVoiceIdentity = {
     id: 'en_US-ljspeech-high',
     provider: 'piper',
     displayName: 'LJ Speech (U.S. English)',
@@ -216,14 +234,13 @@ export function createMockApi(
     modelCardUrl: 'https://huggingface.co/rhasspy/piper-voices/blob/v1.0.0/en/en_US/ljspeech/high/MODEL_CARD',
     provenanceUrl: 'https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0/en/en_US/ljspeech/high',
     attribution: 'LJ Speech Dataset (public domain); Piper voice model by rhasspy contributors.',
-    downloadSize: 114203981,
-    installState: 'not_installed' as const,
   };
+  const mockVoice = { ...mockVoiceIdentity, downloadSize: 114203981, installState: 'not_installed' as const };
   // Whisper defaults to already installed so existing setup/run flows are not
   // gated in every test; a dedicated scenario calls whisperRemove first to
   // exercise the asset_required prompt.
   let whisperInstalled = true;
-  const mockWhisperModel = {
+  const mockWhisperIdentity = {
     id: 'small',
     provider: 'faster-whisper',
     displayName: 'Small',
@@ -234,9 +251,8 @@ export function createMockApi(
     modelCardUrl: 'https://huggingface.co/Systran/faster-whisper-small',
     provenanceUrl: 'https://huggingface.co/Systran/faster-whisper-small',
     attribution: 'CTranslate2 conversion of OpenAI Whisper small, published by Systran.',
-    downloadSize: 483546902 + 2370 + 2203239 + 459861,
-    installState: 'not_installed' as const,
   };
+  const mockWhisperModel = { ...mockWhisperIdentity, downloadSize: 483546902 + 2370 + 2203239 + 459861, installState: 'not_installed' as const };
   const teleprompter = createTeleprompterMock({
     ready: manuscriptReady,
     chapters: () => chapters,
@@ -244,7 +260,7 @@ export function createMockApi(
     assetRequired: () =>
       whisperInstalled
         ? undefined
-        : { status: 'asset_required', model: mockWhisperModel, installState: 'not_installed', downloadSize: mockWhisperModel.downloadSize },
+        : { status: 'asset_required', model: mockWhisperIdentity, installState: 'not_installed', downloadSize: mockWhisperModel.downloadSize },
     seed: initial.teleprompter,
   });
   const publish = () => {
@@ -523,7 +539,7 @@ export function createMockApi(
       })),
     guidePreview: async () => {
       if (!ttsInstalled) {
-        return { status: 'asset_required' as const, voice: mockVoice, installState: 'not_installed' as const, downloadSize: mockVoice.downloadSize };
+        return { status: 'asset_required' as const, voice: mockVoiceIdentity, installState: 'not_installed' as const, downloadSize: mockVoice.downloadSize };
       }
       // The failing seam behind ?mockPreviewError=<text>, so a real host failure can be seen without a host.
       if (initial.previewError) throw new Error(initial.previewError);
@@ -572,7 +588,12 @@ export function createMockApi(
     transcriptStart: async () =>
       whisperInstalled
         ? (startRun(), { status: 'started' as const })
-        : { status: 'asset_required' as const, model: mockWhisperModel, installState: 'not_installed' as const, downloadSize: mockWhisperModel.downloadSize },
+        : {
+            status: 'asset_required' as const,
+            model: mockWhisperIdentity,
+            installState: 'not_installed' as const,
+            downloadSize: mockWhisperModel.downloadSize,
+          },
     transcriptCancel: async () => {
       stopRun();
       transcript = { ...transcript, phase: 'cancelled', message: 'Comparison cancelled' };
@@ -645,7 +666,7 @@ export function createMockApi(
       await manuscriptReady;
       const found = chapters.find((item) => item.id === chapter || item.title === chapter);
       if (!found) throw new Error(`Unknown chapter: ${chapter}`);
-      found.status = status as ChapterStatus;
+      found.status = status;
       return wireClone(found);
     },
     noteList: async (chapter) => wireClone(chapter ? notes.filter((note) => note.chapter === chapter) : notes),
@@ -718,13 +739,6 @@ export function createMockApi(
     ...teleprompter,
     mediaUrl: (sourceFile) => mockAudioSource() ?? sourceFile,
   };
-  const api: NarrationApi =
-    initial.invalidPayload === 'bootstrap'
-      ? {
-          ...base,
-          bootstrap: async () =>
-            parseWire(bootstrapSchema, { ...(await base.bootstrap()), projectName: null }, { boundary: 'host.binding', payload: 'Bootstrap' }),
-        }
-      : base;
+  const api = initial.invalidPayload ? { ...base, ...invalidPayloadOverrides(initial.invalidPayload, base) } : base;
   return { ...api, ...overrides };
 }
