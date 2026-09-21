@@ -11,6 +11,8 @@ What `pnpm check` and CI verify beyond "it lints and the example tests pass", ho
 | Dead code: Knip | `narration-utils:knip` | `pnpm knip` |
 | Import rules taken from ADRs: depguard, the script tracker's pytest | the Go lint and the teleprompter `test` target | with their targets |
 | UI import rules: dependency-cruiser (primitives are leaves, wailsjs only in `src/api`, Base UI only in primitives) and the `<mark>` scan | `narration-utils-ui:architecture`, and two Vitest files | `pnpm --dir apps/ui architecture` |
+| Markdown links (lychee, offline) and PRD paths cited in source: see [the docs link check](ci-and-releases.md#the-docs-link-check) | `Docs / Links (offline)`; `repo-scripts:test-node` | `lychee --config .lychee.toml --offline .`; `node --test scripts/ci/prd-references.test.mjs` |
+| Mermaid diagrams parse (Mermaid's own parser under jsdom, no browser) | `repo-scripts:test-node` | `node --test scripts/ci/mermaid-diagrams.test.mjs` |
 | Playwright traces on a failing visual test (`trace: 'retain-on-failure'`, uploaded when a `ui-visual` step fails) | `ui-visual` | see [CI and releases](ci-and-releases.md) |
 | Axe on every app state, with a declared, capped debt list | `ui-visual` (the visual suite) | `pnpm --dir apps/ui screenshots`, or `UI_AXE=1` to measure |
 | Aria snapshots: the role trees of the dialogs, the slide-over and the navigation | `ui-visual`, after the screenshots | `pnpm --dir apps/ui run aria` |
