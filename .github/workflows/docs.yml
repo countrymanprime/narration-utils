@@ -1,6 +1,5 @@
 name: Docs
-# The link check of every Markdown file in the repository (docs/prds/docs-security-and-hygiene.prd.md, stack S17;
-# docs/operations/ci-and-releases.md#the-docs-link-check).
+# The link check of every Markdown file in the repository (docs/adr/0084, docs/operations/ci-and-releases.md#the-docs-link-check).
 #
 # There is deliberately NO path filter on the pull_request trigger. ci.yml skips documentation-only pull requests, so a
 # path-filtered docs job would also skip a code change that renames a file a doc links to, and a required check that
