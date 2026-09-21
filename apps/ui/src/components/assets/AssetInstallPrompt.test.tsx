@@ -14,6 +14,8 @@ afterEach(() => {
 
 const job = (patch: Partial<AssetInstallJob> = {}): AssetInstallJob => ({
   id: 'job-1',
+  kind: 'tts',
+  assetId: 'v',
   phase: 'downloading',
   message: 'Downloading and verifying the approved voice…',
   percent: 0,

@@ -19,10 +19,11 @@ import type { SystemApi } from './api/contracts/system';
 import type { TeleprompterApi } from './api/contracts/teleprompter';
 import type { TracksApi } from './api/contracts/tracks';
 import type { TranscriptApi } from './api/contracts/transcript';
+import type { AssetsApi } from './api/contracts/assets';
 import type { TtsApi } from './api/contracts/tts';
 import type { UpdateApi } from './api/contracts/update';
 import type { WhisperApi } from './api/contracts/whisper';
 
 /** The app compatibility facade; domain interfaces remain independently testable. */
 export interface NarrationApi
-  extends SystemApi, ManuscriptApi, StoryBibleApi, TranscriptApi, TtsApi, WhisperApi, ProjectApi, TracksApi, TeleprompterApi, UpdateApi {}
+  extends SystemApi, ManuscriptApi, StoryBibleApi, TranscriptApi, TtsApi, WhisperApi, AssetsApi, ProjectApi, TracksApi, TeleprompterApi, UpdateApi {}

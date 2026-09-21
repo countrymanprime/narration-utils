@@ -115,6 +115,10 @@ hash cannot be verified against the asset catalog.
 - **Disk.** Before anything is written the free space on the cache disk is checked against what is still to be downloaded plus 64 MB, and a refusal names both sizes. A disk that fills mid-download keeps what arrived.
 - **Failures the narrator reads** are sentences (checksum mismatch, no room, a host that no longer has the file or is busy, no connection); the cause is in the host log as `install_failed`.
 
+## The asset registry (implemented)
+
+Every kind of asset is one provider in a registry that is built once at start and never replaced ([ADR 0079](../adr/0079-every-downloadable-asset-is-listed-installed-verified-and-removed-through-one-registry-of-providers.md)). Six generic bindings serve all of them: `AssetsList` (state, size, publisher, licence and provenance links, install path, installed and verified times, and the download running for each asset; it reads no file contents), `AssetsInstall(kind, id)` (installs, or repairs a damaged asset; a second call for a running download joins it), `AssetsInstallState`, `AssetsInstallCancel`, `AssetsVerify` and `AssetsRemove` (refused while the asset downloads; it removes only that asset). The install is the one job of [ADR 0077](../adr/0077-every-asset-install-is-one-job-with-real-bytes-a-second-start-joins-it-and-one-hook-follows-it.md). A later kind (spaCy models, dictionaries, Moonshine) is a catalog file, a provider and a row on the page. The voice and Whisper bindings that predate the registry (`TtsInstall`, `WhisperRemove`, ...) are wrappers over the same functions until the pages that use them move over.
+
 ## Acceptance criteria
 
 - A clean machine can install a GitHub release and open the app without a

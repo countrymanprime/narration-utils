@@ -1,8 +1,10 @@
 {
+  "assetId": "en_US-ljspeech-high",
   "bytesDone": 20000000,
   "bytesTotal": 114203981,
   "error": "",
   "id": "tts-1",
+  "kind": "tts",
   "message": "Voice download cancelled.",
   "percent": 17,
   "phase": "cancelled",

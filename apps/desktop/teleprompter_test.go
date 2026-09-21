@@ -172,7 +172,7 @@ func TestTeleprompterStartRejectsAModelOutsideTheApprovedCatalog(t *testing.T) {
 func TestTeleprompterStartProceedsOnceTheModelIsInstalled(t *testing.T) {
 	host, closeServer := hostForTeleprompterStart(t)
 	defer closeServer()
-	if err := host.whisper.Install(context.Background(), "tiny"); err != nil {
+	if err := host.registry().whisper.Install(context.Background(), "tiny"); err != nil {
 		t.Fatal(err)
 	}
 

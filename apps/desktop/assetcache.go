@@ -35,27 +35,47 @@ func cleanAssetCaches(base string) []string {
 	return append(assets.CleanStale(filepath.Join(base, ttsCacheDir)), assets.CleanStale(filepath.Join(base, whisperCacheDir))...)
 }
 
-// buildTtsManager reads the voice catalog (the checkout's, or the packaged release's) and returns a manager over root. When the catalog
-// cannot be read the previous manager is kept, as before: a rebuild that fails must not take a working catalog away.
-func buildTtsManager(cfg config, packagedRoot, root string, previous *tts.Manager) *tts.Manager {
+// buildAssetRegistry builds the registry once, at start: the per-user cache folder and a manager for each approved catalog (the checkout catalog
+// or, in a release, the packaged one). When the operating system cannot name the cache folder the registry says why and holds no provider;
+// there is no fallback to the temporary folder. The caller holds h.mu.
+func (h *Host) buildAssetRegistry() *assetRegistry {
+	base, err := assetCacheBase()
+	if err != nil {
+		_ = h.log.Report("asset_cache_unavailable", err.Error())
+		return &assetRegistry{unavailable: err.Error()}
+	}
+	packaged := ""
+	if _, statErr := os.Stat(layout.Path(h.config.repoRoot, layout.TTSCatalogFile)); statErr != nil {
+		packaged = h.packagedResources()
+	}
+	voices := buildTtsManager(h.config, packaged, filepath.Join(base, ttsCacheDir))
+	models := buildWhisperManager(h.config, packaged, filepath.Join(base, whisperCacheDir))
+	return newAssetRegistry(base, voices, models)
+}
+
+// buildTtsManager reads the voice catalog (the checkout catalog, or the packaged release one) and returns a manager over root, or nil when
+// the catalog cannot be read.
+func buildTtsManager(cfg config, packagedRoot, root string) *tts.Manager {
 	catalog := layout.Path(cfg.repoRoot, layout.TTSCatalogFile)
 	if _, err := os.Stat(catalog); err != nil && packagedRoot != "" {
 		catalog = filepath.Join(packagedRoot, "config", "tts-assets.json")
 	}
-	if manager, err := tts.New(catalog, root); err == nil {
-		return manager
+	manager, err := tts.New(catalog, root)
+	if err != nil {
+		return nil
 	}
-	return previous
+	return manager
 }
 
 // buildWhisperManager is buildTtsManager for the Whisper model catalog.
-func buildWhisperManager(cfg config, packagedRoot, root string, previous *whisper.Manager) *whisper.Manager {
+func buildWhisperManager(cfg config, packagedRoot, root string) *whisper.Manager {
 	catalog := layout.Path(cfg.repoRoot, layout.WhisperCatalogFile)
 	if _, err := os.Stat(catalog); err != nil && packagedRoot != "" {
 		catalog = filepath.Join(packagedRoot, "config", "whisper-assets.json")
 	}
-	if manager, err := whisper.New(catalog, root); err == nil {
-		return manager
+	manager, err := whisper.New(catalog, root)
+	if err != nil {
+		return nil
 	}
-	return previous
+	return manager
 }

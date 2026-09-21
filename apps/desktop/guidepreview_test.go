@@ -107,12 +107,12 @@ func newPreviewHost(t *testing.T, renderMode string) previewHost {
 		t.Fatal(err)
 	}
 	voice, _ := manager.Voice(previewVoiceID)
-	return previewHost{host: &Host{settings: store, tts: manager, guide: service}, voice: voice, project: project, voiceFile: filepath.Join(cacheRoot, "piper", previewVoiceID, "1.0.0", previewVoiceID+".onnx")}
+	return previewHost{host: &Host{settings: store, assets: newAssetRegistry(cacheRoot, manager, nil), guide: service}, voice: voice, project: project, voiceFile: filepath.Join(cacheRoot, "piper", previewVoiceID, "1.0.0", previewVoiceID+".onnx")}
 }
 
 func (p previewHost) install(t *testing.T) {
 	t.Helper()
-	if err := p.host.tts.Install(context.Background(), previewVoiceID); err != nil {
+	if err := p.host.registry().tts.Install(context.Background(), previewVoiceID); err != nil {
 		t.Fatal(err)
 	}
 }

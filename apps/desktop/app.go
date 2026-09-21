@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/assets"
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
@@ -34,7 +33,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 10
+const hostAPIVersion = 11
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -48,8 +47,9 @@ type Host struct {
 	manuscript *manuscript.Service
 	sidecars   *process.Supervisor
 	settings   *settings.Store
-	tts        *tts.Manager
-	whisper    *whisper.Manager
+	// assets is the registry of everything that can be downloaded (assetregistry.go). It is set once, in Startup, and never replaced: a project
+	// switch does not touch it, so it is read with registry() and needs no snapshot.
+	assets *assetRegistry
 	// installJobs are the asset downloads, voices and models alike (installjobs.go); h.mu guards the map and each job its own fields.
 	installJobs  map[string]*installJob
 	guide        *guide.Service
@@ -162,6 +162,7 @@ func (h *Host) Startup(ctx context.Context) {
 	h.mu.Lock()
 	h.ctx, h.cancel = context.WithCancel(ctx)
 	h.configureLocked(parseConfig(h.config.repoRoot))
+	h.assets = h.buildAssetRegistry()
 	runtimeContext := h.ctx
 	h.mu.Unlock()
 	go h.transcriptLoop(runtimeContext)
@@ -214,15 +215,6 @@ func (h *Host) configureLocked(next config) {
 	h.settings.SetProject(h.config.projectFolder)
 	h.guide = guide.New(h.config.projectFolder, h.config.manuscriptPython, h.config.manuscriptBackend, h.settings, h.sidecars)
 	h.guide.SetPersist(h.persist)
-	cacheBase, cacheErr := assetCacheBase()
-	if cacheErr != nil {
-		// No model or voice can be installed without a cache folder, so no manager is built and the first-use gates say the catalog is
-		// unavailable (the temporary folder is never a fallback).
-		_ = h.log.Report("asset_cache_unavailable", cacheErr.Error())
-	} else {
-		h.tts = buildTtsManager(h.config, packagedRoot, filepath.Join(cacheBase, ttsCacheDir), h.tts)
-		h.whisper = buildWhisperManager(h.config, packagedRoot, filepath.Join(cacheBase, whisperCacheDir), h.whisper)
-	}
 	var client *bridge.Client
 	if h.config.sessionDir != "" {
 		client, _ = bridge.New(h.config.sessionDir)
@@ -807,25 +799,22 @@ func validateSettingValue(schema fieldSchema, value string) error {
 	return nil
 }
 func (h *Host) startTtsInstall(voiceID string) (map[string]any, error) {
-	manager := h.services().tts
-	if manager == nil {
-		return nil, fmt.Errorf("the approved TTS catalog is unavailable")
+	registry := h.registry()
+	if registry.tts == nil {
+		return nil, registry.catalogUnavailable("TTS")
 	}
-	voice, ok := manager.Voice(voiceID)
-	if !ok {
+	if _, ok := registry.tts.Voice(voiceID); !ok {
 		return nil, fmt.Errorf("the selected voice is not in the approved catalog")
 	}
-	return h.startInstall(installSpec{kind: installKindTts, assetID: voiceID, endedKind: jobKindTtsInstall, noun: "voice", files: voice.Files,
-		run: func(ctx context.Context, options assets.Options) error {
-			return manager.InstallWith(ctx, voiceID, options)
-		}}), nil
+	snapshot, err := h.startAssetInstall(installKindTts, voiceID)
+	return legacyInstall(snapshot), err
 }
 func (h *Host) ttsInstallState(id string) (map[string]any, error) {
 	job, err := h.installJobByID(id, "TTS")
 	if err != nil {
 		return nil, err
 	}
-	return snapshotInstall(job), nil
+	return legacyInstall(snapshotInstall(job)), nil
 }
 func (h *Host) cancelTtsInstall(id string) (map[string]any, error) {
 	job, err := h.installJobByID(id, "TTS")
@@ -833,28 +822,25 @@ func (h *Host) cancelTtsInstall(id string) (map[string]any, error) {
 		return nil, err
 	}
 	job.cancel()
-	return snapshotInstall(job), nil
+	return legacyInstall(snapshotInstall(job)), nil
 }
 func (h *Host) startWhisperInstall(modelID string) (map[string]any, error) {
-	manager := h.services().whisper
-	if manager == nil {
-		return nil, fmt.Errorf("the approved Whisper catalog is unavailable")
+	registry := h.registry()
+	if registry.whisper == nil {
+		return nil, registry.catalogUnavailable("Whisper")
 	}
-	model, ok := manager.Model(modelID)
-	if !ok {
+	if _, ok := registry.whisper.Model(modelID); !ok {
 		return nil, fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
-	return h.startInstall(installSpec{kind: installKindWhisper, assetID: modelID, endedKind: jobKindWhisperInstall, noun: "Whisper model", files: model.Files,
-		run: func(ctx context.Context, options assets.Options) error {
-			return manager.InstallWith(ctx, modelID, options)
-		}}), nil
+	snapshot, err := h.startAssetInstall(installKindWhisper, modelID)
+	return legacyInstall(snapshot), err
 }
 func (h *Host) whisperInstallState(id string) (map[string]any, error) {
 	job, err := h.installJobByID(id, "Whisper")
 	if err != nil {
 		return nil, err
 	}
-	return snapshotInstall(job), nil
+	return legacyInstall(snapshotInstall(job)), nil
 }
 func (h *Host) cancelWhisperInstall(id string) (map[string]any, error) {
 	job, err := h.installJobByID(id, "Whisper")
@@ -862,7 +848,7 @@ func (h *Host) cancelWhisperInstall(id string) (map[string]any, error) {
 		return nil, err
 	}
 	job.cancel()
-	return snapshotInstall(job), nil
+	return legacyInstall(snapshotInstall(job)), nil
 }
 func (h *Host) startGuideBuild() (map[string]any, error) {
 	svc := h.services()

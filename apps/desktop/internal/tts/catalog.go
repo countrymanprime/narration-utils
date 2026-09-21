@@ -57,6 +57,16 @@ func (m *Manager) Catalog() map[string]any {
 	}
 	return map[string]any{"catalogVersion": m.catalog.Version, "voices": voices}
 }
+
+// Voices is every approved voice, in catalog order.
+func (m *Manager) Voices() []Voice { return append([]Voice(nil), m.catalog.Voices...) }
+
+// InstallDir is where a voice is (or will be) installed, whatever its state.
+func (m *Manager) InstallDir(id string) string {
+	v, _ := m.Voice(id)
+	return assets.Dir(m.root, v.Provider, v.ID, v.Version)
+}
+
 func (m *Manager) Voice(id string) (Voice, bool) {
 	for _, v := range m.catalog.Voices {
 		if v.ID == id {

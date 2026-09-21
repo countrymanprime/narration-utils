@@ -44,7 +44,7 @@ func newTestHostForTranscriptStart(t *testing.T, body []byte, server *httptest.S
 	}
 	store := settings.New(repoRoot, "")
 	transcriptService := transcript.New(transcript.Config{}, nil, store, process.NewSupervisor(), nil)
-	return &Host{settings: store, whisper: whisperManager, transcript: transcriptService, installJobs: map[string]*installJob{}}
+	return &Host{settings: store, assets: newAssetRegistry(cacheRoot, nil, whisperManager), transcript: transcriptService, installJobs: map[string]*installJob{}}
 }
 
 func TestTranscriptStartRequestsTheApprovedModelWhenNotInstalled(t *testing.T) {
@@ -88,7 +88,7 @@ func TestTranscriptStartProceedsOnceTheModelIsInstalled(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write(body) }))
 	defer server.Close()
 	host := newTestHostForTranscriptStart(t, body, server)
-	if err := host.whisper.Install(context.Background(), "tiny"); err != nil {
+	if err := host.registry().whisper.Install(context.Background(), "tiny"); err != nil {
 		t.Fatal(err)
 	}
 

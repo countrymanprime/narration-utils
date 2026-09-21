@@ -16,7 +16,7 @@ func TestServicesReturnsTheServicesTheHostIsUsing(t *testing.T) {
 	if svc.config != host.config {
 		t.Fatalf("config = %#v, want %#v", svc.config, host.config)
 	}
-	if svc.manuscript != host.manuscript || svc.settings != host.settings || svc.tts != host.tts || svc.whisper != host.whisper {
+	if svc.manuscript != host.manuscript || svc.settings != host.settings {
 		t.Fatal("snapshot does not hold the host's current manuscript, settings, tts and whisper services")
 	}
 	if svc.guide != host.guide || svc.transcript != host.transcript || svc.teleprompter != host.teleprompter {
@@ -67,7 +67,7 @@ func TestServicesReleasesTheHostLockBeforeReturning(t *testing.T) {
 
 func TestServicesOnAnUnconfiguredHostHoldsNoProjectServices(t *testing.T) {
 	svc := (&Host{}).services()
-	if svc.guide != nil || svc.transcript != nil || svc.teleprompter != nil || svc.tts != nil || svc.whisper != nil || svc.manuscript != nil || svc.settings != nil {
+	if svc.guide != nil || svc.transcript != nil || svc.teleprompter != nil || svc.manuscript != nil || svc.settings != nil {
 		t.Fatalf("zero host snapshot = %#v, want no services", svc)
 	}
 }

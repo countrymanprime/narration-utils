@@ -110,6 +110,9 @@ func verifyLocked(dir, provider, id, version string, files []File) string {
 // filesHashed counts the files verify has read, so a test can see that a cost is paid once.
 var filesHashed atomic.Int64
 
+// FilesHashed is how many files verify has read in this process: a test's way to see that a listing read none.
+func FilesHashed() int64 { return filesHashed.Load() }
+
 func verify(path string, f File) error {
 	filesHashed.Add(1)
 	info, err := os.Stat(path)

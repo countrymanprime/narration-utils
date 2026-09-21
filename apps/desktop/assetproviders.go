@@ -1,0 +1,105 @@
+package main
+
+import (
+	"context"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/tts"
+	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
+)
+
+// ttsProvider serves the Piper preview voices.
+type ttsProvider struct{ manager *tts.Manager }
+
+func (ttsProvider) kind() string      { return installKindTts }
+func (ttsProvider) label() string     { return "Preview voice" }
+func (ttsProvider) noun() string      { return "voice" }
+func (ttsProvider) endedKind() string { return jobKindTtsInstall }
+
+func (p ttsProvider) items() []assetItem {
+	voices := p.manager.Voices()
+	items := make([]assetItem, 0, len(voices))
+	for _, voice := range voices {
+		items = append(items, p.itemFor(voice))
+	}
+	return items
+}
+
+func (p ttsProvider) itemFor(voice tts.Voice) assetItem {
+	return assetItem{kind: installKindTts, id: voice.ID, displayName: voice.DisplayName, version: voice.Version, publisher: voice.Publisher, license: voice.License,
+		licenseURL: voice.LicenseURL, modelCardURL: voice.ModelCardURL, provenanceURL: voice.ProvenanceURL, attribution: voice.Attribution, files: voice.Files, dir: p.manager.InstallDir(voice.ID)}
+}
+
+func (p ttsProvider) item(id string) (assetItem, bool) {
+	voice, ok := p.manager.Voice(id)
+	if !ok {
+		return assetItem{}, false
+	}
+	return p.itemFor(voice), true
+}
+
+func (p ttsProvider) state(id string) string {
+	voice, ok := p.manager.Voice(id)
+	if !ok {
+		return "not_installed"
+	}
+	return p.manager.State(voice)
+}
+
+func (p ttsProvider) install(ctx context.Context, id string, options assets.Options) error {
+	if p.state(id) == "installed" {
+		return nil
+	}
+	return p.manager.Repair(ctx, id, options)
+}
+
+func (p ttsProvider) verify(id string) (string, error) { return p.manager.Verify(id) }
+func (p ttsProvider) remove(id string) error           { return p.manager.Remove(id) }
+
+// whisperProvider serves the faster-whisper transcription models.
+type whisperProvider struct{ manager *whisper.Manager }
+
+func (whisperProvider) kind() string      { return installKindWhisper }
+func (whisperProvider) label() string     { return "Whisper model" }
+func (whisperProvider) noun() string      { return "Whisper model" }
+func (whisperProvider) endedKind() string { return jobKindWhisperInstall }
+
+func (p whisperProvider) items() []assetItem {
+	models := p.manager.Models()
+	items := make([]assetItem, 0, len(models))
+	for _, model := range models {
+		items = append(items, p.itemFor(model))
+	}
+	return items
+}
+
+func (p whisperProvider) itemFor(model whisper.Model) assetItem {
+	return assetItem{kind: installKindWhisper, id: model.ID, displayName: model.DisplayName, version: model.Version, publisher: model.Publisher, license: model.License,
+		licenseURL: model.LicenseURL, modelCardURL: model.ModelCardURL, provenanceURL: model.ProvenanceURL, attribution: model.Attribution, files: model.Files, dir: p.manager.InstallDir(model.ID)}
+}
+
+func (p whisperProvider) item(id string) (assetItem, bool) {
+	model, ok := p.manager.Model(id)
+	if !ok {
+		return assetItem{}, false
+	}
+	return p.itemFor(model), true
+}
+
+func (p whisperProvider) state(id string) string {
+	model, ok := p.manager.Model(id)
+	if !ok {
+		return "not_installed"
+	}
+	return p.manager.State(model)
+}
+
+func (p whisperProvider) install(ctx context.Context, id string, options assets.Options) error {
+	if p.state(id) == "installed" {
+		return nil
+	}
+	return p.manager.Repair(ctx, id, options)
+}
+
+func (p whisperProvider) verify(id string) (string, error) { return p.manager.Verify(id) }
+func (p whisperProvider) remove(id string) error           { return p.manager.Remove(id) }

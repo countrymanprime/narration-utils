@@ -21,8 +21,6 @@ var swappableHostFields = map[string]bool{
 	"settings":     true,
 	"teleprompter": true,
 	"transcript":   true,
-	"tts":          true,
-	"whisper":      true,
 }
 
 // permanentDirectReaders may touch the swappable fields directly because the
@@ -356,9 +354,9 @@ func TestHostGuardFlagsDirectReadsAndIgnoresSnapshots(t *testing.T) {
 
 func (h *Host) Bad() { _ = h.guide }
 func (host *Host) BadAlias() { host.settings.Global("x") }
-func BadParam(target *Host) { target.tts = nil }
+func BadParam(target *Host) { target.guide = nil }
 func (h *Host) BadClosure() { go func() { h.transcript.Poll() }() }
-func (h *Host) BadDereference() { _ = (*h).whisper }
+func (h *Host) BadDereference() { _ = (*h).transcript }
 func (h *Host) BadLocalAlias() { other := h; _ = other.manuscript }
 func BadConstructed() { app := NewHost(); _ = app.teleprompter }
 func BadLiteral() { app := &Host{}; _ = app.guide }
@@ -377,8 +375,8 @@ func Unrelated(other *Other) { _ = other.guide }
 		flagged[read.function] = read.field
 	}
 	want := map[string]string{
-		"Bad": "guide", "BadAlias": "settings", "BadParam": "tts", "BadClosure": "transcript",
-		"BadDereference": "whisper", "BadLocalAlias": "manuscript", "BadConstructed": "teleprompter",
+		"Bad": "guide", "BadAlias": "settings", "BadParam": "guide", "BadClosure": "transcript",
+		"BadDereference": "transcript", "BadLocalAlias": "manuscript", "BadConstructed": "teleprompter",
 		"BadLiteral": "guide", "BadClosureParam": "guide", closureName: "settings",
 	}
 	if len(flagged) != len(want) {

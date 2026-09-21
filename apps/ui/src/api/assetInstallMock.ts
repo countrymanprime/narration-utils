@@ -13,14 +13,23 @@ const FAILURE =
  *
  * Starting again while one is running joins it, as the host does.
  */
-export function createInstallMock<Extra extends object>(options: { total: number; noun: string; extra: Extra; seed?: MockAssetSeed; onInstalled: () => void }) {
+/** What one step of an install changes: everything but the names of the job and its asset, which stay as they were. */
+type Steps = Omit<AssetInstallJob, 'kind' | 'assetId'>;
+
+export function createInstallMock<Extra extends Pick<AssetInstallJob, 'kind' | 'assetId'>>(options: {
+  total: number;
+  noun: string;
+  extra: Extra;
+  seed?: MockAssetSeed;
+  onInstalled: () => void;
+}) {
   const { total, noun, extra, seed, onInstalled } = options;
   const capital = noun.charAt(0).toUpperCase() + noun.slice(1);
   let count = 0;
   let current: (AssetInstallJob & Extra) | undefined;
 
   const running = (job: AssetInstallJob | undefined) => job?.phase === 'downloading' || job?.phase === 'verifying';
-  const download = (done: number): AssetInstallJob => ({
+  const download = (done: number): Steps => ({
     id: current?.id ?? '',
     phase: 'downloading',
     message: `Downloading and verifying the approved ${noun}…`,
@@ -29,7 +38,7 @@ export function createInstallMock<Extra extends object>(options: { total: number
     bytesTotal: total,
     error: '',
   });
-  const verifying = (): AssetInstallJob => ({
+  const verifying = (): Steps => ({
     ...download(total),
     phase: 'verifying',
     message: `Checking the ${noun} against its approved checksum…`,
@@ -54,7 +63,7 @@ export function createInstallMock<Extra extends object>(options: { total: number
   return {
     start: async (): Promise<AssetInstallJob & Extra> => {
       if (current && running(current)) return { ...current };
-      current = { ...extra, ...download(0), id: `mock-${noun.replace(/\W+/g, '-')}-${++count}` };
+      current = { ...download(0), ...extra, id: `mock-${noun.replace(/\W+/g, '-')}-${++count}` };
       if (seed === 'verifying') current = { ...current, ...verifying() };
       return { ...current };
     },

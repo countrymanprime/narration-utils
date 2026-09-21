@@ -218,8 +218,8 @@ func (h *Host) installJobByID(id, what string) (*installJob, error) {
 	return job, nil
 }
 
-// snapshotInstall is the payload of the install bindings. Percent is bytes received over bytes expected, and nothing else (ADR 0015). A
-// voice names itself voiceId and a model modelId, as the bindings did before they shared a job.
+// snapshotInstall is the payload of the install bindings. Percent is bytes received over bytes expected, and nothing else (ADR 0015),
+// and 99 until the install has succeeded. The generic asset bindings send it as it is.
 func snapshotInstall(job *installJob) map[string]any {
 	job.mu.RLock()
 	defer job.mu.RUnlock()
@@ -233,11 +233,17 @@ func snapshotInstall(job *installJob) map[string]any {
 			percent = 99
 		}
 	}
-	snapshot := map[string]any{"id": job.id, "phase": job.phase, "message": job.message, "percent": percent, "bytesDone": job.done, "bytesTotal": job.total, "error": job.errorText}
-	if job.kind == installKindTts {
-		snapshot["voiceId"] = job.assetID
+	return map[string]any{"id": job.id, "kind": job.kind, "assetId": job.assetID, "phase": job.phase, "message": job.message, "percent": percent,
+		"bytesDone": job.done, "bytesTotal": job.total, "error": job.errorText}
+}
+
+// legacyInstall is the payload of the voice and Whisper install bindings that predate the generic ones: the same job, and the asset named
+// as voiceId or modelId, which the pages that use them read.
+func legacyInstall(snapshot map[string]any) map[string]any {
+	if snapshot["kind"] == installKindTts {
+		snapshot["voiceId"] = snapshot["assetId"]
 	} else {
-		snapshot["modelId"] = job.assetID
+		snapshot["modelId"] = snapshot["assetId"]
 	}
 	return snapshot
 }

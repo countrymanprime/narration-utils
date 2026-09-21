@@ -1,8 +1,10 @@
 {
+  "assetId": "en_US-ljspeech-high",
   "bytesDone": 20000000,
   "bytesTotal": 114203981,
   "error": "The downloaded voice did not match the approved file, so it was not installed.",
   "id": "tts-1",
+  "kind": "tts",
   "message": "The downloaded voice did not match the approved file, so it was not installed.",
   "percent": 17,
   "phase": "error",
