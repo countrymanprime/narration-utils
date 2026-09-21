@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { UpdateAvailable, UpdateChannel, UpdateStatus } from '../contracts/update';
+import type { UpdateAvailable, UpdateChannel, UpdateJob, UpdateStatus } from '../contracts/update';
 
 const updateChannelSchema = z.enum(['candidates', 'stable']) satisfies z.ZodType<UpdateChannel>;
 
@@ -13,6 +13,18 @@ const updateAvailableSchema = z.object({
   publishedAt: z.string(),
   replaces: z.boolean(),
 }) satisfies z.ZodType<UpdateAvailable>;
+
+/** The download of an update: what `UpdateDownload`, `UpdateJobState` and `UpdateJobCancel` answer. */
+export const updateJobSchema = z.object({
+  id: z.string(),
+  version: z.string(),
+  phase: z.enum(['downloading', 'verifying', 'unpacking', 'ready', 'error', 'cancelled']),
+  message: z.string(),
+  percent: z.number().min(0).max(100),
+  bytesDone: z.number().min(0),
+  bytesTotal: z.number().min(0),
+  error: z.string(),
+}) satisfies z.ZodType<UpdateJob>;
 
 /**
  * The update status: what `UpdateStatus` and `UpdateCheck` answer and what the `update:status` event carries. The host builds every

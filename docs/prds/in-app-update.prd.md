@@ -146,7 +146,7 @@ All are answered by the owner's decisions and the implementation plan's rule D22
 | 0 | This PRD | Write this PRD with its decisions and ADR 0072 (Proposed); reconcile [release-artifact-naming](release-artifact-naming.prd.md) (Phase 2 dropped) | complete | - | - | ADR 0072 |
 | 1 | Rename and stamp the version | Program `narration-utils`; `-ldflags` stamping; `Bootstrap` version; Settings shows it; launcher name logic with harness tests; `hostAPIVersion` bump | complete | - | 0 | ADR 0073 |
 | 2 | The update check | `internal/update` version and manifest, the check with `ETag` cache and the daily startup check, `Updates` settings, `UpdateStatus` and `UpdateCheck`, Zod schemas, mock, the Settings panel and the Toast notice, `hostAPIVersion` bump | complete | - | 1 | ADR 0072 |
-| 3 | Download, verify, stage | `assets` progress and cap, disk precheck, the download job with real bytes, hash and name checks, one-file extraction, the download dialog | pending | - | 2 | - |
+| 3 | Download, verify, stage | `assets` progress and cap, disk precheck, the download job with real bytes, hash and name checks, one-file extraction, the download dialog | complete | - | 2 | - |
 | 4 | Apply, relaunch, roll back (Windows) | Busy refusal, the rename swap, the relaunch and hand-off, rollback, the non-writable fallback, the end-to-end apply test and a rehearsal on a built copy | pending | - | 3 | - |
 | 5 | UI polish, docs, steady state | Notice and dialog polish, visual states, the threat model, provisioning and `SECURITY.md` edits, `ci-and-releases.md`, `docs/architecture/in-app-update.md`, the user guide, ADRs, both PRDs deleted | pending | - | 4 | - |
 | 6 | Attestation verification in the app | Verify the zip and the extracted executable against their attestation bundle for the signer workflow of ADR 0071 (sigstore-go), or record why not | deferred | - | 4 | - |
@@ -209,4 +209,4 @@ Read in the repository: `apps/desktop/{main.go,app.go,bindings.go,services.go,wa
 ---
 
 *Generated: 2026-09-21*
-*Status: IN DELIVERY - phases 0 to 2 delivered, phases 3 to 5 pending, phase 6 deferred*
+*Status: IN DELIVERY - phases 0 to 3 delivered, phases 4 and 5 pending, phase 6 deferred*

@@ -254,6 +254,18 @@ export function UpdateCheck() {
   return window['go']['main']['Host']['UpdateCheck']();
 }
 
+export function UpdateDownload() {
+  return window['go']['main']['Host']['UpdateDownload']();
+}
+
+export function UpdateJobCancel(arg1) {
+  return window['go']['main']['Host']['UpdateJobCancel'](arg1);
+}
+
+export function UpdateJobState(arg1) {
+  return window['go']['main']['Host']['UpdateJobState'](arg1);
+}
+
 export function UpdateOpenNotes() {
   return window['go']['main']['Host']['UpdateOpenNotes']();
 }

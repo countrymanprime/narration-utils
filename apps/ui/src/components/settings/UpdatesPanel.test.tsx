@@ -187,3 +187,41 @@ describe('UpdatesPanel, more', () => {
     expect(screen.queryByText(/You have the latest version/)).toBeNull();
   });
 });
+
+describe('UpdatesPanel, downloading', () => {
+  it('asks before it downloads anything, and does not download when the narrator says no', async () => {
+    const download = vi.fn();
+    renderPanel('available', { updateDownload: download });
+    fireEvent.click(await screen.findByRole('button', { name: 'Download update' }));
+    expect(await screen.findByText(/Nothing is installed yet/)).toBeTruthy();
+    expect(screen.getByText(/downloads Narration Utils 0\.2\.7 \(400 MB\)/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(download).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('downloads after the narrator confirms and remembers that it finished', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      renderPanel('available');
+      fireEvent.click(await screen.findByRole('button', { name: 'Download update' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Download' }));
+      expect(await screen.findByRole('dialog', { name: 'Download Narration Utils 0.2.7' })).toBeTruthy();
+      await act(async () => void (await vi.advanceTimersByTimeAsync(4000)));
+      fireEvent.click(await screen.findByRole('button', { name: 'Close' }));
+      expect((await screen.findAllByText('Version 0.2.7 is downloaded and checked.')).length).toBeGreaterThan(0);
+      expect(screen.queryByRole('button', { name: 'Download update' })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('offers no download on a platform that cannot replace itself', async () => {
+    const found = await createMockApi({}, { update: 'available' }).updateStatus();
+    const available = found.available;
+    if (!available) throw new Error('the mock has an update');
+    renderPanel('available', { updateStatus: async () => ({ ...found, available: { ...available, replaces: false } }) });
+    await screen.findByText(/does not update itself/);
+    expect(screen.queryByRole('button', { name: 'Download update' })).toBeNull();
+  });
+});

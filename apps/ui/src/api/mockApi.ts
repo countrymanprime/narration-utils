@@ -21,7 +21,7 @@ import type {
   WorkJob,
 } from '../types';
 import { DESKTOP_HOST_API_VERSION } from '../hostApi';
-import type { UpdateStatus } from './contracts/update';
+import type { UpdateJob, UpdateStatus } from './contracts/update';
 import {
   aliceChapterSeeds,
   WIRE_CHAPTERS,
@@ -61,8 +61,8 @@ const MOCK_APP_VERSION = '0.2.6';
 const MOCK_DEVELOPMENT_VERSION = '0.0.0-dev';
 const MOCK_CHECKED_AT = '2026-09-21T12:00:00Z';
 
-/** Which update state the mock host boots in: `available` found a newer release, `found` is the same and the host also says so at once, as a background check does, `failed` could not reach GitHub, `current` checked and is up to date, `development` is a build with no release to compare with. Without one, nothing has been checked yet. */
-export type MockUpdateSeed = 'available' | 'found' | 'failed' | 'current' | 'development';
+/** Which update state the mock host boots in: `available` found a newer release, `found` is the same and the host also says so at once, as a background check does, `downloading` is the same with a download that stops at 40% (to look at the dialog) and `download-fails` one that ends in an error, `failed` could not reach GitHub, `current` checked and is up to date, `development` is a build with no release to compare with. Without one, nothing has been checked yet. */
+export type MockUpdateSeed = 'available' | 'found' | 'downloading' | 'download-fails' | 'failed' | 'current' | 'development';
 
 function seedUpdateStatus(seed: MockUpdateSeed | undefined): UpdateStatus {
   const status: UpdateStatus = {
@@ -77,6 +77,8 @@ function seedUpdateStatus(seed: MockUpdateSeed | undefined): UpdateStatus {
   switch (seed) {
     case 'available':
     case 'found':
+    case 'downloading':
+    case 'download-fails':
       return {
         ...status,
         lastChecked: MOCK_CHECKED_AT,
@@ -173,6 +175,8 @@ export function createMockApi(
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
+  let updateJob: UpdateJob | undefined;
+  let updateJobTimer: ReturnType<typeof setInterval> | undefined;
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
   let paragraphs = wireClone(WIRE_PARAGRAPHS);
@@ -784,6 +788,59 @@ export function createMockApi(
       // A check that works records the time; one that cannot reach GitHub says so again.
       if (!updateStatus.failure && !updateStatus.development) updateStatus = { ...updateStatus, lastChecked: MOCK_CHECKED_AT };
       return wireClone(updateStatus);
+    },
+    updateDownload: async () => {
+      const available = updateStatus.available;
+      if (!available) throw new Error('There is no newer release to download.');
+      const total = available.size;
+      updateJob = {
+        id: 'mock-update',
+        version: available.version,
+        phase: 'downloading',
+        message: `Downloading Narration Utils ${available.version}…`,
+        percent: 0,
+        bytesDone: 0,
+        bytesTotal: total,
+        error: '',
+      };
+      if (initial.update === 'downloading') {
+        // Stays here, so the dialog can be looked at: real bytes over real bytes, a little under half.
+        updateJob = { ...updateJob, percent: 40, bytesDone: Math.floor(total * 0.4) };
+        return wireClone(updateJob);
+      }
+      clearInterval(updateJobTimer);
+      updateJobTimer = setInterval(() => {
+        const current = updateJob;
+        if (!current || current.phase === 'cancelled') return clearInterval(updateJobTimer);
+        if (current.phase === 'downloading') {
+          const bytesDone = Math.min(total, current.bytesDone + Math.ceil(total / 5));
+          if (initial.update === 'download-fails' && bytesDone >= total * 0.4) {
+            const failure = 'The checksum in the release and GitHub’s own record of the file disagree, so the update was not used.';
+            updateJob = { ...current, phase: 'error', bytesDone, percent: Math.floor((bytesDone / total) * 100), message: failure, error: failure };
+            return clearInterval(updateJobTimer);
+          }
+          updateJob =
+            bytesDone >= total
+              ? { ...current, bytesDone, percent: 100, phase: 'verifying', message: 'Checking the download against the release’s checksum…' }
+              : { ...current, bytesDone, percent: Math.floor((bytesDone / total) * 100) };
+        } else if (current.phase === 'verifying') {
+          updateJob = { ...current, phase: 'unpacking', message: 'Unpacking the program…' };
+        } else if (current.phase === 'unpacking') {
+          updateJob = { ...current, phase: 'ready', message: `Version ${current.version} is downloaded and checked.` };
+          clearInterval(updateJobTimer);
+        }
+      }, 300);
+      return wireClone(updateJob);
+    },
+    updateJobState: async (jobId) => {
+      if (!updateJob || updateJob.id !== jobId) throw new Error('unknown update job');
+      return wireClone(updateJob);
+    },
+    updateJobCancel: async (jobId) => {
+      if (!updateJob || updateJob.id !== jobId) throw new Error('unknown update job');
+      clearInterval(updateJobTimer);
+      updateJob = { ...updateJob, phase: 'cancelled', message: 'The update download was cancelled.' };
+      return wireClone(updateJob);
     },
     updateOpenNotes: async () => undefined,
     subscribeUpdate: (onStatus) => {

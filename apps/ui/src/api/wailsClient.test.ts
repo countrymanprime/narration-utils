@@ -131,6 +131,25 @@ describe('wailsClient', () => {
     expect(open).toHaveBeenCalledWith();
   });
 
+  it('starts, polls and cancels an update download through the job schema', async () => {
+    const job = { id: 'update-1', version: '0.2.7', phase: 'downloading', message: 'Downloading', percent: 40, bytesDone: 4, bytesTotal: 10, error: '' };
+    const cancel = vi.fn().mockResolvedValue(JSON.stringify({ ...job, phase: 'cancelled' }));
+    window.go = {
+      main: {
+        Host: {
+          UpdateDownload: () => Promise.resolve(JSON.stringify(job)),
+          UpdateJobState: () => Promise.resolve(JSON.stringify({ ...job, phase: 'verifying', percent: 100 })),
+          UpdateJobCancel: cancel,
+        },
+      },
+    };
+
+    await expect(wailsClient.updateDownload()).resolves.toEqual(job);
+    await expect(wailsClient.updateJobState('update-1')).resolves.toMatchObject({ phase: 'verifying' });
+    await expect(wailsClient.updateJobCancel('update-1')).resolves.toMatchObject({ phase: 'cancelled' });
+    expect(cancel).toHaveBeenCalledWith('update-1');
+  });
+
   it('subscribes to the update event and passes a status that matches its schema', () => {
     let callback: ((payload: unknown) => void) | undefined;
     const eventsOn = vi.fn((_event: string, listener: (payload: unknown) => void) => {

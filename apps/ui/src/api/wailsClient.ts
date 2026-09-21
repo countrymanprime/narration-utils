@@ -21,7 +21,7 @@ import { guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './s
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
-import { updateStatusSchema } from './schemas/update';
+import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
 import { bootstrapSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { TELEPROMPTER_EVENT_TYPES, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
@@ -178,6 +178,9 @@ export const wailsClient: NarrationApi = {
   transcriptSaveHints: (accepted) => decode(voidResult, 'TranscriptSaveHints', host.TranscriptSaveHints(accepted)),
   updateStatus: () => decode(updateStatusSchema, 'UpdateStatus', host.UpdateStatus()),
   updateCheck: () => decode(updateStatusSchema, 'UpdateCheck', host.UpdateCheck()),
+  updateDownload: () => decode(updateJobSchema, 'UpdateDownload', host.UpdateDownload()),
+  updateJobState: (jobId) => decode(updateJobSchema, 'UpdateJobState', host.UpdateJobState(jobId)),
+  updateJobCancel: (jobId) => decode(updateJobSchema, 'UpdateJobCancel', host.UpdateJobCancel(jobId)),
   updateOpenNotes: () => decode(voidResult, 'UpdateOpenNotes', host.UpdateOpenNotes()),
   subscribeUpdate: (onStatus) => subscribeChecked('update:status', updateStatusSchema, onStatus),
   reportClientDiagnostic: (kind, message) => decode(voidResult, 'SystemReportDiagnostic', host.SystemReportDiagnostic(kind, message)),

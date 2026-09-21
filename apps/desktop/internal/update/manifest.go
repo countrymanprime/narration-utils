@@ -115,6 +115,13 @@ type listedRelease struct {
 // from the list, so they are safe to write to the log. The error is for a body that is not a list at all or is too large: the
 // caller keeps whatever it knew before.
 func ParseReleases(body []byte, repository string, platform Platform) ([]Release, []string, error) {
+	return parseReleasesFrom(body, releasesBase(repository), platform)
+}
+
+// releasesBase is where a repository's releases live; every asset and notes address is built under it.
+func releasesBase(repository string) string { return "https://github.com/" + repository + "/releases" }
+
+func parseReleasesFrom(body []byte, base string, platform Platform) ([]Release, []string, error) {
 	if len(body) > MaxManifestBytes {
 		return nil, nil, errors.New("the release list is larger than expected")
 	}
@@ -135,7 +142,7 @@ func ParseReleases(body []byte, repository string, platform Platform) ([]Release
 			rejected = append(rejected, fmt.Sprintf("%d more entries after the first %d were not read", len(entries)-index, MaxListedReleases))
 			break
 		}
-		release, reason := parseRelease(entry, repository, platform)
+		release, reason := parseRelease(entry, base, platform)
 		if reason == "" {
 			releases = append(releases, release)
 			continue
@@ -152,7 +159,7 @@ func ParseReleases(body []byte, repository string, platform Platform) ([]Release
 	return releases, rejected, nil
 }
 
-func parseRelease(entry json.RawMessage, repository string, platform Platform) (Release, string) {
+func parseRelease(entry json.RawMessage, base string, platform Platform) (Release, string) {
 	var listed listedRelease
 	if err := json.Unmarshal(entry, &listed); err != nil {
 		return Release{}, "the entry does not have the expected shape"
@@ -176,7 +183,6 @@ func parseRelease(entry json.RawMessage, repository string, platform Platform) (
 	if reason != "" {
 		return Release{}, "the checksum: " + reason
 	}
-	base := "https://github.com/" + repository + "/releases"
 	asset.URL = base + "/download/" + listed.TagName + "/" + asset.Name
 	checksum.URL = base + "/download/" + listed.TagName + "/" + checksum.Name
 	return Release{

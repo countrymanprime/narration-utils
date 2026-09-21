@@ -589,6 +589,39 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickSettingsCategory(page, 'About & updates');
       await page.getByText('Version 0.2.7 is available').waitFor();
     },
+    'about-download-confirm': async (page) => {
+      await page.goto('/?mockUpdate=available');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'About & updates');
+      await page.getByRole('button', { name: 'Download update' }).click();
+      await confirmDialog(page, 'Download version 0.2.7?').waitFor();
+    },
+    'about-download-progress': async (page) => {
+      await page.goto('/?mockUpdate=downloading');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'About & updates');
+      await page.getByRole('button', { name: 'Download update' }).click();
+      await page.getByRole('button', { name: 'Download', exact: true }).click();
+      await page.getByRole('dialog', { name: 'Download Narration Utils 0.2.7' }).waitFor();
+      await page
+        .getByText(/160 of 400 MB/)
+        .first()
+        .waitFor();
+    },
+    'about-download-failed': async (page) => {
+      await page.goto('/?mockUpdate=download-fails');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'About & updates');
+      await page.getByRole('button', { name: 'Download update' }).click();
+      await page.getByRole('button', { name: 'Download', exact: true }).click();
+      await page.getByRole('alert').filter({ hasText: 'so the update was not used' }).waitFor();
+    },
     'about-development-build': async (page) => {
       await page.goto('/?mockUpdate=development');
       await settlePage(page);

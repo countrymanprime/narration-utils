@@ -58,7 +58,9 @@ type Checker struct {
 	Client     *http.Client
 	APIBase    string
 	Repository string
-	Platform   Platform
+	// DownloadBase is where release assets and notes live, "https://github.com/<repository>/releases" when empty. Only a test sets it.
+	DownloadBase string
+	Platform     Platform
 	// CachePath is the file that holds the State.
 	CachePath string
 	// Current is the running version, as Bootstrap reports it.
@@ -137,7 +139,7 @@ func (c *Checker) revalidate(releases []Release) []Release {
 		if !validHexDigest(release.Asset.Digest) || !validHexDigest(release.Checksum.Digest) {
 			continue
 		}
-		base := "https://github.com/" + c.Repository + "/releases"
+		base := c.releasesBase()
 		release.Version, release.Candidate = version, candidate
 		release.PublishedAt = cleanTimestamp(release.PublishedAt)
 		release.NotesURL = base + "/tag/" + release.Tag
@@ -202,7 +204,7 @@ func (c *Checker) Check(ctx context.Context) (State, error) {
 		c.save(state)
 		return state, nil
 	}
-	releases, rejected, err := ParseReleases(body, c.Repository, c.Platform)
+	releases, rejected, err := parseReleasesFrom(body, c.releasesBase(), c.Platform)
 	if err != nil {
 		state.Failure = "GitHub sent a release list the app could not read."
 		c.Persist.Warn("update_manifest_invalid", err.Error())
@@ -318,6 +320,13 @@ func (c *Checker) Due(enabled bool, now time.Time) bool {
 	return now.Sub(state.AttemptedAt) >= interval
 }
 
+func (c *Checker) releasesBase() string {
+	if c.DownloadBase != "" {
+		return c.DownloadBase
+	}
+	return releasesBase(c.Repository)
+}
+
 // Available is a release newer than the running version, as the narrator is told about it.
 type Available struct {
 	Version     string `json:"version"`
@@ -356,6 +365,18 @@ func (c *Checker) Status(channel Channel) Status {
 		status.Available = &Available{Version: release.Version.String(), Tag: release.Tag, Candidate: release.Candidate, NotesURL: release.NotesURL, Size: release.Asset.Size, PublishedAt: release.PublishedAt, Replaces: c.Platform.SelfReplace}
 	}
 	return status
+}
+
+// Newer is the newest release on the channel if it is newer than the running version: the release an update would install.
+func (c *Checker) Newer(channel Channel) (Release, bool) {
+	if c.Platform.Asset == "" {
+		return Release{}, false
+	}
+	release, ok := Newest(c.State().Releases, channel)
+	if !ok || !IsUpdate(c.Current, release) {
+		return Release{}, false
+	}
+	return release, true
 }
 
 // MarshalText and UnmarshalText keep a Version a plain "0.2.7" in the cache file.

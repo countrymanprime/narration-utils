@@ -218,6 +218,24 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'settings',
+    state: 'about-download-confirm',
+    description: 'Settings, About and updates: the confirm before an update is downloaded (?mockUpdate=available)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'about-download-progress',
+    description: 'Settings, About and updates: the update download dialog with real bytes, 40 percent and Cancel (?mockUpdate=downloading)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'about-download-failed',
+    description: 'Settings, About and updates: the update download dialog after the checksum check failed (?mockUpdate=download-fails)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
     state: 'about-development-build',
     description: 'Settings, About and updates in a development build, which has no release to compare with (?mockUpdate=development)',
     ...REFLOW,

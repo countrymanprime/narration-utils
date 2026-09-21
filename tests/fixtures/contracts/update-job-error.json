@@ -1,0 +1,10 @@
+{
+  "bytesDone": 52428800,
+  "bytesTotal": 209715200,
+  "error": "The checksum in the release and GitHub's own record of the file disagree, so the update was not used.",
+  "id": "update-1",
+  "message": "The checksum in the release and GitHub's own record of the file disagree, so the update was not used.",
+  "percent": 25,
+  "phase": "error",
+  "version": "0.2.7"
+}

@@ -68,13 +68,38 @@ func verify(path string, f File) error {
 	return nil
 }
 
+// Options are the parts of an install a caller may add to. The zero value is the plain install the voices and models use.
+type Options struct {
+	// Client makes the requests; nil is http.DefaultClient. The app's own update gives it a redirect policy.
+	Client *http.Client
+	// OnProgress is called as bytes of a file arrive, with the file and how many bytes of it have been received so far.
+	OnProgress func(file File, done int64)
+	// Preflight is asked once, before anything is written, with the root and the total bytes about to be downloaded, and may refuse
+	// (a full disk). It is not asked when the asset is already installed.
+	Preflight func(root string, total int64) error
+}
+
 // Install downloads every catalog-owned file into an adjacent staging
 // directory, verifies each against its expected size and hash, and only then
 // atomically renames the staging directory into place. A partial or failed
 // download never becomes visible as an installed asset.
 func Install(ctx context.Context, root, provider, id, version string, files []File) error {
+	return InstallWith(ctx, root, provider, id, version, files, Options{})
+}
+
+// InstallWith is Install with the options of Options.
+func InstallWith(ctx context.Context, root, provider, id, version string, files []File, options Options) error {
 	if State(root, provider, id, version, files) == "installed" {
 		return nil
+	}
+	if options.Preflight != nil {
+		var total int64
+		for _, file := range files {
+			total += file.Size
+		}
+		if err := options.Preflight(root, total); err != nil {
+			return err
+		}
 	}
 	target := Dir(root, provider, id, version)
 	staging := target + ".installing"
@@ -84,7 +109,7 @@ func Install(ctx context.Context, root, provider, id, version string, files []Fi
 	}
 	fail := func(err error) error { _ = os.RemoveAll(staging); return err }
 	for _, file := range files {
-		if err := download(ctx, staging, file); err != nil {
+		if err := download(ctx, staging, file, options); err != nil {
 			return fail(err)
 		}
 	}
@@ -106,12 +131,16 @@ func Install(ctx context.Context, root, provider, id, version string, files []Fi
 	return nil
 }
 
-func download(ctx context.Context, staging string, file File) error {
+func download(ctx context.Context, staging string, file File, options Options) error {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, file.URL, nil)
 	if err != nil {
 		return err
 	}
-	response, err := http.DefaultClient.Do(request)
+	client := options.Client
+	if client == nil {
+		client = http.DefaultClient
+	}
+	response, err := client.Do(request)
 	if err != nil {
 		return fmt.Errorf("could not download approved asset: %w", err)
 	}
@@ -123,7 +152,13 @@ func download(ctx context.Context, staging string, file File) error {
 	if err != nil {
 		return err
 	}
-	_, copyErr := io.Copy(out, response.Body)
+	// The catalog says how big the file is, so no more than that is read: a server cannot fill the disk by sending on. One byte past
+	// the declared size is read on purpose, so an oversized body is seen as a mismatch and not as a file that happens to end there.
+	body := io.Reader(io.LimitReader(response.Body, file.Size+1))
+	if options.OnProgress != nil {
+		body = &progressReader{reader: body, report: func(done int64) { options.OnProgress(file, done) }}
+	}
+	_, copyErr := io.Copy(out, body)
 	closeErr := out.Close()
 	if copyErr != nil {
 		return copyErr
