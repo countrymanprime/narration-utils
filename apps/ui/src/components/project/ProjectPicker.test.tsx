@@ -18,6 +18,12 @@ function renderPicker(overrides: Parameters<typeof createMockApi>[0] = {}) {
 }
 
 describe('ProjectPicker', () => {
+  it('is a page of its own: a main landmark with the level-1 heading (axe: landmark-one-main, page-has-heading-one)', () => {
+    renderPicker();
+    expect(screen.getByRole('main')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Open a project' })).toBeTruthy();
+  });
+
   it('lists seeded recent projects and switches to the one clicked', async () => {
     const api = renderPicker();
     const switchProject = vi.spyOn(api, 'switchProject');

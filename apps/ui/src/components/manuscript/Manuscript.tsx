@@ -346,6 +346,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
                 <TooltipTarget className="-ml-1 flex size-[1.4rem]" text={chapterBookmark ? 'Remove chapter bookmark' : 'Bookmark this chapter'}>
                   <button
                     className={`group relative flex size-[1.4rem] items-center justify-center ${chapterBookmark ? 'text-[var(--bookmark)]' : 'text-[var(--non-text)]'}`}
+                    aria-label={chapterBookmark ? 'Remove chapter bookmark' : 'Bookmark this chapter'}
                     onClick={() => void toggleChapterBookmark(chapter.id)}
                   >
                     <FontAwesomeIcon

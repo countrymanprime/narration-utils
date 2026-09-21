@@ -3,6 +3,32 @@
 `ui-atlas sync` refreshes the vendored core files (`plugin/templates/core`) and stamps the version. It does NOT touch
 scaffold files (yours after `init`), so the **Adopt by hand** lines below are what to copy across on upgrade.
 
+## 0.3.4
+
+- **Core:** axe runs on the app's states, not only on stories. After each capture's screenshot the suite injects `axe-core`
+  (read only when axe runs, so a repo that never turns it on needs no dependency) and groups the page's violations by rule.
+  Three modes, from `lib/validators.ts` `resolveAxeMode`: **off** by default; **gate** when the project's `app.drivers.ts`
+  exports `axeDebt` (a list of `AxeDebt { page, state, rules, reason, viewports? }`), where a violation the list does not
+  declare fails the capture with the rule, the node count, the first selectors and axe's advice, and a declared rule that
+  is no longer reported fails too (the list only shrinks, like `sameAs`); and **report only** with `UI_AXE=1`, which
+  fails nothing and makes the teardown print how many elements axe found over how many captures, per rule, and one line
+  per state (the baseline to measure before gating). `UI_AXE=0` skips it for a quick local run, `UI_AXE=gate` forces the
+  gate for a repo with no list yet, and any other value throws. `lib/validators.ts` gains `AxeFinding`, `AxeDebt`,
+  `RawAxeViolation`, `summariseAxeViolations`, `checkAxeFindings`, `resolveAxeMode`, `summariseAxeRun`, `AXE_TARGET_LIMIT`
+  and an optional `CaptureRecord.axe`. A driver that froze the page clock stopped axe (it waits on timers, and the run hung
+  until the test timed out): the run resumes the clock first, after the picture is taken, and only when a clock was installed
+  (`clock.resume()` on a page without one installs a fake clock). The teardown prints `axe mode: <mode>` on every run; a
+  mistyped `UI_AXE` fails at the start of the run; and on CI (`CI` set) a project that declares `axeDebt` fails if `UI_AXE`
+  is 0 or 1 (`checkAxeModeForCi`), so a leftover shell variable cannot pass a run without the gate.
+- **Skills and docs:** `ui-state-catalog`, `ui-atlas-gate`, `ui-capture-contract` and `design.md` describe the modes and the debt list.
+- **Adopt by hand:** to turn it on, add `axe-core` (the version your Storybook addon already uses) as a devDependency, run
+  `UI_AXE=1 <pm> run screenshots` once to see the baseline, fix what is cheap, then export `axeDebt` from `app.drivers.ts`
+  (`export { AXE_DEBT as axeDebt } from './axe-debt'`, the list in a file of your own) with a reason and a tracking issue per
+  entry. In your `src/visualSuite.test.ts` copy the new `describe` blocks (`summariseAxeViolations`, `checkAxeFindings`,
+  `resolveAxeMode`, `summariseAxeRun`) and an `axe debt` block that caps the list (`MAX_AXE_DEBT_RULES`, like `MAX_UNDRIVEN`)
+  and checks that each entry names a catalog row, a rule and a reason. Expect the first run to find real defects (unnamed
+  buttons, pages with no main landmark or level-1 heading).
+
 ## 0.3.3
 
 - **Core:** the app suite fails a collapsed control: a visible text box, select or textarea (an `<input>` except

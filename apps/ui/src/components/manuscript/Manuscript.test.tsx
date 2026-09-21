@@ -194,6 +194,15 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     expect(document.querySelector('.marker-count')).toBeNull();
   });
 
+  it('names each chapter bookmark toggle, since its icons say nothing to a screen reader (axe: button-name)', async () => {
+    renderManuscript();
+    await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+    const toggle = document.querySelector<HTMLElement>('[data-chapter="Chapter 1"] button.group')!;
+    expect(toggle.getAttribute('aria-label')).toBe('Bookmark this chapter');
+    fireEvent.click(toggle);
+    await waitFor(() => expect(document.querySelector('[data-chapter="Chapter 1"] button.group')!.getAttribute('aria-label')).toBe('Remove chapter bookmark'));
+  });
+
   it('filters chapters and nests matching search results beneath them', async () => {
     renderManuscript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));

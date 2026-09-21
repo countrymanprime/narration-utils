@@ -9,6 +9,12 @@ import { settlePage } from './helpers/settle';
 // tests at import time) so Vitest can check it against the catalog.
 export type Driver = (page: Page) => Promise<void>;
 
+// The accessibility rules an app state is known to violate (axe-debt.ts). Declaring the list turns on the axe gate of the vendored
+// lib/capture.ts: every captured state is checked, and a violation the list does not declare fails it (docs/adr/0064). Read by name
+// through a namespace import Knip cannot follow, hence @public.
+/** @public */
+export { AXE_DEBT as axeDebt } from './axe-debt';
+
 // Two switches for a run of the suite, both off by default. The vendored lib/capture.ts calls this by name before every
 // capture (a namespace import Knip cannot follow, hence @public).
 //

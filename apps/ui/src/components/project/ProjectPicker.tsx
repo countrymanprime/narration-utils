@@ -104,10 +104,11 @@ export function ProjectPicker() {
     });
 
   return (
-    <div className="grid min-h-screen place-items-center p-6">
+    // tabIndex -1 like AppShell's <main>: a dialog that closes with nothing to give focus back to sends it here, not to <body>.
+    <main tabIndex={-1} className="grid min-h-screen place-items-center p-6 focus:outline-none">
       {/* min-w-0: as a grid item the card otherwise grows to its longest nowrap child (a project path) and overflows narrow screens. */}
       <div className="w-full max-w-2xl min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
-        <div className="text-lg font-semibold">Open a project</div>
+        <h1 className="text-lg font-semibold">Open a project</h1>
         <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
           Choose a recent project, browse to an existing folder, or create a new one.
         </p>
@@ -181,6 +182,6 @@ export function ProjectPicker() {
           </button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

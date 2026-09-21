@@ -2,6 +2,13 @@ import type { Page } from '@playwright/test';
 
 export type Driver = (page: Page) => Promise<void>;
 
+// Optional, off by default: axe on the app's states (kit 0.3.4). Declaring the list of rules a state is known to violate turns the gate on:
+// a violation it does not declare fails the capture, and a declared rule that stops being reported fails too (the list only shrinks).
+// Measure first with `UI_AXE=1` (nothing fails; the teardown prints what axe found), fix what is cheap, then declare the rest with a
+// reason and a tracking issue each. Needs `axe-core` as a devDependency. See the ui-state-catalog skill.
+//
+//   export { AXE_DEBT as axeDebt } from './axe-debt';   // export const AXE_DEBT: AxeDebt[] = []; (type from './lib/validators')
+
 // The accessible name of the control that opens the navigation on narrow screens (if there is one).
 const MOBILE_MENU_BUTTON = 'Open navigation';
 

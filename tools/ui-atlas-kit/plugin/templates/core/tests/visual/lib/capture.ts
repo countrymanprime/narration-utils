@@ -1,6 +1,7 @@
-// ui-atlas-kit 0.3.3 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.4 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { createHash } from 'node:crypto';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname } from 'node:path';
 import { expect, type Page } from '@playwright/test';
 import sharp from 'sharp';
@@ -10,14 +11,20 @@ import { runRecordPath, screenshotDir, settleFrames, settlePage } from '../helpe
 import type { Viewport } from '../viewports';
 import type { StateEntry } from './types';
 import {
+  checkAxeFindings,
   checkControlWidths,
   disambiguateLabels,
   NON_TEXT_INPUT_TYPES,
   OVERFLOW_TOLERANCE_PX,
+  resolveAxeMode,
   SIGNATURE_HEIGHT,
   SIGNATURE_WIDTH,
+  summariseAxeViolations,
+  type AxeDebt,
+  type AxeFinding,
   type CaptureRecord,
   type ControlMeasurement,
+  type RawAxeViolation,
 } from './validators';
 
 function watchForProblems(page: Page): string[] {
@@ -81,6 +88,36 @@ async function measureTextControls(page: Page): Promise<ControlMeasurement[]> {
   return disambiguateLabels(measured);
 }
 
+// axe-core is read only when axe runs, so a project that never turns it on does not need the package.
+let axeSource: string | undefined;
+function loadAxeSource(): string {
+  axeSource ??= readFileSync(createRequire(import.meta.url).resolve('axe-core'), 'utf8');
+  return axeSource;
+}
+
+// The page's accessibility violations under axe's default rules (what the atlas runs on stories), grouped by rule. Run
+// after the screenshot, so the picture is what a person would have seen; injecting the script changes nothing visible.
+async function runAxe(page: Page): Promise<AxeFinding[]> {
+  // A driver that froze the page clock (a toast that must not fade before the shot) stops every timer, and axe waits on
+  // timers: it would hang until the test times out. The picture is already taken, so let time run again. Only when a clock
+  // was installed: `clock.resume()` on a page without one installs a fake clock itself (Date starts at 1970 and the timers
+  // are rewired), which changes the page it is about to check. A toast whose timer runs out before axe finishes is not there
+  // to be checked; none of the frozen states declares debt, so that can only miss a violation, never invent one.
+  if (await page.evaluate(() => '__pwClock' in globalThis)) await page.clock.resume();
+  await page.addScriptTag({ content: loadAxeSource() });
+  const violations = await page.evaluate(async (): Promise<RawAxeViolation[]> => {
+    const axe = (window as unknown as { axe: { run: (context: Document, options: object) => Promise<{ violations: RawAxeViolation[] }> } }).axe;
+    const result = await axe.run(document, { resultTypes: ['violations'] });
+    return result.violations.map((violation) => ({
+      id: violation.id,
+      impact: violation.impact,
+      help: violation.help,
+      nodes: violation.nodes.map((node) => ({ target: node.target })),
+    }));
+  });
+  return summariseAxeViolations(violations);
+}
+
 async function maxChannelStdev(png: Buffer): Promise<number> {
   const { channels } = await sharp(png).stats();
   return Math.max(...channels.slice(0, 3).map((channel) => channel.stdev));
@@ -125,12 +162,19 @@ export async function captureState(page: Page, entry: StateEntry, viewport: View
   // taken and recorded, so the picture of the failure exists.
   const controls = await measureTextControls(page);
   problems.push(...checkControlWidths(controls, entry.narrowControls, viewport.name));
+  const axeDebt = (appDrivers as { axeDebt?: readonly AxeDebt[] }).axeDebt;
+  const axeMode = resolveAxeMode(process.env.UI_AXE, axeDebt !== undefined);
   const png = await page.screenshot({
     path: `${screenshotDir(entry.page, entry.state)}/${viewport.name}.png`,
     animations: 'disabled',
     caret: 'hide',
     mask: entry.mask?.map((selector) => page.locator(selector)),
   });
+
+  // Axe on the app's states (a story is checked by the atlas, a page never was). Reported after the screenshot is taken and
+  // recorded, so the picture of the failure exists; the mode says whether a violation fails or is only counted.
+  const axe = axeMode === 'off' ? undefined : await runAxe(page);
+  if (axe && axeMode === 'gate') problems.push(...checkAxeFindings(axe, axeDebt ?? [], entry.page, entry.state, viewport.name));
 
   writeRecord({
     page: entry.page,
@@ -141,6 +185,7 @@ export async function captureState(page: Page, entry: StateEntry, viewport: View
     maxChannelStdev: await maxChannelStdev(png),
     overflowPx,
     narrowestControlPx: controls.length > 0 ? Math.min(...controls.map((control) => control.width)) : null,
+    ...(axe ? { axe } : {}),
   });
 
   expect(problems, 'the app reported problems while this state was captured').toEqual([]);
