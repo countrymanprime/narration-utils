@@ -1,0 +1,142 @@
+# Threat model
+
+**Status: reviewed 2026-09-21** (host API 12, ADRs up to 0083, the release-readiness stack merged). This is a table the maintainer reads, not a diagramming tool: [STRIDE](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool-threats) letters per row, the mitigation that exists in code with the file that holds it, and the risk that is left with an owner. It lines up with [`SECURITY.md`](../../SECURITY.md) row by row: every scope bullet there has a row here, and the two boundaries `SECURITY.md` does not list (the REAPER file bridge, the `/media` route) are here because they are real. It is engineering guidance, not a certification and not legal advice.
+
+**Keeping it true.** A change that touches a trust boundary below updates this file in the same pull request: the `feature-cleanup` skill and the pull request template both ask "does this change a trust boundary or what the app sends off the machine?". Bump the date above when a row is re-read against the code, not only when it changes. A finding that is not fixed here is a GitHub issue ([Tracking work on GitHub](../operations/github-workflow.md)), named in its row.
+
+## How to read it
+
+| Letter | Threat | | Letter | Threat |
+| --- | --- | --- | --- | --- |
+| S | Spoofing: pretending to be a server, a file or a process | | I | Information disclosure |
+| T | Tampering: changing bytes in transit or at rest | | D | Denial of service |
+| R | Repudiation: no record of what happened | | E | Elevation of privilege |
+
+The attacker is one of: **a network attacker** (or a compromised server) between the app and GitHub or Hugging Face; **a hostile file** the narrator opens (a manuscript, a REAPER project, an archive); **another process of the same Windows user** (there is no privilege boundary between two programs a person runs, so this is a fact to record, not a fight to win); **the supply chain** (a dependency or a workflow change that reaches a release). Local-first is the design: the narrator's manuscripts, audio and Story Bible stay on their machine, and nothing here assumes a server of ours, because there is none.
+
+## What is protected
+
+| Asset | Where it lives | Why it matters |
+| --- | --- | --- |
+| Manuscripts, the Story Bible, notes | the project's `narration-utils/` folder next to the REAPER project | unpublished writing of the narrator or the author |
+| Recorded audio and the `.rpp` project | the narrator's folders, read (never modified) by the app; REAPER edits the project through the bridge | the product being made |
+| Settings, recents, host log | `%APPDATA%\narration-utils` and the per-user cache | small; the host log records where data went wrong and never what the data was ([`hostlog`](../../apps/desktop/internal/hostlog/hostlog.go)) |
+| Downloaded models and voices | `%LOCALAPPDATA%\narration-utils\assets` | a wrong model gives wrong text, and a weight file is parsed by native code |
+| The program itself | the install folder, replaced in place by the update | code that runs with the narrator's rights |
+| The release | GitHub Releases | what every narrator installs |
+
+## What the app sends off the machine
+
+The statements below are the ones the docs make elsewhere; each is checked by something that fails.
+
+- **No telemetry, no analytics, no crash upload, no account.** Nothing in the host or the UI reports usage. The host log stays on disk (`hostlog`, [ADR 0069](../adr/0069-payloads-are-validated-with-zod-behind-parsewire-and-a-wrong-shape-fails-loudly.md)); analyzers report findings and never upload them ([ADR 0032](../adr/0032-analyzers-report-findings-and-never-change-audio-or-manuscript-on-their-own.md)).
+- **No listener.** The desktop host opens no port and no socket. The `/media` route is the Wails asset server's in-process handler, reached only by the app's own webview ([ADR 0012](../adr/0012-media-route-for-track-playback.md)); the REAPER bridge is files in a folder ([ADR 0031](../adr/0031-reaper-integration-is-a-lua-file-bridge-verified-by-hand.md)).
+- **The Go host imports networking in three places only:** `internal/assets` (first-use downloads), `internal/update` (the app's own update) and the root `media.go` (the local route). A `depguard` rule in [`.golangci.yml`](../../apps/desktop/.golangci.yml) fails the lint on any other import of `net`, `crypto/tls` or `golang.org/x/net` ([ADR 0032](../adr/0032-analyzers-report-findings-and-never-change-audio-or-manuscript-on-their-own.md) point 4). The fence does not see a sidecar's own network use, which is why the sidecars are loaded from a verified local directory (row 1).
+
+Every outbound request the shipped app can make:
+
+| Request | When | Carries | Off switch |
+| --- | --- | --- | --- |
+| `GET api.github.com/repos/countrymanprime/narration-utils/releases` | automatically once a day at most (2 hours after a failed check), 12 s after the window is up, and when the narrator presses **Check now** (row 2) | the program name and version in `User-Agent`, an `ETag`; nothing about the narrator, the project or the machine | Settings > About & updates > `Updates.check_on_startup` |
+| The Google Fonts stylesheet and font files | **every launch, by the webview** (row 3) | the narrator's IP address and the webview's user agent; no content | none (finding, [#238](https://github.com/countrymanprime/narration-utils/issues/238)) |
+| Hugging Face and GitHub asset downloads | only after the narrator confirms an install (row 1) | the file path of one pinned URL | not started without a click |
+| The update download from GitHub Releases | only after two clicks (row 2) | the URL of one release asset | not started without a click |
+
+A developer running a sidecar by hand with a model *name* instead of `--model-dir` makes `faster-whisper` download from Hugging Face by itself (`sidecars/transcript-compare/core/compare.py`, `sidecars/manuscript-teleprompter/core/live_asr.py`, `local_files_only=bool(model_dir)`), and the not-yet-supported Moonshine engine of the teleprompter sidecar downloads its model from Moonshine's servers when it is given none (`live_asr.py`; the host only starts `whisper`). The mock-API bundle of the UI (`VITE_USE_MOCK_API=1`, development and the visual suite) fetches a sample manuscript from `raw.githubusercontent.com` (`apps/ui/src/api/aliceManuscript.ts`); the shipped app does not run it. The app never does: the host resolves the model directory from an installed, verified catalog entry and refuses with `asset_required` otherwise (`apps/desktop/bindings.go`). The start-up test `apps/desktop/startup_offline_test.go` replaces the HTTP transports with ones that fail, and asserts that opening the app, choosing a model and reading the catalog make no request except the update check, and that one only to the releases address and only when it is switched on.
+
+## The threats
+
+Rows are numbered so an issue or a pull request can name one. "Cited" files are relative to the repository root.
+
+### 1. First-use downloads (`SECURITY.md` bullet 2)
+
+Boundary: Hugging Face and GitHub to the asset store to a sidecar that loads the file. Flow: [first-use dependency provisioning](first-use-dependency-provisioning.md).
+
+| # | Threat | Existing mitigation | Residual, owner |
+| --- | --- | --- | --- |
+| 1a | T, S: a tampered or redirected model, voice or spaCy wheel | The catalogs are compiled into the release (`config/*-assets.json`); every file has an exact size and SHA-256; the Hugging Face files are pinned to a 40-hex commit on `https` and `apps/desktop/internal/assets/pins_test.go` fails a Whisper or voice catalog entry that is not (a tag, a branch, `http`, a missing hash); the two spaCy wheels are pinned by release tag and SHA-256 and `internal/spacy/catalog_test.go` checks their URLs; the download goes into a `<dir>.installing` staging folder and is renamed into place only after size and hash match (`internal/assets/store.go`); a cut-off download resumes with an HTTP Range request and is re-hashed whole; archives are unpacked by our code with hostile entries refused (`internal/assets/extract.go`); the sidecars load the model from that directory with `local_files_only` | A hash in the same commit that names the file proves the file is the one we pinned, not that upstream's file is benign; the pin was checked against the live upstream when it was recorded and a new pin is a reviewed change. Owner: maintainer |
+| 1b | D: a hostile server sends endless data or a huge `Content-Length` | The size in the catalog is checked against the free disk before the first byte is written and the body is read no further than it; the hash gate rejects the rest ([ADR 0078](../adr/0078-asset-state-comes-from-the-manifest-an-asset-is-read-in-full-once-per-session-and-a-failed-download-resumes.md)) | A slow server can hold a job open until the narrator cancels. Accepted |
+| 1c | E: the downloaded file is code | A model file is data loaded by `ctranslate2`, `onnxruntime` and `spacy`; the only executables in the app come from the release, not from a download (row 2 covers the release) | A malformed model could exploit a parser bug in those libraries; they are pinned in `uv.lock` and scanned by OSV-Scanner. Owner: maintainer |
+| 1d | R: no record of which model produced a result | The manifest in each install folder keeps the URL, size, hash and time; Settings > Local assets lists and verifies them ([ADR 0081](../adr/0081-local-assets-is-a-settings-list-built-from-the-registry-whose-rows-own-their-download-verify-and-remove.md)) | None worth a row |
+
+### 2. The app's own update (`SECURITY.md` bullet 3)
+
+Boundary: GitHub's API and CDN to the app, which then replaces its own executable ([in-app update](in-app-update.md), [ADR 0072](../adr/0072-the-app-updates-itself-from-this-repositorys-releases-and-never-installs-without-a-click.md) to [ADR 0074](../adr/0074-the-windows-update-renames-the-running-executable-and-keeps-the-old-one-until-the-new-one-starts.md)). This is the boundary where a mistake runs an attacker's program with the narrator's rights, so it has the most rows.
+
+| # | Threat | Existing mitigation | Residual, owner |
+| --- | --- | --- | --- |
+| 2a | S: a spoofed or hostile release list (a man in the middle, a hijacked response, a poisoned cache file) | TLS to `api.github.com`; the repository is compiled in (`update.Repository`), so no setting or response can point elsewhere; the body is capped (4 MiB), read as at most 60 entries, and every release is validated in Go (a tag only as `vMAJOR.MINOR.PATCH` or with `-rc`, exactly one asset with the platform's name and one `.sha256`, sane sizes); every download URL is **built** from the repository, the tag and the known name, never taken from the JSON; the parsing is fuzzed (`internal/update/manifest.go`) and the on-disk cache is re-validated like a fresh answer on every read (`internal/update/check.go`) | A compromise of GitHub itself, or of the release, is outside what the app can see (2c). Owner: maintainer |
+| 2b | T: the downloaded zip or its checksum is changed in transit or on the CDN | HTTPS only; redirects only to `github.com` and the release-asset hosts on port 443, at most five (`DownloadRedirectPolicy`); if the `.sha256` names a file it must be this release's zip, and if GitHub lists a digest for the zip the two must agree (when GitHub lists none, the check rests on the `.sha256` alone); the zip is read no further than its declared size into a staging folder and renamed only after size and SHA-256 match; exactly one entry, `narration-utils.exe`, is unpacked (a regular file, bounded, no path or link) (`internal/update/stage.go`) | The checksum sits in the same release as the file, so it detects damage, not a substituted release (2c) |
+| 2c | T: a release that GitHub serves correctly but that is not the maintainer's build (a compromised workflow or account) | **Not verified in the app.** The release carries build provenance for every asset and the executable, checked in CI by promote (`assets.mjs verify --attestations`, [ADR 0071](../adr/0071-releases-carry-build-provenance-and-promote-refuses-a-file-the-release-workflows-did-not-build.md)); a person can run `gh attestation verify` on a download | The app installs a release that has a matching checksum and no provenance check ([#199](https://github.com/countrymanprime/narration-utils/issues/199): sigstore verification in the app, weighed at about 370 modules and 16 MB and deferred). The first stable is unsigned (owner decision D7). Owner: maintainer, tracked in #199 |
+| 2d | D, T: a **downgrade** or replay: an old, vulnerable release offered as the update | A release is an update only if its bare version is strictly greater than the running one; an equal or lower version is never installed (`internal/update/version.go`); a development build (`0.0.0-dev`) is never offered one | A hostile list can offer the highest version the parser accepts (each part has at most six digits) and so pin a narrator to "no newer update"; it cannot make the app install without the two clicks, and the install runs the new program with `--version` first. Accepted |
+| 2e | E: the swap is used to run or replace something else | The narrator's confirmed click is required for the download and again for the install, and the install refuses while a job runs; the staged program is copied beside the running one, hashed against the staging record, run once with `--version` and must print the version the release names; the record of an update in progress (`pending.json`) is only compared with the running program and never used as a path, so a planted record cannot make the app touch another file; the update never asks for elevation and falls back to "show the downloaded file" where it cannot write (`internal/update/install.go`, `internal/update/startup.go`) | Another process of the same user can replace the staged file between the hash and the rename (a race with the narrator's own rights; no boundary is crossed). Accepted |
+| 2f | D: an update that does not start leaves the narrator without the app | The old program is kept as `<name>.old` until the new one serves its first `Bootstrap`, and is restored automatically after two starts that never confirmed | A new build that starts and is then broken is not rolled back ([in-app update](in-app-update.md#limits)). Owner: maintainer |
+| 2g | I: the request identifies or tracks the narrator | The request carries `Accept`, `X-GitHub-Api-Version`, `If-None-Match` and `User-Agent: narration-utils/<version>` and nothing else; it is at most once a day, silent on failure, and off with one setting | GitHub sees the narrator's IP address, as with any request to it. Stated in `SECURITY.md`. Accepted |
+
+### 3. The webview at start-up (`SECURITY.md` bullet 1)
+
+| # | Threat | Existing mitigation | Residual, owner |
+| --- | --- | --- | --- |
+| 3a | I: every launch sends the narrator's IP address and user agent to Google, and loads a remote stylesheet | None. `apps/ui/index.html` loads Google Fonts (`fonts.googleapis.com`, `fonts.gstatic.com`) for Barlow Condensed, IBM Plex Mono and IBM Plex Sans. No manuscript content is in the request | **Finding** ([#238](https://github.com/countrymanprime/narration-utils/issues/238)): self-host the fonts and remove the two hosts. It is a product change with visual-suite and licence effects (the fonts would join the notices) and is not made here. Owner: maintainer |
+| 3b | T, E: remote CSS or script changes the app, and the webview has no Content-Security-Policy | The bundle is built from the repository and served from the executable; the UI has no `dangerouslySetInnerHTML` and no `eval` of received text (`apps/ui/src`, checked 2026-09-21); a stylesheet cannot run script | With no CSP a compromised font host could inject CSS and, through a CSS parser bug, more. Same issue as 3a: the fix adds a CSP once nothing is remote. Owner: maintainer |
+| 3c | (metric) the release-readiness "no outbound request at startup" statement is measured by a Go transport test, which cannot see the webview | `startup_offline_test.go` counts the host's requests | It does not count the webview's, which is 3a. After 3a is fixed the statement is whole |
+
+### 4. The Go host to the sidecars (`SECURITY.md` bullet 4)
+
+| # | Threat | Existing mitigation | Residual, owner |
+| --- | --- | --- | --- |
+| 4a | E, T: an option value from the UI becomes an option of the sidecar (`--mic --model-dir ...`) or a shell command | The sidecars are started with `exec.CommandContext` and an argv slice, never through a shell, inside a Windows Job Object (`internal/process/supervisor.go`, `internal/process/stream.go`); the engine is checked against a list (`whisper` only is supported today) and the model directory is computed by the host from an installed catalog entry (the UI's value is overwritten, `bindings.go`); **a value that starts with `-` is refused by Python's `argparse` with exit status 2** ("expected one argument"), so a `--`-prefixed microphone, chapter, model, language or audio-file value cannot become another flag: verified 2026-09-21 and pinned by `sidecars/manuscript-teleprompter/tests/test_live_asr.py` | A hostile value fails the session and injects nothing. The values are still chosen by the narrator's own UI, and `--wav` (a fixture replay option) is any file path the sidecar will read as audio. Owner: maintainer |
+| 4b | T: the sidecar writes a JSON line that the UI then trusts | The host relays only lines that are valid JSON objects with a string `type` (`internal/teleprompter/service.go`; anything else is dropped and counted); the UI parses every event with a Zod schema, which decides what an event means, and drops and counts a wrong one ([ADR 0069](../adr/0069-payloads-are-validated-with-zod-behind-parsewire-and-a-wrong-shape-fails-loudly.md), [wire contracts](wire-contracts.md)); React escapes text and the UI never sets HTML | The sidecars are our own frozen programs, so a hostile line would already mean the release is compromised (row 8). Accepted |
+| 4c | E: the embedded sidecars are extracted to a per-user folder and run from there | They are written at first launch into the per-user cache with a `.complete` marker keyed to the build (`apps/desktop/app.go`) | Another process of the same user can overwrite an extracted executable before it runs (no privilege is crossed). Accepted |
+| 4d | D: a runaway sidecar | The Job Object kills the tree when the host exits; a stop file with an 8 s grace ends a live session ([ADR 0022](../adr/0022-live-sidecar-events-over-wails-and-stop-file.md)); jobs are cancellable | None worth a row |
+
+### 5. The REAPER file bridge (not in `SECURITY.md`; see the note under the table)
+
+Boundary: the Go host and the Lua bridge in REAPER exchange files in one session folder ([the REAPER bridge](reaper-bridge.md), [ADR 0031](../adr/0031-reaper-integration-is-a-lua-file-bridge-verified-by-hand.md)).
+
+| # | Threat | Existing mitigation | Residual, owner |
+| --- | --- | --- | --- |
+| 5a | T, E: another process writes a command file, and the Lua then opens or writes a path the command names | The folder is `<REAPER resource path>\NarrationUtils\sessions\hub_<id>`, under the user's profile (on this machine `%APPDATA%\REAPER` inherits full control for the user, SYSTEM and Administrators only, read with `icacls` on 2026-09-21); the bridge dispatches only registered command names with a protocol version and an unknown one is an `ERROR` event ([ADR 0067](../adr/0067-bridge-commands-are-registered-by-name-and-each-feature-lives-in-its-own-lua-file.md)); a command is deleted after it is read; a command that changes the project writes one undo block and is safe to send twice | **No authentication.** The `0o600` mode the Go side writes is nearly meaningless on Windows (Go maps only the read-only bit); the protection is the profile's folder ACL, not the mode, and a portable REAPER installed elsewhere may not have one. Some commands **write** to a path taken from the command (`read_line_ids` opens its `path` for writing in `narration_line_identity.lua`, the compare commands read theirs), so a forged command can truncate or overwrite any file the user can. A same-user process can do that directly, so no boundary is crossed. Accepted; [#240](https://github.com/countrymanprime/narration-utils/issues/240) hardens the folder |
+| 5b | I, T: the Lua bridge is untested code with file access | The Lua now has a harness: a fake `reaper` driven through the real file protocol, 94 tests and 19 mutation checks, run by `pnpm check` and CI on Linux and Windows under Lua 5.4 ([ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md)); a bridge bug was found and fixed by the scripted real-REAPER run | The harness proves the bridge's logic, not REAPER's: what an API does inside a real REAPER is checked by hand or by a scripted run on a copy of a project, and the owner steps are [#167](https://github.com/countrymanprime/narration-utils/issues/167). Owner: maintainer |
+| 5c | R: events are not attributable | Every event and error carries the run ID of the command that caused it ([ADR 0068](../adr/0068-bridge-events-fan-out-to-subscribers-by-tag-and-run-and-every-error-names-its-run.md)) | None worth a row |
+
+`SECURITY.md` lists what a reporter should look at; the bridge is a boundary a reporter might not think of, so its scope bullet is added there ("the file protocol between the app and REAPER, and the paths the Lua opens from a command").
+
+### 6. Opening a project or a manuscript (`SECURITY.md` bullet 4)
+
+| # | Threat | Existing mitigation | Residual, owner |
+| --- | --- | --- | --- |
+| 6a | T, D: a hostile DOCX (zip bomb, path tricks) | The DOCX is read with `zip.OpenReader` and only named entries are read into memory; nothing is extracted to disk, so there is no zip-slip (`internal/importer/docx.go`); PDF import is behind the `pdf_candidate` build tag and is not in a shipped build | **No size limit on an entry** (`io.ReadAll`): a small file that inflates to gigabytes can exhaust memory ([#239](https://github.com/countrymanprime/narration-utils/issues/239)). Owner: maintainer |
+| 6b | I, E: the `/media` route serves an arbitrary local file | It serves only a path that equals a source file of the current project's parsed `.rpp`, re-resolved on every request, and opens the project's own copy of the path, never the requested string (`apps/desktop/media.go`, [ADR 0012](../adr/0012-media-route-for-track-playback.md)); it is reachable only from the app's own webview | A hostile `.rpp` can list any local file as an item source and the app's webview would then play it (audio decoders only; the response goes nowhere). Accepted |
+| 6c | E: a project path that is not a project | `ProjectCreate` requires an absolute path and refuses while the host is busy; `ProjectSwitch` takes any path the narrator chose in the picker (`apps/desktop/bindings.go`) | Project data is written under the folder's own `narration-utils/` folder; the `.rpp` and the audio are read wherever they are. `ProjectSwitch` does no check beyond that the narrator chose the folder. Accepted |
+| 6d | T: a hostile `.rpp`, manuscript or audio parsed by native code | Parsers are Go (memory safe) or Python; the WAV reader is bounded by its header checks; `go test -fuzz` and Hypothesis property tests run in the gate ([ADR 0044](../adr/0044-property-and-fuzz-tests-are-deterministic-in-the-gate.md)) | A native decoder (`av`, `onnxruntime`) has its own bugs. Pinned and scanned. Owner: maintainer |
+| 6e | E: the second launch chooses the program a sidecar runs | The second launch re-parses launcher arguments including the `--*-python` and `--repo-root` overrides (`onSecondInstance`, `parseConfigArgs` in `apps/desktop/app.go`); a single-instance lock forwards it to the first instance | Any process of the same user that can start the executable can point a sidecar at another program. No privilege is crossed. Accepted |
+
+### 7. Data at rest (`SECURITY.md` bullet 1)
+
+| # | Threat | Existing mitigation | Residual, owner |
+| --- | --- | --- | --- |
+| 7a | I: another local user reads manuscripts, audio or the Story Bible | Data lives in the user's profile and the project's own folder; the host log is capped (1 MiB plus one backup) and records where, not what | Not encrypted, by design: it is local-first software and the operating system's account boundary is the protection. Accepted |
+| 7b | I: content leaves the machine by an analysis or a sidecar | No code path uploads content; the network fence in [What the app sends off the machine](#what-the-app-sends-off-the-machine) and the offline start-up test | A sidecar's own network use is not seen by the Go fence; the sidecars import no HTTP client of their own (checked 2026-09-21: only `urllib.parse` in `libs/python/narration_common/ui_bridge.py`), and the only self-downloading paths are the developer-run ones named above. Owner: maintainer |
+
+### 8. The release pipeline (`SECURITY.md` bullet 5)
+
+| # | Threat | Existing mitigation | Residual, owner |
+| --- | --- | --- | --- |
+| 8a | T, S: a malicious dependency or workflow change reaches an installer | Promote never rebuilds: it re-attaches the candidate's bytes; every asset carries a SHA-256 file and build provenance, and promote verifies both before it creates the stable tag ([CI and releases](../operations/ci-and-releases.md#build-provenance)); every action is pinned to a commit and `zizmor` blocks a workflow that is not; least-privilege `permissions` and no stored checkout credential ([workflow security](../operations/ci-and-releases.md#workflow-security)); the `production` environment needs the owner's approval; Dependabot with cooldowns; advisory CodeQL, dependency review (a licence allow-list and a high-severity gate), `govulncheck` and OSV-Scanner | **Unsigned** (D7): SmartScreen warns and provenance shows which workflow built a file, not that its source is benign. No required status check exists (D11), so the maintainer's review is the gate. No SBOM. Owner: maintainer |
+| 8b | T: an installer or the update zip differs from the reviewed build | The setup program is built by Wails in the same job and attested; the update zip holds exactly one file ([ADR 0082](../adr/0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md)); the packaged smoke test runs the frozen program before it ships | An owner step, the first attested release, is [#188](https://github.com/countrymanprime/narration-utils/issues/188) |
+| 8c | I: licence obligations are not met, so a release cannot be used freely | The project is AGPL-3.0-or-later ([ADR 0039](../adr/0039-the-project-is-licensed-agpl-3-or-later.md)); the notices (third-party licences and the AGPL text with a source offer) are a release asset and are in the zip; model licences are recorded per artifact | The notices and the model table are part of this stack and are linked here when they land |
+
+## Residual risks the owner has accepted or must decide
+
+| Risk | State |
+| --- | --- |
+| The release is unsigned and the app does not verify provenance when it updates itself | Accepted for the first stable (D7); tracked in [#199](https://github.com/countrymanprime/narration-utils/issues/199) |
+| Google Fonts on every launch, and no CSP | Finding: [#238](https://github.com/countrymanprime/narration-utils/issues/238) |
+| DOCX entries have no size limit | Finding: [#239](https://github.com/countrymanprime/narration-utils/issues/239) |
+| The bridge folder relies on the profile's ACL, and `0o600` does nothing on Windows | Finding: [#240](https://github.com/countrymanprime/narration-utils/issues/240) |
+| Same-user processes can alter what the same user's program runs (staged updates, extracted sidecars, the second launch, the bridge) | Accepted: no boundary is crossed |
+
+## What this model does not cover
+
+macOS and Linux preview builds (they are not supported and not installed by the update); the developer environment and the `uv` environment that downloads Python packages (developer tooling, not a shipped surface); the web pages of GitHub and Hugging Face; a narrator's own REAPER setup; physical access to an unlocked machine.

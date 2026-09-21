@@ -22,6 +22,7 @@ This folder documents a local-first audiobook narration toolkit: how it is built
 | [The REAPER bridge and its test harness](architecture/reaper-bridge.md) | Implemented | The file protocol between the app and REAPER's Lua bridge, every command and event, and the Lua 5.4 harness (a fake `reaper` table plus mutation checks) that tests it without REAPER. |
 | [First-use dependency provisioning and Local assets](architecture/first-use-dependency-provisioning.md) | Implemented | Voices (Piper), transcription models (Whisper) and the Story Bible language model (spaCy) are catalog-managed downloads that start only after the narrator confirms; Settings > Local assets lists, verifies, repairs and removes them. Nothing downloads at startup and no model is bundled. |
 | [Windows release, setup program and in-app update](operations/ci-and-releases.md#the-windows-setup-program) | Implemented (Windows); macOS and Linux are previews | A per-user NSIS setup program and an update zip on each GitHub release, both unsigned, with build provenance; the app checks for a newer release once a day at most (two hours after a failed check) and replaces itself only after a confirmed click ([in-app update](architecture/in-app-update.md)). |
+| [Threat model](architecture/threat-model.md) | Implemented (a reviewed table) | Every trust boundary of the app (downloads, the update, the webview, sidecars, the REAPER bridge, opened files, the release pipeline) with its STRIDE threats, the mitigation in code and the risk that is left, lined up with [SECURITY.md](../SECURITY.md). |
 | Audacity adapters | Deferred | Placeholder directories only; no driver has been implemented. |
 
 ## Reading order
@@ -41,6 +42,8 @@ This folder documents a local-first audiobook narration toolkit: how it is built
    [Verification and code-health tooling](operations/verification-tooling.md).
 8. For issues, labels, milestones, and the project board, use
    [Tracking work on GitHub](operations/github-workflow.md).
+9. Before changing what crosses a trust boundary (a download, the update, a sidecar's arguments, the REAPER bridge, the
+   files the app opens), read the [threat model](architecture/threat-model.md) and update its row in the same pull request.
 
 ## Terms
 
