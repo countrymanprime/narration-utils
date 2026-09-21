@@ -147,7 +147,7 @@ Developer: change a Go payload, run the Go test that rewrites the golden file, s
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Foundation: helper, failure policy, host log | Add the library, `parseWire`, `WireError`, real `SystemReportDiagnostic` log, startup and notice UI, schemas for `Ready` and `Bootstrap`, ADR | complete | - | - | - |
 | 2 | Live streams | Schemas and validation for `teleprompter:event`, `teleprompter:state`, `transcript:state`, `system:attached`; Go envelope check; cost measurement | complete | 3 | 1 | - |
-| 3 | Contract tests and golden payloads | Golden files from Go and Python, table-driven validation of `createMockApi` and `WIRE_*`, lint rule against bare casts | pending | 2 | 1 | - |
+| 3 | Contract tests and golden payloads | Golden files from Go and Python, table-driven validation of `createMockApi` and `WIRE_*`, lint rule against bare casts | complete | 2 | 1 | - |
 | 4 | Binding results, part 1 | `decode(schema, ...)` for Manuscript, Story Bible and Project bindings; replace `normalizeGuideEntity`; audit page error handling | pending | 5, 6 | 1, 3 | - |
 | 5 | Binding results, part 2 | Same for Transcript, Tts, Whisper, Tracks, Settings, Teleprompter start | pending | 4, 6 | 1, 3 | - |
 | 6 | Persisted files and sidecar outputs (Go) | Version policy, logged fallbacks and corrupt-file handling; `guide.json` `schema_version` check; progress line parsing | pending | 4, 5 | 1 | - |

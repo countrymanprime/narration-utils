@@ -4,6 +4,8 @@
 // it does against the live sidecar: it leads the confirmed words, pauses, and
 // re-reads an earlier sentence.
 import recordedStream from './teleprompterRecording.json';
+import { recordedStreamSchema } from './schemas/teleprompter';
+import { parseWire } from './wire/parseWire';
 import { tokenize } from '../components/teleprompter/readerModel';
 import type {
   ManuscriptChapter,
@@ -16,8 +18,7 @@ import type {
   TeleprompterState,
 } from '../types';
 
-type RecordedStream = { tokens: number; events: Array<{ t: number; event: TeleprompterPosition }> };
-const recording = recordedStream as unknown as RecordedStream;
+const recording = parseWire(recordedStreamSchema, recordedStream, { boundary: 'mock.recording', payload: 'teleprompterRecording.json' });
 const recordingSeconds = recording.events.at(-1)?.t ?? 1;
 
 const MIN_REPLAY_SECONDS = 8;

@@ -17,3 +17,6 @@ apps/ui/*.ts text eol=lf
 *.go text eol=lf
 *.sh text eol=lf
 integrations/reaper/** text eol=lf
+
+# Golden payloads written by the Go and Python tests are compared byte for byte (ADR 0069): a CRLF checkout would fail every one.
+tests/fixtures/contracts/** text eol=lf

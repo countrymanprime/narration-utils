@@ -55,3 +55,9 @@ export const teleprompterStateSchema = z.object({
   script: teleprompterScriptSchema.nullable().default(null),
   position: teleprompterPositionSchema.nullable().default(null),
 }) satisfies z.ZodType<TeleprompterState>;
+
+/** The stream recorded from the real ScriptTracker (`teleprompterRecording.json`) that the browser mock replays; checked when the mock loads. */
+export const recordedStreamSchema = z.object({
+  tokens: z.number(),
+  events: z.array(z.object({ t: z.number(), event: teleprompterPositionSchema })),
+});
