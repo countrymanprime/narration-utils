@@ -1,0 +1,29 @@
+# 0072. The app updates itself from this repository's releases and never installs without a click
+
+**Status:** Proposed
+**Date:** 2026-09-21
+**Supersedes:**
+
+## Context
+
+The owner's decision D14 ("the version lives inside the app ... the app knows its own version, checks GitHub releases and downloads and replaces itself", in the implementation plan) asks for an update path. The wording leaves choices open, so this ADR records the reading that was followed, for the owner to accept or change. The work is specified in `docs/prds/in-app-update.prd.md` (deleted when the work is done; recover it from git history; the steady state is `docs/architecture/in-app-update.md`).
+
+The facts that shape it: every release so far is a release candidate pre-release; the first stable release is Windows-only and unsigned (D7), so there is no Authenticode signature to check; every release asset and the executable inside the Windows zip carry build provenance ([ADR 0071](0071-releases-carry-build-provenance-and-promote-refuses-a-file-the-release-workflows-did-not-build.md)); the first-use provisioning rules say nothing is downloaded without an explicit action; and the docs so far say the app makes no request at startup that is not an explicit one.
+
+## Decision
+
+1. **The source is this repository's GitHub Releases API,** read from the Go side (the UI's Content Security Policy is unchanged), unauthenticated, with the repository owner and name compiled in. The release list is a trust boundary and is validated in Go: capped body, strict decode, a tag accepted only as `v<MAJOR>.<MINOR>.<PATCH>` or the same with `-rc`, exactly the platform's known asset name and its `.sha256`. The download URL is built from the compiled-in repository, the tag and the known asset name, never taken from the JSON; redirects are followed only to `https` hosts under `github.com` and `githubusercontent.com`.
+2. **The version is bare semver,** the same for a release candidate and its promotion (they are the same bytes), stamped into the binary from the root `package.json`. A release is newer only if its bare version is strictly greater. An equal or lower version is never installed, so a narrator on an RC is not offered that RC's promotion.
+3. **The default channel includes release candidates** (`Updates.channel` = `candidates`), because every current release is one and a stable-only default would never find an update. `stable` is a Settings choice.
+4. **The app makes one automatic request, and it is metadata only:** at most once a day, after the window is up, in the background, silent on failure, unless the narrator turned it off (`Updates.check_on_startup`, default on). It carries no identifier beyond the standard `User-Agent` and sends nothing about the narrator, the project or the machine. This deliberately changes the earlier "no network request at startup" statements in the docs; those are updated with the code.
+5. **Nothing is downloaded and nothing is replaced without one explicit, confirmed click,** with real byte progress, a disk-space check and cancel for the download (the first-use provisioning rules, applied to the app itself). The install step refuses while an import draft, a Story Bible build, a download, a comparison or a teleprompter session is active.
+6. **Integrity, in this delivery: TLS to GitHub, the SHA-256 from the release's `.sha256` asset, a strictly newer version, names and URL fixed at compile time, and a run of the staged executable that must report the version the release names.** The checksum sits in the same release as the zip, so it detects a damaged or partial download; it does not prove where the file came from. The build attestation does, and it is **not verified inside the app in this delivery** (Phase 6, deferred, with an issue). It was weighed rather than skipped: importing `sigstore-go` v1.3.0 (Apache-2.0, AGPL-compatible) for its trusted root and verifier puts about 370 modules in the module graph and adds about 16 MB to a minimal program (measured on 2026-09-21 in a scratch module: 1.6 MB to 18.2 MB stripped), and it needs Sigstore's trusted root (TUF) as embedded data or a live fetch. That is real, reviewable weight for one maintainer, so the owner decides whether to take it. Until then the documentation says the limit plainly, and a person can run `gh attestation verify` on the download.
+7. **Windows only replaces itself** (macOS and Linux are preview assets and notify only). The replacement is a rename swap of the one executable with the old file kept until the new build has started, an automatic restore if it does not, and a fall back to "download and open the folder" when the install folder is not writable; the app never asks for elevation. This part is ADR 0074, written with the code.
+
+## Consequences
+
+- A narrator finds out about a fix within a day and gets it with one click; the maintainer's releases reach them without an announcement.
+- The app now contacts GitHub on its own once a day. It can be switched off in Settings, and the docs (`SECURITY.md`, the provisioning doc) say what is sent and what is not. Offline use is unaffected.
+- The integrity guarantee is weaker than the attestation the release already carries: a compromise of the release itself (not of GitHub's TLS) would install a malicious build that passes the checksum. Phase 6 closes that gap, or a new ADR records why it stays open. The first stable is unsigned (D7), and Windows SmartScreen or antivirus software may object to the relaunched executable.
+- The rate limit (60 requests an hour per address) is respected by a daily check with an `ETag`; a shared address with many installs could still be limited, and the check then reports "could not check" and tries again later.
+- Changing the default channel, adding attestation verification or letting the app install without confirmation each needs a new ADR that supersedes this one.

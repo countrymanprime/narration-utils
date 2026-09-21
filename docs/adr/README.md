@@ -94,3 +94,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0069](0069-payloads-are-validated-with-zod-behind-parsewire-and-a-wrong-shape-fails-loudly.md) | Payloads are validated with Zod behind `parseWire`, and a wrong shape fails loudly | Accepted |
 | [0070](0070-workflow-actions-are-pinned-to-a-commit-and-zizmor-gates-the-workflows.md) | Workflow actions are pinned to a commit, and zizmor gates the workflows | Accepted |
 | [0071](0071-releases-carry-build-provenance-and-promote-refuses-a-file-the-release-workflows-did-not-build.md) | Releases carry build provenance, and promote refuses a file the release workflows did not build | Accepted |
+| [0072](0072-the-app-updates-itself-from-this-repositorys-releases-and-never-installs-without-a-click.md) | The app updates itself from this repository's releases and never installs without a click | Proposed |
