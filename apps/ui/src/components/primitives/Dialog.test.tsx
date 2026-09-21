@@ -197,4 +197,16 @@ describe('Dialog is a real modal', () => {
     expect(dialog.getAttribute('aria-describedby')).not.toBeNull();
     expect(within(dialog).getByText('This cannot be undone.').id).toBe(dialog.getAttribute('aria-describedby'));
   });
+
+  it('draws no action row when it has no actions, and keeps the body as the one focus target', async () => {
+    render(
+      <Dialog title="Rebuild" actions={null}>
+        <p>Working</p>
+      </Dialog>,
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Rebuild' });
+    expect(dialog.querySelector('[data-dialog-actions]')).toBeNull();
+    expect(within(dialog).queryAllByRole('button')).toHaveLength(0);
+    await waitFor(() => expect(dialog.querySelector('[tabindex="0"]')).toBe(document.activeElement));
+  });
 });
