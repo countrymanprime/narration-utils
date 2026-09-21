@@ -15,7 +15,7 @@ New features and bugfixes in this repo have a history of silently breaking unrel
 
 When fixing a visual/UI bug in `apps/ui`, do not consider it done from code review or a single manual screenshot alone. Before reporting a visual fix as complete:
 
-1. Run the Playwright visual suite for the affected page/state across all viewports in `apps/ui/tests/visual/viewports.ts` (desktop, small-desktop, tablet; there is no phone viewport, ADR 0037):
+1. Run the Playwright visual suite for the affected page/state across all viewports in `apps/ui/tests/visual/viewports.ts` (desktop, small-desktop, tablet; there is no phone viewport, ADR 0037, except that the Settings states are also captured at a 390 px `reflow` width, ADR 0061, so look at `reflow.png` for those):
    ```bash
    cd apps/ui
    npx playwright test tests/visual/app.spec.ts -g "<page>.*<state>"
@@ -27,4 +27,4 @@ Primitives are also covered by the component atlas: every one has a `<Name>.stor
 
 `apps/ui/screenshots/` is gitignored — these are scratch verification artifacts, not committed output.
 
-The suite is also a gate, not just a camera: each `{page, state, viewport}` is its own test (`<page> / <state> / <viewport>`), there are no retries, and a run fails on page errors, failed requests, sideways overflow at any viewport, blank screenshots, and two states that render identically unless the catalog row declares `sameAs`. CI runs it as the `ui-visual` job. If it goes red, fix the UI or the driver — don't add a `sameAs`/`undriven` escape without a real reason. How to reach a state lives in `apps/ui/tests/visual/app.drivers.ts`; the row's metadata (`undriven`, `sameAs`, `pointer`, `mask`) lives in `state-catalog.ts`.
+The suite is also a gate, not just a camera: each `{page, state, viewport}` is its own test (`<page> / <state> / <viewport>`), there are no retries, and a run fails on page errors, failed requests, sideways overflow at any viewport, a collapsed control (a text box or select under 64 px, [ADR 0060](docs/adr/0060-the-visual-suite-fails-a-collapsed-control-and-a-row-may-declare-one-narrow-on-purpose.md)), blank screenshots, and two states that render identically unless the catalog row declares `sameAs`. CI runs it as the `ui-visual` job. If it goes red, fix the UI or the driver — don't add a `sameAs`/`undriven`/`narrowControls` escape without a real reason. How to reach a state lives in `apps/ui/tests/visual/app.drivers.ts`; the row's metadata (`undriven`, `sameAs`, `narrowControls`, `extraViewports`, `pointer`, `mask`) lives in `state-catalog.ts`.

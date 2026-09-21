@@ -15,8 +15,8 @@ that was merely still rendering, and a 63 px overflow at 390 px, all only after 
 ## When to use this
 
 - After a change to `<ui-root>/src` that adds, removes, renames or visibly changes a page or state.
-- When `tests/visual` fails: `identical screenshots`, `sameAs no longer holds`, `blank screenshot`, overflow, or a
-  problem list from the app.
+- When `tests/visual` fails: `identical screenshots`, `sameAs no longer holds`, `blank screenshot`, overflow, `collapsed control`
+  (a text box or select under 64 px: fix the layout, or declare `narrowControls`), or a problem list from the app.
 - Not for single-component states (`ui-story-authoring`) or the capture rules themselves (`ui-capture-contract`).
 
 ## What to do
@@ -26,7 +26,11 @@ that was merely still rendering, and a 63 px overflow at 390 px, all only after 
    `global-setup.ts`, `lib/` and `helpers/` are vendored, so change them in the kit and `ui-atlas sync`. Optional
    fields: `undriven` (why there is no driver; the count may only shrink, `MAX_UNDRIVEN` in `visualSuite.test.ts`),
    `sameAs: { of: 'page/state', reason, viewports? }` (renders identically to another row, checked), `mask` (CSS
-   selectors of live regions painted over) and `pointer: 'keep'` (the shot needs the hover or focus the driver left).
+   selectors of live regions painted over), `pointer: 'keep'` (the shot needs the hover or focus the driver left),
+   `extraViewports: [{ name, width, height }]` (also capture this state at a width the whole suite does not pay for;
+   the name must not be one of `VIEWPORTS`, and the driver must be able to reach the state there, so `clickNav` opens
+   the drawer) and `narrowControls: { labels, reason, viewports? }` (text boxes and selects, by accessible name, that
+   may be narrower than the 64 px minimum on purpose; checked, it fails when the control stops being narrow).
 2. Add the driver to `APP_DRIVERS[page][state]` in `app.drivers.ts`: `async (page) => {...}` reaching the state
    through real interaction with accessible-name selectors. The runner has already done `goto('/')` and
    `settlePage`. Reuse `clickVisible`, `clickNav` and `freezeClock` (scaffolded in `app.drivers.ts`) and write repo-specific helpers

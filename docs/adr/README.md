@@ -82,3 +82,5 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0057](0057-a-running-job-that-cannot-be-cancelled-keeps-its-dialog-blocking-and-says-so.md) | A running job that cannot be cancelled keeps its dialog blocking and says so, and the progress bar respects reduced motion | Accepted |
 | [0058](0058-heading-has-a-level-and-panel-names-its-region-with-a-level-2-title.md) | Heading has a level, and Panel names its region with a level-2 title | Accepted |
 | [0059](0059-text-colours-meet-wcag-aa-with-two-text-levels-a-non-text-token-and-derived-on-tint-text.md) | Text colours meet WCAG AA: two text levels, a non-text token, and derived on-tint text | Accepted (amends ADR-0016) |
+| [0060](0060-the-visual-suite-fails-a-collapsed-control-and-a-row-may-declare-one-narrow-on-purpose.md) | The visual suite fails a collapsed control, and a row may declare one narrow on purpose | Accepted (amends ADR-0023) |
+| [0061](0061-settings-states-are-also-captured-at-a-390px-reflow-width.md) | Settings states are also captured at a 390 px reflow width | Proposed (amends ADR-0037) |

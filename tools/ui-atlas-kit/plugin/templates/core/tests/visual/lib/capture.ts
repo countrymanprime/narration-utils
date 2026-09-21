@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.3.1 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.3 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -9,7 +9,15 @@ import type { Driver } from '../app.drivers';
 import { runRecordPath, screenshotDir, settleFrames, settlePage } from '../helpers/settle';
 import type { Viewport } from '../viewports';
 import type { StateEntry } from './types';
-import { OVERFLOW_TOLERANCE_PX, SIGNATURE_HEIGHT, SIGNATURE_WIDTH, type CaptureRecord } from './validators';
+import {
+  checkControlWidths,
+  NON_TEXT_INPUT_TYPES,
+  OVERFLOW_TOLERANCE_PX,
+  SIGNATURE_HEIGHT,
+  SIGNATURE_WIDTH,
+  type CaptureRecord,
+  type ControlMeasurement,
+} from './validators';
 
 function watchForProblems(page: Page): string[] {
   const problems: string[] = [];
@@ -29,6 +37,42 @@ function watchForProblems(page: Page): string[] {
 
 async function measureHorizontalOverflow(page: Page): Promise<number> {
   return page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+}
+
+// Every visible text box, select and textarea, with its accessible name and rendered width. A control in the layout with
+// no width is still returned (that is the collapse being looked for); one that is not rendered (display: none, hidden) is not.
+async function measureTextControls(page: Page): Promise<ControlMeasurement[]> {
+  return page.evaluate((nonText) => {
+    const nameOf = (element: HTMLElement): string => {
+      const labelled = element.getAttribute('aria-labelledby');
+      const fromIds = labelled
+        ? labelled
+            .split(/\s+/)
+            .map((id) => document.getElementById(id)?.textContent?.trim() ?? '')
+            .join(' ')
+            .trim()
+        : '';
+      const labels = (element as HTMLInputElement).labels;
+      const fromLabel = labels && labels.length > 0 ? (labels[0]?.textContent?.trim() ?? '') : '';
+      return (
+        element.getAttribute('aria-label') ||
+        fromIds ||
+        fromLabel ||
+        element.getAttribute('placeholder') ||
+        element.getAttribute('name') ||
+        element.id ||
+        element.tagName.toLowerCase()
+      );
+    };
+    return Array.from(document.querySelectorAll<HTMLElement>('input, select, textarea'))
+      .filter((element) => !(element instanceof HTMLInputElement && nonText.includes(element.type)))
+      .filter((element) => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden')
+      .map((element) => ({
+        label: nameOf(element),
+        kind: element instanceof HTMLInputElement ? `input[${element.type}]` : element.tagName.toLowerCase(),
+        width: Math.round(element.getBoundingClientRect().width * 10) / 10,
+      }));
+  }, NON_TEXT_INPUT_TYPES);
 }
 
 async function maxChannelStdev(png: Buffer): Promise<number> {
@@ -71,6 +115,10 @@ export async function captureState(page: Page, entry: StateEntry, viewport: View
   if (entry.pointer !== 'keep') await page.mouse.move(viewport.width - 1, viewport.height - 1);
 
   const overflowPx = await measureHorizontalOverflow(page);
+  // A control squeezed to a sliver shrinks instead of overflowing, so it needs its own check. Reported after the shot is
+  // taken and recorded, so the picture of the failure exists.
+  const controls = await measureTextControls(page);
+  problems.push(...checkControlWidths(controls, entry.narrowControls, viewport.name));
   const png = await page.screenshot({
     path: `${screenshotDir(entry.page, entry.state)}/${viewport.name}.png`,
     animations: 'disabled',
@@ -86,6 +134,7 @@ export async function captureState(page: Page, entry: StateEntry, viewport: View
     signature: await signatureOf(png),
     maxChannelStdev: await maxChannelStdev(png),
     overflowPx,
+    narrowestControlPx: controls.length > 0 ? Math.min(...controls.map((control) => control.width)) : null,
   });
 
   expect(problems, 'the app reported problems while this state was captured').toEqual([]);

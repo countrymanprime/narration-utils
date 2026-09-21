@@ -1,8 +1,8 @@
-// ui-atlas-kit 0.3.1 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.3 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { RUN_DIR, screenshotDir } from './helpers/settle';
-import { findBlankCaptures, findStaleSameAs, findUndeclaredDuplicates, type CaptureRecord } from './lib/validators';
+import { findBlankCaptures, findNarrowestControl, findStaleSameAs, findUndeclaredDuplicates, type CaptureRecord } from './lib/validators';
 import { STATE_CATALOG } from './state-catalog';
 
 function readRecords(): CaptureRecord[] {
@@ -39,6 +39,10 @@ export default function globalSetup(): () => Promise<void> {
 
   return async () => {
     const records = readRecords();
+    // One line for calibrating the control-width minimum: the narrowest text control of the whole run, and where it was.
+    const narrowest = findNarrowestControl(records);
+    if (narrowest)
+      console.log(`narrowest text control this run: ${narrowest.narrowestControlPx}px in ${narrowest.page}/${narrowest.state} at ${narrowest.viewport}`);
     const problems = [
       ...findBlankCaptures(records).map((record) => `blank screenshot: ${record.page}/${record.state} at ${record.viewport}`),
       ...findUndeclaredDuplicates(records, STATE_CATALOG).map(
