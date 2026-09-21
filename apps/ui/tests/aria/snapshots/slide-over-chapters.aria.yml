@@ -1,0 +1,9 @@
+# The slide-over is a modal drawer: a named dialog, the only thing in <body>. The chapter list is matched partially.
+- /children: equal
+- dialog "Chapters & Search":
+  - heading "Chapters & Search" [level=3]
+  - button "Close"
+  - textbox "Search manuscript"
+  - button /^Chapter 1 /
+  - button /^Chapter 2 /
+  - button /^Chapter 3 /

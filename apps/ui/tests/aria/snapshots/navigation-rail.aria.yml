@@ -1,0 +1,11 @@
+# The icon-only rail (768 to 1399 px): a named complementary of buttons, the page list pinned exactly and in order.
+# It has no navigation landmark, unlike the sidebar and the drawer; that gap is tracked in #159, and this snapshot changes when it is fixed.
+- complementary "Primary navigation":
+  - /children: equal
+  - button "Home"
+  - button "Manuscript"
+  - button "Proofing"
+  - button "Story Bible"
+  - button "Teleprompter"
+  - button "Tracks"
+  - button "Settings"

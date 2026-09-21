@@ -1,0 +1,9 @@
+# The page behind a modal is aria-hidden, so <body> holds the alert dialog and nothing else.
+- /children: equal
+- alertdialog "Unsaved settings":
+  - heading "Unsaved settings" [level=2]
+  - button "Close"
+  - paragraph: /Save or discard changes/
+  - button "Cancel"
+  - button "Discard & continue"
+  - button "Save & continue"

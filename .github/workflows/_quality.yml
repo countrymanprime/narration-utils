@@ -57,6 +57,10 @@ jobs:
         uses: ./.github/actions/setup-playwright
       - if: steps.scope.outputs.affected == 'true'
         run: pnpm --dir apps/ui run screenshots
+      # The role trees of the dialogs, the slide-over and the navigation (tests/aria, ADR 0065): a second Playwright run on
+      # the same mock build, after the screenshots so a red visual run does not hide it and the reverse.
+      - if: steps.scope.outputs.affected == 'true' && !cancelled()
+        run: pnpm --dir apps/ui run aria
       - uses: actions/upload-artifact@v7
         if: always()
         with:

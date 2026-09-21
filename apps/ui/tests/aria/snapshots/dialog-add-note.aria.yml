@@ -1,0 +1,9 @@
+# A modal form dialog (role dialog, not alertdialog): its field is labelled and the page behind it is aria-hidden.
+- /children: equal
+- dialog "Add note":
+  - heading "Add note" [level=2]
+  - button "Close"
+  - paragraph: /Note for:/
+  - textbox "Note"
+  - button "Cancel"
+  - button "Add note" [disabled]

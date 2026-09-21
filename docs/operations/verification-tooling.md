@@ -12,6 +12,7 @@ What `pnpm check` and CI verify beyond "it lints and the example tests pass", ho
 | Import rules taken from ADRs: depguard, the script tracker's pytest | the Go lint and the teleprompter `test` target | with their targets |
 | UI import rules: dependency-cruiser (primitives are leaves, wailsjs only in `src/api`, Base UI only in primitives) and the `<mark>` scan | `narration-utils-ui:architecture`, and two Vitest files | `pnpm --dir apps/ui architecture` |
 | Playwright traces on a failing visual test | `ui-visual` | see [CI and releases](ci-and-releases.md) |
+| Aria snapshots: the role trees of the dialogs, the slide-over and the navigation | `ui-visual`, after the screenshots | `pnpm --dir apps/ui run aria` |
 
 ## Go lint
 
@@ -46,6 +47,17 @@ See [CI and releases](ci-and-releases.md#dead-code-check-knip). The short versio
 
 `apps/ui/.dependency-cruiser.mjs` has three rules over `src` and `tests`, run by the `architecture` target (about 2 s): `primitives-are-leaves` (a file in `components/primitives/`, a story or test too, imports nothing else under `components/`), `wails-bindings-only-in-api` (only `src/api/` imports `wailsjs/`) and `base-ui-only-in-primitives` (a second guard behind `baseUiBoundary.test.ts`, [ADR 0047](../adr/0047-the-ui-primitives-wrap-base-ui-and-app-code-never-imports-it.md)). A failure names the rule and says what to do instead. To add a rule, add an entry to the file and a deliberate violation to `src/architectureRules.test.ts`, which writes each bad fixture and expects exactly that rule to fire. The `<mark>` rule of [ADR 0016](../adr/0016-highlight-primitive.md) needs syntax, not imports, so it is `src/highlightBoundary.test.ts` (a scan with an allowlist that carries a reason per entry and fails when an entry is stale); the tooling's config-protection hook refuses edits to `eslint.config.js`, so no lint rule was added. [ADR 0062](../adr/0062-ui-import-rules-are-a-dependency-cruiser-config-and-a-mark-scan-that-name-their-adr.md) records the rules; `design-spec-guard` cites them and keeps only the judgement calls.
 
+## Aria snapshots
+
+`apps/ui/tests/aria/` compares role trees with `toMatchAriaSnapshot` ([ADR 0065](../adr/0065-aria-snapshots-pin-the-role-trees-of-the-dialogs-the-slide-over-and-the-navigation.md)), in a Playwright run of its own (`playwright.aria.config.ts`, the same mock build, about 9 s). It pins each modal from `<body>` (the page behind an open modal is `aria-hidden`, so `/children: equal` at the root pins the role, the name and that nothing else is in the tree; a canary test removes the hiding and expects the snapshot to stop matching), the navigation list in its three shapes, and the info icon and its tooltip. A snapshot is partial by default: what it lists must be there, in order, and extra nodes are fine.
+
+```bash
+pnpm --dir apps/ui run aria                       # run the aria suite
+pnpm --dir apps/ui run aria --update-snapshots    # rewrite the files with the full tree, then trim them and read the diff
+```
+
+Snapshots live in `tests/aria/snapshots/*.aria.yml`, hand-trimmed and commented. Reach a new state with a driver in `tests/visual/app.drivers.ts` (the visual suite needs it anyway) and add a test to `tests/aria/dialogs.spec.ts`. A red run uploads the traces with the visual suite's (`test-results/aria`).
+
 ## Not built, on purpose
 
-Chromatic, MSW, Playwright component testing, mutation testing as a gate, the Storybook Vitest addon, Vale, `eslint-plugin-jsx-a11y`, Python type checking and crash reporting were considered and left out (reasons in the [PRD](../prds/verification-and-code-health-tooling.prd.md#what-were-not-building), which stays until its last phase ships): Playwright aria snapshots wait for the Base UI primitives stack (now delivered).
+Chromatic, MSW, Playwright component testing, mutation testing as a gate, the Storybook Vitest addon, Vale, `eslint-plugin-jsx-a11y`, Python type checking and crash reporting were considered and left out (reasons in the [PRD](../prds/verification-and-code-health-tooling.prd.md#what-were-not-building), which stays until its last phase ships).

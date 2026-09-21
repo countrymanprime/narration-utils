@@ -44,6 +44,15 @@
         "command": "pnpm --dir {projectRoot} run screenshots"
       }
     },
+    "aria": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm --dir {projectRoot} run aria"
+      },
+      "metadata": {
+        "description": "The role trees of the dialogs, the slide-over and the navigation (tests/aria, ADR 0065). Run by the ui-visual CI job after the visual suite."
+      }
+    },
     "atlas": {
       "executor": "nx:run-commands",
       "options": {
