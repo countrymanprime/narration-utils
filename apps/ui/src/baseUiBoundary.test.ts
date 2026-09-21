@@ -12,8 +12,9 @@ import { describe, expect, test } from 'vitest';
 // that only mentions the package is fine.
 //
 // A test and not a lint rule because ADR 0046 already puts mechanical import rules in the Vitest and pytest runs, and a
-// test proves itself on the deliberately bad fixtures below. An ESLint `no-restricted-imports` block is a second guard
-// the verification tooling PRD plans (its phase 9).
+// test proves itself on the deliberately bad fixtures below. There is no ESLint `no-restricted-imports` block (the tooling's
+// config-protection hook refuses edits to eslint.config.js); the dependency-cruiser rule `base-ui-only-in-primitives` is the
+// second guard (ADR 0062).
 const BASE_UI = /^@base-ui(\/|$)/;
 
 function scriptKind(fileName: string): ts.ScriptKind {

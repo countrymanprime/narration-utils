@@ -1,4 +1,4 @@
-// Import-graph rules for apps/ui (verification tooling PRD phase 9, ADR 0062). Run over the real tree by
+// Import-graph rules for apps/ui (ADR 0062). Run over the real tree by
 // `pnpm --dir apps/ui architecture` (the Nx target of the same name, part of `pnpm check`); src/architectureRules.test.ts
 // proves each rule fires on a deliberate violation. A rule here is a mechanical import fact: which tokens and what looks
 // right stay with design-spec-guard. Rules that need syntax rather than imports live beside this file's siblings

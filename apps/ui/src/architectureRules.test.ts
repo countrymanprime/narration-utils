@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { cruise, type ICruiseOptions, type IRuleSetType } from 'dependency-cruiser';
 import { afterAll, describe, expect, test } from 'vitest';
 
-// Phase 9 of the verification tooling PRD (ADR 0062): the import-graph rules in `.dependency-cruiser.mjs` are run over
+// ADR 0062: the import-graph rules in `.dependency-cruiser.mjs` are run over
 // the real tree by `pnpm --dir apps/ui architecture` (an Nx target in the gate). This file proves that each rule fires:
 // it writes a tiny tree with deliberate violations and legal look-alikes, cruises it with the same rule set and the same
 // options, and expects exactly the named rules to be reported. A rule that can no longer see anything (a renamed folder, a
