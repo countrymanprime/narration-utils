@@ -1,48 +1,49 @@
 // @vitest-environment node
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { describe, expect, test } from 'vitest';
 
-// ADR 0059: `--text-faint` is retired as a text colour. Every place that drew text with it is being triaged by area into
-// muted text (it reads as text) or the non-text token (an icon, a status dot, a decorative glyph), and the token is deleted
-// with the last slice. This scan counts the mentions of it per file and pins the count, so it can only go down: a file with
-// more mentions than its entry fails, an entry higher than the real count fails (lower it, or delete it at zero, in the same
-// change), and a file with no entry may have none. Swapping one mention for another in the same file keeps the count, so
-// that part is the reviewer's.
+// ADR 0059: `--text-faint` is gone. It carried section labels, counts and helper text at 2.2 to 3.7:1, so every place that
+// drew something with it was triaged into muted text (it reads as text) or the non-text token (an icon, a status dot, a
+// decorative glyph), one area per slice, and the token was deleted from both theme blocks. A reference left or added
+// anywhere would draw nothing (an undefined custom property), so this scan fails on any mention in what the UI package
+// ships or tests, not only under src/.
 const RETIRED = '--text-faint';
 
-// Mentions per file, after the primitives, the app shell, the stylesheet (slice 2a), Home, the project picker, Settings and
-// Tracks (slice 2b), the Manuscript reader, chapter navigation and entity summary (slice 2c), and Proofing and the
-// Teleprompter (slice 2d) were migrated. The last slice deletes the Story Bible entries and the `styles.css` entry with the
-// token itself.
-const CEILING: Record<string, number> = {
-  'src/components/storybible/Guide.tsx': 4,
-  'src/components/storybible/GuideDetail.tsx': 9,
-  'src/styles.css': 2,
-};
-
 const uiRoot = join(__dirname, '..');
+const SCANNED = ['src', 'tests', '.storybook', 'index.html'];
+const SOURCE = /\.(tsx?|css|html|m?js|json|mdx?)$/;
 const NOT_UNDER_TEST = /\.test\.tsx?$/;
 
-function sourceFiles(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) return sourceFiles(path);
-    return /\.(tsx?|css)$/.test(entry.name) && !NOT_UNDER_TEST.test(entry.name) ? [path] : [];
-  });
+function filesUnder(path: string): string[] {
+  if (!existsSync(path)) return [];
+  if (!statSync(path).isDirectory()) return [path];
+  return readdirSync(path, { withFileTypes: true }).flatMap((entry) => filesUnder(join(path, entry.name)));
 }
 
 function mentions(): Record<string, number> {
   const counts: Record<string, number> = {};
-  for (const file of sourceFiles(join(uiRoot, 'src'))) {
-    const count = readFileSync(file, 'utf8').split(RETIRED).length - 1;
-    if (count > 0) counts[relative(uiRoot, file).split(sep).join('/')] = count;
+  for (const root of SCANNED) {
+    for (const file of filesUnder(join(uiRoot, root))) {
+      if (!SOURCE.test(file) || NOT_UNDER_TEST.test(file)) continue;
+      const count = readFileSync(file, 'utf8').split(RETIRED).length - 1;
+      if (count > 0) counts[relative(uiRoot, file).split(sep).join('/')] = count;
+    }
   }
   return counts;
 }
 
 describe('the retired text token (ADR 0059)', () => {
-  test('mentions only go down: lower the ceiling with the file you migrated, and add none', () => {
-    expect(mentions()).toEqual(CEILING);
+  test('nothing mentions it: text is --text-muted, an icon or a dot is --non-text', () => {
+    expect(mentions()).toEqual({});
+  });
+
+  test('scans the places a reference could hide', () => {
+    // The scan must find files: an empty walk (a wrong root) would pass the test above for the wrong reason.
+    const scanned = SCANNED.flatMap((root) => filesUnder(join(uiRoot, root))).filter((file) => SOURCE.test(file));
+    expect(scanned.some((file) => file.endsWith('styles.css'))).toBe(true);
+    expect(scanned.some((file) => file.endsWith('index.html'))).toBe(true);
+    expect(scanned.some((file) => file.includes(`${sep}.storybook${sep}`))).toBe(true);
+    expect(scanned.some((file) => file.includes(`${sep}tests${sep}visual${sep}`))).toBe(true);
   });
 });

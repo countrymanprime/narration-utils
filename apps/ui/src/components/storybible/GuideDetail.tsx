@@ -250,7 +250,7 @@ export function GuideDetail({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="mr-1 font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
+          <span className="mr-1 font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
             {entity.occurrence_count} occurrences
           </span>
           {!isNewDraft && (
@@ -364,7 +364,7 @@ export function GuideDetail({
                 </IconButton>
               </TooltipTarget>
             </div>
-            <p className="mt-1 text-xs" style={{ color: 'var(--text-faint)' }}>
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
               Source: {entity.pronunciation.source} · Confidence: {entity.pronunciation.confidence}
             </p>
           </div>
@@ -479,14 +479,14 @@ export function GuideDetail({
                       <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(match.category)] }} />
                       <span className="min-w-0 flex-1">
                         <strong className="text-sm">{match.canonical_name}</strong>
-                        <span className="block text-xs" style={{ color: 'var(--text-faint)' }}>
+                        <span className="block text-xs" style={{ color: 'var(--text-muted)' }}>
                           {categoryLabel(match.category)} · {match.occurrence_count} occurrence{match.occurrence_count === 1 ? '' : 's'}
                         </span>
                       </span>
                     </button>
                   ))
                 ) : (
-                  <div className="p-3 text-sm" style={{ color: 'var(--text-faint)' }}>
+                  <div className="p-3 text-sm" style={{ color: 'var(--text-muted)' }}>
                     No matching Story Bible entries.
                   </div>
                 )}
@@ -539,7 +539,7 @@ export function GuideDetail({
             />
             <div>
               <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">Voice samples</div>
-              <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 No samples yet.
               </p>
               <Button
@@ -607,7 +607,7 @@ export function GuideDetail({
               ))}
               {entity.relationships.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-sm" style={{ color: 'var(--text-faint)' }}>
+                  <TableCell colSpan={3} className="text-sm" style={{ color: 'var(--text-muted)' }}>
                     No related entries yet.
                   </TableCell>
                 </TableRow>
@@ -654,19 +654,19 @@ export function GuideDetail({
         <div className="border-t pt-4" style={{ borderColor: 'var(--border)' }}>
           <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">
             Evidence{' '}
-            <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
+            <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
               ({evidence.length} shown)
             </span>
           </div>
           {evidence.length === 0 ? (
-            <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
               No occurrences found yet.
             </p>
           ) : (
             evidence.map((item, index) => (
               <div key={index} className="flex items-center justify-between gap-3 border-b py-3 last:border-0" style={{ borderColor: 'var(--border)' }}>
                 <div className="min-w-0 flex-1">
-                  <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
+                  <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
                     {item.chapter}
                     {item.alias ? (
                       <>

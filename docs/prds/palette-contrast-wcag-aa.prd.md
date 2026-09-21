@@ -159,7 +159,7 @@ Phases 1-4 and 6. Phase 5 (status text) is Should. Phase 2 is split by area into
 | 2b | Text ramp: Home, project picker, Settings, Tracks | Triage and migrate `--text-faint` in those pages | complete | No | 2a | - |
 | 2c | Text ramp: Manuscript | Triage and migrate `--text-faint` in the reader, chapter navigation and entity summary | complete | No | 2b | - |
 | 2d | Text ramp: Proofing, Teleprompter | Triage and migrate `--text-faint` in those pages | complete | No | 2c | - |
-| 2e | Text ramp: Story Bible, retire the token | Triage and migrate `--text-faint` in the Story Bible; delete `--text-faint` from both theme blocks | pending | No | 2d | - |
+| 2e | Text ramp: Story Bible, retire the token | Triage and migrate `--text-faint` in the Story Bible; delete `--text-faint` from both theme blocks | complete | No | 2d | - |
 | 3 | Active nav on tint | `--accent-strong` text in `NavButton.tsx`; delete the `NavButton` debt entry | pending | No | 2a | - |
 | 4 | Highlight, badges, dark category tokens | Derived `--<kind>-text` tokens, dark overrides for lore/item/event/note, `Highlight.tsx`, `EntitySummary.tsx` badges; delete the `Highlight` debt entry | pending | No | 2e | - |
 | 5 | Status text | `--warn-text` and its siblings for `Settings.tsx`, `Results.tsx`, `InlineDiffRow.tsx`, the danger and review text on soft fills, and the Tailwind `text-red-400` | pending | No | 4 | - |

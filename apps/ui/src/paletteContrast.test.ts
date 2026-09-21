@@ -47,7 +47,6 @@ const KINDS = ['character', 'place', 'org', 'review', 'lore', 'item', 'event'] a
 const PAIRS: PairSpec[] = [
   text('text', 'body text', 'var(--text)', SURFACES),
   text('text-muted', 'secondary text, labels, helper text', 'var(--text-muted)', SURFACES),
-  text('text-faint', 'section labels, counts, placeholders (Option B retires this as text)', 'var(--text-faint)', SURFACES),
   mark('non-text', 'icons, status dots, the info icon border and decorative glyphs: the one colour for what is seen and not read', 'var(--non-text)', SURFACES),
   text('toast', 'Toast: page colour on the text colour', 'var(--bg)', ['surface'], 'var(--text)'),
   text('on-accent', 'primary button and logo: accent-contrast on accent', 'var(--accent-contrast)', ['surface'], 'var(--accent)'),
@@ -113,7 +112,6 @@ const lightOnly: Theme[] = ['light'];
 const known = (fixedBy: string, themes: Theme[], ids: string[]): Record<string, KnownFailure> => Object.fromEntries(ids.map((id) => [id, { themes, fixedBy }]));
 
 const KNOWN_FAILURES: Record<string, KnownFailure> = {
-  ...known('phase 2 (--text-faint is retired as text)', both, ['text-faint']),
   ...known('phase 3 (active navigation)', lightOnly, ['nav-active']),
   ...known('phase 4 (derived on-tint text and the dark category tokens)', both, [
     ...KINDS.map((kind) => `highlight-${kind}`),
@@ -134,7 +132,7 @@ const KNOWN_FAILURES: Record<string, KnownFailure> = {
   ]),
 };
 // Counted per pair and theme: `text-muted` failing in dark as well would be a second failure, not the same one.
-const MAX_KNOWN_FAILURES = 36;
+const MAX_KNOWN_FAILURES = 34;
 
 interface Measured {
   ratio: number;
@@ -263,13 +261,14 @@ const tokensUsedAsText = (): Set<string> => new Set([...textColourUses().values(
 // listed here, per file, with what it draws: a label or a count that lands on it would read at 3:1 and belongs on
 // --text-muted, so a new use fails this list until someone adds it with a reason. All mentions count, not only a `color`
 // (a conditional, a fallback or a colour map slips past a pattern for text colours). Whether a listed use really is an icon,
-// a dot or a decorative glyph is the reviewer's call, as it is for the pins in retiredTokens.test.ts.
+// a dot or a decorative glyph is the reviewer's call: the test only makes every use visible.
 const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
   'components/layout/AppShell.tsx': { count: 1, what: 'the folder icon beside the project name' },
   'components/manuscript/ChapterNav.tsx': { count: 1, what: 'the Not Started status colour: a dot and a meter segment, never text' },
   'components/manuscript/Manuscript.tsx': { count: 1, what: 'the idle chapter bookmark icon' },
   'components/primitives/Tooltip.tsx': { count: 1, what: 'the border of the info icon' },
   'components/proofing/Transcript.tsx': { count: 2, what: 'the arrows between the Setup, Running and Results steps' },
+  'components/storybible/Guide.tsx': { count: 1, what: 'the lock icon beside a locked entry' },
   'components/tracks/TracksPage.tsx': { count: 1, what: 'the dot of a track that has no colour' },
 };
 
