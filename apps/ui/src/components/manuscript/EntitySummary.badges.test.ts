@@ -15,16 +15,27 @@ const TOKEN: Record<string, string> = {
   Event: 'event',
 };
 
+// The fill each badge sits on, which is what the palette guard measures the text against: a soft token for the four kinds
+// that have one, an 18% mix of the kind colour into the surface for the other three.
+const FILL: Record<string, string> = {
+  Character: 'var(--character-soft)',
+  Place: 'var(--place-soft)',
+  Organization: 'var(--org-soft)',
+  Review: 'var(--review-soft)',
+  Lore: 'color-mix(in srgb, var(--lore) 18%, var(--surface))',
+  Item: 'color-mix(in srgb, var(--item) 18%, var(--surface))',
+  Event: 'color-mix(in srgb, var(--event) 18%, var(--surface))',
+};
 describe('entity badge colours (ADR 0059)', () => {
   it('has a badge for every kind and no other', () => {
     expect(Object.keys(BADGE_STYLE).sort()).toEqual(Object.keys(TOKEN).sort());
   });
 
   for (const [kind, token] of Object.entries(TOKEN)) {
-    it(`draws a ${kind} badge in --${token}-text on the soft fill of --${token}`, () => {
+    it(`draws a ${kind} badge in --${token}-text on ${FILL[kind]}`, () => {
       const style = BADGE_STYLE[kind];
       expect(style.color).toBe(`var(--${token}-text)`);
-      expect(String(style.background)).toContain(`var(--${token}`);
+      expect(style.background).toBe(FILL[kind]);
     });
   }
 });

@@ -212,11 +212,12 @@ describe('the ratchet of known failures', () => {
   });
 });
 
-describe('a highlight stacked on another highlight stays at AA', () => {
+describe('a highlight nested once in another highlight stays at AA', () => {
   // ParagraphView nests a mark inside a mark where annotations overlap (an alias inside a longer name, an entity inside a
   // note), so the inner text sits on two tints. Two 20% tints of one colour composite to 36%; an inner kind over any other
-  // outer kind is a mix of two colours. The single-tint pairs above do not see this: at a 50% mix the derived text was
-  // 4.41 to 4.46:1 for Character in Character and Review in Lore in the dark theme, which axe found in the reader.
+  // outer kind is a mix of two colours. The single-tint pairs above do not see this: at a 50% mix the derived text was about
+  // 4.4:1 (4.37 to 4.50) in the dark theme, which axe found in the reader. This covers two stacked tints; a third (an entity
+  // with two aliases on one word) or a "Go to line" tint under the row is not covered and measures lower (issue #139).
   for (const theme of THEME_NAMES) {
     it(`an entity's text on its own tint over any other highlight's tint is at least ${TEXT_MIN}:1 (${theme})`, () => {
       const failures: string[] = [];
@@ -225,7 +226,8 @@ describe('a highlight stacked on another highlight stays at AA', () => {
           for (const over of READING_SURFACES) {
             const bg = `color-mix(in srgb, var(--${inner}) 20%, ${tint(outer, 20)})`;
             const ratio = resolveContrast(THEMES[theme], { fg: `var(--${inner}-text)`, bg, over });
-            if (ratio < TEXT_MIN) failures.push(`${inner} in ${outer} over --${over}: ${ratio.toFixed(2)}:1`);
+            // `!(ratio >= min)` fails a ratio that is not a number instead of letting it pass the comparison.
+            if (!(ratio >= TEXT_MIN)) failures.push(`${inner} in ${outer} over --${over}: ${ratio.toFixed(2)}:1`);
           }
         }
       }

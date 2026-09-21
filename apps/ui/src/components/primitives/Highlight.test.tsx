@@ -21,12 +21,12 @@ const ENTITY_TOKEN: Record<string, string> = {
 
 describe('Highlight colours (ADR 0059)', () => {
   for (const [kind, token] of Object.entries(ENTITY_TOKEN)) {
-    it(`draws a ${kind} in --${token}-text and marks it with the pure --${token}`, () => {
+    it(`draws a ${kind} in --${token}-text on a 20% tint and 1.5px underline of the pure --${token}`, () => {
       render(<Highlight kind={kind as HighlightKind}>word</Highlight>);
       const mark = screen.getByText('word');
       expect(mark.style.color).toBe(`var(--${token}-text)`);
-      expect(mark.getAttribute('style')).toContain(`var(--${token})`);
-      expect(mark.getAttribute('style')).not.toContain(`color: var(--${token});`);
+      expect(mark.style.background).toBe(`color-mix(in srgb, var(--${token}) 20%, transparent)`);
+      expect(mark.style.boxShadow).toBe(`inset 0 -1.5px 0 var(--${token})`);
     });
   }
 
@@ -34,7 +34,8 @@ describe('Highlight colours (ADR 0059)', () => {
     render(<Highlight kind="Note">word</Highlight>);
     const mark = screen.getByText('word');
     expect(mark.style.color).toBe('');
-    expect(mark.getAttribute('style')).toContain('var(--note)');
+    expect(mark.style.background).toBe('color-mix(in srgb, var(--note) 20%, transparent)');
+    expect(mark.style.boxShadow).toBe('inset 0 -1.5px 0 var(--note)');
   });
 
   it('draws the Teleprompter cursor as an accent fill in the accent contrast colour', () => {
