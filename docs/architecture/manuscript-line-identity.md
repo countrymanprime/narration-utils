@@ -1,6 +1,6 @@
 # Manuscript line identity in the REAPER project
 
-**Status: Lua commands implemented; not yet driven by the Go host or UI, and not yet verified inside REAPER.** The manual checklist below has not been run. Nothing in the app calls these commands yet.
+**Status: Lua commands implemented, tested in the harness and verified in a scripted REAPER 7.80 run; not yet driven by the Go host or UI.** Nothing in the app calls these commands yet. Two steps of the checklist below need the owner (a real paste of a stamped item, and Transcript Compare through the app); the rest is recorded in the [verification record](#verification-record).
 
 ## Why
 
@@ -22,11 +22,30 @@ Behaviour that is deliberate:
 - Items are found by GUID only. A GUID that no longer resolves is reported as stale and no neighbouring item is used instead.
 - An item that already carries a different line ID is a conflict and is left alone unless the narrator explicitly overwrites.
 - Each write command is one undo step, and nothing is written (and no undo point created) when there is nothing to change. Re-running with the same payload is a no-op.
-- `read_line_ids` reads through the REAPER API, so the host does not depend on how the `.rpp` file happens to serialise extension data. That format is still unverified (no project on the development machine uses item-level `P_EXT`).
+- `read_line_ids` reads through the REAPER API, so the host does not depend on how the `.rpp` file happens to serialise extension data. That format is now known (spike S0: an `<EXTI` block per item, see [the result](../research/reaper-spike-s0-item-extension-data.md)) and a static read is possible later.
+
+## Verification record
+
+The commands' logic is pinned by the bridge harness (`integrations/reaper/tests`, [the REAPER bridge](reaper-bridge.md#the-harness)); REAPER's own behaviour was checked on 2026-09-21 in REAPER 7.80/x64 by `integrations/reaper/spikes/checklist.lua`, which loads the real bridge in an isolated REAPER (`-cfgfile` in a temp folder, a scratch project, no audio device) and drives it through the file protocol. 37 checks, 0 failures.
+
+| Step | How verified | Result |
+| --- | --- | --- |
+| 1 Scratch project | Scripted | A saved scratch project with three audio items |
+| 2 Stamp | Scripted | `LINES_STAMPED\|t1\|1\|0\|0\|0`; the undo entry is named as documented; Undo removes the stamp and Redo restores it |
+| 3 Idempotent | Scripted | `...\|0\|1\|0\|0`, no new undo entry |
+| 4 Conflict | Scripted | `LINES_CONFLICT` and the old ID kept; overwrite `1` changes it |
+| 5 Stale | Scripted | `LINES_STALE`, no item changed |
+| 6 Survives editing | Scripted, partly | Split: both halves keep the stamp (the right half has a new GUID); duplicate keeps it; a state-chunk copy keeps it. **A real paste of items was not exercised** (clipboard actions do nothing headless): owner |
+| 7 Save and reload | Scripted | The same items and text after reopening; the `.rpp` holds an `<EXTI` block per stamped item |
+| 8 Untouched fields | Scripted | Item notes and take names unchanged |
+| 9 Regions | Scripted | One coloured region; again `...\|0\|1\|0`; a malformed row counted invalid |
+| 10 Transcript Compare | Scripted for the bridge, **not in the app** | `prepare_compare`, `inspect_compare_results`, `export_compare_markers` (with its undo entry) and `jump_to_compare_marker` work against a hand-made results file. Starting a comparison from the app, with the launcher, is for the owner |
+
+The run also found that `reaper.EnumerateFiles` caches the commands folder listing; the bridge now clears it on every tick (see [the REAPER bridge](reaper-bridge.md)).
 
 ## Manual verification checklist
 
-`integrations/reaper` has no automated tests, so run this in REAPER before relying on the commands. The session folder is `<REAPER resource path>/NarrationUtils/sessions/hub_<id>/`; start it by running `NarrationUtils_Launcher.lua`. To drive a command by hand, save a one-line file such as `00000001.cmd` in that folder's `commands/` directory and read `events.log` beside it.
+Run steps 6 (the paste part) and 10 by hand, in REAPER with the app open; the rest is recorded above. The session folder is `<REAPER resource path>/NarrationUtils/sessions/hub_<id>/`; start it by running `NarrationUtils_Launcher.lua`. To drive a command by hand, save a one-line file such as `00000001.cmd` in that folder's `commands/` directory and read `events.log` beside it.
 
 1. Use a scratch project with a few audio items. Note one item's GUID (right-click item, Copy item GUID, or read it from the `.rpp`).
 2. **Stamp.** Payload `{GUID}|line-000001|First line.`, command `1|stamp_item_lines|t1|<payload path>|0`. Expect `LINES_STAMPED|t1|1|0|0|0`, an Edit menu entry "Narration Utils: stamp manuscript line IDs", and Undo removing it.
@@ -44,5 +63,5 @@ Behaviour that is deliberate:
 1. **Go client.** Add bridge methods and payload writers in `apps/desktop/internal`, with tests that mirror `transcript/service_test.go`, a subscription for the `LINES_*`, `REGIONS_CREATED` and `ERROR` events of its own runs (see [the REAPER bridge](reaper-bridge.md#reading-events-in-the-host-the-fan-out)), and a UI trigger. Decide where line IDs come from: the natural source is the item-to-manuscript-span alignment Transcript Compare already computes.
 2. **Chapter regions from the manuscript.** Regions need project-time bounds; derive them from the `tracks` package's item extents per chapter track.
 3. **Static read (optional).** Spike S0 checked how item `P_EXT` appears in a REAPER-saved `.rpp` ([the result](../research/reaper-spike-s0-item-extension-data.md)): an `<EXTI` block of `key value` lines per item, stable across save, reload, split and duplicate, so `tracks` could read line IDs without a running REAPER (a chunk reader that handles the four value forms, and `IGUID` for the item GUID). The fixtures are under `apps/desktop/internal/tracks/testdata/reaper/`. Until then use `read_line_ids`.
-4. **Lua test harness.** A stub `reaper` table with a Lua interpreter in CI, so these commands and the existing ones stop depending on manual checks.
+4. **Lua test harness.** Done ([ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md)): the commands above have harness tests, and new ones come with theirs.
 5. **Consumers.** Timeline-anchored live flags and the punch-and-roll navigator (research items 1 and 2) now that the live ASR sidecar and its Go event relay are on main.

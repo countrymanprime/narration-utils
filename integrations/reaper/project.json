@@ -9,8 +9,8 @@
       "options": {
         "commands": [
           "stylua --check {projectRoot}",
-          "node scripts/quality.mjs python -m ruff format --check {projectRoot}/tests",
-          "node scripts/quality.mjs python -m ruff check {projectRoot}/tests"
+          "node scripts/quality.mjs python -m ruff format --check {projectRoot}/tests {projectRoot}/spikes",
+          "node scripts/quality.mjs python -m ruff check {projectRoot}/tests {projectRoot}/spikes"
         ],
         "parallel": false
       }

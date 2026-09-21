@@ -1,13 +1,13 @@
 # REAPER spike S0: item extension data in a saved project
 
-**Status: done, 2026-09-21.** Spike S0 of the [REAPER automation research](reaper-automation-surface.md) (section 9) and phase 5 of the follow-through PRD. It ran in a real REAPER 7.80 on the development machine under owner decision D3 (isolated resource directory, copies only). It also ran the scripted part of the line identity manual checklist against the real bridge, and produced the REAPER-saved fixture pack the later PRDs read.
+**Status: done, 2026-09-21. Everything below was observed in REAPER 7.80 on Windows; a different version may differ.** Spike S0 of the [REAPER automation research](reaper-automation-surface.md) (section 9) and phase 5 of the follow-through PRD. It ran in a real REAPER 7.80 on the development machine under owner decision D3 (isolated resource directory, copies only). It also ran the scripted part of the line identity manual checklist against the real bridge, and produced the REAPER-saved fixture pack the later PRDs read.
 
 ## What it settles
 
 | Question | Answer | Unblocks |
 | --- | --- | --- |
 | Is `P_EXT` on an item stored in the `.rpp`, and does it survive save and reload? | Yes. Item level is an `<EXTI` block, take level an `<EXT` block, inside the item chunk. Values round-trip through save, reload and `read_line_ids`, including quotes, backslashes, non-ASCII and a 3,000-character value. | [ADR 0026](../adr/0026-manuscript-line-identity-in-item-extension-data.md) is confirmed by evidence; PRD phases 6 and 7 (line identity) |
-| Can a reader parse it without REAPER? | Yes, and it is stable: one `key value` line per key, with four value forms (below). | PRD Open Question 9 answered: phase 14 (static read of line IDs) is feasible; it needs a real chunk reader, not a regex |
+| Can a reader parse it without REAPER? | Yes: one `key value` line per key, with four value forms (below), the same across every save, reload, split and duplicate tried in 7.80. | PRD Open Question 9 answered: phase 14 (static read of line IDs) is feasible; it needs a real chunk reader, not a regex |
 | What do split, duplicate, copy and undo do to a stamp? | Split: both halves keep it (the right half gets a new GUID). Duplicate: the copy keeps it. A state-chunk copy (what a paste serializes) keeps it. Undo removes the stamp exactly and redo restores it. | Line identity survives the edits a narrator makes |
 | Does stamping disturb the rest of a project? | No. On a copy of a real 41-item project, stamping five items added exactly five `<EXTI` blocks (21 lines) and changed the header save time; nothing else. | The "no unreviewed edits" success metric |
 | Does the bridge work in a real REAPER? | Yes after one fix to the bridge found here (below). All 37 scripted checks pass. | PRD phases 1, 3 and 4 evidence |
@@ -15,10 +15,10 @@
 
 ## Method
 
-- **Machine and build.** Windows 11, REAPER 7.80/x64 rev 9d9fa7 (13 Sep 2026), an evaluation license, no audio hardware used. Lua 5.4 inside REAPER, and `debug.getinfo` works there.
+- **Machine and build.** Windows 11, REAPER 7.80/x64 rev 9d9fa7 (13 Sep 2026), an evaluation license. **REAPER opened the default Windows audio device on start** (WaveOut, Microsoft Sound Mapper, two in, two out, 44.1 kHz) even though the first-run "select an audio device" prompt was answered No: nothing was recorded, armed or played, but the device was open while the scripts ran (the runs before the guard below). Every script now calls `reaper.Audio_Quit()` first and asserts `Audio_IsRunning() == 0`; the last runs passed that guard. Lua 5.4 inside REAPER, and `debug.getinfo` works there.
 - **Isolation.** `reaper.exe -cfgfile <temp>\reaper.ini -nosplash -newinst -noactivate [<copy of a .rpp>] <script.lua>`. The resource directory is a temp folder, so the owner's settings, scripts and projects are not read or written. Two first-run dialogs appear in a fresh resource directory and the driver answers them: "select an audio device" (No) and the evaluation notice (closed). A `-ignoreerrors` flag is available for projects with missing media.
 - **The owner's project.** `Challenges_001.rpp` was **copied** (the `.rpp` only, 103,872 bytes) to a temp folder and only the copy was opened. The original's SHA-256 is unchanged (`998b2d14...`) and no file in its folder is newer than the copy. Because only the `.rpp` was copied, its 41 items had offline media, which does not matter for structure.
-- **Scripts.** [`integrations/reaper/spikes/`](../../integrations/reaper/spikes/) (README there): `probe.lua`, `enumcheck.lua`, `build_cases.lua`, `checklist.lua`, `real_project.lua`, and the driver `run-reaper.ps1`. The fixtures use synthetic 3-second tones as media.
+- **Scripts.** [`integrations/reaper/spikes/`](../../integrations/reaper/spikes/) (README there): `probe.lua`, `enumcheck.lua`, `build_cases.lua`, `checklist.lua`, `real_project.lua`, and the driver `run-reaper.ps1`. The fixtures use synthetic 3-second tones as media. The driver refuses a `-Cfg`, `-Out` or `-Project` outside the temp folder or under a `REAPER Media` folder, quotes every argument, and each script asserts at start that REAPER's resource path is the scratch `-Cfg` folder, closes the audio device and asserts it is closed. **Recorded outputs** (paths removed) are in `integrations/reaper/spikes/results/`: `build-cases-report.txt`, `checklist-report.txt` (the run with the guards), `real-project-summary.txt` and `audio-probe.txt` (the default audio device REAPER opens on start).
 
 ## Extension data in the saved file
 
@@ -72,7 +72,7 @@ The harness fake ([ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-u
 | `reaper.EnumerateFiles` | A live listing | **Cached** until `EnumerateFiles(dir, -1)`: a file created after the first call is invisible and a removed one stays listed for seconds | A **bridge bug**: after every command the bridge reported `ERROR||Unsupported hub protocol` for the ghost listing, and new commands could wait. Fixed in the event fan-out PR (the bridge clears the listing and skips a vanished file); the fake now caches |
 | Marker and region numbers | One shared counter | Separate: marker 1 and region 1 coexist | Fake fixed |
 | `SetTakeMarker` | Appended, returned the last index | Keeps take markers ordered by source position and returns the marker's final index | Fake fixed |
-| `Undo_OnStateChange` | Always records | Recorded nothing after an API track rename (the rename was not tracked), while `Undo_BeginBlock2`/`Undo_EndBlock2` with flags `-1` did, and `Undo_OnStateChange` after `SetTakeMarker` (the bridge's own use) did | Noted, not modelled: the bridge's undo entries are verified in the scripted run |
+| Undo points | Every `Undo_EndBlock2` and `Undo_OnStateChange` records | Both record the named point in the cases the bridge uses (`Undo_EndBlock2` with flags `-1` after stamping; `Undo_OnStateChange` after `SetTakeMarker`); whether REAPER skips a point when nothing changed was not established | Not modelled further; the bridge's undo entries are verified in the scripted run (checklist steps 2, 3 and 10) |
 | Media path stored | n/a | `PCM_Source_CreateFromFile('media/x.wav')` in a saved project stores a relative path; an absolute source path stays absolute | Fixture README |
 
 `tests/fake_fidelity_test.lua` pins the fake to these observations.

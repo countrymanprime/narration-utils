@@ -7,6 +7,7 @@ The unbuilt, high-value items from `docs/research/reaper-automation-surface.md` 
 [`implementation-plan.md`](implementation-plan.md) section 1 (2026-09-20) overrides the parts of this PRD it contradicts. The PRD is delivered in two stacks: **part 1, phases 1 to 5 (stack S09)** and the rest (stack S22). Where the text below disagrees with this section, this section wins.
 
 - **D2:** the Lua harness (phase 3) and a behavior-preserving command registry (phase 4) are unconditional and go first. Open Question 1 is answered (b). "Manual checklist for now" and the Decisions Log row that says so are superseded: the manual REAPER sign-off remains only for REAPER API semantics a fake cannot prove ([ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md)).
+- **Delivered (stack S09, 2026-09-21):** phases 2, 3, 4 and 5 are `complete`, and phase 1 is `partial` (see its row). Part 1 also fixed a bug the harness could not have found: a scripted run in a real REAPER showed that `EnumerateFiles` caches the commands folder listing, which the bridge now clears ([ADR 0068](../adr/0068-bridge-events-fan-out-to-subscribers-by-tag-and-run-and-every-error-names-its-run.md), [S0 result](../research/reaper-spike-s0-item-extension-data.md)). Phases 6 onward stay queued for stack S22; the spike scripts in `integrations/reaper/spikes/` and the fixture pack are the starting point for its spikes.
 - **Order inside part 1:** 3 (harness), 4 (registry), then phase 2 (the Go event fan-out; its Lua part, the run ID on `ERROR` events, comes after the registry), then 5 (spike S0 and the fixture pack), then 1 (the checklist results). The Go fan-out does not depend on Lua.
 - **D3:** all six REAPER spikes are approved on copies of `Challenges_001.rpp` in a temp directory with an isolated `-cfgfile`; nothing in the owner's REAPER folder is modified. S0, S5 and S7 run unattended; S1, S3 and S4 need audio hardware and the owner and stay `pending`. "Requires user approval to launch REAPER" below is answered by D3.
 - **D18:** new Go logic directories hold the 80% floor and existing ones ratchet ([ADR 0043](../adr/0043-coverage-is-a-ratchet-on-logic-directories-not-a-blanket-80-percent.md)); Lua is held by the harness and its mutation checks. **D17:** any new dependency is checked for AGPL compatibility (`lupa` and Lua are MIT). **D19:** the first real audio corpus is the `Challenges_001` media. **D22:** every open question not answered above takes the recommendation stated with it.
@@ -199,7 +200,7 @@ Every spike phase below launches REAPER. D3 approves that on copies of `Challeng
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Run the manual checklist | User runs the 10-step checklist in their own REAPER; results and REAPER version recorded in `manuscript-line-identity.md`; status line updated. No code | pending | 2, 3 | - | - |
+| 1 | Run the manual checklist | The checklist is run in REAPER and the results and REAPER version recorded in `manuscript-line-identity.md`; status line updated. No code. Scripted in an isolated REAPER 7.80 for every step that does not need the owner; the owner runs the rest | partial | 2, 3 | - | [verification record](../architecture/manuscript-line-identity.md#verification-record) |
 | 2 | Bridge event fan-out | Go: one event reader, per-consumer routing; transcript service migrated; tests. Then, after phase 4, run IDs on `ERROR` events in Lua | complete | 1, 3, 5 | Go part: none; Lua part: 4 | [ADR 0068](../adr/0068-bridge-events-fan-out-to-subscribers-by-tag-and-run-and-every-error-names-its-run.md), [reaper-bridge](../architecture/reaper-bridge.md) |
 | 3 | Lua stub-`reaper` harness (D2) | Lua 5.4 in CI (Linux and Windows), fake `reaper`, file-protocol driver, characterization tests for every existing command and mutation checks; no bridge source change | complete | 1, 2, 5 | - | [ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md), [reaper-bridge](../architecture/reaper-bridge.md) |
 | 4 | Lua command registry (D2) | Behavior-preserving refactor of the dispatch chain; new-command file convention; `verify-installable.mjs` list | complete | 5 | 3 | [ADR 0067](../adr/0067-bridge-commands-are-registered-by-name-and-each-feature-lives-in-its-own-lua-file.md), [reaper-bridge](../architecture/reaper-bridge.md) |
@@ -230,7 +231,7 @@ Every spike phase below launches REAPER. D3 approves that on copies of `Challeng
 **Phase 1 - Run the manual checklist**
 - **Goal**: replace "implemented, unverified" with a recorded result.
 - **Scope**: the user runs steps 1 to 10 in `manuscript-line-identity.md` in their REAPER (a normal session, not a headless spike); PR updates the doc's status, records REAPER version, pass or fail per step and what split and copy did to the stamp.
-- **Success signal**: a written pass or a filed list of defects; the doc status line no longer says "not yet verified".
+- **Success signal**: a written pass or a filed list of defects; the doc status line no longer says "not yet verified". *Evidence: `integrations/reaper/spikes/checklist.lua` ran the checklist against the real bridge in REAPER 7.80 (37 checks, 0 failures; it found and led to the fix of a cached `EnumerateFiles` listing) and the doc has a verification record. Still for the owner: a real paste of a stamped item (steps 6) and Transcript Compare through the app with the launcher (step 10). The phase stays `partial` until the owner records those two.*
 
 **Phase 2 - Bridge event fan-out**
 - **Goal**: two consumers can use one bridge without losing events.
@@ -398,4 +399,4 @@ Cross-cutting: `docs/roadmap.md` and `config/roadmap.json` change together; ADR 
 ---
 
 *Generated: 2026-09-19*
-*Status: DRAFT - needs validation*
+*Status: IN DELIVERY - part 1 (phases 1 to 5) is delivered by stack S09, with the two owner-only checklist steps pending; phases 6 to 25 are queued (stack S22) and unchanged*

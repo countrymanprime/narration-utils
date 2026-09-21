@@ -1,0 +1,18 @@
+Spike S0 part 3: stamping and saving a COPY of a real narrator project (REAPER 7.80/x64, 2026-09-21).
+The original Challenges_001.rpp was copied (the .rpp only) to a temp folder; the original's SHA-256 (998b2d141a58e6e2...) was
+identical before and after, and no file in its folder was newer than the copy.
+
+opened Challenges_copy.rpp  REAPER 7.80/x64
+tracks 3, items 41, markers 8, regions 0
+items whose media file is not present here: 41 of 41 (the copy holds only the .rpp)
+items already carrying a line id: 0
+re-saved unchanged as real-resaved.rpp
+GUID format of the first item: {XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX} (upper case, braces; value omitted)
+stamp events: LINES_STAMPED|r1|5|0|0|0
+read events: LINES_READ|r2|<scratch path>|5
+saved with the stamps as real-stamped.rpp
+
+Diff of the saved files (lines, from a script; no project content is reproduced here):
+  original copy -> unchanged re-save : header save time; every media FILE path rewritten as absolute (41); one closing line
+  unchanged re-save -> stamped       : header save time; 5 inserted <EXTI blocks (21 lines added, 1 line replaced)
+  <EXTI blocks in the stamped save   : 5

@@ -1,0 +1,11 @@
+REAPER 7.80 on start in a fresh isolated resource directory, after the first-run audio prompt was answered No (before any script closed the device):
+Audio_IsRunning 1
+GetAudioDeviceInfo MODE true WaveOut
+GetAudioDeviceInfo IDENT_IN true WaveOut Microsoft Sound Mapper
+GetAudioDeviceInfo IDENT_OUT true WaveOut Microsoft Sound Mapper
+GetAudioDeviceInfo BSIZE true 1024
+GetAudioDeviceInfo SRATE true 44100
+GetAudioDeviceInfo REAFIRE false 
+GetAudioDeviceInfo ASIO_DRIVER false 
+inputs 2 outputs 2
+latency 1906 8270
