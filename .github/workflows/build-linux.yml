@@ -15,9 +15,13 @@ on:
         type: string
         required: true
 # A caller must grant every permission the reusable workflow's jobs hold, so this is `write` although only the attach job
-# (see _attach-platform.yml) uses it; the reusable workflow itself defaults to `read` and raises it for that one job.
+# (see _attach-platform.yml) uses them (upload the asset, sign and store its provenance); the reusable workflow itself
+# defaults to `read` and raises them for that one job.
 permissions:
   contents: write
+  id-token: write
+  attestations: write
+  artifact-metadata: write
 jobs:
   build:
     uses: ./.github/workflows/_attach-platform.yml
