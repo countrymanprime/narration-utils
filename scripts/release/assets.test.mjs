@@ -263,7 +263,7 @@ test('verifyAttestations needs a repository to verify against', () => {
 });
 
 test('the verify command stays offline unless --attestations is passed, and then needs GITHUB_REPOSITORY', () => {
-  const script = new URL('./assets.mjs', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+  const script = fileURLToPath(new URL('./assets.mjs', import.meta.url));
   const dir = stageRelease(['windows-x64']);
   const env = { ...process.env };
   delete env.GITHUB_REPOSITORY;
@@ -274,4 +274,42 @@ test('the verify command stays offline unless --attestations is passed, and then
   const online = spawnSync(process.execPath, [script, 'verify', dir, '--attestations'], { encoding: 'utf8', env });
   assert.equal(online.status, 2);
   assert.match(online.stderr, /GITHUB_REPOSITORY/);
+});
+
+test('verifyAssets rejects a file that is not one of the release assets or their checksums', () => {
+  const dir = stageRelease(['windows-x64']);
+  writeFileSync(join(dir, 'Setup.exe'), 'not built by the release workflow');
+  writeFileSync(join(dir, `${assetName('windows-x64')}.bak`), 'a stray copy');
+
+  assert.deepEqual(verifyAssets(dir), [
+    'Unexpected file Setup.exe: promote publishes every file, and only the release assets are built and attested by the workflows',
+    'Unexpected file narration-utils-windows-x64.zip.bak: promote publishes every file, and only the release assets are built and attested by the workflows',
+  ]);
+});
+
+test('verifyAttestations keeps the end of a long gh error, where the reason is', () => {
+  const dir = stageRelease(['windows-x64']);
+  const noisy = `${'Loaded digest sha256:abc\n'.repeat(40)}Error: the signer workflow does not match`;
+  const { run } = fakeGh({ [join(dir, 'narration-utils-windows-x64.zip')]: noisy });
+
+  assert.match(verifyAttestations(dir, { repository: REPOSITORY, run })[0], /the signer workflow does not match/);
+});
+
+test('verifyAttestations passes each platform its own signer and the repository it was given', () => {
+  const dir = stageRelease(['macos-arm64']);
+  const { calls, run } = fakeGh();
+
+  verifyAttestations(dir, { repository: 'someone/else', run });
+
+  assert.deepEqual(calls[0], attestationArgs({ file: join(dir, 'narration-utils-macos-arm64.zip'), repository: 'someone/else', platform: 'macos-arm64' }));
+  assert.ok(calls[0].includes('someone/else/.github/workflows/_attach-platform.yml'));
+});
+
+test('the verify command rejects a flag it does not know instead of skipping the check', () => {
+  const dir = stageRelease(['windows-x64']);
+
+  const result = spawnSync(process.execPath, [fileURLToPath(new URL('./assets.mjs', import.meta.url)), 'verify', dir, '--attestation'], { encoding: 'utf8' });
+
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /Unknown flag --attestation/);
 });

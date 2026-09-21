@@ -7,7 +7,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -111,6 +111,14 @@ export function verifyAssets(dir) {
     if (!/^[0-9a-f]{64}$/.test(expected)) problems.push(`${sumName} does not contain a SHA-256 checksum`);
     else if (sha256File(join(dir, name)) !== expected) problems.push(`${name} does not match its checksum in ${sumName}`);
   }
+  // Promote publishes every file in the directory, so a file that is not a release asset must stop it: nothing built or
+  // attested it.
+  const known = new Set(Object.keys(PLATFORMS).flatMap((platform) => [assetName(platform), checksumName(platform)]));
+  for (const name of readdirSync(dir).sort()) {
+    if (!known.has(name)) {
+      problems.push(`Unexpected file ${name}: promote publishes every file, and only the release assets are built and attested by the workflows`);
+    }
+  }
   return problems;
 }
 
@@ -145,7 +153,7 @@ export function verifyAttestations(dir, { repository, run = runGh } = {}) {
       try {
         run(attestationArgs({ file, repository, platform }));
       } catch (error) {
-        const reason = String(error.stderr || error.message).trim().slice(0, 300);
+        const reason = String(error.stderr || error.message).trim().slice(-300);
         problems.push(`${name} has no attestation from ${signerWorkflow} on ${SOURCE_REF}: ${reason}`);
       }
     }
@@ -158,7 +166,14 @@ function exitWith(problems) {
   process.exit(1);
 }
 
+const USAGE = 'Usage: assets.mjs package <platform> | assets.mjs verify <dir> [--attestations]';
+
 function verifyCommand(dir, flags) {
+  const unknown = flags.find((flag) => flag !== '--attestations');
+  if (unknown) {
+    console.error(`Unknown flag ${unknown}. ${USAGE}`);
+    process.exit(2);
+  }
   const problems = verifyAssets(dir);
   if (problems.length) exitWith(problems);
   const shipped = Object.keys(PLATFORMS).filter((platform) => existsSync(join(dir, assetName(platform))));
@@ -185,7 +200,7 @@ function main([command, argument, ...flags]) {
   } else if (command === 'verify' && argument) {
     verifyCommand(argument, flags);
   } else {
-    console.error('Usage: assets.mjs package <platform> | assets.mjs verify <dir> [--attestations]');
+    console.error(USAGE);
     process.exit(2);
   }
 }

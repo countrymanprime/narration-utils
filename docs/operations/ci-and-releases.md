@@ -203,6 +203,8 @@ level 3). The subjects are identified by digest:
   pull request's included. The signer workflows live in the `PLATFORMS` table of `scripts/release/assets.mjs`; rename a
   workflow file and that table is the one place to change (its tests fail first). If a promote is refused, the message
   names the file and gh's reason: a file with no attestation was not built by these workflows.
+  The same step refuses any file in the downloaded release that is not one of the known assets or checksums, because
+  promote publishes every file it downloaded.
 - **What the certificate says.** The signer is the workflow in the certificate's subject alternative name,
   `https://github.com/<repository>/.github/workflows/<file>@<ref>`; for a file attested inside a reusable workflow it is
   the reusable workflow, and the calling workflow appears only in `buildConfigURI`. This was read from real attestations
