@@ -14,6 +14,8 @@
 
 The attacker is one of: **a network attacker** (or a compromised server) between the app and GitHub or Hugging Face; **a hostile file** the narrator opens (a manuscript, a REAPER project, an archive); **another process of the same Windows user** (there is no privilege boundary between two programs a person runs, so this is a fact to record, not a fight to win); **the supply chain** (a dependency or a workflow change that reaches a release). Local-first is the design: the narrator's manuscripts, audio and Story Bible stay on their machine, and nothing here assumes a server of ours, because there is none.
 
+The boundaries are drawn in the [container view](codebase-map.md#how-the-parts-connect), and the four flows that cross them are drawn step by step beside the doc that owns each: [the first-use download](first-use-dependency-provisioning.md#the-install-step-by-step), [a live teleprompter session](manuscript-teleprompter.md), [a REAPER bridge command](reaper-bridge.md#one-command-step-by-step) and [the whole update](in-app-update.md#the-whole-update-step-by-step) (each names the row of this model that a step answers).
+
 ## What is protected
 
 | Asset | Where it lives | Why it matters |

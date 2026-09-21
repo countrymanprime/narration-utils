@@ -26,6 +26,44 @@ The bridge polls the commands folder with `reaper.EnumerateFiles`, which **cache
 
 Every command that writes to the project is one undo block, writes nothing when there is nothing to change, and is safe to send twice.
 
+### One command, step by step
+
+Starting the bridge, and one Transcript Compare command travelling through it and back.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor N as Narrator
+  participant L as integrations/reaper: NarrationUtils_Launcher.lua
+  participant Br as integrations/reaper: narration_ui_bridge.lua
+  participant F as session folder: commands/, events.log
+  participant C as apps/desktop: internal/bridge Client
+  participant TS as apps/desktop: internal/transcript Service
+  participant H as apps/desktop: app.go transcriptLoop
+  N->>L: Run the action in REAPER
+  L->>L: create NarrationUtils/sessions/hub_id/commands
+  L->>H: start narration-utils.exe with --session-dir, --project-folder, --daw
+  L->>Br: run(session_dir), a reaper.defer tick loop
+  N->>TS: Start a comparison (TranscriptStart)
+  TS->>C: Send("prepare_compare", runId)
+  C->>F: write commands/NNNNNNNN.tmp, then rename to .cmd
+  loop every REAPER defer tick
+    Br->>F: EnumerateFiles(commands, -1), then each .cmd in name order
+    Br->>F: read the first line, delete the file
+  end
+  Br->>Br: version 1 check, registry lookup, run the handler
+  Br->>F: append COMPARE_PREPARED|runId|... to events.log
+  loop every 150 ms
+    H->>TS: Drain, then Poll
+    TS->>C: Dispatch, whole new lines, in order, once
+    C->>C: check the fields against the table in wire.go
+    C-->>TS: the event to the subscriber that owns the run
+  end
+  TS->>TS: handlePrepared, start the transcript-compare sidecar
+```
+
+*Verified 2026-09-21 against `NarrationUtils_Launcher.lua`, `narration_ui_bridge.lua` (`M.run`, the `tick` loop), `narration_bridge_core.lua`, `apps/desktop/internal/bridge/{bridge,events,wire}.go`, `apps/desktop/internal/transcript/service.go` (`Start`, `Drain`, `Handle`) and `apps/desktop/app.go` (`transcriptLoop`, `pollTranscript`), and by the harness, which drives the same protocol ([ADR 0031](../adr/0031-reaper-integration-is-a-lua-file-bridge-verified-by-hand.md), [ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md)). The command names here are generic on purpose: every command travels this way, so the diagram does not change when one is added ([ADR 0067](../adr/0067-bridge-commands-are-registered-by-name-and-each-feature-lives-in-its-own-lua-file.md)). The threats at steps 6 to 11 are rows 5a to 5c of the [threat model](threat-model.md#5-the-reaper-file-bridge-not-in-securitymd-see-the-note-under-the-table).*
+
 ## Reading events in the host: the fan-out
 
 `bridge.Client` (`apps/desktop/internal/bridge/events.go`) is the one reader of `events.log` and feeds every consumer, so two features can use one session without stealing each other's events (the old single `ReadEvents` cursor could not).

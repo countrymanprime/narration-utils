@@ -152,6 +152,47 @@ each file against the catalog (revisit then, not before). The tests
 - **Archives.** A catalog file with `extract` is unpacked into the install folder after it is downloaded and checked, and the archive is deleted; the manifest records every unpacked file and the unpack refuses paths that leave the install, links, device names, duplicates and more data than the catalog says (a spaCy model wheel is the first).
 - **Failures the narrator reads** are sentences (checksum mismatch, no room, a host that no longer has the file or is busy, no connection); the cause is in the host log as `install_failed`.
 
+### The install, step by step
+
+The gated call, the prompt, the download and the retry, for a Whisper model that Transcript Compare needs. Every kind of asset takes the same path; only the binding that hits the gate differs.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor N as Narrator
+  participant UI as apps/ui: useAssetInstall, AssetInstallPrompt
+  participant B as apps/desktop: bindings.go, bindings_assets.go
+  participant J as apps/desktop: installjobs.go
+  participant A as internal/assets: InstallWith
+  participant HF as Hugging Face (pinned URL)
+  participant C as user cache: assets/kind/provider/id/version
+  N->>UI: Start a comparison
+  UI->>B: TranscriptStart(options)
+  B-->>UI: status asset_required, model, downloadSize, diskSize, installPath
+  UI->>N: AssetInstallPrompt: name, size, publisher, licence, where it goes
+  N->>UI: Download
+  UI->>B: AssetsInstall(kind, id)
+  B->>J: startInstall(spec), a second start joins the running job
+  B-->>UI: job snapshot: jobId, phase downloading
+  J->>A: InstallWith(ctx, files)
+  A->>C: free-space check, then version.installing staging folder
+  loop each file in the catalog entry
+    A->>HF: GET the pinned URL (Range header when a .part exists)
+    HF-->>A: bytes, counted into the job
+  end
+  A->>A: size and SHA-256 of every file, then the manifest
+  A->>C: rename into place (an old folder is renamed aside first)
+  loop every 400 ms
+    UI->>B: AssetsInstallState(jobId)
+    B-->>UI: phase, bytes per file, verifying, then success, failed or cancelled
+  end
+  J-->>UI: job:ended event
+  UI->>B: TranscriptStart(options) again, from onSuccess
+  B-->>UI: status started (modelDir is the verified install)
+```
+
+*Verified 2026-09-21 against `bindings.go` (`TranscriptStart`, `modelAssetRequired`), `bindings_assets.go`, `installjobs.go` (`startInstall`, `runInstall`), `internal/assets/store.go` (`InstallWith`, `swapIn`), `internal/assets/download.go` and `apps/ui/src/hooks/useAssetInstall.ts` (`POLL_MS = 400`). Nothing before step 5 downloads anything: steps 1 to 4 are a gate that answers with what would be downloaded. A failure at any step leaves the staging folder or its `.part` files and never a half-installed asset; Cancel ends the job and keeps what arrived for the next attempt. The threats at each step are rows 1a to 1d of the [threat model](threat-model.md#1-first-use-downloads-securitymd-bullet-2).*
+
 ## The asset registry (implemented)
 
 Every kind of asset is one provider in a registry that is built once at start and never replaced ([ADR 0079](../adr/0079-every-downloadable-asset-is-listed-installed-verified-and-removed-through-one-registry-of-providers.md)). Six generic bindings serve all of them: `AssetsList` (state, size, publisher, licence and provenance links, install path, installed and verified times, and the download running for each asset; it reads no file contents), `AssetsInstall(kind, id)` (installs, or repairs a damaged asset; a second call for a running download joins it), `AssetsInstallState`, `AssetsInstallCancel`, `AssetsVerify` and `AssetsRemove` (refused while the asset downloads; it removes only that asset). The install is the one job of [ADR 0077](../adr/0077-every-asset-install-is-one-job-with-real-bytes-a-second-start-joins-it-and-one-hook-follows-it.md). The third kind, the Story Bible language models (spaCy, [ADR 0080](../adr/0080-the-story-bible-language-model-is-a-catalog-asset-unpacked-at-install-and-the-build-asks-before-it-downloads.md)), was exactly that: a catalog file, a provider and a row on the page. A later kind (dictionaries, Moonshine) is the same. The voice and Whisper bindings that predate the registry (`TtsInstall`, `WhisperRemove`, ...) are wrappers over the same functions until the pages that use them move over.

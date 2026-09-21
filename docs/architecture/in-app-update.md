@@ -9,6 +9,50 @@
 3. **Install and restart** asks again ("closes and starts again on version 0.2.7 with the same project"), refuses while an import, a Story Bible build, a download, a comparison or a teleprompter session is running, then replaces the program and restarts it with the same arguments. Where the app may not replace itself (Program Files, a locked folder) it says why and offers **Show the downloaded file** instead; it never asks for elevation.
 4. Nothing is downloaded and nothing is replaced without those clicks. The only thing the app does on its own is the metadata request below.
 
+## The whole update, step by step
+
+The check, the two clicks, the download, the swap and the rollback. The notes name the threat each control answers, as rows of the [threat model](threat-model.md#2-the-apps-own-update-securitymd-bullet-3): **spoofing** (2a), **tampering** (2b, 2c), **downgrade** (2d), **elevation** (2e) and the **denial of service** of a broken update (2f).
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor N as Narrator
+  participant UI as apps/ui: Settings, About and updates
+  participant H as apps/desktop: update.go, update_job.go, update_install.go
+  participant U as internal/update: Checker, Stager, Install, Startup
+  participant GH as GitHub: api.github.com, github.com, release-asset hosts
+  participant FS as install folder and user cache: update/
+  H->>U: Check, 12 s after the window, at most once a day
+  U->>GH: GET /repos/countrymanprime/narration-utils/releases (If-None-Match)
+  GH-->>U: the release list, or 304
+  Note over U: spoofing 2a: repository compiled in, body capped, tags and assets validated, URLs built here
+  U->>FS: check.json, re-validated on every read
+  Note over U: downgrade 2d: only a strictly greater version is an update
+  U-->>H: a newer release
+  H-->>UI: update:status event and a toast
+  N->>UI: Download update, confirmed
+  UI->>H: UpdateDownload
+  H->>U: Stage(release)
+  U->>GH: GET the .sha256, then the zip, HTTPS to GitHub hosts only, at most 5 redirects
+  Note over U: tampering 2b: declared size, SHA-256 against the .sha256 and GitHub's digest
+  U->>FS: staged folder, one entry narration-utils.exe, staged.json
+  UI->>H: UpdateJobState, polling for real progress
+  N->>UI: Install and restart, confirmed again
+  UI->>H: UpdateInstall(jobId)
+  H->>U: Install after the busy rule and a writable folder
+  U->>FS: copy to name.new while hashing, run it with --version
+  Note over U: elevation 2e: the copy must match the staging record and print the release's version
+  U->>FS: pending.json, rename the running exe to name.old, name.new takes its name
+  U->>U: start the new program, --relaunch-after pid and the same arguments
+  U-->>UI: the old process closes itself
+  U->>FS: new program: Startup waits for the old pid, first Bootstrap calls Confirm, name.old removed
+  alt the new program never confirms (two starts)
+    Note over U,FS: denial 2f: restore name.old, keep name.failed, start the old program
+  end
+```
+
+*Verified 2026-09-21 against `internal/update/{check,manifest,version,stage,install,startup}.go`, `update.go`, `update_job.go`, `update_install.go`, `bindings_update.go` (`UpdateCheck`, `UpdateDownload`, `UpdateJobState`, `UpdateInstall`), `startupUpdateDelay` in `update.go` and `main.go`. Not in the diagram: **the release itself** (2c): the app does not verify the build attestation, only the checksum that sits in the same release ([#199](https://github.com/countrymanprime/narration-utils/issues/199)); the diagram's trust ends where GitHub's answer begins. On macOS and Linux the flow stops after step 6: the narrator is told and linked, and nothing is downloaded or replaced.*
+
 ## The version
 
 The root `package.json` version is the single source ([CI and releases](../operations/ci-and-releases.md#the-version-inside-the-program)); `scripts/release/wails-build.mjs` stamps it into `main.version` with `-ldflags`. It is bare semver (`0.2.7`): a release candidate and its promotion are the same bytes and report the same version. `Bootstrap.version` carries it and `narration-utils --version` prints it and exits without opening a window (the update flow asks a downloaded program this before it swaps it in). A build with no stamp (`go run`, `go test`, `wails dev`) is `0.0.0-dev` and is never offered an update.
