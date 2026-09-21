@@ -131,7 +131,7 @@ We believe surfacing real errors and removing the poisoned-cache and masking pat
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Correct and legible failures | Real errors, temp-and-rename, zero-byte and voice-keyed cache, timeout, tests, messages | complete | - | T1 (diagnosed instead) | [plan](implementation-plan.md) (S04) |
-| 2 | Install flow honesty | `running` phase handling, single job, tests | pending (folded into release-readiness Phase 1, stack S16) | 1 | release-readiness Phase 1 (owner) | - |
+| 2 | Install flow honesty | `running` phase handling, single job, tests | complete (delivered with release-readiness Phase 1, stack S16, [ADR 0077](../adr/0077-every-asset-install-is-one-job-with-real-bytes-a-second-start-joins-it-and-one-hook-follows-it.md)) | 1 | release-readiness Phase 1 (owner) | [plan](implementation-plan.md) (S16) |
 | 3 | Frozen build and latency | Piper data files, release smoke test, model verification cache | pending (release-readiness stack, S16) | - | 1 | - |
 
 **Phase 1.** Goal: a failed preview never poisons later attempts and always says why. Success: tests for causes 2, 3, 5, 6; a manual retry after a forced failure works.

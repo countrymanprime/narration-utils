@@ -43,7 +43,8 @@ describe('UpdateDownloadDialog', () => {
     const started = vi.spyOn(api, 'updateDownload');
     await advance(1000);
     expect(screen.getByRole('dialog', { name: 'Download Narration Utils 0.2.7' })).toBeTruthy();
-    expect(screen.getByText(/Downloading Narration Utils 0\.2\.7… 160 of 400 MB/)).toBeTruthy();
+    expect(screen.getAllByText(/Downloading Narration Utils 0\.2\.7…/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/160 of 400 MB/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
     expect(started).not.toHaveBeenCalled();

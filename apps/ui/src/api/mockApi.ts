@@ -40,6 +40,7 @@ import {
 } from './mockFixtures';
 import { loadAliceManuscript } from './aliceManuscript';
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
+import { createInstallMock, type MockAssetSeed } from './assetInstallMock';
 
 const DEFAULT_PROJECT_FOLDER = 'C:/Projects/Alice-in-Wonderland';
 const DEFAULT_PROJECT_NAME = 'Alice’s Adventures in Wonderland';
@@ -196,6 +197,8 @@ export function createMockApi(
     rebuildRunning?: boolean;
     /** Boots the update state (see `MockUpdateSeed`). */
     update?: MockUpdateSeed;
+    /** How the next voice or model download behaves (see `MockAssetSeed`). */
+    assets?: MockAssetSeed;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -342,7 +345,8 @@ export function createMockApi(
   // Whisper defaults to already installed so existing setup/run flows are not
   // gated in every test; a dedicated scenario calls whisperRemove first to
   // exercise the asset_required prompt.
-  let whisperInstalled = true;
+  // A download seed boots without the model, so a page that needs it asks to download it.
+  let whisperInstalled = initial.assets === undefined;
   const mockWhisperIdentity = {
     id: 'small',
     provider: 'faster-whisper',
@@ -355,6 +359,24 @@ export function createMockApi(
     provenanceUrl: 'https://huggingface.co/Systran/faster-whisper-small',
     attribution: 'CTranslate2 conversion of OpenAI Whisper small, published by Systran.',
   };
+  const voiceInstall = createInstallMock({
+    total: 114203981,
+    noun: 'voice',
+    extra: { voiceId: 'en_US-ljspeech-high' },
+    seed: initial.assets,
+    onInstalled: () => {
+      ttsInstalled = true;
+    },
+  });
+  const modelInstall = createInstallMock({
+    total: 483546902 + 2370 + 2203239 + 459861,
+    noun: 'Whisper model',
+    extra: { modelId: 'small' },
+    seed: initial.assets,
+    onInstalled: () => {
+      whisperInstalled = true;
+    },
+  });
   const mockWhisperModel = { ...mockWhisperIdentity, downloadSize: 483546902 + 2370 + 2203239 + 459861, installState: 'not_installed' as const };
   const teleprompter = createTeleprompterMock({
     ready: manuscriptReady,
@@ -660,18 +682,10 @@ export function createMockApi(
     }),
     ttsInstall: async (voiceId) => {
       if (voiceId !== mockVoice.id) throw new Error('Unknown approved TTS voice.');
-      ttsInstalled = true;
-      return { id: null, voiceId, phase: 'success', percent: 100, message: 'Voice installed and verified.', error: '' };
+      return voiceInstall.start();
     },
-    ttsInstallState: async (jobId) => ({
-      id: jobId,
-      voiceId: mockVoice.id,
-      phase: 'success',
-      percent: 100,
-      message: 'Voice installed and verified.',
-      error: '',
-    }),
-    ttsInstallCancel: async (jobId) => ({ id: jobId, voiceId: mockVoice.id, phase: 'cancelled', percent: 0, message: 'Voice download cancelled.', error: '' }),
+    ttsInstallState: (jobId) => voiceInstall.state(jobId),
+    ttsInstallCancel: (jobId) => voiceInstall.cancel(jobId),
     ttsRemove: async (voiceId) => {
       if (voiceId === mockVoice.id) ttsInstalled = false;
     },
@@ -682,11 +696,10 @@ export function createMockApi(
     }),
     whisperInstall: async (modelId) => {
       if (modelId !== mockWhisperModel.id) throw new Error('Unknown approved Whisper model.');
-      whisperInstalled = true;
-      return { id: null, modelId, phase: 'success', message: 'Whisper model installed and verified.' };
+      return modelInstall.start();
     },
-    whisperInstallState: async (jobId) => ({ id: jobId, modelId: mockWhisperModel.id, phase: 'success', message: 'Whisper model installed and verified.' }),
-    whisperInstallCancel: async (jobId) => ({ id: jobId, modelId: mockWhisperModel.id, phase: 'cancelled', message: 'Whisper model download cancelled.' }),
+    whisperInstallState: (jobId) => modelInstall.state(jobId),
+    whisperInstallCancel: (jobId) => modelInstall.cancel(jobId),
     whisperRemove: async (modelId) => {
       if (modelId === mockWhisperModel.id) whisperInstalled = false;
     },

@@ -76,10 +76,12 @@ export type ManuscriptFileSelection = { selected: boolean; jobId?: string };
 export type ManuscriptReader = { chapters: ManuscriptChapter[]; paragraphs: ManuscriptParagraph[]; notes: ManuscriptNote[] };
 export type WorkJob = {
   id: string | null;
-  kind: 'manuscript_import' | 'story_bible' | 'app_update';
+  kind: 'manuscript_import' | 'story_bible' | 'app_update' | 'asset_install';
   phase: 'idle' | 'preparing' | 'ready' | 'committing' | 'running' | 'success' | 'cancelled' | 'error';
   message: string;
   percent: number;
+  /** The bytes so far ("44 of 109 MB"), shown next to the message but never announced: it changes on nearly every poll. */
+  detail?: string;
   logs: string[];
   elapsed: number;
   preview?: ManuscriptImportPreview | null;

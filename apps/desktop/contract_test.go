@@ -134,19 +134,16 @@ func TestContractCatalogsAndInstallJobs(t *testing.T) {
 	}
 	contractfile.Check(t, "whisper-catalog", models)
 
-	for name, job := range map[string]*ttsJob{
-		"tts-install-downloading": {id: "tts-1", voiceID: "en_US-ljspeech-high", phase: "downloading", message: "Downloading and verifying the approved voice…"},
-		"tts-install-success":     {id: "tts-1", voiceID: "en_US-ljspeech-high", phase: "success", message: "Voice installed and verified."},
-		"tts-install-error":       {id: "tts-1", voiceID: "en_US-ljspeech-high", phase: "error", message: "the download failed its checksum"},
-		"tts-install-cancelled":   {id: "tts-1", voiceID: "en_US-ljspeech-high", phase: "cancelled", message: "Voice download cancelled."},
+	for name, job := range map[string]*installJob{
+		"tts-install-downloading":     {id: "tts-1", kind: installKindTts, assetID: "en_US-ljspeech-high", phase: installPhaseDownloading, message: "Downloading and verifying the approved voice…", done: 45678901, total: 114203981},
+		"tts-install-verifying":       {id: "tts-1", kind: installKindTts, assetID: "en_US-ljspeech-high", phase: installPhaseVerifying, message: "Checking the voice against its approved checksum…", done: 114203981, total: 114203981},
+		"tts-install-success":         {id: "tts-1", kind: installKindTts, assetID: "en_US-ljspeech-high", phase: installPhaseSuccess, message: "Voice installed and verified.", done: 114203981, total: 114203981},
+		"tts-install-error":           {id: "tts-1", kind: installKindTts, assetID: "en_US-ljspeech-high", phase: installPhaseError, message: "The downloaded voice did not match the approved file, so it was not installed.", errorText: "The downloaded voice did not match the approved file, so it was not installed.", done: 20000000, total: 114203981},
+		"tts-install-cancelled":       {id: "tts-1", kind: installKindTts, assetID: "en_US-ljspeech-high", phase: installPhaseCancelled, message: "Voice download cancelled.", done: 20000000, total: 114203981},
+		"whisper-install-downloading": {id: "whisper-1", kind: installKindWhisper, assetID: "small", phase: installPhaseDownloading, message: "Downloading and verifying the approved Whisper model…", done: 120000000, total: 486212372},
+		"whisper-install-success":     {id: "whisper-1", kind: installKindWhisper, assetID: "small", phase: installPhaseSuccess, message: "Whisper model installed and verified.", done: 486212372, total: 486212372},
 	} {
-		contractfile.Check(t, name, snapshotTts(job))
-	}
-	for name, job := range map[string]*whisperJob{
-		"whisper-install-running": {id: "whisper-1", modelID: "small", phase: "running", message: "Downloading and verifying the approved Whisper model…"},
-		"whisper-install-success": {id: "whisper-1", modelID: "small", phase: "success", message: "Whisper model installed and verified."},
-	} {
-		contractfile.Check(t, name, snapshotWhisper(job))
+		contractfile.Check(t, name, snapshotInstall(job))
 	}
 }
 

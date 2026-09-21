@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { WhisperCatalog, WhisperInstallJob, WhisperInstallState, WhisperModel } from '../contracts/whisper';
 import type { TranscriptStartResult } from '../contracts/transcript';
 import type { TeleprompterStartResult } from '../contracts/teleprompter';
+import { assetInstallJobShape } from './assets';
 import { listFromNull } from './base';
 
 const whisperInstallStateSchema = z.enum(['installed', 'not_installed', 'verification_failed']) satisfies z.ZodType<WhisperInstallState>;
@@ -28,12 +29,7 @@ export const whisperCatalogSchema = z.object({
   models: listFromNull(z.object({ ...modelIdentityShape, downloadSize: z.number(), installState: whisperInstallStateSchema })),
 }) satisfies z.ZodType<WhisperCatalog>;
 
-export const whisperInstallJobSchema = z.object({
-  id: z.string().nullable(),
-  modelId: z.string(),
-  phase: z.enum(['running', 'success', 'cancelled', 'error']),
-  message: z.string(),
-}) satisfies z.ZodType<WhisperInstallJob>;
+export const whisperInstallJobSchema = z.object({ ...assetInstallJobShape, modelId: z.string() }) satisfies z.ZodType<WhisperInstallJob>;
 
 /**
  * The answer to starting a Transcript Compare run or a teleprompter session: it started, or the Whisper model it needs is not

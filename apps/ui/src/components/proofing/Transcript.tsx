@@ -5,9 +5,10 @@ import { faArrowLeft, faPlay, faWandMagicSparkles } from '@fortawesome/free-soli
 import type { Discrepancy, TranscriptState, TranscriptStartResult, WhisperInstallJob } from '../../types';
 import { isTranscriptActive } from '../../state';
 import { useApi } from '../../api/ApiContext';
+import { useAssetInstall } from '../../hooks/useAssetInstall';
 import { usePendingAction } from '../../hooks/usePendingAction';
+import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { Button } from '../primitives/Button';
-import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { ToggleGroup } from '../primitives/ToggleGroup';
@@ -79,7 +80,21 @@ export function Transcript({
   const [lastCompleted, setLastCompleted] = useState<TranscriptState>();
   const [reviewingLast, setReviewingLast] = useState(false);
   const [whisperPrompt, setWhisperPrompt] = useState<Extract<TranscriptStartResult, { status: 'asset_required' }>>();
-  const [whisperJob, setWhisperJob] = useState<WhisperInstallJob>();
+  // The model download: the shared install-poll hook (D4). Success carries on with the comparison the narrator asked for.
+  const whisperInstall = useAssetInstall<WhisperInstallJob>({
+    start: () => {
+      if (!whisperPrompt) return Promise.reject(new Error('Start a comparison first.'));
+      return api.whisperInstall(whisperPrompt.model.id);
+    },
+    state: (jobId) => api.whisperInstallState(jobId),
+    cancel: (jobId) => api.whisperInstallCancel(jobId),
+    onSuccess: async () => {
+      const chapterTitle = pendingChapterTitle;
+      setWhisperPrompt(undefined);
+      notify('Whisper model installed.');
+      await start(chapterTitle);
+    },
+  });
   const [pendingChapterTitle, setPendingChapterTitle] = useState<string>();
   const running = isTranscriptActive(state.phase);
   // Cancel is answered by the next state event, which can be a moment away: the button says it was heard and a second press does nothing.
@@ -180,7 +195,7 @@ export function Transcript({
     try {
       const result = await api.transcriptStart({ model, chunk: String(CHUNK_OPTIONS[chunkIndex]), workers, hints: acceptedHints.join(', '), chapterTitle });
       if (result.status === 'asset_required') {
-        setWhisperJob(undefined);
+        whisperInstall.reset();
         setWhisperPrompt(result);
         setPendingChapterTitle(chapterTitle);
       }
@@ -188,38 +203,9 @@ export function Transcript({
       notify(describeApiError(error), 'error');
     }
   };
-  const installWhisperModel = async () => {
-    if (!whisperPrompt || whisperJob?.phase === 'running') return;
-    try {
-      let job = await api.whisperInstall(whisperPrompt.model.id);
-      setWhisperJob(job);
-      while (job.id && job.phase === 'running') {
-        await new Promise((resolve) => window.setTimeout(resolve, 400));
-        job = await api.whisperInstallState(job.id);
-        setWhisperJob(job);
-      }
-      if (job.phase === 'success') {
-        const chapterTitle = pendingChapterTitle;
-        setWhisperPrompt(undefined);
-        setWhisperJob(undefined);
-        notify('Whisper model installed.');
-        await start(chapterTitle);
-      } else if (job.phase !== 'cancelled') notify(job.message, 'error');
-    } catch (error) {
-      notify(describeApiError(error), 'error');
-    }
-  };
-  const cancelWhisperModelInstall = async () => {
-    if (whisperJob?.id && whisperJob.phase === 'running') {
-      try {
-        setWhisperJob(await api.whisperInstallCancel(whisperJob.id));
-      } catch (error) {
-        notify(describeApiError(error), 'error');
-      }
-      return;
-    }
+  const closeWhisperPrompt = () => {
     setWhisperPrompt(undefined);
-    setWhisperJob(undefined);
+    whisperInstall.reset();
   };
 
   const phase = state.phase === 'success' ? 'results' : state.phase === 'need_chapter' ? 'chapter' : running ? 'running' : 'setup';
@@ -460,17 +446,15 @@ export function Transcript({
         />
       )}
       {whisperPrompt && (
-        <ConfirmDialog
-          title={whisperJob?.phase === 'running' ? 'Downloading Whisper model' : 'Download local Whisper model?'}
-          body={
-            whisperJob?.phase === 'running'
-              ? whisperJob.message
-              : `The ${whisperPrompt.model.displayName} Whisper model is needed to transcribe this comparison. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`
-          }
-          confirmLabel={whisperJob?.phase === 'running' ? 'Downloading…' : 'Download model'}
-          confirm={() => void installWhisperModel()}
-          cancel={() => void cancelWhisperModelInstall()}
-          escapeCancels={whisperJob?.phase !== 'running'}
+        <AssetInstallPrompt
+          ask={{
+            title: 'Download local Whisper model?',
+            body: `The ${whisperPrompt.model.displayName} Whisper model is needed to transcribe this comparison. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`,
+            confirmLabel: 'Download model',
+          }}
+          workTitle="Downloading Whisper model"
+          install={whisperInstall}
+          dismiss={closeWhisperPrompt}
         >
           <dl className="mt-3 space-y-1 text-xs" style={{ color: 'var(--text-muted)' }}>
             <div>
@@ -492,7 +476,7 @@ export function Transcript({
               </dd>
             </div>
           </dl>
-        </ConfirmDialog>
+        </AssetInstallPrompt>
       )}
     </div>
   );

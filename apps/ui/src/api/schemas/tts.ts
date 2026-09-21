@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { TtsCatalog, TtsInstallJob, TtsInstallState, TtsVoice } from '../contracts/tts';
+import { assetInstallJobShape } from './assets';
 import { listFromNull } from './base';
 
 export const ttsInstallStateSchema = z.enum(['installed', 'not_installed', 'verification_failed']) satisfies z.ZodType<TtsInstallState>;
@@ -30,12 +31,5 @@ export const ttsCatalogSchema = z.object({
   voices: listFromNull(z.object({ ...voiceIdentityShape, downloadSize: z.number(), installState: ttsInstallStateSchema })),
 }) satisfies z.ZodType<TtsCatalog>;
 
-/** An install job. The host reports no byte progress yet: percent is 0 until the job ends and 100 once it succeeded. */
-export const ttsInstallJobSchema = z.object({
-  id: z.string().nullable(),
-  voiceId: z.string(),
-  phase: z.enum(['downloading', 'success', 'cancelled', 'error']),
-  percent: z.number(),
-  message: z.string(),
-  error: z.string(),
-}) satisfies z.ZodType<TtsInstallJob>;
+/** A voice install: the shared asset job (`assetInstallJobShape`) that names its voice. */
+export const ttsInstallJobSchema = z.object({ ...assetInstallJobShape, voiceId: z.string() }) satisfies z.ZodType<TtsInstallJob>;

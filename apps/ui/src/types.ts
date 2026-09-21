@@ -4,6 +4,7 @@ export * from './api/contracts/system';
 export * from './api/contracts/manuscript';
 export * from './api/contracts/storyBible';
 export * from './api/contracts/transcript';
+export * from './api/contracts/assets';
 export * from './api/contracts/tts';
 export * from './api/contracts/whisper';
 export * from './api/contracts/project';

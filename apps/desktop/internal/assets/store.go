@@ -11,11 +11,18 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+)
+
+// The two ways a downloaded file can disagree with its catalog entry. A caller matches on them, not on the text.
+var (
+	ErrSizeMismatch     = errors.New("unexpected asset size")
+	ErrChecksumMismatch = errors.New("asset checksum mismatch")
 )
 
 type File struct {
@@ -51,7 +58,7 @@ func verify(path string, f File) error {
 		return err
 	}
 	if info.Size() != f.Size {
-		return fmt.Errorf("unexpected asset size")
+		return ErrSizeMismatch
 	}
 	file, err := os.Open(path)
 	if err != nil {
@@ -63,7 +70,7 @@ func verify(path string, f File) error {
 		return err
 	}
 	if hex.EncodeToString(h.Sum(nil)) != f.SHA256 {
-		return fmt.Errorf("asset checksum mismatch")
+		return ErrChecksumMismatch
 	}
 	return nil
 }
@@ -74,6 +81,9 @@ type Options struct {
 	Client *http.Client
 	// OnProgress is called as bytes of a file arrive, with the file and how many bytes of it have been received so far.
 	OnProgress func(file File, done int64)
+	// OnVerify is called once per file, after every byte of it has arrived and before it is checked against its size and SHA-256, so a job
+	// can say it is checking (a multi-gigabyte model takes seconds to hash).
+	OnVerify func(file File)
 	// Preflight is asked once, before anything is written, with the root and the total bytes about to be downloaded, and may refuse
 	// (a full disk). It is not asked when the asset is already installed.
 	Preflight func(root string, total int64) error
@@ -165,6 +175,9 @@ func download(ctx context.Context, staging string, file File, options Options) e
 	}
 	if closeErr != nil {
 		return closeErr
+	}
+	if options.OnVerify != nil {
+		options.OnVerify(file)
 	}
 	return verify(filepath.Join(staging, file.Name), file)
 }

@@ -236,7 +236,9 @@ describe('TeleprompterPage', () => {
         downloadSize: 75_000_000,
       })
       .mockResolvedValue({ status: 'started' });
-    const whisperInstall = vi.fn().mockResolvedValue({ id: null, modelId: 'tiny', phase: 'success', message: 'Installed.' });
+    const whisperInstall = vi
+      .fn()
+      .mockResolvedValue({ id: 'w-1', modelId: 'tiny', phase: 'success', message: 'Installed.', percent: 100, bytesDone: 10, bytesTotal: 10, error: '' });
     renderPage({ teleprompterStart, whisperInstall });
     await startReading(user);
 

@@ -1,8 +1,10 @@
 {
+  "bytesDone": 20000000,
+  "bytesTotal": 114203981,
   "error": "",
   "id": "tts-1",
   "message": "Voice download cancelled.",
-  "percent": 0,
+  "percent": 17,
   "phase": "cancelled",
   "voiceId": "en_US-ljspeech-high"
 }

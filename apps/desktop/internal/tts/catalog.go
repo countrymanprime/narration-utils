@@ -94,11 +94,16 @@ func (m *Manager) State(v Voice) string {
 // Install downloads only a catalog-owned URL. Files are verified in an
 // adjacent staging directory and become visible only after every file passes.
 func (m *Manager) Install(ctx context.Context, id string) error {
+	return m.InstallWith(ctx, id, assets.Options{})
+}
+
+// InstallWith is Install with the options of assets.Options: progress and the check hook of a job that reports them.
+func (m *Manager) InstallWith(ctx context.Context, id string, options assets.Options) error {
 	v, ok := m.Voice(id)
 	if !ok {
 		return fmt.Errorf("the selected voice is not in the approved catalog")
 	}
-	return assets.Install(ctx, m.root, v.Provider, v.ID, v.Version, v.Files)
+	return assets.InstallWith(ctx, m.root, v.Provider, v.ID, v.Version, v.Files, options)
 }
 func (m *Manager) Remove(id string) error {
 	v, ok := m.Voice(id)

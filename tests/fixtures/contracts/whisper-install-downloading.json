@@ -1,6 +1,10 @@
 {
+  "bytesDone": 120000000,
+  "bytesTotal": 486212372,
+  "error": "",
   "id": "whisper-1",
   "message": "Downloading and verifying the approved Whisper model…",
   "modelId": "small",
-  "phase": "running"
+  "percent": 24,
+  "phase": "downloading"
 }

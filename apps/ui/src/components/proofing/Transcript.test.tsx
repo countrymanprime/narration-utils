@@ -131,7 +131,16 @@ describe('Transcript vocabulary suggestions', () => {
         downloadSize: 483546902,
       })
       .mockResolvedValueOnce({ status: 'started' });
-    const whisperInstall = vi.fn().mockResolvedValue({ id: null, modelId: 'small', phase: 'success', message: 'Whisper model installed and verified.' });
+    const whisperInstall = vi.fn().mockResolvedValue({
+      id: 'w-1',
+      modelId: 'small',
+      phase: 'success',
+      message: 'Whisper model installed and verified.',
+      percent: 100,
+      bytesDone: 10,
+      bytesTotal: 10,
+      error: '',
+    });
     const api = createMockApi({ transcriptStart, whisperInstall });
     render(
       <ApiProvider api={api}>

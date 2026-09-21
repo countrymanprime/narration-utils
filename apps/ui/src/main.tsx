@@ -54,7 +54,11 @@ const mockHoldEdits = mockParams.has('mockHoldEdits');
 const mockUpdate = (
   ['available', 'found', 'downloading', 'download-fails', 'ready', 'install-blocked', 'install-refused', 'failed', 'current', 'development'] as const
 ).find((seed) => seed === mockParams.get('mockUpdate'));
+// `?mockAssets=downloading|verifying|download-fails` makes the next voice or model download hold at 40 percent, hold at the check, or fail after 40
+// percent, so the download dialogs can be seen without a host or a 114 MB transfer. Unset, a download runs through its steps to the end.
+const mockAssets = (['downloading', 'verifying', 'download-fails'] as const).find((seed) => seed === mockParams.get('mockAssets'));
 const mockInitial = {
+  ...(mockAssets ? { assets: mockAssets } : {}),
   ...(mockUpdate ? { update: mockUpdate } : {}),
   ...(mockLiveDegraded ? { liveUpdatesDegraded: true } : {}),
   ...(mockRebuildRunning ? { rebuildRunning: true } : {}),

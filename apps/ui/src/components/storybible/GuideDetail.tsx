@@ -19,7 +19,9 @@ import {
 import type { GuideEntity, GuidePreview, TtsInstallJob } from '../../types';
 import { allEvidence, categoryCssName, categoryLabel, categoryValue, CREATABLE_CATEGORIES, findAliasMatches, highlightTerms } from '../../state';
 import { useApi } from '../../api/ApiContext';
+import { useAssetInstall } from '../../hooks/useAssetInstall';
 import { usePendingAction } from '../../hooks/usePendingAction';
+import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { BADGE_CLASS, BADGE_STYLE, CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from '../manuscript/EntitySummary';
 import { Highlight, highlightKind } from '../primitives/Highlight';
 import { SlideOver } from '../primitives/SlideOver';
@@ -72,7 +74,22 @@ export function GuideDetail({
   // editing - see the "Review entry" button below.
   const [reviewOverlayId, setReviewOverlayId] = useState<string>();
   const [ttsPrompt, setTtsPrompt] = useState<{ preview: Extract<GuidePreview, { status: 'asset_required' }>; aliasIndex?: number }>();
-  const [ttsJob, setTtsJob] = useState<TtsInstallJob>();
+  // The voice download: one install-poll hook for every asset (D4). Success carries on with the preview the narrator asked for.
+  const voiceInstall = useAssetInstall<TtsInstallJob>({
+    start: () => {
+      if (!ttsPrompt) return Promise.reject(new Error('Choose a name to preview first.'));
+      return api.ttsInstall(ttsPrompt.preview.voice.id);
+    },
+    state: (jobId) => api.ttsInstallState(jobId),
+    cancel: (jobId) => api.ttsInstallCancel(jobId),
+    onSuccess: async () => {
+      const aliasIndex = ttsPrompt?.aliasIndex;
+      setTtsPrompt(undefined);
+      notify('Preview voice installed.');
+      await playPreview(aliasIndex);
+    },
+  });
+  const resetVoiceInstall = voiceInstall.reset;
   // Every action that changes the Story Bible goes through this (ADR 0075): one at a time, the control that started it says so, and the others
   // wait. Each is a Python process that rewrites the same file, so two at once could lose an update.
   const mutation = usePendingAction();
@@ -87,7 +104,7 @@ export function GuideDetail({
       return api.guidePreview(entity.id, aliasIndex);
     },
     onAssetRequired: (preview, aliasIndex) => {
-      setTtsJob(undefined);
+      resetVoiceInstall();
       setTtsPrompt({ preview, aliasIndex });
     },
     notify,
@@ -101,7 +118,7 @@ export function GuideDetail({
     setAliasSelectedId(undefined);
     setAliasActiveIndex(0);
     setTtsPrompt(undefined);
-    setTtsJob(undefined);
+    resetVoiceInstall();
     if (entity)
       setDraft({
         name: entity.canonical_name,
@@ -109,7 +126,7 @@ export function GuideDetail({
         personality: entity.personality_notes.map((note) => note.text).join(' '),
         context: entity.context || '',
       });
-  }, [entity]);
+  }, [entity, resetVoiceInstall]);
 
   if (!entity)
     return (
@@ -164,38 +181,9 @@ export function GuideDetail({
     clearAliasMatch();
     void setAliasTexts([...entity.aliases.map((alias) => alias.text), value]);
   };
-  const installPreviewVoice = async () => {
-    if (!ttsPrompt || ttsJob?.phase === 'downloading') return;
-    try {
-      let job = await api.ttsInstall(ttsPrompt.preview.voice.id);
-      setTtsJob(job);
-      while (job.id && job.phase === 'downloading') {
-        await new Promise((resolve) => window.setTimeout(resolve, 400));
-        job = await api.ttsInstallState(job.id);
-        setTtsJob(job);
-      }
-      if (job.phase === 'success') {
-        const aliasIndex = ttsPrompt.aliasIndex;
-        setTtsPrompt(undefined);
-        setTtsJob(undefined);
-        notify('Preview voice installed.');
-        await playPreview(aliasIndex);
-      } else if (job.phase !== 'cancelled') notify(job.error || job.message, 'error');
-    } catch (error) {
-      notify(describeApiError(error), 'error');
-    }
-  };
-  const cancelVoiceInstall = async () => {
-    if (ttsJob?.id && ttsJob.phase === 'downloading') {
-      try {
-        setTtsJob(await api.ttsInstallCancel(ttsJob.id));
-      } catch (error) {
-        notify(describeApiError(error), 'error');
-      }
-      return;
-    }
+  const closeVoicePrompt = () => {
     setTtsPrompt(undefined);
-    setTtsJob(undefined);
+    resetVoiceInstall();
   };
   const createNewEntity = (category: string) =>
     mutation.run('create', async () => {
@@ -781,26 +769,16 @@ export function GuideDetail({
           )}
         </div>
         {ttsPrompt && (
-          <ConfirmDialog
-            title={ttsJob?.phase === 'downloading' ? 'Downloading preview voice' : 'Download local preview voice?'}
-            body={
-              ttsJob?.phase === 'downloading'
-                ? ttsJob.message
-                : `This local voice is needed to play “${ttsPrompt.aliasIndex === undefined ? entity.canonical_name : (entity.aliases[ttsPrompt.aliasIndex]?.text ?? 'this alias')}”. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`
-            }
-            confirmLabel={ttsJob?.phase === 'downloading' ? 'Downloading…' : 'Download voice'}
-            confirm={() => void installPreviewVoice()}
-            cancel={() => void cancelVoiceInstall()}
-            escapeCancels={ttsJob?.phase !== 'downloading'}
+          <AssetInstallPrompt
+            ask={{
+              title: 'Download local preview voice?',
+              body: `This local voice is needed to play “${ttsPrompt.aliasIndex === undefined ? entity.canonical_name : (entity.aliases[ttsPrompt.aliasIndex]?.text ?? 'this alias')}”. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`,
+              confirmLabel: 'Download voice',
+            }}
+            workTitle="Downloading preview voice"
+            install={voiceInstall}
+            dismiss={closeVoicePrompt}
           >
-            {ttsJob?.phase === 'downloading' && (
-              <div className="progressbar mt-3 h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
-                <div
-                  className="h-full bg-[var(--accent)] transition-[width] duration-[0.4s] ease-in-out"
-                  style={{ width: `${Math.max(ttsJob.percent, 4)}%` }}
-                />
-              </div>
-            )}
             <dl className="mt-3 space-y-1 text-xs" style={{ color: 'var(--text-muted)' }}>
               <div>
                 <dt className="inline font-medium">Voice: </dt>
@@ -822,17 +800,17 @@ export function GuideDetail({
                   </a>
                 </dd>
               </div>
-              <div>
-                <a className="link" href={ttsPrompt.preview.voice.modelCardUrl} target="_blank" rel="noreferrer">
-                  Model card
-                </a>
-                {' · '}
-                <a className="link" href={ttsPrompt.preview.voice.provenanceUrl} target="_blank" rel="noreferrer">
-                  Provenance
-                </a>
-              </div>
             </dl>
-          </ConfirmDialog>
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <a className="link" href={ttsPrompt.preview.voice.modelCardUrl} target="_blank" rel="noreferrer">
+                Model card
+              </a>
+              {' · '}
+              <a className="link" href={ttsPrompt.preview.voice.provenanceUrl} target="_blank" rel="noreferrer">
+                Provenance
+              </a>
+            </p>
+          </AssetInstallPrompt>
         )}
         {confirmation === 'delete' && (
           <ConfirmDialog

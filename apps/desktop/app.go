@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	assetstore "github.com/countrymanprime/narration-utils/shell/internal/assets"
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
@@ -33,24 +34,24 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 9
+const hostAPIVersion = 10
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
 type Host struct {
-	mu           sync.RWMutex
-	ctx          context.Context
-	cancel       context.CancelFunc
-	diagnostic   string
-	version      string
-	config       config
-	manuscript   *manuscript.Service
-	sidecars     *process.Supervisor
-	settings     *settings.Store
-	tts          *tts.Manager
-	ttsJobs      map[string]*ttsJob
-	whisper      *whisper.Manager
-	whisperJobs  map[string]*whisperJob
+	mu         sync.RWMutex
+	ctx        context.Context
+	cancel     context.CancelFunc
+	diagnostic string
+	version    string
+	config     config
+	manuscript *manuscript.Service
+	sidecars   *process.Supervisor
+	settings   *settings.Store
+	tts        *tts.Manager
+	whisper    *whisper.Manager
+	// installJobs are the asset downloads, voices and models alike (installjobs.go); h.mu guards the map and each job its own fields.
+	installJobs  map[string]*installJob
 	guide        *guide.Service
 	guideJob     *workJob
 	transcript   *transcript.Service
@@ -85,22 +86,6 @@ type Host struct {
 	persist *persist.Reporter
 }
 
-// ttsPhaseDownloading is the phase of a voice install that is running. It is the word the UI polls for (contracts/tts.ts), and the
-// project-attach guard (canAttachLocked) waits on it too, so both use this name.
-const ttsPhaseDownloading = "downloading"
-
-type ttsJob struct {
-	mu                          sync.RWMutex
-	id, voiceID, phase, message string
-	cancel                      context.CancelFunc
-	started                     time.Time
-}
-type whisperJob struct {
-	mu                          sync.RWMutex
-	id, modelID, phase, message string
-	cancel                      context.CancelFunc
-	started                     time.Time
-}
 type workJob struct {
 	mu                                  sync.RWMutex
 	id, kind, phase, message, errorText string
@@ -139,7 +124,7 @@ func NewHost() *Host {
 	notes.SetPersist(reporter)
 	recent.SetPersist(reporter)
 	notes.SetOnJobEnd(func(job manuscript.ImportJob) { host.importJobEnded(job) })
-	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recent, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
 	return host
 }
 
@@ -575,19 +560,8 @@ func (h *Host) idleLocked() bool {
 			return false
 		}
 	}
-	for _, job := range h.ttsJobs {
-		job.mu.RLock()
-		running := job.phase == ttsPhaseDownloading
-		job.mu.RUnlock()
-		if running {
-			return false
-		}
-	}
-	for _, job := range h.whisperJobs {
-		job.mu.RLock()
-		running := job.phase == "running"
-		job.mu.RUnlock()
-		if running {
+	for _, job := range h.installJobs {
+		if job.running() {
 			return false
 		}
 	}
@@ -835,129 +809,58 @@ func (h *Host) startTtsInstall(voiceID string) (map[string]any, error) {
 	if manager == nil {
 		return nil, fmt.Errorf("the approved TTS catalog is unavailable")
 	}
-	if _, ok := manager.Voice(voiceID); !ok {
+	voice, ok := manager.Voice(voiceID)
+	if !ok {
 		return nil, fmt.Errorf("the selected voice is not in the approved catalog")
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	job := &ttsJob{id: fmt.Sprintf("tts-%d", time.Now().UnixNano()), voiceID: voiceID, phase: ttsPhaseDownloading, message: "Downloading and verifying the approved voice…", cancel: cancel, started: time.Now()}
-	h.mu.Lock()
-	h.ttsJobs[job.id] = job
-	h.mu.Unlock()
-	go func() {
-		err := manager.Install(ctx, voiceID)
-		job.mu.Lock()
-		if err != nil {
-			if ctx.Err() != nil {
-				job.phase = "cancelled"
-				job.message = "Voice download cancelled."
-			} else {
-				job.phase = "error"
-				job.message = err.Error()
-			}
-		} else {
-			job.phase = "success"
-			job.message = "Voice installed and verified."
-		}
-		event, ok := endedJob(job.id, jobKindTtsInstall, job.phase, job.message, job.started)
-		job.mu.Unlock()
-		if ok {
-			h.publishJobEnded(event)
-		}
-	}()
-	return snapshotTts(job), nil
+	return h.startInstall(installSpec{kind: installKindTts, assetID: voiceID, endedKind: jobKindTtsInstall, noun: "voice", files: voice.Files,
+		run: func(ctx context.Context, options assetstore.Options) error {
+			return manager.InstallWith(ctx, voiceID, options)
+		}}), nil
 }
 func (h *Host) ttsInstallState(id string) (map[string]any, error) {
-	h.mu.RLock()
-	job := h.ttsJobs[id]
-	h.mu.RUnlock()
-	if job == nil {
-		return nil, fmt.Errorf("unknown TTS install job")
+	job, err := h.installJobByID(id, "TTS")
+	if err != nil {
+		return nil, err
 	}
-	return snapshotTts(job), nil
+	return snapshotInstall(job), nil
 }
 func (h *Host) cancelTtsInstall(id string) (map[string]any, error) {
-	h.mu.RLock()
-	job := h.ttsJobs[id]
-	h.mu.RUnlock()
-	if job == nil {
-		return nil, fmt.Errorf("unknown TTS install job")
+	job, err := h.installJobByID(id, "TTS")
+	if err != nil {
+		return nil, err
 	}
 	job.cancel()
-	return snapshotTts(job), nil
-}
-func snapshotTts(job *ttsJob) map[string]any {
-	job.mu.RLock()
-	defer job.mu.RUnlock()
-	// The contract (contracts/tts.ts) has a phase of "downloading", a percent and an error; the install reports no byte progress yet, so
-	// percent is 0 until it ends and 100 once it succeeded, and error carries the failure text.
-	percent, failure := 0, ""
-	switch job.phase {
-	case "success":
-		percent = 100
-	case "error":
-		failure = job.message
-	}
-	return map[string]any{"id": job.id, "voiceId": job.voiceID, "phase": job.phase, "message": job.message, "percent": percent, "error": failure}
+	return snapshotInstall(job), nil
 }
 func (h *Host) startWhisperInstall(modelID string) (map[string]any, error) {
 	manager := h.services().whisper
 	if manager == nil {
 		return nil, fmt.Errorf("the approved Whisper catalog is unavailable")
 	}
-	if _, ok := manager.Model(modelID); !ok {
+	model, ok := manager.Model(modelID)
+	if !ok {
 		return nil, fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	job := &whisperJob{id: fmt.Sprintf("whisper-%d", time.Now().UnixNano()), modelID: modelID, phase: "running", message: "Downloading and verifying the approved Whisper model…", cancel: cancel, started: time.Now()}
-	h.mu.Lock()
-	h.whisperJobs[job.id] = job
-	h.mu.Unlock()
-	go func() {
-		err := manager.Install(ctx, modelID)
-		job.mu.Lock()
-		if err != nil {
-			if ctx.Err() != nil {
-				job.phase = "cancelled"
-				job.message = "Whisper model download cancelled."
-			} else {
-				job.phase = "error"
-				job.message = err.Error()
-			}
-		} else {
-			job.phase = "success"
-			job.message = "Whisper model installed and verified."
-		}
-		event, ok := endedJob(job.id, jobKindWhisperInstall, job.phase, job.message, job.started)
-		job.mu.Unlock()
-		if ok {
-			h.publishJobEnded(event)
-		}
-	}()
-	return snapshotWhisper(job), nil
+	return h.startInstall(installSpec{kind: installKindWhisper, assetID: modelID, endedKind: jobKindWhisperInstall, noun: "Whisper model", files: model.Files,
+		run: func(ctx context.Context, options assetstore.Options) error {
+			return manager.InstallWith(ctx, modelID, options)
+		}}), nil
 }
 func (h *Host) whisperInstallState(id string) (map[string]any, error) {
-	h.mu.RLock()
-	job := h.whisperJobs[id]
-	h.mu.RUnlock()
-	if job == nil {
-		return nil, fmt.Errorf("unknown Whisper install job")
+	job, err := h.installJobByID(id, "Whisper")
+	if err != nil {
+		return nil, err
 	}
-	return snapshotWhisper(job), nil
+	return snapshotInstall(job), nil
 }
 func (h *Host) cancelWhisperInstall(id string) (map[string]any, error) {
-	h.mu.RLock()
-	job := h.whisperJobs[id]
-	h.mu.RUnlock()
-	if job == nil {
-		return nil, fmt.Errorf("unknown Whisper install job")
+	job, err := h.installJobByID(id, "Whisper")
+	if err != nil {
+		return nil, err
 	}
 	job.cancel()
-	return snapshotWhisper(job), nil
-}
-func snapshotWhisper(job *whisperJob) map[string]any {
-	job.mu.RLock()
-	defer job.mu.RUnlock()
-	return map[string]any{"id": job.id, "modelId": job.modelID, "phase": job.phase, "message": job.message}
+	return snapshotInstall(job), nil
 }
 func (h *Host) startGuideBuild() (map[string]any, error) {
 	svc := h.services()

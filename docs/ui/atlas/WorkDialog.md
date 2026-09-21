@@ -23,6 +23,7 @@ Storybook title: `Primitives/WorkDialog`. Source: `src/components/primitives/Wor
 
 ## Used by
 
+- `src/components/assets/AssetInstallPrompt.tsx`
 - `src/components/home/Home.tsx`
 - `src/components/settings/UpdateDownloadDialog.tsx`
 - `src/components/settings/UpdatesPanel.tsx`
