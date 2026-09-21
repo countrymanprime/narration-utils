@@ -93,10 +93,13 @@ function Fake:add_region(first, last, name)
   self:insert_marker({ is_region = true, pos = first, rgnend = last, name = name, color = 0 })
 end
 
+-- Markers and regions are numbered separately (REAPER 7.80: marker 1 and region 1 can both exist).
 function Fake:insert_marker(marker)
   local used = {}
   for _, existing in ipairs(self.markers) do
-    used[existing.index] = true
+    if existing.is_region == marker.is_region then
+      used[existing.index] = true
+    end
   end
   local index = 1
   while used[index] do
@@ -380,14 +383,21 @@ function Fake:add_take_api(api)
     end
     return marker.srcpos, marker.name, marker.color
   end
+  -- Take markers stay ordered by source position, and the return value is the index the marker ended up at.
   function api.SetTakeMarker(take, index, name, srcpos, color)
     local marker = { name = name or '', srcpos = srcpos or 0, color = color or 0 }
-    if index < 0 then
-      take.markers[#take.markers + 1] = marker
-      return #take.markers - 1
+    if index >= 0 then
+      table.remove(take.markers, index + 1)
     end
-    take.markers[index + 1] = marker
-    return index
+    take.markers[#take.markers + 1] = marker
+    table.sort(take.markers, function(a, b)
+      return a.srcpos < b.srcpos
+    end)
+    for position, candidate in ipairs(take.markers) do
+      if candidate == marker then
+        return position - 1
+      end
+    end
   end
 end
 
