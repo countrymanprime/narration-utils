@@ -89,4 +89,13 @@ describe('the import-graph rules (ADR 0062)', () => {
     expect(found).toHaveLength(1);
     expect(found[0]).toMatch(/^base-ui-only-in-primitives: src\/components\/settings\/Popup\.ts -> .*@base-ui\/react/);
   });
+
+  test('Zod is imported only under src/api (ADR 0069)', async () => {
+    write('src/api/schemas/thing.ts', "import { z } from 'zod';\nexport const thing = z.string();\n");
+    write('src/components/settings/Validate.ts', "import { z } from 'zod';\nexport const validate = z.string();\n");
+    expect(await violations('src/api/schemas/thing.ts')).toEqual([]);
+    const found = await violations('src/components/settings/Validate.ts');
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatch(/^zod-only-in-api: src\/components\/settings\/Validate\.ts -> .*node_modules\/zod\//);
+  });
 });

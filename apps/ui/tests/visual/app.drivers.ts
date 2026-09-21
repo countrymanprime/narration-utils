@@ -187,6 +187,14 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await settlePage(page);
     },
   },
+  startup: {
+    'invalid-payload': async (page) => {
+      // Reload with the mock's invalid-payload seam (see main.tsx): the Bootstrap goes through the real parseWire.
+      await page.goto('/?mockInvalidPayload=bootstrap');
+      await settlePage(page);
+      await page.getByText('The app received data it could not read.').waitFor();
+    },
+  },
   home: {
     default: async (page) => {
       await homeLoaded(page);

@@ -15,6 +15,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
+	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
@@ -53,6 +54,7 @@ type Host struct {
 	transcript   *transcript.Service
 	teleprompter *teleprompter.Service
 	recents      *recents.Store
+	log          *hostlog.Log
 }
 type ttsJob struct {
 	mu                          sync.RWMutex
@@ -89,7 +91,7 @@ type config struct {
 func NewHost() *Host {
 	workingDirectory, _ := os.Getwd()
 	repoRoot := layout.FindRoot(workingDirectory)
-	return &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), config: config{repoRoot: repoRoot}, manuscript: manuscript.New(""), sidecars: process.NewSupervisor(), settings: settings.New(repoRoot, ""), ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recents.New(recentProjectsPath())}
+	return &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), config: config{repoRoot: repoRoot}, manuscript: manuscript.New(""), sidecars: process.NewSupervisor(), settings: settings.New(repoRoot, ""), ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recents.New(recentProjectsPath()), log: hostlog.New(hostlog.DefaultPath(), 0)}
 }
 
 // recentProjectsPath resolves the per-user recent-projects file. Recent

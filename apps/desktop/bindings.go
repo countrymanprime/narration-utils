@@ -36,7 +36,10 @@ func (h *Host) SystemSaveSettings(tool, scope string, values map[string]*string)
 	return encodeBinding(h.Bootstrap(), nil)
 }
 func (h *Host) SystemReportDiagnostic(kind, message string) (string, error) {
-	// Diagnostics are deliberately local and best-effort.
+	// Diagnostics are deliberately local and best-effort (ADR 0032, ADR 0069): the UI reports a payload that did not
+	// match its schema (`wire_invalid`: boundary, payload and failing paths, never values) and its own errors, and a
+	// write that fails must not become a binding error the client would report again.
+	_ = h.log.Report(kind, message)
 	return encodeBinding(nil, nil)
 }
 

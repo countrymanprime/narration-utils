@@ -41,6 +41,16 @@ export default {
       from: { path: '^(src|tests)/', pathNot: '^src/components/primitives/' },
       to: { path: 'node_modules/@base-ui/' },
     },
+    {
+      // ADR 0069. Zod is the validation library behind `parseWire`, and only the API layer (schemas, the client, the mock
+      // and their tests) knows it. A component asks for a value the API already parsed and never validates one itself,
+      // and the library stays replaceable because `parseWire` is typed on Standard Schema.
+      name: 'zod-only-in-api',
+      comment: 'Zod is imported only under src/api/ (ADR 0069): a component uses the API client, and a new payload gets a schema in src/api/schemas/.',
+      severity: 'error',
+      from: { path: '^(src|tests)/', pathNot: '^src/api/' },
+      to: { path: 'node_modules/zod/' },
+    },
   ],
   options: {
     // Follow imports into wailsjs/ (rule 2 needs to see them) but never into packages.
