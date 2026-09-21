@@ -93,7 +93,7 @@ const actualSites = new Set(
 );
 
 const rows = Object.entries(FEEDBACK_CATALOG);
-const PLAN = /^(P[3-7]|#\d+)$/;
+const PLAN = /^#\d+$/;
 
 describe('the scan itself', () => {
   test('finds a call on any object, numbers repeats, and ignores a comment, a string and a non-API method', () => {

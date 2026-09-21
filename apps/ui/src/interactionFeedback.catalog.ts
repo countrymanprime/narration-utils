@@ -20,7 +20,7 @@ type FailurePath = 'na' | 'toast' | 'inline' | 'dialog' | 'silent' | 'unhandled'
 /** Whether the outcome is still visible after the narrator leaves the page the action started on. */
 type SurvivesNavigation = 'yes' | 'no' | 'na';
 /**
- * `ok` meets the standard. `gap` does not, and its `plan` says who fixes it (a phase `P3` to `P6` of the audit while it runs, an issue `#123` once it is filed).
+ * `ok` meets the standard. `gap` does not, and its `plan` says who fixes it (an issue, `#123`).
  * `owned` belongs to another piece of work named in `plan`. `exempt` is on purpose and `note` says why (a mount-time load with a page error state, a diagnostic
  * that must never throw).
  */
@@ -55,7 +55,7 @@ const row = (
 // Shorthands for the rows that repeat.
 const startup = (note: string) => row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'exempt', note);
 const subscription = (note: string) => row('mount', 'subscription', 'na', 'na', 'event', 'na', 'na', 'exempt', note);
-const OWNED_INSTALL = 'release-readiness Phase 1 (the install flow and its shared poll hook)';
+const OWNED_INSTALL = 'release-readiness Phase 1 (the install flow and its shared poll hook), tracked in #209';
 
 // One row per line keeps the table readable and the file short.
 // prettier-ignore

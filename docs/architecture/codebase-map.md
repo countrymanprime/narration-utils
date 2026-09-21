@@ -91,6 +91,8 @@ surface is operation-specific; it does not accept arbitrary route names.
 
 Every payload the UI receives is validated by a Zod schema in `apps/ui/src/api/schemas/` through `parseWire` (`apps/ui/src/api/wire/`); a new binding, event or persisted file adds its schema and golden payload in the same pull request ([wire contracts](wire-contracts.md)).
 
+Every call the UI makes to the host has a row in a catalog with a verdict against the interaction feedback standard (`apps/ui/src/interactionFeedback.catalog.ts`, checked by `interactionFeedback.test.ts`), so a new call adds its row in the same pull request; a control that starts something slow takes `pending`, and a host job that ends emits `job:ended` ([interaction feedback](interaction-feedback.md)).
+
 `apps/ui/src/api/contracts/` contains the TypeScript wire contracts by
 domain. `types.ts` is a compatibility barrel during migration. New feature
 work should import from its owning contract module and keep component-local
