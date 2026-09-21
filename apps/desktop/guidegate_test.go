@@ -178,3 +178,30 @@ func TestABuildWithNoLanguageModelCatalogSaysSoButStillOffersRulesOnly(t *testin
 }
 
 func ptr(value string) *string { return &value }
+
+// The model setting is a file a project can edit, so it is not trusted as a path or as an option: only an approved model or a plain package
+// name is used, and rules-only is a choice the narrator makes in the dialog, never a value a settings file can smuggle in.
+func TestABuildRefusesAModelSettingThatIsAPathAnOptionOrTheRulesOnlyWord(t *testing.T) {
+	for _, value := range []string{`\attacker\share\model`, `C:\models\en`, "/tmp/model", "../model", "--help", "-x", "rules-only", "a b", ""} {
+		f := newSpacyFixture(t)
+		if value != "" {
+			if err := f.host.settings.Save("ManuscriptGuide", "project", map[string]*string{"spacy_model": &value}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		answer, err := f.host.startGuideBuild(false)
+		if value == "" {
+			// An empty value falls back to the default model, which is approved and not installed: the gate.
+			if err != nil || answer["status"] != "asset_required" {
+				t.Errorf("empty: %#v, %v", answer, err)
+			}
+			continue
+		}
+		if err == nil || !strings.Contains(err.Error(), "not a language model the app can use") {
+			t.Errorf("%q: answer %#v, err %v, want it refused", value, answer, err)
+		}
+		if _, statErr := os.Stat(f.args); statErr == nil {
+			t.Errorf("%q: the sidecar must not run", value)
+		}
+	}
+}

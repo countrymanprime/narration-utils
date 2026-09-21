@@ -1,10 +1,16 @@
 package main
 
 import (
+	"fmt"
+	"regexp"
+
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 )
+
+// plainModelName is what a spaCy package name looks like: letters, digits, underscores, dots and dashes, and not starting with a dash.
+var plainModelName = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.-]*$`)
 
 // spacyForBuild decides what the Story Bible build gives the sidecar as its language model, or stops at the first-use gate:
 //
@@ -24,6 +30,11 @@ func (h *Host) spacyForBuild(store *settings.Store, rulesOnly bool) (model strin
 	}
 	approved, known := registry.spacy.Model(name)
 	if !known {
+		if !plainModelName.MatchString(name) || name == guide.RulesOnly {
+			// The setting is a file the narrator or a project can edit, so it is not trusted as a path or as the rules-only choice: only a
+			// plain package name (a developer's own install) is passed on. A folder, a network path or an option is refused.
+			return "", nil, fmt.Errorf("%q is not a language model the app can use: choose one of the approved models in Settings", name)
+		}
 		return name, nil, nil
 	}
 	dir, dirErr := registry.spacy.ModelDir(name)

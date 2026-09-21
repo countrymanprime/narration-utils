@@ -207,3 +207,54 @@ func TestPreflightForAnArchiveCountsTheDownloadAndTheUnpackedSize(t *testing.T) 
 		t.Fatalf("asked %d, want the download %d plus 5000 unpacked = %d", asked, len(archive), want)
 	}
 }
+
+// A failed unpack (disk full, an antivirus lock) may leave a half-filled folder next to the complete archive; the next attempt starts the
+// unpack from nothing instead of refusing its first file as already there.
+func TestAnInstallThatFailedMidUnpackCanBeRetried(t *testing.T) {
+	archive := buildZip(t, modelEntries)
+	files := []File{archiveFile(serve(t, archive).URL, archive, 2000)}
+	root := t.TempDir()
+	staging := Dir(root, "spacy", "sm", "3.8.0") + ".installing"
+	if err := os.MkdirAll(filepath.Join(staging, "model", "en_core_web_sm", "en_core_web_sm-3.8.0"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(staging, "model.whl"), archive, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(staging, "model", "en_core_web_sm", "en_core_web_sm-3.8.0", "config.cfg"), []byte("half"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := Install(context.Background(), root, "spacy", "sm", "3.8.0", files); err != nil {
+		t.Fatalf("the retry must start the unpack again: %v", err)
+	}
+	if got := Verify(root, "spacy", "sm", "3.8.0", files); got != "installed" {
+		t.Fatalf("Verify = %s", got)
+	}
+}
+
+// The names Windows reserves, in every spelling it honours, are refused wherever they appear in a path.
+func TestSafeSegmentRefusesWindowsReservedNamesInEverySpelling(t *testing.T) {
+	for _, name := range []string{"CON", "con", "NUL.txt", "aux.tar.gz", "PRN", "COM1", "com9.dat", "LPT3", "COM\u00b9", "LPT\u00b2.txt", "CONIN$", "CONOUT$", "NUL .txt", "a:b", "a*b", "a|b", "dir.", "dir ", "", ".", ".."} {
+		if safeSegment(name) {
+			t.Errorf("%q was accepted", name)
+		}
+	}
+	for _, name := range []string{"model", "config.cfg", "en_core_web_sm-3.8.0", "COM10", "CONSOLE", "console.log", "LPT", "a$b", "my model"} {
+		if !safeSegment(name) {
+			t.Errorf("%q was refused", name)
+		}
+	}
+}
+
+func TestAnEntryThatDeclaresMoreThanTheCatalogAllowsIsRefusedBeforeAnythingIsWritten(t *testing.T) {
+	// The sum of two entries that each fit but together do not.
+	archive := buildZip(t, map[string]string{"model/a": strings.Repeat("a", (1<<20)+600), "model/b": strings.Repeat("b", (1<<20)+600)})
+	files := []File{archiveFile(serve(t, archive).URL, archive, 1000)}
+	root := t.TempDir()
+	if err := Install(context.Background(), root, "spacy", "sm", "3.8.0", files); !errors.Is(err, ErrBadArchive) {
+		t.Fatalf("err = %v, want ErrBadArchive", err)
+	}
+	if _, err := os.Stat(Dir(root, "spacy", "sm", "3.8.0") + ".installing"); !os.IsNotExist(err) {
+		t.Fatal("nothing may be kept")
+	}
+}
