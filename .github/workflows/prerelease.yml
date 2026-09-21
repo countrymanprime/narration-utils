@@ -91,7 +91,7 @@ jobs:
         with:
           subject-path: |
             release-assets/*
-            apps/desktop/build/bin/narration-utils-shell*
+            apps/desktop/build/bin/narration-utils*
       # Keep the newest 10 RCs including the one being published, so nx still
       # finds the latest RC tag and bumps past it instead of re-stamping the same version.
       - name: Prune old release candidates

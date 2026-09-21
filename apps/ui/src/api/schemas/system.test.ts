@@ -24,8 +24,9 @@ const idleTranscript = {
 };
 
 const bootstrap = {
-  apiVersion: 5,
+  apiVersion: 6,
   diagnosticId: 'go-1',
+  version: '0.2.7',
   projectFolder: 'C:/Projects/Alice',
   projectName: 'Alice',
   daw: 'reaper',
@@ -52,6 +53,13 @@ describe('bootstrapSchema', () => {
     expect(parsed.transcript.trackName).toBeUndefined();
     expect(parsed.manuscriptCandidate).toBeNull();
     expect(parsed.manuscript?.narratableWordCount).toBe(10);
+    expect(parsed.version).toBe('0.2.7');
+  });
+
+  it('needs the application version, which every host of this API version sends', () => {
+    const withoutVersion = Object.fromEntries(Object.entries(bootstrap).filter(([key]) => key !== 'version'));
+    expect(() => parseWire(bootstrapSchema, withoutVersion, ctx)).toThrow(WireError);
+    expect(() => parseWire(bootstrapSchema, { ...bootstrap, version: 7 }, ctx)).toThrow(WireError);
   });
 
   it('fills the marker export a snapshot saved by an older host lacks', () => {

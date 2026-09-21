@@ -35,12 +35,12 @@ test('assetName rejects a platform the release does not ship', () => {
 
 // The Windows runner has no NSIS, so Wails only warns and the raw executable is the real output.
 // It is zipped (a 400 MB download otherwise) and keeps the name the REAPER launcher looks for.
-test('windows packaging fails when the shell exe is missing', () => {
-  assert.throws(() => packageAsset({ platform: 'windows-x64', binDir: scratch('bin'), outDir: scratch('out') }), /narration-utils-shell\.exe/);
+test('windows packaging fails when the exe is missing', () => {
+  assert.throws(() => packageAsset({ platform: 'windows-x64', binDir: scratch('bin'), outDir: scratch('out') }), /narration-utils\.exe/);
 });
 
-test('windows packaging zips the shell exe under its own name', { skip: process.platform !== 'win32' }, () => {
-  const bin = stageWailsOutput({ 'narration-utils-shell.exe': 'raw shell' });
+test('windows packaging zips the exe under its own name', { skip: process.platform !== 'win32' }, () => {
+  const bin = stageWailsOutput({ 'narration-utils.exe': 'raw exe' });
   const out = scratch('out');
 
   const asset = packageAsset({ platform: 'windows-x64', binDir: bin, outDir: out });
@@ -49,11 +49,11 @@ test('windows packaging zips the shell exe under its own name', { skip: process.
   // bsdtar (System32) lists zips; Git Bash's GNU tar, which may come first on PATH, cannot.
   const tar = join(process.env.SystemRoot, 'System32', 'tar.exe');
   const listing = spawnSync(tar, ['-tf', basename(asset)], { cwd: out, encoding: 'utf8' });
-  assert.equal(listing.stdout.trim(), 'narration-utils-shell.exe');
+  assert.equal(listing.stdout.trim(), 'narration-utils.exe');
 });
 
 test('packaging writes a sha256sum-format checksum next to the asset', { skip: !hasTool('tar') }, () => {
-  const bin = stageWailsOutput({ 'narration-utils-shell': 'elf' });
+  const bin = stageWailsOutput({ 'narration-utils': 'elf' });
   const out = scratch('out');
 
   const asset = packageAsset({ platform: 'linux-x64', binDir: bin, outDir: out });
@@ -62,19 +62,19 @@ test('packaging writes a sha256sum-format checksum next to the asset', { skip: !
   assert.equal(line, `${sha256File(asset)}  narration-utils-linux-x64.tar.gz\n`);
 });
 
-test('linux packaging tars the shell binary', { skip: !hasTool('tar') }, () => {
-  const bin = stageWailsOutput({ 'narration-utils-shell': 'elf' });
+test('linux packaging tars the binary', { skip: !hasTool('tar') }, () => {
+  const bin = stageWailsOutput({ 'narration-utils': 'elf' });
   const out = scratch('out');
 
   const asset = packageAsset({ platform: 'linux-x64', binDir: bin, outDir: out });
 
   // Relative name: GNU tar reads a Windows drive letter in the archive argument as a remote host.
   const listing = spawnSync('tar', ['-tzf', basename(asset)], { cwd: out, encoding: 'utf8' });
-  assert.equal(listing.stdout.trim(), 'narration-utils-shell');
+  assert.equal(listing.stdout.trim(), 'narration-utils');
 });
 
 test('linux packaging fails when the binary is missing', () => {
-  assert.throws(() => packageAsset({ platform: 'linux-x64', binDir: scratch('bin'), outDir: scratch('out') }), /narration-utils-shell/);
+  assert.throws(() => packageAsset({ platform: 'linux-x64', binDir: scratch('bin'), outDir: scratch('out') }), /narration-utils/);
 });
 
 test('macos packaging fails when the app bundle is missing', () => {
@@ -82,13 +82,13 @@ test('macos packaging fails when the app bundle is missing', () => {
 });
 
 test('macos packaging zips the app bundle', { skip: !hasTool('zip') || !hasTool('unzip') }, () => {
-  const bin = stageWailsOutput({ 'Narration Utils.app/Contents/MacOS/narration-utils-shell': 'mach-o' });
+  const bin = stageWailsOutput({ 'Narration Utils.app/Contents/MacOS/narration-utils': 'mach-o' });
   const out = scratch('out');
 
   const asset = packageAsset({ platform: 'macos-arm64', binDir: bin, outDir: out });
 
   const listing = spawnSync('unzip', ['-Z1', asset], { encoding: 'utf8' });
-  assert.match(listing.stdout, /Narration Utils\.app\/Contents\/MacOS\/narration-utils-shell/);
+  assert.match(listing.stdout, /Narration Utils\.app\/Contents\/MacOS\/narration-utils/);
 });
 
 function stageRelease(platforms) {

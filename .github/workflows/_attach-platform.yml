@@ -77,7 +77,7 @@ jobs:
         with:
           subject-path: |
             release-assets/*
-            apps/desktop/build/bin/narration-utils-shell*
+            apps/desktop/build/bin/narration-utils*
       # --clobber makes re-running this workflow for the same tag safe.
       - name: Attach to the release
         run: gh release upload "$TAG" release-assets/* --clobber

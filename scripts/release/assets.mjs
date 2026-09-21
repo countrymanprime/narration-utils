@@ -11,7 +11,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const SHELL_BINARY = 'narration-utils-shell';
+const APP_BINARY = 'narration-utils';
 const MAC_APP_BUNDLE = 'Narration Utils.app';
 
 // The workflows that build and attest an asset (docs/adr/0071). Windows is built and attested by the release job of
@@ -30,17 +30,17 @@ function requireInBin(binDir, name) {
 // (separate, re-runnable) build succeeds and are simply absent when it did not.
 export const PLATFORMS = {
   // The runner has no NSIS, so `wails build -nsis` only warns and the raw self-contained exe is the
-  // real output. It is zipped (about 400 MB otherwise) and keeps the name the REAPER launcher looks for.
+  // real output. It is zipped (about 400 MB otherwise) and keeps the name the REAPER launcher looks for (narration-utils.exe).
   'windows-x64': {
     extension: '.zip',
     required: true,
     signerWorkflow: PRERELEASE_WORKFLOW,
     archive({ binDir, outDir, target }) {
-      requireInBin(binDir, `${SHELL_BINARY}.exe`);
+      requireInBin(binDir, `${APP_BINARY}.exe`);
       // Windows' bsdtar writes zips (-a picks the format from the name). Git Bash's GNU tar comes
       // first on PATH there and cannot, so call the system one by path.
       const tar = join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe');
-      execFileSync(tar, ['-a', '-cf', basename(target), '-C', binDir, `${SHELL_BINARY}.exe`], { cwd: outDir, stdio: 'inherit' });
+      execFileSync(tar, ['-a', '-cf', basename(target), '-C', binDir, `${APP_BINARY}.exe`], { cwd: outDir, stdio: 'inherit' });
     },
   },
   // A .app is a directory, so it has to be archived. -y keeps symlinks inside the bundle.
@@ -59,9 +59,9 @@ export const PLATFORMS = {
     required: false,
     signerWorkflow: ATTACH_WORKFLOW,
     archive({ binDir, outDir, target }) {
-      requireInBin(binDir, SHELL_BINARY);
+      requireInBin(binDir, APP_BINARY);
       // A relative archive name plus -C keeps a Windows drive letter out of tar's archive argument.
-      execFileSync('tar', ['-czf', basename(target), '-C', binDir, SHELL_BINARY], { cwd: outDir, stdio: 'inherit' });
+      execFileSync('tar', ['-czf', basename(target), '-C', binDir, APP_BINARY], { cwd: outDir, stdio: 'inherit' });
     },
   },
 };

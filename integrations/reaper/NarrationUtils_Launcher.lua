@@ -1,6 +1,6 @@
 -- Narration Utils - the sole REAPER action for the suite.
--- Launches the native Go/Wails shell app. Closing the shell's window is the only thing that stops it. Python only runs as a
--- short-lived subprocess the shell spawns for Story Bible builds and
+-- Launches the native Go/Wails app (narration-utils, narration-utils.exe on Windows). Closing the app's window is the only thing that stops it. Python only runs as a
+-- short-lived subprocess the app spawns for Story Bible builds and
 -- transcript comparisons, never as a supervised server. REAPER itself has
 -- no workflow UI; the bridge below only services requests from that
 -- workspace.
@@ -36,7 +36,8 @@ local BUNDLE_ROOT = join(join(SHARED, '..'), '..')
 -- host writes the installed executable path beside this script, so an action
 -- imported from Settings continues to work after the app moves or updates.
 -- This remains an explicit REAPER import: the app never installs actions.
-local configured_shell = common.read_file(SHARED .. SEP .. 'narration-utils-app-path.txt'):gsub('[\r\n]+$', '')
+-- The path is whatever os.Executable() reported, so the launcher never depends on the program's name: only the two fallbacks below do.
+local configured_app = common.read_file(SHARED .. SEP .. 'narration-utils-app-path.txt'):gsub('[\r\n]+$', '')
 
 local function project_context()
   local _, rpp = reaper.EnumProjects(-1, '')
@@ -59,11 +60,12 @@ local manuscript_python = shared_python
 local manuscript_backend = join(manuscript_core, 'manuscript_guide.py')
 local compare_python = shared_python
 local compare_backend = join(compare_core, 'compare.py')
-local shell_name = is_windows and 'narration-utils-shell.exe' or 'narration-utils-shell'
-local bundled_shell = configured_shell ~= '' and configured_shell or join(BUNDLE_ROOT, shell_name)
-local checkout_shell = join(join(join(join(REPO_ROOT, 'apps'), 'desktop'), 'build/bin'), shell_name)
-local release_mode = common.file_exists(bundled_shell)
-local shell_exe = release_mode and bundled_shell or checkout_shell
+-- The program is named for the product (wails.json outputfilename; scripts/release/assets.mjs packages exactly this file).
+local app_name = is_windows and 'narration-utils.exe' or 'narration-utils'
+local bundled_app = configured_app ~= '' and configured_app or join(BUNDLE_ROOT, app_name)
+local checkout_app = join(join(join(join(REPO_ROOT, 'apps'), 'desktop'), 'build/bin'), app_name)
+local release_mode = common.file_exists(bundled_app)
+local app_exe = release_mode and bundled_app or checkout_app
 
 local project_folder, project_name = project_context()
 local session_dir = join(join(join(reaper.GetResourcePath(), 'NarrationUtils'), 'sessions'), 'hub_' .. tostring(reaper.time_precise()):gsub('[%.]', ''))
@@ -84,9 +86,9 @@ if not release_mode and not common.file_exists(shared_python) then
   return
 end
 
-if not common.file_exists(shell_exe) then
+if not common.file_exists(app_exe) then
   reaper.ShowMessageBox(
-    'The Narration Utils shell app has not been built yet.\n\n' .. 'From this checkout, run:\n  pnpm run bootstrap\n\n' .. 'Then launch Narration Utils again.',
+    'The Narration Utils app has not been built yet.\n\n' .. 'From this checkout, run:\n  pnpm run bootstrap\n\n' .. 'Then launch Narration Utils again.',
     'Narration Utils setup required',
     0
   )
@@ -96,11 +98,11 @@ end
 local function quote(value)
   return process.quote(value)
 end
--- No probe/reuse step here anymore: the shell exe owns single-instance
+-- No probe/reuse step here anymore: the app owns single-instance
 -- detection itself and simply forwards to
 -- its already-running window instead of spawning a second backend, so
--- every launch just spawns the shell unconditionally.
-local command = quote(shell_exe)
+-- every launch just spawns the app unconditionally.
+local command = quote(app_exe)
   .. ' --session-dir '
   .. quote(session_dir)
   .. ' --project-folder '
@@ -124,19 +126,19 @@ if not release_mode then
     .. quote(compare_backend)
 end
 
--- Run from REPO_ROOT so the shell's own relative asset lookups resolve
+-- Run from REPO_ROOT so the app's own relative asset lookups resolve
 -- correctly. show_window = true: unlike the Python/browser-tab setup this
--- replaces, the shell has its own real GUI window that needs to actually
+-- replaces, the app has its own real GUI window that needs to actually
 -- appear.
 --
 -- No startup handshake to poll for here anymore: showing the native window
 -- all happens inside that one process now, so there's no
 -- second process whose readiness this script needs to observe. If startup
--- fails, the shell reports the error
+-- fails, the app reports the error
 -- directly in its own window instead of through a marker file in
 -- session_dir.
 if
-  not process.run_hidden(session_dir, command, { wait = false, show_window = true, cwd = release_mode and common.dirname(shell_exe, BUNDLE_ROOT) or REPO_ROOT })
+  not process.run_hidden(session_dir, command, { wait = false, show_window = true, cwd = release_mode and common.dirname(app_exe, BUNDLE_ROOT) or REPO_ROOT })
 then
   reaper.ShowMessageBox('Could not open Narration Utils.', 'Narration Utils', 0)
   return

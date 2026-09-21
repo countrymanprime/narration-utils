@@ -1,6 +1,6 @@
 # Release Artifact Naming: Drop "shell", Add the Version
 
-**Source:** user request of 2026-09-19 ("remove `shell` from the name of the artifacts in the release, but add the version"). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. **Reconciled 2026-09-21 with owner decision D14 (stack S15):** Phase 2 (the version in the asset file names) is **dropped**; the version lives inside the app instead and the app finds newer releases itself ([In-App Update](in-app-update.prd.md)). Phase 1 (rename the program) stays and is delivered with the version stamping of that PRD's Phase 1. The evidence below is kept as written, including the `dc9d01a` paths; the layout move since then renamed `shell/` to `apps/desktop/`.
+**Source:** user request of 2026-09-19 ("remove `shell` from the name of the artifacts in the release, but add the version"). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. **Reconciled 2026-09-21 with owner decision D14 (stack S15):** Phase 2 (the version in the asset file names) is **dropped**; the version lives inside the app instead and the app finds newer releases itself ([In-App Update](in-app-update.prd.md)). Phase 1 (rename the program) stays and is delivered with the version stamping of that PRD's Phase 1. The evidence below is kept as written, including the `dc9d01a` paths; the layout move since then moved the Go program's folder to `apps/desktop/`.
 
 ## Problem Statement
 
@@ -95,7 +95,7 @@ We believe a program named for the product stops the internal name leaking to na
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Rename the program | `wails.json`, `assets.mjs` constant, `apps/desktop/package.json` build script, Lua launcher name with harness tests, tests, docs; delivered together with the version stamping of [In-App Update](in-app-update.prd.md) Phase 1 | pending (stack S15) | - | - | - |
+| 1 | Rename the program | `wails.json`, `assets.mjs` constant, `apps/desktop/package.json` build script, Lua launcher name with harness tests, tests, docs; delivered together with the version stamping of [In-App Update](in-app-update.prd.md) Phase 1 | complete (a real REAPER launch is an owner step) | - | - | ADR 0073 |
 | 2 | Version in asset names | **Dropped by D14.** Asset names stay unversioned; the version lives in the app | dropped | - | - | - |
 
 **Phase 1 - Rename the program.** Goal: no user-visible file is named `*-shell*`. Scope: the spellings above plus `assets.test.mjs` and `docs/operations/ci-and-releases.md:42`. Success signal: `pnpm check`; the Windows zip holds `narration-utils.exe`; a manual REAPER launch works through both launcher paths.
@@ -130,4 +130,4 @@ Everything above was read from the workflows, `scripts/release/`, `apps/desktop/
 ---
 
 *Generated: 2026-09-19*
-*Status: IN DELIVERY (2026-09-21): Phase 1 in stack S15, Phase 2 dropped by D14*
+*Status: Phase 1 delivered by stack S15 (2026-09-21), Phase 2 dropped by D14; deleted with the steady-state docs of In-App Update Phase 5*

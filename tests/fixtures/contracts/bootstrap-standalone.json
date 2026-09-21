@@ -1,5 +1,5 @@
 {
-  "apiVersion": 5,
+  "apiVersion": 6,
   "daw": "Standalone",
   "diagnosticId": "go-1789000000000000000",
   "manuscript": null,
@@ -35,5 +35,6 @@
     "phase": "idle",
     "rows": [],
     "summary": ""
-  }
+  },
+  "version": "0.0.0-dev"
 }

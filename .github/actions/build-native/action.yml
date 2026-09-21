@@ -46,7 +46,7 @@ runs:
         node scripts/release/verify-installable.mjs
         cd apps/desktop
         wails doctor
-        wails build -s "${wails_args[@]}"
+        node ../../scripts/release/wails-build.mjs -s "${wails_args[@]}"
     - name: Package the release asset
       shell: bash
       env:
