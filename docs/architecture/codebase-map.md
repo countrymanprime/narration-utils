@@ -85,7 +85,11 @@ Every binding reads the project-scoped services (manuscript, Story Bible, settin
 `apps/desktop/internal/` holds domain services and infrastructure. The Wails binding
 surface is operation-specific; it does not accept arbitrary route names.
 
+- `hostlog` is the host's local log (`SystemReportDiagnostic` writes to it); `persist` reads the files the host keeps without failing silently; `contractfile` pins the payloads the host sends for the UI's contract tests. How data is checked where it crosses a boundary is in [wire contracts](wire-contracts.md).
+
 ## UI ownership
+
+Every payload the UI receives is validated by a Zod schema in `apps/ui/src/api/schemas/` through `parseWire` (`apps/ui/src/api/wire/`); a new binding, event or persisted file adds its schema and golden payload in the same pull request ([wire contracts](wire-contracts.md)).
 
 `apps/ui/src/api/contracts/` contains the TypeScript wire contracts by
 domain. `types.ts` is a compatibility barrel during migration. New feature
