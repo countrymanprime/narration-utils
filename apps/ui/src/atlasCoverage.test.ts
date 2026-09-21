@@ -32,7 +32,7 @@ describe('component atlas coverage', () => {
 
 describe('atlas accessibility debt', () => {
   // The list of stories allowed to violate an axe rule may only shrink.
-  const MAX_DEBT_ENTRIES = 1;
+  const MAX_DEBT_ENTRIES = 0;
 
   test('does not grow', () => {
     expect(A11Y_DEBT.length).toBeLessThanOrEqual(MAX_DEBT_ENTRIES);

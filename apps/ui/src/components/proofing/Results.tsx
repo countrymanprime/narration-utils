@@ -135,7 +135,7 @@ export function Results({
                           </span>
                         )}
                         {markerState(row) === 'exported' && (
-                          <span className="inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--character)_18%,transparent)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold whitespace-nowrap text-[var(--character)]">
+                          <span className="inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--character)_18%,transparent)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold whitespace-nowrap text-[var(--character-text)]">
                             Exported
                           </span>
                         )}

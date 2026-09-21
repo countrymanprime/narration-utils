@@ -37,6 +37,18 @@ const TOKEN: Record<HighlightKind, string> = {
   Cursor: '--accent',
 };
 
+// The text of an entity is the kind colour mixed toward --text (ADR 0059), which reaches 4.5:1 on the tint where the pure
+// colour did not; the tint and the underline stay the pure colour. A note keeps the text colour (ADR 0016).
+const TEXT_TOKEN: Partial<Record<HighlightKind, string>> = {
+  Character: '--character-text',
+  Place: '--place-text',
+  Organization: '--org-text',
+  Lore: '--lore-text',
+  Item: '--item-text',
+  Event: '--event-text',
+  Review: '--review-text',
+};
+
 // Tints mix with `transparent`, not a surface color, so the same highlight
 // reads correctly on the reader's alternating row backgrounds. Vertical padding
 // on an inline box paints without changing line layout, which is how the
@@ -47,7 +59,7 @@ function highlightStyle(kind: HighlightKind): CSSProperties {
   if (kind === 'Cursor') return { background: token, color: 'var(--accent-contrast)', margin: '0 -0.05em' };
   return {
     background: `color-mix(in srgb, ${token} 20%, transparent)`,
-    color: kind === 'Note' ? undefined : token,
+    color: TEXT_TOKEN[kind] ? `var(${TEXT_TOKEN[kind]})` : undefined,
     boxShadow: `inset 0 -1.5px 0 ${token}`,
   };
 }

@@ -9,10 +9,7 @@ export interface A11yDebt {
   reason: string;
 }
 
-const HIGHLIGHT_CONTRAST =
-  'Category colours (--character, --place, ...) used as text on a 20% tint of themselves reach only 3.2-3.8:1. Fixing it changes the highlight design (ADR-0016) - a design decision, tracked separately.';
-
-export const A11Y_DEBT: A11yDebt[] = [{ title: 'Primitives/Highlight', rules: ['color-contrast'], reason: HIGHLIGHT_CONTRAST }];
+export const A11Y_DEBT: A11yDebt[] = [];
 
 export function allowedRules(title: string): string[] {
   return A11Y_DEBT.filter((debt) => debt.title === title).flatMap((debt) => debt.rules);

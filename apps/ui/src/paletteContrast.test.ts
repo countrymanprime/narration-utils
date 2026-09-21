@@ -82,18 +82,31 @@ const PAIRS: PairSpec[] = [
     'var(--review-soft)',
   ),
   ...KINDS.map((kind) =>
-    text(`highlight-${kind}`, `Highlight (${kind}): the kind colour on its own 20% tint`, `var(--${kind})`, READING_SURFACES, tint(kind, 20)),
+    text(
+      `highlight-${kind}`,
+      `Highlight (${kind}): the derived kind text colour on the kind's own 20% tint`,
+      `var(--${kind}-text)`,
+      READING_SURFACES,
+      tint(kind, 20),
+    ),
   ),
   text('highlight-note', 'Highlight (note): the text colour on the note tint', 'var(--text)', READING_SURFACES, tint('note', 20)),
-  text('badge-character', 'entity badge (Character)', 'var(--character)', ['surface'], 'var(--character-soft)'),
-  text('badge-place', 'entity badge (Place)', 'var(--place)', ['surface'], 'var(--place-soft)'),
-  text('badge-org', 'entity badge (Organization)', 'var(--org)', ['surface'], 'var(--org-soft)'),
-  text('badge-review', 'entity badge (Review)', 'var(--review)', ['surface'], 'var(--review-soft)'),
+  text('badge-character', 'entity badge (Character): the derived text colour on the soft fill', 'var(--character-text)', ['surface'], 'var(--character-soft)'),
+  text('badge-place', 'entity badge (Place)', 'var(--place-text)', ['surface'], 'var(--place-soft)'),
+  text('badge-org', 'entity badge (Organization)', 'var(--org-text)', ['surface'], 'var(--org-soft)'),
+  text('badge-review', 'entity badge (Review)', 'var(--review-text)', ['surface'], 'var(--review-soft)'),
+  text(
+    'result-exported',
+    'Results badge "Exported": the derived Character text colour on an 18% Character tint',
+    'var(--character-text)',
+    ['surface', 'surface-2'],
+    tint('character', 18),
+  ),
   ...(['lore', 'item', 'event'] as const).map((kind) =>
     text(
       `badge-${kind}`,
-      `entity badge (${kind}): the kind colour on an 18% mix into the surface`,
-      `var(--${kind})`,
+      `entity badge (${kind}): the derived kind text colour on an 18% mix into the surface`,
+      `var(--${kind}-text)`,
       ['surface'],
       `color-mix(in srgb, var(--${kind}) 18%, var(--surface))`,
     ),
@@ -107,19 +120,10 @@ interface KnownFailure {
 }
 
 // Every entry names the phase of docs/prds/palette-contrast-wcag-aa.prd.md that fixes it.
-const both: Theme[] = ['light', 'dark'];
 const lightOnly: Theme[] = ['light'];
 const known = (fixedBy: string, themes: Theme[], ids: string[]): Record<string, KnownFailure> => Object.fromEntries(ids.map((id) => [id, { themes, fixedBy }]));
 
 const KNOWN_FAILURES: Record<string, KnownFailure> = {
-  ...known('phase 4 (derived on-tint text and the dark category tokens)', both, [
-    ...KINDS.map((kind) => `highlight-${kind}`),
-    'badge-lore',
-    'badge-item',
-    'badge-event',
-  ]),
-  ...known('phase 4 (derived on-tint text and the dark category tokens)', lightOnly, ['badge-character', 'badge-place', 'badge-org', 'badge-review']),
-  ...known('phase 4 (derived on-tint text and the dark category tokens)', ['dark'], ['mark-item', 'mark-event']),
   ...known('phase 5 (status text: warn, danger, review, info)', lightOnly, [
     'danger',
     'danger-on-soft',
@@ -131,7 +135,7 @@ const KNOWN_FAILURES: Record<string, KnownFailure> = {
   ]),
 };
 // Counted per pair and theme: `text-muted` failing in dark as well would be a second failure, not the same one.
-const MAX_KNOWN_FAILURES = 33;
+const MAX_KNOWN_FAILURES = 7;
 
 interface Measured {
   ratio: number;
@@ -206,6 +210,30 @@ describe('the ratchet of known failures', () => {
     const ids = PAIRS.map((spec) => spec.id);
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
   });
+});
+
+describe('a highlight nested once in another highlight stays at AA', () => {
+  // ParagraphView nests a mark inside a mark where annotations overlap (an alias inside a longer name, an entity inside a
+  // note), so the inner text sits on two tints. Two 20% tints of one colour composite to 36%; an inner kind over any other
+  // outer kind is a mix of two colours. The single-tint pairs above do not see this: at a 50% mix the derived text was about
+  // 4.4:1 (4.37 to 4.50) in the dark theme, which axe found in the reader. This covers two stacked tints; a third (an entity
+  // with two aliases on one word) or a "Go to line" tint under the row is not covered and measures lower (issue #139).
+  for (const theme of THEME_NAMES) {
+    it(`an entity's text on its own tint over any other highlight's tint is at least ${TEXT_MIN}:1 (${theme})`, () => {
+      const failures: string[] = [];
+      for (const inner of KINDS) {
+        for (const outer of [...KINDS, 'note']) {
+          for (const over of READING_SURFACES) {
+            const bg = `color-mix(in srgb, var(--${inner}) 20%, ${tint(outer, 20)})`;
+            const ratio = resolveContrast(THEMES[theme], { fg: `var(--${inner}-text)`, bg, over });
+            // `!(ratio >= min)` fails a ratio that is not a number instead of letting it pass the comparison.
+            if (!(ratio >= TEXT_MIN)) failures.push(`${inner} in ${outer} over --${over}: ${ratio.toFixed(2)}:1`);
+          }
+        }
+      }
+      expect(failures, 'a highlight nested in another loses contrast: strengthen the derived --<kind>-text tokens').toEqual([]);
+    });
+  }
 });
 
 describe('the text ramp keeps its order', () => {
