@@ -1,7 +1,9 @@
 package tracks
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -79,15 +81,25 @@ func TestAMultiTakeItemIsReportedAsItsFirstTakeNotTheActiveOne(t *testing.T) {
 // An item's mute flag (`MUTE 1 0`), the play rate, stretch markers, FX chains and extension data are all in the file
 // and none of them is read yet: the parser only keeps position, length, name and source.
 func TestTheFileCarriesWhatTheParserDoesNotReadYet(t *testing.T) {
-	project := parseReaperFixture(t, "saved-cases.rpp")
+	raw, err := os.ReadFile(filepath.Join("testdata", "reaper", "saved-cases.rpp"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	for _, marker := range []string{"MUTE 1 0", "PLAYRATE 1.25", "SM 0.4 0.5", "<FXCHAIN", "<TAKEFX", "<EXTI", "<EXT\r\n", "IGUID {", "TAKE SEL"} {
+		if !strings.Contains(text, marker) {
+			t.Errorf("the fixture no longer contains %q: the README and this test describe it", marker)
+		}
+	}
 
+	project := parseReaperFixture(t, "saved-cases.rpp")
 	muted := project.Tracks[1].Items[0]
 	if muted.Name != "muted item" || muted.Position != 4 {
 		t.Fatalf("muted item = %#v", muted)
 	}
-	// Item is a plain value: it has no Muted, PlayRate, GUID or extension fields to assert on. When it gains them,
-	// assert `muted item` is muted and `audible item` is not, that `rate 1.25` has rate 1.25, and that the item GUID
-	// comes from IGUID (the item's), not GUID (each take has its own).
+	// Item is a plain value with no Muted, PlayRate, GUID or extension fields, so the parser cannot report any of the
+	// above. When it gains them, assert `muted item` is muted and `audible item` is not, that `rate 1.25` has rate
+	// 1.25, and that the item GUID comes from IGUID (the item's), not GUID (each take has its own).
 }
 
 func TestANoOpResavedProjectKeepsItsTracksButNotTheRelativeMediaPaths(t *testing.T) {
@@ -111,8 +123,11 @@ func TestANoOpResavedProjectKeepsItsTracksButNotTheRelativeMediaPaths(t *testing
 func TestLineIdentityFixtureListsTheSplitDuplicatedAndCopiedItems(t *testing.T) {
 	project := parseReaperFixture(t, "line-identity.rpp")
 
-	if len(project.Tracks) != 1 || len(project.Tracks[0].Items) != 6 {
-		t.Fatalf("tracks = %d, items = %d, want 1 track with 6 items", len(project.Tracks), len(project.Tracks[0].Items))
+	if len(project.Tracks) != 1 {
+		t.Fatalf("tracks = %d, want 1", len(project.Tracks))
+	}
+	if len(project.Tracks[0].Items) != 6 {
+		t.Fatalf("items = %d, want 6", len(project.Tracks[0].Items))
 	}
 	if project.Tracks[0].Items[2].Position != 1.5 {
 		t.Errorf("the right half of the split item should start at 1.5, got %v", project.Tracks[0].Items[2].Position)

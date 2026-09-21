@@ -8,7 +8,7 @@ Real `.rpp` files written by REAPER itself, kept for the parser tests and for th
 | --- | --- |
 | Written by | REAPER 7.80/x64, rev 9d9fa7 (13 Sep 2026), Windows 11, an evaluation license |
 | Date | 2026-09-21 |
-| How | A scripted, isolated run: `reaper.exe -cfgfile <temp>\reaper.ini -nosplash -newinst -noactivate <script.lua>` with a temp resource directory, no audio device, on scratch projects. Nothing of the owner's REAPER setup or projects was used. |
+| How | A scripted, isolated run: `reaper.exe -cfgfile <temp>\reaper.ini -nosplash -newinst -noactivate <script.lua>` with a temp resource directory, on scratch projects. REAPER opens the default Windows audio device on start even when the first-run prompt is answered No; nothing was recorded, armed or played in these runs (the fixtures were written before the scripts closed the device with `Audio_Quit`, which they now do first). Nothing of the owner's REAPER setup or projects was used. |
 | Scripts | [`integrations/reaper/spikes/`](../../../../../../integrations/reaper/spikes/): `build_cases.lua` wrote `saved-cases.rpp` and `resave-noop.rpp`; `checklist.lua` wrote `line-identity.rpp`; `make_media.py` wrote the media; `run-reaper.ps1` is the driver. |
 | Results | [`docs/research/reaper-spike-s0-item-extension-data.md`](../../../../../../docs/research/reaper-spike-s0-item-extension-data.md) |
 | Media | `media/*.wav`: synthetic 3 s sine tones (220, 330 and 440 Hz), 8 kHz mono 16-bit. No narration, no personal audio. |

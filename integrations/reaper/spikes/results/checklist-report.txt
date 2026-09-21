@@ -1,0 +1,48 @@
+project <scratch path>  REAPER 7.80/x64
+items {BAF42550-8910-438E-9F93-3A884D4E2805} {62494E5C-A70E-4B4A-8946-2B9EF8954871} {8C004D6F-2F56-42F8-BA6B-1EC2FAF1A9A0}
+registered commands: close,create_chapter_regions,export_compare_markers,inspect_compare_results,jump_to_compare_marker,prepare_compare,read_line_ids,stamp_item_lines
+PASS  2. stamp: LINES_STAMPED|t1|1|0|0|0  [LINES_STAMPED|t1|1|0|0|0]
+PASS  2. stamp: item carries id and text
+PASS  2. stamp: undo entry "Narration Utils: stamp manuscript line IDs"  [Narration Utils: stamp manuscript line IDs]
+PASS  2. stamp: Undo removes the stamp  [nil]
+PASS  2. stamp: Redo restores the stamp  [line-000001]
+INFO  undo label after a marker point: CHECKLIST marker
+PASS  3. idempotent: LINES_STAMPED|t2|0|1|0|0  [LINES_STAMPED|t2|0|1|0|0]
+PASS  3. idempotent: no new undo entry  [CHECKLIST marker]
+PASS  4. conflict: LINES_CONFLICT then LINES_STAMPED|t3|0|0|0|1  [LINES_CONFLICT|t3|{BAF42550-8910-438E-9F93-3A884D4E2805} ; LINES_STAMPED|t3|0|0|0|1]
+PASS  4. conflict: old id kept
+PASS  4. overwrite=1: id changes  [LINES_STAMPED|t4|1|0|0|0]
+PASS  5. stale: LINES_STALE then LINES_STAMPED|t5|0|0|1|0  [LINES_STALE|t5|{00000000-0000-4000-8000-00000000BEEF} ; LINES_STAMPED|t5|0|0|1|0]
+PASS  5. stale: no item changed
+PASS  6. split: right half exists
+PASS  6. split: left half keeps the stamp  [line-000002]
+PASS  6. split: right half keeps the stamp  [line-000002]
+INFO  split right half text=Changed line.  new GUID differs=true
+PASS  6. duplicate: the copy keeps the stamp (3 stamped items)  [3]
+INFO  paste attempt 1 (42398): items 5 -> 5, stamped 3
+INFO  paste attempt 2 (40058): items 5 -> 5, stamped 3
+INFO  the item state chunk carries the extension block: true
+INFO  chunk copy: stamped 4
+PASS  6. paste or chunk copy: the copy keeps the stamp (4 stamped items)  [4]
+PASS  6. read_line_ids reports every stamped item  [LINES_READ|t6|<scratch path>|4]
+PASS  6. read_line_ids line shape guid|id|position|length|text  [{BAF42550-8910-438E-9F93-3A884D4E2805}|line-000002|0.000000|1.500000|Changed line.]
+PASS  7. reload: same number of stamped items  [4 vs 4]
+PASS  7. reload: read_line_ids reports them all  [LINES_READ|t7|<scratch path>|4]
+PASS  7. reload: item text preserved
+PASS  8. untouched: notes and take name unchanged  [narrator note 2 / take 2]
+PASS  8. untouched: a stamped item keeps its notes  [narrator note 1]
+PASS  9. regions: REGIONS_CREATED|t8|1|0|0  [REGIONS_CREATED|t8|1|0|0]
+PASS  9. regions: a region 0-30 named Chapter 1 with colour  [16812287]
+PASS  9. regions again: REGIONS_CREATED|t9|0|1|0  [REGIONS_CREATED|t9|0|1|0]
+PASS  9. malformed row counted invalid: REGIONS_CREATED|t10|0|1|1  [REGIONS_CREATED|t10|0|1|1]
+PASS  9. still exactly one region  [1]
+PASS  10. prepare_compare: COMPARE_PREPARED with 1 audio item  [COMPARE_PREPARED|c1|<scratch path>|<scratch path>|Narrator (renamed)|<scratch path> (renamed)_c1.diff|1]
+PASS  10. prepare_compare: manifest names the media and the offsets  [0|<scratch path>|0.000000|3.000000
+]
+PASS  10. inspect: one COMPARE_MARKER at project time 5.25 and COMPARE_INSPECTED  [COMPARE_MARKER|c1|0@1.250000|MISREAD|MISREAD: alice|Alice|Alyss|5.25|0|Chapter 1|4|script ctx|audio ctx|pending||1.25 ; COMPARE_INSPECTED|c1|1 discrepancy(s) found.|1|0]
+PASS  10. export: COMPARE_EXPORTED|c1|1|0  [COMPARE_EXPORT_MARKER|c1|0@1.250000|exported| ; COMPARE_EXPORTED|c1|1|0]
+PASS  10. export: a take marker MISREAD: alice at source 1.25  [MISREAD: alice @ 1.25]
+PASS  10. export: undo entry "Transcript Compare: export take markers"  [Transcript Compare: export take markers]
+PASS  10. jump: cursor at 5.25 and the item selected  [5.25]
+PASS  10. jump to an unknown row: ERROR|c1|Marker location is no longer available.  [ERROR|c1|Marker location is no longer available.]
+saved <scratch path> 0 failure(s)

@@ -3,6 +3,20 @@
 -- then stamps its first items through the real bridge, reads them back, saves again (<out>/real-stamped.rpp) and writes
 -- <out>/real-report.txt. Compare the two saved files: stamping should add only extension blocks to the resaved one.
 
+-- Guard (owner decision D3): refuse to run unless REAPER's resource path is the scratch -Cfg folder run-reaper.ps1 passed,
+-- and the audio device is closed. A script that is started any other way stops here instead of touching real settings.
+do
+  local BACKSLASH = string.char(92)
+  local wanted = os.getenv('NARRATION_UTILS_SPIKE_CFG')
+  local actual = reaper.GetResourcePath()
+  assert(wanted and wanted ~= '', 'NARRATION_UTILS_SPIKE_CFG is not set: start this script with run-reaper.ps1')
+  assert(actual:gsub(BACKSLASH, '/'):lower() == wanted:gsub(BACKSLASH, '/'):lower(), 'REAPER is not using the isolated -cfgfile: ' .. actual)
+  -- REAPER opens the default Windows audio device (WaveOut, Sound Mapper) on start even when the first-run prompt is
+  -- answered No. Nothing is recorded or played, but close it at once and prove it is closed.
+  reaper.Audio_Quit()
+  assert(reaper.Audio_IsRunning() == 0, 'the audio device could not be closed')
+end
+
 local BS = string.char(92)
 local function native(path)
   return (path:gsub('/', BS))
@@ -93,6 +107,13 @@ local body = function()
       local handle = file ~= '' and io.open(file, 'rb')
       if handle then
         handle:close()
+        -- D3: only scratch copies may be open. A media file that resolves outside the project copy or the output
+        -- folder means the copy points at the owner's media (REAPER writes peak files beside media): stop.
+        local project_dir = opened:match('^(.*)[/][^/]-$') or ''
+        local function inside(root)
+          return root ~= '' and file:gsub(BS, '/'):lower():find(root:gsub(BS, '/'):lower(), 1, true) == 1
+        end
+        assert(inside(OUT) or inside(project_dir), 'a media file resolves outside the scratch folders: ' .. file)
       else
         offline = offline + 1
       end

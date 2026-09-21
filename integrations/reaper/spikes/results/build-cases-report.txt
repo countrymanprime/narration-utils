@@ -1,0 +1,45 @@
+version 7.80/x64 os Win64
+multi-take: takes 3 active index 1.0
+section: chunk source blocks rewritten 1
+stretch marker index 0 1
+stretch markers 2 rate 1.25
+track FX 0 1
+take FX 0 1
+P_EXT missing key false 
+P_EXT set item true line-000001
+P_EXT set item text true The first line, with | a pipe.
+P_EXT set take true take-level value
+P_EXT read item true line-000001
+P_EXT read take true take-level value
+item GUID true {27BBEA5C-C86C-46D7-8F6D-F924712C5305}
+track GUID true {C67FDB28-F02B-48EB-A0BD-4AB755AD0034}
+P_EXT tricky value set true read back identical true long value length 3003 read back identical true
+P_EXT value with a newline: set true read back first line<LF>second line
+ColorToNative(255,64,64) 4210943
+marker index 1
+marker index 2
+marker index 3
+region index 1
+region index 2
+region index 3
+AddRegionOrMarker exists true
+markers 3 regions 3
+EnumProjectMarkers3 0 1 true 0.0 11.9 Chapter 1 1 0
+EnumProjectMarkers3 1 2 false 6.5 0.0 PICKUP: re-record "the wind" (mispronounced) 1 20988159
+EnumProjectMarkers3 2 3 true 12.0 19.9 Chapter 2 2 16812287
+EnumProjectMarkers3 3 4 false 12.25 0.0 PICKUP: breath at 12.25 2 20988159
+EnumProjectMarkers3 4 5 true 20.0 23.0 Chapter 3 3 0
+EnumProjectMarkers3 5 6 false 21.0 0.0 PICKUP_DONE: line 1 re-recorded 3 0
+EnumProjectMarkers3 past the end 0 false 0.0 0.0  0 0
+EnumProjects(-1) userdata: 0000000002537EB0 
+GetMediaItem order 0.0 4.0
+GetTrackName true Multi-take
+GetMediaSourceFileName media/take_a.wav
+SetTakeMarker returns 0 0 0.5 0
+GetTakeMarker 0 0.5 a-early 0
+GetTakeMarker 1 2.5 z-late 0
+GetTakeMarker invalid index -1.0  0
+first item GUID via GetSetMediaItemInfo_String true {83F2BBC9-F579-4D70-8EC2-63E9FCF1BE8C}
+save cases
+reload
+re-save

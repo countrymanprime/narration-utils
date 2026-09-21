@@ -1,6 +1,6 @@
 # The REAPER bridge and its test harness
 
-**Status: implemented.** The Lua under `integrations/reaper` is tested without REAPER by a harness; what only a running REAPER can show is checked in scripted REAPER runs. Decisions: [ADR 0031](../adr/0031-reaper-integration-is-a-lua-file-bridge-verified-by-hand.md) (a Lua file bridge, no loopback server) and [ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md) (the harness). The boundary rules for what lives in Lua are in [DAW integration](daw-integration.md).
+**Status: implemented.** The Lua under `integrations/reaper` is tested without REAPER by a harness; what only a running REAPER can show is checked in scripted REAPER runs (the line identity checklist and the bridge commands passed 37 checks in REAPER 7.80; the fake is pinned to what that run observed). Decisions: [ADR 0031](../adr/0031-reaper-integration-is-a-lua-file-bridge-verified-by-hand.md) (a Lua file bridge, no loopback server) and [ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md) (the harness). The boundary rules for what lives in Lua are in [DAW integration](daw-integration.md).
 
 ## What is in `integrations/reaper`
 
@@ -11,7 +11,8 @@
 | `narration_bridge_core.lua` | Shared by the bridge and every feature file: the percent-encoding and field-splitting helpers, `event`, file and path helpers, and `new_registry()`. |
 | `narration_compare.lua`, `narration_line_identity.lua` | The commands, one file per feature (Transcript Compare; manuscript line identity and chapter regions). |
 | `reaper_common_core.lua`, `reaper_common_process.lua` | Small helpers the launcher loads: files and paths, hidden process launch, pipe splitting. |
-| `tests/` | The harness (below). Not shipped: `scripts/release/prepare-resources.py` leaves `tests/` and `project.json` out of the app's embedded REAPER package. |
+| `tests/` | The harness (below). Not shipped: `scripts/release/prepare-resources.py` leaves `tests/`, `spikes/` and `project.json` out of the app's embedded REAPER package. |
+| `spikes/` | Scripts that run inside a real REAPER, isolated in a temp resource directory, to find out what a fake cannot ([README](../../integrations/reaper/spikes/README.md); the S0 result is [reaper-spike-s0-item-extension-data.md](../research/reaper-spike-s0-item-extension-data.md)). Research tools, not product code. |
 
 ## The file protocol
 

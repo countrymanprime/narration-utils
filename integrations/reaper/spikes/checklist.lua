@@ -3,6 +3,20 @@
 -- against a scratch project built here, and records every step in chk/report.txt. Steps that need the app or the owner
 -- (Transcript Compare through the app, step 10) are not here.
 
+-- Guard (owner decision D3): refuse to run unless REAPER's resource path is the scratch -Cfg folder run-reaper.ps1 passed,
+-- and the audio device is closed. A script that is started any other way stops here instead of touching real settings.
+do
+  local BACKSLASH = string.char(92)
+  local wanted = os.getenv('NARRATION_UTILS_SPIKE_CFG')
+  local actual = reaper.GetResourcePath()
+  assert(wanted and wanted ~= '', 'NARRATION_UTILS_SPIKE_CFG is not set: start this script with run-reaper.ps1')
+  assert(actual:gsub(BACKSLASH, '/'):lower() == wanted:gsub(BACKSLASH, '/'):lower(), 'REAPER is not using the isolated -cfgfile: ' .. actual)
+  -- REAPER opens the default Windows audio device (WaveOut, Sound Mapper) on start even when the first-run prompt is
+  -- answered No. Nothing is recorded or played, but close it at once and prove it is closed.
+  reaper.Audio_Quit()
+  assert(reaper.Audio_IsRunning() == 0, 'the audio device could not be closed')
+end
+
 local BS = string.char(92)
 local function native(path)
   return (path:gsub('/', BS))
