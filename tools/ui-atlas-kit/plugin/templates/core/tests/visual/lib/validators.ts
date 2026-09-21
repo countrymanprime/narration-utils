@@ -163,6 +163,18 @@ export function findCollapsedControls(
   return controls.filter((control) => control.width < minWidth && !allowed.includes(control.label));
 }
 
+// Two controls with one name (a repeated row of fields, or unlabelled inputs that fall back to their tag) would share an
+// allowance and hide each other's collapse. The second and later ones are numbered ("Model (2)") so a failure and a
+// narrowControls entry each address one control.
+export function disambiguateLabels(controls: readonly ControlMeasurement[]): ControlMeasurement[] {
+  const seen = new Map<string, number>();
+  return controls.map((control) => {
+    const count = (seen.get(control.label) ?? 0) + 1;
+    seen.set(control.label, count);
+    return count === 1 ? control : { ...control, label: `${control.label} (${count})` };
+  });
+}
+
 // What to report for one capture: each collapsed control, and each declared-narrow control that is not narrow any more
 // (or is no longer on the page). A declaration limited to other viewports is neither applied nor checked here.
 export function checkControlWidths(

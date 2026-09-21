@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { RUN_DIR, screenshotDir } from './helpers/settle';
 import { findBlankCaptures, findNarrowestControl, findStaleSameAs, findUndeclaredDuplicates, type CaptureRecord } from './lib/validators';
 import { STATE_CATALOG } from './state-catalog';
+import { VIEWPORTS } from './viewports';
 
 function readRecords(): CaptureRecord[] {
   return readdirSync(RUN_DIR, { withFileTypes: true })
@@ -13,15 +14,24 @@ function readRecords(): CaptureRecord[] {
     );
 }
 
-// A renamed or removed state would otherwise leave its old screenshots behind forever, and a reviewer
-// (or the docs sync) could mistake them for current output.
+// A renamed or removed state, or a viewport a row no longer captures, would otherwise leave its old screenshots behind
+// forever, and a reviewer (or the docs sync) could mistake them for current output.
 function pruneStaleScreenshots(): void {
   const root = screenshotDir('', '').replace(/\/+$/, '').replace(/\/$/, '');
   if (!existsSync(root)) return;
-  const known = new Set(STATE_CATALOG.map((entry) => `${entry.page}/${entry.state}`));
+  const known = new Map(
+    STATE_CATALOG.map((entry) => [`${entry.page}/${entry.state}`, [...VIEWPORTS, ...(entry.extraViewports ?? [])].map((viewport) => `${viewport.name}.png`)]),
+  );
   for (const page of readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
     for (const state of readdirSync(join(root, page.name), { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
-      if (!known.has(`${page.name}/${state.name}`)) rmSync(join(root, page.name, state.name), { recursive: true, force: true });
+      const files = known.get(`${page.name}/${state.name}`);
+      if (!files) {
+        rmSync(join(root, page.name, state.name), { recursive: true, force: true });
+        continue;
+      }
+      for (const file of readdirSync(join(root, page.name, state.name))) {
+        if (!files.includes(file)) rmSync(join(root, page.name, state.name, file), { force: true });
+      }
     }
     if (readdirSync(join(root, page.name)).length === 0) rmSync(join(root, page.name), { recursive: true, force: true });
   }

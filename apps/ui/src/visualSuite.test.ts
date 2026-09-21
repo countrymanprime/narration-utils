@@ -4,6 +4,7 @@ import { STATE_CATALOG } from '../tests/visual/state-catalog';
 import { REFLOW_VIEWPORT, VIEWPORTS } from '../tests/visual/viewports';
 import {
   checkControlWidths,
+  disambiguateLabels,
   findBlankCaptures,
   findCollapsedControls,
   findNarrowestControl,
@@ -197,6 +198,25 @@ describe('checkControlWidths', () => {
     expect(checkControlWidths([control('Pitch', 300, 'input[number]')], declared, 'desktop')).toEqual([]);
     expect(checkControlWidths([control('Pitch', 40, 'input[number]')], declared, 'desktop')).toHaveLength(1);
     expect(checkControlWidths([control('Pitch', 40, 'input[number]')], declared, 'reflow')).toEqual([]);
+  });
+});
+
+describe('disambiguateLabels', () => {
+  test('keeps unique names as they are', () => {
+    expect(disambiguateLabels([control('A', 100), control('B', 100)]).map((c) => c.label)).toEqual(['A', 'B']);
+  });
+
+  test('numbers the second and later control of the same name, so a declaration or a failure addresses one of them', () => {
+    const named = disambiguateLabels([control('Model', 300), control('Model', 30), control('Model', 300)]);
+    expect(named.map((c) => c.label)).toEqual(['Model', 'Model (2)', 'Model (3)']);
+    expect(named.map((c) => c.width)).toEqual([300, 30, 300]);
+  });
+
+  test('a collapsed sibling is not hidden behind an allowance for a wide control of the same name', () => {
+    const declared = { labels: ['Model'], reason: 'The first one is narrow on purpose' };
+    const problems = checkControlWidths(disambiguateLabels([control('Model', 40), control('Model', 30)]), declared, 'desktop');
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain('"Model (2)"');
   });
 });
 

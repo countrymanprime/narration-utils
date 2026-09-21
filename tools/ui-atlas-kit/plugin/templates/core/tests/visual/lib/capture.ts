@@ -11,6 +11,7 @@ import type { Viewport } from '../viewports';
 import type { StateEntry } from './types';
 import {
   checkControlWidths,
+  disambiguateLabels,
   NON_TEXT_INPUT_TYPES,
   OVERFLOW_TOLERANCE_PX,
   SIGNATURE_HEIGHT,
@@ -40,24 +41,27 @@ async function measureHorizontalOverflow(page: Page): Promise<number> {
 }
 
 // Every visible text box, select and textarea, with its accessible name and rendered width. A control in the layout with
-// no width is still returned (that is the collapse being looked for); one that is not rendered (display: none, hidden) is not.
+// no width is still returned (that is the collapse being looked for); one that is not rendered (display: none, hidden), that
+// sits in an aria-hidden or inert subtree, or that is visually hidden (a box one pixel tall or less, as a screen-reader-only
+// input is) is not a control a person sees, so it is not measured.
 async function measureTextControls(page: Page): Promise<ControlMeasurement[]> {
-  return page.evaluate((nonText) => {
+  const measured = await page.evaluate((nonText) => {
+    const squash = (text: string | null | undefined): string => (text ?? '').replace(/\s+/g, ' ').trim();
     const nameOf = (element: HTMLElement): string => {
-      const labelled = element.getAttribute('aria-labelledby');
-      const fromIds = labelled
-        ? labelled
-            .split(/\s+/)
-            .map((id) => document.getElementById(id)?.textContent?.trim() ?? '')
-            .join(' ')
-            .trim()
-        : '';
-      const labels = (element as HTMLInputElement).labels;
-      const fromLabel = labels && labels.length > 0 ? (labels[0]?.textContent?.trim() ?? '') : '';
+      const fromIds = squash(
+        (element.getAttribute('aria-labelledby') ?? '')
+          .split(/\s+/)
+          .map((id) => document.getElementById(id)?.textContent ?? '')
+          .join(' '),
+      );
+      const label = (element as HTMLInputElement).labels?.[0];
+      // A label that wraps its control also contains the control's options: read the label without the controls.
+      const clone = label?.cloneNode(true) as HTMLElement | undefined;
+      clone?.querySelectorAll('input, select, textarea').forEach((control) => control.remove());
       return (
-        element.getAttribute('aria-label') ||
         fromIds ||
-        fromLabel ||
+        element.getAttribute('aria-label') ||
+        squash(clone?.textContent) ||
         element.getAttribute('placeholder') ||
         element.getAttribute('name') ||
         element.id ||
@@ -67,12 +71,14 @@ async function measureTextControls(page: Page): Promise<ControlMeasurement[]> {
     return Array.from(document.querySelectorAll<HTMLElement>('input, select, textarea'))
       .filter((element) => !(element instanceof HTMLInputElement && nonText.includes(element.type)))
       .filter((element) => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden')
+      .filter((element) => !element.closest('[aria-hidden="true"], [inert]') && element.getBoundingClientRect().height > 1)
       .map((element) => ({
         label: nameOf(element),
         kind: element instanceof HTMLInputElement ? `input[${element.type}]` : element.tagName.toLowerCase(),
         width: Math.round(element.getBoundingClientRect().width * 10) / 10,
       }));
   }, NON_TEXT_INPUT_TYPES);
+  return disambiguateLabels(measured);
 }
 
 async function maxChannelStdev(png: Buffer): Promise<number> {

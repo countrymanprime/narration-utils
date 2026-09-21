@@ -10,14 +10,17 @@ scaffold files (yours after `init`), so the **Adopt by hand** lines below are wh
   overflowing, so the sideways-overflow check never saw it. The failure names the control, its width and the viewport, and
   is reported after the screenshot is taken. `lib/validators.ts` gains the pure `findCollapsedControls`,
   `checkControlWidths`, `findNarrowestControl`, `MIN_CONTROL_WIDTH_PX` and `NON_TEXT_INPUT_TYPES`, `CaptureRecord` gains
-  `narrowestControlPx`, and the teardown prints the run's narrowest control (what the 64px was calibrated from).
+  `narrowestControlPx`, and the teardown prints the run's narrowest control (what the 64px was calibrated from). Controls in
+  an `aria-hidden` or `inert` subtree, or one pixel tall or less (screen-reader-only inputs), are not measured; a repeated name is
+  numbered (`disambiguateLabels`, "Model (2)") so a declaration or a failure addresses one control.
 - **Core:** two optional `StateEntry` fields. `narrowControls: { labels, reason, viewports? }` is the per-row opt-out for a
   control that is narrow on purpose; it needs a reason and is checked like `sameAs` (it fails when the control is no longer
   narrow). `extraViewports: Viewport[]` captures a state at widths beyond the `viewports.ts` matrix, for a layout that only
   changes at one width, without every state paying for it (`app.spec.ts` now loops `[...VIEWPORTS, ...extraViewports]`).
+- **Core:** the teardown also prunes screenshots of a viewport a row no longer captures (it pruned only whole state folders).
 - **Skills and docs:** `ui-state-catalog`, `ui-atlas-gate` and `design.md` describe the two fields and the check.
 - **Adopt by hand:** in your `src/visualSuite.test.ts` copy the new `describe` blocks (`findCollapsedControls`,
-  `NON_TEXT_INPUT_TYPES`, `checkControlWidths`, `findNarrowestControl`), the `narrowestControlPx: null` default in the
+  `NON_TEXT_INPUT_TYPES`, `checkControlWidths`, `disambiguateLabels`, `findNarrowestControl`), the `narrowestControlPx: null` default in the
   `record` helper, and the two catalog-integrity tests for `extraViewports` and `narrowControls`; make the `sameAs` viewport
   test include extra viewport names. The first run may flag controls that were already collapsed: fix the layout, or declare
   them in `narrowControls` with a reason. To use `extraViewports` at a width where the layout shows a menu button instead of
