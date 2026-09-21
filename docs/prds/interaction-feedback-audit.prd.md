@@ -34,7 +34,7 @@ Backlog claims re-checked, then new findings (all verified in code unless marked
 
 **4. First count of async call sites (method: enumerate then grep).**
 - `NarrationApi` has 72 members across nine contract files (`apps/ui/src/api/contracts/`): Manuscript 19, Story Bible 12, Transcript 11, System 6, Project 5, Teleprompter 5, Tts 5, Whisper 5, Tracks 4. Seven are not request-response (four `subscribe*`, `mediaUrl`, `ready`, `reportClientDiagnostic`), leaving 65.
-- Grepping `.<method>(` in non-test, non-story source outside `apps/ui/src/api/` finds **87 call sites in 12 files**: Manuscript.tsx 13, Transcript.tsx 12, GuideDetail.tsx 12, Home.tsx 11, TeleprompterPage.tsx 9, Settings.tsx 8, ProjectPicker.tsx 7, App.tsx 4, Results.tsx 3, Guide.tsx 3, TracksPage.tsx 3, AudiobookEstimatePanel.tsx 2. 64 of the 65 methods are called; `manuscriptReader` has no UI caller (a bound but unused method).
+- Grepping `.<method>(` in non-test, non-story source outside `apps/ui/src/api/` found **87 call sites in 12 files** on the original branch; by Phase 2 (after the update and Settings work) the AST scan in the ratchet test finds **108 in 14 files** over 83 members: Manuscript.tsx 13, Transcript.tsx 12, GuideDetail.tsx 12, Home.tsx 11, TeleprompterPage.tsx 9, Settings.tsx 8, ProjectPicker.tsx 7, App.tsx 4, Results.tsx 3, Guide.tsx 3, TracksPage.tsx 3, AudiobookEstimatePanel.tsx 2. 64 of the 65 methods are called; `manuscriptReader` has no UI caller (a bound but unused method).
 - Crude proxies, not verdicts: 59 sites have `notify`/an error setter within 14 lines; 72 have a `try`/`.catch` nearby; 12 have neither. Half of those 12 are false positives (six `ProjectPicker.tsx` sites run inside its `runAction` wrapper, `:43-53`, which sets `busy`, catches and shows the reason; it is the only place with an explicit in-flight state and the model to generalize). The rest need hand triage: `manuscriptImportCancel` (`Home.tsx:329`), `guideCreate` (`Manuscript.tsx:417`), `transcriptReset`/`transcriptCancel` (`Transcript.tsx:446,450,466`), `guidePreview` (`GuideDetail.tsx:73`).
 - Silent failures by design: bare `.catch(() => {})` at `App.tsx:134,177`, `Home.tsx:55`, `Transcript.tsx:103`, `TeleprompterPage.tsx:139,148` (mount-time or on-leave calls; each needs a decision, not necessarily a fix).
 - Go-native candidates to measure too (not Python): `tracksList` re-parses the `.rpp` on every call and `authorizedMediaPath` calls it on every `/media` request (`apps/desktop/media.go:51-64`); `ManuscriptSearch`/`Chapters`/`Reader` on a full manuscript.
@@ -63,7 +63,7 @@ We believe a written feedback standard, a measured latency table and a ratcheted
 
 | Metric | Target | How Measured |
 | --- | --- | --- |
-| Call sites with a recorded verdict | 87 of 87 (or the current count), 0 uncatalogued | Ratchet test comparing enumerated `.method(` sites with the catalog |
+| Call sites with a recorded verdict | 108 of 108 (the count at Phase 2), 0 uncatalogued | Ratchet test comparing enumerated `.method(` sites with the catalog |
 | Measured latency table | p50/p95/max for at least: build (small and full-length), create, edit (1 field, alias), Save (4 fields), setLocked, rescan, merge, delete, relate, preview uncached and cached, seed 10 candidates; Go: `tracksList`, `Chapters`, `Search` | Manual-run harness, at least 20 runs per op, cold and warm, dev venv and frozen sidecar, machine spec recorded |
 | Acknowledgment within 100 ms | 100% of mutating Story Bible actions and other sites the catalog marks "slow" | Vitest with fake timers and a never-resolving stub: click, advance 100 ms, assert disabled or `aria-busy` |
 | Double-fire | 0 overlapping calls per action | Vitest with a counting stub: two rapid clicks produce one call |
@@ -155,7 +155,7 @@ Standard and ADR, latency baseline, catalog with ratchet, and Story Bible action
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Latency baseline | Manual-run harness, measured table for Python-backed and heavy Go-native operations, results note in `docs/research/` (no product code) | complete | 2 | - | - |
-| 2 | Standard, catalog and ratchet | ADR for the standard and thresholds, call-site catalog with verdicts (provisional cost classes), ratchet test, no-swallowed-catch rule | pending | 1 | - | - |
+| 2 | Standard, catalog and ratchet | ADR for the standard and thresholds, call-site catalog with verdicts (provisional cost classes), ratchet test, no-swallowed-catch rule | complete | 1 | - | - |
 | 3 | Story Bible action feedback | Shared pending hook, in-flight state and double-submit guard on save, create, rescan, lock, alias, relate, merge, delete, uncached preview; states and PNG review | pending | - | 1 (tiers), 2 (standard) | - |
 | 4 | Latency reduction (data-gated) | One spawn per edit (batch fields), lazy Piper import, seed path; Python and Go tests; only if Phase 1 justifies it | pending | 5 | 1 | - |
 | 5 | Completion that survives navigation | Host job-end events, App-level subscriber, toast queue and sticky errors, remove page-scoped completion; reuse the unified job snapshot if release-readiness Phase 1 has landed | pending | 4 | 2 (soft: release-readiness Phase 1) | - |

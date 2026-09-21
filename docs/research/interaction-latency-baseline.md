@@ -1,6 +1,6 @@
 # Interaction latency baseline
 
-**Measured 2026-09-21.** Phase 1 of the [interaction feedback audit](../prds/interaction-feedback-audit.prd.md): how long the Story Bible operations and the heavier Go calls take, so the feedback standard (the ADR written in phase 2) rests on numbers. The numbers are one machine's, and the frozen sidecar was measured from a build made for this run, not from a release.
+**Measured 2026-09-21.** Phase 1 of the [interaction feedback audit](../prds/interaction-feedback-audit.prd.md): how long the Story Bible operations and the heavier Go calls take, so the feedback standard ([ADR 0075](../adr/0075-every-action-that-leaves-the-interface-acknowledges-within-100-ms-cannot-be-fired-twice-and-tells-the-narrator-when-it-ends.md)) rests on numbers. The numbers are one machine's, and the frozen sidecar was measured from a build made for this run, not from a release.
 
 ## Method
 
@@ -70,7 +70,7 @@ All are under 10 ms at p50 and under 30 ms at the worst run, so **none needs mor
 3. **One Save is four spawns** (`GuideEdit` runs one process per field, `bindings.go`) and costs 1.2 to 1.8 s; sending the fields in one process would make it about the price of one edit. Seeding ten candidates is ten spawns, 3.7 to 7.5 s, inside an import.
 4. **Nothing here needs a fake or padded indicator.** Tier 2 operations need an in-flight state only; tier 3 needs a state that is honest about not knowing the duration (indeterminate), which is what the standard says.
 
-## Proposed tiers (adopted by the phase 2 ADR)
+## Proposed tiers (adopted by ADR 0075)
 
 | Tier | Duration | Treatment |
 | --- | --- | --- |
