@@ -477,27 +477,7 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
       effectiveSource: 'repo default',
     },
   ],
-  ManuscriptGuide: [
-    choice('spacy_model', 'spaCy model', ['en_core_web_sm', 'en_core_web_lg'], 'en_core_web_sm'),
-    ...[
-      ['character', 'Character', '3C7A5C'],
-      ['location', 'Location', '3F6EA6'],
-      ['organization', 'Organization', '7A5CAE'],
-      ['lore', 'Lore', '9A6B34'],
-      ['item', 'Item', '42758A'],
-      ['event', 'Event', '9A4E69'],
-      ['needs_review', 'Needs Review', 'B5473C'],
-    ].map(([key, label, value]) => ({
-      key: 'color_' + key,
-      label: label + ' color',
-      kind: 'color' as const,
-      choices: [],
-      value,
-      isSet: true,
-      effectiveValue: value,
-      effectiveSource: 'repo default',
-    })),
-  ],
+  ManuscriptGuide: [choice('spacy_model', 'spaCy model', ['en_core_web_sm', 'en_core_web_lg'], 'en_core_web_sm')],
   TranscriptCompare: [
     choice('model_size', 'Default Whisper model', ['tiny', 'small', 'medium', 'large-v3-turbo', 'large-v3'], 'small'),
     choice('chunk_seconds', 'Default chunk length', ['30', '60', '300', '600'], '60'),

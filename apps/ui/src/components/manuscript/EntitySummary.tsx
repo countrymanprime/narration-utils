@@ -8,13 +8,13 @@ import { TooltipTarget } from '../primitives/Tooltip';
 import { IconButton } from '../primitives/IconButton';
 
 export const BADGE_STYLE: Record<string, CSSProperties> = {
-  Character: { background: 'var(--character-soft)', color: 'var(--character)' },
-  Place: { background: 'var(--place-soft)', color: 'var(--place)' },
-  Organization: { background: 'var(--org-soft)', color: 'var(--org)' },
-  Review: { background: 'var(--review-soft)', color: 'var(--review)' },
-  Lore: { background: 'color-mix(in srgb, var(--lore) 18%, var(--surface))', color: 'var(--lore)' },
-  Item: { background: 'color-mix(in srgb, var(--item) 18%, var(--surface))', color: 'var(--item)' },
-  Event: { background: 'color-mix(in srgb, var(--event) 18%, var(--surface))', color: 'var(--event)' },
+  Character: { background: 'var(--character-soft)', color: 'var(--character-text)' },
+  Place: { background: 'var(--place-soft)', color: 'var(--place-text)' },
+  Organization: { background: 'var(--org-soft)', color: 'var(--org-text)' },
+  Review: { background: 'var(--review-soft)', color: 'var(--review-text)' },
+  Lore: { background: 'color-mix(in srgb, var(--lore) 18%, var(--surface))', color: 'var(--lore-text)' },
+  Item: { background: 'color-mix(in srgb, var(--item) 18%, var(--surface))', color: 'var(--item-text)' },
+  Event: { background: 'color-mix(in srgb, var(--event) 18%, var(--surface))', color: 'var(--event-text)' },
 };
 export const BADGE_CLASS =
   "inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold uppercase tracking-[0.03em]";
