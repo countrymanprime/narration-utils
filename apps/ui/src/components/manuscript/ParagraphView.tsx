@@ -91,7 +91,7 @@ export function ParagraphView({
   const entitiesById = useMemo(() => new Map(entities.map((entity) => [entity.id, entity])), [entities]);
   if (!paragraphs.length)
     return (
-      <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
+      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
         No highlighted entities parsed in this chapter yet.
       </p>
     );
@@ -169,7 +169,7 @@ function ParagraphRow({
   const gutterClass = [
     'relative flex items-start justify-center border-r border-[var(--border)]',
     "bg-[var(--surface-2)] px-1.5 font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.625rem] leading-3",
-    'text-[var(--text-faint)]',
+    'text-[var(--text-muted)]',
     lineNumberPadding,
   ].join(' ');
   const renderPiece = (piece: Piece, pieceIndex: number) =>

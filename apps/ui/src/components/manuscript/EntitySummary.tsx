@@ -53,14 +53,14 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
         <span className={BADGE_CLASS} style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
           {entity.review_state}
         </span>
-        <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
+        <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
           {entity.occurrence_count} occurrences
         </span>
       </div>
       <div>
         <div className="mb-1 text-[0.82rem] font-medium text-[var(--text-muted)]">Pronunciation</div>
         <p className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm">{entity.pronunciation.ipa || 'Not generated'}</p>
-        <p className="mt-0.5 text-xs" style={{ color: 'var(--text-faint)' }}>
+        <p className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
           Source: {entity.pronunciation.source} · Confidence: {entity.pronunciation.confidence}
         </p>
       </div>
@@ -73,7 +73,7 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
       <div>
         <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">Aliases</div>
         {entity.aliases.length === 0 ? (
-          <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             None.
           </p>
         ) : (
@@ -81,7 +81,7 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
             {entity.aliases.map((alias) => (
               <div key={alias.text} className="rounded border px-2 py-1.5" style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}>
                 <div className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm">{alias.text}</div>
-                <div className="mt-0.5 text-xs" style={{ color: 'var(--text-faint)' }}>
+                <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
                   {alias.pronunciation.ipa || 'Not generated'} · {alias.pronunciation.source} · {alias.occurrences.length} occurrence
                   {alias.occurrences.length === 1 ? '' : 's'}
                 </div>
@@ -105,7 +105,7 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
       <div>
         <div className="mb-1 text-[0.82rem] font-medium text-[var(--text-muted)]">Relationships</div>
         {entity.relationships.length === 0 ? (
-          <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             None.
           </p>
         ) : (
@@ -115,19 +115,19 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
       <div className="border-t pt-3" style={{ borderColor: 'var(--border)' }}>
         <div className="mb-1 text-[0.82rem] font-medium text-[var(--text-muted)]">
           Evidence{' '}
-          <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
+          <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
             ({evidence.length} shown)
           </span>
         </div>
         {evidence.length === 0 ? (
-          <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             No occurrences found yet.
           </p>
         ) : (
           evidence.map((item, index) => (
             <div key={index} className="flex items-center justify-between gap-2 border-b py-2 last:border-0" style={{ borderColor: 'var(--border)' }}>
               <div className="min-w-0 flex-1">
-                <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
+                <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
                   {item.chapter}
                   {item.alias ? (
                     <>

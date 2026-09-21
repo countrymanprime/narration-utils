@@ -6,7 +6,7 @@ import type { ManuscriptChapter, ReaderBookmark, SearchHit } from '../../types';
 export const STATUS_LABELS = { not_started: 'Not Started', recording: 'Recording', editing: 'Editing', proofing: 'Proofing', finalized: 'Finalized' } as const;
 export const STATUS_ORDER = ['not_started', 'recording', 'editing', 'proofing', 'finalized'] as const;
 export const STATUS_COLOR: Record<keyof typeof STATUS_LABELS, string> = {
-  not_started: 'var(--text-faint)',
+  not_started: 'var(--non-text)',
   recording: 'var(--info)',
   editing: 'var(--warn)',
   proofing: 'var(--org)',
@@ -40,7 +40,7 @@ export function ChapterNav({
   return (
     <div className="space-y-1">
       {searching && searchResults.length === 0 && (
-        <div className="p-2 text-xs" style={{ color: 'var(--text-faint)' }}>
+        <div className="p-2 text-xs" style={{ color: 'var(--text-muted)' }}>
           No matches
         </div>
       )}
@@ -56,7 +56,7 @@ export function ChapterNav({
               <span className="size-2 flex-none rounded-full" style={{ background: STATUS_COLOR[chapter.status] }} />
               <span className="flex-1 truncate text-sm font-medium">{chapter.title}</span>
               {chapterBookmark && <FontAwesomeIcon className="text-[var(--accent)]" icon={faBookmark} />}
-              <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
+              <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
                 {(chapter.wordCount / 1000).toFixed(0)}k
               </span>
             </button>
@@ -89,7 +89,7 @@ export function ChapterNav({
                         <FontAwesomeIcon icon={faBookmark} />
                         {item.kind === 'note' ? 'Note' : `Line ${lineNumber(item.paragraph)}`}
                       </button>
-                      <button className="text-[var(--text-faint)]" aria-label={`Remove ${item.kind} bookmark`} onClick={() => removeBookmark(item.id)}>
+                      <button className="text-[var(--text-muted)]" aria-label={`Remove ${item.kind} bookmark`} onClick={() => removeBookmark(item.id)}>
                         ×
                       </button>
                     </div>

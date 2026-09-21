@@ -303,7 +303,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
             </div>
           </div>
           <div className="mb-4 flex flex-wrap items-center gap-4">
-            <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+            <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
               Text size <Tooltip text="The manuscript always uses the full reading width - adjust text size instead." />
             </span>
             <ToggleGroup
@@ -345,15 +345,15 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
               >
                 <TooltipTarget className="-ml-1 flex size-[1.4rem]" text={chapterBookmark ? 'Remove chapter bookmark' : 'Bookmark this chapter'}>
                   <button
-                    className={`group relative flex size-[1.4rem] items-center justify-center ${chapterBookmark ? 'text-[var(--bookmark)]' : 'text-[var(--text-faint)]'}`}
+                    className={`group relative flex size-[1.4rem] items-center justify-center ${chapterBookmark ? 'text-[var(--bookmark)]' : 'text-[var(--non-text)]'}`}
                     onClick={() => void toggleChapterBookmark(chapter.id)}
                   >
                     <FontAwesomeIcon
-                      className={`absolute inset-0 m-auto size-[1.4rem] transition-opacity ${chapterBookmark ? 'opacity-0' : 'opacity-50 group-hover:opacity-0 group-focus-visible:opacity-0'}`}
+                      className={`absolute inset-0 m-auto size-[1.4rem] transition-opacity ${chapterBookmark ? 'opacity-0' : 'group-hover:opacity-0 group-focus-visible:opacity-0'}`}
                       icon={faBookmarkRegular}
                     />
                     <FontAwesomeIcon
-                      className={`absolute inset-0 m-auto size-[1.4rem] transition-opacity ${chapterBookmark ? 'opacity-100' : 'opacity-0 group-hover:opacity-70 group-focus-visible:opacity-70'}`}
+                      className={`absolute inset-0 m-auto size-[1.4rem] transition-opacity ${chapterBookmark ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100'}`}
                       icon={faBookmarkSolid}
                     />
                   </button>
@@ -362,13 +362,13 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
                   <h2 className="m-0 font-['Barlow_Condensed',sans-serif] text-[1.2rem] font-semibold">
                     {chapter.title}{' '}
                     {chapter.subtitle && (
-                      <span className="font-['IBM_Plex_Mono',monospace] text-[0.8rem] font-normal text-[var(--text-faint)]">— {chapter.subtitle}</span>
+                      <span className="font-['IBM_Plex_Mono',monospace] text-[0.8rem] font-normal text-[var(--text-muted)]">— {chapter.subtitle}</span>
                     )}
                   </h2>
                 </button>
                 <div className="justify-self-end text-right max-md:col-start-2 max-md:flex max-md:gap-2 max-md:justify-self-start">
                   <div className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs">{chapter.wordCount.toLocaleString()} words</div>
-                  <div className="mt-0.5 text-xs" style={{ color: 'var(--text-faint)' }}>
+                  <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
                     ~{Math.max(1, Math.round(chapter.wordCount / 200))} min read
                   </div>
                 </div>
@@ -422,13 +422,13 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
         {detail?.note ? (
           <>
             <div className="mb-3">
-              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 Anchored text
               </div>
               <p className="text-sm italic">“{detail.note.anchorText || 'Paragraph note'}”</p>
             </div>
             <div className="mb-4">
-              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 Note
               </div>
               <p className="text-sm">{detail.note.text}</p>
@@ -454,7 +454,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
           <>
             <SearchBar query={searchQuery} onQueryChange={(value) => void runSearch(value)} />
             <div className="mt-4 border-t pt-3">
-              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+              <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 Chapters
               </div>
               <ChapterNav
