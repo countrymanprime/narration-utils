@@ -27,6 +27,14 @@ for (const [key, title] of sections) {
   const entries = grouped.get(key);
   if (entries.length) output.push(`## ${title}`, '', ...entries, '');
 }
+// Every asset is attested by the release workflow (docs/adr/0071); say how a narrator checks one.
+const repository = process.env.GITHUB_REPOSITORY || '<owner>/<repo>';
+output.push(
+  '## Verifying this download',
+  '',
+  `Each file on this release has build provenance from this repository's release workflow. With the [GitHub CLI](https://cli.github.com): \`gh attestation verify <file> --repo ${repository}\`. The \`.sha256\` beside each file only detects a damaged download.`,
+  '',
+);
 const notes = `${output.join('\n').trim()}\n`;
 const destination = process.env.RELEASE_NOTES_FILE ?? 'release-notes.md';
 writeFileSync(destination, notes);

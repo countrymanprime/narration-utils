@@ -158,17 +158,17 @@ Each platform ships one asset named `narration-utils-<platform>.<ext>`, with a
 
 `scripts/release/assets.mjs` owns that table, packages each asset in CI
 (`pnpm release:package <platform>`), and checks a downloaded release
-(`pnpm release:verify-assets <dir>`).
+(`pnpm release:verify-assets <dir>`, offline: sizes and checksums only; promote adds `--attestations`).
 
 Use **Promote pre-release** with the RC tag when it is ready. Approval on the
 `production` environment gates the job, which then validates main ancestry and
-refuses to continue unless the Windows asset is attached and matches its
-checksum. A macOS or Linux asset that is missing is ignored (that release is
-Windows-only); one that is attached must be complete and match. It creates the
+refuses to continue unless the Windows asset is attached, matches its
+checksum and has build provenance (see [Build provenance](#build-provenance)). A macOS or Linux asset that is missing
+is ignored (that release is Windows-only); one that is attached must be complete, match and be attested. It creates the
 stable tag and GitHub release from the exact same downloaded assets and never
 rebuilds an approved candidate. Release candidates
-published before per-asset checksums (they carry `SHA256SUMS.txt`) cannot be
-promoted this way.
+published before per-asset checksums (they carry `SHA256SUMS.txt`), and ones published before attestations, cannot
+be promoted this way.
 
 ## Build provenance
 
@@ -192,7 +192,36 @@ level 3). The subjects are identified by digest:
 - Attestations prove which workflow, commit and run produced a file. They do not prove the source is benign, and they do
   not change how Windows SmartScreen or antivirus software treats an unsigned executable. The first stable release is
   unsigned and Windows-only (owner decision D7): signing is the owner's call, and no workflow here signs.
-- A release candidate published before this change has no attestations.
+- A release candidate published before this change has no attestations, so promote refuses it (it cannot be promoted
+  once attestations are enforced, as a candidate with `SHA256SUMS.txt` could not be promoted after ADR 0027). Only the
+  newest ten candidates are kept in any case.
+- **Promote verifies before it publishes.** `node scripts/release/assets.mjs verify <dir> --attestations` (the
+  `--attestations` flag needs `GITHUB_REPOSITORY` and an authenticated GitHub CLI, so `pnpm release:verify-assets` stays
+  offline) runs `gh attestation verify` for the archive and the checksum of every platform present, pinned with
+  `--repo`, `--signer-workflow <repository>/<workflow from the table above>`, `--source-ref refs/heads/main` and
+  `--deny-self-hosted-runners`. `--repo` alone would accept an attestation from any workflow of the repository, a
+  pull request's included. The signer workflows live in the `PLATFORMS` table of `scripts/release/assets.mjs`; rename a
+  workflow file and that table is the one place to change (its tests fail first). If a promote is refused, the message
+  names the file and gh's reason: a file with no attestation was not built by these workflows.
+- **What the certificate says.** The signer is the workflow in the certificate's subject alternative name,
+  `https://github.com/<repository>/.github/workflows/<file>@<ref>`; for a file attested inside a reusable workflow it is
+  the reusable workflow, and the calling workflow appears only in `buildConfigURI`. This was read from real attestations
+  made by a throwaway workflow before the flags were written ([ADR 0071](../adr/0071-releases-carry-build-provenance-and-promote-refuses-a-file-the-release-workflows-did-not-build.md)).
+
+### Verifying a download
+
+With the [GitHub CLI](https://cli.github.com), in the folder holding the file:
+
+```bash
+gh attestation verify narration-utils-windows-x64.zip --repo countrymanprime/narration-utils
+```
+
+Success prints the workflow, commit and run that built the file; a modified or unattested file fails. To insist on the
+release workflow and `main`, add `--signer-workflow countrymanprime/narration-utils/.github/workflows/prerelease.yml --source-ref refs/heads/main`
+(macOS and Linux: `_attach-platform.yml`). `gh attestation download <file> --repo ...` saves the attestation as a
+`.jsonl` bundle that `--bundle <file>` then verifies without asking GitHub for it. The same works for the executable
+inside the zip after extracting it, which is what an in-app update can check. The release notes say the same in one line.
+The `.sha256` beside a file only detects a damaged download: it is not evidence of where the file came from.
 
 ## Nx projects and the quality gate
 
