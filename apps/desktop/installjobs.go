@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	assetstore "github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/assets"
 )
 
 // The kinds of asset install. The wrappers over the voice and model bindings (TtsInstall, WhisperInstall) each start one.
@@ -63,8 +63,8 @@ type installSpec struct {
 	kind, assetID string
 	// endedKind is the job:ended kind (jobs.go); noun is the asset in the narrator's words ("voice", "Whisper model").
 	endedKind, noun string
-	files           []assetstore.File
-	run             func(ctx context.Context, options assetstore.Options) error
+	files           []assets.File
+	run             func(ctx context.Context, options assets.Options) error
 }
 
 // startInstall starts the install of one approved asset, or joins the one already running for it: a second press, a second window or a
@@ -143,14 +143,14 @@ func (h *Host) runGuarded(ctx context.Context, spec installSpec, job *installJob
 			err = fmt.Errorf("the install stopped unexpectedly: %v", recovered)
 		}
 	}()
-	return spec.run(ctx, assetstore.Options{
-		OnProgress: func(file assetstore.File, done int64) { job.record(file, done) },
-		OnVerify:   func(assetstore.File) { job.checking(spec.noun) },
+	return spec.run(ctx, assets.Options{
+		OnProgress: func(file assets.File, done int64) { job.record(file, done) },
+		OnVerify:   func(assets.File) { job.checking(spec.noun) },
 	})
 }
 
 // record notes the bytes of one file so far and moves the job back to downloading (a later file follows a checked one).
-func (j *installJob) record(file assetstore.File, done int64) {
+func (j *installJob) record(file assets.File, done int64) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	if done > j.received[file.Name] {
@@ -188,14 +188,24 @@ func capitalize(text string) string {
 	return strings.ToUpper(text[:1]) + text[1:]
 }
 
-// installFailureText is what a narrator reads when an install failed: a sentence about what to do, never the address or the socket error
+// installFailureText is what a narrator reads when an install failed: what happened and what to do, never the address or the socket error
 // (those are in the host log).
 func installFailureText(err error, noun string) string {
+	var short *assets.InsufficientSpaceError
+	var status *assets.StatusError
 	switch {
-	case errors.Is(err, assetstore.ErrChecksumMismatch), errors.Is(err, assetstore.ErrSizeMismatch):
+	case errors.Is(err, assets.ErrChecksumMismatch), errors.Is(err, assets.ErrSizeMismatch):
 		return "The downloaded " + noun + " did not match the approved file, so it was not installed. Try again; if it keeps happening, the file may have changed at its source."
+	case errors.As(err, &short):
+		return short.Error()
+	case assets.IsDiskFull(err):
+		return "The disk filled up while the " + noun + " was downloading. Free some space and try again: what was downloaded so far is kept, so the download carries on from there."
+	case errors.As(err, &status) && status.Missing():
+		return "The download host no longer has the approved " + noun + ". This is a problem with the release, not with your connection: please report it."
+	case errors.As(err, &status):
+		return "The download host is busy or refused the request. Try again in a few minutes."
 	}
-	return "The " + noun + " could not be downloaded. Check your internet connection and try again."
+	return "The " + noun + " could not be downloaded. Check your internet connection and try again: what was downloaded so far is kept, so the download carries on from there."
 }
 
 func (h *Host) installJobByID(id, what string) (*installJob, error) {

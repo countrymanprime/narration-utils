@@ -103,6 +103,18 @@ Existing caches created by retired Windows bootstrap scripts should be detected 
 documented migration/repair path. Do not silently adopt files whose version or
 hash cannot be verified against the asset catalog.
 
+## The asset manager (implemented)
+
+`apps/desktop/internal/assets` owns the lifecycle for every asset kind ([ADR 0078](../adr/0078-asset-state-comes-from-the-manifest-an-asset-is-read-in-full-once-per-session-and-a-failed-download-resumes.md)):
+
+- **Layout.** `<per-user cache>/narration-utils/assets/<kind>/<provider>/<id>/<version>/`. The cache folder is `os.UserCacheDir()`; when the operating system cannot name it there is no fallback to the temporary folder, the catalog is unavailable and the host log says why. Nothing ever deletes an installed asset except the narrator's Remove.
+- **Manifest.** `manifest.json` in the install folder records provider, id, exact version, every file with its size, SHA-256, source URL and modification time, when it was installed and last verified, and whether the last Verify found it damaged.
+- **State is cheap.** A listing trusts the manifest: an asset whose manifest names the catalog's files, sizes and hashes and whose files still have the recorded size and modification time is `installed` without reading a byte (all five Whisper models, 5.3 GB, list in 0.6 ms; reading them was 3.2 s). Anything else is hashed. The first use of an asset in a session (`assets.Ready`, called by `Paths` and `Dir`) reads it in full once, so damage since the install is found before the model loads. `Verify` always reads it in full and records the result; a failed one marks the asset `verification_failed` until `Repair`.
+- **Install and repair.** Files download to `<version>.installing`, each is checked against its size and SHA-256, and the folder is renamed into place; a folder that is already there is renamed aside first and removed only when the new one is in, and put back if that fails. A file the catalog does not name never lands in an install. `Repair` reads the asset, downloads it again only if it is damaged, and leaves a good one alone.
+- **Resume.** What arrived before a network or disk failure stays as `<file>.part` and the next attempt continues it with an HTTP Range request (Hugging Face answers `206 Partial Content`; a host that ignores the range is started from the top, and a refused range starts over). A cancel, or a file that fails its hash, removes it. A staging folder older than a week (and the aside copy of a repair older than an hour) is removed at start.
+- **Disk.** Before anything is written the free space on the cache disk is checked against what is still to be downloaded plus 64 MB, and a refusal names both sizes. A disk that fills mid-download keeps what arrived.
+- **Failures the narrator reads** are sentences (checksum mismatch, no room, a host that no longer has the file or is busy, no connection); the cause is in the host log as `install_failed`.
+
 ## Acceptance criteria
 
 - A clean machine can install a GitHub release and open the app without a

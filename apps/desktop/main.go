@@ -15,7 +15,7 @@ import (
 // of a checkout path.
 //
 //go:embed all:cmd/narration-utils/frontend/dist
-var assets embed.FS
+var frontendAssets embed.FS
 
 // Release preparation places the immutable Python sidecars and their runtime
 // files here. They are embedded into the native application rather than read
@@ -39,7 +39,7 @@ func main() {
 		Height:             860,
 		MinWidth:           960,
 		MinHeight:          640,
-		AssetServer:        &assetserver.Options{Assets: assets, Middleware: app.mediaMiddleware},
+		AssetServer:        &assetserver.Options{Assets: frontendAssets, Middleware: app.mediaMiddleware},
 		OnStartup:          app.Startup,
 		OnShutdown:         app.Shutdown,
 		Bind:               []interface{}{app},

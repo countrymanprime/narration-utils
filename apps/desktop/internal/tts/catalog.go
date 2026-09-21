@@ -70,7 +70,8 @@ func (m *Manager) Paths(id string) (string, string, error) {
 	if !ok {
 		return "", "", fmt.Errorf("the selected voice is not in the approved catalog")
 	}
-	if m.State(v) != "installed" {
+	// The first use of a session reads the voice in full, so a file damaged since the install is found here and not by Piper failing on it.
+	if assets.Ready(m.root, v.Provider, v.ID, v.Version, v.Files) != "installed" {
 		return "", "", fmt.Errorf("the selected voice is not installed or did not verify")
 	}
 	root := assets.Dir(m.root, v.Provider, v.ID, v.Version)
@@ -103,7 +104,34 @@ func (m *Manager) InstallWith(ctx context.Context, id string, options assets.Opt
 	if !ok {
 		return fmt.Errorf("the selected voice is not in the approved catalog")
 	}
-	return assets.InstallWith(ctx, m.root, v.Provider, v.ID, v.Version, v.Files, options)
+	return assets.InstallWith(ctx, m.root, v.Provider, v.ID, v.Version, v.Files, withDefaults(options))
+}
+
+// Verify reads every byte of a voice and says whether it is installed, damaged or absent (the narrator's Verify).
+func (m *Manager) Verify(id string) (string, error) {
+	v, ok := m.Voice(id)
+	if !ok {
+		return "", fmt.Errorf("the selected voice is not in the approved catalog")
+	}
+	assets.Forget(m.root, v.Provider, v.ID, v.Version)
+	return assets.Verify(m.root, v.Provider, v.ID, v.Version, v.Files), nil
+}
+
+// Repair downloads a damaged voice again and swaps it in; a voice that verifies is left alone.
+func (m *Manager) Repair(ctx context.Context, id string, options assets.Options) error {
+	v, ok := m.Voice(id)
+	if !ok {
+		return fmt.Errorf("the selected voice is not in the approved catalog")
+	}
+	return assets.Repair(ctx, m.root, v.Provider, v.ID, v.Version, v.Files, withDefaults(options))
+}
+
+// withDefaults asks the disk before a download unless the caller brought its own check.
+func withDefaults(options assets.Options) assets.Options {
+	if options.Preflight == nil {
+		options.Preflight = assets.RequireFreeSpace
+	}
+	return options
 }
 func (m *Manager) Remove(id string) error {
 	v, ok := m.Voice(id)

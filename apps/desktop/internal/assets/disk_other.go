@@ -1,8 +1,11 @@
 //go:build !windows
 
-package update
+package assets
 
 import (
+	"errors"
+	"syscall"
+
 	"golang.org/x/sys/unix"
 )
 
@@ -15,3 +18,6 @@ func FreeBytes(path string) (uint64, error) {
 	}
 	return uint64(stat.Bavail) * uint64(stat.Bsize), nil //nolint:gosec // G115: block counts and sizes are never negative
 }
+
+// IsDiskFull reports whether err is the disk having no room left (ENOSPC).
+func IsDiskFull(err error) bool { return errors.Is(err, syscall.ENOSPC) }

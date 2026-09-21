@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	assetstore "github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/assets"
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
@@ -166,6 +166,19 @@ func (h *Host) Startup(ctx context.Context) {
 	h.mu.Unlock()
 	go h.transcriptLoop(runtimeContext)
 	go h.startupUpdateCheck(runtimeContext, startupUpdateDelay)
+	go h.cleanStaleDownloads()
+}
+
+// cleanStaleDownloads removes the leftovers of a download or repair that was interrupted long ago. It never runs while a download of this
+// session could be using them: it only touches folders older than a week (or an hour for the aside copy of a repair).
+func (h *Host) cleanStaleDownloads() {
+	base, err := assetCacheBase()
+	if err != nil {
+		return
+	}
+	for _, removed := range cleanAssetCaches(base) {
+		_ = h.log.Report("asset_cache_cleaned", removed)
+	}
 }
 
 // configureLocked rebuilds project-scoped services from launcher arguments.
@@ -201,25 +214,14 @@ func (h *Host) configureLocked(next config) {
 	h.settings.SetProject(h.config.projectFolder)
 	h.guide = guide.New(h.config.projectFolder, h.config.manuscriptPython, h.config.manuscriptBackend, h.settings, h.sidecars)
 	h.guide.SetPersist(h.persist)
-	cacheBase, cacheErr := os.UserCacheDir()
+	cacheBase, cacheErr := assetCacheBase()
 	if cacheErr != nil {
-		cacheBase = os.TempDir()
-	}
-	cacheRoot := filepath.Join(cacheBase, "narration-utils", "assets", "tts")
-	catalog := layout.Path(h.config.repoRoot, layout.TTSCatalogFile)
-	if _, err := os.Stat(catalog); err != nil && packagedRoot != "" {
-		catalog = filepath.Join(packagedRoot, "config", "tts-assets.json")
-	}
-	if manager, err := tts.New(catalog, cacheRoot); err == nil {
-		h.tts = manager
-	}
-	whisperCacheRoot := filepath.Join(cacheBase, "narration-utils", "assets", "whisper")
-	whisperCatalog := layout.Path(h.config.repoRoot, layout.WhisperCatalogFile)
-	if _, err := os.Stat(whisperCatalog); err != nil && packagedRoot != "" {
-		whisperCatalog = filepath.Join(packagedRoot, "config", "whisper-assets.json")
-	}
-	if manager, err := whisper.New(whisperCatalog, whisperCacheRoot); err == nil {
-		h.whisper = manager
+		// No model or voice can be installed without a cache folder, so no manager is built and the first-use gates say the catalog is
+		// unavailable (the temporary folder is never a fallback).
+		_ = h.log.Report("asset_cache_unavailable", cacheErr.Error())
+	} else {
+		h.tts = buildTtsManager(h.config, packagedRoot, filepath.Join(cacheBase, ttsCacheDir), h.tts)
+		h.whisper = buildWhisperManager(h.config, packagedRoot, filepath.Join(cacheBase, whisperCacheDir), h.whisper)
 	}
 	var client *bridge.Client
 	if h.config.sessionDir != "" {
@@ -814,7 +816,7 @@ func (h *Host) startTtsInstall(voiceID string) (map[string]any, error) {
 		return nil, fmt.Errorf("the selected voice is not in the approved catalog")
 	}
 	return h.startInstall(installSpec{kind: installKindTts, assetID: voiceID, endedKind: jobKindTtsInstall, noun: "voice", files: voice.Files,
-		run: func(ctx context.Context, options assetstore.Options) error {
+		run: func(ctx context.Context, options assets.Options) error {
 			return manager.InstallWith(ctx, voiceID, options)
 		}}), nil
 }
@@ -843,7 +845,7 @@ func (h *Host) startWhisperInstall(modelID string) (map[string]any, error) {
 		return nil, fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
 	return h.startInstall(installSpec{kind: installKindWhisper, assetID: modelID, endedKind: jobKindWhisperInstall, noun: "Whisper model", files: model.Files,
-		run: func(ctx context.Context, options assetstore.Options) error {
+		run: func(ctx context.Context, options assets.Options) error {
 			return manager.InstallWith(ctx, modelID, options)
 		}}), nil
 }

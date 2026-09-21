@@ -76,7 +76,9 @@ func (m *Manager) Dir(id string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
-	if m.State(model) != "installed" {
+	// The first use of a session reads the model in full, so a file damaged since the install is found here and not by the model failing
+	// to load.
+	if assets.Ready(m.root, model.Provider, model.ID, model.Version, model.Files) != "installed" {
 		return "", fmt.Errorf("the selected Whisper model is not installed or did not verify")
 	}
 	return assets.Dir(m.root, model.Provider, model.ID, model.Version), nil
@@ -97,7 +99,34 @@ func (m *Manager) InstallWith(ctx context.Context, id string, options assets.Opt
 	if !ok {
 		return fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
-	return assets.InstallWith(ctx, m.root, model.Provider, model.ID, model.Version, model.Files, options)
+	return assets.InstallWith(ctx, m.root, model.Provider, model.ID, model.Version, model.Files, withDefaults(options))
+}
+
+// Verify reads every byte of a model and says whether it is installed, damaged or absent (the narrator's Verify).
+func (m *Manager) Verify(id string) (string, error) {
+	model, ok := m.Model(id)
+	if !ok {
+		return "", fmt.Errorf("the selected Whisper model is not in the approved catalog")
+	}
+	assets.Forget(m.root, model.Provider, model.ID, model.Version)
+	return assets.Verify(m.root, model.Provider, model.ID, model.Version, model.Files), nil
+}
+
+// Repair downloads a damaged model again and swaps it in; a model that verifies is left alone.
+func (m *Manager) Repair(ctx context.Context, id string, options assets.Options) error {
+	model, ok := m.Model(id)
+	if !ok {
+		return fmt.Errorf("the selected Whisper model is not in the approved catalog")
+	}
+	return assets.Repair(ctx, m.root, model.Provider, model.ID, model.Version, model.Files, withDefaults(options))
+}
+
+// withDefaults asks the disk before a download unless the caller brought its own check.
+func withDefaults(options assets.Options) assets.Options {
+	if options.Preflight == nil {
+		options.Preflight = assets.RequireFreeSpace
+	}
+	return options
 }
 func (m *Manager) Remove(id string) error {
 	model, ok := m.Model(id)

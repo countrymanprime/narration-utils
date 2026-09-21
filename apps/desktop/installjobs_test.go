@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	assetstore "github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/assets"
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
@@ -255,12 +256,12 @@ func TestARunningInstallBlocksAProjectAttachUntilItEnds(t *testing.T) {
 // The message follows the phase: a file that follows a checked one is being downloaded, and the job says so.
 func TestAnInstallGoesBackToDownloadingWhenTheNextFileStarts(t *testing.T) {
 	job := &installJob{phase: installPhaseDownloading, message: "Downloading the voice…", downloadingText: "Downloading the voice…", total: 10, received: map[string]int64{}}
-	job.record(assetstore.File{Name: "a"}, 5)
+	job.record(assets.File{Name: "a"}, 5)
 	job.checking("voice")
 	if job.phase != installPhaseVerifying || !strings.Contains(job.message, "Checking") {
 		t.Fatalf("after a check: %s %q", job.phase, job.message)
 	}
-	job.record(assetstore.File{Name: "b"}, 1)
+	job.record(assets.File{Name: "b"}, 1)
 	if job.phase != installPhaseDownloading || job.message != "Downloading the voice…" {
 		t.Fatalf("the next file: %s %q", job.phase, job.message)
 	}
@@ -288,5 +289,32 @@ func TestStartingAgainAfterACancelStartsANewDownload(t *testing.T) {
 	waitForPhase(t, voiceState(f, second["id"].(string)), "success")
 	if final := voiceState(f, first["id"].(string))(); final["phase"] != "cancelled" {
 		t.Fatalf("the first job ended %v, want cancelled", final["phase"])
+	}
+}
+
+// What a narrator reads for each way an install can fail: what happened and what to do, never an address or a socket error.
+func TestInstallFailureTextSaysWhatHappenedAndWhatToDo(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want string
+	}{
+		{"a file that is not the approved one", assets.ErrChecksumMismatch, "did not match the approved file"},
+		{"a size that is not the approved one", assets.ErrSizeMismatch, "did not match the approved file"},
+		{"a disk that cannot hold it", &assets.InsufficientSpaceError{Need: 3 << 30, Free: 1 << 30}, "not enough free space"},
+		{"a host that no longer has the file", &assets.StatusError{Code: 404, Status: "404 Not Found"}, "no longer has"},
+		{"a host that is busy", &assets.StatusError{Code: 429, Status: "429 Too Many Requests"}, "busy"},
+		{"a host that is down", &assets.StatusError{Code: 503, Status: "503 Service Unavailable"}, "busy"},
+		{"a connection that dropped", assets.ErrIncomplete, "internet connection"},
+		{"no network at all", errors.New(`Get "https://huggingface.co/x": dial tcp: lookup huggingface.co: no such host`), "internet connection"},
+	}
+	for _, c := range cases {
+		text := installFailureText(c.err, "voice")
+		if !strings.Contains(text, c.want) {
+			t.Errorf("%s: %q does not say %q", c.name, text, c.want)
+		}
+		if strings.Contains(text, "huggingface") || strings.Contains(text, "dial tcp") || strings.Contains(text, "404 Not Found") {
+			t.Errorf("%s: %q leaks the technical text", c.name, text)
+		}
 	}
 }
