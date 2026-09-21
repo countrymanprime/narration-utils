@@ -83,7 +83,8 @@ export const STATE_CATALOG: StateEntry[] = [
   {
     page: 'manuscript',
     state: 'invalid-payload',
-    description: 'Manuscript, the inline error with Retry when the data it loads could not be read; navigation still works (ADR 0069)',
+    description:
+      'Manuscript, the inline error with Retry when the data it loads could not be read, beside the notice Home raised for the same data; navigation still works (ADR 0069, 0075)',
   },
 
   // Proofing
