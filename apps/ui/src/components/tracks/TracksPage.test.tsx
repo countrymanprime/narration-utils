@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TracksPage } from './TracksPage';
@@ -70,7 +70,9 @@ describe('TracksPage', () => {
     });
     const tracksSelect = vi.spyOn(api, 'tracksSelect');
 
-    expect(await screen.findByText('Choose a REAPER project file')).toBeTruthy();
+    // The prompt is a named region under the page heading, so a screen reader can list and jump to it.
+    const prompt = await screen.findByRole('region', { name: 'Choose a REAPER project file' });
+    expect(within(prompt).getByRole('heading', { level: 2, name: 'Choose a REAPER project file' })).toBeTruthy();
     await user.click(screen.getByText('C:/Book/Final.rpp'));
 
     await waitFor(() => expect(tracksSelect).toHaveBeenCalledWith('C:/Book/Final.rpp'));
@@ -92,7 +94,8 @@ describe('TracksPage', () => {
   it('explains when the project folder has no .rpp file instead of showing a blank page', async () => {
     renderTracksPage({}, { tracksCandidates: [] });
 
-    expect(await screen.findByText('No REAPER project file found')).toBeTruthy();
+    const empty = await screen.findByRole('region', { name: 'No REAPER project file found' });
+    expect(within(empty).getByRole('heading', { level: 2 })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Play' })).toBeNull();
   });
 

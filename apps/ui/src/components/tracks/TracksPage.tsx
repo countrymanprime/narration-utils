@@ -22,8 +22,7 @@ function formatTime(seconds: number): string {
 
 function RppPicker({ discovery, onSelect }: { discovery: TracksDiscovery; onSelect: (path: string) => void }) {
   return (
-    <Panel>
-      <div className="font-semibold">Choose a REAPER project file</div>
+    <Panel title="Choose a REAPER project file">
       <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
         More than one .rpp file was found in this project folder. Choose which one to read tracks from.
       </p>
@@ -172,8 +171,7 @@ export function TracksPage() {
         </p>
       )}
       {discovery && discovery.candidates.length === 0 && (
-        <Panel>
-          <div className="font-semibold">No REAPER project file found</div>
+        <Panel title="No REAPER project file found">
           <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
             This project folder doesn&rsquo;t contain a .rpp file. Save your REAPER project into the folder, then reopen this page.
           </p>

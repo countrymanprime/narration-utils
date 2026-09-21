@@ -352,8 +352,7 @@ export function Transcript({
         </section>
       )}
       {phase === 'chapter' && (
-        <Panel>
-          <h2 className="font-medium">Choose manuscript chapter</h2>
+        <Panel title="Choose manuscript chapter">
           <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
             The track name did not confidently match a chapter.
           </p>
