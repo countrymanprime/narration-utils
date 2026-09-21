@@ -1,6 +1,6 @@
 # TXT and EPUB Manuscript Import
 
-**Source:** user request of 2026-09-20 ("add a PRD to support TXT and EPUB imports"). Citations are `file:line` on branch `claude/reverent-dijkstra-d02b07` at 6c037d3f. Nothing here is built yet. Related: [import-structure-toc-and-characters.prd.md](import-structure-toc-and-characters.prd.md) (shares `model.go`; its Phase 4 reads a docx TOC, which an EPUB gives us structurally), [import-review-redesign.prd.md](import-review-redesign.prd.md) (the dialog and `Home.tsx`), verification-and-code-health-tooling.prd.md (PRD deleted, delivered) Phase 6 (fuzz targets).
+**Source:** user request of 2026-09-20 ("add a PRD to support TXT and EPUB imports"). Citations are `file:line` on branch `claude/reverent-dijkstra-d02b07` at 6c037d3f. Nothing here is built yet. Related: [import-structure-toc-and-characters.prd.md](import-structure-toc-and-characters.prd.md) (shares `model.go`; its Phase 4 reads a docx TOC, which an EPUB gives us structurally), [the import review](../architecture/import-review.md) (the dialog and `Home.tsx`; its PRD is delivered and deleted), verification-and-code-health-tooling.prd.md (PRD deleted, delivered) Phase 6 (fuzz targets).
 
 ## Problem Statement
 
@@ -142,7 +142,7 @@ We believe that importing TXT and EPUB directly, with the same chapter, formatti
 
 | Phase | Files and areas touched | Collision risk |
 | --- | --- | --- |
-| 1 | `apps/desktop/internal/importer/{importer,formats,txt}.go` and tests, `apps/desktop/bindings.go:294`, `apps/desktop/cmd/manuscript-import/main.go`, `apps/ui/src/api/contracts/manuscript.ts`, `Home.tsx:135`, `mockApi.ts`, `tests/fixtures/*`, `apps/desktop/go.mod` | [import-review-redesign](import-review-redesign.prd.md) Phase 1 (extracts the review body from `Home.tsx`; land it first or rebase), [import-structure](import-structure-toc-and-characters.prd.md) Phase 1 (`model.go`, `docx.go`, `markdown.go`), [wire contracts](../architecture/wire-contracts.md) (schema validation, delivered), Base UI foundation (`go.mod` is separate, `package.json` is not touched) |
+| 1 | `apps/desktop/internal/importer/{importer,formats,txt}.go` and tests, `apps/desktop/bindings.go:294`, `apps/desktop/cmd/manuscript-import/main.go`, `apps/ui/src/api/contracts/manuscript.ts`, `Home.tsx:135`, `mockApi.ts`, `tests/fixtures/*`, `apps/desktop/go.mod` | [the import review](../architecture/import-review.md) (its extraction of the review body from `Home.tsx` is delivered: `ImportReview.tsx`), [import-structure](import-structure-toc-and-characters.prd.md) Phase 1 (`model.go`, `docx.go`, `markdown.go`), [wire contracts](../architecture/wire-contracts.md) (schema validation, delivered), Base UI foundation (`go.mod` is separate, `package.json` is not touched) |
 | 2 | `epub*.go` and tests, `formats.go`, `tests/fixtures/generate_alice.py` | Phase 1 only |
 | 3 | `epub*.go`, `model.go` and `service.go:390` if a kind is passed through | import-structure Phases 1-3 (`model.go`, contentKind consumers `app.go:596`, `state.ts:7`) |
 | 4 | `detect.go`, `docs/**`, `docs/images/ui/*`, `docs/adr/`, `docs/prds/README.md` | ADR number and the README index; the Go fuzz targets of the delivered verification tooling ([Property tests and fuzzing](../operations/verification-tooling.md#property-tests-and-fuzzing); add the two fuzz targets there) |

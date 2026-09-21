@@ -208,3 +208,16 @@ func TestPreviewSectionSubtitlesAreTheSubtitlesTheWrittenChaptersGet(t *testing.
 		t.Errorf("subtitles = %q and %q", sections[0].Subtitle, sections[1].Subtitle)
 	}
 }
+
+// The review shows what the importer repaired in the source (a title and subtitle it found run together) where the preview log used to be the
+// only place that said so, so the repairs travel in the preview itself, and only when there are some.
+func TestPreviewPayloadCarriesTheRepairsTheImporterMade(t *testing.T) {
+	repaired := previewPayload(importer.Draft{Format: "docx", SourceName: "a.docx", Notices: []string{"Heading \"CHAPTER ONEBad\" was split."}})
+	if got, ok := repaired["notices"].([]string); !ok || len(got) != 1 || !strings.Contains(got[0], "CHAPTER ONE") {
+		t.Fatalf("notices = %#v", repaired["notices"])
+	}
+	untouched := previewPayload(importer.Draft{Format: "markdown", SourceName: "a.md"})
+	if _, present := untouched["notices"]; present {
+		t.Fatalf("a preview with no repairs must not carry the field, got %#v", untouched["notices"])
+	}
+}

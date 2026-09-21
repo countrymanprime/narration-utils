@@ -25,6 +25,7 @@ Storybook title: `Primitives/Tooltip`. Source: `src/components/primitives/Toolti
 - `src/App.tsx`
 - `src/components/home/AudiobookEstimatePanel.tsx`
 - `src/components/home/Home.tsx`
+- `src/components/home/ImportReview.tsx`
 - `src/components/manuscript/EntitySummary.tsx`
 - `src/components/manuscript/Manuscript.tsx`
 - `src/components/primitives/MeterBar.tsx`

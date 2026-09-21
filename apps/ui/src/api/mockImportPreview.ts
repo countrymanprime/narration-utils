@@ -1,7 +1,15 @@
 import type { ManuscriptImportPreview, ManuscriptImportSection } from './contracts/manuscript';
 
-/** Which manuscript the mock host says the narrator picked: a Word file, or a Markdown one (which has the heading-level choice). */
-export type MockImportKind = 'docx' | 'markdown';
+/**
+ * Which manuscript the mock host says the narrator picked: a Word file, a Markdown one (which has the heading-level choice), or a Word
+ * file whose headings had a title and subtitle run together, which the importer split and reports as a repair.
+ */
+export type MockImportKind = 'docx' | 'markdown' | 'repaired';
+
+const REPAIR_NOTICES = [
+  'Heading "CHAPTER ONEDown the Rabbit-Hole" had no gap between its number and title; split into "CHAPTER ONE" and "Down the Rabbit-Hole".',
+  'Heading "CHAPTER TWOThe Pool of Tears" had no gap between its number and title; split into "CHAPTER TWO" and "The Pool of Tears".',
+];
 
 // The sections of every kind the importer proposes for a book with front matter, chapters, a character list and a glossary. They
 // are in the order the host sends them: the titles the parser read come first, in document order, and "Front Matter" (the
@@ -31,7 +39,7 @@ const SECTIONS: readonly ManuscriptImportSection[] = [
 export function mockImportPreview(kind: MockImportKind = 'docx'): ManuscriptImportPreview {
   const sections = SECTIONS.map((section) => ({ ...section }));
   return {
-    format: kind,
+    format: kind === 'markdown' ? 'markdown' : 'docx',
     sourceName: kind === 'markdown' ? 'Alice.md' : 'Alice.docx',
     paragraphCount: sections.reduce((total, section) => total + section.paragraphCount, 0),
     chapterTitles: sections.filter((section) => section.contentKind !== 'opening').map((section) => section.title),
@@ -46,6 +54,7 @@ export function mockImportPreview(kind: MockImportKind = 'docx'): ManuscriptImpo
       },
       { id: 'candidate-section-0007-003', name: 'The Duchess', description: '', sourceSectionId: 'section-0007' },
     ],
+    ...(kind === 'repaired' ? { notices: [...REPAIR_NOTICES] } : {}),
   };
 }
 
@@ -68,6 +77,7 @@ export function mockImportPreviewLog(preview: ManuscriptImportPreview, headingLe
         ];
   return [
     ...read,
+    ...(preview.notices ?? []),
     'Classifying front matter, chapters and reference sections',
     `Found ${chapters} chapters in ${sections.length} sections`,
     `Preview ready: ${preview.paragraphCount} paragraphs, ${chapters} chapters, ${suggestions} character suggestions`,

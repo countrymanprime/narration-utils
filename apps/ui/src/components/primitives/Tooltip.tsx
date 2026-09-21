@@ -1,6 +1,6 @@
 import { Popover } from '@base-ui/react/popover';
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip';
-import { isValidElement, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { isValidElement, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { HINT_POPUP_ATTRIBUTE, HINT_POPUP_CLASSES } from './hintLayer';
 import { lastInputWasKeyboard } from './inputModality';
 
@@ -48,11 +48,24 @@ export function TooltipTarget({ text, children, className = '', style }: { text:
 
 // The "i" next to a label. It is a real button, so the keyboard reaches it and a screen reader announces it, and its text
 // is its accessible description (a hint that only appears on hover is invisible to a screen reader). Hover (after a
-// second), keyboard focus and a press open the popup; Escape closes it.
-export function Tooltip({ text }: { text: string }) {
+// second), keyboard focus and a press open the popup; Escape closes it. `label` names the icon when a page has more than one, so a screen
+// reader can tell them apart ("About reference material").
+export function Tooltip({ text, label = 'More information' }: { text: string; label?: string }) {
   const [open, setOpen] = useState(false);
   const openedByFocus = useRef(false);
   const popupRef = useRef<HTMLDivElement>(null);
+  // Escape closes the note wherever focus is (WCAG 1.4.13: dismissible without moving the pointer or focus). Base UI closes it from its own
+  // handler, but inside a dialog that handler is not reached for a note opened by hover, so the icon listens itself while its note is open.
+  useEffect(() => {
+    if (!open) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      openedByFocus.current = false;
+      setOpen(false);
+    };
+    document.addEventListener('keydown', closeOnEscape, true);
+    return () => document.removeEventListener('keydown', closeOnEscape, true);
+  }, [open]);
   return (
     <Popover.Root
       open={open}
@@ -71,7 +84,7 @@ export function Tooltip({ text }: { text: string }) {
       <Popover.Trigger
         openOnHover
         delay={HOVER_DELAY_MS}
-        aria-label="More information"
+        aria-label={label}
         aria-description={text}
         onFocus={() => {
           if (!lastInputWasKeyboard()) return;
