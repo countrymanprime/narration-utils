@@ -43,16 +43,17 @@
   --item: #42758a;
   --event: #9a4e69;
   --note: #b85c1e;
-  /* Text on a tint of the kind's own colour (highlights, entity badges): the kind colour mixed halfway toward the text
-     colour, so the hue survives and 4.5:1 holds (ADR 0059). Defined once for both themes: it resolves against the theme's own
-     --text, and it follows a user override of the kind colour. The tint and the underline stay the pure kind colour. */
-  --character-text: color-mix(in srgb, var(--character) 50%, var(--text));
-  --place-text: color-mix(in srgb, var(--place) 50%, var(--text));
-  --org-text: color-mix(in srgb, var(--org) 50%, var(--text));
-  --review-text: color-mix(in srgb, var(--review) 50%, var(--text));
-  --lore-text: color-mix(in srgb, var(--lore) 50%, var(--text));
-  --item-text: color-mix(in srgb, var(--item) 50%, var(--text));
-  --event-text: color-mix(in srgb, var(--event) 50%, var(--text));
+  /* Text on a tint of the kind's own colour (highlights, entity badges): 45% of the kind colour and 55% of the text colour,
+     so the hue survives and 4.5:1 holds (ADR 0059), including where one highlight is nested in another and the tints add up
+     (at 50% the dark theme fell to 4.4:1 there). Defined once for both themes: it resolves against the theme's own --text,
+     and it follows a user override of the kind colour. The tint and the underline stay the pure kind colour. */
+  --character-text: color-mix(in srgb, var(--character) 45%, var(--text));
+  --place-text: color-mix(in srgb, var(--place) 45%, var(--text));
+  --org-text: color-mix(in srgb, var(--org) 45%, var(--text));
+  --review-text: color-mix(in srgb, var(--review) 45%, var(--text));
+  --lore-text: color-mix(in srgb, var(--lore) 45%, var(--text));
+  --item-text: color-mix(in srgb, var(--item) 45%, var(--text));
+  --event-text: color-mix(in srgb, var(--event) 45%, var(--text));
   --danger: #b5473c;
   --warn: #b5871e;
   --info: #3f6ea6;

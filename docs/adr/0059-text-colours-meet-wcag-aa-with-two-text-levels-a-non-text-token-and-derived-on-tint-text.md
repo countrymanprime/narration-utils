@@ -39,3 +39,11 @@ The current colour values live in `apps/ui/src/styles.css` and are described in 
 - Highlights and badges are a little darker (light) or lighter (dark) than the pure category colour, and the underline keeps the pure colour.
 - Border contrast (`--border` at 1.56:1 on white, WCAG 1.4.11 for component boundaries) is not decided here.
 - To change any of this, write a new ADR that supersedes this one.
+
+## Update (phase 4)
+
+The decision stands. Building the dark palette corrected three details:
+
+- **The mix is 45% kind, 55% text, not 50%.** At 50% a highlight nested in another highlight (an alias inside a longer name, an entity inside a note) put the derived text on two stacked tints and measured 4.40 to 4.48:1 in the dark theme, which axe found in the reader. At 45% the worst stacked case is 4.59:1 in dark and 5.35:1 in light, and the guard now checks every inner and outer kind.
+- **The seven entity colours are not user settings in the shipped app.** The host offers `color_note` and the three diff-marker colours only (`apps/desktop/app.go`, `fieldSchemas`); the mock offered seven more, and because the app writes every colour setting inline on `<html>`, where it beats both theme blocks, every dark capture and axe pass showed the light hexes and hid the dark tokens. The mock now matches the host. So "user-chosen colours are not guaranteed" applies to a future setting and to the note colour (whose text is `--text`, so there is nothing to guarantee); the derived tokens still follow any override.
+- **The dark values** are `--lore` `#c49056`, `--item` `#6ea5bc`, `--event` `#d37e9b` and `--note` `#d4865a`, taken from the light hues at the lightness of the existing dark colours (about 0.69 in OKLCH) and checked by eye in the reader, the legend and the atlas. `--note` is a fallback in the running app: it writes the repo default note colour inline, which beats the dark token, so the note dot stays `#b85c1e` in dark (3:1 or better as a mark).

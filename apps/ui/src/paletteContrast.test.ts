@@ -212,6 +212,28 @@ describe('the ratchet of known failures', () => {
   });
 });
 
+describe('a highlight stacked on another highlight stays at AA', () => {
+  // ParagraphView nests a mark inside a mark where annotations overlap (an alias inside a longer name, an entity inside a
+  // note), so the inner text sits on two tints. Two 20% tints of one colour composite to 36%; an inner kind over any other
+  // outer kind is a mix of two colours. The single-tint pairs above do not see this: at a 50% mix the derived text was
+  // 4.41 to 4.46:1 for Character in Character and Review in Lore in the dark theme, which axe found in the reader.
+  for (const theme of THEME_NAMES) {
+    it(`an entity's text on its own tint over any other highlight's tint is at least ${TEXT_MIN}:1 (${theme})`, () => {
+      const failures: string[] = [];
+      for (const inner of KINDS) {
+        for (const outer of [...KINDS, 'note']) {
+          for (const over of READING_SURFACES) {
+            const bg = `color-mix(in srgb, var(--${inner}) 20%, ${tint(outer, 20)})`;
+            const ratio = resolveContrast(THEMES[theme], { fg: `var(--${inner}-text)`, bg, over });
+            if (ratio < TEXT_MIN) failures.push(`${inner} in ${outer} over --${over}: ${ratio.toFixed(2)}:1`);
+          }
+        }
+      }
+      expect(failures, 'a highlight nested in another loses contrast: strengthen the derived --<kind>-text tokens').toEqual([]);
+    });
+  }
+});
+
 describe('the text ramp keeps its order', () => {
   // Contrast against the same surface must step down text, then muted, then the non-text mark: equal levels would mean the
   // hierarchy the palette exists to give the eye has collapsed.
