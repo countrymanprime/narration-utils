@@ -20,14 +20,20 @@ import posixpath
 import re
 from collections.abc import Callable, Iterable
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 DEFAULT_REF = "main"
 INDEX_NAMES = ("README.md", "index.md")
 
 _SCHEME = re.compile(r"^([a-z][a-z0-9+.-]*:|//)", re.IGNORECASE)
 _LINK = re.compile(r'(!?\[[^\]\n]*\])\(([^)\s]+)((?:\s+"[^"]*")?)\)')
-_CODE = re.compile(r"^(`{3,}|~{3,})[^\n]*\n.*?^\1[ \t]*$|`[^`\n]+`", re.MULTILINE | re.DOTALL)
+# Elements whose content HTML parsers read as text up to a closing tag that prose never writes: a `<title>` in a sentence
+# ("named <title> progress") makes newer Python html.parser swallow the rest of the page, headings included. GitHub hides such a tag;
+# the site shows it as text.
+_RAW_TEXT_TAG = re.compile(r"<(/?)(title|textarea|script|style|iframe|noembed|noframes|noscript|plaintext|xmp)\b([^>\n]*)>", re.IGNORECASE)
+_REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$")
+_CODE = re.compile(r"^[ \t]*(`{3,}|~{3,})[^\n]*\n.*?(?:^[ \t]*\1[ \t]*$|\Z)|`[^`\n]+`", re.MULTILINE | re.DOTALL)
+_REFERENCE_DEFINITION = re.compile(r"^ {0,3}\[[^\]\n]+\]:[ \t]*(\S+)", re.MULTILINE)
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -84,10 +90,12 @@ def unmatched_entries(uris: Iterable[str], entries: Iterable[str]) -> list[str]:
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-def github_url(repo_url: str, ref: str, repo_path: str, *, is_dir: bool, fragment: str = "") -> str:
+def github_url(repo_url: str, ref: str, repo_path: str, *, is_dir: bool, fragment: str = "", raw: bool = False) -> str:
+    """The GitHub file view (`raw`: the file itself, for an image) of a path in the repository at a ref."""
     kind = "tree" if is_dir else "blob"
+    query = "?raw=true" if raw and not is_dir else ""
     suffix = f"#{fragment}" if fragment else ""
-    return f"{repo_url.rstrip('/')}/{kind}/{ref}/{repo_path}{suffix}"
+    return f"{repo_url.rstrip('/')}/{kind}/{ref}/{quote(repo_path, safe='/')}{query}{suffix}"
 
 
 def resolve_target(
@@ -99,13 +107,14 @@ def resolve_target(
     published: Callable[[str], bool],
     repo_url: str,
     ref: str,
+    image: bool = False,
 ) -> str | None:
     """The replacement for one link target, or None to leave it as written."""
     if not target or target.startswith("#") or _SCHEME.match(target):
         return None
     path, _, fragment = target.partition("#")
     path = path.split("?", 1)[0]
-    if not path:
+    if not path or path.startswith("/") or "\\" in path:
         return None
     base = posixpath.dirname(page_uri)
     rel = posixpath.normpath(posixpath.join(base, unquote(path)))
@@ -125,12 +134,30 @@ def resolve_target(
             if published(index):
                 local = posixpath.relpath(index, base or ".")
                 return local + (f"#{fragment}" if fragment else "")
-    return github_url(repo_url, ref, repo_rel, is_dir=on_disk.is_dir(), fragment=fragment)
+    return github_url(repo_url, ref, repo_rel, is_dir=on_disk.is_dir(), fragment=fragment, raw=image)
 
 
 def _mask_code(text: str) -> str:
     """The same text with code spans and fenced blocks blanked out (newlines kept), so a link is found only in prose."""
     return _CODE.sub(lambda m: re.sub(r"[^\n]", "\x00", m.group(0)), text)
+
+
+def escape_raw_text_tags(markdown: str) -> str:
+    """Turn a raw-text HTML tag written in prose into visible text; code spans and fenced blocks are examples and stay as written."""
+    masked = _mask_code(markdown)
+    out = []
+    last = 0
+    for match in _RAW_TEXT_TAG.finditer(masked):
+        out.append(markdown[last : match.start()])
+        out.append("&lt;" + match.group(1) + match.group(2) + match.group(3) + "&gt;")
+        last = match.end()
+    out.append(markdown[last:])
+    return "".join(out)
+
+
+def safe_ref(value: str | None) -> str:
+    """The branch, tag or commit to link to: DOCS_SITE_REF when it looks like one, otherwise `main`."""
+    return value if value and _REF.match(value) else DEFAULT_REF
 
 
 def rewrite_links(
@@ -144,11 +171,14 @@ def rewrite_links(
     ref: str = DEFAULT_REF,
 ) -> str:
     masked = _mask_code(markdown)
+    targets = [(m.span(2), m.group(1).startswith("!")) for m in _LINK.finditer(masked)]
+    targets += [(m.span(1), False) for m in _REFERENCE_DEFINITION.finditer(masked)]
     out = []
     last = 0
-    for match in _LINK.finditer(masked):
-        start, end = match.span(2)
-        replacement = resolve_target(markdown[start:end], page_uri, docs_dir=docs_dir, repo_root=repo_root, published=published, repo_url=repo_url, ref=ref)
+    for (start, end), image in sorted(targets):
+        replacement = resolve_target(
+            markdown[start:end], page_uri, docs_dir=docs_dir, repo_root=repo_root, published=published, repo_url=repo_url, ref=ref, image=image
+        )
         if replacement is not None:
             out.append(markdown[last:start])
             out.append(replacement)
@@ -204,9 +234,12 @@ def on_files(files, config):
     stale = unmatched_entries((file.src_uri for file in docs_files), entries)
     if stale:
         raise PluginError(f"include.txt names nothing in docs/ for: {', '.join(stale)}")
+    docs_dir = Path(config.docs_dir).resolve()
     for file in docs_files:
         if not is_published(file.src_uri, entries):
             files.remove(file)
+        elif not Path(file.abs_src_path).resolve().is_relative_to(docs_dir):
+            raise PluginError(f"{file.src_uri} resolves outside docs/ (a symbolic link?); the site publishes only what docs/ holds")
     return files
 
 
@@ -214,13 +247,13 @@ def on_page_markdown(markdown, page, config, files):
     docs_dir = Path(config.docs_dir).resolve()
     repo_root = docs_dir.parent
     text = rewrite_links(
-        markdown,
+        escape_raw_text_tags(markdown),
         page.file.src_uri,
         docs_dir=docs_dir,
         repo_root=repo_root,
         published=lambda uri: files.get_file_from_path(uri) is not None,
         repo_url=_settings(config)["repo_url"],
-        ref=os.environ.get("DOCS_SITE_REF") or DEFAULT_REF,
+        ref=safe_ref(os.environ.get("DOCS_SITE_REF")),
     )
     settings = _settings(config)
     if page.file.src_uri == settings["storybook_page"]:

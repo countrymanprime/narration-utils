@@ -16,7 +16,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-LINK_ATTRIBUTES = {"href", "src"}
+LINK_ATTRIBUTES = {"href", "src", "poster", "data"}
 IGNORED_SCHEMES = {"mailto", "tel", "javascript", "data", "blob"}
 
 
@@ -36,6 +36,8 @@ class _Page(HTMLParser):
                 self.ids.add(value)
             elif name in LINK_ATTRIBUTES:
                 self.references.append(value)
+            elif name == "srcset":
+                self.references.extend(candidate.split()[0] for candidate in value.split(",") if candidate.strip())
 
 
 def _parse(path: Path) -> _Page:
@@ -44,23 +46,24 @@ def _parse(path: Path) -> _Page:
     return page
 
 
-def _internal_path(reference: str, page_dir: str, base: str, site_url: str) -> tuple[str, str] | str | None:
+def _internal_path(reference: str, here: str, base: str, site_url: str) -> tuple[str, str] | str | None:
     """(path inside the site, fragment) for an internal reference, an error string for one that leaves the base, None to skip."""
     parts = urlsplit(reference)
     if parts.scheme in IGNORED_SCHEMES or reference.startswith("//"):
         return None
     if parts.scheme:
-        if not (site_url and reference.startswith(site_url)):
+        prefix = site_url.rstrip("/")
+        if not prefix or not (reference == prefix or reference.startswith(prefix + "/")):
             return None
-        return unquote(reference[len(site_url) :].split("#", 1)[0].split("?", 1)[0]), unquote(parts.fragment)
+        return unquote(reference[len(prefix) :].lstrip("/").split("#", 1)[0].split("?", 1)[0]), unquote(parts.fragment)
     path = unquote(parts.path)
     if path.startswith("/"):
         if not path.startswith(base):
             return f"points outside the site base {base}"
         return path[len(base) :], unquote(parts.fragment)
     if not path:
-        return page_dir, unquote(parts.fragment)
-    return _join(page_dir, path), unquote(parts.fragment)
+        return here, unquote(parts.fragment)
+    return _join(here.rsplit("/", 1)[0] + "/" if "/" in here else "", path), unquote(parts.fragment)
 
 
 def _join(directory: str, relative: str) -> str:
@@ -80,7 +83,11 @@ def _target_file(site: Path, inner: str) -> Path | None:
     candidate = site / inner
     if inner == "" or inner.endswith("/") or candidate.is_dir():
         candidate = candidate / "index.html"
-    return candidate if candidate.is_file() else None
+    if not candidate.is_file():
+        return None
+    # A case-insensitive file system (Windows, macOS) finds `Index.html` for `index.html`; the server that publishes the site does not.
+    expected = candidate.relative_to(site).as_posix()
+    return candidate if candidate.resolve().relative_to(site).as_posix() == expected else None
 
 
 def check_site(site: Path, *, base: str = "/", site_url: str = "", require: tuple[str, ...] = ()) -> list[str]:
@@ -92,9 +99,8 @@ def check_site(site: Path, *, base: str = "/", site_url: str = "", require: tupl
     pages = {path: _parse(path) for path in sorted(site.rglob("*.html"))}
     for path, page in pages.items():
         here = path.relative_to(site).as_posix()
-        page_dir = here.rsplit("/", 1)[0] + "/" if "/" in here else ""
         for reference in page.references:
-            found = _internal_path(reference, page_dir, base, site_url)
+            found = _internal_path(reference, here, base, site_url)
             if found is None:
                 continue
             if isinstance(found, str):

@@ -2,20 +2,25 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "name": "docs-site",
   "projectType": "library",
-  "tags": ["toolchain:docs"],
-  "$comment": "The public docs site (ADR 0083): MkDocs + Material reading docs/ in place. `build` is the gate: a strict MkDocs build (every warning, including a dead link or anchor, fails) and then check_site.py over the built HTML. Needs the `docs` uv group, which `uv sync` installs by default.",
+  "tags": [
+    "toolchain:docs"
+  ],
+  "$comment": "The public docs site (ADR 0083): MkDocs + Material reading docs/ in place. `build` is the gate: a strict MkDocs build (every warning, including a dead link or anchor, fails) and then check_site.py over the built HTML. Both run through `uv run --locked --only-group docs`, which installs the `docs` uv group into .venv on first use (it is not a default group, so the release build never has it).",
   "targets": {
     "lint": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": ["node scripts/quality.mjs python -m ruff format --check {projectRoot}", "node scripts/quality.mjs python -m ruff check {projectRoot}"],
+        "commands": [
+          "node scripts/quality.mjs python -m ruff format --check {projectRoot}",
+          "node scripts/quality.mjs python -m ruff check {projectRoot}"
+        ],
         "parallel": false
       }
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node scripts/quality.mjs pytest {projectRoot}/tests"
+        "command": "uv run --locked --only-group docs python -m pytest -q -p no:cacheprovider {projectRoot}/tests"
       },
       "metadata": {
         "description": "Unit tests of the include list, the link rewriting and the output link check, and MkDocs builds of a tiny tree (a dead link, a dead heading link and a stale include line each fail the build) and of the real docs/."
@@ -25,11 +30,13 @@
       "executor": "nx:run-commands",
       "options": {
         "commands": [
-          "node scripts/quality.mjs python -m mkdocs build --strict -f {projectRoot}/mkdocs.yml",
-          "node scripts/quality.mjs python {projectRoot}/check_site.py {projectRoot}/build/site --base /narration-utils/"
+          "uv run --locked --only-group docs python -m mkdocs build --strict -f {projectRoot}/mkdocs.yml",
+          "uv run --locked --only-group docs python {projectRoot}/check_site.py {projectRoot}/build/site --base /narration-utils/"
         ],
         "parallel": false,
-        "env": { "NO_MKDOCS_2_WARNING": "true" }
+        "env": {
+          "NO_MKDOCS_2_WARNING": "true"
+        }
       },
       "metadata": {
         "description": "Builds the public docs site from docs/ into tools/docs-site/build/site (ignored) and fails on any dead internal link. The Storybook is added beside it by .github/workflows/pages.yml."

@@ -65,3 +65,29 @@ def test_the_command_exits_nonzero_on_a_dead_link_and_zero_on_a_clean_site(tmp_p
 
 def test_the_command_refuses_a_folder_that_was_never_built(tmp_path):
     assert check_site.main([str(tmp_path / "not-built")]) == 2
+
+
+def test_a_fragment_only_link_on_a_page_that_is_not_an_index_is_checked_against_that_page(tmp_path):
+    write(tmp_path, "index.html", page('<h2 id="home">h</h2>'))
+    write(tmp_path, "404.html", page('<a href="#home">x</a>'))
+    assert check_site.check_site(tmp_path) == ["404.html: #home names no #home on the page it links to"]
+
+
+def test_a_url_under_the_site_url_without_a_trailing_slash_is_internal_and_a_sibling_site_is_not(tmp_path):
+    write(tmp_path, "index.html", page('<a href="https://example.github.io/project">a</a><a href="https://example.github.io/project-two/x">b</a>'))
+    assert check_site.check_site(tmp_path, site_url="https://example.github.io/project/") == []
+
+
+def test_srcset_and_poster_references_are_checked(tmp_path):
+    write(tmp_path, "index.html", page('<img srcset="a.png 1x, b.png 2x"><video poster="c.png"></video>'))
+    write(tmp_path, "a.png", "x")
+    assert check_site.check_site(tmp_path) == [
+        "index.html: b.png does not resolve to a file of the site",
+        "index.html: c.png does not resolve to a file of the site",
+    ]
+
+
+def test_a_link_that_differs_only_in_case_is_dead_because_the_publishing_server_is_case_sensitive(tmp_path):
+    write(tmp_path, "guide/index.html", page("<p>g</p>"))
+    write(tmp_path, "index.html", page('<a href="Guide/">g</a>'))
+    assert check_site.check_site(tmp_path) == ["index.html: Guide/ does not resolve to a file of the site"]

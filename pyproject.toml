@@ -36,9 +36,9 @@ docs = ["mkdocs==1.6.1", "mkdocs-material==9.7.7", "pytest==9.1.1", "ruff==0.16.
 
 [tool.uv]
 package = false
-# `uv sync` installs the lua and docs groups too, so `pnpm check` can build the docs site; the Lua CI job installs only its group
-# (`uv sync --locked --only-group lua`) and the docs job only its own (`--only-group docs`).
-default-groups = ["lua", "docs"]
+# `uv sync` installs the lua group too; the Lua CI job installs only it (`uv sync --locked --only-group lua`). The docs group is not
+# a default, so the release build never installs it: the docs-site targets run `uv run --locked --only-group docs`, which adds it to .venv on demand.
+default-groups = ["lua"]
 
 [tool.ruff]
 line-length = 160

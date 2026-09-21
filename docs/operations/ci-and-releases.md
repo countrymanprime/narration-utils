@@ -437,8 +437,8 @@ fails if it gains one, or if `docs_dir` stops being `docs/`.
   `Pages` build job all gate on them. This is the first link check the repository has. Proof it fails: `tools/docs-site/tests/test_build.py`
   builds a tiny tree in which a dead page link, a dead heading link and a stale include line each fail the build.
 - **Build and browse it.** `pnpm exec nx run docs-site:build` writes `tools/docs-site/build/site` (ignored); serve that folder from a
-  directory that has it as `narration-utils/` to see the site under its real base path. `uv sync --locked` installs MkDocs (the `docs`
-  group, in the default groups); `NO_MKDOCS_2_WARNING=true` silences Material's MkDocs 2.0 notice.
+  directory that has it as `narration-utils/` to see the site under its real base path. the Nx targets run `uv run --locked --only-group docs`, which installs MkDocs (the `docs`
+  uv group, not a default group) into `.venv` on first use; `NO_MKDOCS_2_WARNING=true` silences Material's MkDocs 2.0 notice.
 - **Navigation** is generated from the folders; `mkdocs.yml` (`extra.nav_titles`, `extra.nav_order`) names the sections and orders the top
   level, and a page's title is its first heading. Search is local; the site loads no font and asks no third-party service (the repository link
   is a footer link, not Material's repository widget, which would call `api.github.com` on every page).

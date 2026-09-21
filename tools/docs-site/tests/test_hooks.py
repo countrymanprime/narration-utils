@@ -92,8 +92,8 @@ class TestLinkRewriting:
         text = "[a](https://example.com/x.md) [b](#here) [c](mailto:me@example.com) [d](//cdn.example.com/x)"
         assert rewrite(repo, text) == text
 
-    def test_an_image_is_rewritten_like_a_link_and_a_title_survives(self, repo):
-        assert rewrite(repo, '![shot](../../config/roadmap.json "the roadmap")') == f'![shot]({REPO}/blob/abc123/config/roadmap.json "the roadmap")'
+    def test_an_image_outside_the_published_set_points_at_the_file_itself_and_a_title_survives(self, repo):
+        assert rewrite(repo, '![shot](../../config/roadmap.json "the roadmap")') == f'![shot]({REPO}/blob/abc123/config/roadmap.json?raw=true "the roadmap")'
 
     def test_a_link_text_with_code_in_it_is_still_a_link(self, repo):
         assert rewrite(repo, "[`plan`](../prds/plan.prd.md)") == f"[`plan`]({REPO}/blob/abc123/docs/prds/plan.prd.md)"
@@ -108,6 +108,49 @@ class TestLinkRewriting:
 
     def test_the_ref_names_the_commit_or_branch_being_built(self, repo):
         assert rewrite(repo, "[plan](../prds/plan.prd.md)", ref="main").startswith(f"[plan]({REPO}/blob/main/")
+
+
+class TestLinkForms:
+    def test_a_path_with_a_space_or_a_percent_sign_is_quoted_so_the_link_still_parses(self, repo):
+        (repo / "docs" / "prds" / "my plan.md").write_text("# x\n", encoding="utf-8")
+        assert rewrite(repo, "[a](../prds/my%20plan.md)") == f"[a]({REPO}/blob/abc123/docs/prds/my%20plan.md)"
+
+    def test_a_reference_style_definition_is_rewritten_like_an_inline_link(self, repo):
+        text = "See [the plan][plan].\n\n[plan]: ../prds/plan.prd.md\n"
+        assert rewrite(repo, text) == f"See [the plan][plan].\n\n[plan]: {REPO}/blob/abc123/docs/prds/plan.prd.md\n"
+
+    def test_a_fence_indented_under_a_list_item_is_still_code(self, repo):
+        text = "- step\n\n    ```md\n    [a](../prds/plan.prd.md)\n    ```\n"
+        assert rewrite(repo, text) == text
+
+    def test_an_unclosed_fence_runs_to_the_end_of_the_page(self, repo):
+        text = "intro\n\n```md\n[a](../prds/plan.prd.md)\n"
+        assert rewrite(repo, text) == text
+
+
+class TestUnsafeInput:
+    def test_an_absolute_path_is_not_a_repository_file_and_is_left_for_the_strict_build(self, repo):
+        text = "[a](/etc/passwd) and [b](/docs/README.md) and [c](..\\..\\SECURITY.md)"
+        assert rewrite(repo, text) == text
+
+    def test_a_raw_text_tag_in_prose_becomes_visible_text_so_the_rest_of_the_page_survives(self):
+        text = 'named "<title> progress" and <script src="x.js"></script> here'
+        assert hooks.escape_raw_text_tags(text) == 'named "&lt;title&gt; progress" and &lt;script src="x.js"&gt;&lt;/script&gt; here'
+
+    def test_a_raw_text_tag_in_code_is_an_example_and_stays_as_written(self):
+        text = "Write `<title>` in a code span:\n\n```html\n<title>Page</title>\n```\n"
+        assert hooks.escape_raw_text_tags(text) == text
+
+    def test_ordinary_inline_html_is_left_alone(self):
+        text = "line one<br>line two and <details><summary>more</summary>text</details> and <kbd>Ctrl</kbd>"
+        assert hooks.escape_raw_text_tags(text) == text
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [("0123abc", "0123abc"), ("release/1.2", "release/1.2"), ("", "main"), (None, "main"), ("a b)", "main"), ("x)[y](z", "main"), ("../up", "main")],
+    )
+    def test_the_ref_is_a_branch_tag_or_commit_name_or_main(self, value, expected):
+        assert hooks.safe_ref(value) == expected
 
 
 class TestStorybookLink:

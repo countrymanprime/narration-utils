@@ -97,3 +97,15 @@ def test_the_real_tree_builds_strictly_with_zero_dead_internal_links(tmp_path):
     # The atlas page links the Storybook that pages.yml publishes beside the site, so that one link is checked there, not here.
     problems = check_site.check_site(site, base="/narration-utils/")
     assert problems == []
+
+
+def test_a_raw_text_tag_in_prose_does_not_swallow_the_rest_of_the_page(tiny):
+    (tiny / "docs" / "guide.md").write_text(
+        '# Guide\n\nA job named "<title> progress" is announced.\n\n## Consequences\n\nSee [them](#consequences).\n', encoding="utf-8"
+    )
+    result = mkdocs(tiny / "mkdocs.yml")
+    assert result.returncode == 0, result.stderr + result.stdout
+    html = (tiny / "site" / "guide" / "index.html").read_text(encoding="utf-8")
+    assert "&lt;title&gt; progress" in html
+    assert 'id="consequences"' in html
+    assert check_site.check_site(tiny / "site", base="/tiny/") == []
