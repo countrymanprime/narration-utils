@@ -8,6 +8,7 @@ import { Button } from '../primitives/Button';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { InlineDiffRow, KIND_STYLES } from './InlineDiffRow';
 import { IconButton } from '../primitives/IconButton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 
 const TYPE_CHIP_BG: Record<string, string> = {
   MISREAD: 'bg-[var(--review-soft)]',
@@ -94,40 +95,40 @@ export function Results({
         </p>
       ) : (
         <div className="overflow-auto">
-          <table className="dtable">
-            <thead>
-              <tr>
-                <th className="align-middle">Type</th>
-                <th className="align-middle">Script</th>
-                <th className="align-middle">Heard</th>
-                <th className="align-middle">Time</th>
-                <th className="align-middle">Marker</th>
-                <th className="align-middle">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table label="Discrepancies">
+            <TableHead>
+              <TableRow>
+                <TableHeader>Type</TableHeader>
+                <TableHeader>Script</TableHeader>
+                <TableHeader>Heard</TableHeader>
+                <TableHeader>Time</TableHeader>
+                <TableHeader>Marker</TableHeader>
+                <TableHeader>Actions</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {state.rows.map((row) => {
                 const eligible = canAddEquivalence(row);
                 const isSelected = row.id === selected?.id;
                 return (
                   <Fragment key={row.id}>
-                    <tr data-row className={isSelected ? 'row-selected' : ''} onClick={() => select(isSelected ? undefined : row)}>
-                      <td className="align-middle">
+                    <TableRow selected={isSelected} onActivate={() => select(isSelected ? undefined : row)}>
+                      <TableCell>
                         <span
                           className={`rounded px-[0.45rem] py-[0.1rem] font-['Barlow_Condensed',sans-serif] text-[0.68rem] font-bold tracking-[0.03em] ${TYPE_CHIP_BG[row.kind] ?? TYPE_CHIP_BG.MISREAD}`}
                           style={{ color: (KIND_STYLES[row.kind] ?? KIND_STYLES.MISREAD).color }}
                         >
                           {row.kind}
                         </span>
-                      </td>
-                      <td className="align-middle font-['IBM_Plex_Mono',ui-monospace,monospace]">{row.docText || '—'}</td>
-                      <td className="align-middle font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-muted)' }}>
+                      </TableCell>
+                      <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace]">{row.docText || '—'}</TableCell>
+                      <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-muted)' }}>
                         {row.audioText || '—'}
-                      </td>
-                      <td className="align-middle font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
+                      </TableCell>
+                      <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
                         {seconds(row.projectTime)}
-                      </td>
-                      <td className="align-middle text-xs">
+                      </TableCell>
+                      <TableCell className="text-xs">
                         {markerState(row) === 'pending' && (
                           <span className="inline-flex items-center rounded-full bg-[var(--accent-soft)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold whitespace-nowrap text-[var(--accent-strong)]">
                             Ready to export
@@ -145,8 +146,8 @@ export function Results({
                             </span>
                           </TooltipTarget>
                         )}
-                      </td>
-                      <td className="align-middle">
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
                           <TooltipTarget className="flex-none" text={row.chapter ? 'Jump to script in Manuscript' : 'No manuscript source is available'}>
                             <IconButton label="Jump to manuscript" disabled={!row.chapter} onClick={() => goToManuscript(row)}>
@@ -174,14 +175,14 @@ export function Results({
                             </IconButton>
                           </TooltipTarget>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                     {isSelected && <InlineDiffRow row={row} />}
                   </Fragment>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
       {state.markerExport.phase !== 'idle' && (

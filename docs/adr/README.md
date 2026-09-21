@@ -31,7 +31,7 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0006](0006-chapter-progress-bar-ordering.md) | Chapter progress bar ordered finalized-to-not-started, left to right | Accepted |
 | [0007](0007-story-bible-locked-entry-enforcement.md) | Story Bible locked-entry enforcement is server-side authoritative | Accepted |
 | [0008](0008-timing-confidence-over-forced-alignment-model-for-transcript-compare.md) | Timing-confidence signal over a forced-alignment model for Transcript Compare, for now | Accepted |
-| [0009](0009-complete-tailwind-migration.md) | Complete the Tailwind migration; retire the legacy custom-CSS system | Accepted |
+| [0009](0009-complete-tailwind-migration.md) | Complete the Tailwind migration; retire the legacy custom-CSS system | Accepted (its `table.dtable` exception is superseded by ADR-0056) |
 | [0010](0010-theme-switching.md) | Tri-state Light/Dark/System theme switching | Accepted |
 | [0011](0011-doc-screenshots-curated-from-visual-suite.md) | Documentation screenshots are curated from the Playwright visual suite, not captured separately | Accepted |
 | [0012](0012-media-route-for-track-playback.md) | Local track audio is streamed through a Wails asset-server route, not the base64-binding pattern | Accepted |
@@ -78,3 +78,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0053](0053-icon-buttons-text-fields-and-selects-wrap-the-native-controls.md) | Icon buttons, text fields and selects wrap the native controls, and pages may not write them | Accepted |
 | [0054](0054-tabs-and-toggle-groups-name-and-link-what-the-hand-built-strips-left-anonymous.md) | Tabs and toggle groups name and link what the hand-built strips left anonymous | Accepted |
 | [0055](0055-the-tag-input-is-a-wrapped-text-field-and-chips-that-report-and-never-edit-the-list.md) | The tag input is a wrapped text field and chips that report and never edit the list | Accepted |
+| [0056](0056-a-presentational-table-primitive-replaces-the-dtable-class-and-rows-take-the-keyboard.md) | A presentational Table primitive replaces the dtable class, and pressable rows take the keyboard | Accepted |
