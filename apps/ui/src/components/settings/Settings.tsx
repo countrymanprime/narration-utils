@@ -117,8 +117,12 @@ export function Settings({
   const save = useCallback(async () => {
     if (!active?.tool) return;
     try {
-      await api.saveSettings(active.tool, scope, changedValues(settings[active.tool] ?? [], values));
-      notify(`${scope === 'global' ? 'Global' : 'Project'} settings saved.`);
+      const changed = changedValues(settings[active.tool] ?? [], values);
+      // An edit that was put back leaves nothing to save: reloading is what clears "Unsaved changes", and the host is not asked.
+      if (Object.keys(changed).length > 0) {
+        await api.saveSettings(active.tool, scope, changed);
+        notify(`${scope === 'global' ? 'Global' : 'Project'} settings saved.`);
+      }
       await load();
     } catch (error) {
       notify(String(error));

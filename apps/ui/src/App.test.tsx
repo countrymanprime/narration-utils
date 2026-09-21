@@ -250,6 +250,23 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(saveSettings).toHaveBeenCalledWith('TranscriptCompare', 'project', { model_size: 'large-v3' });
   });
 
+  it('does not call the host when an edit was put back, and leaves nothing marked unsaved', async () => {
+    const saveSettings = vi.fn(createMockApi().saveSettings);
+    renderApp({ saveSettings });
+    await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+
+    const verbosity = await screen.findByDisplayValue('normal');
+    fireEvent.change(verbosity, { target: { value: 'verbose' } });
+    fireEvent.change(verbosity, { target: { value: 'normal' } });
+    expect(screen.getByText('Unsaved changes')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(screen.queryByText('Unsaved changes')).toBeNull());
+    expect(saveSettings).not.toHaveBeenCalled();
+  });
+
   it('names the Settings tabs and keeps the selected one while unsaved changes ask before a switch', async () => {
     renderApp();
     await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
