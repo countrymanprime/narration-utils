@@ -69,13 +69,22 @@ type installSpec struct {
 
 // startInstall starts the install of one approved asset, or joins the one already running for it: a second press, a second window or a
 // retry that arrives before the first finished never starts a second download of the same files.
-func (h *Host) startInstall(spec installSpec) map[string]any {
+// errBeingRemoved is what a start says when the same asset is being removed at that moment.
+func errBeingRemoved(noun string) error {
+	return fmt.Errorf("the %s is being removed: try again in a moment", noun)
+}
+
+func (h *Host) startInstall(spec installSpec) (map[string]any, error) {
 	var total int64
 	for _, file := range spec.files {
 		total += file.Size
 	}
 	for {
 		h.mu.Lock()
+		if h.removing[spec.kind+"/"+spec.assetID] {
+			h.mu.Unlock()
+			return nil, errBeingRemoved(spec.noun)
+		}
 		var dying *installJob
 		for _, existing := range h.installJobs {
 			if existing.kind != spec.kind || existing.assetID != spec.assetID || !existing.running() {
@@ -83,7 +92,7 @@ func (h *Host) startInstall(spec installSpec) map[string]any {
 			}
 			if existing.ctx.Err() == nil {
 				h.mu.Unlock()
-				return snapshotInstall(existing)
+				return snapshotInstall(existing), nil
 			}
 			dying = existing
 		}
@@ -94,7 +103,7 @@ func (h *Host) startInstall(spec installSpec) map[string]any {
 			select {
 			case <-dying.finished:
 			case <-time.After(10 * time.Second):
-				return snapshotInstall(dying)
+				return snapshotInstall(dying), nil
 			}
 			continue
 		}
@@ -105,7 +114,7 @@ func (h *Host) startInstall(spec installSpec) map[string]any {
 		h.installJobs[job.id] = job
 		h.mu.Unlock()
 		go h.runInstall(ctx, spec, job)
-		return snapshotInstall(job)
+		return snapshotInstall(job), nil
 	}
 }
 
@@ -240,6 +249,9 @@ func snapshotInstall(job *installJob) map[string]any {
 // legacyInstall is the payload of the voice and Whisper install bindings that predate the generic ones: the same job, and the asset named
 // as voiceId or modelId, which the pages that use them read.
 func legacyInstall(snapshot map[string]any) map[string]any {
+	if snapshot == nil {
+		return nil
+	}
 	if snapshot["kind"] == installKindTts {
 		snapshot["voiceId"] = snapshot["assetId"]
 	} else {

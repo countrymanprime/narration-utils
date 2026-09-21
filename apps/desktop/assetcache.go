@@ -44,9 +44,13 @@ func (h *Host) buildAssetRegistry() *assetRegistry {
 		_ = h.log.Report("asset_cache_unavailable", err.Error())
 		return &assetRegistry{unavailable: err.Error()}
 	}
+	// The packaged release resources are only unpacked when a checkout does not have every catalog.
 	packaged := ""
-	if _, statErr := os.Stat(layout.Path(h.config.repoRoot, layout.TTSCatalogFile)); statErr != nil {
-		packaged = h.packagedResources()
+	for _, catalog := range []string{layout.TTSCatalogFile, layout.WhisperCatalogFile} {
+		if _, statErr := os.Stat(layout.Path(h.config.repoRoot, catalog)); statErr != nil {
+			packaged = h.packagedResources()
+			break
+		}
 	}
 	voices := buildTtsManager(h.config, packaged, filepath.Join(base, ttsCacheDir))
 	models := buildWhisperManager(h.config, packaged, filepath.Join(base, whisperCacheDir))

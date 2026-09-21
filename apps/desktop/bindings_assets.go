@@ -96,7 +96,7 @@ func (h *Host) startAssetInstall(kind, id string) (map[string]any, error) {
 		return nil, err
 	}
 	return h.startInstall(installSpec{kind: kind, assetID: id, endedKind: provider.endedKind(), noun: provider.noun(), files: item.files,
-		run: func(ctx context.Context, options assets.Options) error { return provider.install(ctx, id, options) }}), nil
+		run: func(ctx context.Context, options assets.Options) error { return provider.install(ctx, id, options) }})
 }
 
 func (h *Host) verifyAsset(kind, id string) (map[string]any, error) {
@@ -116,8 +116,25 @@ func (h *Host) removeAsset(kind, id string) error {
 	if err != nil {
 		return err
 	}
-	if h.runningInstallID(kind, id) != "" {
-		return fmt.Errorf("the %s is downloading: cancel the download first", provider.noun())
+	// The check and the mark are one step under h.mu, and a start refuses while the mark is there, so an install cannot begin between
+	// the two and the asset cannot come back after it was removed.
+	key := kind + "/" + id
+	h.mu.Lock()
+	for _, job := range h.installJobs {
+		if job.kind == kind && job.assetID == id && job.running() {
+			h.mu.Unlock()
+			return fmt.Errorf("the %s is downloading: cancel the download first", provider.noun())
+		}
 	}
+	if h.removing == nil {
+		h.removing = map[string]bool{}
+	}
+	h.removing[key] = true
+	h.mu.Unlock()
+	defer func() {
+		h.mu.Lock()
+		delete(h.removing, key)
+		h.mu.Unlock()
+	}()
 	return provider.remove(id)
 }

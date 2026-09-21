@@ -184,3 +184,24 @@ func TestAssetsListReadsNoFileContents(t *testing.T) {
 	}
 	_ = time.Now()
 }
+
+// A download cannot start under a removal: the asset would come back after it was removed.
+func TestAnInstallCannotStartWhileTheSameAssetIsBeingRemoved(t *testing.T) {
+	f := newInstallFixture(t, false)
+	f.host.mu.Lock()
+	f.host.removing = map[string]bool{"tts/v1": true}
+	f.host.mu.Unlock()
+	if _, err := f.host.AssetsInstall("tts", "v1"); err == nil || !strings.Contains(err.Error(), "being removed") {
+		t.Fatalf("err = %v, want the start refused while the asset is being removed", err)
+	}
+	if _, err := f.host.startTtsInstall("v1"); err == nil || !strings.Contains(err.Error(), "being removed") {
+		t.Fatalf("legacy start err = %v", err)
+	}
+	other, err := f.host.AssetsInstall("whisper", "m1")
+	if err != nil {
+		t.Fatalf("another asset is not affected: %v", err)
+	}
+	close(f.release)
+	id := answer(t)(other, nil)["id"].(string)
+	waitForPhase(t, func() map[string]any { return answer(t)(f.host.AssetsInstallState(id)) }, "success")
+}

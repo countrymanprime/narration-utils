@@ -254,6 +254,10 @@ func Repair(ctx context.Context, root, provider, id, version string, files []Fil
 
 // Remove deletes one catalog item's install directory.
 func Remove(root, provider, id, version string) error {
+	dir := Dir(root, provider, id, version)
+	lock := lockFor(dir)
+	lock.Lock()
+	defer lock.Unlock()
 	Forget(root, provider, id, version)
-	return os.RemoveAll(Dir(root, provider, id, version))
+	return os.RemoveAll(dir)
 }

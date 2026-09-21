@@ -51,7 +51,9 @@ type Host struct {
 	// switch does not touch it, so it is read with registry() and needs no snapshot.
 	assets *assetRegistry
 	// installJobs are the asset downloads, voices and models alike (installjobs.go); h.mu guards the map and each job its own fields.
-	installJobs  map[string]*installJob
+	installJobs map[string]*installJob
+	// removing holds the assets (kind/id) that are being removed, so a download of the same asset cannot start under the removal (h.mu).
+	removing     map[string]bool
 	guide        *guide.Service
 	guideJob     *workJob
 	transcript   *transcript.Service
@@ -807,7 +809,10 @@ func (h *Host) startTtsInstall(voiceID string) (map[string]any, error) {
 		return nil, fmt.Errorf("the selected voice is not in the approved catalog")
 	}
 	snapshot, err := h.startAssetInstall(installKindTts, voiceID)
-	return legacyInstall(snapshot), err
+	if err != nil {
+		return nil, err
+	}
+	return legacyInstall(snapshot), nil
 }
 func (h *Host) ttsInstallState(id string) (map[string]any, error) {
 	job, err := h.installJobByID(id, "TTS")
@@ -833,7 +838,10 @@ func (h *Host) startWhisperInstall(modelID string) (map[string]any, error) {
 		return nil, fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
 	snapshot, err := h.startAssetInstall(installKindWhisper, modelID)
-	return legacyInstall(snapshot), err
+	if err != nil {
+		return nil, err
+	}
+	return legacyInstall(snapshot), nil
 }
 func (h *Host) whisperInstallState(id string) (map[string]any, error) {
 	job, err := h.installJobByID(id, "Whisper")
