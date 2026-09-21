@@ -11,6 +11,8 @@ Storybook title: `Primitives/Heading`. Source: `src/components/primitives/Headin
 - With Rich Subtitle
 - Long Title Wraps
 - Long Subtitle Wraps
+- Long Unbroken Subtitle
+- Levels
 - Renders Level One Heading
 - Title Only Omits Subtitle
 

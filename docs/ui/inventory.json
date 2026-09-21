@@ -176,6 +176,8 @@
         "With Rich Subtitle",
         "Long Title Wraps",
         "Long Subtitle Wraps",
+        "Long Unbroken Subtitle",
+        "Levels",
         "Renders Level One Heading",
         "Title Only Omits Subtitle"
       ],
@@ -332,6 +334,7 @@
       "stories": [
         "Text Only",
         "Title And Description",
+        "Long Title Wraps",
         "With Header And Actions",
         "With Header No Actions",
         "With Form Fields",

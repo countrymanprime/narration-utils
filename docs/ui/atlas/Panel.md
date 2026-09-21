@@ -8,6 +8,7 @@ Storybook title: `Primitives/Panel`. Source: `src/components/primitives/Panel.ts
 
 - Text Only
 - Title And Description
+- Long Title Wraps
 - With Header And Actions
 - With Header No Actions
 - With Form Fields
