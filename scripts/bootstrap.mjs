@@ -188,7 +188,8 @@ function helpText() {
   return `Usage: pnpm run bootstrap -- [--python <path>] [--skip-install] [--refresh] [--release]
 
 Creates a portable checkout environment and builds the UI and native Wails binary.
-It never builds installers or downloads optional spaCy models or Piper voices.
+It never builds installers or downloads optional assets (spaCy models, Piper voices, Whisper models);
+the app downloads them on first use, and pnpm run assets:seed seeds them explicitly for offline work.
 --skip-install requires existing local environments. --refresh recreates them from lockfiles.
 --release builds the Wails release binary.`;
 }
@@ -240,7 +241,7 @@ export function runBootstrap(options, dependencies = {}) {
   }
 
   (dependencies.log ?? console.log)(
-    'Narration Utils is ready. Optional spaCy models and Piper voices were not downloaded. Story Bible uses rules-only extraction until a selected spaCy model is installed through its first-use flow.',
+    'Narration Utils is ready. Bootstrap preloads no optional assets: the Piper voice, the Whisper models and the Story Bible language model (spaCy) are downloaded by the app itself, after a click, the first time a feature needs one (Settings > Local assets lists them all). Until the language model is installed a Story Bible build asks first and can run rules-only. To seed assets for offline work, run: pnpm run assets:seed -- --list',
   );
 }
 

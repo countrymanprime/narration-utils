@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -12,24 +11,15 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 )
 
-// The per-asset-kind folders under the asset cache. Each provider keeps its own catalog and its own folder, so removing one kind never
-// touches another.
+// The per-asset-kind folders under the asset cache (internal/assets names them once, for the host and for the seeding command alike).
 const (
-	ttsCacheDir     = "tts"
-	whisperCacheDir = "whisper"
-	spacyCacheDir   = "spacy"
+	ttsCacheDir     = assets.TTSDir
+	whisperCacheDir = assets.WhisperDir
+	spacyCacheDir   = assets.SpacyDir
 )
 
-// assetCacheBase is where downloaded assets live: the per-user cache folder, outside the release, the project and the checkout. When the
-// operating system cannot say where that is the answer is an error and not the temporary folder, which a cleanup tool empties: a
-// multi-gigabyte download must not land there.
-func assetCacheBase() (string, error) {
-	base, err := os.UserCacheDir()
-	if err != nil {
-		return "", fmt.Errorf("the per-user cache folder for downloaded models could not be found: %w", err)
-	}
-	return filepath.Join(base, "narration-utils", "assets"), nil
-}
+// assetCacheBase is where downloaded assets live: the per-user cache folder, never the temporary one (assets.CacheBase).
+func assetCacheBase() (string, error) { return assets.CacheBase() }
 
 // cleanAssetCaches removes what an interrupted download or repair left under the asset cache and nothing will resume: run once at start.
 // It returns what it removed.

@@ -1,8 +1,19 @@
 # First-Use Dependency Provisioning
 
-**Status: Partially implemented — Piper preview voices and Whisper transcription models.**
+**Status: Implemented for every asset kind the app ships: Piper preview voices, Whisper transcription models and Story Bible
+spaCy language models.** The catalog, asset manager, registry, Local assets page, the no-download-at-startup proof and the
+legacy-cache policy are delivered (release-readiness phases 1 to 7); what remains is the packaged-release smoke test and the
+installer, planned in [release-readiness-provisioning-and-docs-site.prd.md](../prds/release-readiness-provisioning-and-docs-site.prd.md).
+Each shipped artifact's record (publisher, version, URL, SHA-256, licences, install location, update policy) is in
+[local dependency evaluation](../research/local-dependency-evaluation.md#shipped-assets).
 
-Remaining work is planned in [release-readiness-provisioning-and-docs-site.prd.md](../prds/release-readiness-provisioning-and-docs-site.prd.md).
+| Slice of the original plan | Where it is |
+| --- | --- |
+| Boundary, catalog and manifest format | Catalogs `config/{tts,whisper,spacy}-assets.json`; manifest in [ADR 0078](../adr/0078-asset-state-comes-from-the-manifest-an-asset-is-read-in-full-once-per-session-and-a-failed-download-resumes.md) |
+| Asset manager | `apps/desktop/internal/assets` ("The asset manager" below) |
+| State APIs, UI, catalog-backed choices | `Assets*` bindings, Settings > Local assets, catalog-backed spaCy choices ("The asset registry", "The local assets page") |
+| Piper, Whisper, spaCy; later assets | Shipped; a new kind is a catalog file and a provider |
+| Docs, legacy caches, release smoke | Records and policy below and in the research record (phase 7); the packaged smoke test is phase 8 |
 
 ## Problem
 
@@ -83,10 +94,10 @@ apply to Piper voices, Whisper models, and later optional tools/model packs.
   narrator, their projects or their machine. Nothing is downloaded and nothing
   is replaced without an explicit, confirmed click ([ADR 0072](../adr/0072-the-app-updates-itself-from-this-repositorys-releases-and-never-installs-without-a-click.md)).
 
-This work must follow the artifact-level license and provenance requirements in
-the [local dependency evaluation and license plan](../research/local-dependency-evaluation.md).
-Those records need updating because that document currently describes setup-time
-downloads for a source checkout, not release-time first-use provisioning.
+This work follows the artifact-level license and provenance requirements in
+the [local dependency evaluation and license plan](../research/local-dependency-evaluation.md),
+which records every shipped artifact and describes first-use provisioning (there is no
+setup-time download).
 
 ## Migration from the current bootstrap flow
 
@@ -94,14 +105,31 @@ The release build must package the compiled shell, UI assets, local backend,
 and its base runtime into the GitHub release artifact. It must not call
 `pnpm run bootstrap` or require developer build tooling after installation.
 
-The developer bootstrap must not preload optional assets. Development should
-exercise the same catalog and first-use installer as the released application;
-an explicit developer-only provisioning command may seed assets for offline
-testing or packaging verification.
+The developer bootstrap does not preload optional assets. Development exercises the same
+catalog and first-use installer as the released application. The one explicit way to have
+assets without the first-use download is the developer-only seeding command,
+`pnpm run assets:seed` (`apps/desktop/cmd/seed-assets`): it installs approved catalog assets by
+`kind` or `kind/id` (`tts`, `whisper`, `spacy`, or `all`) into the same per-user cache through
+the same managers, catalogs and hash verification the app uses, so the app recognises what it
+installed. `--list` shows every approved asset and its state; `--cache-dir` installs somewhere
+else (the app only reads the per-user cache). It reads the catalogs of the checkout it runs in (or
+`--repo-root`), which are trusted input: run it only in a checkout you trust. It is for offline tests and packaging checks;
+bootstrap never calls it and a release never contains it.
 
-Existing caches created by retired Windows bootstrap scripts should be detected only by an explicit,
-documented migration/repair path. Do not silently adopt files whose version or
-hash cannot be verified against the asset catalog.
+### Migration from the retired bootstrap
+
+Owner decision (release-readiness Open Question 7): **legacy caches are deliberately ignored,
+never adopted.** The retired Windows bootstrap kept voices and models in `.piper`, `.runtime`
+and `.bootstrap` folders; they were gitignored developer artifacts, and nothing recorded a
+version or hash for what they hold. The app therefore never reads them, never treats a file in
+one as an installed asset (even one that is byte for byte a catalog file), never moves or
+deletes them, and downloads its own verified copy on first use. There is no import flow. A
+narrator or developer who wants the disk back removes the folders by hand; a real user with an
+old cache who would rather reuse it is the trigger to design an explicit import that verifies
+each file against the catalog (revisit then, not before). The tests
+`TestAFileInARetiredBootstrapFolderIsNeverAnInstalledAsset` and
+`TestARetiredBootstrapFolderNextToTheRealCacheIsIgnoredAtLaunch` in
+`apps/desktop/startup_offline_test.go` hold the policy.
 
 ## The asset manager (implemented)
 
@@ -129,7 +157,15 @@ Settings > Local assets (Global scope) is the one place to see, verify, repair a
 - A clean machine can install a GitHub release and open the app without a
   repository checkout, Node, Go, an external Python installer, or
   `pnpm run bootstrap`.
-- First application launch performs no optional asset download.
+- First application launch performs no optional asset download and makes no
+  request other than the once-a-day update check, which asks GitHub for release
+  metadata only, downloads no asset and can be switched off (see the update rule
+  above and [ADR 0072](../adr/0072-the-app-updates-itself-from-this-repositorys-releases-and-never-installs-without-a-click.md)).
+  Selecting a model in Settings makes no request at all. Both are tests in
+  `apps/desktop/startup_offline_test.go`: a `http.DefaultTransport` that fails and
+  records every request, run over `NewHost`, `Startup`, the first `Bootstrap`,
+  the settings, catalogs and asset list, and over saving each approved
+  spaCy, Whisper and Piper choice.
 - A narrator who never builds a Story Bible does not download spaCy; a narrator
   who never requests a Piper preview does not download a Piper voice.
 - Every catalog-approved compatible spaCy model is selectable before it is

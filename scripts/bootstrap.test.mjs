@@ -63,6 +63,21 @@ test('uses the Windows Python launcher only when no executable was selected', ()
   assert.deepEqual(commands[0], ['py', ['-3.12', '-m', 'venv', '.venv']]);
 });
 
+test('the closing message says bootstrap preloads nothing and points to where assets really come from', () => {
+  const lines = [];
+  runBootstrap(
+    { python: 'python3', skipInstall: false, refresh: false, release: false },
+    { root: '/repo', platform: 'linux', skipPreflight: true, run: () => {}, log: (line) => lines.push(line) },
+  );
+  const message = lines.join(' ');
+  // Every optional asset is downloaded by the app on first use after a click; a developer who wants them offline seeds them explicitly.
+  assert.match(message, /preload/i);
+  assert.match(message, /Settings > Local assets/);
+  assert.match(message, /assets:seed/);
+  // The retired promise: a first-use flow that only existed for spaCy in the message, not in the app.
+  assert.doesNotMatch(message, /selected spaCy model is installed through its first-use flow/);
+});
+
 test('runs setup commands in order and reports subprocess failure', () => {
   const calls = [];
   runBootstrap(
