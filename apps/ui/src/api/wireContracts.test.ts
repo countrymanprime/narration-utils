@@ -21,7 +21,7 @@ import {
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
-import { updateStatusSchema } from './schemas/update';
+import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
 import { projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
 import { guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
@@ -97,6 +97,11 @@ const GOLDEN: Record<string, z.ZodType> = {
   'update-status-available.json': updateStatusSchema,
   'update-status-check-failed.json': updateStatusSchema,
   'update-status-development.json': updateStatusSchema,
+  'update-job-downloading.json': updateJobSchema,
+  'update-job-verifying.json': updateJobSchema,
+  'update-job-ready.json': updateJobSchema,
+  'update-job-error.json': updateJobSchema,
+  'update-job-cancelled.json': updateJobSchema,
   'tracks-project.json': tracksProjectSchema,
   'tracks-discovery-none.json': tracksDiscoverySchema,
   'tracks-discovery-several.json': tracksDiscoverySchema,
@@ -313,6 +318,18 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expectMatches(updateStatusSchema, await api.updateCheck(), 'mock update check');
   });
 
+  it.each(['downloading', 'available', 'download-fails'] as const)('the update download the mock host reports (%s)', async (seed) => {
+    vi.useFakeTimers();
+    const api = createMockApi({}, { update: seed });
+    const started = await api.updateDownload();
+    expectMatches(updateJobSchema, started, 'mock update download');
+    for (let step = 0; step < 12; step++) {
+      await vi.advanceTimersByTimeAsync(300);
+      expectMatches(updateJobSchema, await api.updateJobState(started.id), 'mock update job');
+    }
+    expectMatches(updateJobSchema, await api.updateJobCancel(started.id), 'mock update job cancelled');
+  });
+
   it('the update event the mock host sends when a background check found a release', async () => {
     vi.useFakeTimers();
     const seen: unknown[] = [];
@@ -383,6 +400,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterState',
       'updateStatus',
       'updateCheck',
+      'updateDownload',
+      'updateJobState',
+      'updateJobCancel',
     ];
     const VOID = [
       'manuscriptImportCancel',

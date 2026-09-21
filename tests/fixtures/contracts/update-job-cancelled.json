@@ -1,0 +1,10 @@
+{
+  "bytesDone": 52428800,
+  "bytesTotal": 209715200,
+  "error": "",
+  "id": "update-1",
+  "message": "The update download was cancelled.",
+  "percent": 25,
+  "phase": "cancelled",
+  "version": "0.2.7"
+}

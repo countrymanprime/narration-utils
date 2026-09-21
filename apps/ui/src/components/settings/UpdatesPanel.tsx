@@ -3,6 +3,8 @@ import { describeApiError } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
 import type { UpdateStatus } from '../../types';
 import { Button } from '../primitives/Button';
+import { ConfirmDialog } from '../primitives/ConfirmDialog';
+import { UpdateDownloadDialog } from './UpdateDownloadDialog';
 
 const BYTES_PER_MB = 1024 * 1024;
 
@@ -25,6 +27,10 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
   const checkButton = useRef<HTMLButtonElement>(null);
+  // The narrator's steps toward an update: asked to confirm, downloading, and the version that finished downloading.
+  const [confirming, setConfirming] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloaded, setDownloaded] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -93,6 +99,7 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
                 <div style={{ color: 'var(--text-muted)' }}>
                   {available.candidate ? 'A release candidate' : 'A release'} · {Math.round(available.size / BYTES_PER_MB)} MB
                 </div>
+                {available.replaces && downloaded === available.version && <p>Version {available.version} is downloaded and checked.</p>}
                 {!available.replaces && (
                   <p style={{ color: 'var(--text-muted)' }}>
                     This platform does not update itself. Open the release notes to download it from the release page.
@@ -112,9 +119,16 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
             {status.failure && <p style={{ color: 'var(--danger-text)' }}>{status.failure}</p>}
           </div>
           {available && (
-            <Button variant="ghost" className="text-xs" aria-label="Release notes (opens in your browser)" onClick={openNotes}>
-              Release notes
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              {available.replaces && downloaded !== available.version && (
+                <Button className="text-xs" onClick={() => setConfirming(true)}>
+                  Download update
+                </Button>
+              )}
+              <Button variant="ghost" className="text-xs" aria-label="Release notes (opens in your browser)" onClick={openNotes}>
+                Release notes
+              </Button>
+            </div>
           )}
           <div className="flex flex-wrap items-center gap-3">
             <Button ref={checkButton} variant="ghost" className="text-xs" disabled={checking || formDirty} onClick={() => void check()}>
@@ -129,6 +143,27 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
         </>
       )}
       {errorAlert}
+      {confirming && available && (
+        <ConfirmDialog
+          title={`Download version ${available.version}?`}
+          body={`This downloads Narration Utils ${available.version} (${Math.round(available.size / BYTES_PER_MB)} MB) from GitHub and checks it against the release's checksum. Nothing is installed yet, and you can cancel the download.`}
+          confirmLabel="Download"
+          confirm={() => {
+            setConfirming(false);
+            setDownloading(true);
+          }}
+          cancel={() => setConfirming(false)}
+        />
+      )}
+      {downloading && available && (
+        <UpdateDownloadDialog
+          available={available}
+          close={(result) => {
+            setDownloading(false);
+            if (result === 'ready') setDownloaded(available.version);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -33,7 +33,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 7
+const hostAPIVersion = 8
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -60,6 +60,9 @@ type Host struct {
 	// updates asks GitHub for a newer release and remembers the answer (ADR 0072). It is set once in NewHost and never swapped, so it is
 	// read directly, like recents.
 	updates *update.Checker
+	// stager downloads and unpacks an update into the per-user cache; updateJob is the download in progress or the last one (h.mu).
+	stager    *update.Stager
+	updateJob *updateJob
 	// updateEvents and openURL are seams for tests: nil means the Wails runtime.
 	updateEvents func(update.Status)
 	openURL      func(ctx context.Context, address string)
@@ -118,7 +121,7 @@ func NewHost() *Host {
 	store.SetPersist(reporter)
 	notes.SetPersist(reporter)
 	recent.SetPersist(reporter)
-	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recent, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter)}
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recent, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager()}
 	return host
 }
 

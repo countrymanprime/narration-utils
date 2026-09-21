@@ -31,11 +31,32 @@ export type UpdateStatus = {
   available: UpdateAvailable | null;
 };
 
+/**
+ * The download of an update. The host stages it in the user's cache (never over the running program) and the percent is real bytes
+ * over real bytes (ADR 0015). `ready` means it is downloaded, checked against the release's checksum and unpacked.
+ */
+export type UpdateJob = {
+  id: string;
+  version: string;
+  phase: 'downloading' | 'verifying' | 'unpacking' | 'ready' | 'error' | 'cancelled';
+  message: string;
+  percent: number;
+  bytesDone: number;
+  bytesTotal: number;
+  /** The reason it failed, in words a narrator can read; empty unless `phase` is `error`. */
+  error: string;
+};
+
 export interface UpdateApi {
   /** The remembered answer of the last check. It asks nobody. */
   updateStatus(): Promise<UpdateStatus>;
   /** Asks GitHub now (the Check now button). A failure is reported in `failure`, not thrown. */
   updateCheck(): Promise<UpdateStatus>;
+  /** Starts downloading the release the last check found. The narrator's explicit action; nothing else downloads an update. */
+  updateDownload(): Promise<UpdateJob>;
+  updateJobState(jobId: string): Promise<UpdateJob>;
+  /** Stops the download and removes what it fetched. */
+  updateJobCancel(jobId: string): Promise<UpdateJob>;
   /** Opens the release notes of the release that was found in the browser. */
   updateOpenNotes(): Promise<void>;
   /** Calls `onStatus` when a background check found a release newer than the running version. */

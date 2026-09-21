@@ -12,3 +12,18 @@ func (h *Host) UpdateCheck() (string, error) {
 
 // UpdateOpenNotes opens the release notes of the release the last check found in the narrator's browser. It takes no address.
 func (h *Host) UpdateOpenNotes() (string, error) { return encodeBinding(nil, h.openReleaseNotes()) }
+
+// UpdateDownload starts downloading the release the last check found, when this program can install it. It is the narrator's explicit
+// action and the only thing that downloads the update; progress is polled with UpdateJobState.
+func (h *Host) UpdateDownload() (string, error) { return encodeBinding(h.startUpdateDownload()) }
+
+// UpdateJobState is the download's phase and its real bytes.
+func (h *Host) UpdateJobState(jobID string) (string, error) {
+	return encodeBinding(h.updateJobState(jobID))
+}
+
+// UpdateJobCancel stops the download. What was fetched is removed while the file is still arriving; a zip that had arrived and been
+// verified is kept, so trying again does not fetch it a second time.
+func (h *Host) UpdateJobCancel(jobID string) (string, error) {
+	return encodeBinding(h.cancelUpdateJob(jobID))
+}

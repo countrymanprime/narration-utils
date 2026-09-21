@@ -1,0 +1,10 @@
+{
+  "bytesDone": 209715200,
+  "bytesTotal": 209715200,
+  "error": "",
+  "id": "update-1",
+  "message": "Checking the download against the release's checksum…",
+  "percent": 100,
+  "phase": "verifying",
+  "version": "0.2.7"
+}

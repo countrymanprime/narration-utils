@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseWire } from '../wire/parseWire';
 import { WireError } from '../wire/WireError';
-import { updateStatusSchema } from './update';
+import { updateJobSchema, updateStatusSchema } from './update';
 
 const ctx = { boundary: 'host.binding', payload: 'UpdateStatus' };
 
@@ -44,5 +44,25 @@ describe('updateStatusSchema', () => {
     ['a development flag that is text', { ...status, development: 'yes' }],
   ])('rejects %s', (_name, value) => {
     expect(() => parseWire(updateStatusSchema, value, ctx)).toThrow(WireError);
+  });
+});
+
+const job = { id: 'update-1', version: '0.2.7', phase: 'downloading', message: 'Downloading', percent: 40, bytesDone: 4, bytesTotal: 10, error: '' };
+
+describe('updateJobSchema', () => {
+  it.each(['downloading', 'verifying', 'unpacking', 'ready', 'error', 'cancelled'])('accepts the phase %s', (phase) => {
+    expect(parseWire(updateJobSchema, { ...job, phase }, ctx).phase).toBe(phase);
+  });
+
+  it.each([
+    ['a phase it does not know', { ...job, phase: 'installing' }],
+    ['a percent over 100', { ...job, percent: 101 }],
+    ['a negative percent', { ...job, percent: -1 }],
+    ['negative bytes', { ...job, bytesDone: -1 }],
+    ['bytes that are text', { ...job, bytesTotal: '10' }],
+    ['no error text', { ...job, error: undefined }],
+    ['no id', { ...job, id: undefined }],
+  ])('rejects %s', (_name, value) => {
+    expect(() => parseWire(updateJobSchema, value, ctx)).toThrow(WireError);
   });
 });
