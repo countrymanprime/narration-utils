@@ -40,6 +40,7 @@ test('isSourceFile leaves Markdown, the ADRs and the fixtures that name made-up 
   assert.equal(isSourceFile('docs/architecture/x.md'), false);
   assert.equal(isSourceFile('tools/docs-site/tests/test_hooks.py'), false);
   assert.equal(isSourceFile('docs/prds/other.prd.md'), false);
+  assert.equal(isSourceFile('scripts/ci/prd-references.test.mjs'), false);
 });
 
 test('every PRD a source file cites exists (ADR 0028: a deleted PRD takes its citations with it)', () => {

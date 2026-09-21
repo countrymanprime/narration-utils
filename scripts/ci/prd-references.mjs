@@ -5,7 +5,8 @@
 // this covers those. Markdown is left to lychee, the ADRs are immutable records, and the docs-site tests name made-up PRDs.
 
 const PRD_PATH = /(?<![\w./-])docs\/prds\/[\w.-]+\.md\b/g;
-const NOT_SOURCE = [/\.md$/, /^docs\//, /^tools\/docs-site\/tests\//];
+// The check and its test name made-up PRDs on purpose.
+const NOT_SOURCE = [/\.md$/, /^docs\//, /^tools\/docs-site\/tests\//, /^scripts\/ci\/prd-references(\.test)?\.mjs$/];
 
 export function isSourceFile(file) {
   return !NOT_SOURCE.some((pattern) => pattern.test(file));

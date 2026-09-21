@@ -5,6 +5,8 @@
     ".github",
     ".gitignore",
     ".husky",
+    ".lychee.toml",
+    ".lycheeignore",
     ".prettierignore",
     ".prettierrc.json",
     ".vscode",
