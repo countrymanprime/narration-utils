@@ -191,7 +191,7 @@ Phases 1, 3, 4, 5, 7 and 8. Phase 2 follows once the baseline is clean; 9 and 10
 | 7 | Notices tooling | Spike then `scripts/licenses/` and generated report for the Windows package | complete | 1, 3-6, 8 | - | - |
 | 8 | Model provenance and licence answers | Generated `model-provenance.md`; the GPL and unclear-licence questions were answered by D17 and Q13 (b) | complete | 1, 3-7 | - | - |
 | 9 | Dependency-review `allow-licenses` | List, scopes, docs | complete | 2, 3-6, 10 | 8 | - |
-| 10 | Ship notices | Release asset and zip copy, `assets.mjs` and `verify-installable.mjs`, release-note line | pending | 2, 3-6, 9 | 7, 8 | - |
+| 10 | Ship notices | Release asset (the zip copy is deferred: it conflicts with the updater's one-file rule, ADR 0085, #250), `assets.mjs`, release-note line | complete | 2, 3-6, 9 | 7, 8 | - |
 | 11 | Markdown lint (Could) | `markdownlint-cli2` if the owner wants it | pending | 3-10 | 2 | - |
 
 ### Phase Details

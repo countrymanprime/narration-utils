@@ -258,6 +258,11 @@ class TestReport:
 
         assert "at the tag v0.1.0-rc" in text
 
+    def test_the_source_offer_also_names_the_commit_because_a_release_candidates_tag_is_pruned_later(self):
+        text = notices.render_report(version="0.1.0", components=self.sample(), program_license="AGPL", catalogs=[], tag="v0.1.0-rc", commit="a" * 40)
+
+        assert f"at the tag v0.1.0-rc (commit {'a' * 40})" in text
+
     def test_lists_every_component_with_its_licence_and_text_and_flags_the_copyleft_ones(self):
         text = notices.render_report(version="0.1.0", components=self.sample(), program_license="AGPL", catalogs=[])
 

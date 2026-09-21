@@ -8,15 +8,21 @@ inputs:
   version:
     description: Release version to stamp into the build; empty keeps the checked-in version
     default: ''
+  tag:
+    description: The git tag the release is built from, for the source offer in THIRD-PARTY-NOTICES.txt (Windows); empty means v<version>-rc
+    default: ''
 
 # The caller checks the repository out and runs on the matching OS; the `ui-dist`
 # artifact must already exist in this workflow run (see _ui-dist.yml).
 runs:
   using: composite
   steps:
+    # Windows also writes the third-party notices, which read the UI's production dependencies (`pnpm licenses`), so it installs the UI's
+    # packages (only that project) and the others do not.
     - uses: ./.github/actions/setup-toolchain
       with:
-        need-pnpm: 'false'
+        need-pnpm: ${{ inputs.platform == 'windows-x64' && 'true' || 'false' }}
+        pnpm-filter: narration-utils-ui
         need-stylua: 'false'
     - if: inputs.version != ''
       name: Apply the computed release version
@@ -101,6 +107,24 @@ runs:
           { echo '### Packaged app smoke test'; echo '```json'; cat "$SMOKE_REPORT"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
         fi
         exit "$status"
+    # The third-party licences and the source offer (owner decision D17, docs/operations/ci-and-releases.md "Third-party notices"). Written
+    # from what this very build contains: the frozen sidecars' tables of contents, the UI's production dependencies and the Go modules of
+    # the Windows build. It refuses to write a report it cannot trust (an unknown licence, a component with no licence text, a missing
+    # direct dependency), which fails the build, on purpose: a release without its notices is not a release. It is packaged as its own
+    # asset beside the zip and the setup program (scripts/release/assets.mjs) and attested with them.
+    - name: Write the third-party notices
+      if: inputs.platform == 'windows-x64'
+      shell: bash
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_TAG: ${{ inputs.tag }}
+        COMMIT: ${{ github.sha }}
+      run: |
+        version="${INPUT_VERSION:-$(node -p "require('./package.json').version")}"
+        tag="${INPUT_TAG:-v${version}-rc}"
+        # The commit is in the source offer too: a release candidate's tag is pruned once newer ones exist, and the promoted release keeps
+        # these very bytes (prerelease.yml keeps the newest ten candidates).
+        uv run python scripts/licenses/notices.py --version "$version" --tag "$tag" --commit "$COMMIT" --out apps/desktop/build/bin/THIRD-PARTY-NOTICES.txt
     - name: Package the release asset
       shell: bash
       env:

@@ -82,6 +82,7 @@ jobs:
         with:
           platform: windows-x64
           version: ${{ needs.version.outputs.version }}
+          tag: ${{ needs.version.outputs.tag }}
       # Build provenance (SLSA Build L2) for everything a narrator can download (the zip, the setup program and their checksums, all in
       # release-assets), and for the executable inside the zip so it can be verified after extraction. The setup program in build/bin is
       # not named separately: the copy in release-assets is the same bytes. Before the prune and the release on purpose: if this step

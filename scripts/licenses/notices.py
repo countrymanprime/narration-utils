@@ -442,11 +442,15 @@ def render_report(
     catalogs: list[dict],
     reviewed: dict[str, str] | None = None,
     tag: str | None = None,
+    commit: str | None = None,
     no_text_ok: set[str] | None = None,
 ) -> str:
     reviewed = reviewed or {}
     no_text_ok = no_text_ok or set()
     tag = tag or f"v{version}"
+    # A release candidate's tag is pruned when newer ones come (prerelease.yml keeps ten), and the promoted release re-attaches these very
+    # bytes, so the offer also names the commit, which stays.
+    where = f"the tag {tag}" + (f" (commit {commit})" if commit else "")
     names: dict[Component, str] = {}
     unknown = []
     used: set[str] = set()
@@ -479,7 +483,7 @@ def render_report(
     out.append(_section("The program and where its source is"))
     out.append(
         f"narration-utils is free software under the {PROGRAM_LICENSE} licence (the full text is at the end of this file).\n"
-        f"Source offer: the complete corresponding source of this release is published at {REPOSITORY}, at the tag {tag}\n"
+        f"Source offer: the complete corresponding source of this release is published at {REPOSITORY}, at {where}\n"
         f"(a release candidate is tagged v{version}-rc, the promoted release v{version}). Anyone who receives this program may fetch it there, or ask for it by opening an\n"
         f"issue at {REPOSITORY}/issues. The version and the tag are the same as the ones the program prints with --version.\n"
     )
@@ -553,7 +557,7 @@ def read_reviewed(path: Path) -> tuple[dict[str, str], set[str], frozenset[str]]
     return dict(data.get("licenses", {})), set(no_text), frozenset(data.get("ignoredModules", []))
 
 
-def build(root: Path, version: str, release_build: Path, tag: str | None = None) -> str:
+def build(root: Path, version: str, release_build: Path, tag: str | None = None, commit: str | None = None) -> str:
     """The whole report. Anything that would make it wrong or incomplete raises NoticeError instead."""
     reviewed, no_text_ok, ignored_modules = read_reviewed(Path(__file__).parent / "reviewed.json")
     python, vendored = python_components(release_build, ignored_modules)
@@ -576,6 +580,7 @@ def build(root: Path, version: str, release_build: Path, tag: str | None = None)
         catalogs=read_catalogs(root / "config"),
         reviewed=reviewed,
         tag=tag,
+        commit=commit,
         no_text_ok=no_text_ok,
     )
 
@@ -584,15 +589,17 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--version", required=True, help="the release version, for example 0.1.0")
     parser.add_argument("--tag", help="the git tag this release is built from (default v<version>; a release candidate is v<version>-rc)")
+    parser.add_argument("--commit", help="the git commit the release is built from; a release candidate's tag is pruned later, the commit stays")
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--release-build", type=Path, default=Path(".release-build"), help="where scripts/release/prepare-resources.py froze the sidecars")
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
     args = parser.parse_args(argv)
     try:
-        text = build(args.root, args.version, args.release_build, args.tag)
+        text = build(args.root, args.version, args.release_build, args.tag, args.commit)
     except NoticeError as error:
         print(f"notices: {error}", file=sys.stderr)
         return 1
+    args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(text, encoding="utf-8")
     print(f"notices: wrote {args.out} ({len(text.splitlines())} lines)")
     return 0

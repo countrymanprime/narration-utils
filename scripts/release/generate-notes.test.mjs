@@ -24,6 +24,16 @@ function releaseNotes(env) {
   return readFileSync(destination, 'utf8');
 }
 
+// The program is AGPL-3.0-or-later and bundles GPL-family code (owner decision D17): the licences and the source offer travel as their own
+// release asset, so the notes point at it.
+test('the release notes point at the third-party notices and the source offer', () => {
+  const notes = releaseNotes({});
+
+  assert.match(notes, /## Licences and source/);
+  assert.match(notes, /THIRD-PARTY-NOTICES\.txt/);
+  assert.match(notes, /AGPL-3\.0-or-later/);
+});
+
 test('the release notes tell a narrator how to verify a download against the repository that built it', () => {
   const notes = releaseNotes({ GITHUB_REPOSITORY: 'countrymanprime/narration-utils' });
 

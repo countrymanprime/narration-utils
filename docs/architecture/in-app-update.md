@@ -126,6 +126,10 @@ Bindings: `UpdateStatus` (from the cache, no request), `UpdateCheck`, `UpdateOpe
 - A rehearsal with two real builds is not in the gate (it opens the application's window): `go test -tags rehearsal -run Rehearsal ./internal/update` with `REHEARSAL_OLD` and `REHEARSAL_NEW` set to two `narration-utils.exe` builds (build the second with `wails build -o narration-utils-099.exe -ldflags "-X main.version=0.9.9"`). On 2026-09-21 it swapped a real 0.1.0 for a real 0.9.9 while 0.1.0 was running, and the new build loaded its window, asked for its `Bootstrap` and confirmed.
 - Not proven by any test, because it needs a real release: the first update from one published release candidate to the next (the owner's first attested release, [#188](https://github.com/countrymanprime/narration-utils/issues/188), is the same milestone), and a launch from REAPER after an update.
 
+## Why the zip holds one file
+
+The zip the updater downloads holds only `narration-utils.exe`, and `Stager.unpack` refuses any other entry. The third-party notices ([CI and releases](../operations/ci-and-releases.md#third-party-notices)) are therefore a separate release asset and not a second file in the zip: an installed client that predates a two-file zip would refuse the update, and the defence against a hostile archive is not loosened for a text file ([ADR 0085](../adr/0085-the-third-party-notices-are-generated-from-the-release-and-ship-as-their-own-asset-and-not-inside-the-update-zip.md), Proposed).
+
 ## Limits
 
 No silent installs, no delta updates, no signing (D7), no update server, no telemetry, no self-replacement on macOS or Linux, no downgrade or same-version install, no "skip this version". A new build that reaches its first `Bootstrap` and is then broken is not rolled back. Changing any of this needs a new ADR that supersedes the one above.
