@@ -51,6 +51,11 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Home, import manuscript confirm dialog with format/paragraph/chapter preview (reached via "Replace manuscript" since a manuscript is already loaded)',
   },
+  {
+    page: 'home',
+    state: 'import-confirm-markdown',
+    description: 'Home, import review dialog for a Markdown file: the same review plus the chapter heading level choice',
+  },
 
   {
     page: 'home',

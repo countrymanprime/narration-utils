@@ -50,7 +50,7 @@ We believe showing each chapter's subtitle and summarizing what was detected bef
 | Metric | Target | How Measured |
 | --- | --- | --- |
 | Subtitle shown | A section with a subtitle renders "Title - subtitle"; a section without one renders the title only | Go `model_test.go` case on a soft-break docx (fixtures at `docx_test.go:15-70`) plus Vitest |
-| No API bump | `hostAPIVersion` unchanged (5) | Diff review |
+| No API bump | `hostAPIVersion` unchanged (12; the subtitle and notices are additive fields) | Diff review |
 | Summary is exact | Counts equal the effective kinds, update on reclassification, correct plurals | Vitest with the mock preview |
 | Chapter count | "proposed chapters" counts narration sections only | Vitest |
 | Reference note | Absent from the dialog body; present as a tooltip on the Reference material group | Vitest and PNG review |
@@ -62,18 +62,18 @@ We believe showing each chapter's subtitle and summarizing what was detected bef
 
 ## Open Questions
 
-- [ ] **I1. Where does the reference-material tooltip go?** Options: (a) an "i" on the Reference material group header (recommended, one place, not repeated per row); (b) a `TooltipTarget` around each row's select (repeats N times); (c) around only rows currently set to Reference. A native `<option>` cannot host a tooltip. The "i" is not keyboard-reachable until the Tooltip PRD lands, and the tooltip may render behind a native-top-layer dialog after the dialog PRD's Phase 2. Recommendation: (a), and verify against both PRDs' status at delivery.
-- [ ] **I2. Tooltip wording.** The current sentence omits that Front Matter is excluded too. Options: keep the wording for reference only, or say "Excluded from audiobook totals and Proofing. Still readable in the manuscript." on Reference and add an equivalent for Front Matter. Recommendation: one short string per group, accurate for that group.
-- [ ] **I3. Subtitle source.** The first paragraph's `ChapterSubtitle`, as commit does (`service.go:403`), or title-keyed? Repeated titles merge (`model.go:155-165`) and heading-only sections have none. Recommendation: the first paragraph's, matching commit exactly.
-- [ ] **I4. What does "chapters" count in the summary?** Narration only (matches Home's "narratable chapters", `AudiobookEstimatePanel.tsx:63`) or narration plus front matter (`isListableChapter`, ADR 0005)? Recommendation: narration only in the headline, front matter listed as its own line.
-- [ ] **I5. Disclosure component.** Options: (a) a real `Disclosure` primitive with stories and an atlas entry (`atlasCoverage.test.ts`), also usable by `AudiobookEstimatePanel`; (b) reuse the inline chevron + `aria-expanded` pattern; (c) native `<details>`, unused in the codebase. Recommendation: (a) if a second consumer is accepted in the same PRD, otherwise (b).
-- [ ] **I6. Default expansion.** Recommendation: expand the exceptions (Front matter and Reference material, and Characters when any candidate is unchecked), collapse narration chapters when there are many.
-- [ ] **I7. Where does expand/collapse state live?** Changing the heading level swaps the dialog to the `WorkDialog` and resets `importSelection` (ids change), which would also reset local state. Recommendation: hold it in the extracted component's parent, reset only on a new preview.
-- [ ] **I8. Character selection semantics.** `characterCandidateIds` undefined means all checked, and commit always sends the full explicit list (`Home.tsx:98-99,105,284,293`); "3 of 5 selected" must compute that default, and "select all / none" writes an explicit list. Recommendation: keep the wire behavior and compute the display.
-- [ ] **I9. Interim.** Ship request 4 alone first (drop the sentence, tooltip on the current select rows), or fold it into the regroup? Recommendation: fold it in, the placement depends on the grouping.
-- [ ] **I10. Native selects.** Unstyled selects (`Home.tsx:220,255`) differ from token-styled ones (`ScopedSetting.tsx:43-44`); `Field` has no select. Converge now or leave? Recommendation: leave, unless the regroup needs a shared row component anyway.
-- [ ] **I11. Accessible name.** Rows use `aria-label="{title} content type"` (`:256`); should the name include the subtitle? Recommendation: yes, when present.
-- [ ] **I12. Split the briefs PRD.** Amend Phase 5 of `story-bible-and-import-ux-briefs.prd.md` so display ships here and only the override stays gated. Recommendation: yes, in the PR that delivers Phase 2 below.
+- [x] **I1. Where does the reference-material tooltip go?** Options: (a) an "i" on the Reference material group header (recommended, one place, not repeated per row); (b) a `TooltipTarget` around each row's select (repeats N times); (c) around only rows currently set to Reference. A native `<option>` cannot host a tooltip. The "i" is not keyboard-reachable until the Tooltip PRD lands, and the tooltip may render behind a native-top-layer dialog after the dialog PRD's Phase 2. Recommendation: (a), and verify against both PRDs' status at delivery. **Answered (D6, ADR 0049):** (a): an info-icon button beside the Reference material group header, whose text is a popover; the Tooltip dependency is delivered.
+- [x] **I2. Tooltip wording.** The current sentence omits that Front Matter is excluded too. Options: keep the wording for reference only, or say "Excluded from audiobook totals and Proofing. Still readable in the manuscript." on Reference and add an equivalent for Front Matter. Recommendation: one short string per group, accurate for that group. **Answered (D22):** one short string per group, accurate for that group (Reference and Front matter each say what they are excluded from).
+- [x] **I3. Subtitle source.** The first paragraph's `ChapterSubtitle`, as commit does (`service.go:403`), or title-keyed? Repeated titles merge (`model.go:155-165`) and heading-only sections have none. Recommendation: the first paragraph's, matching commit exactly. **Answered (D22):** the first paragraph's subtitle, as commit does.
+- [x] **I4. What does "chapters" count in the summary?** Narration only (matches Home's "narratable chapters", `AudiobookEstimatePanel.tsx:63`) or narration plus front matter (`isListableChapter`, ADR 0005)? Recommendation: narration only in the headline, front matter listed as its own line. **Answered (D22):** narration only in the headline, front matter as its own line.
+- [x] **I5. Disclosure component.** Options: (a) a real `Disclosure` primitive with stories and an atlas entry (`atlasCoverage.test.ts`), also usable by `AudiobookEstimatePanel`; (b) reuse the inline chevron + `aria-expanded` pattern; (c) native `<details>`, unused in the codebase. Recommendation: (a) if a second consumer is accepted in the same PRD, otherwise (b). **Answered (owner, D1):** a real `Disclosure` primitive built on the wrapped Base UI `Collapsible`, with stories and an atlas entry.
+- [x] **I6. Default expansion.** Recommendation: expand the exceptions (Front matter and Reference material, and Characters when any candidate is unchecked), collapse narration chapters when there are many. **Answered (D22):** expand the exceptions (Front matter, Reference material, Characters when any is unchecked); collapse narration chapters when there are many.
+- [x] **I7. Where does expand/collapse state live?** Changing the heading level swaps the dialog to the `WorkDialog` and resets `importSelection` (ids change), which would also reset local state. Recommendation: hold it in the extracted component's parent, reset only on a new preview. **Answered (D22):** the open/closed choices are held by `Home`, above the swapped component, and reset when a new file is chosen.
+- [x] **I8. Character selection semantics.** `characterCandidateIds` undefined means all checked, and commit always sends the full explicit list (`Home.tsx:98-99,105,284,293`); "3 of 5 selected" must compute that default, and "select all / none" writes an explicit list. Recommendation: keep the wire behavior and compute the display. **Answered (D22):** keep the wire behaviour, compute the display.
+- [x] **I9. Interim.** Ship request 4 alone first (drop the sentence, tooltip on the current select rows), or fold it into the regroup? Recommendation: fold it in, the placement depends on the grouping. **Answered (D22):** folded into the regroup.
+- [x] **I10. Native selects.** Unstyled selects (`Home.tsx:220,255`) differ from token-styled ones (`ScopedSetting.tsx:43-44`); `Field` has no select. Converge now or leave? Recommendation: leave, unless the regroup needs a shared row component anyway. **Answered (owner):** the token-styled `Select` primitive (delivered by S10b) is used for every select.
+- [x] **I11. Accessible name.** Rows use `aria-label="{title} content type"` (`:256`); should the name include the subtitle? Recommendation: yes, when present. **Answered (D22):** the accessible name includes the subtitle when present.
+- [x] **I12. Split the briefs PRD.** Amend Phase 5 of `story-bible-and-import-ux-briefs.prd.md` so display ships here and only the override stays gated. Recommendation: yes, in the PR that delivers Phase 2 below. **Answered (D22):** the briefs PRD is amended in phase 2; only the override stays gated.
 
 ## Users & Context
 
@@ -131,7 +131,7 @@ We believe showing each chapter's subtitle and summarizing what was detected bef
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Coverage and extraction | Mock preview with sections/candidates/subtitle, Vitest, visual states, extract the review component; no behavior change | pending | - | - | - |
+| 1 | Coverage and extraction | Mock preview with sections/candidates/subtitle, Vitest, visual states, extract the review component; no behavior change | complete | - | - | - |
 | 2 | Show subtitles | `Subtitle` in `DraftSection` and the contract, render in rows, Go and Vitest tests, screenshot and guide refresh, amend the briefs PRD (I12) | pending | - | 1 | - |
 | 3 | Grouped summary layout | Summary, groups, counts and plurals, tooltip replacing the sentence, options group, optional `Disclosure`, states, screenshots, guide | pending | - | 1 (2 preferred) | - |
 
@@ -175,6 +175,7 @@ Cross-cutting: `visual-catalog-sync`, the Playwright visual suite with PNG revie
 | Subtitle display is separate from the override (proposed) | Display now, override stays evidence-gated | Ship both | Display needs no binding change and produces the evidence |
 | Subtitle payload | New `subtitle` field on the section (proposed) | Put it in `chapterTitles` | Keeps titles clean for counts and logs |
 | Order | Coverage and extraction, then subtitles, then regroup (proposed) | Regroup first | The dialog is untested today |
+| Owner decisions applied (2026-09-21, plan section 1) | D1 and D6 (a wrapped Base UI `Collapsible` and `Disclosure`, an info-icon popover for the note), D8 (the Story Bible build after import is on by default: this PRD reserves the checkbox and leaves a documented seam, the chaining is built by the briefs PRD), D16 (`subtitle` and `notices` are added to the schemas and the mock passes them), D22 (the recommendations of I2, I3, I4, I6 to I9, I11, I12) | | The plan's decisions override the text above where they differ |
 
 ## Research Summary
 

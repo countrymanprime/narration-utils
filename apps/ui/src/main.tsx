@@ -61,7 +61,10 @@ const mockUpdate = (
 const mockAssets = (['missing', 'downloading', 'verifying', 'download-fails', 'installing', 'checking', 'damaged'] as const).find(
   (seed) => seed === mockParams.get('mockAssets'),
 );
+// `?mockImportPreview=markdown` makes the next manuscript import a Markdown file, so the chapter heading level choice can be seen in the review dialog.
+const mockImportPreview = mockParams.get('mockImportPreview') === 'markdown' ? ('markdown' as const) : undefined;
 const mockInitial = {
+  ...(mockImportPreview ? { importPreview: mockImportPreview } : {}),
   ...(mockAssets ? { assets: mockAssets } : {}),
   ...(mockUpdate ? { update: mockUpdate } : {}),
   ...(mockLiveDegraded ? { liveUpdatesDegraded: true } : {}),

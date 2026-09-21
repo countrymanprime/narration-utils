@@ -277,6 +277,13 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       // The progress dialog that precedes it is titled "Import manuscript"; the confirm names the file.
       await confirmDialog(page, 'Import Alice.docx').waitFor();
     },
+    'import-confirm-markdown': async (page) => {
+      // The mock's Markdown seam (see main.tsx): the same book as a .md file, which is the one with the heading level choice.
+      await page.goto('/?mockImportPreview=markdown');
+      await settlePage(page);
+      await clickVisible(page, 'button', 'Replace manuscript');
+      await confirmDialog(page, 'Import Alice.md').waitFor();
+    },
   },
   manuscript: {
     'invalid-payload': async (page) => {

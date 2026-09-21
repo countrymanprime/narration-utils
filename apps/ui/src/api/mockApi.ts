@@ -39,6 +39,7 @@ import {
   wireSettings,
 } from './mockFixtures';
 import { loadAliceManuscript } from './aliceManuscript';
+import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './mockImportPreview';
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
@@ -212,6 +213,8 @@ export function createMockApi(
     holdEdits?: boolean;
     /** Boots with a Story Bible rebuild that is still running, so its dialog (and Continue in background) can be seen without a host. */
     rebuildRunning?: boolean;
+    /** Which manuscript an import picks: a Word file (the default) or a Markdown one, which has the chapter heading level choice. */
+    importPreview?: MockImportKind;
     /** Boots the update state (see `MockUpdateSeed`). */
     update?: MockUpdateSeed;
     /** How the next voice or model download behaves (see `MockAssetSeed`). */
@@ -332,6 +335,21 @@ export function createMockApi(
   const endJob = (event: JobEnded) => void setTimeout(() => jobEndListeners.forEach((listener) => listener(event)), 0);
   let runTimers: ReturnType<typeof setTimeout>[] = [];
   let importJob: WorkJob = { id: null, kind: 'manuscript_import', phase: 'idle', message: 'Ready to import.', percent: 0, logs: [], elapsed: 0 };
+  // Choosing a file and accepting the offer of one both begin the same job; the preview it will answer is `initial.importPreview`.
+  const startImport = () => {
+    importJob = {
+      id: 'mock-import',
+      kind: 'manuscript_import',
+      phase: 'preparing',
+      message: 'Manuscript selected. Choose import options to continue.',
+      percent: 0,
+      logs: ['Selected manuscript'],
+      elapsed: 0,
+      preview: mockImportPreview(initial.importPreview),
+      requiresReset: false,
+    };
+    return { selected: true, jobId: 'mock-import' };
+  };
   let storyBibleJob: WorkJob = initial.rebuildRunning
     ? {
         id: 'mock-guide-running',
@@ -522,34 +540,8 @@ export function createMockApi(
       runtime: {},
       transcript: wireClone(transcript),
     }),
-    selectManuscript: async () => {
-      importJob = {
-        id: 'mock-import',
-        kind: 'manuscript_import',
-        phase: 'preparing',
-        message: 'Manuscript selected. Choose import options to continue.',
-        percent: 0,
-        logs: ['Selected manuscript'],
-        elapsed: 0,
-        preview: { format: 'docx', sourceName: 'Alice.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] },
-        requiresReset: false,
-      };
-      return { selected: true, jobId: 'mock-import' };
-    },
-    manuscriptBeginImport: async () => {
-      importJob = {
-        id: 'mock-import',
-        kind: 'manuscript_import',
-        phase: 'preparing',
-        message: 'Manuscript selected. Choose import options to continue.',
-        percent: 0,
-        logs: ['Selected manuscript'],
-        elapsed: 0,
-        preview: { format: 'docx', sourceName: 'Alice.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] },
-        requiresReset: false,
-      };
-      return { selected: true, jobId: 'mock-import' };
-    },
+    selectManuscript: async () => startImport(),
+    manuscriptBeginImport: async () => startImport(),
     manuscriptImportState: async () => wireClone(importJob),
     manuscriptImportPreview: async (_jobId, { markdownHeadingLevel }) => {
       importJob = {
@@ -558,24 +550,25 @@ export function createMockApi(
         percent: 100,
         message: 'Import preview is ready.',
         // Mirrors the host's staged import log (apps/desktop/internal/importer).
-        logs: [
-          ...importJob.logs,
-          `Reading document structure using H${markdownHeadingLevel} chapter headings`,
-          'Read 240 paragraphs, 12 of them headings',
-          'Classifying front matter, chapters and reference sections',
-          'Preview ready: 240 paragraphs, 3 chapters, 0 character suggestions',
-        ],
+        logs: [...importJob.logs, ...(importJob.preview ? mockImportPreviewLog(importJob.preview, markdownHeadingLevel) : [])],
       };
       return wireClone(importJob);
     },
     manuscriptImportCommit: async () => {
+      const sourceName = importJob.preview?.sourceName ?? 'Alice.docx';
+      const format = importJob.preview?.format ?? 'docx';
       importJob = {
         ...importJob,
         phase: 'success',
         percent: 100,
         message: 'Manuscript import complete.',
-        logs: [...importJob.logs, 'Copying Alice.docx (48 KB) into the project and computing its checksum', 'Writing manuscript.json', 'Manuscript imported'],
-        result: { id: 'alice', format: 'docx', sourceName: 'Alice.docx', importedAt: '2026-01-01T00:00:00Z' },
+        logs: [
+          ...importJob.logs,
+          `Copying ${sourceName} (48 KB) into the project and computing its checksum`,
+          'Writing manuscript.json',
+          'Manuscript imported',
+        ],
+        result: { id: 'alice', format, sourceName, importedAt: '2026-01-01T00:00:00Z' },
       };
       return wireClone(importJob);
     },
