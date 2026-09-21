@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { countRootRules, parseThemes, resolveContrast, rootRules, type Theme, type TokenMap } from './tokenContrast';
 
@@ -48,6 +48,7 @@ const PAIRS: PairSpec[] = [
   text('text', 'body text', 'var(--text)', SURFACES),
   text('text-muted', 'secondary text, labels, helper text', 'var(--text-muted)', SURFACES),
   text('text-faint', 'section labels, counts, placeholders (Option B retires this as text)', 'var(--text-faint)', SURFACES),
+  mark('non-text', 'icons, status dots, the info icon border and decorative glyphs: the one colour for what is seen and not read', 'var(--non-text)', SURFACES),
   text('toast', 'Toast: page colour on the text colour', 'var(--bg)', ['surface'], 'var(--text)'),
   text('on-accent', 'primary button and logo: accent-contrast on accent', 'var(--accent-contrast)', ['surface'], 'var(--accent)'),
   text('on-accent-strong', 'primary button hover: accent-contrast on accent-strong', 'var(--accent-contrast)', ['surface'], 'var(--accent-strong)'),
@@ -112,7 +113,6 @@ const lightOnly: Theme[] = ['light'];
 const known = (fixedBy: string, themes: Theme[], ids: string[]): Record<string, KnownFailure> => Object.fromEntries(ids.map((id) => [id, { themes, fixedBy }]));
 
 const KNOWN_FAILURES: Record<string, KnownFailure> = {
-  ...known('phase 2 (text ramp)', lightOnly, ['text-muted']),
   ...known('phase 2 (--text-faint is retired as text)', both, ['text-faint']),
   ...known('phase 3 (active navigation)', lightOnly, ['nav-active']),
   ...known('phase 4 (derived on-tint text and the dark category tokens)', both, [
@@ -134,7 +134,7 @@ const KNOWN_FAILURES: Record<string, KnownFailure> = {
   ]),
 };
 // Counted per pair and theme: `text-muted` failing in dark as well would be a second failure, not the same one.
-const MAX_KNOWN_FAILURES = 37;
+const MAX_KNOWN_FAILURES = 36;
 
 interface Measured {
   ratio: number;
@@ -214,12 +214,12 @@ describe('the ratchet of known failures', () => {
 describe('the text ramp keeps its order', () => {
   // Contrast against the same surface must step down text, then muted, then the non-text mark: equal levels would mean the
   // hierarchy the palette exists to give the eye has collapsed.
-  it('text is stronger than muted on every surface, in both themes', () => {
+  it('text is stronger than muted, and muted stronger than the non-text mark, on every surface, in both themes', () => {
     for (const theme of THEME_NAMES) {
       for (const over of SURFACES) {
-        const strong = resolveContrast(THEMES[theme], { fg: 'var(--text)', over });
-        const muted = resolveContrast(THEMES[theme], { fg: 'var(--text-muted)', over });
-        expect(strong, `--text vs --text-muted over --${over} (${theme})`).toBeGreaterThan(muted);
+        const contrast = (token: string) => resolveContrast(THEMES[theme], { fg: `var(--${token})`, over });
+        expect(contrast('text'), `--text vs --text-muted over --${over} (${theme})`).toBeGreaterThan(contrast('text-muted'));
+        expect(contrast('text-muted'), `--text-muted vs --non-text over --${over} (${theme})`).toBeGreaterThan(contrast('non-text'));
       }
     }
   });
@@ -229,6 +229,7 @@ describe('the text ramp keeps its order', () => {
 // unmeasured. `text-[var(--x)]`, `color: 'var(--x)'` and a `color:` declaration in a stylesheet all count.
 const NO_TEXT_PAIR: Record<string, string> = {
   bookmark: 'a bookmark icon colour, not text',
+  'non-text': 'the colour of icons, status dots and decorative glyphs, held to 3:1 as a mark and never the colour of text that carries information',
 };
 
 function sourceFiles(directory: string): string[] {
@@ -239,20 +240,38 @@ function sourceFiles(directory: string): string[] {
   });
 }
 
-function tokensUsedAsText(): Set<string> {
-  const used = new Set<string>();
+// `text-[var(--x)]`, `text-[color:var(--x)]`, `text-(--x)`, and a `color:` that is not `background-color:` or `border-color:`.
+const TEXT_COLOUR = /text-\[(?:color:)?var\(--([a-z0-9-]+)\)\]|text-\(--([a-z0-9-]+)\)|(?<![-\w])color:\s*['"`]?var\(--([a-z0-9-]+)\)/g;
+
+// How many times each source file draws a `color` with each token, keyed by the path under src/.
+function textColourUses(): Map<string, Record<string, number>> {
+  const uses = new Map<string, Record<string, number>>();
   for (const file of sourceFiles(__dirname)) {
-    const source = readFileSync(file, 'utf8');
-    // `text-[var(--x)]`, `text-[color:var(--x)]`, `text-(--x)`, and a `color:` that is not `background-color:` or `border-color:`.
-    for (const match of source.matchAll(/text-\[(?:color:)?var\(--([a-z0-9-]+)\)\]|text-\(--([a-z0-9-]+)\)|(?<![-\w])color:\s*['"`]?var\(--([a-z0-9-]+)\)/g))
-      used.add(match[1] ?? match[2] ?? match[3]);
+    const perFile: Record<string, number> = {};
+    for (const match of readFileSync(file, 'utf8').matchAll(TEXT_COLOUR)) {
+      const token = match[1] ?? match[2] ?? match[3];
+      perFile[token] = (perFile[token] ?? 0) + 1;
+    }
+    if (Object.keys(perFile).length > 0) uses.set(relative(__dirname, file).split(sep).join('/'), perFile);
   }
-  return used;
+  return uses;
 }
+
+const tokensUsedAsText = (): Set<string> => new Set([...textColourUses().values()].flatMap((perFile) => Object.keys(perFile)));
+
+// `--non-text` (3:1) is the colour of what is seen and not read, so it has no text pair. It is drawn as a `color` only on the
+// icons and glyphs listed here, per file: a label or a count that lands on it would read at 3:1, so it fails this list until
+// it moves to --text-muted. Each slice of the `--text-faint` migration adds the icons it triaged.
+const NON_TEXT_COLOUR_USES: Record<string, { count: number; what: string }> = {
+  'components/layout/AppShell.tsx': { count: 1, what: 'the folder icon beside the project name' },
+};
 
 describe('no text colour ships without a declared pair', () => {
   it('measures every token the source draws text with', () => {
-    const measured = new Set(PAIRS.flatMap((spec) => [...spec.fg.matchAll(/var\(--([a-z0-9-]+)\)/g)].map((match) => match[1])));
+    // Only a text pair (4.5:1) measures a text colour: a mark pair (3:1) does not make its token safe to read.
+    const measured = new Set(
+      PAIRS.filter((spec) => spec.min === TEXT_MIN).flatMap((spec) => [...spec.fg.matchAll(/var\(--([a-z0-9-]+)\)/g)].map((match) => match[1])),
+    );
     const unmeasured = [...tokensUsedAsText()].filter((token) => !measured.has(token) && !(token in NO_TEXT_PAIR));
     expect(unmeasured, 'declare a pair for each of these in PAIRS, or list it in NO_TEXT_PAIR with a reason').toEqual([]);
   });
@@ -263,5 +282,13 @@ describe('no text colour ships without a declared pair', () => {
       expect(reason.length, token).toBeGreaterThan(10);
       expect(used.has(token), `${token} is no longer used as text: delete it from NO_TEXT_PAIR`).toBe(true);
     }
+  });
+
+  it('draws --non-text as a colour only on the icons and glyphs listed', () => {
+    const drawn = Object.fromEntries(
+      [...textColourUses()].filter(([, perFile]) => 'non-text' in perFile).map(([file, perFile]) => [file, perFile['non-text']]),
+    );
+    const listed = Object.fromEntries(Object.entries(NON_TEXT_COLOUR_USES).map(([file, use]) => [file, use.count]));
+    expect(drawn, 'a label or a count belongs on --text-muted; list only an icon or a glyph, with what it is').toEqual(listed);
   });
 });

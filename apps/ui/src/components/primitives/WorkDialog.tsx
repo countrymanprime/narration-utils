@@ -57,9 +57,7 @@ export function WorkDialog({ title, job, close, cancel }: { title: string; job: 
         </Progress.Track>
       </Progress.Root>
       <div className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-        <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
-          Live activity
-        </div>
+        <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] uppercase">Live activity</div>
         <div
           tabIndex={0}
           className="h-36 overflow-x-hidden overflow-y-auto border border-[var(--border)] bg-[var(--surface-2)] font-['IBM_Plex_Mono',ui-monospace,monospace] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
@@ -69,11 +67,7 @@ export function WorkDialog({ title, job, close, cancel }: { title: string; job: 
               {line}
             </div>
           ))}
-          {!job.logs.length && (
-            <div className="border-b border-[var(--border)] px-[0.45rem] py-1" style={{ color: 'var(--text-faint)' }}>
-              Waiting for activity…
-            </div>
-          )}
+          {!job.logs.length && <div className="border-b border-[var(--border)] px-[0.45rem] py-1">Waiting for activity…</div>}
         </div>
       </div>
     </Dialog>

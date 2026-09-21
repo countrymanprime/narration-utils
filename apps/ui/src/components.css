@@ -13,7 +13,7 @@
 .section-label {
   font-weight: 600;
   font-size: 0.72rem;
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 .panel {
   background: var(--surface);

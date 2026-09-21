@@ -68,7 +68,7 @@ export const WithCaptionAndLegend: Story = {
   render: (args) => (
     <div>
       <div className="mb-1.5 flex justify-between text-xs">
-        <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+        <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
           Recording progress
         </span>
         <span className="font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-muted)' }}>
