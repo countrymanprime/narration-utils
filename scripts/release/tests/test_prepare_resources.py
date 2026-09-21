@@ -170,7 +170,7 @@ def test_sidecar_flag_freezes_only_that_sidecar(script, monkeypatch):
     assert [call["name"] for call in fake.calls] == ["manuscript-guide"]
 
 
-def test_the_reaper_package_ships_the_scripts_and_not_the_harness(script, monkeypatch):
+def test_the_reaper_package_ships_the_scripts_and_not_the_harness_or_the_spikes(script, monkeypatch):
     install(monkeypatch, script, FakePyInstaller())
     source = script.ROOT / script.REAPER_DIR
     (source / "NarrationUtils_Launcher.lua").write_text("-- launcher", encoding="utf-8")
@@ -178,6 +178,8 @@ def test_the_reaper_package_ships_the_scripts_and_not_the_harness(script, monkey
     (source / "tests").mkdir()
     (source / "tests" / "protocol_test.lua").write_text("-- test", encoding="utf-8")
     (source / "tests" / "__pycache__").mkdir()
+    (source / "spikes").mkdir()
+    (source / "spikes" / "run-reaper.ps1").write_text("# spike driver", encoding="utf-8")
 
     script.main()
 
