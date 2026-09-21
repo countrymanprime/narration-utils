@@ -1,6 +1,6 @@
 # Standalone app startup & project picker
 
-**Status: Implemented** (project picker and recent projects). The OS-level entry points (installer, Start Menu entry, desktop shortcut) are not built; see [Packaging](#packaging-not-built).
+**Status: Implemented** (project picker and recent projects, and the Windows installer that registers the Start Menu entry and an optional desktop shortcut; see [Packaging](#packaging)).
 
 ## Problem
 
@@ -15,6 +15,6 @@ The app was originally launched only from REAPER: `integrations/reaper/Narration
 - **"Create new" only makes the folder.** `ProjectCreate` requires an absolute path, checks that a switch would be accepted (so a refused create leaves no folder behind), runs `os.MkdirAll` on the chosen path and then `ProjectSwitch` (see [host binding concurrency](host-binding-concurrency.md)). The `narration-utils/` sidecar folders (`manuscript/`, settings and so on) are created lazily by whichever service first writes to them (for example `apps/desktop/internal/manuscript/service.go:332,366`), and nothing scaffolds anything in REAPER: the DAW is `Standalone`.
 - **The REAPER launcher is unchanged** and still always passes `--project-folder`, `--project-name` and `--daw REAPER` (`integrations/reaper/NarrationUtils_Launcher.lua:104-109`), so the embedded launch path behaves as before.
 
-## Packaging (not built)
+## Packaging
 
-No installer definition, Start Menu entry or desktop shortcut exists yet. Windows needs an installer that registers a Start Menu entry and optionally a desktop shortcut so the app can be launched with no `--project-folder` at all, which the picker above already handles. This is planned in [release-readiness-provisioning-and-docs-site.prd.md](../prds/release-readiness-provisioning-and-docs-site.prd.md) (Windows installer phase). The PyInstaller sidecar bundling is a separate, already-solved concern.
+Windows has an installer that registers a Start Menu entry and an optional desktop shortcut, so the app can be launched with no `--project-folder` at all, which the picker above handles. It is an NSIS setup program that Wails builds (`wails build -nsis`) from `apps/desktop/build/windows/installer/project.nsi` and the release carries as `narration-utils-windows-x64-setup.exe`; it installs per user, with no administrator prompt, into `%LOCALAPPDATA%\Programs\Narration Utils`, installs the WebView2 runtime only when it is missing, and its uninstaller leaves the narrator's settings (`%APPDATA%\narration-utils`, which includes `recent-projects.json`), the asset cache and every project's sidecar folders alone. The decision, and why per user, is [ADR 0082](../adr/0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md); how CI builds it is in [CI and releases](../operations/ci-and-releases.md#the-windows-setup-program). Status: the definition and the pipeline are built and CI produces the setup program; an install on a clean machine is the owner's check (the first stable rehearsal). The first launch of an installed copy records its path for the REAPER launcher, as any launch does (`narration-utils-app-path.txt`). macOS and Linux have no installer. The PyInstaller sidecar bundling is a separate, already-solved concern.

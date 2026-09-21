@@ -1,5 +1,5 @@
 name: Build native package
-description: Build the Wails app on the current runner and package it as release-assets/narration-utils-<platform>.<ext> with a .sha256 beside it
+description: Build the Wails app on the current runner and package it as release-assets/narration-utils-<platform>.<ext> with a .sha256 beside it (Windows also gets its setup program)
 
 inputs:
   platform:
@@ -33,20 +33,52 @@ runs:
       with:
         name: ui-dist
         path: apps/desktop/cmd/narration-utils/frontend/dist
+    # The Windows setup program is built by Wails with NSIS (`-nsis`, definition in apps/desktop/build/windows/installer, docs/adr/0082).
+    # The hosted runner does not ship makensis (`wails doctor` lists nsis as optional and available, not installed), and Wails only
+    # warns and skips the installer when it is missing, so it is installed here at a pinned version. The build fails if -nsis was
+    # asked for and no installer came out (scripts/release/wails-build.mjs), so a runner image change cannot silently drop it.
+    - name: Install NSIS (makensis) for the Windows setup program
+      if: inputs.platform == 'windows-x64'
+      shell: bash
+      env:
+        NSIS_VERSION: 3.11.0
+      run: |
+        if command -v makensis > /dev/null 2>&1; then
+          echo "makensis was already on PATH: $(command -v makensis)"
+        else
+          choco install nsis --version="$NSIS_VERSION" --no-progress -y
+        fi
+        # The installer puts makensis in Program Files (x86); the build step below adds that folder to its own PATH.
+        PATH="$PATH:/c/Program Files (x86)/NSIS"
+        echo "makensis version: $(makensis -VERSION)"
     - name: Build native package
       shell: bash
       env:
         PLATFORM: ${{ inputs.platform }}
       run: |
         case "$PLATFORM" in
-          linux-x64) wails_args=(-tags webkit2_41) ;;
-          *)         wails_args=() ;;
+          linux-x64)   wails_args=(-tags webkit2_41) ;;
+          windows-x64) wails_args=(-nsis); PATH="$PATH:/c/Program Files (x86)/NSIS" ;;
+          *)           wails_args=() ;;
         esac
         uv run python scripts/release/prepare-resources.py --clean
         node scripts/release/verify-installable.mjs
         cd apps/desktop
         wails doctor
         node ../../scripts/release/wails-build.mjs -s "${wails_args[@]}"
+    # Wails downloads Microsoft's WebView2 bootstrapper while it builds the installer and embeds it, and the installer runs it when the
+    # runtime is missing. Nothing pins that download, so check it is still the file Microsoft signed before a release is built from it.
+    - name: Check the embedded WebView2 bootstrapper is signed by Microsoft
+      if: inputs.platform == 'windows-x64'
+      shell: pwsh
+      run: |
+        $file = 'apps/desktop/build/windows/installer/tmp/MicrosoftEdgeWebview2Setup.exe'
+        $signature = Get-AuthenticodeSignature -FilePath $file
+        $subject = "$($signature.SignerCertificate.Subject)"
+        Write-Host "WebView2 bootstrapper signature: $($signature.Status), $subject"
+        if ($signature.Status -ne 'Valid' -or $subject -notlike '*O=Microsoft Corporation*') {
+          throw "The embedded WebView2 bootstrapper is not validly signed by Microsoft Corporation."
+        }
     # The packaged app proves it can start: `--smoke` unpacks the embedded resources, starts every frozen sidecar, checks that the frozen
     # Story Bible sidecar can load its dictionary and espeak-ng data, loads the three asset catalogs, writes the asset cache and checks the
     # REAPER package, then exits (no window, no download; apps/desktop/smoke.go). It runs before packaging, so a build that cannot start
@@ -74,3 +106,10 @@ runs:
       env:
         PLATFORM: ${{ inputs.platform }}
       run: node scripts/release/assets.mjs package "$PLATFORM"
+    - name: Show the release files
+      shell: bash
+      run: |
+        ls -l release-assets
+        if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+          { echo '### Release files'; echo '```'; ls -l release-assets; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+        fi

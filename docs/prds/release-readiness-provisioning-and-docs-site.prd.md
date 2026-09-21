@@ -233,7 +233,7 @@ Tags: **shipped** = enforced by `apps/desktop/internal/assets` and the Piper and
 | 11 | Public docs site | Build from `docs/`, curated include list, atlas embed, link check, deploy with Storybook | pending | 12, 13, 14 | 9, 10 | - |
 | 12 | README and docs accuracy pass | Root README refresh, first-use doc statuses, verify the showcase brief's removal left no dangling links, trim the first-use brief | pending | 1-11, 13 | - | - |
 | 13 | CI docs and pipeline hygiene | Reconcile `ci-and-releases.md` with the workflows, decide `changed-files.mjs`, align action pins, cover the new CodeQL, labeler and sync jobs, extend the owner-only settings list in `github-workflow.md` | pending | 1-12 | - | - |
-| 14 | Windows installer | NSIS definition, Start Menu entry, WebView2 check, asset collection, checksum flow | pending | 11, 12, 13 | 8 (smoke test), Open Question 10 | - |
+| 14 | Windows installer | NSIS definition, Start Menu entry, WebView2 check, asset collection, checksum flow | partial (S16, [ADR 0082](../adr/0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md): definition and pipeline built; CI result and clean-machine install pending, see the phase notes) | 11, 12, 13 | 8 (smoke test), Open Question 10 | [plan](implementation-plan.md) (S16) |
 | 15 | Code signing | Decision, then signing steps and secrets handling; user-owned | pending | - | 14, user decision | - |
 | 16 | First stable rehearsal | Release checklist, clean-machine install check, user runs Promote on an RC | pending | - | 8, 14, 13 | - |
 

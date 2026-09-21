@@ -56,6 +56,10 @@ A release is an update only if its bare version is strictly greater than the run
 | `<name>.old` | the version that was replaced, kept until the new one has started |
 | `<name>.failed` | a new version that did not start and was rolled back |
 
+### Installed copies and the installer
+
+A first install comes from the Windows setup program (`narration-utils-windows-x64-setup.exe`), which is **per user** on purpose ([ADR 0082](../adr/0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md)): it installs to `%LOCALAPPDATA%\Programs\Narration Utils`, a folder the narrator can write to, so the check above (`WritableDir`) passes and the update swaps the program in place, exactly as for an unpacked zip. The setup program is never what the updater downloads: it fetches `narration-utils-windows-x64.zip` and its `.sha256` by exact name and ignores every other asset of a release. A per-machine copy (a zip unpacked under Program Files, or a folder an administrator owns) fails the writable check and gets `ErrNotWritable`'s answer with the download; the narrator updates it by running the new setup program or replacing the file. An update leaves `<name>.new`, `<name>.old` and `<name>.failed` beside the program only while it runs or after a rollback, and the uninstaller removes those too, so a rolled-back copy does not keep the install folder alive. Uninstalling does not touch `%LOCALAPPDATA%\narration-utils\update` (staged downloads and the pending record): that folder is part of the asset cache the uninstaller leaves.
+
 **If the program is missing after a crash between the two renames** (a power cut, a killed process), rename `narration-utils.exe.old` back to `narration-utils.exe`.
 
 ## Code map
