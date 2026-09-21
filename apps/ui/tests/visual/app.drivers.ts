@@ -99,13 +99,13 @@ function confirmDialog(page: Page, name: string | RegExp) {
   return page.getByRole('dialog', { name }).or(page.getByRole('alertdialog', { name }));
 }
 
-// Settings' own category rail (.settings-nav) reuses the same labels as the
+// Settings' own category rail (.settings-nav, a tab list) reuses the same labels as the
 // primary app nav ("Proofing", "Story Bible") - an unscoped role/name query
 // matches both and .first() can silently click the wrong one (navigating
 // away from Settings instead of switching category). Always scope category
 // clicks to .settings-nav specifically.
 async function clickSettingsCategory(page: Page, name: string): Promise<void> {
-  await page.locator('.settings-nav').getByRole('button', { name, exact: true }).click();
+  await page.locator('.settings-nav').getByRole('tab', { name, exact: true }).click();
 }
 
 // Playwright's synthetic page.mouse.down/move/up drag doesn't reliably
@@ -286,7 +286,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'reader-dark': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'Global');
+      await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Appearance');
       await clickVisible(page, 'button', 'Dark');
       await goToPage(page, 'Manuscript');
@@ -345,23 +345,23 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   storybible: {
     'category-all': async (page) => {
       await goToPage(page, 'Story Bible');
-      await clickVisible(page, 'button', /^All · \d+$/);
+      await clickVisible(page, 'tab', /^All · \d+$/);
     },
     'category-character': async (page) => {
       await goToPage(page, 'Story Bible');
-      await clickVisible(page, 'button', /^Characters · \d+$/);
+      await clickVisible(page, 'tab', /^Characters · \d+$/);
     },
     'category-place': async (page) => {
       await goToPage(page, 'Story Bible');
-      await clickVisible(page, 'button', /^Locations · \d+$/);
+      await clickVisible(page, 'tab', /^Locations · \d+$/);
     },
     'category-organization': async (page) => {
       await goToPage(page, 'Story Bible');
-      await clickVisible(page, 'button', /^Organizations · \d+$/);
+      await clickVisible(page, 'tab', /^Organizations · \d+$/);
     },
     'category-needs-review': async (page) => {
       await goToPage(page, 'Story Bible');
-      await clickVisible(page, 'button', /^Needs Review · \d+$/);
+      await clickVisible(page, 'tab', /^Needs Review · \d+$/);
     },
     'entity-selected': async (page) => {
       await goToPage(page, 'Story Bible');
@@ -489,57 +489,57 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
   settings: {
     'global-general': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'Global');
+      await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'General');
     },
     'global-manuscript': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'Global');
+      await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Manuscript');
     },
     'global-proofing': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'Global');
+      await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Proofing');
     },
     'global-storybible': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'Global');
+      await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Story Bible');
     },
     'global-daw': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'Global');
+      await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'DAW Integration');
     },
     'global-tts': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'Global');
+      await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'TTS');
     },
     'global-appearance': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'Global');
+      await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Appearance');
     },
     'project-proofing': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'This Project');
+      await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Proofing');
     },
     'project-storybible': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'This Project');
+      await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Story Bible');
     },
     'project-data': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'This Project');
+      await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Project data');
     },
     'dirty-footer': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'Global');
+      await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Proofing');
       // Proofing settings fields are <select> comboboxes, not pill buttons
       // (that's a Setup-page-only control) - pick a different model to dirty it.
@@ -549,7 +549,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'navigate-away-confirm': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'Global');
+      await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Proofing');
       await page.getByRole('combobox').first().selectOption('large-v3');
       // Leaving with unsaved changes asks first, so this click does not arrive at Home: it opens the confirm dialog.
@@ -558,7 +558,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'reset-override': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'This Project');
+      await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Proofing');
       const reset = page.getByRole('button', { name: 'Reset' }).first();
       if (await reset.count()) await reset.hover();
@@ -601,14 +601,14 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'theme-light': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'Global');
+      await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Appearance');
       await clickVisible(page, 'button', 'Light');
       await goToPage(page, 'Home');
     },
     'theme-dark': async (page) => {
       await goToPage(page, 'Settings');
-      await clickVisible(page, 'button', 'Global');
+      await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Appearance');
       await clickVisible(page, 'button', 'Dark');
       await goToPage(page, 'Home');

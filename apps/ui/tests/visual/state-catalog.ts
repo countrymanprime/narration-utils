@@ -178,7 +178,17 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'settings', state: 'project-data', description: 'Settings, Project scope / Project data category (clear derived project data)' },
   { page: 'settings', state: 'dirty-footer', description: 'Settings, unsaved-changes footer visible' },
   { page: 'settings', state: 'navigate-away-confirm', description: 'Settings, navigate-away-while-dirty confirm dialog' },
-  { page: 'settings', state: 'reset-override', description: 'Settings, reset/clear-override control on a field', pointer: 'keep' },
+  {
+    page: 'settings',
+    state: 'reset-override',
+    description: 'Settings, reset/clear-override control on a field',
+    pointer: 'keep',
+    sameAs: {
+      of: 'settings/project-proofing',
+      reason:
+        'The mock has no saved project override, so no field shows a Reset link and the driver hovers nothing. It used to differ from project-proofing only by the category button the pointer rested on (a hover tint that the tab list now shows as the selected tint). Saving an override in the driver shows Reset on every field and squeezes the row at tablet width, which the settings mobile layout PRD (phase 1) fixes; the state becomes real then.',
+    },
+  },
 
   // Global overlays (captured once against Home, not per-page)
   {

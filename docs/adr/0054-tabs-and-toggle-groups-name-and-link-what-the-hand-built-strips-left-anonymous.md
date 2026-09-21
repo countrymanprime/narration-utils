@@ -1,0 +1,24 @@
+# 0054. Tabs and toggle groups name and link what the hand-built strips left anonymous
+
+**Status:** Accepted
+**Date:** 2026-09-20
+**Supersedes:**
+
+## Context
+
+Three strips of buttons acted as tabs with none of the semantics: the Story Bible's category strip (`Guide.tsx`), Settings' Global and This Project switch and Settings' category list (`Settings.tsx`). They had no `tablist`, `tab` or `tabpanel` roles, no `aria-selected`, no link between a label and the content it swaps, and no arrow keys. Seven groups of exclusive chips (the Whisper model, chunk length, parallel workers, log detail, text size, theme, the Teleprompter's model) were `Pill`s under a `<label>` that named nothing: a screen reader read the chips with no group name, and pressing the label text activated the info icon inside it. The primitives PRD listed `Tabs`, `ToggleGroup`, `TagInput`, `Popover` and `Switch` for its phase 4; `Menu`, `Collapsible` and `Switch` were built by the Base UI foundation ([ADR 0052](0052-toggle-menu-checkbox-collapsible-and-switch-replace-the-hand-rolled-widgets.md)).
+
+## Decision
+
+- **`Tabs`** is four parts on Base UI Tabs: `Tabs` (the root: controlled `value` and `onChange`, `orientation`, a layout `className`), `TabList` (the strip: a required `label`, `variant` `underline` or `sidebar`, and `activation`), `Tab` and `TabPanel` (the content of the selected tab). The parts are separate because the strip and its panel sit in different places of a page. Base UI supplies the roles, `aria-selected`, the `aria-controls`/`aria-labelledby` links and arrow keys, Home and End. The selected look comes from Base UI's `data-active` (ADR 0017: the classes stay exclusive by state). `activation` is `manual` by default (arrows move focus, Enter or Space select), which suits Settings' scope switch because choosing it can ask to discard unsaved edits; the Story Bible categories use `automatic` because they only redraw a list. A panel takes no tab stop of its own (`tabIndex={-1}`): the controls inside are reached by Tab after the strip.
+- The three call sites use it. The Story Bible page root is the `Tabs` and its list section the `TabPanel`. Settings has two: the scope switch (its panel is the grid below it) and, inside it, the category list as `sidebar` vertical tabs whose root is `display: contents` so the list and the panel stay grid children. The category list's orientation follows the layout (`useMediaQuery`, below Tailwind's `md` it is a row, so the horizontal arrows apply). A change is still refused through the caller: the controlled `value` moves only when the caller changes it, so the unsaved-settings confirm works as before.
+- **`ToggleGroup`** is a `role="group"` with a required `label` around `Pill`s, one per option (`value`, `label`, `disabled`, `title`), `onChange(value)`. It uses no library part: each chip stays a tab stop and a `aria-pressed` toggle, so the look and the keyboard behaviour are unchanged and the group gains its name. The seven chip groups use it and their `<label>`s became `<span>`s. Radio semantics would be more accurate for a single choice, and the group semantics were deferred in ADR 0052; they stay deferred.
+- **Not built:** a general `Popover` primitive. No call site needs one (the info icon is already a Base UI Popover inside `Tooltip`, and the chapter-stage PRD recommends a `SlideOver`).
+- The visual-suite drivers click these as `tab`s. The `settings/reset-override` state now declares `sameAs: settings/project-proofing`: the mock has no project override, so the state never showed a Reset link, and it had differed from `project-proofing` only by a hover tint on the category button, which the tab list now shows as the selected tint. Making the state real needs the settings mobile layout fix (an override shows Reset on every field and the row squeezes at tablet width).
+
+## Consequences
+
+- The strips announce as tabs and the chip groups as named groups, and arrow keys work along a tab strip. Two things differ in the captures, 13 Settings states (39 PNGs) and no others: the selected category's text is `--accent-strong`, not `--accent` (5.5:1 on its tint, where `--accent` reached 4.03:1 and the atlas's axe check failed the new `Sidebar` story; `NavButton` has the same fault recorded as debt and the palette stack fixes tokens), and `settings/reset-override` loses its accidental hover tint (above). Every Story Bible and chip-group capture is identical.
+- A tab strip needs its panel under the same `Tabs` root, so a page that wants tabs restructures its root. The `contents` root is used once, and where it is used the panel is a `div`, not a `section`.
+- The Story Bible list section is now `role="tabpanel"` named by the selected tab; a screen reader hears "All, tab panel" (the selected tab's name) when it enters the list.
+- To change any of this (radio semantics, another activation default), write a new ADR that supersedes this one.

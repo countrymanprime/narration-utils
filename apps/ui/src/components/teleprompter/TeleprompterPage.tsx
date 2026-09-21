@@ -6,7 +6,7 @@ import { Button } from '../primitives/Button';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
-import { Pill } from '../primitives/Pill';
+import { ToggleGroup } from '../primitives/ToggleGroup';
 import { Select } from '../primitives/Select';
 import { TextField } from '../primitives/TextField';
 import { ReaderText } from './ReaderText';
@@ -284,17 +284,13 @@ export function TeleprompterPage() {
                 </div>
                 <div className="md:col-span-2">
                   <span className={LABEL_CLASS}>Whisper model</span>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {MODELS.map((option) => (
-                      <Pill
-                        key={option.value}
-                        label={option.label}
-                        title={option.caption}
-                        active={model === option.value}
-                        onClick={() => setModel(option.value)}
-                      />
-                    ))}
-                  </div>
+                  <ToggleGroup
+                    label="Whisper model"
+                    className="mt-1.5 flex-wrap gap-1.5"
+                    value={model}
+                    onChange={setModel}
+                    options={MODELS.map((option) => ({ value: option.value, label: option.label, title: option.caption }))}
+                  />
                 </div>
               </div>
             )}

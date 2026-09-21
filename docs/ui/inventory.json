@@ -357,10 +357,7 @@
         "Announces Its Pressed State"
       ],
       "consumers": [
-        "src/components/manuscript/Manuscript.tsx",
-        "src/components/proofing/Transcript.tsx",
-        "src/components/settings/Settings.tsx",
-        "src/components/teleprompter/TeleprompterPage.tsx"
+        "src/components/primitives/ToggleGroup.tsx"
       ],
       "a11yDebt": false
     },
@@ -436,6 +433,24 @@
       "a11yDebt": false
     },
     {
+      "title": "Primitives/Tabs",
+      "name": "Tabs",
+      "source": "src/components/primitives/Tabs.tsx",
+      "stories": [
+        "Underline",
+        "Sidebar",
+        "Roles And Links",
+        "Arrows Move And Enter Selects",
+        "Automatic Activation Follows Focus",
+        "Sidebar Uses The Vertical Arrows"
+      ],
+      "consumers": [
+        "src/components/settings/Settings.tsx",
+        "src/components/storybible/Guide.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/TextField",
       "name": "TextField",
       "source": "src/components/primitives/TextField.tsx",
@@ -453,6 +468,24 @@
         "src/components/proofing/Transcript.tsx",
         "src/components/settings/ScopedSetting.tsx",
         "src/components/storybible/GuideDetail.tsx",
+        "src/components/teleprompter/TeleprompterPage.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
+      "title": "Primitives/ToggleGroup",
+      "name": "ToggleGroup",
+      "source": "src/components/primitives/ToggleGroup.tsx",
+      "stories": [
+        "Default",
+        "Second Chosen",
+        "Choosing Moves The Press",
+        "Disabled Chip Is Not Chosen"
+      ],
+      "consumers": [
+        "src/components/manuscript/Manuscript.tsx",
+        "src/components/proofing/Transcript.tsx",
+        "src/components/settings/Settings.tsx",
         "src/components/teleprompter/TeleprompterPage.tsx"
       ],
       "a11yDebt": false
