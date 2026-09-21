@@ -10,9 +10,9 @@ import { countRootRules, parseThemes, resolveContrast, rootRules, type Theme, ty
 // sits on, measured over every surface it can appear on and composited the way the browser paints it (a `color-mix(...
 // transparent)` tint is laid over the surface first, so a highlight on a banded reader row is judged on the darker row).
 //
-// KNOWN_FAILURES is the explicit ratchet of pairs that fail today. Each recolouring phase fixes its pairs, deletes their
-// entries, and lowers MAX_KNOWN_FAILURES; an entry whose pair now passes fails this test until it is deleted, so the list
-// can only shrink and a fix cannot be forgotten. Adding an entry needs the same review as an `A11Y_DEBT` entry.
+// KNOWN_FAILURES is the explicit ratchet of pairs that fail: it held the 26 that failed on the day this test landed, each
+// recolouring phase fixed its pairs and deleted their entries, and it is empty now. An entry whose pair now passes fails
+// this test until it is deleted, so the list can only shrink, and adding one needs the same review as an `A11Y_DEBT` entry.
 
 const CSS = readFileSync(join(__dirname, 'styles.css'), 'utf8');
 const THEMES = parseThemes(CSS);
@@ -118,6 +118,8 @@ const PAIRS: PairSpec[] = [
     ),
   ),
   ...[...KINDS, 'note'].map((kind) => mark(`mark-${kind}`, `the ${kind} highlight underline and category dot`, `var(--${kind})`, READING_SURFACES)),
+  mark('mark-warn', 'the Editing status dot and meter segment, and the dotted underline of a skipped word: warn on the surface', 'var(--warn)', ['surface']),
+  mark('mark-info', 'the Recording status dot and meter segment: info on the surface', 'var(--info)', ['surface']),
 ];
 
 interface KnownFailure {
@@ -233,14 +235,15 @@ describe('a highlight nested once in another highlight stays at AA', () => {
 describe('placeholder text', () => {
   // A placeholder is text (WCAG 1.4.3), and axe does not test it. Tailwind's preflight draws it at 50% of the field's text
   // colour, about 3.2:1 in the light theme, so styles.css sets it to the muted text colour, which the `text-muted` pair holds
-  // to 4.5:1 on every surface.
+  // to 4.5:1 on every surface. This reads the source; that the rule wins in a browser (it is in the `base` layer with the
+  // preflight rule it replaces, and more specific) was checked on every state that shows a field, in both themes.
   it('is drawn in --text-muted at full opacity for inputs and textareas', () => {
     const rules = [...CSS.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]*::placeholder[^{}]*)\{([^}]*)\}/g)];
     const muted = rules.filter(
       ([, selector, body]) =>
         /input::placeholder/.test(selector) &&
         /textarea::placeholder/.test(selector) &&
-        /color:\s*var\(--text-muted\)/.test(body) &&
+        /(?<![-\w])color:\s*var\(--text-muted\)/.test(body) &&
         /opacity:\s*1\b/.test(body),
     );
     expect(muted.length, 'styles.css needs one rule: input::placeholder, textarea::placeholder { color: var(--text-muted); opacity: 1 }').toBe(1);
@@ -338,13 +341,24 @@ describe('no text colour ships without a declared pair', () => {
   });
 
   it('draws no text in a Tailwind palette colour or a literal colour: only tokens have a measured pair', () => {
-    // `text-red-400` in Results.tsx was 2.8:1 on white, in both themes, because a palette colour is no token: no pair measures
-    // it and the dark theme never changes it.
-    const literal =
-      /\btext-(?:(?:red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone)-\d{2,3}|white|black)\b|\btext-\[#[0-9a-fA-F]{3,8}\]/;
+    // `text-red-400` in Results.tsx was 2.89:1 on white in the light theme, because a palette colour is no token: no pair
+    // measures it and the dark theme never changes it. This catches a palette utility, an arbitrary text colour that is not a
+    // `var()`, and a literal `color:` in a style object or stylesheet.
+    const palette =
+      'red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone|mauve|olive|mist|taupe';
+    const functions = 'rgba?|hsla?|hwb|lab|lch|oklab|oklch|color';
+    const literal = new RegExp(
+      [
+        String.raw`\btext-(?:(?:${palette})-\d{2,3}|white|black)\b`,
+        String.raw`\btext-\[(?:#[0-9a-fA-F]{3,8}|(?:${functions})\(|color:(?!var\())`,
+        String.raw`(?<![-\w])color:\s*['"\x60]?(?:#[0-9a-fA-F]{3,8}\b|(?:${functions})\(|white\b|black\b)`,
+      ].join('|'),
+      'g',
+    );
+    // Not src/api: mock and wire data (a track's `color: '#3F6EA6'`) is not a text colour.
     const offenders = sourceFiles(__dirname)
-      .filter((file) => literal.test(readFileSync(file, 'utf8')))
-      .map((file) => relative(__dirname, file).split(sep).join('/'));
+      .filter((file) => !relative(__dirname, file).startsWith('api'))
+      .flatMap((file) => [...readFileSync(file, 'utf8').matchAll(literal)].map((match) => `${relative(__dirname, file).split(sep).join('/')}: ${match[0]}`));
     expect(offenders, 'use a token from styles.css, with a declared pair').toEqual([]);
   });
 
