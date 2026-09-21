@@ -239,36 +239,47 @@ func (h *Host) configureLocked(next config) {
 	h.teleprompter.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
 }
 
-// packagedSidecar materializes an embedded release resource under the
-// per-user cache so Python/ONNX dynamic libraries can use ordinary filesystem
-// paths. Developer launches pass explicit paths and never use this route.
+// packagedResources materializes the embedded release resources under the per-user cache so Python/ONNX dynamic libraries can use
+// ordinary filesystem paths. Developer launches pass explicit paths and never use this route. It answers the folder, or "" when they
+// could not be unpacked.
 func (h *Host) packagedResources() string {
 	cache, err := os.UserCacheDir()
 	if err != nil {
 		return ""
 	}
-	key, err := resourceKey()
+	root, err := materializeResources(resources, cache, executablePath())
 	if err != nil {
 		return ""
 	}
-	target := filepath.Join(cache, "narration-utils", "runtime", key)
+	return root
+}
+
+// materializeResources unpacks the resources embedded in source into <userCache>/narration-utils/runtime/<key> and returns that folder.
+// The folder is content-addressed and is only written when it is missing or incomplete, so it is safe to call at every start. The
+// packaged smoke test (smoke.go) calls it with the embedded resources of the real executable.
+func materializeResources(source fs.FS, userCache, executable string) (string, error) {
+	key, err := resourceKeyFor(source)
+	if err != nil {
+		return "", err
+	}
+	target := filepath.Join(userCache, "narration-utils", "runtime", key)
 	if _, err := os.Stat(filepath.Join(target, ".complete")); err == nil {
 		// The payload may be unchanged while the app executable moves (for
 		// example after a user relocates a portable install). Refresh this
 		// tiny launcher pointer on every startup; REAPER import itself remains
 		// an explicit, user-controlled action.
-		_ = writeReaperLauncherPath(target, executablePath())
-		return target
+		_ = writeReaperLauncherPath(target, executable)
+		return target, nil
 	}
 	staging := target + ".staging"
 	if err := os.RemoveAll(staging); err != nil {
-		return ""
+		return "", err
 	}
-	if err := fs.WalkDir(resources, "cmd/narration-utils/resources", func(path string, entry fs.DirEntry, walkErr error) error {
+	if err := fs.WalkDir(source, resourcesRoot, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		relative, err := filepath.Rel("cmd/narration-utils/resources", path)
+		relative, err := filepath.Rel(resourcesRoot, path)
 		if err != nil || relative == "." {
 			return nil
 		}
@@ -276,7 +287,7 @@ func (h *Host) packagedResources() string {
 		if entry.IsDir() {
 			return os.MkdirAll(destination, 0o755)
 		}
-		bytes, err := resources.ReadFile(path)
+		bytes, err := fs.ReadFile(source, path)
 		if err != nil {
 			return err
 		}
@@ -287,26 +298,26 @@ func (h *Host) packagedResources() string {
 		return os.WriteFile(destination, bytes, 0o700) //nolint:gosec // G306: executable resources
 	}); err != nil {
 		_ = os.RemoveAll(staging)
-		return ""
+		return "", err
 	}
 	if err := os.WriteFile(filepath.Join(staging, ".complete"), []byte(key+"\n"), 0o600); err != nil {
 		_ = os.RemoveAll(staging)
-		return ""
+		return "", err
 	}
 	if err := os.RemoveAll(target); err != nil {
 		_ = os.RemoveAll(staging)
-		return ""
+		return "", err
 	}
 	if err := os.Rename(staging, target); err != nil {
-		return ""
+		return "", err
 	}
 	// The REAPER action is intentionally materialized beside the immutable
 	// sidecars.  It needs the installed Wails executable rather than a
 	// checkout-relative path; the Lua launcher reads this one-line file.
 	// REAPER is never modified automatically: Settings shows this path for a
 	// user-controlled import or re-import.
-	_ = writeReaperLauncherPath(target, executablePath())
-	return target
+	_ = writeReaperLauncherPath(target, executable)
+	return target, nil
 }
 
 func executablePath() string {
@@ -333,16 +344,12 @@ func writeReaperLauncherPath(root, executable string) error {
 	return os.Rename(temporary, target)
 }
 
-// resourceKey changes whenever any embedded release resource changes. Keeping
+// resourceKeyFor changes whenever any embedded release resource changes. Keeping
 // the cache content-addressed means an installed app update never starts an
 // obsolete Python sidecar or REAPER action from a previous build.
-func resourceKey() (string, error) {
-	return resourceKeyFor(resources)
-}
-
 func resourceKeyFor(source fs.FS) (string, error) {
 	hash := sha256.New()
-	err := fs.WalkDir(source, "cmd/narration-utils/resources", func(path string, entry fs.DirEntry, walkErr error) error {
+	err := fs.WalkDir(source, resourcesRoot, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}

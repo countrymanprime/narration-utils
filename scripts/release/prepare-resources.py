@@ -41,6 +41,7 @@ class Sidecar(NamedTuple):
     entry: Path
     paths: list[Path]
     collect_data: tuple[str, ...] = ()
+    copy_metadata: tuple[str, ...] = ()
 
 
 def emit(text: str) -> None:
@@ -51,7 +52,7 @@ def emit(text: str) -> None:
         sys.stdout.flush()
 
 
-def freeze(name: str, entry: Path, paths: list[Path], collect_data: tuple[str, ...] = ()) -> None:
+def freeze(name: str, entry: Path, paths: list[Path], collect_data: tuple[str, ...] = (), copy_metadata: tuple[str, ...] = ()) -> None:
     work = ROOT / ".release-build" / name
     args = [
         sys.executable,
@@ -73,6 +74,8 @@ def freeze(name: str, entry: Path, paths: list[Path], collect_data: tuple[str, .
         args.extend(["--paths", str(path)])
     for package in collect_data:
         args.extend(["--collect-data", package])
+    for package in copy_metadata:
+        args.extend(["--copy-metadata", package])
     args.append(str(entry))
     # `--clean` wipes PyInstaller's cache directory, which every run shares by default. With the freezes
     # running at once, that would delete files another one is reading, so each gets a cache of its own.
@@ -109,10 +112,18 @@ def main() -> None:
     shared_python = ROOT / PYTHON_LIB_DIR
     sidecars_root = ROOT / SIDECARS_DIR
     sidecars = [
+        # Piper speaks through its bundled espeak-ng and needs piper/espeak-ng-data (about 19 MB, plus a few MB of other Piper data);
+        # the CMU dictionary (cmudict, read by pronouncing) needs its data file and its package metadata (it reads its own version).
+        # PyInstaller has no hook for either: without them a frozen preview could not speak, and the frozen guide logged "CMU
+        # pronunciation unavailable (No package metadata was found for cmudict)". `narration-utils --smoke` runs `manuscript-guide
+        # self-check` to prove both load. (The other log line, "eSpeak phonetic fallback unavailable", is the phonemizer package
+        # wanting a system libespeak-ng that no build has, on a dev machine too; data files do not fix it.)
         Sidecar(
             "manuscript-guide",
             sidecars_root / "manuscript-guide" / "core" / "manuscript_guide.py",
             [shared_python, sidecars_root / "manuscript-guide" / "core"],
+            ("piper", "cmudict"),
+            ("cmudict",),
         ),
         # faster-whisper ships its Silero VAD model (assets/silero_vad_v6.onnx) as
         # package data and PyInstaller has no hook for it. Without collecting it, a

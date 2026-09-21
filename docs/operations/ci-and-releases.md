@@ -207,6 +207,51 @@ candidate (a pre-release) and `v<version>` for its promotion; and the program re
 The updater refuses anything else, so changing one of these means changing `apps/desktop/internal/update` in the same pull request
 (`scripts/release/assets.mjs` and the updater's `PlatformFor` mirror each other).
 
+## The packaged-app smoke test
+
+A release must start on a machine that has none of the repository. Wails is a GUI program, so CI cannot start it and look at a
+window; instead the executable has a non-interactive mode, `narration-utils --smoke` (`apps/desktop/smoke.go`), that runs before
+the update relaunch logic, the single-instance lock and the window exist, checks what the release carries, prints a JSON report
+and exits: `0` when every check passed, `1` when one failed, `2` for a bad command line. It downloads nothing.
+
+| Check | What it proves |
+| --- | --- |
+| `resources` | the embedded resources unpack into the per-user cache (the same code the app runs at launch) |
+| `asset-cache` | the asset cache folder (`<user cache>/narration-utils/assets`) can be created and written |
+| `sidecar:<name>` | each of the three frozen sidecars is in the unpacked tree and starts (`--help` exits 0) |
+| `guide:cmudict`, `guide:espeak` | the frozen Story Bible sidecar reads the CMU dictionary and starts the espeak-ng phonemizer Piper speaks through, from `piper/espeak-ng-data` (`manuscript-guide self-check`); a freeze that loses either data set fails here, and a self-check that stops reporting one of them fails too |
+| `guide:synthesis` | only with `--piper-model FILE`: the frozen guide loads that voice and speaks one word |
+| `catalogs` | the three approved asset catalogs load and name assets |
+| `reaper` | the launcher and its six scripts are present and the launcher points at this executable |
+
+CI runs it in the `Smoke test the packaged app` step of `.github/actions/build-native`, on `windows-x64` only, after the Wails
+build and before the release asset is packaged, so both `Build (Windows)` in `ci.yml` and the Windows release build of
+`prerelease.yml` fail on a build that cannot start. The macOS and Linux previews are not smoked. There is no path filter to
+restrict it to package changes: the build itself runs on every non-docs change, and the check adds a few seconds. The step points
+`LocalAppData` at an empty folder, writes the report to a file (a GUI-subsystem program's standard output can be lost) and shows it
+in the log and the job summary. To run it locally, build as in `README.md`, then
+`narration-utils.exe --smoke --report smoke.json` (set `LocalAppData` to an empty folder to leave your own cache alone; add
+`--piper-model <the installed .onnx>` to hear one word spoken by the frozen sidecar).
+
+**Decision: CI does not speak a word.** A real synthesis needs the 114 MB voice, and downloading that on every run would cost
+more than the risk it covers. What a freeze loses (the espeak-ng data, the dictionary) is what `guide:espeak` and `guide:cmudict`
+exercise without a voice; the one-word synthesis is a local check with `--piper-model`, run whenever the freeze arguments change
+(`scripts/release/prepare-resources.py`). Seed the voice with `pnpm run assets:seed -- tts`.
+
+`scripts/release/verify-installable.mjs`, which runs before the Wails build, keeps its checks separate: the three sidecars, the
+Piper and ONNX Runtime folders of the frozen guide, the guide's `piper/espeak-ng-data`, `cmudict/data` and cmudict package metadata
+(`cmudict-<version>.dist-info`), the three asset catalogs, and the REAPER files. Each has a test in
+`scripts/release/verify-installable.test.mjs`. `prepare-resources.py` gives the guide `--collect-data piper --collect-data cmudict`
+and `--copy-metadata cmudict`; PyInstaller has no hook for them (the guide grows by about 48 MB; `piper/hebrew` and `piper/tashkeel`
+come with the package data and English does not need them, a saving left for a later change).
+
+**Known gap, not fixed here:** the IPA shown for a name the CMU dictionary lacks comes from the `phonemizer` package, which needs a
+system `libespeak-ng` that no build ships (it fails with "espeak not installed on your system" on a developer machine too), so
+such a name gets no pronunciation in any build. That is a Story Bible behaviour, separate from previews, which speak through Piper's
+own bundled espeak-ng; `guide:espeak` checks the latter. Using Piper's phonemizer for the IPA fallback would close it.
+
+The smoke test's `resources` step unpacks into the same per-user cache the app uses, so do not run it while the app is open.
+
 ## Build provenance
 
 Every release asset is attested: `actions/attest` records, in GitHub's attestation store, which workflow, commit and

@@ -785,5 +785,78 @@ class StrictEntityExtractionTests(unittest.TestCase):
         self.assertTrue({"Dawnspire", "Vex", "Nyx"} <= set(vocabulary))
 
 
+class SelfCheckTests(unittest.TestCase):
+    """`self-check` is what the packaged-app smoke test runs against the frozen sidecar: it proves the data the freeze must carry
+    (the CMU dictionary and Piper's espeak-ng data) is really there, without needing the 114 MB voice."""
+
+    def test_passes_when_the_dictionary_and_the_espeak_data_load(self):
+        results = guide.run_self_check()
+        self.assertEqual([entry["name"] for entry in results], ["cmudict", "espeak"])
+        self.assertTrue(all(entry["ok"] for entry in results), results)
+        self.assertIn("HH", results[0]["detail"])  # "hello" from the CMU dictionary, in ARPAbet
+        self.assertTrue(results[1]["detail"])  # the phonemes espeak-ng made of "hello"
+
+    def test_a_dictionary_that_cannot_load_fails_that_check_and_says_why(self):
+        # The frozen guide logged exactly this in the phase 4 spike: the freeze carried no cmudict metadata.
+        with patch("pronouncing.phones_for_word", side_effect=RuntimeError("No package metadata was found for cmudict")):
+            results = guide.run_self_check()
+        cmudict = results[0]
+        self.assertFalse(cmudict["ok"])
+        self.assertIn("No package metadata was found for cmudict", cmudict["detail"])
+        self.assertTrue(results[1]["ok"], "one failing check must not hide the other")
+
+    def test_a_missing_espeak_data_directory_fails_that_check_and_names_it(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            missing = Path(temporary) / "espeak-ng-data"
+            results = guide.run_self_check(espeak_data_dir=missing)
+        espeak = results[1]
+        self.assertFalse(espeak["ok"])
+        self.assertIn(str(missing), espeak["detail"])
+
+    def test_a_dictionary_with_no_entry_for_a_common_word_fails(self):
+        with patch("pronouncing.phones_for_word", return_value=[]):
+            results = guide.run_self_check()
+        self.assertFalse(results[0]["ok"])
+
+    def test_with_a_voice_it_also_speaks_one_word(self):
+        voice = ManuscriptGuideTests._speaking_voice(frames=200)
+        with tempfile.TemporaryDirectory() as temporary, patch.object(guide, "load_voice", return_value=voice) as load:
+            results = guide.run_self_check(piper_model=str(Path(temporary) / "voice.onnx"))
+            self.assertEqual(load.call_count, 1)
+        self.assertEqual([entry["name"] for entry in results], ["cmudict", "espeak", "synthesis"])
+        self.assertTrue(results[2]["ok"], results[2])
+        self.assertIn("200", results[2]["detail"])  # frames written
+
+    def test_a_voice_that_cannot_speak_fails_the_synthesis_check_with_the_real_reason(self):
+        voice = MagicMock()
+        voice.synthesize_wav.side_effect = RuntimeError("espeak-ng data directory not found")
+        with tempfile.TemporaryDirectory() as temporary, patch.object(guide, "load_voice", return_value=voice):
+            results = guide.run_self_check(piper_model=str(Path(temporary) / "voice.onnx"))
+        self.assertFalse(results[2]["ok"])
+        self.assertIn("espeak-ng data directory not found", results[2]["detail"])
+
+    def test_the_command_prints_one_json_report_and_exits_zero_when_every_check_passes(self):
+        out = io.StringIO()
+        with patch.object(sys, "argv", ["manuscript_guide.py", "self-check"]), patch("sys.stdout", out):
+            guide.main()  # returns: exit code 0
+        report = json.loads(out.getvalue())
+        self.assertTrue(report["ok"])
+        self.assertEqual([entry["name"] for entry in report["checks"]], ["cmudict", "espeak"])
+
+    def test_the_command_exits_one_and_still_prints_the_report_when_a_check_fails(self):
+        out = io.StringIO()
+        with (
+            patch.object(sys, "argv", ["manuscript_guide.py", "self-check"]),
+            patch("sys.stdout", out),
+            patch("pronouncing.phones_for_word", side_effect=RuntimeError("broken")),
+            self.assertRaises(SystemExit) as caught,
+        ):
+            guide.main()
+        self.assertEqual(caught.exception.code, 1)
+        report = json.loads(out.getvalue())
+        self.assertFalse(report["ok"])
+        self.assertIn("broken", json.dumps(report))
+
+
 if __name__ == "__main__":
     unittest.main()

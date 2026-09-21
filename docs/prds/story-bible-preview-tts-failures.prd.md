@@ -34,7 +34,7 @@ The reporter's toast text and entry (T1, T2) were never supplied, so Phase 1 dia
 | 1 | Install flow reports `running`, UI keys on `downloading` | **Confirmed by reading** (`startTtsInstall` sets `phase: "running"`, and `GuideDetail.tsx` only loops on `downloading`, so a fresh install shows a "Downloading..." toast and no progress). It needs no synthesis, so it is the most likely reporter case on a first run. **Not fixed here:** Phase 2, owned by release-readiness Phase 1. | Phase 2 |
 | 2 | Synthesis failure masked as "# channels not specified" | **Confirmed.** Names that phonemize to nothing (`...`, `---`, an em dash, a lone space) exit 1 with that message; names with letters, digits, Cyrillic and CJK all speak. | `test_a_synthesis_error_is_reported_not_masked_by_the_wave_writer`, `test_a_name_that_produces_no_audio_says_so` |
 | 3 | Failure leaves a 0-byte cached file that later attempts reuse | **Confirmed.** The failed run above leaves a 0-byte `.wav`, and the old `os.Stat` cache check trusted it. | `test_a_failed_render_leaves_no_file_behind`, `TestPreviewIgnoresAZeroByteCachedFileAndReplacesIt`, `TestPreviewRejectsAnEmptyResultAndDoesNotKeepIt` |
-| 4 | Frozen build lacks piper data | **Not testable on a dev build.** Left for Phase 3. | Phase 3 |
+| 4 | Frozen build lacks piper data | **Confirmed on a frozen build (phase 3, stack S16), fixed.** The guide freeze without `--collect-data piper` had no `_internal/piper/espeak-ng-data` and no cmudict data or metadata: the new `manuscript-guide self-check` reported "the espeak-ng data directory was not found" and "No package metadata was found for cmudict" (exit 1). With `--collect-data piper --collect-data cmudict --copy-metadata cmudict` both pass, and the frozen sidecar loaded the pinned voice and spoke a word (12,032 frames, 1.9 s including start and model load). | `test_prepare_resources.py` (freeze arguments), `SelfCheckTests`, `smoke_test.go`, `verify-installable.test.mjs` |
 | 5 | Non-cp1252 project path | **Confirmed.** A project folder with CJK and accented characters wrote the WAV, then exited 1 with `'charmap' codec can't encode characters`; the second click hit the cache and worked. | `test_main_writes_utf8_to_a_legacy_codepage_pipe` |
 | 6 | Cache key ignores the voice | **Confirmed by reading and by test** (the hash used a constant provider and version). | `TestPreviewCacheIsKeyedOnTheVoice` |
 
@@ -65,7 +65,7 @@ We believe surfacing real errors and removing the poisoned-cache and masking pat
 | Timeout | A hung sidecar returns an error after a bounded time | Go test with a fake process |
 | Error path in the UI | Each user-visible message has a test; the hook resets to idle and the button is usable again | Vitest (`usePreviewAudio`, `GuideDetail`) |
 | Install flow | `running` and every other job phase render as progress in the install dialog; extra clicks do not start extra jobs | Vitest; Go test for `startTtsInstall` |
-| Frozen sidecar | Piper voice loads and synthesizes in the frozen guide sidecar | Manual check on a frozen build, recorded in the PR |
+| Frozen sidecar | Piper voice loads and synthesizes in the frozen guide sidecar | Manual check on a frozen build, recorded in the PR (done in stack S16: 12,032 frames for one word); CI checks the data without a voice |
 | Latency | Model hash not recomputed on every click | Go test on `assets.State` caching; manual timing |
 
 ## Open Questions
@@ -75,7 +75,7 @@ We believe surfacing real errors and removing the poisoned-cache and masking pat
 - [x] **T3. Write to a temp file and rename, or catch the exception before `wave` closes?** Answered (recommendation adopted, D22): render to `<name>.<pid>.part` next to the target, rename on success, remove on failure. The wave writer is closed by hand so its own error cannot replace the real one.
 - [x] **T4. Timeout value** for `render-audio` and where to enforce it (context with deadline in `Run`). Answered: `previewTimeout` is 2 minutes in `guide/service.go`, enforced by a context deadline around the sidecar run in `Preview`. `Run` itself is unchanged and unbounded for the other commands.
 - [x] **T5. Cache the model hash?** Delivered by stack S16 ([ADR 0078](../adr/0078-asset-state-comes-from-the-manifest-an-asset-is-read-in-full-once-per-session-and-a-failed-download-resumes.md)): the manifest records each file's size, hash and modification time, a listing trusts it, and the model is read in full once per session (the preview no longer hashes 114 MB on every click).
-- [ ] **T6. Frozen build data.** Recommendation adopted (yes: `collect_data` plus a release smoke test, sequenced with the release-readiness provisioning phases); Phase 3, not built yet.
+- [x] **T6. Frozen build data.** Delivered by stack S16 (phase 3): `--collect-data piper --collect-data cmudict --copy-metadata cmudict` for the guide freeze, and the packaged smoke test (`narration-utils --smoke`, release-readiness Phase 8) with the guide's `self-check`. CI proves the data loads without a voice (no 114 MB download on every run); the real spoken word is a local check with `--piper-model` (see [CI and releases](../operations/ci-and-releases.md#the-packaged-app-smoke-test)).
 - [x] **T7. Message wording** for each failure (voice missing, name not speakable, sidecar unavailable). Answered: one cause line with the raw reason inside it, because the toast has no details area yet (the interaction feedback work delivered a toast queue with sticky errors but still no details area). Messages: `"<name>" could not be spoken: <reason>`; `The preview voice could not be loaded (<reason>). If its files are damaged, remove it in Settings and install it again.`; `The preview could not be saved (<reason>). Close anything that has the file open and try again.`; `the preview took longer than 2m0s and was stopped; try again, and restart the app if it keeps happening`; and the existing asset-required prompt for a missing voice. The UI drops any `Error:` prefix and capitalizes the first letter.
 
 ## Users & Context
@@ -132,11 +132,11 @@ We believe surfacing real errors and removing the poisoned-cache and masking pat
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Correct and legible failures | Real errors, temp-and-rename, zero-byte and voice-keyed cache, timeout, tests, messages | complete | - | T1 (diagnosed instead) | [plan](implementation-plan.md) (S04) |
 | 2 | Install flow honesty | `running` phase handling, single job, tests | complete (delivered with release-readiness Phase 1, stack S16, [ADR 0077](../adr/0077-every-asset-install-is-one-job-with-real-bytes-a-second-start-joins-it-and-one-hook-follows-it.md)) | 1 | release-readiness Phase 1 (owner) | [plan](implementation-plan.md) (S16) |
-| 3 | Frozen build and latency | Piper data files, release smoke test, model verification cache | pending (release-readiness stack, S16) | - | 1 | - |
+| 3 | Frozen build and latency | Piper data files, release smoke test, model verification cache | complete (stack S16: the model verification cache is [ADR 0078](../adr/0078-asset-state-comes-from-the-manifest-an-asset-is-read-in-full-once-per-session-and-a-failed-download-resumes.md) (phase 2); the frozen data and the smoke test are release-readiness Phase 8; evidence in the cause 4 row above; a spoken word in a frozen build ran locally, not yet in CI) | 1 | [plan](implementation-plan.md) (S16) |
 
 **Phase 1.** Goal: a failed preview never poisons later attempts and always says why. Success: tests for causes 2, 3, 5, 6; a manual retry after a forced failure works.
 **Phase 2.** Goal: first-use install works end to end in the UI. Success: Vitest with `phase:'running'`; a Go test for `startTtsInstall`.
-**Phase 3.** Goal: the frozen sidecar can synthesize, and previews are fast. Success: a frozen-build smoke test; measured click-to-audio time recorded.
+**Phase 3.** Goal: the frozen sidecar can synthesize, and previews are fast. Success: a frozen-build smoke test; measured click-to-audio time recorded. Delivered: the smoke test; the frozen sidecar's cold start, voice load and one word took 1.9 s; the model hash is no longer recomputed per click (ADR 0078: listing five installed Whisper models is 0.6 ms, was 3.2 s).
 
 **Parallelism Notes**: Phase 1 and 2 touch different files; Phase 3 follows Phase 1.
 
@@ -171,4 +171,4 @@ Cross-cutting: `hostAPIVersion` unchanged unless a binding changes; each phase f
 ---
 
 *Generated: 2026-09-20*
-*Status: IN DELIVERY - Phase 1 complete (stack S04); Phases 2 and 3 pending*
+*Status: all three phases complete (stacks S04 and S16); the PRD can be retired with the last PR of stack S16*

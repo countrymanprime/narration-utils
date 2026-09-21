@@ -6,10 +6,12 @@ package process
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
 	"sync"
+	"time"
 )
 
 type Child struct {
@@ -73,36 +75,32 @@ func (s *Supervisor) Start(ctx context.Context, program string, args ...string) 
 	return child, nil
 }
 
-// Run is the synchronous counterpart used for short Story Bible mutations.
-// It has the same Job Object ownership and pipe draining guarantees as Start.
+// runWaitDelay is how long Run waits for a program's output once the program has exited (or been stopped): a descendant that kept the
+// pipe open must not keep Run waiting for ever.
+const runWaitDelay = 5 * time.Second
+
+// Run is the synchronous counterpart used for short Story Bible mutations and the packaged smoke test.
+// It has the same Job Object ownership as Start. The output is copied into buffers by the standard library and Run returns only when it
+// has been read to the end: reading a pipe by hand while Wait closes it can lose the last bytes of what the program printed.
 func (s *Supervisor) Run(ctx context.Context, program string, args ...string) (int, string, string, error) {
 	command := exec.CommandContext(ctx, program, args...)
 	configure(command)
-	stdout, err := command.StdoutPipe()
-	if err != nil {
-		return 0, "", "", err
-	}
-	stderr, err := command.StderrPipe()
-	if err != nil {
-		return 0, "", "", err
-	}
-	if err = command.Start(); err != nil {
+	var out, failure bytes.Buffer
+	command.Stdout, command.Stderr = &out, &failure
+	command.WaitDelay = runWaitDelay
+	if err := command.Start(); err != nil {
 		return 0, "", "", fmt.Errorf("could not start %s: %w", program, err)
 	}
-	if err = s.jobs.assign(command.Process.Pid); err != nil {
+	if err := s.jobs.assign(command.Process.Pid); err != nil {
 		_ = command.Process.Kill()
+		_ = command.Wait()
 		return 0, "", "", err
 	}
-	var out, failure bytes.Buffer
-	var drains sync.WaitGroup
-	drains.Add(2)
-	go func() { defer drains.Done(); _, _ = io.Copy(&out, stdout) }()
-	go func() { defer drains.Done(); _, _ = io.Copy(&failure, stderr) }()
 	waitErr := command.Wait()
-	drains.Wait()
 	code := 0
-	if waitErr != nil {
-		if exit, ok := waitErr.(*exec.ExitError); ok {
+	if waitErr != nil && !errors.Is(waitErr, exec.ErrWaitDelay) {
+		var exit *exec.ExitError
+		if errors.As(waitErr, &exit) {
 			code = exit.ExitCode()
 		} else {
 			code = -1
