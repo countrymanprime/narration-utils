@@ -35,7 +35,9 @@ type Service struct {
 	sidecars *process.Supervisor
 	emit     func(json.RawMessage)
 	changed  func(map[string]any)
+	report   func(kind, message string)
 	grace    time.Duration
+	dropped  int
 
 	state    map[string]any
 	script   json.RawMessage
@@ -204,18 +206,64 @@ func (s *Service) fail(message string) {
 	s.notify()
 }
 
-// onLine handles one stdout line. Anything that is not a JSON value is stray
-// output (a library print) and is dropped; the rest is relayed unchanged.
+// alwaysLogDrops and logDropsEvery keep the host log readable when a sidecar prints many broken lines: the first few are
+// logged, then one in logDropsEvery.
+const (
+	alwaysLogDrops = 3
+	logDropsEvery  = 100
+)
+
+// SetLog gives the service somewhere to say that it dropped a line. It is optional; without it drops are only counted.
+func (s *Service) SetLog(report func(kind, message string)) {
+	s.mu.Lock()
+	s.report = report
+	s.mu.Unlock()
+}
+
+// Dropped is how many lines this service has dropped because they were JSON but not an event (ADR 0069).
+func (s *Service) Dropped() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.dropped
+}
+
+// isEvent reports whether raw is a JSON object with a non-empty string `type`, the envelope every event of ADR 0021 has.
+func isEvent(raw json.RawMessage) (string, bool) {
+	var head struct {
+		Type any `json:"type"`
+	}
+	if err := json.Unmarshal(raw, &head); err != nil {
+		return "", false
+	}
+	kind, ok := head.Type.(string)
+	return kind, ok && kind != ""
+}
+
+// drop counts a line that was JSON but not an event and logs it, by count only: a line can hold the narrator's words.
+func (s *Service) drop() {
+	s.mu.Lock()
+	s.dropped++
+	count, report := s.dropped, s.report
+	s.mu.Unlock()
+	if report != nil && (count <= alwaysLogDrops || count%logDropsEvery == 0) {
+		report("sidecar_line_dropped", fmt.Sprintf("teleprompter sidecar line %d was JSON but not an event (no string type); it was not relayed", count))
+	}
+}
+
+// onLine handles one stdout line. Anything that is not a JSON value is stray output (a library print) and is dropped
+// silently. A JSON value that is not an event envelope (an object with a string `type`) is dropped, counted and logged.
+// The rest is relayed unchanged: the UI checks the rest of each event against its schema (ADR 0022, ADR 0069).
 func (s *Service) onLine(line string) {
 	if !json.Valid([]byte(line)) {
 		return
 	}
 	raw := json.RawMessage(line)
-	var head struct {
-		Type string `json:"type"`
+	kind, ok := isEvent(raw)
+	if !ok {
+		s.drop()
+		return
 	}
-	_ = json.Unmarshal(raw, &head)
-	switch head.Type {
+	switch kind {
 	case "script":
 		s.mu.Lock()
 		s.script = raw

@@ -43,7 +43,10 @@ const mockPreviewError = mockParams.get('mockPreviewError');
 // `?mockInvalidPayload=bootstrap` makes the Bootstrap arrive in the wrong shape (through the real `parseWire`), so the
 // startup error screen for a payload the app could not read can be seen without a host.
 const mockInvalidPayload = mockParams.get('mockInvalidPayload') === 'bootstrap' ? ('bootstrap' as const) : undefined;
+// `?mockLiveDegraded=1` tells the app at once that live updates are degraded, so the notice can be seen without a failing host.
+const mockLiveDegraded = mockParams.has('mockLiveDegraded');
 const mockInitial = {
+  ...(mockLiveDegraded ? { liveUpdatesDegraded: true } : {}),
   ...(mockInvalidPayload ? { invalidPayload: mockInvalidPayload } : {}),
   ...(mockNoManuscript ? { noManuscript: true } : {}),
   ...(mockPreviewError ? { previewError: mockPreviewError } : {}),

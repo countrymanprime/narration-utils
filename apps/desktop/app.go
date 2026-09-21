@@ -179,6 +179,7 @@ func (h *Host) configureLocked(next config) {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")
 	}
 	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
+	h.teleprompter.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
 }
 
 // packagedSidecar materializes an embedded release resource under the

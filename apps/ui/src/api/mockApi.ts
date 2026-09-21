@@ -108,6 +108,8 @@ export function createMockApi(
     previewError?: string;
     /** Makes that payload arrive in the wrong shape, through the real `parseWire`, so the failure screens can be seen without a host. */
     invalidPayload?: 'bootstrap';
+    /** Tells the app at once that live updates from the host are degraded, so the notice can be seen without a failing host. */
+    liveUpdatesDegraded?: boolean;
   } = {},
 ): NarrationApi {
   let entities = wireClone(WIRE_ENTITIES);
@@ -708,6 +710,11 @@ export function createMockApi(
       return wireClone(tracksDiscovery);
     },
     tracksList: async () => wireClone(WIRE_TRACKS_PROJECT),
+    subscribeLiveUpdateHealth: (onDegraded) => {
+      if (!initial.liveUpdatesDegraded) return () => {};
+      const timer = setTimeout(onDegraded, 0);
+      return () => clearTimeout(timer);
+    },
     ...teleprompter,
     mediaUrl: (sourceFile) => mockAudioSource() ?? sourceFile,
   };

@@ -34,4 +34,6 @@ export interface SystemApi {
   settingsForScope(scope: Scope): Promise<Record<string, ScopedSettingField[]>>;
   reportClientDiagnostic(kind: string, message: string): Promise<void>;
   subscribeProjectAttach(onUpdate: (state: ProjectAttachState) => void): () => void;
+  /** Calls `onDegraded` once when live updates from the host have been failing, so the app can say what is on screen may be out of date. */
+  subscribeLiveUpdateHealth(onDegraded: () => void): () => void;
 }

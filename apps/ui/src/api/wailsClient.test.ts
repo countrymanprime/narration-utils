@@ -243,3 +243,122 @@ describe('wailsClient', () => {
     expect(wailsClient.mediaUrl('C:\\My Book\\media\\take 1.wav')).toBe('/media?path=C%3A%5CMy%20Book%5Cmedia%5Ctake%201.wav');
   });
 });
+
+describe('live events (ADR 0069: dropped and counted, never thrown inside the callback)', () => {
+  type Listener = (payload: unknown) => void;
+
+  // A fresh module per test: the live-event counter is the client's own, and one test's drops must not degrade the next.
+  async function subscribeTo(event: string) {
+    vi.resetModules();
+    const { wailsClient: client } = await import('./wailsClient');
+    let listener: Listener | undefined;
+    const eventsOn = vi.fn((name: string, callback: Listener) => {
+      if (name === event) listener = callback;
+      return () => {};
+    });
+    (window as unknown as { runtime: { EventsOnMultiple: typeof eventsOn } }).runtime = { EventsOnMultiple: eventsOn };
+    const report = vi.fn().mockResolvedValue('null');
+    window.go = { main: { Host: { SystemReportDiagnostic: report } } };
+    return { client, emit: (payload: unknown) => listener?.(payload), report };
+  }
+
+  const transcript = { phase: 'running', percent: 10, message: 'Working', logs: [], chapters: [], rows: [], diff: '', summary: '', elapsed: 1 };
+  const position = { type: 'position', read: 4, committed: 3, status: 'listening', jump: null, skipped: null };
+
+  it('passes a valid transcript state on and keeps the marker export default', async () => {
+    const { client, emit } = await subscribeTo('transcript:state');
+    const update = vi.fn();
+    client.subscribeTranscript(update);
+    emit(transcript);
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ phase: 'running', markerExport: { phase: 'idle', message: '', added: 0, skipped: 0 } }));
+  });
+
+  it('drops a malformed transcript state without throwing, and writes it to the host log', async () => {
+    const { client, emit, report } = await subscribeTo('transcript:state');
+    const update = vi.fn();
+    client.subscribeTranscript(update);
+    expect(() => emit({ ...transcript, percent: 'ten' })).not.toThrow();
+    expect(update).not.toHaveBeenCalled();
+    expect(report).toHaveBeenCalledTimes(1);
+    const [kind, message] = report.mock.calls[0] as [string, string];
+    expect(kind).toBe('wire_invalid');
+    expect(message).toContain('host.event transcript:state');
+    expect(message).toContain('percent');
+  });
+
+  it('tells the app once that live updates are degraded after a run of dropped events', async () => {
+    const { client, emit } = await subscribeTo('teleprompter:event');
+    const degraded = vi.fn();
+    client.subscribeLiveUpdateHealth(degraded);
+    client.subscribeTeleprompterEvent(vi.fn());
+    for (let i = 0; i < 8; i += 1) emit({ ...position, read: 'x' });
+    expect(degraded).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads a teleprompter event sent as JSON text, as the transport may', async () => {
+    const { client, emit } = await subscribeTo('teleprompter:event');
+    const onEvent = vi.fn();
+    client.subscribeTeleprompterEvent(onEvent);
+    emit(JSON.stringify(position));
+    expect(onEvent).toHaveBeenCalledWith(position);
+  });
+
+  it('ignores an event type it does not know without counting it as a failure', async () => {
+    const { client, emit, report } = await subscribeTo('teleprompter:event');
+    const onEvent = vi.fn();
+    const degraded = vi.fn();
+    client.subscribeLiveUpdateHealth(degraded);
+    client.subscribeTeleprompterEvent(onEvent);
+    for (let i = 0; i < 10; i += 1) emit({ type: 'latency', ms: 12 });
+    expect(onEvent).not.toHaveBeenCalled();
+    expect(degraded).not.toHaveBeenCalled();
+    expect(report).toHaveBeenCalledTimes(1);
+    expect(report.mock.calls[0]?.[0]).toBe('wire_unknown_event');
+    expect(report.mock.calls[0]?.[1]).toContain('latency');
+  });
+
+  it('drops a value that is not an event at all', async () => {
+    const { client, emit, report } = await subscribeTo('teleprompter:event');
+    const onEvent = vi.fn();
+    client.subscribeTeleprompterEvent(onEvent);
+    emit(42);
+    emit(null);
+    emit('not json');
+    expect(onEvent).not.toHaveBeenCalled();
+    expect(report).toHaveBeenCalled();
+  });
+
+  it('fills a partial teleprompter state and drops one with an unknown phase', async () => {
+    const { client, emit } = await subscribeTo('teleprompter:state');
+    const onState = vi.fn();
+    client.subscribeTeleprompterState(onState);
+    emit({ phase: 'running' });
+    emit({ phase: 'paused' });
+    expect(onState).toHaveBeenCalledTimes(1);
+    expect(onState).toHaveBeenCalledWith({ phase: 'running', message: '', engine: null, chapter: null, script: null, position: null });
+  });
+
+  it('drops a project-attach event with the wrong shape', async () => {
+    const { client, emit } = await subscribeTo('system:attached');
+    const update = vi.fn();
+    client.subscribeProjectAttach(update);
+    emit({ attached: 'yes' });
+    emit({ attached: true });
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledWith({ attached: true });
+  });
+
+  it('reads the teleprompter state binding through the same schema', async () => {
+    vi.resetModules();
+    const { wailsClient: client } = await import('./wailsClient');
+    window.go = {
+      main: {
+        Host: {
+          TeleprompterState: () =>
+            Promise.resolve(JSON.stringify({ phase: 'idle', message: 'Choose', engine: null, chapter: null, script: null, position: null })),
+        },
+      },
+    };
+    await expect(client.teleprompterState()).resolves.toMatchObject({ phase: 'idle', engine: null });
+  });
+});
