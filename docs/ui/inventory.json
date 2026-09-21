@@ -433,7 +433,9 @@
         "Press Toggles",
         "Space Toggles"
       ],
-      "consumers": [],
+      "consumers": [
+        "src/components/settings/ScopedSetting.tsx"
+      ],
       "a11yDebt": false
     },
     {

@@ -4,7 +4,8 @@ export type Scope = 'global' | 'project';
 export type ScopedSettingField = {
   key: string;
   label: string;
-  kind: 'text' | 'choice' | 'color';
+  // A `bool` is stored as the string "true" or "false" (every setting value is a string) and shown as a Switch.
+  kind: 'text' | 'choice' | 'color' | 'bool';
   choices: string[];
   value: string;
   isSet: boolean;
