@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 // An on/off setting: a track with a thumb, then its label, and pressing the label toggles it. It is a `role="switch"`
 // (Base UI), which announces "on" and "off", the right semantics for a setting that takes effect at once, where a checkbox
-// says "checked". Settings booleans use it (the Settings boolean kind itself is a later change). Controlled.
+// says "checked". The Settings `bool` kind is a row of it (ScopedSetting). Controlled.
 export function Switch({
   checked,
   onChange,

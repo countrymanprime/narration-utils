@@ -267,6 +267,26 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(saveSettings).not.toHaveBeenCalled();
   });
 
+  it('does not write an override when a field with no value of its own is put back to the value it inherits', async () => {
+    const saveSettings = vi.fn(createMockApi().saveSettings);
+    renderApp({ saveSettings });
+    await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+
+    // A project shows the Global value ("small") for a field it has no override for. Changing it and changing it back must
+    // not pin that value in the project, or a later change to the Global default would no longer reach it.
+    fireEvent.click(screen.getByRole('tab', { name: 'This Project' }));
+    fireEvent.click(await screen.findByRole('tab', { name: 'Proofing' }));
+    const model = await screen.findByRole('combobox', { name: 'Default Whisper model' });
+    fireEvent.change(model, { target: { value: 'large-v3' } });
+    fireEvent.change(model, { target: { value: 'small' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(screen.queryByText('Unsaved changes')).toBeNull());
+    expect(saveSettings).not.toHaveBeenCalled();
+  });
+
   it('names the Settings tabs and keeps the selected one while unsaved changes ask before a switch', async () => {
     renderApp();
     await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));

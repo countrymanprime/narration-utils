@@ -10,6 +10,7 @@ func TestValidateSettingValueAcceptsWhatEachKindStores(t *testing.T) {
 	choice := fieldSchema{key: "model_size", label: "Model", kind: "choice", choices: []string{"tiny", "small"}}
 	color := fieldSchema{key: "color_note", label: "Note color", kind: "color"}
 	flag := fieldSchema{key: "notify", label: "Notify", kind: "bool"}
+	text := fieldSchema{key: "note_label", label: "Note label", kind: "text"}
 
 	cases := []struct {
 		name    string
@@ -24,6 +25,8 @@ func TestValidateSettingValueAcceptsWhatEachKindStores(t *testing.T) {
 		{"color lower case", color, "b85c1e", ""},
 		{"color too short", color, "B85C1", "must be a six-digit color"},
 		{"color not hex", color, "ZZZZZZ", "must be a six-digit color"},
+		{"text any string", text, "Narrator note", ""},
+		{"text empty", text, "", ""},
 		{"bool true", flag, "true", ""},
 		{"bool false", flag, "false", ""},
 		{"bool empty", flag, "", "must be true or false"},

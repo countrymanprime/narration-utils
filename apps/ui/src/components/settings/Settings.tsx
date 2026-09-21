@@ -31,8 +31,11 @@ const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
 // What the narrator edited. The form holds every field of the category, and a field with no value in this scope holds an
 // empty string, which the host rejects for a choice or a colour ("unsupported value for chunk_seconds"): sending the whole
 // form failed every save in a scope that had any unset field (a project has none set until one is saved).
+// A field with no value of its own shows the value it inherits, so putting it back to that value is no change either: sending
+// it would pin the inherited value as an override (a two-state switch makes that easy to do by accident).
 function changedValues(fields: readonly ScopedSettingField[], values: Record<string, string>): Record<string, string> {
-  return Object.fromEntries(fields.filter((field) => (values[field.key] ?? field.value) !== field.value).map((field) => [field.key, values[field.key]]));
+  const isChanged = (field: ScopedSettingField, next: string) => next !== field.value && !(field.value === '' && next === field.effectiveValue);
+  return Object.fromEntries(fields.filter((field) => isChanged(field, values[field.key] ?? field.value)).map((field) => [field.key, values[field.key]]));
 }
 
 export function Settings({
