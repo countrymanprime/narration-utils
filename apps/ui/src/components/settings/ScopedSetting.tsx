@@ -1,5 +1,6 @@
 import type { Scope, ScopedSettingField } from '../../types';
 import { Select } from '../primitives/Select';
+import { Switch } from '../primitives/Switch';
 import { TextField } from '../primitives/TextField';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { proofingChoiceLabel } from '../proofing/options';
@@ -36,6 +37,8 @@ const ROW_CLASSES =
 // The controls (a select, or a swatch and a hex box) and the Reset link. The row may wrap so Reset drops under the control only
 // when there is no room beside it, and a control stops growing at 28rem so every select is the same width from md up.
 const CONTROLS_CLASSES = 'flex min-w-0 max-w-md flex-wrap items-center gap-[0.6rem]';
+// A boolean row: the switch with its label, the hint icon and Reset on one wrapping line.
+const BOOL_ROW_CLASSES = 'flex flex-wrap items-center gap-x-1 gap-y-2 border-b border-[var(--border)] py-4';
 // A control that takes the free width, wraps to its own line below 10rem rather than shrinking past being usable, and can
 // shrink below its content (`min-w-0`; a flex item otherwise never gets narrower than its longest option).
 const GROWING_CONTROL_CLASSES = 'min-w-0 flex-[1_1_10rem]';
@@ -57,6 +60,24 @@ export function ScopedSetting({
   onClearOverride: () => void;
 }) {
   const effective = value || field.effectiveValue;
+  const resetButton = scope === 'project' && field.isSet && (
+    <button type="button" className="ml-auto flex-none text-[0.75rem] text-[var(--accent)] underline" onClick={onClearOverride}>
+      Reset
+    </button>
+  );
+  if (field.kind === 'bool') {
+    // A switch is its own label (the setting's name), so the row is the switch, the hint icon and Reset, not a label column
+    // and a control column. Only the stored string "true" is on: anything else the host never validated reads as off.
+    return (
+      <div className={BOOL_ROW_CLASSES}>
+        <Switch checked={effective === 'true'} onChange={(checked) => change(String(checked))}>
+          {field.label}
+        </Switch>
+        <Tooltip text={TOOLTIP[field.key] || `Configure ${field.label.toLowerCase()}.`} />
+        {resetButton}
+      </div>
+    );
+  }
   const isColor = field.kind === 'color';
   const isText = field.kind === 'text';
   return (
@@ -91,11 +112,7 @@ export function ScopedSetting({
             />
           </TooltipTarget>
         )}
-        {scope === 'project' && field.isSet && (
-          <button type="button" className="ml-auto flex-none text-[0.75rem] text-[var(--accent)] underline" onClick={onClearOverride}>
-            Reset
-          </button>
-        )}
+        {resetButton}
       </div>
     </div>
   );

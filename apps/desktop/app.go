@@ -702,14 +702,35 @@ func (h *Host) saveSettings(tool, scope string, values map[string]*string) error
 		if value == nil {
 			continue
 		}
-		if schema.kind == "color" && (len(*value) != 6 || !isHex(*value)) {
-			return fmt.Errorf("setting %s must be a six-digit color", key)
-		}
-		if schema.kind == "choice" && !contains(schema.choices, *value) {
-			return fmt.Errorf("unsupported value for %s", key)
+		if err := validateSettingValue(schema, *value); err != nil {
+			return err
 		}
 	}
 	return h.services().settings.Save(tool, scope, values)
+}
+
+// validateSettingValue checks one value against its field's kind. Every value is a string in the settings files, so a
+// bool is stored as "true" or "false". An unknown kind fails closed: it would otherwise be written as it came.
+func validateSettingValue(schema fieldSchema, value string) error {
+	switch schema.kind {
+	case "text":
+		return nil
+	case "color":
+		if len(value) != 6 || !isHex(value) {
+			return fmt.Errorf("setting %s must be a six-digit color", schema.key)
+		}
+	case "choice":
+		if !contains(schema.choices, value) {
+			return fmt.Errorf("unsupported value for %s", schema.key)
+		}
+	case "bool":
+		if value != "true" && value != "false" {
+			return fmt.Errorf("setting %s must be true or false", schema.key)
+		}
+	default:
+		return fmt.Errorf("unsupported setting kind %q for %s", schema.kind, schema.key)
+	}
+	return nil
 }
 func (h *Host) startTtsInstall(voiceID string) (map[string]any, error) {
 	manager := h.services().tts

@@ -62,6 +62,47 @@ describe('ScopedSetting controls', () => {
     expect(screen.getByPlaceholderText('Not set')).toBeTruthy();
   });
 
+  it('shows a bool as a switch named by the setting, on when the stored value is "true", and stores "true" or "false"', () => {
+    const change = renderSetting({ ...FIELD, key: 'notify_done', label: 'Notify when a job finishes', kind: 'bool', choices: [], effectiveValue: 'true' });
+    const toggle = screen.getByRole('switch', { name: 'Notify when a job finishes' });
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(toggle);
+    expect(change).toHaveBeenLastCalledWith('false');
+    cleanup();
+    const changeOn = renderSetting({ ...FIELD, key: 'notify_done', label: 'Notify when a job finishes', kind: 'bool', choices: [], effectiveValue: 'false' });
+    const off = screen.getByRole('switch', { name: 'Notify when a job finishes' });
+    expect(off.getAttribute('aria-checked')).toBe('false');
+    fireEvent.click(off);
+    expect(changeOn).toHaveBeenLastCalledWith('true');
+  });
+
+  it('reads the value being edited before the saved one, so the switch follows a click', () => {
+    renderSetting({ ...FIELD, key: 'notify_done', label: 'Notify me', kind: 'bool', choices: [], value: 'false', effectiveValue: 'true' });
+    expect(screen.getByRole('switch', { name: 'Notify me' }).getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('treats anything but "true" as off, so a value the host never validated cannot turn a switch on', () => {
+    renderSetting({ ...FIELD, key: 'notify_done', label: 'Notify me', kind: 'bool', choices: [], effectiveValue: 'yes' });
+    expect(screen.getByRole('switch', { name: 'Notify me' }).getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('offers Reset on a project bool that has an override', () => {
+    const clear = vi.fn();
+    render(
+      <TooltipProvider>
+        <ScopedSetting
+          field={{ ...FIELD, key: 'notify_done', label: 'Notify me', kind: 'bool', choices: [], isSet: true, value: 'false' }}
+          scope="project"
+          value="false"
+          change={vi.fn()}
+          onClearOverride={clear}
+        />
+      </TooltipProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(clear).toHaveBeenCalledTimes(1);
+  });
+
   it('offers Reset on a project setting that has an override, and reports it', () => {
     const clear = vi.fn();
     render(
