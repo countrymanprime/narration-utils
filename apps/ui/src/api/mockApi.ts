@@ -1,6 +1,8 @@
 // Browser/mock API. It deliberately uses the same literal fixture data
 // everywhere so visual review never silently exercises placeholder
 // content instead of the screen we are trying to match.
+import { parseWire } from './wire/parseWire';
+import { bootstrapSchema } from './schemas/system';
 import type {
   Bootstrap,
   ChapterStatus,
@@ -104,6 +106,8 @@ export function createMockApi(
     teleprompter?: TeleprompterSeed;
     /** Makes every Story Bible preview fail with this text once the voice is installed. */
     previewError?: string;
+    /** Makes that payload arrive in the wrong shape, through the real `parseWire`, so the failure screens can be seen without a host. */
+    invalidPayload?: 'bootstrap';
   } = {},
 ): NarrationApi {
   let entities = wireClone(WIRE_ENTITIES);
@@ -707,5 +711,13 @@ export function createMockApi(
     ...teleprompter,
     mediaUrl: (sourceFile) => mockAudioSource() ?? sourceFile,
   };
-  return { ...base, ...overrides };
+  const api: NarrationApi =
+    initial.invalidPayload === 'bootstrap'
+      ? {
+          ...base,
+          bootstrap: async () =>
+            parseWire(bootstrapSchema, { ...(await base.bootstrap()), projectName: null }, { boundary: 'host.binding', payload: 'Bootstrap' }),
+        }
+      : base;
+  return { ...api, ...overrides };
 }

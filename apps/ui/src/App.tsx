@@ -17,6 +17,7 @@ import { TracksPage } from './components/tracks/TracksPage';
 import { TooltipProvider } from './components/primitives/Tooltip';
 import { ErrorBoundary } from './components/primitives/ErrorBoundary';
 import { DESKTOP_HOST_API_VERSION } from './hostApi';
+import { isWireError } from './api/wire/WireError';
 
 export function App() {
   return (
@@ -40,6 +41,7 @@ function AppRoutes() {
   const dismissNotice = useCallback(() => setNotice(''), [setNotice]);
   const [startup, setStartup] = useState<StartupState>('connecting');
   const [startupError, setStartupError] = useState('');
+  const [startupDetails, setStartupDetails] = useState<string>();
   const [diagnosticId, setDiagnosticId] = useState('');
   const [retryKey, setRetryKey] = useState(0);
   const [settingsDirty, setSettingsDirty] = useState(false);
@@ -61,6 +63,7 @@ function AppRoutes() {
   useEffect(() => {
     let active = true;
     let loaded = false;
+    let failed = false;
     const load = async () => {
       try {
         const ready = await api.ready();
@@ -73,11 +76,16 @@ function AppRoutes() {
           setData(next);
         }
       } catch (error) {
-        const message = String(error);
-        void api.reportClientDiagnostic('bootstrap_failed', message).catch(() => {});
+        // A payload that did not match its schema says so in plain words and keeps the technical text for "Copy details"
+        // (ADR 0069); the client has already written it to the host log, so it is not reported a second time.
+        const wire = isWireError(error);
+        const message = wire ? error.userMessage : String(error);
+        if (!wire) void api.reportClientDiagnostic('bootstrap_failed', message).catch(() => {});
+        failed = true;
         if (active) {
           setStartup('error');
           setStartupError(message);
+          setStartupDetails(wire ? error.details() : undefined);
         }
       }
     };
@@ -87,7 +95,7 @@ function AppRoutes() {
     window.addEventListener('unhandledrejection', rejection);
     void load();
     const timeout = window.setTimeout(() => {
-      if (active && !loaded) {
+      if (active && !loaded && !failed) {
         setStartup('timeout');
         setStartupError('The desktop host did not respond within 10 seconds.');
       }
@@ -145,10 +153,12 @@ function AppRoutes() {
       <StartupScreen
         state={startup}
         error={startupError}
+        details={startupDetails}
         diagnosticId={diagnosticId}
         retry={() => {
           setStartup('connecting');
           setStartupError('');
+          setStartupDetails(undefined);
           setRetryKey((value) => value + 1);
         }}
       />

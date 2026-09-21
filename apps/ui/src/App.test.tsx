@@ -5,6 +5,8 @@ import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { createMockApi } from './api/mockApi';
 import { ThemeProvider } from './theme/ThemeContext';
+import { parseWire } from './api/wire/parseWire';
+import { bootstrapSchema } from './api/schemas/system';
 import type { WorkJob } from './types';
 
 // BrowserRouter reads/writes the real window.location via history.pushState,
@@ -50,6 +52,38 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     await waitFor(() => expect(screen.getByText('Desktop host needs attention')).toBeTruthy());
     expect(screen.getByText(/no project open/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Retry connection/ })).toBeTruthy();
+  });
+
+  it('shows a plain message, technical details and Copy details when Bootstrap does not match its schema', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const good = await createMockApi().bootstrap();
+    renderApp({
+      bootstrap: async () =>
+        parseWire(
+          bootstrapSchema,
+          { ...good, projectName: 42, transcript: { ...good.transcript, phase: 'bogus' } },
+          { boundary: 'host.binding', payload: 'Bootstrap' },
+        ),
+    });
+
+    await waitFor(() => expect(screen.getByText('Desktop host needs attention')).toBeTruthy());
+    expect(screen.getByText('The app received data it could not read.')).toBeTruthy();
+    const details = screen.getByLabelText('Technical details').textContent ?? '';
+    expect(details).toContain('host.binding Bootstrap');
+    expect(details).toContain('projectName');
+    expect(details).toContain('transcript.phase');
+    fireEvent.click(screen.getByRole('button', { name: /Copy details/ }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(details));
+    expect(await screen.findByRole('button', { name: /Copied/ })).toBeTruthy();
+  });
+
+  it('reports an incompatible host as a version problem even when its Bootstrap would not match', async () => {
+    const bootstrap = vi.fn().mockRejectedValue(new Error('must not be reached'));
+    renderApp({ ready: async () => ({ apiVersion: 99, diagnosticId: 'future-host' }), bootstrap });
+    await waitFor(() => expect(screen.getByText(/Desktop host API version 99 is incompatible/)).toBeTruthy());
+    expect(bootstrap).not.toHaveBeenCalled();
+    expect(screen.queryByText('The app received data it could not read.')).toBeNull();
   });
 
   it('rejects an incompatible desktop-host API version', async () => {

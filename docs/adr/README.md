@@ -91,3 +91,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0066](0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md) | The Lua bridge is tested by a harness under Lua 5.4, and REAPER API behaviour is checked in REAPER | Accepted (supersedes point 3 of ADR-0031) |
 | [0067](0067-bridge-commands-are-registered-by-name-and-each-feature-lives-in-its-own-lua-file.md) | Bridge commands are registered by name, and each feature lives in its own Lua file | Accepted |
 | [0068](0068-bridge-events-fan-out-to-subscribers-by-tag-and-run-and-every-error-names-its-run.md) | Bridge events fan out to subscribers by tag and run, and every error names its run | Accepted |
+| [0069](0069-payloads-are-validated-with-zod-behind-parsewire-and-a-wrong-shape-fails-loudly.md) | Payloads are validated with Zod behind `parseWire`, and a wrong shape fails loudly | Accepted |

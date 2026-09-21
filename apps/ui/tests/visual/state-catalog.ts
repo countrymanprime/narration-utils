@@ -20,6 +20,13 @@ export const STATE_CATALOG: StateEntry[] = [
     description: 'No project open yet - ProjectPicker with a recent-projects list, browse, and create actions',
   },
 
+  // Startup (before the app has a Bootstrap)
+  {
+    page: 'startup',
+    state: 'invalid-payload',
+    description: 'Startup error for a Bootstrap that did not match its schema - plain message, technical details, Retry and Copy details (ADR 0069)',
+  },
+
   // Home
   { page: 'home', state: 'default', description: 'Home, manuscript found' },
   { page: 'home', state: 'manuscript-not-found', description: 'Home, manuscript-not-found banner' },

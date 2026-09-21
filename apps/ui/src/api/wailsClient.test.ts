@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { wailsClient } from './wailsClient';
+import { WireError } from './wire/WireError';
 
 const originalGo = window.go;
 const originalRuntime = (window as unknown as { runtime?: unknown }).runtime;
@@ -20,6 +21,69 @@ describe('wailsClient', () => {
     await expect(wailsClient.ready()).resolves.toEqual({ apiVersion: 1, diagnosticId: 'native' });
     await expect(wailsClient.selectManuscript()).resolves.toEqual({ selected: true, jobId: 'import-1' });
     expect(select).toHaveBeenCalledWith();
+  });
+
+  it('accepts the idle Bootstrap the host sends, with nulls for unset transcript fields and no marker export', async () => {
+    const idle = {
+      runId: null,
+      phase: 'idle',
+      percent: 0,
+      message: '',
+      logs: [],
+      chapters: [],
+      rows: [],
+      diff: '',
+      summary: '',
+      trackName: null,
+      audioItemCount: null,
+      completedAt: null,
+      elapsed: 0,
+    };
+    const bootstrap = {
+      apiVersion: 5,
+      diagnosticId: 'go-1',
+      projectFolder: 'C:/P',
+      projectName: 'P',
+      daw: 'reaper',
+      manuscript: null,
+      manuscriptCandidate: null,
+      runtime: { Reaper: { launcherPath: '' } },
+      transcript: idle,
+    };
+    window.go = { main: { Host: { Bootstrap: () => Promise.resolve(bootstrap) } } };
+
+    const parsed = await wailsClient.bootstrap();
+
+    expect(parsed.transcript.runId).toBeUndefined();
+    expect(parsed.transcript.markerExport).toEqual({ phase: 'idle', message: '', added: 0, skipped: 0 });
+  });
+
+  it('rejects a Bootstrap with the wrong shape as a WireError and writes it to the host log without values', async () => {
+    const report = vi.fn().mockResolvedValue('null');
+    window.go = {
+      main: {
+        Host: { Bootstrap: () => Promise.resolve({ apiVersion: 5, projectName: 'A SECRET TITLE', transcript: 'nope' }), SystemReportDiagnostic: report },
+      },
+    };
+
+    await expect(wailsClient.bootstrap()).rejects.toBeInstanceOf(WireError);
+
+    expect(report).toHaveBeenCalledTimes(1);
+    const [kind, message] = report.mock.calls[0] as [string, string];
+    expect(kind).toBe('wire_invalid');
+    expect(message).toContain('host.binding Bootstrap');
+    expect(message).toContain('transcript');
+    expect(message).not.toContain('SECRET');
+  });
+
+  it('still throws the WireError when there is no host to report to', async () => {
+    window.go = { main: { Host: { Ready: () => Promise.resolve({ diagnosticId: 'x' }) } } };
+    await expect(wailsClient.ready()).rejects.toBeInstanceOf(WireError);
+  });
+
+  it('rejects a host binding that answers with text that is not JSON', async () => {
+    window.go = { main: { Host: { SystemReportDiagnostic: () => Promise.resolve('<html>') } } };
+    await expect(wailsClient.reportClientDiagnostic('k', 'm')).rejects.toBeInstanceOf(WireError);
   });
 
   it('subscribes once to the transcript state event and normalizes marker export state', () => {
