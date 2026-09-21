@@ -1,8 +1,8 @@
 # Product Roadmap
 
-The in-app Narration Utils roadmap reads the matching machine-readable
-[`config/roadmap.json`](../config/roadmap.json) data. Update both
-files together when a milestone changes so the shipped workspace and this
+The matching machine-readable [`config/roadmap.json`](../config/roadmap.json) holds the milestones
+that `sync-milestones.yml` turns into GitHub milestones (the app does not read it). Update both
+files together when a milestone or a shipped or deferred item changes so GitHub and this
 documentation describe the same product direction.
 
 ## Product boundary
@@ -43,13 +43,17 @@ The suite helps a narrator find and review issues faster. It may analyze local m
 
 ## Release-readiness work item: first-use dependency provisioning
 
-Keep optional model downloads out of checkout bootstrap and move them to application-owned,
-explicit first-use provisioning before distributing compiled GitHub releases.
-The app must launch without a checkout or developer bootstrap script, download
-no optional model at application startup, and offer every compatible model for
-download only when the narrator selects and uses it. See the
-[first-use dependency provisioning brief](architecture/first-use-dependency-provisioning.md)
-for the required catalog, integrity, UX, migration, and acceptance criteria.
+**Status: provisioning delivered; the first stable release is not yet rehearsed.** Optional model downloads are out of the
+checkout bootstrap and are application-owned, explicit first-use provisioning: the app launches without a checkout or
+developer bootstrap script, downloads no optional model at startup, and offers every compatible voice, transcription model and
+Story Bible language model for download only when the narrator uses it, after a confirmation. Delivered: the asset manager,
+registry and Settings > Local assets page, the spaCy language model, the no-download-at-startup test, the legacy-cache policy,
+the packaged smoke test and a per-user Windows setup program built in CI, beside the in-app update. Still open, in order: run
+the setup program on a clean Windows machine, publish the component atlas and the docs site, and a first stable rehearsal
+(the owner runs Promote). The first stable release is Windows-only and unsigned (owner decision D7); no model is bundled.
+See the [first-use dependency provisioning rules](architecture/first-use-dependency-provisioning.md) for the required
+catalog, integrity, UX, migration, and acceptance criteria and the
+[release readiness PRD](prds/release-readiness-provisioning-and-docs-site.prd.md) for the phases.
 
 ### Deferred work
 
@@ -57,7 +61,7 @@ for the required catalog, integrity, UX, migration, and acceptance criteria.
 - macOS/Linux installers and adapters.
 - Languages beyond US English.
 - Team collaboration, cloud analysis, or shared project services.
-- Manuscript Teleprompter: local live microphone listening with karaoke-style manuscript highlighting and reviewable suspected word-level substitutions, skips, or misreads; it never edits text or audio automatically. See the [Manuscript Teleprompter brief](architecture/manuscript-teleprompter.md) for the resolved design questions.
+- Manuscript Teleprompter beyond its first cut (shipped: local microphone listening with a Whisper model and word highlighting): reviewable suspected word-level substitutions, skips, or misreads, other engines and a microphone picker; it never edits text or audio automatically. See the [Manuscript Teleprompter brief](architecture/manuscript-teleprompter.md) for the resolved design questions.
 
 ## Dependency rules
 

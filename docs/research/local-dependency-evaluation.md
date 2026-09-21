@@ -37,7 +37,7 @@ recheck all upstream terms at the exact version being offered.
 
 | Capability | Current implementation | Consequence for evaluation |
 | --- | --- | --- |
-| DOCX parsing | `python-docx` is already in both tool environments. `libs/python/narration_common/docx_chapters.py` is the shared paragraph walker. | Do not add a second document parser. Test only improvements to structure heuristics. |
+| DOCX parsing | The Go importer (`apps/desktop/internal/importer/docx.go`) reads DOCX and Markdown once into the canonical `manuscript.json`; the sidecars read that file and never reparse a DOCX. | Do not add a second document parser. Test only improvements to structure heuristics. |
 | Story Bible extraction | Local spaCy plus conservative name/context rules. | BookNLP and GLiNER must improve a reviewed entity, quote, or continuity task over this baseline. |
 | Transcript comparison | Local `faster-whisper`, word timestamps, hotwords, normalizations, and a word diff. | Alignment tests must improve marker placement or reduce false discrepancy review, not merely produce another transcript. |
 | Voice activity detection | `sidecars/transcript-compare/core/compare.py` calls faster-whisper with `vad_filter=True`. Faster-whisper's VAD path uses Silero VAD to omit non-speech before ASR. | Standalone VAD is justified only if exposing its time ranges creates useful review/recording actions. |
@@ -106,7 +106,7 @@ SHA-256 is the hash of the first download and is the pin.
 | Licences | Training data (LJ Speech) is public domain; the Piper Voices repository is MIT ([LJ Speech](https://keithito.com/LJ-Speech-Dataset/)). Attribution kept in the catalog: "LJ Speech Dataset (public domain); Piper voice model by rhasspy contributors." |
 | Model card, provenance | `.../piper-voices/blob/v1.0.0/en/en_US/ljspeech/high/MODEL_CARD`; `.../tree/v1.0.0/en/en_US/ljspeech/high` |
 | Install location | `<cache>/assets/tts/piper/en_US-ljspeech-high/1.0.0/` |
-| Runtime | `piper-tts` 1.8.0 and its phonemizer and eSpeak NG data are bundled in the frozen Story Bible sidecar (GPL-family code inside an AGPL-3.0-or-later program, [ADR 0039](../adr/0039-the-project-is-licensed-agpl-3-0-or-later.md)); only the voice is an asset |
+| Runtime | `piper-tts` 1.8.0 and its phonemizer and eSpeak NG data are bundled in the frozen Story Bible sidecar (GPL-family code inside an AGPL-3.0-or-later program, [ADR 0039](../adr/0039-the-project-is-licensed-agpl-3-or-later.md)); only the voice is an asset |
 | Feature | Story Bible name and alias preview |
 
 ### Whisper models (Transcript Compare, Teleprompter)
@@ -168,7 +168,7 @@ phonemizer and load its dictionary.
 | Permissive | MIT, BSD-2/3-Clause, Apache-2.0 | Allowed. | Keep copyright/license notices in the dependency manifest. Apache-2.0 also carries notice and patent terms. |
 | Attribution | CC BY 4.0 model packs | Allowed. | Display and retain the exact required attribution and model card. Do not imply Narration Utils owns the model. |
 | Weak copyleft | LGPL | Allowed. | Prefer a separately installed executable or dynamically linked library; preserve notices and allow replacement of the LGPL component if distributing a combined application. |
-| Strong copyleft | GPL | Allowed for using the tool to make a paid audiobook. The audiobook is not made GPL by that use. | Keep it as a separate executable/process. If Narration Utils ever distributes a combined/modified GPL program, obtain a license review and meet source-offer obligations. |
+| Strong copyleft | GPL | Allowed for using the tool to make a paid audiobook. The audiobook is not made GPL by that use. | Narration Utils is itself AGPL-3.0-or-later ([ADR 0039](../adr/0039-the-project-is-licensed-agpl-3-or-later.md)) and already ships GPL-family code in the frozen Story Bible sidecar (Piper, phonemizer, eSpeak NG data), so a GPL-3.0-or-later component is compatible: keep its notices and make the corresponding source available. GPL-2.0-only is not compatible. Prefer a separate executable for a tool the release does not need. |
 | Unclear, restricted, or non-commercial | Missing license, `NC`, research-only, gated terms inconsistent with commercial use | Not approved. | Do not download automatically, list as a supported option, or use in shipped tests until the exact artifact is cleared. |
 
 ### Required dependency record
@@ -486,9 +486,9 @@ server component itself is rejected (it would reintroduce the loopback
 server this app's DAW-integration boundary explicitly disallows).
 
 **License/provenance.** WhisperLive is MIT licensed
-(`Copyright (c) 2023 Vineet Suryan, Collabora Ltd.`) — same permissive class
-as this repository, so porting its logic is unrestricted. The only
-obligation is preserving attribution: the ported module's header must cite
+(`Copyright (c) 2023 Vineet Suryan, Collabora Ltd.`) — a permissive licence
+that this AGPL-3.0-or-later repository may include (ADR 0039), so porting its logic is
+allowed. The only obligation is preserving attribution: the ported module's header must cite
 the source repository and copyright holder, pinned to the exact upstream
 commit ported from, since MIT's condition ("the above copyright notice and
 this permission notice shall be included in all copies or substantial

@@ -7,6 +7,14 @@
     {
       "title": "Transcript Compare",
       "summary": "Compare a selected narration track with its manuscript chapter."
+    },
+    {
+      "title": "Tracks",
+      "summary": "List and play the tracks of a project's REAPER file, with no running REAPER needed."
+    },
+    {
+      "title": "Manuscript Teleprompter (first cut)",
+      "summary": "Listen with a local Whisper model and highlight the word being read in a chosen chapter."
     }
   ],
   "milestones": [
@@ -36,6 +44,6 @@
     "macOS and Linux installers/adapters",
     "Languages beyond US English",
     "Team collaboration or cloud services",
-    "Manuscript Teleprompter: local live microphone listening with karaoke-style highlighting and reviewable suspected substitutions, skips, or misreads; never edits text or audio automatically"
+    "Manuscript Teleprompter beyond its first cut: reviewable suspected substitutions, skips, or misreads, other engines and a microphone picker; never edits text or audio automatically"
   ]
 }

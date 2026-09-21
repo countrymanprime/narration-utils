@@ -31,9 +31,9 @@ either scope from the workspace's corner **Settings** button.
 - `core/` — the DAW-agnostic Python backend (`manuscript_guide.py`) and its tests. No DAW APIs
   are used here; it's a plain CLI invoked by whichever DAW driver below is running it. Its
   dependencies are declared in the repo-root `pyproject.toml` and pinned in `uv.lock`.
-- `daws/reaper/` — reserved for a future dedicated adapter; current REAPER integration is
-  centralized in `integrations/reaper/narration_ui_bridge.lua`.
-- `daws/audacity/` — placeholder for a future Audacity driver.
+- `tests/` — the pytest suite for the backend.
+- REAPER integration is centralized in `integrations/reaper/narration_ui_bridge.lua`; a future Audacity
+  driver has placeholder notes under `integrations/audacity/manuscript-guide/`.
 
 ## Install (Reaper)
 

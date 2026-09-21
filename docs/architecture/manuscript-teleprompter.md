@@ -256,8 +256,8 @@ arguments (`--engine`, `--model`, `--model-dir`, `--manuscript`, `--chapter`,
 verbatim as the Wails event `teleprompter:event`, publishes phase changes as
 `teleprompter:state`, and keeps the last `script` and `position` events in its
 snapshot so a view that opens mid-session catches up. The `Host` exposes
-`TeleprompterStart`, `TeleprompterStop` and `TeleprompterState` (host API
-version 5). `TeleprompterStart` uses the same first-use model gate as
+`TeleprompterStart`, `TeleprompterStop` and `TeleprompterState` (added in
+host API version 5). `TeleprompterStart` uses the same first-use model gate as
 Transcript Compare and defaults to the `tiny` model, because live
 transcription has to keep up with speech. Only the Whisper engine is
 launchable from the host until Moonshine's models are provisioned through the
@@ -316,9 +316,10 @@ punch-and-roll) are specified in
 
 ## Third-party license note
 
-Porting WhisperLive's streaming-inference logic is permitted without
-restriction — both this repository and WhisperLive are MIT-licensed. The
-only condition is preserving attribution: the ported module needs a header
+Porting WhisperLive's streaming-inference logic is permitted: WhisperLive
+is MIT-licensed, and MIT code may be included in this AGPL-3.0-or-later
+repository ([ADR 0039](../adr/0039-the-project-is-licensed-agpl-3-or-later.md)).
+The only condition is preserving attribution: the ported module needs a header
 citing the source and copyright holder (`Copyright (c) 2023 Vineet Suryan,
 Collabora Ltd.`), and this is the first entry of its kind (ported logic, not
 a downloaded dependency) in

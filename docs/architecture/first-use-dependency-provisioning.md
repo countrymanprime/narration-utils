@@ -1,19 +1,25 @@
 # First-Use Dependency Provisioning
 
-**Status: Implemented for every asset kind the app ships: Piper preview voices, Whisper transcription models and Story Bible
-spaCy language models.** The catalog, asset manager, registry, Local assets page, the no-download-at-startup proof and the
-legacy-cache policy and the packaged-release smoke test (`narration-utils --smoke`, run by CI on the Windows build) are
-delivered (release-readiness phases 1 to 8); what remains is the installer, planned in [release-readiness-provisioning-and-docs-site.prd.md](../prds/release-readiness-provisioning-and-docs-site.prd.md).
-Each shipped artifact's record (publisher, version, URL, SHA-256, licences, install location, update policy) is in
-[local dependency evaluation](../research/local-dependency-evaluation.md#shipped-assets).
+**Status: Implemented** for every kind of optional asset the app ships: Piper preview voices, Whisper transcription models and
+Story Bible spaCy language models. This document holds the rules that code, other docs and `SECURITY.md` are checked against; the
+sections from "The asset manager" on describe what implements them.
 
-| Slice of the original plan | Where it is |
-| --- | --- |
-| Boundary, catalog and manifest format | Catalogs `config/{tts,whisper,spacy}-assets.json`; manifest in [ADR 0078](../adr/0078-asset-state-comes-from-the-manifest-an-asset-is-read-in-full-once-per-session-and-a-failed-download-resumes.md) |
-| Asset manager | `apps/desktop/internal/assets` ("The asset manager" below) |
-| State APIs, UI, catalog-backed choices | `Assets*` bindings, Settings > Local assets, catalog-backed spaCy choices ("The asset registry", "The local assets page") |
-| Piper, Whisper, spaCy; later assets | Shipped; a new kind is a catalog file and a provider |
-| Docs, legacy caches, release smoke | Records and policy below and in the research record (phase 7); the packaged smoke test ("The packaged smoke test" below, phase 8) |
+What is delivered, and what is deliberately not:
+
+- **Delivered.** One catalog per kind (`config/{tts,whisper,spacy}-assets.json`) with pinned URLs, sizes and SHA-256; the asset
+  manager and its manifest, resume, repair and free-space check; the registry and the `Assets*` bindings; the first-use dialog for
+  Piper, Whisper and Story Bible (with the rules-only choice); Settings > Local assets; no download and no request at startup
+  other than the switch-off-able update check (tests in `apps/desktop/startup_offline_test.go`); the legacy-cache policy; the
+  developer seeding command; and the packaged smoke test, `narration-utils --smoke`, which CI runs on the Windows build. Each
+  shipped artifact's record (publisher, version, URL, SHA-256, licences, install location, update policy) is in
+  [local dependency evaluation](../research/local-dependency-evaluation.md#shipped-assets).
+- **Not bundled.** No model, voice or dictionary is inside the release; a narrator downloads each one, once, after confirming.
+- **No automatic updates of assets.** The catalog is pinned per release and there is no "update available" state; an asset is
+  replaced only by the narrator's own Remove and Download, or Repair.
+- **Windows first.** The setup program and the in-app update are Windows features ([CI and releases](../operations/ci-and-releases.md#the-windows-setup-program));
+  macOS and Linux builds are previews without an installer, and their first-use behaviour is the same code but is not smoke-tested.
+  The setup program is built in CI and has not yet been run on a clean machine by the owner (release-readiness phase 14 and the first
+  stable rehearsal). Work still open is tracked in [release-readiness-provisioning-and-docs-site.prd.md](../prds/release-readiness-provisioning-and-docs-site.prd.md).
 
 ## Problem
 
@@ -48,7 +54,7 @@ app checks the selected compatible asset:
 
 Selecting a model in Settings must not itself download it. A user can choose a
 compatible model first and download it only when they use that feature (or
-explicitly choose a future **Manage local assets** download action).
+explicitly choose the Download action of Settings > Local assets).
 
 For example, opening the app or working only with Transcript Compare must not
 install spaCy. Building a Story Bible with `en_core_web_sm` offers that
@@ -72,9 +78,10 @@ apply to Piper voices, Whisper models, and later optional tools/model packs.
   `downloading`, `verification failed`, or `update available`). Do not hide a
   compatible choice solely because it has not been downloaded yet.
 - Put downloaded assets in a per-user application-data cache outside the
-  installed release and outside a project folder. The final Windows location,
-  retention policy, and any shared cache must be specified by the release
-  implementation; asset paths must never be stored as checkout-relative paths.
+  installed release and outside a project folder. The Windows location is
+  `%LOCALAPPDATA%\narration-utils\assets`, nothing ever deletes an asset except the
+  narrator's Remove, and there is no cache shared between versions or installs
+  (owner decision Q3); asset paths must never be stored as checkout-relative paths.
 - Download to a temporary file, verify its hash and expected content before
   atomically making it available, and remove incomplete temporary files on
   cancellation or failure. A corrupt or partial asset must never be selected.
@@ -99,7 +106,7 @@ the [local dependency evaluation and license plan](../research/local-dependency-
 which records every shipped artifact and describes first-use provisioning (there is no
 setup-time download).
 
-## Migration from the current bootstrap flow
+## What the release and the developer bootstrap each provide
 
 The release build must package the compiled shell, UI assets, local backend,
 and its base runtime into the GitHub release artifact. It must not call
