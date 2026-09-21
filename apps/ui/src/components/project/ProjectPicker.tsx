@@ -112,7 +112,7 @@ export function ProjectPicker() {
           Choose a recent project, browse to an existing folder, or create a new one.
         </p>
         {reason && (
-          <p className="mt-3 text-sm" role="alert" style={{ color: 'var(--danger)' }}>
+          <p className="mt-3 text-sm" role="alert" style={{ color: 'var(--danger-text)' }}>
             {reason}
           </p>
         )}
@@ -125,7 +125,7 @@ export function ProjectPicker() {
             Open recent
           </div>
           {recentsFailed ? (
-            <p className="text-sm" style={{ color: 'var(--danger)' }}>
+            <p className="text-sm" style={{ color: 'var(--danger-text)' }}>
               Couldn&apos;t load recent projects.
             </p>
           ) : recents.length === 0 ? (

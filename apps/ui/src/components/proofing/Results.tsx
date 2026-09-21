@@ -141,7 +141,7 @@ export function Results({
                         )}
                         {markerState(row) === 'existing' && (
                           <TooltipTarget text={row.existingMarkerName ? `Existing marker: ${row.existingMarkerName}` : 'A matching marker already exists'}>
-                            <span className="inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--warn)_18%,transparent)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold whitespace-nowrap text-[var(--warn)]">
+                            <span className="inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--warn)_18%,transparent)] px-[0.45rem] py-[0.18rem] text-[0.68rem] font-semibold whitespace-nowrap text-[var(--warn-text)]">
                               Already marked
                             </span>
                           </TooltipTarget>
@@ -187,7 +187,7 @@ export function Results({
       )}
       {state.markerExport.phase !== 'idle' && (
         <p
-          className={`px-3 pb-3 text-xs ${state.markerExport.phase === 'error' ? 'text-red-400' : ''}`}
+          className={`px-3 pb-3 text-xs ${state.markerExport.phase === 'error' ? 'text-[var(--danger-text)]' : ''}`}
           style={{ color: state.markerExport.phase === 'error' ? undefined : 'var(--text-muted)' }}
         >
           {state.markerExport.message}

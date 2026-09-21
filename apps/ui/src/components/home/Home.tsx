@@ -343,7 +343,9 @@ export function Home({
               <span
                 className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
                 style={
-                  lastCompleted ? { background: 'var(--review-soft)', color: 'var(--review)' } : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
+                  lastCompleted
+                    ? { background: 'var(--review-soft)', color: 'var(--danger-text)' }
+                    : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
                 }
               >
                 {lastCompleted ? `${lastCompleted.rows.length} ${lastCompleted.rows.length === 1 ? 'discrepancy' : 'discrepancies'}` : 'Ready'}

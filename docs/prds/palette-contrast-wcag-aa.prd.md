@@ -162,7 +162,7 @@ Phases 1-4 and 6. Phase 5 (status text) is Should. Phase 2 is split by area into
 | 2e | Text ramp: Story Bible, retire the token | Triage and migrate `--text-faint` in the Story Bible; delete `--text-faint` from both theme blocks | complete | No | 2d | - |
 | 3 | Active nav on tint | `--accent-strong` text in `NavButton.tsx`; delete the `NavButton` debt entry | complete | No | 2a | - |
 | 4 | Highlight, badges, dark category tokens | Derived `--<kind>-text` tokens, dark overrides for lore/item/event/note, `Highlight.tsx`, `EntitySummary.tsx` badges; delete the `Highlight` debt entry | complete | No | 2e | - |
-| 5 | Status text | `--warn-text` and its siblings for `Settings.tsx`, `Results.tsx`, `InlineDiffRow.tsx`, the danger and review text on soft fills, and the Tailwind `text-red-400` | pending | No | 4 | - |
+| 5 | Status text | `--warn-text` and its siblings for `Settings.tsx`, `Results.tsx`, `InlineDiffRow.tsx`, the danger and review text on soft fills, and the Tailwind `text-red-400` | complete | No | 4 | - |
 | 6 | Sweep and docs | Close defect 1 (delete this PRD); `MAX_DEBT_ENTRIES = 0`, `KNOWN_FAILURES` empty; `design-system.md` colour section; regenerate `docs/ui` and the doc images once; final PNG pass | pending | No | 2e, 3, 4, 5 | - |
 
 ### Phase Details

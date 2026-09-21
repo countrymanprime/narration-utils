@@ -77,6 +77,6 @@ describe('IconButton', () => {
     expect(screen.getByRole('button', { name: 'a' }).className).toContain('text-[var(--text-muted)]');
     expect(screen.getByRole('button', { name: 'a' }).className).not.toContain('bg-[var(--accent)]');
     expect(screen.getByRole('button', { name: 'b' }).className).toContain('bg-[var(--accent)]');
-    expect(screen.getByRole('button', { name: 'c' }).className).toContain('text-[var(--danger)]');
+    expect(screen.getByRole('button', { name: 'c' }).className).toContain('text-[var(--danger-text)]');
   });
 });

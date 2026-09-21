@@ -295,7 +295,11 @@ export function TeleprompterPage() {
             )}
             <div className={`flex flex-wrap items-center justify-between gap-3 ${active ? '' : 'mt-4'}`}>
               <div className="min-w-0 text-sm">
-                <span role="status" className="font-semibold" style={{ color: session.position?.status === 'waiting' && active ? 'var(--warn)' : undefined }}>
+                <span
+                  role="status"
+                  className="font-semibold"
+                  style={{ color: session.position?.status === 'waiting' && active ? 'var(--warn-text)' : undefined }}
+                >
                   {status}
                 </span>
                 {session.script && (
@@ -323,7 +327,7 @@ export function TeleprompterPage() {
         </div>
       )}
       {(error || host.phase === 'error') && (
-        <p role="alert" className="text-sm" style={{ color: 'var(--danger)' }}>
+        <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
           {error || host.message}
         </p>
       )}

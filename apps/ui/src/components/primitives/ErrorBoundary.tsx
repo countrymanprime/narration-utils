@@ -21,7 +21,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode; onError?: (e
         <div className="grid min-h-full place-items-center p-6">
           <div className="max-w-lg rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 text-center shadow-[var(--shadow)]">
             <div className="text-lg font-semibold">
-              <FontAwesomeIcon icon={faTriangleExclamation} className="mr-2" style={{ color: 'var(--review)' }} />
+              <FontAwesomeIcon icon={faTriangleExclamation} className="mr-2" style={{ color: 'var(--danger-text)' }} />
               Something went wrong
             </div>
             <p className="mt-3 text-sm" style={{ color: 'var(--text-muted)' }}>
