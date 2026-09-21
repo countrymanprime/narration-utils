@@ -1,7 +1,32 @@
-// ui-atlas-kit 0.3.3 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.4 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 // Pure checks over what one visual-suite run captured. Kept free of Playwright
 // and Node APIs so they are unit-tested by Vitest (src/visualSuite.test.ts) and
 // reused unchanged by global-setup.ts's post-run teardown.
+
+// One axe rule that a page reported in one capture (the run's violations, grouped by rule).
+export interface AxeFinding {
+  // axe's rule id, for example "color-contrast".
+  rule: string;
+  impact: string | null;
+  // What axe says to do about it (its `help` text), so a failure explains itself.
+  help: string;
+  // How many elements broke the rule in this capture.
+  nodes: number;
+  // Selectors of the first few of them (AXE_TARGET_LIMIT).
+  targets: string[];
+}
+
+// Rules a state is KNOWN to violate, each with the reason and where the fix belongs: the app-state counterpart of a
+// story's A11Y_DEBT. An escape hatch, not a default: an entry hides a real failure, so it needs a reason, the list may only
+// shrink (the project's test caps its length), and it is checked like sameAs: it fails when the rule stops being reported.
+export interface AxeDebt {
+  page: string;
+  state: string;
+  rules: string[];
+  reason: string;
+  // Viewports the entry covers; omitted means every viewport the row is captured at.
+  viewports?: string[];
+}
 
 export interface CaptureRecord {
   page: string;
@@ -21,6 +46,9 @@ export interface CaptureRecord {
   // Width of the narrowest text-like control on screen at capture time, or null when there was none. Not a check on
   // its own (checkControlWidths is); it is what a threshold is calibrated from, and the teardown prints the run's minimum.
   narrowestControlPx: number | null;
+  // What axe reported for this capture, grouped by rule; undefined when axe did not run (it is off unless the project
+  // declares axeDebt or a run sets UI_AXE=1), an empty list when it ran and found nothing.
+  axe?: AxeFinding[];
 }
 
 export interface SameAsDeclaration {
@@ -207,4 +235,108 @@ export function findNarrowestControl(records: readonly CaptureRecord[]): (Captur
     if (!narrowest || record.narrowestControlPx < narrowest.narrowestControlPx) narrowest = { ...record, narrowestControlPx: record.narrowestControlPx };
   }
   return narrowest;
+}
+
+// How many selectors of a rule's offending elements a finding lists (enough to find them, not a page of markup).
+export const AXE_TARGET_LIMIT = 3;
+
+// The part of axe's `results.violations` this suite reads (kept structural so nothing here imports axe-core).
+export interface RawAxeViolation {
+  id: string;
+  impact?: string | null;
+  help: string;
+  nodes: { target: unknown[] }[];
+}
+
+// A node's target is a selector path: a plain array of selectors, or nested arrays where the element sits in a shadow root
+// or a frame. Read it as one string.
+function targetText(target: unknown[]): string {
+  return target.flat(Infinity).map(String).join(' ');
+}
+
+// Sorted by rule id, so two runs over the same page produce the same record.
+export function summariseAxeViolations(violations: readonly RawAxeViolation[]): AxeFinding[] {
+  return violations
+    .map((violation) => ({
+      rule: violation.id,
+      impact: violation.impact ?? null,
+      help: violation.help,
+      nodes: violation.nodes.length,
+      targets: violation.nodes.slice(0, AXE_TARGET_LIMIT).map((node) => targetText(node.target)),
+    }))
+    .sort((a, b) => a.rule.localeCompare(b.rule));
+}
+
+function debtApplies(entry: AxeDebt, page: string, state: string, viewport: string): boolean {
+  return entry.page === page && entry.state === state && (!entry.viewports || entry.viewports.includes(viewport));
+}
+
+// What to report for one capture: each rule the page violates that nothing declares, and each declared rule that the page no
+// longer violates (an entry is an allowlist entry, and an allowlist only stays honest if it fails when it stops being
+// needed). An entry limited to other viewports is neither applied nor checked here.
+export function checkAxeFindings(findings: readonly AxeFinding[], debt: readonly AxeDebt[], page: string, state: string, viewport: string): string[] {
+  const declared = debt.filter((entry) => debtApplies(entry, page, state, viewport));
+  const allowed = new Set(declared.flatMap((entry) => entry.rules));
+  const problems = findings
+    .filter((found) => !allowed.has(found.rule))
+    .map(
+      (found) =>
+        `accessibility: axe "${found.rule}" (${found.impact ?? 'no impact given'}) on ${found.nodes} node${found.nodes === 1 ? '' : 's'} at ${viewport}: ${found.help} - e.g. ${found.targets.join(', ')} - fix the page, or declare axeDebt (rules and a reason) for this state in the project's drivers`,
+    );
+  const reported = new Set(findings.map((found) => found.rule));
+  for (const rule of allowed) {
+    if (!reported.has(rule)) problems.push(`axeDebt no longer holds at ${viewport}: axe does not report "${rule}" any more - remove it from the declaration`);
+  }
+  return problems;
+}
+
+export type AxeMode = 'off' | 'report' | 'gate';
+
+// Whether axe runs on the app's states and whether a violation fails the capture. Off unless the project declares an
+// `axeDebt` list in its drivers (the gate: any violation the list does not declare fails) or a run sets UI_AXE. UI_AXE=1 is
+// the report-only baseline (nothing fails; the teardown prints what axe found), UI_AXE=0 skips it for a quick local run and
+// UI_AXE=gate forces the gate for a project with no list yet. A mistyped value throws: a typo must not silently turn a gate off.
+export function resolveAxeMode(env: string | undefined, projectDeclaresDebt: boolean): AxeMode {
+  if (env === undefined || env === '') return projectDeclaresDebt ? 'gate' : 'off';
+  if (env === '0') return 'off';
+  if (env === '1') return 'report';
+  if (env === 'gate') return 'gate';
+  throw new Error(`UI_AXE must be 0 (off), 1 (report only) or gate, got "${env}"`);
+}
+
+// What is wrong with the axe mode of a run on CI: the gate a project declared (`axeDebt`) was switched off (UI_AXE=0) or
+// turned into a report (UI_AXE=1), so a green run proves nothing about accessibility. Those values are for a developer's
+// shell; a leftover in a CI environment must not pass quietly. `env` is the UI_AXE value, passed in to keep this pure.
+export function checkAxeModeForCi(mode: AxeMode, projectDeclaresDebt: boolean, onCi: boolean, env: string | undefined): string[] {
+  if (!onCi || !projectDeclaresDebt || mode === 'gate') return [];
+  return [`UI_AXE=${env ?? ''} runs axe as "${mode}" on CI, but this project declares axeDebt: unset UI_AXE so the gate runs`];
+}
+
+export interface AxeRunSummary {
+  // Captures axe ran on.
+  captures: number;
+  // Of those, the ones with at least one violation.
+  withViolations: number;
+  // Offending elements over the whole run.
+  nodes: number;
+  // Per rule, worst first: nodes over the run and how many captures reported it.
+  byRule: { rule: string; nodes: number; captures: number }[];
+}
+
+// The report-only baseline (UI_AXE=1): how much axe finds across the app's states before any of it is gated.
+export function summariseAxeRun(records: readonly CaptureRecord[]): AxeRunSummary {
+  const measured = records.filter((record) => record.axe !== undefined);
+  const byRule = new Map<string, { nodes: number; captures: number }>();
+  for (const record of measured) {
+    for (const found of record.axe ?? []) {
+      const total = byRule.get(found.rule) ?? { nodes: 0, captures: 0 };
+      byRule.set(found.rule, { nodes: total.nodes + found.nodes, captures: total.captures + 1 });
+    }
+  }
+  return {
+    captures: measured.length,
+    withViolations: measured.filter((record) => (record.axe ?? []).length > 0).length,
+    nodes: [...byRule.values()].reduce((sum, total) => sum + total.nodes, 0),
+    byRule: [...byRule.entries()].map(([rule, total]) => ({ rule, ...total })).sort((a, b) => b.nodes - a.nodes || a.rule.localeCompare(b.rule)),
+  };
 }

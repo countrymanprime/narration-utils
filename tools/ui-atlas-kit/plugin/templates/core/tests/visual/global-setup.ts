@@ -1,8 +1,19 @@
-// ui-atlas-kit 0.3.3 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.4 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import * as appDrivers from './app.drivers';
 import { RUN_DIR, screenshotDir } from './helpers/settle';
-import { findBlankCaptures, findNarrowestControl, findStaleSameAs, findUndeclaredDuplicates, type CaptureRecord } from './lib/validators';
+import {
+  checkAxeModeForCi,
+  findBlankCaptures,
+  findNarrowestControl,
+  findStaleSameAs,
+  findUndeclaredDuplicates,
+  resolveAxeMode,
+  summariseAxeRun,
+  type AxeDebt,
+  type CaptureRecord,
+} from './lib/validators';
 import { STATE_CATALOG } from './state-catalog';
 import { VIEWPORTS } from './viewports';
 
@@ -46,6 +57,9 @@ export default function globalSetup(): () => Promise<void> {
   rmSync(RUN_DIR, { recursive: true, force: true });
   mkdirSync(RUN_DIR, { recursive: true });
   pruneStaleScreenshots();
+  // Resolved once here as well as per capture: a mistyped UI_AXE fails the run at its start, not after every capture.
+  const declaresAxeDebt = (appDrivers as { axeDebt?: readonly AxeDebt[] }).axeDebt !== undefined;
+  const axeMode = resolveAxeMode(process.env.UI_AXE, declaresAxeDebt);
 
   return async () => {
     const records = readRecords();
@@ -53,7 +67,22 @@ export default function globalSetup(): () => Promise<void> {
     const narrowest = findNarrowestControl(records);
     if (narrowest)
       console.log(`narrowest text control this run: ${narrowest.narrowestControlPx}px in ${narrowest.page}/${narrowest.state} at ${narrowest.viewport}`);
+    // Axe ran (the gate, or UI_AXE=1): what it found over the run. In the gate this is what is left as declared debt; in a
+    // report-only run (UI_AXE=1) it is the whole baseline, worst rule first, with one line per state below it.
+    const axeRun = summariseAxeRun(records);
+    console.log(`axe mode: ${axeMode}`);
+    if (axeRun.captures > 0) {
+      console.log(`axe: ${axeRun.nodes} element(s) over ${axeRun.withViolations} of ${axeRun.captures} captures`);
+      for (const rule of axeRun.byRule) console.log(`  ${rule.rule}: ${rule.nodes} element(s) in ${rule.captures} capture(s)`);
+      if (process.env.UI_AXE === '1') {
+        for (const record of records.filter((candidate) => (candidate.axe ?? []).length > 0)) {
+          for (const found of record.axe ?? [])
+            console.log(`  ${record.page}/${record.state} at ${record.viewport}: ${found.rule} x${found.nodes} ${found.targets.join(', ')}`);
+        }
+      }
+    }
     const problems = [
+      ...checkAxeModeForCi(axeMode, declaresAxeDebt, Boolean(process.env.CI), process.env.UI_AXE),
       ...findBlankCaptures(records).map((record) => `blank screenshot: ${record.page}/${record.state} at ${record.viewport}`),
       ...findUndeclaredDuplicates(records, STATE_CATALOG).map(
         (group) =>

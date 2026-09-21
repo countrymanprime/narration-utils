@@ -86,3 +86,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0061](0061-settings-states-are-also-captured-at-a-390px-reflow-width.md) | Settings states are also captured at a 390 px reflow width | Proposed (amends ADR-0037) |
 | [0062](0062-ui-import-rules-are-a-dependency-cruiser-config-and-a-mark-scan-that-name-their-adr.md) | UI import rules are a dependency-cruiser config and a `<mark>` scan that name their ADR | Accepted |
 | [0063](0063-the-proofing-diff-marks-its-own-words-and-adr-0016-covers-entry-highlights.md) | The proofing diff marks its own words, and ADR 0016 covers entry highlights | Proposed (amends ADR-0016) |
+| [0064](0064-the-visual-suite-runs-axe-on-every-app-state-and-a-violation-fails-unless-it-is-declared-debt.md) | The visual suite runs axe on every app state, and a violation fails unless it is declared debt | Accepted (amends ADR-0023) |

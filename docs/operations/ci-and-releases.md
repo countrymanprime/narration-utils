@@ -191,8 +191,14 @@ exactly that. What the suites do so that timing is not a variable:
   state, or a genuinely slow test; a Go failure that comes and goes with the CPU count is an ordering bug.
 
 The known limits of the gates are stated in [Design system](../design/design-system.md#what-the-suites-do-not-prove): axe
-runs on stories only (measuring it on app states is queued behind the palette work), and pixel baselines are not adopted
-(a spike, after the suite has been stable for 50 runs).
+cannot judge gradients or text over semi-transparent overlays, and pixel baselines are not adopted (a spike, after the
+suite has been stable for 50 runs, [#153](https://github.com/countrymanprime/narration-utils/issues/153)).
+
+- **Axe on app states** ([ADR 0064](../adr/0064-the-visual-suite-runs-axe-on-every-app-state-and-a-violation-fails-unless-it-is-declared-debt.md)):
+  the visual suite runs axe after each screenshot and fails on a violation that `apps/ui/tests/visual/axe-debt.ts` does not
+  declare, and on a declared rule that is no longer reported. `UI_AXE=1` (PowerShell: `$env:UI_AXE='1'`) with `pnpm --dir apps/ui screenshots` measures without
+  failing (the teardown prints the count per rule and where), `UI_AXE=0` skips it; on CI either value fails the run. To clear an entry, fix the page and delete
+  it (and lower `MAX_AXE_DEBT_RULES`); to add one, say why and name the issue that tracks it.
 
 ## Dead-code check (Knip)
 

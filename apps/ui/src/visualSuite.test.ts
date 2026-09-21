@@ -1,8 +1,12 @@
 import { describe, expect, test } from 'vitest';
+import * as appDrivers from '../tests/visual/app.drivers';
 import { APP_DRIVERS } from '../tests/visual/app.drivers';
+import { AXE_DEBT } from '../tests/visual/axe-debt';
 import { STATE_CATALOG } from '../tests/visual/state-catalog';
 import { REFLOW_VIEWPORT, VIEWPORTS } from '../tests/visual/viewports';
 import {
+  checkAxeFindings,
+  checkAxeModeForCi,
   checkControlWidths,
   disambiguateLabels,
   findBlankCaptures,
@@ -13,6 +17,11 @@ import {
   isSameImage,
   MIN_CONTROL_WIDTH_PX,
   NON_TEXT_INPUT_TYPES,
+  resolveAxeMode,
+  summariseAxeRun,
+  summariseAxeViolations,
+  type AxeDebt,
+  type AxeFinding,
   type CaptureRecord,
   type ControlMeasurement,
 } from '../tests/visual/lib/validators';
@@ -235,6 +244,154 @@ describe('findNarrowestControl', () => {
   });
 });
 
+function finding(rule: string, nodes = 1, overrides: Partial<AxeFinding> = {}): AxeFinding {
+  return { rule, impact: 'serious', help: `${rule} help`, nodes, targets: ['#a'], ...overrides };
+}
+
+describe('summariseAxeViolations', () => {
+  test('keeps the rule, its impact, what to do and how many nodes, sorted by rule so a run is stable', () => {
+    const summary = summariseAxeViolations([
+      { id: 'label', impact: 'critical', help: 'Form elements must have labels', nodes: [{ target: ['#a'] }, { target: ['#b'] }] },
+      { id: 'color-contrast', impact: 'serious', help: 'Elements must meet minimum colour contrast', nodes: [{ target: ['.x'] }] },
+    ]);
+    expect(summary.map((f) => [f.rule, f.impact, f.nodes])).toEqual([
+      ['color-contrast', 'serious', 1],
+      ['label', 'critical', 2],
+    ]);
+    expect(summary[1]?.help).toBe('Form elements must have labels');
+  });
+
+  test('lists the first three targets only and flattens a shadow or iframe path', () => {
+    const [only] = summariseAxeViolations([
+      { id: 'label', impact: null, help: 'h', nodes: [{ target: ['#a'] }, { target: ['iframe', '#b'] }, { target: [['host', '#c']] }, { target: ['#d'] }] },
+    ]);
+    expect(only?.targets).toEqual(['#a', 'iframe #b', 'host #c']);
+    expect(only?.nodes).toBe(4);
+    expect(only?.impact).toBeNull();
+  });
+
+  test('a clean page has no findings', () => {
+    expect(summariseAxeViolations([])).toEqual([]);
+  });
+});
+
+describe('checkAxeFindings', () => {
+  const debt = (overrides: Partial<AxeDebt> = {}): AxeDebt => ({
+    page: 'home',
+    state: 'default',
+    rules: ['label'],
+    reason: 'A form field with no label, fix tracked in #1',
+    ...overrides,
+  });
+
+  test('a violation nothing declares fails and says which rule, how many nodes, where and how to declare it', () => {
+    const [problem, ...rest] = checkAxeFindings([finding('label', 2, { targets: ['#a', '#b'] })], [], 'home', 'default', 'desktop');
+    expect(rest).toEqual([]);
+    expect(problem).toContain('label');
+    expect(problem).toContain('2 nodes');
+    expect(problem).toContain('#a, #b');
+    expect(problem).toContain('desktop');
+    expect(problem).toContain('axeDebt');
+  });
+
+  test('a clean state with no debt reports nothing', () => {
+    expect(checkAxeFindings([], [], 'home', 'default', 'desktop')).toEqual([]);
+  });
+
+  test('a rule the row declares as debt is allowed, and only that rule', () => {
+    const problems = checkAxeFindings([finding('label'), finding('color-contrast')], [debt()], 'home', 'default', 'desktop');
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain('color-contrast');
+  });
+
+  test('debt on another state is not applied', () => {
+    expect(checkAxeFindings([finding('label')], [debt({ state: 'other' })], 'home', 'default', 'desktop')).toHaveLength(1);
+    expect(checkAxeFindings([finding('label')], [debt({ page: 'settings' })], 'home', 'default', 'desktop')).toHaveLength(1);
+  });
+
+  test('debt that no longer holds fails, so an entry cannot outlive its violation (the list only shrinks)', () => {
+    const problems = checkAxeFindings([], [debt()], 'home', 'default', 'tablet');
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain('no longer');
+    expect(problems[0]).toContain('label');
+    expect(problems[0]).toContain('tablet');
+  });
+
+  test('debt limited to some viewports is neither applied nor checked at another', () => {
+    const limited = debt({ viewports: ['desktop'] });
+    expect(checkAxeFindings([], [limited], 'home', 'default', 'tablet')).toEqual([]);
+    expect(checkAxeFindings([finding('label')], [limited], 'home', 'default', 'tablet')).toHaveLength(1);
+    expect(checkAxeFindings([finding('label')], [limited], 'home', 'default', 'desktop')).toEqual([]);
+  });
+
+  test('two entries for one state add up', () => {
+    const both = [debt(), debt({ rules: ['color-contrast'] })];
+    expect(checkAxeFindings([finding('label'), finding('color-contrast')], both, 'home', 'default', 'desktop')).toEqual([]);
+  });
+});
+
+describe('resolveAxeMode', () => {
+  test('is off unless the project declares axeDebt or a run asks for it', () => {
+    expect(resolveAxeMode(undefined, false)).toBe('off');
+    expect(resolveAxeMode('', false)).toBe('off');
+  });
+
+  test('is a gate as soon as the project declares axeDebt (even an empty list)', () => {
+    expect(resolveAxeMode(undefined, true)).toBe('gate');
+  });
+
+  test('UI_AXE=1 measures without failing, whether or not the project has a gate', () => {
+    expect(resolveAxeMode('1', false)).toBe('report');
+    expect(resolveAxeMode('1', true)).toBe('report');
+  });
+
+  test('UI_AXE=0 switches it off for a quick local run, and UI_AXE=gate forces the gate', () => {
+    expect(resolveAxeMode('0', true)).toBe('off');
+    expect(resolveAxeMode('gate', false)).toBe('gate');
+  });
+
+  test('a mistyped value fails loudly instead of quietly turning the gate off', () => {
+    expect(() => resolveAxeMode('yes', true)).toThrow(/UI_AXE/);
+  });
+});
+
+describe('checkAxeModeForCi', () => {
+  test('a project with a gate cannot switch it off or down to a report on CI', () => {
+    expect(checkAxeModeForCi('off', true, true, '0')[0]).toContain('UI_AXE=0');
+    expect(checkAxeModeForCi('report', true, true, '1')[0]).toContain('UI_AXE=1');
+  });
+
+  test('the gate itself, a developer machine and a project with no gate are fine', () => {
+    expect(checkAxeModeForCi('gate', true, true, undefined)).toEqual([]);
+    expect(checkAxeModeForCi('off', true, false, '0')).toEqual([]);
+    expect(checkAxeModeForCi('report', false, true, '1')).toEqual([]);
+  });
+});
+
+describe('summariseAxeRun', () => {
+  test('counts the captures axe ran on and totals nodes per rule, worst first, for the report-only baseline', () => {
+    const records = [
+      record('home', 'a', 'desktop', 'h1', { axe: [finding('color-contrast', 3), finding('label', 1)] }),
+      record('home', 'b', 'desktop', 'h2', { axe: [finding('color-contrast', 2)] }),
+      record('home', 'c', 'desktop', 'h3', { axe: [] }),
+      record('home', 'd', 'desktop', 'h4'),
+    ];
+    expect(summariseAxeRun(records)).toEqual({
+      captures: 3,
+      withViolations: 2,
+      nodes: 6,
+      byRule: [
+        { rule: 'color-contrast', nodes: 5, captures: 2 },
+        { rule: 'label', nodes: 1, captures: 1 },
+      ],
+    });
+  });
+
+  test('a run where axe did not run has nothing to summarise', () => {
+    expect(summariseAxeRun([record('home', 'a', 'desktop', 'h1')])).toEqual({ captures: 0, withViolations: 0, nodes: 0, byRule: [] });
+  });
+});
+
 describe('visual suite catalog integrity', () => {
   const keys = STATE_CATALOG.map((entry) => key(entry.page, entry.state));
 
@@ -305,5 +462,47 @@ describe('visual suite catalog integrity', () => {
     const settings = STATE_CATALOG.filter((entry) => entry.page === 'settings');
     expect(settings.length).toBeGreaterThan(0);
     for (const entry of settings) expect(entry.extraViewports, key(entry.page, entry.state)).toContainEqual(REFLOW_VIEWPORT);
+  });
+});
+
+describe('axe debt', () => {
+  // The (state, rule) pairs the app states are allowed to violate. It may only shrink: lower it when an entry goes, and a
+  // higher number needs a maintainer's decision, not just a green run.
+  const MAX_AXE_DEBT_RULES = 19;
+  const pairs = AXE_DEBT.flatMap((entry) => entry.rules.map((rule) => `${entry.page}/${entry.state}: ${rule}`));
+
+  test('the axe gate is on, because the drivers declare the list', () => {
+    expect((appDrivers as { axeDebt?: unknown }).axeDebt).toBe(AXE_DEBT);
+  });
+
+  test('does not grow', () => {
+    expect(pairs.length).toBeLessThanOrEqual(MAX_AXE_DEBT_RULES);
+  });
+
+  test('names each state and rule once', () => {
+    expect(new Set(pairs).size).toBe(pairs.length);
+  });
+
+  test('every entry belongs to a catalog row, names a rule, says why and points at viewports the row is captured at', () => {
+    for (const entry of AXE_DEBT) {
+      const where = key(entry.page, entry.state);
+      const row = STATE_CATALOG.find((candidate) => key(candidate.page, candidate.state) === where);
+      expect(row, `${where} is not a catalog row`).toBeDefined();
+      expect(entry.rules.length, `${where} axe debt names no rule`).toBeGreaterThan(0);
+      expect(entry.reason.trim().length, `${where} axe debt needs a reason`).toBeGreaterThan(20);
+      const capturedAt = [...VIEWPORTS, ...(row?.extraViewports ?? [])].map((viewport) => viewport.name);
+      for (const name of entry.viewports ?? []) expect(capturedAt, `${where} axe debt viewports`).toContain(name);
+    }
+  });
+
+  test('an entry is on a row the suite captures, so it can be checked and go stale', () => {
+    for (const entry of AXE_DEBT) {
+      const row = STATE_CATALOG.find((candidate) => key(candidate.page, candidate.state) === key(entry.page, entry.state));
+      expect(row?.undriven, `${key(entry.page, entry.state)} is not driven, so its axe debt is never checked`).toBeUndefined();
+    }
+  });
+
+  test('every entry says where the fix is tracked', () => {
+    for (const entry of AXE_DEBT) expect(entry.reason, `${key(entry.page, entry.state)} axe debt`).toMatch(/#\d+/);
   });
 });

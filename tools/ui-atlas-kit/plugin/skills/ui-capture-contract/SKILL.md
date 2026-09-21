@@ -83,5 +83,6 @@ meant to follow this playbook; this skill defines it.
 - Renamed or removed states no longer leave stale PNGs behind: `global-setup.ts` prunes `screenshots/app/<page>/<state>`
   directories that are not in the catalog.
 - Never rely on axe alone for contrast: it misses low-contrast text over semi-transparent overlays and gradients, and it
-  does not run on app states (only on stories). Look at the dark theme with your eyes.
+  runs on app states only when the project declares `axeDebt` (kit 0.3.4; `UI_AXE=1` measures without failing). Look at the
+  dark theme with your eyes.
 

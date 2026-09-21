@@ -31,6 +31,10 @@ that was merely still rendering, and a 63 px overflow at 390 px, all only after 
    the name must not be one of `VIEWPORTS`, and the driver must be able to reach the state there, so `clickNav` opens
    the drawer) and `narrowControls: { labels, reason, viewports? }` (text boxes and selects, by accessible name, that
    may be narrower than the 64 px minimum on purpose; checked, it fails when the control stops being narrow).
+   Accessibility of app states is separate: when `app.drivers.ts` exports `axeDebt` (`AxeDebt[]`: `page`, `state`, `rules`, `reason`,
+   `viewports?`), axe runs on every capture and a violation the list does not declare fails it, and a declared rule that is no
+   longer reported fails too. `UI_AXE=1` measures without failing (the baseline before there is a list), `UI_AXE=0` skips it.
+   Fix the page first; declare debt only for a design decision, with a reason and where the fix is tracked.
 2. Add the driver to `APP_DRIVERS[page][state]` in `app.drivers.ts`: `async (page) => {...}` reaching the state
    through real interaction with accessible-name selectors. The runner has already done `goto('/')` and
    `settlePage`. Reuse `clickVisible`, `clickNav` and `freezeClock` (scaffolded in `app.drivers.ts`) and write repo-specific helpers
