@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { Heading } from './Heading';
 
-// Heading has no level or variant prop: it always renders the page-level <h1>
-// with an optional muted line under it, so the stories vary only the content.
+// Heading renders the page-level <h1> by default, with an optional muted line under it. `level` changes the tag only
+// (2 or 3 under another heading); the look is the same at every level.
 const meta = {
   title: 'Primitives/Heading',
   component: Heading,
@@ -43,6 +43,32 @@ export const LongSubtitleWraps: Story = {
     title: 'Tracks',
     children:
       'Detected from the project’s REAPER file, which lists every recorded chapter and its takes. Re-scan the folder after saving the project to pick up new tracks.',
+  },
+};
+
+// TracksPage puts the selected .rpp file's name here. A file name has no break opportunity, so it must wrap
+// anywhere: this story is the atlas's sideways-overflow check for it at the narrow viewport.
+export const LongUnbrokenSubtitle: Story = {
+  args: {
+    title: 'Tracks',
+    children: 'The_Very_Long_Running_Series_Book_Three_The_Reckoning_chapter_twenty_seven_revised_v14_reviewed_by_editor_FINAL.rpp',
+  },
+};
+
+// A section title under the page title: the outline reads 1, 2, 3 (axe's heading-order rule would flag a bare h2).
+export const Levels: Story = {
+  render: () => (
+    <div className="space-y-2">
+      <Heading title="Settings" />
+      <Heading title="Story Bible defaults" level={2} />
+      <Heading title="Extraction" level={3} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
+    await expect(canvas.getByRole('heading', { level: 2, name: 'Story Bible defaults' })).toBeVisible();
+    await expect(canvas.getByRole('heading', { level: 3, name: 'Extraction' })).toBeVisible();
   },
 };
 

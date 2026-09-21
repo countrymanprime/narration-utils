@@ -70,4 +70,11 @@ describe('legacy CSS guards (ADR-0017)', () => {
     const unexpected = [...classes].filter((name) => !UNLAYERED_ALLOW_LIST.has(name) && !name.startsWith('type-'));
     expect(unexpected).toEqual([]);
   });
+
+  it('components.css declares no motion: a legacy rule would beat the motion-safe: utilities that guard it', () => {
+    // components.css is imported into the utilities layer and its selectors are more specific than a single utility class,
+    // so a `transition` here runs even for people who asked for reduced motion (ADR 0057). Motion is a `motion-safe:` utility.
+    const css = readFileSync(join(SRC, 'components.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(css.match(/(^|[\s;{])(transition|animation)(-[a-z-]+)?\s*:/g) ?? []).toEqual([]);
+  });
 });

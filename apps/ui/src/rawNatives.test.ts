@@ -4,20 +4,20 @@ import { join, relative, sep } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, test } from 'vitest';
 
-// ADR 0053: a page builds a control from a primitive (`IconButton`, `TextField`, `SearchField`, `Select`, `Field`, ...) and
+// ADR 0053 (and ADR 0056 for the table parts): a page builds a control from a primitive (`IconButton`, `TextField`, `SearchField`, `Select`, `Field`, ...) and
 // not from the native element, so every control looks and behaves one way. This scan counts the native elements written in
 // JSX outside `components/primitives/`, per file, and a file's count may only go down: a ceiling that is higher than the real
 // count fails, so the entry is lowered (or deleted at zero) in the same change, and a file with no entry may have none. The
-// controls the primitives now cover have no entry left: `Select`, `TextField`, `Field` for `select`, `input`, `textarea`.
+// controls the primitives now cover have no entry left: `Select`, `TextField`, `Field` and `Table`.
 // No file outside the primitives may paste the icon-button look either (`size-8` with `rounded-md`).
 //
 // Buttons stay a ratchet rather than a ban ([ui-primitives PRD L10]: text buttons already have `Button`, and the bare ones
 // left are a toast's dismiss, a card that is a button, a list row). A new file with a raw `<button>` needs an entry, which is
 // a review-visible decision: prefer `Button`, `IconButton` or a new primitive.
-const NATIVE_TAGS = ['button', 'select', 'input', 'textarea', 'table'] as const;
+const NATIVE_TAGS = ['button', 'select', 'input', 'textarea', 'table', 'thead', 'tbody', 'tr', 'th', 'td'] as const;
 type NativeTag = (typeof NATIVE_TAGS)[number];
 
-// Native elements written in JSX per file, outside the primitives, at the time of ADR 0053 (phase 1b: no native select, input or textarea is left).
+// Native elements written in JSX per file, outside the primitives, at the time of ADR 0053 (phase 5: no native select, input, textarea or table part is left).
 const CEILING: Record<NativeTag, Record<string, number>> = {
   button: {
     'src/components/home/Home.tsx': 2,
@@ -25,21 +25,20 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     'src/components/manuscript/ChapterNav.tsx': 4,
     'src/components/manuscript/Manuscript.tsx': 2,
     'src/components/project/ProjectPicker.tsx': 3,
-    'src/components/proofing/Transcript.tsx': 3,
+    'src/components/proofing/Transcript.tsx': 1,
     'src/components/settings/ScopedSetting.tsx': 1,
-    'src/components/storybible/Guide.tsx': 2,
     'src/components/storybible/GuideDetail.tsx': 1,
     'src/components/tracks/TracksPage.tsx': 2,
   },
   select: {},
   input: {},
   textarea: {},
-  table: {
-    'src/components/home/AudiobookEstimatePanel.tsx': 1,
-    'src/components/proofing/Results.tsx': 1,
-    'src/components/storybible/Guide.tsx': 1,
-    'src/components/storybible/GuideDetail.tsx': 2,
-  },
+  table: {},
+  thead: {},
+  tbody: {},
+  tr: {},
+  th: {},
+  td: {},
 };
 
 const uiRoot = join(__dirname, '..');

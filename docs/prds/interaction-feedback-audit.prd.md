@@ -29,7 +29,7 @@ Backlog claims re-checked, then new findings (all verified in code unless marked
 - The uncached pronunciation preview has the same gap: `playPreview` awaits `guidePreview` (Go, then `render-audio` with Piper voice load) with no loading state until sound starts (`apps/ui/src/components/storybible/usePreviewAudio.ts:54-100`).
 
 **3. Completion signals are page-scoped and short-lived.**
-- Story Bible build polling lives in a `Guide.tsx` effect that stops on unmount (`Guide.tsx:77-102`); leaving the page mid-build loses the dialog and the success toast. The build `WorkDialog` has no Cancel and no Close while running (`primitives/WorkDialog.tsx:8-27`, the retired UI-defects register's defect 3; `dialog-modality-and-workdialog-a11y.prd.md` owns that).
+- Story Bible build polling lives in a `Guide.tsx` effect that stops on unmount (`Guide.tsx:77-102`); leaving the page mid-build loses the dialog and the success toast. The build `WorkDialog` has no Cancel and no Close while running; it now says so and stays blocking ([ADR 0057](../adr/0057-a-running-job-that-cannot-be-cancelled-keeps-its-dialog-blocking-and-says-so.md)).
 - The only notification channel is one toast: a single string, fixed 2.4 s (`layout/Toast.tsx:8-9`), keyed by its text (`App.tsx:236`), so an identical message within 2.4 s neither restarts nor re-shows, and an error disappears as fast as a success. Native OS notifications are not implemented (the retired native-notifications brief, now carried by `story-bible-and-import-ux-briefs.prd.md`).
 
 **4. First count of async call sites (method: enumerate then grep).**
@@ -52,7 +52,7 @@ We believe a written feedback standard, a measured latency table and a ratcheted
 - Fake or padded progress or minimum-delay spinners - ADR 0015 (real progress only); indeterminate is allowed where no measurement exists.
 - A persistent Python sidecar or any local server - `codebase-map.md`; latency is reduced by fewer spawns and lazy imports instead.
 - OS-level notifications - owned by `story-bible-and-import-ux-briefs.prd.md` (native notifications); this PRD supplies the completion events they consume.
-- Dialog modality, focus trap, Escape handling and `WorkDialog` semantics - `dialog-modality-and-workdialog-a11y` owns them; this PRD only consumes them (see Parallelism Notes for the one hard coupling).
+- Dialog modality, focus trap, Escape handling and `WorkDialog` semantics - delivered ([ADR 0048](../adr/0048-every-dialog-is-one-modal-shell-and-confirms-are-alert-dialogs.md), [ADR 0057](../adr/0057-a-running-job-that-cannot-be-cancelled-keeps-its-dialog-blocking-and-says-so.md)); this PRD only consumes them (see Parallelism Notes for the one hard coupling).
 - REAPER/Lua-side interactions (`integrations/reaper`) - no automated tests, separate manual-verification scope.
 - The install-job contract fix (TTS `'running'` versus `'downloading'`), real download progress and the asset-manager work - owned by `release-readiness-provisioning-and-docs-site.prd.md` Phase 1; this PRD tracks the rows.
 - Choosing a tracker - already answered on main: work in flight is tracked on GitHub (issues, labels, milestones, the project board) and decisions and docs stay in the repo, per `docs/operations/github-workflow.md` (Open Question 8). Jira is not used.
@@ -203,7 +203,7 @@ Standard and ADR, latency baseline, catalog with ratchet, and Story Bible action
 
 Phases 1 and 2 have no dependencies and touch disjoint areas (harness and docs, catalog and test), so they can run concurrently. Phases 4 and 5 are independent of each other but 4 edits `bindings.go`/Python and 5 edits `App.tsx`/`Toast.tsx`/`Guide.tsx`. Phase 3 edits `GuideDetail.tsx`, which release-readiness Phase 1 also edits (install loop `:152-184`, dialog `:768-800`); the hunks are disjoint but expect a rebase.
 
-Coupling with the dialog PRD (`dialog-modality-and-workdialog-a11y`): its Open Question 4 recommends keeping a running rebuild dialog blocking and non-cancellable (option a). Its option (b), "Close and let the job continue in the background", is only safe once Phase 5 here exists, because dismissing the dialog otherwise loses the completion signal. If the user picks (b), sequence Phase 5 first.
+Coupling with the delivered dialog work ([ADR 0057](../adr/0057-a-running-job-that-cannot-be-cancelled-keeps-its-dialog-blocking-and-says-so.md)): a running rebuild dialog stays blocking and non-cancellable (option (a) of the retired dialog PRD's question 4; owner decision D8 makes it load-bearing, because build-after-import is on by default). Its option (b), "Close and let the job continue in the background", is only safe once Phase 5 here exists, because dismissing the dialog otherwise loses the completion signal. Phase 5 is what can relax ADR 0057, and it does so with a new ADR that supersedes it.
 
 ### Parallel-session compatibility
 

@@ -9,9 +9,6 @@ export interface A11yDebt {
   reason: string;
 }
 
-const TOKEN_CONTRAST =
-  'Light/dark --text-faint (and --text-muted on --surface-2/--surface-3) miss 4.5:1. Fixing it means darkening the palette tokens in styles.css, which collapses the faint/muted hierarchy - a design decision, tracked separately.';
-
 const HIGHLIGHT_CONTRAST =
   'Category colours (--character, --place, ...) used as text on a 20% tint of themselves reach only 3.2-3.8:1. Fixing it changes the highlight design (ADR-0016) - a design decision, tracked separately.';
 
@@ -19,8 +16,6 @@ const ACCENT_ON_TINT =
   'Active nav item is --accent text on a 10% accent tint: 4.03:1 in the light theme. Fixing it means a darker accent for text (--accent-strong), a design decision, tracked separately.';
 
 export const A11Y_DEBT: A11yDebt[] = [
-  { title: 'Primitives/WorkDialog', rules: ['color-contrast'], reason: TOKEN_CONTRAST },
-  { title: 'Primitives/MeterBar', rules: ['color-contrast'], reason: TOKEN_CONTRAST },
   { title: 'Primitives/NavButton', rules: ['color-contrast'], reason: ACCENT_ON_TINT },
   { title: 'Primitives/Highlight', rules: ['color-contrast'], reason: HIGHLIGHT_CONTRAST },
 ];

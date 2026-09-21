@@ -177,7 +177,7 @@ export function Settings({
           >
             <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
               <h2 className="font-['Barlow_Condensed',sans-serif] text-lg tracking-[0.08em] uppercase">{active?.label}</h2>
-              <span className="text-xs" style={{ color: 'var(--text-faint)' }}>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 {scope === 'global' ? 'Global defaults' : 'This Project — falls back to Global where unset'}
               </span>
             </div>

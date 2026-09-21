@@ -250,6 +250,7 @@ describe('TeleprompterPage', () => {
   it('says so when the manuscript has no chapter to read', async () => {
     renderPage({ manuscriptChapters: async () => [] });
 
-    expect(await screen.findByText(/no chapters to read/i)).toBeTruthy();
+    const region = await screen.findByRole('region', { name: /no chapters to read/i });
+    expect(within(region).getByRole('heading', { level: 2 })).toBeTruthy();
   });
 });

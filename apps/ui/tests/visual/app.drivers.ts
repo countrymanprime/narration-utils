@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { THEME_STORAGE_KEY } from '../../src/theme/theme';
 import { settlePage } from './helpers/settle';
 
 // How to reach each {page, state} in STATE_CATALOG. Driven entirely through
@@ -8,12 +9,31 @@ import { settlePage } from './helpers/settle';
 // tests at import time) so Vitest can check it against the catalog.
 export type Driver = (page: Page) => Promise<void>;
 
-// Stress mode for the drivers: UI_CPU_THROTTLE=<factor> makes the page's CPU that many times slower (a busy CI runner is
-// often 3 to 5 times slower than a developer machine), so a driver that races the render photographs the wrong page or
-// times out here, on demand, instead of once in a while on CI. Off by default. The vendored lib/capture.ts calls this by name
-// before every capture (a namespace import Knip cannot follow, hence @public).
+// Two switches for a run of the suite, both off by default. The vendored lib/capture.ts calls this by name before every
+// capture (a namespace import Knip cannot follow, hence @public).
+//
+// UI_CPU_THROTTLE=<factor> makes the page's CPU that many times slower (a busy CI runner is often 3 to 5 times slower than
+// a developer machine), so a driver that races the render photographs the wrong page or times out here, on demand, instead
+// of once in a while on CI.
+//
+// UI_THEME=dark (or light) starts every capture in that theme, so the whole suite can be looked at in dark: the app reads the
+// same localStorage key the theme picker writes (theme/theme.ts). The suite still fails at its end on `theme-dark` and
+// `reader-dark` matching their default states: that check is for the default run, so copy `screenshots/app` aside and use the PNGs.
 /** @public */
 export async function beforeCapture(page: Page): Promise<void> {
+  await startInRequestedTheme(page);
+  await throttleRequestedCpu(page);
+}
+
+async function startInRequestedTheme(page: Page): Promise<void> {
+  const theme = process.env.UI_THEME;
+  if (!theme) return;
+  // A mistyped value must not turn into a light run that gets filed as the dark one.
+  if (theme !== 'light' && theme !== 'dark') throw new Error(`UI_THEME must be "light" or "dark", got "${theme}"`);
+  await page.addInitScript(([key, value]) => window.localStorage.setItem(key, value), [THEME_STORAGE_KEY, theme]);
+}
+
+async function throttleRequestedCpu(page: Page): Promise<void> {
   const requested = process.env.UI_CPU_THROTTLE;
   if (!requested) return;
   const rate = Number(requested);

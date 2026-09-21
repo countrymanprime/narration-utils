@@ -23,6 +23,7 @@ Storybook title: `Primitives/Button`. Source: `src/components/primitives/Button.
 - `src/components/manuscript/SelectionMenu.tsx`
 - `src/components/primitives/ConfirmDialog.tsx`
 - `src/components/primitives/ErrorBoundary.tsx`
+- `src/components/primitives/TagInput.tsx`
 - `src/components/primitives/WorkDialog.tsx`
 - `src/components/project/ProjectPicker.tsx`
 - `src/components/proofing/Results.tsx`

@@ -59,7 +59,7 @@ export function AppShell({
         </span>
         <span className="leading-tight">
           <b className="block font-['Barlow_Condensed',sans-serif] text-sm tracking-[0.02em] uppercase">Narration</b>
-          <span className="block font-['Barlow_Condensed',sans-serif] text-[0.65rem] tracking-[0.08em] text-[var(--text-faint)] uppercase">Console</span>
+          <span className="block font-['Barlow_Condensed',sans-serif] text-[0.65rem] tracking-[0.08em] text-[var(--text-muted)] uppercase">Console</span>
         </span>
       </div>
       <nav className="flex-1 p-2">
@@ -120,7 +120,7 @@ export function AppShell({
           </IconButton>
           <div className="flex min-w-0 items-center gap-2">
             <span className="section-label">Project</span>
-            <FontAwesomeIcon icon={faFolder} style={{ color: 'var(--text-faint)' }} />
+            <FontAwesomeIcon icon={faFolder} style={{ color: 'var(--non-text)' }} />
             <span className="truncate font-medium">{projectName}</span>
           </div>
           <span className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em]">

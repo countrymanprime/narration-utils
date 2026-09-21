@@ -22,6 +22,7 @@
         "src/components/manuscript/SelectionMenu.tsx",
         "src/components/primitives/ConfirmDialog.tsx",
         "src/components/primitives/ErrorBoundary.tsx",
+        "src/components/primitives/TagInput.tsx",
         "src/components/primitives/WorkDialog.tsx",
         "src/components/project/ProjectPicker.tsx",
         "src/components/proofing/Results.tsx",
@@ -175,6 +176,8 @@
         "With Rich Subtitle",
         "Long Title Wraps",
         "Long Subtitle Wraps",
+        "Long Unbroken Subtitle",
+        "Levels",
         "Renders Level One Heading",
         "Title Only Omits Subtitle"
       ],
@@ -331,6 +334,7 @@
       "stories": [
         "Text Only",
         "Title And Description",
+        "Long Title Wraps",
         "With Header And Actions",
         "With Header No Actions",
         "With Form Fields",
@@ -433,6 +437,25 @@
       "a11yDebt": false
     },
     {
+      "title": "Primitives/Table",
+      "name": "Table",
+      "source": "src/components/primitives/Table.tsx",
+      "stories": [
+        "Sortable Rows",
+        "Plain",
+        "Announces The Sort",
+        "Rows Activate From The Keyboard"
+      ],
+      "consumers": [
+        "src/components/home/AudiobookEstimatePanel.tsx",
+        "src/components/proofing/InlineDiffRow.tsx",
+        "src/components/proofing/Results.tsx",
+        "src/components/storybible/Guide.tsx",
+        "src/components/storybible/GuideDetail.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/Tabs",
       "name": "Tabs",
       "source": "src/components/primitives/Tabs.tsx",
@@ -451,6 +474,25 @@
       "a11yDebt": false
     },
     {
+      "title": "Primitives/TagInput",
+      "name": "TagInput",
+      "source": "src/components/primitives/TagInput.tsx",
+      "stories": [
+        "Default",
+        "Empty",
+        "Only Suggestions",
+        "Enter Adds A Term",
+        "Add Button Adds A Term",
+        "Blank Is Not Added",
+        "Removing Keeps The Cursor In The Page",
+        "Accepting A Suggestion"
+      ],
+      "consumers": [
+        "src/components/proofing/Transcript.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/TextField",
       "name": "TextField",
       "source": "src/components/primitives/TextField.tsx",
@@ -465,7 +507,7 @@
       ],
       "consumers": [
         "src/components/primitives/SearchField.tsx",
-        "src/components/proofing/Transcript.tsx",
+        "src/components/primitives/TagInput.tsx",
         "src/components/settings/ScopedSetting.tsx",
         "src/components/storybible/GuideDetail.tsx",
         "src/components/teleprompter/TeleprompterPage.tsx"
@@ -519,6 +561,7 @@
         "src/components/primitives/NavButton.tsx",
         "src/components/primitives/Pill.tsx",
         "src/components/primitives/SearchField.tsx",
+        "src/components/primitives/TagInput.tsx",
         "src/components/proofing/Results.tsx",
         "src/components/proofing/Transcript.tsx",
         "src/components/settings/ScopedSetting.tsx",

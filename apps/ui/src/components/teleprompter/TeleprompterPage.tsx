@@ -241,8 +241,7 @@ export function TeleprompterPage() {
     <div className="mx-auto max-w-3xl space-y-4">
       <Heading title="Teleprompter">Read a chapter aloud and follow along - the highlight moves with your voice.</Heading>
       {chapters?.length === 0 && (
-        <Panel>
-          <div className="font-semibold">This manuscript has no chapters to read</div>
+        <Panel title="This manuscript has no chapters to read">
           <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
             The teleprompter reads narration chapters. Import a manuscript with at least one narration chapter first.
           </p>

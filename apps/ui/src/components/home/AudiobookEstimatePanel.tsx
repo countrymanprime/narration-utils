@@ -11,6 +11,7 @@ import { Panel } from '../primitives/Panel';
 import { Select } from '../primitives/Select';
 import { STATUS_COLOR, STATUS_LABELS, STATUS_ORDER } from '../manuscript/ChapterNav';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 
 const fmtHours = (hours: number) => {
   const whole = Math.floor(hours);
@@ -88,7 +89,7 @@ export function AudiobookEstimatePanel({
       <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
         <div>
           <h2 className="text-sm font-semibold">Audiobook estimate</h2>
-          <div className="mt-0.5 flex items-center text-xs" style={{ color: 'var(--text-faint)' }}>
+          <div className="mt-0.5 flex items-center text-xs" style={{ color: 'var(--text-muted)' }}>
             {totalWords.toLocaleString()} words · {narrationChapters.length} chapters · ~150 words/min narrated{' '}
             <Tooltip text="Fixed industry rule of thumb (~9,300 words per finished hour). Record, edit, and proof use standard multipliers of that finished length." />
           </div>
@@ -103,7 +104,7 @@ export function AudiobookEstimatePanel({
         <div className="grid grid-cols-5 gap-4">
           {stats.map((stat) => (
             <div key={stat.label}>
-              <div className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+              <div className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 {stat.label}
               </div>
               <div className="mt-1 font-['IBM_Plex_Mono',ui-monospace,monospace] text-2xl font-semibold">{stat.value}</div>
@@ -112,7 +113,7 @@ export function AudiobookEstimatePanel({
         </div>
         <div>
           <div className="mb-1.5 flex justify-between text-xs">
-            <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+            <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
               Recording progress
             </span>
             <span className="font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-muted)' }}>
@@ -141,22 +142,22 @@ export function AudiobookEstimatePanel({
           </div>
         </div>
         <CollapsiblePanel className="overflow-x-auto border-t border-[var(--border)] pt-1">
-          <table className="dtable">
-            <thead>
-              <tr>
-                <th>Chapter</th>
-                <th className="text-right">Words</th>
-                <th className="text-right">Est. finished length</th>
-                <th className="text-right">Actual recorded</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table label="Chapters">
+            <TableHead>
+              <TableRow>
+                <TableHeader>Chapter</TableHeader>
+                <TableHeader align="right">Words</TableHeader>
+                <TableHeader align="right">Est. finished length</TableHeader>
+                <TableHeader align="right">Actual recorded</TableHeader>
+                <TableHeader>Status</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {narrationChapters.map((chapter) => {
                 const finished = estimateFinishedHours(chapter.wordCount);
                 return (
-                  <tr key={chapter.id}>
-                    <td>
+                  <TableRow key={chapter.id}>
+                    <TableCell>
                       <div>
                         <Link
                           className="font-medium hover:underline"
@@ -170,22 +171,26 @@ export function AudiobookEstimatePanel({
                         >
                           {chapter.title}
                           {chapter.subtitle && (
-                            <span style={{ color: 'var(--text-faint)' }}>
+                            <span style={{ color: 'var(--text-muted)' }}>
                               {' — '}
                               {chapter.subtitle}
                             </span>
                           )}
                         </Link>
                       </div>
-                    </td>
-                    <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]">{chapter.wordCount.toLocaleString()}</td>
-                    <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]">{fmtHours(finished)}</td>
-                    <td className="text-right font-['IBM_Plex_Mono',ui-monospace,monospace]">
+                    </TableCell>
+                    <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+                      {chapter.wordCount.toLocaleString()}
+                    </TableCell>
+                    <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+                      {fmtHours(finished)}
+                    </TableCell>
+                    <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
                       {(chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status]) > 0
                         ? fmtHours(finished * (chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status]))
                         : '—'}
-                    </td>
-                    <td>
+                    </TableCell>
+                    <TableCell>
                       <Select
                         label={`${chapter.title} status`}
                         value={chapter.status}
@@ -205,12 +210,12 @@ export function AudiobookEstimatePanel({
                           }
                         }}
                       />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CollapsiblePanel>
       </div>
     </Collapsible>

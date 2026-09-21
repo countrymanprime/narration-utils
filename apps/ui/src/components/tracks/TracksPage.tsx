@@ -22,8 +22,7 @@ function formatTime(seconds: number): string {
 
 function RppPicker({ discovery, onSelect }: { discovery: TracksDiscovery; onSelect: (path: string) => void }) {
   return (
-    <Panel>
-      <div className="font-semibold">Choose a REAPER project file</div>
+    <Panel title="Choose a REAPER project file">
       <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
         More than one .rpp file was found in this project folder. Choose which one to read tracks from.
       </p>
@@ -54,7 +53,7 @@ function TrackRow({ track, active, onSelect }: { track: Track; active: boolean; 
         onClick={onSelect}
         className={`flex w-full items-center gap-2.5 rounded-md border px-3 py-2.5 text-left transition ${active ? 'border-[var(--accent)] bg-[var(--surface-2)]' : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)]'}`}
       >
-        <span className="size-[10px] flex-none rounded-full" style={{ backgroundColor: track.color || 'var(--text-faint)' }} aria-hidden="true" />
+        <span className="size-[10px] flex-none rounded-full" style={{ backgroundColor: track.color || 'var(--non-text)' }} aria-hidden="true" />
         <span className="min-w-0 flex-1 truncate font-medium">{track.name || `Track ${track.index + 1}`}</span>
         {track.muted && <span className="section-label flex-none">Muted</span>}
         {hasIssue && (
@@ -62,7 +61,7 @@ function TrackRow({ track, active, onSelect }: { track: Track; active: boolean; 
             <FontAwesomeIcon icon={faTriangleExclamation} />
           </span>
         )}
-        <span className="flex-none text-xs" style={{ color: 'var(--text-faint)' }}>
+        <span className="flex-none text-xs" style={{ color: 'var(--text-muted)' }}>
           {playableCount}/{track.items.length}
         </span>
       </button>
@@ -172,8 +171,7 @@ export function TracksPage() {
         </p>
       )}
       {discovery && discovery.candidates.length === 0 && (
-        <Panel>
-          <div className="font-semibold">No REAPER project file found</div>
+        <Panel title="No REAPER project file found">
           <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
             This project folder doesn&rsquo;t contain a .rpp file. Save your REAPER project into the folder, then reopen this page.
           </p>

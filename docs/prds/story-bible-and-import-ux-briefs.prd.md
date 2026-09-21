@@ -55,7 +55,7 @@ Deliver in value/risk order, MVP first. MVP = N (host sender, an on/off setting,
 - Provider choice that only changes printed IPA - it would change nothing the narrator hears (P is blocked on the preview finding).
 - Any auto-import or auto-build without the user's setting - ADR 0019 (offer, never do silently) is the spirit; B is opt-in.
 - Notification action buttons, categories, reply fields and macOS/Linux behavior - Windows-first; plain title and body only.
-- The interaction-feedback audit itself and dialog modality/`WorkDialog` accessibility - separate PRDs (`interaction-feedback-audit`, `dialog-modality-and-workdialog-a11y`).
+- The interaction-feedback audit itself and dialog modality/`WorkDialog` accessibility - separate work (the `interaction-feedback-audit` PRD; the dialog work is delivered, [ADR 0048](../adr/0048-every-dialog-is-one-modal-shell-and-confirms-are-alert-dialogs.md) and [ADR 0057](../adr/0057-a-running-job-that-cannot-be-cancelled-keeps-its-dialog-blocking-and-says-so.md)).
 - Choosing REAPER-side or Lua changes - none of the five needs `integrations/reaper`.
 
 ## Success Metrics

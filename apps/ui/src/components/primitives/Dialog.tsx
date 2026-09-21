@@ -15,6 +15,7 @@ type DialogProps = {
   // false: Escape is ignored even though there is an `onClose`. For a dialog whose close would abort work in flight (a
   // running download): the header button and Cancel are the deliberate ways out, a stray key is not.
   escapeCloses?: boolean;
+  // null when there is nothing to press (a running job that cannot be cancelled): no empty action row is drawn.
   actions: ReactNode;
   // WorkDialog only ever shows one action at a time - 'between' would strand
   // it on the left, so it opts into 'end' instead.
@@ -27,8 +28,9 @@ type DialogProps = {
   | { variant: 'alert'; description: ReactNode }
 );
 
-// An empty description (a job message that has not arrived yet) would leave `aria-describedby` pointing at nothing.
-const hasText = (node: ReactNode): boolean => node !== undefined && node !== null && node !== false && node !== '';
+// An empty description (a job message that has not arrived yet) would leave `aria-describedby` pointing at nothing, and an
+// empty `actions` would draw a padded blank row under the body.
+const hasContent = (node: ReactNode): boolean => node !== undefined && node !== null && node !== false && node !== '';
 
 // The one modal shell (ADR 0001, 0002, 0047, 0048). Base UI supplies the behaviour: the page behind is hidden from
 // assistive technology and unreachable by Tab, Tab loops inside, focus moves in on open and comes back on close. This
@@ -106,19 +108,22 @@ export function Dialog({
               tabIndex={0}
               className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-[1.1rem] break-words focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
             >
-              {hasText(description) && (
+              {hasContent(description) && (
                 <Parts.Description render={typeof description === 'string' ? <p /> : <div />} className="text-sm text-[var(--text-muted)]">
                   {description}
                 </Parts.Description>
               )}
               {children}
             </div>
-            <div
-              className={`flex flex-none gap-2 border-t px-4 pt-3 pb-4 ${actionsAlign === 'between' ? 'justify-between' : 'justify-end'}`}
-              style={{ borderColor: 'var(--border)' }}
-            >
-              {actions}
-            </div>
+            {hasContent(actions) && (
+              <div
+                data-dialog-actions
+                className={`flex flex-none gap-2 border-t px-4 pt-3 pb-4 ${actionsAlign === 'between' ? 'justify-between' : 'justify-end'}`}
+                style={{ borderColor: 'var(--border)' }}
+              >
+                {actions}
+              </div>
+            )}
           </Parts.Popup>
         </Parts.Viewport>
       </Parts.Portal>
