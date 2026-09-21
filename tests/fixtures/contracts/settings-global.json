@@ -130,5 +130,30 @@
       "label": "Extra marker color",
       "value": ""
     }
+  ],
+  "Updates": [
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "true",
+      "isSet": false,
+      "key": "check_on_startup",
+      "kind": "bool",
+      "label": "Check for updates on startup",
+      "value": ""
+    },
+    {
+      "choices": [
+        "candidates",
+        "stable"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "candidates",
+      "isSet": false,
+      "key": "channel",
+      "kind": "choice",
+      "label": "Update channel",
+      "value": ""
+    }
   ]
 }

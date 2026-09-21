@@ -9,6 +9,10 @@
     "tts_provider": "piper",
     "tts_voice_id": "en_US-ljspeech-high"
   },
+  "Updates": {
+    "check_on_startup": "true",
+    "channel": "candidates"
+  },
   "Manuscript": {
     "color_note": "B85C1E"
   },

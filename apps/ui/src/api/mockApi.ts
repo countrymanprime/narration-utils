@@ -21,6 +21,7 @@ import type {
   WorkJob,
 } from '../types';
 import { DESKTOP_HOST_API_VERSION } from '../hostApi';
+import type { UpdateStatus } from './contracts/update';
 import {
   aliceChapterSeeds,
   WIRE_CHAPTERS,
@@ -55,8 +56,50 @@ const MOCK_PREVIEW_WAV_BASE64 =
   'UklGRuwAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YcgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
 
 const MOCK_AUDIO_SECONDS = 600;
-/** The version the mock host reports as its own; the update states (later phases) offer a newer one. */
+/** The version the mock host reports as its own; the update states (`MockUpdateSeed`) offer a newer one. */
 const MOCK_APP_VERSION = '0.2.6';
+const MOCK_DEVELOPMENT_VERSION = '0.0.0-dev';
+const MOCK_CHECKED_AT = '2026-09-21T12:00:00Z';
+
+/** Which update state the mock host boots in: `available` found a newer release, `found` is the same and the host also says so at once, as a background check does, `failed` could not reach GitHub, `current` checked and is up to date, `development` is a build with no release to compare with. Without one, nothing has been checked yet. */
+export type MockUpdateSeed = 'available' | 'found' | 'failed' | 'current' | 'development';
+
+function seedUpdateStatus(seed: MockUpdateSeed | undefined): UpdateStatus {
+  const status: UpdateStatus = {
+    version: MOCK_APP_VERSION,
+    development: false,
+    platform: 'windows-x64',
+    channel: 'candidates',
+    lastChecked: '',
+    failure: '',
+    available: null,
+  };
+  switch (seed) {
+    case 'available':
+    case 'found':
+      return {
+        ...status,
+        lastChecked: MOCK_CHECKED_AT,
+        available: {
+          version: '0.2.7',
+          tag: 'v0.2.7-rc',
+          candidate: true,
+          notesUrl: 'https://github.com/countrymanprime/narration-utils/releases/tag/v0.2.7-rc',
+          size: 419_895_808,
+          publishedAt: '2026-09-20T10:00:00Z',
+          replaces: true,
+        },
+      };
+    case 'failed':
+      return { ...status, failure: 'Could not reach GitHub to check for updates.' };
+    case 'current':
+      return { ...status, lastChecked: MOCK_CHECKED_AT };
+    case 'development':
+      return { ...status, version: MOCK_DEVELOPMENT_VERSION, development: true };
+    default:
+      return status;
+  }
+}
 let mockAudioUrl: string | undefined;
 
 /**
@@ -125,8 +168,11 @@ export function createMockApi(
     liveUpdatesDegraded?: boolean;
     /** Tells the app this text at once, as the host does after keeping a file it could not read. */
     notice?: string;
+    /** Boots the update state (see `MockUpdateSeed`). */
+    update?: MockUpdateSeed;
   } = {},
 ): NarrationApi {
+  let updateStatus = seedUpdateStatus(initial.update);
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
   let paragraphs = wireClone(WIRE_PARAGRAPHS);
@@ -317,7 +363,7 @@ export function createMockApi(
     bootstrap: async () => ({
       apiVersion: DESKTOP_HOST_API_VERSION,
       diagnosticId: 'mock',
-      version: MOCK_APP_VERSION,
+      version: updateStatus.version,
       projectFolder,
       projectName,
       daw,
@@ -731,6 +777,18 @@ export function createMockApi(
       const text = initial.notice;
       if (!text) return () => {};
       const timer = setTimeout(() => onNotice(text), 0);
+      return () => clearTimeout(timer);
+    },
+    updateStatus: async () => wireClone(updateStatus),
+    updateCheck: async () => {
+      // A check that works records the time; one that cannot reach GitHub says so again.
+      if (!updateStatus.failure && !updateStatus.development) updateStatus = { ...updateStatus, lastChecked: MOCK_CHECKED_AT };
+      return wireClone(updateStatus);
+    },
+    updateOpenNotes: async () => undefined,
+    subscribeUpdate: (onStatus) => {
+      if (initial.update !== 'found') return () => {};
+      const timer = setTimeout(() => onStatus(wireClone(updateStatus)), 0);
       return () => clearTimeout(timer);
     },
     subscribeLiveUpdateHealth: (onDegraded) => {

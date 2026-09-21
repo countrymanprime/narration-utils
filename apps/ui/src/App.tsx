@@ -122,6 +122,15 @@ function AppRoutes() {
     return api.subscribeNotices(setNotice);
   }, [api, hasBootstrap, setNotice]);
 
+  // A check the app makes on its own found a release newer than this build (ADR 0072): the narrator is told once, and Settings > About
+  // and updates says the rest. Nothing is downloaded until they ask.
+  useEffect(() => {
+    if (!hasBootstrap) return;
+    return api.subscribeUpdate((status) => {
+      if (status.available) setNotice(`Version ${status.available.version} is available. See Settings, About & updates.`);
+    });
+  }, [api, hasBootstrap, setNotice]);
+
   // Live events that do not match their schema are dropped and counted (ADR 0069); after a run of them the page on screen may be
   // out of date, and the narrator is told once instead of being left with a page that silently stopped updating.
   useEffect(() => {

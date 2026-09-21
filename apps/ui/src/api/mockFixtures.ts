@@ -513,6 +513,19 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     },
   ],
   Piper: [choice('tts_provider', 'TTS provider', ['piper'], 'piper'), choice('tts_voice_id', 'Preview voice', ['en_US-ljspeech-high'], 'en_US-ljspeech-high')],
+  Updates: [
+    {
+      key: 'check_on_startup',
+      label: 'Check for updates on startup',
+      kind: 'bool',
+      choices: [],
+      value: 'true',
+      isSet: true,
+      effectiveValue: 'true',
+      effectiveSource: 'repo default',
+    },
+    choice('channel', 'Update channel', ['candidates', 'stable'], 'candidates'),
+  ],
   Daw: [],
 });
 export const WIRE_TRACKS_PROJECT: TracksProject = {

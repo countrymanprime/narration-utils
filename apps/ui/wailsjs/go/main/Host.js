@@ -250,6 +250,18 @@ export function TtsRemove(arg1) {
   return window['go']['main']['Host']['TtsRemove'](arg1);
 }
 
+export function UpdateCheck() {
+  return window['go']['main']['Host']['UpdateCheck']();
+}
+
+export function UpdateOpenNotes() {
+  return window['go']['main']['Host']['UpdateOpenNotes']();
+}
+
+export function UpdateStatus() {
+  return window['go']['main']['Host']['UpdateStatus']();
+}
+
 export function WhisperCatalog() {
   return window['go']['main']['Host']['WhisperCatalog']();
 }

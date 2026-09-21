@@ -1,0 +1,17 @@
+{
+  "available": {
+    "candidate": true,
+    "notesUrl": "https://github.com/countrymanprime/narration-utils/releases/tag/v0.2.7-rc",
+    "publishedAt": "2026-09-20T10:00:00Z",
+    "replaces": true,
+    "size": 419430400,
+    "tag": "v0.2.7-rc",
+    "version": "0.2.7"
+  },
+  "channel": "candidates",
+  "development": false,
+  "failure": "Could not reach GitHub to check for updates.",
+  "lastChecked": "2026-09-21T12:00:00Z",
+  "platform": "windows-x64",
+  "version": "0.2.6"
+}

@@ -125,4 +125,10 @@ describe('ScopedSetting controls', () => {
     );
     expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
   });
+  it('shows the update channel in words, not as the stored names', () => {
+    renderSetting({ ...FIELD, key: 'channel', label: 'Update channel', choices: ['candidates', 'stable'], effectiveValue: 'candidates' });
+    const select = screen.getByRole('combobox', { name: 'Update channel' }) as HTMLSelectElement;
+    expect(Array.from(select.options).map((option) => option.textContent)).toEqual(['Candidates and stable', 'Stable only']);
+    expect(Array.from(select.options).map((option) => option.value)).toEqual(['candidates', 'stable']);
+  });
 });

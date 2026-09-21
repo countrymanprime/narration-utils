@@ -125,6 +125,12 @@ export function TtsInstallState(arg1:string):Promise<string>;
 
 export function TtsRemove(arg1:string):Promise<string>;
 
+export function UpdateCheck():Promise<string>;
+
+export function UpdateOpenNotes():Promise<string>;
+
+export function UpdateStatus():Promise<string>;
+
 export function WhisperCatalog():Promise<string>;
 
 export function WhisperInstall(arg1:string):Promise<string>;

@@ -24,6 +24,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
+	"github.com/countrymanprime/narration-utils/shell/internal/update"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -32,7 +33,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 6
+const hostAPIVersion = 7
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -56,6 +57,12 @@ type Host struct {
 	teleprompter *teleprompter.Service
 	recents      *recents.Store
 	log          *hostlog.Log
+	// updates asks GitHub for a newer release and remembers the answer (ADR 0072). It is set once in NewHost and never swapped, so it is
+	// read directly, like recents.
+	updates *update.Checker
+	// updateEvents and openURL are seams for tests: nil means the Wails runtime.
+	updateEvents func(update.Status)
+	openURL      func(ctx context.Context, address string)
 	// persist reports a file that cannot be read: to the host log and, for the narrator's own data, to the narrator (ADR 0069).
 	persist *persist.Reporter
 }
@@ -111,7 +118,7 @@ func NewHost() *Host {
 	store.SetPersist(reporter)
 	notes.SetPersist(reporter)
 	recent.SetPersist(reporter)
-	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recent, log: logger, persist: reporter}
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recent, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter)}
 	return host
 }
 
@@ -152,6 +159,7 @@ func (h *Host) Startup(ctx context.Context) {
 	runtimeContext := h.ctx
 	h.mu.Unlock()
 	go h.transcriptLoop(runtimeContext)
+	go h.startupUpdateCheck(runtimeContext, startupUpdateDelay)
 }
 
 // configureLocked rebuilds project-scoped services from launcher arguments.
@@ -706,6 +714,7 @@ var fieldSchemas = map[string][]fieldSchema{
 	"Manuscript":        {{"color_note", "Note color", "color", nil}},
 	"ManuscriptGuide":   {{"spacy_model", "spaCy model", "choice", []string{"en_core_web_sm", "en_core_web_lg"}}},
 	"Piper":             {{"tts_provider", "TTS provider", "choice", []string{"piper"}}, {"tts_voice_id", "Preview voice", "choice", []string{"en_US-ljspeech-high"}}},
+	"Updates":           {{"check_on_startup", "Check for updates on startup", "bool", nil}, {"channel", "Update channel", "choice", []string{"candidates", "stable"}}},
 	"TranscriptCompare": {{"model_size", "Default Whisper model", "choice", []string{"tiny", "small", "medium", "large-v3-turbo", "large-v3"}}, {"chunk_seconds", "Default chunk length", "choice", []string{"30", "60", "300", "600"}}, {"color_misread", "Misread marker color", "color", nil}, {"color_skipped", "Skipped marker color", "color", nil}, {"color_extra", "Extra marker color", "color", nil}},
 }
 
@@ -734,6 +743,9 @@ func (h *Host) saveSettings(tool, scope string, values map[string]*string) error
 	schemas, ok := fieldSchemas[tool]
 	if !ok {
 		return fmt.Errorf("unsupported settings tool")
+	}
+	if tool == "Updates" && scope != "global" {
+		return fmt.Errorf("update settings are global: a project does not choose how the app updates")
 	}
 	valid := map[string]fieldSchema{}
 	for _, schema := range schemas {

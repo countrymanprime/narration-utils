@@ -57,6 +57,7 @@ var builtinDefaults = map[string]Values{
 	"General":           {"log_verbosity": "normal"},
 	"ManuscriptGuide":   {"spacy_model": "en_core_web_sm"},
 	"Piper":             {"tts_provider": "piper", "tts_voice_id": "en_US-ljspeech-high"},
+	"Updates":           {"check_on_startup": "true", "channel": "candidates"},
 	"Manuscript":        {"color_note": "B85C1E"},
 	"TranscriptCompare": {"chunk_seconds": "60", "model_size": "small", "color_misread": "FF4040", "color_skipped": "FFC000", "color_extra": "40A0FF"},
 }
@@ -85,7 +86,7 @@ func (s *Store) Project(tool string) Values {
 
 func (s *Store) Fields(scope string) map[string]map[string]any {
 	result := map[string]map[string]any{}
-	for _, tool := range []string{"General", "ManuscriptGuide", "Piper", "Manuscript", "TranscriptCompare"} {
+	for _, tool := range []string{"General", "ManuscriptGuide", "Piper", "Manuscript", "TranscriptCompare", "Updates"} {
 		defaults := s.Defaults(tool)
 		global := s.Global(tool)
 		project := s.Project(tool)
