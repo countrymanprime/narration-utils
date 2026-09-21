@@ -7,6 +7,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Wait a week before proposing a release; security updates ignore the cooldown. pnpm itself refuses versions under 3 days (pnpm-workspace.yaml).
+    cooldown:
+      default-days: 7
     groups:
       tooling:
         update-types: [minor, patch]
@@ -19,6 +22,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Three days, the length of Dependabot's own default; uv.lock pins hashes. Security updates ignore the cooldown.
+    cooldown:
+      default-days: 3
     groups:
       python-dependencies:
         update-types: [minor, patch]
@@ -26,6 +32,9 @@ updates:
     directory: /apps/desktop
     schedule:
       interval: weekly
+    # Three days, as for uv; go.sum and the checksum database pin every module. Security updates ignore the cooldown.
+    cooldown:
+      default-days: 3
     groups:
       go-dependencies:
         update-types: [minor, patch]
@@ -33,6 +42,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # A pinned action SHA is only as safe as the tag it came from, so wait a week before proposing a new one; security updates ignore the cooldown.
+    cooldown:
+      default-days: 7
     groups:
       github-actions:
         update-types: [minor, patch]

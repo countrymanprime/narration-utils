@@ -155,7 +155,7 @@ Phases 1, 2, 5a, 5b and 6: pinned and scanned workflows, attested and verified r
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | zizmor and workflow least privilege | `zizmor.yml` (advisory), `.github/zizmor.yml`, permissions audit, `persist-credentials: false`, findings fixed or justified | complete | 3, 4, 8 | - | - |
 | 2 | Pin every action to a SHA | pinact conversion (33 refs), full-version comments, one stylua version, zizmor blocking, docs | pending | 3, 4, 8 | 1 | - |
-| 3 | Install-time settings | Explicit pnpm settings, Dependabot `cooldown`, `uv exclude-newer` spike, optional `trustPolicy` | pending | 1, 2, 4, 8 | - | - |
+| 3 | Install-time settings | Explicit pnpm settings, Dependabot `cooldown`, `uv exclude-newer` spike, optional `trustPolicy` | complete | 1, 2, 4, 8 | - | - |
 | 4 | Vulnerability scanning | `security.yml`: govulncheck and OSV-Scanner, advisory, seeded-vulnerability proof, lockfile spike | pending | 1-3, 5-8 | - | - |
 | 5a | Produce attestations | `actions/attest` in `prerelease.yml`, `_attach-platform.yml`, `build-*.yml` permissions; one real RC verified by hand | pending | 3, 4, 8 | 2 | - |
 | 5b | Verify attestations | `assets.mjs verify --attestations`, promote gate, "Verifying a download" docs, release-note line | pending | 3, 4, 6 | 5a | - |
