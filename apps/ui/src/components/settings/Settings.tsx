@@ -28,6 +28,13 @@ const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'system', label: 'System' },
 ];
 
+// What the narrator edited. The form holds every field of the category, and a field with no value in this scope holds an
+// empty string, which the host rejects for a choice or a colour ("unsupported value for chunk_seconds"): sending the whole
+// form failed every save in a scope that had any unset field (a project has none set until one is saved).
+function changedValues(fields: readonly ScopedSettingField[], values: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(fields.filter((field) => (values[field.key] ?? field.value) !== field.value).map((field) => [field.key, values[field.key]]));
+}
+
 export function Settings({
   data,
   notify,
@@ -110,13 +117,17 @@ export function Settings({
   const save = useCallback(async () => {
     if (!active?.tool) return;
     try {
-      await api.saveSettings(active.tool, scope, values);
-      notify(`${scope === 'global' ? 'Global' : 'Project'} settings saved.`);
+      const changed = changedValues(settings[active.tool] ?? [], values);
+      // An edit that was put back leaves nothing to save: reloading is what clears "Unsaved changes", and the host is not asked.
+      if (Object.keys(changed).length > 0) {
+        await api.saveSettings(active.tool, scope, changed);
+        notify(`${scope === 'global' ? 'Global' : 'Project'} settings saved.`);
+      }
       await load();
     } catch (error) {
       notify(String(error));
     }
-  }, [active?.tool, api, load, notify, scope, values]);
+  }, [active?.tool, api, load, notify, scope, settings, values]);
   const discard = useCallback(async () => {
     await load();
   }, [load]);
