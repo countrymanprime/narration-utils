@@ -7,7 +7,21 @@
     "lint": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "stylua --check {projectRoot}"
+        "commands": [
+          "stylua --check {projectRoot}",
+          "node scripts/quality.mjs python -m ruff format --check {projectRoot}/tests",
+          "node scripts/quality.mjs python -m ruff check {projectRoot}/tests"
+        ],
+        "parallel": false
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node scripts/quality.mjs python {projectRoot}/tests/run_lua_tests.py --mutations"
+      },
+      "metadata": {
+        "description": "Runs the bridge harness under Lua 5.4 (lupa): a fake `reaper` table driven through the file protocol, with a characterization test for every bridge command, then the mutation checks in tests/mutations.json (each breaks one guard in the Lua source and the suite must fail). See docs/architecture/reaper-bridge.md."
       }
     }
   }

@@ -148,7 +148,8 @@ def main() -> None:
     # The action package is embedded with the desktop host.  At first launch
     # the host materializes it in its per-user cache and writes the installed
     # executable path beside it.  REAPER imports only when the narrator asks.
-    shutil.copytree(ROOT / REAPER_DIR, REAPER, dirs_exist_ok=True)
+    # The harness (tests/), the Nx project file and Python caches stay behind.
+    shutil.copytree(ROOT / REAPER_DIR, REAPER, dirs_exist_ok=True, ignore=shutil.ignore_patterns("tests", "project.json", "__pycache__"))
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # 0031. REAPER integration stays a Lua file bridge, and Lua changes are verified by hand
 
-**Status:** Proposed
+**Status:** Proposed (its point 3, and the sentence about the harness in its Consequences, are superseded by [ADR 0066](0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md))
 **Date:** 2026-09-19
 
 ## Context

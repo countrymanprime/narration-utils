@@ -1,0 +1,98 @@
+[
+  {
+    "name": "a stale GUID resolves to another item",
+    "file": "narration_ui_bridge.lua",
+    "find": "local item = items[row.guid]\n    if not item then",
+    "replace": "local item = items[row.guid] or reaper.GetMediaItem(0, 0)\n    if not item then"
+  },
+  {
+    "name": "a different existing line ID is overwritten without asking",
+    "file": "narration_ui_bridge.lua",
+    "find": "elseif current ~= '' and current ~= row.id and not overwrite then",
+    "replace": "elseif false then"
+  },
+  {
+    "name": "stamping is not idempotent",
+    "file": "narration_ui_bridge.lua",
+    "find": "if current == row.id and ext_value(item, LINE_TEXT_KEY) == row.text then",
+    "replace": "if false then"
+  },
+  {
+    "name": "stamping opens an undo block even when nothing changed",
+    "file": "narration_ui_bridge.lua",
+    "find": "if #plan.apply > 0 then\n    reaper.Undo_BeginBlock2(0)\n    for _, entry in ipairs(plan.apply) do",
+    "replace": "if true then\n    reaper.Undo_BeginBlock2(0)\n    for _, entry in ipairs(plan.apply) do"
+  },
+  {
+    "name": "the unresolved-GUID event cap is lifted",
+    "file": "narration_ui_bridge.lua",
+    "find": "local UNRESOLVED_EVENT_LIMIT = 50",
+    "replace": "local UNRESOLVED_EVENT_LIMIT = 5000"
+  },
+  {
+    "name": "an existing region is created again",
+    "file": "narration_ui_bridge.lua",
+    "find": "found = found or same_region(region, row.title, row.first, row.last)",
+    "replace": "found = false"
+  },
+  {
+    "name": "the region tolerance widens",
+    "file": "narration_ui_bridge.lua",
+    "find": "local REGION_TOLERANCE = 0.01",
+    "replace": "local REGION_TOLERANCE = 1"
+  },
+  {
+    "name": "a malformed region row is accepted",
+    "file": "narration_ui_bridge.lua",
+    "find": "if first and last and first >= 0 and last > first and title ~= '' then",
+    "replace": "if first and last and title ~= '' then"
+  },
+  {
+    "name": "the duplicate marker window widens",
+    "file": "narration_ui_bridge.lua",
+    "find": "math.abs(marker_pos - srcpos) <= 0.15",
+    "replace": "math.abs(marker_pos - srcpos) <= 5"
+  },
+  {
+    "name": "export does not re-check for a marker the narrator added meanwhile",
+    "file": "narration_ui_bridge.lua",
+    "find": "          local existing_name = existing(entry.take, fields[3], srcpos)\n          if existing_name then\n            row.state = 'existing'",
+    "replace": "          local existing_name = nil\n          if existing_name then\n            row.state = 'existing'"
+  },
+  {
+    "name": "export writes an undo point even when nothing was added",
+    "file": "narration_ui_bridge.lua",
+    "find": "if added > 0 then\n    reaper.Undo_OnStateChange",
+    "replace": "if true then\n    reaper.Undo_OnStateChange"
+  },
+  {
+    "name": "a command with another protocol version is executed",
+    "file": "narration_ui_bridge.lua",
+    "find": "if command[1] ~= '1' then",
+    "replace": "if false then"
+  },
+  {
+    "name": "half-written command files are read",
+    "file": "narration_ui_bridge.lua",
+    "find": "if name:match('%.cmd$') then",
+    "replace": "if true then"
+  },
+  {
+    "name": "close does not stop the loop",
+    "file": "narration_ui_bridge.lua",
+    "find": "active = false",
+    "replace": "active = true"
+  },
+  {
+    "name": "jump moves the cursor without selecting only that item",
+    "file": "narration_ui_bridge.lua",
+    "find": "reaper.SelectAllMediaItems(0, false)\n          reaper.SetMediaItemSelected(row.item, true)",
+    "replace": "reaper.SetMediaItemSelected(row.item, true)"
+  },
+  {
+    "name": "command files are processed in listing order instead of name order",
+    "file": "narration_ui_bridge.lua",
+    "find": "table.sort(names)",
+    "replace": ""
+  }
+]

@@ -19,6 +19,7 @@ This folder documents a local-first audiobook narration toolkit: how it is built
 | [Manuscript Teleprompter](architecture/manuscript-teleprompter.md) | Implemented (first cut) | Listens to a microphone with a local Whisper model and highlights the current word of a chosen manuscript chapter as it is read. Microphone is typed by name and only Whisper is wired up; misread findings, Moonshine, and a device picker are planned in the [engines and input devices PRD](prds/teleprompter-engines-and-input-devices.prd.md) and the integration PRD below. |
 | [Teleprompter–Manuscript integration](prds/teleprompter-manuscript-integration.prd.md) | Planned | Plans the teleprompter as a reading mode of the Manuscript page: modal, story bible and notes, misread marks, seek to a word, resume from the DAW track's last audio, and punch-and-roll cursor moves. |
 | [REAPER shared helpers](architecture/daw-integration.md) | Implemented | Provides ExtState, path, and hidden-process helpers for ReaScripts. |
+| [The REAPER bridge and its test harness](architecture/reaper-bridge.md) | Implemented | The file protocol between the app and REAPER's Lua bridge, every command and event, and the Lua 5.4 harness (a fake `reaper` table plus mutation checks) that tests it without REAPER. |
 | Audacity adapters | Deferred | Placeholder directories only; no driver has been implemented. |
 
 ## Reading order

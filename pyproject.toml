@@ -24,8 +24,16 @@ dependencies = [
   "uvicorn==0.53.0",
 ]
 
+[dependency-groups]
+# The REAPER bridge harness (integrations/reaper/tests): Lua 5.4, the major version REAPER 7 embeds, and ruff for
+# the Python runner. lupa is MIT and ships the interpreter inside its wheels, so uv.lock pins and hashes it on
+# Linux and Windows. Keep the ruff pin equal to the one in [project] above.
+lua = ["lupa==2.8", "ruff==0.16.8"]
+
 [tool.uv]
 package = false
+# `uv sync` installs the lua group too; the Lua CI job installs only it (`uv sync --locked --only-group lua`).
+default-groups = ["lua"]
 
 [tool.ruff]
 line-length = 160
