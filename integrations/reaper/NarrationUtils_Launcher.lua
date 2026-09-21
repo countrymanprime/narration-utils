@@ -19,7 +19,9 @@ local ok_core, common = pcall(dofile, join(SHARED, 'reaper_common_core.lua'))
 local ok_proc, process = pcall(dofile, join(SHARED, 'reaper_common_process.lua'))
 local ok_bridge, bridge = pcall(dofile, join(SHARED, 'narration_ui_bridge.lua'))
 if not ok_core or not ok_proc or not ok_bridge then
-  reaper.ShowMessageBox('Could not load Narration Utils shared libraries from:\n' .. SHARED, 'Narration Utils', 0)
+  -- The first failure names the file that could not be loaded (a missing or broken bridge feature file, say).
+  local failure = (not ok_core and common) or (not ok_proc and process) or bridge
+  reaper.ShowMessageBox('Could not load Narration Utils shared libraries from:\n' .. SHARED .. '\n\n' .. tostring(failure), 'Narration Utils', 0)
   return
 end
 

@@ -3,6 +3,8 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { REAPER_FILES } from './reaper-files.mjs';
+
 // The Go/Wails host embeds the two analysis tools and launches
 // Python. A release must provide platform-native equivalents before it can be
 // advertised as installable. This guard deliberately blocks publication until
@@ -20,7 +22,7 @@ const previewRuntimeMissing = ['piper', 'onnxruntime'].filter((name) => !existsS
 if (previewRuntimeMissing.length) {
   throw new Error(`Release preview runtime is incomplete: ${previewRuntimeMissing.join(', ')}. Manuscript Guide must embed Piper and ONNX Runtime.`);
 }
-const reaperMissing = ['NarrationUtils_Launcher.lua', 'reaper_common_core.lua', 'reaper_common_process.lua', 'narration_ui_bridge.lua']
+const reaperMissing = REAPER_FILES
   .filter((name) => !existsSync(resolve(resources, 'reaper', name)));
 if (reaperMissing.length) {
   throw new Error(`Release REAPER package is incomplete: ${reaperMissing.join(', ')}.`);

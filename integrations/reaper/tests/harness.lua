@@ -172,7 +172,12 @@ function H.session(options)
   local self = setmetatable({ fake = fake, dir = session_dir, sent = 0, read_offset = 0 }, Session)
   host.makedirs(H.join(session_dir, 'commands'))
   local bridge = dofile(H.join(host.reaper_dir, 'narration_ui_bridge.lua'))
-  bridge.run(session_dir, host.reaper_dir)
+  -- `setup(registry)` may register extra commands before the loop starts (a test double, or a new feature under test).
+  local registry = options.setup and bridge.new_registry() or nil
+  if registry then
+    options.setup(registry)
+  end
+  bridge.run(session_dir, registry)
   self.bridge = bridge
   sessions[#sessions + 1] = self
   return self
