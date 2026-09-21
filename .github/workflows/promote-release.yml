@@ -22,6 +22,7 @@ jobs:
       name: production
     permissions:
       contents: write # to create the stable tag and release
+      attestations: read # for `gh attestation verify` below (a public repository needs no scope; a private one would)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,8 +48,10 @@ jobs:
           mkdir prerelease-assets
           gh release download "$TAG" --dir prerelease-assets
           # Fails unless every platform's asset has been attached (macOS and Linux upload after
-          # the Windows build publishes the release) and matches its .sha256.
-          node scripts/release/assets.mjs verify prerelease-assets
+          # the Windows build publishes the release), matches its .sha256, and, with --attestations, has build
+          # provenance from the release workflow on main (gh attestation verify; GITHUB_REPOSITORY is set by
+          # Actions). A candidate built before attestations existed cannot be promoted; the next one can.
+          node scripts/release/assets.mjs verify prerelease-assets --attestations
       - name: Create the stable tag and release without rebuilding
         env:
           GH_TOKEN: ${{ github.token }}

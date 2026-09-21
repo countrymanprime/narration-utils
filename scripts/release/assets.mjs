@@ -7,12 +7,19 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const SHELL_BINARY = 'narration-utils-shell';
 const MAC_APP_BUNDLE = 'Narration Utils.app';
+
+// The workflows that build and attest an asset (docs/adr/0071). Windows is built and attested by the release job of
+// prerelease.yml; the others by the reusable _attach-platform.yml, which is the signer named in the certificate even
+// though build-macos.yml or build-linux.yml calls it. Releases are built from main only.
+const PRERELEASE_WORKFLOW = '.github/workflows/prerelease.yml';
+const ATTACH_WORKFLOW = '.github/workflows/_attach-platform.yml';
+const SOURCE_REF = 'refs/heads/main';
 
 function requireInBin(binDir, name) {
   if (!existsSync(join(binDir, name))) throw new Error(`Expected ${name} in ${binDir}; did the Wails build run?`);
@@ -27,6 +34,7 @@ export const PLATFORMS = {
   'windows-x64': {
     extension: '.zip',
     required: true,
+    signerWorkflow: PRERELEASE_WORKFLOW,
     archive({ binDir, outDir, target }) {
       requireInBin(binDir, `${SHELL_BINARY}.exe`);
       // Windows' bsdtar writes zips (-a picks the format from the name). Git Bash's GNU tar comes
@@ -39,6 +47,7 @@ export const PLATFORMS = {
   'macos-arm64': {
     extension: '.zip',
     required: false,
+    signerWorkflow: ATTACH_WORKFLOW,
     archive({ binDir, target }) {
       requireInBin(binDir, MAC_APP_BUNDLE);
       execFileSync('zip', ['-r', '-y', target, MAC_APP_BUNDLE], { cwd: binDir, stdio: 'inherit' });
@@ -48,6 +57,7 @@ export const PLATFORMS = {
   'linux-x64': {
     extension: '.tar.gz',
     required: false,
+    signerWorkflow: ATTACH_WORKFLOW,
     archive({ binDir, outDir, target }) {
       requireInBin(binDir, SHELL_BINARY);
       // A relative archive name plus -C keeps a Windows drive letter out of tar's archive argument.
@@ -101,10 +111,85 @@ export function verifyAssets(dir) {
     if (!/^[0-9a-f]{64}$/.test(expected)) problems.push(`${sumName} does not contain a SHA-256 checksum`);
     else if (sha256File(join(dir, name)) !== expected) problems.push(`${name} does not match its checksum in ${sumName}`);
   }
+  // Promote publishes every file in the directory, so a file that is not a release asset must stop it: nothing built or
+  // attested it.
+  const known = new Set(Object.keys(PLATFORMS).flatMap((platform) => [assetName(platform), checksumName(platform)]));
+  for (const name of readdirSync(dir).sort()) {
+    if (!known.has(name)) {
+      problems.push(`Unexpected file ${name}: promote publishes every file, and only the release assets are built and attested by the workflows`);
+    }
+  }
   return problems;
 }
 
-function main([command, argument]) {
+// The `gh attestation verify` arguments that say who may have built a file. `--repo` alone would accept an attestation
+// from any workflow of the repository, a pull request's included, so the signer workflow and the branch are named too.
+export function attestationArgs({ file, repository, platform }) {
+  return [
+    'attestation',
+    'verify',
+    file,
+    '--repo',
+    repository,
+    '--signer-workflow',
+    `${repository}/${platformEntry(platform).signerWorkflow}`,
+    '--source-ref',
+    SOURCE_REF,
+    '--deny-self-hosted-runners',
+  ];
+}
+
+const runGh = (args) => execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+
+// Returns a problem for every present asset or checksum that has no attestation from the workflow that should have built
+// it. Meant for promote, which has the network and the GitHub CLI; `verifyAssets` stays offline.
+export function verifyAttestations(dir, { repository, run = runGh } = {}) {
+  if (!repository) throw new Error('Verifying attestations needs the repository, for example countrymanprime/narration-utils.');
+  const problems = [];
+  for (const [platform, { signerWorkflow }] of Object.entries(PLATFORMS)) {
+    for (const name of [assetName(platform), checksumName(platform)]) {
+      const file = join(dir, name);
+      if (!existsSync(file)) continue;
+      try {
+        run(attestationArgs({ file, repository, platform }));
+      } catch (error) {
+        const reason = String(error.stderr || error.message).trim().slice(-300);
+        problems.push(`${name} has no attestation from ${signerWorkflow} on ${SOURCE_REF}: ${reason}`);
+      }
+    }
+  }
+  return problems;
+}
+
+function exitWith(problems) {
+  console.error(problems.map((problem) => `- ${problem}`).join('\n'));
+  process.exit(1);
+}
+
+const USAGE = 'Usage: assets.mjs package <platform> | assets.mjs verify <dir> [--attestations]';
+
+function verifyCommand(dir, flags) {
+  const unknown = flags.find((flag) => flag !== '--attestations');
+  if (unknown) {
+    console.error(`Unknown flag ${unknown}. ${USAGE}`);
+    process.exit(2);
+  }
+  const problems = verifyAssets(dir);
+  if (problems.length) exitWith(problems);
+  const shipped = Object.keys(PLATFORMS).filter((platform) => existsSync(join(dir, assetName(platform))));
+  console.log(`Verified ${shipped.join(', ')} in ${dir}.`);
+  if (!flags.includes('--attestations')) return;
+  const repository = process.env.GITHUB_REPOSITORY;
+  if (!repository) {
+    console.error('--attestations needs GITHUB_REPOSITORY (owner/repo) and an authenticated GitHub CLI.');
+    process.exit(2);
+  }
+  const attestationProblems = verifyAttestations(dir, { repository });
+  if (attestationProblems.length) exitWith(attestationProblems);
+  console.log(`Every asset and checksum is attested by the release workflows of ${repository}.`);
+}
+
+function main([command, argument, ...flags]) {
   if (command === 'package' && argument) {
     const asset = packageAsset({
       platform: argument,
@@ -113,15 +198,9 @@ function main([command, argument]) {
     });
     console.log(`Packaged ${asset}`);
   } else if (command === 'verify' && argument) {
-    const problems = verifyAssets(argument);
-    if (problems.length) {
-      console.error(problems.map((problem) => `- ${problem}`).join('\n'));
-      process.exit(1);
-    }
-    const shipped = Object.keys(PLATFORMS).filter((platform) => existsSync(join(argument, assetName(platform))));
-    console.log(`Verified ${shipped.join(', ')} in ${argument}.`);
+    verifyCommand(argument, flags);
   } else {
-    console.error('Usage: assets.mjs package <platform> | assets.mjs verify <dir>');
+    console.error(USAGE);
     process.exit(2);
   }
 }
