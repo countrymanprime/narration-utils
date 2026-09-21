@@ -22,6 +22,6 @@ especially welcome:
 - Downloads of models or binaries that skip the integrity checks described in
   [first-use dependency provisioning](docs/architecture/first-use-dependency-provisioning.md).
 - Path traversal, command injection, or unsafe file handling when opening projects, manuscripts, or archives.
-- Weaknesses in the release pipeline (for example an installer or checksum that does not match the reviewed build).
+- Weaknesses in the release pipeline (for example an installer or checksum that does not match the reviewed build, or a release asset without valid build provenance; see [CI and releases](docs/operations/ci-and-releases.md#build-provenance)).
 
 Problems in a third-party dependency belong upstream, but tell us if we ship a version that is affected.

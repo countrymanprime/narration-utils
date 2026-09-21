@@ -27,6 +27,11 @@ CI. The docs follow the settings, not the other way round (owner decision D11 of
   things need a decision first: `ci.yml` skips documentation-only pull requests (`paths-ignore: docs/**, **/*.md`),
   which would leave a required check pending on them, and the visual and atlas jobs have to have stopped failing
   without a code change (see [Keeping a red run meaningful](#keeping-a-red-run-meaningful)).
+- **Two settings the workflows rely on are the owner's to change:** "Require actions to be pinned to a full-length commit
+  SHA" (off now; `zizmor` already enforces the same rule, and the setting is a backstop to enable after the pinning
+  change has run once with Dependabot) and immutable releases (off, and they stay off: they would break the late macOS
+  and Linux upload and the release-candidate prune, see [#186](https://github.com/countrymanprime/narration-utils/issues/186)).
+  The owner checklist is in [Tracking work on GitHub](github-workflow.md#owner-checklist-for-the-release-supply-chain-work).
 - Conventional Commit titles are enforced by the local commitlint hook, not by CI. macOS and Linux are deliberately
   not built on pull requests (see [ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)), so `Build (Windows)`
   is the only native build a pull request runs.
@@ -49,7 +54,7 @@ The checks a pull request shows, by the name GitHub displays (`ci.yml` calls `_q
 
 `codeql.yml` and `dependency-review.yml` run their own checks (`Analyze (<language>)`, `review`) and are advisory too
 ([Tracking work on GitHub](github-workflow.md)). A pull request that changes only `docs/**` or Markdown runs none of
-the `CI` checks, so a docs-only change is reviewed by reading.
+the `CI` checks, so a docs-only change is reviewed by reading; `zizmor`, `security.yml` and the labeler have no path filter and always run.
 
 Create a `production` environment with `@countrymanprime` as a required
 reviewer. Leave **Prevent self-review** disabled and leave administrator bypass
@@ -82,11 +87,13 @@ The permission model, so a change can be judged against it:
 
 - Every workflow declares `permissions` at the top, and a job that needs more raises it for that job only. The
   top-level default is `contents: read` (`zizmor.yml` and `promote-release.yml` use `{}`). The one exception is
-  `build-macos.yml` and `build-linux.yml`, whose `contents: write` is a workflow-level grant because a caller must
-  grant everything the reusable `_attach-platform.yml` holds; only its `attach` job uses it.
-- The release job of `prerelease.yml` holds `contents: write` (create the release) and `actions: write` (start the
-  optional macOS and Linux builds); `promote-release.yml`'s one job holds `contents: write` (create the stable tag and
-  release), behind the `production` environment.
+  `build-macos.yml` and `build-linux.yml`, whose `contents: write`, `id-token: write`, `attestations: write` and
+  `artifact-metadata: write` are a workflow-level grant because a caller must grant everything the reusable
+  `_attach-platform.yml` holds; only its `attach` job uses them.
+- The release job of `prerelease.yml` holds `contents: write` (create the release), `actions: write` (start the
+  optional macOS and Linux builds) and the three attestation permissions (`id-token`, `attestations`,
+  `artifact-metadata`: write); `promote-release.yml`'s one job holds `contents: write` (create the stable tag and
+  release) and `attestations: read`, behind the `production` environment.
 - Every `actions/checkout` sets `persist-credentials: false`, so the token is not left in `.git/config` for later steps.
   Promote therefore creates the stable tag through the API (`gh api .../git/refs`) instead of `git push`.
 - Values an outsider can influence (a tag input, a branch name) reach a shell through `env:`, never straight into a
@@ -128,6 +135,7 @@ the run log; a fork or Dependabot pull request scans but does not upload, becaus
   Dependabot proposes the fixes.
 - **Moving to blocking** is a decision after a clean month: the pull-request mode of OSV (`fail-on-vuln: true`) fails
   only on what the pull request adds, and govulncheck stays advisory.
+
 ## Version lifecycle
 
 The pre-release workflow runs after each non-release push to `main`. Nx Release

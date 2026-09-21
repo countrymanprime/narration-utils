@@ -82,12 +82,25 @@ These live outside the repository, so a pull request cannot enforce them:
 | Wiki | Disabled (`gh repo edit --enable-wiki=false`) |
 | Squash-only merges, delete branch on merge | On |
 | `Main Protection` and `Pull Request` rulesets | Active: no force-push or deletion of `main`; squash only, one approval with code-owner review (the owner is exempt). Neither requires a status check. See [CI and releases](ci-and-releases.md#what-the-repository-enforces-and-what-ci-is-for) |
-| Secret scanning and push protection | On |
+| Secret scanning and push protection | On. Its two extras, non-provider patterns and validity checks, are off; turning them on is optional (`gh api -X PATCH repos/countrymanprime/narration-utils -f "security_and_analysis[secret_scanning_non_provider_patterns][status]=enabled"`, and `...[secret_scanning_validity_checks]...`) |
+| Required status checks | None, by owner decision D11: the docs follow the live rulesets. `zizmor`, `security.yml`, CodeQL and dependency review are advisory too |
+| Require actions to be pinned to a full-length commit SHA (Settings > Actions > General) | **Off; enable it after the workflow-pinning pull request has merged and one Dependabot `github-actions` run has passed** (checklist below) |
+| Immutable releases (Settings > General > Releases) | **Off, and stays off** until a spike proves a flow ([#186](https://github.com/countrymanprime/narration-utils/issues/186)): once on, `gh release upload` to a published release fails (the late macOS and Linux attach, and a re-run for a promoted release) and the release-candidate prune cannot reuse or delete a tag. Repository-wide, so it cannot be limited to stable releases. Read the state with `gh api repos/countrymanprime/narration-utils/immutable-releases` |
 | Private vulnerability reporting (what [`SECURITY.md`](../../SECURITY.md) points reporters to) | `gh api -X PUT repos/countrymanprime/narration-utils/private-vulnerability-reporting` |
 | Dependabot alerts (also turns on the dependency graph that `dependency-review.yml` needs) | `gh api -X PUT repos/countrymanprime/narration-utils/vulnerability-alerts` |
 | Dependabot security updates | `gh api -X PUT repos/countrymanprime/narration-utils/automated-security-fixes` |
 
-`security.yml` (govulncheck and OSV-Scanner) is advisory in the same way: look under **Security > Code scanning**, or in the run log (see [Vulnerability scanning](ci-and-releases.md#vulnerability-scanning)).
+### Owner checklist for the release supply-chain work
+
+These are settings and real releases, so an agent does not do them. Tracked in [#188](https://github.com/countrymanprime/narration-utils/issues/188).
+
+1. **Require actions to be pinned to a full-length commit SHA.** Every workflow action is already pinned ([ADR 0070](../adr/0070-workflow-actions-are-pinned-to-a-commit-and-zizmor-gates-the-workflows.md)), so the policy only backstops `zizmor`. Turn it on in Settings > Actions > General, or with `gh api -X PUT repos/countrymanprime/narration-utils/actions/permissions -F enabled=true -f allowed_actions=all -F sha_pinning_required=true`. Do it after the pinning pull request has merged and one Dependabot `github-actions` pull request has run green. Before relying on it, open a pull request from a branch and check three things: that a workflow's own `./.github/actions/*` and `./.github/workflows/*` references still start (sources disagree on whether local references are exempt), that CodeQL still runs, and that Dependabot's update runs. It is one toggle to undo.
+2. **First release candidate after the merge.** Confirm the `Prerelease` run's attest step passed and that `Build macOS` and `Build Linux` attested. On a clean machine run `gh attestation verify narration-utils-windows-x64.zip --repo countrymanprime/narration-utils --signer-workflow countrymanprime/narration-utils/.github/workflows/prerelease.yml --source-ref refs/heads/main`, the same for the `.sha256` and for `narration-utils-shell.exe` after extracting the zip ([Verifying a download](ci-and-releases.md#verifying-a-download)).
+3. **First promote.** Run **Promote pre-release** on an attested candidate and expect the `Download and verify` step to pass and the stable tag to be created (that step now uses the API instead of `git push`). To watch it refuse, start it on a candidate built before attestations (no attestations): it fails before anything is created.
+4. **Leave off:** immutable releases (above). Windows code signing is the owner's decision and no workflow signs (owner decision D7).
+5. **Owner-only settings that stay as they are:** admin bypass of the rulesets, unsigned commits, the `production` environment.
+
+`security.yml` (govulncheck and OSV-Scanner) is advisory in the same way: look under **Security > Code scanning**, or in the run log (see [Vulnerability scanning](ci-and-releases.md#vulnerability-scanning)). OSV-Scanner reports two existing npm advisories (`esbuild` 0.21.5, `smol-toml` 1.6.1) that Dependabot proposes fixes for.
 
 `codeql.yml` and `dependency-review.yml` are advisory: their results show under **Security** and on pull requests, but
 they are not required checks, because no check is (see [CI and releases](ci-and-releases.md#what-the-repository-enforces-and-what-ci-is-for)). If the owner ever requires checks, add these only after a few clean runs.
