@@ -12,14 +12,14 @@ gate](#nx-projects-and-the-quality-gate)).
 ## What the repository enforces, and what CI is for
 
 GitHub Actions cannot configure repository settings from a workflow, so this section records what is set on the
-repository (read with `gh api repos/countrymanprime/narration-utils/rulesets` on 2026-09-20) and what that means for
-CI. The docs follow the settings, not the other way round (owner decision D11 of the [implementation plan](../prds/implementation-plan.md)).
+repository (read with `gh api repos/countrymanprime/narration-utils/rulesets`, and `.../environments` and `.../actions/permissions`, on
+2026-09-21) and what that means for CI. The docs follow the settings, not the other way round (owner decision D11 of the [implementation plan](../prds/implementation-plan.md)).
 
 - **`Main Protection` ruleset** (active): deleting `main`, force-pushing to it and re-creating it are blocked. The
   admin role and the owner bypass it.
 - **`Pull Request` ruleset** (active): squash merges only; one approval; **code-owner review is required**
   (`.github/CODEOWNERS` names `@countrymanprime` for every path); a new push dismisses stale approvals; the last push
-  must be approved; every review thread must be resolved. The admin role can bypass it through a pull request, and the
+  must be approved; every review thread must be resolved; its `require_extra_approval_for_unattributed_changes` option is on. The admin role can bypass it through a pull request, and the
   owner `@countrymanprime` is exempt, so the solo maintainer merges their own pull requests.
 - **No ruleset requires a status check.** CI is advisory: a red job does not block a merge and a green one does not
   permit it, so the maintainer reads the run before merging (the table below says what each check is). Requiring
@@ -32,7 +32,14 @@ CI. The docs follow the settings, not the other way round (owner decision D11 of
   change has run once with Dependabot) and immutable releases (off, and they stay off: they would break the late macOS
   and Linux upload and the release-candidate prune, see [#186](https://github.com/countrymanprime/narration-utils/issues/186)).
   The owner checklist is in [Tracking work on GitHub](github-workflow.md#owner-checklist-for-the-release-supply-chain-work).
-- Conventional Commit titles are enforced by the local commitlint hook, not by CI. macOS and Linux are deliberately
+- **Nothing in CI checks a pull request title.** Conventional Commit messages are enforced by the local commitlint hook (Husky
+  `commit-msg`) on the commits you make, but the title of a pull request becomes the squash commit and decides the next version, and
+  no job reads it: the maintainer does, prompted by the pull request template. A title-check job was considered and not added: with
+  no required checks it could only advise, and a new action or script in the release path is a change to review on its own.
+  Adding one later means a small, SHA-pinned job in `ci.yml`.
+- **Draft pull requests are not skipped.** `ci.yml` has no draft condition, so every push to a draft runs the same checks as a
+  ready pull request (a newer push cancels the run before it). No other workflow has a draft condition either.
+- macOS and Linux are deliberately
   not built on pull requests (see [ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)), so `Build (Windows)`
   is the only native build a pull request runs.
 
@@ -41,7 +48,7 @@ The checks a pull request shows, by the name GitHub displays (`ci.yml` calls `_q
 
 | Check | What it runs |
 | --- | --- |
-| `quality / js` | `lint`, `format` and `test` of `narration-utils-ui` (Vitest with the coverage ratchet), then Knip over the whole repository |
+| `quality / js` | `lint`, `format`, `architecture` (the import rules) and `test` of `narration-utils-ui` (Vitest with the coverage ratchet), then Knip over the whole repository |
 | `quality / ui-visual` | the Playwright visual suite of the mock-backed app (`pnpm --dir apps/ui run screenshots`); uploads screenshots, and traces when it fails |
 | `quality / ui-atlas` | the Storybook component atlas: every story in light and dark at a wide and a narrow viewport, with axe |
 | `quality / ui-atlas-kit` | the tests of `tools/ui-atlas-kit` and its drift check against `apps/ui` |
@@ -52,14 +59,37 @@ The checks a pull request shows, by the name GitHub displays (`ci.yml` calls `_q
 | `ui-dist / build` | builds the UI bundle the Windows build reuses |
 | `Build (Windows)` | the native Windows build, starting as soon as `ui-dist / build` finishes |
 
-`codeql.yml` and `dependency-review.yml` run their own checks (`Analyze (<language>)`, `review`) and are advisory too
-([Tracking work on GitHub](github-workflow.md)). A pull request that changes only `docs/**` or Markdown runs none of
-the `CI` checks, so a docs-only change is reviewed by reading; `zizmor`, `security.yml` and the labeler have no path filter and always run.
+`codeql.yml`, `dependency-review.yml`, `security.yml` and `zizmor.yml` run their own checks and are advisory too
+([every workflow](#every-workflow), [Tracking work on GitHub](github-workflow.md)). A pull request that changes only `docs/**` or
+Markdown runs none of the `CI` checks, and not CodeQL either, so a docs-only change is reviewed by reading; `zizmor`, `security.yml`,
+`dependency-review.yml` and the labeler have no path filter and always run.
 
-Create a `production` environment with `@countrymanprime` as a required
-reviewer. Leave **Prevent self-review** disabled and leave administrator bypass
-enabled so the owner can promote an emergency or solo release. Restrict the
-environment to `main` and tags matching `v*`.
+**The `production` environment** (read live on 2026-09-21) has `@countrymanprime` as its one required reviewer, **Prevent self-review**
+left off and administrator bypass left on, so the owner can promote an emergency or solo release. It has **no deployment branch or tag
+restriction** (`deployment_branch_policy` is null); `promote-release.yml` checks for itself that the candidate tag is an ancestor of `main`
+and a pre-release. Restricting the environment to `main` and tags matching `v*` would also stop a run from another branch and is an
+optional owner setting ([owner settings](github-workflow.md#repository-settings-that-only-the-owner-can-change)); it is not on today.
+
+## Every workflow
+
+Each file in `.github/workflows`, what starts it, and the checks it shows on a pull request (`_` files are reusable and start nothing themselves):
+
+| Workflow | Starts on | Jobs and check names | Blocking? |
+| --- | --- | --- | --- |
+| `ci.yml` (`CI`) | pull request that is not docs- or Markdown-only; manual | `quality / *` and `ui-dist / build` (the reusable `_quality.yml` and `_ui-dist.yml`), `Build (Windows)` | no ruleset requires it |
+| `prerelease.yml` (`Prerelease`) | push to `main` that is not docs- or Markdown-only; manual | `quality / *`, `ui-dist / build`, `version`, `Windows build and release` (needs the three before it, and runs only when `version` found a releasable change) | not a pull request check |
+| `promote-release.yml` | manual, with an RC tag; behind the `production` environment | `promote` | not a pull request check |
+| `build-macos.yml`, `build-linux.yml` | manual, or started by the release job | one reusable `_attach-platform.yml` run: `Check the release`, `ui-dist / build`, `Build and attach <platform>` | not a pull request check |
+| `zizmor.yml` | every pull request, push to `main`, manual | `zizmor` | advisory in GitHub terms (not required); a finding at the `regular` persona fails the run |
+| `security.yml` (`Security scan`) | every pull request, push to `main`, weekly (Tuesday 06:41 UTC), manual | `govulncheck`, `osv-scanner (pull request)` (only for a same-repository pull request that is not Dependabot's) or `osv-scanner` (every other trigger) | advisory: neither fails on a finding |
+| `codeql.yml` (`CodeQL`) | pull request to `main` that is not docs- or Markdown-only (same-repository, not Dependabot), push to `main`, weekly (Monday 05:23 UTC), manual | `Analyze (go)`, `Analyze (javascript-typescript)`, `Analyze (python)` | advisory |
+| `dependency-review.yml` | pull request to `main` | `review` (fails on a high-severity advisory the pull request adds; needs the dependency graph) | advisory |
+| `labeler.yml` | `pull_request_target` (opened, synchronize, reopened, ready for review) | `label` | not a check that gates anything |
+| `sync-labels.yml`, `sync-milestones.yml` | push to `main` that changes `.github/labels.json`, `config/roadmap.json` or `scripts/github/**`, and the workflow file; manual | `sync` | run after a merge, never on a pull request |
+
+The tests of `scripts/github/*.test.mjs` (the label and milestone sync) run in `quality / repo-scripts`. Nothing runs on a schedule except
+CodeQL and the security scan. There is no `github-scripts` job and no changed-file classification: Nx `affected` decides what a pull
+request runs (see [Nx projects and the quality gate](#nx-projects-and-the-quality-gate)).
 
 Issues, labels, milestones, and the project board are covered in
 [Tracking work on GitHub](github-workflow.md).
@@ -82,6 +112,16 @@ github.com/suzuki-shunsuke/pinact/v3/cmd/pinact@latest`, with `GITHUB_TOKEN` set
 writes the comment); `pinact run --verify --check` re-checks that every SHA matches its comment. Dependabot
 (`github-actions`, weekly, with a 7-day cooldown) proposes the newer SHA and rewrites the comment. A new action needs
 a reason: it runs with the job's token, so prefer a script in `scripts/` or a tool the toolchain already installs.
+
+**Pin check (2026-09-21).** All 17 distinct `owner/repo@sha` pins in `.github/workflows` and `.github/actions` (45 lines; none
+unpinned) were checked against GitHub: each comment's tag exists and resolves, through an annotated tag where there is one, to exactly
+the pinned commit. The pins are uniform in form, not in version: two `setup-node` majors are in use (`v7.0.0` in
+`promote-release.yml`, `v4.4.0` in the `setup-toolchain` composite action), and the composite actions also hold `setup-go` and
+`setup-python` `v5.6.0`, `cache` and `download-artifact` `v4.3.0` and `pnpm/action-setup` `v4.3.0` while the workflows are on the
+latest `checkout`, `upload-artifact` and `setup-node`. The likely cause is Dependabot's `github-actions` entry, which has
+`directory: /` and, per GitHub's [options reference](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference),
+searches `/.github/workflows` and a root `action.yml` only, not `.github/actions/*/action.yml`; adding `directories: ["/", "/.github/actions/*"]`
+would include them. That is a configuration change with its own review, so it is not made in a documentation pull request.
 
 The permission model, so a change can be judged against it:
 
@@ -138,7 +178,8 @@ the run log; a fork or Dependabot pull request scans but does not upload, becaus
 
 ## Version lifecycle
 
-The pre-release workflow runs after each non-release push to `main`. Nx Release
+The pre-release workflow runs after each push to `main` that changes more than `docs/**` or Markdown (and by hand). It runs the quality
+jobs first, and its Windows release job waits for them. Nx Release
 uses the squash commit title to calculate the synchronized application version:
 `feat` is minor; `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`,
 `chore`, and `revert` are patch. Pre-1.0 breaking changes are handled as the
@@ -378,6 +419,10 @@ runner called:
   their own `run:` steps (the atlas kit's audit looks for them) and skip them through
   `.github/actions/nx-affected` when the UI is not affected. The atlas-kit job always runs, because its drift check
   reads `apps/ui`, and so does the `repo-scripts` job, because the layout and project guards read every tracked file.
+- **No changed-file classifier.** `scripts/ci/changed-files.mjs` (and its test) sorted a pull request into `bootstrap` and
+  `package` scopes for a four-platform bootstrap and installer matrix that no longer exists. No workflow, script, Nx target or
+  document called it, and Nx `affected` with `nx-scope.sh` does the job, so both files were deleted (2026-09-21) rather than wired
+  in; Knip stays at zero. `git log --follow scripts/ci/changed-files.mjs` has the history.
 - **Failure diagnostics.** A failing visual test leaves `apps/ui/test-results/<test>/trace.zip` (Playwright
   `trace: 'retain-on-failure'`: DOM snapshots, network and console for every action; a passing test keeps nothing,
   and no retry is involved, [ADR 0023](../adr/0023-visual-suite-capture-contract-and-storybook.md)). When a step of the
