@@ -580,8 +580,20 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Proofing');
-      const reset = page.getByRole('button', { name: 'Reset' }).first();
-      if (await reset.count()) await reset.hover();
+      // The mock starts with no project override, so make one the way a narrator does: pick a value and save it. Only a
+      // field that has an override shows Reset (the model select), and its row is the one that must not squeeze.
+      await page.getByRole('combobox', { name: 'Default Whisper model' }).selectOption('large-v3');
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      const reset = page.getByRole('button', { name: 'Reset' });
+      await reset.waitFor();
+      // The save toast removes itself on a real 2.4 s timer, which would race the screenshot: dismiss it, unless a slow
+      // run already let it expire, and wait until it is gone either way.
+      const dismissToast = page.getByRole('button', { name: 'Dismiss message' });
+      await dismissToast.click({ timeout: 1_000 }).catch(() => undefined);
+      await dismissToast.waitFor({ state: 'detached' });
+      // Clicking Save scrolled the panel to its footer: bring the top back so the category and its first row are in the shot.
+      await page.getByRole('heading', { level: 2, name: 'Proofing' }).scrollIntoViewIfNeeded();
+      await reset.hover();
     },
   },
   global: {

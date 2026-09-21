@@ -2,6 +2,16 @@
 
 **Supersedes:** `docs/design/known-ui-defects.md` (defect 8 [medium]; the file's last revision is `b613933`, recover it with `git show b613933:docs/design/known-ui-defects.md`)
 
+## Reconciliation with the implementation plan (stack S12b, issue #143)
+
+Applied by the first pull request of the stack, so the text below is read with these corrections ([implementation plan](implementation-plan.md) sections 1 and 3).
+
+- **Paths and primitives.** The UI lives in `apps/ui` (layout stack, [ADR 0040](../adr/0040-the-repository-is-laid-out-by-role-and-each-project-is-an-nx-project.md)) and every control in a Settings row is now a wrapped primitive (`TextField`, `Select`; D1, [ADR 0053](../adr/0053-icon-buttons-text-fields-and-selects-wrap-the-native-controls.md)), and the info icon is a real button (D6, [ADR 0049](../adr/0049-hints-are-base-ui-tooltips-that-meet-wcag-1-4-13-and-info-icons-are-buttons.md)). The `TooltipTarget` wrapper of the select takes a `className`, so no primitive changes.
+- **Viewports.** [ADR 0037](../adr/0037-the-visual-suite-captures-no-phone-viewport.md) removed the 390 px viewport, so the suite captures desktop (1440), small-desktop (1024) and tablet (768), 222 tests, and the desktop shell cannot go below 960 px wide. The bug is still real (below 768 px, and at a high browser zoom, WCAG 1.4.10 Reflow), so Phase 1 was verified with a scratch run at 390 px and Phase 2 records how the check reaches that width (see its Decisions Log row). Every "four viewports" and "300 captures" below means the captured viewports plus 390 px.
+- **Boolean kind (D8).** Notifications and Build Story Bible after import default to on and need a Switch. The `bool` Settings kind is delivered as its own small pull request in this stack, before Phase 2; the check exempts checkboxes and switches by type (Q2).
+- **`settings/reset-override`.** S10b declared it `sameAs` `settings/project-proofing` because the mock had no project override. It is a real state now: the driver saves one override and shows Reset on that row. Getting there exposed that Save sent every field of the category (unset ones as empty strings, which the host rejects), fixed first in its own pull request.
+- **Open questions.** Every question adopts its recommendation (D22); see the ticked list and the Decisions Log.
+
 ## Problem Statement
 
 On narrow widths (390px) every Settings row that has a select or a colour input renders its control as a blank sliver: the model and chunk-length selects are about 45px wide and the colour swatch and hex input are squeezed to nothing, so a narrator with a narrow app window (for example tiled beside REAPER) cannot read or change the setting. The visual suite that exists to catch layout bugs did not flag it because it only measures page-level sideways overflow, and other in-flight work that adds Settings fields inherits the same broken row.
@@ -48,13 +58,13 @@ We believe stacking Settings rows below `md` and adding a control-width check to
 
 ## Open Questions
 
-- [ ] **1. Where does the assertion live?** Options: (a) generic check in the kit core `capture.ts`/`validators.ts` (every repo using the kit gets it; needs kit 0.3.2, `ui-atlas sync`, changelog, unit tests in `src/visualSuite.test.ts`); (b) a project-local hook (new optional `afterDrive` export in `app.drivers.ts`, like `beforeCapture`); (c) a Settings-only assertion in the Settings drivers. Recommendation: (a) with a per-row opt-out in `state-catalog.ts` carrying a required reason, mirroring `sameAs`/`undriven`. Note it extends ADR 0023's contract, so record it in a short ADR (amends 0023) via `adr-author`.
-- [ ] **2. Threshold and scope.** Options: text-like controls (`input` except color/checkbox/radio/range/file/hidden, `select`, `textarea`) at >= 64px; or a fraction of the container; or >= 96px. Recommendation: 64px flat, calibrated by one suite run on the fixed layout that logs the minimum observed width per capture; colour swatches and checkboxes are exempt by type.
-- [ ] **3. Mobile layout.** Options: (a) stack label above control below `md`; (b) keep two columns but shrink the label column to `minmax(8rem,10rem)` (control about 150px at 390); (c) move controls to a per-row disclosure. Recommendation: (a): labels carry a tooltip icon and wrap poorly in a narrow column, and `md` is already the app's layout breakpoint.
-- [ ] **4. Control width on wider screens.** Options: fill the column; fill up to `max-w-md`; keep shrink-to-fit. Recommendation: fill up to `max-w-md` so `small` and `1m` selects match at tablet.
-- [ ] **5. "Reset" placement when stacked.** Options: inline right (wraps under the control when tight); always below the control right-aligned. Recommendation: `flex-wrap` on the control row so Reset drops below only when needed.
-- [ ] **6. Sequencing against other Settings PRDs.** Options: land Phase 1 before their Settings work; or let them rebase. Recommendation: land Phase 1 first (small, no dependencies) and tell the other PRDs' owners; it removes a known visual defect from their screenshots.
-- [ ] **7. Sweep scope.** Options: fix only what the new check flags on Settings; or everything it flags app-wide in Phase 3. Recommendation: app-wide but bounded by the check's output; anything that needs design input is filed as a GitHub bug issue (`area:ui`, see `docs/operations/github-workflow.md`) instead of fixed here.
+- [x] **1. Where does the assertion live?** Options: (a) generic check in the kit core `capture.ts`/`validators.ts` (every repo using the kit gets it; needs kit 0.3.2, `ui-atlas sync`, changelog, unit tests in `src/visualSuite.test.ts`); (b) a project-local hook (new optional `afterDrive` export in `app.drivers.ts`, like `beforeCapture`); (c) a Settings-only assertion in the Settings drivers. Recommendation: (a) with a per-row opt-out in `state-catalog.ts` carrying a required reason, mirroring `sameAs`/`undriven`. Note it extends ADR 0023's contract, so record it in a short ADR (amends 0023) via `adr-author`. **Answered:** (a), generic check in the kit core with a reasoned per-row opt-out (Phase 2; kit 0.3.3, because S07 already released 0.3.2), and an ADR amending 0023.
+- [x] **2. Threshold and scope.** Options: text-like controls (`input` except color/checkbox/radio/range/file/hidden, `select`, `textarea`) at >= 64px; or a fraction of the container; or >= 96px. Recommendation: 64px flat, calibrated by one suite run on the fixed layout that logs the minimum observed width per capture; colour swatches and checkboxes are exempt by type. **Answered:** 64 px flat; text-like controls only, colour swatches, checkboxes and switches exempt by type; calibrated by one logged suite run in Phase 2.
+- [x] **3. Mobile layout.** Options: (a) stack label above control below `md`; (b) keep two columns but shrink the label column to `minmax(8rem,10rem)` (control about 150px at 390); (c) move controls to a per-row disclosure. Recommendation: (a): labels carry a tooltip icon and wrap poorly in a narrow column, and `md` is already the app's layout breakpoint. **Answered:** (a), with one refinement found by looking at the tablet PNG: from `md` to `lg` the label column is a fixed 12rem (the category list stands beside the panel, so the control got 127 px and a spaCy model name was clipped), and it may grow to 16rem from `lg`.
+- [x] **4. Control width on wider screens.** Options: fill the column; fill up to `max-w-md`; keep shrink-to-fit. Recommendation: fill up to `max-w-md` so `small` and `1m` selects match at tablet. **Answered:** fill up to `max-w-md` (28rem), so every select is the same width from `md` up.
+- [x] **5. "Reset" placement when stacked.** Options: inline right (wraps under the control when tight); always below the control right-aligned. Recommendation: `flex-wrap` on the control row so Reset drops below only when needed. **Answered:** `flex-wrap` on the control row, and the control has a 10rem flex basis, so Reset shares the line and drops under the control only when there is no room (it does at tablet width).
+- [x] **6. Sequencing against other Settings PRDs.** Options: land Phase 1 before their Settings work; or let them rebase. Recommendation: land Phase 1 first (small, no dependencies) and tell the other PRDs' owners; it removes a known visual defect from their screenshots. **Answered:** moot: the teleprompter and diagnostics Settings phases run later in the train (S21, S22), so they inherit the fixed row.
+- [x] **7. Sweep scope.** Options: fix only what the new check flags on Settings; or everything it flags app-wide in Phase 3. Recommendation: app-wide but bounded by the check's output; anything that needs design input is filed as a GitHub bug issue (`area:ui`, see `docs/operations/github-workflow.md`) instead of fixed here. **Answered:** app-wide but bounded by the check's output; anything that needs design input is filed as an `area:ui` issue.
 
 ## Users & Context
 
@@ -118,7 +128,7 @@ Phases 1 and 2. Phase 3 is the bounded sweep.
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Responsive Settings row | Stack below `md`, `min-w-0 w-full` controls, select wrapper width, wrapping colour row, Reset placement; PNG review of all Settings states at 4 viewports; closes defect 8 | pending | No | - | - |
+| 1 | Responsive Settings row | Stack below `md`, `min-w-0 w-full` controls, select wrapper width, wrapping colour row, Reset placement; PNG review of all Settings states at 4 viewports; closes defect 8 | complete | No | - | - |
 | 2 | Collapsed-control check | Kit core check + unit tests + optional per-row opt-out + ADR amending 0023 + kit version bump + `ui-atlas sync`; demonstrate red on the pre-fix commit | pending | No | 1 | - |
 | 3 | Sweep | Fix or record whatever else the check flags across all states and viewports | pending | No | 2 | - |
 
@@ -151,7 +161,10 @@ Files owned: `settings/ScopedSetting.tsx` (Phase 1), the row wrappers in `settin
 | Visual fixes are verified by viewing PNGs at every viewport (prior decision, CLAUDE.md) | Required for Phases 1 and 3 | Code review only | A fix at one width is not verified |
 | `apps/ui` is upstream of the kit; vendored files are not edited in place (prior decision, kit header) | Change kit core then sync | Edit vendored files | Avoids drift failure |
 | Nothing merges without the user (prior decision, CLAUDE.md) | One PR per phase | - | - |
-| Stack below `md`, keep two columns from `md` (proposed) | Option (a) | Shrink label column; disclosure | Q3 |
+| Stack below `md`, keep two columns from `md` (Q3, D22) | Option (a) | Shrink label column; disclosure | Q3 |
+| Between `md` and `lg` the label column is 12rem, from `lg` it is `minmax(12rem,16rem)` (Phase 1) | Two templates | One template from `md` | At 768 px the panel is about 490 px wide beside the category list; the 16rem label left the control 127 px and clipped "English - small (fast)". 191 px fits; 1024 px and up are unchanged |
+| A control takes the free width up to `max-w-md` and wraps below 10rem; the hex box has a 4.5rem minimum (Phase 1) | `flex-[1_1_10rem]` on selects and text, `flex-[1_1_0%]` on the hex box | Fixed widths; `w-full` per control | Q4, Q5: Reset shares the line unless it cannot; the swatch and the hex box never separate |
+| Save sends only the fields the narrator changed (its own pull request) | `changedValues` | Fix in the host | The host rejects an empty choice or colour, and an unset field is an empty string in the form |
 | Generic check in the kit with a reasoned opt-out (proposed) | Option (a) | Project-local hook; Settings-only | Q1 |
 
 ## Research Summary
@@ -163,4 +176,4 @@ Files owned: `settings/ScopedSetting.tsx` (Phase 1), the row wrappers in `settin
 ---
 
 *Generated: 2026-09-19*
-*Status: DRAFT - needs validation*
+*Status: IN DELIVERY - stack S12b, issue #143*

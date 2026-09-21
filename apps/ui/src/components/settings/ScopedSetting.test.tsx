@@ -61,4 +61,66 @@ describe('ScopedSetting controls', () => {
     expect((screen.getByLabelText('Note color hex') as HTMLInputElement).value).toBe('#808080');
     expect(screen.getByPlaceholderText('Not set')).toBeTruthy();
   });
+
+  it('offers Reset on a project setting that has an override, and reports it', () => {
+    const clear = vi.fn();
+    render(
+      <TooltipProvider>
+        <ScopedSetting field={{ ...FIELD, isSet: true, value: 'small' }} scope="project" value="small" change={vi.fn()} onClearOverride={clear} />
+      </TooltipProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(clear).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers no Reset on a global setting or on a project setting with no override', () => {
+    renderSetting({ ...FIELD, isSet: true });
+    expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
+    cleanup();
+    render(
+      <TooltipProvider>
+        <ScopedSetting field={FIELD} scope="project" value="" change={vi.fn()} onClearOverride={vi.fn()} />
+      </TooltipProvider>,
+    );
+    expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
+  });
+});
+
+// jsdom does no layout, so these pin the class contract that the visual suite's collapsed-control check then proves in a
+// real browser (settings mobile layout PRD): a grid with no breakpoint gave the control column 45 px at a 390 px window.
+// The row is the label cell's parent and the control row is its sibling; nothing carries a test id (the app has none).
+describe('ScopedSetting row layout', () => {
+  const classesOf = (element: HTMLElement) => element.className.split(/\s+/);
+
+  it('stacks the label above the control below md and puts them side by side from md', () => {
+    renderSetting(FIELD);
+    const row = screen.getByRole('combobox', { name: 'Model size' }).closest('div.grid') as HTMLElement;
+    expect(classesOf(row)).toContain('grid-cols-1');
+    expect(classesOf(row)).toContain('md:grid-cols-[12rem_minmax(0,1fr)]');
+    expect(classesOf(row)).toContain('lg:grid-cols-[minmax(12rem,16rem)_minmax(0,1fr)]');
+    // The unconditional two-column template is the bug: it must never come back without a breakpoint prefix.
+    expect(classesOf(row).filter((token) => token.startsWith('grid-cols-['))).toEqual([]);
+  });
+
+  it('lets the control row wrap and shrink, and caps how wide a control grows', () => {
+    renderSetting(FIELD);
+    const controls = screen.getByRole('combobox', { name: 'Model size' }).closest('div.flex') as HTMLElement;
+    for (const token of ['min-w-0', 'flex-wrap', 'max-w-md']) expect(classesOf(controls)).toContain(token);
+  });
+
+  it('lets a select grow into the free width and shrink below its content, so Reset drops under it only when it must', () => {
+    renderSetting(FIELD);
+    const wrapper = screen.getByRole('combobox', { name: 'Model size' }).parentElement as HTMLElement;
+    for (const token of ['min-w-0', 'flex-[1_1_10rem]']) expect(classesOf(wrapper)).toContain(token);
+  });
+
+  it('lets the hex box of a colour row grow into the free width beside the swatch', () => {
+    renderSetting({ ...FIELD, key: 'color_note', label: 'Note color', kind: 'color', choices: [], effectiveValue: 'ffd54f' });
+    for (const token of ['min-w-[4.5rem]', 'flex-[1_1_0%]']) expect(classesOf(screen.getByRole('textbox', { name: 'Note color' }))).toContain(token);
+  });
+
+  it('lets a text box grow into the free width', () => {
+    renderSetting({ ...FIELD, key: 'note', label: 'Note label', kind: 'text', choices: [], effectiveValue: 'Note' });
+    for (const token of ['min-w-0', 'flex-[1_1_10rem]']) expect(classesOf(screen.getByRole('textbox', { name: 'Note label' }))).toContain(token);
+  });
 });

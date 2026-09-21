@@ -183,11 +183,6 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'reset-override',
     description: 'Settings, reset/clear-override control on a field',
     pointer: 'keep',
-    sameAs: {
-      of: 'settings/project-proofing',
-      reason:
-        'The mock has no saved project override, so no field shows a Reset link and the driver hovers nothing. It used to differ from project-proofing only by the category button the pointer rested on (a hover tint that the tab list now shows as the selected tint). Saving an override in the driver shows Reset on every field and squeezes the row at tablet width, which the settings mobile layout PRD (phase 1) fixes; the state becomes real then.',
-    },
   },
 
   // Global overlays (captured once against Home, not per-page)
