@@ -25,7 +25,7 @@ const TrackedWords = memo(function TrackedWords({ row, local, skipped }: { row: 
             data-word={position}
             data-skipped={missed || undefined}
             style={{
-              color: spoken && !missed ? 'var(--text-faint)' : undefined,
+              color: spoken && !missed ? 'var(--text-muted)' : undefined,
               textDecoration: missed ? 'underline dotted var(--warn)' : undefined,
               textUnderlineOffset: missed ? '0.25em' : undefined,
             }}

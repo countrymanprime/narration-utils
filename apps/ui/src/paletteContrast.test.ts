@@ -259,13 +259,28 @@ function textColourUses(): Map<string, Record<string, number>> {
 
 const tokensUsedAsText = (): Set<string> => new Set([...textColourUses().values()].flatMap((perFile) => Object.keys(perFile)));
 
-// `--non-text` (3:1) is the colour of what is seen and not read, so it has no text pair. It is drawn as a `color` only on the
-// icons and glyphs listed here, per file: a label or a count that lands on it would read at 3:1, so it fails this list until
-// it moves to --text-muted. Each slice of the `--text-faint` migration adds the icons it triaged.
-const NON_TEXT_COLOUR_USES: Record<string, { count: number; what: string }> = {
+// `--non-text` (3:1) is the colour of what is seen and not read, so it has no text pair. Every place the source uses it is
+// listed here, per file, with what it draws: a label or a count that lands on it would read at 3:1 and belongs on
+// --text-muted, so a new use fails this list until someone adds it with a reason. All mentions count, not only a `color`
+// (a conditional, a fallback or a colour map slips past a pattern for text colours). Whether a listed use really is an icon,
+// a dot or a decorative glyph is the reviewer's call, as it is for the pins in retiredTokens.test.ts.
+const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
   'components/layout/AppShell.tsx': { count: 1, what: 'the folder icon beside the project name' },
+  'components/manuscript/ChapterNav.tsx': { count: 1, what: 'the Not Started status colour: a dot and a meter segment, never text' },
   'components/manuscript/Manuscript.tsx': { count: 1, what: 'the idle chapter bookmark icon' },
+  'components/primitives/Tooltip.tsx': { count: 1, what: 'the border of the info icon' },
+  'components/proofing/Transcript.tsx': { count: 2, what: 'the arrows between the Setup, Running and Results steps' },
+  'components/tracks/TracksPage.tsx': { count: 1, what: 'the dot of a track that has no colour' },
 };
+
+function nonTextMentions(): Record<string, number> {
+  const mentions: Record<string, number> = {};
+  for (const file of sourceFiles(__dirname)) {
+    const count = readFileSync(file, 'utf8').split('var(--non-text)').length - 1;
+    if (count > 0) mentions[relative(__dirname, file).split(sep).join('/')] = count;
+  }
+  return mentions;
+}
 
 describe('no text colour ships without a declared pair', () => {
   it('measures every token the source draws text with', () => {
@@ -285,11 +300,12 @@ describe('no text colour ships without a declared pair', () => {
     }
   });
 
-  it('draws --non-text as a colour only on the icons and glyphs listed', () => {
-    const drawn = Object.fromEntries(
-      [...textColourUses()].filter(([, perFile]) => 'non-text' in perFile).map(([file, perFile]) => [file, perFile['non-text']]),
-    );
-    const listed = Object.fromEntries(Object.entries(NON_TEXT_COLOUR_USES).map(([file, use]) => [file, use.count]));
-    expect(drawn, 'a label or a count belongs on --text-muted; list only an icon or a glyph, with what it is').toEqual(listed);
+  it('uses --non-text only where an icon, a dot or a glyph is listed', () => {
+    const listed = Object.fromEntries(Object.entries(NON_TEXT_USES).map(([file, use]) => [file, use.count]));
+    expect(nonTextMentions(), 'a label or a count belongs on --text-muted; list only an icon, a dot or a glyph, with what it is').toEqual(listed);
+  });
+
+  it('says what every listed --non-text use draws', () => {
+    for (const [file, use] of Object.entries(NON_TEXT_USES)) expect(use.what.length, file).toBeGreaterThan(10);
   });
 });

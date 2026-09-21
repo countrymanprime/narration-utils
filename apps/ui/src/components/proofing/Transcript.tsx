@@ -221,14 +221,14 @@ export function Transcript({
           >
             1 · Setup
           </span>
-          <span style={{ color: 'var(--text-faint)' }}>→</span>
+          <span style={{ color: 'var(--non-text)' }}>→</span>
           <span
             className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] tracking-[0.08em] uppercase ${phase === 'running' ? 'font-semibold' : ''}`}
             style={{ background: phase === 'running' ? 'var(--accent-soft)' : undefined }}
           >
             2 · Running
           </span>
-          <span style={{ color: 'var(--text-faint)' }}>→</span>
+          <span style={{ color: 'var(--non-text)' }}>→</span>
           <span
             className={`rounded px-2 py-1 font-['Barlow_Condensed',sans-serif] tracking-[0.08em] uppercase ${phase === 'results' ? 'font-semibold' : ''}`}
             style={{ background: phase === 'results' ? 'var(--accent-soft)' : undefined }}
@@ -385,7 +385,7 @@ export function Transcript({
             </div>
             <div className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
               <div className="mb-1.5 flex items-center justify-between">
-                <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-faint)] uppercase">
+                <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                   Live activity
                 </span>
                 <ToggleGroup
@@ -408,7 +408,7 @@ export function Transcript({
                   </div>
                 ))}
                 {state.logs.length === 0 && (
-                  <div className="border-b border-[var(--border)] px-[0.45rem] py-1" style={{ color: 'var(--text-faint)' }}>
+                  <div className="border-b border-[var(--border)] px-[0.45rem] py-1" style={{ color: 'var(--text-muted)' }}>
                     Waiting for notable events…
                   </div>
                 )}

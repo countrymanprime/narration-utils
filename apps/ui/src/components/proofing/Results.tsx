@@ -125,7 +125,7 @@ export function Results({
                       <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-muted)' }}>
                         {row.audioText || '—'}
                       </TableCell>
-                      <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-faint)' }}>
+                      <TableCell className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
                         {seconds(row.projectTime)}
                       </TableCell>
                       <TableCell className="text-xs">

@@ -12,16 +12,12 @@ import { describe, expect, test } from 'vitest';
 const RETIRED = '--text-faint';
 
 // Mentions per file, after the primitives, the app shell, the stylesheet (slice 2a), Home, the project picker, Settings and
-// Tracks (slice 2b), and the Manuscript reader, chapter navigation and entity summary (slice 2c) were migrated. Each later
-// slice deletes its files' entries; the last one deletes the `styles.css` entry with the token itself.
+// Tracks (slice 2b), the Manuscript reader, chapter navigation and entity summary (slice 2c), and Proofing and the
+// Teleprompter (slice 2d) were migrated. The last slice deletes the Story Bible entries and the `styles.css` entry with the
+// token itself.
 const CEILING: Record<string, number> = {
-  'src/components/proofing/InlineDiffRow.tsx': 3,
-  'src/components/proofing/Results.tsx': 1,
-  'src/components/proofing/Transcript.tsx': 4,
   'src/components/storybible/Guide.tsx': 4,
   'src/components/storybible/GuideDetail.tsx': 9,
-  'src/components/teleprompter/ReaderText.tsx': 1,
-  'src/components/teleprompter/TeleprompterPage.tsx': 2,
   'src/styles.css': 2,
 };
 

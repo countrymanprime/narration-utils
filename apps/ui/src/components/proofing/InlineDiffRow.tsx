@@ -33,20 +33,20 @@ export function InlineDiffRow({ row }: { row: Discrepancy }) {
         ),
       )
     ) : (
-      <span style={{ color: 'var(--text-faint)' }}>—</span>
+      <span style={{ color: 'var(--text-muted)' }}>—</span>
     );
   return (
     <TableRow style={{ borderTop: '1px solid var(--border)', background: 'var(--surface-2)' }}>
       <TableCell colSpan={6} className="text-sm">
         <div className="space-y-1.5">
           <div>
-            <span className="text-xs tracking-wide uppercase" style={{ color: 'var(--text-faint)' }}>
+            <span className="text-xs tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
               Script
             </span>
             <div className="mt-0.5">{render(diff.script)}</div>
           </div>
           <div>
-            <span className="text-xs tracking-wide uppercase" style={{ color: 'var(--text-faint)' }}>
+            <span className="text-xs tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
               Heard
             </span>
             <div className="mt-0.5">{render(diff.heard)}</div>

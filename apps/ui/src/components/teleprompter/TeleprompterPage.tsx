@@ -277,7 +277,7 @@ export function TeleprompterPage() {
                     placeholder="Microphone (USB Audio Device)"
                     onChange={changeDevice}
                   />
-                  <span id="teleprompter-device-hint" className="mt-1 block text-xs" style={{ color: 'var(--text-faint)' }}>
+                  <span id="teleprompter-device-hint" className="mt-1 block text-xs" style={{ color: 'var(--text-muted)' }}>
                     The device name exactly as Windows lists it under Sound settings.
                   </span>
                 </div>
@@ -304,7 +304,7 @@ export function TeleprompterPage() {
                   </span>
                 )}
                 {active && session.heard && (
-                  <div className="truncate text-xs" style={{ color: 'var(--text-faint)' }}>
+                  <div className="truncate text-xs" style={{ color: 'var(--text-muted)' }}>
                     Heard: {session.heard}
                   </div>
                 )}
