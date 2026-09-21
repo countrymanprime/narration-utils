@@ -49,6 +49,9 @@ func New(config Config, client *bridge.Client, store *settings.Store, sidecars *
 			Tags:   []string{"COMPARE_*", "ERROR"},
 			Owns:   s.ownsRun,
 			Handle: func(event bridge.Event) { s.Handle(event.Fields) },
+			// An event of this run that fails its table (bridge/wire.go) is REAPER's script and this app disagreeing about the protocol:
+			// the run says so instead of carrying on with a row of zeros.
+			Invalid: s.handleInvalid,
 		})
 	}
 	return s
@@ -56,6 +59,27 @@ func New(config Config, client *bridge.Client, store *settings.Store, sidecars *
 
 // SetPersist says where to log a last-comparison file that cannot be read (ADR 0069). It is derived data and heals.
 func (s *Service) SetPersist(reporter *persist.Reporter) { s.files.Store(reporter) }
+
+// handleInvalid ends the run in progress with a message that names the event and the field that could not be read (never a value).
+// The advice is the fix for the usual cause: the REAPER script the narrator imported is older or newer than this app.
+func (s *Service) handleInvalid(event bridge.Event, reason error) {
+	message := fmt.Sprintf("The Narration Utils script in REAPER sent a message this app could not read (%v). Import the script from this app's REAPER folder again, then start a new comparison.", reason)
+	s.mu.Lock()
+	if !runInProgress(s.state) {
+		s.mu.Unlock()
+		return
+	}
+	if exportPhase(s.state) == "exporting" {
+		s.state["markerExport"] = map[string]any{"phase": "error", "message": message, "added": 0, "skipped": 0}
+	} else {
+		s.state["phase"], s.state["message"] = "error", message
+	}
+	snapshot := s.snapshotLocked()
+	s.mu.Unlock()
+	if s.changed != nil {
+		s.changed(snapshot)
+	}
+}
 
 // ownsRun reports whether runID is the run this service is tracking.
 func (s *Service) ownsRun(runID string) bool {
@@ -629,6 +653,9 @@ func textAt(values []string, index int) string {
 	}
 	return ""
 }
+
+// intAt and floatAt read a number field of an event. bridge.CheckEvent has already refused an event whose number is not a number, so
+// a value that is empty here is an optional field an older script does not send, and 0 is its documented default.
 func intAt(values []string, index int) int {
 	result, _ := strconv.Atoi(textAt(values, index))
 	return result

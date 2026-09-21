@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,6 +27,10 @@ type Subscription struct {
 	// Handle receives the consumer's events, in log order, on the goroutine that called Dispatch. It runs while every
 	// other consumer waits, so it should be quick (hand slow work to a goroutine), and it must not call Dispatch.
 	Handle func(Event)
+	// Invalid, when set, receives an event of a tag this consumer handles that failed the table in wire.go (too few fields, or a number
+	// that is not a number), with the reason. The event is never given to Handle. It is called like Handle, and only for a run the
+	// consumer owns, so it can tell the narrator that REAPER's script and this app disagree (ADR 0069).
+	Invalid func(Event, error)
 }
 
 type subscriber struct {
@@ -43,6 +48,8 @@ type events struct {
 	subscribers []subscriber
 	undelivered int
 	malformed   int
+	invalid     int
+	report      func(kind, message string)
 }
 
 // Subscribe registers a consumer and returns the function that removes it. Events already read are not replayed. An
@@ -81,9 +88,48 @@ func (c *Client) Dispatch() error {
 			c.countMalformed()
 			continue
 		}
-		c.deliver(newEvent(fields))
+		event := newEvent(fields)
+		if checkErr := CheckEvent(fields); checkErr != nil {
+			c.reportInvalid(event, checkErr)
+			continue
+		}
+		c.deliver(event)
 	}
 	return nil
+}
+
+// Invalid is how many events failed the table in wire.go and were reported instead of delivered. It only grows.
+func (c *Client) Invalid() int {
+	c.events.mu.Lock()
+	defer c.events.mu.Unlock()
+	return c.events.invalid
+}
+
+// SetLog says where to write a line for an event that failed its table (the host log). It is optional.
+func (c *Client) SetLog(report func(kind, message string)) {
+	c.events.mu.Lock()
+	defer c.events.mu.Unlock()
+	c.events.report = report
+}
+
+// reportInvalid counts and logs an event that failed its table, and tells each consumer that handles its tag and owns its run. The
+// log line names the tag and the reason (never a field value, since a field can hold the narrator's words).
+func (c *Client) reportInvalid(event Event, reason error) {
+	c.events.mu.Lock()
+	c.events.invalid++
+	count := c.events.invalid
+	report := c.events.report
+	snapshot := append([]subscriber(nil), c.events.subscribers...)
+	c.events.mu.Unlock()
+	// The first few are logged, then one in a hundred: a script that keeps sending a bad line must not fill the log.
+	if report != nil && (count <= 3 || count%100 == 0) {
+		report("reaper_event_invalid", fmt.Sprintf("the REAPER script sent an event this app could not read (%d so far): %s", count, reason.Error()))
+	}
+	for _, existing := range snapshot {
+		if existing.sub.Invalid != nil && existing.sub.wants(event) {
+			existing.sub.Invalid(event, reason)
+		}
+	}
 }
 
 // Undelivered is how many events reached no consumer (no matching tag, or a run ID nobody owns). An event a consumer
