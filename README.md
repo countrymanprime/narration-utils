@@ -86,6 +86,11 @@ This is the current **developer-checkout** workflow, not the intended release
 installation path. Compiled GitHub releases package their own sidecars and
 installer resources, and never call this command.
 
+A compiled release is one program, `narration-utils` (`narration-utils.exe` on Windows), that knows its own version
+(Settings > About & updates). Once a day at most it asks GitHub whether a newer release of this repository exists (switch
+it off there), and on Windows, after your confirmed click, it downloads that release, checks it and replaces itself; it
+never downloads or installs anything on its own. See [in-app update](docs/architecture/in-app-update.md).
+
 Legacy `.runtime` and `.bootstrap` directories created by the retired Windows
 bootstrap are ignored but unused. After a successful bootstrap, review and
 remove them manually if no older checkout still needs them.

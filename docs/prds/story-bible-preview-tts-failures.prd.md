@@ -146,7 +146,7 @@ We believe surfacing real errors and removing the poisoned-cache and masking pat
 | --- | --- | --- |
 | 1 | `manuscript_guide.py` and tests, `apps/desktop/internal/guide/service.go` and tests, `bindings_test.go`, `usePreviewAudio*`, `GuideDetail.tsx`, mock | Entries PRD Phase 3 (`GuideDetail.tsx`), briefs Phase 10 (`manuscript_guide.py` preview), audit Phase 4 |
 | 2 | `apps/desktop/app.go` (`startTtsInstall`), `GuideDetail.tsx`, `contracts/tts.ts` | release-readiness Phase 1, teleprompter-engines Phase 4 (`useAssetInstall`) |
-| 3 | `scripts/release/prepare-resources.py`, workflows, `apps/desktop/internal/assets/store.go` | release-readiness provisioning phases, `release-artifact-naming.prd.md` (workflows) |
+| 3 | `scripts/release/prepare-resources.py`, workflows, `apps/desktop/internal/assets/store.go` | release-readiness provisioning phases, the delivered in-app update (`scripts/release/wails-build.mjs`, [ADR 0072](../adr/0072-the-app-updates-itself-from-this-repositorys-releases-and-never-installs-without-a-click.md)) |
 
 Cross-cutting: `hostAPIVersion` unchanged unless a binding changes; each phase follows `CLAUDE.md`: plan, `change-impact-scan`, TDD (tests first, they must fail before the fix), `full-verification-gate`, `feature-cleanup`; UI-visible states add `visual-catalog-sync`; sidecar changes rebuild the frozen sidecars.
 
