@@ -71,6 +71,25 @@ The custom-CSS system (`.btn`, `.panel-head`/`.panel-body`, `.progressbar`, etc.
 - **A field that is read-only, locked or not-yet-persisted is `disabled`, not hidden**, so the user can see what exists without being able to edit it. Story Bible entries open read-only and gain Edit/Save/Cancel controls only on request ([ADR 0018](../adr/0018-story-bible-entries-read-only-until-edit.md)); see `GuideDetail.tsx`.s `editingDisabled`.
 - **A non-destructive "peek at something else" action is a `SlideOver` primitive, never a navigation that replaces the current view's state.** See `Manuscript.tsx`'s Chapters & Search overlay and `GuideDetail.tsx`'s "Review entry" overlay — both exist specifically so switching context doesn't discard an in-progress edit.
 
+## Settings rows
+
+`apps/ui/src/components/settings/ScopedSetting.tsx` renders one Settings field by its `kind`, and the host (`apps/desktop/app.go`, `fieldSchemas` and `validateSettingValue`) validates it by the same kind. Every value is a string in the settings files.
+
+| Kind | Control | Stored value |
+| --- | --- | --- |
+| `choice` | `Select`, full width of its column | one of the schema's choices |
+| `text` | `TextField` | any string |
+| `color` | a colour swatch and a mono hex `TextField` on one line | six hex digits, no `#`, capitals |
+| `bool` | `Switch`: the row is the switch (named by the setting), its hint icon and Reset, not a label column and a control column | `"true"` or `"false"`; anything else reads as off and the host rejects it |
+
+**Layout.** Below `md` (768 px) the label stacks above the control; from `md` to `lg` the label column is a fixed 12rem, from `lg` `minmax(12rem,16rem)`. A grid gives a fixed-range track its full maximum before a flexible one gets any, so a two-column template with no breakpoint left a 45 px control at a 390 px window (defect 8, [ADR 0060](../adr/0060-the-visual-suite-fails-a-collapsed-control-and-a-row-may-declare-one-narrow-on-purpose.md)). Selects and text boxes take the free width (`flex-[1_1_10rem]`, `min-w-0`) up to `max-w-md`, so every select is the same width; the hex box has a 4.5rem minimum beside its swatch; the control row wraps, so Reset shares the line and drops under the control only when there is no room (it does at 768 px). Tailwind utilities on tokens only; no primitive or `styles.css` change.
+
+**Saving.** The form holds every field of the category, and a field with no value in the scope is an empty string, which the host rejects for a choice or a colour. Save sends only the fields whose value changed (`changedValues` in `Settings.tsx`); putting a field with no value of its own back to the value it inherits is no change, and a save with nothing changed does not call the host.
+
+**Adding a field.** Add it to `fieldSchemas` (Go) and give it a default in `config/defaults.json` and in `builtinDefaults` (`internal/settings/store.go`; a test keeps them equal) and in `mockFixtures.ts`. It needs no visual-suite work unless it is a new category, which is a new `settings` catalog row with `...REFLOW`. The suite then checks the row at 390 px: a text box or select narrower than 64 px fails, and the PNG at `screenshots/app/settings/<state>/reflow.png` is one to look at with the other viewports ([ADR 0061](../adr/0061-settings-states-are-also-captured-at-a-390px-reflow-width.md)). The first `bool` field also needs its own state so the Switch row is captured; none ships yet (the notification and Build Story Bible after import settings, owner decision D8, are the first).
+
+**Known at 390 px, outside Settings** (found by a one-off sweep of every state at that width; the collapsed-control check passes everywhere): the Proofing results header and table (#148), the Home chapter table (#149) and a three-action confirm dialog (#150) are clipped or cramped. They need layout decisions and are reachable only by zoom, since the shell's minimum window is 960 px.
+
 ## Manuscript reader
 
 - **Alternating rows.** Paragraph rows alternate between `--surface` and `--row-alt` (a touch darker in light theme, a touch lighter in dark) with a 1px `--border` line between rows, like banded table rows. Highlights tint with `transparent` mixes so they read on either row.
