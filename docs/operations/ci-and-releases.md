@@ -262,6 +262,30 @@ release workflow and `main`, add `--signer-workflow countrymanprime/narration-ut
 inside the zip after extracting it, which is what an in-app update can check. The release notes say the same in one line.
 The `.sha256` beside a file only detects a damaged download: it is not evidence of where the file came from.
 
+## Build provenance
+
+Every release asset is attested: `actions/attest` records, in GitHub's attestation store, which workflow, commit and
+run built a file (SLSA build provenance, level 2: the build runs in the calling job, so it is not the isolated
+level 3). The subjects are identified by digest:
+
+| Platform | Signed by (the workflow the certificate names) | Subjects |
+| --- | --- | --- |
+| Windows | `.github/workflows/prerelease.yml`, the `release` job | `narration-utils-windows-x64.zip`, its `.sha256`, and `narration-utils-shell.exe` (so the executable can be checked after the zip is extracted, which an in-app update can do) |
+| macOS | `.github/workflows/_attach-platform.yml` (the reusable workflow, not `build-macos.yml`) | the zip and its `.sha256` |
+| Linux | `.github/workflows/_attach-platform.yml` | the archive, its `.sha256`, and `narration-utils-shell` |
+
+- The step runs in the same job as the build and before anything is published. Windows attests before the prune and
+  `gh release create`; macOS and Linux attest before `gh release upload`. If it fails the job fails and nothing
+  unattested is published; re-run the workflow to retry.
+- The jobs that attest hold `id-token: write`, `attestations: write` and `artifact-metadata: write`. A workflow that
+  calls `build-macos.yml` or `build-linux.yml` has to grant the same, because a caller must grant what the reusable
+  workflow's job holds.
+- Promote does not attest again: it re-publishes the same bytes, and an attestation belongs to a digest, not to a release.
+- Attestations prove which workflow, commit and run produced a file. They do not prove the source is benign, and they do
+  not change how Windows SmartScreen or antivirus software treats an unsigned executable. The first stable release is
+  unsigned and Windows-only (owner decision D7): signing is the owner's call, and no workflow here signs.
+- A release candidate published before this change has no attestations.
+
 ## Nx projects and the quality gate
 
 Every folder of the [role-based layout](../architecture/codebase-map.md) is an Nx project with its own
