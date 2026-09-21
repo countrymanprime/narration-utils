@@ -21,6 +21,7 @@ import type {
   WorkJob,
 } from '../types';
 import { DESKTOP_HOST_API_VERSION } from '../hostApi';
+import type { JobEnded } from './contracts/system';
 import type { UpdateJob, UpdateStatus } from './contracts/update';
 import {
   aliceChapterSeeds,
@@ -189,6 +190,8 @@ export function createMockApi(
     liveUpdatesDegraded?: boolean;
     /** Tells the app this text at once, as the host does after keeping a file it could not read. */
     notice?: string;
+    /** Boots with a Story Bible rebuild that is still running, so its dialog (and Continue in background) can be seen without a host. */
+    rebuildRunning?: boolean;
     /** Boots the update state (see `MockUpdateSeed`). */
     update?: MockUpdateSeed;
   } = {},
@@ -300,9 +303,24 @@ export function createMockApi(
   };
   const subscribers = new Set<(state: TranscriptState) => void>();
   let nextId = 1;
+  // A job that ends tells whoever listens, after the call that started it has returned, the way the host does (ADR 0076). The mock ends
+  // only the Story Bible rebuild this way: its comparison run is driven by a timer the visual suite steps through, and a toast raised at
+  // the end of one would land in every screenshot of the results.
+  const jobEndListeners = new Set<(event: JobEnded) => void>();
+  const endJob = (event: JobEnded) => void setTimeout(() => jobEndListeners.forEach((listener) => listener(event)), 0);
   let runTimers: ReturnType<typeof setTimeout>[] = [];
   let importJob: WorkJob = { id: null, kind: 'manuscript_import', phase: 'idle', message: 'Ready to import.', percent: 0, logs: [], elapsed: 0 };
-  let storyBibleJob: WorkJob = { id: null, kind: 'story_bible', phase: 'idle', message: 'Ready to build.', percent: 0, logs: [], elapsed: 0 };
+  let storyBibleJob: WorkJob = initial.rebuildRunning
+    ? {
+        id: 'mock-guide-running',
+        kind: 'story_bible',
+        phase: 'running',
+        message: 'Extracting names and terms',
+        percent: 45,
+        logs: ['Reading canonical manuscript', 'Read 240 paragraphs in 3 chapters', 'Extracting names and terms'],
+        elapsed: 12,
+      }
+    : { id: null, kind: 'story_bible', phase: 'idle', message: 'Ready to build.', percent: 0, logs: [], elapsed: 0 };
   let ttsInstalled = false;
   // What the host says about a voice that is not installed yet (Go's previewVoice); the install state and download size are separate keys.
   const mockVoiceIdentity = {
@@ -506,6 +524,7 @@ export function createMockApi(
         elapsed: 1,
         result: { message: 'Story Bible rebuilt.' },
       };
+      endJob({ id: 'mock-guide', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 1000 });
       return wireClone(storyBibleJob);
     },
     guideBuildState: async () => wireClone(storyBibleJob),
@@ -817,6 +836,10 @@ export function createMockApi(
       if (!text) return () => {};
       const timer = setTimeout(() => onNotice(text), 0);
       return () => clearTimeout(timer);
+    },
+    subscribeJobEnded: (onEnded) => {
+      jobEndListeners.add(onEnded);
+      return () => void jobEndListeners.delete(onEnded);
     },
     updateStatus: async () => wireClone(mockUpdateStatus()),
     updateCheck: async () => {

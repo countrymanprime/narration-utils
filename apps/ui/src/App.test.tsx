@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
@@ -8,6 +8,7 @@ import { ThemeProvider } from './theme/ThemeContext';
 import { parseWire } from './api/wire/parseWire';
 import { bootstrapSchema } from './api/schemas/system';
 import type { WorkJob } from './types';
+import type { JobEnded } from './api/contracts/system';
 
 // BrowserRouter reads/writes the real window.location via history.pushState,
 // which jsdom keeps alive across tests in this file - reset it so each test
@@ -178,11 +179,64 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     await screen.findByRole('heading', { name: 'Proofing' });
 
     fireEvent.click(await screen.findByRole('button', { name: /Suggest from manuscript/ }));
-    const first = await screen.findByRole('status');
+    await waitFor(() => expect(screen.getByRole('status').firstElementChild).not.toBeNull());
+    const first = screen.getByRole('status').firstElementChild;
+    const text = screen.getByRole('status').textContent;
     fireEvent.click(screen.getByRole('button', { name: /Suggest from manuscript/ }));
 
-    await waitFor(() => expect(screen.getByRole('status')).not.toBe(first));
-    expect(screen.getByRole('status').textContent).toBe(first.textContent);
+    // The same text replaces the message that is showing, as a new element that starts its time again, and does not stack a copy.
+    await waitFor(() => expect(screen.getByRole('status').firstElementChild).not.toBe(first));
+    expect(screen.getByRole('status').textContent).toBe(text);
+    expect(screen.getByRole('status').children).toHaveLength(1);
+  });
+
+  it('tells the narrator a rebuild finished after they left the Story Bible, and keeps a failure until it is dismissed', async () => {
+    let announce: (event: JobEnded) => void = () => {};
+    renderApp({
+      subscribeJobEnded: (listener) => {
+        announce = listener;
+        return () => {};
+      },
+    });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Proofing' })[0]);
+    await screen.findByRole('heading', { name: 'Proofing' });
+
+    act(() => announce({ id: 'guide-1', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 4200 }));
+    expect(within(screen.getByRole('status')).getByText('Story Bible rebuild complete.')).toBeTruthy();
+
+    act(() =>
+      announce({ id: 'run-1', kind: 'transcript_compare', outcome: 'error', message: 'The comparison could not read the REAPER audio.', durationMs: 900 }),
+    );
+    const alert = within(screen.getByRole('alert'));
+    expect(alert.getByText('The comparison could not read the REAPER audio.')).toBeTruthy();
+    fireEvent.click(alert.getByRole('button', { name: 'Dismiss message' }));
+    expect(screen.queryByText('The comparison could not read the REAPER audio.')).toBeNull();
+
+    // The import has its own modal dialog, so it is not announced a second time.
+    act(() => announce({ id: 'import-1', kind: 'manuscript_import', outcome: 'success', message: 'Manuscript imported.', durationMs: 1200 }));
+    expect(screen.queryByText('Manuscript imported.')).toBeNull();
+  });
+
+  it('closes the rebuild dialog by itself once the host reports the build done', async () => {
+    const job = { id: 'guide-9', kind: 'story_bible' as const, message: 'Extracting names', percent: 40, logs: [], elapsed: 12 };
+    let calls = 0;
+    renderApp({ guideBuildState: async () => ({ ...job, phase: ++calls === 1 ? ('running' as const) : ('success' as const) }) });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Story Bible' })[0]);
+    await screen.findByRole('dialog', { name: 'Rebuild Story Bible' });
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Rebuild Story Bible' })).toBeNull(), { timeout: 3000 });
+  });
+
+  it('shows a rebuild that is still running when the narrator comes back to the Story Bible, and lets them send it to the background', async () => {
+    const running = { id: 'guide-9', kind: 'story_bible' as const, phase: 'running' as const, message: 'Extracting names', percent: 40, logs: [], elapsed: 12 };
+    renderApp({ guideBuildState: async () => running });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Story Bible' })[0]);
+    const dialog = await screen.findByRole('dialog', { name: 'Rebuild Story Bible' });
+    expect(within(dialog).getByText(/keeps running/)).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Continue in background' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Rebuild Story Bible' })).toBeNull());
   });
 
   it('wires every primary page through the application router', async () => {

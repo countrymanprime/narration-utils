@@ -13,6 +13,7 @@ import { Select } from '../primitives/Select';
 import { STATUS_COLOR, STATUS_LABELS, STATUS_ORDER } from '../../chapterStatus';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
+import type { Notify } from '../primitives/Toast';
 
 const fmtHours = (hours: number) => {
   const whole = Math.floor(hours);
@@ -42,7 +43,7 @@ export function AudiobookEstimatePanel({
   goToManuscript,
   refreshKey,
 }: {
-  notify: (text: string) => void;
+  notify: Notify;
   goToManuscript: (chapter: string) => void;
   // The owning Home page changes this after a manuscript import/replacement.
   // Chapter estimates are derived from a separate request, so they cannot
@@ -207,7 +208,7 @@ export function AudiobookEstimatePanel({
                               ),
                             );
                           } catch (error) {
-                            notify(describeApiError(error));
+                            notify(describeApiError(error), 'error');
                           }
                         }}
                       />

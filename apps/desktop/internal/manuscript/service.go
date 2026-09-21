@@ -43,10 +43,21 @@ type Service struct {
 	project string
 	jobs    map[string]*ImportJob
 	persist atomic.Pointer[persist.Reporter]
+	onEnd   atomic.Pointer[func(ImportJob)]
 }
 
 func New(project string) *Service            { return &Service{project: project, jobs: map[string]*ImportJob{}} }
 func (s *Service) SetProject(project string) { s.mu.Lock(); defer s.mu.Unlock(); s.project = project }
+
+// SetOnJobEnd says who to tell when a commit finishes, well or badly (a preview that is ready is not an end: the narrator still has to
+// choose). It is called from the commit's own goroutine after the job is settled and no lock is held, so it may take other locks.
+func (s *Service) SetOnJobEnd(fn func(ImportJob)) { s.onEnd.Store(&fn) }
+
+func (s *Service) jobEnded(job ImportJob) {
+	if fn := s.onEnd.Load(); fn != nil && *fn != nil {
+		(*fn)(job)
+	}
+}
 
 // SetPersist says where to report a notes file that cannot be read (ADR 0069). Without it a corrupt file is still kept aside.
 func (s *Service) SetPersist(reporter *persist.Reporter) { s.persist.Store(reporter) }
@@ -259,7 +270,9 @@ func (s *Service) runCommit(job *ImportJob, confirmedReset bool, kinds map[strin
 	defer func() {
 		s.mu.Lock()
 		job.busy = false
+		ended := copyJob(job)
 		s.mu.Unlock()
+		s.jobEnded(ended)
 	}()
 	s.mu.Lock()
 	project := s.project

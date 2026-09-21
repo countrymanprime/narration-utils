@@ -7,7 +7,7 @@
 | Boundary | Checked by | Where |
 | --- | --- | --- |
 | **Host binding result** (Wails string bindings, `Ready`, `Bootstrap`) | `parseWire` with a schema, in `wailsClient.decode` | `apps/ui/src/api/wailsClient.ts`, `schemas/` |
-| **Live events** (`transcript:state`, `teleprompter:event`, `teleprompter:state`, `system:attached`, `system:notice`, `update:status`) | `parseWire` per event; a bad one is dropped and counted | `wailsClient.ts`, `wire/liveHealth.ts` |
+| **Live events** (`transcript:state`, `teleprompter:event`, `teleprompter:state`, `system:attached`, `system:notice`, `update:status`, `job:ended`) | `parseWire` per event; a bad one is dropped and counted | `wailsClient.ts`, `wire/liveHealth.ts` |
 | **Sidecar to host** (the teleprompter's NDJSON, progress files, `guide.json`) | An envelope check in Go (`type` is a string), `process.ParseProgress`, `persist.CheckVersion`; the UI validates the rest of each event | `internal/teleprompter`, `internal/process`, `internal/guide` |
 | **REAPER to host** (`events.log`) | A table of events and their numeric fields, checked before any consumer sees a line | `internal/bridge/wire.go` |
 | **The GitHub release list** (the in-app update, [ADR 0072](../adr/0072-the-app-updates-itself-from-this-repositorys-releases-and-never-installs-without-a-click.md)) | `update.ParseReleases` in Go, before anything uses it: a capped body, a fixed shape per release, a tag and asset-name allowlist, sizes and digests checked, and every URL built from the compiled-in repository, never read from the list; a release that fails is dropped with a logged reason. The UI validates only the status the host derives from it | `apps/desktop/internal/update/manifest.go`, `schemas/update.ts` |

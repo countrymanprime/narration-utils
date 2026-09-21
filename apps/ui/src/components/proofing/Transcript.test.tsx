@@ -189,7 +189,7 @@ describe('Transcript vocabulary hints feedback', () => {
 
     suggest();
 
-    await waitFor(() => expect(notify).toHaveBeenCalledWith('build the Story Bible before requesting vocabulary suggestions'));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('build the Story Bible before requesting vocabulary suggestions', 'error'));
   });
 
   it('says when the saved hints could not be loaded instead of showing an empty box', async () => {
@@ -198,6 +198,7 @@ describe('Transcript vocabulary hints feedback', () => {
     await waitFor(() =>
       expect(notify).toHaveBeenCalledWith(
         'The saved vocabulary hints could not be loaded: the saved vocabulary hints file is not a valid list. Hints you add now will replace them.',
+        'error',
       ),
     );
     expect(screen.getByText('Vocabulary hints')).toBeTruthy();

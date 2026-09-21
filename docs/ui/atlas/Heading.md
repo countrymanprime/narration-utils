@@ -19,6 +19,7 @@ Storybook title: `Primitives/Heading`. Source: `src/components/primitives/Headin
 ## Used by
 
 - `src/components/home/Home.tsx`
+- `src/components/layout/LoadError.tsx`
 - `src/components/manuscript/Manuscript.tsx`
 - `src/components/proofing/Transcript.tsx`
 - `src/components/settings/Settings.tsx`

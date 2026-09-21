@@ -23,7 +23,7 @@ import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
-import { bootstrapSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
+import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { TELEPROMPTER_EVENT_TYPES, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
 import type { NarrationApi } from '../types';
@@ -189,6 +189,7 @@ export const wailsClient: NarrationApi = {
   subscribeProjectAttach: (onUpdate) => subscribeChecked('system:attached', projectAttachStateSchema, onUpdate),
   subscribeLiveUpdateHealth: (onDegraded) => liveHealth.subscribe(onDegraded),
   subscribeNotices: (onNotice) => subscribeChecked('system:notice', noticeSchema, (event) => onNotice(event.text)),
+  subscribeJobEnded: (onEnded) => subscribeChecked('job:ended', jobEndedSchema, onEnded),
   manuscriptChapters: () => decode(chaptersSchema, 'ManuscriptChapters', host.ManuscriptChapters()),
   manuscriptReader: () => decode(readerSchema, 'ManuscriptReader', host.ManuscriptReader()),
   readerState: () => decode(readerStateSchema, 'ManuscriptReaderState', host.ManuscriptReaderState()),

@@ -1,5 +1,5 @@
 {
-  "generatedBy": "ui-atlas 0.3.2",
+  "generatedBy": "ui-atlas 0.3.4",
   "components": [
     {
       "title": "Primitives/Button",
@@ -16,6 +16,7 @@
         "Disabled Is Inert"
       ],
       "consumers": [
+        "src/components/layout/LoadError.tsx",
         "src/components/layout/StartupScreen.tsx",
         "src/components/manuscript/AddNoteDialog.tsx",
         "src/components/manuscript/Manuscript.tsx",
@@ -28,6 +29,7 @@
         "src/components/proofing/Results.tsx",
         "src/components/proofing/Transcript.tsx",
         "src/components/settings/Settings.tsx",
+        "src/components/settings/UpdatesPanel.tsx",
         "src/components/storybible/GuideDetail.tsx",
         "src/components/teleprompter/TeleprompterPage.tsx",
         "src/components/tracks/TracksPage.tsx"
@@ -88,6 +90,7 @@
         "src/components/home/Home.tsx",
         "src/components/proofing/Transcript.tsx",
         "src/components/settings/Settings.tsx",
+        "src/components/settings/UpdatesPanel.tsx",
         "src/components/storybible/GuideDetail.tsx",
         "src/components/teleprompter/TeleprompterPage.tsx"
       ],
@@ -183,6 +186,7 @@
       ],
       "consumers": [
         "src/components/home/Home.tsx",
+        "src/components/layout/LoadError.tsx",
         "src/components/manuscript/Manuscript.tsx",
         "src/components/proofing/Transcript.tsx",
         "src/components/settings/Settings.tsx",
@@ -342,6 +346,7 @@
       ],
       "consumers": [
         "src/components/home/AudiobookEstimatePanel.tsx",
+        "src/components/layout/LoadError.tsx",
         "src/components/proofing/Transcript.tsx",
         "src/components/teleprompter/TeleprompterPage.tsx",
         "src/components/tracks/TracksPage.tsx"
@@ -517,6 +522,33 @@
       "a11yDebt": false
     },
     {
+      "title": "Primitives/Toast",
+      "name": "Toast",
+      "source": "src/components/primitives/Toast.tsx",
+      "stories": [
+        "Information",
+        "Error Message",
+        "Queue",
+        "Long Message",
+        "Live Regions",
+        "Dismiss Removes One"
+      ],
+      "consumers": [
+        "src/App.tsx",
+        "src/components/home/AudiobookEstimatePanel.tsx",
+        "src/components/home/Home.tsx",
+        "src/components/manuscript/Manuscript.tsx",
+        "src/components/proofing/Results.tsx",
+        "src/components/proofing/Transcript.tsx",
+        "src/components/settings/Settings.tsx",
+        "src/components/storybible/Guide.tsx",
+        "src/components/storybible/GuideDetail.tsx",
+        "src/hooks/useToasts.ts",
+        "src/jobEnded.ts"
+      ],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/ToggleGroup",
       "name": "ToggleGroup",
       "source": "src/components/primitives/ToggleGroup.tsx",
@@ -582,6 +614,7 @@
         "Running With Progress",
         "Committing",
         "Running Without Cancel",
+        "Running In Background",
         "Success",
         "Error State",
         "Cancelled",
@@ -593,6 +626,8 @@
       ],
       "consumers": [
         "src/components/home/Home.tsx",
+        "src/components/settings/UpdateDownloadDialog.tsx",
+        "src/components/settings/UpdatesPanel.tsx",
         "src/components/storybible/Guide.tsx"
       ],
       "a11yDebt": false

@@ -388,13 +388,21 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     toast: async (page) => {
       await goToPage(page, 'Proofing');
-      await page.getByPlaceholder('Add a term…').fill('Test term');
-      // The toast fades on a real 2.25s timer; freeze timers so it cannot race the screenshot.
+      // Suggesting hints from the manuscript answers with a toast (adding a term answers with none), and an information toast
+      // fades on a real 5 s timer: freeze timers so it cannot race the screenshot.
       await freezeClock(page);
-      await clickVisible(page, 'button', 'Add');
+      await clickVisible(page, 'button', 'Suggest from manuscript');
+      await page.locator('[data-tone]').first().waitFor();
     },
   },
   storybible: {
+    'rebuild-running': async (page) => {
+      await page.goto('/?mockRebuildRunning=1');
+      await settlePage(page);
+      await clickNav(page, 'Story Bible');
+      await page.getByRole('dialog', { name: 'Rebuild Story Bible' }).waitFor();
+      await page.getByRole('button', { name: 'Continue in background' }).waitFor();
+    },
     'invalid-payload': async (page) => {
       await page.goto('/?mockInvalidPayload=storybible');
       await settlePage(page);
@@ -768,10 +776,11 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     toast: async (page) => {
       await goToPage(page, 'Proofing');
-      await page.getByPlaceholder('Add a term…').fill('Test term');
-      // The toast fades on a real 2.25s timer; freeze timers so it cannot race the screenshot.
+      // Suggesting hints from the manuscript answers with a toast (adding a term answers with none), and an information toast
+      // fades on a real 5 s timer: freeze timers so it cannot race the screenshot.
       await freezeClock(page);
-      await clickVisible(page, 'button', 'Add');
+      await clickVisible(page, 'button', 'Suggest from manuscript');
+      await page.locator('[data-tone]').first().waitFor();
     },
     'confirm-dialog': async (page) => {
       await goToPage(page, 'Story Bible');

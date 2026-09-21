@@ -66,6 +66,9 @@ type Host struct {
 	// updateEvents and openURL are seams for tests: nil means the Wails runtime.
 	updateEvents func(updateStatus)
 	openURL      func(ctx context.Context, address string)
+	// jobEvents is a seam for tests: nil means the Wails runtime (jobs.go). transcriptRuns turns transcript states into job ends.
+	jobEvents      func(jobEnded)
+	transcriptRuns transcriptWatch
 	// installUpdate, quitApp, executable and pendingPath are seams for tests: nil or empty means the real thing.
 	installUpdate func(context.Context, update.InstallOptions) error
 	quitApp       func()
@@ -90,11 +93,13 @@ type ttsJob struct {
 	mu                          sync.RWMutex
 	id, voiceID, phase, message string
 	cancel                      context.CancelFunc
+	started                     time.Time
 }
 type whisperJob struct {
 	mu                          sync.RWMutex
 	id, modelID, phase, message string
 	cancel                      context.CancelFunc
+	started                     time.Time
 }
 type workJob struct {
 	mu                                  sync.RWMutex
@@ -133,6 +138,7 @@ func NewHost() *Host {
 	store.SetPersist(reporter)
 	notes.SetPersist(reporter)
 	recent.SetPersist(reporter)
+	notes.SetOnJobEnd(func(job manuscript.ImportJob) { host.importJobEnded(job) })
 	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recent, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
 	return host
 }
@@ -388,6 +394,10 @@ func sidecarPath(root, name string) string {
 }
 
 func (h *Host) emitTranscript(state map[string]any) {
+	// A run that just ended is reported once, as a job end, before the state event that carries its results (jobs.go).
+	if event, ended := h.transcriptRuns.observe(state); ended {
+		h.publishJobEnded(event)
+	}
 	h.mu.RLock()
 	ctx := h.ctx
 	h.mu.RUnlock()
@@ -829,14 +839,13 @@ func (h *Host) startTtsInstall(voiceID string) (map[string]any, error) {
 		return nil, fmt.Errorf("the selected voice is not in the approved catalog")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	job := &ttsJob{id: fmt.Sprintf("tts-%d", time.Now().UnixNano()), voiceID: voiceID, phase: ttsPhaseDownloading, message: "Downloading and verifying the approved voice…", cancel: cancel}
+	job := &ttsJob{id: fmt.Sprintf("tts-%d", time.Now().UnixNano()), voiceID: voiceID, phase: ttsPhaseDownloading, message: "Downloading and verifying the approved voice…", cancel: cancel, started: time.Now()}
 	h.mu.Lock()
 	h.ttsJobs[job.id] = job
 	h.mu.Unlock()
 	go func() {
 		err := manager.Install(ctx, voiceID)
 		job.mu.Lock()
-		defer job.mu.Unlock()
 		if err != nil {
 			if ctx.Err() != nil {
 				job.phase = "cancelled"
@@ -848,6 +857,11 @@ func (h *Host) startTtsInstall(voiceID string) (map[string]any, error) {
 		} else {
 			job.phase = "success"
 			job.message = "Voice installed and verified."
+		}
+		event, ok := endedJob(job.id, jobKindTtsInstall, job.phase, job.message, job.started)
+		job.mu.Unlock()
+		if ok {
+			h.publishJobEnded(event)
 		}
 	}()
 	return snapshotTts(job), nil
@@ -894,14 +908,13 @@ func (h *Host) startWhisperInstall(modelID string) (map[string]any, error) {
 		return nil, fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	job := &whisperJob{id: fmt.Sprintf("whisper-%d", time.Now().UnixNano()), modelID: modelID, phase: "running", message: "Downloading and verifying the approved Whisper model…", cancel: cancel}
+	job := &whisperJob{id: fmt.Sprintf("whisper-%d", time.Now().UnixNano()), modelID: modelID, phase: "running", message: "Downloading and verifying the approved Whisper model…", cancel: cancel, started: time.Now()}
 	h.mu.Lock()
 	h.whisperJobs[job.id] = job
 	h.mu.Unlock()
 	go func() {
 		err := manager.Install(ctx, modelID)
 		job.mu.Lock()
-		defer job.mu.Unlock()
 		if err != nil {
 			if ctx.Err() != nil {
 				job.phase = "cancelled"
@@ -913,6 +926,11 @@ func (h *Host) startWhisperInstall(modelID string) (map[string]any, error) {
 		} else {
 			job.phase = "success"
 			job.message = "Whisper model installed and verified."
+		}
+		event, ok := endedJob(job.id, jobKindWhisperInstall, job.phase, job.message, job.started)
+		job.mu.Unlock()
+		if ok {
+			h.publishJobEnded(event)
 		}
 	}()
 	return snapshotWhisper(job), nil
@@ -987,7 +1005,6 @@ func (h *Host) startGuideBuild() (map[string]any, error) {
 		<-stopped
 		pollWorkJob(job, progress, log, &logAt)
 		job.mu.Lock()
-		defer job.mu.Unlock()
 		if err != nil {
 			job.phase = "error"
 			job.errorText = err.Error()
@@ -996,6 +1013,11 @@ func (h *Host) startGuideBuild() (map[string]any, error) {
 			job.phase = "success"
 			job.percent = 100
 			job.message = "Story Bible rebuild complete."
+		}
+		event, ok := endedJob(job.id, jobKindStoryBible, job.phase, job.message, job.started)
+		job.mu.Unlock()
+		if ok {
+			h.publishJobEnded(event)
 		}
 	}()
 	return snapshotWork(job), nil

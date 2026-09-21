@@ -13,6 +13,7 @@ import type { ThemePreference } from '../../theme/theme';
 import { AboutPanel } from './AboutPanel';
 import { ScopedSetting } from './ScopedSetting';
 import { UpdatesPanel } from './UpdatesPanel';
+import type { Notify } from '../primitives/Toast';
 
 type SettingsCategory = { key: string; label: string; tool?: string; scopes: Scope[]; filter?: (field: ScopedSettingField) => boolean };
 const SETTINGS_CATEGORIES: SettingsCategory[] = [
@@ -50,7 +51,7 @@ export function Settings({
   onProjectDataCleared,
 }: {
   data: Bootstrap;
-  notify: (text: string) => void;
+  notify: Notify;
   onDirtyChange: (dirty: boolean) => void;
   registerActions: (actions: { save: () => Promise<void>; discard: () => Promise<void> }) => void;
   onProjectDataCleared: () => Promise<void>;
@@ -132,7 +133,7 @@ export function Settings({
       }
       await load();
     } catch (error) {
-      notify(describeApiError(error));
+      notify(describeApiError(error), 'error');
     }
   }, [active?.tool, api, load, notify, scope, settings, values]);
   const discard = useCallback(async () => {
@@ -152,7 +153,7 @@ export function Settings({
       notify('Project override cleared.');
       await load();
     } catch (error) {
-      notify(describeApiError(error));
+      notify(describeApiError(error), 'error');
     }
   };
   const selectedTtsVoice = ttsCatalog?.voices.find((voice) => voice.id === ttsCatalog.voice.id);
@@ -234,7 +235,7 @@ export function Settings({
                           void navigator.clipboard
                             .writeText(reaperLauncher)
                             .then(() => notify('REAPER launcher path copied.'))
-                            .catch(() => notify('Could not copy the REAPER launcher path.'))
+                            .catch(() => notify('Could not copy the REAPER launcher path.', 'error'))
                         }
                       >
                         Copy path
@@ -408,7 +409,7 @@ export function Settings({
               notify('Derived project data cleared.');
               await onProjectDataCleared();
             } catch (error) {
-              notify(describeApiError(error));
+              notify(describeApiError(error), 'error');
             }
           }}
           cancel={() => setConfirmClearProjectData(false)}
@@ -428,7 +429,7 @@ export function Settings({
                 notify('Local preview voice removed.');
                 await load();
               })
-              .catch((error) => notify(describeApiError(error)))
+              .catch((error) => notify(describeApiError(error), 'error'))
           }
           cancel={() => setConfirmRemoveVoice(false)}
         />
@@ -447,7 +448,7 @@ export function Settings({
                 notify('Local Whisper model removed.');
                 await load();
               })
-              .catch((error) => notify(describeApiError(error)))
+              .catch((error) => notify(describeApiError(error), 'error'))
           }
           cancel={() => setConfirmRemoveModel(false)}
         />

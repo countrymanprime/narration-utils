@@ -25,7 +25,7 @@ import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
 import { projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
 import { guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
-import { bootstrapSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
+import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
 import { unknownKeys } from './schemas/strictness';
@@ -81,6 +81,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'project-switch-attached.json': projectSwitchResultSchema,
   'project-switch-refused.json': projectSwitchResultSchema,
   'system-notice.json': noticeSchema,
+  'job-ended-success.json': jobEndedSchema,
+  'job-ended-error.json': jobEndedSchema,
   'tts-catalog.json': ttsCatalogSchema,
   'tts-install-downloading.json': ttsInstallJobSchema,
   'tts-install-success.json': ttsInstallJobSchema,
@@ -436,6 +438,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeProjectAttach',
       'subscribeLiveUpdateHealth',
       'subscribeNotices',
+      'subscribeJobEnded',
       'subscribeTranscript',
       'subscribeTeleprompterEvent',
       'subscribeTeleprompterState',

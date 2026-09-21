@@ -28,6 +28,12 @@ export type Bootstrap = {
 };
 export type HostReady = { apiVersion: number; diagnosticId: string };
 export type ProjectAttachState = { attached: boolean; reason?: string };
+/**
+ * A host job that just ended, sent once per job on the `job:ended` event (ADR 0076). `kind` is `story_bible`, `manuscript_import`, `tts_install`,
+ * `whisper_install`, `app_update` or `transcript_compare` (a newer host may add more, so it is a string). `message` is a sentence for the narrator: the
+ * failure text for an error. `durationMs` is how long the job ran, for the notification work to decide whether the narrator was waiting.
+ */
+export type JobEnded = { id: string; kind: string; outcome: 'success' | 'error' | 'cancelled'; message: string; durationMs: number };
 
 export interface SystemApi {
   ready(): Promise<HostReady>;
@@ -38,6 +44,8 @@ export interface SystemApi {
   subscribeProjectAttach(onUpdate: (state: ProjectAttachState) => void): () => void;
   /** Calls `onNotice` with text the host wants the narrator to read (a file it could not read and kept aside, for one). */
   subscribeNotices(onNotice: (text: string) => void): () => void;
+  /** Calls `onEnded` when a host job ends, whatever page the narrator is on. */
+  subscribeJobEnded(onEnded: (event: JobEnded) => void): () => void;
   /** Calls `onDegraded` once when live updates from the host have been failing, so the app can say what is on screen may be out of date. */
   subscribeLiveUpdateHealth(onDegraded: () => void): () => void;
 }

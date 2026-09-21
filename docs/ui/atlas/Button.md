@@ -17,6 +17,7 @@ Storybook title: `Primitives/Button`. Source: `src/components/primitives/Button.
 
 ## Used by
 
+- `src/components/layout/LoadError.tsx`
 - `src/components/layout/StartupScreen.tsx`
 - `src/components/manuscript/AddNoteDialog.tsx`
 - `src/components/manuscript/Manuscript.tsx`
@@ -29,6 +30,7 @@ Storybook title: `Primitives/Button`. Source: `src/components/primitives/Button.
 - `src/components/proofing/Results.tsx`
 - `src/components/proofing/Transcript.tsx`
 - `src/components/settings/Settings.tsx`
+- `src/components/settings/UpdatesPanel.tsx`
 - `src/components/storybible/GuideDetail.tsx`
 - `src/components/teleprompter/TeleprompterPage.tsx`
 - `src/components/tracks/TracksPage.tsx`

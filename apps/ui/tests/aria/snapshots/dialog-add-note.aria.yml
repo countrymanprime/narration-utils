@@ -1,5 +1,10 @@
 # A modal form dialog (role dialog, not alertdialog): its field is labelled and the page behind it is aria-hidden.
 - /children: equal
+# The two toast live regions stay in the tree on purpose: Base UI leaves live regions exposed behind a modal, so an error raised
+# from inside a dialog is still announced. They are empty here, and they are the only thing under <main>.
+- main:
+  - alert
+  - status
 - dialog "Add note":
   - heading "Add note" [level=2]
   - button "Close"

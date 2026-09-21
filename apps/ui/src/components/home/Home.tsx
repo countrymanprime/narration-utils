@@ -13,6 +13,7 @@ import { WorkDialog } from '../primitives/WorkDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { IconButton } from '../primitives/IconButton';
 import { Select } from '../primitives/Select';
+import type { Notify } from '../primitives/Toast';
 
 // Import runs as a host-side job; the UI only ever displays the percent and log
 // lines the host reports while polling (ADR-0015) - it never invents progress.
@@ -43,7 +44,7 @@ export function Home({
 }: {
   data: Bootstrap;
   go: (page: string) => void;
-  notify: (text: string) => void;
+  notify: Notify;
   goToManuscript: (chapter: string) => void;
   refreshBootstrap: () => Promise<void>;
 }) {
@@ -198,7 +199,7 @@ export function Home({
             void api
               .manuscriptBeginImport(candidate.path)
               .then((result) => (result.selected && result.jobId ? beginImportPreview(result.jobId) : undefined))
-              .catch((error) => notify(describeApiError(error)))
+              .catch((error) => notify(describeApiError(error), 'error'))
           }
           cancel={() => {
             declinedCandidates.add(candidate.path);
@@ -217,7 +218,7 @@ export function Home({
             void api
               .manuscriptImportCancel(importJob.id!)
               .then(() => setImportJob(undefined))
-              .catch((error) => notify(error.message))
+              .catch((error) => notify(error.message, 'error'))
           }
         >
           {importJob.preview.format === 'markdown' && (
@@ -234,7 +235,7 @@ export function Home({
                   void api
                     .manuscriptImportPreview(importJob.id!, { markdownHeadingLevel: level })
                     .then(setImportJob)
-                    .catch((error) => notify(error.message));
+                    .catch((error) => notify(error.message, 'error'));
                 }}
               />
             </label>

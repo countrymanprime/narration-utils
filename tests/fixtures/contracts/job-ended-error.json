@@ -1,0 +1,7 @@
+{
+  "id": "run-7",
+  "kind": "transcript_compare",
+  "outcome": "error",
+  "message": "The comparison could not read the REAPER audio.",
+  "durationMs": 31500
+}

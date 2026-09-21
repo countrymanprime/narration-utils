@@ -98,6 +98,8 @@ func downloadHost(t *testing.T, fake *releaseFiles) *Host {
 	host.stager = &update.Stager{Root: t.TempDir(), Platform: platform, Client: fake.server.Client(), Free: func(string) (uint64, error) { return 100 << 30, nil }}
 	host.mu.Lock()
 	host.ctx, host.cancel = context.WithCancel(context.Background())
+	// The Wails runtime rejects a context it did not make, so a job end goes to a sink (jobs_test.go replaces it to look at the events).
+	host.jobEvents = func(jobEnded) {}
 	host.mu.Unlock()
 	t.Cleanup(host.cancel)
 	return host

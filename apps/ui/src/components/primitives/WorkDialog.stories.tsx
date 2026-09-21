@@ -70,6 +70,20 @@ export const RunningWithoutCancel: Story = {
   },
 };
 
+// A job the caller lets keep running (the Story Bible rebuild, ADR 0076): the notice says the window can be closed and a message
+// will arrive, and Continue in background (and Escape) dismisses the dialog without stopping the job.
+export const RunningInBackground: Story = {
+  args: { title: 'Rebuild Story Bible', cancel: undefined, background: fn() },
+  play: async ({ args }) => {
+    const dialog = await screen.findByRole('dialog', { name: 'Rebuild Story Bible' });
+    await expect(dialog).toHaveAccessibleDescription(/keeps running, and a message appears when it finishes/);
+    await expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Continue in background' }));
+    await expect(args.background).toHaveBeenCalledOnce();
+    await expect(args.close).not.toHaveBeenCalled();
+  },
+};
+
 export const Success: Story = {
   args: {
     job: { ...runningJob, phase: 'success', message: 'Imported 12 chapters', percent: 100, elapsed: 24.9, logs: [...runningJob.logs, 'Wrote 12 chapters'] },

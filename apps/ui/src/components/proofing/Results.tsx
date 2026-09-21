@@ -10,6 +10,7 @@ import { TooltipTarget } from '../primitives/Tooltip';
 import { InlineDiffRow, KIND_STYLES } from './InlineDiffRow';
 import { IconButton } from '../primitives/IconButton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
+import type { Notify } from '../primitives/Toast';
 
 const TYPE_CHIP_BG: Record<string, string> = {
   MISREAD: 'bg-[var(--review-soft)]',
@@ -36,7 +37,7 @@ export function Results({
   state: TranscriptState;
   selected?: Discrepancy;
   select: (row?: Discrepancy) => void;
-  notify: (text: string) => void;
+  notify: Notify;
   goToManuscript: (row: Discrepancy) => void;
   reset: () => void;
   canExportMarkers: boolean;
@@ -74,7 +75,7 @@ export function Results({
                   await api.transcriptExportMarkers();
                   notify(`Exporting ${pendingMarkers} marker${pendingMarkers === 1 ? '' : 's'} to REAPER…`);
                 } catch (error) {
-                  notify(describeApiError(error));
+                  notify(describeApiError(error), 'error');
                 }
               }}
             >
@@ -168,7 +169,7 @@ export function Results({
                                 try {
                                   notify(await api.transcriptAddEquivalence(row.id));
                                 } catch (error) {
-                                  notify(describeApiError(error));
+                                  notify(describeApiError(error), 'error');
                                 }
                               }}
                             >

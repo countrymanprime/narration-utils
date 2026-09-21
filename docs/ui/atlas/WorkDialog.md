@@ -11,6 +11,7 @@ Storybook title: `Primitives/WorkDialog`. Source: `src/components/primitives/Wor
 - Running With Progress
 - Committing
 - Running Without Cancel
+- Running In Background
 - Success
 - Error State
 - Cancelled
@@ -23,4 +24,6 @@ Storybook title: `Primitives/WorkDialog`. Source: `src/components/primitives/Wor
 ## Used by
 
 - `src/components/home/Home.tsx`
+- `src/components/settings/UpdateDownloadDialog.tsx`
+- `src/components/settings/UpdatesPanel.tsx`
 - `src/components/storybible/Guide.tsx`

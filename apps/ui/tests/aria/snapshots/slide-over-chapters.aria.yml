@@ -1,5 +1,10 @@
-# The slide-over is a modal drawer: a named dialog, the only thing in <body>. The chapter list is matched partially.
+# The slide-over is a modal drawer: a named dialog, the only thing in <body> besides the two empty toast live regions. The chapter list is matched partially.
 - /children: equal
+# The two toast live regions stay in the tree on purpose: Base UI leaves live regions exposed behind a modal, so an error raised
+# from inside a dialog is still announced. They are empty here, and they are the only thing under <main>.
+- main:
+  - alert
+  - status
 - dialog "Chapters & Search":
   - heading "Chapters & Search" [level=3]
   - button "Close"
