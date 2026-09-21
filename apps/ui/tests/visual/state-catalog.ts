@@ -52,6 +52,12 @@ export const STATE_CATALOG: StateEntry[] = [
       'Home, import manuscript confirm dialog with format/paragraph/chapter preview (reached via "Replace manuscript" since a manuscript is already loaded)',
   },
 
+  {
+    page: 'home',
+    state: 'live-updates-degraded',
+    description: 'Home, the notice that live updates from the desktop host could not be read and the page may be out of date (ADR 0069)',
+  },
+
   // Manuscript
   { page: 'manuscript', state: 'reader-text-small', description: 'Manuscript, small text size' },
   { page: 'manuscript', state: 'reader-text-medium', description: 'Manuscript, medium text size' },

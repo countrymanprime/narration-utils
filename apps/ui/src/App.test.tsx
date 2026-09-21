@@ -78,6 +78,11 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(await screen.findByRole('button', { name: /Copied/ })).toBeTruthy();
   });
 
+  it('tells the narrator once when live updates from the host have been failing', async () => {
+    renderApp({}, { liveUpdatesDegraded: true });
+    expect(await screen.findByText(/live updates from the desktop host could not be read/)).toBeTruthy();
+  });
+
   it('reports an incompatible host as a version problem even when its Bootstrap would not match', async () => {
     const bootstrap = vi.fn().mockRejectedValue(new Error('must not be reached'));
     renderApp({ ready: async () => ({ apiVersion: 99, diagnosticId: 'future-host' }), bootstrap });

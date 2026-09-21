@@ -19,6 +19,8 @@ import { ErrorBoundary } from './components/primitives/ErrorBoundary';
 import { DESKTOP_HOST_API_VERSION } from './hostApi';
 import { isWireError } from './api/wire/WireError';
 
+const LIVE_UPDATES_DEGRADED = 'Some live updates from the desktop host could not be read, so what you see may be out of date. Reopen the page to refresh it.';
+
 export function App() {
   return (
     <BrowserRouter>
@@ -113,6 +115,13 @@ function AppRoutes() {
     if (!hasBootstrap) return;
     return api.subscribeTranscript((transcript) => setData((current) => (current ? { ...current, transcript } : current)));
   }, [api, hasBootstrap]);
+
+  // Live events that do not match their schema are dropped and counted (ADR 0069); after a run of them the page on screen may be
+  // out of date, and the narrator is told once instead of being left with a page that silently stopped updating.
+  useEffect(() => {
+    if (!hasBootstrap) return;
+    return api.subscribeLiveUpdateHealth(() => setNotice(LIVE_UPDATES_DEGRADED));
+  }, [api, hasBootstrap, setNotice]);
 
   // Wails forwards a second REAPER launch to the existing native window. The
   // host replaces project-scoped services only after proving it is idle, then
