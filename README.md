@@ -20,6 +20,9 @@ verifies and removes the voices and models the app has downloaded (Settings > Lo
 [Using the app](docs/guides/using-the-app/README.md) for a full screenshot walkthrough. The UI's component library is a
 Storybook atlas (`pnpm --dir apps/ui run storybook`, checked in CI by the `ui-atlas` job); its generated reference is in
 [`docs/ui/atlas/`](docs/ui/atlas/index.md) and the design rules in the [design system reference](docs/design/design-system.md).
+The atlas is also published as a website, [countrymanprime.github.io/narration-utils](https://countrymanprime.github.io/narration-utils/),
+rebuilt from `main` by the `Pages` workflow (the link answers 404 until the repository owner sets Settings > Pages > Source to
+GitHub Actions; see [Tracking work on GitHub](docs/operations/github-workflow.md#repository-settings-that-only-the-owner-can-change)).
 
 ![Home, manuscript found](docs/images/ui/home-default.webp)
 
