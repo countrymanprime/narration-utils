@@ -218,7 +218,7 @@
         "src/components/storybible/GuideDetail.tsx",
         "src/components/teleprompter/ReaderText.tsx"
       ],
-      "a11yDebt": true
+      "a11yDebt": false
     },
     {
       "title": "Primitives/IconButton",
@@ -286,7 +286,7 @@
       "consumers": [
         "src/components/home/AudiobookEstimatePanel.tsx"
       ],
-      "a11yDebt": true
+      "a11yDebt": false
     },
     {
       "title": "Primitives/NavButton",
@@ -308,7 +308,7 @@
       "consumers": [
         "src/components/layout/AppShell.tsx"
       ],
-      "a11yDebt": true
+      "a11yDebt": false
     },
     {
       "title": "Primitives/NavDrawer",
@@ -593,7 +593,7 @@
         "src/components/home/Home.tsx",
         "src/components/storybible/Guide.tsx"
       ],
-      "a11yDebt": true
+      "a11yDebt": false
     }
   ]
 }

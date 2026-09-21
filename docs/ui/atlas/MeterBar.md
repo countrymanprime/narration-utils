@@ -23,7 +23,3 @@ Storybook title: `Primitives/MeterBar`. Source: `src/components/primitives/Meter
 ## Used by
 
 - `src/components/home/AudiobookEstimatePanel.tsx`
-
-## Known accessibility debt
-
-This component has a recorded, reasoned exemption in `tests/atlas/a11y-debt.ts`.

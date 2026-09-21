@@ -24,7 +24,3 @@ Storybook title: `Primitives/WorkDialog`. Source: `src/components/primitives/Wor
 
 - `src/components/home/Home.tsx`
 - `src/components/storybible/Guide.tsx`
-
-## Known accessibility debt
-
-This component has a recorded, reasoned exemption in `tests/atlas/a11y-debt.ts`.
