@@ -161,7 +161,7 @@ Phases 1, 2, 5a, 5b and 6: pinned and scanned workflows, attested and verified r
 | 5b | Verify attestations | `assets.mjs verify --attestations`, promote gate, "Verifying a download" docs, release-note line | complete (the first real RC and promote verify it) | 3, 4, 6 | 5a | - |
 | 6 | Rulesets and required checks (docs and owner checklist only, D11) | The docs match the live rulesets (code-owner review, no required status check) and list the owner-only settings; no `ci.yml` gate | pending | 3, 5a, 5b, 8 | 1, 2 | - |
 | 7 | Immutable-release spike and decision | Scratch-repo test of RC, attach, prune and promote under immutability; ADR; owner enables or defers | pending | 3, 4, 8 | 5b, first stable | - |
-| 8 | Model pin tightening (Could) | Piper commit pin, pin-shape test, threat-model note | pending | 1-7 | - | - |
+| 8 | Model pin tightening (Could) | Piper commit pin, pin-shape test, threat-model note | complete | 1-7 | - | - |
 | 9 | Scorecard (Could) | `scorecard.yml`, badge, recorded baseline | pending | 3-8 | 2, 6 | - |
 
 ### Phase Details

@@ -380,6 +380,17 @@ rebuilt per platform.
 
 ## Runtime provenance
 
+**Model and voice downloads are pinned.** Every file in `config/whisper-assets.json` and `config/tts-assets.json` is
+fetched from a Hugging Face URL that names a 40-character commit (`/resolve/<commit>/...`), never a tag or a branch that
+can be moved, over https, with a 64-character SHA-256 and a size that the installer checks in a staging directory before
+anything is activated. `apps/desktop/internal/assets/pins_test.go` fails on a tag or branch in a URL, a non-https URL, a
+malformed checksum or a missing size, and its own cases prove each rule on a bad fixture. When adding a voice or model,
+resolve its commit (`git ls-remote https://huggingface.co/<owner>/<repo> refs/tags/<tag>`, or the `X-Repo-Commit`
+response header) and put it in the URL. The Piper voice's `version` stays `1.0.0` (it names the install directory, so
+existing installs stay valid); only the download URLs moved from the tag `v1.0.0` to its commit, with the same hashes.
+The Whisper path that loads a model by name from the hub when no `--model-dir` is given is not covered here (release
+readiness provisioning phase 2).
+
 `scripts/release/prepare-resources.py` freezes only the two first-party Python
 tool entry points. It does not bundle optional voices, models, dictionaries, or
 unreviewed third-party binaries. Before publishing a release that adds such an
