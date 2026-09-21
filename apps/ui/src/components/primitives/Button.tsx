@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type { ComponentProps } from 'react';
 
 type ButtonVariant = 'primary' | 'ghost' | 'danger';
 
@@ -8,7 +8,8 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   danger: 'border-[var(--danger)] bg-transparent text-[var(--danger-text)] hover:bg-[var(--review-soft)]',
 };
 
-type Props = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant };
+// `ComponentProps` carries `ref` (React 19 passes it as a prop), for the caller that has to put focus back on a button it disabled.
+type Props = ComponentProps<'button'> & { variant?: ButtonVariant };
 
 export function Button({ variant = 'primary', className = '', type = 'button', ...rest }: Props) {
   return (

@@ -106,6 +106,47 @@ describe('wailsClient', () => {
     expect(update).toHaveBeenCalledWith(expect.objectContaining({ markerExport: { phase: 'idle', message: '', added: 0, skipped: 0 } }));
   });
 
+  it('reads the update status through its schema and reports a payload that does not match', async () => {
+    const status = { version: '0.2.6', development: false, platform: 'windows-x64', channel: 'candidates', lastChecked: '', failure: '', available: null };
+    const report = vi.fn().mockResolvedValue('null');
+    window.go = {
+      main: {
+        Host: {
+          UpdateStatus: () => Promise.resolve(JSON.stringify(status)),
+          UpdateCheck: () => Promise.resolve('{"version":3}'),
+          SystemReportDiagnostic: report,
+        },
+      },
+    };
+
+    await expect(wailsClient.updateStatus()).resolves.toEqual(status);
+    await expect(wailsClient.updateCheck()).rejects.toBeInstanceOf(WireError);
+    expect(report).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens the release notes through a binding that takes no address', async () => {
+    const open = vi.fn().mockResolvedValue('null');
+    window.go = { main: { Host: { UpdateOpenNotes: open } } };
+    await expect(wailsClient.updateOpenNotes()).resolves.toBeUndefined();
+    expect(open).toHaveBeenCalledWith();
+  });
+
+  it('subscribes to the update event and passes a status that matches its schema', () => {
+    let callback: ((payload: unknown) => void) | undefined;
+    const eventsOn = vi.fn((_event: string, listener: (payload: unknown) => void) => {
+      callback = listener;
+      return () => {};
+    });
+    (window as unknown as { runtime: { EventsOnMultiple: typeof eventsOn } }).runtime = { EventsOnMultiple: eventsOn };
+    const seen = vi.fn();
+
+    wailsClient.subscribeUpdate(seen);
+    callback?.({ version: '0.2.6', development: false, platform: 'windows-x64', channel: 'stable', lastChecked: 'x', failure: '', available: null });
+
+    expect(eventsOn).toHaveBeenCalledWith('update:status', expect.any(Function), -1);
+    expect(seen).toHaveBeenCalledWith(expect.objectContaining({ channel: 'stable' }));
+  });
+
   it('forwards checked character candidates when committing a manuscript import', async () => {
     const commit = vi
       .fn()

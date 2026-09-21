@@ -63,6 +63,7 @@ var stressReaders = []stressReader{
 	{"SystemSettingsForScope global", func(h *Host) { _, _ = h.SystemSettingsForScope("global") }},
 	{"SystemSettingsForScope project", func(h *Host) { _, _ = h.SystemSettingsForScope("project") }},
 	{"TeleprompterState", func(h *Host) { _, _ = h.TeleprompterState() }},
+	{"UpdateStatus", func(h *Host) { _, _ = h.UpdateStatus() }},
 	{"TeleprompterStop", func(h *Host) { _, _ = h.TeleprompterStop() }},
 	{"TracksDiscover", func(h *Host) { _, _ = h.TracksDiscover() }},
 	{"TracksList", func(h *Host) { _, _ = h.TracksList() }},

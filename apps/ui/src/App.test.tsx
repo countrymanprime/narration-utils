@@ -95,6 +95,17 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(await screen.findByText(/Your notes file could not be read/)).toBeTruthy();
   });
 
+  it('tells the narrator when a check the app made on its own found a newer version', async () => {
+    renderApp({}, { update: 'found' });
+    expect(await screen.findByText(/Version 0\.2\.7 is available\. See Settings/)).toBeTruthy();
+  });
+
+  it('says nothing about updates when the check found nothing newer', async () => {
+    renderApp({}, { update: 'current' });
+    await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
+    expect(screen.queryByText(/is available/)).toBeNull();
+  });
+
   it('tells the narrator once when live updates from the host have been failing', async () => {
     renderApp({}, { liveUpdatesDegraded: true });
     expect(await screen.findByText(/live updates from the desktop host could not be read/)).toBeTruthy();

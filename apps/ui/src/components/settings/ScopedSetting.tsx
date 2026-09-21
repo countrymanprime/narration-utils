@@ -11,6 +11,9 @@ const TOOLTIP: Record<string, string> = {
   chunk_seconds: 'Default transcription chunk length.',
   color_note: 'Color used for narrator note treatment.',
   log_verbosity: 'Controls diagnostic output shown in logs.',
+  check_on_startup:
+    'Once a day, when the app starts, it asks GitHub whether a newer release exists. It sends nothing about you or your projects, and it never downloads anything without your click.',
+  channel: 'Release candidates are the pre-releases that come before each stable release; every release so far is one.',
 };
 const optionTip = (field: ScopedSettingField, value: string) =>
   field.key.includes('color')

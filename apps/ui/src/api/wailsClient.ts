@@ -21,6 +21,7 @@ import { guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './s
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
+import { updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
 import { bootstrapSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { TELEPROMPTER_EVENT_TYPES, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
@@ -175,6 +176,10 @@ export const wailsClient: NarrationApi = {
   transcriptSuggestHints: () => decode(hintSuggestionsSchema, 'TranscriptSuggestHints', host.TranscriptSuggestHints()),
   transcriptHints: () => decode(hintsSchema, 'TranscriptHints', host.TranscriptHints()),
   transcriptSaveHints: (accepted) => decode(voidResult, 'TranscriptSaveHints', host.TranscriptSaveHints(accepted)),
+  updateStatus: () => decode(updateStatusSchema, 'UpdateStatus', host.UpdateStatus()),
+  updateCheck: () => decode(updateStatusSchema, 'UpdateCheck', host.UpdateCheck()),
+  updateOpenNotes: () => decode(voidResult, 'UpdateOpenNotes', host.UpdateOpenNotes()),
+  subscribeUpdate: (onStatus) => subscribeChecked('update:status', updateStatusSchema, onStatus),
   reportClientDiagnostic: (kind, message) => decode(voidResult, 'SystemReportDiagnostic', host.SystemReportDiagnostic(kind, message)),
   subscribeProjectAttach: (onUpdate) => subscribeChecked('system:attached', projectAttachStateSchema, onUpdate),
   subscribeLiveUpdateHealth: (onDegraded) => liveHealth.subscribe(onDegraded),

@@ -21,6 +21,7 @@ import {
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
+import { updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
 import { projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
 import { guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
@@ -92,6 +93,10 @@ const GOLDEN: Record<string, z.ZodType> = {
   'transcript-start-started.json': startResultSchema,
   'settings-global.json': settingsForScopeSchema,
   'settings-project.json': settingsForScopeSchema,
+  'update-status-unchecked.json': updateStatusSchema,
+  'update-status-available.json': updateStatusSchema,
+  'update-status-check-failed.json': updateStatusSchema,
+  'update-status-development.json': updateStatusSchema,
   'tracks-project.json': tracksProjectSchema,
   'tracks-discovery-none.json': tracksDiscoverySchema,
   'tracks-discovery-several.json': tracksDiscoverySchema,
@@ -302,6 +307,21 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expectMatches(equivalenceSchema, { message: await api.transcriptAddEquivalence('row-1') }, 'mock equivalence');
   });
 
+  it.each(['available', 'found', 'failed', 'current', 'development', undefined] as const)('the update status the mock host answers (%s)', async (seed) => {
+    const api = createMockApi({}, seed ? { update: seed } : {});
+    expectMatches(updateStatusSchema, await api.updateStatus(), 'mock update status');
+    expectMatches(updateStatusSchema, await api.updateCheck(), 'mock update check');
+  });
+
+  it('the update event the mock host sends when a background check found a release', async () => {
+    vi.useFakeTimers();
+    const seen: unknown[] = [];
+    createMockApi({}, { update: 'found' }).subscribeUpdate((status) => seen.push(status));
+    await vi.advanceTimersByTimeAsync(10);
+    expect(seen).toHaveLength(1);
+    expectMatches(updateStatusSchema, seen[0], 'mock update:status');
+  });
+
   it('the Tracks answers', async () => {
     const api = createMockApi();
     expectMatches(tracksDiscoverySchema, await api.tracksDiscover(), 'mock tracks discovery');
@@ -361,6 +381,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'tracksList',
       'teleprompterStart',
       'teleprompterState',
+      'updateStatus',
+      'updateCheck',
     ];
     const VOID = [
       'manuscriptImportCancel',
@@ -383,6 +405,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'transcriptSaveHints',
       'teleprompterStop',
       'reportClientDiagnostic',
+      'updateOpenNotes',
     ];
     const NOT_A_REQUEST = [
       'mediaUrl',
@@ -392,6 +415,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeTranscript',
       'subscribeTeleprompterEvent',
       'subscribeTeleprompterState',
+      'subscribeUpdate',
     ];
     expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());
   });

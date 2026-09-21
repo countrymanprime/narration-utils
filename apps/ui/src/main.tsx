@@ -45,7 +45,11 @@ const mockPreviewError = mockParams.get('mockPreviewError');
 const mockInvalidPayload = (['bootstrap', 'manuscript', 'storybible'] as const).find((which) => which === mockParams.get('mockInvalidPayload'));
 // `?mockLiveDegraded=1` tells the app at once that live updates are degraded, so the notice can be seen without a failing host.
 const mockLiveDegraded = mockParams.has('mockLiveDegraded');
+// `?mockUpdate=available|found|failed|current|development` boots the mock host in that update state ("Version 0.2.7 is available", "could not reach
+// GitHub", "up to date", a development build), so the About and updates page can be seen without GitHub. `found` also notifies at once.
+const mockUpdate = (['available', 'found', 'failed', 'current', 'development'] as const).find((seed) => seed === mockParams.get('mockUpdate'));
 const mockInitial = {
+  ...(mockUpdate ? { update: mockUpdate } : {}),
   ...(mockLiveDegraded ? { liveUpdatesDegraded: true } : {}),
   ...(mockInvalidPayload ? { invalidPayload: mockInvalidPayload } : {}),
   ...(mockNoManuscript ? { noManuscript: true } : {}),

@@ -76,6 +76,12 @@ apply to Piper voices, Whisper models, and later optional tools/model packs.
 - Updates are opt-in. An available upstream version may be displayed only when
   it has been added to a reviewed release catalog; it may not replace an
   installed model automatically.
+- The application's own update follows the same rule and adds one thing. Once a
+  day at most, in the background and unless the narrator turned it off
+  (Settings > About and updates), the app asks GitHub which releases exist. That
+  request is metadata only: it downloads no asset and sends nothing about the
+  narrator, their projects or their machine. Nothing is downloaded and nothing
+  is replaced without an explicit, confirmed click ([ADR 0072](../adr/0072-the-app-updates-itself-from-this-repositorys-releases-and-never-installs-without-a-click.md)).
 
 This work must follow the artifact-level license and provenance requirements in
 the [local dependency evaluation and license plan](../research/local-dependency-evaluation.md).

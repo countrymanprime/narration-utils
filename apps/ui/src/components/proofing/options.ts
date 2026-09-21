@@ -14,5 +14,12 @@ export const proofingChoiceLabel = (key: string, value: string) => {
         en_core_web_lg: 'English — large (more accurate)',
       }[value] ?? value
     );
+  if (key === 'channel')
+    return (
+      {
+        candidates: 'Candidates and stable',
+        stable: 'Stable only',
+      }[value] ?? value
+    );
   return value;
 };

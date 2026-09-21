@@ -12,6 +12,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import type { ThemePreference } from '../../theme/theme';
 import { AboutPanel } from './AboutPanel';
 import { ScopedSetting } from './ScopedSetting';
+import { UpdatesPanel } from './UpdatesPanel';
 
 type SettingsCategory = { key: string; label: string; tool?: string; scopes: Scope[]; filter?: (field: ScopedSettingField) => boolean };
 const SETTINGS_CATEGORIES: SettingsCategory[] = [
@@ -23,7 +24,7 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'Daw', label: 'DAW Integration', scopes: ['global'] },
   { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global', 'project'] },
   { key: 'ProjectData', label: 'Project data', scopes: ['project'] },
-  { key: 'About', label: 'About', scopes: ['global'] },
+  { key: 'About', label: 'About & updates', tool: 'Updates', scopes: ['global'] },
 ];
 const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -157,6 +158,8 @@ export function Settings({
   const selectedTtsVoice = ttsCatalog?.voices.find((voice) => voice.id === ttsCatalog.voice.id);
   const selectedWhisperModel = whisperCatalog?.models.find((model) => model.id === whisperCatalog.model.id);
   const reaperLauncher = data.runtime.Reaper?.launcherPath;
+  // The update panel asks the host what is available on the saved channel, so it starts over when that changes.
+  const savedUpdateChannel = settings.Updates?.find((field) => field.key === 'channel')?.effectiveValue ?? '';
 
   return (
     <Tabs
@@ -239,8 +242,6 @@ export function Settings({
                     </div>
                   )}
                 </div>
-              ) : category === 'About' ? (
-                <AboutPanel version={data.version} />
               ) : category === 'Appearance' ? (
                 <div className="space-y-3 text-sm">
                   <div className="font-medium">Theme</div>
@@ -273,6 +274,12 @@ export function Settings({
                     void save();
                   }}
                 >
+                  {category === 'About' && (
+                    <>
+                      <AboutPanel version={data.version} />
+                      <UpdatesPanel key={savedUpdateChannel} formDirty={dirty} />
+                    </>
+                  )}
                   {category === 'TranscriptCompare' && (
                     <div className="mb-4 space-y-3 rounded-md p-3 text-sm" style={{ background: 'var(--surface-2)' }}>
                       <div>

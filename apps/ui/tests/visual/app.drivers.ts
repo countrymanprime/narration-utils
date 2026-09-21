@@ -578,7 +578,32 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'global-about': async (page) => {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'Global');
-      await clickSettingsCategory(page, 'About');
+      await clickSettingsCategory(page, 'About & updates');
+      await page.getByText('Not checked yet.').waitFor();
+    },
+    'about-update-available': async (page) => {
+      await page.goto('/?mockUpdate=available');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'About & updates');
+      await page.getByText('Version 0.2.7 is available').waitFor();
+    },
+    'about-development-build': async (page) => {
+      await page.goto('/?mockUpdate=development');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'About & updates');
+      await page.getByText('A development build is never offered an update.').waitFor();
+    },
+    'about-check-failed': async (page) => {
+      await page.goto('/?mockUpdate=failed');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'About & updates');
+      await page.getByText('Could not reach GitHub to check for updates.').waitFor();
     },
     'global-appearance': async (page) => {
       await goToPage(page, 'Settings');
