@@ -107,7 +107,18 @@ describe('wailsClient', () => {
   });
 
   it('reads the update status through its schema and reports a payload that does not match', async () => {
-    const status = { version: '0.2.6', development: false, platform: 'windows-x64', channel: 'candidates', lastChecked: '', failure: '', available: null };
+    const status = {
+      version: '0.2.6',
+      development: false,
+      platform: 'windows-x64',
+      channel: 'candidates',
+      canInstall: true,
+      installBlockedReason: '',
+      downloaded: null,
+      lastChecked: '',
+      failure: '',
+      available: null,
+    };
     const report = vi.fn().mockResolvedValue('null');
     window.go = {
       main: {
@@ -160,7 +171,18 @@ describe('wailsClient', () => {
     const seen = vi.fn();
 
     wailsClient.subscribeUpdate(seen);
-    callback?.({ version: '0.2.6', development: false, platform: 'windows-x64', channel: 'stable', lastChecked: 'x', failure: '', available: null });
+    callback?.({
+      version: '0.2.6',
+      development: false,
+      platform: 'windows-x64',
+      channel: 'stable',
+      canInstall: false,
+      installBlockedReason: 'x',
+      downloaded: null,
+      lastChecked: 'x',
+      failure: '',
+      available: null,
+    });
 
     expect(eventsOn).toHaveBeenCalledWith('update:status', expect.any(Function), -1);
     expect(seen).toHaveBeenCalledWith(expect.objectContaining({ channel: 'stable' }));

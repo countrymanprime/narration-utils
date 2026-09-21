@@ -29,6 +29,9 @@ func main() {
 		printVersion()
 		return
 	}
+	if !startAfterUpdate() {
+		return
+	}
 	app := NewHost()
 	err := wails.Run(&options.App{
 		Title:              "Narration Utils",

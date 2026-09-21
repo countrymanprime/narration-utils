@@ -71,14 +71,18 @@ type userError string
 
 func (e userError) Error() string { return string(e) }
 
-// UserMessage is what a narrator reads when staging failed: the sentence of an error written for them, or a general line for
-// anything else (a network error's text names addresses and is for the log, not for them).
-func UserMessage(err error) string {
+// UserError is an error whose text is a sentence for the narrator (capitalised, ending in a full stop); the host uses it for what a
+// binding refuses, so it reads as one and is shown as it is.
+func UserError(sentence string) error { return userError(sentence) }
+
+// UserMessage is what a narrator reads when staging or installing failed: the sentence of an error written for them, or the fallback
+// line for anything else (a network error's text names addresses and is for the log, not for them).
+func UserMessage(err error, fallback string) string {
 	var sentence userError
 	if errors.As(err, &sentence) {
 		return string(sentence)
 	}
-	return "The update could not be downloaded."
+	return fallback
 }
 
 // Staged is an update that is downloaded, verified against its checksum and unpacked, ready to be installed.
@@ -143,7 +147,9 @@ func (s *Stager) dirFor(release Release) string {
 }
 
 // Staged reports whether the release is already staged: its program is where the record says and has the size the record says. It
-// reads a few bytes and hashes nothing; the installer hashes the program again before it swaps it in.
+// reads a few bytes and hashes nothing; the installer hashes the program again, while it copies it, against the record's hash before
+// it swaps it in. That reference is the record's own, so it guards against damage and a swapped file, not against someone who can
+// rewrite the whole cache folder as this user.
 func (s *Stager) Staged(release Release) (Staged, bool) {
 	dir := s.dirFor(release)
 	bytes, err := os.ReadFile(filepath.Join(dir, stagedRecord))

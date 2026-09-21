@@ -64,6 +64,9 @@ func updateHost(t *testing.T, fake *fakeReleaseServer, current string) *Host {
 	t.Setenv("USERPROFILE", appData)
 	host := NewHost()
 	host.version = current
+	installDir := t.TempDir()
+	host.executable = func() (string, error) { return filepath.Join(installDir, "narration-utils.exe"), nil }
+	host.pendingPath = filepath.Join(t.TempDir(), "pending.json")
 	platform, _ := update.PlatformFor("windows", "amd64")
 	host.updates = &update.Checker{
 		Client: fake.server.Client(), APIBase: fake.server.URL, Repository: updateTestRepository, Platform: platform,
@@ -165,8 +168,8 @@ func TestADevelopmentBuildIsToldItHasNothingToCompareWith(t *testing.T) {
 func TestTheStartupCheckRunsOnlyWhenSwitchedOnAndDue(t *testing.T) {
 	fake := newFakeReleaseServer(t, "v0.2.7-rc")
 	host := updateHost(t, fake, "0.2.6")
-	var events []update.Status
-	host.updateEvents = func(status update.Status) { events = append(events, status) }
+	var events []updateStatus
+	host.updateEvents = func(status updateStatus) { events = append(events, status) }
 
 	saveUpdateSetting(t, host, "check_on_startup", "false")
 	host.autoCheckForUpdate(context.Background())
@@ -189,8 +192,8 @@ func TestTheStartupCheckRunsOnlyWhenSwitchedOnAndDue(t *testing.T) {
 func TestTheStartupCheckSaysNothingWhenThereIsNothingNewOrItFails(t *testing.T) {
 	fake := newFakeReleaseServer(t, "v0.2.6-rc")
 	host := updateHost(t, fake, "0.2.6")
-	var events []update.Status
-	host.updateEvents = func(status update.Status) { events = append(events, status) }
+	var events []updateStatus
+	host.updateEvents = func(status updateStatus) { events = append(events, status) }
 	host.autoCheckForUpdate(context.Background())
 	if fake.requests.Load() != 1 || len(events) != 0 {
 		t.Fatalf("nothing newer: %d requests, %d events", fake.requests.Load(), len(events))
@@ -198,7 +201,7 @@ func TestTheStartupCheckSaysNothingWhenThereIsNothingNewOrItFails(t *testing.T) 
 
 	offline := newFakeReleaseServer(t, "v0.2.7-rc")
 	failing := updateHost(t, offline, "0.2.6")
-	failing.updateEvents = func(status update.Status) { events = append(events, status) }
+	failing.updateEvents = func(status updateStatus) { events = append(events, status) }
 	offline.server.Close()
 	failing.autoCheckForUpdate(context.Background())
 	if len(events) != 0 {

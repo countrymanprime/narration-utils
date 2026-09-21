@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { describeApiError } from '../../api/errorMessage';
+import { apiErrorMessage } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
 import type { UpdateAvailable, UpdateJob, WorkJob } from '../../types';
 import { WorkDialog } from '../primitives/WorkDialog';
@@ -20,6 +20,7 @@ const WORK_PHASE: Record<UpdateJob['phase'], WorkJob['phase']> = {
   downloading: 'running',
   verifying: 'running',
   unpacking: 'running',
+  installing: 'running',
   ready: 'success',
   error: 'error',
   cancelled: 'cancelled',
@@ -49,7 +50,7 @@ export function UpdateDownloadDialog({ available, close }: { available: UpdateAv
         setJob(next);
         if (!isFinished(next.phase)) timer = setTimeout(() => void poll(id), POLL_MS);
       } catch (error) {
-        if (active) setFailure(describeApiError(error));
+        if (active) setFailure(apiErrorMessage(error));
       }
     };
     starting.current ??= api.updateDownload();
@@ -59,7 +60,7 @@ export function UpdateDownloadDialog({ available, close }: { available: UpdateAv
         setJob(started);
         timer = setTimeout(() => void poll(started.id), POLL_MS);
       })
-      .catch((error) => active && setFailure(describeApiError(error)));
+      .catch((error) => active && setFailure(apiErrorMessage(error)));
     const clock = setInterval(() => setSeconds((current) => current + 1), 1000);
     return () => {
       active = false;
@@ -99,7 +100,7 @@ export function UpdateDownloadDialog({ available, close }: { available: UpdateAv
               void api
                 .updateJobCancel(job.id)
                 .then(setJob)
-                .catch((error) => setFailure(describeApiError(error)))
+                .catch((error) => setFailure(apiErrorMessage(error)))
           : undefined
       }
     />

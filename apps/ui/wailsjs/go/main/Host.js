@@ -258,6 +258,10 @@ export function UpdateDownload() {
   return window['go']['main']['Host']['UpdateDownload']();
 }
 
+export function UpdateInstall(arg1) {
+  return window['go']['main']['Host']['UpdateInstall'](arg1);
+}
+
 export function UpdateJobCancel(arg1) {
   return window['go']['main']['Host']['UpdateJobCancel'](arg1);
 }
@@ -268,6 +272,10 @@ export function UpdateJobState(arg1) {
 
 export function UpdateOpenNotes() {
   return window['go']['main']['Host']['UpdateOpenNotes']();
+}
+
+export function UpdateShowDownload() {
+  return window['go']['main']['Host']['UpdateShowDownload']();
 }
 
 export function UpdateStatus() {

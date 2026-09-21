@@ -62,7 +62,8 @@ const MOCK_DEVELOPMENT_VERSION = '0.0.0-dev';
 const MOCK_CHECKED_AT = '2026-09-21T12:00:00Z';
 
 /** Which update state the mock host boots in: `available` found a newer release, `found` is the same and the host also says so at once, as a background check does, `downloading` is the same with a download that stops at 40% (to look at the dialog) and `download-fails` one that ends in an error, `failed` could not reach GitHub, `current` checked and is up to date, `development` is a build with no release to compare with. Without one, nothing has been checked yet. */
-export type MockUpdateSeed = 'available' | 'found' | 'downloading' | 'download-fails' | 'failed' | 'current' | 'development';
+export type MockUpdateSeed =
+  'available' | 'found' | 'downloading' | 'download-fails' | 'ready' | 'install-blocked' | 'install-refused' | 'failed' | 'current' | 'development';
 
 function seedUpdateStatus(seed: MockUpdateSeed | undefined): UpdateStatus {
   const status: UpdateStatus = {
@@ -70,15 +71,27 @@ function seedUpdateStatus(seed: MockUpdateSeed | undefined): UpdateStatus {
     development: false,
     platform: 'windows-x64',
     channel: 'candidates',
+    canInstall: true,
+    installBlockedReason: '',
+    downloaded: null,
     lastChecked: '',
     failure: '',
     available: null,
   };
   switch (seed) {
+    case 'install-blocked':
+      return {
+        ...seedUpdateStatus('available'),
+        canInstall: false,
+        installBlockedReason:
+          'Narration Utils is installed where it is not allowed to replace itself. Download the update and replace the program yourself, or ask whoever manages this computer.',
+      };
     case 'available':
     case 'found':
     case 'downloading':
     case 'download-fails':
+    case 'ready':
+    case 'install-refused':
       return {
         ...status,
         lastChecked: MOCK_CHECKED_AT,
@@ -97,7 +110,13 @@ function seedUpdateStatus(seed: MockUpdateSeed | undefined): UpdateStatus {
     case 'current':
       return { ...status, lastChecked: MOCK_CHECKED_AT };
     case 'development':
-      return { ...status, version: MOCK_DEVELOPMENT_VERSION, development: true };
+      return {
+        ...status,
+        version: MOCK_DEVELOPMENT_VERSION,
+        development: true,
+        canInstall: false,
+        installBlockedReason: 'A development build does not update itself.',
+      };
     default:
       return status;
   }
@@ -175,8 +194,24 @@ export function createMockApi(
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
-  let updateJob: UpdateJob | undefined;
+  let updateJob: UpdateJob | undefined =
+    initial.update === 'ready' || initial.update === 'install-refused'
+      ? {
+          id: 'mock-update',
+          version: '0.2.7',
+          phase: 'ready',
+          message: 'Version 0.2.7 is downloaded and checked.',
+          percent: 100,
+          bytesDone: 419_895_808,
+          bytesTotal: 419_895_808,
+          error: '',
+        }
+      : undefined;
   let updateJobTimer: ReturnType<typeof setInterval> | undefined;
+  const mockUpdateStatus = (): UpdateStatus => ({
+    ...updateStatus,
+    downloaded: updateJob?.phase === 'ready' && updateStatus.available ? { jobId: updateJob.id, version: updateJob.version } : null,
+  });
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
   let paragraphs = wireClone(WIRE_PARAGRAPHS);
@@ -783,11 +818,11 @@ export function createMockApi(
       const timer = setTimeout(() => onNotice(text), 0);
       return () => clearTimeout(timer);
     },
-    updateStatus: async () => wireClone(updateStatus),
+    updateStatus: async () => wireClone(mockUpdateStatus()),
     updateCheck: async () => {
       // A check that works records the time; one that cannot reach GitHub says so again.
       if (!updateStatus.failure && !updateStatus.development) updateStatus = { ...updateStatus, lastChecked: MOCK_CHECKED_AT };
-      return wireClone(updateStatus);
+      return wireClone(mockUpdateStatus());
     },
     updateDownload: async () => {
       const available = updateStatus.available;
@@ -832,6 +867,17 @@ export function createMockApi(
       }, 300);
       return wireClone(updateJob);
     },
+    updateInstall: async (jobId) => {
+      if (!updateJob || updateJob.id !== jobId || updateJob.phase !== 'ready') throw new Error('The update is not downloaded yet.');
+      if (initial.update === 'install-refused') {
+        throw new Error(
+          'Narration Utils is busy, so the update was not installed. Finish or stop what is running (an import, a Story Bible build, a download, a comparison or a teleprompter session), then try again.',
+        );
+      }
+      updateJob = { ...updateJob, phase: 'installing', message: `Installing version ${updateJob.version}. Narration Utils restarts in a moment.` };
+      return wireClone(updateJob);
+    },
+    updateShowDownload: async () => undefined,
     updateJobState: async (jobId) => {
       if (!updateJob || updateJob.id !== jobId) throw new Error('unknown update job');
       return wireClone(updateJob);

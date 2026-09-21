@@ -33,7 +33,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 8
+const hostAPIVersion = 9
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -64,8 +64,20 @@ type Host struct {
 	stager    *update.Stager
 	updateJob *updateJob
 	// updateEvents and openURL are seams for tests: nil means the Wails runtime.
-	updateEvents func(update.Status)
+	updateEvents func(updateStatus)
 	openURL      func(ctx context.Context, address string)
+	// installUpdate, quitApp, executable and pendingPath are seams for tests: nil or empty means the real thing.
+	installUpdate func(context.Context, update.InstallOptions) error
+	quitApp       func()
+	executable    func() (string, error)
+	openFolder    func(dir string) error
+	pendingPath   string
+	confirmUpdate sync.Once
+	// writable* remember whether the install folder can be written to, for a short while (see writable).
+	writableMu  sync.Mutex
+	writableDir string
+	writableAt  time.Time
+	writableOK  bool
 	// persist reports a file that cannot be read: to the host log and, for the narrator's own data, to the narrator (ADR 0069).
 	persist *persist.Reporter
 }
@@ -121,7 +133,7 @@ func NewHost() *Host {
 	store.SetPersist(reporter)
 	notes.SetPersist(reporter)
 	recent.SetPersist(reporter)
-	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recent, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager()}
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recent, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
 	return host
 }
 
@@ -536,6 +548,12 @@ func hasArgument(arguments []string, wanted string) bool {
 // saved project only when that cannot discard an import draft, sidecar run,
 // Story Bible build, or voice download in the visible window.
 func (h *Host) canAttachLocked() bool {
+	return h.idleLocked() && (h.updateJob == nil || !h.updateJob.installing())
+}
+
+// idleLocked reports whether nothing is running that a restart or a project switch would displace: an import draft, a Story Bible
+// build, a download, a comparison or a teleprompter session. The caller holds h.mu.
+func (h *Host) idleLocked() bool {
 	if h.manuscript != nil && !h.manuscript.CanSwitchProject() {
 		return false
 	}
@@ -576,6 +594,14 @@ func (h *Host) canAttachLocked() bool {
 	return true
 }
 
+// idle is idleLocked under a read lock. The update install asks it again just before the swap; the update job itself is not work
+// it would displace.
+func (h *Host) idle() bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.idleLocked()
+}
+
 func (h *Host) resolveDeveloperSidecars() {
 	python := filepath.Join(h.config.repoRoot, ".venv", "Scripts", "python.exe")
 	if os.PathSeparator != '\\' {
@@ -609,6 +635,8 @@ func (h *Host) Ready() map[string]any {
 }
 
 func (h *Host) Bootstrap() map[string]any {
+	// The first Bootstrap means the window loaded and the UI accepted this host: an update that was just installed has worked.
+	h.confirmUpdate.Do(h.confirmInstalledUpdate)
 	svc := h.services()
 	config := svc.config
 	var imported any

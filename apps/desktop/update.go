@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/update"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -19,6 +20,11 @@ const startupUpdateDelay = 12 * time.Second
 // updateStatusEvent is the event a background check sends when it found a release newer than the running version. Its payload is
 // the same Status the UpdateStatus binding returns (apps/ui/src/api/schemas/update.ts).
 const updateStatusEvent = "update:status"
+
+// updatePendingPath is the record an update leaves for the next launch (see update.Startup), beside the check's cache.
+func updatePendingPath() string {
+	return filepath.Join(filepath.Dir(updateCachePath()), "pending.json")
+}
 
 // updateCachePath is the per-user file the update check remembers its answer in, beside the other cached data (never in a project).
 func updateCachePath() string {
@@ -47,15 +53,37 @@ func (h *Host) updateSettings() (checkOnStartup bool, channel update.Channel) {
 	return read("check_on_startup", "true") != "false", update.ParseChannel(read("channel", string(update.ChannelCandidates)))
 }
 
+// updateStatus is what the update bindings and the update:status event send: the checker's status and whether this install can be
+// replaced by the app itself.
+type updateStatus struct {
+	update.Status
+	CanInstall           bool   `json:"canInstall"`
+	InstallBlockedReason string `json:"installBlockedReason"`
+	// Downloaded is the update that finished downloading and can be installed, when it is the one on offer.
+	Downloaded *downloadedUpdate `json:"downloaded"`
+}
+
+// downloadedUpdate names a download that is ready: the job to install, and the version it holds.
+type downloadedUpdate struct {
+	JobID   string `json:"jobId"`
+	Version string `json:"version"`
+}
+
 // updateStatus is the remembered answer and the running version. It makes no request.
-func (h *Host) updateStatus() update.Status {
+func (h *Host) updateStatus() updateStatus {
 	_, channel := h.updateSettings()
-	return h.updates.Status(channel)
+	status := updateStatus{Status: h.updates.Status(channel)}
+	status.InstallBlockedReason = h.installBlockedReason()
+	status.CanInstall = status.InstallBlockedReason == ""
+	if id, version, ok := h.readyUpdate(); ok && status.Available != nil && status.Available.Version == version {
+		status.Downloaded = &downloadedUpdate{JobID: id, Version: version}
+	}
+	return status
 }
 
 // checkForUpdate asks GitHub now, for an explicit Check now. Every outcome is a status: a failure is the `failure` text the
 // narrator reads, never an exception.
-func (h *Host) checkForUpdate(ctx context.Context) update.Status {
+func (h *Host) checkForUpdate(ctx context.Context) updateStatus {
 	if _, err := h.updates.Check(ctx); err != nil && !errors.Is(err, update.ErrChecking) && !errors.Is(err, update.ErrNoPlatform) && ctx.Err() == nil {
 		_ = h.log.Report("update_check_failed", err.Error())
 	}
@@ -102,7 +130,7 @@ func (h *Host) startupUpdateCheck(ctx context.Context, delay time.Duration) {
 	h.autoCheckForUpdate(ctx)
 }
 
-func (h *Host) publishUpdate(status update.Status) {
+func (h *Host) publishUpdate(status updateStatus) {
 	h.mu.RLock()
 	ctx, events := h.ctx, h.updateEvents
 	h.mu.RUnlock()
@@ -134,4 +162,21 @@ func (h *Host) openReleaseNotes() error {
 	}
 	runtime.BrowserOpenURL(ctx, status.Available.NotesURL)
 	return nil
+}
+
+// startAfterUpdate runs before the window and the single-instance lock: it takes the relaunch arguments off os.Args, waits for the
+// program that started this one (an update installing itself) to exit, and, when this is a new version that did not start last time,
+// puts the previous one back and starts it. It reports whether this program should carry on and open its window.
+func startAfterUpdate() bool {
+	executable, err := update.CurrentExecutable()
+	if err != nil {
+		return true
+	}
+	logger := hostlog.New(hostlog.DefaultPath(), 0)
+	result := update.Startup(update.StartupOptions{
+		Executable: executable, Args: os.Args[1:], PendingPath: updatePendingPath(), Version: version, PID: os.Getpid(),
+		Log: func(kind, message string) { _ = logger.Report(kind, message) },
+	})
+	os.Args = append([]string{os.Args[0]}, result.Args...)
+	return !result.RolledBack
 }

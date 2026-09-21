@@ -27,3 +27,15 @@ func (h *Host) UpdateJobState(jobID string) (string, error) {
 func (h *Host) UpdateJobCancel(jobID string) (string, error) {
 	return encodeBinding(h.cancelUpdateJob(jobID))
 }
+
+// UpdateInstall replaces the running program with the downloaded update and starts it: the narrator's explicit action, refused while
+// an import, a Story Bible build, a download, a comparison or a teleprompter session is running. On success the app closes a moment
+// after this answers; on failure the running version is unchanged and the answer is an error to read.
+func (h *Host) UpdateInstall(jobID string) (string, error) {
+	return encodeBinding(h.installDownloadedUpdate(jobID))
+}
+
+// UpdateShowDownload opens the folder that holds the downloaded update, for an install the app is not allowed to replace itself in.
+func (h *Host) UpdateShowDownload() (string, error) {
+	return encodeBinding(nil, h.showDownloadedUpdate())
+}

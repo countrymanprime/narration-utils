@@ -200,7 +200,7 @@ describe('UpdatesPanel, downloading', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('downloads after the narrator confirms and remembers that it finished', async () => {
+  it('downloads after the narrator confirms and then offers to install it', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       renderPanel('available');
@@ -211,6 +211,7 @@ describe('UpdatesPanel, downloading', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Close' }));
       expect((await screen.findAllByText('Version 0.2.7 is downloaded and checked.')).length).toBeGreaterThan(0);
       expect(screen.queryByRole('button', { name: 'Download update' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Install and restart' })).toBeTruthy();
     } finally {
       vi.useRealTimers();
     }
@@ -223,5 +224,72 @@ describe('UpdatesPanel, downloading', () => {
     renderPanel('available', { updateStatus: async () => ({ ...found, available: { ...available, replaces: false } }) });
     await screen.findByText(/does not update itself/);
     expect(screen.queryByRole('button', { name: 'Download update' })).toBeNull();
+  });
+});
+
+describe('UpdatesPanel, installing', () => {
+  it('shows a download that finished earlier as ready to install, and asks before it restarts the app', async () => {
+    const install = vi.fn(async (jobId: string) => createMockApi({}, { update: 'ready' }).updateInstall(jobId));
+    renderPanel('ready', { updateInstall: install });
+    fireEvent.click(await screen.findByRole('button', { name: 'Install and restart' }));
+    expect(await screen.findByText(/closes and starts again on version 0\.2\.7/)).toBeTruthy();
+    expect(screen.getByText(/If the new version does not start, the previous one comes back by itself/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(install).not.toHaveBeenCalled();
+  });
+
+  it('installs when the narrator confirms, and shows a blocking dialog that says it cannot be cancelled', async () => {
+    const install = vi.fn(async (jobId: string) => createMockApi({}, { update: 'ready' }).updateInstall(jobId));
+    renderPanel('ready', { updateInstall: install });
+    fireEvent.click(await screen.findByRole('button', { name: 'Install and restart' }));
+    // The panel behind the confirm is hidden from assistive technology, so the only reachable button of this name is the dialog's.
+    fireEvent.click(await screen.findByRole('button', { name: 'Install and restart' }));
+    expect(await screen.findByRole('dialog', { name: 'Installing Narration Utils 0.2.7' })).toBeTruthy();
+    expect(screen.getByText(/This step cannot be cancelled/)).toBeTruthy();
+    expect(install).toHaveBeenCalledWith('mock-update');
+  });
+
+  it('shows why an install was refused and leaves the update ready to try again', async () => {
+    renderPanel('install-refused');
+    fireEvent.click(await screen.findByRole('button', { name: 'Install and restart' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Install and restart' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('Narration Utils is busy');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Install and restart' })).toBeTruthy();
+  });
+
+  it('where the app may not replace itself, says why and shows the downloaded file instead of installing', async () => {
+    const show = vi.fn(async () => undefined);
+    const found = await createMockApi({}, { update: 'install-blocked' }).updateStatus();
+    renderPanel('ready', {
+      updateShowDownload: show,
+      updateStatus: async () => ({
+        ...found,
+        canInstall: false,
+        installBlockedReason: 'Narration Utils is installed where it is not allowed to replace itself.',
+        downloaded: { jobId: 'mock-update', version: '0.2.7' },
+      }),
+    });
+    expect(await screen.findByText(/not allowed to replace itself/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Install and restart' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Show the downloaded file' }));
+    expect(show).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers to download where the app may not replace itself, so the narrator can replace it by hand', async () => {
+    renderPanel('install-blocked');
+    expect(await screen.findByRole('button', { name: 'Download update' })).toBeTruthy();
+  });
+
+  it('shows an error when the downloaded file cannot be shown', async () => {
+    const found = await createMockApi({}, { update: 'ready' }).updateStatus();
+    renderPanel('ready', {
+      updateStatus: async () => ({ ...found, canInstall: false, installBlockedReason: 'x', downloaded: { jobId: 'mock-update', version: '0.2.7' } }),
+      updateShowDownload: async () => {
+        throw new Error('explorer is not available');
+      },
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Show the downloaded file' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('explorer is not available');
   });
 });

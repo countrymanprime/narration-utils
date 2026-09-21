@@ -19,6 +19,9 @@ const status = {
   development: false,
   platform: 'windows-x64',
   channel: 'candidates',
+  canInstall: true,
+  installBlockedReason: '',
+  downloaded: null,
   lastChecked: '2026-09-21T12:00:00Z',
   failure: '',
   available,
@@ -42,6 +45,9 @@ describe('updateStatusSchema', () => {
     ['a release with a size that is text', { ...status, available: { ...available, size: 'big' } }],
     ['a release with no notes address', { ...status, available: { ...available, notesUrl: undefined } }],
     ['a development flag that is text', { ...status, development: 'yes' }],
+    ['no canInstall', { ...status, canInstall: undefined }],
+    ['no downloaded (the host sends null, never nothing)', { ...status, downloaded: undefined }],
+    ['a downloaded update with no job', { ...status, downloaded: { version: '0.2.7' } }],
   ])('rejects %s', (_name, value) => {
     expect(() => parseWire(updateStatusSchema, value, ctx)).toThrow(WireError);
   });
@@ -50,12 +56,12 @@ describe('updateStatusSchema', () => {
 const job = { id: 'update-1', version: '0.2.7', phase: 'downloading', message: 'Downloading', percent: 40, bytesDone: 4, bytesTotal: 10, error: '' };
 
 describe('updateJobSchema', () => {
-  it.each(['downloading', 'verifying', 'unpacking', 'ready', 'error', 'cancelled'])('accepts the phase %s', (phase) => {
+  it.each(['downloading', 'verifying', 'unpacking', 'ready', 'installing', 'error', 'cancelled'])('accepts the phase %s', (phase) => {
     expect(parseWire(updateJobSchema, { ...job, phase }, ctx).phase).toBe(phase);
   });
 
   it.each([
-    ['a phase it does not know', { ...job, phase: 'installing' }],
+    ['a phase it does not know', { ...job, phase: 'restarting' }],
     ['a percent over 100', { ...job, percent: 101 }],
     ['a negative percent', { ...job, percent: -1 }],
     ['negative bytes', { ...job, bytesDone: -1 }],

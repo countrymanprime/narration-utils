@@ -87,6 +87,9 @@ func downloadHost(t *testing.T, fake *releaseFiles) *Host {
 	t.Setenv("USERPROFILE", appData)
 	host := NewHost()
 	host.version = "0.2.6"
+	installDir := t.TempDir()
+	host.executable = func() (string, error) { return filepath.Join(installDir, "narration-utils.exe"), nil }
+	host.pendingPath = filepath.Join(t.TempDir(), "pending.json")
 	platform, _ := update.PlatformFor("windows", "amd64")
 	host.updates = &update.Checker{
 		Client: fake.server.Client(), APIBase: fake.server.URL, DownloadBase: fake.server.URL + "/releases", Repository: updateTestRepository,
@@ -160,6 +163,9 @@ func TestDownloadStagesTheUpdateWithRealBytesAndEndsReady(t *testing.T) {
 	staged, ok := host.stagedUpdate()
 	if !ok {
 		t.Fatal("the host does not know the update is staged")
+	}
+	if downloaded := host.updateStatus().Downloaded; downloaded == nil || downloaded.JobID != started.ID || downloaded.Version != "0.2.7" {
+		t.Fatalf("the status does not say the update is downloaded: %+v", downloaded)
 	}
 	got, err := os.ReadFile(staged.Executable)
 	if err != nil || !bytes.Equal(got, fake.executable) {
@@ -302,6 +308,27 @@ func TestContractUpdateJob(t *testing.T) {
 	pin("update-job-downloading", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseDownloading, message: "Downloading Narration Utils 0.2.7…", done: 104857600, total: 209715200}))
 	pin("update-job-verifying", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseVerifying, message: "Checking the download against the release's checksum…", done: 209715200, total: 209715200}))
 	pin("update-job-ready", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseReady, message: "Version 0.2.7 is downloaded and checked.", done: 209715200, total: 209715200}))
+	pin("update-job-installing", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseInstalling, message: "Installing version 0.2.7. Narration Utils restarts in a moment.", done: 209715200, total: 209715200}))
 	pin("update-job-error", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseError, message: "The checksum in the release and GitHub's own record of the file disagree, so the update was not used.", errorText: "The checksum in the release and GitHub's own record of the file disagree, so the update was not used.", done: 52428800, total: 209715200}))
 	pin("update-job-cancelled", snapshotUpdateJob(&updateJob{id: "update-1", version: "0.2.7", phase: updatePhaseCancelled, message: "The update download was cancelled.", done: 52428800, total: 209715200}))
+}
+
+// A status that says the update is downloaded and can be installed (the job id is fixed so the file is stable).
+func TestContractUpdateStatusDownloaded(t *testing.T) {
+	fake := newFakeReleaseServer(t, "v0.2.7-rc")
+	host := updateHost(t, fake, "0.2.6")
+	if _, err := host.UpdateCheck(); err != nil {
+		t.Fatal(err)
+	}
+	status := host.updateStatus()
+	status.Downloaded = &downloadedUpdate{JobID: "update-1", Version: "0.2.7"}
+	bytes, err := json.Marshal(status)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var value any
+	if err := json.Unmarshal(bytes, &value); err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "update-status-downloaded", value)
 }

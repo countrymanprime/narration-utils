@@ -18,7 +18,7 @@ const updateAvailableSchema = z.object({
 export const updateJobSchema = z.object({
   id: z.string(),
   version: z.string(),
-  phase: z.enum(['downloading', 'verifying', 'unpacking', 'ready', 'error', 'cancelled']),
+  phase: z.enum(['downloading', 'verifying', 'unpacking', 'ready', 'installing', 'error', 'cancelled']),
   message: z.string(),
   percent: z.number().min(0).max(100),
   bytesDone: z.number().min(0),
@@ -35,6 +35,9 @@ export const updateStatusSchema = z.object({
   development: z.boolean(),
   platform: z.string(),
   channel: updateChannelSchema,
+  canInstall: z.boolean(),
+  installBlockedReason: z.string(),
+  downloaded: z.object({ jobId: z.string(), version: z.string() }).nullable(),
   lastChecked: z.string(),
   failure: z.string(),
   available: updateAvailableSchema.nullable(),
