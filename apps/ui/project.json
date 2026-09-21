@@ -10,6 +10,15 @@
         "command": "pnpm --dir {projectRoot} run lint:ci"
       }
     },
+    "architecture": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm --dir {projectRoot} run architecture"
+      },
+      "metadata": {
+        "description": "The import-graph rules of apps/ui (.dependency-cruiser.mjs, ADR 0062): primitives are leaves, only src/api reaches wailsjs, Base UI only in primitives."
+      }
+    },
     "format": {
       "executor": "nx:run-commands",
       "options": {

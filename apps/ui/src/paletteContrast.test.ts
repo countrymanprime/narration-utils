@@ -304,8 +304,8 @@ const tokensUsedAsText = (): Set<string> => new Set([...textColourUses().values(
 // (a conditional, a fallback or a colour map slips past a pattern for text colours). Whether a listed use really is an icon,
 // a dot or a decorative glyph is the reviewer's call: the test only makes every use visible.
 const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
+  'chapterStatus.ts': { count: 1, what: 'the Not Started status colour: a dot and a meter segment, never text' },
   'components/layout/AppShell.tsx': { count: 1, what: 'the folder icon beside the project name' },
-  'components/manuscript/ChapterNav.tsx': { count: 1, what: 'the Not Started status colour: a dot and a meter segment, never text' },
   'components/manuscript/Manuscript.tsx': { count: 1, what: 'the idle chapter bookmark icon' },
   'components/primitives/Tooltip.tsx': { count: 1, what: 'the border of the info icon' },
   'components/proofing/Transcript.tsx': { count: 2, what: 'the arrows between the Setup, Running and Results steps' },

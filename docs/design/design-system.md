@@ -49,6 +49,10 @@ Location: `apps/ui/src/components/primitives/`.
 
 A page builds a control from a primitive and never writes the native element ([ADR 0053](../adr/0053-icon-buttons-text-fields-and-selects-wrap-the-native-controls.md)). `apps/ui/src/rawNatives.test.ts` counts the native `button`, `select`, `input`, `textarea` and `table` elements written outside `components/primitives/` against a per-file ceiling that may only go down (`select`, `input`, `textarea` and the table parts have none left), and fails on the pasted icon-button look (`size-8` with `rounded-md`). Use `IconButton` for an icon-only button, `Button` for a text button, `TextField`, `SearchField` or `Field` for a text control, `Select` for a choice, and `Table` for tabular data.
 
+### Import rules
+
+Three import facts are checked, not reviewed ([ADR 0062](../adr/0062-ui-import-rules-are-a-dependency-cruiser-config-and-a-mark-scan-that-name-their-adr.md), `pnpm --dir apps/ui architecture`): a file in `components/primitives/` (a story or a test too) imports nothing else under `components/`, so shared data such as the chapter status labels sits above the feature folders (`src/chapterStatus.ts`); only `src/api/` imports the generated `wailsjs/` bindings; and only a primitive imports Base UI. `Highlight` is the only file that writes a `<mark>`, with one reasoned exception, the proofing diff's `InlineDiffRow`, which waits on the owner ([ADR 0063](../adr/0063-the-proofing-diff-marks-its-own-words-and-adr-0016-covers-entry-highlights.md), Proposed); `src/highlightBoundary.test.ts` is the check.
+
 ### Base UI wrappers
 
 Interactive behaviour (focus trap, Escape, focus return, id wiring, roving focus) comes from Base UI (`@base-ui/react`), and only the primitives import it ([ADR 0047](../adr/0047-the-ui-primitives-wrap-base-ui-and-app-code-never-imports-it.md)). To build a widget:
