@@ -22,23 +22,6 @@ export type GuideEntity = {
   context?: string;
 };
 
-// Native sidecars may contain older records where optional collection fields
-// were serialized as null. Keep every UI consumer on the stable array shape.
-export function normalizeGuideEntity(entity: GuideEntity): GuideEntity {
-  return {
-    ...entity,
-    pronunciation: entity.pronunciation ?? { ipa: '', source: '', confidence: '' },
-    description: { ...entity.description, text: entity.description?.text ?? '', evidence: entity.description?.evidence ?? {} },
-    aliases: (entity.aliases ?? []).map((alias) => ({
-      ...alias,
-      pronunciation: alias.pronunciation ?? { ipa: '', source: '', confidence: '' },
-      occurrences: alias.occurrences ?? [],
-    })),
-    occurrences: entity.occurrences ?? [],
-    personality_notes: entity.personality_notes ?? [],
-    relationships: entity.relationships ?? [],
-  };
-}
 export type GuidePreview =
   | { status: 'ready'; audioBase64: string; mimeType: string }
   | { status: 'asset_required'; voice: Omit<TtsVoice, 'downloadSize' | 'installState'>; installState: TtsInstallState; downloadSize: number };

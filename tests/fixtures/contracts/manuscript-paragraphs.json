@@ -1,0 +1,30 @@
+[
+  {
+    "chapter": "Chapter One",
+    "chapterId": "c-0001",
+    "entityIds": [],
+    "id": "p-000001",
+    "index": 0,
+    "spans": [
+      {
+        "end": 13,
+        "start": 10,
+        "style": "italic"
+      },
+      {
+        "end": 31,
+        "start": 27,
+        "style": "bold"
+      }
+    ],
+    "text": "Roses are red,\nviolets are blue."
+  },
+  {
+    "chapter": "Chapter One",
+    "chapterId": "c-0001",
+    "entityIds": [],
+    "id": "p-000002",
+    "index": 1,
+    "text": "A second paragraph of the first chapter."
+  }
+]

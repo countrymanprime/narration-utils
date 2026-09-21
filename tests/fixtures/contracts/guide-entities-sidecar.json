@@ -1,0 +1,152 @@
+[
+  {
+    "aliases": [
+      {
+        "occurrences": [
+          {
+            "chapter": "Chapter 1",
+            "chapterId": "legacy-chapter-1",
+            "excerpt": "Arelian was a veteran navigator, brave and wary before the council arrived.",
+            "paragraph": 1,
+            "paragraphId": "legacy-paragraph-1"
+          }
+        ],
+        "pronunciation": {
+          "confidence": "unknown",
+          "ipa": "",
+          "source": "not generated"
+        },
+        "text": "Arelian"
+      }
+    ],
+    "canonical_name": "Captain Arelian",
+    "category": "Character",
+    "context": "",
+    "description": {
+      "evidence": {
+        "chapter": "Chapter 1",
+        "excerpt": "Arelian was a veteran navigator, brave and wary before the council arrived."
+      },
+      "text": "Explicitly described as veteran navigator."
+    },
+    "id": "entity-e4d28618aafe",
+    "locked": false,
+    "manual": false,
+    "occurrence_count": 2,
+    "occurrences": [
+      {
+        "chapter": "Chapter 1",
+        "chapterId": "legacy-chapter-0",
+        "excerpt": "Captain Arelian said the Council of Ash would meet in Dawnspire.",
+        "paragraph": 0,
+        "paragraphId": "legacy-paragraph-0"
+      }
+    ],
+    "personality_notes": [
+      {
+        "evidence": {
+          "chapter": "Chapter 1",
+          "excerpt": "Arelian was a veteran navigator, brave and wary before the council arrived."
+        },
+        "text": "Described as brave."
+      },
+      {
+        "evidence": {
+          "chapter": "Chapter 1",
+          "excerpt": "Arelian was a veteran navigator, brave and wary before the council arrived."
+        },
+        "text": "Described as wary."
+      }
+    ],
+    "pronunciation": {
+      "confidence": "unknown",
+      "ipa": "",
+      "source": "not generated"
+    },
+    "relationships": [],
+    "review_state": "generated"
+  },
+  {
+    "aliases": [],
+    "canonical_name": "Dawnspire",
+    "category": "Needs Review",
+    "context": "",
+    "description": {
+      "evidence": {},
+      "text": ""
+    },
+    "id": "entity-ca9d5e84c411",
+    "locked": false,
+    "manual": false,
+    "occurrence_count": 4,
+    "occurrences": [
+      {
+        "chapter": "Chapter 1",
+        "chapterId": "legacy-chapter-0",
+        "excerpt": "Captain Arelian said the Council of Ash would meet in Dawnspire.",
+        "paragraph": 0,
+        "paragraphId": "legacy-paragraph-0"
+      },
+      {
+        "chapter": "Chapter 1",
+        "chapterId": "legacy-chapter-2",
+        "excerpt": "Later they saw Dawnspire burning. The road to Dawnspire was long.",
+        "paragraph": 2,
+        "paragraphId": "legacy-paragraph-2"
+      },
+      {
+        "chapter": "Chapter 1",
+        "chapterId": "legacy-chapter-2",
+        "excerpt": "Later they saw Dawnspire burning. The road to Dawnspire was long.",
+        "paragraph": 2,
+        "paragraphId": "legacy-paragraph-2"
+      },
+      {
+        "chapter": "Chapter 1",
+        "chapterId": "legacy-chapter-3",
+        "excerpt": "Everyone knew Dawnspire well.",
+        "paragraph": 3,
+        "paragraphId": "legacy-paragraph-3"
+      }
+    ],
+    "personality_notes": [],
+    "pronunciation": {
+      "confidence": "unknown",
+      "ipa": "",
+      "source": "not generated"
+    },
+    "relationships": [],
+    "review_state": "needs review"
+  },
+  {
+    "aliases": [],
+    "canonical_name": "Council of Ash",
+    "category": "Organization",
+    "context": "",
+    "description": {
+      "evidence": {},
+      "text": ""
+    },
+    "id": "entity-ca9485dd54fc",
+    "locked": false,
+    "manual": false,
+    "occurrence_count": 1,
+    "occurrences": [
+      {
+        "chapter": "Chapter 1",
+        "chapterId": "legacy-chapter-0",
+        "excerpt": "Captain Arelian said the Council of Ash would meet in Dawnspire.",
+        "paragraph": 0,
+        "paragraphId": "legacy-paragraph-0"
+      }
+    ],
+    "personality_notes": [],
+    "pronunciation": {
+      "confidence": "medium",
+      "ipa": "k aʊ n s ʌ l ʌ v æ ʃ",
+      "source": "CMU dictionary"
+    },
+    "relationships": [],
+    "review_state": "generated"
+  }
+]

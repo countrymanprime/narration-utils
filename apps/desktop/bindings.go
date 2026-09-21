@@ -12,6 +12,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
+	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -185,7 +186,7 @@ func (h *Host) GuidePreview(id string, aliasIndex *int) (string, error) {
 	}
 	model, _, err := svc.tts.Paths(voiceID)
 	if err != nil {
-		return encodeBinding(map[string]any{"status": "asset_required", "voice": previewVoice(voice), "installState": svc.tts.State(voice), "downloadSize": voiceDownloadSize(voice)}, nil)
+		return encodeBinding(voiceAssetRequired(voice, svc.tts.State(voice)), nil)
 	}
 	audio, err := svc.guide.Preview(id, aliasIndex, guide.PreviewVoice{ID: voiceID, Model: model, Provider: voice.Provider, Version: voice.Version})
 	return encodeBinding(map[string]any{"status": "ready", "audioBase64": base64.StdEncoding.EncodeToString(audio), "mimeType": "audio/wav"}, err)
@@ -238,6 +239,11 @@ func reportAttach(ctx context.Context, attached bool, reason string) (string, er
 			runtime.EventsEmit(ctx, "system:attached", map[string]any{"attached": false, "reason": reason})
 		}
 	}
+	return attachResult(attached, reason)
+}
+
+// attachResult is what ProjectSwitch and ProjectCreate answer: whether the project was attached and, when it was not, why.
+func attachResult(attached bool, reason string) (string, error) {
 	return encodeBinding(map[string]any{"switched": attached, "reason": reason}, nil)
 }
 
@@ -572,3 +578,9 @@ func (h *Host) TracksSelect(path string) (string, error) {
 	return encodeBinding(h.tracksSelect(path))
 }
 func (h *Host) TracksList() (string, error) { return encodeBinding(h.tracksList()) }
+
+// voiceAssetRequired is the answer to a preview that needs a voice that is not installed yet: which voice, its state and its
+// download size, so the UI can offer to install it. The UI validates it as `GuidePreview` (ADR 0069).
+func voiceAssetRequired(voice tts.Voice, installState string) map[string]any {
+	return map[string]any{"status": "asset_required", "voice": previewVoice(voice), "installState": installState, "downloadSize": voiceDownloadSize(voice)}
+}

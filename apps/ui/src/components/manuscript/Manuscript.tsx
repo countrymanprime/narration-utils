@@ -1,3 +1,5 @@
+import { LoadError } from '../layout/LoadError';
+import { describeApiError } from '../../api/errorMessage';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -85,12 +87,14 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
           expandedChapters: next.expandedChapters || [],
         });
       } catch (error) {
-        notify(String(error));
+        notify(describeApiError(error));
       }
     },
     [api, notify],
   );
 
+  const [loadError, setLoadError] = useState<string>();
+  const [loadAttempt, setLoadAttempt] = useState(0);
   useEffect(() => {
     void (async () => {
       try {
@@ -103,15 +107,17 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
         const firstChapter = nextChapters[0]?.id;
         const chapterId = (value: string | undefined) => nextChapters.find((item) => item.id === value || item.title === value)?.id || value;
         const expandedChapters = (state.expandedChapters ?? [state.activeChapter || firstChapter]).map(chapterId).filter((id): id is string => Boolean(id));
+        setLoadError(undefined);
         setChapters(nextChapters);
         setNotes(nextNotes);
         setEntities(nextEntities);
         setReaderState({ ...state, activeChapter: chapterId(state.activeChapter) || firstChapter, expandedChapters });
       } catch (error) {
-        notify(String(error));
+        // Nothing to read without these four lists, so the page says so inline and offers Retry (ADR 0069).
+        setLoadError(describeApiError(error));
       }
     })();
-  }, [api, notify]);
+  }, [api, loadAttempt]);
   useEffect(() => {
     for (const chapterId of readerState.expandedChapters || []) {
       if (requestedChapters.current.has(chapterId)) continue;
@@ -120,7 +126,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
       void api
         .manuscriptParagraphs(chapterId)
         .then((next) => setParagraphs((current) => [...current.filter((paragraph) => paragraph.chapterId !== chapterId), ...next]))
-        .catch((error) => notify(String(error)))
+        .catch((error) => notify(describeApiError(error)))
         .finally(() =>
           setLoadingChapters((current) => {
             const next = new Set(current);
@@ -217,7 +223,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
         setReaderState({ ...readerState, bookmarks: [...readerState.bookmarks, next] });
       }
     } catch (error) {
-      notify(String(error));
+      notify(describeApiError(error));
     }
   };
   const runSearch = async (query: string) => {
@@ -231,7 +237,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
       const results = await api.manuscriptSearch(query);
       if (request === searchRequest.current) setSearchResults(results);
     } catch (error) {
-      if (request === searchRequest.current) notify(String(error));
+      if (request === searchRequest.current) notify(describeApiError(error));
     }
   };
   const addNote = () => {
@@ -257,7 +263,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
       setNotes((current) => [...current, created]);
       notify('Note added.');
     } catch (error) {
-      notify(String(error));
+      notify(describeApiError(error));
     }
   };
   const deleteNote = async (id: string) => {
@@ -267,9 +273,11 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
       closeSheet();
       notify('Note deleted.');
     } catch (error) {
-      notify(String(error));
+      notify(describeApiError(error));
     }
   };
+
+  if (loadError) return <LoadError title="Manuscript" message={loadError} retry={() => setLoadAttempt((attempt) => attempt + 1)} />;
 
   return (
     <div className="reader-page min-h-full [--reader-inline:1.5rem] max-md:[--reader-inline:1rem]" style={{ '--band-h': `${bandHeight}px` } as CSSProperties}>
@@ -476,7 +484,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
                   void api
                     .readerBookmarkDelete(id)
                     .then(() => setReaderState((current) => ({ ...current, bookmarks: current.bookmarks.filter((item) => item.id !== id) })))
-                    .catch((error) => notify(String(error)))
+                    .catch((error) => notify(describeApiError(error)))
                 }
               />
             </div>

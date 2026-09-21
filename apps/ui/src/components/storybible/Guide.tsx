@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { LoadError } from '../layout/LoadError';
+import { describeApiError } from '../../api/errorMessage';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLock, faPlus, faRotate } from '@fortawesome/free-solid-svg-icons';
-import { normalizeGuideEntity, type GuideEntity, type WorkJob } from '../../types';
+import type { GuideEntity, WorkJob } from '../../types';
 import { categoryCssName, categoryLabel, sortEntities, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { Heading } from '../primitives/Heading';
@@ -50,6 +52,10 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
   const routerNavigate = useNavigate();
   const entityId = location.hash ? decodeURIComponent(location.hash.slice(1)) : undefined;
   const [rows, setRows] = useState<GuideEntity[]>([]);
+  // The first load failing leaves the page with nothing to show, so it gets an inline error and Retry; a later reload failing
+  // keeps the rows on screen and is a toast, as before.
+  const [loadError, setLoadError] = useState<string>();
+  const loadedOnce = useRef(false);
   const [selectedId, setSelectedId] = useState<string>();
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState('All');
@@ -65,11 +71,14 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
   const load = useCallback(
     async (selectId?: string) => {
       try {
-        const next = ((await api.guideEntities()) || []).map(normalizeGuideEntity);
+        const next = await api.guideEntities();
+        loadedOnce.current = true;
+        setLoadError(undefined);
         setRows(next);
         setSelectedId((current) => (next.find((row) => row.id === (selectId ?? current)) || next.find((row) => row.category !== 'Draft'))?.id);
       } catch (error) {
-        notify(String(error));
+        if (loadedOnce.current) notify(describeApiError(error));
+        else setLoadError(describeApiError(error));
       }
     },
     [api, notify],
@@ -99,7 +108,9 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
           }
         })
         .catch(
-          (error) => active && setBuildJob((current) => (current ? { ...current, phase: 'error', error: String(error), message: String(error) } : current)),
+          (error) =>
+            active &&
+            setBuildJob((current) => (current ? { ...current, phase: 'error', error: describeApiError(error), message: describeApiError(error) } : current)),
         );
     refresh();
     const timer = window.setInterval(refresh, 250);
@@ -137,6 +148,8 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
     setSelectedId(id);
   };
 
+  if (loadError) return <LoadError title="Story Bible" message={loadError} retry={() => void load(entityId)} />;
+
   return (
     <Tabs value={tab} onChange={setTab} className="mx-auto flex h-[calc(100dvh-6.5rem)] max-w-6xl flex-col gap-4 overflow-hidden max-md:h-auto">
       <div className="flex-none space-y-4">
@@ -159,7 +172,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
                       notify(job.result?.message || 'Story Bible rebuilt.');
                     } else setBuildJob(job);
                   } catch (error) {
-                    notify(String(error));
+                    notify(describeApiError(error));
                   }
                 }}
               >

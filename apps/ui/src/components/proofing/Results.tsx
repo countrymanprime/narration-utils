@@ -1,3 +1,4 @@
+import { describeApiError } from '../../api/errorMessage';
 import { Fragment } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileExport, faFileLines, faHeadphones, faPlus, faRotateLeft } from '@fortawesome/free-solid-svg-icons';
@@ -73,7 +74,7 @@ export function Results({
                   await api.transcriptExportMarkers();
                   notify(`Exporting ${pendingMarkers} marker${pendingMarkers === 1 ? '' : 's'} to REAPER…`);
                 } catch (error) {
-                  notify(String(error));
+                  notify(describeApiError(error));
                 }
               }}
             >
@@ -167,7 +168,7 @@ export function Results({
                                 try {
                                   notify(await api.transcriptAddEquivalence(row.id));
                                 } catch (error) {
-                                  notify(String(error));
+                                  notify(describeApiError(error));
                                 }
                               }}
                             >
