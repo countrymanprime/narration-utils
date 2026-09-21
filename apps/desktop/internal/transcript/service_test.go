@@ -3,6 +3,7 @@ package transcript
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -151,5 +152,125 @@ func TestLoadHintsWithNoProjectIsEmptyNotACwdRead(t *testing.T) {
 	service := New(Config{}, nil, nil, nil, nil)
 	if hints, err := service.LoadHints(); err != nil || len(hints) != 0 {
 		t.Fatalf("hints = %#v, err = %v", hints, err)
+	}
+}
+
+// appendEvents writes raw event lines to the session's events.log, the way REAPER's Lua does.
+func appendEvents(t *testing.T, session string, lines ...string) {
+	t.Helper()
+	file, err := os.OpenFile(filepath.Join(session, "events.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = file.Close() }()
+	if _, err := file.WriteString(strings.Join(lines, "\n") + "\n"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDrainSharesTheBridgeWithAnotherConsumerWithoutLosingOrStealingEvents(t *testing.T) {
+	service, session := testService(t)
+	service.state = empty()
+	service.state["runId"], service.state["phase"] = "run-1", "inspecting"
+	var others []string
+	service.bridge.Subscribe(bridge.Subscription{
+		Tags:   []string{"LINES_*", "ERROR"},
+		Owns:   func(runID string) bool { return runID == "lines-9" },
+		Handle: func(event bridge.Event) { others = append(others, event.Tag+"|"+event.RunID) },
+	})
+	appendEvents(t, session,
+		"LINES_STAMPED|lines-9|2|0|0|0",
+		"COMPARE_MARKER|run-1|row-1|MISREAD|Alice|alice|Alyss|3.5|2|Chapter%201|4|script|audio|pending||1.25",
+		"ERROR|lines-9|The%20manuscript%20line%20list%20was%20not%20found.",
+		"COMPARE_INSPECTED|run-1|1%20discrepancy%20found.|1|0",
+	)
+
+	if err := service.Drain(); err != nil {
+		t.Fatal(err)
+	}
+
+	state := service.Snapshot()
+	if state["phase"] != "success" || len(state["rows"].([]any)) != 1 {
+		t.Fatalf("the transcript service must still get its own events, got %#v", state)
+	}
+	if want := []string{"LINES_STAMPED|lines-9", "ERROR|lines-9"}; !reflect.DeepEqual(others, want) {
+		t.Fatalf("the other consumer got %v, want %v", others, want)
+	}
+}
+
+func TestABridgeErrorForTheRunReachesTheState(t *testing.T) {
+	service, session := testService(t)
+	service.state = empty()
+	service.state["runId"], service.state["phase"] = "run-1", "preparing"
+	appendEvents(t, session, "ERROR|run-1|Save%20the%20REAPER%20project%20before%20starting%20Transcript%20Compare.")
+
+	if err := service.Drain(); err != nil {
+		t.Fatal(err)
+	}
+
+	state := service.Snapshot()
+	if state["phase"] != "error" || state["message"] != "Save the REAPER project before starting Transcript Compare." {
+		t.Fatalf("state = %#v", state)
+	}
+}
+
+func TestABridgeErrorDuringAnExportReachesTheExportNotThePhase(t *testing.T) {
+	service, session := testService(t)
+	service.state = empty()
+	service.state["runId"], service.state["phase"] = "run-1", "success"
+	service.state["markerExport"] = map[string]any{"phase": "exporting", "message": "", "added": 0, "skipped": 0}
+	appendEvents(t, session, "ERROR|run-1|Transcript%20results%20were%20not%20found.")
+
+	if err := service.Drain(); err != nil {
+		t.Fatal(err)
+	}
+
+	state := service.Snapshot()
+	export, _ := state["markerExport"].(map[string]any)
+	if state["phase"] != "success" || export["phase"] != "error" || export["message"] != "Transcript results were not found." {
+		t.Fatalf("state = %#v", state)
+	}
+}
+
+func TestAnErrorForAnotherRunIsNotShownAsThisRunsError(t *testing.T) {
+	service, session := testService(t)
+	service.state = empty()
+	service.state["runId"], service.state["phase"] = "run-2", "inspecting"
+	appendEvents(t, session, "ERROR|run-1|Transcript%20Compare%20context%20expired%3B%20prepare%20a%20new%20comparison.")
+
+	if err := service.Drain(); err != nil {
+		t.Fatal(err)
+	}
+
+	if state := service.Snapshot(); state["phase"] != "inspecting" {
+		t.Fatalf("a stale run's error changed the current run: %#v", state)
+	}
+}
+
+func TestAnUnattributedBridgeErrorFailsARunInProgressAndIsIgnoredWhenIdle(t *testing.T) {
+	service, session := testService(t)
+	service.state = empty()
+	appendEvents(t, session, "ERROR||Unsupported%20hub%20protocol")
+	if err := service.Drain(); err != nil {
+		t.Fatal(err)
+	}
+	if state := service.Snapshot(); state["phase"] != "idle" {
+		t.Fatalf("an idle service must ignore a session-level error, got %#v", state)
+	}
+
+	service.state["runId"], service.state["phase"] = "run-1", "preparing"
+	appendEvents(t, session, "ERROR||Unsupported%20hub%20protocol")
+	if err := service.Drain(); err != nil {
+		t.Fatal(err)
+	}
+	if state := service.Snapshot(); state["phase"] != "error" || state["message"] != "Unsupported hub protocol" {
+		t.Fatalf("state = %#v", state)
+	}
+}
+
+func TestDrainWithoutABridgeIsANoOp(t *testing.T) {
+	service := New(Config{Project: t.TempDir()}, nil, settings.New(t.TempDir(), t.TempDir()), nil, nil)
+	if err := service.Drain(); err != nil {
+		t.Fatal(err)
 	}
 }

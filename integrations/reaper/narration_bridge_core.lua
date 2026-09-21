@@ -41,7 +41,11 @@ local function event(session_dir, tag, ...)
     handle:close()
   end
 end
+-- reaper.EnumerateFiles caches a directory's listing until it is called with index -1: without that, a file created
+-- after the first call is not listed and a removed one still is (seen in REAPER 7.80), so a command would be read late
+-- or as a ghost. The clear comes first on every call.
 local function command_files(directory)
+  reaper.EnumerateFiles(directory, -1)
   local names, index = {}, 0
   while true do
     local name = reaper.EnumerateFiles(directory, index)

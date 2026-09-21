@@ -49,11 +49,13 @@ func PercentEncode(value string) string {
 	return builder.String()
 }
 
+// Client is the host's end of one REAPER session directory: it sends commands and, through Subscribe and
+// Dispatch, fans events out to the consumers that asked for them.
 type Client struct {
-	mu          sync.Mutex
-	sessionDir  string
-	counter     uint64
-	eventOffset int64
+	mu         sync.Mutex // guards counter (the command file names)
+	sessionDir string
+	counter    uint64
+	events     events
 }
 
 func New(sessionDir string) (*Client, error) {
@@ -77,31 +79,6 @@ func (c *Client) Send(action string, fields []string) (string, error) {
 		return "", fmt.Errorf("could not activate bridge command: %w", err)
 	}
 	return target, nil
-}
-
-func (c *Client) ReadEvents() ([]string, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	bytes, err := os.ReadFile(filepath.Join(c.sessionDir, "events.log"))
-	if os.IsNotExist(err) {
-		return []string{}, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	offset := c.eventOffset
-	if offset < 0 || offset > int64(len(bytes)) {
-		offset = int64(len(bytes))
-	}
-	c.eventOffset = int64(len(bytes))
-	text := string(bytes[offset:])
-	result := []string{}
-	for _, line := range strings.Split(text, "\n") {
-		if line != "" {
-			result = append(result, strings.TrimSuffix(line, "\r"))
-		}
-	}
-	return result, nil
 }
 
 func percentDecode(value string) (string, error) {

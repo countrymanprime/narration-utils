@@ -65,24 +65,25 @@ function M.run(session_dir, registry)
     for _, name in ipairs(core.command_files(commands_dir)) do
       local path = core.join(commands_dir, name)
       local handle = io.open(path, 'r')
-      local line = handle and handle:read('*l') or ''
+      -- A file that cannot be opened is already gone (a listing can be stale): nothing to run, nothing to report.
       if handle then
+        local line = handle:read('*l') or ''
         handle:close()
-      end
-      os.remove(path)
-      local command = core.split(line, 8)
-      if command[1] ~= '1' then
-        ctx.event('ERROR', 'Unsupported hub protocol')
-      else
-        local handler = registry.lookup(command[2])
-        if handler then
-          local args = {}
-          for index = 3, #command do
-            args[#args + 1] = command[index]
-          end
-          handler(ctx, args)
+        os.remove(path)
+        local command = core.split(line, 8)
+        if command[1] ~= '1' then
+          ctx.event('ERROR', '', 'Unsupported hub protocol')
         else
-          ctx.event('ERROR', 'Unsupported workspace command')
+          local handler = registry.lookup(command[2])
+          if handler then
+            local args = {}
+            for index = 3, #command do
+              args[#args + 1] = command[index]
+            end
+            handler(ctx, args)
+          else
+            ctx.event('ERROR', command[3] or '', 'Unsupported workspace command')
+          end
         end
       end
     end

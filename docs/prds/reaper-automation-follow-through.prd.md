@@ -200,7 +200,7 @@ Every spike phase below launches REAPER. D3 approves that on copies of `Challeng
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Run the manual checklist | User runs the 10-step checklist in their own REAPER; results and REAPER version recorded in `manuscript-line-identity.md`; status line updated. No code | pending | 2, 3 | - | - |
-| 2 | Bridge event fan-out | Go: one event reader, per-consumer routing; transcript service migrated; tests. Then, after phase 4, run IDs on `ERROR` events in Lua | pending | 1, 3, 5 | Go part: none; Lua part: 4 | - |
+| 2 | Bridge event fan-out | Go: one event reader, per-consumer routing; transcript service migrated; tests. Then, after phase 4, run IDs on `ERROR` events in Lua | complete | 1, 3, 5 | Go part: none; Lua part: 4 | [ADR 0068](../adr/0068-bridge-events-fan-out-to-subscribers-by-tag-and-run-and-every-error-names-its-run.md), [reaper-bridge](../architecture/reaper-bridge.md) |
 | 3 | Lua stub-`reaper` harness (D2) | Lua 5.4 in CI (Linux and Windows), fake `reaper`, file-protocol driver, characterization tests for every existing command and mutation checks; no bridge source change | complete | 1, 2, 5 | - | [ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md), [reaper-bridge](../architecture/reaper-bridge.md) |
 | 4 | Lua command registry (D2) | Behavior-preserving refactor of the dispatch chain; new-command file convention; `verify-installable.mjs` list | complete | 5 | 3 | [ADR 0067](../adr/0067-bridge-commands-are-registered-by-name-and-each-feature-lives-in-its-own-lua-file.md), [reaper-bridge](../architecture/reaper-bridge.md) |
 | 5 | Spike S0: item `P_EXT` in a saved project (approved, D3) | Scripted, isolated REAPER run: stamp, split, copy, save, inspect the `.rpp`; keep a REAPER-saved fixture; record result | pending | 1, 2, 3 | D3 | - |
@@ -235,7 +235,7 @@ Every spike phase below launches REAPER. D3 approves that on copies of `Challeng
 **Phase 2 - Bridge event fan-out**
 - **Goal**: two consumers can use one bridge without losing events.
 - **Scope**: `apps/desktop/internal/bridge` (reader plus subscription), `apps/desktop/internal/transcript/service.go` migration, `ERROR` events with a run ID in `narration_ui_bridge.lua` (small Lua change, manual check), tests.
-- **Success signal**: transcript service tests unchanged and green; fan-out test with two subscribers and unrelated run IDs; Transcript Compare still runs end to end in REAPER (checklist step 10).
+- **Success signal**: transcript service tests unchanged and green; fan-out test with two subscribers and unrelated run IDs; Transcript Compare still runs end to end in REAPER (checklist step 10). *Evidence: the existing transcript tests pass unchanged; the fan-out is tested with two consumers and interleaved run IDs, partial lines, malformed lines and concurrent `Dispatch` calls (`internal/bridge`, 94% coverage, floor raised from 85); the run ID on `ERROR` is pinned in the Lua harness. Also found: the transcript service used to drop every `ERROR` (see ADR 0068). The end-to-end check in the app (step 10) needs the owner and is tracked under phase 1.*
 
 **Phase 3 - Lua stub-`reaper` harness (D2)**
 - **Goal**: Lua behavior is tested in CI without REAPER.

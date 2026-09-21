@@ -41,7 +41,7 @@ Behaviour that is deliberate:
 
 ## Later phases
 
-1. **Go client.** Add bridge methods and payload writers in `apps/desktop/internal`, with tests that mirror `transcript/service_test.go`, and a UI trigger. Decide where line IDs come from: the natural source is the item-to-manuscript-span alignment Transcript Compare already computes.
+1. **Go client.** Add bridge methods and payload writers in `apps/desktop/internal`, with tests that mirror `transcript/service_test.go`, a subscription for the `LINES_*`, `REGIONS_CREATED` and `ERROR` events of its own runs (see [the REAPER bridge](reaper-bridge.md#reading-events-in-the-host-the-fan-out)), and a UI trigger. Decide where line IDs come from: the natural source is the item-to-manuscript-span alignment Transcript Compare already computes.
 2. **Chapter regions from the manuscript.** Regions need project-time bounds; derive them from the `tracks` package's item extents per chapter track.
 3. **Static read (optional).** Once a REAPER-saved sample project exists, check how item `P_EXT` appears in the `.rpp`. If it is stable, `tracks` could read line IDs without a running REAPER; until then use `read_line_ids`.
 4. **Lua test harness.** A stub `reaper` table with a Lua interpreter in CI, so these commands and the existing ones stop depending on manual checks.
