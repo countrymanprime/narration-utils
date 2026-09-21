@@ -348,6 +348,16 @@ describe('live events (ADR 0069: dropped and counted, never thrown inside the ca
     expect(update).toHaveBeenCalledWith({ attached: true });
   });
 
+  it('passes on a notice from the host and drops one with no text', async () => {
+    const { client, emit } = await subscribeTo('system:notice');
+    const onNotice = vi.fn();
+    client.subscribeNotices(onNotice);
+    emit({ text: 'Your settings file could not be read.' });
+    emit({ message: 'wrong key' });
+    expect(onNotice).toHaveBeenCalledTimes(1);
+    expect(onNotice).toHaveBeenCalledWith('Your settings file could not be read.');
+  });
+
   it('reads the teleprompter state binding through the same schema', async () => {
     vi.resetModules();
     const { wailsClient: client } = await import('./wailsClient');

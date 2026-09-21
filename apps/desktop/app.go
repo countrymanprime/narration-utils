@@ -8,7 +8,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +17,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
+	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
@@ -55,6 +55,8 @@ type Host struct {
 	teleprompter *teleprompter.Service
 	recents      *recents.Store
 	log          *hostlog.Log
+	// persist reports a file that cannot be read: to the host log and, for the narrator's own data, to the narrator (ADR 0069).
+	persist *persist.Reporter
 }
 
 // ttsPhaseDownloading is the phase of a voice install that is running. It is the word the UI polls for (contracts/tts.ts), and the
@@ -77,6 +79,9 @@ type workJob struct {
 	percent                             int
 	logs                                []string
 	started                             time.Time
+	// report writes to the host log; badProgress is set once a malformed progress line was reported, so a stuck line is not repeated.
+	report      func(kind, message string)
+	badProgress bool
 }
 
 type config struct {
@@ -96,8 +101,32 @@ type config struct {
 func NewHost() *Host {
 	workingDirectory, _ := os.Getwd()
 	repoRoot := layout.FindRoot(workingDirectory)
-	return &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), config: config{repoRoot: repoRoot}, manuscript: manuscript.New(""), sidecars: process.NewSupervisor(), settings: settings.New(repoRoot, ""), ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recents.New(recentProjectsPath()), log: hostlog.New(hostlog.DefaultPath(), 0)}
+	logger := hostlog.New(hostlog.DefaultPath(), 0)
+	// The services are built and given their reporter before the Host exists, so nothing reads a swappable field off a Host here
+	// (hostguard_test.go); the reporter reaches the narrator through the host once it does.
+	var host *Host
+	reporter := &persist.Reporter{Log: func(kind, message string) { _ = logger.Report(kind, message) }, Notify: func(text string) { host.noticeNarrator(text) }}
+	store, notes, recent := settings.New(repoRoot, ""), manuscript.New(""), recents.New(recentProjectsPath())
+	store.SetPersist(reporter)
+	notes.SetPersist(reporter)
+	recent.SetPersist(reporter)
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, ttsJobs: map[string]*ttsJob{}, whisperJobs: map[string]*whisperJob{}, recents: recent, log: logger, persist: reporter}
+	return host
 }
+
+// noticeNarrator tells the narrator something the app did on their behalf, such as keeping a file it could not read (the
+// system:notice event). It is best effort before the window exists, and it never holds h.mu across the emit.
+func (h *Host) noticeNarrator(text string) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "system:notice", noticePayload(text))
+	}
+}
+
+// noticePayload is the system:notice event: the text to show the narrator.
+func noticePayload(text string) map[string]any { return map[string]any{"text": text} }
 
 // recentProjectsPath resolves the per-user recent-projects file. Recent
 // projects are not project-scoped, so this is constructed exactly once in
@@ -132,6 +161,7 @@ func (h *Host) configureLocked(next config) {
 	next.repoRoot = layout.FindRoot(next.repoRoot)
 	h.config = next
 	h.settings = settings.New(h.config.repoRoot, h.config.projectFolder)
+	h.settings.SetPersist(h.persist)
 	h.resolveDeveloperSidecars()
 	packagedRoot := ""
 	if h.config.manuscriptPython == "" || h.config.comparePython == "" || h.config.teleprompterPython == "" {
@@ -152,8 +182,10 @@ func (h *Host) configureLocked(next config) {
 		h.config.reaperLauncher = layout.Path(h.config.repoRoot, layout.LauncherFile)
 	}
 	h.manuscript = manuscript.New(h.config.projectFolder)
+	h.manuscript.SetPersist(h.persist)
 	h.settings.SetProject(h.config.projectFolder)
 	h.guide = guide.New(h.config.projectFolder, h.config.manuscriptPython, h.config.manuscriptBackend, h.settings, h.sidecars)
+	h.guide.SetPersist(h.persist)
 	cacheBase, cacheErr := os.UserCacheDir()
 	if cacheErr != nil {
 		cacheBase = os.TempDir()
@@ -179,6 +211,7 @@ func (h *Host) configureLocked(next config) {
 		client, _ = bridge.New(h.config.sessionDir)
 	}
 	h.transcript = transcript.New(transcript.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir, Python: h.config.comparePython, Backend: h.config.compareBackend}, client, h.settings, h.sidecars, h.emitTranscript)
+	h.transcript.SetPersist(h.persist)
 	teleprompterDir := h.config.sessionDir
 	if teleprompterDir == "" {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")
@@ -876,7 +909,7 @@ func (h *Host) startGuideBuild() (map[string]any, error) {
 			return nil, fmt.Errorf("a Story Bible rebuild is already running")
 		}
 	}
-	job := &workJob{id: fmt.Sprintf("guide-%d", time.Now().UnixNano()), kind: "story_bible", phase: "running", message: "Story Bible rebuild started.", percent: 1, started: time.Now()}
+	job := &workJob{id: fmt.Sprintf("guide-%d", time.Now().UnixNano()), kind: "story_bible", phase: "running", message: "Story Bible rebuild started.", percent: 1, started: time.Now(), report: func(kind, message string) { _ = h.log.Report(kind, message) }}
 	h.guideJob = job
 	h.mu.Unlock()
 	// The build runs on the snapshot's Story Bible and session directory, which
@@ -938,11 +971,14 @@ func pollWorkJob(job *workJob, progressPath, logPath string, logAt *int64) {
 	var message string
 	if raw, err := os.ReadFile(progressPath); err == nil {
 		lines := strings.Split(strings.TrimSpace(string(raw)), "\n")
-		if parts := strings.SplitN(lines[len(lines)-1], "|", 3); len(parts) >= 2 {
-			percent, _ = strconv.Atoi(strings.TrimSpace(parts[1]))
-			if len(parts) == 3 {
-				message = strings.TrimSpace(parts[2])
+		if _, parsed, text, parseErr := process.ParseProgress(lines[len(lines)-1]); parseErr != nil {
+			// A bad line keeps the last good progress; it is reported once per job, not on every poll.
+			if job.report != nil && !job.badProgress {
+				job.badProgress = true
+				job.report("progress_line_ignored", fmt.Sprintf("Story Bible progress line ignored: %v", parseErr))
 			}
+		} else {
+			percent, message = int(parsed), text
 		}
 	}
 	var fresh []string

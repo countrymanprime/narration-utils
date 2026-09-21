@@ -90,6 +90,11 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeTruthy();
   });
 
+  it('shows the narrator a notice the host sends, such as a file it kept aside', async () => {
+    renderApp({}, { notice: 'Your notes file could not be read. It was kept next to the original, and a fresh one was started.' });
+    expect(await screen.findByText(/Your notes file could not be read/)).toBeTruthy();
+  });
+
   it('tells the narrator once when live updates from the host have been failing', async () => {
     renderApp({}, { liveUpdatesDegraded: true });
     expect(await screen.findByText(/live updates from the desktop host could not be read/)).toBeTruthy();

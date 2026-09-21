@@ -6,15 +6,17 @@ import (
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 )
 
 func TestBuiltinDefaultsMatchRepoDefaultsFile(t *testing.T) {
-	document := readDocument(layout.RepoFile(layout.DefaultsFile))
+	store := New(t.TempDir(), "")
+	document := store.readDocument(layout.RepoFile(layout.DefaultsFile), persist.Disposable)
 	if len(document) == 0 {
 		t.Fatalf("could not read %s", layout.DefaultsFile)
 	}
 	for tool := range document {
-		file := readTool(layout.RepoFile(layout.DefaultsFile), tool)
+		file := store.readTool(layout.RepoFile(layout.DefaultsFile), tool, persist.Disposable)
 		for key, want := range file {
 			if got := builtinDefaults[tool][key]; got != want {
 				t.Errorf("builtinDefaults[%q][%q] = %q, defaults.json has %q", tool, key, got, want)

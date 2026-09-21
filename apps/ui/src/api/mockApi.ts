@@ -121,6 +121,8 @@ export function createMockApi(
     invalidPayload?: 'bootstrap' | 'manuscript' | 'storybible';
     /** Tells the app at once that live updates from the host are degraded, so the notice can be seen without a failing host. */
     liveUpdatesDegraded?: boolean;
+    /** Tells the app this text at once, as the host does after keeping a file it could not read. */
+    notice?: string;
   } = {},
 ): NarrationApi {
   let entities = wireClone(WIRE_ENTITIES);
@@ -722,6 +724,12 @@ export function createMockApi(
       return wireClone(tracksDiscovery);
     },
     tracksList: async () => wireClone(WIRE_TRACKS_PROJECT),
+    subscribeNotices: (onNotice) => {
+      const text = initial.notice;
+      if (!text) return () => {};
+      const timer = setTimeout(() => onNotice(text), 0);
+      return () => clearTimeout(timer);
+    },
     subscribeLiveUpdateHealth: (onDegraded) => {
       if (!initial.liveUpdatesDegraded) return () => {};
       const timer = setTimeout(onDegraded, 0);

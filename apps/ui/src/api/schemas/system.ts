@@ -31,3 +31,6 @@ export const bootstrapSchema = z.object({
 
 /** The `system:attached` event: a second REAPER launch attached, or was refused with a reason for the narrator. */
 export const projectAttachStateSchema = z.object({ attached: z.boolean(), reason: z.string().optional() }) satisfies z.ZodType<ProjectAttachState>;
+
+/** The `system:notice` event: something the app did for the narrator that they should read, such as keeping a file it could not read. */
+export const noticeSchema = z.object({ text: z.string() });
