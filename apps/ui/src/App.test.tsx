@@ -232,6 +232,24 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(saveSettings).toHaveBeenCalledWith('General', 'global', expect.objectContaining({ log_verbosity: 'verbose' }));
   });
 
+  it('saves only the settings the narrator changed, so a field with no value yet is never sent as an empty string', async () => {
+    const saveSettings = vi.fn(createMockApi().saveSettings);
+    renderApp({ saveSettings });
+    await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+
+    // A project has no override for any Proofing field until one is saved, so all of them are unset (empty) here. The
+    // host rejects an empty choice or colour ("unsupported value for chunk_seconds"), so only the edited field may go.
+    fireEvent.click(screen.getByRole('tab', { name: 'This Project' }));
+    fireEvent.click(await screen.findByRole('tab', { name: 'Proofing' }));
+    fireEvent.change(await screen.findByRole('combobox', { name: 'Default Whisper model' }), { target: { value: 'large-v3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(saveSettings).toHaveBeenCalledTimes(1));
+    expect(saveSettings).toHaveBeenCalledWith('TranscriptCompare', 'project', { model_size: 'large-v3' });
+  });
+
   it('names the Settings tabs and keeps the selected one while unsaved changes ask before a switch', async () => {
     renderApp();
     await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
