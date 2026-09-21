@@ -81,3 +81,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0056](0056-a-presentational-table-primitive-replaces-the-dtable-class-and-rows-take-the-keyboard.md) | A presentational Table primitive replaces the dtable class, and pressable rows take the keyboard | Accepted |
 | [0057](0057-a-running-job-that-cannot-be-cancelled-keeps-its-dialog-blocking-and-says-so.md) | A running job that cannot be cancelled keeps its dialog blocking and says so, and the progress bar respects reduced motion | Accepted |
 | [0058](0058-heading-has-a-level-and-panel-names-its-region-with-a-level-2-title.md) | Heading has a level, and Panel names its region with a level-2 title | Accepted |
+| [0059](0059-text-colours-meet-wcag-aa-with-two-text-levels-a-non-text-token-and-derived-on-tint-text.md) | Text colours meet WCAG AA: two text levels, a non-text token, and derived on-tint text | Accepted (amends ADR-0016) |

@@ -179,6 +179,10 @@ exactly that. What the suites do so that timing is not a variable:
   racing driver fails or photographs the wrong page there on demand instead of once in twenty CI runs. At 20x the two
   Story Bible confirm states exceed Playwright's 30 s test timeout inside the capture's own steps: they fail loudly, they
   do not photograph the wrong page. The reusable version of this lives in the kit's scaffold (`clickNav`, `beforeCapture`).
+  `UI_THEME=dark pnpm --dir apps/ui run screenshots` starts every capture in the dark theme, which is how the whole suite
+  is looked at in dark (the palette work checks every state in both themes). Its end-of-run validation fails on
+  `theme-dark` and `reader-dark` matching their default states, so copy `apps/ui/screenshots/app` aside after the run and read the PNGs; the
+  default run stays the gate.
 - **Go tests** that guard an ordering between goroutines run on one and on four CPUs (`test-schedules`), because the
   default scheduler hid the shutdown bug that failed four CI runs. Tests do not assert a wall-clock duration: the
   monotonic clock ticks every 0.5 to 15.6 ms on Windows, so a fast operation can measure exactly zero.
