@@ -1,0 +1,14 @@
+# Below md the navigation is a modal drawer: a named dialog, the only thing in <body>, holding the same list as the sidebar.
+- /children: equal
+- dialog "Navigation":
+  - heading "Navigation" [level=2]
+  - button "Close navigation"
+  - navigation:
+    - /children: equal
+    - button "Home"
+    - button "Manuscript"
+    - button "Proofing"
+    - button "Story Bible"
+    - button "Teleprompter"
+    - button "Tracks"
+  - button "Settings"

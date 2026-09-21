@@ -1,0 +1,2 @@
+# The info icon is a real button, and it says it is expanded while its hint shows.
+- button "More information" [expanded]

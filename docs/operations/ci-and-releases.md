@@ -194,6 +194,10 @@ The known limits of the gates are stated in [Design system](../design/design-sys
 cannot judge gradients or text over semi-transparent overlays, and pixel baselines are not adopted (a spike, after the
 suite has been stable for 50 runs, [#153](https://github.com/countrymanprime/narration-utils/issues/153)).
 
+- **Aria snapshots** ([ADR 0065](../adr/0065-aria-snapshots-pin-the-role-trees-of-the-dialogs-the-slide-over-and-the-navigation.md)):
+  the `ui-visual` job also runs `pnpm --dir apps/ui run aria` after the screenshots (its own config, the same mock build, no
+  retries, traces in `test-results/aria`), so a dialog that loses its role or name, a modal that stops hiding the page, or a
+  changed navigation list fails there (comparison-only on CI). See [Verification and code-health tooling](verification-tooling.md#aria-snapshots).
 - **Axe on app states** ([ADR 0064](../adr/0064-the-visual-suite-runs-axe-on-every-app-state-and-a-violation-fails-unless-it-is-declared-debt.md)):
   the visual suite runs axe after each screenshot and fails on a violation that `apps/ui/tests/visual/axe-debt.ts` does not
   declare, and on a declared rule that is no longer reported. `UI_AXE=1` (PowerShell: `$env:UI_AXE='1'`) with `pnpm --dir apps/ui screenshots` measures without

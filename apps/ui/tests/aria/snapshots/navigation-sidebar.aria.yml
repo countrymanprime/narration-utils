@@ -1,0 +1,11 @@
+# The page list is pinned exactly and in order (`children: equal`): a page added, removed or moved fails here. Settings sits after it.
+- complementary:
+  - navigation:
+    - /children: equal
+    - button "Home"
+    - button "Manuscript"
+    - button "Proofing"
+    - button "Story Bible"
+    - button "Teleprompter"
+    - button "Tracks"
+  - button "Settings"

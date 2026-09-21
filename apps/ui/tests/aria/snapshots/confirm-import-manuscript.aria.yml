@@ -1,0 +1,8 @@
+# The page behind a modal is aria-hidden, so <body> holds the alert dialog and nothing else.
+- /children: equal
+- alertdialog "Import Alice.docx":
+  - heading "Import Alice.docx" [level=2]
+  - button "Close"
+  - paragraph: /DOCX · \d+ paragraphs/
+  - button "Cancel"
+  - button "Import"
