@@ -14,6 +14,8 @@ on:
       tag:
         type: string
         required: true
+# A caller must grant every permission the reusable workflow's jobs hold, so this is `write` although only the attach job
+# (see _attach-platform.yml) uses it; the reusable workflow itself defaults to `read` and raises it for that one job.
 permissions:
   contents: write
 jobs:

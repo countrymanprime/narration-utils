@@ -1,0 +1,13 @@
+# Configuration for zizmor (.github/workflows/zizmor.yml). Every suppression carries its reason.
+# Auditor and pedantic personas are not used: the check runs at the default `regular` persona.
+rules:
+  # zizmor suggests `$/...` in place of `./...` for a workflow or action in this repository. That is a style
+  # preference, not a security finding: local references are not fetched from anywhere, so there is nothing
+  # to pin, and `./` is the syntax every runner and Dependabot already understand.
+  self-repository:
+    disable: true
+  # Dependabot waits this many days before proposing a release. The default floor is 7 days; the Go and uv
+  # ecosystems use 3 (their entries in dependabot.yml say why), so the audit's minimum is 3.
+  dependabot-cooldown:
+    config:
+      days: 3

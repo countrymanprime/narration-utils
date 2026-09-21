@@ -8,8 +8,7 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: write
+permissions: {}
 
 concurrency:
   group: production-release
@@ -21,9 +20,12 @@ jobs:
     timeout-minutes: 10
     environment:
       name: production
+    permissions:
+      contents: write # to create the stable tag and release
     steps:
       - uses: actions/checkout@v7
         with:
+          persist-credentials: false
           fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
@@ -57,7 +59,10 @@ jobs:
           STABLE_TAG="v${VERSION}"
           git rev-parse "$TAG"
           test -z "$(git tag --list "$STABLE_TAG")"
-          git tag "$STABLE_TAG" "$TAG"
-          git push origin "$STABLE_TAG"
+          # The local tag is what the notes script diffs against. The remote tag is created through the API
+          # (a lightweight tag on the RC's commit, as `git push` made) so the checkout above needs no stored credential.
+          COMMIT="$(git rev-parse "$TAG^{commit}")"
+          git tag "$STABLE_TAG" "$COMMIT"
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$STABLE_TAG" -f sha="$COMMIT" > /dev/null
           node scripts/release/generate-notes.mjs "$STABLE_TAG"
           gh release create "$STABLE_TAG" prerelease-assets/* --title "$STABLE_TAG" --notes-file release-notes.md
