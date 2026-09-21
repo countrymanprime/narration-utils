@@ -465,3 +465,56 @@ func TestAVoiceDownloadInProgressBlocksAProjectAttach(t *testing.T) {
 		t.Fatal("a finished voice download must not block an attach")
 	}
 }
+
+// A progress line that cannot be read keeps the last good progress and is reported once, not zeroed and not on every poll.
+func TestPollWorkJobKeepsTheLastGoodProgressWhenALineIsMalformedAndReportsItOnce(t *testing.T) {
+	dir := t.TempDir()
+	progress, logPath := filepath.Join(dir, "progress.txt"), filepath.Join(dir, "log.txt")
+	var reports []string
+	job := &workJob{percent: 1, report: func(kind, message string) { reports = append(reports, kind+" "+message) }}
+	var logAt int64
+
+	if err := os.WriteFile(progress, []byte("EXTRACT|40|Finding names\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	pollWorkJob(job, progress, logPath, &logAt)
+	if err := os.WriteFile(progress, []byte("EXTRACT|forty|Finding names\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	pollWorkJob(job, progress, logPath, &logAt)
+	pollWorkJob(job, progress, logPath, &logAt)
+
+	if job.percent != 40 || job.message != "Finding names" {
+		t.Fatalf("percent %d, message %q: a bad line must keep the last good progress", job.percent, job.message)
+	}
+	if len(reports) != 1 || !strings.HasPrefix(reports[0], "progress_line_ignored ") {
+		t.Fatalf("reports = %v, want exactly one", reports)
+	}
+}
+
+// The settings store configureLocked builds for a project is the one the narrator's settings are read through, so it must carry the
+// reporter: a corrupt settings file is kept and the narrator told (ADR 0069), not lost in silence.
+func TestTheProjectSettingsStoreReportsACorruptFileToTheNarrator(t *testing.T) {
+	appData := t.TempDir()
+	t.Setenv("APPDATA", appData)
+	t.Setenv("USERPROFILE", appData)
+	host := NewHost()
+	var notices []string
+	host.persist.Notify = func(text string) { notices = append(notices, text) }
+	path := filepath.Join(appData, "narration-utils", "global-settings.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(`{"General": `), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	host.mu.Lock()
+	host.configureLocked(host.config)
+	host.mu.Unlock()
+	_ = host.services().settings.Global("General")
+
+	if len(notices) != 1 || !strings.Contains(notices[0], "settings") {
+		t.Fatalf("notices = %v: the store configureLocked builds must report to the narrator", notices)
+	}
+}

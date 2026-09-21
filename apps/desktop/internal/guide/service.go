@@ -12,13 +12,16 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 )
 
 type Service struct {
+	persist                  atomic.Pointer[persist.Reporter]
 	project, python, backend string
 	settings                 *settings.Store
 	sidecars                 *process.Supervisor
@@ -36,19 +39,43 @@ func (s *Service) guidePath() string {
 func (s *Service) manuscript() string {
 	return filepath.Join(s.project, "narration-utils", "manuscript", "manuscript.json")
 }
+
+// SetPersist says where to report a Story Bible file that cannot be read (ADR 0069).
+func (s *Service) SetPersist(reporter *persist.Reporter) { s.persist.Store(reporter) }
+
+// schemaVersion is the newest Story Bible file this host reads; the Python sidecar writes it (manuscript_guide.py SCHEMA_VERSION).
+const schemaVersion = 2
+
 func (s *Service) Entities() ([]map[string]any, error) {
-	b, e := os.ReadFile(s.guidePath())
-	if e != nil {
-		if os.IsNotExist(e) {
-			return []map[string]any{}, nil
+	// The entries carry the narrator's edits and locks, so a file that cannot be read is kept aside and the narrator told, and the
+	// Story Bible starts empty. A file from a newer version is refused with a message and left exactly as it is.
+	var document map[string]any
+	var versionErr error
+	outcome := s.persist.Load().ReadJSON(s.guidePath(), "Story Bible", persist.NarratorData, func(bytes []byte) error {
+		var decoded map[string]any
+		if err := json.Unmarshal(bytes, &decoded); err != nil {
+			return err
 		}
-		return nil, fmt.Errorf("could not read the Story Bible: %w", e)
+		if decoded == nil {
+			return fmt.Errorf("not a JSON object")
+		}
+		version, _ := decoded["schema_version"].(float64)
+		if versionErr = persist.CheckVersion(int(version), schemaVersion, "Story Bible"); versionErr != nil {
+			return nil
+		}
+		document = decoded
+		return nil
+	})
+	if versionErr != nil {
+		return nil, versionErr
 	}
-	var v map[string]any
-	if json.Unmarshal(b, &v) != nil || v == nil {
-		return nil, fmt.Errorf("the Story Bible data could not be read")
+	if outcome == persist.Unreadable {
+		return nil, fmt.Errorf("the Story Bible file could not be read")
 	}
-	raw, present := v["entities"]
+	if document == nil {
+		return []map[string]any{}, nil
+	}
+	raw, present := document["entities"]
 	if !present || raw == nil {
 		return []map[string]any{}, nil
 	}

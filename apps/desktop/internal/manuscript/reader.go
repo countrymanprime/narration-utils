@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 )
 
 // Chapters returns the stable reader contract derived from the immutable
@@ -244,12 +246,21 @@ func (s *Service) loadNotes() map[string]any {
 	if project == "" {
 		return emptyNotes()
 	}
-	bytes, err := os.ReadFile(filepath.Join(project, "narration-utils", "manuscript-notes.json"))
-	if err != nil {
-		return emptyNotes()
-	}
+	// The notes, reader state and chapter statuses are the narrator's own work: a file that cannot be read is kept aside, the
+	// narrator is told, and a fresh one is started, so the next note never replaces it without a trace (ADR 0069).
 	var raw map[string]any
-	if json.Unmarshal(bytes, &raw) != nil {
+	s.persist.Load().ReadJSON(filepath.Join(project, "narration-utils", "manuscript-notes.json"), "notes", persist.NarratorData, func(bytes []byte) error {
+		var decoded map[string]any
+		if err := json.Unmarshal(bytes, &decoded); err != nil {
+			return err
+		}
+		if decoded == nil {
+			return fmt.Errorf("not a JSON object")
+		}
+		raw = decoded
+		return nil
+	})
+	if raw == nil {
 		return emptyNotes()
 	}
 	return normalizeNotes(raw)
@@ -263,6 +274,9 @@ func (s *Service) saveNotes(notes map[string]any) error {
 		return fmt.Errorf("save the REAPER project first")
 	}
 	path := filepath.Join(project, "narration-utils", "manuscript-notes.json")
+	if err := persist.CanOverwrite(path, "notes"); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("could not create manuscript sidecar: %w", err)
 	}

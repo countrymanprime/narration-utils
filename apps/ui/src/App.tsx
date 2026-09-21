@@ -116,6 +116,12 @@ function AppRoutes() {
     return api.subscribeTranscript((transcript) => setData((current) => (current ? { ...current, transcript } : current)));
   }, [api, hasBootstrap]);
 
+  // The host tells the narrator what it did on their behalf, such as keeping a file it could not read (ADR 0069).
+  useEffect(() => {
+    if (!hasBootstrap) return;
+    return api.subscribeNotices(setNotice);
+  }, [api, hasBootstrap, setNotice]);
+
   // Live events that do not match their schema are dropped and counted (ADR 0069); after a run of them the page on screen may be
   // out of date, and the narrator is told once instead of being left with a page that silently stopped updating.
   useEffect(() => {

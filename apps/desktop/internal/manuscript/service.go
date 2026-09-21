@@ -11,9 +11,11 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
+	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 )
 
 type ImportJob struct {
@@ -40,10 +42,14 @@ type Service struct {
 	notesMu sync.Mutex
 	project string
 	jobs    map[string]*ImportJob
+	persist atomic.Pointer[persist.Reporter]
 }
 
 func New(project string) *Service            { return &Service{project: project, jobs: map[string]*ImportJob{}} }
 func (s *Service) SetProject(project string) { s.mu.Lock(); defer s.mu.Unlock(); s.project = project }
+
+// SetPersist says where to report a notes file that cannot be read (ADR 0069). Without it a corrupt file is still kept aside.
+func (s *Service) SetPersist(reporter *persist.Reporter) { s.persist.Store(reporter) }
 
 // CanSwitchProject is deliberately conservative. A prepared preview is
 // meaningful user work even though it has no child process, so a second
