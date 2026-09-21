@@ -1,0 +1,45 @@
+{
+  "chapter": "c1",
+  "engine": "whisper",
+  "message": "Listening…",
+  "phase": "running",
+  "position": {
+    "committed": 29,
+    "jump": null,
+    "read": 29,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  "script": {
+    "chapter": {
+      "id": "c1",
+      "title": "Chapter One"
+    },
+    "spans": [
+      {
+        "count": 2,
+        "id": "c1",
+        "index": null,
+        "kind": "title",
+        "start": 0
+      },
+      {
+        "count": 20,
+        "id": "p1",
+        "index": 0,
+        "kind": "paragraph",
+        "start": 2
+      },
+      {
+        "count": 11,
+        "id": "p2",
+        "index": 1,
+        "kind": "paragraph",
+        "start": 22
+      }
+    ],
+    "tokens": 33,
+    "type": "script"
+  }
+}

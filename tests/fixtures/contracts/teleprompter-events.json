@@ -1,0 +1,400 @@
+[
+  {
+    "chapter": {
+      "id": "c1",
+      "title": "Chapter One"
+    },
+    "spans": [
+      {
+        "count": 2,
+        "id": "c1",
+        "index": null,
+        "kind": "title",
+        "start": 0
+      },
+      {
+        "count": 20,
+        "id": "p1",
+        "index": 0,
+        "kind": "paragraph",
+        "start": 2
+      },
+      {
+        "count": 11,
+        "id": "p2",
+        "index": 1,
+        "kind": "paragraph",
+        "start": 22
+      }
+    ],
+    "tokens": 33,
+    "type": "script"
+  },
+  {
+    "segment": 0,
+    "type": "partial",
+    "words": [
+      {
+        "end": 0.15,
+        "start": 0.0,
+        "word": "chapter"
+      },
+      {
+        "end": 0.35,
+        "start": 0.2,
+        "word": "one"
+      },
+      {
+        "end": 0.55,
+        "start": 0.4,
+        "word": "the"
+      },
+      {
+        "end": 0.75,
+        "start": 0.6,
+        "word": "old"
+      }
+    ]
+  },
+  {
+    "committed": 0,
+    "jump": null,
+    "read": 4,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "segment": 0,
+    "type": "partial",
+    "words": [
+      {
+        "end": 0.15,
+        "start": 0.0,
+        "word": "chapter"
+      },
+      {
+        "end": 0.35,
+        "start": 0.2,
+        "word": "one"
+      },
+      {
+        "end": 0.55,
+        "start": 0.4,
+        "word": "the"
+      },
+      {
+        "end": 0.75,
+        "start": 0.6,
+        "word": "old"
+      },
+      {
+        "end": 0.95,
+        "start": 0.8,
+        "word": "lighthouse"
+      },
+      {
+        "end": 1.15,
+        "start": 1.0,
+        "word": "keeper"
+      },
+      {
+        "end": 1.35,
+        "start": 1.2,
+        "word": "climbed"
+      }
+    ]
+  },
+  {
+    "committed": 0,
+    "jump": null,
+    "read": 7,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 0.15,
+    "segment": 0,
+    "start": 0.0,
+    "type": "word",
+    "word": "chapter"
+  },
+  {
+    "committed": 1,
+    "jump": null,
+    "read": 7,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 0.35,
+    "segment": 0,
+    "start": 0.2,
+    "type": "word",
+    "word": "one"
+  },
+  {
+    "committed": 2,
+    "jump": null,
+    "read": 7,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 0.55,
+    "segment": 0,
+    "start": 0.4,
+    "type": "word",
+    "word": "the"
+  },
+  {
+    "committed": 3,
+    "jump": null,
+    "read": 7,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 0.75,
+    "segment": 0,
+    "start": 0.6,
+    "type": "word",
+    "word": "old"
+  },
+  {
+    "committed": 4,
+    "jump": null,
+    "read": 7,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 0.95,
+    "segment": 0,
+    "start": 0.8,
+    "type": "word",
+    "word": "lighthouse"
+  },
+  {
+    "committed": 5,
+    "jump": null,
+    "read": 7,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 1.15,
+    "segment": 0,
+    "start": 1.0,
+    "type": "word",
+    "word": "keeper"
+  },
+  {
+    "committed": 6,
+    "jump": null,
+    "read": 7,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 1.35,
+    "segment": 0,
+    "start": 1.2,
+    "type": "word",
+    "word": "climbed"
+  },
+  {
+    "committed": 7,
+    "jump": null,
+    "read": 7,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 1.55,
+    "segment": 0,
+    "start": 1.4,
+    "type": "word",
+    "word": "the"
+  },
+  {
+    "committed": 8,
+    "jump": null,
+    "read": 8,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 1.75,
+    "segment": 0,
+    "start": 1.6,
+    "type": "word",
+    "word": "spiral"
+  },
+  {
+    "committed": 9,
+    "jump": null,
+    "read": 9,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 1.95,
+    "segment": 0,
+    "start": 1.8,
+    "type": "word",
+    "word": "stairs"
+  },
+  {
+    "committed": 10,
+    "jump": null,
+    "read": 10,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "segment": 0,
+    "type": "segment_end"
+  },
+  {
+    "segment": 1,
+    "type": "partial",
+    "words": [
+      {
+        "end": 0.15,
+        "start": 0.0,
+        "word": "far"
+      },
+      {
+        "end": 0.35,
+        "start": 0.2,
+        "word": "out"
+      },
+      {
+        "end": 0.55,
+        "start": 0.4,
+        "word": "at"
+      },
+      {
+        "end": 0.75,
+        "start": 0.6,
+        "word": "sea"
+      }
+    ]
+  },
+  {
+    "committed": 10,
+    "jump": "skip",
+    "read": 26,
+    "skipped": [
+      10,
+      22
+    ],
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 0.15,
+    "segment": 1,
+    "start": 0.0,
+    "type": "word",
+    "word": "far"
+  },
+  {
+    "end": 0.35,
+    "segment": 1,
+    "start": 0.2,
+    "type": "word",
+    "word": "out"
+  },
+  {
+    "end": 0.55,
+    "segment": 1,
+    "start": 0.4,
+    "type": "word",
+    "word": "at"
+  },
+  {
+    "committed": 25,
+    "jump": null,
+    "read": 26,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 0.75,
+    "segment": 1,
+    "start": 0.6,
+    "type": "word",
+    "word": "sea"
+  },
+  {
+    "committed": 26,
+    "jump": null,
+    "read": 26,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 0.95,
+    "segment": 1,
+    "start": 0.8,
+    "type": "word",
+    "word": "a"
+  },
+  {
+    "committed": 27,
+    "jump": null,
+    "read": 27,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 1.15,
+    "segment": 1,
+    "start": 1.0,
+    "type": "word",
+    "word": "small"
+  },
+  {
+    "committed": 28,
+    "jump": null,
+    "read": 28,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 1.35,
+    "segment": 1,
+    "start": 1.2,
+    "type": "word",
+    "word": "boat"
+  },
+  {
+    "committed": 29,
+    "jump": null,
+    "read": 29,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "segment": 1,
+    "type": "segment_end"
+  }
+]

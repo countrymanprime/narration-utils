@@ -1,0 +1,42 @@
+{
+  "apiVersion": 5,
+  "daw": "REAPER",
+  "diagnosticId": "go-1789000000000000000",
+  "manuscript": null,
+  "manuscriptCandidate": {
+    "name": "Manuscript.docx",
+    "path": "C:/Projects/Alice/Manuscript.docx"
+  },
+  "projectFolder": "C:/Projects/Alice",
+  "projectName": "Alice",
+  "runtime": {
+    "ManuscriptGuide": {
+      "backend": "manuscript_guide.py",
+      "python_exe": "python.exe"
+    },
+    "Reaper": {
+      "launcherPath": "narration_launcher.lua"
+    },
+    "TranscriptCompare": {
+      "compare_script": "compare.py",
+      "python_exe": "python.exe"
+    }
+  },
+  "transcript": {
+    "chapters": [],
+    "diff": "",
+    "elapsed": 0,
+    "logs": [],
+    "markerExport": {
+      "added": 0,
+      "message": "",
+      "phase": "idle",
+      "skipped": 0
+    },
+    "message": "",
+    "percent": 0,
+    "phase": "idle",
+    "rows": [],
+    "summary": ""
+  }
+}

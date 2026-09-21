@@ -1,0 +1,54 @@
+{
+  "audioItemCount": null,
+  "chapters": [],
+  "completedAt": "2026-09-21T10:00:00Z",
+  "diff": "",
+  "elapsed": 12.5,
+  "logs": [],
+  "markerExport": {
+    "added": 0,
+    "message": "",
+    "phase": "idle",
+    "skipped": 0
+  },
+  "message": "Comparison complete — review discrepancies before exporting markers.",
+  "percent": 100,
+  "phase": "success",
+  "rows": [
+    {
+      "audioContext": "audio context",
+      "audioText": "Alyss",
+      "chapter": "Chapter 1",
+      "docText": "alice",
+      "existingMarkerName": "",
+      "id": "row-1",
+      "itemIndex": 2,
+      "kind": "MISREAD",
+      "markerState": "pending",
+      "name": "Alice",
+      "paragraph": 4,
+      "projectTime": 3.5,
+      "scriptContext": "script context",
+      "srcpos": 1.25
+    },
+    {
+      "audioContext": "",
+      "audioText": "",
+      "chapter": "Chapter 1",
+      "docText": "hatter",
+      "existingMarkerName": "Hatter (marker)",
+      "id": "row-2",
+      "itemIndex": 3,
+      "kind": "EXTRA",
+      "markerState": "existing",
+      "name": "Hatter",
+      "paragraph": 6,
+      "projectTime": 9.25,
+      "scriptContext": "hatter",
+      "srcpos": 8.5
+    }
+  ],
+  "runId": "1789000000000000",
+  "summary": "2 discrepancies found.",
+  "trackName": null
+}
