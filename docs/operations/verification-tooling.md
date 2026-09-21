@@ -11,7 +11,8 @@ What `pnpm check` and CI verify beyond "it lints and the example tests pass", ho
 | Dead code: Knip | `narration-utils:knip` | `pnpm knip` |
 | Import rules taken from ADRs: depguard, the script tracker's pytest | the Go lint and the teleprompter `test` target | with their targets |
 | UI import rules: dependency-cruiser (primitives are leaves, wailsjs only in `src/api`, Base UI only in primitives) and the `<mark>` scan | `narration-utils-ui:architecture`, and two Vitest files | `pnpm --dir apps/ui architecture` |
-| Playwright traces on a failing visual test | `ui-visual` | see [CI and releases](ci-and-releases.md) |
+| Playwright traces on a failing visual test (`trace: 'retain-on-failure'`, uploaded when a `ui-visual` step fails) | `ui-visual` | see [CI and releases](ci-and-releases.md) |
+| Axe on every app state, with a declared, capped debt list | `ui-visual` (the visual suite) | `pnpm --dir apps/ui screenshots`, or `UI_AXE=1` to measure |
 | Aria snapshots: the role trees of the dialogs, the slide-over and the navigation | `ui-visual`, after the screenshots | `pnpm --dir apps/ui run aria` |
 
 ## Go lint
@@ -60,4 +61,15 @@ Snapshots live in `tests/aria/snapshots/*.aria.yml`, hand-trimmed and commented.
 
 ## Not built, on purpose
 
-Chromatic, MSW, Playwright component testing, mutation testing as a gate, the Storybook Vitest addon, Vale, `eslint-plugin-jsx-a11y`, Python type checking and crash reporting were considered and left out (reasons in the [PRD](../prds/verification-and-code-health-tooling.prd.md#what-were-not-building), which stays until its last phase ships).
+These were considered and left out; the reasons are current as of the work that delivered this tooling (`git log` for `docs/prds/verification-and-code-health-tooling.prd.md` recovers the full PRD).
+
+- **Chromatic:** a SaaS visual service, redundant with the Playwright suite, and it cannot see the WebView2 host.
+- **MSW:** the app talks to Wails bindings, not HTTP, and the mock API already covers tests.
+- **Playwright component testing:** the experimental React packages were removed upstream; it would overlap the atlas.
+- **Mutation testing as a gate:** Stryker's Vitest runner does not support Browser Mode and mutmut needs `fork` (WSL only on Windows). At most an occasional manual run on the parser modules.
+- **Storybook Vitest addon:** only if atlas maintenance becomes a burden.
+- **Vale** (prose lint) and **`eslint-plugin-jsx-a11y`:** the latter's peer range stops at ESLint 9 and this repository is on ESLint 10, and it overlaps axe.
+- **Python type checking as a gate:** none for now; revisit `ty` as an advisory step when it reaches 1.0.
+- **Crash reporting:** out by the privacy rule that analysis is local ([ADR 0032](../adr/0032-analyzers-report-findings-and-never-change-audio-or-manuscript-on-their-own.md)).
+- **Pixel-baseline visual diffs:** a deferred spike ([#153](https://github.com/countrymanprime/narration-utils/issues/153)), started only after 50 consecutive stable `ui-visual` runs; baselines would come from a pinned Linux container and be stored outside the repository, and the result is an ADR either way.
+- **An ESLint rule for the `<mark>` and Base UI import boundaries:** the tooling's config-protection hook refuses edits to `eslint.config.js`, so they are a Vitest scan and a dependency-cruiser rule with bad fixtures ([ADR 0062](../adr/0062-ui-import-rules-are-a-dependency-cruiser-config-and-a-mark-scan-that-name-their-adr.md)); add the lint rule by hand if wanted (the selector is in `highlightBoundary.test.ts`).

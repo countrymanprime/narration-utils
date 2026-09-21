@@ -189,11 +189,6 @@ exactly that. What the suites do so that timing is not a variable:
 - **Classifying a red run**: `gh run view <id> --log-failed`. `identical screenshots` or `sameAs no longer holds` is a
   driver (or a real duplicate); `Unable to find` or `Test timed out` in a frontend test is a wait that does not match the
   state, or a genuinely slow test; a Go failure that comes and goes with the CPU count is an ordering bug.
-
-The known limits of the gates are stated in [Design system](../design/design-system.md#what-the-suites-do-not-prove): axe
-cannot judge gradients or text over semi-transparent overlays, and pixel baselines are not adopted (a spike, after the
-suite has been stable for 50 runs, [#153](https://github.com/countrymanprime/narration-utils/issues/153)).
-
 - **Aria snapshots** ([ADR 0065](../adr/0065-aria-snapshots-pin-the-role-trees-of-the-dialogs-the-slide-over-and-the-navigation.md)):
   the `ui-visual` job also runs `pnpm --dir apps/ui run aria` after the screenshots (its own config, the same mock build, no
   retries, traces in `test-results/aria`), so a dialog that loses its role or name, a modal that stops hiding the page, or a
@@ -203,6 +198,10 @@ suite has been stable for 50 runs, [#153](https://github.com/countrymanprime/nar
   declare, and on a declared rule that is no longer reported. `UI_AXE=1` (PowerShell: `$env:UI_AXE='1'`) with `pnpm --dir apps/ui screenshots` measures without
   failing (the teardown prints the count per rule and where), `UI_AXE=0` skips it; on CI either value fails the run. To clear an entry, fix the page and delete
   it (and lower `MAX_AXE_DEBT_RULES`); to add one, say why and name the issue that tracks it.
+
+The known limits of the gates are stated in [Design system](../design/design-system.md#what-the-suites-do-not-prove): axe
+cannot judge gradients or text over semi-transparent overlays, and pixel baselines are not adopted (a spike, after the
+suite has been stable for 50 runs, [#153](https://github.com/countrymanprime/narration-utils/issues/153)).
 
 ## Dead-code check (Knip)
 

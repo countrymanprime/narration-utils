@@ -3,7 +3,7 @@
 #
 # `standard` is the v2 default set: errcheck, govet, ineffassign, staticcheck (which in v2 also
 # carries the former gosimple and stylecheck checks) and unused. gosec is added on top. This is
-# equal to or stricter than the standalone staticcheck it replaced (docs/prds/verification-and-code-health-tooling.prd.md).
+# equal to or stricter than the standalone staticcheck it replaced (docs/operations/verification-tooling.md).
 #
 # The version is pinned in scripts/toolchain.json; the binary is built with the repo's Go toolchain
 # (`go install`), so it always understands the Go version the module targets.

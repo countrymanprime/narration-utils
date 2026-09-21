@@ -52,7 +52,7 @@ In the shipped app only the note colour is a user setting (`color_note`, written
 - The component tests `Highlight.test.tsx`, `EntitySummary.badges.test.ts` and `NavButton.test.tsx` tie the components to the recipes the guard measures (the guard reads tokens, not component source).
 - The component atlas (`pnpm --dir apps/ui atlas`) runs axe on every story in both themes; its debt list (`tests/atlas/a11y-debt.ts`) is empty and capped at 0.
 
-Not enforced by a test: axe over the app's own states (it runs on stories only; the test flakiness PRD's phase 6 adds it, and every state is at 0 violations in both themes today), and border contrast.
+Enforced beyond the token test: axe runs on every app state in the visual suite ([ADR 0064](../adr/0064-the-visual-suite-runs-axe-on-every-app-state-and-a-violation-fails-unless-it-is-declared-debt.md)), and none of its declared debt is `color-contrast`; the suite runs the light theme by default, so the dark palette is guarded by the token test and by a manual `UI_THEME=dark UI_AXE=1` run. Not enforced by a test: border contrast.
 
 ## Checking a colour change
 
