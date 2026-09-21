@@ -75,13 +75,14 @@ apply to Piper voices, Whisper models, and later optional tools/model packs.
   `latest` aliases or unrestricted `pip install`/tool downloads at runtime.
 - The Settings and capability UI must obtain their choices from the compatible
   catalog and expose install state separately (`installed`, `not installed`,
-  `downloading`, `verification failed`, or `update available`). Do not hide a
+  `downloading`, `verification failed`, or `update available`; the last is not
+  implemented, see above). Do not hide a
   compatible choice solely because it has not been downloaded yet.
 - Put downloaded assets in a per-user application-data cache outside the
   installed release and outside a project folder. The Windows location is
   `%LOCALAPPDATA%\narration-utils\assets`, nothing ever deletes an asset except the
-  narrator's Remove, and there is no cache shared between versions or installs
-  (owner decision Q3); asset paths must never be stored as checkout-relative paths.
+  narrator's Remove, and there is one per-user folder, which every version and install of that user
+  reuses, and no second store (owner decision Q3); asset paths must never be stored as checkout-relative paths.
 - Download to a temporary file, verify its hash and expected content before
   atomically making it available, and remove incomplete temporary files on
   cancellation or failure. A corrupt or partial asset must never be selected.

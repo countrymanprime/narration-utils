@@ -48,9 +48,9 @@ checkout bootstrap and are application-owned, explicit first-use provisioning: t
 developer bootstrap script, downloads no optional model at startup, and offers every compatible voice, transcription model and
 Story Bible language model for download only when the narrator uses it, after a confirmation. Delivered: the asset manager,
 registry and Settings > Local assets page, the spaCy language model, the no-download-at-startup test, the legacy-cache policy,
-the packaged smoke test and a per-user Windows setup program built in CI, beside the in-app update. Still open, in order: run
-the setup program on a clean Windows machine, publish the component atlas and the docs site, and a first stable rehearsal
-(the owner runs Promote). The first stable release is Windows-only and unsigned (owner decision D7); no model is bundled.
+the packaged smoke test and a per-user Windows setup program built in CI, beside the in-app update. Still open: run the
+setup program on a clean Windows machine, publish the component atlas and the docs site (phases 9 to 11), the CI docs
+reconciliation (phase 13), and a first stable rehearsal (the owner runs Promote); signing is deferred. The first stable release is Windows-only and unsigned (owner decision D7); no model is bundled.
 See the [first-use dependency provisioning rules](architecture/first-use-dependency-provisioning.md) for the required
 catalog, integrity, UX, migration, and acceptance criteria and the
 [release readiness PRD](prds/release-readiness-provisioning-and-docs-site.prd.md) for the phases.

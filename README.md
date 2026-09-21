@@ -168,8 +168,8 @@ The tools keep their own DAW-agnostic Python backends. What they share:
   parity.
 - **`integrations/reaper/`** — `reaper_common_core.lua` (ExtState access, file/path helpers) and
   `reaper_common_process.lua` (hidden-subprocess launching, the pipe-delimited protocol used by
-  each tool's Python backend). The launcher and the bridge load these via `dofile`, resolved relative to
-  their own script path; the bridge's file protocol is in [the REAPER bridge](docs/architecture/reaper-bridge.md).
+  each tool's Python backend). The launcher loads these via `dofile`, resolved relative to
+  its own script path; the bridge's file protocol is in [the REAPER bridge](docs/architecture/reaper-bridge.md).
 - **`libs/python/narration_common/`** — cross-tool contracts including canonical manuscript,
   settings, bridge, logging, and `progress.py` (the `stage|pct|message` progress-file writer,
   retry-hardened against Windows sharing violations), and `logging_utils.py` (stderr[+file]
