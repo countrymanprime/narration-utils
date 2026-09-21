@@ -31,6 +31,24 @@ belongs to instead of creating a duplicate.
 
 ![Story Bible alias field with a matching-entries dropdown open](../../images/ui/storybible-alias-dropdown.webp)
 
+## Building with a language model
+
+The first time you press Build / refresh, the app asks before it downloads anything. The Story Bible finds
+people, places and organizations best with a language model (a small English model by default, chosen under
+Settings, Story Bible). The question says what it is, its version and publisher, how much is downloaded and how
+much disk it needs, where it will be kept, and its licence. You choose one of three:
+
+- **Download model** downloads it with a progress bar you can cancel, checks it, and then builds. The next build
+  does not ask again.
+- **Build with rules-only** builds this once without a model. The result is lower quality (it finds fewer names
+  and mistakes more ordinary words for names) and the build says so when it finishes. The model stays not
+  downloaded, and the next build asks again.
+- **Cancel** changes nothing: no build and no download.
+
+If a download fails, the message says why (no connection, not enough disk space, or a file that did not match
+the approved one) and you can try again. A download that was cut off carries on from where it stopped. Choosing a
+model in Settings never downloads it, and Settings lists every approved model whether or not it is installed.
+
 ## Hearing a name
 
 The play button beside a name, or beside one of its aliases, speaks it with the local preview

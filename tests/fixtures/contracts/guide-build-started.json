@@ -1,0 +1,13 @@
+{
+  "job": {
+    "elapsed": 0,
+    "error": "",
+    "id": "guide-1",
+    "kind": "story_bible",
+    "logs": null,
+    "message": "Story Bible rebuild started.",
+    "percent": 1,
+    "phase": "running"
+  },
+  "status": "started"
+}

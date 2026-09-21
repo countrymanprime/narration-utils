@@ -72,6 +72,22 @@ export const WithDangerAction: Story = {
   },
 };
 
+// A quieter way forward beside the confirm: the Story Bible asks to download a language model and offers to build without one this once.
+export const WithASecondaryChoice: Story = {
+  args: {
+    title: 'Download local language model?',
+    body: 'The Story Bible reads your manuscript with a language model. It is not bundled with Narration Utils.',
+    confirmLabel: 'Download model',
+    secondaryLabel: 'Build with rules-only',
+    secondary: fn(),
+  },
+  play: async ({ args }) => {
+    await userEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Build with rules-only' }));
+    await expect(args.secondary).toHaveBeenCalledOnce();
+    await expect(args.confirm).not.toHaveBeenCalled();
+  },
+};
+
 export const WithChildren: Story = {
   args: {
     children: (

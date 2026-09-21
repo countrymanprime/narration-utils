@@ -25,7 +25,7 @@ import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
 import { projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
-import { guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
+import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
@@ -76,6 +76,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'guide-build-idle.json': workJobSchema,
   'guide-build-starting.json': workJobSchema,
   'guide-build-failed.json': workJobSchema,
+  'guide-build-started.json': guideBuildResultSchema,
+  'guide-build-asset-required.json': guideBuildResultSchema,
   'guide-preview-asset-required.json': guidePreviewSchema,
   'project-recents.json': recentProjectsSchema,
   'project-recents-empty.json': recentProjectsSchema,
@@ -263,7 +265,9 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     const api = createMockApi();
     expectMatches(guideEntitiesSchema, await api.guideEntities(), 'mock entities');
     expectMatches(workJobSchema, await api.guideBuildState(), 'mock guide state');
-    expectMatches(workJobSchema, await api.guideBuild(), 'mock guide build');
+    expectMatches(guideBuildResultSchema, await api.guideBuild(), 'mock guide build');
+    expectMatches(guideBuildResultSchema, await api.guideBuild({ rulesOnly: true }), 'mock guide build, rules-only');
+    expectMatches(guideBuildResultSchema, await createMockApi({}, { assets: 'downloading' }).guideBuild(), 'mock guide build, asking for the language model');
     expectMatches(guideCreatedSchema, { id: await api.guideCreate('New', 'Character', []) }, 'mock guide create');
     const entity = (await api.guideEntities())[0];
     expectMatches(guidePreviewSchema, await api.guidePreview(entity?.id ?? ''), 'mock preview');
@@ -318,7 +322,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const api = createMockApi();
     const catalog = await api.assetsList();
     expectMatches(assetCatalogSchema, catalog, 'mock asset list');
-    expect(catalog.assets.map((asset) => asset.kind)).toEqual(['tts', 'whisper']);
+    expect(catalog.assets.map((asset) => asset.kind)).toEqual(['tts', 'whisper', 'spacy']);
     const voice = catalog.assets[0];
     const started = await api.assetsInstall(voice.kind, voice.id);
     for (const job of [started, await api.assetsInstallState(started.id), await api.assetsInstallState(started.id), await api.assetsInstallState(started.id)]) {

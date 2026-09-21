@@ -15,7 +15,7 @@ export function AssetsVerify(arg1:string,arg2:string):Promise<string>;
 
 export function Bootstrap():Promise<Record<string, any>>;
 
-export function GuideBuild():Promise<string>;
+export function GuideBuild(arg1:boolean):Promise<string>;
 
 export function GuideBuildState():Promise<string>;
 

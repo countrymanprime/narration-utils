@@ -116,7 +116,7 @@ describe('Story Bible local TTS preview', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Play preview' })[0]);
     expect(await screen.findByRole('heading', { name: 'Download local preview voice?' })).toBeTruthy();
     expect(screen.getByText(/LJ Speech/)).toBeTruthy();
-    expect(screen.getByText(/109 MB/)).toBeTruthy();
+    expect(screen.getAllByText(/109 MB/).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: 'Download voice' }));
     await waitFor(() => expect(screen.queryByRole('heading', { name: /preview voice/i })).toBeNull());

@@ -374,7 +374,15 @@ def rule_candidates(paragraphs: list[dict[str, str]]) -> list[dict[str, str]]:
     ]
 
 
+# The model argument that builds with the rules-only extraction on purpose (the narrator chose it for this build), as opposed to a model that
+# was asked for and could not be loaded. The host sends it; it is the same word as guide.RulesOnly in Go.
+RULES_ONLY = "rules-only"
+
+
 def spacy_candidates(paragraphs: list[dict[str, str]], model_name: str) -> list[dict[str, str]] | None:
+    if model_name == RULES_ONLY:
+        log("Extraction: rules-only, chosen for this build. It is lower quality than a language model.")
+        return None
     try:
         import spacy
 
@@ -744,7 +752,8 @@ def build(args: argparse.Namespace) -> None:
     log(f"Loaded {len(paragraphs):,} paragraphs")
     write_progress(args.progress, "EXTRACT", 30, "Finding people, places, and organizations...")
     previous = load_json(args.out)
-    log(f"Extracting candidates with spaCy model {args.spacy_model}")
+    if args.spacy_model != RULES_ONLY:
+        log(f"Extracting candidates with spaCy model {args.spacy_model}")
     entities = build_entities(paragraphs, args.spacy_model, args.espeak_library or None)
     write_progress(args.progress, "MERGE", 85, "Preserving locked edits...")
     log("Merging generated entries with locked and manual edits")

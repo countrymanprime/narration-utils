@@ -85,7 +85,14 @@ describe('teleprompter mock', () => {
   });
 
   it('asks for the model first when it is not installed', async () => {
-    const needed = { status: 'asset_required' as const, model: { id: 'tiny' } as never, installState: 'not_installed' as const, downloadSize: 1 };
+    const needed = {
+      status: 'asset_required' as const,
+      model: { id: 'tiny' } as never,
+      installState: 'not_installed' as const,
+      downloadSize: 1,
+      diskSize: 1,
+      installPath: 'C:/assets/whisper',
+    };
     const mock = build({ assetRequired: () => needed });
 
     await expect(mock.teleprompterStart(options)).resolves.toBe(needed);

@@ -1,6 +1,17 @@
 import { z } from 'zod';
-import type { GuideAlias, GuideEntity, GuideEvidence, GuideNote, GuidePreview, GuidePronunciation, GuideRelationship } from '../contracts/storyBible';
+import type {
+  GuideAlias,
+  GuideBuildResult,
+  GuideEntity,
+  GuideEvidence,
+  GuideNote,
+  GuidePreview,
+  GuidePronunciation,
+  GuideRelationship,
+} from '../contracts/storyBible';
 import { listFromNull, optionalFromNull } from './base';
+import { assetInstallStateSchema } from './assets';
+import { workJobSchema } from './manuscript';
 import { ttsInstallStateSchema, ttsVoiceIdentitySchema } from './tts';
 
 const evidenceSchema = z.object({
@@ -60,5 +71,39 @@ export const guideCreatedSchema = z.object({ id: z.string() });
 
 export const guidePreviewSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('ready'), audioBase64: z.string(), mimeType: z.string() }),
-  z.object({ status: z.literal('asset_required'), voice: ttsVoiceIdentitySchema, installState: ttsInstallStateSchema, downloadSize: z.number() }),
+  z.object({
+    status: z.literal('asset_required'),
+    voice: ttsVoiceIdentitySchema,
+    installState: ttsInstallStateSchema,
+    downloadSize: z.number(),
+    diskSize: z.number(),
+    installPath: z.string(),
+  }),
 ]) satisfies z.ZodType<GuidePreview>;
+
+const languageModelSchema = z.object({
+  id: z.string(),
+  provider: z.string(),
+  displayName: z.string(),
+  description: z.string(),
+  version: z.string(),
+  publisher: z.string(),
+  license: z.string(),
+  licenseUrl: z.string(),
+  modelCardUrl: z.string(),
+  provenanceUrl: z.string(),
+  attribution: z.string(),
+});
+
+/** What starting a build answers: the job that started, or the first-use gate for the language model. */
+export const guideBuildResultSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('started'), job: workJobSchema }),
+  z.object({
+    status: z.literal('asset_required'),
+    model: languageModelSchema,
+    installState: assetInstallStateSchema,
+    downloadSize: z.number(),
+    diskSize: z.number(),
+    installPath: z.string(),
+  }),
+]) satisfies z.ZodType<GuideBuildResult>;

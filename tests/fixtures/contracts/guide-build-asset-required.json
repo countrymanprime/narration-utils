@@ -1,0 +1,20 @@
+{
+  "diskSize": 15251718,
+  "downloadSize": 12806118,
+  "installPath": "C:/Users/narrator/AppData/Local/narration-utils/assets/spacy/en_core_web_sm/3.8.0",
+  "installState": "not_installed",
+  "model": {
+    "attribution": "spaCy English pipeline by Explosion (MIT).",
+    "description": "The default: a small download that runs on any computer.",
+    "displayName": "English, small (fast)",
+    "id": "en_core_web_sm",
+    "license": "MIT",
+    "licenseUrl": "https://spacy.io/models/en#en_core_web_sm",
+    "modelCardUrl": "https://github.com/explosion/spacy-models/releases/tag/en_core_web_sm-3.8.0",
+    "provenanceUrl": "https://github.com/explosion/spacy-models/releases/tag/en_core_web_sm-3.8.0",
+    "provider": "spacy",
+    "publisher": "Explosion",
+    "version": "3.8.0"
+  },
+  "status": "asset_required"
+}

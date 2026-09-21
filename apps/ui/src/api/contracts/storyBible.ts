@@ -1,3 +1,4 @@
+import type { AssetInstallState } from './assets';
 import type { TtsInstallState, TtsVoice } from './tts';
 import type { WorkJob } from './manuscript';
 
@@ -24,10 +25,41 @@ export type GuideEntity = {
 
 export type GuidePreview =
   | { status: 'ready'; audioBase64: string; mimeType: string }
-  | { status: 'asset_required'; voice: Omit<TtsVoice, 'downloadSize' | 'installState'>; installState: TtsInstallState; downloadSize: number };
+  | {
+      status: 'asset_required';
+      voice: Omit<TtsVoice, 'downloadSize' | 'installState'>;
+      installState: TtsInstallState;
+      downloadSize: number;
+      diskSize: number;
+      installPath: string;
+    };
+
+/** A spaCy language model as the host describes it before it is installed. */
+export type LanguageModel = {
+  id: string;
+  provider: string;
+  displayName: string;
+  description: string;
+  version: string;
+  publisher: string;
+  license: string;
+  licenseUrl: string;
+  modelCardUrl: string;
+  provenanceUrl: string;
+  attribution: string;
+};
+
+/** The answer to starting a build: it started, or the language model it needs is not installed and the narrator is asked (download, rules-only this once, cancel). */
+export type GuideBuildResult =
+  | { status: 'started'; job: WorkJob }
+  | { status: 'asset_required'; model: LanguageModel; installState: AssetInstallState; downloadSize: number; diskSize: number; installPath: string };
 
 export interface StoryBibleApi {
-  guideBuild(): Promise<WorkJob>;
+  /**
+   * Starts the Story Bible build with the language model the narrator selected, or answers `asset_required` when that model is not
+   * installed (the first-use gate). `rulesOnly` builds without a model for this run: lower quality, chosen by the narrator.
+   */
+  guideBuild(options?: { rulesOnly?: boolean }): Promise<GuideBuildResult>;
   guideBuildState(): Promise<WorkJob>;
   guideEntities(): Promise<GuideEntity[]>;
   guideEdit(id: string, values: Record<string, string>): Promise<void>;

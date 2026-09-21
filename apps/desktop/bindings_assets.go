@@ -57,7 +57,7 @@ func (h *Host) assetsList() (map[string]any, error) {
 		for _, item := range provider.items() {
 			state := provider.state(item.id)
 			if state == "installed" {
-				installedBytes += item.downloadSize()
+				installedBytes += item.installedSize()
 			}
 			entries = append(entries, assetEntry(provider, item, state, h.runningInstallID(item.kind, item.id)))
 		}
@@ -75,7 +75,7 @@ func assetEntry(provider assetProvider, item assetItem, state, activeJob string)
 	}
 	return map[string]any{"kind": item.kind, "kindLabel": provider.label(), "id": item.id, "displayName": item.displayName, "version": item.version, "publisher": item.publisher,
 		"license": item.license, "licenseUrl": item.licenseURL, "modelCardUrl": item.modelCardURL, "provenanceUrl": item.provenanceURL, "attribution": item.attribution,
-		"downloadSize": item.downloadSize(), "installState": state, "path": item.dir, "installedAt": installedAt, "verifiedAt": verifiedAt, "activeJobId": activeJob}
+		"downloadSize": item.downloadSize(), "diskSize": item.installedSize(), "installState": state, "path": item.dir, "installedAt": installedAt, "verifiedAt": verifiedAt, "activeJobId": activeJob}
 }
 
 // runningInstallID is the id of the download running for one asset, or "".

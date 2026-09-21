@@ -1,5 +1,7 @@
 {
+  "diskSize": 114004800,
   "downloadSize": 114004800,
+  "installPath": "C:/Users/narrator/AppData/Local/narration-utils/assets/tts/piper/en_US-ljspeech-high/1.0.0",
   "installState": "not_installed",
   "status": "asset_required",
   "voice": {

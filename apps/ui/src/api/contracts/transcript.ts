@@ -29,7 +29,14 @@ export type MarkerExport = { phase: 'idle' | 'exporting' | 'complete' | 'error';
 
 export type TranscriptStartResult =
   | { status: 'started' }
-  | { status: 'asset_required'; model: Omit<WhisperModel, 'downloadSize' | 'installState'>; installState: WhisperInstallState; downloadSize: number };
+  | {
+      status: 'asset_required';
+      model: Omit<WhisperModel, 'downloadSize' | 'installState'>;
+      installState: WhisperInstallState;
+      downloadSize: number;
+      diskSize: number;
+      installPath: string;
+    };
 
 export type TranscriptState = {
   runId?: string;

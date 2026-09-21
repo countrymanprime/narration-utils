@@ -7,6 +7,7 @@ import { isTranscriptActive } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { useAssetInstall } from '../../hooks/useAssetInstall';
 import { usePendingAction } from '../../hooks/usePendingAction';
+import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
@@ -456,26 +457,19 @@ export function Transcript({
           install={whisperInstall}
           dismiss={closeWhisperPrompt}
         >
-          <dl className="mt-3 space-y-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-            <div>
-              <dt className="inline font-medium">Model: </dt>
-              <dd className="inline">{whisperPrompt.model.displayName}</dd>
-            </div>
-            <div>
-              <dt className="inline font-medium">Download: </dt>
-              <dd className="inline">
-                {Math.ceil(whisperPrompt.downloadSize / (1024 * 1024))} MB · {whisperPrompt.model.publisher}
-              </dd>
-            </div>
-            <div>
-              <dt className="inline font-medium">License: </dt>
-              <dd className="inline">
-                <a className="link" href={whisperPrompt.model.licenseUrl} target="_blank" rel="noreferrer">
-                  {whisperPrompt.model.license}
-                </a>
-              </dd>
-            </div>
-          </dl>
+          <AssetFacts
+            label="Model"
+            name={whisperPrompt.model.displayName}
+            version={whisperPrompt.model.version}
+            publisher={whisperPrompt.model.publisher}
+            license={whisperPrompt.model.license}
+            licenseUrl={whisperPrompt.model.licenseUrl}
+            modelCardUrl={whisperPrompt.model.modelCardUrl}
+            provenanceUrl={whisperPrompt.model.provenanceUrl}
+            downloadSize={whisperPrompt.downloadSize}
+            diskSize={whisperPrompt.diskSize}
+            installPath={whisperPrompt.installPath}
+          />
         </AssetInstallPrompt>
       )}
     </div>

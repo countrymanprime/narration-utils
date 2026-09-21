@@ -6,6 +6,10 @@ import { Dialog } from './Dialog';
 // screen reader, so the type refuses one without the other.
 type DangerAction = { danger?: undefined; dangerLabel?: undefined } | { danger: () => void; dangerLabel: string };
 
+// A second, quieter way forward beside the confirm (the Story Bible asks to download a language model, and offers to build without one this
+// once): the same rule, a label needs its handler.
+type SecondaryAction = { secondary?: undefined; secondaryLabel?: undefined } | { secondary: () => void; secondaryLabel: string };
+
 type ConfirmDialogProps = {
   title: string;
   // What the dialog asks. A string or richer content; it is the dialog's accessible description.
@@ -23,7 +27,8 @@ type ConfirmDialogProps = {
   // so the action cannot be confirmed twice or walked away from half done. The caller closes the dialog when the action ends.
   pending?: boolean;
   children?: ReactNode;
-} & DangerAction;
+} & DangerAction &
+  SecondaryAction;
 
 // Every confirm interrupts and needs an answer, so it is an alertdialog: Escape and Cancel decline, a press on the
 // backdrop does nothing (ADR 0048).
@@ -35,6 +40,8 @@ export function ConfirmDialog({
   confirmVariant = 'primary',
   dangerLabel,
   danger,
+  secondaryLabel,
+  secondary,
   cancel,
   escapeCancels = true,
   pending = false,
@@ -56,6 +63,11 @@ export function ConfirmDialog({
             {danger && (
               <Button variant="danger" disabled={pending} onClick={danger}>
                 {dangerLabel}
+              </Button>
+            )}
+            {secondary && (
+              <Button variant="ghost" disabled={pending} onClick={secondary}>
+                {secondaryLabel}
               </Button>
             )}
             <Button variant={confirmVariant} pending={pending} onClick={confirm}>

@@ -10,6 +10,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
+	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 )
@@ -76,6 +77,14 @@ func TestContractStoryBibleBuildJob(t *testing.T) {
 	pinBinding("guide-build-idle", host.guideBuildState())
 	// A job just started has no log lines yet: its `logs` is a nil slice, which the host sends as null.
 	pinBinding("guide-build-starting", snapshotWork(&workJob{id: "guide-1", kind: "story_bible", phase: "running", message: "Preparing…", started: time.Now()}))
+	// What GuideBuild answers: the job that started, or the first-use gate for the language model (release readiness phase 5).
+	started := snapshotWork(&workJob{id: "guide-1", kind: "story_bible", phase: "running", message: "Story Bible rebuild started.", percent: 1, started: time.Now()})
+	started["elapsed"] = 0.0
+	contractfile.Check(t, "guide-build-started", map[string]any{"status": "started", "job": started})
+	contractfile.Check(t, "guide-build-asset-required", spacyAssetRequired(spacy.Model{ID: "en_core_web_sm", Provider: "spacy", DisplayName: "English, small (fast)", Description: "The default: a small download that runs on any computer.",
+		Version: "3.8.0", Publisher: "Explosion", License: "MIT", LicenseURL: "https://spacy.io/models/en#en_core_web_sm", ModelCardURL: "https://github.com/explosion/spacy-models/releases/tag/en_core_web_sm-3.8.0",
+		ProvenanceURL: "https://github.com/explosion/spacy-models/releases/tag/en_core_web_sm-3.8.0", Attribution: "spaCy English pipeline by Explosion (MIT).",
+		Files: []spacy.File{{Name: "w.whl", Size: 12806118, Extract: "model", Expand: 15251718}}}, "not_installed", "C:/Users/narrator/AppData/Local/narration-utils/assets/spacy/en_core_web_sm/3.8.0"))
 	pinBinding("guide-build-failed", snapshotWork(&workJob{id: "guide-1", kind: "story_bible", phase: "error", message: "The Story Bible build failed.", errorText: "python exited with code 1", percent: 40, logs: []string{"Reading canonical manuscript", "Loaded 120 paragraphs"}, started: time.Now()}))
 }
 
@@ -103,7 +112,7 @@ func TestContractPreviewNeedsAVoice(t *testing.T) {
 		License: "CC0-1.0", LicenseURL: "https://example.test/license", ModelCardURL: "https://example.test/card", ProvenanceURL: "https://example.test/source",
 		Attribution: "LJ Speech dataset", Files: []tts.File{{Name: "voice.onnx", Size: 114_000_000}, {Name: "voice.onnx.json", Size: 4_800}},
 	}
-	contractfile.Check(t, "guide-preview-asset-required", voiceAssetRequired(voice, "not_installed"))
+	contractfile.Check(t, "guide-preview-asset-required", voiceAssetRequired(voice, "not_installed", "C:/Users/narrator/AppData/Local/narration-utils/assets/tts/piper/en_US-ljspeech-high/1.0.0"))
 }
 
 // The approved catalogs, built from the repository's real config files with nothing installed (ADR 0069), and the install jobs.
@@ -124,7 +133,11 @@ func contractServices(t *testing.T) contractFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return contractFixture{registry: newAssetRegistry(t.TempDir(), voices, models), settings: settings.New(layout.FindRoot("."), "")}
+	languageModels, err := spacy.New(layout.RepoFile(layout.SpacyCatalogFile), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return contractFixture{registry: newAssetRegistry(t.TempDir(), voices, models, languageModels), settings: settings.New(layout.FindRoot("."), "")}
 }
 
 func TestContractCatalogsAndInstallJobs(t *testing.T) {
@@ -177,7 +190,7 @@ func TestContractAFirstUseGateForAModel(t *testing.T) {
 	if !ok {
 		t.Fatal("the approved catalog has no small model")
 	}
-	contractfile.Check(t, "transcript-start-asset-required", modelAssetRequired(model, svc.registry.whisper.State(model)))
+	contractfile.Check(t, "transcript-start-asset-required", modelAssetRequired(model, svc.registry.whisper.State(model), "C:/Users/narrator/AppData/Local/narration-utils/assets/whisper/faster-whisper/small/536b0662742c02347bc0e980a01041f333bce120"))
 	contractfile.Check(t, "transcript-start-started", map[string]any{"status": "started"})
 }
 

@@ -33,7 +33,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 11
+const hostAPIVersion = 12
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -729,13 +729,26 @@ var fieldSchemas = map[string][]fieldSchema{
 	"TranscriptCompare": {{"model_size", "Default Whisper model", "choice", []string{"tiny", "small", "medium", "large-v3-turbo", "large-v3"}}, {"chunk_seconds", "Default chunk length", "choice", []string{"30", "60", "300", "600"}}, {"color_misread", "Misread marker color", "color", nil}, {"color_skipped", "Skipped marker color", "color", nil}, {"color_extra", "Extra marker color", "color", nil}},
 }
 
+// settingsSchemas is the settings the app offers with each choice that comes from an approved catalog filled in from it: the spaCy model
+// choice is the catalog's models, whether or not they are installed, so a narrator can select a model before downloading it.
+func (h *Host) settingsSchemas() map[string][]fieldSchema {
+	schemas := make(map[string][]fieldSchema, len(fieldSchemas))
+	for tool, fields := range fieldSchemas {
+		schemas[tool] = fields
+	}
+	if models := h.registry().spacy; models != nil {
+		schemas["ManuscriptGuide"] = []fieldSchema{{"spacy_model", "spaCy model", "choice", models.IDs()}}
+	}
+	return schemas
+}
+
 func (h *Host) settingsForScope(scope string) (map[string]any, error) {
 	if scope != "global" && scope != "project" {
 		return nil, fmt.Errorf("unsupported settings scope")
 	}
 	store := h.services().settings
 	result := map[string]any{}
-	for tool, schemas := range fieldSchemas {
+	for tool, schemas := range h.settingsSchemas() {
 		values := []map[string]any{}
 		scoped := store.Global(tool)
 		if scope == "project" {
@@ -751,7 +764,7 @@ func (h *Host) settingsForScope(scope string) (map[string]any, error) {
 	return result, nil
 }
 func (h *Host) saveSettings(tool, scope string, values map[string]*string) error {
-	schemas, ok := fieldSchemas[tool]
+	schemas, ok := h.settingsSchemas()[tool]
 	if !ok {
 		return fmt.Errorf("unsupported settings tool")
 	}
@@ -858,10 +871,18 @@ func (h *Host) cancelWhisperInstall(id string) (map[string]any, error) {
 	job.cancel()
 	return legacyInstall(snapshotInstall(job)), nil
 }
-func (h *Host) startGuideBuild() (map[string]any, error) {
+
+// startGuideBuild starts the Story Bible build with the language model the narrator selected. The model is an asset: when it is not
+// installed nothing starts and the answer is asset_required (the first-use gate), so the narrator chooses to download it, to build with
+// the rules-only extraction this once, or to cancel. rulesOnly is that second choice.
+func (h *Host) startGuideBuild(rulesOnly bool) (map[string]any, error) {
 	svc := h.services()
 	if svc.guide == nil {
 		return nil, fmt.Errorf("the Story Bible is unavailable")
+	}
+	model, gate, err := h.spacyForBuild(svc.settings, rulesOnly)
+	if err != nil || gate != nil {
+		return gate, err
 	}
 	h.mu.Lock()
 	if h.guideJob != nil {
@@ -899,7 +920,7 @@ func (h *Host) startGuideBuild() (map[string]any, error) {
 				}
 			}
 		}()
-		_, err := svc.guide.Build(progress, log)
+		_, err := svc.guide.Build(progress, log, model)
 		close(stop)
 		<-stopped
 		pollWorkJob(job, progress, log, &logAt)
@@ -912,6 +933,9 @@ func (h *Host) startGuideBuild() (map[string]any, error) {
 			job.phase = "success"
 			job.percent = 100
 			job.message = "Story Bible rebuild complete."
+			if rulesOnly {
+				job.message = "Story Bible rebuild complete with the rules-only extraction, which is lower quality than a language model."
+			}
 		}
 		event, ok := endedJob(job.id, jobKindStoryBible, job.phase, job.message, job.started)
 		job.mu.Unlock()
@@ -919,7 +943,7 @@ func (h *Host) startGuideBuild() (map[string]any, error) {
 			h.publishJobEnded(event)
 		}
 	}()
-	return snapshotWork(job), nil
+	return map[string]any{"status": "started", "job": snapshotWork(job)}, nil
 }
 func (h *Host) guideBuildState() map[string]any {
 	h.mu.RLock()

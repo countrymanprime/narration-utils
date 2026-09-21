@@ -3,6 +3,7 @@
     {
       "activeJobId": "",
       "attribution": "LJ Speech Dataset (public domain); Piper voice model by rhasspy contributors.",
+      "diskSize": 114203981,
       "displayName": "LJ Speech (U.S. English)",
       "downloadSize": 114203981,
       "id": "en_US-ljspeech-high",
@@ -22,6 +23,7 @@
     {
       "activeJobId": "",
       "attribution": "CTranslate2 conversion of OpenAI Whisper tiny, published by Systran.",
+      "diskSize": 78203619,
       "displayName": "Tiny",
       "downloadSize": 78203619,
       "id": "tiny",
@@ -41,6 +43,7 @@
     {
       "activeJobId": "",
       "attribution": "CTranslate2 conversion of OpenAI Whisper small, published by Systran.",
+      "diskSize": 486212372,
       "displayName": "Small",
       "downloadSize": 486212372,
       "id": "small",
@@ -60,6 +63,7 @@
     {
       "activeJobId": "",
       "attribution": "CTranslate2 conversion of OpenAI Whisper medium, published by Systran.",
+      "diskSize": 1530571735,
       "displayName": "Medium",
       "downloadSize": 1530571735,
       "id": "medium",
@@ -79,6 +83,7 @@
     {
       "activeJobId": "",
       "attribution": "CTranslate2 conversion of OpenAI Whisper large-v3-turbo, published by deepdml.",
+      "diskSize": 1621665983,
       "displayName": "Large v3 Turbo",
       "downloadSize": 1621665983,
       "id": "large-v3-turbo",
@@ -98,6 +103,7 @@
     {
       "activeJobId": "",
       "attribution": "CTranslate2 conversion of OpenAI Whisper large-v3, published by Systran.",
+      "diskSize": 3090835702,
       "displayName": "Large v3",
       "downloadSize": 3090835702,
       "id": "large-v3",
@@ -113,6 +119,46 @@
       "publisher": "Systran",
       "verifiedAt": "",
       "version": "edaa852ec7e145841d8ffdb056a99866b5f0a478"
+    },
+    {
+      "activeJobId": "",
+      "attribution": "spaCy English pipeline by Explosion (MIT). Trained on OntoNotes 5, the ClearNLP dependency conversion and WordNet 3.0; the notices ship with the model in LICENSES_SOURCES.",
+      "diskSize": 15251718,
+      "displayName": "English, small (fast)",
+      "downloadSize": 12806118,
+      "id": "en_core_web_sm",
+      "installState": "not_installed",
+      "installedAt": "",
+      "kind": "spacy",
+      "kindLabel": "Story Bible language model",
+      "license": "MIT",
+      "licenseUrl": "https://spacy.io/models/en#en_core_web_sm",
+      "modelCardUrl": "https://github.com/explosion/spacy-models/releases/tag/en_core_web_sm-3.8.0",
+      "path": "C:/Users/narrator/AppData/Local/narration-utils/assets/spacy/en_core_web_sm",
+      "provenanceUrl": "https://github.com/explosion/spacy-models/releases/tag/en_core_web_sm-3.8.0",
+      "publisher": "Explosion",
+      "verifiedAt": "",
+      "version": "3.8.0"
+    },
+    {
+      "activeJobId": "",
+      "attribution": "spaCy English pipeline by Explosion (MIT). Trained on OntoNotes 5, the ClearNLP dependency conversion and WordNet 3.0 and Explosion Vectors (OSCAR 2109, Wikipedia, OpenSubtitles, WMT News Crawl); the notices ship with the model in LICENSES_SOURCES.",
+      "diskSize": 445159665,
+      "displayName": "English, large (more accurate)",
+      "downloadSize": 400658291,
+      "id": "en_core_web_lg",
+      "installState": "not_installed",
+      "installedAt": "",
+      "kind": "spacy",
+      "kindLabel": "Story Bible language model",
+      "license": "MIT",
+      "licenseUrl": "https://spacy.io/models/en#en_core_web_lg",
+      "modelCardUrl": "https://github.com/explosion/spacy-models/releases/tag/en_core_web_lg-3.8.0",
+      "path": "C:/Users/narrator/AppData/Local/narration-utils/assets/spacy/en_core_web_lg",
+      "provenanceUrl": "https://github.com/explosion/spacy-models/releases/tag/en_core_web_lg-3.8.0",
+      "publisher": "Explosion",
+      "verifiedAt": "",
+      "version": "3.8.0"
     }
   ],
   "cacheRoot": "C:/Users/narrator/AppData/Local/narration-utils/assets",

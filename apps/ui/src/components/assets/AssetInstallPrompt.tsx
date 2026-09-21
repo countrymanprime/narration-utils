@@ -53,7 +53,8 @@ export function AssetInstallPrompt({
   dismiss,
   children,
 }: {
-  ask: { title: string; body: ReactNode; confirmLabel: string };
+  /** `alternative` is a second way forward beside the download (the Story Bible builds without a language model this once). */
+  ask: { title: string; body: ReactNode; confirmLabel: string; alternative?: { label: string; action: () => void } };
   workTitle: string;
   install: AssetInstall;
   /** Cancel in the question, and Close once the install ended without success. */
@@ -61,9 +62,19 @@ export function AssetInstallPrompt({
   children?: ReactNode;
 }) {
   const asking = !install.job && !install.failure && !install.starting;
+  const secondaryChoice: { secondary: () => void; secondaryLabel: string } | { secondary?: undefined; secondaryLabel?: undefined } = ask.alternative
+    ? { secondary: ask.alternative.action, secondaryLabel: ask.alternative.label }
+    : {};
   if (asking) {
     return (
-      <ConfirmDialog title={ask.title} body={ask.body} confirmLabel={ask.confirmLabel} confirm={() => void install.begin()} cancel={dismiss}>
+      <ConfirmDialog
+        title={ask.title}
+        body={ask.body}
+        confirmLabel={ask.confirmLabel}
+        confirm={() => void install.begin()}
+        cancel={dismiss}
+        {...secondaryChoice}
+      >
         {children}
       </ConfirmDialog>
     );

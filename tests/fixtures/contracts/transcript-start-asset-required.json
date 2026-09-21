@@ -1,5 +1,7 @@
 {
+  "diskSize": 486212372,
   "downloadSize": 486212372,
+  "installPath": "C:/Users/narrator/AppData/Local/narration-utils/assets/whisper/faster-whisper/small/536b0662742c02347bc0e980a01041f333bce120",
   "installState": "not_installed",
   "model": {
     "attribution": "CTranslate2 conversion of OpenAI Whisper small, published by Systran.",

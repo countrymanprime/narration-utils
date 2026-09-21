@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone, faStop } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
 import { useAssetInstall } from '../../hooks/useAssetInstall';
+import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
@@ -73,17 +74,6 @@ function statusText(host: TeleprompterState, session: Session): string {
   if (session.position?.status === 'waiting') return 'Waiting for you to return to the script';
   if (session.position?.status === 'done') return 'Done - that is the end of the chapter';
   return 'Listening';
-}
-
-function ModelFacts({ prompt }: { prompt: ModelPrompt }) {
-  return (
-    <p className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-      {Math.ceil(prompt.downloadSize / (1024 * 1024))} MB · {prompt.model.publisher} ·{' '}
-      <a className="link" href={prompt.model.licenseUrl} target="_blank" rel="noreferrer">
-        {prompt.model.license}
-      </a>
-    </p>
-  );
 }
 
 export function TeleprompterPage() {
@@ -310,7 +300,19 @@ export function TeleprompterPage() {
           install={modelInstall}
           dismiss={closeModelPrompt}
         >
-          <ModelFacts prompt={prompt} />
+          <AssetFacts
+            label="Model"
+            name={prompt.model.displayName}
+            version={prompt.model.version}
+            publisher={prompt.model.publisher}
+            license={prompt.model.license}
+            licenseUrl={prompt.model.licenseUrl}
+            modelCardUrl={prompt.model.modelCardUrl}
+            provenanceUrl={prompt.model.provenanceUrl}
+            downloadSize={prompt.downloadSize}
+            diskSize={prompt.diskSize}
+            installPath={prompt.installPath}
+          />
         </AssetInstallPrompt>
       )}
     </div>

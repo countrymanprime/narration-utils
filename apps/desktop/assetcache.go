@@ -7,6 +7,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 )
@@ -16,6 +17,7 @@ import (
 const (
 	ttsCacheDir     = "tts"
 	whisperCacheDir = "whisper"
+	spacyCacheDir   = "spacy"
 )
 
 // assetCacheBase is where downloaded assets live: the per-user cache folder, outside the release, the project and the checkout. When the
@@ -32,7 +34,11 @@ func assetCacheBase() (string, error) {
 // cleanAssetCaches removes what an interrupted download or repair left under the asset cache and nothing will resume: run once at start.
 // It returns what it removed.
 func cleanAssetCaches(base string) []string {
-	return append(assets.CleanStale(filepath.Join(base, ttsCacheDir)), assets.CleanStale(filepath.Join(base, whisperCacheDir))...)
+	var removed []string
+	for _, dir := range []string{ttsCacheDir, whisperCacheDir, spacyCacheDir} {
+		removed = append(removed, assets.CleanStale(filepath.Join(base, dir))...)
+	}
+	return removed
 }
 
 // buildAssetRegistry builds the registry once, at start: the per-user cache folder and a manager for each approved catalog (the checkout catalog
@@ -46,7 +52,7 @@ func (h *Host) buildAssetRegistry() *assetRegistry {
 	}
 	// The packaged release resources are only unpacked when a checkout does not have every catalog.
 	packaged := ""
-	for _, catalog := range []string{layout.TTSCatalogFile, layout.WhisperCatalogFile} {
+	for _, catalog := range []string{layout.TTSCatalogFile, layout.WhisperCatalogFile, layout.SpacyCatalogFile} {
 		if _, statErr := os.Stat(layout.Path(h.config.repoRoot, catalog)); statErr != nil {
 			packaged = h.packagedResources()
 			break
@@ -54,7 +60,8 @@ func (h *Host) buildAssetRegistry() *assetRegistry {
 	}
 	voices := buildTtsManager(h.config, packaged, filepath.Join(base, ttsCacheDir))
 	models := buildWhisperManager(h.config, packaged, filepath.Join(base, whisperCacheDir))
-	return newAssetRegistry(base, voices, models)
+	languageModels := buildSpacyManager(h.config, packaged, filepath.Join(base, spacyCacheDir))
+	return newAssetRegistry(base, voices, models, languageModels)
 }
 
 // buildTtsManager reads the voice catalog (the checkout catalog, or the packaged release one) and returns a manager over root, or nil when
@@ -78,6 +85,19 @@ func buildWhisperManager(cfg config, packagedRoot, root string) *whisper.Manager
 		catalog = filepath.Join(packagedRoot, "config", "whisper-assets.json")
 	}
 	manager, err := whisper.New(catalog, root)
+	if err != nil {
+		return nil
+	}
+	return manager
+}
+
+// buildSpacyManager is buildTtsManager for the spaCy language model catalog.
+func buildSpacyManager(cfg config, packagedRoot, root string) *spacy.Manager {
+	catalog := layout.Path(cfg.repoRoot, layout.SpacyCatalogFile)
+	if _, err := os.Stat(catalog); err != nil && packagedRoot != "" {
+		catalog = filepath.Join(packagedRoot, "config", "spacy-assets.json")
+	}
+	manager, err := spacy.New(catalog, root)
 	if err != nil {
 		return nil
 	}

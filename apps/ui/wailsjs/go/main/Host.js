@@ -30,8 +30,8 @@ export function Bootstrap() {
   return window['go']['main']['Host']['Bootstrap']();
 }
 
-export function GuideBuild() {
-  return window['go']['main']['Host']['GuideBuild']();
+export function GuideBuild(arg1) {
+  return window['go']['main']['Host']['GuideBuild'](arg1);
 }
 
 export function GuideBuildState() {

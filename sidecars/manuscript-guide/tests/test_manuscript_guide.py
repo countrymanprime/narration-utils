@@ -95,6 +95,23 @@ class ManuscriptGuideTests(unittest.TestCase):
         ):
             self.assertEqual([], guide.build_entities(paragraphs, "unused", None))
 
+    def test_the_rules_only_choice_builds_without_spacy_and_says_it_was_chosen(self):
+        paragraphs = [{"chapter": "Chapter 1", "text": "Captain Arelian arrives."}]
+        messages: list[str] = []
+        # spaCy cannot even be imported: the choice must not try, and must not report a model that "could not be loaded".
+        with patch.dict(sys.modules, {"spacy": None}), patch.object(guide, "log", side_effect=messages.append):
+            self.assertIsNone(guide.spacy_candidates(paragraphs, guide.RULES_ONLY))
+        self.assertEqual(1, len(messages))
+        self.assertIn("rules-only", messages[0])
+        self.assertIn("chosen", messages[0])
+        self.assertNotIn("unavailable", messages[0])
+
+    def test_a_model_that_cannot_be_loaded_is_still_reported_as_unavailable(self):
+        messages: list[str] = []
+        with patch.dict(sys.modules, {"spacy": None}), patch.object(guide, "log", side_effect=messages.append):
+            self.assertIsNone(guide.spacy_candidates([{"chapter": "C", "text": "Ada arrives."}], "en_core_web_sm"))
+        self.assertIn("unavailable", messages[0])
+
     def test_rule_fallback_strips_articles_and_keeps_names_seen_three_times(self):
         paragraphs = [
             {"chapter": "Chapter 1", "text": "A Black Halo appeared. About noon, it vanished."},

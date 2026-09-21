@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 )
@@ -103,3 +104,52 @@ func (p whisperProvider) install(ctx context.Context, id string, options assets.
 
 func (p whisperProvider) verify(id string) (string, error) { return p.manager.Verify(id) }
 func (p whisperProvider) remove(id string) error           { return p.manager.Remove(id) }
+
+// spacyProvider serves the spaCy language models the Story Bible reads a manuscript with.
+type spacyProvider struct{ manager *spacy.Manager }
+
+func (spacyProvider) kind() string      { return installKindSpacy }
+func (spacyProvider) label() string     { return "Story Bible language model" }
+func (spacyProvider) noun() string      { return "language model" }
+func (spacyProvider) endedKind() string { return jobKindSpacyInstall }
+
+func (p spacyProvider) items() []assetItem {
+	models := p.manager.Models()
+	items := make([]assetItem, 0, len(models))
+	for _, model := range models {
+		items = append(items, p.itemFor(model))
+	}
+	return items
+}
+
+func (p spacyProvider) itemFor(model spacy.Model) assetItem {
+	return assetItem{kind: installKindSpacy, id: model.ID, displayName: model.DisplayName, version: model.Version, publisher: model.Publisher, license: model.License,
+		licenseURL: model.LicenseURL, modelCardURL: model.ModelCardURL, provenanceURL: model.ProvenanceURL, attribution: model.Attribution, files: model.Files,
+		dir: p.manager.InstallDir(model.ID), diskSize: model.DiskSize()}
+}
+
+func (p spacyProvider) item(id string) (assetItem, bool) {
+	model, ok := p.manager.Model(id)
+	if !ok {
+		return assetItem{}, false
+	}
+	return p.itemFor(model), true
+}
+
+func (p spacyProvider) state(id string) string {
+	model, ok := p.manager.Model(id)
+	if !ok {
+		return "not_installed"
+	}
+	return p.manager.State(model)
+}
+
+func (p spacyProvider) install(ctx context.Context, id string, options assets.Options) error {
+	if p.state(id) == "installed" {
+		return nil
+	}
+	return p.manager.Repair(ctx, id, options)
+}
+
+func (p spacyProvider) verify(id string) (string, error) { return p.manager.Verify(id) }
+func (p spacyProvider) remove(id string) error           { return p.manager.Remove(id) }

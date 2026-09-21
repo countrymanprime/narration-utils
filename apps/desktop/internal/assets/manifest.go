@@ -19,6 +19,8 @@ type ManifestFile struct {
 	SHA256  string `json:"sha256"`
 	Size    int64  `json:"size"`
 	ModTime int64  `json:"modTimeUnixNano"`
+	// Extracted is what an archive unpacked to, when File.Extract was set: the archive itself is gone, so these are the files a check reads.
+	Extracted []ExtractedFile `json:"extracted,omitempty"`
 }
 
 // Manifest is the record an install directory keeps of itself: the exact version and provenance (for diagnostics, repair and removal),
@@ -62,12 +64,59 @@ func (m Manifest) vouchesFor(dir string, files []File) bool {
 		if !ok || entry.SHA256 != f.SHA256 || entry.Size != f.Size {
 			return false
 		}
+		if f.Extract != "" {
+			if !extractedUnchanged(dir, entry.Extracted) {
+				return false
+			}
+			continue
+		}
 		info, err := os.Stat(filepath.Join(dir, f.Name))
 		if err != nil || !info.Mode().IsRegular() || info.Size() != f.Size || info.ModTime().UnixNano() != entry.ModTime {
 			return false
 		}
 	}
 	return true
+}
+
+// extractedUnchanged reports whether every unpacked file still has the size and modification time it had when it was unpacked.
+func extractedUnchanged(dir string, entries []ExtractedFile) bool {
+	if len(entries) == 0 {
+		return false
+	}
+	for _, entry := range entries {
+		info, err := os.Stat(filepath.Join(dir, filepath.FromSlash(entry.Path)))
+		if err != nil || !info.Mode().IsRegular() || info.Size() != entry.Size || info.ModTime().UnixNano() != entry.ModTime {
+			return false
+		}
+	}
+	return true
+}
+
+// hashExtracted reads every unpacked file of an archive against the hash recorded when it was unpacked. With no manifest to say what was
+// unpacked there is nothing to check against, so an install that has its folder but no record cannot be trusted.
+func hashExtracted(dir string, f File) string {
+	manifest, err := ReadManifest(dir)
+	if err != nil {
+		if _, statErr := os.Stat(filepath.Join(dir, f.Extract)); statErr != nil {
+			return "not_installed"
+		}
+		return "verification_failed"
+	}
+	for _, entry := range manifest.Files {
+		if entry.Name != f.Name || entry.SHA256 != f.SHA256 || len(entry.Extracted) == 0 {
+			continue
+		}
+		for _, item := range entry.Extracted {
+			if err := verify(filepath.Join(dir, filepath.FromSlash(item.Path)), File{SHA256: item.SHA256, Size: item.Size}); err != nil {
+				if os.IsNotExist(err) {
+					return "not_installed"
+				}
+				return "verification_failed"
+			}
+		}
+		return "installed"
+	}
+	return "verification_failed"
 }
 
 func writeManifest(dir string, manifest Manifest) error {
@@ -88,9 +137,13 @@ func writeManifest(dir string, manifest Manifest) error {
 }
 
 // manifestFor records every catalog file with the modification time it has in dir now.
-func manifestFor(dir, provider, id, version string, files []File) (Manifest, error) {
+func manifestFor(dir, provider, id, version string, files []File, extracted map[string][]ExtractedFile) (Manifest, error) {
 	manifest := Manifest{Provider: provider, ID: id, Version: version}
 	for _, f := range files {
+		if f.Extract != "" {
+			manifest.Files = append(manifest.Files, ManifestFile{Name: f.Name, URL: f.URL, SHA256: f.SHA256, Size: f.Size, Extracted: extracted[f.Name]})
+			continue
+		}
 		info, err := os.Stat(filepath.Join(dir, f.Name))
 		if err != nil {
 			return Manifest{}, err
@@ -100,8 +153,8 @@ func manifestFor(dir, provider, id, version string, files []File) (Manifest, err
 	return manifest, nil
 }
 
-func writeInstalledManifest(dir, provider, id, version string, files []File) error {
-	manifest, err := manifestFor(dir, provider, id, version, files)
+func writeInstalledManifest(dir, provider, id, version string, files []File, extracted map[string][]ExtractedFile) error {
+	manifest, err := manifestFor(dir, provider, id, version, files, extracted)
 	if err != nil {
 		return err
 	}
@@ -112,11 +165,22 @@ func writeInstalledManifest(dir, provider, id, version string, files []File) err
 
 // recordVerified refreshes the manifest after a Verify that read every byte and found them right.
 func recordVerified(dir, provider, id, version string, files []File) error {
-	manifest, err := manifestFor(dir, provider, id, version, files)
+	previous, readErr := ReadManifest(dir)
+	extracted := map[string][]ExtractedFile{}
+	if readErr == nil {
+		for _, entry := range previous.Files {
+			refreshed, err := refreshExtracted(dir, entry.Extracted)
+			if err != nil {
+				return err
+			}
+			extracted[entry.Name] = refreshed
+		}
+	}
+	manifest, err := manifestFor(dir, provider, id, version, files, extracted)
 	if err != nil {
 		return err
 	}
-	if previous, readErr := ReadManifest(dir); readErr == nil {
+	if readErr == nil {
 		manifest.InstalledAt = previous.InstalledAt
 	}
 	manifest.VerifiedAt = time.Now().UTC().Format(time.RFC3339)
@@ -135,4 +199,19 @@ func recordDamaged(dir, provider, id, version string) error {
 		return nil
 	}
 	return err
+}
+
+// refreshExtracted takes the modification times of the unpacked files as they are now, which the caller has just found to hold the bytes they
+// held when they were unpacked.
+func refreshExtracted(dir string, entries []ExtractedFile) ([]ExtractedFile, error) {
+	refreshed := make([]ExtractedFile, 0, len(entries))
+	for _, entry := range entries {
+		info, err := os.Stat(filepath.Join(dir, filepath.FromSlash(entry.Path)))
+		if err != nil {
+			return nil, err
+		}
+		entry.ModTime = info.ModTime().UnixNano()
+		refreshed = append(refreshed, entry)
+	}
+	return refreshed, nil
 }
