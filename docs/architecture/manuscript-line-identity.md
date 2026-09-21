@@ -8,7 +8,7 @@ The features that follow from the [REAPER automation research](../research/reape
 
 ## What exists
 
-Three commands in [`integrations/reaper/narration_ui_bridge.lua`](../../integrations/reaper/narration_ui_bridge.lua), sent over the same file protocol as Transcript Compare (`1|<command>|<args>` in `commands/NNNNNNNN.cmd`). Payloads travel as files because the command line carries at most eight fields.
+Three commands in [`integrations/reaper/narration_line_identity.lua`](../../integrations/reaper/narration_line_identity.lua) (registered with the bridge, see [the REAPER bridge](reaper-bridge.md)), sent over the same file protocol as Transcript Compare (`1|<command>|<args>` in `commands/NNNNNNNN.cmd`). Payloads travel as files because the command line carries at most eight fields.
 
 | Command | Fields after the command name | Payload file | Events |
 | --- | --- | --- | --- |

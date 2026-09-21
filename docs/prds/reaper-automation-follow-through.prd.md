@@ -202,7 +202,7 @@ Every spike phase below launches REAPER. D3 approves that on copies of `Challeng
 | 1 | Run the manual checklist | User runs the 10-step checklist in their own REAPER; results and REAPER version recorded in `manuscript-line-identity.md`; status line updated. No code | pending | 2, 3 | - | - |
 | 2 | Bridge event fan-out | Go: one event reader, per-consumer routing; transcript service migrated; tests. Then, after phase 4, run IDs on `ERROR` events in Lua | pending | 1, 3, 5 | Go part: none; Lua part: 4 | - |
 | 3 | Lua stub-`reaper` harness (D2) | Lua 5.4 in CI (Linux and Windows), fake `reaper`, file-protocol driver, characterization tests for every existing command and mutation checks; no bridge source change | complete | 1, 2, 5 | - | [ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md), [reaper-bridge](../architecture/reaper-bridge.md) |
-| 4 | Lua command registry (D2) | Behavior-preserving refactor of the dispatch chain; new-command file convention; `verify-installable.mjs` list | pending | 5 | 3 | - |
+| 4 | Lua command registry (D2) | Behavior-preserving refactor of the dispatch chain; new-command file convention; `verify-installable.mjs` list | complete | 5 | 3 | [ADR 0067](../adr/0067-bridge-commands-are-registered-by-name-and-each-feature-lives-in-its-own-lua-file.md), [reaper-bridge](../architecture/reaper-bridge.md) |
 | 5 | Spike S0: item `P_EXT` in a saved project (approved, D3) | Scripted, isolated REAPER run: stamp, split, copy, save, inspect the `.rpp`; keep a REAPER-saved fixture; record result | pending | 1, 2, 3 | D3 | - |
 | 6 | Line-identity Go client | Payload writers, `read_line_ids` parser, stale/conflict/drift reporting, binding, host API bump, tests mirroring `transcript/service_test.go` | pending | 8 | 1, 2 | - |
 | 7 | Line-identity UI and chapter regions | "Link chapters" flow with preview and approval, chapter regions from matched tracks, visual states, docs | pending | 8, 9 | 6, chapter matcher from the teleprompter PRD Phase 8 | - |
@@ -245,7 +245,7 @@ Every spike phase below launches REAPER. D3 approves that on copies of `Challeng
 **Phase 4 - Lua command registry (D2)**
 - **Goal**: new commands land without editing one giant chain.
 - **Scope**: behavior-preserving refactor covered by the Phase 3 tests; convention for per-feature Lua files; `verify-installable.mjs` updated; docs note.
-- **Success signal**: all harness tests unchanged and green; manual checklist step 10 (Transcript Compare still starts) passes.
+- **Success signal**: all harness tests unchanged and green; manual checklist step 10 (Transcript Compare still starts) passes. *Evidence: the 76 harness tests written before the split pass unchanged on the new layout; loading in a real REAPER is checked in the phase 5 scripted run; the in-app Transcript Compare check (step 10) needs the owner and is tracked under phase 1.*
 
 **Phase 5 - Spike S0: item `P_EXT` in a saved project (approved, D3)**
 - **Goal**: learn the `.rpp` representation and how split and copy treat item extension data.

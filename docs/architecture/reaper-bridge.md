@@ -7,7 +7,9 @@
 | File | Role |
 | --- | --- |
 | `NarrationUtils_Launcher.lua` | The one REAPER action. Finds the app executable, starts it with the session directory, project and DAW arguments, then runs the bridge loop. Its name and path are stable: the narrator imports it into REAPER's action list. |
-| `narration_ui_bridge.lua` | The bridge: polls `commands/` from a `reaper.defer` loop, dispatches each command, appends results to `events.log`. |
+| `narration_ui_bridge.lua` | The command loop and the registry it dispatches through: polls `commands/` from a `reaper.defer` loop, looks each command up, appends results to `events.log`. Lists the feature files in `FEATURE_FILES` and loads them next to itself. |
+| `narration_bridge_core.lua` | Shared by the bridge and every feature file: the percent-encoding and field-splitting helpers, `event`, file and path helpers, and `new_registry()`. |
+| `narration_compare.lua`, `narration_line_identity.lua` | The commands, one file per feature (Transcript Compare; manuscript line identity and chapter regions). |
 | `reaper_common_core.lua`, `reaper_common_process.lua` | Small helpers the launcher loads: files and paths, hidden process launch, pipe splitting. |
 | `tests/` | The harness (below). Not shipped: `scripts/release/prepare-resources.py` leaves `tests/` and `project.json` out of the app's embedded REAPER package. |
 
@@ -20,6 +22,19 @@ The Go host (`apps/desktop/internal/bridge`) and the Lua bridge share one sessio
 - **Errors** are `ERROR|<message>` events; an unsupported protocol version or command name is reported the same way.
 
 Every command that writes to the project is one undo block, writes nothing when there is nothing to change, and is safe to send twice.
+
+## The command registry
+
+A command is a handler `function(ctx, args)` registered under its name. `ctx.session_dir` is the session directory, `ctx.event(tag, ...)` appends an event, `ctx.stop()` ends the loop (the `close` command is just that). `args` are the command's fields after its name, already percent-decoded. A name may be registered once: registering it twice is an error, so two features cannot shadow each other. An unknown name is answered with `ERROR|Unsupported workspace command`, an unsupported protocol version with `ERROR|Unsupported hub protocol`.
+
+To add a command:
+
+1. Write the harness tests first (see below), and watch them fail.
+2. Put the command in `integrations/reaper/narration_<feature>.lua`. The file starts with `local core = ...` (the shared helpers arrive as the chunk argument) and returns `function(registry)`, which creates the feature's state (a `runs` table, say) and calls `registry.register(name, handler)`.
+3. List the file in `FEATURE_FILES` in `narration_ui_bridge.lua` and in `scripts/release/reaper-files.mjs` (the installer check requires every file listed there; `reaper-files.test.mjs` fails when the list and the folder disagree, and a registry test fails when a feature file exists that the bridge does not load).
+4. Add the command to the table below and to the registry test that pins the list of registered names.
+
+The feature files are `loadfile`d when the bridge module loads, so a missing or broken one fails the launcher's `dofile` and the narrator sees "Could not load Narration Utils shared libraries" before the app starts. The bridge finds its own folder from `debug.getinfo` and falls back to the running action's path.
 
 ## Commands
 
@@ -43,7 +58,7 @@ Every command that writes to the project is one undo block, writes nothing when 
 | `run_lua_tests.py` | The runner. Gives each `*_test.lua` its own Lua state (the `lupa` wheel, Lua 5.4), injects the few things Lua's standard library lacks (a temp directory, listing and creating directories), and exits non-zero on a failure. `--mutations` adds the mutation checks. |
 | `fake_reaper.lua` | The fake API and an in-memory project: tracks, items, takes and their markers, item extension data (a missing `P_EXT` key reads as `false, ''`), markers and regions (`EnumProjectMarkers3` returns index plus one), an undo log, a `defer` queue that `pump()` runs one frame at a time. `remove_api(name)` makes `APIExists` answer false, the way an older REAPER lacks a function. |
 | `harness.lua` | Tests, assertions, and `session()`: builds a fake REAPER, loads the bridge from `host.reaper_dir`, and offers `send(command, ...)` (writes a `.cmd` file and runs one tick) and `events()` (the new events, decoded). |
-| `*_test.lua` | Characterization tests: `protocol_test` (the loop), `compare_test`, `line_identity_test`, `launcher_test` (the launcher from an installed-bundle layout), `common_test` (the helpers). |
+| `*_test.lua` | Characterization tests: `protocol_test` (the loop), `registry_test` (the registry and the feature-file convention), `compare_test`, `line_identity_test`, `launcher_test` (the launcher from an installed-bundle layout), `common_test` (the helpers). |
 | `mutations.json`, `mutations.py` | Each entry breaks one guard in the Lua source (a stale GUID resolving to another item, an overwrite without asking, a spurious undo point, a widened duplicate window) and the suite must fail. A mutation that survives, or whose text is no longer in the source, fails the run. |
 
 ### Writing a test
