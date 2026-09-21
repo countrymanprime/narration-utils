@@ -156,7 +156,7 @@ Standard and ADR, latency baseline, catalog with ratchet, and Story Bible action
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Latency baseline | Manual-run harness, measured table for Python-backed and heavy Go-native operations, results note in `docs/research/` (no product code) | complete | 2 | - | - |
 | 2 | Standard, catalog and ratchet | ADR for the standard and thresholds, call-site catalog with verdicts (provisional cost classes), ratchet test, no-swallowed-catch rule | complete | 1 | - | - |
-| 3 | Story Bible action feedback | Shared pending hook, in-flight state and double-submit guard on save, create, rescan, lock, alias, relate, merge, delete, uncached preview; states and PNG review | pending | - | 1 (tiers), 2 (standard) | - |
+| 3 | Story Bible action feedback | Shared pending hook, in-flight state and double-submit guard on save, create, rescan, lock, alias, relate, merge, delete, uncached preview; states and PNG review | complete | - | 1 (tiers), 2 (standard) | - |
 | 4 | Latency reduction (data-gated) | One spawn per edit (batch fields), lazy Piper import, seed path; Python and Go tests; only if Phase 1 justifies it | pending | 5 | 1 | - |
 | 5 | Completion that survives navigation | Host job-end events, App-level subscriber, toast queue and sticky errors, remove page-scoped completion; reuse the unified job snapshot if release-readiness Phase 1 has landed | complete | 4 | 2 (soft: release-readiness Phase 1) | - |
 | 6 | Remaining gaps | Work through catalog rows still marked gap (swallowed errors, cancel/reset, Settings saves, Go-native slow calls); close the install-flow rows once release-readiness Phase 1 is verified | pending | - | 2, 3, 5 | - |

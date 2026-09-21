@@ -19,6 +19,21 @@ export const Primary: Story = { args: { variant: 'primary', label: 'Save changes
 export const Danger: Story = { args: { variant: 'danger', label: 'Delete entity', children: <FontAwesomeIcon icon={faTrash} /> } };
 export const Disabled: Story = { args: { disabled: true, label: 'Remove relationship', children: <FontAwesomeIcon icon={faXmark} /> } };
 
+// The action this button started is running (ADR 0075): the icon becomes a spinner, the name stays, and a press does nothing.
+export const Pending: Story = { args: { pending: true, variant: 'primary', label: 'Save changes' } };
+
+export const PendingIsBusyAndFocusable: Story = {
+  args: { pending: true, label: 'Save changes' },
+  play: async ({ args, canvasElement }) => {
+    const button = within(canvasElement).getByRole('button', { name: 'Save changes' });
+    await expect(button).toHaveAttribute('aria-busy', 'true');
+    await expect(button).not.toBeDisabled();
+    button.focus();
+    await expect(button).toHaveFocus();
+    await expect(args.onClick).not.toHaveBeenCalled();
+  },
+};
+
 // A hint is composed around the button, not a prop of it: the hint can say more than the label.
 export const WithHint: Story = {
   render: (args) => (

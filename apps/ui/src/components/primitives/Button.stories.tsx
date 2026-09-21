@@ -20,6 +20,25 @@ export const PrimaryDisabled: Story = { args: { variant: 'primary', disabled: tr
 export const GhostDisabled: Story = { args: { variant: 'ghost', disabled: true } };
 export const DangerDisabled: Story = { args: { variant: 'danger', children: 'Delete', disabled: true } };
 
+// The action this button started is running (ADR 0075): a spinner, dimmed, aria-busy, and a press does nothing. It stays focusable.
+export const PrimaryPending: Story = { args: { variant: 'primary', pending: true } };
+export const GhostPending: Story = { args: { variant: 'ghost', pending: true } };
+export const DangerPending: Story = { args: { variant: 'danger', children: 'Delete', pending: true } };
+
+// Busy and still focusable (it is not `disabled`). A pointer cannot reach it (`pointer-events: none`, like a disabled button), and the unit test
+// presses it with the keyboard and by dispatching a click: the handler is never called.
+export const PendingIsBusyAndFocusable: Story = {
+  args: { pending: true },
+  play: async ({ args, canvasElement }) => {
+    const button = within(canvasElement).getByRole('button', { name: 'Save changes' });
+    await expect(button).toHaveAttribute('aria-busy', 'true');
+    await expect(button).not.toBeDisabled();
+    button.focus();
+    await expect(button).toHaveFocus();
+    await expect(args.onClick).not.toHaveBeenCalled();
+  },
+};
+
 // Interaction: clicking an enabled button invokes onClick exactly once.
 export const ClickInvokesHandler: Story = {
   args: { variant: 'primary' },

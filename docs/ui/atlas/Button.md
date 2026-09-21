@@ -12,6 +12,10 @@ Storybook title: `Primitives/Button`. Source: `src/components/primitives/Button.
 - Primary Disabled
 - Ghost Disabled
 - Danger Disabled
+- Primary Pending
+- Ghost Pending
+- Danger Pending
+- Pending Is Busy And Focusable
 - Click Invokes Handler
 - Disabled Is Inert
 

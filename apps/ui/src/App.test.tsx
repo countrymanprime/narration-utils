@@ -228,6 +228,19 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Rebuild Story Bible' })).toBeNull(), { timeout: 3000 });
   });
 
+  it('says the rebuild was heard and starts only one when the button is pressed twice', async () => {
+    const guideBuild = vi.fn(() => new Promise<WorkJob>(() => {}));
+    renderApp({ guideBuild });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Story Bible' })[0]);
+    await screen.findByRole('heading', { name: 'Story Bible' });
+    const build = await screen.findByRole('button', { name: 'Build / refresh Story Bible' });
+    fireEvent.click(build);
+    fireEvent.click(build);
+    await waitFor(() => expect(build.getAttribute('aria-busy')).toBe('true'));
+    expect(guideBuild).toHaveBeenCalledTimes(1);
+  });
+
   it('shows a rebuild that is still running when the narrator comes back to the Story Bible, and lets them send it to the background', async () => {
     const running = { id: 'guide-9', kind: 'story_bible' as const, phase: 'running' as const, message: 'Extracting names', percent: 40, logs: [], elapsed: 12 };
     renderApp({ guideBuildState: async () => running });

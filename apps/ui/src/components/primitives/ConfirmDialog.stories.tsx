@@ -20,6 +20,23 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
+// The confirmed action is running (ADR 0075): the confirm button is busy, Cancel is off, and neither Escape nor the header button leaves.
+export const Pending: Story = {
+  args: {
+    title: 'Delete entry',
+    body: 'Delete "Alice" and its aliases, evidence, and relationships? This cannot be undone.',
+    confirmLabel: 'Delete entry',
+    confirmVariant: 'danger',
+    pending: true,
+  },
+  play: async ({ args }) => {
+    const confirm = await screen.findByRole('button', { name: 'Delete entry' });
+    await expect(confirm).toHaveAttribute('aria-busy', 'true');
+    await expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    await expect(args.confirm).not.toHaveBeenCalled();
+  },
+};
+
 // Overwriting existing work is spelled out in the body and the confirm label, and the confirm button is red.
 export const DestructiveConfirm: Story = {
   args: {

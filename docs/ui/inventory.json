@@ -12,6 +12,10 @@
         "Primary Disabled",
         "Ghost Disabled",
         "Danger Disabled",
+        "Primary Pending",
+        "Ghost Pending",
+        "Danger Pending",
+        "Pending Is Busy And Focusable",
         "Click Invokes Handler",
         "Disabled Is Inert"
       ],
@@ -72,6 +76,7 @@
       "source": "src/components/primitives/ConfirmDialog.tsx",
       "stories": [
         "Default",
+        "Pending",
         "Destructive Confirm",
         "Rich Body",
         "With Danger Action",
@@ -233,6 +238,8 @@
         "Primary",
         "Danger",
         "Disabled",
+        "Pending",
+        "Pending Is Busy And Focusable",
         "With Hint",
         "Press Reports Click",
         "Disabled Does Nothing"
@@ -543,6 +550,7 @@
         "src/components/settings/Settings.tsx",
         "src/components/storybible/Guide.tsx",
         "src/components/storybible/GuideDetail.tsx",
+        "src/components/storybible/usePreviewAudio.ts",
         "src/hooks/useToasts.ts",
         "src/jobEnded.ts"
       ],

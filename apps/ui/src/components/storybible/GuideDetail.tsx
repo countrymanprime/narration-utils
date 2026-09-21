@@ -1,5 +1,5 @@
 import { describeApiError } from '../../api/errorMessage';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChevronDown,
@@ -19,6 +19,7 @@ import {
 import type { GuideEntity, GuidePreview, TtsInstallJob } from '../../types';
 import { allEvidence, categoryCssName, categoryLabel, categoryValue, CREATABLE_CATEGORIES, findAliasMatches, highlightTerms } from '../../state';
 import { useApi } from '../../api/ApiContext';
+import { usePendingAction } from '../../hooks/usePendingAction';
 import { BADGE_CLASS, BADGE_STYLE, CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from '../manuscript/EntitySummary';
 import { Highlight, highlightKind } from '../primitives/Highlight';
 import { SlideOver } from '../primitives/SlideOver';
@@ -72,7 +73,14 @@ export function GuideDetail({
   const [reviewOverlayId, setReviewOverlayId] = useState<string>();
   const [ttsPrompt, setTtsPrompt] = useState<{ preview: Extract<GuidePreview, { status: 'asset_required' }>; aliasIndex?: number }>();
   const [ttsJob, setTtsJob] = useState<TtsInstallJob>();
-  const { playingPreview, playPreview } = usePreviewAudio({
+  // Every action that changes the Story Bible goes through this (ADR 0075): one at a time, the control that started it says so, and the others
+  // wait. Each is a Python process that rewrites the same file, so two at once could lose an update.
+  const mutation = usePendingAction();
+  // An action that outlives a switch to another entry must not pull the selection back to the one it started on when it reloads.
+  const currentId = useRef(entity?.id);
+  currentId.current = entity?.id;
+  const reloadFor = (id: string) => reload(currentId.current === id ? id : undefined);
+  const { playingPreview, loadingPreview, playPreview } = usePreviewAudio({
     resetKey: entity,
     requestPreview: (aliasIndex) => {
       if (!entity) throw new Error('Select a Story Bible entry before previewing it.');
@@ -131,18 +139,19 @@ export function GuideDetail({
   const evidence = allEvidence(entity);
   const highlightNames = [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)];
 
-  const save = async (values: Record<string, string>, message: string): Promise<boolean> => {
-    try {
-      await api.guideEdit(entity.id, values);
-      notify(message);
-      await reload(entity.id);
-      return true;
-    } catch (error) {
-      notify(describeApiError(error), 'error');
-      return false;
-    }
-  };
-  const setAliasTexts = (aliases: string[]) => save({ aliases: aliases.join(';') }, 'Aliases updated.');
+  const save = async (key: string, values: Record<string, string>, message: string): Promise<boolean> =>
+    (await mutation.run(key, async () => {
+      try {
+        await api.guideEdit(entity.id, values);
+        notify(message);
+        await reloadFor(entity.id);
+        return true;
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+        return false;
+      }
+    })) ?? false;
+  const setAliasTexts = (aliases: string[], key = 'alias') => save(key, { aliases: aliases.join(';') }, 'Aliases updated.');
   const clearAliasMatch = () => {
     setAliasQuery('');
     setAliasSelectedId(undefined);
@@ -150,7 +159,8 @@ export function GuideDetail({
   };
   const addAliasFromQuery = () => {
     const value = aliasQuery.trim();
-    if (!value) return;
+    // Another action is running: keep what was typed instead of clearing it and adding nothing.
+    if (!value || mutation.isBusy) return;
     clearAliasMatch();
     void setAliasTexts([...entity.aliases.map((alias) => alias.text), value]);
   };
@@ -187,24 +197,85 @@ export function GuideDetail({
     setTtsPrompt(undefined);
     setTtsJob(undefined);
   };
-  const createNewEntity = async (category: string) => {
-    try {
-      const id = await api.guideCreate(draft.name.trim() || entity.canonical_name, category, []);
-      notify('Entity created.');
-      onCreatedNewDraft?.(id);
-    } catch (error) {
-      notify(describeApiError(error), 'error');
-    }
+  const createNewEntity = (category: string) =>
+    mutation.run('create', async () => {
+      try {
+        const id = await api.guideCreate(draft.name.trim() || entity.canonical_name, category, []);
+        notify('Entity created.');
+        onCreatedNewDraft?.(id);
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+      }
+    });
+  const rescanOccurrences = () =>
+    mutation.run('rescan', async () => {
+      try {
+        await api.guideRescan(entity.id);
+        notify('Occurrences rescanned.');
+        await reloadFor(entity.id);
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+      }
+    });
+  const setLocked = () =>
+    mutation.run('lock', async () => {
+      try {
+        await api.guideSetLocked(entity.id, !locked);
+        notify(locked ? 'Entry unlocked.' : 'Entry locked.');
+        await reloadFor(entity.id);
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+      }
+    });
+  const removeRelationship = (relationId: string, label: string) =>
+    mutation.run(`unrelate:${relationId}:${label}`, async () => {
+      try {
+        await api.guideUnrelate(entity.id, relationId, label);
+        await reloadFor(entity.id);
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+      }
+    });
+  const addRelationship = () => {
+    if (!relationOtherId || !relationLabel.trim()) return;
+    return mutation.run('relate', async () => {
+      try {
+        await api.guideRelate(entity.id, relationOtherId, relationLabel.trim());
+        setRelationOtherId('');
+        setRelationLabel('');
+        await reloadFor(entity.id);
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+      }
+    });
   };
-  const rescanOccurrences = async () => {
-    try {
-      await api.guideRescan(entity.id);
-      notify('Occurrences rescanned.');
-      await reload(entity.id);
-    } catch (error) {
-      notify(describeApiError(error), 'error');
-    }
-  };
+  const deleteEntry = () =>
+    mutation.run('delete', async () => {
+      try {
+        await api.guideDelete(entity.id);
+        notify('Entity deleted.');
+        await reload();
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+      } finally {
+        setConfirmation(undefined);
+      }
+    });
+  const mergeEntry = (source: GuideEntity) =>
+    mutation.run('merge', async () => {
+      try {
+        await api.guideMerge(source.id, entity.id);
+        notify(`Merged ${source.canonical_name} into ${entity.canonical_name}.`);
+        await reloadFor(entity.id);
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+      } finally {
+        setConfirmation(undefined);
+        clearAliasMatch();
+      }
+    });
+  // The others wait while one runs; the one that is running shows it is (`pending`).
+  const waiting = (key: string) => mutation.isBlockedFor(key);
   const onAliasKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -235,14 +306,14 @@ export function GuideDetail({
               <Menu
                 triggerClassName={BADGE_CLASS}
                 triggerStyle={BADGE_STYLE[entity.category]}
-                disabled={locked || !(editing || isNewDraft)}
+                disabled={locked || !(editing || isNewDraft) || mutation.isBusy}
                 items={CREATABLE_CATEGORIES.map((label) => ({
                   key: label,
                   label,
                   leading: <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryValue(label)] }} />,
                   onSelect: () => {
                     if (isNewDraft) void createNewEntity(categoryValue(label));
-                    else void save({ category: categoryValue(label) }, `Category changed to ${label}.`);
+                    else void save('category', { category: categoryValue(label) }, `Category changed to ${label}.`);
                   },
                 }))}
               >
@@ -259,15 +330,9 @@ export function GuideDetail({
             <TooltipTarget text={locked ? 'Unlock entry' : 'Lock entry'}>
               <IconButton
                 label={locked ? 'Unlock entry' : 'Lock entry'}
-                onClick={async () => {
-                  try {
-                    await api.guideSetLocked(entity.id, !locked);
-                    notify(locked ? 'Entry unlocked.' : 'Entry locked.');
-                    await reload(entity.id);
-                  } catch (error) {
-                    notify(describeApiError(error), 'error');
-                  }
-                }}
+                pending={mutation.isPending('lock')}
+                disabled={waiting('lock')}
+                onClick={() => void setLocked()}
               >
                 <FontAwesomeIcon icon={locked ? faLock : faLockOpen} />
               </IconButton>
@@ -285,8 +350,11 @@ export function GuideDetail({
               <TooltipTarget text="Save changes to this entry">
                 <IconButton
                   label="Save changes to this entry"
+                  pending={mutation.isPending('save')}
+                  disabled={waiting('save')}
                   onClick={() =>
                     void save(
+                      'save',
                       {
                         canonical_name: draft.name.trim() || entity.canonical_name,
                         description: draft.description,
@@ -310,7 +378,7 @@ export function GuideDetail({
           )}
           {!locked && !isNewDraft && (
             <TooltipTarget text="Delete entity">
-              <IconButton label="Delete entity" onClick={() => setConfirmation('delete')}>
+              <IconButton label="Delete entity" disabled={mutation.isBusy} onClick={() => setConfirmation('delete')}>
                 <FontAwesomeIcon icon={faTrash} />
               </IconButton>
             </TooltipTarget>
@@ -360,6 +428,7 @@ export function GuideDetail({
                 <IconButton
                   label={playingPreview === CANONICAL_PREVIEW ? 'Pause preview' : 'Play preview'}
                   disabled={isNewDraft}
+                  pending={loadingPreview === CANONICAL_PREVIEW}
                   onClick={() => void playPreview()}
                 >
                   <FontAwesomeIcon icon={playingPreview === CANONICAL_PREVIEW ? faPause : faWaveSquare} />
@@ -401,6 +470,7 @@ export function GuideDetail({
                       >
                         <IconButton
                           label={playingPreview === previewKey(index) ? 'Pause alias pronunciation' : 'Play alias pronunciation'}
+                          pending={loadingPreview === previewKey(index)}
                           onClick={() => void playPreview(index)}
                         >
                           <FontAwesomeIcon icon={playingPreview === previewKey(index) ? faPause : faWaveSquare} />
@@ -412,8 +482,14 @@ export function GuideDetail({
                   <TableCell align="right">
                     <IconButton
                       label={`Remove alias ${alias.text}`}
-                      disabled={editingDisabled}
-                      onClick={() => void setAliasTexts(entity.aliases.filter((other) => other.text !== alias.text).map((other) => other.text))}
+                      disabled={editingDisabled || waiting(`alias:${alias.text}`)}
+                      pending={mutation.isPending(`alias:${alias.text}`)}
+                      onClick={() =>
+                        void setAliasTexts(
+                          entity.aliases.filter((other) => other.text !== alias.text).map((other) => other.text),
+                          `alias:${alias.text}`,
+                        )
+                      }
                     >
                       <FontAwesomeIcon icon={faXmark} />
                     </IconButton>
@@ -453,7 +529,7 @@ export function GuideDetail({
                     </Button>
                   </TooltipTarget>
                 ) : (
-                  <Button variant="primary" className="text-xs" onClick={() => setConfirmation('merge')}>
+                  <Button variant="primary" className="text-xs" disabled={mutation.isBusy} onClick={() => setConfirmation('merge')}>
                     <FontAwesomeIcon icon={faCodeMerge} />
                     Merge into current entry
                   </Button>
@@ -494,12 +570,22 @@ export function GuideDetail({
                 )}
                 <div data-alias-actions className="flex items-center justify-between p-2">
                   <TooltipTarget text="Add alias">
-                    <IconButton label="Add alias" disabled={editingDisabled} onClick={addAliasFromQuery}>
+                    <IconButton
+                      label="Add alias"
+                      disabled={editingDisabled || waiting('alias')}
+                      pending={mutation.isPending('alias')}
+                      onClick={addAliasFromQuery}
+                    >
                       <FontAwesomeIcon icon={faPlus} />
                     </IconButton>
                   </TooltipTarget>
                   <TooltipTarget text="Rescan occurrences for this entry">
-                    <IconButton label="Rescan occurrences" disabled={isNewDraft} onClick={() => void rescanOccurrences()}>
+                    <IconButton
+                      label="Rescan occurrences"
+                      disabled={isNewDraft || waiting('rescan')}
+                      pending={mutation.isPending('rescan')}
+                      onClick={() => void rescanOccurrences()}
+                    >
                       <FontAwesomeIcon icon={faRotate} />
                     </IconButton>
                   </TooltipTarget>
@@ -508,12 +594,22 @@ export function GuideDetail({
             ) : (
               <div data-alias-actions className="mt-2 flex items-center justify-between">
                 <TooltipTarget text="Add alias">
-                  <IconButton label="Add alias" disabled={editingDisabled} onClick={addAliasFromQuery}>
+                  <IconButton
+                    label="Add alias"
+                    disabled={editingDisabled || waiting('alias')}
+                    pending={mutation.isPending('alias')}
+                    onClick={addAliasFromQuery}
+                  >
                     <FontAwesomeIcon icon={faPlus} />
                   </IconButton>
                 </TooltipTarget>
                 <TooltipTarget text="Rescan occurrences for this entry">
-                  <IconButton label="Rescan occurrences" disabled={isNewDraft} onClick={() => void rescanOccurrences()}>
+                  <IconButton
+                    label="Rescan occurrences"
+                    disabled={isNewDraft || waiting('rescan')}
+                    pending={mutation.isPending('rescan')}
+                    onClick={() => void rescanOccurrences()}
+                  >
                     <FontAwesomeIcon icon={faRotate} />
                   </IconButton>
                 </TooltipTarget>
@@ -592,15 +688,9 @@ export function GuideDetail({
                   <TableCell align="right">
                     <IconButton
                       label="Remove relationship"
-                      disabled={editingDisabled}
-                      onClick={async () => {
-                        try {
-                          await api.guideUnrelate(entity.id, rel.id, rel.label);
-                          await reload(entity.id);
-                        } catch (error) {
-                          notify(describeApiError(error), 'error');
-                        }
-                      }}
+                      disabled={editingDisabled || waiting(`unrelate:${rel.id}:${rel.label}`)}
+                      pending={mutation.isPending(`unrelate:${rel.id}:${rel.label}`)}
+                      onClick={() => void removeRelationship(rel.id, rel.label)}
                     >
                       <FontAwesomeIcon icon={faXmark} />
                     </IconButton>
@@ -635,18 +725,9 @@ export function GuideDetail({
             <Button
               variant="ghost"
               className="text-xs"
-              disabled={editingDisabled}
-              onClick={async () => {
-                if (!relationOtherId || !relationLabel.trim()) return;
-                try {
-                  await api.guideRelate(entity.id, relationOtherId, relationLabel.trim());
-                  setRelationOtherId('');
-                  setRelationLabel('');
-                  await reload(entity.id);
-                } catch (error) {
-                  notify(describeApiError(error), 'error');
-                }
-              }}
+              disabled={editingDisabled || waiting('relate')}
+              pending={mutation.isPending('relate')}
+              onClick={() => void addRelationship()}
             >
               <FontAwesomeIcon icon={faPlus} /> Add
             </Button>
@@ -759,16 +840,8 @@ export function GuideDetail({
             body={`Delete “${entity.canonical_name}” and its aliases, evidence, and relationships? This cannot be undone.`}
             confirmLabel="Delete entry"
             confirmVariant="danger"
-            confirm={() => {
-              setConfirmation(undefined);
-              void api
-                .guideDelete(entity.id)
-                .then(() => {
-                  notify('Entity deleted.');
-                  return reload();
-                })
-                .catch((error) => notify(describeApiError(error), 'error'));
-            }}
+            pending={mutation.isPending('delete')}
+            confirm={() => void deleteEntry()}
             cancel={() => setConfirmation(undefined)}
           />
         )}
@@ -778,17 +851,8 @@ export function GuideDetail({
             body={`Merge “${selectedAliasMatch.canonical_name}” into “${entity.canonical_name}”? The source entry will be deleted.`}
             confirmLabel="Merge & delete source"
             confirmVariant="danger"
-            confirm={() => {
-              setConfirmation(undefined);
-              void api
-                .guideMerge(selectedAliasMatch.id, entity.id)
-                .then(() => {
-                  clearAliasMatch();
-                  notify(`Merged ${selectedAliasMatch.canonical_name} into ${entity.canonical_name}.`);
-                  return reload(entity.id);
-                })
-                .catch((error) => notify(describeApiError(error), 'error'));
-            }}
+            pending={mutation.isPending('merge')}
+            confirm={() => void mergeEntry(selectedAliasMatch)}
             cancel={() => setConfirmation(undefined)}
           />
         )}

@@ -396,6 +396,17 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
   },
   storybible: {
+    'entry-saving': async (page) => {
+      await page.goto('/?mockHoldEdits=1');
+      await settlePage(page);
+      await clickNav(page, 'Story Bible');
+      await page.locator('tr[data-row]').first().click();
+      const unlock = page.getByRole('button', { name: 'Unlock entry' });
+      if (await unlock.count()) await unlock.click();
+      await clickVisible(page, 'button', 'Edit this entry');
+      await clickVisible(page, 'button', 'Save changes to this entry');
+      await page.getByRole('button', { name: 'Save changes to this entry' }).and(page.locator('[aria-busy="true"]')).waitFor();
+    },
     'rebuild-running': async (page) => {
       await page.goto('/?mockRebuildRunning=1');
       await settlePage(page);
