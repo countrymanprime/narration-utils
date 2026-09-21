@@ -74,6 +74,8 @@ Phase counts are the rows of each PRD's phase table.
 | [Proofing Vocabulary Hints](proofing-vocabulary-hints.prd.md) | Defect, then feature | 2 | None |
 | [Proofing Preview Suggestion](proofing-preview-suggestion.prd.md) | Feature | 8 | None; unscheduled like the chapter stage recommendations set |
 | [Audiobook Credits Templates](audiobook-credits-templates.prd.md) | Feature | 5 | None |
+| [UI Primitives and a Headless Library](ui-primitives-and-headless-library.prd.md) | Feature (infrastructure) | 6 (including a phase 0 decision) | None; reopens Q1 of [Dialog Modality and WorkDialog Accessibility](dialog-modality-and-workdialog-a11y.prd.md) |
+| [TypeScript 7 and Typed Linting](typescript-7-and-typed-linting.prd.md) | Feature (tooling) | 3 (the last blocked on typescript-eslint and TypeScript 7.1) | None |
 
 ## Replaced briefs
 

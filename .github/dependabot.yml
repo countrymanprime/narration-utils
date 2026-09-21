@@ -1,5 +1,8 @@
 version: 2
 updates:
+  # One npm entry covers the pnpm workspace, including apps/ui. A second entry for /apps/ui opened duplicate pull
+  # requests that changed only apps/ui/package.json and failed the frozen-lockfile install, because Dependabot
+  # cannot update the workspace lockfile from a member directory.
   - package-ecosystem: npm
     directory: /
     schedule:
@@ -7,13 +10,11 @@ updates:
     groups:
       tooling:
         update-types: [minor, patch]
-  - package-ecosystem: npm
-    directory: /apps/ui
-    schedule:
-      interval: weekly
-    groups:
-      ui-dependencies:
-        update-types: [minor, patch]
+    ignore:
+      # TypeScript 7 ships no JS API and typescript-eslint cannot run on it (peer range <6.1), so the bump breaks
+      # lint and two tests. Lift this when docs/prds/typescript-7-and-typed-linting.prd.md phase 1 lands.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: uv
     directory: /
     schedule:
