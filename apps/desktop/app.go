@@ -209,6 +209,9 @@ func (h *Host) configureLocked(next config) {
 	var client *bridge.Client
 	if h.config.sessionDir != "" {
 		client, _ = bridge.New(h.config.sessionDir)
+		if client != nil {
+			client.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
+		}
 	}
 	h.transcript = transcript.New(transcript.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir, Python: h.config.comparePython, Backend: h.config.compareBackend}, client, h.settings, h.sidecars, h.emitTranscript)
 	h.transcript.SetPersist(h.persist)

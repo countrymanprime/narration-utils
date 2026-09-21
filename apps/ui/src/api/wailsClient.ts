@@ -137,12 +137,7 @@ export const wailsClient: NarrationApi = {
     decode(
       workJobSchema,
       'ManuscriptImportCommit',
-      host.ManuscriptImportCommit(
-        jobId,
-        options.confirmedReset,
-        (options.selection?.sectionKinds ?? {}) as Record<string, string>,
-        options.selection?.characterCandidateIds ?? [],
-      ),
+      host.ManuscriptImportCommit(jobId, options.confirmedReset, options.selection?.sectionKinds ?? {}, options.selection?.characterCandidateIds ?? []),
     ),
   manuscriptImportCancel: (jobId) => decode(voidResult, 'ManuscriptImportCancel', host.ManuscriptImportCancel(jobId)),
   saveSettings: (tool, scope, values) => decode(bootstrapSchema, 'SystemSaveSettings', host.SystemSaveSettings(tool, scope, values)),

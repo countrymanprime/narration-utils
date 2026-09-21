@@ -49,7 +49,6 @@ function boundaryFiles(dir: string): string[] {
 
 // What the scan reports: `as <Type>` for an assertion and `JSON.parse(<argument>)` for a parse, keyed by file (relative, forward slashes).
 const ALLOWED: Array<{ file: string; text: string; reason: string }> = [
-  { file: 'wailsClient.ts', text: 'as Record<string, string>', reason: 'an argument the UI sends to the host, not a payload it receives' },
   { file: 'wire/parseWire.ts', text: 'JSON.parse(text)', reason: 'the one place JSON text is parsed: its result goes straight into the schema' },
   {
     file: 'wailsClient.ts',
