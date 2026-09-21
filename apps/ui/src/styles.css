@@ -57,6 +57,11 @@
   --danger: #b5473c;
   --warn: #b5871e;
   --info: #3f6ea6;
+  /* Text-safe companions of the status colours, for text on the page and on their soft fills (ADR 0059): --danger, --warn and
+     --info stay for borders, dots and fills. Light darkens the colour toward --text; in dark the fill colour already passes. */
+  --danger-text: color-mix(in srgb, var(--danger) 85%, var(--text));
+  --warn-text: color-mix(in srgb, var(--warn) 50%, var(--text));
+  --info-text: color-mix(in srgb, var(--info) 90%, var(--text));
   --bookmark: #3b6fc4;
   /* Alternating reader rows: a touch darker than --surface, like banded table rows. */
   --row-alt: color-mix(in srgb, var(--surface) 94%, var(--text));
@@ -117,6 +122,9 @@
   --danger: #db7a6e;
   --warn: #e0b255;
   --info: #6e9fdb;
+  --danger-text: var(--danger);
+  --warn-text: var(--warn);
+  --info-text: var(--info);
   --bookmark: #6e9fdb;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25);
   --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.3);
@@ -140,6 +148,13 @@
   }
   button:disabled {
     cursor: not-allowed;
+  }
+  /* Tailwind's preflight draws a placeholder at 50% of the field's text colour, about 3.2:1 in the light theme. A placeholder
+     is text (WCAG 1.4.3), so it takes the muted text colour (ADR 0059). */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
   }
 }
 @keyframes tooltip-in {

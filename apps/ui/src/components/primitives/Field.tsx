@@ -50,7 +50,7 @@ export function Field({
         <BaseField.Description className="mt-1 block text-xs text-[var(--text-muted)]">{hint}</BaseField.Description>
       )}
       {error && (
-        <BaseField.Error match className="mt-1 block text-xs text-[var(--danger)]">
+        <BaseField.Error match className="mt-1 block text-xs text-[var(--danger-text)]">
           {error}
         </BaseField.Error>
       )}

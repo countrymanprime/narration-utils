@@ -68,19 +68,25 @@ const PAIRS: PairSpec[] = [
     ['surface'],
     'color-mix(in srgb, var(--accent) 10%, var(--surface))',
   ),
-  text('danger', 'danger button, field error, red confirm', 'var(--danger)', PAGE_SURFACES),
-  text('danger-on-soft', 'danger button hover: danger on review-soft', 'var(--danger)', ['surface'], 'var(--review-soft)'),
-  text('warn', 'the warn text in Settings and the Results status', 'var(--warn)', ['surface']),
-  text('warn-on-tint', 'Results badge: warn on an 18% warn tint', 'var(--warn)', ['surface'], tint('warn', 18)),
-  text('warn-on-accent-soft', 'SKIPPED word in the inline diff: warn on accent-soft', 'var(--warn)', ['surface-2'], 'var(--accent-soft)'),
-  text('info-on-place-soft', 'EXTRA word in the inline diff: info on place-soft', 'var(--info)', ['surface-2'], 'var(--place-soft)'),
+  text('danger', 'danger button, field error, red confirm, alerts: the text-safe danger colour', 'var(--danger-text)', PAGE_SURFACES),
   text(
-    'review-on-soft',
-    'MISREAD word, alert and last-completed badge: review on review-soft',
-    'var(--review)',
+    'danger-on-soft',
+    'danger button hover, MISREAD word, alert and last-completed badge: danger text on review-soft',
+    'var(--danger-text)',
     ['surface', 'surface-2'],
     'var(--review-soft)',
   ),
+  text('warn', 'the warn text in Settings and the Teleprompter status: the text-safe warn colour', 'var(--warn-text)', PAGE_SURFACES),
+  text(
+    'warn-on-tint',
+    'Results badge: warn text on an 18% warn tint (a hovered or selected row is surface-2)',
+    'var(--warn-text)',
+    ['surface', 'surface-2'],
+    tint('warn', 18),
+  ),
+  text('warn-on-accent-soft', 'SKIPPED word in the inline diff: warn text on accent-soft', 'var(--warn-text)', ['surface-2'], 'var(--accent-soft)'),
+  text('info', 'the text-safe info colour on the page', 'var(--info-text)', PAGE_SURFACES),
+  text('info-on-place-soft', 'EXTRA word in the inline diff: info text on place-soft', 'var(--info-text)', ['surface-2'], 'var(--place-soft)'),
   ...KINDS.map((kind) =>
     text(
       `highlight-${kind}`,
@@ -119,23 +125,11 @@ interface KnownFailure {
   fixedBy: string;
 }
 
-// Every entry names the phase of docs/prds/palette-contrast-wcag-aa.prd.md that fixes it.
-const lightOnly: Theme[] = ['light'];
-const known = (fixedBy: string, themes: Theme[], ids: string[]): Record<string, KnownFailure> => Object.fromEntries(ids.map((id) => [id, { themes, fixedBy }]));
-
-const KNOWN_FAILURES: Record<string, KnownFailure> = {
-  ...known('phase 5 (status text: warn, danger, review, info)', lightOnly, [
-    'danger',
-    'danger-on-soft',
-    'warn',
-    'warn-on-tint',
-    'warn-on-accent-soft',
-    'info-on-place-soft',
-    'review-on-soft',
-  ]),
-};
-// Counted per pair and theme: `text-muted` failing in dark as well would be a second failure, not the same one.
-const MAX_KNOWN_FAILURES = 7;
+// Every entry names the phase of docs/prds/palette-contrast-wcag-aa.prd.md that fixes it. Empty since the status text phase:
+// a new entry is a new known failure and needs the same review as an `A11Y_DEBT` entry.
+const KNOWN_FAILURES: Record<string, KnownFailure> = {};
+// Counted per pair and theme: a pair failing in both themes is two failures, not one.
+const MAX_KNOWN_FAILURES = 0;
 
 interface Measured {
   ratio: number;
@@ -236,6 +230,23 @@ describe('a highlight nested once in another highlight stays at AA', () => {
   }
 });
 
+describe('placeholder text', () => {
+  // A placeholder is text (WCAG 1.4.3), and axe does not test it. Tailwind's preflight draws it at 50% of the field's text
+  // colour, about 3.2:1 in the light theme, so styles.css sets it to the muted text colour, which the `text-muted` pair holds
+  // to 4.5:1 on every surface.
+  it('is drawn in --text-muted at full opacity for inputs and textareas', () => {
+    const rules = [...CSS.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]*::placeholder[^{}]*)\{([^}]*)\}/g)];
+    const muted = rules.filter(
+      ([, selector, body]) =>
+        /input::placeholder/.test(selector) &&
+        /textarea::placeholder/.test(selector) &&
+        /color:\s*var\(--text-muted\)/.test(body) &&
+        /opacity:\s*1\b/.test(body),
+    );
+    expect(muted.length, 'styles.css needs one rule: input::placeholder, textarea::placeholder { color: var(--text-muted); opacity: 1 }').toBe(1);
+  });
+});
+
 describe('the text ramp keeps its order', () => {
   // Contrast against the same surface must step down text, then muted, then the non-text mark: equal levels would mean the
   // hierarchy the palette exists to give the eye has collapsed.
@@ -324,6 +335,17 @@ describe('no text colour ships without a declared pair', () => {
       expect(reason.length, token).toBeGreaterThan(10);
       expect(used.has(token), `${token} is no longer used as text: delete it from NO_TEXT_PAIR`).toBe(true);
     }
+  });
+
+  it('draws no text in a Tailwind palette colour or a literal colour: only tokens have a measured pair', () => {
+    // `text-red-400` in Results.tsx was 2.8:1 on white, in both themes, because a palette colour is no token: no pair measures
+    // it and the dark theme never changes it.
+    const literal =
+      /\btext-(?:(?:red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone)-\d{2,3}|white|black)\b|\btext-\[#[0-9a-fA-F]{3,8}\]/;
+    const offenders = sourceFiles(__dirname)
+      .filter((file) => literal.test(readFileSync(file, 'utf8')))
+      .map((file) => relative(__dirname, file).split(sep).join('/'));
+    expect(offenders, 'use a token from styles.css, with a declared pair').toEqual([]);
   });
 
   it('uses --non-text only where an icon, a dot or a glyph is listed', () => {

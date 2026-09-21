@@ -232,7 +232,7 @@ describe('Story Bible delete confirmation', () => {
     await user.click(opener);
 
     const dialog = await screen.findByRole('alertdialog', { name: 'Delete entry' });
-    expect(within(dialog).getByRole('button', { name: 'Delete entry' }).className).toContain('text-[var(--danger)]');
+    expect(within(dialog).getByRole('button', { name: 'Delete entry' }).className).toContain('text-[var(--danger-text)]');
     // The page behind is out of the accessibility tree while the dialog is open.
     expect(screen.queryByRole('button', { name: 'Edit this entry' })).toBeNull();
 

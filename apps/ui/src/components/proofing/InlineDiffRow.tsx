@@ -2,9 +2,9 @@ import type { Discrepancy } from '../../types';
 import { TableCell, TableRow } from '../primitives/Table';
 
 export const KIND_STYLES: Record<string, { color: string; soft: string }> = {
-  MISREAD: { color: 'var(--review)', soft: 'var(--review-soft)' },
-  SKIPPED: { color: 'var(--warn)', soft: 'var(--accent-soft)' },
-  EXTRA: { color: 'var(--info)', soft: 'var(--place-soft)' },
+  MISREAD: { color: 'var(--danger-text)', soft: 'var(--review-soft)' },
+  SKIPPED: { color: 'var(--warn-text)', soft: 'var(--accent-soft)' },
+  EXTRA: { color: 'var(--info-text)', soft: 'var(--place-soft)' },
 };
 
 function diffWords(script: string, heard: string) {

@@ -57,7 +57,7 @@ function TrackRow({ track, active, onSelect }: { track: Track; active: boolean; 
         <span className="min-w-0 flex-1 truncate font-medium">{track.name || `Track ${track.index + 1}`}</span>
         {track.muted && <span className="section-label flex-none">Muted</span>}
         {hasIssue && (
-          <span title="This track has an item that can't be played" className="flex-none" style={{ color: 'var(--danger)' }}>
+          <span title="This track has an item that can't be played" className="flex-none" style={{ color: 'var(--danger-text)' }}>
             <FontAwesomeIcon icon={faTriangleExclamation} />
           </span>
         )}
@@ -82,7 +82,7 @@ function Transport({ tracks, activeIndex, onActiveIndexChange }: { tracks: Track
         </p>
       )}
       {player.loadError && (
-        <p role="alert" className="mt-1 text-sm" style={{ color: 'var(--danger)' }}>
+        <p role="alert" className="mt-1 text-sm" style={{ color: 'var(--danger-text)' }}>
           This track&rsquo;s audio couldn&rsquo;t be played. Check that its source files are still where the project expects them.
         </p>
       )}
@@ -166,7 +166,7 @@ export function TracksPage() {
     <div className="mx-auto max-w-3xl space-y-4">
       <Heading title="Tracks">{discovery?.selected ? basename(discovery.selected) : 'Detected from the project’s REAPER file.'}</Heading>
       {error && (
-        <p role="alert" className="text-sm" style={{ color: 'var(--danger)' }}>
+        <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
           {error}
         </p>
       )}

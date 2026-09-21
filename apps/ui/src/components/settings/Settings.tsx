@@ -183,7 +183,7 @@ export function Settings({
             </div>
             <div className="p-[1.1rem]">
               {loadError && (
-                <div className="mb-4 rounded-md p-3 text-sm" role="alert" style={{ background: 'var(--review-soft)', color: 'var(--review)' }}>
+                <div className="mb-4 rounded-md p-3 text-sm" role="alert" style={{ background: 'var(--review-soft)', color: 'var(--danger-text)' }}>
                   Settings could not be loaded: {loadError}. Select another category or try again.
                 </div>
               )}
@@ -332,7 +332,7 @@ export function Settings({
                     ))}
                   </div>
                   <div className="mt-5 flex items-center justify-between gap-3 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-                    <span className="text-xs" style={{ color: 'var(--warn)' }}>
+                    <span className="text-xs" style={{ color: 'var(--warn-text)' }}>
                       {dirty && 'Unsaved changes'}
                     </span>
                     <div className="flex gap-2">

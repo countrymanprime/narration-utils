@@ -5,7 +5,7 @@ type ButtonVariant = 'primary' | 'ghost' | 'danger';
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary: 'border-transparent bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-strong)]',
   ghost: 'border-[var(--border)] bg-transparent text-[var(--text)] hover:bg-[var(--surface-2)]',
-  danger: 'border-[var(--danger)] bg-transparent text-[var(--danger)] hover:bg-[var(--review-soft)]',
+  danger: 'border-[var(--danger)] bg-transparent text-[var(--danger-text)] hover:bg-[var(--review-soft)]',
 };
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant };

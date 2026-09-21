@@ -5,7 +5,7 @@ type IconButtonVariant = 'default' | 'primary' | 'danger';
 const VARIANT_CLASSES: Record<IconButtonVariant, string> = {
   default: 'border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]',
   primary: 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-strong)]',
-  danger: 'border-[var(--danger)] bg-[var(--surface)] text-[var(--danger)] hover:bg-[var(--review-soft)]',
+  danger: 'border-[var(--danger)] bg-[var(--surface)] text-[var(--danger-text)] hover:bg-[var(--review-soft)]',
 };
 
 type Props = Omit<ComponentPropsWithRef<'button'>, 'aria-label' | 'title'> & {
