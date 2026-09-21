@@ -126,10 +126,9 @@ func (h *Host) GuideEdit(id string, values map[string]string) (string, error) {
 	if service == nil {
 		return "", fmt.Errorf("the Story Bible is unavailable")
 	}
-	for field, value := range values {
-		if err := service.Edit(id, field, value); err != nil {
-			return "", err
-		}
+	// One sidecar process for the whole edit, and all of it or none of it: a field the sidecar refuses leaves the file as it was.
+	if err := service.EditFields(id, values); err != nil {
+		return "", err
 	}
 	return encodeBinding(nil, nil)
 }
@@ -375,13 +374,9 @@ func seedCharacterCandidates(service *guide.Service, candidates []importer.Chara
 	}
 	for index, candidate := range chosen {
 		report(index*100/len(chosen), fmt.Sprintf("Adding Story Bible character %d of %d: %s", index+1, len(chosen), candidate.Name))
-		entityID, err := service.Create(candidate.Name, "Character", nil)
-		if err != nil {
+		// The description goes in with the create: one sidecar process per candidate instead of two.
+		if _, err := service.CreateDescribed(candidate.Name, "Character", nil, candidate.Description); err != nil {
 			report(index*100/len(chosen), fmt.Sprintf("Skipped %s: %v", candidate.Name, err))
-			continue
-		}
-		if candidate.Description != "" {
-			_ = service.Edit(entityID, "description", candidate.Description)
 		}
 	}
 	if len(chosen) > 0 {

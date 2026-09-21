@@ -197,12 +197,31 @@ func (s *Service) Build(progress, log string) (string, error) {
 }
 
 func (s *Service) Edit(id, field, value string) error {
-	_, err := s.Run(s.editArgs(id, field, value)...)
+	return s.EditFields(id, map[string]string{field: value})
+}
+
+// EditFields changes every field of an entity in one sidecar process. The sidecar applies them all in memory and writes the file once, so a
+// field it refuses leaves the file as it was, and a Save of four fields costs one process instead of four (interaction feedback audit, phase 4).
+// The fields are sent in name order, so the same edit always produces the same command.
+func (s *Service) EditFields(id string, values map[string]string) error {
+	if len(values) == 0 {
+		return nil
+	}
+	_, err := s.Run(s.editArgs(id, values)...)
 	return err
 }
-func (s *Service) editArgs(id, field, value string) []string {
-	args := []string{"edit", "--guide", s.guidePath(), "--entity-id", id, "--field", field, "--value", value}
-	if field == "aliases" {
+func (s *Service) editArgs(id string, values map[string]string) []string {
+	fields := make([]string, 0, len(values))
+	for field := range values {
+		fields = append(fields, field)
+	}
+	sort.Strings(fields)
+	args := []string{"edit", "--guide", s.guidePath(), "--entity-id", id}
+	for _, field := range fields {
+		// --value=... and not "--value", "...": argparse takes a value that starts with a dash ("-brave") only in this form.
+		args = append(args, "--field", field, "--value="+values[field])
+	}
+	if _, editsAliases := values["aliases"]; editsAliases {
 		args = append(args, "--manuscript", s.manuscript())
 	}
 	return args
@@ -212,7 +231,12 @@ func (s *Service) Rescan(id string) error {
 	return err
 }
 func (s *Service) Create(name, category string, aliases []string) (string, error) {
-	out, err := s.Run(s.createArgs(name, category, aliases)...)
+	return s.CreateDescribed(name, category, aliases, "")
+}
+
+// CreateDescribed creates an entity that already has its description, in one sidecar process instead of a create and an edit.
+func (s *Service) CreateDescribed(name, category string, aliases []string, description string) (string, error) {
+	out, err := s.Run(s.createArgs(name, category, aliases, description)...)
 	if err != nil {
 		return "", err
 	}
@@ -222,8 +246,11 @@ func (s *Service) Create(name, category string, aliases []string) (string, error
 	}
 	return parts[1], nil
 }
-func (s *Service) createArgs(name, category string, aliases []string) []string {
+func (s *Service) createArgs(name, category string, aliases []string, description string) []string {
 	args := []string{"create", "--guide", s.guidePath(), "--manuscript", s.manuscript(), "--name", name, "--category", category, "--aliases", strings.Join(aliases, ";")}
+	if description != "" {
+		args = append(args, "--description="+description)
+	}
 	return args
 }
 func (s *Service) Merge(source, target string) error {

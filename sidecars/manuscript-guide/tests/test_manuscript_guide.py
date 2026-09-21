@@ -3,6 +3,7 @@ import importlib.util
 import io
 import json
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -154,6 +155,119 @@ class ManuscriptGuideTests(unittest.TestCase):
             data = json.loads(guide_file.read_text(encoding="utf-8"))
             self.assertFalse(data["entities"][0]["locked"])
 
+    def _guide_with_entity(self, root: Path, **fields) -> Path:
+        guide_file = root / "ManuscriptGuide" / "manuscript_guide.json"
+        entity = {"id": "entity-1", "canonical_name": "Alice", "category": "Character", "description": {"text": "Old."}, "aliases": [], **fields}
+        guide.write_json(str(guide_file), {"entities": [entity]})
+        return guide_file
+
+    @staticmethod
+    def _edit_args(guide_file: Path, pairs: list[tuple[str, str]]) -> argparse.Namespace:
+        return argparse.Namespace(
+            guide=str(guide_file),
+            entity_id="entity-1",
+            field=[field for field, _ in pairs],
+            value=[value for _, value in pairs],
+            manuscript=None,
+            espeak_library="",
+        )
+
+    def test_edit_applies_several_fields_in_one_run_and_writes_the_file_once(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            guide_file = self._guide_with_entity(Path(temporary))
+            pairs = [("canonical_name", "Alice Liddell"), ("description", "A curious child."), ("personality", "Curious."), ("context", "Oxford.")]
+            with patch.object(guide, "write_json", wraps=guide.write_json) as write:
+                guide.edit(self._edit_args(guide_file, pairs))
+            self.assertEqual(1, write.call_count)
+            entity = json.loads(guide_file.read_text(encoding="utf-8"))["entities"][0]
+            self.assertEqual("Alice Liddell", entity["canonical_name"])
+            self.assertEqual("A curious child.", entity["description"]["text"])
+            self.assertEqual("Curious.", entity["personality_notes"][0]["text"])
+            self.assertEqual("Oxford.", entity["context"])
+            self.assertEqual("reviewed", entity["review_state"])
+
+    def test_an_alias_edit_beside_other_fields_reads_the_manuscript_once_and_finds_where_it_occurs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manuscript = _write_manuscript(root, "Chapter 1", ["Ally walked in. Then Ally left."])
+            guide_file = self._guide_with_entity(root)
+            args = self._edit_args(guide_file, [("aliases", "Ally"), ("description", "A child.")])
+            args.manuscript = str(manuscript)
+            with patch.object(guide, "load_manuscript", wraps=guide.load_manuscript) as load:
+                guide.edit(args)
+            self.assertEqual(1, load.call_count)
+            entity = json.loads(guide_file.read_text(encoding="utf-8"))["entities"][0]
+            self.assertEqual("A child.", entity["description"]["text"])
+            self.assertEqual(["Ally"], [alias["text"] for alias in entity["aliases"]])
+            self.assertEqual(2, len(entity["aliases"][0]["occurrences"]))
+
+    def test_the_command_line_takes_a_value_that_starts_with_a_dash(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            guide_file = self._guide_with_entity(Path(temporary))
+            argv = ["manuscript_guide.py", "edit", "--guide", str(guide_file), "--entity-id", "entity-1", "--field", "personality", "--value=-brave"]
+            with patch.object(sys, "argv", argv), patch.object(sys, "stdout", io.StringIO()):
+                guide.main()
+            entity = json.loads(guide_file.read_text(encoding="utf-8"))["entities"][0]
+            self.assertEqual("-brave", entity["personality_notes"][0]["text"])
+
+    def test_edit_with_one_bad_field_changes_nothing(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            guide_file = self._guide_with_entity(Path(temporary))
+            before = guide_file.read_text(encoding="utf-8")
+            pairs = [("description", "Changed."), ("category", "Not A Category")]
+            with self.assertRaises(ValueError):
+                guide.edit(self._edit_args(guide_file, pairs))
+            self.assertEqual(before, guide_file.read_text(encoding="utf-8"))
+
+    def test_edit_refuses_a_locked_entity_for_every_field_at_once(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            guide_file = self._guide_with_entity(Path(temporary), locked=True)
+            before = guide_file.read_text(encoding="utf-8")
+            with self.assertRaises(ValueError):
+                guide.edit(self._edit_args(guide_file, [("description", "A"), ("context", "B")]))
+            self.assertEqual(before, guide_file.read_text(encoding="utf-8"))
+
+    def test_edit_needs_a_value_for_every_field(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            guide_file = self._guide_with_entity(Path(temporary))
+            args = self._edit_args(guide_file, [("description", "A")])
+            args.field = ["description", "context"]
+            with self.assertRaises(ValueError):
+                guide.edit(args)
+
+    def test_the_command_line_takes_repeated_field_and_value_pairs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            guide_file = self._guide_with_entity(Path(temporary))
+            argv = ["manuscript_guide.py", "edit", "--guide", str(guide_file), "--entity-id", "entity-1"]
+            argv += ["--field", "description", "--value", "One.", "--field", "context", "--value", "Two."]
+            with patch.object(sys, "argv", argv), patch.object(sys, "stdout", io.StringIO()):
+                guide.main()
+            entity = json.loads(guide_file.read_text(encoding="utf-8"))["entities"][0]
+            self.assertEqual(("One.", "Two."), (entity["description"]["text"], entity["context"]))
+
+    def test_create_sets_the_description_in_the_same_run(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manuscript = _write_manuscript(root, "Chapter 1", ["Juno walked in."])
+            guide_file = root / "ManuscriptGuide" / "manuscript_guide.json"
+            common = {"guide": str(guide_file), "manuscript": str(manuscript), "category": "Character", "aliases": "", "espeak_library": ""}
+            guide.create(argparse.Namespace(name="Juno", description="The narrator's friend.", **common))
+            guide.create(argparse.Namespace(name="Zeph", description="", **common))
+            entities = {entity["canonical_name"]: entity for entity in json.loads(guide_file.read_text(encoding="utf-8"))["entities"]}
+            self.assertEqual("The narrator's friend.", entities["Juno"]["description"]["text"])
+            self.assertEqual("", entities["Zeph"]["description"]["text"])
+
+    def test_importing_the_module_does_not_import_piper(self):
+        # Piper costs about a quarter of a second to import and only render-audio uses it, so every other command must not pay for it.
+        code = (
+            "import importlib.util, sys;"
+            f"spec = importlib.util.spec_from_file_location('manuscript_guide', r'{MODULE_PATH}');"
+            "module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module);"
+            "print(any(name == 'piper' or name.startswith('piper.') for name in sys.modules))"
+        )
+        result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+        self.assertEqual("False", result.stdout.strip(), result.stderr)
+
     def test_direct_trait_has_evidence(self):
         occurrences = [{"chapter": "Chapter 1", "text": "Arelian was brave and wary.", "start": "0", "end": "7"}]
         notes = guide.trait_notes("Arelian", occurrences)
@@ -260,7 +374,7 @@ class ManuscriptGuideTests(unittest.TestCase):
                 wav_file.writeframes(b"\0\0")
 
             voice.synthesize_wav.side_effect = synthesize
-            with patch.object(guide.PiperVoice, "load", return_value=voice) as load:
+            with patch.object(guide, "load_voice", return_value=voice) as load:
                 guide.render_audio(
                     argparse.Namespace(
                         guide=str(guide_file),
@@ -289,7 +403,7 @@ class ManuscriptGuideTests(unittest.TestCase):
             alias_index=None,
             output_name=output_name,
         )
-        with patch.object(guide.PiperVoice, "load", return_value=voice):
+        with patch.object(guide, "load_voice", return_value=voice):
             guide.render_audio(args)
         return audio_dir
 
@@ -407,7 +521,7 @@ class ManuscriptGuideTests(unittest.TestCase):
                 output_name="preview.wav",
             )
             missing = FileNotFoundError(2, "No such file or directory", "missing.onnx.json")
-            with patch.object(guide.PiperVoice, "load", side_effect=missing), self.assertRaises(ValueError) as caught:
+            with patch.object(guide, "load_voice", side_effect=missing), self.assertRaises(ValueError) as caught:
                 guide.render_audio(args)
         self.assertIn("preview voice could not be loaded", str(caught.exception))
         self.assertIn("missing.onnx.json", str(caught.exception))
@@ -435,7 +549,7 @@ class ManuscriptGuideTests(unittest.TestCase):
                 "v.onnx",
             ]
             with (
-                patch.object(guide.PiperVoice, "load", return_value=self._speaking_voice(10)),
+                patch.object(guide, "load_voice", return_value=self._speaking_voice(10)),
                 patch.object(sys, "argv", argv),
                 patch.object(sys, "stdout", legacy_out),
                 patch.object(sys, "stderr", legacy_err),
