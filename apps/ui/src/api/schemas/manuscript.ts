@@ -100,6 +100,7 @@ export const readerSchema = z.object({
 const importSectionSchema = z.object({
   id: z.string(),
   title: z.string(),
+  subtitle: z.string().optional(),
   contentKind: contentKindSchema,
   paragraphCount: z.number(),
 }) satisfies z.ZodType<ManuscriptImportSection>;

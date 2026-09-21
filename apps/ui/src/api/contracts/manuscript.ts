@@ -54,6 +54,8 @@ export type SearchHit = { chapter: string; chapterId?: string; paragraph: number
 export type ManuscriptImportSection = {
   id: string;
   title: string;
+  /** What follows the title in the heading ("CHAPTER ONE / Bad Ideas..."): the first paragraph's, which is what the written chapter gets. Omitted when there is none. */
+  subtitle?: string;
   contentKind: ManuscriptContentKind;
   paragraphCount: number;
 };

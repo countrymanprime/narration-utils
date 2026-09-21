@@ -1,8 +1,10 @@
 package importer
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -79,5 +81,61 @@ func TestMarkdownContentsHeadingGetsItsOwnGroup(t *testing.T) {
 	}
 	if len(draft.ChapterTitles) != 2 {
 		t.Fatalf("expected Contents to be excluded from chapter titles, got %#v", draft.ChapterTitles)
+	}
+}
+
+func sectionNamed(t *testing.T, draft Draft, title string) DraftSection {
+	t.Helper()
+	for _, section := range draft.Sections {
+		if section.Title == title {
+			return section
+		}
+	}
+	t.Fatalf("no section %q in %#v", title, draft.Sections)
+	return DraftSection{}
+}
+
+func subtitled(chapter, subtitle, text string, index int) Paragraph {
+	return Paragraph{Chapter: chapter, ChapterSubtitle: &subtitle, Text: text, SourceIndex: index}
+}
+
+func TestNewDraftSectionSubtitleIsTheFirstParagraphsSubtitleAsTheCommitReadsIt(t *testing.T) {
+	paragraphs := []Paragraph{
+		subtitled("Chapter One", "Down the Rabbit-Hole", "First.", 0),
+		{Chapter: "Chapter Two", Text: "No subtitle here.", SourceIndex: 1},
+		// A title that repeats merges into the first section, and the first subtitle wins, as it does when the chapter is written.
+		subtitled("Chapter One", "A Later Subtitle", "Second.", 2),
+		// The first paragraph has none and a later one does: the chapter is written from the first paragraph, so it has none.
+		{Chapter: "Chapter Three", Text: "Plain.", SourceIndex: 3},
+		subtitled("Chapter Three", "The Pool of Tears", "Later.", 4),
+	}
+	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One", "Chapter Two", "Chapter Three", "Chapter Four"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for title, want := range map[string]string{
+		"Chapter One":   "Down the Rabbit-Hole",
+		"Chapter Two":   "",
+		"Chapter Three": "",
+		// A heading with no paragraphs under it has nothing to take a subtitle from.
+		"Chapter Four": "",
+	} {
+		if got := sectionNamed(t, draft, title).Subtitle; got != want {
+			t.Errorf("section %q subtitle = %q, want %q", title, got, want)
+		}
+	}
+}
+
+func TestNewDraftSectionWithoutSubtitleSendsNoSubtitleField(t *testing.T) {
+	draft, err := newDraft("docx", "test.docx", []Paragraph{{Chapter: "Chapter One", Text: "Text.", SourceIndex: 0}}, []string{"Chapter One"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := json.Marshal(draft.Sections[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encoded), "subtitle") {
+		t.Fatalf("a section without a subtitle must not carry the field, got %s", encoded)
 	}
 }

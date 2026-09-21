@@ -193,3 +193,16 @@ func TestDocxCharacterStylesMapToFormatting(t *testing.T) {
 		t.Fatalf("spans = %#v", spans)
 	}
 }
+
+func TestDocxSoftBreakSubtitleReachesTheSectionForTheReview(t *testing.T) {
+	draft := importDocx(t, wordParagraph("Heading1", wordRun("CHAPTER ONE"), softBreak, wordRun("Bad Ideas Look Great in Neon"))+
+		wordParagraph("", wordRun("The first line."))+
+		wordParagraph("Heading1", wordRun("CHAPTER TWO"))+
+		wordParagraph("", wordRun("Another line.")))
+	if got := sectionNamed(t, draft, "CHAPTER ONE").Subtitle; got != "Bad Ideas Look Great in Neon" {
+		t.Fatalf("CHAPTER ONE subtitle = %q", got)
+	}
+	if got := sectionNamed(t, draft, "CHAPTER TWO").Subtitle; got != "" {
+		t.Fatalf("CHAPTER TWO has no subtitle, got %q", got)
+	}
+}

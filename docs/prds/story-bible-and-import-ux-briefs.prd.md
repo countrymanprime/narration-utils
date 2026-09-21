@@ -124,7 +124,7 @@ Deliver in value/risk order, MVP first. MVP = N (host sender, an on/off setting,
 | Should | Recorded build duration and the default decision | B |
 | Could | Host-side chaining (`buildStoryBible` parameter) | B |
 | Must | Evidence corpus of misread headings before any code | I |
-| Should | Subtitle data in the preview payload plus `subtitleOverrides` in `ManuscriptImportSelection`, applied before canonicalization | I |
+| Should | `subtitleOverrides` in `ManuscriptImportSelection`, applied before canonicalization (the subtitle in the preview payload and its display in the review were delivered by [import-review-redesign](import-review-redesign.prd.md) phase 2) | I |
 | Could | Global "second line is subtitle" default | I |
 | Won't | Other import settings not motivated by evidence | I |
 | Must | Spike: dataset, license, size, lookup engine, provisioning shape (docs plus ADR) | D |
@@ -214,9 +214,9 @@ Phases 1 to 3 (N and B) plus the three docs-only phases 4, 6 and 9 that de-risk 
 - **Success signal**: a counted list, or a recorded "no failures, defer".
 
 **Phase 5 - Import subtitle override**
-- **Note**: showing each section's subtitle in the review needs no binding change and is specified separately in [import-review-redesign.prd.md](import-review-redesign.prd.md) (Phase 2). This phase keeps only the override, still gated on Phase 4.
+- **Note**: showing each section's subtitle in the review was split out and delivered by [import-review-redesign.prd.md](import-review-redesign.prd.md) (Phase 2: `DraftSection.subtitle`, no binding change, `hostAPIVersion` unchanged). This phase keeps only the override, still gated on Phase 4; the rows in the review already leave room for a trailing control.
 - **Goal**: correct wrong splits before commit.
-- **Scope**: subtitle in the preview payload; `subtitleOverrides`; apply in commit before canonicalization; `ManuscriptImportCommit` signature change; contract, client, mock; review UI extending the existing dialog (no second settings step); API bump.
+- **Scope**: `subtitleOverrides` (the preview payload already carries each section's `subtitle`, delivered by import-review-redesign phase 2); apply in commit before canonicalization; `ManuscriptImportCommit` signature change; contract, client, mock; review UI extending the existing dialog (no second settings step); API bump.
 - **Success signal**: each Phase 4 misread fixable; importer fixtures unchanged for correct headings.
 
 **Phase 6 - Dictionary spike**

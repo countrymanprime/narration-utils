@@ -10,7 +10,7 @@ import (
 
 // The payloads the manuscript bindings send to the UI (ADR 0069), pinned for its contract tests. They come from a real import of
 // a small Markdown file through the real service; random ids and timestamps are named or fixed by contractfile.Stabilize.
-const contractSource = "# Chapter One\nRoses are *red*,  \nviolets are **blue**.\n\nA second paragraph of the first chapter.\n\n# Chapter Two\nA short line in the second chapter.\n"
+const contractSource = "# Chapter One<br>Down the Rabbit-Hole\nRoses are *red*,  \nviolets are **blue**.\n\nA second paragraph of the first chapter.\n\n# Chapter Two\nA short line in the second chapter.\n"
 
 func pin(t *testing.T, name string, value any) {
 	t.Helper()

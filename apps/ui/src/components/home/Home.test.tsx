@@ -33,7 +33,7 @@ describe('the import review dialog, as the narrator meets it', () => {
     const { dialog } = await openReview();
     expect(dialog.getByText(/^DOCX · 221 paragraphs · /)).toBeTruthy();
     const kinds = (title: string) => (dialog.getByRole('combobox', { name: `${title} content type` }) as HTMLSelectElement).value;
-    expect(kinds('Chapter One')).toBe('narration');
+    expect(kinds('Chapter One — Down the Rabbit-Hole')).toBe('narration');
     expect(kinds('Characters')).toBe('reference');
     expect(kinds('Glossary')).toBe('reference');
     expect(kinds('Front Matter')).toBe('opening');
@@ -42,7 +42,7 @@ describe('the import review dialog, as the narrator meets it', () => {
 
   it('offers the three kinds a section can be, by their names in the reader', async () => {
     const { dialog } = await openReview();
-    const options = within(dialog.getByRole('combobox', { name: 'Chapter One content type' })).getAllByRole('option');
+    const options = within(dialog.getByRole('combobox', { name: 'Chapter One — Down the Rabbit-Hole content type' })).getAllByRole('option');
     expect(options.map((option) => option.textContent)).toEqual(['Narration chapter', 'Front Matter', 'Reference material']);
   });
 
@@ -139,5 +139,26 @@ describe('the import review dialog, as the narrator meets it', () => {
     fireEvent.click(dialog.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(cancel).toHaveBeenCalledWith('mock-import');
+  });
+});
+
+describe('the subtitle of each chapter in the review', () => {
+  it('shows the subtitle of a chapter after its title, and only its title when the heading had none', async () => {
+    const { dialog } = await openReview();
+    expect(dialog.getByText('Chapter One').textContent).toBe('Chapter One — Down the Rabbit-Hole');
+    expect(dialog.getByText('Chapter Two').textContent).toBe('Chapter Two — The Pool of Tears');
+    expect(dialog.getByText('Chapter Three').textContent).toBe('Chapter Three');
+  });
+
+  it('keeps the whole title and subtitle in the title attribute of the row, for a name cut short', async () => {
+    const { dialog } = await openReview();
+    expect(dialog.getByText('Chapter One').getAttribute('title')).toBe('Chapter One — Down the Rabbit-Hole');
+    expect(dialog.getByText('Chapter Three').getAttribute('title')).toBe('Chapter Three');
+  });
+
+  it('names the select of a row for the subtitle too, so two chapters with one title can be told apart', async () => {
+    const { dialog } = await openReview();
+    expect(dialog.getByRole('combobox', { name: 'Chapter Two — The Pool of Tears content type' })).toBeTruthy();
+    expect(dialog.getByRole('combobox', { name: 'Chapter Three content type' })).toBeTruthy();
   });
 });

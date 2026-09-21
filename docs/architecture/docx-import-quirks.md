@@ -31,6 +31,10 @@ Code: `apps/desktop/internal/importer/` (`docx.go`, `markdown.go`, `markdown_inl
 | Subtitle in a heading | `# **CHAPTER ONE**<br>Bad Ideas…` | Markers stripped, `<br>` splits title/subtitle | `TestMarkdownHeadingBrSplitsSubtitleAndStripsMarkers` |
 | Byte-order mark | leading `EF BB BF` | Stripped | `TestMarkdownByteOrderMarkIsStripped` |
 
+## Where the subtitle shows
+
+A heading's subtitle is kept on every paragraph under it (`Paragraph.ChapterSubtitle`), and the import review lists it after the title ("Chapter One — Bad Ideas Look Great in Neon") so the narrator can confirm the split before anything is written. `DraftSection.Subtitle` is the subtitle of the first paragraph of the section, which is exactly what the written chapter gets (`manuscript.canonicalize` reads the paragraph that starts the chapter), so a repeated title (merged into one section) shows its first heading's subtitle and a heading with no text has none. Tests: `TestNewDraftSectionSubtitleIsTheFirstParagraphsSubtitleAsTheCommitReadsIt`, `TestDocxSoftBreakSubtitleReachesTheSectionForTheReview`, `TestMarkdownHeadingSubtitleReachesTheSectionForTheReview` and, across the host service, `TestPreviewSectionSubtitlesAreTheSubtitlesTheWrittenChaptersGet`. The field is additive (`subtitle`, omitted when empty), so `hostAPIVersion` is unchanged. Changing a wrong split from the review (the override) is a separate, evidence-gated piece of the briefs PRD.
+
 ## Adding a quirk
 
 1. Reproduce it with a minimal in-test document (`docxFixture` builds a `.docx` from WordprocessingML; `importMarkdown` takes a string).

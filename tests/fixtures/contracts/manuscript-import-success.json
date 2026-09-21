@@ -12,7 +12,7 @@
     "Preview ready: 3 paragraphs, 2 chapters, 0 character suggestions",
     "Preparing the project's manuscript folder",
     "Copying book.md (0 KB) into the project and computing its checksum",
-    "Stored the original file (sha256 c79310d0af45…)",
+    "Stored the original file (sha256 d07271600316…)",
     "Building the canonical manuscript: 3 paragraphs",
     "Writing manuscript.json",
     "Manuscript imported"
@@ -33,6 +33,7 @@
         "contentKind": "narration",
         "id": "section-0001",
         "paragraphCount": 2,
+        "subtitle": "Down the Rabbit-Hole",
         "title": "Chapter One"
       },
       {

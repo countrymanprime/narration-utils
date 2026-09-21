@@ -14,7 +14,10 @@ chapter with its word count, estimated and actual recorded length, and status.
 ![Home, per-chapter breakdown expanded](../../images/ui/home-chapter-table-expanded.webp)
 
 Importing (or replacing) the manuscript opens a confirm dialog previewing the detected format,
-paragraph count, and proposed chapters before anything changes.
+paragraph count, and proposed chapters before anything changes. Each section is listed with its
+subtitle after the title ("Chapter One — Down the Rabbit-Hole") when the heading had one, so you can
+check that the importer split the title from the subtitle where you meant it to; a long one is cut
+short in the row, and hovering it shows the whole line.
 
 ![Home - import manuscript confirm dialog with format/paragraph/chapter preview](../../images/ui/home-import-confirm.webp)
 
