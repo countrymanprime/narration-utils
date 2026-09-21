@@ -26,6 +26,23 @@ const pickerColor = (value: string) => {
   return /^[0-9a-f]{6}$/i.test(hex) ? `#${hex}` : NEUTRAL_PICKER_COLOR;
 };
 
+// One setting: the label above its control below `md`, the label beside it from `md` (Tailwind's 48rem, the app's own layout
+// breakpoint). The two-column template used to apply at every width, and a grid gives a fixed-range track (the label's
+// minmax(12rem,16rem)) its full maximum before a flexible one gets any, so at a 390 px window the control column was 45 px.
+// Between `md` and `lg` the settings panel is narrow (the category list stands beside it) so the label takes its 12rem
+// minimum and the control the rest (191 px at 768 px, not 127); from `lg` the label may grow to 16rem again.
+const ROW_CLASSES =
+  'grid grid-cols-1 gap-2 border-b border-[var(--border)] py-4 md:grid-cols-[12rem_minmax(0,1fr)] md:items-start md:gap-5 lg:grid-cols-[minmax(12rem,16rem)_minmax(0,1fr)]';
+// The controls (a select, or a swatch and a hex box) and the Reset link. The row may wrap so Reset drops under the control only
+// when there is no room beside it, and a control stops growing at 28rem so every select is the same width from md up.
+const CONTROLS_CLASSES = 'flex min-w-0 max-w-md flex-wrap items-center gap-[0.6rem]';
+// A control that takes the free width, wraps to its own line below 10rem rather than shrinking past being usable, and can
+// shrink below its content (`min-w-0`; a flex item otherwise never gets narrower than its longest option).
+const GROWING_CONTROL_CLASSES = 'min-w-0 flex-[1_1_10rem]';
+// The hex box beside a swatch: a six-digit code needs about 4.5rem, so it shares the row with the swatch rather than wrapping
+// under it, and takes whatever is left.
+const HEX_CONTROL_CLASSES = 'min-w-[4.5rem] flex-[1_1_0%]';
+
 export function ScopedSetting({
   field,
   scope,
@@ -43,21 +60,28 @@ export function ScopedSetting({
   const isColor = field.kind === 'color';
   const isText = field.kind === 'text';
   return (
-    <div className="grid grid-cols-[minmax(12rem,16rem)_minmax(0,1fr)] items-start gap-5 border-b border-[var(--border)] py-4">
-      <div className="pt-2 text-[0.82rem] font-medium text-[var(--text-muted)]">
+    <div className={ROW_CLASSES}>
+      <div className="text-[0.82rem] font-medium text-[var(--text-muted)] md:pt-2">
         {field.label}
         <Tooltip text={TOOLTIP[field.key] || `Configure ${field.label.toLowerCase()}.`} />
       </div>
-      <div className="flex items-center gap-[0.6rem]">
+      <div className={CONTROLS_CLASSES}>
         {isColor ? (
           <>
             <TextField label={`${field.label} hex`} type="color" value={pickerColor(effective)} onChange={(value) => change(value.slice(1).toUpperCase())} />
-            <TextField label={field.label} mono placeholder="Not set" value={effective} onChange={(value) => change(value.replace('#', '').toUpperCase())} />
+            <TextField
+              label={field.label}
+              mono
+              className={HEX_CONTROL_CLASSES}
+              placeholder="Not set"
+              value={effective}
+              onChange={(value) => change(value.replace('#', '').toUpperCase())}
+            />
           </>
         ) : isText ? (
-          <TextField label={field.label} value={effective} onChange={change} />
+          <TextField label={field.label} className={GROWING_CONTROL_CLASSES} value={effective} onChange={change} />
         ) : (
-          <TooltipTarget text={optionTip(field, effective)}>
+          <TooltipTarget text={optionTip(field, effective)} className={GROWING_CONTROL_CLASSES}>
             <Select
               label={field.label}
               fullWidth
@@ -68,7 +92,7 @@ export function ScopedSetting({
           </TooltipTarget>
         )}
         {scope === 'project' && field.isSet && (
-          <button type="button" className="ml-auto text-[0.75rem] text-[var(--accent)] underline" onClick={onClearOverride}>
+          <button type="button" className="ml-auto flex-none text-[0.75rem] text-[var(--accent)] underline" onClick={onClearOverride}>
             Reset
           </button>
         )}
