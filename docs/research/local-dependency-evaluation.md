@@ -570,6 +570,57 @@ for why two live engines are supported and how they are compared.
   for Small and 0.17x for Tiny; partial updates every 0.5s; word timestamps
   noisy in partials; final line identical to the last partial in 27 of 27 lines.
 
+### 11. Open English WordNet — dictionary/thesaurus lookup (Story Bible and import UX briefs, D1-D2)
+
+**Decision: adopt.** `Decided by stack S19d, docs/prds/story-bible-and-import-ux-briefs.prd.md` Phase 6 (D1: local dataset only,
+provisioned as a downloadable asset, never a cloud API; D2: single-word definitions, synonyms and antonyms from one dataset, US
+English). See [ADR 0090](../adr/0090-the-manuscript-reader-word-lookup-uses-the-open-english-wordnet-as-a-downloadable-asset.md) (Proposed).
+
+**What it contributes.** A single offline dataset covering definitions, synonyms (same-synset members) and antonyms (an explicit
+lexical relation in WordNet-style data) for single US English words, looked up from the reader's selection menu (D-phase 8,
+not built by this stack: the backend, phase 7, and the UI, phase 8, are deferred).
+
+**Candidates compared.**
+
+| Candidate | Licence | Maintenance | Verdict |
+| --- | --- | --- | --- |
+| Princeton WordNet 3.1 | A custom, permissive "WordNet License" (BSD-like; commercial use allowed with the copyright notice retained) | Last major release 2011; effectively unmaintained | Rejected: same licence class as OEWN but stale data (11+ years of missing senses and corrections) |
+| **Open English WordNet (OEWN)** | **CC BY 4.0** ([globalwordnet/english-wordnet](https://github.com/globalwordnet/english-wordnet)) | Actively maintained, annual editions (2025 Edition, December 2025) | **Adopted**: an actively-maintained fork of Princeton WordNet's data with the same synset/definition/antonym structure, distributed under an unambiguous attribution licence |
+| Wiktionary-derived extracts | Share-alike terms (CC BY-SA), not one of the four classes in [License classes](#license-classes) | Actively maintained upstream, but no single reviewed extract artifact | Deferred: share-alike is not yet a reviewed class in this policy; would need its own policy decision before adoption, not folded into this one |
+
+**Licence check against this project's policy.** CC BY 4.0 is the **Attribution** class in [License classes](#license-classes):
+"Allowed. Display and retain the exact required attribution and model card." AGPL-3.0-or-later (this project's own licence,
+[ADR 0039](../adr/0039-the-project-is-licensed-agpl-3-or-later.md)) has no reciprocal terms that CC BY 4.0 data would trigger
+(CC BY 4.0 is not a copyleft software licence; it applies to the dataset, not to Narration Utils' own code), so bundling or
+downloading it does not affect the project's own AGPL status. This is a fresh evaluation of the dataset's own terms, not the
+Princeton WordNet License already noted as a training-data component of the spaCy models above.
+
+**Record so far** (immutable URL and exact SHA-256 to be pinned at Phase 7, when the asset catalog entry is written):
+
+- **Dataset**: Open English WordNet, 2025 Edition (core lexical version, without the Namenet proper-noun extension — this
+  feature only needs common-word definitions, synonyms and antonyms, not a gazetteer).
+- **Publisher**: Global WordNet Association / the Open English WordNet contributors.
+- **Format**: the JSON release asset (`english-wordnet-2025.json.zip` per the repository's release naming) is the candidate
+  format for a Go reader (`encoding/json`, no XML parser or RDF/Turtle dependency); the WNDB format is the fallback if the JSON
+  shape proves awkward for the lookup index Phase 7 designs.
+  size: not yet measured at the pinned artifact (the repository does not publish sizes on its release page); the 2025 Plus
+  edition's approximately 162,000 words across roughly 120,000 synsets suggests the compressed download is tens of megabytes,
+  well inside the asset-provisioning pattern's existing range (Piper voices, spaCy models).
+- **Licence**: CC BY 4.0. Required attribution text (from the repository's citation guidance): "This work includes data from
+  the Open English WordNet, which is licensed under CC BY 4.0" plus a link to the project. Displayed in the lookup overlay
+  (Phase 8) and recorded in `THIRD-PARTY-NOTICES.txt`, the same generated-notices path every other asset uses.
+  ([Third-party notices](../operations/ci-and-releases.md#third-party-notices))
+- **Runtime dependency**: none beyond the Go standard library; the data is a static file read into an in-process index,
+  matching the "no Python server or browser transport" boundary (`codebase-map.md`).
+  **Invocation**: a downloadable asset like the Whisper/spaCy catalogs, verified by SHA-256 and installed through the shared
+  asset manager (`apps/desktop/internal/assets`); registered as a provider in release-readiness Phase 3's aggregated catalog
+  (`AssetsList`) per the PRD's architecture notes, not a parallel catalog.
+- **Removal/update policy**: removable from Settings > Local assets like every other asset; no automatic updates — a new
+  edition needs a reviewed catalog change, a new pinned URL and hash, and a licence re-check (the same policy every asset here
+  follows).
+- **Test result**: not yet built (Phase 7, deferred by this stack's scope).
+- **Feature enabled**: an offline "Look up" action on a selected word in the manuscript reader (Phase 8, deferred).
+
 ## Clarifications for adjacent tools
 
 ### FFmpeg and ffprobe versus the DAW
