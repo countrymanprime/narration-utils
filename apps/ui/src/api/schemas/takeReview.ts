@@ -79,7 +79,7 @@ const takeReviewReviewStateSchema = z.object({
   timestamp: z.string().optional(),
 }) satisfies z.ZodType<TakeReviewReviewState>;
 
-export const takeReviewFindingSchema = z.object({
+const takeReviewFindingSchema = z.object({
   schema_version: z.number(),
   id: z.string(),
   analyzer: z.string(),
