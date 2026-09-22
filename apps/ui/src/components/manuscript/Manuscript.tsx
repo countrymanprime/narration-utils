@@ -3,7 +3,7 @@ import { describeApiError } from '../../api/errorMessage';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faList } from '@fortawesome/free-solid-svg-icons';
+import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faFont, faList } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderState, SearchHit } from '../../types';
 import { categoryCssName, chapterLineNumbers, chapterTextMatches, STORY_BIBLE_TABS } from '../../state';
@@ -326,8 +326,35 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
       >
         <div className="px-[var(--reader-inline)] pt-4 pb-3">
           <div className="mb-4 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
-            <div className="flex items-center gap-3">
-              <Heading title="Manuscript" />
+            <Heading title="Manuscript" />
+            <div className="flex flex-wrap gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] tracking-wider text-[var(--text-muted)] uppercase">
+              {[...STORY_BIBLE_TABS.filter((item) => item !== 'All'), 'Note'].map((name) => (
+                <span key={name} className="flex items-center gap-1">
+                  <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(name === 'Location' ? 'Place' : name)] }} />
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
+          {/* One control cluster: text size on the left, chapters/search and expand/collapse on the right (R12) - wraps to
+              a second line only below 400px, since ml-auto pushes the right group down with the row rather than
+              overlapping it once the row can no longer fit both groups side by side. */}
+          <div className="mb-4 flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Tooltip
+                label="Text size"
+                icon={<FontAwesomeIcon icon={faFont} />}
+                text="The manuscript always uses the full reading width - adjust text size instead."
+              />
+              <ToggleGroup
+                label="Text size"
+                className="gap-1"
+                value={textSize}
+                onChange={(value) => setTextSize(value as (typeof TEXT_SIZES)[number])}
+                options={TEXT_SIZE_OPTIONS}
+              />
+            </div>
+            <div className="ml-auto flex items-center gap-2">
               <TooltipTarget text="Chapters & Search">
                 <IconButton
                   label="Chapters & Search"
@@ -339,40 +366,20 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
                   <FontAwesomeIcon icon={faList} />
                 </IconButton>
               </TooltipTarget>
+              <TooltipTarget text="Expand all chapters">
+                <IconButton
+                  label="Expand all chapters"
+                  onClick={() => void saveState({ ...readerState, expandedChapters: chapters.map((chapter) => chapter.id) })}
+                >
+                  <FontAwesomeIcon icon={faAnglesDown} />
+                </IconButton>
+              </TooltipTarget>
+              <TooltipTarget text="Collapse all chapters">
+                <IconButton label="Collapse all chapters" onClick={() => void saveState({ ...readerState, expandedChapters: [] })}>
+                  <FontAwesomeIcon icon={faAnglesUp} />
+                </IconButton>
+              </TooltipTarget>
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] tracking-wider text-[var(--text-muted)] uppercase">
-              {[...STORY_BIBLE_TABS.filter((item) => item !== 'All'), 'Note'].map((name) => (
-                <span key={name} className="flex items-center gap-1">
-                  <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(name === 'Location' ? 'Place' : name)] }} />
-                  {name}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="mb-4 flex flex-wrap items-center gap-4">
-            <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
-              Text size <Tooltip text="The manuscript always uses the full reading width - adjust text size instead." />
-            </span>
-            <ToggleGroup
-              label="Text size"
-              className="gap-1"
-              value={textSize}
-              onChange={(value) => setTextSize(value as (typeof TEXT_SIZES)[number])}
-              options={TEXT_SIZE_OPTIONS}
-            />
-            <TooltipTarget text="Expand all chapters">
-              <IconButton
-                label="Expand all chapters"
-                onClick={() => void saveState({ ...readerState, expandedChapters: chapters.map((chapter) => chapter.id) })}
-              >
-                <FontAwesomeIcon icon={faAnglesDown} />
-              </IconButton>
-            </TooltipTarget>
-            <TooltipTarget text="Collapse all chapters">
-              <IconButton label="Collapse all chapters" onClick={() => void saveState({ ...readerState, expandedChapters: [] })}>
-                <FontAwesomeIcon icon={faAnglesUp} />
-              </IconButton>
-            </TooltipTarget>
           </div>
         </div>
       </div>
