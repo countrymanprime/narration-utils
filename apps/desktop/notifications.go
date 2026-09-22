@@ -7,7 +7,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// notificationSender is the seam over the Wails notification API (ADR 0090), so tests substitute a fake instead of
+// notificationSender is the seam over the Wails notification API (ADR 0097), so tests substitute a fake instead of
 // touching the OS notification center or, on Windows, writing the per-user registry key InitializeNotifications needs.
 type notificationSender interface {
 	Initialize() error

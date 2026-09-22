@@ -1,4 +1,4 @@
-# 0090. The manuscript reader's word lookup uses the Open English WordNet as a downloadable asset
+# 0097. The manuscript reader's word lookup uses the Open English WordNet as a downloadable asset
 
 **Status:** Proposed
 **Date:** 2026-09-21
