@@ -198,6 +198,15 @@ version that depends on who built it. `Bootstrap` returns it and Settings > Abou
   test the REAPER launcher: `apps/desktop/build/bin/narration-utils-shell.exe` from a build before the rename is no longer
   looked for.
 
+### What the in-app updater depends on
+
+The app replaces itself from these releases ([in-app update](../architecture/in-app-update.md)), so the shape of a Windows release is
+a contract: the asset is `narration-utils-windows-x64.zip` with a `narration-utils-windows-x64.zip.sha256` beside it in
+`sha256sum` format naming that zip; the zip holds exactly one entry, `narration-utils.exe`; the tag is `v<version>-rc` for a
+candidate (a pre-release) and `v<version>` for its promotion; and the program reports its own bare version for `--version`.
+The updater refuses anything else, so changing one of these means changing `apps/desktop/internal/update` in the same pull request
+(`scripts/release/assets.mjs` and the updater's `PlatformFor` mirror each other).
+
 ## Build provenance
 
 Every release asset is attested: `actions/attest` records, in GitHub's attestation store, which workflow, commit and

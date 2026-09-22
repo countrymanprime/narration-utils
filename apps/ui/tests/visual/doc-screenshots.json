@@ -218,6 +218,13 @@
   },
   {
     "page": "settings",
+    "state": "about-update-available",
+    "viewport": "desktop",
+    "docName": "settings-about-updates",
+    "caption": "Settings - Global scope, About and updates category with a newer version found"
+  },
+  {
+    "page": "settings",
     "state": "project-data",
     "viewport": "desktop",
     "docName": "settings-project-data",
