@@ -147,23 +147,6 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
         );
     }
   }, [readerState.expandedChapters, api, notify]);
-  // Escape clears an in-progress search before it closes the panel, so a narrator who mistypes
-  // doesn't lose the panel along with the query (R8). SlideOver's own Escape-to-close is cancelled
-  // whenever the chapters sheet is open (see the onEscape prop below) so this stays the one place
-  // that decides what Escape does, instead of two handlers racing each other.
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      if (sheet === 'chapters' && searchQuery.trim()) {
-        clearSearch();
-        return;
-      }
-      closeSheet();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [sheet, searchQuery]);
-
   const showChapter = useCallback(
     (chapter: string, paragraph?: number) => {
       if (!chapter) return;
@@ -458,7 +441,17 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
         open={Boolean(sheet)}
         title={detail?.note ? 'Note' : detail?.entity?.canonical_name || 'Chapters & Search'}
         onClose={closeSheet}
-        onEscape={() => sheet === 'chapters'}
+        // Escape clears an in-progress search before it closes the panel, so a narrator who
+        // mistypes doesn't lose the panel along with the query (R8): the first Escape is handled
+        // right here (inside Base UI's own dismiss flow, which is the only listener that reliably
+        // sees the key - a separate window-level handler raced it and lost, since Base UI's Drawer
+        // stops the native event from reaching window once it decides to act on Escape) and keeps
+        // the panel open; a second Escape returns false and the panel closes as normal.
+        onEscape={() => {
+          if (sheet !== 'chapters' || !searchQuery.trim()) return false;
+          clearSearch();
+          return true;
+        }}
       >
         {detail?.note ? (
           <>

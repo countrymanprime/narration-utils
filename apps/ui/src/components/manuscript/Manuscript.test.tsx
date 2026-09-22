@@ -257,11 +257,15 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     fireEvent.change(screen.getByLabelText('Search manuscript'), { target: { value: 'Rabbit' } });
     await screen.findAllByRole('button', { name: /Search result in Chapter 1/ });
 
-    fireEvent.keyDown(window, { key: 'Escape' });
+    // Fired on the focused input itself (not window directly) so it bubbles through Base UI's own
+    // document-level Escape listener exactly as a real keypress would - dispatching straight on
+    // window would skip that listener entirely and prove nothing about production behavior.
+    const input = screen.getByLabelText('Search manuscript');
+    fireEvent.keyDown(input, { key: 'Escape' });
     expect((screen.getByLabelText('Search manuscript') as HTMLInputElement).value).toBe('');
     expect(document.querySelector('[data-slide-over]')).toBeTruthy();
 
-    fireEvent.keyDown(window, { key: 'Escape' });
+    fireEvent.keyDown(screen.getByLabelText('Search manuscript'), { key: 'Escape' });
     await waitFor(() => expect(document.querySelector('[data-slide-over]')).toBeNull());
   });
 
