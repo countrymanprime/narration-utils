@@ -358,6 +358,8 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
     'ok',
     'Phase 12: writes ID3 CHAP/CTOC tags into a new copy of the narrator-chosen file. Gated on the confirm checkbox and a non-blank destination; the button and the confirm checkbox stay disabled while it runs. A success shows the new file path, a failure shows inline as an alert.',
   ),
+  'src/components/tracks/TakeReviewPanel.tsx::takeReviewScan#1': row('click', 'job', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'Runs the repeated-span sidecar to completion (take-review phase 5); the Scan button shows pending and is disabled meanwhile, the results table renders when it returns, and a failure is an inline alert.'),
+  'src/components/tracks/TakeReviewPanel.tsx::takeReviewCreateTake#1': row('click', 'job', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'The take-review "Add as take" confirm (phase 6): a bounded round trip to REAPER over the bridge. Every dialog control is disabled while pending, the row shows "Take added" on success, and a stale-target or REAPER-side failure is an inline alert inside the dialog.'),
 
   // Credits (audiobook-credits-templates.prd.md, Phase 1)
   'src/components/settings/CreditsPanel.tsx::creditsTemplates#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The template library load; an inline error banner otherwise.'),
