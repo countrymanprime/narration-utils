@@ -26,6 +26,9 @@ func TestMain(m *testing.M) {
 	if os.Getenv(fakeGuideRenderEnv) != "" {
 		os.Exit(runFakeGuideRender())
 	}
+	if path := os.Getenv(fakeGuideCountEnv); path != "" {
+		os.Exit(runFakeGuideCount(path))
+	}
 	if os.Getenv(fakeTeleprompterEnv) != "" {
 		runFakeTeleprompter()
 		os.Exit(0)

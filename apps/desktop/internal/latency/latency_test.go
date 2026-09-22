@@ -178,17 +178,26 @@ func storyBibleOperations(t *testing.T, label string, project string, svc *guide
 	out = append(out, measure(t, label+" create", runs, nil, func(int) error { _, err := svc.Create(unique("Zed"), "Character", nil); return err }))
 	out = append(out, measure(t, label+" edit, 1 field", runs, nil, func(i int) error { return svc.Edit(subject, "description", fmt.Sprintf("Description %d", i)) }))
 	out = append(out, measure(t, label+" edit, aliases (pronunciation)", runs, nil, func(i int) error { return svc.Edit(subject, "aliases", fmt.Sprintf("Ald %d;Old Ald", i)) }))
-	out = append(out, measure(t, label+" Save, 4 fields (4 spawns)", runs, nil, func(i int) error {
-		for _, field := range []string{"canonical_name", "description", "personality", "context"} {
-			value := "Aldric"
-			if field != "canonical_name" {
-				value = fmt.Sprintf("%s %d", field, i)
-			}
-			if err := svc.Edit(subject, field, value); err != nil {
+	// A Save sends four fields. The host used to start one process per field (the first row, kept to measure the difference) and now starts one.
+	// The name is left as it is, so the rescan below still has the same name to look for.
+	save := map[string]string{"description": "d", "personality": "p", "context": "c"}
+	out = append(out, measure(t, label+" Save, 4 fields (one process per field, the old way)", runs, nil, func(i int) error {
+		if err := svc.Edit(subject, "canonical_name", "Aldric"); err != nil {
+			return err
+		}
+		for field, value := range save {
+			if err := svc.Edit(subject, field, fmt.Sprintf("%s %d", value, i)); err != nil {
 				return err
 			}
 		}
 		return nil
+	}))
+	out = append(out, measure(t, label+" Save, 4 fields (one process)", runs, nil, func(i int) error {
+		values := map[string]string{"canonical_name": "Aldric"}
+		for field, value := range save {
+			values[field] = fmt.Sprintf("%s %d", value, i)
+		}
+		return svc.EditFields(subject, values)
 	}))
 	out = append(out, measure(t, label+" setLocked", runs, nil, func(i int) error { return svc.Edit(subject, "locked", fmt.Sprint(i%2 == 0)) }))
 	if err := svc.Edit(subject, "locked", "false"); err != nil {

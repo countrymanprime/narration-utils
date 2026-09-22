@@ -17,7 +17,7 @@ import wave
 from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 _SHARED_PYTHON = Path(__file__).resolve().parents[3] / "libs" / "python"
 if str(_SHARED_PYTHON) not in sys.path:
@@ -27,7 +27,9 @@ from narration_common import manuscript as canonical_manuscript
 from narration_common.config import get_default
 from narration_common.logging_utils import log, set_log_file
 from narration_common.progress import write_progress
-from piper.voice import PiperVoice
+
+if TYPE_CHECKING:
+    from piper.voice import PiperVoice
 
 SCHEMA_VERSION = 2
 CAPITALIZED = re.compile(r"\b[A-Z][A-Za-z'’-]*(?:\s+(?:(?:of|the|and)\s+)?[A-Z][A-Za-z'’-]*){0,3}\b")
@@ -797,31 +799,27 @@ def entity_occurrence_count(entity: dict[str, Any]) -> int:
     return len(entity.get("occurrences", [])) + sum(len(alias.get("occurrences", [])) for alias in entity.get("aliases", []))
 
 
-def edit(args: argparse.Namespace) -> None:
-    guide = load_json(args.guide)
-    if not guide:
-        raise ValueError("Guide file does not exist; build it first.")
-    entity = find_entity(guide, args.entity_id)
-    if entity.get("locked") and args.field != "locked":
+def apply_edit(entity: dict[str, Any], field: str, value: str, paragraphs: list[dict[str, str]] | None, espeak_library: str | None) -> None:
+    """Applies one field edit to ``entity`` in memory. Nothing is written here."""
+    if entity.get("locked") and field != "locked":
         raise ValueError("This entity is locked. Unlock it before editing.")
-    if args.field == "locked":
-        entity["locked"] = args.value.strip().lower() in {"1", "true", "yes", "on"}
-    elif args.field == "description":
-        entity.setdefault("description", {})["text"] = args.value
-    elif args.field == "personality":
-        entity["personality_notes"] = [{"text": args.value, "evidence": {"chapter": "User edit", "excerpt": "User-authored note."}}] if args.value else []
-    elif args.field == "context":
-        entity["context"] = args.value
-    elif args.field == "category":
-        if args.value in SYSTEM_CATEGORIES or args.value not in VALID_CATEGORIES:
-            raise ValueError(f"Unknown or reserved category: {args.value}")
-        entity["category"] = args.value
-    elif args.field == "canonical_name":
-        entity["canonical_name"] = args.value
-    elif args.field == "aliases":
-        requested = [item.strip() for item in args.value.split(";") if item.strip()]
+    if field == "locked":
+        entity["locked"] = value.strip().lower() in {"1", "true", "yes", "on"}
+    elif field == "description":
+        entity.setdefault("description", {})["text"] = value
+    elif field == "personality":
+        entity["personality_notes"] = [{"text": value, "evidence": {"chapter": "User edit", "excerpt": "User-authored note."}}] if value else []
+    elif field == "context":
+        entity["context"] = value
+    elif field == "category":
+        if value in SYSTEM_CATEGORIES or value not in VALID_CATEGORIES:
+            raise ValueError(f"Unknown or reserved category: {value}")
+        entity["category"] = value
+    elif field == "canonical_name":
+        entity["canonical_name"] = value
+    elif field == "aliases":
+        requested = [item.strip() for item in value.split(";") if item.strip()]
         existing_by_text = {alias["text"].lower(): alias for alias in entity.get("aliases", [])}
-        paragraphs = load_manuscript(args.manuscript) if args.manuscript else None
         new_aliases = []
         for name in requested:
             existing = existing_by_text.get(name.lower())
@@ -831,7 +829,7 @@ def edit(args: argparse.Namespace) -> None:
             new_aliases.append(
                 {
                     "text": name,
-                    "pronunciation": pronunciation(name, args.espeak_library or None),
+                    "pronunciation": pronunciation(name, espeak_library),
                     "occurrences": find_occurrences(paragraphs, name) if paragraphs is not None else [],
                 }
             )
@@ -839,6 +837,26 @@ def edit(args: argparse.Namespace) -> None:
         entity["occurrence_count"] = entity_occurrence_count(entity)
     else:
         raise ValueError("Unsupported editable field.")
+
+
+def edit(args: argparse.Namespace) -> None:
+    """Edits one or more fields of an entity in a single run (``--field`` and ``--value`` repeat, in pairs).
+
+    Every field is applied in memory and the file is written once, after the last one succeeded, so a bad
+    field leaves the file exactly as it was. That is one process for a whole Save instead of one per field.
+    """
+    guide = load_json(args.guide)
+    if not guide:
+        raise ValueError("Guide file does not exist; build it first.")
+    entity = find_entity(guide, args.entity_id)
+    fields = args.field if isinstance(args.field, list) else [args.field]
+    values = args.value if isinstance(args.value, list) else [args.value]
+    if len(fields) != len(values):
+        raise ValueError("Every --field needs a --value.")
+    # The manuscript is read only when an alias is edited, to find where the new alias occurs.
+    paragraphs = load_manuscript(args.manuscript) if "aliases" in fields and args.manuscript else None
+    for field, value in zip(fields, values, strict=True):
+        apply_edit(entity, field, value, paragraphs, args.espeak_library or None)
     entity["review_state"] = "reviewed"
     write_json(args.guide, guide)
     print("EDITED|" + args.entity_id)
@@ -907,6 +925,10 @@ def create(args: argparse.Namespace) -> None:
         "manual": True,
         "review_state": "reviewed",
     }
+    description = getattr(args, "description", "")
+    if description:
+        # The same as an edit of the description right after the create, without a second process for it.
+        entity["description"]["text"] = description
     entity["occurrence_count"] = entity_occurrence_count(entity)
     guide["entities"].append(entity)
     write_json(args.guide, guide)
@@ -1043,6 +1065,14 @@ def unrelate(args: argparse.Namespace) -> None:
     print("UNRELATED|" + args.entity_id)
 
 
+def load_voice(model_path: str) -> PiperVoice:
+    """Loads a Piper voice. Piper is imported here, not at the top of the module: only ``render-audio`` needs it,
+    and importing it costs about a quarter of a second, which every other command (each Save, lock, rescan) would pay."""
+    from piper.voice import PiperVoice
+
+    return PiperVoice.load(model_path)
+
+
 def render_audio(args: argparse.Namespace) -> None:
     guide = load_json(args.guide)
     if not guide:
@@ -1066,7 +1096,7 @@ def render_audio(args: argparse.Namespace) -> None:
     # supported Python API avoids relying on a checkout-local piper.exe or
     # adding a third Python sidecar to the native host.
     try:
-        voice = PiperVoice.load(args.piper_model)
+        voice = load_voice(args.piper_model)
     except Exception as exc:
         raise ValueError(f"The preview voice could not be loaded ({exc}). If its files are damaged, remove it in Settings and install it again.") from exc
     synthesize_to_file(voice, spoken, destination)
@@ -1150,8 +1180,8 @@ def main() -> None:
     edit_parser = command.add_parser("edit")
     edit_parser.add_argument("--guide", required=True)
     edit_parser.add_argument("--entity-id", required=True)
-    edit_parser.add_argument("--field", required=True)
-    edit_parser.add_argument("--value", required=True)
+    edit_parser.add_argument("--field", required=True, action="append")
+    edit_parser.add_argument("--value", required=True, action="append")
     edit_parser.add_argument("--manuscript", default="")
     edit_parser.add_argument("--espeak-library", default="")
     rescan_parser = command.add_parser("rescan")
@@ -1164,6 +1194,7 @@ def main() -> None:
     create_parser.add_argument("--name", required=True)
     create_parser.add_argument("--category", default="")
     create_parser.add_argument("--aliases", default="")
+    create_parser.add_argument("--description", default="")
     create_parser.add_argument("--espeak-library", default="")
     merge_parser = command.add_parser("merge")
     merge_parser.add_argument("--guide", required=True)

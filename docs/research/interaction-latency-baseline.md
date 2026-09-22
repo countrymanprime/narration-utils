@@ -83,4 +83,27 @@ The acknowledgment is required for every non-instant action whatever the measure
 
 ## Decision for the audit's phase 4
 
-The data justifies it: cutting the Piper import from every subcommand that does not render audio should remove up to about 260 ms from each operation in the dev-venv tables, and one process per Save removes 3 of its 4 spawns. Both are done in phase 4, with these tables as the before.
+The data justifies it: cutting the Piper import from every subcommand that does not render audio should remove up to about 260 ms from each operation in the dev-venv tables, and one process per Save removes 3 of its 4 spawns. Both were done in phase 4 (below), with the tables above as the before.
+
+## After phase 4
+
+Measured 2026-09-21 the same way (same harness, machine, 20 runs, synthetic manuscripts; the frozen sidecar was rebuilt from the changed source). Two changes: `manuscript_guide.py` imports Piper only inside `render-audio` (`load_voice`), and `edit` takes several `--field`/`--value` pairs, applies them all in memory and writes the file once, so `GuideEdit` (a Save) starts one process instead of one per field. Seeding a character candidate is one `create` with its description instead of a `create` and an `edit`. p50 in milliseconds, before (the tables above) then after:
+
+| Operation | Dev, small | Dev, full | Frozen, small | Frozen, full |
+| --- | --- | --- | --- | --- |
+| edit, 1 field | 310 to 121 | 439 to 216 | 313 to 226 | 441 to 355 |
+| setLocked | 327 to 129 | 455 to 215 | 318 to 252 | 448 to 362 |
+| rescan | 317 to 125 | 469 to 236 | 320 to 231 | 472 to 380 |
+| relate | 320 to 125 | 439 to 215 | 320 to 222 | 468 to 355 |
+| merge | 294 to 123 | 444 to 209 | 321 to 232 | 485 to 359 |
+| delete | 316 to 129 | 452 to 208 | 294 to 249 | 473 to 367 |
+| create | 554 to 394 | 668 to 474 | 374 to 348 | 497 to 467 |
+| **Save, 4 fields** | **1,247 to 125** | **1,761 to 202** | **1,235 to 245** | **1,752 to 355** |
+| Save with the four processes but the lazy import (the old way, measured again) | 538 | 858 | 953 | 1,412 |
+| edit, aliases (pronunciation) | 621 to 545 | 749 to 722 | 378 to 342 | 508 to 463 |
+| build | 1,433 to 1,439 | 5,512 to 6,416 | 1,095 to 1,237 | 6,177 to 8,114 |
+
+- **A Save is a tier 2 action now** (125 to 355 ms), not a tier 3 one (1.2 to 1.8 s): the lazy import alone took it to 0.5 to 1.4 s, and one process to a fifth of that again. Seeding ten characters that have descriptions is about half the processes (ten instead of twenty); the ten-`create` row is unchanged because a create was not touched.
+- **Every mutation is still over 100 ms** (dev 120 to 240 ms, frozen 220 to 380 ms), so the acknowledgment of phase 3 stays required; the change moves work from "a second and a half of nothing" to "a quarter second of a spinner".
+- **The frozen floor is about 230 ms** where the dev venv's is about 120 ms: PyInstaller's own start (unpacking, loading the bootloader's Python) is what is left, and the only way under it is a persistent process, which `docs/architecture/codebase-map.md` forbids.
+- **Not improved on purpose:** an alias edit still pays for the pronunciation lookup (`pronouncing`, and eSpeak when it is configured); `build` was not touched, and it measured 16% (dev) and 31% (frozen) slower on the second run, which is the size of this machine's run-to-run noise: read every row of the table with about that much slack, which the gains above are far outside of.
