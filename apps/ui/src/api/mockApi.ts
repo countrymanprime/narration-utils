@@ -933,6 +933,7 @@ export function createMockApi(
       hints = [...accepted];
     },
     reportClientDiagnostic: async () => {},
+    systemNotify: async () => {},
     manuscriptChapters: async () => {
       await manuscriptReady;
       return wireClone(chapters);

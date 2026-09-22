@@ -1,6 +1,7 @@
 {
   "General": {
-    "log_verbosity": "normal"
+    "log_verbosity": "normal",
+    "notifications": "true"
   },
   "ManuscriptGuide": {
     "spacy_model": "en_core_web_sm"

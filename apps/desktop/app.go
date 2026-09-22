@@ -33,7 +33,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 13
+const hostAPIVersion = 14
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -88,6 +88,10 @@ type Host struct {
 	writableOK  bool
 	// persist reports a file that cannot be read: to the host log and, for the narrator's own data, to the narrator (ADR 0069).
 	persist *persist.Reporter
+	// notifySender is a seam for tests: nil means the real Wails notification API. notifyInitOnce guards the lazy
+	// InitializeNotifications call SystemNotify makes on the first qualifying send (notifications.go, N2).
+	notifySender   notificationSender
+	notifyInitOnce sync.Once
 }
 
 type workJob struct {
@@ -733,7 +737,7 @@ type fieldSchema struct {
 }
 
 var fieldSchemas = map[string][]fieldSchema{
-	"General":           {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}},
+	"General":           {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}, {"notifications", "Notify me when a long task finishes while I'm away", "bool", nil}},
 	"Manuscript":        {{"color_note", "Note color", "color", nil}},
 	"ManuscriptGuide":   {{"spacy_model", "spaCy model", "choice", []string{"en_core_web_sm", "en_core_web_lg"}}},
 	"Piper":             {{"tts_provider", "TTS provider", "choice", []string{"piper"}}, {"tts_voice_id", "Preview voice", "choice", []string{"en_US-ljspeech-high"}}},

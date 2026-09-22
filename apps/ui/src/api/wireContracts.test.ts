@@ -493,6 +493,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'transcriptSaveHints',
       'teleprompterStop',
       'reportClientDiagnostic',
+      'systemNotify',
       'updateOpenNotes',
       'updateShowDownload',
     ];
