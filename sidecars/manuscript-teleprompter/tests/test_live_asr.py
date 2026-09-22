@@ -504,3 +504,22 @@ def test_with_decode_timing_logs_duration_and_passes_words_through(capsys):
 
     assert words == [("hi", 0.0, 0.1)]
     assert "decode: 1.00s audio in" in capsys.readouterr().err
+
+
+# The host builds the sidecar's argv from options the UI sends (apps/desktop/internal/teleprompter/service.go). argparse must refuse a value
+# that looks like an option instead of taking the next token as a flag, or a chosen "microphone" could switch on another option
+# (docs/architecture/threat-model.md, row 4a).
+@pytest.mark.parametrize("option", ["--mic", "--chapter", "--model", "--wav", "--model-dir", "--language", "--stop-file"])
+@pytest.mark.parametrize("hostile", ["--stop-file", "--wav", "--engine", "--nonsense", "-x"])
+def test_an_option_value_that_looks_like_an_option_is_refused(option, hostile, capsys):
+    with pytest.raises(SystemExit) as refused:
+        live_asr.build_parser().parse_args([option, hostile, "value"])
+
+    assert refused.value.code == 2
+    assert "expected one argument" in capsys.readouterr().err
+
+
+def test_an_ordinary_value_is_taken_as_the_option_value():
+    parsed = live_asr.build_parser().parse_args(["--mic", "Microphone (USB)", "--chapter", "Chapter 1"])
+
+    assert (parsed.mic, parsed.chapter) == ("Microphone (USB)", "Chapter 1")

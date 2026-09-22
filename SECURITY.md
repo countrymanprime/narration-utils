@@ -25,4 +25,10 @@ especially welcome:
 - Path traversal, command injection, or unsafe file handling when opening projects, manuscripts, or archives.
 - Weaknesses in the release pipeline (for example an installer or checksum that does not match the reviewed build, or a release asset without valid build provenance). What the pipeline promises, and what it does not: every release asset has a SHA-256 file (it detects a damaged download, not a tampered one) and a build-provenance attestation you can check with `gh attestation verify` ([Build provenance](docs/operations/ci-and-releases.md#build-provenance)); the releases are **unsigned** by decision, so Windows SmartScreen warns and that warning alone is not a vulnerability; and the owner-only settings that back the pipeline (rulesets, the `production` environment, immutable releases, action pinning) are listed in [Tracking work on GitHub](docs/operations/github-workflow.md#repository-settings-that-only-the-owner-can-change).
 
+- The file protocol between the app and REAPER (the session folder under REAPER's resource path, the command files the Lua bridge reads, and the paths it opens from a command) and the local `/media` route that plays a project's audio.
+
 Problems in a third-party dependency belong upstream, but tell us if we ship a version that is affected.
+
+## What the app does on the network
+
+There is no telemetry, no account and no listening port. The only requests the shipped program makes are the once-a-day release check above (off with one setting), the downloads of models and voices and of an update that you confirm with a click, and one thing that is a known finding: the interface loads its fonts from Google Fonts on every launch, which reveals your IP address and browser identity to Google and no content ([#238](https://github.com/countrymanprime/narration-utils/issues/238)). The [threat model](docs/architecture/threat-model.md) lists every boundary, what protects it in the code and what risk is left with its owner; a report about a risk it already lists is still welcome, but it is a known limit, not a new vulnerability.
