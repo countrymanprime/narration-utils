@@ -1,6 +1,6 @@
 # Story Bible Entries: Properties, Actions and Pronunciation
 
-**Source:** user requests of 2026-09-20 (items 20, 21, 22, 24). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. Nothing here is built yet. Related: [import-structure-toc-and-characters.prd.md](import-structure-toc-and-characters.prd.md) (properties captured at import), [the Story Bible preview](../architecture/story-bible-preview.md) (the preview error, delivered), [story-bible-and-import-ux-briefs.prd.md](story-bible-and-import-ux-briefs.prd.md) phases 9-11 (pronunciation provider), the delivered primitives (`IconButton`, `Menu`, `TextField`, `Select`, `Table`; see [design-system.md](../design/design-system.md)).
+**Source:** user requests of 2026-09-20 (items 20, 21, 22, 24). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. Phases are being built by stack S19a (see the phase table). Related: [import-structure-toc-and-characters.prd.md](import-structure-toc-and-characters.prd.md) (properties captured at import), [the Story Bible preview](../architecture/story-bible-preview.md) (the preview error, delivered), [story-bible-and-import-ux-briefs.prd.md](story-bible-and-import-ux-briefs.prd.md) phases 9-11 (pronunciation provider), the delivered primitives (`IconButton`, `Menu`, `TextField`, `Select`, `Table`; see [design-system.md](../design/design-system.md)).
 
 ## Problem Statement
 
@@ -12,6 +12,8 @@ Four Story Bible frictions:
 4. The pronunciation play button is enabled even when no pronunciation exists, and there is no way to generate, refresh or replace one.
 
 ## Evidence
+
+> **Reconciled at the S18 tip (stack S19a, [the plan](implementation-plan.md)).** The citations below are from the branch the PRD was written on. Since then: `IconButton`, `TextField`, `Select`, `Tabs`, `TagInput`, `Table`, `Menu` and the wrapped Base UI primitives exist ([ADR 0047](../adr/0047-the-ui-primitives-wrap-base-ui-and-app-code-never-imports-it.md) to [ADR 0058](../adr/0058-heading-has-a-level-and-panel-names-its-region-with-a-level-2-title.md)); tooltips meet WCAG 1.4.13 (ADR 0049) and the Story Bible header is already icon buttons with hints; the palette is option B and `--danger-text` is the text-safe danger colour (ADR 0059); every payload has a Zod schema, a golden file and a passing mock (ADR 0069, [wire contracts](../architecture/wire-contracts.md)); `hostAPIVersion` is 12; Guide bindings read the project through `h.services()` (ADR 0041); every mutation is acknowledged and one at a time (ADR 0075); the Story Bible preview is described in [the Story Bible preview](../architecture/story-bible-preview.md), and the bundled eSpeak NG data is the S16 work (issue #232 holds the IPA-fallback question). Where a paragraph below says a thing does not exist, read it against this note.
 
 - **Entity schema** (`sidecars/manuscript-guide/core/manuscript_guide.py:579-595`, manual creation `:896-910`): `id`, `canonical_name`, `aliases[]` (`{text, pronunciation, occurrences[]}`), `category`, `occurrences[]`, `occurrence_count`, `pronunciation`, `description {text, evidence}`, `personality_notes[]`, `context`, `relationships[] {id, name, label}`, `locked`, `manual`, `review_state`; top-level `schema_version` 2 (`:32`, written `:751,:869`), `source`, `generated_at`, `entities`, `vocabulary_candidates`, `absorbed_names`. Go has no struct: `map[string]any` with `normalizeEntity` defaults (`apps/desktop/internal/guide/service.go:41-45,71-106`). TS type `apps/ui/src/api/contracts/storyBible.ts:9-25` with `normalizeGuideEntity` (`:27`); `manual` is stored but not in the TS type.
 - **Edit choke point (ADR 0007).** `edit()` (`manuscript_guide.py:800-844`) rejects every field except `locked` on a locked entity (`:805`), dispatches by `if/elif`, raises "Unsupported editable field" (`:841`) and sets `review_state = "reviewed"` on every call (`:842`). `GuideEdit` (`apps/desktop/bindings.go:104-114`) runs one process per field in map order; `editArgs` at `service.go:164`; the UI Save sends four fields (`GuideDetail.tsx:304-311`).
@@ -60,18 +62,30 @@ We believe composable properties, mode-appropriate actions and an honest pronunc
 
 ## Open Questions
 
-- [ ] **B1. Properties shape.** Ordered list `[{key, value}]` (recommended; Go decodes to `map[string]any` and re-marshals, which sorts object keys and would lose the user's order) versus an object.
-- [ ] **B2. Which categories get properties?** All (recommendation) or Characters only.
-- [ ] **B3. Actions layout.** (a) mode-based buttons (recommended: Lock in read view, red Delete in edit mode) or (b) one overflow "hamburger" menu, which needs a menu primitive with full keyboard and a11y behavior (overlaps the dialog and Tooltip PRDs). Recommendation: (a) now, (b) when the DropdownMenu primitive lands.
-- [ ] **B4. ADR 0018.** Amend or supersede? Recommendation: a new ADR superseding the "regardless of mode" clause, recording the new action placement and the lock/edit interaction.
-- [ ] **B5. Delete in edit mode only.** The destructive action becomes reachable only after Edit, which is the intent, but is it also easy to mis-click beside Save? Recommendation: red, separated to the far side of the header, with the existing confirm dialog kept.
-- [ ] **B6. Locking rule.** Lock only in read-only view; how does a narrator lock a new draft? Recommendation: new drafts start unlocked and lock after save.
-- [ ] **B7. Icon for Delete.** A red icon-only trash is a new danger `IconButton`; its icon colour is `--danger-text` (the text-safe danger colour, [colour and contrast](../design/colour-and-contrast.md)).
-- [ ] **B8. Play gating meaning.** The audio speaks the spelled name and ignores IPA, so gating on IPA is a UI policy only. Options: gate on IPA existing (requested), or gate on a non-empty name. Recommendation: as requested; say so in the disabled tooltip.
-- [ ] **B9. Generate and replace live in edit mode** (briefs PRD decision) but the request reads as available while viewing. Recommendation: edit mode, matching ADR 0018 and ADR 0007, and blocked for locked entries; confirm with the owner.
-- [ ] **B10. Choice of service.** What is "a different service"? Today only CMU then eSpeak, in a fixed order, and no user choice. Recommendation: the replace control offers CMU and eSpeak explicitly (each may be unavailable) until the briefs PRD Phase 9 decides on providers; store the chosen source and confidence with the value.
-- [ ] **B11. Rebuild.** A generated or chosen pronunciation is lost on rebuild for unlocked entities until `merge_locked` carries it (briefs PRD Phase 10). Should this PRD carry it? Recommendation: yes, for entries the narrator explicitly set.
-- [ ] **B12. `review_state`.** `edit()` marks an entry reviewed on every call (`:842`); does adding properties or generating a pronunciation count as review? Recommendation: properties yes, generation no.
+- [x] **B1. Properties shape.** Ordered list `[{key, value}]` (recommended; Go decodes to `map[string]any` and re-marshals, which sorts object keys and would lose the user's order) versus an object.
+  **Decided (D22, recommendation adopted): an ordered list `[{key, value}]`; a key is required and unique whatever its case, a value may be empty.**
+- [x] **B2. Which categories get properties?** All (recommendation) or Characters only.
+  **Decided (D22): every category gets properties.**
+- [x] **B3. Actions layout.** (a) mode-based buttons (recommended: Lock in read view, red Delete in edit mode) or (b) one overflow "hamburger" menu, which needs a menu primitive with full keyboard and a11y behavior (overlaps the dialog and Tooltip PRDs). Recommendation: (a) now, (b) when the DropdownMenu primitive lands.
+  **Decided (D22, recommendation adopted): (a) mode-based buttons, Lock in the read view and a red Delete in edit mode. The `Menu` primitive now exists, but the header holds four or five icon buttons and fits at every viewport without an overflow menu, so no menu is built; a later PRD may add one.**
+- [x] **B4. ADR 0018.** Amend or supersede? Recommendation: a new ADR superseding the "regardless of mode" clause, recording the new action placement and the lock/edit interaction.
+  **Decided (D22): a new ADR supersedes the "regardless of mode" clause of ADR 0018 (Accepted, owner-decided by this PRD path).**
+- [x] **B5. Delete in edit mode only.** The destructive action becomes reachable only after Edit, which is the intent, but is it also easy to mis-click beside Save? Recommendation: red, separated to the far side of the header, with the existing confirm dialog kept.
+  **Decided (D22): red, on the far side of the header and separated from Save, with the existing confirm dialog kept (D12: a red danger confirm).**
+- [x] **B6. Locking rule.** Lock only in read-only view; how does a narrator lock a new draft? Recommendation: new drafts start unlocked and lock after save.
+  **Decided (D22): a new draft starts unlocked and locks after it is saved.**
+- [x] **B7. Icon for Delete.** A red icon-only trash is a new danger `IconButton`; its icon colour is `--danger-text` (the text-safe danger colour, [colour and contrast](../design/colour-and-contrast.md)).
+  **Decided (D22): a danger `IconButton` whose icon is `--danger-text`; the token-pair test proves its contrast.**
+- [x] **B8. Play gating meaning.** The audio speaks the spelled name and ignores IPA, so gating on IPA is a UI policy only. Options: gate on IPA existing (requested), or gate on a non-empty name. Recommendation: as requested; say so in the disabled tooltip.
+  **Decided (D22): gate on the IPA existing, and say why in the disabled explanation. The audio still speaks the spelled name, so the gate is a UI policy.**
+- [x] **B9. Generate and replace live in edit mode** (briefs PRD decision) but the request reads as available while viewing. Recommendation: edit mode, matching ADR 0018 and ADR 0007, and blocked for locked entries; confirm with the owner.
+  **Decided (owner, D13): Generate and Replace live in edit mode only and are blocked for locked entries.**
+- [x] **B10. Choice of service.** What is "a different service"? Today only CMU then eSpeak, in a fixed order, and no user choice. Recommendation: the replace control offers CMU and eSpeak explicitly (each may be unavailable) until the briefs PRD Phase 9 decides on providers; store the chosen source and confidence with the value.
+  **Decided (D22): the replace control offers CMU and eSpeak explicitly (each may be unavailable) until the briefs PRD phase 9 decides on providers; the chosen source and its confidence are stored with the value.**
+- [x] **B11. Rebuild.** A generated or chosen pronunciation is lost on rebuild for unlocked entities until `merge_locked` carries it (briefs PRD Phase 10). Should this PRD carry it? Recommendation: yes, for entries the narrator explicitly set.
+  **Decided (D22): yes, `merge_locked` carries a pronunciation the narrator explicitly set (marked `chosen`); a generated one is regenerated by a rebuild as before.**
+- [x] **B12. `review_state`.** `edit()` marks an entry reviewed on every call (`:842`); does adding properties or generating a pronunciation count as review? Recommendation: properties yes, generation no.
+  **Decided (D22): properties count as a review; generating a pronunciation does not.**
 
 ## Users & Context
 
@@ -125,7 +139,7 @@ We believe composable properties, mode-appropriate actions and an honest pronunc
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Properties | Schema, sidecar, Go, TS, UI, rebuild carry-over, tests | pending | - | - | - |
+| 1 | Properties | Schema, sidecar, Go, TS, UI, rebuild carry-over, tests | complete | - | - | - |
 | 2 | Actions and icon-only Go to line | Mode-based actions, red Delete, lock/edit fix, ADR, `IconButton` use | pending | 1 | primitives Phase 1 | - |
 | 3 | Pronunciation controls | Play gating, Generate, replace icon, binding, API bump | pending | - | 2 (soft); briefs Phase 9 (provider question) | - |
 
@@ -153,6 +167,12 @@ Cross-cutting: ADR numbering and `hostAPIVersion` re-checked at merge time; `vis
 | Pronunciation changes happen in edit mode through `edit()`-family commands (prior, briefs PRD) | Generate and replace in edit mode (proposed) | Read-view button | Single enforcement point |
 | Property order | Ordered list (proposed) | Object | Go re-marshal sorts keys |
 | Actions layout | Mode-based buttons first (proposed) | Overflow menu | No menu primitive yet |
+| Property shape (B1, B2) | Ordered list `[{key, value}]` on every category; key unique whatever its case; text only (D22) | An object; Characters only | Go re-marshals a map and sorts keys |
+| Actions layout (B3, B5) | Mode-based buttons; the red Delete on the far side of the edit header (D22) | Overflow menu (the `Menu` primitive exists but the header fits without it) | Fewer clicks; delete unreachable from the read view |
+| ADR 0018 (B4) | A new ADR supersedes the "regardless of mode" clause; Accepted (D22) | Amend 0018 | Never edit an Accepted ADR |
+| Locking (B6) | Lock and Unlock in the read view only; a new draft starts unlocked (D22) | Lock during edit | Locking mid-edit discarded the draft |
+| Pronunciation controls (B8, B9, B10, B12) | Play gated on an IPA with the reason in the explanation; Generate and Replace in edit mode only, CMU or eSpeak chosen explicitly, stored with source and confidence; generation is not a review (D13, D22) | A read-view button | Single enforcement point (ADR 0007) |
+| Rebuild (B11) | A pronunciation the narrator set is carried by `merge_locked` (D22) | Wait for the briefs PRD | Otherwise a rebuild silently undoes the narrator's choice |
 
 ## Research Summary
 
@@ -162,4 +182,4 @@ Cross-cutting: ADR numbering and `hostAPIVersion` re-checked at merge time; `vis
 ---
 
 *Generated: 2026-09-20*
-*Status: DRAFT - needs validation*
+*Status: IN EXECUTION (stack S19a): phase 1 delivered; phases 2 and 3 follow.*

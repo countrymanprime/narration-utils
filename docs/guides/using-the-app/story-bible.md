@@ -17,6 +17,13 @@ words, so add unusual names by hand with the + button.
 Pressing Edit switches the entry to edit mode, where Save and Cancel appear. Locked entries show
 neither Edit nor Save.
 
+Each entry also has **Properties**: a list of labelled facts, such as "Codename: Wren" or "Abilities: flight",
+that you keep in the order you give them. In edit mode each property is a row with a name and a value, buttons to
+move it up or down or remove it, and an Add button below. A value needs a name, and no two properties may share
+one (capital letters do not make a name different); Save says which row to fix. A row you add and leave blank is
+dropped. Properties are kept when you rebuild the Story Bible, and the summary of an entry that opens from the
+Manuscript lists them too.
+
 ![Story Bible - an entry in edit mode, with Save and Cancel shown](../../images/ui/storybible-entry-editing.webp)
 
 Entries the build isn't sure about are filed under Needs Review, and their evidence is

@@ -1,13 +1,14 @@
 // Browser/mock API. It deliberately uses the same literal fixture data
 // everywhere so visual review never silently exercises placeholder
 // content instead of the screen we are trying to match.
-import { parseWire } from './wire/parseWire';
+import { parseWire, parseWireJson } from './wire/parseWire';
 import { chaptersSchema } from './schemas/manuscript';
-import { guideEntitiesSchema } from './schemas/storyBible';
+import { guideEntitiesSchema, guidePropertiesSchema } from './schemas/storyBible';
 import { bootstrapSchema } from './schemas/system';
 import type {
   GuideEntity,
   GuideEvidence,
+  GuideProperty,
   ManuscriptNote,
   NarrationApi,
   ProjectAttachState,
@@ -48,6 +49,18 @@ const DEFAULT_PROJECT_FOLDER = 'C:/Projects/Alice-in-Wonderland';
 const DEFAULT_PROJECT_NAME = 'Alice’s Adventures in Wonderland';
 
 /** Mirrors the Go backend's `filepath.Base(path)` default-naming rule for a folder chosen with no explicit name. */
+/** What the sidecar does with the `properties` value of an edit: a JSON list of pairs, a name on every one and no name twice (whatever its case). */
+function parseMockProperties(text: string): GuideProperty[] {
+  const seen = new Set<string>();
+  return parseWireJson(guidePropertiesSchema, text, wireContext('mock properties')).map((row, index) => {
+    const key = row.key.trim();
+    if (!key) throw new Error(`Property ${index + 1} has no name.`);
+    if (seen.has(key.toLowerCase())) throw new Error(`There are two properties named '${key}'; give each a different name.`);
+    seen.add(key.toLowerCase());
+    return { key, value: row.value.trim() };
+  });
+}
+
 function basename(path: string): string {
   return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 }
@@ -634,6 +647,7 @@ export function createMockApi(
         description: values.description === undefined ? entity.description : { text: values.description, evidence: {} },
         personality_notes: values.personality === undefined ? entity.personality_notes : values.personality ? [{ text: values.personality, evidence: {} }] : [],
         context: values.context ?? entity.context,
+        properties: values.properties === undefined ? entity.properties : parseMockProperties(values.properties),
         aliases:
           values.aliases === undefined
             ? entity.aliases
@@ -679,6 +693,7 @@ export function createMockApi(
           pronunciation: { ipa: '', source: 'Piper', confidence: 'pending' },
           description: { text: '', evidence: {} },
           personality_notes: [],
+          properties: [],
           context: '',
           aliases: aliases.map((text) => ({ text, pronunciation: { ipa: '', source: 'Piper', confidence: 'pending' }, occurrences: [] })),
           relationships: [],

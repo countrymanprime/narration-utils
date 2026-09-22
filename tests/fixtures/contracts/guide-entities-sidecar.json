@@ -63,6 +63,7 @@
       "ipa": "",
       "source": "not generated"
     },
+    "properties": [],
     "relationships": [],
     "review_state": "generated"
   },
@@ -115,6 +116,7 @@
       "ipa": "",
       "source": "not generated"
     },
+    "properties": [],
     "relationships": [],
     "review_state": "needs review"
   },
@@ -146,6 +148,7 @@
       "ipa": "k aʊ n s ʌ l ʌ v æ ʃ",
       "source": "CMU dictionary"
     },
+    "properties": [],
     "relationships": [],
     "review_state": "generated"
   }

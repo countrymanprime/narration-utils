@@ -6,6 +6,8 @@ export type GuideEvidence = { chapter: string; chapterId?: string; paragraph: nu
 export type GuideRelationship = { id: string; name: string; label: string };
 export type GuidePronunciation = { ipa: string; source: string; confidence: string };
 export type GuideNote = { text: string; evidence: { chapter?: string; excerpt?: string } };
+/** One labelled fact of an entry ("Codename": "Wren"). The list is ordered and a key is unique whatever its case; a value may be empty. */
+export type GuideProperty = { key: string; value: string };
 export type GuideAlias = { text: string; pronunciation: GuidePronunciation; occurrences: GuideEvidence[] };
 export type GuideEntity = {
   id: string;
@@ -18,6 +20,8 @@ export type GuideEntity = {
   description: GuideNote;
   personality_notes: GuideNote[];
   relationships: GuideRelationship[];
+  /** The narrator's ordered facts about the entry, filled by hand or from the labelled lines of an imported cast block; empty when there are none. */
+  properties: GuideProperty[];
   locked: boolean;
   review_state: string;
   context?: string;

@@ -184,6 +184,11 @@ export const STATE_CATALOG: StateEntry[] = [
     sameAs: { of: 'storybible/entity-selected', reason: 'The fixture entity a fresh selection lands on is unlocked, so selecting it is this state.' },
   },
   { page: 'storybible', state: 'entry-editing', description: 'Story Bible, an unlocked entry in edit mode (Save and Cancel shown)' },
+  {
+    page: 'storybible',
+    state: 'entry-properties-editing',
+    description: 'Story Bible, an entry in edit mode with its properties table: a new row with a value and no name, and the message that says so',
+  },
   { page: 'storybible', state: 'entry-needs-review', description: 'Story Bible, a Needs Review entry with review-colored evidence highlights' },
 
   {

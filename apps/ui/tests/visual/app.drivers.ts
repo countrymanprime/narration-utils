@@ -583,6 +583,19 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       if (await unlock.count()) await unlock.click();
       await clickVisible(page, 'button', 'Edit this entry');
     },
+    'entry-properties-editing': async (page) => {
+      await goToPage(page, 'Story Bible');
+      await page.locator('tr[data-row]').first().click();
+      const unlock = page.getByRole('button', { name: 'Unlock entry' });
+      if (await unlock.count()) await unlock.click();
+      await clickVisible(page, 'button', 'Edit this entry');
+      await clickVisible(page, 'button', 'Add property');
+      await page.getByRole('textbox', { name: 'Property 3 value' }).fill('Wren');
+      await clickVisible(page, 'button', 'Save changes to this entry');
+      await page.getByRole('alert').filter({ hasText: 'Give property 3 a name' }).waitFor();
+      // The properties table is below the fold of the detail panel: bring it into view for the screenshot.
+      await page.getByRole('table', { name: 'Properties' }).scrollIntoViewIfNeeded();
+    },
   },
   tracks: {
     default: async (page) => {
