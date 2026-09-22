@@ -30,6 +30,9 @@ var formats = []format{
 	{name: "txt", extensions: []string{"txt"}, build: func(path string, _ int, progress Progress) (Draft, error) {
 		return txtWithProgress(path, progress)
 	}},
+	{name: "epub", extensions: []string{"epub"}, build: func(path string, _ int, progress Progress) (Draft, error) {
+		return epubWithProgress(path, progress)
+	}},
 }
 
 func formatFor(extension string) *format {
@@ -69,4 +72,4 @@ func PickerPattern() string {
 
 // unsupportedFormatMessage is BuildDraftProgress's error for any extension
 // formatFor does not recognize (and that isn't the quarantined pdf case).
-const unsupportedFormatMessage = "Choose a Word (.docx), Markdown (.md) or plain text (.txt) manuscript."
+const unsupportedFormatMessage = "Choose a Word (.docx), Markdown (.md), plain text (.txt) or EPUB (.epub) manuscript."
