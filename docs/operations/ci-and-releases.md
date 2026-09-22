@@ -85,6 +85,7 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | `codeql.yml` (`CodeQL`) | pull request to `main` that is not docs- or Markdown-only (same-repository, not Dependabot), push to `main`, weekly (Monday 05:23 UTC), manual | `Analyze (go)`, `Analyze (javascript-typescript)`, `Analyze (python)` | advisory |
 | `dependency-review.yml` | pull request to `main` | `review` (fails on a high-severity advisory the pull request adds; needs the dependency graph) | advisory |
 | `labeler.yml` | `pull_request_target` (opened, synchronize, reopened, ready for review) | `label` | not a check that gates anything |
+| `pages.yml` (`Pages`) | push to `main` (any change, docs included); manual | `build`, `deploy` ([below](#the-pages-workflow)); never runs for a pull request | not a pull request check |
 | `sync-labels.yml`, `sync-milestones.yml` | push to `main` that changes `.github/labels.json`, `config/roadmap.json` or `scripts/github/**`, and the workflow file; manual | `sync` | run after a merge, never on a pull request |
 
 The tests of `scripts/github/*.test.mjs` (the label and milestone sync) run in `quality / repo-scripts`. Nothing runs on a schedule except
@@ -126,7 +127,7 @@ would include them. That is a configuration change with its own review, so it is
 The permission model, so a change can be judged against it:
 
 - Every workflow declares `permissions` at the top, and a job that needs more raises it for that job only. The
-  top-level default is `contents: read` (`zizmor.yml` and `promote-release.yml` use `{}`). The one exception is
+  top-level default is `contents: read` (`zizmor.yml`, `promote-release.yml` and `pages.yml` use `{}`). The one exception is
   `build-macos.yml` and `build-linux.yml`, whose `contents: write`, `id-token: write`, `attestations: write` and
   `artifact-metadata: write` are a workflow-level grant because a caller must grant everything the reusable
   `_attach-platform.yml` holds; only its `attach` job uses them.
@@ -381,6 +382,31 @@ release workflow and `main`, add `--signer-workflow countrymanprime/narration-ut
 `.jsonl` bundle that `--bundle <file>` then verifies without asking GitHub for it. The same works for the executable
 inside the zip after extracting it, which is what an in-app update can check. The release notes say the same in one line.
 The `.sha256` beside a file only detects a damaged download: it is not evidence of where the file came from.
+
+## The Pages workflow
+
+`pages.yml` publishes the Storybook component atlas of `apps/ui` to GitHub Pages, at `https://countrymanprime.github.io/narration-utils/`,
+on every push to `main` and on demand (PRD phase 9).
+
+- **Two jobs.** `build` (read-only token) checks out with `persist-credentials: false`, runs the `setup-toolchain` action for pnpm
+  only, `pnpm --dir apps/ui run build-storybook` and uploads `apps/ui/storybook-static` with `actions/upload-pages-artifact`. `deploy`
+  needs it, runs only on `refs/heads/main` (a manual start from a branch builds and stops), holds `pages: write` and
+  `id-token: write` (the only job that does), uses the `github-pages` environment and calls `actions/deploy-pages`. The top-level
+  `permissions` is `{}`, there is no secret, and no trigger reaches a pull request, so a fork cannot get the deploy token. One
+  deployment runs at a time and a running one is never cancelled.
+- **It works under a project sub-path.** Pages serves this repository at `/narration-utils/`, not at `/`. Storybook's build writes
+  every asset URL relative (`./sb-manager/...`, `./assets/...`), so no `base` setting is needed. Checked by serving the build
+  from `/narration-utils/` on a server that answers 404 for anything outside that folder and loading `index.html` and `iframe.html`
+  in Chromium in light and dark (`globals=theme:dark`): no request failed, no page or console error, the stories rendered
+  (2026-09-21, [PRD phase 9](../prds/release-readiness-provisioning-and-docs-site.prd.md)). The one thing outside the folder is
+  Google Fonts, which `apps/ui/.storybook/preview-head.html` loads for the story frame, the same three families `index.html` asks for; it is the
+  one third-party request the published atlas makes.
+- **Not enabled yet.** Pages is off for the repository and turning it on is an owner-only setting
+  ([the table](github-workflow.md#repository-settings-that-only-the-owner-can-change)). Until then the `deploy` job fails with GitHub's
+  "Pages is not enabled" message on each push to `main` and `build` passes. After the owner sets the source to GitHub Actions, re-run
+  the latest run; the deployed address appears on the `deploy` job and in the repository's Environments list.
+- **Change it like any workflow:** every action is pinned to a commit (`pinact run --verify --check`), `zizmor` must be clean, and a
+  new artifact path or job goes through review of the token scopes above.
 
 ## Nx projects and the quality gate
 

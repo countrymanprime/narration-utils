@@ -1,0 +1,55 @@
+name: Pages
+# Publishes the Storybook component atlas (apps/ui) to GitHub Pages after every push to main, and by hand. It is
+# served at https://<owner>.github.io/narration-utils/ once the owner sets Settings > Pages > Source to "GitHub Actions"
+# (an owner-only setting, see docs/operations/github-workflow.md); until then the deploy job fails with GitHub's own
+# "Pages is not enabled" message and the build job still proves the site builds.
+#
+# Nothing here runs for a pull request, so a fork can never reach the deploy token: the triggers are a push to main and
+# a manual start, and the deploy job also refuses any ref but main (a manual start from a branch builds and stops).
+# No secret is used. The token is read-only everywhere except the deploy job, which alone holds `pages: write` (create
+# the deployment) and `id-token: write` (prove to Pages that the artifact came from this workflow run).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+permissions: {}
+# One deployment at a time, and a running one finishes: cancelling a deploy half way leaves the site stale.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-go: 'false'
+          need-python: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+          need-linux-native-deps: 'false'
+      - name: Build Storybook
+        run: pnpm --dir apps/ui run build-storybook
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: apps/ui/storybook-static
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
