@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 )
@@ -484,7 +485,10 @@ func canonicalize(draft importer.Draft, name, storedPath, sha string, kinds map[
 }
 
 func resetDerived(project string) error {
-	for _, path := range []string{filepath.Join(project, "ManuscriptGuide"), filepath.Join(project, "TranscriptCompare"), filepath.Join(project, "narration-utils", "manuscript-notes.json"), filepath.Join(project, ".narration-last-comparison.json")} {
+	// Findings are anchored to manuscript chapter and paragraph ids, so a
+	// replace or Clear that invalidates those ids clears findings too
+	// (review-dashboard-and-findings-adoption.prd.md Q5).
+	for _, path := range []string{filepath.Join(project, "ManuscriptGuide"), filepath.Join(project, "TranscriptCompare"), filepath.Join(project, "narration-utils", "manuscript-notes.json"), filepath.Join(project, ".narration-last-comparison.json"), filepath.Join(project, filepath.FromSlash(findings.Dir))} {
 		if err := os.RemoveAll(path); err != nil {
 			return fmt.Errorf("could not clear project data: %w", err)
 		}

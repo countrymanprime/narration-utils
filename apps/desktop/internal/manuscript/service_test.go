@@ -221,3 +221,33 @@ func TestPreviewPayloadCarriesTheRepairsTheImporterMade(t *testing.T) {
 		t.Fatalf("a preview with no repairs must not carry the field, got %#v", untouched["notices"])
 	}
 }
+
+// Findings are anchored to manuscript chapter and paragraph ids
+// (review-dashboard-and-findings-adoption.prd.md Q5): resetDerived, run on a
+// confirmed manuscript replace and on Clear, must clear them along with the
+// other derived, manuscript-anchored folders.
+func TestResetDerivedClearsTheFindingsDirectory(t *testing.T) {
+	project := t.TempDir()
+	findingsFile := filepath.Join(project, "narration-utils", "findings", "transcript_compare", "c-0001.json")
+	if err := os.MkdirAll(filepath.Dir(findingsFile), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(findingsFile, []byte("[]"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	settingsFile := filepath.Join(project, "narration-utils", "settings.json")
+	if err := os.WriteFile(settingsFile, []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resetDerived(project); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(project, "narration-utils", "findings")); !os.IsNotExist(err) {
+		t.Fatalf("expected the findings directory to be removed, stat err = %v", err)
+	}
+	if _, err := os.Stat(settingsFile); err != nil {
+		t.Fatalf("resetDerived must not touch narration-utils/settings.json: %v", err)
+	}
+}
