@@ -213,13 +213,25 @@ func TestACompletePartFileIsCheckedAndUsedWithoutAnotherDownload(t *testing.T) {
 
 func TestACancelledDownloadRemovesWhatItFetched(t *testing.T) {
 	body := []byte(strings.Repeat("abcdefghij", 20000))
-	server := newRangeServer(t, body, 0, true)
+	// The server sends the first part and then holds the connection open, so the install is always in the middle of the file when the
+	// cancel arrives (a fast runner could otherwise finish the whole small file before the cancel is seen).
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+		_, _ = w.Write(body[:50000])
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+	}))
+	defer server.Close()
 	root := t.TempDir()
 	files := []File{fileFor(server.URL, body)}
 	ctx, cancel := context.WithCancel(context.Background())
 	options := Options{OnProgress: func(File, int64) { cancel() }}
-	if err := InstallWith(ctx, root, "p", "id", "1", files, options); err == nil {
+	err := InstallWith(ctx, root, "p", "id", "1", files, options)
+	if err == nil {
 		t.Fatal("a cancelled install must fail")
+	}
+	if !errors.Is(ctx.Err(), context.Canceled) {
+		t.Fatalf("the context should be cancelled, got %v", ctx.Err())
 	}
 	if _, err := os.Stat(stagingDir(root)); !os.IsNotExist(err) {
 		t.Fatal("the narrator cancelled: nothing is kept")
