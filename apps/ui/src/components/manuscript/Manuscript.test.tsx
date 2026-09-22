@@ -348,7 +348,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       renderManuscript({ manuscriptChapters: chapters });
       fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
       await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
-      expect(await screen.findByText('Text size')).toBeTruthy();
+      expect(await screen.findByRole('button', { name: 'Text size' })).toBeTruthy();
       expect(chapters).toHaveBeenCalledTimes(2);
     });
   });
