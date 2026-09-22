@@ -1,8 +1,27 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBookmark, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { faBookmark, faParagraph } from '@fortawesome/free-solid-svg-icons';
 import { STATUS_COLOR } from '../../chapterStatus';
-import { chapterLineNumber, isListableChapter } from '../../state';
+import { chapterLineNumber, isListableChapter, windowExcerpt } from '../../state';
 import type { ManuscriptChapter, ReaderBookmark, SearchHit } from '../../types';
+import { Highlight } from '../primitives/Highlight';
+
+// Renders a hit's excerpt windowed to the row's width (R3), with the matched term highlighted at
+// its real position - not re-found by text search, since the excerpt can repeat the query term.
+// matchStart is optional (an older payload, or the mock, may omit it); it defaults to 0, which still
+// renders correctly but highlights from the excerpt's start rather than the term's real position.
+function HitText({ excerpt, matchStart, term }: { excerpt: string; matchStart?: number; term: string }) {
+  const windowed = windowExcerpt(excerpt, matchStart ?? 0, term.length);
+  const before = windowed.text.slice(0, windowed.matchStart);
+  const match = windowed.text.slice(windowed.matchStart, windowed.matchStart + windowed.matchLength);
+  const after = windowed.text.slice(windowed.matchStart + windowed.matchLength);
+  return (
+    <>
+      {before}
+      {match && <Highlight kind="Search">{match}</Highlight>}
+      {after}
+    </>
+  );
+}
 
 export function ChapterNav({
   chapters,
@@ -56,13 +75,20 @@ export function ChapterNav({
         return (
           <div key={chapter.id} className="rounded-[0.4rem]">
             <button
-              className="flex w-full items-center gap-[0.6rem] rounded-[0.4rem] border border-transparent px-[0.7rem] py-[0.55rem] text-left hover:bg-[var(--surface-2)]"
+              className="flex w-full items-start gap-[0.6rem] rounded-[0.4rem] border border-transparent px-[0.7rem] py-[0.55rem] text-left hover:bg-[var(--surface-2)]"
               onClick={() => select(chapter.id)}
             >
-              <span className="size-2 flex-none rounded-full" style={{ background: STATUS_COLOR[chapter.status] }} />
-              <span className="flex-1 truncate text-sm font-medium">{chapter.title}</span>
-              {chapterBookmark && <FontAwesomeIcon className="text-[var(--bookmark)]" icon={faBookmark} />}
-              <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
+              <span className="mt-[0.4rem] size-2 flex-none rounded-full" style={{ background: STATUS_COLOR[chapter.status] }} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">{chapter.title}</span>
+                {chapter.subtitle && (
+                  <span className="block truncate text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {chapter.subtitle}
+                  </span>
+                )}
+              </span>
+              {chapterBookmark && <FontAwesomeIcon className="mt-[0.15rem] flex-none text-[var(--bookmark)]" icon={faBookmark} />}
+              <span className="mt-[0.15rem] flex-none font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
                 {(chapter.wordCount / 1000).toFixed(0)}k
               </span>
             </button>
@@ -70,16 +96,17 @@ export function ChapterNav({
               ? matchesFor(chapter).map((hit, index) => (
                   <div
                     key={`${hit.paragraph}-${index}`}
-                    className="mr-[0.35rem] mb-[0.2rem] ml-7 flex items-center justify-between gap-[0.4rem] border-l border-[var(--border)] px-[0.4rem] py-[0.28rem] text-[0.74rem] text-[var(--text-muted)]"
+                    className="mr-[0.35rem] mb-[0.2rem] ml-7 border-l border-[var(--border)] px-[0.4rem] py-[0.28rem] text-[0.74rem] text-[var(--text-muted)]"
                   >
                     <button
-                      className="w-full"
+                      className="flex w-full items-start gap-[0.35rem] text-left"
                       aria-label={`Search result in ${chapter.title}, line ${chapterLineNumber(chapter, hit.paragraph, lineNumbers)}`}
                       onClick={() => select(chapter.id, hit.paragraph)}
                     >
-                      <FontAwesomeIcon icon={faMagnifyingGlass} />
-                      <span className="truncate">
-                        Line {chapterLineNumber(chapter, hit.paragraph, lineNumbers)} · {hit.excerpt}
+                      <FontAwesomeIcon icon={faParagraph} className="mt-[0.15rem] flex-none text-[var(--non-text)]" />
+                      <span className="min-w-0 flex-1 truncate">
+                        Line {chapterLineNumber(chapter, hit.paragraph, lineNumbers)}:{' '}
+                        <HitText excerpt={hit.excerpt} matchStart={hit.matchStart} term={searchQuery.trim()} />
                       </span>
                     </button>
                   </div>

@@ -43,6 +43,9 @@
   --item: #42758a;
   --event: #9a4e69;
   --note: #b85c1e;
+  /* The manuscript search match highlight (reader search and controls PRD, R4): a dedicated kind, a
+     true yellow distinct from --warn/--lore's amber-brown and every other kind hue. */
+  --search: #8a7500;
   /* Text on a tint of the kind's own colour (highlights, entity badges): 45% of the kind colour and 55% of the text colour,
      so the hue survives and 4.5:1 holds (ADR 0059), including where one highlight is nested in another and the tints add up
      (at 50% the dark theme fell to 4.4:1 there). Defined once for both themes: it resolves against the theme's own --text,
@@ -54,6 +57,7 @@
   --lore-text: color-mix(in srgb, var(--lore) 45%, var(--text));
   --item-text: color-mix(in srgb, var(--item) 45%, var(--text));
   --event-text: color-mix(in srgb, var(--event) 45%, var(--text));
+  --search-text: color-mix(in srgb, var(--search) 45%, var(--text));
   --danger: #b5473c;
   --warn: #b5871e;
   --info: #3f6ea6;
@@ -120,6 +124,7 @@
   --item: #6ea5bc;
   --event: #d37e9b;
   --note: #d4865a;
+  --search: #e2c53c;
   --danger: #db7a6e;
   --warn: #e0b255;
   --info: #6e9fdb;

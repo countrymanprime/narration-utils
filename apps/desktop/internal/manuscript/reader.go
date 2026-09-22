@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 )
@@ -70,10 +71,17 @@ func (s *Service) Search(query string) ([]map[string]any, error) {
 	result := []map[string]any{}
 	for _, paragraph := range objects(data["paragraphs"]) {
 		body := text(paragraph, "text")
-		offset := strings.Index(strings.ToLower(body), needle)
-		if offset < 0 {
+		byteOffset := strings.Index(strings.ToLower(body), needle)
+		if byteOffset < 0 {
 			continue
 		}
+		// matchStart travels to the UI as a JS string index (UTF-16 code units), but strings.Index
+		// returns a UTF-8 byte offset - identical for ASCII, but wrong as soon as a curly quote, em
+		// dash or accented letter (all common in a manuscript) appears before the match. Converting
+		// to a rune count fixes every character in the Basic Multilingual Plane (everything but
+		// emoji and rare CJK extensions, which encode as UTF-16 surrogate pairs); that residual gap
+		// is accepted rather than tracked per-surrogate for a feature this narrow.
+		offset := utf8.RuneCountInString(body[:byteOffset])
 		result = append(result, map[string]any{
 			"chapter": text(paragraph, "chapterTitle"), "chapterId": text(paragraph, "chapterId"),
 			"paragraph": paragraph["index"], "paragraphId": text(paragraph, "id"), "excerpt": body,

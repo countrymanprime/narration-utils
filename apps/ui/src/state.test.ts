@@ -13,6 +13,7 @@ import {
   isTranscriptActive,
   selectDiscrepancy,
   sortEntities,
+  windowExcerpt,
 } from './state';
 import type { GuideAlias, GuideEntity } from './types';
 
@@ -202,6 +203,59 @@ describe('Manuscript chapter title/subtitle subset (R2)', () => {
 
   it('returns nothing when no title or subtitle matches', () => {
     expect(chapterTextMatches(chapters, 'nonexistent')).toEqual(new Set());
+  });
+});
+
+describe('windowExcerpt (R3)', () => {
+  const long = 'A'.repeat(30) + 'RABBIT' + 'B'.repeat(60); // len 96, match at [30,36)
+
+  it('returns the text unchanged when it already fits the budget', () => {
+    expect(windowExcerpt('short line', 0, 5, 38)).toEqual({ text: 'short line', matchStart: 0, matchLength: 5 });
+  });
+
+  it('cuts only the tail (ellipsis on the right) when the match falls within the first budget characters', () => {
+    const result = windowExcerpt(long, 30, 6, 38);
+    expect(result.text.startsWith('…')).toBe(false);
+    expect(result.text.endsWith('…')).toBe(true);
+    expect(result.text.slice(result.matchStart, result.matchStart + result.matchLength)).toBe('RABBIT');
+    expect(result.text.length).toBe(39); // 38 chars + the trailing ellipsis
+  });
+
+  it('adds a left ellipsis (and a right one if text remains) when the match starts beyond the budget', () => {
+    const farText = 'B'.repeat(60) + 'RABBIT' + 'A'.repeat(30); // match at [60, 66)
+    const result = windowExcerpt(farText, 60, 6, 38);
+    expect(result.text.startsWith('…')).toBe(true);
+    expect(result.text.slice(result.matchStart, result.matchStart + result.matchLength)).toBe('RABBIT');
+  });
+
+  it('adds only a left ellipsis when the match sits at the very end, with nothing left to show after it', () => {
+    const endText = 'B'.repeat(90) + 'RABBIT'; // match at [90, 96)
+    const result = windowExcerpt(endText, 90, 6, 38);
+    expect(result.text.startsWith('…')).toBe(true);
+    expect(result.text.endsWith('…')).toBe(false);
+    expect(result.text.slice(result.matchStart, result.matchStart + result.matchLength)).toBe('RABBIT');
+  });
+
+  it('never cuts the match itself, across a spread of match positions', () => {
+    const filler = (n: number) => 'x'.repeat(n);
+    for (const start of [0, 10, 40, 79, 80, 120, 155]) {
+      const text = `${filler(start)}RABBIT${filler(160 - start)}`;
+      const result = windowExcerpt(text, start, 6, 38);
+      expect(result.text.slice(result.matchStart, result.matchStart + result.matchLength)).toBe('RABBIT');
+    }
+  });
+
+  it('truncates the match itself when the match term alone is wider than the budget', () => {
+    const term = 'X'.repeat(50);
+    const result = windowExcerpt(term, 0, 50, 38);
+    expect(result.matchStart).toBe(0);
+    expect(result.text.endsWith('…')).toBe(true);
+    expect(result.text.length).toBe(38); // 37 chars of the term + the ellipsis
+  });
+
+  it('clamps an out-of-range match instead of slicing negatively or past the end', () => {
+    expect(() => windowExcerpt('short', -5, 3, 38)).not.toThrow();
+    expect(() => windowExcerpt('short', 3, 100, 38)).not.toThrow();
   });
 });
 

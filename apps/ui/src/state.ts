@@ -136,6 +136,48 @@ export const chapterTextMatches = (chapters: Pick<ManuscriptChapter, 'id' | 'tit
   );
 };
 
+// The result row's character budget (R3): measured from the panel's own layout, not a guess. The
+// panel is `w-[min(20rem,100vw)]` with `p-[1.1rem]` padding (SlideOver.tsx), leaving a hit row about
+// 220-230px wide at the row's 0.74rem font size - about 35-40 characters - so this is that measured
+// width, taken once rather than re-measured live (a ResizeObserver/canvas.measureText round trip)
+// since the panel's width and the row font size are both fixed layout constants, not user-resizable.
+// Not exported: the only caller is windowExcerpt's own default; tests pass an explicit budget.
+const SEARCH_EXCERPT_BUDGET = 38;
+
+export type WindowedExcerpt = { text: string; matchStart: number; matchLength: number };
+
+// Windows a long excerpt around its match to fit a result row (R3). The match is never cut, except
+// when the match term alone is wider than the budget, which then truncates the term itself. When the
+// match already falls within the first `budget` characters, only the tail is cut (ellipsis on the
+// right - the common case, a match near the start of a paragraph). Otherwise the window shifts to
+// keep the match in view, extending right with whatever budget the match itself did not use, then
+// falling back to left context with what remains - an ellipsis appears on the left (and the right
+// too, if text remains after the window).
+export function windowExcerpt(text: string, matchStart: number, matchLength: number, budget: number = SEARCH_EXCERPT_BUDGET): WindowedExcerpt {
+  const length = text.length;
+  const start = Math.min(Math.max(matchStart, 0), length);
+  const matchLen = Math.min(Math.max(matchLength, 0), length - start);
+  const end = start + matchLen;
+  if (length <= budget) return { text, matchStart: start, matchLength: matchLen };
+  if (matchLen >= budget) {
+    const cut = Math.max(0, budget - 1);
+    return { text: `${text.slice(start, start + cut)}…`, matchStart: 0, matchLength: cut };
+  }
+  if (end <= budget) return { text: `${text.slice(0, budget)}…`, matchStart: start, matchLength: matchLen };
+  const remaining = budget - matchLen;
+  const rightBudget = Math.min(remaining, length - end);
+  const leftBudget = remaining - rightBudget;
+  const windowStart = Math.max(0, start - leftBudget);
+  const windowEnd = Math.min(length, end + rightBudget);
+  const prefix = windowStart > 0 ? '…' : '';
+  const suffix = windowEnd < length ? '…' : '';
+  return {
+    text: `${prefix}${text.slice(windowStart, windowEnd)}${suffix}`,
+    matchStart: start - windowStart + prefix.length,
+    matchLength: matchLen,
+  };
+}
+
 export type EntitySort = { key: 'name' | 'occurrences'; dir: 'asc' | 'desc' };
 export const sortEntities = (entities: GuideEntity[], sort: EntitySort): GuideEntity[] => {
   const factor = sort.dir === 'asc' ? 1 : -1;
