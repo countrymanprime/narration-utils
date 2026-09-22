@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -13,6 +14,39 @@ type paragraphRecord struct {
 	text    string
 	spans   []Span
 	heading bool
+	// level is the paragraph's outline depth when heading is true and a depth could be determined (a numbered "heading N" style,
+	// "title" at 0, or a custom style's own outlineLvl); hasLevel is false for a heading whose depth is unclear (docx.go:headingLevel).
+	level    int
+	hasLevel bool
+}
+
+// headingLevel derives a heading's outline depth from its paragraph style name (already lower-cased by styleNames) and, for a custom
+// style with no recognised name, its own <w:outlineLvl>. Word's built-in "TOC Heading" style is deliberately excluded from the
+// navigation pane via outlineLvl 9, which is also why it must be recognised by name rather than by outline level; it is given level 1,
+// the same depth as a chapter heading, so it ends an active Characters section the same way a sibling chapter does.
+func headingLevel(style, outline string) (int, bool) {
+	switch {
+	case style == "title":
+		return 0, true
+	case style == "toc heading":
+		return 1, true
+	case strings.HasPrefix(style, "heading"):
+		suffix := strings.TrimSpace(strings.TrimPrefix(style, "heading"))
+		if suffix == "" {
+			return 1, true
+		}
+		if level, err := strconv.Atoi(suffix); err == nil {
+			return level, true
+		}
+		return 1, true
+	}
+	if outline != "" && outline != "9" {
+		if level, err := strconv.Atoi(outline); err == nil {
+			return level + 1, true
+		}
+		return 1, true
+	}
+	return 0, false
 }
 
 func docxEntry(archive *zip.ReadCloser, name string) ([]byte, bool) {
@@ -188,13 +222,14 @@ func documentRecords(content []byte, styles wordStyles) []paragraphRecord {
 				}
 				inParagraph = false
 				style := styles.paragraph[styleID]
-				heading := strings.HasPrefix(style, "heading") || style == "title"
+				level, hasLevel := headingLevel(style, outline)
+				heading := strings.HasPrefix(style, "heading") || style == "title" || style == "toc heading"
 				if outline != "" && outline != "9" {
 					heading = true
 				}
 				text, spans := builder.build(heading)
 				if text != "" {
-					records = append(records, paragraphRecord{text: text, spans: spans, heading: heading})
+					records = append(records, paragraphRecord{text: text, spans: spans, heading: heading, level: level, hasLevel: hasLevel})
 				}
 			}
 		case xml.CharData:
@@ -227,9 +262,14 @@ func docxWithProgress(path string, progress Progress) (Draft, error) {
 		}
 	}
 	progress.report(55, "Read %d paragraphs, %d of them headings", len(records), headings)
+	// first is the index of the document's first heading of any kind, chapter or not (a Contents/TOC heading included): everything
+	// before it is unheaded front matter or cover material, and everything from it on belongs to the heading that introduced it. A
+	// TOC heading used to be skipped here so only the first *chapter* heading counted, which is what let a pre-first-chapter TOC's
+	// own entries (still ordinary, non-heading paragraphs) fall through to the front-matter heuristic below alongside the real cover
+	// text.
 	first := len(records)
 	for index, record := range records {
-		if record.heading && !isNonChapterHeading(record.text) {
+		if record.heading {
 			first = index
 			break
 		}
@@ -251,11 +291,23 @@ func docxWithProgress(path string, progress Progress) (Draft, error) {
 	paragraphs := []Paragraph{}
 	titles := []string{}
 	notices := []string{}
+	// headingLevels records the outline depth newDraft needs to bound an active Characters section to its own subheadings (S3) -
+	// every heading-derived group's title, chapter or not, keyed by its exact text; the first occurrence wins.
+	headingLevels := map[string]int{}
+	recordLevel := func(title string, record paragraphRecord) {
+		if !record.hasLevel {
+			return
+		}
+		if _, seen := headingLevels[title]; !seen {
+			headingLevels[title] = record.level
+		}
+	}
 	for index, record := range records {
 		if record.heading {
 			if isNonChapterHeading(collapse(record.text)) {
 				chapter = collapse(record.text)
 				subtitle = ""
+				recordLevel(chapter, record)
 				continue
 			}
 			var glued bool
@@ -264,6 +316,7 @@ func docxWithProgress(path string, progress Progress) (Draft, error) {
 				notices = append(notices, fmt.Sprintf("Heading %q had no gap between its number and title; split into %q and %q.", collapse(record.text), chapter, subtitle))
 			}
 			titles = append(titles, chapter)
+			recordLevel(chapter, record)
 			continue
 		}
 		if kind, ok := kindsByRecord[index]; ok {
@@ -281,7 +334,7 @@ func docxWithProgress(path string, progress Progress) (Draft, error) {
 		progress.report(70, "%s", notice)
 	}
 	progress.report(80, "Classifying front matter, chapters and reference sections")
-	draft, err := newDraft("docx", filepath.Base(path), paragraphs, titles)
+	draft, err := newDraft("docx", filepath.Base(path), paragraphs, titles, headingLevels)
 	draft.Notices = notices
 	if err == nil {
 		progress.report(95, "Found %d chapters in %d sections", len(titles), len(draft.Sections))
