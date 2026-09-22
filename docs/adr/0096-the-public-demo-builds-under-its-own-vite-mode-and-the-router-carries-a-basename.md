@@ -1,4 +1,4 @@
-# 0095. The public demo builds under its own Vite mode, and the router carries a basename
+# 0096. The public demo builds under its own Vite mode, and the router carries a basename
 
 **Status:** Accepted
 **Date:** 2026-09-22
