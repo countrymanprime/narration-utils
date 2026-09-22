@@ -88,7 +88,7 @@ func TestContractStoryBibleBuildJob(t *testing.T) {
 	pinBinding("guide-build-failed", snapshotWork(&workJob{id: "guide-1", kind: "story_bible", phase: "error", message: "The Story Bible build failed.", errorText: "python exited with code 1", percent: 40, logs: []string{"Reading canonical manuscript", "Loaded 120 paragraphs"}, started: time.Now()}))
 }
 
-// How a project attach ends, as ProjectSwitch and ProjectCreate answer it, and the Story Bible answer that needs a voice.
+// How a project attach ends, as ProjectSwitch and ProjectCreateIn answer it, and the Story Bible answer that needs a voice.
 func TestContractProjectAttachResults(t *testing.T) {
 	for name, attached := range map[string]struct {
 		ok     bool
