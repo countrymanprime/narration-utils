@@ -212,3 +212,67 @@ def test_a_noisy_recorded_style_partial_sequence_ends_at_the_right_place():
 @pytest.mark.parametrize("event", [{"type": "segment_end", "segment": 0}, {"type": "unknown"}])
 def test_events_that_do_not_change_anything_produce_no_position_events(event):
     assert _tracker().feed(event, 1.0) == []
+
+
+def test_reset_to_jumps_forward_and_reports_it_as_a_restart():
+    tracker = _tracker()
+
+    events = tracker.reset_to(15, 1.0)
+
+    assert [(e["read"], e["committed"], e["jump"]) for e in events] == [(15, 15, "restart")]
+
+
+def test_reset_to_jumps_back_by_one_word():
+    tracker = _tracker()
+    _read_segment(tracker, 0, "the old lighthouse keeper climbed")
+
+    events = tracker.reset_to(4, 2.0)
+
+    assert [(e["read"], e["committed"], e["jump"]) for e in events] == [(4, 4, "restart")]
+
+
+def test_reset_to_jumps_back_by_many_words():
+    tracker = _tracker()
+    _read_segment(tracker, 0, "the old lighthouse keeper climbed the spiral stairs each evening")
+
+    events = tracker.reset_to(0, 3.0)
+
+    assert [(e["read"], e["committed"], e["jump"]) for e in events] == [(0, 0, "restart")]
+
+
+def test_reset_to_clamps_an_out_of_range_word_to_the_end_of_the_script():
+    tracker = _tracker()
+    total = len(tracker_module.script_words(SCRIPT))
+
+    events = tracker.reset_to(total + 500, 1.0)
+
+    assert events[-1]["read"] == total
+    assert events[-1]["jump"] == "restart"
+    assert events[-1]["status"] == "done"
+
+
+def test_reset_to_clamps_a_negative_word_to_the_start():
+    tracker = _tracker()
+
+    events = tracker.reset_to(-5, 1.0)
+
+    assert events[-1]["read"] == 0
+
+
+def test_reset_to_reports_again_even_when_the_word_does_not_change():
+    tracker = _tracker()
+    tracker.reset_to(4, 1.0)
+
+    events = tracker.reset_to(4, 2.0)
+
+    assert [(e["read"], e["jump"]) for e in events] == [(4, "restart")]
+
+
+def test_reading_continues_normally_after_a_reset_to_seek():
+    tracker = _tracker()
+    tracker.reset_to(10, 1.0)
+
+    events = tracker.feed(_partial(0, "lit the great lamp"), 2.0)
+
+    assert events[-1]["read"] == 15
+    assert events[-1]["jump"] is None

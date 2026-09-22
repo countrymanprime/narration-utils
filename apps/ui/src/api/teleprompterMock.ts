@@ -145,6 +145,10 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
         publish();
       }
     },
+    teleprompterSeek: async (word) => {
+      if (state.phase !== 'running') throw new Error('no teleprompter session is running');
+      emit({ type: 'position', read: word, committed: word, status: 'listening', jump: 'restart', skipped: null });
+    },
     teleprompterState: async () => {
       // Concurrent first callers (React StrictMode mounts twice) must share one seeding.
       if (deps.seed) await (seeding ??= seedState());

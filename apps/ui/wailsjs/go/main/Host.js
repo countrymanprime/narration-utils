@@ -350,6 +350,10 @@ export function TakeReviewScan(arg1) {
   return window['go']['main']['Host']['TakeReviewScan'](arg1);
 }
 
+export function TeleprompterSeek(arg1) {
+  return window['go']['main']['Host']['TeleprompterSeek'](arg1);
+}
+
 export function TracksDiscover() {
   return window['go']['main']['Host']['TracksDiscover']();
 }

@@ -243,6 +243,26 @@ describe('answers of the mock client (it must pass the schemas the real host ans
     expectMatches(teleprompterDevicesResultSchema, await empty.teleprompterDevices(), 'mock teleprompter devices, none found');
   });
 
+  it('teleprompterSeek moves a running session to the requested word, reported as a restart jump', async () => {
+    const api = createMockApi();
+    const events: unknown[] = [];
+    api.subscribeTeleprompterEvent((event) => events.push(event));
+    const chapter = (await api.manuscriptChapters())[0];
+    await api.teleprompterStart({ chapter: chapter?.id ?? '', device: 'Microphone' });
+
+    await api.teleprompterSeek(3);
+
+    const seek = events.at(-1);
+    expectMatches(teleprompterEventSchema, seek, 'mock teleprompter seek event');
+    expect(seek).toMatchObject({ type: 'position', read: 3, committed: 3, jump: 'restart' });
+  });
+
+  it('teleprompterSeek rejects when no session is running', async () => {
+    const api = createMockApi();
+
+    await expect(api.teleprompterSeek(3)).rejects.toThrow(/no teleprompter session/);
+  });
+
   it('the project-attach event', () => {
     const attached: unknown[] = [];
     const api = createMockApi();
@@ -748,6 +768,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'transcriptSaveHints',
       'teleprompterStop',
       'dawCatalogOpenDownloadPage',
+      'teleprompterSeek',
       'reportClientDiagnostic',
       'systemNotify',
       'updateOpenNotes',

@@ -189,6 +189,111 @@ func TestStartLaunchesTheSidecarWithTheHostContractFlags(t *testing.T) {
 	if !strings.HasPrefix(flagValue(args, "--stop-file"), f.session) {
 		t.Errorf("--stop-file = %q, want it inside the session dir", flagValue(args, "--stop-file"))
 	}
+	if !strings.HasPrefix(flagValue(args, "--control-file"), f.session) {
+		t.Errorf("--control-file = %q, want it inside the session dir", flagValue(args, "--control-file"))
+	}
+}
+
+func TestStartPassesStartWordOnlyWhenGiven(t *testing.T) {
+	f := newFixture(t, "stream")
+	options := validOptions()
+	options["startWord"] = "42"
+	if err := f.service.Start(options); err != nil {
+		t.Fatal(err)
+	}
+
+	args := echoedArgs(t, f)
+
+	if got := flagValue(args, "--start-word"); got != "42" {
+		t.Errorf("--start-word = %q, want 42 (args %v)", got, args)
+	}
+}
+
+func TestStartOmitsStartWordWhenNotGiven(t *testing.T) {
+	f := newFixture(t, "stream")
+	if err := f.service.Start(validOptions()); err != nil {
+		t.Fatal(err)
+	}
+
+	args := echoedArgs(t, f)
+
+	for _, arg := range args {
+		if arg == "--start-word" {
+			t.Fatalf("--start-word should be omitted when no startWord option was given, args = %v", args)
+		}
+	}
+}
+
+func controlFileContent(t *testing.T, session string) string {
+	t.Helper()
+	matches, err := filepath.Glob(filepath.Join(session, "teleprompter_*.control"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matches) != 1 {
+		t.Fatalf("expected exactly one control file, found %v", matches)
+	}
+	data, err := os.ReadFile(matches[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
+func TestSeekAppendsASeekCommandToTheControlFile(t *testing.T) {
+	f := newFixture(t, "stream")
+	if err := f.service.Start(validOptions()); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, "the position event", func() bool { return f.recorder.firstEvent("position") != nil })
+
+	if err := f.service.Seek(42); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.service.Seek(7); err != nil {
+		t.Fatal(err)
+	}
+
+	content := controlFileContent(t, f.session)
+	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("control file lines = %v, want 2", lines)
+	}
+	var first, second map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &first); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal([]byte(lines[1]), &second); err != nil {
+		t.Fatal(err)
+	}
+	if first["cmd"] != "seek" || first["word"] != float64(42) {
+		t.Errorf("first command = %v", first)
+	}
+	if second["cmd"] != "seek" || second["word"] != float64(7) {
+		t.Errorf("second command = %v", second)
+	}
+}
+
+func TestSeekErrorsWhenNoSessionIsRunning(t *testing.T) {
+	f := newFixture(t, "stream")
+
+	if err := f.service.Seek(5); err == nil || !strings.Contains(err.Error(), "no teleprompter session") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestSeekErrorsAfterTheSessionHasStopped(t *testing.T) {
+	f := newFixture(t, "stream")
+	if err := f.service.Start(validOptions()); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, "the position event", func() bool { return f.recorder.firstEvent("position") != nil })
+	f.service.Stop()
+	waitFor(t, "the stopped phase", func() bool { return phase(f.service) == "stopped" })
+
+	if err := f.service.Seek(5); err == nil {
+		t.Fatal("expected an error once the session has stopped")
+	}
 }
 
 func TestSidecarEventsAreRelayedInOrderAndStrayOutputIsIgnored(t *testing.T) {

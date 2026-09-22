@@ -546,6 +546,18 @@ func (h *Host) TeleprompterStop() (string, error) {
 	return encodeBinding(nil, nil)
 }
 
+// TeleprompterSeek moves a running session's tracker straight to script word `word` (the read-aloud modal's "Start
+// here"/"Go back to here", teleprompter-manuscript-integration.prd.md Phase 3): one line appended to the session's
+// control file, the sentinel-file pattern service.Seek documents. Errors (no service, no running session, a write
+// failure) come back as a rejected promise, the same shape as every other teleprompter binding failure.
+func (h *Host) TeleprompterSeek(word int) (string, error) {
+	service := h.services().teleprompter
+	if service == nil {
+		return "", fmt.Errorf("the teleprompter service is unavailable")
+	}
+	return encodeBinding(nil, service.Seek(word))
+}
+
 // teleprompterDevicesTimeout bounds one `--list-devices` sidecar run: it prints one JSON line and exits, so this only
 // needs to cover process start-up and dshow's own listing time, not anything as slow as a model load.
 const teleprompterDevicesTimeout = 10 * time.Second

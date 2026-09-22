@@ -281,6 +281,30 @@ func TestTeleprompterStopWithoutASessionIsHarmless(t *testing.T) {
 	}
 }
 
+func TestTeleprompterSeekReachesTheRunningServiceThroughTheHostBinding(t *testing.T) {
+	host := newHostWithARunningTeleprompter(t)
+
+	if _, err := host.TeleprompterSeek(12); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTeleprompterSeekReportsAnUnavailableService(t *testing.T) {
+	host := &Host{}
+
+	if _, err := host.TeleprompterSeek(12); err == nil || !strings.Contains(err.Error(), "unavailable") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestTeleprompterSeekWithoutARunningSessionReportsTheServicesError(t *testing.T) {
+	host := &Host{teleprompter: teleprompter.New(teleprompter.Config{}, nil, nil, nil)}
+
+	if _, err := host.TeleprompterSeek(12); err == nil || !strings.Contains(err.Error(), "no teleprompter session") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestTheDeveloperSidecarPathsIncludeTheTeleprompter(t *testing.T) {
 	root := t.TempDir()
 	python := filepath.Join(root, ".venv", "Scripts", "python.exe")

@@ -69,6 +69,7 @@ var stressReaders = []stressReader{
 	{"UpdateInstall (unknown job)", func(h *Host) { _, _ = h.UpdateInstall("missing") }},
 	{"UpdateShowDownload (nothing downloaded)", func(h *Host) { _, _ = h.UpdateShowDownload() }},
 	{"TeleprompterStop", func(h *Host) { _, _ = h.TeleprompterStop() }},
+	{"TeleprompterSeek", func(h *Host) { _, _ = h.TeleprompterSeek(1) }},
 	{"TracksDiscover", func(h *Host) { _, _ = h.TracksDiscover() }},
 	{"TracksList", func(h *Host) { _, _ = h.TracksList() }},
 	{"TracksSelect", func(h *Host) { _, _ = h.TracksSelect("not-a-project-file.rpp") }},
