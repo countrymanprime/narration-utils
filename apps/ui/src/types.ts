@@ -11,6 +11,7 @@ export * from './api/contracts/project';
 export * from './api/contracts/tracks';
 export * from './api/contracts/teleprompter';
 export * from './api/contracts/update';
+export * from './api/contracts/credits';
 
 import type { ManuscriptApi } from './api/contracts/manuscript';
 import type { ProjectApi } from './api/contracts/project';
@@ -23,7 +24,20 @@ import type { AssetsApi } from './api/contracts/assets';
 import type { TtsApi } from './api/contracts/tts';
 import type { UpdateApi } from './api/contracts/update';
 import type { WhisperApi } from './api/contracts/whisper';
+import type { CreditsApi } from './api/contracts/credits';
 
 /** The app compatibility facade; domain interfaces remain independently testable. */
 export interface NarrationApi
-  extends SystemApi, ManuscriptApi, StoryBibleApi, TranscriptApi, TtsApi, WhisperApi, AssetsApi, ProjectApi, TracksApi, TeleprompterApi, UpdateApi {}
+  extends
+    SystemApi,
+    ManuscriptApi,
+    StoryBibleApi,
+    TranscriptApi,
+    TtsApi,
+    WhisperApi,
+    AssetsApi,
+    ProjectApi,
+    TracksApi,
+    TeleprompterApi,
+    UpdateApi,
+    CreditsApi {}

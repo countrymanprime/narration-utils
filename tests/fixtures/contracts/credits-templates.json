@@ -1,0 +1,23 @@
+[
+  {
+    "id": "default-opening-acx-minimum",
+    "kind": "opening",
+    "name": "ACX minimum (opening)",
+    "body": "[Title], written by [Author], narrated by [Narrator].",
+    "builtIn": true
+  },
+  {
+    "id": "default-closing-acx-best-practice",
+    "kind": "closing",
+    "name": "ACX best practice (closing)",
+    "body": "You have been listening to [Title], written by [Author], narrated by [Narrator]. The End.",
+    "builtIn": true
+  },
+  {
+    "id": "default-with-copyright",
+    "kind": "closing",
+    "name": "With copyright (contractual)",
+    "body": "[Title]. Written by [Author]. Read by [Narrator]. Copyright by [Copyright].",
+    "builtIn": true
+  }
+]

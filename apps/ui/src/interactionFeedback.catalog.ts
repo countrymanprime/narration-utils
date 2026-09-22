@@ -239,6 +239,15 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/tracks/TracksPage.tsx::tracksDiscover#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'An inline error.'),
   'src/components/tracks/TracksPage.tsx::tracksList#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Parsing a 100 KB project file takes about 2 ms (docs/research/interaction-latency-baseline.md).'),
   'src/components/tracks/TracksPage.tsx::tracksSelect#1': row('click', 'file-io', 'none', 'none', 'ui', 'inline', 'na', 'ok', 'A small file write.'),
+
+  // Credits (audiobook-credits-templates.prd.md, Phase 1)
+  'src/components/settings/CreditsPanel.tsx::creditsTemplates#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The template library load; an inline error banner otherwise.'),
+  'src/components/settings/CreditsPanel.tsx::creditsProjectValues#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The project values and manuscript-seeded suggestions load; an inline error banner otherwise.'),
+  'src/components/settings/CreditsPanel.tsx::creditsPreview#1': row('effect', 'instant', 'na', 'na', 'ui', 'inline', 'na', 'exempt', 'A background preview refresh on every body/value change; a failed render just falls back to "Nothing to preview yet." rather than a toast per keystroke, and the fields it was rendering from stay visible and correct.'),
+  'src/components/settings/CreditsPanel.tsx::saveCreditsTemplate#1': row('click', 'file-io', 'disabled', 'disabled', 'toast', 'toast', 'na', 'ok', 'Save template disables while busy (and its own pending look) and cannot fire twice; a failure is a toast and the draft stays editable to retry.'),
+  'src/components/settings/CreditsPanel.tsx::duplicateCreditsTemplate#1': row('click', 'file-io', 'disabled', 'disabled', 'toast', 'toast', 'na', 'ok', 'Duplicate disables while busy and cannot fire twice; a failure is a toast.'),
+  'src/components/settings/CreditsPanel.tsx::deleteCreditsTemplate#1': row('click', 'file-io', 'disabled', 'disabled', 'toast', 'toast', 'na', 'ok', 'Delete disables while busy and cannot fire twice; a failure is a toast, and the template stays in the library to retry.'),
+  'src/components/settings/CreditsPanel.tsx::saveCreditsProjectValues#1': row('input', 'file-io', 'disabled', 'disabled', 'ui', 'toast', 'na', 'ok', "Saves on every change to a project value field (never blocks on an unresolved token, C6); the field being saved disables until it ends, so a second edit cannot race the first, and a failure is a toast while the typed value stays on screen."),
 };
 
 /**

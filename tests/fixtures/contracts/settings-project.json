@@ -45,6 +45,16 @@
       "kind": "bool",
       "label": "Notify me when a long task finishes while I'm away",
       "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "narrator_name",
+      "kind": "text",
+      "label": "Narrator name (default for credits)",
+      "value": ""
     }
   ],
   "Manuscript": [

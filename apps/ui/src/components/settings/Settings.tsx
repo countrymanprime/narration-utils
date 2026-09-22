@@ -13,6 +13,7 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useTheme } from '../../theme/ThemeContext';
 import type { ThemePreference } from '../../theme/theme';
 import { AboutPanel } from './AboutPanel';
+import { CreditsPanel } from './CreditsPanel';
 import { ScopedSetting } from './ScopedSetting';
 import { UpdatesPanel } from './UpdatesPanel';
 import type { Notify } from '../primitives/Toast';
@@ -29,6 +30,8 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'Teleprompter', label: 'Teleprompter', tool: 'Teleprompter', scopes: ['global'] },
   { key: 'LocalAssets', label: 'Local assets', scopes: ['global'] },
   { key: 'ProjectData', label: 'Project data', scopes: ['project'] },
+  // Credit values are per-project (Open Question C2); the global narrator default lives in the General category.
+  { key: 'Credits', label: 'Credits', scopes: ['project'] },
   { key: 'About', label: 'About & updates', tool: 'Updates', scopes: ['global'] },
 ];
 const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
@@ -344,6 +347,8 @@ export function Settings({
                 </div>
               ) : category === 'LocalAssets' ? (
                 <LocalAssets notify={notify} />
+              ) : category === 'Credits' ? (
+                <CreditsPanel notify={notify} />
               ) : category === 'ProjectData' ? (
                 <div className="space-y-4 text-sm">
                   <div className="rounded-md p-3" style={{ background: 'var(--surface-2)' }}>

@@ -315,3 +315,44 @@ func TestContractDawLaunch(t *testing.T) {
 	}
 	contractfile.Check(t, "daw-launch", stable)
 }
+
+// CreditsTemplates' shipped defaults (audiobook-credits-templates.prd.md, Phase 1).
+func TestContractCreditsTemplates(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	host := NewHost()
+	templates, err := host.creditTemplates.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "credits-templates", templates)
+}
+
+// CreditsProjectValues' payload for a project with no credits saved yet, and CreditsPreview's Result for a template with
+// one unresolved token (Success Metrics: "unresolved tokens are reported by name").
+func TestContractCreditsProjectValuesAndPreview(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	folder := t.TempDir()
+	host := NewHost()
+	host.config.projectFolder = folder
+	host.config.projectName = "Alice"
+	host.settings = settings.New(layout.FindRoot("."), folder)
+	values, err := host.CreditsProjectValues()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(values), &decoded); err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "credits-project-values-empty", decoded)
+
+	preview, err := host.CreditsPreview("[Title], written by [Author], narrated by [Narrator].")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decodedPreview map[string]any
+	if err := json.Unmarshal([]byte(preview), &decodedPreview); err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "credits-preview-unresolved", decodedPreview)
+}
