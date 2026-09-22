@@ -255,7 +255,8 @@ export const STATE_CATALOG: StateEntry[] = [
   {
     page: 'teleprompter',
     state: 'setup-default',
-    description: 'Teleprompter, before a session - chapter, microphone and model choices with the chapter text below (no highlight yet)',
+    description:
+      'Teleprompter, before a session - chapter, microphone (picker of enumerated devices) and model choices with the chapter text below (no highlight yet)',
   },
   {
     page: 'teleprompter',

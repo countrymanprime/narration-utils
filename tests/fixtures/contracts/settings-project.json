@@ -68,6 +68,18 @@
       "value": ""
     }
   ],
+  "Teleprompter": [
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "input_device",
+      "kind": "text",
+      "label": "Microphone",
+      "value": ""
+    }
+  ],
   "TranscriptCompare": [
     {
       "choices": [

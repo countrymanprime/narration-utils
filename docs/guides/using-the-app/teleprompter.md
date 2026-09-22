@@ -6,10 +6,10 @@ The Teleprompter follows you as you read a chapter aloud: it listens through you
 with a local Whisper model and highlights the word you are on. It needs an [imported manuscript](home.md),
 and nothing you say is edited, saved, or sent anywhere.
 
-Choose the chapter, type the name of your microphone exactly as Windows lists it (Settings,
-System, Sound), and pick a model. Tiny is the fastest and keeps up on most computers; Small is
-more accurate but needs a faster one. The first time you start, the app asks before downloading
-the model. It remembers the microphone name for next time.
+Choose the chapter, pick your microphone from the list (Refresh if you just plugged one in), and
+pick a model. Tiny is the fastest and keeps up on most computers; Small is more accurate but needs
+a faster one. The first time you start, the app asks before downloading the model. Your microphone
+is remembered for next time; if it is not listed you can type its name instead.
 
 ![Teleprompter before a session, with the chapter, microphone and model choices above the chapter text](../../images/ui/teleprompter-setup.webp)
 

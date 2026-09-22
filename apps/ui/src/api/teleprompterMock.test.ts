@@ -3,6 +3,8 @@ import { createTeleprompterMock } from './teleprompterMock';
 import { tokenize } from '../components/teleprompter/readerModel';
 import type { ManuscriptChapter, ManuscriptParagraph, TeleprompterEvent, TeleprompterState } from '../types';
 
+const DEVICES = [{ name: 'Microphone Array (Realtek(R) Audio)' }, { name: 'Headset Microphone (USB Audio Device)' }];
+
 const chapters: ManuscriptChapter[] = [
   { id: 'chapter-1', title: 'CHAPTER I', subtitle: 'Down the Rabbit-Hole', index: 0, wordCount: 120, status: 'recording' },
 ];
@@ -19,6 +21,7 @@ function build(overrides: Partial<Parameters<typeof createTeleprompterMock>[0]> 
     chapters: () => chapters,
     paragraphs: () => paragraphs,
     assetRequired: () => undefined,
+    devices: DEVICES,
     ...overrides,
   });
 }
@@ -113,6 +116,11 @@ describe('teleprompter mock', () => {
     const [first, second] = await Promise.all([mock.teleprompterState(), mock.teleprompterState()]);
 
     expect([first.phase, second.phase]).toEqual(['running', 'running']);
+  });
+
+  it('reports the configured device list, and an empty one for the no-devices fallback', async () => {
+    await expect(build().teleprompterDevices()).resolves.toEqual({ devices: DEVICES, error: null });
+    await expect(build({ devices: [] }).teleprompterDevices()).resolves.toEqual({ devices: [], error: null });
   });
 
   it.each(['listening', 'waiting', 'done'] as const)('can boot mid-session in the %s state', async (seed) => {

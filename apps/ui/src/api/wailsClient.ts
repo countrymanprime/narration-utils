@@ -25,7 +25,7 @@ import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
-import { TELEPROMPTER_EVENT_TYPES, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
+import { TELEPROMPTER_EVENT_TYPES, teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
 import type { NarrationApi } from '../types';
 import * as host from '../../wailsjs/go/main/Host';
@@ -228,6 +228,7 @@ export const wailsClient: NarrationApi = {
   teleprompterStart: (options) => decode(startResultSchema, 'TeleprompterStart', host.TeleprompterStart(options)),
   teleprompterStop: () => decode(voidResult, 'TeleprompterStop', host.TeleprompterStop()),
   teleprompterState: () => decode(teleprompterStateSchema, 'TeleprompterState', host.TeleprompterState()),
+  teleprompterDevices: () => decode(teleprompterDevicesResultSchema, 'TeleprompterDevices', host.TeleprompterDevices()),
   subscribeTeleprompterEvent: subscribeTeleprompterEvents,
   subscribeTeleprompterState: (onState) => subscribeChecked('teleprompter:state', teleprompterStateSchema, onState),
   mediaUrl: (sourceFile) => `${mediaRoute}?path=${encodeURIComponent(sourceFile)}`,

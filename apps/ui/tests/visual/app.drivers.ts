@@ -673,7 +673,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await settlePage(page);
       await goToPage(page, 'Teleprompter');
       await page.getByText('Alice was beginning').first().waitFor();
-      await page.getByPlaceholder('Microphone (USB Audio Device)').fill('Studio microphone');
+      await page.getByLabel('Microphone').selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
       await page.getByRole('button', { name: 'Start reading' }).click();
       await page.getByRole('button', { name: 'Download model' }).click();
       await page.getByRole('dialog', { name: 'Downloading Whisper model' }).waitFor();

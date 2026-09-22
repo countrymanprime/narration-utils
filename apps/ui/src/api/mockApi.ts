@@ -18,6 +18,7 @@ import type {
   RecentProject,
   Scope,
   ScopedSettingField,
+  TeleprompterDevice,
   TracksDiscovery,
   TranscriptState,
   WorkJob,
@@ -35,6 +36,7 @@ import {
   WIRE_PARAGRAPHS,
   withFormatting,
   WIRE_READER_STATE,
+  WIRE_TELEPROMPTER_DEVICES,
   WIRE_TRACKS_PROJECT,
   WIRE_TRANSCRIPT,
   wireClone,
@@ -233,6 +235,8 @@ export function createMockApi(
     update?: MockUpdateSeed;
     /** How the next voice or model download behaves (see `MockAssetSeed`). */
     assets?: MockAssetSeed;
+    /** What `teleprompterDevices` reports; defaults to `WIRE_TELEPROMPTER_DEVICES`. An empty array exercises the picker's no-devices fallback. */
+    teleprompterDevices?: TeleprompterDevice[];
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -478,6 +482,7 @@ export function createMockApi(
             installPath: MOCK_ASSET_ROOT + '/whisper/faster-whisper/small',
           },
     seed: initial.teleprompter,
+    devices: initial.teleprompterDevices ?? WIRE_TELEPROMPTER_DEVICES,
   });
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));

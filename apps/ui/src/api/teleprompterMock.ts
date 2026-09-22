@@ -11,6 +11,7 @@ import type {
   ManuscriptChapter,
   ManuscriptParagraph,
   TeleprompterApi,
+  TeleprompterDevice,
   TeleprompterEvent,
   TeleprompterPosition,
   TeleprompterScript,
@@ -36,6 +37,8 @@ type Deps = {
   assetRequired: () => Extract<TeleprompterStartResult, { status: 'asset_required' }> | undefined;
   /** Boots already part-way through a chapter, as a session the host kept running. */
   seed?: TeleprompterSeed;
+  /** What `teleprompterDevices` reports (an empty list exercises the picker's no-devices fallback). */
+  devices: TeleprompterDevice[];
 };
 
 const idle: TeleprompterState = {
@@ -147,6 +150,7 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       if (deps.seed) await (seeding ??= seedState());
       return clone();
     },
+    teleprompterDevices: async () => ({ devices: deps.devices.map((device) => ({ ...device })), error: null }),
     subscribeTeleprompterEvent: (onEvent) => {
       eventSubscribers.add(onEvent);
       return () => eventSubscribers.delete(onEvent);

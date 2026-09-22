@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone, faStop } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
@@ -17,6 +17,7 @@ import { usePacedCursor } from './usePacedCursor';
 import type {
   ManuscriptChapter,
   ManuscriptParagraph,
+  TeleprompterDevice,
   TeleprompterEvent,
   TeleprompterPhase,
   TeleprompterStartResult,
@@ -31,7 +32,12 @@ const MODELS = [
   { value: 'tiny', label: 'Tiny', caption: 'Fastest - keeps up with your voice on most computers' },
   { value: 'small', label: 'Small', caption: 'More accurate - needs a faster computer to keep up' },
 ];
-const DEVICE_KEY = 'narration.teleprompter.device';
+// The pre-Phase-2 browser-storage device value: migrated once into the global settings file
+// (docs/prds/teleprompter-engines-and-input-devices.prd.md, "Where the device, engine and model choices are stored")
+// and then removed, so it is never read again once the settings value exists.
+const LEGACY_DEVICE_KEY = 'narration.teleprompter.device';
+const SETTINGS_TOOL = 'Teleprompter';
+const INPUT_DEVICE_KEY = 'input_device';
 const ACTIVE_PHASES: TeleprompterPhase[] = ['starting', 'running', 'stopping'];
 const IDLE_STATE: TeleprompterState = { phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null };
 
@@ -48,19 +54,19 @@ function sessionReducer(session: Session, action: SessionAction): Session {
   }
 }
 
-function readDevice(): string {
+function readLegacyDevice(): string {
   try {
-    return window.localStorage.getItem(DEVICE_KEY) ?? '';
+    return window.localStorage.getItem(LEGACY_DEVICE_KEY) ?? '';
   } catch {
     return '';
   }
 }
 
-function rememberDevice(value: string) {
+function clearLegacyDevice() {
   try {
-    window.localStorage.setItem(DEVICE_KEY, value);
+    window.localStorage.removeItem(LEGACY_DEVICE_KEY);
   } catch {
-    /* the field still works for this visit */
+    /* nothing to clean up if storage is unavailable */
   }
 }
 
@@ -80,7 +86,10 @@ export function TeleprompterPage() {
   const api = useApi();
   const [chapters, setChapters] = useState<ManuscriptChapter[]>();
   const [chosenChapter, setChosenChapter] = useState('');
-  const [device, setDevice] = useState(readDevice);
+  const [device, setDevice] = useState('');
+  const [devices, setDevices] = useState<TeleprompterDevice[]>([]);
+  const [devicesError, setDevicesError] = useState<string | null>(null);
+  const [devicesLoading, setDevicesLoading] = useState(false);
   const [model, setModel] = useState('tiny');
   const [host, setHost] = useState<TeleprompterState>(IDLE_STATE);
   const [session, dispatch] = useReducer(sessionReducer, initialSession);
@@ -123,6 +132,48 @@ export function TeleprompterPage() {
     return () => {
       stopEvents();
       stopState();
+    };
+  }, [api]);
+
+  const loadDevices = useCallback(() => {
+    setDevicesLoading(true);
+    void api
+      .teleprompterDevices()
+      .then((result) => {
+        setDevices(result.devices);
+        setDevicesError(result.error);
+      })
+      .catch((reason) => setDevicesError(errorText(reason)))
+      .finally(() => setDevicesLoading(false));
+  }, [api]);
+
+  useEffect(() => {
+    loadDevices();
+  }, [loadDevices]);
+
+  // Loads the persisted device once (global settings, D-"Where the device, engine and model choices are stored"), and
+  // migrates the pre-Phase-2 browser-storage value into it exactly once: only when the settings value has never been
+  // set, so a narrator who has already picked a device from the new picker is never overwritten by a stale browser value.
+  useEffect(() => {
+    let live = true;
+    void api
+      .settingsForScope('global')
+      .then((settings) => {
+        if (!live) return;
+        const field = settings[SETTINGS_TOOL]?.find((item) => item.key === INPUT_DEVICE_KEY);
+        if (field?.isSet) {
+          setDevice(field.value);
+          return;
+        }
+        const legacy = readLegacyDevice();
+        if (!legacy) return;
+        setDevice(legacy);
+        clearLegacyDevice();
+        void api.saveSettings(SETTINGS_TOOL, 'global', { [INPUT_DEVICE_KEY]: legacy }).catch(() => {});
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
     };
   }, [api]);
 
@@ -185,7 +236,7 @@ export function TeleprompterPage() {
   };
   const changeDevice = (value: string) => {
     setDevice(value);
-    rememberDevice(value);
+    void api.saveSettings(SETTINGS_TOOL, 'global', { [INPUT_DEVICE_KEY]: value }).catch((reason) => setError(errorText(reason)));
   };
 
   const status = statusText(host, session);
@@ -218,7 +269,14 @@ export function TeleprompterPage() {
                     options={chapters.map((item) => ({ value: item.id, label: item.subtitle ? `${item.title}: ${item.subtitle}` : item.title }))}
                   />
                 </div>
-                <MicrophoneField value={device} onChange={changeDevice} />
+                <MicrophoneField
+                  value={device}
+                  onChange={changeDevice}
+                  devices={devices}
+                  error={devicesError}
+                  onRefresh={loadDevices}
+                  refreshing={devicesLoading}
+                />
                 <div className="md:col-span-2">
                   <span className={LABEL_CLASS}>Whisper model</span>
                   <ToggleGroup
