@@ -39,6 +39,14 @@ output.push(
   'Once installed, the app updates itself from these releases after you click **Install and restart** (Settings > About & updates). `narration-utils-windows-x64.zip` is that update package, not something to run by hand.',
   '',
 );
+// The program is AGPL-3.0-or-later (docs/adr/0039) and bundles GPL-family components, so the licences and the source offer are their own asset
+// (scripts/release/assets.mjs, scripts/licenses/notices.py).
+output.push(
+  '## Licences and source',
+  '',
+  'Narration Utils is free software under the AGPL-3.0-or-later licence. `THIRD-PARTY-NOTICES.txt` on this release lists every third-party component in the program with its licence and licence text, includes the full AGPL text, and says where the complete source of this release is: this repository, at the tag this release was built from.',
+  '',
+);
 // Every asset is attested by the release workflow (docs/adr/0071); say how a narrator checks one.
 const repository = process.env.GITHUB_REPOSITORY || '<owner>/<repo>';
 output.push(

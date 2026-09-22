@@ -20,6 +20,11 @@ const MAC_APP_BUNDLE = 'Narration Utils.app';
 // two equal). The name carries no version, like every asset (docs/adr/0073).
 export const WINDOWS_INSTALLER = 'narration-utils-windows-x64-setup.exe';
 
+// The third-party licences and the source offer of the release (scripts/licenses/notices.py; docs/operations/ci-and-releases.md,
+// "Third-party notices"). It is its own asset, not a second file in the update zip: the in-app updater refuses a zip that holds
+// anything but narration-utils.exe (docs/adr/0074), and a client that predates a two-file zip would refuse every update to it.
+export const NOTICES_FILE = 'THIRD-PARTY-NOTICES.txt';
+
 // The workflows that build and attest an asset (docs/adr/0071). Windows is built and attested by the release job of
 // prerelease.yml; the others by the reusable _attach-platform.yml, which is the signer named in the certificate even
 // though build-macos.yml or build-linux.yml calls it. Releases are built from main only.
@@ -29,6 +34,13 @@ const SOURCE_REF = 'refs/heads/main';
 
 function requireInBin(binDir, name) {
   if (!existsSync(join(binDir, name))) throw new Error(`Expected ${name} in ${binDir}; did the Wails build run?`);
+}
+
+// The notices are written after the Wails build (they read the frozen sidecars and the build's Go modules), into the same folder.
+function requireNotices(binDir, name = NOTICES_FILE) {
+  if (!existsSync(join(binDir, name))) {
+    throw new Error(`Expected ${name} in ${binDir}. Write it with scripts/licenses/notices.py --out ${join(binDir, name)} after the build and before packaging.`);
+  }
 }
 
 // `wails build -nsis` only warns, and still exits 0, when makensis is missing, so a build can succeed without its setup program.
@@ -48,6 +60,7 @@ export const PLATFORMS = {
   'windows-x64': {
     extension: '.zip',
     installer: WINDOWS_INSTALLER,
+    notices: NOTICES_FILE,
     required: true,
     signerWorkflow: PRERELEASE_WORKFLOW,
     archive({ binDir, outDir, target }) {
@@ -91,10 +104,11 @@ function platformEntry(platform) {
 export const assetName = (platform) => `narration-utils-${platform}${platformEntry(platform).extension}`;
 export const checksumName = (platform) => `${assetName(platform)}.sha256`;
 export const installerName = (platform) => platformEntry(platform).installer;
+export const noticesName = (platform) => platformEntry(platform).notices;
 export const sha256File = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
 
-// Every downloadable of a platform: the archive and, when there is one, the setup program. Each has a .sha256 beside it.
-const platformAssets = (platform) => [assetName(platform), installerName(platform)].filter(Boolean);
+// Every downloadable of a platform: the archive and, when there is one, the setup program and the notices. Each has a .sha256 beside it.
+const platformAssets = (platform) => [assetName(platform), installerName(platform), noticesName(platform)].filter(Boolean);
 
 // Every file a platform puts on a release, each asset followed by its checksum.
 export const releaseFiles = (platform) => platformAssets(platform).flatMap((name) => [name, `${name}.sha256`]);
@@ -102,12 +116,13 @@ export const releaseFiles = (platform) => platformAssets(platform).flatMap((name
 const writeChecksum = (out, name) => writeFileSync(join(out, `${name}.sha256`), `${sha256File(join(out, name))}  ${name}\n`);
 
 export function packageAsset({ platform, binDir, outDir }) {
-  const { archive, installer } = platformEntry(platform);
+  const { archive, installer, notices } = platformEntry(platform);
   const bin = resolve(binDir);
   const out = resolve(outDir);
   const target = join(out, assetName(platform));
   // Before anything is written or zipped: a build without its setup program is not a release.
   if (installer) requireInstaller(bin, installer);
+  if (notices) requireNotices(bin, notices);
   mkdirSync(out, { recursive: true });
   rmSync(target, { force: true });
   archive({ binDir: bin, outDir: out, target });
@@ -115,6 +130,10 @@ export function packageAsset({ platform, binDir, outDir }) {
   if (installer) {
     copyFileSync(join(bin, installer), join(out, installer));
     writeChecksum(out, installer);
+  }
+  if (notices) {
+    copyFileSync(join(bin, notices), join(out, notices));
+    writeChecksum(out, notices);
   }
   return target;
 }

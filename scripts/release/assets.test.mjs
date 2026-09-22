@@ -7,12 +7,14 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
+  NOTICES_FILE,
   PLATFORMS,
   WINDOWS_INSTALLER,
   assetName,
   attestationArgs,
   checksumName,
   installerName,
+  noticesName,
   packageAsset,
   releaseFiles,
   sha256File,
@@ -57,8 +59,17 @@ test('windows ships a zip for the updater and an unversioned setup program for a
     'narration-utils-windows-x64.zip.sha256',
     'narration-utils-windows-x64-setup.exe',
     'narration-utils-windows-x64-setup.exe.sha256',
+    'THIRD-PARTY-NOTICES.txt',
+    'THIRD-PARTY-NOTICES.txt.sha256',
   ]);
   assert.deepEqual(releaseFiles('linux-x64'), ['narration-utils-linux-x64.tar.gz', 'narration-utils-linux-x64.tar.gz.sha256']);
+});
+
+test('the third-party notices are a Windows release asset of their own, never a second file in the update zip', () => {
+  assert.equal(NOTICES_FILE, 'THIRD-PARTY-NOTICES.txt');
+  assert.equal(noticesName('windows-x64'), NOTICES_FILE);
+  assert.equal(noticesName('macos-arm64'), undefined);
+  assert.equal(noticesName('linux-x64'), undefined);
 });
 
 test('the updater still finds its zip: the setup program does not change what assetName returns', () => {
@@ -66,7 +77,7 @@ test('the updater still finds its zip: the setup program does not change what as
 });
 
 test('windows packaging fails when the exe is missing', () => {
-  const bin = stageWailsOutput({ [WINDOWS_INSTALLER]: 'setup bytes' });
+  const bin = stageWailsOutput({ [WINDOWS_INSTALLER]: 'setup bytes', [NOTICES_FILE]: 'notices' });
 
   assert.throws(() => packageAsset({ platform: 'windows-x64', binDir: bin, outDir: scratch('out') }), /narration-utils\.exe/);
 });
@@ -81,8 +92,28 @@ test('windows packaging fails, naming the setup program and makensis, when only 
   assert.deepEqual(readdirSync(out), []);
 });
 
-test('windows packaging copies the setup program under its release name and checksums it', { skip: process.platform !== 'win32' }, () => {
+// A build that could not write the notices (the generator refuses to guess a licence) must never become a release, and packaging must say
+// so before it zips 400 MB.
+test('windows packaging fails, naming the generator, when the notices were not written', () => {
   const bin = stageWailsOutput({ 'narration-utils.exe': 'raw exe', [WINDOWS_INSTALLER]: 'setup bytes' });
+  const out = scratch('out');
+
+  assert.throws(() => packageAsset({ platform: 'windows-x64', binDir: bin, outDir: out }), /THIRD-PARTY-NOTICES\.txt.*scripts\/licenses\/notices\.py/s);
+  assert.deepEqual(readdirSync(out), []);
+});
+
+test('windows packaging copies the notices beside the zip and the setup program and checksums them', { skip: process.platform !== 'win32' }, () => {
+  const bin = stageWailsOutput({ 'narration-utils.exe': 'raw exe', [WINDOWS_INSTALLER]: 'setup bytes', [NOTICES_FILE]: 'the notices' });
+  const out = scratch('out');
+
+  packageAsset({ platform: 'windows-x64', binDir: bin, outDir: out });
+
+  assert.equal(readFileSync(join(out, NOTICES_FILE), 'utf8'), 'the notices');
+  assert.equal(readFileSync(join(out, `${NOTICES_FILE}.sha256`), 'utf8'), `${sha256File(join(out, NOTICES_FILE))}  ${NOTICES_FILE}\n`);
+});
+
+test('windows packaging copies the setup program under its release name and checksums it', { skip: process.platform !== 'win32' }, () => {
+  const bin = stageWailsOutput({ 'narration-utils.exe': 'raw exe', [WINDOWS_INSTALLER]: 'setup bytes', [NOTICES_FILE]: 'the notices' });
   const out = scratch('out');
 
   packageAsset({ platform: 'windows-x64', binDir: bin, outDir: out });
@@ -93,7 +124,7 @@ test('windows packaging copies the setup program under its release name and chec
 });
 
 test('windows packaging zips the exe under its own name', { skip: process.platform !== 'win32' }, () => {
-  const bin = stageWailsOutput({ 'narration-utils.exe': 'raw exe', [WINDOWS_INSTALLER]: 'setup bytes' });
+  const bin = stageWailsOutput({ 'narration-utils.exe': 'raw exe', [WINDOWS_INSTALLER]: 'setup bytes', [NOTICES_FILE]: 'the notices' });
   const out = scratch('out');
 
   const asset = packageAsset({ platform: 'windows-x64', binDir: bin, outDir: out });
@@ -102,6 +133,7 @@ test('windows packaging zips the exe under its own name', { skip: process.platfo
   // bsdtar (System32) lists zips; Git Bash's GNU tar, which may come first on PATH, cannot.
   const tar = join(process.env.SystemRoot, 'System32', 'tar.exe');
   const listing = spawnSync(tar, ['-tf', basename(asset)], { cwd: out, encoding: 'utf8' });
+  // One file, on purpose: the in-app updater refuses a zip that holds anything else (docs/adr/0074), and the notices are a separate asset.
   assert.equal(listing.stdout.trim(), 'narration-utils.exe');
 });
 
@@ -147,7 +179,7 @@ test('macos packaging zips the app bundle', { skip: !hasTool('zip') || !hasTool(
 function stageRelease(platforms) {
   const dir = scratch('release');
   for (const platform of platforms) {
-    for (const name of [assetName(platform), installerName(platform)].filter(Boolean)) {
+    for (const name of [assetName(platform), installerName(platform), noticesName(platform)].filter(Boolean)) {
       const asset = join(dir, name);
       writeFileSync(asset, `bytes of ${name}`);
       writeFileSync(join(dir, `${name}.sha256`), `${sha256File(asset)}  ${name}\n`);
@@ -181,7 +213,39 @@ test('verifyAssets reports a missing Windows asset and checksum', () => {
     'Missing narration-utils-windows-x64.zip.sha256',
     'Missing narration-utils-windows-x64-setup.exe',
     'Missing narration-utils-windows-x64-setup.exe.sha256',
+    'Missing THIRD-PARTY-NOTICES.txt',
+    'Missing THIRD-PARTY-NOTICES.txt.sha256',
   ]);
+});
+
+// The licences and the source offer are part of the release: a build without them, or with a file that was changed after it was checksummed,
+// must not be promoted.
+test('verifyAssets reports a Windows release that has no third-party notices', () => {
+  const dir = stageRelease(['windows-x64']);
+  rmSync(join(dir, NOTICES_FILE));
+  rmSync(join(dir, `${NOTICES_FILE}.sha256`));
+
+  assert.deepEqual(verifyAssets(dir), ['Missing THIRD-PARTY-NOTICES.txt', 'Missing THIRD-PARTY-NOTICES.txt.sha256']);
+});
+
+test('verifyAssets reports notices that no longer match their checksum', () => {
+  const dir = stageRelease(['windows-x64']);
+  writeFileSync(join(dir, NOTICES_FILE), 'tampered');
+
+  const problems = verifyAssets(dir);
+
+  assert.equal(problems.length, 1);
+  assert.match(problems[0], /THIRD-PARTY-NOTICES\.txt.*checksum/);
+});
+
+test('verifyAttestations checks the notices like every other file of the release', () => {
+  const dir = stageRelease(['windows-x64']);
+  const asked = [];
+
+  verifyAttestations(dir, { repository: 'o/r', run: (args) => asked.push(args[2]) });
+
+  assert.ok(asked.includes(join(dir, NOTICES_FILE)), 'the notices file was verified');
+  assert.ok(asked.includes(join(dir, `${NOTICES_FILE}.sha256`)), 'and its checksum');
 });
 
 // A build that lost its installer (makensis missing, the Wails step skipped) must never become a release.
@@ -282,7 +346,7 @@ test('macOS and Linux are signed by the reusable attach workflow, not by the wor
   }
 });
 
-test('verifyAttestations checks every file of every platform that is present, the setup program included', () => {
+test('verifyAttestations checks every file of every platform that is present, the setup program and the notices included', () => {
   const dir = stageRelease(['windows-x64', 'linux-x64']);
   const { calls, run } = fakeGh();
 
@@ -295,6 +359,8 @@ test('verifyAttestations checks every file of every platform that is present, th
       'narration-utils-windows-x64.zip.sha256',
       'narration-utils-windows-x64-setup.exe',
       'narration-utils-windows-x64-setup.exe.sha256',
+      'THIRD-PARTY-NOTICES.txt',
+      'THIRD-PARTY-NOTICES.txt.sha256',
       'narration-utils-linux-x64.tar.gz',
       'narration-utils-linux-x64.tar.gz.sha256',
     ],
@@ -306,7 +372,7 @@ test('verifyAttestations does not ask about a platform that was never shipped', 
 
   verifyAttestations(stageRelease(['windows-x64']), { repository: REPOSITORY, run });
 
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 6);
 });
 
 test('verifyAttestations names every file that has no valid attestation and why', () => {
@@ -328,7 +394,7 @@ test('verifyAttestations keeps going after a failure so every problem is reporte
   });
 
   assert.equal(verifyAttestations(dir, { repository: REPOSITORY, run }).length, 2);
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 6);
 });
 
 test('verifyAttestations reports a missing gh instead of passing', () => {
@@ -339,7 +405,7 @@ test('verifyAttestations reports a missing gh instead of passing', () => {
 
   const problems = verifyAttestations(dir, { repository: REPOSITORY, run });
 
-  assert.equal(problems.length, 4);
+  assert.equal(problems.length, 6);
   assert.match(problems[0], /ENOENT/);
 });
 
