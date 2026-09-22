@@ -1,19 +1,32 @@
+import type { KeyboardEvent } from 'react';
 import { SearchField } from '../primitives/SearchField';
 
 export function SearchBar({
   query,
   onQueryChange,
   autoFocus = false,
+  onEnter,
 }: {
   query: string;
   onQueryChange: (value: string) => void;
   // Focuses the input as soon as the Chapters & Search panel opens (R8), so typing can start
   // immediately without a click.
   autoFocus?: boolean;
+  // Enter fires the search immediately, bypassing the debounce (R1).
+  onEnter?: () => void;
 }) {
   return (
     <div>
-      <SearchField label="Search manuscript" value={query} onChange={onQueryChange} placeholder="Search manuscript…" autoFocus={autoFocus} />
+      <SearchField
+        label="Search manuscript"
+        value={query}
+        onChange={onQueryChange}
+        placeholder="Search manuscript…"
+        autoFocus={autoFocus}
+        onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+          if (event.key === 'Enter') onEnter?.();
+        }}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   categoryLabel,
   categoryValue,
   chapterLineNumber,
+  chapterTextMatches,
   estimateFinishedHours,
   findAliasMatches,
   highlightEntitiesInText,
@@ -175,6 +176,32 @@ describe('Manuscript search/bookmark line numbers (R5)', () => {
 
   it('prefers paragraphIds over a stale loaded map', () => {
     expect(chapterLineNumber(chapter, 11, new Map([[11, 99]]))).toBe(2);
+  });
+});
+
+describe('Manuscript chapter title/subtitle subset (R2)', () => {
+  const chapters = [
+    { id: 'c1', title: 'Down the Rabbit-Hole', subtitle: undefined },
+    { id: 'c2', title: 'The Pool of Tears', subtitle: 'A soggy start' },
+    { id: 'c3', title: 'Advice from a Caterpillar', subtitle: undefined },
+  ];
+
+  it('matches a chapter whose title contains the query, case-insensitively', () => {
+    expect(chapterTextMatches(chapters, 'rabbit')).toEqual(new Set(['c1']));
+    expect(chapterTextMatches(chapters, 'POOL')).toEqual(new Set(['c2']));
+  });
+
+  it('matches a chapter whose subtitle contains the query', () => {
+    expect(chapterTextMatches(chapters, 'soggy')).toEqual(new Set(['c2']));
+  });
+
+  it('returns nothing for a blank query', () => {
+    expect(chapterTextMatches(chapters, '')).toEqual(new Set());
+    expect(chapterTextMatches(chapters, '   ')).toEqual(new Set());
+  });
+
+  it('returns nothing when no title or subtitle matches', () => {
+    expect(chapterTextMatches(chapters, 'nonexistent')).toEqual(new Set());
   });
 });
 

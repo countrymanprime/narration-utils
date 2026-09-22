@@ -9,6 +9,8 @@ export function ChapterNav({
   bookmarks,
   searchQuery,
   searchResults,
+  titleMatches = new Set(),
+  pending = false,
   lineNumbers,
   select,
   removeBookmark,
@@ -18,6 +20,11 @@ export function ChapterNav({
   bookmarks: ReaderBookmark[];
   searchQuery: string;
   searchResults: SearchHit[];
+  // Chapters whose title or subtitle matched, filtered client-side and never debounced (R2) - shown
+  // right away, before any line result has had a chance to arrive.
+  titleMatches?: Set<string>;
+  // A query has been typed but the debounced line search has not settled for it yet (R1).
+  pending?: boolean;
   lineNumbers: Map<number, number>;
   select: (id: string, paragraph?: number) => void;
   removeBookmark: (id: string) => void;
@@ -26,14 +33,19 @@ export function ChapterNav({
   const matchesFor = (chapter: ManuscriptChapter) =>
     searchResults.filter((hit) => hit.chapterId === chapter.id || (!hit.chapterId && hit.chapter === chapter.title));
   const listableChapters = chapters.filter(isListableChapter);
-  const visibleChapters = searching ? listableChapters.filter((chapter) => matchesFor(chapter).length > 0) : listableChapters;
+  const visibleChapters = searching ? listableChapters.filter((chapter) => titleMatches.has(chapter.id) || matchesFor(chapter).length > 0) : listableChapters;
   // A hit in a hidden (reference) chapter never surfaces a row, so "No matches" reads off what is
   // actually shown, not the raw result count - otherwise a query that only hits Contents or
   // Characters left the panel blank with no explanation (see ADR 0005 and the Evidence section).
   const visibleHitCount = searching ? visibleChapters.reduce((total, chapter) => total + matchesFor(chapter).length, 0) : 0;
   return (
     <div className="space-y-1">
-      {searching && visibleHitCount === 0 && (
+      {searching && pending && (
+        <div className="p-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+          Searching…
+        </div>
+      )}
+      {searching && !pending && visibleHitCount === 0 && titleMatches.size === 0 && (
         <div className="p-2 text-xs" style={{ color: 'var(--text-muted)' }}>
           No matches
         </div>
