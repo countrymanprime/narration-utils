@@ -1,0 +1,11 @@
+{
+  "licenses": {
+    "pyinstaller": "GPL-2.0-or-later WITH Bootloader-exception"
+  },
+  "noText": {
+    "ctranslate2": "The wheel ships no licence file; its metadata declares MIT. The text is not in the notices yet: issue 246.",
+    "tokenizers": "The wheel ships no licence file; its classifier declares Apache-2.0. The text is not in the notices yet: issue 246.",
+    "@rolldown/binding-win32-x64-msvc": "A build tool binary reached through the UI's production dependency closure, not part of the built UI; its package has no licence file. Issue 246."
+  },
+  "ignoredModules": []
+}

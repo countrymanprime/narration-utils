@@ -188,7 +188,7 @@ Phases 1, 3, 4, 5, 7 and 8. Phase 2 follows once the baseline is clean; 9 and 10
 | 4 | Container view | Flowchart in `codebase-map.md`, caption and conventions | complete | 1, 3, 7, 8 | - | - |
 | 5 | Sequence diagrams | First-use download, live teleprompter, REAPER bridge, and (D14) the in-app update, each in its owning doc | complete | 1, 3, 7, 8 | 4 | - |
 | 6 | Diagram parse check (Could) | Parser or mermaid-cli check per Open Question 9 | complete | 7-9 | 4, 5 | - |
-| 7 | Notices tooling | Spike then `scripts/licenses/` and generated report for the Windows package | pending | 1, 3-6, 8 | - | - |
+| 7 | Notices tooling | Spike then `scripts/licenses/` and generated report for the Windows package | complete | 1, 3-6, 8 | - | - |
 | 8 | Model provenance and licence answers | Generated `model-provenance.md`, GPL and unclear-licence questions put to the owner | pending | 1, 3-7 | - | - |
 | 9 | Dependency-review `allow-licenses` | List, scopes, docs | pending | 2, 3-6, 10 | 8 | - |
 | 10 | Ship notices | Release asset and zip copy, `assets.mjs` and `verify-installable.mjs`, release-note line | pending | 2, 3-6, 9 | 7, 8 | - |

@@ -14,7 +14,7 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node scripts/quality.mjs pytest {projectRoot}/release/tests"
+        "command": "node scripts/quality.mjs pytest {projectRoot}/release/tests {projectRoot}/licenses/tests"
       }
     },
     "test-node": {
