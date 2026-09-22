@@ -93,6 +93,8 @@ export function ProjectSwitch(arg1:string,arg2:string):Promise<string>;
 
 export function Ready():Promise<Record<string, any>>;
 
+export function SystemNotify(arg1:string,arg2:string,arg3:string):Promise<string>;
+
 export function SystemReportDiagnostic(arg1:string,arg2:string):Promise<string>;
 
 export function SystemSaveSettings(arg1:string,arg2:string,arg3:Record<string, any>):Promise<string>;

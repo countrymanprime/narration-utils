@@ -186,6 +186,10 @@ export function Ready() {
   return window['go']['main']['Host']['Ready']();
 }
 
+export function SystemNotify(arg1, arg2, arg3) {
+  return window['go']['main']['Host']['SystemNotify'](arg1, arg2, arg3);
+}
+
 export function SystemReportDiagnostic(arg1, arg2) {
   return window['go']['main']['Host']['SystemReportDiagnostic'](arg1, arg2);
 }
