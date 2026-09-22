@@ -56,11 +56,14 @@ catalog, integrity, UX, migration, and acceptance criteria and the
 
 ### Deferred work
 
-- Audacity adapters after the shared contract and REAPER workflow are proven.
 - macOS/Linux installers and adapters.
 - Languages beyond US English.
 - Team collaboration, cloud analysis, or shared project services.
 - Manuscript Teleprompter beyond its first cut (shipped: local microphone listening with a Whisper model and word highlighting): reviewable suspected word-level substitutions, skips, or misreads, other engines and a microphone picker; it never edits text or audio automatically. See the [Manuscript Teleprompter brief](architecture/manuscript-teleprompter.md) for the resolved design questions.
+
+## Audacity adapter
+
+Unscheduled on this roadmap, like the chapter stage recommendations set (owner decision D9 of the [implementation plan](prds/implementation-plan.md)), but no longer deferred behind the REAPER workflow (owner decision D23): it runs as its own parallel stack, spike-gated on its own scripting surface (`mod-script-pipe`) rather than on any REAPER milestone. See the [Audacity integration PRD](prds/audacity-integration.prd.md) and the [DAW integration boundary](architecture/daw-integration.md#audacity-boundary).
 
 ## Dependency rules
 

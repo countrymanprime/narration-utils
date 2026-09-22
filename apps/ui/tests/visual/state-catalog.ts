@@ -83,6 +83,18 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'manuscript', state: 'reader-text-medium', description: 'Manuscript, medium text size' },
   { page: 'manuscript', state: 'reader-text-large', description: 'Manuscript, large text size' },
   { page: 'manuscript', state: 'chapters-overlay-open', description: 'Manuscript, chapters & search overlay open' },
+  {
+    page: 'manuscript',
+    state: 'chapters-overlay-searching',
+    description:
+      'Manuscript, a query typed into Chapters & Search before the debounce settles - matching chapter titles show at once and a "Searching…" hint replaces "No matches" (R1, R2)',
+  },
+  {
+    page: 'manuscript',
+    state: 'chapters-overlay-search',
+    description:
+      'Manuscript, settled search results in Chapters & Search - a line hit reads "[icon] Line n: ...windowed text..." with the matched term highlighted (R3, R4)',
+  },
   { page: 'manuscript', state: 'detail-sidebar-note', description: 'Manuscript, detail sidebar open on a note' },
   { page: 'manuscript', state: 'detail-sidebar-entity', description: 'Manuscript, detail sidebar open on an entity' },
   { page: 'manuscript', state: 'selection-popup', description: 'Manuscript, text-selection action popup open' },
