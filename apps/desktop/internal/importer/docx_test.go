@@ -370,3 +370,40 @@ func TestNestedCastSubheadingDoesNotRebaselineTheCharactersScopeLevel(t *testing
 		t.Fatalf("Chapter One content kind = %q, want narration", got)
 	}
 }
+
+// TestPerCharacterHeadingBodyBecomesDescriptionThenProperties covers import-structure-toc-and-characters Phase 3 (S4): a
+// per-character heading's own body paragraphs are scanned the same way a flat cast list is - the first bare-text paragraph
+// becomes the description, and a later "Label: value" paragraph becomes a property - instead of the old uncapped-first-paragraph
+// description that stranded every labelled line after it in a reference chapter nothing structured read.
+func TestPerCharacterHeadingBodyBecomesDescriptionThenProperties(t *testing.T) {
+	draft := importDocx(t, wordParagraph("Heading1", wordRun("Characters"))+
+		wordParagraph("Heading2", wordRun("Wren"))+
+		wordParagraph("", wordRun("A spy for the crown."))+
+		wordParagraph("", wordRun("Codename: The Sparrow")))
+	wren := candidateNamed(t, draft, "Wren")
+	if wren.Description != "A spy for the crown." {
+		t.Fatalf("description = %q", wren.Description)
+	}
+	if len(wren.Properties) != 1 || wren.Properties[0] != (Property{Key: "Codename", Value: "The Sparrow"}) {
+		t.Fatalf("properties = %#v", wren.Properties)
+	}
+}
+
+// TestAFlatCastHeadingFlushesACandidateLeftOpenByThePriorPerCharacterHeading covers a review finding: a per-character heading
+// (Wren) whose own body never closes it (no trailing narrative marker) leaves a candidate open; the next group being a *flat*
+// characters-heading block ("Cast", itself matching isCharacterHeading) must still flush it before scanning its own lines, or
+// the flat block's first labelled line silently attaches to the wrong, already-closed character.
+func TestAFlatCastHeadingFlushesACandidateLeftOpenByThePriorPerCharacterHeading(t *testing.T) {
+	draft := importDocx(t, wordParagraph("Heading1", wordRun("Characters"))+
+		wordParagraph("Heading2", wordRun("Wren"))+
+		wordParagraph("", wordRun("A spy for the crown."))+
+		wordParagraph("Heading2", wordRun("Cast"))+
+		wordParagraph("", wordRun("Motto: For king and crown")))
+	wren := candidateNamed(t, draft, "Wren")
+	if len(wren.Properties) != 0 {
+		t.Fatalf("Motto must not attach to Wren, a different (flat) group; Wren properties = %#v", wren.Properties)
+	}
+	if hasCandidate(draft, "Motto") {
+		t.Fatalf("a stray label with no candidate open and the legacy form already used must not fabricate one, got %#v", candidateNames(draft))
+	}
+}
