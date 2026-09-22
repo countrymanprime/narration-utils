@@ -116,12 +116,12 @@ We believe a Contents section that never reaches the recording, reader or Story 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Stop the leaks | `characterListActive` scope, TOC layouts, fixtures and tests, stale fixture docs | complete | - | - | - |
-| 2 | Contents and Characters in the reader | Decide S1/S2, ADR, coordinate the reader filter | pending | - | 1; reader PRD Phase 5 | - |
+| 2 | Contents and Characters in the reader | Decide S1/S2, ADR, coordinate the reader filter | partial | - | 1; reader PRD Phase 5 | - |
 | 3 | Structured character properties | `Properties` on candidates, structural label rule, `create --properties`, single call | pending | - | 1; Story Bible entries PRD Phase 1 | - |
 | 4 | TOC as the chapter list | docx TOC reader and matcher, fallback, Markdown links, notices | pending | - | 1 | - |
 
 **Phase 1 - Stop the leaks.** Goal: no TOC-derived suggestions or narration leakage. Scope as above. Success: table tests for each layout; `importer_test.go` fixture results unchanged.
-**Phase 2 - Contents and Characters in the reader.** Goal: neither appears as a readable chapter. Scope: the decision, ADR, and the reader PRD's helper. Success: reader and totals verified on a fixture with a TOC and cast.
+**Phase 2 - Contents and Characters in the reader.** Goal: neither appears as a readable chapter. Scope: the decision, ADR, and the reader PRD's helper. Success: reader and totals verified on a fixture with a TOC and cast. **Status: partial.** The decision (S1/S2) is settled and recorded in [ADR 0088](../adr/0088-contents-and-characters-stay-reference-hidden-by-the-reader.md); the storage-side classification was already correct (pinned by a new regression test) and needed no code change. The read-through reader view (`Manuscript.tsx`) still shows both as ordinary chapters: that half is [manuscript-reader-search-and-controls.prd.md](manuscript-reader-search-and-controls.prd.md) Phase 5, which had not landed when this stack ran (see `implementation-plan.md`, stack S19b of the train).
 **Phase 3 - Structured character properties.** Goal: labelled facts survive as data. Scope: schema agreed with the Story Bible PRD, parser, sidecar CLI, wire. Success: a Codename/Abilities/Dossier block produces one candidate with three properties.
 **Phase 4 - TOC as the chapter list.** Goal: the manuscript's own list of chapters. Scope: docx first. Success: proposed chapters equal TOC entries on a TOC fixture; fallback and notice tested.
 
