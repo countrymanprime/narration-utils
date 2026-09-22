@@ -6,6 +6,7 @@ import { AppShell } from './components/layout/AppShell';
 import { StartupScreen, type StartupState } from './components/layout/StartupScreen';
 import { ToastRegion } from './components/primitives/Toast';
 import { useToasts } from './hooks/useToasts';
+import { usePendingAction } from './hooks/usePendingAction';
 import { toastForJobEnd } from './jobEnded';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
 import { Home } from './components/home/Home';
@@ -64,6 +65,29 @@ function AppRoutes() {
       setNotice(describeApiError(error), 'error');
     }
   }, [api, setNotice]);
+
+  // The one shared "link a REAPER project file" action behind the header pill, the Tracks page and Settings' DAW
+  // category (PRD project-workspace-and-daw-link.prd.md, Open Question W19). Cancelling the dialog does nothing; a
+  // folder mismatch is refused with its own message rather than silently re-pointing the project (W15). One
+  // `usePendingAction` ref guards all three call sites at once (ADR 0075), since the host's file dialog is native
+  // and modal - a second press from any of them while it is open is refused, not just the button that shows it.
+  const dawLink = usePendingAction();
+  const linkDawFile = useCallback(async () => {
+    await dawLink.run('link-daw', async () => {
+      try {
+        const result = await api.linkDawFile();
+        if (!result.selected) return;
+        if (!result.linked) {
+          setNotice(result.message || 'That REAPER project file could not be linked.', 'error');
+          return;
+        }
+        await refreshBootstrap();
+        setNotice('REAPER project linked.');
+      } catch (error) {
+        setNotice(describeApiError(error), 'error');
+      }
+    });
+  }, [api, dawLink, refreshBootstrap, setNotice]);
 
   // Startup verifies the host and then loads its bootstrap payload.
   useEffect(() => {
@@ -238,8 +262,10 @@ function AppRoutes() {
           pathname={location.pathname}
           navigate={guardedNavigate}
           projectName={data.projectName}
-          daw={data.daw}
           hasManuscript={Boolean(data.manuscript)}
+          dawFileLinked={data.dawFileLinked}
+          onLinkDawFile={() => void linkDawFile()}
+          linkingDawFile={dawLink.isBusy}
         >
           <ErrorBoundary key={location.pathname.split('/')[1] || 'home'}>
             <Routes>
@@ -259,14 +285,20 @@ function AppRoutes() {
                 path="/proofing"
                 element={
                   data.manuscript ? (
-                    <Transcript state={data.transcript} notify={setNotice} goHome={() => guardedNavigate('/')} goToManuscript={goToManuscript} />
+                    <Transcript
+                      state={data.transcript}
+                      notify={setNotice}
+                      goHome={() => guardedNavigate('/')}
+                      goToManuscript={goToManuscript}
+                      dawFileLinked={data.dawFileLinked}
+                    />
                   ) : (
                     <Navigate to="/" replace />
                   )
                 }
               />
               <Route path="/teleprompter" element={data.manuscript ? <TeleprompterPage /> : <Navigate to="/" replace />} />
-              <Route path="/tracks" element={<TracksPage />} />
+              <Route path="/tracks" element={<TracksPage dawFileLinked={data.dawFileLinked} onLinkDawFile={() => void linkDawFile()} />} />
               <Route
                 path="/settings"
                 element={
@@ -281,6 +313,7 @@ function AppRoutes() {
                       await refreshBootstrap();
                       guardedNavigate('/');
                     }}
+                    onLinkDawFile={() => void linkDawFile()}
                   />
                 }
               />

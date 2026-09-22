@@ -74,6 +74,17 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/App.tsx::subscribeProjectAttach#1': subscription('A project attach refreshes the bootstrap or shows why it was refused.'),
   'src/App.tsx::settingsForScope#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Cosmetic: the narrator\'s entity colours; the built-in colours stay if the settings cannot be read, and Settings reports the real error.'),
   'src/App.tsx::transcriptReset#1': row('click', 'instant', 'na', 'na', 'na', 'silent', 'na', 'exempt', 'Best effort when leaving Proofing: a reset that fails leaves the finished results in place, which is harmless.'),
+  'src/App.tsx::linkDawFile#1': row(
+    'click',
+    'os-dialog',
+    'pending',
+    'pending',
+    'ui',
+    'toast',
+    'yes',
+    'ok',
+    'The one shared binding behind the pill, Tracks and Settings\' DAW category (PRD project-workspace-and-daw-link.prd.md, W19): a single usePendingAction ref guards all three call sites, not just the one whose button visibly disables. A folder mismatch is its own toast, not an unhandled rejection (W15); the linked file persists in the project manifest, so it survives navigation.',
+  ),
 
   // Home
   'src/components/home/AudiobookEstimatePanel.tsx::manuscriptChapters#1': row('mount', 'file-io', 'na', 'na', 'ui', 'toast', 'na', 'ok', 'A failed load empties the estimate and says why, instead of reading as a manuscript with no chapters (phase 6).'),

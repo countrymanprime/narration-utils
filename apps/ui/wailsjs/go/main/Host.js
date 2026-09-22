@@ -162,6 +162,10 @@ export function ProjectCreateIn(arg1, arg2) {
   return window['go']['main']['Host']['ProjectCreateIn'](arg1, arg2);
 }
 
+export function ProjectLinkDawFile() {
+  return window['go']['main']['Host']['ProjectLinkDawFile']();
+}
+
 export function ProjectRecents() {
   return window['go']['main']['Host']['ProjectRecents']();
 }
