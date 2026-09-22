@@ -17,6 +17,7 @@ import { NavDrawer } from '../primitives/NavDrawer';
 import { IconButton } from '../primitives/IconButton';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { combinedRequiredReason } from '../../dawAvailability';
+import { DemoBanner } from './DemoBanner';
 
 // requiresManuscript/requiresDaw name what each nav item is gated on (PRD project-workspace-and-daw-link.prd.md, Open
 // Question W16): only Proofing needs a linked DAW project file today - Tracks reads the project's REAPER file
@@ -115,61 +116,64 @@ export function AppShell({
     </>
   );
   return (
-    <div className="flex h-full overflow-hidden bg-[var(--bg)]">
-      <aside className="hidden w-56 flex-none flex-col border-r border-[var(--border)] bg-[var(--surface)] min-[1400px]:flex">{navigation}</aside>
-      <aside
-        className="medium-rail hidden w-14 flex-none flex-col gap-1 border-r border-[var(--border)] bg-[var(--surface)] p-2 md:max-[1399px]:flex"
-        aria-label="Primary navigation"
-      >
-        {NAV.map((item) => (
-          <NavButton
-            key={item.name}
-            active={isActivePath(pathname, item.path)}
-            icon={item.icon}
-            onClick={() => go(item.path)}
-            iconOnly
-            disabled={isDisabled(item)}
-            disabledReason={requiredReason(item)}
-          >
-            {item.name}
-          </NavButton>
-        ))}
-        <div className="mt-auto">
-          <NavButton active={settingsActive} icon={faGear} onClick={() => go('/settings')} iconOnly>
-            Settings
-          </NavButton>
-        </div>
-      </aside>
-      <NavDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        {navigation}
-      </NavDrawer>
-      {/* tabIndex -1: a dialog that closes with nothing to give focus back to (its opener is gone) sends focus into <main> (its first control, or <main> itself), not to <body>. */}
-      <main tabIndex={-1} className="flex min-w-0 flex-1 flex-col overflow-hidden focus:outline-none">
-        <header className="flex h-14 flex-none items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 text-sm md:px-5">
-          <IconButton label="Open navigation" onClick={() => setDrawerOpen(true)} className="hidden max-md:inline-flex">
-            <FontAwesomeIcon icon={faBars} />
-          </IconButton>
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="section-label">Project</span>
-            <FontAwesomeIcon icon={faFolder} style={{ color: 'var(--non-text)' }} />
-            <span className="truncate font-medium">{projectName}</span>
-          </div>
-          <TooltipTarget text={pillTooltip}>
-            <button
-              type="button"
-              onClick={onLinkDawFile}
-              disabled={linkingDawFile}
-              aria-busy={linkingDawFile || undefined}
-              aria-label={`${pillLabel} — ${pillTooltip}`}
-              className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em] hover:border-[var(--accent)] disabled:pointer-events-none disabled:opacity-60"
+    <div className="flex h-full flex-col overflow-hidden bg-[var(--bg)]">
+      <DemoBanner />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <aside className="hidden w-56 flex-none flex-col border-r border-[var(--border)] bg-[var(--surface)] min-[1400px]:flex">{navigation}</aside>
+        <aside
+          className="medium-rail hidden w-14 flex-none flex-col gap-1 border-r border-[var(--border)] bg-[var(--surface)] p-2 md:max-[1399px]:flex"
+          aria-label="Primary navigation"
+        >
+          {NAV.map((item) => (
+            <NavButton
+              key={item.name}
+              active={isActivePath(pathname, item.path)}
+              icon={item.icon}
+              onClick={() => go(item.path)}
+              iconOnly
+              disabled={isDisabled(item)}
+              disabledReason={requiredReason(item)}
             >
-              <span className="size-[7px] flex-none rounded-full" style={pillDotStyle} />
-              {pillLabel}
-            </button>
-          </TooltipTarget>
-        </header>
-        <div className={`scroll-chrome-hidden flex-1 overflow-y-auto ${isActivePath(pathname, '/manuscript') ? 'p-0' : 'p-4 md:p-6'}`}>{children}</div>
-      </main>
+              {item.name}
+            </NavButton>
+          ))}
+          <div className="mt-auto">
+            <NavButton active={settingsActive} icon={faGear} onClick={() => go('/settings')} iconOnly>
+              Settings
+            </NavButton>
+          </div>
+        </aside>
+        <NavDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+          {navigation}
+        </NavDrawer>
+        {/* tabIndex -1: a dialog that closes with nothing to give focus back to (its opener is gone) sends focus into <main> (its first control, or <main> itself), not to <body>. */}
+        <main tabIndex={-1} className="flex min-w-0 flex-1 flex-col overflow-hidden focus:outline-none">
+          <header className="flex h-14 flex-none items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 text-sm md:px-5">
+            <IconButton label="Open navigation" onClick={() => setDrawerOpen(true)} className="hidden max-md:inline-flex">
+              <FontAwesomeIcon icon={faBars} />
+            </IconButton>
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="section-label">Project</span>
+              <FontAwesomeIcon icon={faFolder} style={{ color: 'var(--non-text)' }} />
+              <span className="truncate font-medium">{projectName}</span>
+            </div>
+            <TooltipTarget text={pillTooltip}>
+              <button
+                type="button"
+                onClick={onLinkDawFile}
+                disabled={linkingDawFile}
+                aria-busy={linkingDawFile || undefined}
+                aria-label={`${pillLabel} — ${pillTooltip}`}
+                className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em] hover:border-[var(--accent)] disabled:pointer-events-none disabled:opacity-60"
+              >
+                <span className="size-[7px] flex-none rounded-full" style={pillDotStyle} />
+                {pillLabel}
+              </button>
+            </TooltipTarget>
+          </header>
+          <div className={`scroll-chrome-hidden flex-1 overflow-y-auto ${isActivePath(pathname, '/manuscript') ? 'p-0' : 'p-4 md:p-6'}`}>{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

@@ -8,6 +8,7 @@
     "dev:mock": "vite --mode mock",
     "build": "tsc --noEmit && vite build",
     "build:mock": "vite build --mode mock --outDir node_modules/.cache/mock-build",
+    "build:demo": "vite build --mode demo --outDir dist-demo",
     "test": "vitest run",
     "lint": "eslint .",
     "lint:ci": "eslint . --max-warnings 0",
