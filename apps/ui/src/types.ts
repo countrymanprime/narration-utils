@@ -10,10 +10,12 @@ export * from './api/contracts/whisper';
 export * from './api/contracts/project';
 export * from './api/contracts/dawCatalog';
 export * from './api/contracts/tracks';
+export * from './api/contracts/chapterTrackMap';
 export * from './api/contracts/teleprompter';
 export * from './api/contracts/update';
 export * from './api/contracts/credits';
 
+import type { ChapterTrackMapApi } from './api/contracts/chapterTrackMap';
 import type { DawCatalogApi } from './api/contracts/dawCatalog';
 import type { ManuscriptApi } from './api/contracts/manuscript';
 import type { ProjectApi } from './api/contracts/project';
@@ -41,6 +43,7 @@ export interface NarrationApi
     ProjectApi,
     DawCatalogApi,
     TracksApi,
+    ChapterTrackMapApi,
     TeleprompterApi,
     UpdateApi,
     CreditsApi {}

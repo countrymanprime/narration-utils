@@ -23,6 +23,7 @@ import type {
   Scope,
   ScopedSettingField,
   TeleprompterDevice,
+  TrackMapping,
   TracksDiscovery,
   TranscriptState,
   WorkJob,
@@ -363,6 +364,10 @@ export function createMockApi(
   // One candidate auto-selects (like the Go host); several leave the choice to the narrator.
   const tracksCandidates = initial.tracksCandidates ?? [WIRE_TRACKS_PROJECT.path];
   let tracksDiscovery: TracksDiscovery = { candidates: tracksCandidates, selected: tracksCandidates.length === 1 ? tracksCandidates[0] : '' };
+  // The confirmed chapter-track mapping (analysis evidence ledger PRD, Phase 5): keyed to one mock documentId, since the
+  // mock always has exactly one manuscript document loaded.
+  const mockDocumentId = 'mock-document-1';
+  let chapterTrackMappings: TrackMapping[] = [];
   let recentProjects: RecentProject[] = [
     { path: 'C:/Projects/Alice-in-Wonderland', name: 'Alice’s Adventures in Wonderland', lastOpened: '2026-09-15T09:00:00Z' },
     { path: 'C:/Projects/Voltage-and-the-Undercroft', name: 'Voltage and the Undercroft', lastOpened: '2026-09-10T18:30:00Z' },
@@ -1228,6 +1233,19 @@ export function createMockApi(
       return wireClone(tracksDiscovery);
     },
     tracksList: async () => wireClone(WIRE_TRACKS_PROJECT),
+    chapterTrackMapList: async () => ({ documentId: mockDocumentId, mappings: wireClone(chapterTrackMappings) }),
+    chapterTrackMapConfirm: async (trackGuid, chapterId) => {
+      await manuscriptReady;
+      const chapter = chapters.find((candidate) => candidate.id === chapterId);
+      if (!chapter) throw new Error('that chapter is not part of the current manuscript');
+      const mapping: TrackMapping = { trackGuid, chapterId, chapterTitle: chapter.title, confirmedAt: new Date().toISOString() };
+      chapterTrackMappings = [...chapterTrackMappings.filter((existing) => existing.trackGuid !== trackGuid), mapping];
+      return wireClone(mapping);
+    },
+    chapterTrackMapClear: async (trackGuid) => {
+      chapterTrackMappings = chapterTrackMappings.filter((existing) => existing.trackGuid !== trackGuid);
+      return { documentId: mockDocumentId, mappings: wireClone(chapterTrackMappings) };
+    },
     subscribeNotices: (onNotice) => {
       const text = initial.notice;
       if (!text) return () => {};

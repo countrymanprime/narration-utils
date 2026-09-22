@@ -665,6 +665,18 @@ func (h *Host) TranscriptSaveHints(accepted []string) (string, error) {
 	return encodeBinding(nil, service.SaveHints(accepted))
 }
 
+// ChapterTrackMapList, ChapterTrackMapConfirm and ChapterTrackMapClear are
+// the narrator-confirmed chapter-track mapping's bindings (analysis
+// evidence ledger PRD, Phase 5, Q6/Q7): the mapping-confirm UI itself is
+// Phase 7 (not built here), but the store it will call is bound now.
+func (h *Host) ChapterTrackMapList() (string, error) { return encodeBinding(h.mappingList()) }
+func (h *Host) ChapterTrackMapConfirm(trackGUID, chapterID string) (string, error) {
+	return encodeBinding(h.mappingConfirm(trackGUID, chapterID))
+}
+func (h *Host) ChapterTrackMapClear(trackGUID string) (string, error) {
+	return encodeBinding(h.mappingClear(trackGUID))
+}
+
 func (h *Host) TracksDiscover() (string, error) { return encodeBinding(h.tracksDiscover()) }
 func (h *Host) TracksSelect(path string) (string, error) {
 	return encodeBinding(h.tracksSelect(path))

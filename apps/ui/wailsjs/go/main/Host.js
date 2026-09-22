@@ -30,6 +30,18 @@ export function Bootstrap() {
   return window['go']['main']['Host']['Bootstrap']();
 }
 
+export function ChapterTrackMapClear(arg1) {
+  return window['go']['main']['Host']['ChapterTrackMapClear'](arg1);
+}
+
+export function ChapterTrackMapConfirm(arg1, arg2) {
+  return window['go']['main']['Host']['ChapterTrackMapConfirm'](arg1, arg2);
+}
+
+export function ChapterTrackMapList() {
+  return window['go']['main']['Host']['ChapterTrackMapList']();
+}
+
 export function CreditsDeleteTemplate(arg1) {
   return window['go']['main']['Host']['CreditsDeleteTemplate'](arg1);
 }

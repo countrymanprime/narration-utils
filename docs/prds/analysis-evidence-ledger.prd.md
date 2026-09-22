@@ -179,7 +179,7 @@ Phases 1 to 6 are the platform the signal PRDs consume, with Phase 5 adding the 
 | 2 | Source identity, fingerprint and analysis key | `SourceIdentity`, played range, analysis key, item and track fingerprints, hash policy, edit-type table tests | complete | 3, 5 | 1; called by DX-1 | - |
 | 3 | Analysis ledger | Record type, per-file atomic store, retention API, `resetDerived` entry, crash tests | complete | 1, 2, 5 | - | - |
 | 4 | Per-item result cache | Opaque keyed store, size-bounded pruning, hit and miss counters, `resetDerived` entry | complete | 5 | 2, 3 | - |
-| 5 | Confirmed chapter-track mapping | `chapter-track-map.json` store keyed by `documentId`, suggestion adapter over TM-8, list/confirm/clear bindings, contract, mock, host API bump | pending | 1, 2, 3, 4 | TM-8 (suggestions), 3 | - |
+| 5 | Confirmed chapter-track mapping | `chapter-track-map.json` store keyed by `documentId`, suggestion adapter over TM-8, list/confirm/clear bindings, contract, mock, host API bump | complete | 1, 2, 3, 4 | TM-8 (suggestions), 3 | - |
 | 6 | Staleness evaluator | `current`, `stale` or `never` with reasons and recomposable flag, saved-project warning, basis builder for SR | pending | 7 | 2, 3, 4, 5 | - |
 | 7 | Mapping confirm UI and close-out | Inline prompt, Tracks page list, states, docs, screenshots, ADR, `docs/utilities/tracks.md` update | pending | - | 5, 6 | - |
 | 8 | Live change counter (Could) | Bridge read of the project change count, "changed since this check" label, manual REAPER checklist | pending | - | 6, RF (bridge plumbing) | - |

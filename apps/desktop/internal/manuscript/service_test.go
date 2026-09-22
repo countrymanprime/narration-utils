@@ -349,3 +349,52 @@ func TestClearRemovesTheAnalysisCacheDirectoryAlongsideManuscriptData(t *testing
 		t.Fatalf("Clear left the analysis cache directory behind: %v", err)
 	}
 }
+
+// The evidence ledger PRD's Phase 5 (Q6, Q9 option A) adds the confirmed
+// chapter-track mapping file alongside LedgerDir and CacheDir: a mapping
+// names a chapter ID a re-import invalidates, so it must not survive one
+// either. Unlike the ledger and cache, this is a single file, not a
+// directory of records.
+func TestResetDerivedClearsTheChapterTrackMappingFile(t *testing.T) {
+	project := t.TempDir()
+	mappingFile := evidence.MappingFile(project)
+	if err := os.MkdirAll(filepath.Dir(mappingFile), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(mappingFile, []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resetDerived(project); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(mappingFile); !os.IsNotExist(err) {
+		t.Fatalf("resetDerived left the chapter-track mapping file behind: %v", err)
+	}
+}
+
+func TestClearRemovesTheChapterTrackMappingFileAlongsideManuscriptData(t *testing.T) {
+	project := t.TempDir()
+	service := New(project)
+	job := service.Begin(layout.RepoFile(layout.FixturesDir + "/alice.md"))
+	if _, err := service.Preview(job.ID, 1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Commit(job.ID, false, nil); err != nil {
+		t.Fatal(err)
+	}
+	mappingFile := evidence.MappingFile(project)
+	if err := os.MkdirAll(filepath.Dir(mappingFile), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(mappingFile, []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := service.Clear(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(mappingFile); !os.IsNotExist(err) {
+		t.Fatalf("Clear left the chapter-track mapping file behind: %v", err)
+	}
+}

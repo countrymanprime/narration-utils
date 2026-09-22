@@ -15,6 +15,12 @@ export function AssetsVerify(arg1:string,arg2:string):Promise<string>;
 
 export function Bootstrap():Promise<Record<string, any>>;
 
+export function ChapterTrackMapClear(arg1:string):Promise<string>;
+
+export function ChapterTrackMapConfirm(arg1:string,arg2:string):Promise<string>;
+
+export function ChapterTrackMapList():Promise<string>;
+
 export function CreditsDeleteTemplate(arg1:string):Promise<string>;
 
 export function CreditsDuplicateTemplate(arg1:string):Promise<string>;

@@ -9,6 +9,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
@@ -237,6 +238,86 @@ func TestContractTracksDiscovery(t *testing.T) {
 	pin("tracks-discovery-none", none)
 	pin("tracks-discovery-several", several)
 	pin("tracks-discovery-selected", one)
+}
+
+// The confirmed chapter-track mapping's ChapterTrackMapList/Confirm/Clear payloads (analysis evidence ledger PRD,
+// Phase 5, Q6). ConfirmedAt is a real timestamp (RFC3339Nano), so it is normalized to a fixed value before pinning -
+// the same "machine-specific values are fixed" rule contractHost already applies to the diagnostic id.
+func TestContractChapterTrackMap(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	project := t.TempDir()
+	host := NewHost()
+	host.config.projectFolder = project
+	host.manuscript = manuscript.New(project)
+	job := host.manuscript.Begin(layout.RepoFile(layout.FixturesDir + "/alice.md"))
+	if _, err := host.manuscript.Preview(job.ID, 1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := host.manuscript.Commit(job.ID, false, nil); err != nil {
+		t.Fatal(err)
+	}
+	chapters, err := host.manuscript.Chapters()
+	if err != nil || len(chapters) == 0 {
+		t.Fatalf("chapters = %#v, %v", chapters, err)
+	}
+	firstChapterID, _ := chapters[0]["id"].(string)
+
+	pin := func(name string, value any) {
+		normalized, err := normalizeMappingPayload(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		contractfile.Check(t, name, normalized)
+	}
+
+	emptyRaw, err := host.ChapterTrackMapList()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pin("chapter-track-map-empty", json.RawMessage(emptyRaw))
+
+	confirmedRaw, err := host.ChapterTrackMapConfirm("{0E4D1D7F-D039-674D-87E6-719376DE95EC}", firstChapterID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pin("chapter-track-map-confirmed", json.RawMessage(confirmedRaw))
+
+	listRaw, err := host.ChapterTrackMapList()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pin("chapter-track-map-list", json.RawMessage(listRaw))
+}
+
+// normalizeMappingPayload decodes a JSON-encoded ChapterTrackMap binding payload and replaces every "confirmedAt"
+// field (a real time.Now() value) and "documentId" field (newID()'s random hex, manuscript/service.go) with fixed
+// values, so neither ever makes a committed contract fixture flap from one test run to the next - the same
+// "machine-specific values are fixed" rule contractHost already applies to the diagnostic id.
+func normalizeMappingPayload(value any) (any, error) {
+	const fixedTime = "2026-01-01T00:00:00Z"
+	const fixedDocumentID = "doc-fixed-for-contract-test"
+	bytes, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(bytes, &decoded); err != nil {
+		return nil, err
+	}
+	if _, ok := decoded["confirmedAt"]; ok {
+		decoded["confirmedAt"] = fixedTime
+	}
+	if _, ok := decoded["documentId"]; ok {
+		decoded["documentId"] = fixedDocumentID
+	}
+	if mappings, ok := decoded["mappings"].([]any); ok {
+		for _, entry := range mappings {
+			if mapping, ok := entry.(map[string]any); ok {
+				mapping["confirmedAt"] = fixedTime
+			}
+		}
+	}
+	return decoded, nil
 }
 
 // The system:notice event: something the app did for the narrator that they should read (ADR 0069).
