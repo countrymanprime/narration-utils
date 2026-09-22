@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
-import { act, renderHook } from '@testing-library/react';
-import { StrictMode, type ReactNode } from 'react';
+import { act, cleanup, render, renderHook, screen } from '@testing-library/react';
+import { StrictMode, useEffect, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AssetInstallJob } from '../types';
 import { useAssetInstall } from './useAssetInstall';
 
 beforeEach(() => vi.useFakeTimers());
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 const job = (patch: Partial<AssetInstallJob> = {}): AssetInstallJob => ({
   id: 'job-1',
@@ -211,6 +214,23 @@ describe('useAssetInstall', () => {
     expect(result.current.running).toBe(false);
   });
 
+  it('lets the next begin start at once after a Cancel ended the download, without waiting for the poll', async () => {
+    const host = scripted([job(), job({ percent: 40, bytesDone: 400 })]);
+    const { result } = renderHook(() => useAssetInstall(host));
+    await act(async () => {
+      void result.current.begin();
+    });
+    await act(async () => {
+      await result.current.cancel();
+    });
+    expect(result.current.job?.phase).toBe('cancelled');
+    await act(async () => {
+      void result.current.begin();
+    });
+    expect(host.start).toHaveBeenCalledTimes(2);
+    expect(result.current.job?.phase).toBe('downloading');
+  });
+
   it('says why a Cancel did not work and leaves the running job showing', async () => {
     const host = { ...scripted([job()]), cancel: vi.fn().mockRejectedValue(new Error('the host is busy')) };
     const { result } = renderHook(() => useAssetInstall(host));
@@ -251,6 +271,33 @@ describe('useAssetInstall', () => {
     });
     await settle();
     expect(host.start).toHaveBeenCalledTimes(1);
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('follows a job it is asked to begin from an effect on mount, which StrictMode runs twice', async () => {
+    // The Local assets page follows a download that was already running when it opened: `begin` runs from an effect, and StrictMode tears the
+    // first run down before it answers. The second run must not find the first one still holding the guard.
+    const host = scripted([job(), job({ percent: 40, bytesDone: 400 }), job({ phase: 'success', percent: 100 })]);
+    const onSuccess = vi.fn();
+    function Follower() {
+      const install = useAssetInstall({ ...host, onSuccess });
+      const { begin } = install;
+      useEffect(() => {
+        void begin();
+      }, [begin]);
+      return <p>{install.job ? `${install.job.phase} ${install.job.percent}` : 'nothing yet'}</p>;
+    }
+    render(
+      <StrictMode>
+        <Follower />
+      </StrictMode>,
+    );
+    await settle(0);
+    expect(screen.getByText('downloading 0')).toBeTruthy();
+    await settle();
+    expect(screen.getByText('downloading 40')).toBeTruthy();
+    await settle();
+    expect(screen.getByText('success 100')).toBeTruthy();
     expect(onSuccess).toHaveBeenCalledTimes(1);
   });
 });

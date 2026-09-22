@@ -40,7 +40,7 @@ import {
 } from './mockFixtures';
 import { loadAliceManuscript } from './aliceManuscript';
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
-import { createInstallMock, type MockAssetSeed } from './assetInstallMock';
+import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
 
 const DEFAULT_PROJECT_FOLDER = 'C:/Projects/Alice-in-Wonderland';
@@ -363,9 +363,14 @@ export function createMockApi(
   // gated in every test; a dedicated scenario calls whisperRemove first to
   // exercise the asset_required prompt.
   // A download seed boots without the model, so a page that needs it asks to download it.
-  let whisperInstalled = initial.assets === undefined;
+  // The seeds for the Local assets page (installing, checking, damaged) keep it installed, so the page shows a mix of states.
+  const localAssetsSeed = initial.assets !== undefined && LOCAL_ASSETS_SEEDS.includes(initial.assets);
+  let whisperInstalled = initial.assets === undefined || localAssetsSeed;
+  // Damaged: the files are there but no longer match, which is what `verification_failed` (Needs repair) says. A repair or a removal ends it.
+  let whisperDamaged = initial.assets === 'damaged';
+  const whisperState = (): AssetInstallState => (!whisperInstalled ? 'not_installed' : whisperDamaged ? 'verification_failed' : 'installed');
   // The Story Bible language model is installed by default for the same reason; a download seed boots without it, so the build asks first.
-  let spacyInstalled = initial.assets === undefined;
+  let spacyInstalled = initial.assets === undefined || localAssetsSeed;
   const mockWhisperIdentity = {
     id: 'small',
     provider: 'faster-whisper',
@@ -382,18 +387,22 @@ export function createMockApi(
     total: 114203981,
     noun: 'voice',
     extra: { kind: 'tts', assetId: 'en_US-ljspeech-high' },
-    seed: initial.assets,
+    seed: installSeedFor(initial.assets),
     onInstalled: () => {
       ttsInstalled = true;
     },
   });
+  // A page opened while the voice downloads follows the job through the list's `activeJobId` (the Local assets page, `?mockAssets=installing|checking`).
+  if (initial.assets === 'installing' || initial.assets === 'checking') void voiceInstall.start();
   const modelInstall = createInstallMock({
     total: 483546902 + 2370 + 2203239 + 459861,
     noun: 'Whisper model',
     extra: { kind: 'whisper', assetId: 'small' },
-    seed: initial.assets,
+    // The Local assets seeds hold the voice download and nothing else: the Whisper model is repaired and reinstalled to the end.
+    seed: localAssetsSeed ? undefined : initial.assets,
     onInstalled: () => {
       whisperInstalled = true;
+      whisperDamaged = false;
     },
   });
   const mockLanguageModel = {
@@ -413,7 +422,7 @@ export function createMockApi(
     total: 12806118,
     noun: 'language model',
     extra: { kind: 'spacy', assetId: 'en_core_web_sm' },
-    seed: initial.assets,
+    seed: localAssetsSeed ? undefined : initial.assets,
     onInstalled: () => {
       spacyInstalled = true;
     },
@@ -764,7 +773,7 @@ export function createMockApi(
     whisperCatalog: async () => ({
       catalogVersion: 1,
       model: { id: mockWhisperModel.id, effectiveSource: 'repo_default' },
-      models: [{ ...mockWhisperModel, installState: whisperInstalled ? 'installed' : 'not_installed' }],
+      models: [{ ...mockWhisperModel, installState: whisperState() }],
     }),
     whisperInstall: async (modelId) => {
       if (modelId !== mockWhisperModel.id) throw new Error('Unknown approved Whisper model.');
@@ -773,10 +782,13 @@ export function createMockApi(
     whisperInstallState: async (jobId) => ({ ...(await modelInstall.state(jobId)), modelId: mockWhisperModel.id }),
     whisperInstallCancel: async (jobId) => ({ ...(await modelInstall.cancel(jobId)), modelId: mockWhisperModel.id }),
     whisperRemove: async (modelId) => {
-      if (modelId === mockWhisperModel.id) whisperInstalled = false;
+      if (modelId === mockWhisperModel.id) {
+        whisperInstalled = false;
+        whisperDamaged = false;
+      }
     },
     assetsList: async () => {
-      const item = (kind: string, kindLabel: string, model: AssetFactsSource, installed: boolean, installState: AssetInstallState) => ({
+      const item = (kind: string, kindLabel: string, model: AssetFactsSource, installState: AssetInstallState, activeJobId: string) => ({
         kind,
         kindLabel,
         id: model.id,
@@ -792,22 +804,24 @@ export function createMockApi(
         installState,
         diskSize: kind === 'spacy' ? 15251718 : model.downloadSize,
         path: `${MOCK_ASSET_ROOT}/${kind}/${model.id}`,
-        installedAt: installed ? '2026-09-20T09:30:00Z' : '',
-        verifiedAt: installed ? '2026-09-20T09:30:00Z' : '',
-        activeJobId: '',
+        installedAt: installState === 'not_installed' ? '' : '2026-09-20T09:30:00Z',
+        verifiedAt: installState === 'installed' ? '2026-09-20T09:30:00Z' : '',
+        activeJobId,
       });
-      const voice = item('tts', 'Preview voice', mockVoice, ttsInstalled, ttsInstalled ? 'installed' : 'not_installed');
+      const voice = item('tts', 'Preview voice', mockVoice, ttsInstalled ? 'installed' : 'not_installed', voiceInstall.activeId());
       const language = item(
         'spacy',
         'Story Bible language model',
         { ...mockLanguageModel, downloadSize: 12806118 },
-        spacyInstalled,
         spacyInstalled ? 'installed' : 'not_installed',
+        languageModelInstall.activeId(),
       );
-      const model = item('whisper', 'Whisper model', mockWhisperModel, whisperInstalled, whisperInstalled ? 'installed' : 'not_installed');
+      const model = item('whisper', 'Whisper model', mockWhisperModel, whisperState(), modelInstall.activeId());
       return {
         cacheRoot: MOCK_ASSET_ROOT,
-        totalInstalledBytes: (ttsInstalled ? voice.diskSize : 0) + (whisperInstalled ? model.diskSize : 0) + (spacyInstalled ? language.diskSize : 0),
+        // Only what verifies counts: a damaged asset is not one the app can use.
+        totalInstalledBytes:
+          (ttsInstalled ? voice.diskSize : 0) + (whisperInstalled && !whisperDamaged ? model.diskSize : 0) + (spacyInstalled ? language.diskSize : 0),
         assets: [voice, model, language],
       };
     },
@@ -821,12 +835,16 @@ export function createMockApi(
     assetsInstallCancel: async (jobId) => installMockFor(jobId).cancel(jobId),
     assetsVerify: async (kind, id) => {
       const installed = kind === 'tts' ? ttsInstalled : kind === 'spacy' ? spacyInstalled : whisperInstalled;
+      if (kind === 'whisper' && whisperDamaged) return { kind, id, installState: 'verification_failed' as const };
       return { kind, id, installState: installed ? ('installed' as const) : ('not_installed' as const) };
     },
     assetsRemove: async (kind) => {
       if (kind === 'tts') ttsInstalled = false;
       else if (kind === 'spacy') spacyInstalled = false;
-      else whisperInstalled = false;
+      else {
+        whisperInstalled = false;
+        whisperDamaged = false;
+      }
     },
     transcriptStart: async () =>
       whisperInstalled

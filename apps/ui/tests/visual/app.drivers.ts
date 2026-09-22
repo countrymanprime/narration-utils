@@ -157,6 +157,18 @@ async function clickSettingsCategory(page: Page, name: string): Promise<void> {
   await page.locator('.settings-nav').getByRole('tab', { name, exact: true }).click();
 }
 
+// Settings > Local assets, optionally booted with a mock seed (?mockAssets=): the rows are on screen once the list has loaded.
+async function openLocalAssets(page: Page, seed?: string): Promise<void> {
+  if (seed) {
+    await page.goto(`/?mockAssets=${seed}`);
+    await settlePage(page);
+  }
+  await goToPage(page, 'Settings');
+  await clickVisible(page, 'tab', 'Global');
+  await clickSettingsCategory(page, 'Local assets');
+  await page.getByRole('heading', { level: 3, name: 'Small', exact: true }).waitFor();
+}
+
 // Playwright's synthetic page.mouse.down/move/up drag doesn't reliably
 // produce a non-empty window.getSelection() range for useTextSelection.ts's
 // mouseup listener to pick up (unlike a real Chromium user drag, or RTL's
@@ -653,6 +665,35 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'About & updates');
       await page.getByText('Not checked yet.').waitFor();
+    },
+    'local-assets': async (page) => {
+      await openLocalAssets(page);
+    },
+    'local-assets-downloading': async (page) => {
+      await openLocalAssets(page, 'installing');
+      await page.getByRole('progressbar', { name: /Download progress for/ }).waitFor();
+      await page
+        .getByText(/44 of 109 MB/)
+        .first()
+        .waitFor();
+    },
+    'local-assets-verifying': async (page) => {
+      await openLocalAssets(page, 'checking');
+      await page.getByRole('button', { name: /^Verifying Preview voice LJ Speech/ }).waitFor();
+    },
+    'local-assets-needs-repair': async (page) => {
+      await openLocalAssets(page, 'damaged');
+      await page.getByRole('button', { name: 'Repair Whisper model Small' }).waitFor();
+    },
+    'local-assets-failed': async (page) => {
+      await openLocalAssets(page, 'download-fails');
+      await page.getByRole('button', { name: 'Download Preview voice LJ Speech (U.S. English)' }).click();
+      await page.getByRole('alert').filter({ hasText: 'did not match the approved one' }).waitFor();
+    },
+    'local-assets-remove-confirm': async (page) => {
+      await openLocalAssets(page);
+      await page.getByRole('button', { name: 'Remove Whisper model Small' }).click();
+      await confirmDialog(page, 'Remove Whisper model Small?').waitFor();
     },
     'about-update-available': async (page) => {
       await page.goto('/?mockUpdate=available');

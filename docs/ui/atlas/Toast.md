@@ -16,6 +16,8 @@ Storybook title: `Primitives/Toast`. Source: `src/components/primitives/Toast.ts
 ## Used by
 
 - `src/App.tsx`
+- `src/components/assets/LocalAssetRow.tsx`
+- `src/components/assets/LocalAssets.tsx`
 - `src/components/home/AudiobookEstimatePanel.tsx`
 - `src/components/home/Home.tsx`
 - `src/components/manuscript/Manuscript.tsx`

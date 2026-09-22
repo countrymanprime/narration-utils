@@ -1,3 +1,5 @@
+import type { AssetInstallJob } from '../../types';
+
 const BYTES_PER_MB = 1024 * 1024;
 const BYTES_PER_GB = 1024 * BYTES_PER_MB;
 
@@ -5,6 +7,12 @@ const BYTES_PER_GB = 1024 * BYTES_PER_MB;
 export function formatSize(bytes: number): string {
   if (bytes >= BYTES_PER_GB) return `${(bytes / BYTES_PER_GB).toFixed(1)} GB`;
   return `${Math.max(1, Math.round(bytes / BYTES_PER_MB))} MB`;
+}
+
+/** While it downloads, the real bytes so far ("44 of 109 MB"), so the narrator sees it move and knows how far it has to go; nothing before the size is known. */
+export function bytesProgress(job: Pick<AssetInstallJob, 'phase' | 'bytesDone' | 'bytesTotal'>): string | undefined {
+  if (job.phase !== 'downloading' || job.bytesTotal <= 0) return undefined;
+  return `${Math.round(job.bytesDone / BYTES_PER_MB)} of ${Math.round(job.bytesTotal / BYTES_PER_MB)} MB`;
 }
 
 export type AssetFactsProps = {

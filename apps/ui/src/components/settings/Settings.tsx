@@ -8,6 +8,7 @@ import { Heading } from '../primitives/Heading';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
 import { ToggleGroup } from '../primitives/ToggleGroup';
+import { LocalAssets } from '../assets/LocalAssets';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useTheme } from '../../theme/ThemeContext';
 import type { ThemePreference } from '../../theme/theme';
@@ -25,6 +26,7 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'] },
   { key: 'Daw', label: 'DAW Integration', scopes: ['global'] },
   { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global', 'project'] },
+  { key: 'LocalAssets', label: 'Local assets', scopes: ['global'] },
   { key: 'ProjectData', label: 'Project data', scopes: ['project'] },
   { key: 'About', label: 'About & updates', tool: 'Updates', scopes: ['global'] },
 ];
@@ -258,6 +260,8 @@ export function Settings({
                     options={THEME_OPTIONS}
                   />
                 </div>
+              ) : category === 'LocalAssets' ? (
+                <LocalAssets notify={notify} />
               ) : category === 'ProjectData' ? (
                 <div className="space-y-4 text-sm">
                   <div className="rounded-md p-3" style={{ background: 'var(--surface-2)' }}>

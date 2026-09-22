@@ -20,6 +20,8 @@
         "Disabled Is Inert"
       ],
       "consumers": [
+        "src/components/assets/LocalAssetRow.tsx",
+        "src/components/assets/LocalAssets.tsx",
         "src/components/layout/LoadError.tsx",
         "src/components/layout/StartupScreen.tsx",
         "src/components/manuscript/AddNoteDialog.tsx",
@@ -94,6 +96,7 @@
       "consumers": [
         "src/App.tsx",
         "src/components/assets/AssetInstallPrompt.tsx",
+        "src/components/assets/LocalAssetRow.tsx",
         "src/components/home/Home.tsx",
         "src/components/settings/Settings.tsx",
         "src/components/settings/UpdatesPanel.tsx",
@@ -378,6 +381,23 @@
       "a11yDebt": false
     },
     {
+      "title": "Primitives/ProgressBar",
+      "name": "ProgressBar",
+      "source": "src/components/primitives/ProgressBar.tsx",
+      "stories": [
+        "Determinate",
+        "With Value Text",
+        "Indeterminate",
+        "Just Begun",
+        "Done"
+      ],
+      "consumers": [
+        "src/components/assets/LocalAssetRow.tsx",
+        "src/components/primitives/WorkDialog.tsx"
+      ],
+      "a11yDebt": false
+    },
+    {
       "title": "Primitives/SearchField",
       "name": "SearchField",
       "source": "src/components/primitives/SearchField.tsx",
@@ -542,6 +562,8 @@
       ],
       "consumers": [
         "src/App.tsx",
+        "src/components/assets/LocalAssetRow.tsx",
+        "src/components/assets/LocalAssets.tsx",
         "src/components/home/AudiobookEstimatePanel.tsx",
         "src/components/home/Home.tsx",
         "src/components/manuscript/Manuscript.tsx",
