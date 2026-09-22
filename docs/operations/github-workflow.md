@@ -106,5 +106,13 @@ These are settings and real releases, so an agent does not do them. Tracked in [
 
 `security.yml` (govulncheck and OSV-Scanner) is advisory in the same way: look under **Security > Code scanning**, or in the run log (see [Vulnerability scanning](ci-and-releases.md#vulnerability-scanning)). OSV-Scanner reports two existing npm advisories (`esbuild` 0.21.5, `smol-toml` 1.6.1) that Dependabot proposes fixes for.
 
+### The dependency licence allow-list
+
+`dependency-review.yml` carries an SPDX `allow-licenses` list and `fail-on-scopes: runtime` (docs security and hygiene PRD, phase 9; owner decisions D17 and Q14). A pull request that adds or changes a runtime dependency whose licence is not on the list fails the `review` job, with the vulnerability gate (`fail-on-severity: high`) as before; development-only dependencies (test runners, linters, the docs generator) are not judged. The job stays advisory like every check (D11).
+
+- **What is on it:** the permissive and attribution licences the release already ships (MIT, MIT-0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, CC0-1.0, CC-BY-4.0, Unlicense, Zlib, Python-2.0, PSF-2.0, BlueOak-1.0.0, MPL-2.0) and the copyleft families the project may bundle because it is AGPL-3.0-or-later ([ADR 0039](../adr/0039-the-project-is-licensed-agpl-3-or-later.md)): GPL-2.0-or-later, GPL-3.0-only and -or-later, AGPL-3.0-only and -or-later, LGPL-2.1-only and -or-later, LGPL-3.0-only and -or-later. **GPL-2.0-only is not on it**: it cannot be combined with an AGPL-3.0 program.
+- **To add a licence:** read the dependency's licence, decide, add its SPDX id to the list in the same pull request that adds the dependency, and say why in the description. Models and voices are not dependencies and are checked separately ([model provenance](../architecture/model-provenance.md)).
+- **What it cannot see:** the action judges only what a pull request adds or changes, and it only warns when it cannot detect a licence, so it would not have caught `piper-tts` or `phonemizer` (already locked). `scripts/licenses/tests/test_dependency_review.py` is the other half: it fails when the list drops a family the policy names, allows GPL-2.0-only, or lacks a licence that the UI's production dependencies, the Go modules of the Windows build or the frozen sidecars already carry, and the [third-party notices](ci-and-releases.md#third-party-notices) inventory what ships.
+
 `codeql.yml` and `dependency-review.yml` are advisory: their results show under **Security** and on pull requests, but
 they are not required checks, because no check is (see [CI and releases](ci-and-releases.md#what-the-repository-enforces-and-what-ci-is-for)). If the owner ever requires checks, add these only after a few clean runs.
