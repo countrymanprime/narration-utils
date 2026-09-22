@@ -33,7 +33,7 @@ This folder documents a local-first audiobook narration toolkit: how it is built
 2. Read the [findings contract](architecture/findings-contract.md) before adding any analyzer or dashboard action.
 3. Use the workflow documents to understand how utilities combine: [manuscript/editorial](workflows/manuscript-and-editorial-review.md), [recording/comping](workflows/recording-and-comping.md), [character continuity](workflows/character-continuity.md), and [technical QC/handoff](workflows/technical-qc-and-handoff.md).
 4. Planned utilities and known defects are specified as PRDs in [prds/](prds/README.md), which indexes them; [utilities/](utilities/) keeps the docs for implemented tools ([Manuscript Guide](utilities/manuscript-guide.md), [Transcript Compare](utilities/transcript-compare.md), [Tracks](utilities/tracks.md)).
-5. Before adding a local model, executable, or model pack, use the [local dependency evaluation and license plan](research/local-dependency-evaluation.md).
+5. Before adding a local model, executable, or model pack, use the [local dependency evaluation and license plan](research/local-dependency-evaluation.md), and record the artifact in [model provenance](architecture/model-provenance.md) (a generated table: a catalog entry without a review row fails `pnpm check`).
 6. Before adding a downloadable model, voice or tool pack, or changing how one is installed, verified or removed, use the
    [first-use dependency provisioning](architecture/first-use-dependency-provisioning.md) rules and their implementation notes.
 7. For developer checks, GitHub Actions, release promotion, and the required
