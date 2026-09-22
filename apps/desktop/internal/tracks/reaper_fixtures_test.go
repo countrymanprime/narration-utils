@@ -65,22 +65,45 @@ func TestASectionSourceIsUnwrappedToItsFile(t *testing.T) {
 	if item.SourceKind != "WAVE" || filepath.Base(item.SourceFile) != "take_c.wav" || item.Length != 1.5 {
 		t.Fatalf("section item = %#v", item)
 	}
-}
-
-// The parser reads the first <SOURCE> and the first NAME of an item, which are the first take's. The fixture's
-// active take is "take B" (`TAKE SEL`), so the ledger's parser superset must follow the active take instead.
-func TestAMultiTakeItemIsReportedAsItsFirstTakeNotTheActiveOne(t *testing.T) {
-	project := parseReaperFixture(t, "saved-cases.rpp")
-
-	item := project.Tracks[0].Items[0]
-	if item.Name != "take A" || filepath.Base(item.SourceFile) != "take_a.wav" {
-		t.Fatalf("multi-take item = %#v; if this now reports take B, update the fixture README and this test", item)
+	section := item.Active().Section
+	if section == nil || section.StartPos != 0.5 || section.Length != 1.5 || section.Overlap != 0.01 {
+		t.Fatalf("section offsets = %#v, want StartPos 0.5, Length 1.5, Overlap 0.01", section)
 	}
 }
 
-// An item's mute flag (`MUTE 1 0`), the play rate, stretch markers, FX chains and extension data are all in the file
-// and none of them is read yet: the parser only keeps position, length, name and source.
-func TestTheFileCarriesWhatTheParserDoesNotReadYet(t *testing.T) {
+// The fixture's active take is "take B" (`TAKE SEL`); the parser superset (EL Phase 1) follows the active take, not
+// the first one, and exposes every take.
+func TestAMultiTakeItemIsReportedAsItsActiveTake(t *testing.T) {
+	project := parseReaperFixture(t, "saved-cases.rpp")
+
+	item := project.Tracks[0].Items[0]
+	if item.Name != "take B" || filepath.Base(item.SourceFile) != "take_b.wav" {
+		t.Fatalf("multi-take item = %#v, want the active take (take B)", item)
+	}
+	if len(item.Takes) != 3 {
+		t.Fatalf("Takes = %#v, want 3", item.Takes)
+	}
+	wantNames := []string{"take A", "take B", "take C"}
+	for index, want := range wantNames {
+		if item.Takes[index].Name != want {
+			t.Errorf("Takes[%d].Name = %q, want %q", index, item.Takes[index].Name, want)
+		}
+	}
+	if item.ActiveTake != 1 {
+		t.Errorf("ActiveTake = %d, want 1 (take B)", item.ActiveTake)
+	}
+	if item.GUID != "{83F2BBC9-F579-4D70-8EC2-63E9FCF1BE8C}" {
+		t.Errorf("item.GUID = %q, want the IGUID value", item.GUID)
+	}
+	if item.Takes[1].GUID != "{F5614A11-80D0-425B-82BB-B4D942CD241E}" {
+		t.Errorf("Takes[1].GUID = %q, want take B's own GUID", item.Takes[1].GUID)
+	}
+}
+
+// The parser superset (EL Phase 1) now reads the item GUID (from IGUID, not a take's own GUID), mute, every take
+// with its own GUID/source/SOFFS/PLAYRATE, which take is active, FX-chain presence and stretch-marker count as
+// evidence, and item/take extension data (P_EXT/TAKE EXT, including <BIN> blocks).
+func TestTheParserNowReadsMuteRateStretchFxAndExtensionData(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("testdata", "reaper", "saved-cases.rpp"))
 	if err != nil {
 		t.Fatal(err)
@@ -93,13 +116,73 @@ func TestTheFileCarriesWhatTheParserDoesNotReadYet(t *testing.T) {
 	}
 
 	project := parseReaperFixture(t, "saved-cases.rpp")
+
 	muted := project.Tracks[1].Items[0]
-	if muted.Name != "muted item" || muted.Position != 4 {
-		t.Fatalf("muted item = %#v", muted)
+	if muted.Name != "muted item" || muted.Position != 4 || !muted.Muted {
+		t.Fatalf("muted item = %#v, want Muted = true", muted)
 	}
-	// Item is a plain value with no Muted, PlayRate, GUID or extension fields, so the parser cannot report any of the
-	// above. When it gains them, assert `muted item` is muted and `audible item` is not, that `rate 1.25` has rate
-	// 1.25, and that the item GUID comes from IGUID (the item's), not GUID (each take has its own).
+	if muted.GUID != "{387FD4B2-BBE4-4CA2-A48C-E2398699D421}" {
+		t.Errorf("muted item GUID = %q, want the IGUID value, not a take's GUID", muted.GUID)
+	}
+	audible := project.Tracks[1].Items[1]
+	if audible.Name != "audible item" || audible.Muted {
+		t.Fatalf("audible item = %#v, want Muted = false", audible)
+	}
+
+	rate := project.Tracks[3].Items[0]
+	active := rate.Active()
+	if active.PlayRate != 1.25 || active.SOFFS != 0.5 {
+		t.Fatalf("rate 1.25 item active take = %#v, want PlayRate 1.25 and SOFFS 0.5", active)
+	}
+	if active.StretchMarkerCount != 1 {
+		t.Errorf("StretchMarkerCount = %d, want 1 (one SM line)", active.StretchMarkerCount)
+	}
+
+	if !project.Tracks[4].HasFXChain {
+		t.Error("the FX chains track's own <FXCHAIN> is not read")
+	}
+	fxItem := project.Tracks[4].Items[0]
+	if !fxItem.Active().HasFXChain {
+		t.Error("the take's <TAKEFX> is not read")
+	}
+
+	stamped := project.Tracks[5].Items[0]
+	if stamped.Ext["narration_utils_line_id"] != "line-000001" {
+		t.Errorf("item extension data narration_utils_line_id = %q", stamped.Ext["narration_utils_line_id"])
+	}
+	if stamped.Ext["narration_utils_line_text"] != `The first line, with | a pipe.` {
+		t.Errorf("item extension data narration_utils_line_text = %q", stamped.Ext["narration_utils_line_text"])
+	}
+	if stamped.Active().Ext["narration_utils_take_note"] != "take-level value" {
+		t.Errorf("take extension data narration_utils_take_note = %q", stamped.Active().Ext["narration_utils_take_note"])
+	}
+
+	tricky := project.Tracks[5].Items[1]
+	wantHostile := "She said \"hello\", then left.\\ Café 100% done; it's fine."
+	if tricky.Ext["narration_utils_line_text"] != wantHostile {
+		t.Errorf("hostile-value extension data = %q, want %q", tricky.Ext["narration_utils_line_text"], wantHostile)
+	}
+	longValue := tricky.Ext["narration_utils_long"]
+	if !strings.HasPrefix(longValue, "word word word") || !strings.HasSuffix(longValue, "word end") || len(longValue) < 3000 {
+		t.Errorf("<BIN> extension data narration_utils_long decoded wrong: prefix/suffix/length = %q.../%q/%d", firstN(longValue, 20), lastN(longValue, 20), len(longValue))
+	}
+	if tricky.Ext["narration_utils_multiline"] != "first line\nsecond line" {
+		t.Errorf("<BIN> extension data narration_utils_multiline = %q", tricky.Ext["narration_utils_multiline"])
+	}
+}
+
+func firstN(s string, n int) string {
+	if len(s) < n {
+		return s
+	}
+	return s[:n]
+}
+
+func lastN(s string, n int) string {
+	if len(s) < n {
+		return s
+	}
+	return s[len(s)-n:]
 }
 
 func TestANoOpResavedProjectKeepsItsTracksButNotTheRelativeMediaPaths(t *testing.T) {

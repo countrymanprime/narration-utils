@@ -19,6 +19,21 @@ type node struct {
 	params   []string
 	attrs    map[string][]string
 	children []*node
+	sequence []seqEntry
+}
+
+// seqEntry records one line of a chunk in file order: either an attribute
+// occurrence (key/values) or a child chunk. attrs (a first-occurrence map)
+// and children (every child, but typed by tag only) both lose information
+// sequence keeps: a REAPER take repeats NAME, SOFFS, PLAYRATE, GUID and
+// <SOURCE> once per take with no wrapping chunk of its own, and a <BIN>
+// extension block's base64 is only reconstructable in the order its lines
+// were written. The item-model parser superset (EL Phase 1) walks this to
+// split an <ITEM> chunk into its takes and to decode extension data.
+type seqEntry struct {
+	key    string
+	values []string
+	child  *node
 }
 
 func (n *node) attr0(key string) string {
@@ -75,6 +90,7 @@ func parseChunks(text string) *node {
 				child.tag, child.params = tokens[0], tokens[1:]
 			}
 			top.children = append(top.children, child)
+			top.sequence = append(top.sequence, seqEntry{child: child})
 			stack = append(stack, child)
 			continue
 		}
@@ -82,12 +98,15 @@ func parseChunks(text string) *node {
 		if len(tokens) == 0 {
 			continue
 		}
-		// First occurrence wins: every attribute this package reads (NAME,
-		// POSITION, LENGTH, MUTESOLO, PEAKCOL, TRACKID, FILE) appears at
-		// most once per chunk in REAPER's own output.
+		// First occurrence wins for attrs: every scalar this package reads
+		// once per chunk (NAME, POSITION, LENGTH, MUTESOLO, PEAKCOL,
+		// TRACKID, FILE, IGUID, MUTE) appears at most once in REAPER's own
+		// output. sequence keeps every occurrence, including repeats
+		// (a take's own NAME/SOFFS/PLAYRATE/GUID).
 		if _, exists := top.attrs[tokens[0]]; !exists {
 			top.attrs[tokens[0]] = tokens[1:]
 		}
+		top.sequence = append(top.sequence, seqEntry{key: tokens[0], values: tokens[1:]})
 	}
 	return root
 }
