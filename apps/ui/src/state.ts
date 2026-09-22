@@ -106,6 +106,22 @@ export const chapterLineNumbers = (paragraphs: ManuscriptParagraph[]): Map<numbe
   return map;
 };
 
+// The line number a search hit or bookmark should show for a global paragraph index, in a chapter
+// that may not be loaded (collapsed, never expanded). `chapter.paragraphIds` already carries each
+// paragraph's position within its own chapter as imported, so this needs no paragraph body to be
+// fetched (R5). Manuscripts imported before `paragraphIds` existed fall back to `loadedLineNumbers`
+// (chapterLineNumbers of whatever chapters happen to be expanded), and finally to the raw global
+// paragraph index if neither source has it - never undefined, so a row always shows something.
+export const chapterLineNumber = (
+  chapter: Pick<ManuscriptChapter, 'paragraphIds'> | undefined,
+  paragraphIndex: number,
+  loadedLineNumbers: Map<number, number>,
+): number => {
+  const position = chapter?.paragraphIds?.findIndex((row) => row.index === paragraphIndex) ?? -1;
+  if (position >= 0) return position + 1;
+  return loadedLineNumbers.get(paragraphIndex) ?? paragraphIndex;
+};
+
 export type EntitySort = { key: 'name' | 'occurrences'; dir: 'asc' | 'desc' };
 export const sortEntities = (entities: GuideEntity[], sort: EntitySort): GuideEntity[] => {
   const factor = sort.dir === 'asc' ? 1 : -1;

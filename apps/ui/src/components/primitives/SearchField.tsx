@@ -13,12 +13,14 @@ export function SearchField({
   onChange,
   placeholder,
   clearLabel = 'Clear search',
+  autoFocus = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   clearLabel?: string;
+  autoFocus?: boolean;
 }) {
   const fieldRef = useRef<HTMLInputElement>(null);
   return (
@@ -29,6 +31,7 @@ export function SearchField({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        autoFocus={autoFocus}
         style={value ? { paddingRight: '2.25rem' } : undefined}
       />
       {value && (

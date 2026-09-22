@@ -4,6 +4,7 @@ import {
   canAddEquivalence,
   categoryLabel,
   categoryValue,
+  chapterLineNumber,
   estimateFinishedHours,
   findAliasMatches,
   highlightEntitiesInText,
@@ -146,6 +147,34 @@ describe('Home audiobook estimate', () => {
   it('converts a word count into finished narration hours using the fixed rule of thumb', () => {
     expect(estimateFinishedHours(9300)).toBe(1);
     expect(estimateFinishedHours(0)).toBe(0);
+  });
+});
+
+describe('Manuscript search/bookmark line numbers (R5)', () => {
+  const chapter = {
+    paragraphIds: [
+      { id: 'p10', index: 10 },
+      { id: 'p11', index: 11 },
+      { id: 'p12', index: 12 },
+    ],
+  };
+
+  it('reads the in-chapter position from paragraphIds, for a chapter that was never loaded', () => {
+    expect(chapterLineNumber(chapter, 10, new Map())).toBe(1);
+    expect(chapterLineNumber(chapter, 12, new Map())).toBe(3);
+  });
+
+  it('falls back to loaded line numbers when the chapter has no paragraphIds (pre-migration manuscripts)', () => {
+    expect(chapterLineNumber(undefined, 10, new Map([[10, 7]]))).toBe(7);
+  });
+
+  it('falls back to the raw global paragraph index as a last resort', () => {
+    expect(chapterLineNumber(undefined, 10, new Map())).toBe(10);
+    expect(chapterLineNumber({ paragraphIds: undefined }, 10, new Map())).toBe(10);
+  });
+
+  it('prefers paragraphIds over a stale loaded map', () => {
+    expect(chapterLineNumber(chapter, 11, new Map([[11, 99]]))).toBe(2);
   });
 });
 
