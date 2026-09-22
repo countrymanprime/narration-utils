@@ -14,7 +14,7 @@ func TestNewDraftGivesContentsItsOwnGroupInsteadOfLeakingIntoPriorSection(t *tes
 		{Chapter: "Contents", Text: "Chapter One .... 1", SourceIndex: 1},
 		{Chapter: "Chapter Two", Text: "Chapter two text.", SourceIndex: 2},
 	}
-	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One", "Chapter Two"})
+	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One", "Chapter Two"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestNewDraftClassifiesFrontMatterAsOpening(t *testing.T) {
 		{Chapter: "Front Matter", Text: "By Jane Author", SourceIndex: 0},
 		{Chapter: "Chapter One", Text: "Chapter one text.", SourceIndex: 1},
 	}
-	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One"})
+	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +109,7 @@ func TestNewDraftSectionSubtitleIsTheFirstParagraphsSubtitleAsTheCommitReadsIt(t
 		{Chapter: "Chapter Three", Text: "Plain.", SourceIndex: 3},
 		subtitled("Chapter Three", "The Pool of Tears", "Later.", 4),
 	}
-	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One", "Chapter Two", "Chapter Three", "Chapter Four"})
+	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One", "Chapter Two", "Chapter Three", "Chapter Four"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func TestNewDraftSectionSubtitleIsTheFirstParagraphsSubtitleAsTheCommitReadsIt(t
 }
 
 func TestNewDraftSectionWithoutSubtitleSendsNoSubtitleField(t *testing.T) {
-	draft, err := newDraft("docx", "test.docx", []Paragraph{{Chapter: "Chapter One", Text: "Text.", SourceIndex: 0}}, []string{"Chapter One"})
+	draft, err := newDraft("docx", "test.docx", []Paragraph{{Chapter: "Chapter One", Text: "Text.", SourceIndex: 0}}, []string{"Chapter One"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

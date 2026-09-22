@@ -46,6 +46,10 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 	chapter, subtitle, section := "Front Matter", "", ""
 	paragraphs := []Paragraph{}
 	titles, pending := []string{}, []markdownLine{}
+	// headingLevels records the outline depth newDraft needs to bound an active Characters section (S3): every group-starting
+	// heading (level == headingLevel) sits at the same depth, chapter or not, so any later one - not only a "Chapter N"-shaped
+	// title - now ends the section instead of leaking every later short heading in as a candidate.
+	headingLevels := map[string]int{}
 	flush := func() {
 		if len(pending) == 0 {
 			return
@@ -86,11 +90,17 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 			if level == headingLevel {
 				if isNonChapterHeading(text) {
 					chapter, subtitle, section = collapse(text), "", ""
+					if _, seen := headingLevels[chapter]; !seen {
+						headingLevels[chapter] = level
+					}
 					continue
 				}
 				chapter, subtitle, _ = headingParts(text)
 				section = ""
 				titles = append(titles, chapter)
+				if _, seen := headingLevels[chapter]; !seen {
+					headingLevels[chapter] = level
+				}
 			} else if level > headingLevel {
 				section = collapse(text)
 			}
@@ -116,7 +126,7 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 	}
 	progress.report(60, "Read %d paragraphs under %d chapter headings", len(paragraphs), len(titles))
 	progress.report(80, "Classifying front matter, chapters and reference sections")
-	draft, err := newDraft("markdown", filepath.Base(path), paragraphs, titles)
+	draft, err := newDraft("markdown", filepath.Base(path), paragraphs, titles, headingLevels)
 	if err == nil {
 		progress.report(95, "Found %d chapters in %d sections", len(titles), len(draft.Sections))
 	}
