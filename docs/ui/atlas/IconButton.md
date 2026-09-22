@@ -10,6 +10,8 @@ Storybook title: `Primitives/IconButton`. Source: `src/components/primitives/Ico
 - Primary
 - Danger
 - Disabled
+- Pending
+- Pending Is Busy And Focusable
 - With Hint
 - Press Reports Click
 - Disabled Does Nothing

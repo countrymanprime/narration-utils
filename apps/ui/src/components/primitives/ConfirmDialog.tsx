@@ -19,6 +19,9 @@ type ConfirmDialogProps = {
   // false: Escape does not decline. For a confirm that has turned into a running download, where declining aborts the
   // download: the header button and Cancel stay as the deliberate ways out.
   escapeCancels?: boolean;
+  // The confirmed action is running (ADR 0075): the confirm button says so and ignores a press, and nothing else in the dialog can be pressed,
+  // so the action cannot be confirmed twice or walked away from half done. The caller closes the dialog when the action ends.
+  pending?: boolean;
   children?: ReactNode;
 } & DangerAction;
 
@@ -34,27 +37,28 @@ export function ConfirmDialog({
   danger,
   cancel,
   escapeCancels = true,
+  pending = false,
   children,
 }: ConfirmDialogProps) {
   return (
     <Dialog
       title={title}
       variant="alert"
-      onClose={cancel}
-      escapeCloses={escapeCancels}
+      onClose={pending ? undefined : cancel}
+      escapeCloses={escapeCancels && !pending}
       description={body}
       actions={
         <>
-          <Button variant="ghost" onClick={cancel}>
+          <Button variant="ghost" disabled={pending} onClick={cancel}>
             Cancel
           </Button>
           <div className="flex gap-2">
             {danger && (
-              <Button variant="danger" onClick={danger}>
+              <Button variant="danger" disabled={pending} onClick={danger}>
                 {dangerLabel}
               </Button>
             )}
-            <Button variant={confirmVariant} onClick={confirm}>
+            <Button variant={confirmVariant} pending={pending} onClick={confirm}>
               {confirmLabel}
             </Button>
           </div>

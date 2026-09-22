@@ -7,6 +7,7 @@ Storybook title: `Primitives/ConfirmDialog`. Source: `src/components/primitives/
 ## Stories
 
 - Default
+- Pending
 - Destructive Confirm
 - Rich Body
 - With Danger Action

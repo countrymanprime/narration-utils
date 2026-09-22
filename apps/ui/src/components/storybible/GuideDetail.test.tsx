@@ -172,7 +172,7 @@ describe('Story Bible local TTS preview', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Play preview' }));
-    await waitFor(() => expect(notify).toHaveBeenCalledWith('"Dawnspire" could not be spoken: the voice produced no audio for it.'));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('"Dawnspire" could not be spoken: the voice produced no audio for it.', 'error'));
     const play = screen.getByRole('button', { name: 'Play preview' });
     expect((play as HTMLButtonElement).disabled).toBe(false);
 
@@ -201,7 +201,7 @@ describe('Story Bible local TTS preview', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Play preview' }));
 
-    await waitFor(() => expect(notify).toHaveBeenCalledWith('The preview voice could not be loaded (missing file)'));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('The preview voice could not be loaded (missing file)', 'error'));
     expect(screen.getByRole('button', { name: 'Play preview' })).toBeTruthy();
   });
 

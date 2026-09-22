@@ -30,6 +30,34 @@ describe('ConfirmDialog', () => {
     expect(cancel).toHaveBeenCalledOnce();
   });
 
+  it('while the confirmed action runs, the confirm button is busy and ignores a press, and nothing else can leave the dialog', () => {
+    const confirm = vi.fn();
+    const cancel = vi.fn();
+    const danger = vi.fn();
+    render(
+      <ConfirmDialog
+        title="Delete entry"
+        body="Delete it?"
+        confirmLabel="Delete entry"
+        confirm={confirm}
+        dangerLabel="Discard"
+        danger={danger}
+        cancel={cancel}
+        pending
+      />,
+    );
+    const button = screen.getByRole('button', { name: 'Delete entry' });
+    expect(button.getAttribute('aria-busy')).toBe('true');
+    fireEvent.click(button);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Discard' }));
+    fireEvent.keyDown(screen.getByRole('alertdialog'), { key: 'Escape' });
+    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+    expect(confirm).not.toHaveBeenCalled();
+    expect(cancel).not.toHaveBeenCalled();
+    expect(danger).not.toHaveBeenCalled();
+  });
+
   it('omits the danger action entirely when no dangerLabel/danger is given', () => {
     render(<ConfirmDialog title="Confirm" body="Continue?" confirmLabel="OK" confirm={() => {}} cancel={() => {}} />);
     expect(screen.queryByRole('button', { name: /discard/i })).toBeNull();

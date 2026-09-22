@@ -11,11 +11,14 @@ export function SelectionMenu({
   selection,
   addNote,
   addToStoryBible,
+  addingToStoryBible = false,
   dismiss,
 }: {
   selection: ManuscriptSelection;
   addNote: () => void;
   addToStoryBible: () => void;
+  // The entry is being created (a Python process, about half a second): the button says so and ignores a second press (ADR 0075).
+  addingToStoryBible?: boolean;
   dismiss: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -48,10 +51,16 @@ export function SelectionMenu({
       style={position}
       onMouseDown={(event) => event.preventDefault()}
     >
-      <Button variant="primary" className="rounded-none border-0 text-xs" aria-label="+ Note" onClick={addNote}>
+      <Button variant="primary" className="rounded-none border-0 text-xs" aria-label="+ Note" disabled={addingToStoryBible} onClick={addNote}>
         <FontAwesomeIcon icon={faNoteSticky} /> Note
       </Button>
-      <Button variant="ghost" className="rounded-none border-0 border-l border-l-[var(--border)] text-xs" aria-label="+ Story Bible" onClick={addToStoryBible}>
+      <Button
+        variant="ghost"
+        className="rounded-none border-0 border-l border-l-[var(--border)] text-xs"
+        aria-label="+ Story Bible"
+        pending={addingToStoryBible}
+        onClick={addToStoryBible}
+      >
         <FontAwesomeIcon icon={faBookOpen} /> Story Bible
       </Button>
     </div>,

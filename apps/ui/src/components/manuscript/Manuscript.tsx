@@ -8,6 +8,7 @@ import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-i
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderState, SearchHit } from '../../types';
 import { categoryCssName, chapterLineNumbers, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
+import { usePendingAction } from '../../hooks/usePendingAction';
 import { useTextSelection } from '../../hooks/useTextSelection';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
@@ -48,6 +49,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   const searchRequest = useRef(0);
   const requestedChapters = useRef(new Set<string>());
   const highlightTimer = useRef<number | undefined>(undefined);
+  const addingToStoryBible = usePendingAction();
   const [bandHeight, setBandHeight] = useState(0);
   const [chapters, setChapters] = useState<Awaited<ReturnType<typeof api.manuscriptChapters>>>([]);
   const [paragraphs, setParagraphs] = useState<ManuscriptParagraph[]>([]);
@@ -419,11 +421,18 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
         <SelectionMenu
           selection={selection}
           addNote={addNote}
-          addToStoryBible={() => {
-            const text = selection.text;
-            clearSelection();
-            void api.guideCreate(text, '', []).then(focusStoryBibleEntity);
-          }}
+          addingToStoryBible={addingToStoryBible.isPending('add')}
+          addToStoryBible={() =>
+            void addingToStoryBible.run('add', async () => {
+              try {
+                const id = await api.guideCreate(selection.text, '', []);
+                clearSelection();
+                focusStoryBibleEntity(id);
+              } catch (error) {
+                notify(describeApiError(error), 'error');
+              }
+            })
+          }
           dismiss={clearSelection}
         />
       )}

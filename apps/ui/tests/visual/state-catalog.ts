@@ -111,6 +111,11 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Story Bible, a rebuild still running: its dialog says the step cannot be cancelled but can go on in the background (ADR 0076, ?mockRebuildRunning=1)',
   },
+  {
+    page: 'storybible',
+    state: 'entry-saving',
+    description: 'Story Bible, an entry being saved: the Save button is busy and the other actions are off (ADR 0075, ?mockHoldEdits=1)',
+  },
   { page: 'storybible', state: 'category-all', description: 'Story Bible, All category tab' },
   { page: 'storybible', state: 'category-character', description: 'Story Bible, Character category tab' },
   { page: 'storybible', state: 'category-place', description: 'Story Bible, Place/Location category tab' },

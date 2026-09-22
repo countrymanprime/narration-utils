@@ -190,6 +190,8 @@ export function createMockApi(
     liveUpdatesDegraded?: boolean;
     /** Tells the app this text at once, as the host does after keeping a file it could not read. */
     notice?: string;
+    /** Makes every Story Bible edit hang, as a Python process that has not answered would, so the busy state can be seen without a host. */
+    holdEdits?: boolean;
     /** Boots with a Story Bible rebuild that is still running, so its dialog (and Continue in background) can be seen without a host. */
     rebuildRunning?: boolean;
     /** Boots the update state (see `MockUpdateSeed`). */
@@ -533,8 +535,10 @@ export function createMockApi(
       await manuscriptReady;
       return wireClone(entities);
     },
-    guideEdit: async (id, values) =>
-      updateEntity(id, (entity) => ({
+    guideEdit: async (id, values) => {
+      // A Python process that has not answered yet: the Save button stays busy, so its look can be seen (`?mockHoldEdits=1`).
+      if (initial.holdEdits) await new Promise<void>(() => {});
+      return updateEntity(id, (entity) => ({
         ...entity,
         canonical_name: values.canonical_name ?? entity.canonical_name,
         category: values.category ?? entity.category,
@@ -556,7 +560,8 @@ export function createMockApi(
                       occurrences: [],
                     },
                 ),
-      })),
+      }));
+    },
     guideSetLocked: async (id, locked) => updateEntity(id, (entity) => ({ ...entity, locked })),
     guideRescan: async (id) =>
       updateEntity(id, (entity) => ({

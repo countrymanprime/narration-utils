@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GuidePreview } from '../../types';
+import type { Notify } from '../primitives/Toast';
 
 export const CANONICAL_PREVIEW = 'canonical';
 
@@ -11,7 +12,7 @@ type PreviewAudioOptions = {
   resetKey: unknown;
   requestPreview: (aliasIndex?: number) => Promise<GuidePreview>;
   onAssetRequired: (preview: AssetRequiredPreview, aliasIndex?: number) => void;
-  notify: (message: string) => void;
+  notify: Notify;
 };
 
 /**
@@ -54,6 +55,10 @@ function decodePreview(audioBase64: string, fail: (message: string) => void): Ui
  */
 export function usePreviewAudio({ resetKey, requestPreview, onAssetRequired, notify }: PreviewAudioOptions) {
   const [playingPreview, setPlayingPreview] = useState<string>();
+  // The preview the host is still rendering (a Python process that loads a voice, so it takes a while). One at a time: pressing play
+  // again while it renders does nothing, and the button says it is working (ADR 0075).
+  const [loadingPreview, setLoadingPreview] = useState<string>();
+  const loadingRef = useRef<string | undefined>(undefined);
   const audioRef = useRef<HTMLAudioElement | undefined>(undefined);
   const activeKeyRef = useRef<string | undefined>(undefined);
   const objectUrlRef = useRef<string | undefined>(undefined);
@@ -79,6 +84,8 @@ export function usePreviewAudio({ resetKey, requestPreview, onAssetRequired, not
 
   const stop = useCallback(() => {
     requestRef.current += 1;
+    loadingRef.current = undefined;
+    setLoadingPreview(undefined);
     clear();
   }, [clear]);
 
@@ -99,22 +106,34 @@ export function usePreviewAudio({ resetKey, requestPreview, onAssetRequired, not
           if (audioRef.current === audio) setPlayingPreview(target);
         } catch (error) {
           if (audioRef.current === audio && !isDeliberateAbort(error))
-            callbacksRef.current.notify(`Preview audio could not be played (${rejectionReason(error)}).`);
+            callbacksRef.current.notify(`Preview audio could not be played (${rejectionReason(error)}).`, 'error');
         }
         return;
       }
 
+      if (loadingRef.current !== undefined) return;
       stop();
       const requestId = requestRef.current;
       try {
-        const preview = await callbacksRef.current.requestPreview(aliasIndex);
+        loadingRef.current = target;
+        setLoadingPreview(target);
+        let preview: GuidePreview;
+        try {
+          preview = await callbacksRef.current.requestPreview(aliasIndex);
+        } finally {
+          // A newer request (or stop) already reset this; only the request that set it clears it.
+          if (requestId === requestRef.current) {
+            loadingRef.current = undefined;
+            setLoadingPreview(undefined);
+          }
+        }
         if (requestId !== requestRef.current) return;
         if (preview.status !== 'ready') {
           callbacksRef.current.onAssetRequired(preview, aliasIndex);
           return;
         }
 
-        const bytes = decodePreview(preview.audioBase64, callbacksRef.current.notify);
+        const bytes = decodePreview(preview.audioBase64, (message) => callbacksRef.current.notify(message, 'error'));
         if (!bytes) return;
         const objectUrl = URL.createObjectURL(new Blob([bytes], { type: preview.mimeType }));
         objectUrlRef.current = objectUrl;
@@ -125,7 +144,7 @@ export function usePreviewAudio({ resetKey, requestPreview, onAssetRequired, not
         nextAudio.onerror = () => {
           if (audioRef.current !== nextAudio) return;
           clear(nextAudio);
-          callbacksRef.current.notify('Preview audio could not be played.');
+          callbacksRef.current.notify('Preview audio could not be played.', 'error');
         };
         try {
           await nextAudio.play();
@@ -138,14 +157,14 @@ export function usePreviewAudio({ resetKey, requestPreview, onAssetRequired, not
           // Already stopped, replaced, or reported through onerror: nothing more to say.
           if (audioRef.current !== nextAudio) return;
           clear(nextAudio);
-          if (!isDeliberateAbort(error)) callbacksRef.current.notify(`Preview audio could not be played (${rejectionReason(error)}).`);
+          if (!isDeliberateAbort(error)) callbacksRef.current.notify(`Preview audio could not be played (${rejectionReason(error)}).`, 'error');
         }
       } catch (error) {
-        if (requestId === requestRef.current) callbacksRef.current.notify(sentence(rejectionReason(error)));
+        if (requestId === requestRef.current) callbacksRef.current.notify(sentence(rejectionReason(error)), 'error');
       }
     },
     [clear, playingPreview, stop],
   );
 
-  return { playingPreview, playPreview, stopPreview: stop };
+  return { playingPreview, loadingPreview, playPreview, stopPreview: stop };
 }

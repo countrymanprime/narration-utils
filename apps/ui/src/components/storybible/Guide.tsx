@@ -7,6 +7,7 @@ import { faLock, faPlus, faRotate } from '@fortawesome/free-solid-svg-icons';
 import type { GuideEntity, WorkJob } from '../../types';
 import { categoryCssName, categoryLabel, sortEntities, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
+import { usePendingAction } from '../../hooks/usePendingAction';
 import { Heading } from '../primitives/Heading';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { CAT_DOT_BG, CAT_DOT_CLASS } from '../manuscript/EntitySummary';
@@ -62,6 +63,8 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
   const [tab, setTab] = useState('All');
   const [sort, setSort] = useState<EntitySort>({ key: 'name', dir: 'asc' });
   const [buildJob, setBuildJob] = useState<WorkJob>();
+  // The start call is quick, but the button says it was heard and a second press cannot start a second rebuild (ADR 0075).
+  const starting = usePendingAction();
   const [pendingNewEntity, setPendingNewEntity] = useState<{ name: string }>();
   // Memoized so the object identity only changes when a draft opens/closes,
   // not on every Guide re-render - GuideDetail resets its local form state
@@ -178,15 +181,18 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
             <TooltipTarget text="Build / refresh Story Bible">
               <IconButton
                 label="Build / refresh Story Bible"
-                onClick={async () => {
-                  try {
-                    const job = await api.guideBuild();
-                    if (job.phase === 'success') await load();
-                    else setBuildJob(job);
-                  } catch (error) {
-                    notify(describeApiError(error), 'error');
-                  }
-                }}
+                pending={starting.isPending('build')}
+                onClick={() =>
+                  void starting.run('build', async () => {
+                    try {
+                      const job = await api.guideBuild();
+                      if (job.phase === 'success') await load();
+                      else setBuildJob(job);
+                    } catch (error) {
+                      notify(describeApiError(error), 'error');
+                    }
+                  })
+                }
               >
                 <FontAwesomeIcon icon={faRotate} />
               </IconButton>
@@ -252,6 +258,8 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
         </TabPanel>
         <div className="flex min-h-0 min-w-0">
           <GuideDetail
+            // One detail per entry, so what an action left pending on one entry never shows on the next.
+            key={newEntityDraft ? 'new-draft' : (selected?.id ?? 'none')}
             entity={newEntityDraft ?? selected}
             isNewDraft={Boolean(newEntityDraft)}
             onDiscardNewDraft={() => setPendingNewEntity(undefined)}

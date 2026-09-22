@@ -24,5 +24,6 @@ Storybook title: `Primitives/Toast`. Source: `src/components/primitives/Toast.ts
 - `src/components/settings/Settings.tsx`
 - `src/components/storybible/Guide.tsx`
 - `src/components/storybible/GuideDetail.tsx`
+- `src/components/storybible/usePreviewAudio.ts`
 - `src/hooks/useToasts.ts`
 - `src/jobEnded.ts`

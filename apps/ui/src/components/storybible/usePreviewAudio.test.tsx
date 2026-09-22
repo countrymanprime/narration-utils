@@ -43,7 +43,7 @@ describe('usePreviewAudio failures', () => {
     ]);
 
     await act(async () => result.current.playPreview());
-    expect(notify).toHaveBeenCalledWith('The preview took longer than 2m0s and was stopped; try again');
+    expect(notify).toHaveBeenCalledWith('The preview took longer than 2m0s and was stopped; try again', 'error');
     expect(result.current.playingPreview).toBeUndefined();
 
     await act(async () => result.current.playPreview());
@@ -56,7 +56,7 @@ describe('usePreviewAudio failures', () => {
 
     await act(async () => result.current.playPreview());
 
-    expect(notify).toHaveBeenCalledWith('"..." could not be spoken: the voice produced no audio for it.');
+    expect(notify).toHaveBeenCalledWith('"..." could not be spoken: the voice produced no audio for it.', 'error');
     expect(result.current.playingPreview).toBeUndefined();
   });
 
@@ -65,7 +65,7 @@ describe('usePreviewAudio failures', () => {
 
     await act(async () => result.current.playPreview());
 
-    expect(notify).toHaveBeenCalledWith('The preview audio was empty. Try playing it again.');
+    expect(notify).toHaveBeenCalledWith('The preview audio was empty. Try playing it again.', 'error');
     expect(result.current.playingPreview).toBeUndefined();
   });
 
@@ -74,7 +74,7 @@ describe('usePreviewAudio failures', () => {
 
     await act(async () => result.current.playPreview());
 
-    expect(notify).toHaveBeenCalledWith('The preview audio was not valid. Try playing it again.');
+    expect(notify).toHaveBeenCalledWith('The preview audio was not valid. Try playing it again.', 'error');
     expect(result.current.playingPreview).toBeUndefined();
   });
 
@@ -90,7 +90,7 @@ describe('usePreviewAudio failures', () => {
     const { result, notify } = renderPreviewHook([() => Promise.resolve(ready()), () => Promise.resolve(ready())], RejectingAudio);
 
     await act(async () => result.current.playPreview());
-    expect(notify).toHaveBeenCalledWith('Preview audio could not be played (NotSupportedError: The element has no supported sources.).');
+    expect(notify).toHaveBeenCalledWith('Preview audio could not be played (NotSupportedError: The element has no supported sources.).', 'error');
     expect(result.current.playingPreview).toBeUndefined();
 
     await act(async () => result.current.playPreview());
@@ -111,7 +111,7 @@ describe('usePreviewAudio failures', () => {
     expect(result.current.playingPreview).toBe('canonical');
     act(() => audios[0].onerror?.());
 
-    expect(notify).toHaveBeenCalledWith('Preview audio could not be played.');
+    expect(notify).toHaveBeenCalledWith('Preview audio could not be played.', 'error');
     expect(result.current.playingPreview).toBeUndefined();
   });
 
@@ -133,7 +133,7 @@ describe('usePreviewAudio failures', () => {
     await act(async () => result.current.playPreview());
 
     expect(notify).toHaveBeenCalledTimes(1);
-    expect(notify).toHaveBeenCalledWith('Preview audio could not be played.');
+    expect(notify).toHaveBeenCalledWith('Preview audio could not be played.', 'error');
     expect(result.current.playingPreview).toBeUndefined();
   });
 
@@ -167,10 +167,10 @@ describe('usePreviewAudio failures', () => {
     const { result, notify } = renderPreviewHook([() => Promise.resolve(ready('   ')), () => Promise.reject(new Error(''))]);
 
     await act(async () => result.current.playPreview());
-    expect(notify).toHaveBeenLastCalledWith('The preview audio was empty. Try playing it again.');
+    expect(notify).toHaveBeenLastCalledWith('The preview audio was empty. Try playing it again.', 'error');
 
     await act(async () => result.current.playPreview());
-    expect(notify).toHaveBeenLastCalledWith('Unknown error');
+    expect(notify).toHaveBeenLastCalledWith('Unknown error', 'error');
   });
 });
 
