@@ -164,6 +164,53 @@ func (s *Service) plan(options map[string]string) (launch, error) {
 	return launch{args: args, engine: engine, chapter: chapter, stopFile: stopFile}, nil
 }
 
+// Device is one input device the sidecar's `--list-devices` reported, by the
+// same name its capture path (`dshow`) opens it under.
+type Device struct {
+	Name string `json:"name"`
+}
+
+// devicesResult mirrors the sidecar's `--list-devices` NDJSON line:
+// {"type":"devices","devices":[...],"error":null}.
+type devicesResult struct {
+	Devices []Device `json:"devices"`
+	Error   *string  `json:"error"`
+}
+
+// Devices asks the sidecar to list input devices, honoring ctx's deadline and caching nothing (a fresh list every
+// call). It returns a Go error only for a setup problem (the service is not configured); every sidecar-side or
+// process-level failure - a bad exit code, a timeout, unparseable output - is folded into the returned message
+// instead, the same "never block Start" contract the sidecar's own {"devices": [], "error": ...} shape gives (see
+// docs/prds/teleprompter-engines-and-input-devices.prd.md, Architecture Notes).
+func (s *Service) Devices(ctx context.Context) ([]Device, string, error) {
+	s.mu.RLock()
+	python, backend, sidecars := s.config.Python, s.config.Backend, s.sidecars
+	s.mu.RUnlock()
+	if python == "" || sidecars == nil {
+		return nil, "", errors.New("configure the teleprompter executable before continuing")
+	}
+	args := []string{"--list-devices"}
+	if backend != "" {
+		args = append([]string{backend}, args...)
+	}
+	code, out, stderr, err := sidecars.Run(ctx, python, args...)
+	if err != nil {
+		return nil, err.Error(), nil
+	}
+	if code != 0 {
+		return nil, failureMessage(code, stderr, "Could not list input devices"), nil
+	}
+	var result devicesResult
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &result); err != nil {
+		return nil, "the teleprompter sidecar returned an unreadable device list", nil
+	}
+	message := ""
+	if result.Error != nil {
+		message = *result.Error
+	}
+	return result.Devices, message, nil
+}
+
 // Start launches a session for one chapter.
 func (s *Service) Start(options map[string]string) error {
 	plan, err := s.plan(options)
@@ -278,7 +325,9 @@ func (s *Service) onLine(line string) {
 	}
 }
 
-func failureMessage(code int, stderr string) string {
+// failureMessage picks the sidecar's last non-blank stderr line (a Python traceback ends with the useful part), or
+// falls back to a generic message naming the exit code when stderr said nothing useful.
+func failureMessage(code int, stderr, fallback string) string {
 	lines := strings.Split(strings.TrimSpace(stderr), "\n")
 	for index := len(lines) - 1; index >= 0; index-- {
 		if line := strings.TrimSpace(lines[index]); line != "" {
@@ -288,7 +337,7 @@ func failureMessage(code int, stderr string) string {
 			return line
 		}
 	}
-	return fmt.Sprintf("The teleprompter stopped unexpectedly (exit code %d).", code)
+	return fmt.Sprintf("%s (exit code %d).", fallback, code)
 }
 
 func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc, finished chan struct{}) {
@@ -300,7 +349,7 @@ func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc, f
 	if s.stopping || code == 0 {
 		s.state["phase"], s.state["message"] = "stopped", "Stopped."
 	} else {
-		s.state["phase"], s.state["message"] = "error", failureMessage(code, child.StderrTail())
+		s.state["phase"], s.state["message"] = "error", failureMessage(code, child.StderrTail(), "The teleprompter stopped unexpectedly")
 	}
 	s.child, s.stopping = nil, false
 	s.mu.Unlock()

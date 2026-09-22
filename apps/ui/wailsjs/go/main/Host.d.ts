@@ -97,6 +97,8 @@ export function SystemSaveSettings(arg1:string,arg2:string,arg3:Record<string, a
 
 export function SystemSettingsForScope(arg1:string):Promise<string>;
 
+export function TeleprompterDevices():Promise<string>;
+
 export function TeleprompterStart(arg1:Record<string, string>):Promise<string>;
 
 export function TeleprompterState():Promise<string>;

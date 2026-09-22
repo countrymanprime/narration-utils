@@ -8,11 +8,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
+	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -518,6 +520,39 @@ func (h *Host) TeleprompterStop() (string, error) {
 		service.Stop()
 	}
 	return encodeBinding(nil, nil)
+}
+
+// teleprompterDevicesTimeout bounds one `--list-devices` sidecar run: it prints one JSON line and exits, so this only
+// needs to cover process start-up and dshow's own listing time, not anything as slow as a model load.
+const teleprompterDevicesTimeout = 10 * time.Second
+
+// TeleprompterDevices lists the input devices the teleprompter's capture path can open, by the name it opens them
+// under (docs/prds/teleprompter-engines-and-input-devices.prd.md Phase 1). It never fails Start-style: a listing
+// problem comes back as `{"devices": [], "error": "..."}`, not a rejected promise, so a caller can always still try
+// to start with a device the narrator picked before.
+func (h *Host) TeleprompterDevices() (string, error) {
+	service := h.services().teleprompter
+	if service == nil {
+		return "", fmt.Errorf("the teleprompter service is unavailable")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), teleprompterDevicesTimeout)
+	defer cancel()
+	devices, message, err := service.Devices(ctx)
+	if err != nil {
+		return "", err
+	}
+	if devices == nil {
+		devices = []teleprompter.Device{}
+	}
+	return encodeBinding(map[string]any{"devices": devices, "error": nonEmptyOrNil(message)}, nil)
+}
+
+// nonEmptyOrNil turns "" into a JSON null instead of an empty string, matching the sidecar's own {"error": null} shape.
+func nonEmptyOrNil(message string) *string {
+	if message == "" {
+		return nil
+	}
+	return &message
 }
 func (h *Host) TeleprompterState() (string, error) {
 	if service := h.services().teleprompter; service != nil {

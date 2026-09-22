@@ -36,7 +36,21 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+// runFakeTeleprompterDevices stands in for the sidecar's `--list-devices` mode: one JSON line, then exit. Checked
+// first (before the streaming behavior below) so a TeleprompterDevices test never waits on a --stop-file that
+// `--list-devices` never receives.
+func runFakeTeleprompterDevices() bool {
+	if len(os.Args) < 2 || os.Args[1] != "--list-devices" {
+		return false
+	}
+	fmt.Println(`{"type":"devices","devices":[{"name":"Microphone Array (Realtek(R) Audio)"}],"error":null}`)
+	return true
+}
+
 func runFakeTeleprompter() {
+	if runFakeTeleprompterDevices() {
+		return
+	}
 	fmt.Println(`{"type":"script","chapter":{"id":"c1","title":"One"},"tokens":4,"spans":[]}`)
 	stopFile := ""
 	for index, arg := range os.Args {
@@ -187,6 +201,37 @@ func TestTeleprompterStartReportsAnUnavailableService(t *testing.T) {
 	host := &Host{}
 
 	if _, err := host.TeleprompterStart(map[string]string{}); err == nil || !strings.Contains(err.Error(), "unavailable") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestTeleprompterDevicesReturnsTheSidecarsListThroughTheHostBinding(t *testing.T) {
+	t.Setenv(fakeTeleprompterEnv, "1")
+	host := &Host{teleprompter: teleprompter.New(teleprompter.Config{Project: t.TempDir(), SessionDir: t.TempDir(), Python: os.Args[0]}, process.NewSupervisor(), nil, nil)}
+
+	raw, err := host.TeleprompterDevices()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result struct {
+		Devices []map[string]string `json:"devices"`
+		Error   *string             `json:"error"`
+	}
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Error != nil {
+		t.Fatalf("error = %v, want nil", *result.Error)
+	}
+	if len(result.Devices) != 1 || result.Devices[0]["name"] != "Microphone Array (Realtek(R) Audio)" {
+		t.Fatalf("devices = %v", result.Devices)
+	}
+}
+
+func TestTeleprompterDevicesReportsAnUnavailableServiceLikeTeleprompterStart(t *testing.T) {
+	host := &Host{}
+
+	if _, err := host.TeleprompterDevices(); err == nil || !strings.Contains(err.Error(), "unavailable") {
 		t.Fatalf("err = %v", err)
 	}
 }

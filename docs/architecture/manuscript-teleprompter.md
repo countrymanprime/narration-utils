@@ -322,6 +322,47 @@ selection plumbing, and relaying streamed events to the React frontend.
 REAPER Lua is not involved in the live loop at all — same boundary the DAW
 integration doc already draws for take/marker mutation.
 
+## Device enumeration (teleprompter-engines-and-input-devices PRD, Phase 1)
+
+The PRD's "Where device enumeration runs" open question asked whether PyAV can
+list `dshow` devices without shelling out to ffmpeg directly (option (a)); the
+spike confirmed it can. `sidecars/manuscript-teleprompter/core/devices.py`
+adds `--list-devices` to `live_asr.py`: it opens `dshow` with the
+`list_devices` option (which always raises - that mode is a listing, not a
+real capture) inside `av.logging.Capture`, which receives ffmpeg's own device
+listing as the log text it would otherwise print to stderr, and parses that
+into a device list. No ffmpeg subprocess, no log-file scraping.
+
+Verified on the development machine (2026-09-22, real hardware): `ffmpeg
+-list_devices true -f dshow -i dummy` and the PyAV spike agreed on the same
+four devices (two audio, one video, one virtual "none" device); the sidecar
+keeps only the "audio" ones. Both audio devices then opened successfully
+through the exact `av.open(file=f"audio={name}", format="dshow")` call
+`iter_microphone_chunks` uses (open, confirm the stream, close cleanly) - the
+name that is listed is the name that opens, so no separate device-id mapping
+is needed for Start.
+
+**Duplicate device names.** ffmpeg disambiguates same-named devices with an
+"Alternative name" line (a stable `@device_...` path); `devices.py` records
+it (`Device.alternative_name`) but nothing opens a device by that path
+instead of its friendly name yet, and no duplicate audio device names existed
+on the development machine to test the collision case against. Left for the
+phase that builds the picker (Phase 2): if it needs to disambiguate, the
+alternative name is already captured, just not exposed over the wire yet
+(`Device.to_json()` returns only `name` today).
+
+The Go binding (`apps/desktop/internal/teleprompter/service.go`'s `Devices`,
+exposed as the `TeleprompterDevices` host binding, `hostAPIVersion` 14) runs
+the sidecar in `--list-devices` mode with a caller-supplied timeout and caches
+nothing; a failure at any layer (bad exit code, unparseable output, a timeout)
+comes back as an empty list plus a message, never a rejected call - listing
+must never block Start. Phase 1 stops at the binding: no UI calls it yet, and
+the existing typed microphone field is unchanged behavior, only relocated to
+`apps/ui/src/components/teleprompter/MicrophoneField.tsx` as the shared seam
+this PRD and `teleprompter-manuscript-integration.prd.md` agreed on. The
+device picker itself (consuming `TeleprompterDevices`, replacing the typed
+field, the "not found" state) is Phase 2.
+
 ## UI: what shipped and what is still open
 
 **Shipped (Teleprompter page, `apps/ui/src/components/teleprompter/`).** Pick a

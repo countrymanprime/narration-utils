@@ -194,6 +194,10 @@ export function SystemSettingsForScope(arg1) {
   return window['go']['main']['Host']['SystemSettingsForScope'](arg1);
 }
 
+export function TeleprompterDevices() {
+  return window['go']['main']['Host']['TeleprompterDevices']();
+}
+
 export function TeleprompterStart(arg1) {
   return window['go']['main']['Host']['TeleprompterStart'](arg1);
 }
