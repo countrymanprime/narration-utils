@@ -153,6 +153,29 @@ jobs:
           targets: test-node
           projects: repo-scripts
           always: 'true'
+  docs-site:
+    # The public docs site (tools/docs-site, ADR 0083): unit tests of the include list and link rewriting, a strict MkDocs
+    # build of docs/ (a dead link or heading link fails it) and a link check over the built HTML. `always`: the site reads
+    # docs/, which belongs to no Nx project, so Nx cannot see that a change there affects it. ci.yml skips documentation-only
+    # pull requests, so pages.yml runs the same build for a pull request that changes docs/.
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { fetch-depth: 0, persist-credentials: false }
+      - uses: ./.github/actions/setup-toolchain
+        with:
+          need-go: 'false'
+          need-wails-tools: 'false'
+          need-stylua: 'false'
+          need-linux-native-deps: 'false'
+          python-sync-args: --only-group docs
+          pnpm-filter: narration-utils
+      - uses: ./.github/actions/nx-run
+        with:
+          targets: lint test build
+          projects: docs-site
+          always: 'true'
   python:
     # ruff and pytest for libs/python, the sidecars, scripts/ (release tests) and tests/fixtures.
     timeout-minutes: 15

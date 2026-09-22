@@ -52,6 +52,7 @@ The checks a pull request shows, by the name GitHub displays (`ci.yml` calls `_q
 | `quality / ui-visual` | the Playwright visual suite of the mock-backed app (`pnpm --dir apps/ui run screenshots`); uploads screenshots, and traces when it fails |
 | `quality / ui-atlas` | the Storybook component atlas: every story in light and dark at a wide and a narrow viewport, with axe |
 | `quality / ui-atlas-kit` | the tests of `tools/ui-atlas-kit` and its drift check against `apps/ui` |
+| `quality / docs-site` | the public docs site ([below](#the-public-docs-site)): ruff and pytest of `tools/docs-site`, a strict MkDocs build of `docs/` and the link check over the built HTML; fails on any dead internal link |
 | `quality / repo-scripts` | the plain-Node tests of `scripts/` (labels, milestones, release tooling, the layout and project guards) |
 | `quality / python` | ruff and pytest for `libs/python`, the sidecars, `scripts/` and `tests/fixtures` |
 | `quality / lua (ubuntu-latest)`, `quality / lua (windows-latest)` | StyLua and ruff on `integrations/reaper`, then its bridge harness under Lua 5.4 (a fake `reaper` driven through the file protocol, and the mutation checks; [ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md)) |
@@ -85,7 +86,7 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | `codeql.yml` (`CodeQL`) | pull request to `main` that is not docs- or Markdown-only (same-repository, not Dependabot), push to `main`, weekly (Monday 05:23 UTC), manual | `Analyze (go)`, `Analyze (javascript-typescript)`, `Analyze (python)` | advisory |
 | `dependency-review.yml` | pull request to `main` | `review` (fails on a high-severity advisory the pull request adds; needs the dependency graph) | advisory |
 | `labeler.yml` | `pull_request_target` (opened, synchronize, reopened, ready for review) | `label` | not a check that gates anything |
-| `pages.yml` (`Pages`) | push to `main` (any change, docs included); manual | `build`, `deploy` ([below](#the-pages-workflow)); never runs for a pull request | not a pull request check |
+| `pages.yml` (`Pages`) | push to `main` (any change, docs included); a pull request that changes `docs/`, `tools/docs-site/`, the Storybook config, `pyproject.toml`, `uv.lock` or the workflow (`build` only); manual | `build`, `deploy` ([below](#the-pages-workflow)); `deploy` never runs for a pull request | the `build` job is the docs link check for a documentation-only pull request; advisory like the rest |
 | `sync-labels.yml`, `sync-milestones.yml` | push to `main` that changes `.github/labels.json`, `config/roadmap.json` or `scripts/github/**`, and the workflow file; manual | `sync` | run after a merge, never on a pull request |
 
 The tests of `scripts/github/*.test.mjs` (the label and milestone sync) run in `quality / repo-scripts`. Nothing runs on a schedule except
@@ -385,20 +386,27 @@ The `.sha256` beside a file only detects a damaged download: it is not evidence 
 
 ## The Pages workflow
 
-`pages.yml` publishes the Storybook component atlas of `apps/ui` to GitHub Pages, at `https://countrymanprime.github.io/narration-utils/`,
-on every push to `main` and on demand (PRD phase 9).
+`pages.yml` publishes the public site to GitHub Pages, at `https://countrymanprime.github.io/narration-utils/`, on every push to `main` and on
+demand: the docs at the root ([below](#the-public-docs-site)) and the Storybook component atlas of `apps/ui` under `/storybook/` (PRD phases 9 and 11).
 
-- **Two jobs.** `build` (read-only token) checks out with `persist-credentials: false`, runs the `setup-toolchain` action for pnpm
-  only, `pnpm --dir apps/ui run build-storybook` and uploads `apps/ui/storybook-static` with `actions/upload-pages-artifact`. `deploy`
-  needs it, runs only on `refs/heads/main` (a manual start from a branch builds and stops), holds `pages: write` and
-  `id-token: write` (the only job that does), uses the `github-pages` environment and calls `actions/deploy-pages`. The top-level
-  `permissions` is `{}`, there is no secret, and no trigger reaches a pull request, so a fork cannot get the deploy token. One
-  deployment runs at a time and a running one is never cancelled.
+- **Two jobs.** `build` (read-only token) checks out with `persist-credentials: false`, runs the `setup-toolchain` action (pnpm, and
+  the `docs` uv group only), `pnpm --dir apps/ui run build-storybook`, `nx run docs-site:build` (the strict docs build and its link check),
+  copies `apps/ui/storybook-static` to `tools/docs-site/build/site/storybook`, checks every link of the combined site (including the atlas
+  page's link to the Storybook) and uploads it with `actions/upload-pages-artifact`. `deploy` needs it, runs only on a push or manual
+  start on `refs/heads/main` (a manual start from a branch builds and stops), holds `pages: write` and `id-token: write` (the only
+  job that does), uses the `github-pages` environment and calls `actions/deploy-pages`. The top-level `permissions` is `{}` and there
+  is no secret. One deployment runs at a time and a running one is never cancelled.
+- **A pull request runs `build` only.** `ci.yml` skips documentation-only pull requests, and those are the ones that break links, so
+  a pull request that changes `docs/`, `tools/docs-site/`, `apps/ui/.storybook/`, `pyproject.toml`, `uv.lock` or the workflow runs the
+  build job too: a read-only `pull_request` token (a fork's is read-only by GitHub's rule), nothing uploaded, its own concurrency
+  group that the next push replaces, and `deploy` skipped by its `if`. The `docs-site` job of `_quality.yml` runs the same target
+  for a code change.
 - **It works under a project sub-path.** Pages serves this repository at `/narration-utils/`, not at `/`. Storybook's build writes
   every asset URL relative (`./sb-manager/...`, `./assets/...`), so no `base` setting is needed. Checked by serving the build
   from `/narration-utils/` on a server that answers 404 for anything outside that folder and loading `index.html` and `iframe.html`
   in Chromium in light and dark (`globals=theme:dark`): no request failed, no page or console error, the stories rendered
-  (2026-09-21, [PRD phase 9](../prds/release-readiness-provisioning-and-docs-site.prd.md)). The one thing outside the folder is
+  (2026-09-21, [PRD phase 9](../prds/release-readiness-provisioning-and-docs-site.prd.md)). Phase 11 put it one folder deeper
+  (`/narration-utils/storybook/`) and loaded it from there the same way; the docs pages use relative links only. The one thing outside the folder is
   Google Fonts, which `apps/ui/.storybook/preview-head.html` loads for the story frame, the same three families `index.html` asks for; it is the
   one third-party request the published atlas makes.
 - **Not enabled yet.** Pages is off for the repository and turning it on is an owner-only setting
@@ -407,6 +415,39 @@ on every push to `main` and on demand (PRD phase 9).
   the latest run; the deployed address appears on the `deploy` job and in the repository's Environments list.
 - **Change it like any workflow:** every action is pinned to a commit (`pinact run --verify --check`), `zizmor` must be clean, and a
   new artifact path or job goes through review of the token scopes above.
+
+## The public docs site
+
+The site at `https://countrymanprime.github.io/narration-utils/` is the repository's own `docs/` folder, built by MkDocs 1.6.1 with the
+Material 9.7.7 theme ([ADR 0083](../adr/0083-the-public-docs-site-is-built-by-mkdocs-with-the-material-theme-straight-from-docs-and-a-reviewed-include-list.md),
+the [spike](../research/docs-site-generator-spike.md) behind it). `tools/docs-site` holds configuration only and no page or picture: a test
+fails if it gains one, or if `docs_dir` stops being `docs/`.
+
+- **What is published** is `tools/docs-site/include.txt`, one path or glob per line (`dir/`, `file.md`, `*` inside a folder, `**` across
+  folders): the guide, the roadmap, the component atlas, the tool pages, nine architecture pages, the design system, every ADR and the
+  screenshots they embed. `docs/research/`, `docs/prds/`, `docs/operations/` and `docs/workflows/` stay out until someone lists them, so
+  publishing a page is a reviewed change to that file. A line that matches nothing fails the build.
+- **Links.** A relative link to a page that is not published, to a folder with no published index, or to a file outside `docs/` (`../../apps/...`,
+  `../../SECURITY.md`, `../config/roadmap.json`) is rewritten at build time to the GitHub file view of that path at the commit being built
+  (`DOCS_SITE_REF`, `main` locally) by `tools/docs-site/hooks.py`. A link to something that does not exist is not rewritten, so the
+  strict build reports it. Links inside code spans and fenced blocks are examples and are left alone.
+- **The link check.** `mkdocs build --strict` fails on any warning (a missing page, a `#heading` that is not on the page it names, a link it
+  cannot place), then `tools/docs-site/check_site.py` reads the built HTML and fails on any internal `href`, `src` or `#fragment` that does not
+  resolve, under the `/narration-utils/` base. Both run in `nx run docs-site:build`, so `pnpm check`, the `quality / docs-site` job and the
+  `Pages` build job all gate on them. This is the first link check the repository has. Proof it fails: `tools/docs-site/tests/test_build.py`
+  builds a tiny tree in which a dead page link, a dead heading link and a stale include line each fail the build.
+- **Build and browse it.** `pnpm exec nx run docs-site:build` writes `tools/docs-site/build/site` (ignored); serve that folder from a
+  directory that has it as `narration-utils/` to see the site under its real base path. the Nx targets run `uv run --locked --only-group docs`, which installs MkDocs (the `docs`
+  uv group, not a default group) into `.venv` on first use; `NO_MKDOCS_2_WARNING=true` silences Material's MkDocs 2.0 notice.
+- **Navigation** is generated from the folders; `mkdocs.yml` (`extra.nav_titles`, `extra.nav_order`) names the sections and orders the top
+  level, and a page's title is its first heading. Search is local; the site loads no font and asks no third-party service (the repository link
+  is a footer link, not Material's repository widget, which would call `api.github.com` on every page).
+- **The Storybook** is copied beside the built site by `pages.yml` and linked from the generated atlas page (`hooks.py` appends the link;
+  `docs/ui/atlas/index.md` is generated and not edited).
+- **Dependencies** are the `docs` group of `pyproject.toml` (`mkdocs`, `mkdocs-material`, and `pytest`/`ruff` so the docs job installs that
+  group alone), exact versions, locked with hashes in `uv.lock`, Dependabot's `uv` entry and its 3-day cooldown apply, and nothing of it is
+  in the app. Do not raise the pins without re-running the spike: Material requires `mkdocs<2`.
+- **Not proven until the owner enables Pages:** that the deployed address serves this build (phases 9 and 11 are `partial` for that reason).
 
 ## Nx projects and the quality gate
 
@@ -423,6 +464,7 @@ runner called:
 | `reaper` | `integrations/reaper` | `lint` (StyLua, and ruff for the harness runner), `test` (the Lua bridge harness and its mutation checks, [reaper-bridge](../architecture/reaper-bridge.md)) |
 | `repo-scripts` | `scripts` | `lint`, `test` (pytest), `test-node` (`node --test`) |
 | `ui-atlas-kit` | `tools/ui-atlas-kit` | `test` |
+| `docs-site` | `tools/docs-site` | `lint` (ruff), `test` (pytest), `build` (the strict MkDocs build of `docs/` and the link check; [above](#the-public-docs-site)) |
 | `config`, `fixtures` | `config`, `tests/fixtures` | none (fixtures: `lint`); they exist so a change to them affects the projects that read them |
 | `narration-utils` | the repo root | `knip` (unused files, exports and dependencies, gated at zero: see below); also the `nx release` project |
 

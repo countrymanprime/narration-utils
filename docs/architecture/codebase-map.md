@@ -23,6 +23,7 @@ tests/
   fixtures/       manuscripts and other data used by tests across projects
 tools/
   ui-atlas-kit/   the reusable UI-atlas plugin (development tooling only)
+  docs-site/      the public docs site: MkDocs config, include list and link hooks; reads docs/ in place
 scripts/          repo automation, release and CI tooling
 docs/             documentation, ADRs and PRDs
 ```

@@ -1,0 +1,48 @@
+# The pages of docs/ that the public site publishes (ADR 0083; owner decision Q9 of the release-readiness PRD).
+#
+# One path or glob per line, relative to docs/. Anything not listed is not built: it stays in the repository, and a link to
+# it from a published page becomes a link to its GitHub file view (hooks.py). Adding a page to the public site is a reviewed
+# change to this file; a line that matches nothing fails the build, so a renamed page cannot leave a stale entry.
+#
+#   dir/      every file below that folder
+#   a/b.md    that file
+#   a/*.md    `*` stays inside one folder, `**` crosses folders
+#
+# Not published, on purpose: research/ (until each page is reviewed), prds/, operations/ (repository administration) and
+# workflows/. Images are listed because the published pages embed them.
+
+# Home: the inventory and reading order
+README.md
+
+# The user guide (its layout is fixed by apps/ui/src/docsGuide.test.ts)
+guides/using-the-app/
+
+# The roadmap
+roadmap.md
+
+# The component atlas: the generated pages of docs/ui (`ui-atlas docs`) and the pictures they embed
+ui/atlas/
+ui/images/
+
+# The tools, as a narrator uses them
+utilities/
+
+# Screenshots the guide and the tool pages embed
+images/
+
+# Selected architecture pages: the ones that describe what the product does and how it is installed and updated
+architecture/codebase-map.md
+architecture/first-use-dependency-provisioning.md
+architecture/in-app-update.md
+architecture/standalone-launch.md
+architecture/manuscript-teleprompter.md
+architecture/reaper-bridge.md
+architecture/wire-contracts.md
+architecture/findings-contract.md
+architecture/interaction-feedback.md
+
+# The design system
+design/design-system.md
+
+# The decision records: the index and every ADR
+adr/
