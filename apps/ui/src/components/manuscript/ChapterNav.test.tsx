@@ -96,4 +96,56 @@ describe('ChapterNav', () => {
     const icons = document.querySelectorAll('.text-\\[var\\(--bookmark\\)\\]');
     expect(icons.length).toBe(2);
   });
+
+  it('highlights the matched term at its real position, using matchStart rather than re-searching the excerpt (R3, R4)', () => {
+    const chapters = [chapter({ id: 'c1', title: 'Chapter One' })];
+    // "rabbit" appears twice; matchStart points at the second occurrence, so a naive re-search
+    // (finding the first "rabbit") would highlight the wrong one.
+    const hits: SearchHit[] = [{ chapter: 'Chapter One', chapterId: 'c1', paragraph: 0, excerpt: 'A rabbit ran past another rabbit hole.', matchStart: 26 }];
+    render(
+      <ChapterNav
+        chapters={chapters}
+        bookmarks={[]}
+        searchQuery="rabbit"
+        searchResults={hits}
+        lineNumbers={new Map()}
+        select={vi.fn()}
+        removeBookmark={vi.fn()}
+      />,
+    );
+    const mark = document.querySelector('[data-highlight="Search"]');
+    expect(mark?.textContent).toBe('rabbit');
+    // The first (unmatched) "rabbit" is still plain text, not wrapped in the highlight.
+    expect(document.querySelectorAll('[data-highlight="Search"]')).toHaveLength(1);
+  });
+
+  it('windows a long excerpt to the row width, keeping the match visible with an ellipsis (R3)', () => {
+    const chapters = [chapter({ id: 'c1', title: 'Chapter One' })];
+    const filler = 'x'.repeat(80);
+    const excerpt = `${filler}RABBIT${filler}`;
+    const hits: SearchHit[] = [{ chapter: 'Chapter One', chapterId: 'c1', paragraph: 0, excerpt, matchStart: 80 }];
+    render(
+      <ChapterNav
+        chapters={chapters}
+        bookmarks={[]}
+        searchQuery="rabbit"
+        searchResults={hits}
+        lineNumbers={new Map()}
+        select={vi.fn()}
+        removeBookmark={vi.fn()}
+      />,
+    );
+    expect(document.querySelector('[data-highlight="Search"]')?.textContent).toBe('RABBIT');
+    const button = screen.getByRole('button', { name: /Search result in Chapter One/ });
+    expect(button.textContent).not.toContain(filler); // the row never renders the whole 80-char filler
+    expect(button.textContent).toContain('…');
+  });
+
+  it('shows a truncated subtitle under the chapter title, in browse mode too (R10)', () => {
+    const chapters = [chapter({ id: 'c1', title: 'Chapter One', subtitle: 'A Long and Winding Subtitle' })];
+    render(
+      <ChapterNav chapters={chapters} bookmarks={[]} searchQuery="" searchResults={[]} lineNumbers={new Map()} select={vi.fn()} removeBookmark={vi.fn()} />,
+    );
+    expect(screen.getByText('A Long and Winding Subtitle')).toBeTruthy();
+  });
 });

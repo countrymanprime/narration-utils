@@ -135,7 +135,7 @@ Decided 2026-09-21 (owner instruction, `docs/prds/implementation-plan.md` D22): 
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Search defects and small fixes | Line numbers, empty state, clear on select and clear icon, 30 s highlight, one bookmark colour, docs | complete | - | - | - |
 | 2 | Debounce and subset | Debounce hook, chapter-title subset, searching state, server cache/cap/offset, tests, visual state | complete | - | 1 | - |
-| 3 | Result rows | Left-aligned rows, `[icon] Line n: text`, windowing helper, match highlight, subtitle line, states | pending | - | 2 | - |
+| 3 | Result rows | Left-aligned rows, `[icon] Line n: text`, windowing helper, match highlight, subtitle line, states | complete | - | 2 | - |
 | 4 | Controls bar | Inline chapters/search, font icon, right-aligned cluster, tooltip home, screenshots | pending | 3 | primitives Phase 1 (soft) | - |
 | 5 | Hide non-recorded chapters | `isRecordedChapter`, ADR, default chapter, Expand all, hash links, tests | pending | 3, 4 | import-structure Phase 2 (soft) | - |
 
