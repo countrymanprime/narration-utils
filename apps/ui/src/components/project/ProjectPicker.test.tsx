@@ -58,16 +58,28 @@ describe('ProjectPicker', () => {
     expect(createProject).not.toHaveBeenCalled();
   });
 
-  it('creates a new project through the Create new flow instead of switching', async () => {
-    const api = renderPicker({ selectProjectFolder: async () => ({ selected: true, path: 'C:/Projects/Fresh-Project' }) });
+  it('opens the New Project dialog through the Create new flow, instead of switching', async () => {
+    const api = renderPicker();
     const switchProject = vi.spyOn(api, 'switchProject');
-    const createProject = vi.spyOn(api, 'createProject');
     await waitFor(() => screen.getByRole('button', { name: /Create new/ }));
 
     fireEvent.click(screen.getByRole('button', { name: /Create new/ }));
 
-    await waitFor(() => expect(createProject).toHaveBeenCalledWith('C:/Projects/Fresh-Project'));
+    expect(screen.getByRole('dialog', { name: 'New Project' })).toBeTruthy();
     expect(switchProject).not.toHaveBeenCalled();
+  });
+
+  it('creates a new project by name through the New Project dialog and closes it', async () => {
+    const api = renderPicker();
+    const createProject = vi.spyOn(api, 'createProject');
+    await waitFor(() => screen.getByRole('button', { name: /Create new/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Create new/ }));
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Fresh Project' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    await waitFor(() => expect(createProject).toHaveBeenCalledWith('', 'Fresh Project'));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'New Project' })).toBeNull());
   });
 
   it('reports a load failure distinctly from an empty recents list', async () => {
