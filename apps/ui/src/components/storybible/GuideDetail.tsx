@@ -21,6 +21,7 @@ import { allEvidence, categoryCssName, categoryLabel, categoryValue, CREATABLE_C
 import { useApi } from '../../api/ApiContext';
 import { useAssetInstall } from '../../hooks/useAssetInstall';
 import { usePendingAction } from '../../hooks/usePendingAction';
+import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { BADGE_CLASS, BADGE_STYLE, CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from '../manuscript/EntitySummary';
 import { Highlight, highlightKind } from '../primitives/Highlight';
@@ -779,37 +780,19 @@ export function GuideDetail({
             install={voiceInstall}
             dismiss={closeVoicePrompt}
           >
-            <dl className="mt-3 space-y-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-              <div>
-                <dt className="inline font-medium">Voice: </dt>
-                <dd className="inline">
-                  {ttsPrompt.preview.voice.displayName} · {ttsPrompt.preview.voice.locale}
-                </dd>
-              </div>
-              <div>
-                <dt className="inline font-medium">Download: </dt>
-                <dd className="inline">
-                  {Math.ceil(ttsPrompt.preview.downloadSize / (1024 * 1024))} MB · {ttsPrompt.preview.voice.publisher}
-                </dd>
-              </div>
-              <div>
-                <dt className="inline font-medium">License: </dt>
-                <dd className="inline">
-                  <a className="link" href={ttsPrompt.preview.voice.licenseUrl} target="_blank" rel="noreferrer">
-                    {ttsPrompt.preview.voice.license}
-                  </a>
-                </dd>
-              </div>
-            </dl>
-            <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-              <a className="link" href={ttsPrompt.preview.voice.modelCardUrl} target="_blank" rel="noreferrer">
-                Model card
-              </a>
-              {' · '}
-              <a className="link" href={ttsPrompt.preview.voice.provenanceUrl} target="_blank" rel="noreferrer">
-                Provenance
-              </a>
-            </p>
+            <AssetFacts
+              label="Voice"
+              name={`${ttsPrompt.preview.voice.displayName} · ${ttsPrompt.preview.voice.locale}`}
+              version={ttsPrompt.preview.voice.version}
+              publisher={ttsPrompt.preview.voice.publisher}
+              license={ttsPrompt.preview.voice.license}
+              licenseUrl={ttsPrompt.preview.voice.licenseUrl}
+              modelCardUrl={ttsPrompt.preview.voice.modelCardUrl}
+              provenanceUrl={ttsPrompt.preview.voice.provenanceUrl}
+              downloadSize={ttsPrompt.preview.downloadSize}
+              diskSize={ttsPrompt.preview.diskSize}
+              installPath={ttsPrompt.preview.installPath}
+            />
           </AssetInstallPrompt>
         )}
         {confirmation === 'delete' && (

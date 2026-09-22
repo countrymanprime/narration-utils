@@ -47,7 +47,14 @@ export type TeleprompterStartOptions = {
 
 export type TeleprompterStartResult =
   | { status: 'started' }
-  | { status: 'asset_required'; model: Omit<WhisperModel, 'downloadSize' | 'installState'>; installState: WhisperInstallState; downloadSize: number };
+  | {
+      status: 'asset_required';
+      model: Omit<WhisperModel, 'downloadSize' | 'installState'>;
+      installState: WhisperInstallState;
+      downloadSize: number;
+      diskSize: number;
+      installPath: string;
+    };
 
 export interface TeleprompterApi {
   teleprompterStart(options: TeleprompterStartOptions): Promise<TeleprompterStartResult>;

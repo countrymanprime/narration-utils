@@ -1,0 +1,55 @@
+{
+  "catalogVersion": 1,
+  "models": [
+    {
+      "id": "en_core_web_sm",
+      "provider": "spacy",
+      "displayName": "English, small (fast)",
+      "description": "The default: a small download that runs on any computer.",
+      "version": "3.8.0",
+      "publisher": "Explosion",
+      "license": "MIT",
+      "licenseUrl": "https://spacy.io/models/en#en_core_web_sm",
+      "modelCardUrl": "https://github.com/explosion/spacy-models/releases/tag/en_core_web_sm-3.8.0",
+      "provenanceUrl": "https://github.com/explosion/spacy-models/releases/tag/en_core_web_sm-3.8.0",
+      "attribution": "spaCy English pipeline by Explosion (MIT). Trained on OntoNotes 5, the ClearNLP dependency conversion and WordNet 3.0; the notices ship with the model in LICENSES_SOURCES.",
+      "spacyVersion": ">=3.8.0,<3.9.0",
+      "modelPath": "model/en_core_web_sm/en_core_web_sm-3.8.0",
+      "files": [
+        {
+          "name": "en_core_web_sm-3.8.0-py3-none-any.whl",
+          "url": "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
+          "sha256": "1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85",
+          "size": 12806118,
+          "extract": "model",
+          "expand": 15251718
+        }
+      ]
+    },
+    {
+      "id": "en_core_web_lg",
+      "provider": "spacy",
+      "displayName": "English, large (more accurate)",
+      "description": "A 400 MB download with word vectors; a little slower to build.",
+      "version": "3.8.0",
+      "publisher": "Explosion",
+      "license": "MIT",
+      "licenseUrl": "https://spacy.io/models/en#en_core_web_lg",
+      "modelCardUrl": "https://github.com/explosion/spacy-models/releases/tag/en_core_web_lg-3.8.0",
+      "provenanceUrl": "https://github.com/explosion/spacy-models/releases/tag/en_core_web_lg-3.8.0",
+      "attribution": "spaCy English pipeline by Explosion (MIT). Trained on OntoNotes 5, the ClearNLP dependency conversion and WordNet 3.0 and Explosion Vectors (OSCAR 2109, Wikipedia, OpenSubtitles, WMT News Crawl); the notices ship with the model in LICENSES_SOURCES.",
+      "spacyVersion": ">=3.8.0,<3.9.0",
+      "modelPath": "model/en_core_web_lg/en_core_web_lg-3.8.0",
+      "files": [
+        {
+          "name": "en_core_web_lg-3.8.0-py3-none-any.whl",
+          "url": "https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl",
+          "sha256": "293e9547a655b25499198ab15a525b05b9407a75f10255e405e8c3854329ab63",
+          "size": 400658291,
+          "extract": "model",
+          "expand": 445159665
+        }
+      ]
+    }
+  ]
+}

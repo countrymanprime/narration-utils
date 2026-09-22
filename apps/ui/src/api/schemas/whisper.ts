@@ -42,5 +42,7 @@ export const startResultSchema = z.discriminatedUnion('status', [
     model: whisperModelIdentitySchema,
     installState: whisperInstallStateSchema,
     downloadSize: z.number(),
+    diskSize: z.number(),
+    installPath: z.string(),
   }),
 ]) satisfies z.ZodType<TranscriptStartResult> & z.ZodType<TeleprompterStartResult>;

@@ -1,7 +1,10 @@
 import type { AssetInstallJob } from '../types';
 
-/** How the mock's next install behaves. Unset, it runs to the end: half the bytes, the check, success. */
-export type MockAssetSeed = 'downloading' | 'verifying' | 'download-fails';
+/**
+ * How the mock's next install behaves. Unset, it runs to the end: half the bytes, the check, success. Any seed also boots the mock without the
+ * downloadable assets installed, so the first-use question shows; `missing` is that and nothing else (the downloads then run to the end).
+ */
+export type MockAssetSeed = 'missing' | 'downloading' | 'verifying' | 'download-fails';
 
 const FAILURE =
   'The downloaded file did not match the approved one, so it was not installed. Try again; if it keeps happening, the file may have changed at its source.';

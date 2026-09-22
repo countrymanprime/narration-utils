@@ -16,6 +16,7 @@ import (
 const (
 	installKindTts     = "tts"
 	installKindWhisper = "whisper"
+	installKindSpacy   = "spacy"
 )
 
 // The phases of an asset install, the words the UI polls for (apps/ui/src/api/contracts/assets.ts). Whisper used to say "running"; every

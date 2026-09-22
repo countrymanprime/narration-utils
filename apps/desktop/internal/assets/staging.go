@@ -25,6 +25,9 @@ func remainingBytes(staging string, files []File) int64 {
 	var remaining int64
 	for _, f := range files {
 		have := int64(0)
+		if f.Extract != "" {
+			remaining += f.Expand // the archive is unpacked next to itself before it is removed
+		}
 		if info, err := os.Stat(filepath.Join(staging, f.Name)); err == nil && info.Size() == f.Size {
 			have = f.Size
 		} else if info, err := os.Stat(filepath.Join(staging, f.Name+partSuffix)); err == nil && info.Size() < f.Size {
@@ -44,6 +47,10 @@ func pruneStaging(staging string, files []File) error {
 	}
 	named := map[string]bool{manifestName: true}
 	for _, f := range files {
+		if f.Extract != "" {
+			named[f.Extract] = true
+			continue
+		}
 		named[f.Name] = true
 	}
 	for _, entry := range entries {

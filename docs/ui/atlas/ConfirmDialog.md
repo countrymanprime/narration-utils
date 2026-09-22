@@ -11,6 +11,7 @@ Storybook title: `Primitives/ConfirmDialog`. Source: `src/components/primitives/
 - Destructive Confirm
 - Rich Body
 - With Danger Action
+- With A Secondary Choice
 - With Children
 - Long Unbroken Body
 - Long Scrolling Children

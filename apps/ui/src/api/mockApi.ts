@@ -173,6 +173,22 @@ function invalidPayloadOverrides(which: 'bootstrap' | 'manuscript' | 'storybible
   }
 }
 
+type AssetFactsSource = {
+  id: string;
+  displayName: string;
+  version: string;
+  publisher: string;
+  license: string;
+  licenseUrl: string;
+  modelCardUrl: string;
+  provenanceUrl: string;
+  attribution: string;
+  downloadSize: number;
+};
+
+/** Where the mock says downloaded assets are kept. */
+const MOCK_ASSET_ROOT = 'C:/Users/narrator/AppData/Local/narration-utils/assets';
+
 export function createMockApi(
   overrides: Partial<NarrationApi> = {},
   // manuscriptCandidate boots a project with no imported manuscript but a
@@ -348,6 +364,8 @@ export function createMockApi(
   // exercise the asset_required prompt.
   // A download seed boots without the model, so a page that needs it asks to download it.
   let whisperInstalled = initial.assets === undefined;
+  // The Story Bible language model is installed by default for the same reason; a download seed boots without it, so the build asks first.
+  let spacyInstalled = initial.assets === undefined;
   const mockWhisperIdentity = {
     id: 'small',
     provider: 'faster-whisper',
@@ -378,6 +396,30 @@ export function createMockApi(
       whisperInstalled = true;
     },
   });
+  const mockLanguageModel = {
+    id: 'en_core_web_sm',
+    provider: 'spacy',
+    displayName: 'English, small (fast)',
+    description: 'The default: a small download that runs on any computer.',
+    version: '3.8.0',
+    publisher: 'Explosion',
+    license: 'MIT',
+    licenseUrl: 'https://spacy.io/models/en#en_core_web_sm',
+    modelCardUrl: 'https://github.com/explosion/spacy-models/releases/tag/en_core_web_sm-3.8.0',
+    provenanceUrl: 'https://github.com/explosion/spacy-models/releases/tag/en_core_web_sm-3.8.0',
+    attribution: 'spaCy English pipeline by Explosion (MIT). Trained on OntoNotes 5, the ClearNLP dependency conversion and WordNet 3.0.',
+  };
+  const languageModelInstall = createInstallMock({
+    total: 12806118,
+    noun: 'language model',
+    extra: { kind: 'spacy', assetId: 'en_core_web_sm' },
+    seed: initial.assets,
+    onInstalled: () => {
+      spacyInstalled = true;
+    },
+  });
+  const installMockFor = (jobId: string) =>
+    jobId.startsWith('mock-voice') ? voiceInstall : jobId.startsWith('mock-language') ? languageModelInstall : modelInstall;
   const mockWhisperModel = { ...mockWhisperIdentity, downloadSize: 483546902 + 2370 + 2203239 + 459861, installState: 'not_installed' as const };
   const teleprompter = createTeleprompterMock({
     ready: manuscriptReady,
@@ -386,7 +428,14 @@ export function createMockApi(
     assetRequired: () =>
       whisperInstalled
         ? undefined
-        : { status: 'asset_required', model: mockWhisperIdentity, installState: 'not_installed', downloadSize: mockWhisperModel.downloadSize },
+        : {
+            status: 'asset_required',
+            model: mockWhisperIdentity,
+            installState: 'not_installed',
+            downloadSize: mockWhisperModel.downloadSize,
+            diskSize: mockWhisperModel.downloadSize,
+            installPath: MOCK_ASSET_ROOT + '/whisper/faster-whisper/small',
+          },
     seed: initial.teleprompter,
   });
   const publish = () => {
@@ -538,19 +587,34 @@ export function createMockApi(
       return base.bootstrap();
     },
     settingsForScope: async (scope) => wireClone(settings[scope]),
-    guideBuild: async () => {
+    guideBuild: async (options) => {
+      // The first-use gate: the selected language model is an asset, so nothing starts until the narrator chooses to download it or to
+      // build without it this once.
+      if (!spacyInstalled && !options?.rulesOnly) {
+        return {
+          status: 'asset_required' as const,
+          model: mockLanguageModel,
+          installState: 'not_installed' as const,
+          downloadSize: 12806118,
+          diskSize: 15251718,
+          installPath: MOCK_ASSET_ROOT + '/spacy/en_core_web_sm/3.8.0',
+        };
+      }
+      const message = options?.rulesOnly
+        ? 'Story Bible rebuild complete with the rules-only extraction, which is lower quality than a language model.'
+        : 'Story Bible rebuild complete.';
       storyBibleJob = {
         id: 'mock-guide',
         kind: 'story_bible',
         phase: 'success',
-        message: 'Story Bible rebuild complete.',
+        message,
         percent: 100,
         logs: ['Reading canonical manuscript', 'Built Story Bible with 7 entities'],
         elapsed: 1,
         result: { message: 'Story Bible rebuilt.' },
       };
-      endJob({ id: 'mock-guide', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 1000 });
-      return wireClone(storyBibleJob);
+      endJob({ id: 'mock-guide', kind: 'story_bible', outcome: 'success', message, durationMs: 1000 });
+      return { status: 'started' as const, job: wireClone(storyBibleJob) };
     },
     guideBuildState: async () => wireClone(storyBibleJob),
     clearProjectData: async () => {},
@@ -669,7 +733,14 @@ export function createMockApi(
       })),
     guidePreview: async () => {
       if (!ttsInstalled) {
-        return { status: 'asset_required' as const, voice: mockVoiceIdentity, installState: 'not_installed' as const, downloadSize: mockVoice.downloadSize };
+        return {
+          status: 'asset_required' as const,
+          voice: mockVoiceIdentity,
+          installState: 'not_installed' as const,
+          downloadSize: mockVoice.downloadSize,
+          diskSize: mockVoice.downloadSize,
+          installPath: MOCK_ASSET_ROOT + '/tts/piper/en_US-ljspeech-high',
+        };
       }
       // The failing seam behind ?mockPreviewError=<text>, so a real host failure can be seen without a host.
       if (initial.previewError) throw new Error(initial.previewError);
@@ -705,13 +776,7 @@ export function createMockApi(
       if (modelId === mockWhisperModel.id) whisperInstalled = false;
     },
     assetsList: async () => {
-      const item = (
-        kind: string,
-        kindLabel: string,
-        model: typeof mockVoice | typeof mockWhisperModel,
-        installed: boolean,
-        installState: AssetInstallState,
-      ) => ({
+      const item = (kind: string, kindLabel: string, model: AssetFactsSource, installed: boolean, installState: AssetInstallState) => ({
         kind,
         kindLabel,
         id: model.id,
@@ -725,32 +790,42 @@ export function createMockApi(
         attribution: model.attribution,
         downloadSize: model.downloadSize,
         installState,
-        path: `C:/Users/narrator/AppData/Local/narration-utils/assets/${kind}/${model.id}`,
+        diskSize: kind === 'spacy' ? 15251718 : model.downloadSize,
+        path: `${MOCK_ASSET_ROOT}/${kind}/${model.id}`,
         installedAt: installed ? '2026-09-20T09:30:00Z' : '',
         verifiedAt: installed ? '2026-09-20T09:30:00Z' : '',
         activeJobId: '',
       });
       const voice = item('tts', 'Preview voice', mockVoice, ttsInstalled, ttsInstalled ? 'installed' : 'not_installed');
+      const language = item(
+        'spacy',
+        'Story Bible language model',
+        { ...mockLanguageModel, downloadSize: 12806118 },
+        spacyInstalled,
+        spacyInstalled ? 'installed' : 'not_installed',
+      );
       const model = item('whisper', 'Whisper model', mockWhisperModel, whisperInstalled, whisperInstalled ? 'installed' : 'not_installed');
       return {
-        cacheRoot: 'C:/Users/narrator/AppData/Local/narration-utils/assets',
-        totalInstalledBytes: (ttsInstalled ? voice.downloadSize : 0) + (whisperInstalled ? model.downloadSize : 0),
-        assets: [voice, model],
+        cacheRoot: MOCK_ASSET_ROOT,
+        totalInstalledBytes: (ttsInstalled ? voice.diskSize : 0) + (whisperInstalled ? model.diskSize : 0) + (spacyInstalled ? language.diskSize : 0),
+        assets: [voice, model, language],
       };
     },
     assetsInstall: async (kind, id) => {
       if (kind === 'tts' && id === mockVoice.id) return voiceInstall.start();
       if (kind === 'whisper' && id === mockWhisperModel.id) return modelInstall.start();
+      if (kind === 'spacy' && id === mockLanguageModel.id) return languageModelInstall.start();
       throw new Error(`"${id}" is not in the approved catalog of ${kind}`);
     },
-    assetsInstallState: async (jobId) => (jobId.startsWith('mock-voice') ? voiceInstall.state(jobId) : modelInstall.state(jobId)),
-    assetsInstallCancel: async (jobId) => (jobId.startsWith('mock-voice') ? voiceInstall.cancel(jobId) : modelInstall.cancel(jobId)),
+    assetsInstallState: async (jobId) => installMockFor(jobId).state(jobId),
+    assetsInstallCancel: async (jobId) => installMockFor(jobId).cancel(jobId),
     assetsVerify: async (kind, id) => {
-      const installed = kind === 'tts' ? ttsInstalled : whisperInstalled;
+      const installed = kind === 'tts' ? ttsInstalled : kind === 'spacy' ? spacyInstalled : whisperInstalled;
       return { kind, id, installState: installed ? ('installed' as const) : ('not_installed' as const) };
     },
     assetsRemove: async (kind) => {
       if (kind === 'tts') ttsInstalled = false;
+      else if (kind === 'spacy') spacyInstalled = false;
       else whisperInstalled = false;
     },
     transcriptStart: async () =>
@@ -761,6 +836,8 @@ export function createMockApi(
             model: mockWhisperIdentity,
             installState: 'not_installed' as const,
             downloadSize: mockWhisperModel.downloadSize,
+            diskSize: mockWhisperModel.downloadSize,
+            installPath: MOCK_ASSET_ROOT + '/whisper/faster-whisper/small',
           },
     transcriptCancel: async () => {
       stopRun();

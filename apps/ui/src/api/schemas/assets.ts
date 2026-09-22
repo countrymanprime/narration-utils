@@ -20,7 +20,7 @@ export const assetInstallJobShape = {
   error: z.string(),
 };
 
-const assetInstallStateSchema = z.enum(['installed', 'not_installed', 'verification_failed']) satisfies z.ZodType<AssetInstallState>;
+export const assetInstallStateSchema = z.enum(['installed', 'not_installed', 'verification_failed']) satisfies z.ZodType<AssetInstallState>;
 
 export const assetCatalogSchema = z.object({
   cacheRoot: z.string(),
@@ -39,6 +39,7 @@ export const assetCatalogSchema = z.object({
       provenanceUrl: z.string(),
       attribution: z.string(),
       downloadSize: z.number(),
+      diskSize: z.number(),
       installState: assetInstallStateSchema,
       path: z.string(),
       installedAt: z.string(),

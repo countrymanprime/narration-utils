@@ -110,7 +110,11 @@ func (h *Host) WhisperRemove(modelID string) (string, error) {
 	return encodeBinding(nil, h.removeAsset(installKindWhisper, modelID))
 }
 
-func (h *Host) GuideBuild() (string, error) { return encodeBinding(h.startGuideBuild()) }
+// GuideBuild starts the Story Bible build, or asks for the language model it needs first (see startGuideBuild). rulesOnly builds without one
+// for this run.
+func (h *Host) GuideBuild(rulesOnly bool) (string, error) {
+	return encodeBinding(h.startGuideBuild(rulesOnly))
+}
 func (h *Host) GuideBuildState() (string, error) {
 	return encodeBinding(h.guideBuildState(), nil)
 }
@@ -196,7 +200,7 @@ func (h *Host) GuidePreview(id string, aliasIndex *int) (string, error) {
 	}
 	model, _, err := voices.Paths(voiceID)
 	if err != nil {
-		return encodeBinding(voiceAssetRequired(voice, voices.State(voice)), nil)
+		return encodeBinding(voiceAssetRequired(voice, voices.State(voice), voices.InstallDir(voice.ID)), nil)
 	}
 	audio, err := svc.guide.Preview(id, aliasIndex, guide.PreviewVoice{ID: voiceID, Model: model, Provider: voice.Provider, Version: voice.Version})
 	return encodeBinding(map[string]any{"status": "ready", "audioBase64": base64.StdEncoding.EncodeToString(audio), "mimeType": "audio/wav"}, err)
@@ -447,7 +451,7 @@ func (h *Host) TranscriptStart(options map[string]string) (string, error) {
 	}
 	modelDir, err := models.Dir(modelID)
 	if err != nil {
-		return encodeBinding(modelAssetRequired(model, models.State(model)), nil)
+		return encodeBinding(modelAssetRequired(model, models.State(model), models.InstallDir(model.ID)), nil)
 	}
 	started := map[string]string{}
 	for key, value := range options {
@@ -478,7 +482,7 @@ func (h *Host) TeleprompterStart(options map[string]string) (string, error) {
 	}
 	modelDir, err := models.Dir(modelID)
 	if err != nil {
-		return encodeBinding(modelAssetRequired(model, models.State(model)), nil)
+		return encodeBinding(modelAssetRequired(model, models.State(model), models.InstallDir(model.ID)), nil)
 	}
 	started := map[string]string{}
 	for key, value := range options {
@@ -589,12 +593,14 @@ func (h *Host) TracksList() (string, error) { return encodeBinding(h.tracksList(
 
 // voiceAssetRequired is the answer to a preview that needs a voice that is not installed yet: which voice, its state and its
 // download size, so the UI can offer to install it. The UI validates it as `GuidePreview` (ADR 0069).
-func voiceAssetRequired(voice tts.Voice, installState string) map[string]any {
-	return map[string]any{"status": "asset_required", "voice": previewVoice(voice), "installState": installState, "downloadSize": voiceDownloadSize(voice)}
+func voiceAssetRequired(voice tts.Voice, installState, installPath string) map[string]any {
+	size := voiceDownloadSize(voice)
+	return map[string]any{"status": "asset_required", "voice": previewVoice(voice), "installState": installState, "downloadSize": size, "diskSize": size, "installPath": installPath}
 }
 
 // modelAssetRequired is the answer to a start that needs a Whisper model that is not installed yet, as TranscriptStart and
 // TeleprompterStart give it (the first-use gate). The UI validates it as `TranscriptStartResult` (ADR 0069).
-func modelAssetRequired(model whisper.Model, installState string) map[string]any {
-	return map[string]any{"status": "asset_required", "model": previewModel(model), "installState": installState, "downloadSize": modelDownloadSize(model)}
+func modelAssetRequired(model whisper.Model, installState, installPath string) map[string]any {
+	size := modelDownloadSize(model)
+	return map[string]any{"status": "asset_required", "model": previewModel(model), "installState": installState, "downloadSize": size, "diskSize": size, "installPath": installPath}
 }

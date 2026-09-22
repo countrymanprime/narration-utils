@@ -118,6 +118,17 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'storybible',
+    state: 'language-model-confirm',
+    description:
+      'Story Bible, the first-use question before the language model is downloaded: what it is, its sizes and where it goes, with Download, Build with rules-only and Cancel (?mockAssets=missing)',
+  },
+  {
+    page: 'storybible',
+    state: 'language-model-progress',
+    description: 'Story Bible, the language model download with real bytes, 39 percent and Cancel (?mockAssets=downloading)',
+  },
+  {
+    page: 'storybible',
     state: 'voice-download-confirm',
     description: 'Story Bible, the first-use question before the local preview voice is downloaded: what it is, its size, publisher and licence',
   },

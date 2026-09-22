@@ -45,6 +45,8 @@ export type AssetItem = {
   provenanceUrl: string;
   attribution: string;
   downloadSize: number;
+  /** What it takes on the disk once installed: the download, or what it unpacks to. */
+  diskSize: number;
   installState: AssetInstallState;
   /** Where it is (or will be) installed. */
   path: string;

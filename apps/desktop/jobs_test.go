@@ -103,15 +103,17 @@ func TestAStoryBibleBuildEndsWithOneEventAndAFailureCarriesItsReason(t *testing.
 		host := fixture.host
 		host.config.sessionDir = t.TempDir()
 		events := collectJobEnds(host)
-		started, err := host.startGuideBuild()
+		started, err := host.startGuideBuild(true)
 		if err != nil {
 			t.Fatal(err)
 		}
+		job, _ := started["job"].(map[string]any)
 		event := nextJobEnd(t, events)
-		if event.Kind != jobKindStoryBible || event.Outcome != c.outcome || event.ID != started["id"] {
-			t.Fatalf("%s: event = %+v, started = %v", c.mode, event, started["id"])
+		if event.Kind != jobKindStoryBible || event.Outcome != c.outcome || event.ID != job["id"] {
+			t.Fatalf("%s: event = %+v, started = %v", c.mode, event, job["id"])
 		}
-		if c.outcome == jobOutcomeSuccess && event.Message != "Story Bible rebuild complete." {
+		// The rules-only choice says so when it ends (the model itself is covered by guidegate_test.go).
+		if c.outcome == jobOutcomeSuccess && !strings.HasPrefix(event.Message, "Story Bible rebuild complete") {
 			t.Fatalf("success message = %q", event.Message)
 		}
 		if c.outcome == jobOutcomeError && !strings.Contains(event.Message, "could not be spoken") {

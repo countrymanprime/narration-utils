@@ -4,10 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLock, faPlus, faRotate } from '@fortawesome/free-solid-svg-icons';
-import type { GuideEntity, WorkJob } from '../../types';
+import type { GuideBuildResult, GuideEntity, WorkJob } from '../../types';
 import { categoryCssName, categoryLabel, sortEntities, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
+import { useAssetInstall } from '../../hooks/useAssetInstall';
 import { usePendingAction } from '../../hooks/usePendingAction';
+import { AssetFacts } from '../assets/AssetFacts';
+import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { Heading } from '../primitives/Heading';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { CAT_DOT_BG, CAT_DOT_CLASS } from '../manuscript/EntitySummary';
@@ -65,6 +68,9 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
   const [buildJob, setBuildJob] = useState<WorkJob>();
   // The start call is quick, but the button says it was heard and a second press cannot start a second rebuild (ADR 0075).
   const starting = usePendingAction();
+  // The build needs a language model, an asset: when it is not installed the host says so instead of starting, and the narrator chooses to
+  // download it, to build without it this once, or to cancel. Nothing downloads on its own.
+  const [modelPrompt, setModelPrompt] = useState<Extract<GuideBuildResult, { status: 'asset_required' }>>();
   const [pendingNewEntity, setPendingNewEntity] = useState<{ name: string }>();
   // Memoized so the object identity only changes when a draft opens/closes,
   // not on every Guide re-render - GuideDetail resets its local form state
@@ -87,6 +93,41 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
     },
     [api, notify],
   );
+  const modelInstall = useAssetInstall({
+    start: () => {
+      if (!modelPrompt) return Promise.reject(new Error('Build the Story Bible first.'));
+      return api.assetsInstall('spacy', modelPrompt.model.id);
+    },
+    state: (jobId) => api.assetsInstallState(jobId),
+    cancel: (jobId) => api.assetsInstallCancel(jobId),
+    onSuccess: async () => {
+      setModelPrompt(undefined);
+      notify('Language model installed.');
+      await startBuild(false);
+    },
+  });
+  const resetModelInstall = modelInstall.reset;
+  /** Starts a build and follows its job, or opens the first-use question when the language model has to be downloaded first. */
+  const startBuild = useCallback(
+    (rulesOnly: boolean) =>
+      starting.run('build', async () => {
+        try {
+          const result = await api.guideBuild({ rulesOnly });
+          if (result.status === 'asset_required') {
+            resetModelInstall();
+            setModelPrompt(result);
+          } else if (result.job.phase === 'success') await load();
+          else setBuildJob(result.job);
+        } catch (error) {
+          notify(describeApiError(error), 'error');
+        }
+      }),
+    [api, load, notify, resetModelInstall, starting],
+  );
+  const closeModelPrompt = () => {
+    setModelPrompt(undefined);
+    resetModelInstall();
+  };
   useEffect(() => {
     void load(entityId);
     if (entityId) routerNavigate('/story-bible', { replace: true });
@@ -179,21 +220,7 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
               </IconButton>
             </TooltipTarget>
             <TooltipTarget text="Build / refresh Story Bible">
-              <IconButton
-                label="Build / refresh Story Bible"
-                pending={starting.isPending('build')}
-                onClick={() =>
-                  void starting.run('build', async () => {
-                    try {
-                      const job = await api.guideBuild();
-                      if (job.phase === 'success') await load();
-                      else setBuildJob(job);
-                    } catch (error) {
-                      notify(describeApiError(error), 'error');
-                    }
-                  })
-                }
-              >
+              <IconButton label="Build / refresh Story Bible" pending={starting.isPending('build')} onClick={() => void startBuild(false)}>
                 <FontAwesomeIcon icon={faRotate} />
               </IconButton>
             </TooltipTarget>
@@ -274,6 +301,33 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
           />
         </div>
       </div>
+      {modelPrompt && (
+        <AssetInstallPrompt
+          ask={{
+            title: 'Download local language model?',
+            body: 'The Story Bible reads your manuscript with a language model to find people, places and organizations. It is not bundled with Narration Utils and will be stored in your per-user asset cache. You can build without it this once, with lower-quality results.',
+            confirmLabel: 'Download model',
+            alternative: { label: 'Build with rules-only', action: () => void startBuild(true).then(closeModelPrompt) },
+          }}
+          workTitle="Downloading language model"
+          install={modelInstall}
+          dismiss={closeModelPrompt}
+        >
+          <AssetFacts
+            label="Language model"
+            name={modelPrompt.model.displayName}
+            version={modelPrompt.model.version}
+            publisher={modelPrompt.model.publisher}
+            license={modelPrompt.model.license}
+            licenseUrl={modelPrompt.model.licenseUrl}
+            modelCardUrl={modelPrompt.model.modelCardUrl}
+            provenanceUrl={modelPrompt.model.provenanceUrl}
+            downloadSize={modelPrompt.downloadSize}
+            diskSize={modelPrompt.diskSize}
+            installPath={modelPrompt.installPath}
+          />
+        </AssetInstallPrompt>
+      )}
       {buildJob && <WorkDialog title="Rebuild Story Bible" job={buildJob} close={() => setBuildJob(undefined)} background={() => setBuildJob(undefined)} />}
     </Tabs>
   );

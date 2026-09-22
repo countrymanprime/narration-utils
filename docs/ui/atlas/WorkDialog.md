@@ -9,6 +9,7 @@ Storybook title: `Primitives/WorkDialog`. Source: `src/components/primitives/Wor
 - Preparing
 - Running Indeterminate
 - Running With Progress
+- Download With Bytes
 - Committing
 - Running Without Cancel
 - Running In Background

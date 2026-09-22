@@ -19,6 +19,7 @@ const (
 	jobKindManuscriptImport = "manuscript_import"
 	jobKindTtsInstall       = "tts_install"
 	jobKindWhisperInstall   = "whisper_install"
+	jobKindSpacyInstall     = "spacy_install"
 	jobKindAppUpdate        = "app_update"
 	jobKindTranscript       = "transcript_compare"
 )

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 )
@@ -17,6 +18,16 @@ type assetItem struct {
 	license, licenseURL, modelCardURL, provenanceURL, attribution string
 	files                                                         []assets.File
 	dir                                                           string
+	// diskSize is what the asset takes once installed, when that is not what is downloaded (an archive is unpacked and not kept).
+	diskSize int64
+}
+
+// installedSize is the disk the asset takes once installed.
+func (i assetItem) installedSize() int64 {
+	if i.diskSize > 0 {
+		return i.diskSize
+	}
+	return i.downloadSize()
 }
 
 func (i assetItem) downloadSize() int64 {
@@ -59,16 +70,20 @@ type assetRegistry struct {
 	// first-use gates of Transcript Compare and the Teleprompter).
 	tts     *tts.Manager
 	whisper *whisper.Manager
+	spacy   *spacy.Manager
 }
 
 // newAssetRegistry registers a provider for each manager that exists.
-func newAssetRegistry(base string, voices *tts.Manager, models *whisper.Manager) *assetRegistry {
-	registry := &assetRegistry{base: base, tts: voices, whisper: models}
+func newAssetRegistry(base string, voices *tts.Manager, models *whisper.Manager, languageModels *spacy.Manager) *assetRegistry {
+	registry := &assetRegistry{base: base, tts: voices, whisper: models, spacy: languageModels}
 	if voices != nil {
 		registry.providers = append(registry.providers, ttsProvider{manager: voices})
 	}
 	if models != nil {
 		registry.providers = append(registry.providers, whisperProvider{manager: models})
+	}
+	if languageModels != nil {
+		registry.providers = append(registry.providers, spacyProvider{manager: languageModels})
 	}
 	return registry
 }

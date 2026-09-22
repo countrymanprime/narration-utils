@@ -18,6 +18,7 @@ const (
 	DefaultsFile             = ConfigDir + "/defaults.json"
 	TTSCatalogFile           = ConfigDir + "/tts-assets.json"
 	WhisperCatalogFile       = ConfigDir + "/whisper-assets.json"
+	SpacyCatalogFile         = ConfigDir + "/spacy-assets.json"
 	ReaperDir                = "integrations/reaper"
 	LauncherFile             = ReaperDir + "/NarrationUtils_Launcher.lua"
 	FixturesDir              = "tests/fixtures"

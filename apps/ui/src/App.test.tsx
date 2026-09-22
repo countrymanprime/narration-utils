@@ -7,7 +7,7 @@ import { createMockApi } from './api/mockApi';
 import { ThemeProvider } from './theme/ThemeContext';
 import { parseWire } from './api/wire/parseWire';
 import { bootstrapSchema } from './api/schemas/system';
-import type { WorkJob } from './types';
+import type { GuideBuildResult, WorkJob } from './types';
 import type { JobEnded } from './api/contracts/system';
 
 // BrowserRouter reads/writes the real window.location via history.pushState,
@@ -282,7 +282,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
   });
 
   it('says the rebuild was heard and starts only one when the button is pressed twice', async () => {
-    const guideBuild = vi.fn(() => new Promise<WorkJob>(() => {}));
+    const guideBuild = vi.fn(() => new Promise<GuideBuildResult>(() => {}));
     renderApp({ guideBuild });
     await screen.findByRole('heading', { name: 'Welcome back' });
     fireEvent.click(screen.getAllByRole('button', { name: 'Story Bible' })[0]);

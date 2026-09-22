@@ -29,6 +29,10 @@ const (
 // runFakeGuideRender stands in for the Story Bible sidecar's render-audio
 // command: it writes a small WAV where the host asked for it, or fails.
 func runFakeGuideRender() int {
+	if path := os.Getenv("SHELL_FAKE_GUIDE_ARGS"); path != "" {
+		// A test that wants to see how the sidecar was started: the arguments, one per line.
+		_ = os.WriteFile(path, []byte(strings.Join(os.Args[1:], "\n")+"\n"), 0o600)
+	}
 	if os.Getenv(fakeGuideRenderEnv) == "fail" {
 		_, _ = os.Stderr.WriteString("ERROR: \"Dawnspire\" could not be spoken: the voice produced no audio for it.\n")
 		return 1
@@ -107,7 +111,7 @@ func newPreviewHost(t *testing.T, renderMode string) previewHost {
 		t.Fatal(err)
 	}
 	voice, _ := manager.Voice(previewVoiceID)
-	return previewHost{host: &Host{settings: store, assets: newAssetRegistry(cacheRoot, manager, nil), guide: service}, voice: voice, project: project, voiceFile: filepath.Join(cacheRoot, "piper", previewVoiceID, "1.0.0", previewVoiceID+".onnx")}
+	return previewHost{host: &Host{settings: store, assets: newAssetRegistry(cacheRoot, manager, nil, nil), guide: service}, voice: voice, project: project, voiceFile: filepath.Join(cacheRoot, "piper", previewVoiceID, "1.0.0", previewVoiceID+".onnx")}
 }
 
 func (p previewHost) install(t *testing.T) {

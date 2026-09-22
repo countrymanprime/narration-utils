@@ -44,7 +44,7 @@ func newTestHostForTranscriptStart(t *testing.T, body []byte, server *httptest.S
 	}
 	store := settings.New(repoRoot, "")
 	transcriptService := transcript.New(transcript.Config{}, nil, store, process.NewSupervisor(), nil)
-	return &Host{settings: store, assets: newAssetRegistry(cacheRoot, nil, whisperManager), transcript: transcriptService, installJobs: map[string]*installJob{}}
+	return &Host{settings: store, assets: newAssetRegistry(cacheRoot, nil, whisperManager, nil), transcript: transcriptService, installJobs: map[string]*installJob{}}
 }
 
 func TestTranscriptStartRequestsTheApprovedModelWhenNotInstalled(t *testing.T) {

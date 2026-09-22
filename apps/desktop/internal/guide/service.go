@@ -187,11 +187,15 @@ func (s *Service) command(args []string) (string, []string, error) {
 	}
 	return s.python, append([]string{s.backend}, args...), nil
 }
-func (s *Service) Build(progress, log string) (string, error) {
+
+// RulesOnly is the model argument that builds without a language model: the rules-only extraction, lower quality, chosen for one build.
+const RulesOnly = "rules-only"
+
+// Build runs the Story Bible build. model is what the sidecar gives spaCy: the folder of an installed model, a model name, or RulesOnly.
+func (s *Service) Build(progress, log, model string) (string, error) {
 	if e := os.MkdirAll(filepath.Dir(s.guidePath()), 0755); e != nil {
 		return "", e
 	}
-	model, _ := s.settings.Effective("ManuscriptGuide", "spacy_model", "en_core_web_sm")
 	args := []string{"build", "--manuscript", s.manuscript(), "--out", s.guidePath(), "--progress", progress, "--log", log, "--spacy-model", model}
 	return s.Run(args...)
 }

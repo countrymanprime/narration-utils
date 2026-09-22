@@ -36,6 +36,10 @@ type File struct {
 	URL    string `json:"url"`
 	SHA256 string `json:"sha256"`
 	Size   int64  `json:"size"`
+	// Extract, when set, says the file is an archive to unpack into this folder of the install once it is downloaded and checked; the
+	// archive itself is not kept. Expand is how many bytes it unpacks to (the disk it needs, and the most it may hold).
+	Extract string `json:"extract,omitempty"`
+	Expand  int64  `json:"expand,omitempty"`
 }
 
 // Dir returns the install directory for one catalog item under root.
@@ -72,9 +76,16 @@ func State(root, provider, id, version string, files []File) string {
 	return state
 }
 
-// hashState is the state of every file after reading every byte of it.
+// hashState is the state of every file after reading every byte of it. An archive that was unpacked is no longer there: its unpacked files
+// are read instead, against the hashes taken when they were unpacked (the archive was checked against the catalog then).
 func hashState(dir string, files []File) string {
 	for _, f := range files {
+		if f.Extract != "" {
+			if state := hashExtracted(dir, f); state != "installed" {
+				return state
+			}
+			continue
+		}
 		if err := verify(filepath.Join(dir, f.Name), f); err != nil {
 			if os.IsNotExist(err) {
 				return "not_installed"
@@ -194,10 +205,21 @@ func InstallWith(ctx context.Context, root, provider, id, version string, files 
 			return fail(err)
 		}
 	}
+	extracted := map[string][]ExtractedFile{}
+	for _, file := range files {
+		if file.Extract == "" {
+			continue
+		}
+		entries, err := extractArchive(staging, file)
+		if err != nil {
+			return fail(err)
+		}
+		extracted[file.Name] = entries
+	}
 	if err := pruneStaging(staging, files); err != nil {
 		return fail(err)
 	}
-	if err := writeInstalledManifest(staging, provider, id, version, files); err != nil {
+	if err := writeInstalledManifest(staging, provider, id, version, files, extracted); err != nil {
 		return fail(err)
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
@@ -217,7 +239,7 @@ func InstallWith(ctx context.Context, root, provider, id, version string, files 
 // resumable says whether what a failed install fetched is worth keeping for the next attempt: it is unless the narrator cancelled or a
 // file was wrong (bytes that failed their hash must not be resumed from).
 func resumable(ctx context.Context, err error) bool {
-	return ctx.Err() == nil && !errors.Is(err, ErrChecksumMismatch) && !errors.Is(err, ErrSizeMismatch)
+	return ctx.Err() == nil && !errors.Is(err, ErrChecksumMismatch) && !errors.Is(err, ErrSizeMismatch) && !errors.Is(err, ErrBadArchive)
 }
 
 // swapIn puts the staging folder where the install belongs. An existing target (a damaged install) is renamed aside first and removed

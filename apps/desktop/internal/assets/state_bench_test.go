@@ -33,7 +33,7 @@ func benchAssets(b *testing.B) (root string, all [][]File) {
 			b.Fatal(err)
 		}
 		_ = file.Close()
-		manifest, err := manifestFor(dir, "p", id, "1", files)
+		manifest, err := manifestFor(dir, "p", id, "1", files, nil)
 		if err != nil {
 			b.Fatal(err)
 		}

@@ -161,7 +161,7 @@ func storyBibleOperations(t *testing.T, label string, project string, svc *guide
 	t.Helper()
 	var out []sample
 	progress, log := filepath.Join(project, "progress.txt"), filepath.Join(project, "log.txt")
-	out = append(out, measure(t, label+" build", envInt("LATENCY_BUILD_RUNS", runs), nil, func(int) error { _, err := svc.Build(progress, log); return err }))
+	out = append(out, measure(t, label+" build", envInt("LATENCY_BUILD_RUNS", runs), nil, func(int) error { _, err := svc.Build(progress, log, "en_core_web_sm"); return err }))
 
 	create := func(name string) string {
 		id, err := svc.Create(name, "Character", nil)
