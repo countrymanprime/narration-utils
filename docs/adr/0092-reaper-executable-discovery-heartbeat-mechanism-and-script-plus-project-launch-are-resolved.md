@@ -1,4 +1,4 @@
-# 0090. REAPER executable discovery, heartbeat mechanism and script-plus-project launch are resolved
+# 0092. REAPER executable discovery, heartbeat mechanism and script-plus-project launch are resolved
 
 **Status:** Accepted
 **Date:** 2026-09-22
