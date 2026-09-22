@@ -198,3 +198,25 @@ func TestSeedingACharacterIsOneProcessNotTwo(t *testing.T) {
 		t.Fatalf("last report = %q", last)
 	}
 }
+
+// TestSeedingACharacterSendsItsPropertiesInTheSameCreateCall covers import-structure-toc-and-characters Phase 3: a candidate's
+// labelled facts (Codename, Abilities, ...) go to the sidecar's create --properties in the same process as the name and
+// description - not a second edit - and a candidate with none sends no --properties flag at all.
+func TestSeedingACharacterSendsItsPropertiesInTheSameCreateCall(t *testing.T) {
+	service, calls := countingGuide(t)
+	candidates := []importer.CharacterCandidate{
+		{ID: "a", Name: "Wren", Description: "A spy.", Properties: []importer.Property{{Key: "Codename", Value: "The Sparrow"}, {Key: "Abilities", Value: "Flight"}}},
+		{ID: "b", Name: "Juno"},
+	}
+	seedCharacterCandidates(service, candidates, []string{"a", "b"}, func(_ int, _ string) {})
+	got := calls()
+	if len(got) != 2 {
+		t.Fatalf("two checked characters started %d processes, want 2: %v", len(got), got)
+	}
+	if !slices.Contains(got[0], `--properties=[{"key":"Codename","value":"The Sparrow"},{"key":"Abilities","value":"Flight"}]`) {
+		t.Fatalf("Wren's create did not carry its properties: %v", got[0])
+	}
+	if slices.ContainsFunc(got[1], func(arg string) bool { return strings.HasPrefix(arg, "--properties") }) {
+		t.Fatalf("Juno has no properties and must send no --properties flag: %v", got[1])
+	}
+}

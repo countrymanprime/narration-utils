@@ -45,7 +45,16 @@ export function mockImportPreview(kind: MockImportKind = 'docx'): ManuscriptImpo
     chapterTitles: sections.filter((section) => section.contentKind !== 'opening').map((section) => section.title),
     sections,
     characterCandidates: [
-      { id: 'candidate-section-0007-001', name: 'Alice', description: 'A curious girl who follows a White Rabbit', sourceSectionId: 'section-0007' },
+      {
+        id: 'candidate-section-0007-001',
+        name: 'Alice',
+        description: 'A curious girl who follows a White Rabbit',
+        sourceSectionId: 'section-0007',
+        properties: [
+          { key: 'Species', value: 'Human' },
+          { key: 'Age', value: 'Seven' },
+        ],
+      },
       {
         id: 'candidate-section-0007-002',
         name: 'The White Rabbit',
