@@ -33,8 +33,8 @@ jobs:
         with:
           lycheeVersion: v0.24.2
           args: --config .lychee.toml --offline --no-progress .
-          # Phase 1 of the PRD lands advisory; phase 2 flips this to true once the baseline is clean.
-          fail: false
+          # Blocking: the baseline is clean (0 dead repository links) and offline mode is deterministic.
+          fail: true
   links-online:
     name: Links (online, advisory)
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

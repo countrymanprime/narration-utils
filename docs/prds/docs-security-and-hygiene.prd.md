@@ -183,7 +183,7 @@ Phases 1, 3, 4, 5, 7 and 8. Phase 2 follows once the baseline is clean; 9 and 10
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Link check, advisory | `docs.yml` (offline on every PR, weekly online), `.lychee.toml`, `.lycheeignore`, fix dead links, PRD-path grep test | complete | 3, 4, 7, 8 | - | - |
-| 2 | Link check blocking | Flip offline job to fail, document in `ci-and-releases.md`, owner may require the check | pending | 3-9 | 1 | - |
+| 2 | Link check blocking | Flip offline job to fail, document in `ci-and-releases.md`, owner may require the check | complete | 3-9 | 1 | - |
 | 3 | Threat model | `docs/architecture/threat-model.md`, `SECURITY.md` cross-links, issues for findings (fonts, `--` options) | pending | 1, 4, 7, 8 | - | - |
 | 4 | Container view | Flowchart in `codebase-map.md`, caption and conventions | pending | 1, 3, 7, 8 | - | - |
 | 5 | Sequence diagrams | First-use download, live teleprompter, REAPER bridge, each in its owning doc | pending | 1, 3, 7, 8 | 4 | - |
