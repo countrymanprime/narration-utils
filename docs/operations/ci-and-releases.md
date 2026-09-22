@@ -60,10 +60,11 @@ The checks a pull request shows, by the name GitHub displays (`ci.yml` calls `_q
 | `ui-dist / build` | builds the UI bundle the Windows build reuses |
 | `Build (Windows)` | the native Windows build, starting as soon as `ui-dist / build` finishes |
 
-`codeql.yml`, `dependency-review.yml`, `security.yml` and `zizmor.yml` run their own checks and are advisory too
+`codeql.yml`, `dependency-review.yml`, `docs.yml`, `security.yml` and `zizmor.yml` run their own checks and are advisory too
 ([every workflow](#every-workflow), [Tracking work on GitHub](github-workflow.md)). A pull request that changes only `docs/**` or
-Markdown runs none of the `CI` checks, and not CodeQL either, so a docs-only change is reviewed by reading; `zizmor`, `security.yml`,
-`dependency-review.yml` and the labeler have no path filter and always run.
+Markdown runs none of the `CI` checks, and not CodeQL either, so a docs-only change is reviewed by reading and by the link check
+([The docs link check](#the-docs-link-check)); `docs.yml`, `zizmor`, `security.yml`, `dependency-review.yml` and the labeler have no path
+filter and always run.
 
 **The `production` environment** (read live on 2026-09-21) has `@countrymanprime` as its one required reviewer, **Prevent self-review**
 left off and administrator bypass left on, so the owner can promote an emergency or solo release. It has **no deployment branch or tag
@@ -81,6 +82,7 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | `prerelease.yml` (`Prerelease`) | push to `main` that is not docs- or Markdown-only; manual | `quality / *`, `ui-dist / build`, `version`, `Windows build and release` (needs the three before it, and runs only when `version` found a releasable change) | not a pull request check |
 | `promote-release.yml` | manual, with an RC tag; behind the `production` environment | `promote` | not a pull request check |
 | `build-macos.yml`, `build-linux.yml` | manual, or started by the release job | one reusable `_attach-platform.yml` run: `Check the release`, `ui-dist / build`, `Build and attach <platform>` | not a pull request check |
+| `docs.yml` (`Docs`) | every pull request (no path filter), weekly (Monday 07:17 UTC), manual | `Links (offline)` (pull requests and manual) and `Links (online, advisory)` (weekly and manual) ([below](#the-docs-link-check)) | advisory in GitHub terms; the offline job fails the run on a dead repository link |
 | `zizmor.yml` | every pull request, push to `main`, manual | `zizmor` | advisory in GitHub terms (not required); a finding at the `regular` persona fails the run |
 | `security.yml` (`Security scan`) | every pull request, push to `main`, weekly (Tuesday 06:41 UTC), manual | `govulncheck`, `osv-scanner (pull request)` (only for a same-repository pull request that is not Dependabot's) or `osv-scanner` (every other trigger) | advisory: neither fails on a finding |
 | `codeql.yml` (`CodeQL`) | pull request to `main` that is not docs- or Markdown-only (same-repository, not Dependabot), push to `main`, weekly (Monday 05:23 UTC), manual | `Analyze (go)`, `Analyze (javascript-typescript)`, `Analyze (python)` | advisory |
@@ -90,7 +92,7 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | `sync-labels.yml`, `sync-milestones.yml` | push to `main` that changes `.github/labels.json`, `config/roadmap.json` or `scripts/github/**`, and the workflow file; manual | `sync` | run after a merge, never on a pull request |
 
 The tests of `scripts/github/*.test.mjs` (the label and milestone sync) run in `quality / repo-scripts`. Nothing runs on a schedule except
-CodeQL and the security scan. There is no `github-scripts` job and no changed-file classification: Nx `affected` decides what a pull
+CodeQL, the security scan and the online link check. There is no `github-scripts` job and no changed-file classification: Nx `affected` decides what a pull
 request runs (see [Nx projects and the quality gate](#nx-projects-and-the-quality-gate)).
 
 Issues, labels, milestones, and the project board are covered in
@@ -383,6 +385,17 @@ release workflow and `main`, add `--signer-workflow countrymanprime/narration-ut
 `.jsonl` bundle that `--bundle <file>` then verifies without asking GitHub for it. The same works for the executable
 inside the zip after extracting it, which is what an in-app update can check. The release notes say the same in one line.
 The `.sha256` beside a file only detects a damaged download: it is not evidence of where the file came from.
+
+## The docs link check
+
+`docs.yml` (workflow `Docs`) runs [lychee](https://github.com/lycheeverse/lychee) (`lycheeverse/lychee-action`, pinned to a commit, lychee 0.24.2) over every Markdown file in the repository, configured by `.lychee.toml` and `.lycheeignore` at the root. It has two jobs:
+
+- **`Links (offline)`** starts on **every** pull request: the trigger has no `paths` filter, on purpose. `ci.yml` skips documentation-only pull requests, so a docs job that shared its filter would also skip a *code* change that renames a file a document links to, and a check that GitHub skips because of a path filter stays pending if it is ever required (see the note at the top of this document). Offline mode reads only the tree and never opens a network connection: a relative link must resolve to a file, and a `#fragment` to a heading of that file (checked; `include_fragments = "anchor-only"` works with `--offline`). A local run over the 227 Markdown files and 1,356 links takes 0.13 seconds (the Actions run adds the runner set-up), so it is cheap enough to block on, and it is deterministic. It replaces nothing: the docs-site build ([below](#the-public-docs-site)) checks the built HTML of the pages it publishes, and `apps/ui/src/docsGuide.test.ts` checks the guide's own anchors.
+- **`Links (online, advisory)`** starts weekly and by hand. It also follows the `http(s)` links (with `actions/cache` on `.lycheecache`, one day), reports the ones that rotted in the job summary, and **never fails**: a link on someone else's server is not a regression in this repository. `429 Too Many Requests` is accepted. The `GITHUB_TOKEN` is passed only to lift GitHub's anonymous rate limit.
+
+What it does not see: a path in a code comment (`docs/prds/<name>.prd.md` in a Go or Python file) is not a Markdown link, so `scripts/ci/prd-references.test.mjs` (in `quality / repo-scripts`) fails when a source file cites a PRD that is not in the tree ([ADR 0028](../adr/0028-planned-work-is-specified-as-prds-and-deleted-when-built.md) deletes them by design). Mermaid diagrams are text to lychee.
+
+The baseline on 2026-09-21 (S17 phase 1): 0 dead repository links; 7 external links rotted or unreachable, six of them pull requests of the owner's private repositories cited as history in `tools/ui-atlas-kit/docs/rollout-ledger.md` (now ignored, with the reason, in `.lycheeignore`) and one real finding, the README's link to the published site `https://countrymanprime.github.io/narration-utils/`, which answers 404 until the owner enables GitHub Pages ([#231](https://github.com/countrymanprime/narration-utils/issues/231)). To add a link the checker should not chase, add a regular expression to `.lycheeignore` with its reason; to run the check locally, install lychee (`cargo install lychee --locked`) and run `lychee --config .lychee.toml --offline .` (drop `--offline` for the online run).
 
 ## The Pages workflow
 

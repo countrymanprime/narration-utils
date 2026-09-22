@@ -1,0 +1,61 @@
+name: Docs
+# The link check of every Markdown file in the repository (docs/prds/docs-security-and-hygiene.prd.md, stack S17;
+# docs/operations/ci-and-releases.md#the-docs-link-check).
+#
+# There is deliberately NO path filter on the pull_request trigger. ci.yml skips documentation-only pull requests, so a
+# path-filtered docs job would also skip a code change that renames a file a doc links to, and a required check that
+# GitHub skips stays pending forever. This workflow runs on every pull request, so its job is safe to require later.
+#
+# links-offline reads only the repository (lychee --offline: a relative link must resolve to a file, a `#fragment` to a
+# heading of that file) and does not touch the network, so it is deterministic. links-online also follows the http(s)
+# links, which rot on their own, so it runs weekly and by hand and only reports: it never blocks a pull request.
+on:
+  pull_request:
+  schedule:
+    - cron: '17 7 * * 1'
+  workflow_dispatch: {}
+permissions: { contents: read }
+concurrency:
+  group: docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  links-offline:
+    name: Links (offline)
+    # The scheduled run exists for the online job; the offline one has nothing to add to it.
+    if: github.event_name != 'schedule'
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          lycheeVersion: v0.24.2
+          args: --config .lychee.toml --offline --no-progress .
+          # Phase 1 of the PRD lands advisory; phase 2 flips this to true once the baseline is clean.
+          fail: false
+  links-online:
+    name: Links (online, advisory)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Remembered answers for a day, so a weekly run does not re-ask every host about every URL.
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .lycheecache
+          key: lychee-${{ github.run_id }}
+          restore-keys: lychee-
+      - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          lycheeVersion: v0.24.2
+          args: --config .lychee.toml --cache --max-cache-age 1d --no-progress .
+          # Reports in the job summary and never fails: a link on someone else's server is not this repository's regression.
+          fail: false
+        env:
+          # Only to lift GitHub's anonymous rate limit on the links to github.com.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
