@@ -279,6 +279,18 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'last-track-selected',
     description: 'Tracks, the last track (muted, MIDI-only) selected - Muted badge shown and Next track disabled',
   },
+  {
+    page: 'tracks',
+    state: 'chapter-link-confirmed',
+    description:
+      'Tracks, the Chapter links list at the foot of the page - the first chapter confirmed to a track shows Linked with the track name, Change and Clear (analysis evidence ledger PRD, Phase 7)',
+  },
+  {
+    page: 'tracks',
+    state: 'chapter-link-missing',
+    description:
+      'Tracks, a chapter confirmed to a track GUID no longer in the project - Track missing, with the missing-track message and Change/Clear (reached via the ?mockChapterLink=missing mock seam)',
+  },
 
   // Teleprompter
   {

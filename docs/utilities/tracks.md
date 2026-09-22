@@ -8,7 +8,7 @@ A narrator wants to see what a REAPER project actually contains - which tracks e
 
 ## Workflow
 
-Open a project folder. The Tracks page finds the project's `.rpp` file, lists its tracks, and offers play/pause, skip back/forward 30 seconds, and previous/next track. See [Using the app: Tracks](../guides/using-the-app/tracks.md) for screenshots.
+Open a project folder. The Tracks page finds the project's `.rpp` file, lists its tracks, offers play/pause, skip back/forward 30 seconds, and previous/next track, and lists every chapter's confirmed link to a track. See [Using the app: Tracks](../guides/using-the-app/tracks.md) for screenshots.
 
 ## How it works
 
@@ -18,10 +18,11 @@ Open a project folder. The Tracks page finds the project's `.rpp` file, lists it
 - **Unavailable and unsupported are states, not errors.** An item whose source file is missing on disk is reported as unavailable; a non-audio source (MIDI, embedded subproject, video) is reported as unsupported. The track is still listed, flagged, and its playable count shown (for example `0/1`).
 - **Empty and failure states.** A folder with no `.rpp` shows a "No REAPER project file found" message rather than a blank page. If audio that was available at load time can't be played (moved or deleted since), playback stops and the page says so; a playback request interrupted by switching tracks is not treated as a failure.
 - **Playback.** A track's playable items play back to back in project-time order. Previous/next moves between tracks, not items. Audio is streamed through the `/media` route - see [ADR 0012](../adr/0012-media-route-for-track-playback.md) - which only serves files the current project's selected `.rpp` references, and supports HTTP Range requests so skipping doesn't load a whole chapter into memory.
+- **Chapter links.** The `Chapter links` list (analysis evidence ledger PRD, Phase 7) shows one row per narration chapter (reference chapters are hidden, since they have no audio to link) against the `chapter-track-map.json` store built in Phase 5: **Linked** with the track's name when the confirmed `trackGuid` still resolves to a track in the current project, **Not linked** with nothing confirmed, and **Track missing** when a confirmed `trackGuid` no longer resolves (the track was deleted, or the selected `.rpp` changed). A reusable `MappingConfirm` widget (`apps/ui/src/components/mapping/MappingConfirm.tsx`) drives the pick-a-track/Confirm/Change/Clear flow in each row, so the same prompt can sit beside a future check (a Home row's "Check recording", an evidence view) without the narrator visiting Tracks first. Linking never chooses for the narrator: a suggested match (TM Phase 8's matcher, not built yet) is a proposal only, and this page shows confirmed links, made through `ChapterTrackMapList`/`Confirm`/`Clear`.
 
 ## Non-goals and review boundary
 
-Read-only: nothing edits the `.rpp`, moves media, or changes REAPER state. Track-to-chapter matching and measured recorded duration are planned in [diagnostics-delivery-and-cleanup-tools.prd.md](../prds/diagnostics-delivery-and-cleanup-tools.prd.md) (Phase 8); transcript and waveform views are recorded there as later work. Both can build on this parser instead of a new bridge action.
+Read-only: nothing edits the `.rpp`, moves media, or changes REAPER state. Track-to-chapter *matching* (scoring a suggestion) is TM Phase 8; this page and the mapping store only record and show the narrator's own confirmation of a link, never a computed guess. Measured recorded duration is planned in [diagnostics-delivery-and-cleanup-tools.prd.md](../prds/diagnostics-delivery-and-cleanup-tools.prd.md) (Phase 8); transcript and waveform views are recorded there as later work. Both can build on this parser instead of a new bridge action.
 
 ## Known limits
 
