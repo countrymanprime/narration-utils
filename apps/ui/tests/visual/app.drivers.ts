@@ -444,6 +444,17 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'button', 'Dark');
       await goToPage(page, 'Manuscript');
     },
+    'credits-entries': async (page) => {
+      await goToPage(page, 'Manuscript');
+      // Collapse the real chapters first: chapter 1's body has the seeded overlapping entity/note marks used by the
+      // 'overlapping-highlights' state (axe-debt.ts, #155) - collapsing keeps this state's own screenshot free of
+      // that unrelated, already-tracked issue instead of growing the axe-debt ratchet for an unrelated reason.
+      await clickVisible(page, 'button', 'Collapse all chapters');
+      // The default mock project has no Title/Author/Narrator value set, so the shipped opening template's tokens
+      // render as unresolved chips (C6) - expanding it shows both the chip and the "unresolved token(s)" count.
+      await clickVisible(page, 'button', 'Opening credits');
+      await page.getByText(/unresolved token/).waitFor();
+    },
   },
   proofing: {
     'disabled-button': async (page) => {
