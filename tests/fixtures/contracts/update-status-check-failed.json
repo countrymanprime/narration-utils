@@ -8,9 +8,12 @@
     "tag": "v0.2.7-rc",
     "version": "0.2.7"
   },
+  "canInstall": true,
   "channel": "candidates",
   "development": false,
+  "downloaded": null,
   "failure": "Could not reach GitHub to check for updates.",
+  "installBlockedReason": "",
   "lastChecked": "2026-09-21T12:00:00Z",
   "platform": "windows-x64",
   "version": "0.2.6"

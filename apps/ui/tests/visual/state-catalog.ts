@@ -236,6 +236,38 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'settings',
+    state: 'about-update-ready',
+    description: 'Settings, About and updates with the update downloaded and checked, ready to install (?mockUpdate=ready)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'about-install-confirm',
+    description: 'Settings, About and updates: the confirm before the app replaces itself and restarts (?mockUpdate=ready)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'about-installing',
+    description:
+      'Settings, About and updates: the blocking dialog while the app installs the update and restarts, with the cannot-be-cancelled notice (?mockUpdate=ready)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'about-install-refused',
+    description: 'Settings, About and updates after an install was refused because work is running (?mockUpdate=install-refused)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'about-install-blocked',
+    description:
+      'Settings, About and updates where the app may not replace itself: why, and Show the downloaded file (?mockUpdate=install-blocked, after a download)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
     state: 'about-development-build',
     description: 'Settings, About and updates in a development build, which has no release to compare with (?mockUpdate=development)',
     ...REFLOW,

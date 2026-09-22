@@ -24,6 +24,12 @@ export type UpdateStatus = {
   /** The release platform (`windows-x64`), empty where this program has no release. */
   platform: string;
   channel: UpdateChannel;
+  /** Whether the app can replace itself where it is installed: a release build on Windows, in a folder it may write to. */
+  canInstall: boolean;
+  /** Why not, in words a narrator can read; empty when `canInstall`. */
+  installBlockedReason: string;
+  /** The update that finished downloading and is ready to install, when it is the one on offer. */
+  downloaded: { jobId: string; version: string } | null;
   /** When the last successful check finished (ISO 8601), empty if none did. */
   lastChecked: string;
   /** Why the last check failed, in words a narrator can read; empty when it worked. */
@@ -38,7 +44,7 @@ export type UpdateStatus = {
 export type UpdateJob = {
   id: string;
   version: string;
-  phase: 'downloading' | 'verifying' | 'unpacking' | 'ready' | 'error' | 'cancelled';
+  phase: 'downloading' | 'verifying' | 'unpacking' | 'ready' | 'installing' | 'error' | 'cancelled';
   message: string;
   percent: number;
   bytesDone: number;
@@ -55,6 +61,10 @@ export interface UpdateApi {
   /** Starts downloading the release the last check found. The narrator's explicit action; nothing else downloads an update. */
   updateDownload(): Promise<UpdateJob>;
   updateJobState(jobId: string): Promise<UpdateJob>;
+  /** Replaces the running program with the downloaded update and starts it; the app closes a moment after this answers. Refused while work is running. */
+  updateInstall(jobId: string): Promise<UpdateJob>;
+  /** Opens the folder that holds the downloaded update, for an install the app may not replace itself in. */
+  updateShowDownload(): Promise<void>;
   /** Stops the download and removes what it fetched. */
   updateJobCancel(jobId: string): Promise<UpdateJob>;
   /** Opens the release notes of the release that was found in the browser. */

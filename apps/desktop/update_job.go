@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,6 +17,7 @@ const (
 	updatePhaseVerifying   = "verifying"
 	updatePhaseUnpacking   = "unpacking"
 	updatePhaseReady       = "ready"
+	updatePhaseInstalling  = "installing"
 	updatePhaseError       = "error"
 	updatePhaseCancelled   = "cancelled"
 )
@@ -36,7 +36,7 @@ type updateJob struct {
 func (j *updateJob) running() bool {
 	j.mu.RLock()
 	defer j.mu.RUnlock()
-	return j.phase == updatePhaseDownloading || j.phase == updatePhaseVerifying || j.phase == updatePhaseUnpacking
+	return j.phase == updatePhaseDownloading || j.phase == updatePhaseVerifying || j.phase == updatePhaseUnpacking || j.phase == updatePhaseInstalling
 }
 
 // updateStagingRoot is where downloads are kept: the per-user cache, beside the other downloaded assets and never in a project.
@@ -53,17 +53,17 @@ func newUpdateStager() *update.Stager {
 // starts on its own: the only caller is the narrator's explicit click (ADR 0072).
 func (h *Host) startUpdateDownload() (map[string]any, error) {
 	if !h.updates.Platform.SelfReplace {
-		return nil, errors.New("this platform does not update itself; open the release notes to download the update from the release page")
+		return nil, update.UserError("This platform does not update itself. Open the release notes to download the update from the release page.")
 	}
 	_, channel := h.updateSettings()
 	release, ok := h.updates.Newer(channel)
 	if !ok {
-		return nil, errors.New("there is no newer release to download")
+		return nil, update.UserError("There is no newer release to download.")
 	}
 	h.mu.Lock()
 	if h.updateJob != nil && h.updateJob.running() {
 		h.mu.Unlock()
-		return nil, errors.New("an update download is already running")
+		return nil, update.UserError("An update download is already running.")
 	}
 	parent := h.ctx
 	if parent == nil {
@@ -99,7 +99,7 @@ func (h *Host) runUpdateDownload(ctx context.Context, stager *update.Stager, rel
 	var narratorText string
 	if err != nil && ctx.Err() == nil {
 		_ = h.log.Report("update_download_failed", err.Error())
-		narratorText = update.UserMessage(err)
+		narratorText = update.UserMessage(err, "The update could not be downloaded.")
 	}
 	job.mu.Lock()
 	defer job.mu.Unlock()
@@ -121,7 +121,7 @@ func (h *Host) updateJobByID(id string) (*updateJob, error) {
 	job := h.updateJob
 	h.mu.RUnlock()
 	if job == nil || job.id != id {
-		return nil, errors.New("unknown update job")
+		return nil, update.UserError("That update download is not known.")
 	}
 	return job, nil
 }
@@ -161,6 +161,58 @@ func (h *Host) stagedUpdate() (update.Staged, bool) {
 		return update.Staged{}, false
 	}
 	return staged, true
+}
+
+// beginInstall takes the job from ready to installing and returns the staged program, or reports that it is not ready (not
+// downloaded, gone, or already being installed). It is atomic under the job's lock.
+func (j *updateJob) beginInstall() (update.Staged, bool) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	if !j.hasStaged || j.phase != updatePhaseReady {
+		return update.Staged{}, false
+	}
+	if info, err := os.Lstat(j.staged.Executable); err != nil || !info.Mode().IsRegular() || info.Size() != j.staged.ExecutableSize {
+		return update.Staged{}, false
+	}
+	j.phase, j.message = updatePhaseInstalling, "Installing version "+j.version+". Narration Utils restarts in a moment."
+	return j.staged, true
+}
+
+// endInstall records how the install ended: on failure the update is ready again to be tried; on success it stays on its last step.
+func (j *updateJob) endInstall(installed bool) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	if !installed {
+		j.phase, j.message = updatePhaseReady, "Version "+j.version+" is downloaded and checked."
+	}
+}
+
+// installing reports whether the job is on its last step: the app is replacing itself and about to close.
+func (j *updateJob) installing() bool {
+	j.mu.RLock()
+	defer j.mu.RUnlock()
+	return j.phase == updatePhaseInstalling
+}
+
+// readyUpdate is the job and version of the update that finished downloading and is still there to install.
+func (h *Host) readyUpdate() (id, version string, ok bool) {
+	h.mu.RLock()
+	job := h.updateJob
+	h.mu.RUnlock()
+	if job == nil {
+		return "", "", false
+	}
+	job.mu.RLock()
+	staged, ready := job.staged, job.hasStaged && job.phase == updatePhaseReady
+	id, version = job.id, job.version
+	job.mu.RUnlock()
+	if !ready {
+		return "", "", false
+	}
+	if info, err := os.Lstat(staged.Executable); err != nil || !info.Mode().IsRegular() || info.Size() != staged.ExecutableSize {
+		return "", "", false
+	}
+	return id, version, true
 }
 
 // snapshotUpdateJob is the payload the download bindings send. The percent is bytes received over bytes expected, and nothing else.

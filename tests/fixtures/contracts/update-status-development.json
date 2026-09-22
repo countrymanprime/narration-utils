@@ -1,8 +1,11 @@
 {
   "available": null,
+  "canInstall": false,
   "channel": "candidates",
   "development": true,
+  "downloaded": null,
   "failure": "Could not reach GitHub to check for updates.",
+  "installBlockedReason": "A development build does not update itself.",
   "lastChecked": "2026-09-21T12:00:00Z",
   "platform": "windows-x64",
   "version": "0.0.0-dev"

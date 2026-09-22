@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { describeApiError } from '../../api/errorMessage';
+import { apiErrorMessage } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
-import type { UpdateStatus } from '../../types';
+import type { UpdateStatus, WorkJob } from '../../types';
 import { Button } from '../primitives/Button';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
+import { WorkDialog } from '../primitives/WorkDialog';
 import { UpdateDownloadDialog } from './UpdateDownloadDialog';
 
 const BYTES_PER_MB = 1024 * 1024;
@@ -27,10 +28,11 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
   const checkButton = useRef<HTMLButtonElement>(null);
-  // The narrator's steps toward an update: asked to confirm, downloading, and the version that finished downloading.
+  // The narrator's steps toward an update: asked to confirm the download, downloading, asked to confirm the install, and installing.
   const [confirming, setConfirming] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [downloaded, setDownloaded] = useState('');
+  const [confirmingInstall, setConfirmingInstall] = useState(false);
+  const [installing, setInstalling] = useState<WorkJob>();
 
   useEffect(() => {
     let active = true;
@@ -38,7 +40,7 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
       .updateStatus()
       // An event that arrived first is newer than this answer.
       .then((next) => active && setStatus((current) => current ?? next))
-      .catch((failure) => active && setError(describeApiError(failure)));
+      .catch((failure) => active && setError(apiErrorMessage(failure)));
     // A check the app makes on its own, after this page opened, that found a release.
     const unsubscribe = api.subscribeUpdate((next) => {
       setStatus(next);
@@ -56,7 +58,7 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
     try {
       setStatus(await api.updateCheck());
     } catch (failure) {
-      setError(describeApiError(failure));
+      setError(apiErrorMessage(failure));
     } finally {
       setChecking(false);
       // The button was disabled while it ran, which drops keyboard focus; the result is announced, and focus comes back to it.
@@ -65,8 +67,29 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
   }, [api]);
 
   const openNotes = useCallback(() => {
-    api.updateOpenNotes().catch((failure) => setError(describeApiError(failure)));
+    api.updateOpenNotes().catch((failure) => setError(apiErrorMessage(failure)));
   }, [api]);
+
+  const showDownload = useCallback(() => {
+    api.updateShowDownload().catch((failure) => setError(apiErrorMessage(failure)));
+  }, [api]);
+
+  // The host replaces the running program and closes the app a moment after it answers; an error here means it changed nothing.
+  const install = useCallback(
+    async (jobId: string, version: string) => {
+      setConfirmingInstall(false);
+      setError('');
+      setInstalling({ id: jobId, kind: 'app_update', phase: 'running', message: `Installing version ${version}…`, percent: 0, logs: [], elapsed: 0 });
+      try {
+        const job = await api.updateInstall(jobId);
+        setInstalling({ id: job.id, kind: 'app_update', phase: 'running', message: job.message, percent: 0, logs: [job.message], elapsed: 0 });
+      } catch (failure) {
+        setInstalling(undefined);
+        setError(apiErrorMessage(failure));
+      }
+    },
+    [api],
+  );
 
   const errorAlert = error && (
     <p role="alert" style={{ color: 'var(--danger-text)' }}>
@@ -99,7 +122,8 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
                 <div style={{ color: 'var(--text-muted)' }}>
                   {available.candidate ? 'A release candidate' : 'A release'} · {Math.round(available.size / BYTES_PER_MB)} MB
                 </div>
-                {available.replaces && downloaded === available.version && <p>Version {available.version} is downloaded and checked.</p>}
+                {available.replaces && status.downloaded && <p>Version {status.downloaded.version} is downloaded and checked.</p>}
+                {available.replaces && status.downloaded && !status.canInstall && <p style={{ color: 'var(--text-muted)' }}>{status.installBlockedReason}</p>}
                 {!available.replaces && (
                   <p style={{ color: 'var(--text-muted)' }}>
                     This platform does not update itself. Open the release notes to download it from the release page.
@@ -120,9 +144,19 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
           </div>
           {available && (
             <div className="flex flex-wrap items-center gap-3">
-              {available.replaces && downloaded !== available.version && (
+              {available.replaces && !status.downloaded && (
                 <Button className="text-xs" onClick={() => setConfirming(true)}>
                   Download update
+                </Button>
+              )}
+              {available.replaces && status.downloaded && status.canInstall && (
+                <Button className="text-xs" onClick={() => setConfirmingInstall(true)}>
+                  Install and restart
+                </Button>
+              )}
+              {available.replaces && status.downloaded && !status.canInstall && (
+                <Button className="text-xs" onClick={showDownload}>
+                  Show the downloaded file
                 </Button>
               )}
               <Button variant="ghost" className="text-xs" aria-label="Release notes (opens in your browser)" onClick={openNotes}>
@@ -160,10 +194,25 @@ export function UpdatesPanel({ formDirty = false }: { formDirty?: boolean }) {
           available={available}
           close={(result) => {
             setDownloading(false);
-            if (result === 'ready') setDownloaded(available.version);
+            // A download that finished is the host's to report: the status says whether it can be installed.
+            if (result === 'ready')
+              api
+                .updateStatus()
+                .then(setStatus)
+                .catch((failure) => setError(apiErrorMessage(failure)));
           }}
         />
       )}
+      {confirmingInstall && available && status.downloaded && (
+        <ConfirmDialog
+          title={`Install version ${available.version} and restart?`}
+          body={`Narration Utils closes and starts again on version ${available.version} with the same project, and REAPER's launcher keeps working. It cannot install while an import, a Story Bible build, a download, a comparison or a teleprompter session is running. If the new version does not start, the previous one comes back by itself.`}
+          confirmLabel="Install and restart"
+          confirm={() => void install(status.downloaded?.jobId ?? '', available.version)}
+          cancel={() => setConfirmingInstall(false)}
+        />
+      )}
+      {installing && <WorkDialog title={`Installing Narration Utils ${available?.version ?? ''}`.trim()} job={installing} />}
     </div>
   );
 }

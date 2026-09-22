@@ -129,11 +129,15 @@ export function UpdateCheck():Promise<string>;
 
 export function UpdateDownload():Promise<string>;
 
+export function UpdateInstall(arg1:string):Promise<string>;
+
 export function UpdateJobCancel(arg1:string):Promise<string>;
 
 export function UpdateJobState(arg1:string):Promise<string>;
 
 export function UpdateOpenNotes():Promise<string>;
+
+export function UpdateShowDownload():Promise<string>;
 
 export function UpdateStatus():Promise<string>;
 

@@ -11,7 +11,10 @@
   "canInstall": true,
   "channel": "candidates",
   "development": false,
-  "downloaded": null,
+  "downloaded": {
+    "jobId": "update-1",
+    "version": "0.2.7"
+  },
   "failure": "",
   "installBlockedReason": "",
   "lastChecked": "2026-09-21T12:00:00Z",

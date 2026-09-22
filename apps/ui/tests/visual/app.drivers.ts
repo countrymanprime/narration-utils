@@ -622,6 +622,55 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.getByRole('button', { name: 'Download', exact: true }).click();
       await page.getByRole('alert').filter({ hasText: 'so the update was not used' }).waitFor();
     },
+    'about-update-ready': async (page) => {
+      await page.goto('/?mockUpdate=ready');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'About & updates');
+      await page.getByRole('button', { name: 'Install and restart' }).waitFor();
+    },
+    'about-install-confirm': async (page) => {
+      await page.goto('/?mockUpdate=ready');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'About & updates');
+      await page.getByRole('button', { name: 'Install and restart' }).click();
+      await confirmDialog(page, 'Install version 0.2.7 and restart?').waitFor();
+    },
+    'about-installing': async (page) => {
+      await page.goto('/?mockUpdate=ready');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'About & updates');
+      await page.getByRole('button', { name: 'Install and restart' }).click();
+      await confirmDialog(page, 'Install version 0.2.7 and restart?').getByRole('button', { name: 'Install and restart' }).click();
+      await page.getByRole('dialog', { name: 'Installing Narration Utils 0.2.7' }).waitFor();
+    },
+    'about-install-refused': async (page) => {
+      await page.goto('/?mockUpdate=install-refused');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'About & updates');
+      await page.getByRole('button', { name: 'Install and restart' }).click();
+      await confirmDialog(page, 'Install version 0.2.7 and restart?').getByRole('button', { name: 'Install and restart' }).click();
+      await page.getByRole('alert').filter({ hasText: 'Narration Utils is busy' }).waitFor();
+    },
+    'about-install-blocked': async (page) => {
+      await page.goto('/?mockUpdate=install-blocked');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'About & updates');
+      await page.getByRole('button', { name: 'Download update' }).click();
+      await page.getByRole('button', { name: 'Download', exact: true }).click();
+      await page.getByRole('button', { name: 'Close' }).waitFor({ timeout: 15_000 });
+      await page.getByRole('button', { name: 'Close' }).click();
+      await page.getByRole('button', { name: 'Show the downloaded file' }).waitFor();
+    },
     'about-development-build': async (page) => {
       await page.goto('/?mockUpdate=development');
       await settlePage(page);

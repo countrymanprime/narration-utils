@@ -1,0 +1,10 @@
+{
+  "bytesDone": 209715200,
+  "bytesTotal": 209715200,
+  "error": "",
+  "id": "update-1",
+  "message": "Installing version 0.2.7. Narration Utils restarts in a moment.",
+  "percent": 100,
+  "phase": "installing",
+  "version": "0.2.7"
+}

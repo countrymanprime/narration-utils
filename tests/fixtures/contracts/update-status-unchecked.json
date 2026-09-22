@@ -1,8 +1,11 @@
 {
   "available": null,
+  "canInstall": true,
   "channel": "candidates",
   "development": false,
+  "downloaded": null,
   "failure": "",
+  "installBlockedReason": "",
   "lastChecked": "",
   "platform": "windows-x64",
   "version": "0.2.6"

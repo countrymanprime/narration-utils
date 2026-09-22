@@ -97,9 +97,11 @@ const GOLDEN: Record<string, z.ZodType> = {
   'update-status-available.json': updateStatusSchema,
   'update-status-check-failed.json': updateStatusSchema,
   'update-status-development.json': updateStatusSchema,
+  'update-status-downloaded.json': updateStatusSchema,
   'update-job-downloading.json': updateJobSchema,
   'update-job-verifying.json': updateJobSchema,
   'update-job-ready.json': updateJobSchema,
+  'update-job-installing.json': updateJobSchema,
   'update-job-error.json': updateJobSchema,
   'update-job-cancelled.json': updateJobSchema,
   'tracks-project.json': tracksProjectSchema,
@@ -403,6 +405,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'updateDownload',
       'updateJobState',
       'updateJobCancel',
+      'updateInstall',
     ];
     const VOID = [
       'manuscriptImportCancel',
@@ -426,6 +429,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterStop',
       'reportClientDiagnostic',
       'updateOpenNotes',
+      'updateShowDownload',
     ];
     const NOT_A_REQUEST = [
       'mediaUrl',
