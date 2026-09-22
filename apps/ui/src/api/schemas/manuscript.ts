@@ -110,6 +110,7 @@ const characterCandidateSchema = z.object({
   name: z.string(),
   description: z.string(),
   sourceSectionId: z.string(),
+  properties: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
 }) satisfies z.ZodType<ManuscriptCharacterCandidate>;
 
 const importPreviewSchema = z.object({

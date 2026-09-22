@@ -103,3 +103,19 @@ func TestMarkdownHeadingSubtitleReachesTheSectionForTheReview(t *testing.T) {
 		t.Fatalf("CHAPTER TWO has no subtitle, got %q", got)
 	}
 }
+
+// TestMarkdownCharacterListActiveEndsAtTheNextChapterLevelHeading covers PRD import-structure-toc-and-characters Phase 1, S3: a
+// heading after Characters that is not a "Chapter N"-shaped narrative marker (here, "Notes") used to stay classified reference and
+// become a spurious character candidate.
+func TestMarkdownCharacterListActiveEndsAtTheNextChapterLevelHeading(t *testing.T) {
+	draft := importMarkdown(t, "# Characters\nWren — a spy.\n\n# Notes\nSome note text.\n\n# Chapter One\nStory text.\n")
+	if !hasCandidate(draft, "Wren") {
+		t.Fatalf("expected a Wren candidate, got %#v", candidateNames(draft))
+	}
+	if hasCandidate(draft, "Notes") {
+		t.Fatalf("Notes must not become a candidate, got %#v", candidateNames(draft))
+	}
+	if got := sectionNamed(t, draft, "Notes").ContentKind; got != "narration" {
+		t.Fatalf("Notes content kind = %q, want narration", got)
+	}
+}

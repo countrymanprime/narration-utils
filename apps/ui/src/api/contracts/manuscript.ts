@@ -59,7 +59,14 @@ export type ManuscriptImportSection = {
   contentKind: ManuscriptContentKind;
   paragraphCount: number;
 };
-export type ManuscriptCharacterCandidate = { id: string; name: string; description: string; sourceSectionId: string };
+export type ManuscriptCharacterCandidate = {
+  id: string;
+  name: string;
+  description: string;
+  sourceSectionId: string;
+  /** Labelled facts captured from the manuscript's cast block ("Codename": "Wren"), in source order. Omitted when there are none. */
+  properties?: Array<{ key: string; value: string }>;
+};
 export type ManuscriptImportSelection = {
   sectionKinds?: Record<string, ManuscriptContentKind>;
   characterCandidateIds?: string[];

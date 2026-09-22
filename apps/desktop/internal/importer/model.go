@@ -27,11 +27,20 @@ type DraftSection struct {
 	ParagraphCount int    `json:"paragraphCount"`
 }
 
+// Property is one labelled fact captured from a character candidate's source lines ("Codename": "Wren"), in the order the
+// manuscript gave them. It mirrors guide.Property so bindings.go can hand it straight to Service.CreateFull with no conversion
+// beyond the package boundary itself (import-structure-toc-and-characters PRD, Phase 3, S5).
+type Property struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 type CharacterCandidate struct {
-	ID              string `json:"id"`
-	Name            string `json:"name"`
-	Description     string `json:"description"`
-	SourceSectionID string `json:"sourceSectionId"`
+	ID              string     `json:"id"`
+	Name            string     `json:"name"`
+	Description     string     `json:"description"`
+	SourceSectionID string     `json:"sourceSectionId"`
+	Properties      []Property `json:"properties,omitempty"`
 }
 
 type Draft struct {
@@ -131,19 +140,92 @@ func looksLikeName(value string) bool {
 	return true
 }
 
-func characterLine(value string) (string, string, bool) {
-	value = strings.Trim(value, "•-–—* ")
-	if value == "" || len([]rune(value)) > 240 {
-		return "", "", false
-	}
-	name, description := value, ""
+// splitLabel splits a trimmed candidate line on the first of the label separators and reports whether one was found. The left
+// side is a name or a label; the right is a description or a property value depending on what the caller does with it.
+func splitLabel(value string) (left, right string, found bool) {
 	for _, separator := range []string{" — ", " – ", " - ", ": "} {
-		if left, right, found := strings.Cut(value, separator); found {
-			name, description = strings.TrimSpace(left), strings.TrimSpace(right)
-			break
+		if l, r, ok := strings.Cut(value, separator); ok {
+			return strings.TrimSpace(l), strings.TrimSpace(r), true
 		}
 	}
-	return name, description, looksLikeName(name)
+	return value, "", false
+}
+
+// characterCandidateScanner turns a manuscript's cast lines into candidates using the structural rule (S4 of the
+// import-structure-toc-and-characters PRD, Phase 3): a bare name line or heading opens a candidate; a "Label: value" line that
+// follows attaches as an ordered property to the open candidate; with no candidate open, "Name: description" keeps the legacy
+// behavior of opening one from a labelled line whose label looks like a name. This replaces the old per-line, stateless
+// characterLine check, which read every "Label: value" as its own candidate (the "Codename" collision bug the PRD's Evidence
+// traces by hand): "Codename: X" no longer opens a candidate named "Codename" once a real name line has opened one already.
+type characterCandidateScanner struct {
+	sourceSectionID string
+	candidates      []CharacterCandidate
+	seen            map[string]bool
+	open            *CharacterCandidate
+	// opened is true once openWithName has been called at all, a duplicate name included. It gates the legacy "Name: description"
+	// fallback (S4): that reading is only for a block that never opened a candidate structurally at all. Without this, a labelled
+	// line found with nothing open right after a *duplicate* name closed one (openWithName leaves s.open nil either way) would be
+	// misread as a brand-new candidate opening from whatever short label happened to follow - a name-shaped label like "Notes" or
+	// "Age" would fabricate a phantom character (review finding on this phase).
+	opened bool
+}
+
+// commit closes whatever candidate is open, adding it to the result. A no-op with nothing open.
+func (s *characterCandidateScanner) commit() {
+	if s.open == nil {
+		return
+	}
+	s.candidates = append(s.candidates, *s.open)
+	s.open = nil
+}
+
+// openWithName starts a new candidate, closing whatever was open first. A name already claimed (case-insensitively, anywhere in
+// the draft) opens nothing, so a repeated heading or line does not duplicate the entry - but it still counts as "opened" so a
+// labelled line that follows is not misread as the start of a new one (see the opened field's own comment).
+func (s *characterCandidateScanner) openWithName(name string) {
+	s.commit()
+	s.opened = true
+	key := strings.ToLower(name)
+	if s.seen[key] {
+		return
+	}
+	s.seen[key] = true
+	s.open = &CharacterCandidate{ID: fmt.Sprintf("candidate-%s-%03d", s.sourceSectionID, len(s.candidates)+1), Name: name, SourceSectionID: s.sourceSectionID}
+}
+
+// item processes one source line, already bullet-trimmed by the caller for a paragraph split on ';' (several facts on one line).
+func (s *characterCandidateScanner) item(value string) {
+	value = strings.Trim(value, "•-–—* ")
+	if value == "" || len([]rune(value)) > 240 {
+		return
+	}
+	left, right, found := splitLabel(value)
+	if !found {
+		if looksLikeName(value) {
+			s.openWithName(value)
+		} else if s.open != nil && s.open.Description == "" {
+			s.open.Description = value
+		}
+		return
+	}
+	if s.open != nil {
+		key := strings.ToLower(left)
+		for _, existing := range s.open.Properties {
+			if strings.ToLower(existing.Key) == key {
+				// The sidecar's create --properties refuses a duplicate key outright (manuscript_guide.py normalize_properties), so
+				// a repeated label under one candidate keeps its first value rather than failing the candidate's whole creation.
+				return
+			}
+		}
+		s.open.Properties = append(s.open.Properties, Property{Key: left, Value: right})
+		return
+	}
+	if !s.opened && looksLikeName(left) {
+		s.openWithName(left)
+		if s.open != nil {
+			s.open.Description = right
+		}
+	}
 }
 
 // firstSubtitle is the subtitle of the first of the given paragraphs, or "" when it has none or there are no paragraphs. It is what the
@@ -159,7 +241,11 @@ func firstSubtitle(paragraphs []Paragraph, indexes []int) string {
 	return ""
 }
 
-func newDraft(format, sourceName string, paragraphs []Paragraph, titles []string) (Draft, error) {
+// newDraft groups paragraphs into sections by their (already-detected) chapter title, in first-seen order with any titles named up
+// front (so an expected chapter with no paragraphs still gets an empty section). headingLevels gives the outline depth of every
+// heading-derived title the caller saw - chapter headings and non-chapter ones like "Contents" alike - keyed by its exact text; a
+// title absent from the map (a synthetic group such as "Front Matter" that never had its own heading paragraph) has no known level.
+func newDraft(format, sourceName string, paragraphs []Paragraph, titles []string, headingLevels map[string]int) (Draft, error) {
 	if len(paragraphs) == 0 {
 		return Draft{}, &Error{"The manuscript has no readable text paragraphs."}
 	}
@@ -187,43 +273,72 @@ func newDraft(format, sourceName string, paragraphs []Paragraph, titles []string
 		groups[position].indexes = append(groups[position].indexes, index)
 	}
 	sections := make([]DraftSection, 0, len(groups))
-	candidates := []CharacterCandidate{}
-	candidateNames := map[string]bool{}
+	// candidates starts non-nil (empty, not nil) so an import with no cast still sends "characterCandidates": [] on the wire, as it
+	// always has, rather than null (contract_test.go's golden payload pins this).
+	scanner := &characterCandidateScanner{seen: map[string]bool{}, candidates: []CharacterCandidate{}}
 	characterListActive := false
+	charactersLevel := 0
 	for sectionIndex, group := range groups {
 		id := fmt.Sprintf("section-%04d", sectionIndex+1)
 		charactersHeading := isCharacterHeading(group.title)
 		narrative := isNarrativeMarker(group.title)
+		level, hasLevel := headingLevels[group.title]
+		// endsCharacterScope bounds the Characters section to its own subheadings (S3): a heading whose level is as shallow as or
+		// shallower than the Characters heading's own (a sibling chapter, or the book's Title) ends it, the same way a Contents
+		// heading now does since docx.go/markdown.go record its level too. A heading whose level cannot be determined (a synthetic
+		// group that never had its own heading paragraph) falls back to the old narrative-marker check.
+		endsCharacterScope := characterListActive && ((hasLevel && level <= charactersLevel) || (!hasLevel && narrative))
 		contentKind := "narration"
 		if normalizedHeading(group.title) == "cover" || normalizedHeading(group.title) == "opening pages" || normalizedHeading(group.title) == "front matter" {
 			contentKind = "opening"
-		} else if isReferenceHeading(group.title) || (characterListActive && !narrative) {
+		} else if isReferenceHeading(group.title) || (characterListActive && !endsCharacterScope) {
 			contentKind = "reference"
 		}
-		if narrative {
+		if endsCharacterScope {
 			characterListActive = false
 		}
 		if charactersHeading {
+			// charactersLevel is only (re)baselined when this heading is opening a fresh scope (characterListActive is false going
+			// into it, whether it never started or a shallower heading just ended it above). A heading that also matches
+			// isCharacterHeading (a "Cast" subheading nested inside an outer "Characters" section, for instance) must not overwrite
+			// the level the outer heading set, or a later sibling of the outer heading would wrongly compare against the nested
+			// one's deeper level and never end the section.
+			if !characterListActive {
+				if hasLevel {
+					charactersLevel = level
+				} else {
+					charactersLevel = 1
+				}
+			}
 			characterListActive = true
 		}
 		if charactersHeading {
+			// commit first: a candidate left open by a *previous* group (a per-character heading whose own body never got a
+			// trailing narrative marker to close it) must not still be open when this group's own lines are scanned, or its first
+			// labelled line would silently attach to the wrong character instead of starting this group's own candidates (review
+			// finding on this phase; the else-if branch below is already safe because openWithName always commits first).
+			scanner.commit()
+			scanner.sourceSectionID = id
 			for _, paragraphIndex := range group.indexes {
 				for _, item := range strings.Split(paragraphs[paragraphIndex].Text, ";") {
-					if name, description, ok := characterLine(item); ok && !candidateNames[strings.ToLower(name)] {
-						candidateNames[strings.ToLower(name)] = true
-						candidates = append(candidates, CharacterCandidate{ID: fmt.Sprintf("candidate-%s-%03d", id, len(candidates)+1), Name: name, Description: description, SourceSectionID: id})
-					}
+					scanner.item(item)
 				}
 			}
-		} else if characterListActive && contentKind == "reference" && looksLikeName(group.title) && !candidateNames[strings.ToLower(group.title)] {
-			candidateNames[strings.ToLower(group.title)] = true
-			description := ""
-			if len(group.indexes) > 0 {
-				description = paragraphs[group.indexes[0]].Text
+		} else if characterListActive && contentKind == "reference" && looksLikeName(group.title) {
+			// A per-character heading (docx: each character gets its own heading under Characters) opens its candidate from the
+			// heading text itself, then scans its own paragraphs the same way a flat list would: the first bare line becomes the
+			// description and any "Label: value" line becomes a property, instead of the old uncapped-first-paragraph description
+			// that left every labelled line after it stranded in a reference chapter nothing structured read.
+			scanner.sourceSectionID = id
+			scanner.openWithName(group.title)
+			for _, paragraphIndex := range group.indexes {
+				for _, item := range strings.Split(paragraphs[paragraphIndex].Text, ";") {
+					scanner.item(item)
+				}
 			}
-			candidates = append(candidates, CharacterCandidate{ID: fmt.Sprintf("candidate-%s-%03d", id, len(candidates)+1), Name: group.title, Description: description, SourceSectionID: id})
 		}
 		sections = append(sections, DraftSection{ID: id, Title: group.title, Subtitle: firstSubtitle(paragraphs, group.indexes), ContentKind: contentKind, ParagraphCount: len(group.indexes)})
 	}
-	return Draft{Format: format, SourceName: sourceName, Paragraphs: paragraphs, Sections: sections, CharacterCandidates: candidates, ChapterTitles: titles}, nil
+	scanner.commit()
+	return Draft{Format: format, SourceName: sourceName, Paragraphs: paragraphs, Sections: sections, CharacterCandidates: scanner.candidates, ChapterTitles: titles}, nil
 }
