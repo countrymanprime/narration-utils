@@ -43,6 +43,18 @@ function RppPicker({ discovery, onSelect }: { discovery: TracksDiscovery; onSele
   );
 }
 
+// The Tracks page's own entry point to the shared DAW-link binding (PRD project-workspace-and-daw-link.prd.md, Open
+// Question W19: one binding, three call sites - the pill, here, and Settings' DAW category). Tracks reads its .rpp
+// through its own discovery flow, independent of the manifest link, so this is offered as an extra "point at a
+// different file" action, not a gate on the page.
+function DawFileLink({ dawFileLinked, onLinkDawFile }: { dawFileLinked: boolean; onLinkDawFile: () => void }) {
+  return (
+    <Button variant="ghost" className="text-xs" onClick={onLinkDawFile}>
+      {dawFileLinked ? 'Link a different REAPER project file' : 'Link a REAPER project file'}
+    </Button>
+  );
+}
+
 function TrackRow({ track, active, onSelect }: { track: Track; active: boolean; onSelect: () => void }) {
   const playableCount = track.items.filter((item) => item.supported && item.sourceAvailable).length;
   const hasIssue = track.items.some((item) => !item.supported || !item.sourceAvailable);
@@ -112,7 +124,7 @@ function Transport({ tracks, activeIndex, onActiveIndexChange }: { tracks: Track
   );
 }
 
-export function TracksPage() {
+export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: boolean; onLinkDawFile: () => void }) {
   const api = useApi();
   const [discovery, setDiscovery] = useState<TracksDiscovery>();
   const [project, setProject] = useState<TracksProject>();
@@ -165,6 +177,7 @@ export function TracksPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <Heading title="Tracks">{discovery?.selected ? basename(discovery.selected) : 'Detected from the project’s REAPER file.'}</Heading>
+      <DawFileLink dawFileLinked={dawFileLinked} onLinkDawFile={onLinkDawFile} />
       {error && (
         <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
           {error}

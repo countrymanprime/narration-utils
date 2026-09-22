@@ -81,6 +81,8 @@ export function ManuscriptSetChapterStatus(arg1:string,arg2:string):Promise<stri
 
 export function ProjectCreateIn(arg1:string,arg2:string):Promise<string>;
 
+export function ProjectLinkDawFile():Promise<string>;
+
 export function ProjectRecents():Promise<string>;
 
 export function ProjectRemoveRecent(arg1:string):Promise<string>;

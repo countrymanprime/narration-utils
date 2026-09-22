@@ -270,3 +270,46 @@ describe('the subtitle of each chapter in the review', () => {
     expect(dialog.getByRole('combobox', { name: 'Chapter Three content type' })).toBeTruthy();
   });
 });
+
+describe('the Proofing card and a linked DAW file (PRD project-workspace-and-daw-link.prd.md, W16)', () => {
+  // The mock's default `transcriptLastCompleted` already has a completed comparison, so "review latest comparison"
+  // would stay reachable regardless of the DAW link - override it to nothing-to-review to isolate the Start gate.
+  async function renderHome(dawFileLinked: boolean) {
+    const api = createMockApi({ transcriptLastCompleted: async () => undefined }, { dawFileLinked });
+    const data: Bootstrap = await api.bootstrap();
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+  }
+
+  it('disables the Proofing card with a reason that names the missing DAW link when there is nothing to review yet', async () => {
+    await renderHome(false);
+    const button = await screen.findByRole('button', { name: 'Open Proofing' });
+    await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(true));
+  });
+
+  it('enables the Proofing card once a DAW file is linked', async () => {
+    await renderHome(true);
+    const button = await screen.findByRole('button', { name: 'Open Proofing' });
+    expect((button as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('keeps the Proofing card open for reviewing an existing comparison even without a linked DAW file', async () => {
+    const api = createMockApi({}, { dawFileLinked: false });
+    const data: Bootstrap = await api.bootstrap();
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <Home data={data} go={() => {}} notify={() => {}} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    const button = await screen.findByRole('button', { name: 'Open Proofing' });
+    await waitFor(() => expect(button.textContent).toContain('Review latest comparison'));
+    expect((button as HTMLButtonElement).disabled).toBe(false);
+  });
+});

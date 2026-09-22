@@ -15,36 +15,40 @@ import {
 import { NavButton } from '../primitives/NavButton';
 import { NavDrawer } from '../primitives/NavDrawer';
 import { IconButton } from '../primitives/IconButton';
+import { TooltipTarget } from '../primitives/Tooltip';
 import { combinedRequiredReason } from '../../dawAvailability';
 
-// alwaysEnabled items don't depend on an imported manuscript - Tracks reads
-// the project's REAPER file directly, independent of the manuscript feature.
+// requiresManuscript/requiresDaw name what each nav item is gated on (PRD project-workspace-and-daw-link.prd.md, Open
+// Question W16): only Proofing needs a linked DAW project file today - Tracks reads the project's REAPER file
+// directly through its own discovery flow and is not gated here.
 const NAV = [
-  { name: 'Home', path: '/', icon: faHouse, alwaysEnabled: true },
-  { name: 'Manuscript', path: '/manuscript', icon: faFileLines, alwaysEnabled: false },
-  { name: 'Proofing', path: '/proofing', icon: faWaveSquare, alwaysEnabled: false },
-  { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, alwaysEnabled: false },
-  { name: 'Teleprompter', path: '/teleprompter', icon: faScroll, alwaysEnabled: false },
-  { name: 'Tracks', path: '/tracks', icon: faLayerGroup, alwaysEnabled: true },
+  { name: 'Home', path: '/', icon: faHouse, requiresManuscript: false, requiresDaw: false },
+  { name: 'Manuscript', path: '/manuscript', icon: faFileLines, requiresManuscript: true, requiresDaw: false },
+  { name: 'Proofing', path: '/proofing', icon: faWaveSquare, requiresManuscript: true, requiresDaw: true },
+  { name: 'Story Bible', path: '/story-bible', icon: faBookOpen, requiresManuscript: true, requiresDaw: false },
+  { name: 'Teleprompter', path: '/teleprompter', icon: faScroll, requiresManuscript: true, requiresDaw: false },
+  { name: 'Tracks', path: '/tracks', icon: faLayerGroup, requiresManuscript: false, requiresDaw: false },
 ];
-// combinedRequiredReason(W17) always returns a string here since `manuscript` is always true; the DAW half of the
-// combined reason (`dawFile`) is wired in once Tracks/Proofing actually gate on the DAW link (a later phase).
-const MANUSCRIPT_REQUIRED_REASON = combinedRequiredReason({ manuscript: true, dawFile: false }) as string;
 const isActivePath = (pathname: string, path: string) => (path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`));
 
 export function AppShell({
   pathname,
   navigate,
   projectName,
-  daw,
   hasManuscript,
+  dawFileLinked,
+  onLinkDawFile,
+  linkingDawFile = false,
   children,
 }: {
   pathname: string;
   navigate: (path: string) => void;
   projectName: string;
-  daw: string;
   hasManuscript: boolean;
+  dawFileLinked: boolean;
+  onLinkDawFile: () => void;
+  /** True while the shared DAW-link binding is running for any of its three call sites (ADR 0075's ref guard). */
+  linkingDawFile?: boolean;
   children: ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -53,7 +57,13 @@ export function AppShell({
     navigate(next);
   };
   const settingsActive = isActivePath(pathname, '/settings');
-  const isDisabled = (item: (typeof NAV)[number]) => !item.alwaysEnabled && !hasManuscript;
+  const isDisabled = (item: (typeof NAV)[number]) => (item.requiresManuscript && !hasManuscript) || (item.requiresDaw && !dawFileLinked);
+  const requiredReason = (item: (typeof NAV)[number]) =>
+    combinedRequiredReason({ manuscript: item.requiresManuscript && !hasManuscript, dawFile: item.requiresDaw && !dawFileLinked });
+  // Copy must not claim to know whether REAPER is running or reachable (PRD W15): dawReachable is still hardcoded
+  // unknown, so the pill only ever speaks to the one fact it actually has - whether a project file is linked.
+  const pillLabel = dawFileLinked ? 'REAPER project linked' : 'No REAPER project linked';
+  const pillTooltip = dawFileLinked ? 'Change the linked REAPER project (.rpp) file' : 'Link a REAPER project (.rpp) file';
   const navigation = (
     <>
       <div className="flex items-center gap-2 border-b border-[var(--border)] p-4">
@@ -73,7 +83,7 @@ export function AppShell({
             icon={item.icon}
             onClick={() => go(item.path)}
             disabled={isDisabled(item)}
-            disabledReason={isDisabled(item) ? MANUSCRIPT_REQUIRED_REASON : undefined}
+            disabledReason={requiredReason(item)}
           >
             {item.name}
           </NavButton>
@@ -101,7 +111,7 @@ export function AppShell({
             onClick={() => go(item.path)}
             iconOnly
             disabled={isDisabled(item)}
-            disabledReason={isDisabled(item) ? MANUSCRIPT_REQUIRED_REASON : undefined}
+            disabledReason={requiredReason(item)}
           >
             {item.name}
           </NavButton>
@@ -126,10 +136,22 @@ export function AppShell({
             <FontAwesomeIcon icon={faFolder} style={{ color: 'var(--non-text)' }} />
             <span className="truncate font-medium">{projectName}</span>
           </div>
-          <span className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em]">
-            <span className="size-[7px] flex-none rounded-full bg-[var(--character)] shadow-[0_0_5px_var(--character)]" />
-            {daw}
-          </span>
+          <TooltipTarget text={pillTooltip}>
+            <button
+              type="button"
+              onClick={onLinkDawFile}
+              disabled={linkingDawFile}
+              aria-busy={linkingDawFile || undefined}
+              aria-label={`${pillLabel} — ${pillTooltip}`}
+              className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em] hover:border-[var(--accent)] disabled:pointer-events-none disabled:opacity-60"
+            >
+              <span
+                className="size-[7px] flex-none rounded-full"
+                style={dawFileLinked ? { backgroundColor: 'var(--character)', boxShadow: '0 0 5px var(--character)' } : { backgroundColor: 'var(--non-text)' }}
+              />
+              {pillLabel}
+            </button>
+          </TooltipTarget>
         </header>
         <div className={`scroll-chrome-hidden flex-1 overflow-y-auto ${isActivePath(pathname, '/manuscript') ? 'p-0' : 'p-4 md:p-6'}`}>{children}</div>
       </main>

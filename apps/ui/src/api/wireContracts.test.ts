@@ -24,7 +24,7 @@ import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
-import { projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
+import { dawLinkResultSchema, projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
@@ -84,6 +84,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'project-recents-empty.json': recentProjectsSchema,
   'project-switch-attached.json': projectSwitchResultSchema,
   'project-switch-refused.json': projectSwitchResultSchema,
+  'daw-link-selected.json': dawLinkResultSchema,
+  'daw-link-folder-mismatch.json': dawLinkResultSchema,
+  'daw-link-cancelled.json': dawLinkResultSchema,
   'system-notice.json': noticeSchema,
   'job-ended-success.json': jobEndedSchema,
   'job-ended-error.json': jobEndedSchema,
@@ -297,6 +300,11 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(projectSwitchResultSchema, await api.switchProject('C:/Projects/Other', 'Other'), 'mock switch');
     expectMatches(projectSwitchResultSchema, await api.createProject('C:/Projects/New', 'New'), 'mock create');
   });
+
+  it('the DAW link binding answers, linked and refused on a folder mismatch', async () => {
+    expectMatches(dawLinkResultSchema, await createMockApi().linkDawFile(), 'mock link');
+    expectMatches(dawLinkResultSchema, await createMockApi({}, { dawLinkMismatch: true }).linkDawFile(), 'mock link, folder mismatch');
+  });
 });
 
 describe('answers of the mock client for the settings, voice, model, transcript and tracks bindings', () => {
@@ -458,6 +466,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'switchProject',
       'createProject',
       'removeRecentProject',
+      'linkDawFile',
       'tracksDiscover',
       'tracksSelect',
       'tracksList',
