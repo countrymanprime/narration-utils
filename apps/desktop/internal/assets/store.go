@@ -110,6 +110,9 @@ func verifyLocked(dir, provider, id, version string, files []File) string {
 // filesHashed counts the files verify has read, so a test can see that a cost is paid once.
 var filesHashed atomic.Int64
 
+// FilesHashed is how many files verify has read in this process: a test's way to see that a listing read none.
+func FilesHashed() int64 { return filesHashed.Load() }
+
 func verify(path string, f File) error {
 	filesHashed.Add(1)
 	info, err := os.Stat(path)
@@ -251,6 +254,10 @@ func Repair(ctx context.Context, root, provider, id, version string, files []Fil
 
 // Remove deletes one catalog item's install directory.
 func Remove(root, provider, id, version string) error {
+	dir := Dir(root, provider, id, version)
+	lock := lockFor(dir)
+	lock.Lock()
+	defer lock.Unlock()
 	Forget(root, provider, id, version)
-	return os.RemoveAll(Dir(root, provider, id, version))
+	return os.RemoveAll(dir)
 }

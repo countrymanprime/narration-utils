@@ -212,3 +212,25 @@ func TestCleanStalePutsBackTheOnlyCopyWhenTheInstallIsMissing(t *testing.T) {
 		t.Fatalf("the old copy was not put back: %v", err)
 	}
 }
+
+// Remove waits for the swap (or a Verify) of the same asset: it cannot land between the two renames of a replacement.
+func TestRemoveWaitsForAnInstallDirectoryThatIsBeingSwapped(t *testing.T) {
+	root, _, _ := installOne(t, "the payload")
+	lock := lockFor(Dir(root, "p", "id", "1.2"))
+	lock.Lock()
+	done := make(chan error, 1)
+	go func() { done <- Remove(root, "p", "id", "1.2") }()
+	select {
+	case <-done:
+		lock.Unlock()
+		t.Fatal("Remove ran while the directory was locked")
+	case <-time.After(100 * time.Millisecond):
+	}
+	lock.Unlock()
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(Dir(root, "p", "id", "1.2")); !os.IsNotExist(err) {
+		t.Fatal("the asset should be gone")
+	}
+}

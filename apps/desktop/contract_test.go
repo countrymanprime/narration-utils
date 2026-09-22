@@ -107,7 +107,13 @@ func TestContractPreviewNeedsAVoice(t *testing.T) {
 }
 
 // The approved catalogs, built from the repository's real config files with nothing installed (ADR 0069), and the install jobs.
-func contractServices(t *testing.T) hostServices {
+// contractFixture is what the catalog payloads are built from: the registry of approved assets and the settings that say which is selected.
+type contractFixture struct {
+	registry *assetRegistry
+	settings *settings.Store
+}
+
+func contractServices(t *testing.T) contractFixture {
 	t.Helper()
 	t.Setenv("APPDATA", t.TempDir())
 	voices, err := tts.New(layout.RepoFile(layout.TTSCatalogFile), t.TempDir())
@@ -118,17 +124,17 @@ func contractServices(t *testing.T) hostServices {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return hostServices{tts: voices, whisper: models, settings: settings.New(layout.FindRoot("."), "")}
+	return contractFixture{registry: newAssetRegistry(t.TempDir(), voices, models), settings: settings.New(layout.FindRoot("."), "")}
 }
 
 func TestContractCatalogsAndInstallJobs(t *testing.T) {
 	svc := contractServices(t)
-	voices, err := ttsCatalogPayload(svc)
+	voices, err := ttsCatalogPayload(svc.registry, svc.settings)
 	if err != nil {
 		t.Fatal(err)
 	}
 	contractfile.Check(t, "tts-catalog", voices)
-	models, err := whisperCatalogPayload(svc)
+	models, err := whisperCatalogPayload(svc.registry, svc.settings)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,17 +149,35 @@ func TestContractCatalogsAndInstallJobs(t *testing.T) {
 		"whisper-install-downloading": {id: "whisper-1", kind: installKindWhisper, assetID: "small", phase: installPhaseDownloading, message: "Downloading and verifying the approved Whisper model…", done: 120000000, total: 486212372},
 		"whisper-install-success":     {id: "whisper-1", kind: installKindWhisper, assetID: "small", phase: installPhaseSuccess, message: "Whisper model installed and verified.", done: 486212372, total: 486212372},
 	} {
-		contractfile.Check(t, name, snapshotInstall(job))
+		contractfile.Check(t, name, legacyInstall(snapshotInstall(job)))
 	}
+}
+
+// The generic asset API (release readiness phase 3): the list of everything that can be downloaded, and the answer to a verify.
+func TestContractAssetsListAndVerify(t *testing.T) {
+	fixture := contractServices(t)
+	host := &Host{assets: fixture.registry, installJobs: map[string]*installJob{}}
+	list, err := host.assetsList()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The cache folder is a per-machine path; the golden holds a fixed one so the file is the same everywhere.
+	list["cacheRoot"] = "C:/Users/narrator/AppData/Local/narration-utils/assets"
+	for _, entry := range list["assets"].([]map[string]any) {
+		entry["path"] = "C:/Users/narrator/AppData/Local/narration-utils/assets/" + entry["kind"].(string) + "/" + entry["id"].(string)
+	}
+	contractfile.Check(t, "assets-list", list)
+	contractfile.Check(t, "asset-install-downloading", snapshotInstall(&installJob{id: "tts-1", kind: installKindTts, assetID: "en_US-ljspeech-high", phase: installPhaseDownloading, message: "Downloading and verifying the approved voice…", done: 45678901, total: 114203981}))
+	contractfile.Check(t, "assets-verify", map[string]any{"kind": "tts", "id": "en_US-ljspeech-high", "installState": "verification_failed"})
 }
 
 func TestContractAFirstUseGateForAModel(t *testing.T) {
 	svc := contractServices(t)
-	model, ok := svc.whisper.Model("small")
+	model, ok := svc.registry.whisper.Model("small")
 	if !ok {
 		t.Fatal("the approved catalog has no small model")
 	}
-	contractfile.Check(t, "transcript-start-asset-required", modelAssetRequired(model, svc.whisper.State(model)))
+	contractfile.Check(t, "transcript-start-asset-required", modelAssetRequired(model, svc.registry.whisper.State(model)))
 	contractfile.Check(t, "transcript-start-started", map[string]any{"status": "started"})
 }
 

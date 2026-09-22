@@ -7,6 +7,5 @@
   "kind": "tts",
   "message": "Downloading and verifying the approved voice…",
   "percent": 39,
-  "phase": "downloading",
-  "voiceId": "en_US-ljspeech-high"
+  "phase": "downloading"
 }

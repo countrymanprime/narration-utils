@@ -58,6 +58,16 @@ func (m *Manager) Catalog() map[string]any {
 	}
 	return map[string]any{"catalogVersion": m.catalog.Version, "models": models}
 }
+
+// Models is every approved model, in catalog order.
+func (m *Manager) Models() []Model { return append([]Model(nil), m.catalog.Models...) }
+
+// InstallDir is where a model is (or will be) installed, whatever its state.
+func (m *Manager) InstallDir(id string) string {
+	model, _ := m.Model(id)
+	return assets.Dir(m.root, model.Provider, model.ID, model.Version)
+}
+
 func (m *Manager) Model(id string) (Model, bool) {
 	for _, model := range m.catalog.Models {
 		if model.ID == id {

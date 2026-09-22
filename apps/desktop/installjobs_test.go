@@ -73,7 +73,7 @@ func newInstallFixture(t *testing.T, corrupt bool) *installFixture {
 		t.Fatal(err)
 	}
 	f.logPath = filepath.Join(dir, "host.log")
-	f.host = &Host{tts: voiceManager, whisper: modelManager, installJobs: map[string]*installJob{}, log: hostlog.New(f.logPath, 0)}
+	f.host = &Host{assets: newAssetRegistry(filepath.Join(dir, "cache"), voiceManager, modelManager), installJobs: map[string]*installJob{}, log: hostlog.New(f.logPath, 0)}
 	return f
 }
 
@@ -211,8 +211,8 @@ func TestACancelledInstallSaysSoAndLeavesNothingInstalled(t *testing.T) {
 	if final["message"] != "Voice download cancelled." || final["error"] != "" {
 		t.Fatalf("final = %#v", final)
 	}
-	voice, _ := f.host.tts.Voice("v1")
-	if state := f.host.tts.State(voice); state != "not_installed" {
+	voice, _ := f.host.registry().tts.Voice("v1")
+	if state := f.host.registry().tts.State(voice); state != "not_installed" {
 		t.Fatalf("state after a cancel = %s", state)
 	}
 }

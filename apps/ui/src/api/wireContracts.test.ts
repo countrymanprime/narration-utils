@@ -18,6 +18,7 @@ import {
   searchHitsSchema,
   workJobSchema,
 } from './schemas/manuscript';
+import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
@@ -88,6 +89,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'tts-install-success.json': ttsInstallJobSchema,
   'tts-install-error.json': ttsInstallJobSchema,
   'tts-install-cancelled.json': ttsInstallJobSchema,
+  'asset-install-downloading.json': assetInstallJobSchema,
+  'assets-list.json': assetCatalogSchema,
+  'assets-verify.json': assetVerifyResultSchema,
   'whisper-catalog.json': whisperCatalogSchema,
   'whisper-install-downloading.json': whisperInstallJobSchema,
   'tts-install-verifying.json': ttsInstallJobSchema,
@@ -310,6 +314,24 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     }
   });
 
+  it('the list of every approved asset, its install job and a verify', async () => {
+    const api = createMockApi();
+    const catalog = await api.assetsList();
+    expectMatches(assetCatalogSchema, catalog, 'mock asset list');
+    expect(catalog.assets.map((asset) => asset.kind)).toEqual(['tts', 'whisper']);
+    const voice = catalog.assets[0];
+    const started = await api.assetsInstall(voice.kind, voice.id);
+    for (const job of [started, await api.assetsInstallState(started.id), await api.assetsInstallState(started.id), await api.assetsInstallState(started.id)]) {
+      expectMatches(assetInstallJobSchema, job, 'mock asset install job');
+    }
+    expect((await api.assetsList()).assets[0].installState).toBe('installed');
+    expectMatches(assetInstallJobSchema, await api.assetsInstallCancel(started.id), 'mock asset install cancel');
+    expectMatches(assetVerifyResultSchema, await api.assetsVerify(voice.kind, voice.id), 'mock asset verify');
+    await api.assetsRemove(voice.kind, voice.id);
+    expect((await api.assetsList()).assets[0].installState).toBe('not_installed');
+    await expect(api.assetsInstall('moonshine', 'x')).rejects.toThrow(/not in the approved catalog/);
+  });
+
   it('the first-use gates for a model that is not installed, and a start that goes ahead', async () => {
     const api = createMockApi();
     const model = (await api.whisperCatalog()).models[0]?.id ?? '';
@@ -393,6 +415,11 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guideEntities',
       'guideCreate',
       'guidePreview',
+      'assetsList',
+      'assetsInstall',
+      'assetsInstallState',
+      'assetsInstallCancel',
+      'assetsVerify',
       'ttsCatalog',
       'ttsInstall',
       'ttsInstallState',
@@ -437,6 +464,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guideUnrelate',
       'ttsRemove',
       'whisperRemove',
+      'assetsRemove',
       'transcriptCancel',
       'transcriptReset',
       'transcriptJump',

@@ -41,6 +41,7 @@ import {
 import { loadAliceManuscript } from './aliceManuscript';
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
 import { createInstallMock, type MockAssetSeed } from './assetInstallMock';
+import type { AssetInstallState } from './contracts/assets';
 
 const DEFAULT_PROJECT_FOLDER = 'C:/Projects/Alice-in-Wonderland';
 const DEFAULT_PROJECT_NAME = 'Alice’s Adventures in Wonderland';
@@ -362,7 +363,7 @@ export function createMockApi(
   const voiceInstall = createInstallMock({
     total: 114203981,
     noun: 'voice',
-    extra: { voiceId: 'en_US-ljspeech-high' },
+    extra: { kind: 'tts', assetId: 'en_US-ljspeech-high' },
     seed: initial.assets,
     onInstalled: () => {
       ttsInstalled = true;
@@ -371,7 +372,7 @@ export function createMockApi(
   const modelInstall = createInstallMock({
     total: 483546902 + 2370 + 2203239 + 459861,
     noun: 'Whisper model',
-    extra: { modelId: 'small' },
+    extra: { kind: 'whisper', assetId: 'small' },
     seed: initial.assets,
     onInstalled: () => {
       whisperInstalled = true;
@@ -682,10 +683,10 @@ export function createMockApi(
     }),
     ttsInstall: async (voiceId) => {
       if (voiceId !== mockVoice.id) throw new Error('Unknown approved TTS voice.');
-      return voiceInstall.start();
+      return { ...(await voiceInstall.start()), voiceId };
     },
-    ttsInstallState: (jobId) => voiceInstall.state(jobId),
-    ttsInstallCancel: (jobId) => voiceInstall.cancel(jobId),
+    ttsInstallState: async (jobId) => ({ ...(await voiceInstall.state(jobId)), voiceId: mockVoice.id }),
+    ttsInstallCancel: async (jobId) => ({ ...(await voiceInstall.cancel(jobId)), voiceId: mockVoice.id }),
     ttsRemove: async (voiceId) => {
       if (voiceId === mockVoice.id) ttsInstalled = false;
     },
@@ -696,12 +697,61 @@ export function createMockApi(
     }),
     whisperInstall: async (modelId) => {
       if (modelId !== mockWhisperModel.id) throw new Error('Unknown approved Whisper model.');
-      return modelInstall.start();
+      return { ...(await modelInstall.start()), modelId };
     },
-    whisperInstallState: (jobId) => modelInstall.state(jobId),
-    whisperInstallCancel: (jobId) => modelInstall.cancel(jobId),
+    whisperInstallState: async (jobId) => ({ ...(await modelInstall.state(jobId)), modelId: mockWhisperModel.id }),
+    whisperInstallCancel: async (jobId) => ({ ...(await modelInstall.cancel(jobId)), modelId: mockWhisperModel.id }),
     whisperRemove: async (modelId) => {
       if (modelId === mockWhisperModel.id) whisperInstalled = false;
+    },
+    assetsList: async () => {
+      const item = (
+        kind: string,
+        kindLabel: string,
+        model: typeof mockVoice | typeof mockWhisperModel,
+        installed: boolean,
+        installState: AssetInstallState,
+      ) => ({
+        kind,
+        kindLabel,
+        id: model.id,
+        displayName: model.displayName,
+        version: model.version,
+        publisher: model.publisher,
+        license: model.license,
+        licenseUrl: model.licenseUrl,
+        modelCardUrl: model.modelCardUrl,
+        provenanceUrl: model.provenanceUrl,
+        attribution: model.attribution,
+        downloadSize: model.downloadSize,
+        installState,
+        path: `C:/Users/narrator/AppData/Local/narration-utils/assets/${kind}/${model.id}`,
+        installedAt: installed ? '2026-09-20T09:30:00Z' : '',
+        verifiedAt: installed ? '2026-09-20T09:30:00Z' : '',
+        activeJobId: '',
+      });
+      const voice = item('tts', 'Preview voice', mockVoice, ttsInstalled, ttsInstalled ? 'installed' : 'not_installed');
+      const model = item('whisper', 'Whisper model', mockWhisperModel, whisperInstalled, whisperInstalled ? 'installed' : 'not_installed');
+      return {
+        cacheRoot: 'C:/Users/narrator/AppData/Local/narration-utils/assets',
+        totalInstalledBytes: (ttsInstalled ? voice.downloadSize : 0) + (whisperInstalled ? model.downloadSize : 0),
+        assets: [voice, model],
+      };
+    },
+    assetsInstall: async (kind, id) => {
+      if (kind === 'tts' && id === mockVoice.id) return voiceInstall.start();
+      if (kind === 'whisper' && id === mockWhisperModel.id) return modelInstall.start();
+      throw new Error(`"${id}" is not in the approved catalog of ${kind}`);
+    },
+    assetsInstallState: async (jobId) => (jobId.startsWith('mock-voice') ? voiceInstall.state(jobId) : modelInstall.state(jobId)),
+    assetsInstallCancel: async (jobId) => (jobId.startsWith('mock-voice') ? voiceInstall.cancel(jobId) : modelInstall.cancel(jobId)),
+    assetsVerify: async (kind, id) => {
+      const installed = kind === 'tts' ? ttsInstalled : whisperInstalled;
+      return { kind, id, installState: installed ? ('installed' as const) : ('not_installed' as const) };
+    },
+    assetsRemove: async (kind) => {
+      if (kind === 'tts') ttsInstalled = false;
+      else whisperInstalled = false;
     },
     transcriptStart: async () =>
       whisperInstalled

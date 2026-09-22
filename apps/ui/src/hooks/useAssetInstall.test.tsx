@@ -10,6 +10,8 @@ afterEach(() => vi.useRealTimers());
 
 const job = (patch: Partial<AssetInstallJob> = {}): AssetInstallJob => ({
   id: 'job-1',
+  kind: 'tts',
+  assetId: 'v',
   phase: 'downloading',
   message: 'Downloading…',
   percent: 0,

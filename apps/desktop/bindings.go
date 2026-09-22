@@ -12,6 +12,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
+	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -46,17 +47,17 @@ func (h *Host) SystemReportDiagnostic(kind, message string) (string, error) {
 }
 
 func (h *Host) TtsCatalog() (string, error) {
-	return encodeBinding(ttsCatalogPayload(h.services()))
+	return encodeBinding(ttsCatalogPayload(h.registry(), h.services().settings))
 }
 
 // ttsCatalogPayload is the approved voices plus which provider and voice are selected and where that choice comes from.
-func ttsCatalogPayload(svc hostServices) (map[string]any, error) {
-	if svc.tts == nil {
-		return nil, fmt.Errorf("the approved TTS catalog is unavailable")
+func ttsCatalogPayload(registry *assetRegistry, store *settings.Store) (map[string]any, error) {
+	if registry.tts == nil {
+		return nil, registry.catalogUnavailable("TTS")
 	}
-	catalog := svc.tts.Catalog()
-	provider, providerSource := svc.settings.Effective("Piper", "tts_provider", "piper")
-	voice, voiceSource := svc.settings.Effective("Piper", "tts_voice_id", "en_US-ljspeech-high")
+	catalog := registry.tts.Catalog()
+	provider, providerSource := store.Effective("Piper", "tts_provider", "piper")
+	voice, voiceSource := store.Effective("Piper", "tts_voice_id", "en_US-ljspeech-high")
 	catalog["provider"] = map[string]any{"id": provider, "effectiveSource": providerSource}
 	catalog["voice"] = map[string]any{"id": voice, "effectiveSource": voiceSource}
 	return catalog, nil
@@ -71,24 +72,24 @@ func (h *Host) TtsInstallCancel(jobID string) (string, error) {
 	return encodeBinding(h.cancelTtsInstall(jobID))
 }
 func (h *Host) TtsRemove(voiceID string) (string, error) {
-	manager := h.services().tts
-	if manager == nil {
-		return "", fmt.Errorf("the approved TTS catalog is unavailable")
+	registry := h.registry()
+	if registry.tts == nil {
+		return "", registry.catalogUnavailable("TTS")
 	}
-	return encodeBinding(nil, manager.Remove(voiceID))
+	return encodeBinding(nil, h.removeAsset(installKindTts, voiceID))
 }
 
 func (h *Host) WhisperCatalog() (string, error) {
-	return encodeBinding(whisperCatalogPayload(h.services()))
+	return encodeBinding(whisperCatalogPayload(h.registry(), h.services().settings))
 }
 
 // whisperCatalogPayload is the approved models plus which one is selected and where that choice comes from.
-func whisperCatalogPayload(svc hostServices) (map[string]any, error) {
-	if svc.whisper == nil {
-		return nil, fmt.Errorf("the approved Whisper catalog is unavailable")
+func whisperCatalogPayload(registry *assetRegistry, store *settings.Store) (map[string]any, error) {
+	if registry.whisper == nil {
+		return nil, registry.catalogUnavailable("Whisper")
 	}
-	catalog := svc.whisper.Catalog()
-	modelID, modelSource := svc.settings.Effective("TranscriptCompare", "model_size", "small")
+	catalog := registry.whisper.Catalog()
+	modelID, modelSource := store.Effective("TranscriptCompare", "model_size", "small")
 	catalog["model"] = map[string]any{"id": modelID, "effectiveSource": modelSource}
 	return catalog, nil
 }
@@ -102,11 +103,11 @@ func (h *Host) WhisperInstallCancel(jobID string) (string, error) {
 	return encodeBinding(h.cancelWhisperInstall(jobID))
 }
 func (h *Host) WhisperRemove(modelID string) (string, error) {
-	manager := h.services().whisper
-	if manager == nil {
-		return "", fmt.Errorf("the approved Whisper catalog is unavailable")
+	registry := h.registry()
+	if registry.whisper == nil {
+		return "", registry.catalogUnavailable("Whisper")
 	}
-	return encodeBinding(nil, manager.Remove(modelID))
+	return encodeBinding(nil, h.removeAsset(installKindWhisper, modelID))
 }
 
 func (h *Host) GuideBuild() (string, error) { return encodeBinding(h.startGuideBuild()) }
@@ -184,17 +185,18 @@ func (h *Host) GuideUnrelate(id, otherID, label string) (string, error) {
 }
 func (h *Host) GuidePreview(id string, aliasIndex *int) (string, error) {
 	svc := h.services()
-	if svc.guide == nil || svc.tts == nil {
+	voices := h.registry().tts
+	if svc.guide == nil || voices == nil {
 		return "", fmt.Errorf("story Bible preview is unavailable")
 	}
 	voiceID, _ := svc.settings.Effective("Piper", "tts_voice_id", "en_US-ljspeech-high")
-	voice, knownVoice := svc.tts.Voice(voiceID)
+	voice, knownVoice := voices.Voice(voiceID)
 	if !knownVoice {
 		return "", fmt.Errorf("the selected preview voice is not in the approved catalog")
 	}
-	model, _, err := svc.tts.Paths(voiceID)
+	model, _, err := voices.Paths(voiceID)
 	if err != nil {
-		return encodeBinding(voiceAssetRequired(voice, svc.tts.State(voice)), nil)
+		return encodeBinding(voiceAssetRequired(voice, voices.State(voice)), nil)
 	}
 	audio, err := svc.guide.Preview(id, aliasIndex, guide.PreviewVoice{ID: voiceID, Model: model, Provider: voice.Provider, Version: voice.Version})
 	return encodeBinding(map[string]any{"status": "ready", "audioBase64": base64.StdEncoding.EncodeToString(audio), "mimeType": "audio/wav"}, err)
@@ -434,17 +436,18 @@ func (h *Host) TranscriptStart(options map[string]string) (string, error) {
 	if svc.transcript == nil {
 		return "", fmt.Errorf("the Transcript Compare service is unavailable")
 	}
-	if svc.whisper == nil {
-		return "", fmt.Errorf("the approved Whisper catalog is unavailable")
+	models := h.registry().whisper
+	if models == nil {
+		return "", h.registry().catalogUnavailable("Whisper")
 	}
 	modelID := resolveWhisperModelID(svc.settings, options)
-	model, knownModel := svc.whisper.Model(modelID)
+	model, knownModel := models.Model(modelID)
 	if !knownModel {
 		return "", fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
-	modelDir, err := svc.whisper.Dir(modelID)
+	modelDir, err := models.Dir(modelID)
 	if err != nil {
-		return encodeBinding(modelAssetRequired(model, svc.whisper.State(model)), nil)
+		return encodeBinding(modelAssetRequired(model, models.State(model)), nil)
 	}
 	started := map[string]string{}
 	for key, value := range options {
@@ -464,17 +467,18 @@ func (h *Host) TeleprompterStart(options map[string]string) (string, error) {
 	if svc.teleprompter == nil {
 		return "", fmt.Errorf("the teleprompter service is unavailable")
 	}
-	if svc.whisper == nil {
-		return "", fmt.Errorf("the approved Whisper catalog is unavailable")
+	models := h.registry().whisper
+	if models == nil {
+		return "", h.registry().catalogUnavailable("Whisper")
 	}
 	modelID := resolveTeleprompterModelID(options)
-	model, knownModel := svc.whisper.Model(modelID)
+	model, knownModel := models.Model(modelID)
 	if !knownModel {
 		return "", fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
-	modelDir, err := svc.whisper.Dir(modelID)
+	modelDir, err := models.Dir(modelID)
 	if err != nil {
-		return encodeBinding(modelAssetRequired(model, svc.whisper.State(model)), nil)
+		return encodeBinding(modelAssetRequired(model, models.State(model)), nil)
 	}
 	started := map[string]string{}
 	for key, value := range options {

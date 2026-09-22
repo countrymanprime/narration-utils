@@ -1,8 +1,10 @@
 {
+  "assetId": "small",
   "bytesDone": 486212372,
   "bytesTotal": 486212372,
   "error": "",
   "id": "whisper-1",
+  "kind": "whisper",
   "message": "Whisper model installed and verified.",
   "modelId": "small",
   "percent": 100,

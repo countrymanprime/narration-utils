@@ -6,16 +6,14 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
-	"github.com/countrymanprime/narration-utils/shell/internal/tts"
-	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 )
 
 // hostServices is one consistent view of the project-scoped state of a Host:
-// the launch config and the seven service pointers that configureLocked
+// the launch config and the five service pointers that configureLocked
 // replaces whenever a project is attached (the picker, "open recent", and a
-// REAPER second launch). A service can legitimately be nil, for example tts
-// when its catalog could not be loaded (configureLocked keeps the previous
-// manager if a rebuild fails), so callers keep their nil checks.
+// REAPER second launch). A service can legitimately be nil, so callers keep their nil checks. The
+// asset managers are not here: they are not project-scoped, and the registry
+// that holds them is built once (assetregistry.go).
 type hostServices struct {
 	config       config
 	guide        *guide.Service
@@ -23,8 +21,6 @@ type hostServices struct {
 	settings     *settings.Store
 	teleprompter *teleprompter.Service
 	transcript   *transcript.Service
-	tts          *tts.Manager
-	whisper      *whisper.Manager
 }
 
 // services returns a snapshot of the swappable services. It is the only way a
@@ -60,7 +56,5 @@ func (h *Host) services() hostServices {
 		settings:     h.settings,
 		teleprompter: h.teleprompter,
 		transcript:   h.transcript,
-		tts:          h.tts,
-		whisper:      h.whisper,
 	}
 }
