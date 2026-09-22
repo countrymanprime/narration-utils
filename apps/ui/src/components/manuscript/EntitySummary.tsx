@@ -70,6 +70,19 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
           <p className="text-sm">{entity.description.text}</p>
         </div>
       )}
+      {entity.properties.length > 0 && (
+        <div>
+          <div className="mb-1 text-[0.82rem] font-medium text-[var(--text-muted)]">Properties</div>
+          <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
+            {entity.properties.map((property) => (
+              <div key={property.key} className="contents">
+                <dt className="font-medium break-words">{property.key}</dt>
+                <dd className="break-words whitespace-pre-wrap">{property.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
       <div>
         <div className="mb-1.5 text-[0.82rem] font-medium text-[var(--text-muted)]">Aliases</div>
         {entity.aliases.length === 0 ? (

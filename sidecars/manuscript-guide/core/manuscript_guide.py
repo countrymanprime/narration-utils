@@ -599,6 +599,7 @@ def build_entities(paragraphs: list[dict[str, str]], model_name: str, espeak_lib
                 "personality_notes": trait_notes(canonical_name, occurrences) if category == "Character" else [],
                 "context": "",
                 "relationships": [],
+                "properties": [],
                 "locked": False,
                 "manual": False,
                 "review_state": "needs review" if category == "Needs Review" else "generated",
@@ -693,6 +694,8 @@ def merge_locked(generated: list[dict[str, Any]], old: dict[str, Any] | None) ->
                 if prior.get(field) and not entity.get(field):
                     entity[field] = prior[field]
             entity["relationships"] = prior.get("relationships", [])
+            # Properties are the narrator's own facts and extraction never produces them, so a rebuild keeps them all.
+            entity["properties"] = entity_properties(prior)
             # An alias added by hand (typed in, or the product of a merge) can
             # never be "rediscovered" by extraction the way the automatic
             # title-prefix aliases can, so anything prior-only survives too.
@@ -808,6 +811,47 @@ def entity_occurrence_count(entity: dict[str, Any]) -> int:
     return len(entity.get("occurrences", [])) + sum(len(alias.get("occurrences", [])) for alias in entity.get("aliases", []))
 
 
+def normalize_properties(raw: Any) -> list[dict[str, str]]:
+    """Checks an entity's properties and returns them trimmed, in the order given.
+
+    A property is a ``{"key", "value"}`` pair of strings: the labelled facts of a character block ("Codename", "Abilities", "Dossier").
+    The list is ordered, and it is a list rather than an object because the host re-marshals the file and would sort an object's keys.
+    A key is required and unique whatever its case; a value may be empty. Anything else is refused with the position of the property.
+    """
+    if not isinstance(raw, list):
+        raise ValueError("Properties must be a list of key and value pairs.")  # noqa: TRY004 - every refused input is a ValueError here
+    properties: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for position, item in enumerate(raw, start=1):
+        if not isinstance(item, dict) or not isinstance(item.get("key"), str) or not isinstance(item.get("value"), str):
+            raise ValueError(f"Property {position} must have a text key and a text value.")  # noqa: TRY004 - every refused input is a ValueError here
+        key, value = item["key"].strip(), item["value"].strip()
+        if not key:
+            raise ValueError(f"Property {position} has no name.")
+        if key.casefold() in seen:
+            raise ValueError(f"There are two properties named {key!r}; give each a different name.")
+        seen.add(key.casefold())
+        properties.append({"key": key, "value": value})
+    return properties
+
+
+def parse_properties(text: str) -> list[dict[str, str]]:
+    """Reads the properties a command line carries as one JSON value. Empty text is no properties."""
+    if not text.strip():
+        return []
+    try:
+        raw = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"The properties are not valid JSON ({exc}).") from exc
+    return normalize_properties(raw)
+
+
+def entity_properties(entity: dict[str, Any]) -> list[dict[str, str]]:
+    """The properties of an entity, empty for a file written before they existed."""
+    properties = entity.get("properties")
+    return properties if isinstance(properties, list) else []
+
+
 def apply_edit(entity: dict[str, Any], field: str, value: str, paragraphs: list[dict[str, str]] | None, espeak_library: str | None) -> None:
     """Applies one field edit to ``entity`` in memory. Nothing is written here."""
     if entity.get("locked") and field != "locked":
@@ -820,6 +864,8 @@ def apply_edit(entity: dict[str, Any], field: str, value: str, paragraphs: list[
         entity["personality_notes"] = [{"text": value, "evidence": {"chapter": "User edit", "excerpt": "User-authored note."}}] if value else []
     elif field == "context":
         entity["context"] = value
+    elif field == "properties":
+        entity["properties"] = parse_properties(value)
     elif field == "category":
         if value in SYSTEM_CATEGORIES or value not in VALID_CATEGORIES:
             raise ValueError(f"Unknown or reserved category: {value}")
@@ -906,6 +952,7 @@ def create(args: argparse.Namespace) -> None:
     name = args.name.strip()
     if not name:
         raise ValueError("Name is required.")
+    properties = parse_properties(getattr(args, "properties", "") or "")
     new_id = entity_id(name)
     if any(value["id"] == new_id for value in guide["entities"]):
         raise ValueError("An entity with this name already exists.")
@@ -930,6 +977,7 @@ def create(args: argparse.Namespace) -> None:
         "description": direct_description(name, canonical_occurrences) if canonical_occurrences else {"text": "", "evidence": {}},
         "personality_notes": [],
         "relationships": [],
+        "properties": properties,
         "locked": False,
         "manual": True,
         "review_state": "reviewed",
@@ -1003,6 +1051,10 @@ def merge(args: argparse.Namespace) -> None:
         target["description"] = source["description"]
     if not target.get("personality_notes") and source.get("personality_notes"):
         target["personality_notes"] = source["personality_notes"]
+    # The target's own values win; the source adds the keys the target does not have.
+    target_properties = entity_properties(target)
+    target_keys = {item["key"].casefold() for item in target_properties}
+    target["properties"] = [*target_properties, *(item for item in entity_properties(source) if item["key"].casefold() not in target_keys)]
 
     for other in guide["entities"]:
         if other["id"] in {args.source_id, args.target_id}:
@@ -1271,6 +1323,7 @@ def main() -> None:
     create_parser.add_argument("--category", default="")
     create_parser.add_argument("--aliases", default="")
     create_parser.add_argument("--description", default="")
+    create_parser.add_argument("--properties", default="", help='the properties as one JSON list, e.g. [{"key": "Codename", "value": "Wren"}]')
     create_parser.add_argument("--espeak-library", default="")
     merge_parser = command.add_parser("merge")
     merge_parser.add_argument("--guide", required=True)

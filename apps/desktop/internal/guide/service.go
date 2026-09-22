@@ -110,7 +110,9 @@ func normalizeEntity(entity map[string]any) error {
 	} else if description["evidence"] == nil {
 		description["evidence"] = map[string]any{}
 	}
-	for _, key := range []string{"aliases", "occurrences", "personality_notes", "relationships"} {
+	// properties is the narrator's ordered list of {key, value} facts. It is additive (a file written before it has none), so it reads as
+	// an empty list, and it stays a list: the host re-marshals this map, and an object would come back with its keys sorted.
+	for _, key := range []string{"aliases", "occurrences", "personality_notes", "relationships", "properties"} {
 		if entity[key] == nil {
 			entity[key] = []any{}
 			continue
@@ -238,9 +240,22 @@ func (s *Service) Create(name, category string, aliases []string) (string, error
 	return s.CreateDescribed(name, category, aliases, "")
 }
 
+// Property is one labelled fact of an entity ("Codename": "Wren"). The sidecar requires a key, unique whatever its case, and takes an
+// empty value; a caller with a labelled line that repeats a label merges the values before it asks for the entity.
+type Property struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 // CreateDescribed creates an entity that already has its description, in one sidecar process instead of a create and an edit.
 func (s *Service) CreateDescribed(name, category string, aliases []string, description string) (string, error) {
-	out, err := s.Run(s.createArgs(name, category, aliases, description)...)
+	return s.CreateFull(name, category, aliases, description, nil)
+}
+
+// CreateFull creates an entity with its description and its properties in one sidecar process. The import of a manuscript's cast blocks
+// uses it for the labelled facts of a character (import structure PRD, phase 3).
+func (s *Service) CreateFull(name, category string, aliases []string, description string, properties []Property) (string, error) {
+	out, err := s.Run(s.createArgs(name, category, aliases, description, properties)...)
 	if err != nil {
 		return "", err
 	}
@@ -250,10 +265,15 @@ func (s *Service) CreateDescribed(name, category string, aliases []string, descr
 	}
 	return parts[1], nil
 }
-func (s *Service) createArgs(name, category string, aliases []string, description string) []string {
+func (s *Service) createArgs(name, category string, aliases []string, description string, properties []Property) []string {
 	args := []string{"create", "--guide", s.guidePath(), "--manuscript", s.manuscript(), "--name", name, "--category", category, "--aliases", strings.Join(aliases, ";")}
 	if description != "" {
 		args = append(args, "--description="+description)
+	}
+	if len(properties) > 0 {
+		// One JSON list in the --flag=value form, which argparse takes even when the text starts with a dash.
+		encoded, _ := json.Marshal(properties) // a slice of two strings cannot fail to encode
+		args = append(args, "--properties="+string(encoded))
 	}
 	return args
 }

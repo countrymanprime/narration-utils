@@ -32,11 +32,23 @@ import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Menu } from '../primitives/Menu';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { CANONICAL_PREVIEW, previewKey, usePreviewAudio } from './usePreviewAudio';
+import { PropertiesSection } from './PropertiesSection';
+import { draftFrom, propertiesFrom, propertyProblem, sameProperties, type DraftProperty } from './propertyDraft';
 import { IconButton } from '../primitives/IconButton';
 import { Select } from '../primitives/Select';
 import { TextField } from '../primitives/TextField';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 import type { Notify } from '../primitives/Toast';
+
+// What the form holds while an entry is being edited: the entry's own values, until the narrator changes them.
+type Draft = { name: string; description: string; personality: string; context: string; properties: DraftProperty[] };
+const draftOf = (entity: GuideEntity): Draft => ({
+  name: entity.canonical_name,
+  description: entity.description.text,
+  personality: entity.personality_notes.map((note) => note.text).join(' '),
+  context: entity.context || '',
+  properties: draftFrom(entity.properties),
+});
 
 export function GuideDetail({
   entity,
@@ -62,7 +74,8 @@ export function GuideDetail({
   goToManuscript: (chapter: string, paragraph: number) => void;
 }) {
   const api = useApi();
-  const [draft, setDraft] = useState({ name: '', description: '', personality: '', context: '' });
+  const [draft, setDraft] = useState<Draft>({ name: '', description: '', personality: '', context: '', properties: [] });
+  const [propertyError, setPropertyError] = useState<string>();
   const [editing, setEditing] = useState(false);
   const [aliasQuery, setAliasQuery] = useState('');
   const [aliasSelectedId, setAliasSelectedId] = useState<string>();
@@ -120,13 +133,8 @@ export function GuideDetail({
     setAliasActiveIndex(0);
     setTtsPrompt(undefined);
     resetVoiceInstall();
-    if (entity)
-      setDraft({
-        name: entity.canonical_name,
-        description: entity.description.text,
-        personality: entity.personality_notes.map((note) => note.text).join(' '),
-        context: entity.context || '',
-      });
+    setPropertyError(undefined);
+    if (entity) setDraft(draftOf(entity));
   }, [entity, resetVoiceInstall]);
 
   if (!entity)
@@ -143,12 +151,25 @@ export function GuideDetail({
   const editingDisabled = !canEdit || !editing;
   const stopEditing = () => {
     setEditing(false);
-    setDraft({
-      name: entity.canonical_name,
-      description: entity.description.text,
-      personality: entity.personality_notes.map((note) => note.text).join(' '),
-      context: entity.context || '',
-    });
+    setPropertyError(undefined);
+    setDraft(draftOf(entity));
+  };
+  // The properties go with a Save only when they changed, so a Save of a name alone does not rewrite them.
+  const saveEntry = () => {
+    const problem = propertyProblem(draft.properties);
+    if (problem) {
+      setPropertyError(problem);
+      return;
+    }
+    const properties = propertiesFrom(draft.properties);
+    const values: Record<string, string> = {
+      canonical_name: draft.name.trim() || entity.canonical_name,
+      description: draft.description,
+      personality: draft.personality,
+      context: draft.context,
+    };
+    if (!sameProperties(properties, entity.properties)) values.properties = JSON.stringify(properties);
+    void save('save', values, 'Entry saved.').then((saved) => saved && setEditing(false));
   };
   const otherEntities = entities.filter((row) => row.id !== entity.id && row.category !== 'Draft');
   const aliasMatches = aliasSelectedId ? [] : findAliasMatches(entities, aliasQuery, entity.id);
@@ -341,18 +362,7 @@ export function GuideDetail({
                   label="Save changes to this entry"
                   pending={mutation.isPending('save')}
                   disabled={waiting('save')}
-                  onClick={() =>
-                    void save(
-                      'save',
-                      {
-                        canonical_name: draft.name.trim() || entity.canonical_name,
-                        description: draft.description,
-                        personality: draft.personality,
-                        context: draft.context,
-                      },
-                      'Entry saved.',
-                    ).then((saved) => saved && setEditing(false))
-                  }
+                  onClick={saveEntry}
                   variant="primary"
                 >
                   <FontAwesomeIcon icon={faFloppyDisk} />
@@ -613,6 +623,17 @@ export function GuideDetail({
           disabled={editingDisabled}
           value={draft.description}
           onChange={(value) => setDraft({ ...draft, description: value })}
+        />
+
+        <PropertiesSection
+          saved={entity.properties}
+          rows={draft.properties}
+          editing={editing && canEdit}
+          error={propertyError}
+          onChange={(properties) => {
+            setPropertyError(undefined);
+            setDraft({ ...draft, properties });
+          }}
         />
 
         {entity.category === 'Character' && (

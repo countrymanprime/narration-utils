@@ -34,6 +34,7 @@ const entity = (overrides: Partial<GuideEntity>): GuideEntity => ({
   description: { text: '', evidence: {} },
   personality_notes: [],
   relationships: [],
+  properties: [],
   locked: false,
   review_state: 'generated',
   ...overrides,

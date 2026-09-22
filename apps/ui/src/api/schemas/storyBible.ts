@@ -7,6 +7,7 @@ import type {
   GuideNote,
   GuidePreview,
   GuidePronunciation,
+  GuideProperty,
   GuideRelationship,
 } from '../contracts/storyBible';
 import { listFromNull, optionalFromNull } from './base';
@@ -46,6 +47,11 @@ const aliasSchema = z.object({
 
 const relationshipSchema = z.object({ id: z.string(), name: z.string(), label: z.string() }) satisfies z.ZodType<GuideRelationship>;
 
+const propertySchema = z.object({ key: z.string(), value: z.string() }) satisfies z.ZodType<GuideProperty>;
+
+/** The `properties` value of an edit or a create, which the host carries as JSON text; the mock parses it with this. */
+export const guidePropertiesSchema = listFromNull(propertySchema);
+
 const guideEntitySchema = z.object({
   id: z.string(),
   canonical_name: z.string(),
@@ -57,6 +63,8 @@ const guideEntitySchema = z.object({
   description: noteSchema.nullish().transform((value): GuideNote => value ?? { text: '', evidence: {} }),
   personality_notes: listFromNull(noteSchema),
   relationships: listFromNull(relationshipSchema),
+  /** A file written before properties existed has none, and the host fills the list; both read as empty. */
+  properties: guidePropertiesSchema,
   locked: z.boolean(),
   review_state: z.string(),
   context: optionalFromNull(z.string()),

@@ -47,6 +47,7 @@ const emptyGuideEntity = (name: string): GuideEntity => ({
   description: { text: '', evidence: {} },
   personality_notes: [],
   relationships: [],
+  properties: [],
   locked: false,
   review_state: 'reviewed',
 });

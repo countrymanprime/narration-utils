@@ -124,7 +124,7 @@ func TestAliasAndCreateOperationsUseCanonicalManuscriptWithoutLegacyESpeakPath(t
 	if !slices.Contains(alias, "--manuscript") || !slices.Contains(alias, filepath.Join(root, "narration-utils", "manuscript", "manuscript.json")) || slices.Contains(alias, "--espeak-library") {
 		t.Fatalf("alias arguments must use canonical context only: %#v", alias)
 	}
-	create := s.createArgs("Name", "Character", []string{"A. Name"}, "")
+	create := s.createArgs("Name", "Character", []string{"A. Name"}, "", nil)
 	if slices.Contains(create, "--espeak-library") {
 		t.Fatalf("create arguments must not include an eSpeak path: %#v", create)
 	}
