@@ -172,5 +172,17 @@
     "file": "narration_pickups.lua",
     "find": "for _, marker in ipairs(project_markers()) do\n    if marker_kind(marker.name) == 'PICKUP' then\n      local gap = math.abs(marker.pos - target)",
     "replace": "for _, marker in ipairs(project_markers()) do\n    if marker_kind(marker.name) ~= '' then\n      local gap = math.abs(marker.pos - target)"
+  },
+  {
+    "name": "configure_chapter_render accepts an empty output folder",
+    "file": "narration_render.lua",
+    "find": "if output_folder == '' then",
+    "replace": "if false then"
+  },
+  {
+    "name": "configure_chapter_render runs without the render-config API",
+    "file": "narration_render.lua",
+    "find": "if not reaper.APIExists('GetSetProjectInfo_String') or not reaper.APIExists('GetSetProjectInfo') then",
+    "replace": "if false then"
   }
 ]

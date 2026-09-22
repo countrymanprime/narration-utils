@@ -1,0 +1,11 @@
+{
+  "count": 2,
+  "folder": "C:\\Books\\Alice\\renders",
+  "message": "Render configured for 2 chapter files. Press Render in REAPER to create them.",
+  "phase": "success",
+  "runId": "1790000000000000",
+  "targets": [
+    "C:\\Books\\Alice\\renders\\Chapter 1.wav",
+    "C:\\Books\\Alice\\renders\\Chapter 2.wav"
+  ]
+}

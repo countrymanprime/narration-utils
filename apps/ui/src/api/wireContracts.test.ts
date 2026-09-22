@@ -34,6 +34,7 @@ import { teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterS
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
 import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
+import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
 import { unknownKeys } from './schemas/strictness';
 import { parseWire, type WireContext } from './wire/parseWire';
 import { WireError } from './wire/WireError';
@@ -138,6 +139,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'line-identity-read-success.json': lineIdentityStateSchema,
   'pickups-idle.json': pickupsStateSchema,
   'pickups-import-success.json': pickupsStateSchema,
+  'render-config-idle.json': renderConfigStateSchema,
+  'render-config-success.json': renderConfigStateSchema,
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -560,6 +563,26 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(result.rowErrors).toEqual(['line 2: could not parse this row']);
   });
 
+  it('the render-config state through a configure run, and its seeded states', async () => {
+    vi.useFakeTimers();
+    const api = createMockApi();
+    const seen: unknown[] = [];
+    api.subscribeRenderConfig((state) => seen.push(structuredClone(state)));
+    expectMatches(renderConfigSuggestedFolderSchema, await api.renderConfigSuggestFolder(), 'mock suggested folder');
+    expectMatches(renderConfigStartResultSchema, await api.renderConfigConfigure('C:/Books/Alice/renders'), 'mock configure start');
+    await vi.advanceTimersByTimeAsync(300);
+    expect(seen.length).toBeGreaterThan(1);
+    for (const state of seen) expectMatches(renderConfigStateSchema, state, 'mock renderconfig:state');
+    expectMatches(renderConfigStateSchema, await api.renderConfigState(), 'mock render-config state');
+    for (const seed of ['success', 'no-regions', 'error'] as const) {
+      expectMatches(renderConfigStateSchema, await createMockApi({}, { renderConfig: seed }).renderConfigState(), `mock render-config seed ${seed}`);
+    }
+  });
+
+  it('renderConfigConfigure refuses an empty folder, the way the Go service does', async () => {
+    await expect(createMockApi().renderConfigConfigure('   ')).rejects.toThrow(/output folder is required/);
+  });
+
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
@@ -628,6 +651,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'pickupsResolve',
       'pickupsCount',
       'pickupsState',
+      'renderConfigConfigure',
+      'renderConfigSuggestFolder',
+      'renderConfigState',
       'teleprompterStart',
       'teleprompterState',
       'teleprompterDevices',
@@ -685,6 +711,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeUpdate',
       'subscribeLineIdentity',
       'subscribePickups',
+      'subscribeRenderConfig',
     ];
     expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());
   });

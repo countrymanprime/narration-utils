@@ -34,6 +34,7 @@ H.test('the bridge registers exactly the commands the host and the docs know abo
   local s = H.session()
   H.eq(s.bridge.new_registry().names(), {
     'close',
+    'configure_chapter_render',
     'count_pickups',
     'create_chapter_regions',
     'export_compare_markers',

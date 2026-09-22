@@ -823,6 +823,38 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await message.waitFor();
       await message.scrollIntoViewIfNeeded();
     },
+    'render-config-prefilled': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Prepare chapter render…');
+      await page.getByRole('button', { name: 'Configure render' }).waitFor();
+    },
+    'render-config-success': async (page) => {
+      await page.goto('/?mockRenderConfig=success');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Prepare chapter render…');
+      const message = page.getByText(/Render is configured/);
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
+    'render-config-no-regions': async (page) => {
+      await page.goto('/?mockRenderConfig=no-regions');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Prepare chapter render…');
+      const message = page.getByText(/No chapter regions were found yet/);
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
+    'render-config-error': async (page) => {
+      await page.goto('/?mockRenderConfig=error');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Prepare chapter render…');
+      const message = page.getByText(/cannot configure render settings/).first();
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
   },
   teleprompter: {
     'setup-default': async (page) => {

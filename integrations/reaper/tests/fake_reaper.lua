@@ -39,6 +39,8 @@ function Fake.new(host)
   self.missing_api = {}
   self.next_guid = 1
   self.calls = {}
+  self.render_info = {}
+  self.render_info_string = {}
   self.reaper = self:build_api()
   return self
 end
@@ -132,6 +134,23 @@ end
 -- Makes `APIExists(name)` answer false, the way an older REAPER lacks a newer function.
 function Fake:remove_api(name)
   self.missing_api[name] = true
+end
+
+-- Mirrors what the S5 spike observed in a real REAPER (docs/research/reaper-spike-s5-render-details.md): reading
+-- RENDER_TARGETS predicts one file per region, named `<folder>/<region name>.wav`, only when RENDER_PATTERN is
+-- literally "$region" and RENDER_BOUNDSFLAG is 3 ("all regions"); any other configuration predicts nothing.
+function Fake:render_targets()
+  if self.render_info_string['RENDER_PATTERN'] ~= '$region' or self.render_info['RENDER_BOUNDSFLAG'] ~= 3 then
+    return ''
+  end
+  local folder = self.render_info_string['RENDER_FILE'] or ''
+  local names = {}
+  for _, marker in ipairs(self.markers) do
+    if marker.is_region then
+      names[#names + 1] = folder .. '/' .. marker.name .. '.wav'
+    end
+  end
+  return table.concat(names, ';')
 end
 
 -- Deferred queue --------------------------------------------------------------------------------------------------
@@ -268,6 +287,38 @@ function Fake:add_project_api(api)
   end
   function api.Undo_OnStateChange(label)
     fake.undo[#fake.undo + 1] = { label = label }
+  end
+  -- Records every call in fake.calls: narration_render.lua's harness tests assert this is never invoked, since the
+  -- S5 spike proved it (or a real render action's ID passed to the RENDER_STATS getter, below) can actually
+  -- trigger a render.
+  function api.Main_OnCommand(command_id, flag)
+    fake.calls[#fake.calls + 1] = { name = 'Main_OnCommand', command_id = command_id, flag = flag }
+    return true
+  end
+  -- The numeric project-info keys (RENDER_BOUNDSFLAG, RENDER_ADDTOPROJ, ...). Every call is recorded in fake.calls
+  -- the same way Main_OnCommand is, so a test can assert which keys were touched.
+  function api.GetSetProjectInfo(_, key, value, set)
+    fake.calls[#fake.calls + 1] = { name = 'GetSetProjectInfo', key = key, value = value, set = set }
+    if set then
+      fake.render_info[key] = value
+      return true
+    end
+    return fake.render_info[key] or 0
+  end
+  -- The string project-info keys (RENDER_FILE, RENDER_PATTERN, RENDER_TARGETS, RENDER_STATS, ...). RENDER_TARGETS
+  -- is computed (Fake:render_targets), matching what a real REAPER predicts before any render runs; every other
+  -- key is a plain store/read, matching the S5 spike's finding that RENDER_PATTERN reads back literally, not
+  -- resolved.
+  function api.GetSetProjectInfo_String(_, key, value, set)
+    fake.calls[#fake.calls + 1] = { name = 'GetSetProjectInfo_String', key = key, value = value, set = set }
+    if key == 'RENDER_TARGETS' then
+      return true, fake:render_targets()
+    end
+    if set then
+      fake.render_info_string[key] = value
+      return true, value
+    end
+    return true, fake.render_info_string[key] or ''
   end
 end
 

@@ -11,6 +11,7 @@ import type {
   ManuscriptParagraph,
   PickupsState,
   ReaderState,
+  RenderConfigState,
   ScopedSettingField,
   TeleprompterDevice,
   TextSpan,
@@ -842,6 +843,45 @@ export const WIRE_PICKUPS_ERROR: PickupsState = {
   remaining: 0,
   total: 0,
   csv: '',
+};
+
+/** The Go host's RenderConfigState answer before any run (mirrors tests/fixtures/contracts/render-config-idle.json). */
+export const WIRE_RENDER_CONFIG_IDLE: RenderConfigState = {
+  phase: 'idle',
+  message: '',
+  folder: '',
+  targets: [],
+  count: 0,
+};
+
+/** A completed configure with two chapter regions (mirrors tests/fixtures/contracts/render-config-success.json). */
+export const WIRE_RENDER_CONFIG_SUCCESS: RenderConfigState = {
+  runId: '1790000000000000',
+  phase: 'success',
+  message: 'Render configured for 2 chapter files. Press Render in REAPER to create them.',
+  folder: 'C:\\Books\\Alice\\renders',
+  targets: ['C:\\Books\\Alice\\renders\\Chapter 1.wav', 'C:\\Books\\Alice\\renders\\Chapter 2.wav'],
+  count: 2,
+};
+
+/** A completed configure with no chapter regions yet, so the "create them first" message can be reviewed. */
+export const WIRE_RENDER_CONFIG_NO_REGIONS: RenderConfigState = {
+  runId: '1790000000000001',
+  phase: 'success',
+  message: 'Render configured. No chapter regions were found yet: create them before rendering.',
+  folder: 'C:\\Books\\Alice\\renders',
+  targets: [],
+  count: 0,
+};
+
+/** REAPER reported a problem configuring the render. */
+export const WIRE_RENDER_CONFIG_ERROR: RenderConfigState = {
+  runId: '1790000000000002',
+  phase: 'error',
+  message: 'This REAPER version cannot configure render settings.',
+  folder: '',
+  targets: [],
+  count: 0,
 };
 
 export const wireClone = <T>(value: T): T => structuredClone(value);

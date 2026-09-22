@@ -25,6 +25,7 @@ var realEvents = map[string][]string{
 	"PICKUPS_COUNTED":       {"PICKUPS_COUNTED", "t1", "1", "2"},
 	"PICKUP_NEXT":           {"PICKUP_NEXT", "t1", "9.25", "narrator", "Mispronounced"},
 	"PICKUP_RESOLVED":       {"PICKUP_RESOLVED", "t1", "9.25", "narrator", "Mispronounced"},
+	"RENDER_CONFIGURED":     {"RENDER_CONFIGURED", "t1", "C:/p/renders", "2", "C:/p/renders/Chapter 1.wav;C:/p/renders/Chapter 2.wav"},
 }
 
 func TestEveryRealEventPassesItsTable(t *testing.T) {

@@ -23,6 +23,7 @@ import type {
   ReaderBookmark,
   ReaderState,
   RecentProject,
+  RenderConfigState,
   Scope,
   ScopedSettingField,
   TeleprompterDevice,
@@ -53,6 +54,10 @@ import {
   WIRE_PICKUPS_NEXT_SUCCESS,
   withFormatting,
   WIRE_READER_STATE,
+  WIRE_RENDER_CONFIG_ERROR,
+  WIRE_RENDER_CONFIG_IDLE,
+  WIRE_RENDER_CONFIG_NO_REGIONS,
+  WIRE_RENDER_CONFIG_SUCCESS,
   WIRE_TELEPROMPTER_DEVICES,
   WIRE_TRACKS_PROJECT,
   WIRE_TRANSCRIPT,
@@ -330,6 +335,8 @@ export function createMockApi(
     lineIdentity?: 'success' | 'conflict' | 'error';
     /** Boots PickupsState already at this result, so the pickup list's states can be seen without stepping through a run. */
     pickups?: 'import-success' | 'next-success' | 'export-success' | 'error';
+    /** Boots RenderConfigState already at this result, so "Prepare chapter render" states can be seen without stepping through a run. */
+    renderConfig?: 'success' | 'no-regions' | 'error';
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -551,6 +558,22 @@ export function createMockApi(
   // A job that ends tells whoever listens, after the call that started it has returned, the way the host does (ADR 0076). The mock ends
   // only the Story Bible rebuild this way: its comparison run is driven by a timer the visual suite steps through, and a toast raised at
   // the end of one would land in every screenshot of the results.
+  let renderConfig: RenderConfigState = wireClone(
+    initial.renderConfig === 'success'
+      ? WIRE_RENDER_CONFIG_SUCCESS
+      : initial.renderConfig === 'no-regions'
+        ? WIRE_RENDER_CONFIG_NO_REGIONS
+        : initial.renderConfig === 'error'
+          ? WIRE_RENDER_CONFIG_ERROR
+          : WIRE_RENDER_CONFIG_IDLE,
+  );
+  // The 'no-regions' seed models a project with no chapter regions yet (Configure still succeeds - it is just
+  // project-info keys - but predicts 0 files); 'error' models a broken REAPER script, sticking the same way the
+  // pickups 'error' seed does.
+  const renderConfigHasRegions = initial.renderConfig !== 'no-regions';
+  const renderConfigAlwaysErrors = initial.renderConfig === 'error';
+  const renderConfigSubscribers = new Set<(state: RenderConfigState) => void>();
+  const publishRenderConfig = () => renderConfigSubscribers.forEach((fn) => fn(wireClone(renderConfig)));
   const jobEndListeners = new Set<(event: JobEnded) => void>();
   const endJob = (event: JobEnded) => void setTimeout(() => jobEndListeners.forEach((listener) => listener(event)), 0);
   let runTimers: ReturnType<typeof setTimeout>[] = [];
@@ -1382,6 +1405,46 @@ export function createMockApi(
       pickupsSubscribers.add(onUpdate);
       onUpdate(wireClone(pickups));
       return () => pickupsSubscribers.delete(onUpdate);
+    },
+    renderConfigConfigure: async (outputFolder) => {
+      const folder = outputFolder.trim();
+      if (!folder) throw new Error('an output folder is required');
+      renderConfig = { ...wireClone(WIRE_RENDER_CONFIG_IDLE), runId: String(Date.now()), phase: 'configuring', message: 'Configuring the chapter render…' };
+      publishRenderConfig();
+      setTimeout(() => {
+        if (renderConfig.phase !== 'configuring') return;
+        if (renderConfigAlwaysErrors) {
+          renderConfig = { ...renderConfig, phase: 'error', message: WIRE_RENDER_CONFIG_ERROR.message };
+        } else if (renderConfigHasRegions) {
+          const targets = [`${folder}\\Chapter 1.wav`, `${folder}\\Chapter 2.wav`];
+          renderConfig = {
+            ...renderConfig,
+            phase: 'success',
+            folder,
+            targets,
+            count: targets.length,
+            message: `Render configured for ${targets.length} chapter files. Press Render in REAPER to create them.`,
+          };
+        } else {
+          renderConfig = {
+            ...renderConfig,
+            phase: 'success',
+            folder,
+            targets: [],
+            count: 0,
+            message: 'Render configured. No chapter regions were found yet: create them before rendering.',
+          };
+        }
+        publishRenderConfig();
+      }, 300);
+      return { status: 'started' };
+    },
+    renderConfigSuggestFolder: async () => ({ folder: `${projectFolder}\\renders` }),
+    renderConfigState: async () => wireClone(renderConfig),
+    subscribeRenderConfig: (onUpdate) => {
+      renderConfigSubscribers.add(onUpdate);
+      onUpdate(wireClone(renderConfig));
+      return () => renderConfigSubscribers.delete(onUpdate);
     },
     subscribeProjectAttach: (onUpdate) => {
       projectAttachSubscribers.add(onUpdate);

@@ -27,6 +27,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
+	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
@@ -40,7 +41,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 22
+const hostAPIVersion = 23
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -75,6 +76,7 @@ type Host struct {
 	reachability *daw.Reachability
 	lineIdentity *lineidentity.Service
 	pickups      *pickups.Service
+	renderConfig *renderconfig.Service
 	teleprompter *teleprompter.Service
 	recents      *recents.Store
 	// creditTemplates is the narrator's own credit-template library (audiobook-credits-templates.prd.md, Phase 1):
@@ -316,6 +318,10 @@ func (h *Host) configureLocked(next config) {
 	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does for line
 	// identity above.
 	h.pickups = pickups.New(pickups.Config{SessionDir: h.config.sessionDir}, client, h.emitPickups)
+	// The render-config service (reaper-automation-follow-through PRD Phase 11) is the bridge's fourth real
+	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does for line identity
+	// and pickups above.
+	h.renderConfig = renderconfig.New(renderconfig.Config{SessionDir: h.config.sessionDir}, client, h.emitRenderConfig)
 	teleprompterDir := h.config.sessionDir
 	if teleprompterDir == "" {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")
@@ -524,6 +530,17 @@ func (h *Host) emitPickups(state map[string]any) {
 	h.mu.RUnlock()
 	if ctx != nil {
 		runtime.EventsEmit(ctx, "pickups:state", state)
+	}
+}
+
+// emitRenderConfig relays a renderconfig.Service snapshot to the frontend (Phase 11's "Prepare chapter render"
+// action), the same simple relay emitPickups uses.
+func (h *Host) emitRenderConfig(state map[string]any) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "renderconfig:state", state)
 	}
 }
 
