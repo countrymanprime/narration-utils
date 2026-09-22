@@ -232,6 +232,18 @@ func (s *Service) editArgs(id string, values map[string]string) []string {
 	}
 	return args
 }
+
+// Pronounce sets the pronunciation of an entity's own name (aliasIndex nil) or one of its aliases from exactly the
+// named engine ("cmu" or "espeak"), and marks it as the narrator's explicit choice so a rebuild keeps it (D13, B9-B11).
+// It is refused on a locked entity (ADR 0007, enforced by the sidecar) and when the chosen engine has nothing for the name.
+func (s *Service) Pronounce(id string, aliasIndex *int, source string) error {
+	args := []string{"pronounce", "--guide", s.guidePath(), "--entity-id", id, "--source", source}
+	if aliasIndex != nil {
+		args = append(args, "--alias-index", fmt.Sprint(*aliasIndex))
+	}
+	_, err := s.Run(args...)
+	return err
+}
 func (s *Service) Rescan(id string) error {
 	_, err := s.Run("rescan", "--guide", s.guidePath(), "--manuscript", s.manuscript(), "--entity-id", id)
 	return err

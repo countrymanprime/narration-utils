@@ -190,6 +190,11 @@ export const STATE_CATALOG: StateEntry[] = [
     description: 'Story Bible, an entry in edit mode with its properties table: a new row with a value and no name, and the message that says so',
   },
   { page: 'storybible', state: 'entry-needs-review', description: 'Story Bible, a Needs Review entry with review-colored evidence highlights' },
+  {
+    page: 'storybible',
+    state: 'entry-pronunciation-missing',
+    description: 'Story Bible, an entry with no pronunciation in edit mode: Play disabled with a reason, and Generate offered',
+  },
 
   {
     page: 'storybible',

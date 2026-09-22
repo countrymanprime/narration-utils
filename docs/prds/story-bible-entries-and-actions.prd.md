@@ -141,7 +141,7 @@ We believe composable properties, mode-appropriate actions and an honest pronunc
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Properties | Schema, sidecar, Go, TS, UI, rebuild carry-over, tests | complete | - | - | - |
 | 2 | Actions and icon-only Go to line | Mode-based actions, red Delete, lock/edit fix, ADR, `IconButton` use | complete | 1 | primitives Phase 1 | - |
-| 3 | Pronunciation controls | Play gating, Generate, replace icon, binding, API bump | pending | - | 2 (soft); briefs Phase 9 (provider question) | - |
+| 3 | Pronunciation controls | Play gating, Generate, replace icon, binding, API bump | complete | - | 2 (soft); briefs Phase 9 (provider question) | - |
 
 **Phase 1 - Properties.** Goal: entries hold ordered key/value facts. Success: round-trip, rebuild, lock and old-file tests; PNGs for read and edit.
 **Phase 2 - Actions and icon-only Go to line.** Goal: safe, mode-based actions. Success: Vitest and drivers updated; lock mid-edit impossible; ADR merged.
@@ -173,6 +173,7 @@ Cross-cutting: ADR numbering and `hostAPIVersion` re-checked at merge time; `vis
 | Locking (B6) | Lock and Unlock in the read view only; a new draft starts unlocked (D22) | Lock during edit | Locking mid-edit discarded the draft |
 | Pronunciation controls (B8, B9, B10, B12) | Play gated on an IPA with the reason in the explanation; Generate and Replace in edit mode only, CMU or eSpeak chosen explicitly, stored with source and confidence; generation is not a review (D13, D22) | A read-view button | Single enforcement point (ADR 0007) |
 | Rebuild (B11) | A pronunciation the narrator set is carried by `merge_locked` (D22) | Wait for the briefs PRD | Otherwise a rebuild silently undoes the narrator's choice |
+| Generate/Replace scope | Canonical name only for this stack; aliases keep the same Play gating fix but no Generate/Replace control yet | Build alias-level controls too | The binding (`GuidePronounce`) already takes an alias index end-to-end, so extending the UI later is small; kept the phase bounded |
 
 ## Research Summary
 

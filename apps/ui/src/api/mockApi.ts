@@ -9,6 +9,7 @@ import type {
   GuideEntity,
   GuideEvidence,
   GuideProperty,
+  GuidePronunciation,
   ManuscriptNote,
   NarrationApi,
   ProjectAttachState,
@@ -762,6 +763,21 @@ export function createMockApi(
       // The failing seam behind ?mockPreviewError=<text>, so a real host failure can be seen without a host.
       if (initial.previewError) throw new Error(initial.previewError);
       return { status: 'ready' as const, audioBase64: MOCK_PREVIEW_WAV_BASE64, mimeType: 'audio/wav' };
+    },
+    guidePronounce: async (id, source, aliasIndex) => {
+      const entity = entities.find((row) => row.id === id);
+      if (!entity) throw new Error('Entity not found.');
+      if (entity.locked) throw new Error('This entity is locked. Unlock it before editing.');
+      // The mock always succeeds; the real chain can refuse a name a given engine has nothing for (D13/B10).
+      const value: GuidePronunciation =
+        source === 'cmu'
+          ? { ipa: '/mɒk kjuː ɛm juː/', source: 'CMU dictionary', confidence: 'medium', chosen: true }
+          : { ipa: '/mɒk iː spiːk/', source: 'eSpeak NG', confidence: 'low', chosen: true };
+      updateEntity(id, (row) =>
+        aliasIndex === undefined
+          ? { ...row, pronunciation: value }
+          : { ...row, aliases: row.aliases.map((alias, index) => (index === aliasIndex ? { ...alias, pronunciation: value } : alias)) },
+      );
     },
     ttsCatalog: async () => ({
       catalogVersion: 1,

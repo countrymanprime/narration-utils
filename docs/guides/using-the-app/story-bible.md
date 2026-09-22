@@ -62,9 +62,20 @@ model in Settings never downloads it, and Settings lists every approved model wh
 ## Hearing a name
 
 The play button beside a name, or beside one of its aliases, speaks it with the local preview
-voice. The first time, the app asks before it downloads the voice. If the preview fails, the
-message says why, and pressing play again tries again; a failed run never leaves a broken
-recording behind.
+voice. It only works once a pronunciation exists: with none, the button is dimmed and a hint
+(reachable by keyboard, not just the mouse) says so. The first time you press play, the app asks
+before it downloads the voice. If the preview fails, the message says why, and pressing play
+again tries again; a failed run never leaves a broken recording behind.
+
+## Generating and replacing a pronunciation
+
+In edit mode, a name with no pronunciation shows a **+** button beside it; press it and choose the
+CMU dictionary or eSpeak NG to generate one. Once a pronunciation exists, the same spot shows a
+refresh button instead, so you can replace it with the other source. Either engine can have
+nothing for an unusual name (most fantasy names aren't in the CMU dictionary, and the eSpeak
+fallback needs a system component many machines don't have) - the message says which, and you can
+try the other source or try again. A pronunciation you set this way is kept the next time you
+rebuild the Story Bible; an automatically generated one can still change on a rebuild.
 
 | Message | What it means | What to do |
 | --- | --- | --- |

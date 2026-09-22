@@ -62,6 +62,10 @@ export function GuidePreview(arg1, arg2) {
   return window['go']['main']['Host']['GuidePreview'](arg1, arg2);
 }
 
+export function GuidePronounce(arg1, arg2, arg3) {
+  return window['go']['main']['Host']['GuidePronounce'](arg1, arg2, arg3);
+}
+
 export function GuideRelate(arg1, arg2, arg3) {
   return window['go']['main']['Host']['GuideRelate'](arg1, arg2, arg3);
 }

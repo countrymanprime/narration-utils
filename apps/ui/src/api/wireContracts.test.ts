@@ -478,6 +478,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'guideEdit',
       'guideSetLocked',
       'guideRescan',
+      'guidePronounce',
       'guideMerge',
       'guideDelete',
       'guideRelate',

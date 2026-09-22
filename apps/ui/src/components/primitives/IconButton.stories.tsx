@@ -65,3 +65,16 @@ export const DisabledDoesNothing: Story = {
     await expect(args.onClick).not.toHaveBeenCalled();
   },
 };
+
+// disabledReason keeps the button focusable and hoverable, unlike native disabled (D6, WCAG 1.4.13): pair it with
+// a plain TooltipTarget whose tooltip stays reachable because the button itself carries it.
+export const DisabledWithReason: Story = {
+  args: { disabledReason: 'No pronunciation exists for this name yet.', label: 'Play preview' },
+  play: async ({ args, canvasElement }) => {
+    const button = within(canvasElement).getByRole('button', { name: 'Play preview' });
+    await expect(button).toHaveAttribute('aria-disabled', 'true');
+    await expect(button).not.toBeDisabled();
+    button.click();
+    await expect(args.onClick).not.toHaveBeenCalled();
+  },
+};

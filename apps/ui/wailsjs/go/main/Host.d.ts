@@ -31,6 +31,8 @@ export function GuideMerge(arg1:string,arg2:string):Promise<string>;
 
 export function GuidePreview(arg1:string,arg2:any):Promise<string>;
 
+export function GuidePronounce(arg1:string,arg2:any,arg3:string):Promise<string>;
+
 export function GuideRelate(arg1:string,arg2:string,arg3:string):Promise<string>;
 
 export function GuideRescan(arg1:string):Promise<string>;

@@ -66,4 +66,13 @@ describe('Menu', () => {
     await user.click(screen.getByRole('button', { name: 'Character' }));
     expect(screen.queryByRole('menuitem')).toBeNull();
   });
+
+  it('takes an explicit accessible name for an icon-only trigger', () => {
+    render(
+      <Menu items={items} label="Choose a source">
+        <span aria-hidden="true">⟳</span>
+      </Menu>,
+    );
+    expect(screen.getByRole('button', { name: 'Choose a source' })).toBeTruthy();
+  });
 });

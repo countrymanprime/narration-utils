@@ -1,5 +1,5 @@
 import { Menu as BaseMenu } from '@base-ui/react/menu';
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactElement, ReactNode } from 'react';
 
 export type MenuItem = {
   key: string;
@@ -16,20 +16,28 @@ export type MenuItem = {
 export function Menu({
   items,
   disabled,
+  label,
   triggerClassName,
   triggerStyle,
+  render,
   children,
 }: {
   items: MenuItem[];
   disabled?: boolean;
+  // An accessible name for the trigger, for an icon-only trigger whose `children` carries no text of its own. Ignored
+  // when `render` is given: that element owns its own accessible name (an `IconButton`'s `label`).
+  label?: string;
   triggerClassName?: string;
   triggerStyle?: CSSProperties;
+  // Renders the trigger as another component instead of a plain button, the same pattern as `TooltipTarget` - pass
+  // `<IconButton label="..." />` for an icon-only trigger instead of pasting the icon-button look here.
+  render?: ReactElement;
   children: ReactNode;
 }) {
   return (
     // Not modal: the page behind stays scrollable and clickable, as with the menu this replaced (a press outside closes it).
     <BaseMenu.Root modal={false}>
-      <BaseMenu.Trigger disabled={disabled} className={triggerClassName} style={triggerStyle}>
+      <BaseMenu.Trigger disabled={disabled} {...(render ? { render } : { 'aria-label': label, className: triggerClassName, style: triggerStyle })}>
         {children}
       </BaseMenu.Trigger>
       <BaseMenu.Portal>
