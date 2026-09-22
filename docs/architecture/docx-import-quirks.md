@@ -19,6 +19,10 @@ Code: `apps/desktop/internal/importer/` (`docx.go`, `markdown.go`, `markdown_inl
 | Non-breaking / soft hyphens | `<w:noBreakHyphen/>`, `<w:softHyphen/>` | `-` / dropped | — |
 | Deleted (tracked-change) text | `<w:delText>` | Ignored (only `<w:t>` counts) | — |
 | Text boxes and shapes | nested `<w:p>` inside `<w:txbxContent>`, often duplicated in `mc:AlternateContent` | **Not supported**; may duplicate or drop text. Move the text into the body before importing | — |
+| "TOC Heading" style, deliberately not an outline heading | Word's built-in style for the heading that introduces a table of contents, always `outlineLvl` 9 (which the importer otherwise reads as "not a heading at all") | Recognised by style name regardless of `outlineLvl`; the section it introduces is `contentKind: reference` like any other Contents heading | `TestDocxTOCHeadingStyleIsRecognizedDespiteItsOutlineLvl9` |
+| A TOC before the first real chapter, or right after the book's Title | No heading paragraph precedes the TOC's own body, or a Title-styled paragraph does | The front-matter cutoff is the document's first heading of *any* kind, so the TOC's own entries stay attributed to it instead of falling into Cover/Front Matter or the Title "chapter" | `TestDocxTOCBeforeFirstChapterWithNoTitleIsNotSweptIntoFrontMatter`, `TestDocxTOCAfterTitleIsNotAbsorbedIntoTheTitleChapter` |
+| Table-of-contents entry lines | `"TOC 1"`.."TOC 9"`-styled paragraphs, each usually a `w:hyperlink` whose `w:anchor` cites a `"_Toc"` bookmark Word opened around its target heading, plus an inert cached field (`fldChar`/`instrText`, ignored - only `<w:t>` is visible text) | Read as the document's own chapter list; see [Table of contents authority](#table-of-contents-authority) below | `TestDocxTOCWithBookmarksBecomesTheAuthoritativeChapterList` |
+| An in-body cross-reference hyperlink | Word's "Insert cross-reference \> insert as hyperlink" reuses the target heading's existing `"_Toc"` bookmark rather than minting a `"_Ref"` one, so an ordinary sentence elsewhere in the manuscript can carry a `w:anchor` that looks exactly like a TOC entry's | Only a `"TOC N"`-styled paragraph counts as an entry; a hyperlink's anchor alone does not, so a stray cross-reference is never miscounted as one more (unmatched) TOC entry | `TestDocxAnOrdinaryCrossReferenceHyperlinkIsNotCountedAsATOCEntry` |
 
 ## Markdown
 
@@ -30,10 +34,25 @@ Code: `apps/desktop/internal/importer/` (`docx.go`, `markdown.go`, `markdown_inl
 | Things that look like markers | `snake_case_name`, `2 * 3 * 4`, escaped `\*` | Left literal | `TestMarkdownIntrawordUnderscoresAndLoneAsterisksStayLiteral`, `TestMarkdownEscapedMarkersStayLiteral` |
 | Subtitle in a heading | `# **CHAPTER ONE**<br>Bad Ideas…` | Markers stripped, `<br>` splits title/subtitle | `TestMarkdownHeadingBrSplitsSubtitleAndStripsMarkers` |
 | Byte-order mark | leading `EF BB BF` | Stripped | `TestMarkdownByteOrderMarkIsStripped` |
+| Number and title glued in one heading line | `# CHAPTER ONEBad Ideas…` (no separator at all) | `splitGluedHeading` repairs it, same as docx, and the split is now reported in `Draft.Notices` (previously discarded) | `TestMarkdownGluedHeadingSplitIsReportedAsANotice` |
 
 ## Where the subtitle shows
 
 A heading's subtitle is kept on every paragraph under it (`Paragraph.ChapterSubtitle`), and the import review lists it after the title ("Chapter One — Bad Ideas Look Great in Neon") so the narrator can confirm the split before anything is written. `DraftSection.Subtitle` is the subtitle of the first paragraph of the section, which is exactly what the written chapter gets (`manuscript.canonicalize` reads the paragraph that starts the chapter), so a repeated title (merged into one section) shows its first heading's subtitle and a heading with no text has none. Tests: `TestNewDraftSectionSubtitleIsTheFirstParagraphsSubtitleAsTheCommitReadsIt`, `TestDocxSoftBreakSubtitleReachesTheSectionForTheReview`, `TestMarkdownHeadingSubtitleReachesTheSectionForTheReview` and, across the host service, `TestPreviewSectionSubtitlesAreTheSubtitlesTheWrittenChaptersGet`. The field is additive (`subtitle`, omitted when empty), so `hostAPIVersion` is unchanged. Changing a wrong split from the review (the override) is a separate, evidence-gated piece of the briefs PRD. The review is described in [the import review](import-review.md).
+
+## Table of contents authority
+
+A docx's own table of contents can become the authoritative, ordered chapter list instead of the heading heuristic
+([ADR 0089](../adr/0089-a-docx-table-of-contents-becomes-the-authoritative-chapter-list-above-a-match-threshold.md)). Entries are
+read from `"TOC N"`-styled paragraphs; each is matched to a heading the heuristic already found, in order, by the `"_Toc"`
+bookmark its own `w:hyperlink` cites, then by normalised heading text, then by position among whatever is left unmatched. Only
+once **80%** or more of the TOC's own entries matched something does it win - and only the exposed `chapterTitles` changes when it
+does; `Sections`/paragraph grouping are computed exactly as before and are never touched. Below the threshold, the heuristic's
+chapter list is kept, and a notice ("The table of contents listed N entries; M matched a chapter in the manuscript.") is added
+whenever the counts differ either way. No real user manuscript with a Word TOC field was available when this shipped; it is
+verified against a hand-built OOXML fixture with real `_Toc` bookmarks (`docx_test.go`), not a real one - treat it as **awaiting a
+real manuscript**. Markdown does not yet read its own table of contents (a `[text](#slug)` link list); chapters there still come
+only from the heading structure.
 
 ## Adding a quirk
 
