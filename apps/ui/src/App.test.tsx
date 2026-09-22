@@ -91,6 +91,19 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeTruthy();
   });
 
+  it('shows the Manuscript page an inline error with Retry when its chapters cannot be read, beside the notice Home raised for the same data', async () => {
+    renderApp({}, { invalidPayload: 'manuscript' });
+    await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
+    // Home's audiobook estimate reads the same chapters, so it tells the narrator at once, and the notice stays (ADR 0075) ...
+    const message = 'The app received data it could not read.';
+    await waitFor(() => expect(screen.getAllByText(message)).toHaveLength(1));
+    fireEvent.click(screen.getAllByRole('button', { name: /Manuscript/ })[0]);
+    // ... so once the page has its own inline error the same words are on screen twice, which is why the visual driver waits for both.
+    expect(await screen.findByText('This page could not be loaded')).toBeTruthy();
+    expect(screen.getAllByText(message)).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+  });
+
   it('shows the narrator a notice the host sends, such as a file it kept aside', async () => {
     renderApp({}, { notice: 'Your notes file could not be read. It was kept next to the original, and a fresh one was started.' });
     expect(await screen.findByText(/Your notes file could not be read/)).toBeTruthy();
