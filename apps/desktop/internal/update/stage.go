@@ -198,7 +198,8 @@ func (s *Stager) Stage(ctx context.Context, release Release, onProgress func(Pro
 	file := assets.File{Name: release.Asset.Name, URL: release.Asset.URL, SHA256: checksum, Size: release.Asset.Size}
 	verifying := false
 	err = assets.InstallWith(ctx, s.Root, stagedProvider, s.Platform.Key, release.Version.String(), []assets.File{file}, assets.Options{
-		Client: s.client(),
+		Client:   s.client(),
+		NoResume: true,
 		OnProgress: func(_ assets.File, done int64) {
 			// One byte past the declared size is read on purpose (to see a longer body); it is not progress.
 			report(Progress{Phase: PhaseDownloading, Done: min(done, file.Size), Total: file.Size})

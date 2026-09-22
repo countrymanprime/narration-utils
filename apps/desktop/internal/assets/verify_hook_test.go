@@ -38,9 +38,15 @@ func TestInstallWithNamesAChecksumMismatchAsOne(t *testing.T) {
 	if !errors.Is(err, ErrChecksumMismatch) {
 		t.Fatalf("err = %v, want ErrChecksumMismatch", err)
 	}
+	long := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("payload and more")) }))
+	defer long.Close()
+	if err := InstallWith(context.Background(), t.TempDir(), "p", "id", "1", []File{fileFor(long.URL, body)}, Options{}); !errors.Is(err, ErrSizeMismatch) {
+		t.Fatalf("err = %v, want ErrSizeMismatch for a body longer than the catalog says", err)
+	}
+	// A body that stops short is not a mismatch: it is an incomplete download, and what arrived is kept to be resumed.
 	short := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("pay")) }))
 	defer short.Close()
-	if err := InstallWith(context.Background(), t.TempDir(), "p", "id", "1", []File{fileFor(short.URL, body)}, Options{}); !errors.Is(err, ErrSizeMismatch) {
-		t.Fatalf("err = %v, want ErrSizeMismatch", err)
+	if err := InstallWith(context.Background(), t.TempDir(), "p", "id", "1", []File{fileFor(short.URL, body)}, Options{}); !errors.Is(err, ErrIncomplete) {
+		t.Fatalf("err = %v, want ErrIncomplete", err)
 	}
 }

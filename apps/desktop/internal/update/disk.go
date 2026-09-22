@@ -1,18 +1,7 @@
 package update
 
-import (
-	"os"
-	"path/filepath"
-)
+import "github.com/countrymanprime/narration-utils/shell/internal/assets"
 
-// nearestExisting is path if it exists, otherwise the closest parent that does: the disk a folder about to be created will be on.
-func nearestExisting(path string) string {
-	for current := filepath.Clean(path); ; current = filepath.Dir(current) {
-		if _, err := os.Stat(current); err == nil {
-			return current
-		}
-		if parent := filepath.Dir(current); parent == current {
-			return current
-		}
-	}
-}
+// FreeBytes is how many bytes the current user can still write on the disk that holds path. The path need not exist yet: the
+// nearest folder that does is asked. It is the asset manager's, which every download shares.
+func FreeBytes(path string) (uint64, error) { return assets.FreeBytes(path) }

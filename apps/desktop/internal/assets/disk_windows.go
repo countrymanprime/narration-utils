@@ -1,8 +1,11 @@
 //go:build windows
 
-package update
+package assets
 
 import (
+	"errors"
+	"syscall"
+
 	winsys "golang.org/x/sys/windows"
 )
 
@@ -19,4 +22,10 @@ func FreeBytes(path string) (uint64, error) {
 		return 0, err
 	}
 	return available, nil
+}
+
+// IsDiskFull reports whether err is the disk having no room left (ERROR_DISK_FULL or ERROR_HANDLE_DISK_FULL).
+func IsDiskFull(err error) bool {
+	var errno syscall.Errno
+	return errors.As(err, &errno) && (errno == winsys.ERROR_DISK_FULL || errno == winsys.ERROR_HANDLE_DISK_FULL)
 }
