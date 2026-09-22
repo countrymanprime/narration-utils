@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faFont, faList } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderState, SearchHit } from '../../types';
-import { categoryCssName, chapterLineNumbers, chapterTextMatches, STORY_BIBLE_TABS } from '../../state';
+import { categoryCssName, chapterLineNumbers, chapterTextMatches, isListableChapter, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import { useTextSelection } from '../../hooks/useTextSelection';
@@ -77,7 +77,11 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   const lastFetchedQueryRef = useRef('');
   const debouncedQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
   const { selection, clear: clearSelection } = useTextSelection(readerRef);
-  const active = readerState.activeChapter || chapters[0]?.id;
+  // Reference material (Contents, Characters, ...) stays in manuscript.json and the chapter list,
+  // but is never a page the narrator flips through - see isListableChapter and the reader search and
+  // controls PRD Phase 5 (supersedes the reader half of ADR 0005; ADR 0090).
+  const recordedChapters = useMemo(() => chapters.filter(isListableChapter), [chapters]);
+  const active = readerState.activeChapter || recordedChapters[0]?.id;
   const lineNumbers = useMemo(() => chapterLineNumbers(paragraphs), [paragraphs]);
   const titleMatches = useMemo(() => chapterTextMatches(chapters, searchQuery), [chapters, searchQuery]);
   // True once there is a query the panel has not shown results for yet - the debounce wait, or
@@ -132,14 +136,25 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
           api.readerState(),
           api.noteList(),
         ]);
-        const firstChapter = nextChapters[0]?.id;
+        const firstChapter = nextChapters.filter(isListableChapter)[0]?.id;
         const chapterId = (value: string | undefined) => nextChapters.find((item) => item.id === value || item.title === value)?.id || value;
-        const expandedChapters = (state.expandedChapters ?? [state.activeChapter || firstChapter]).map(chapterId).filter((id): id is string => Boolean(id));
+        // A reader state saved before this phase (or a manuscript re-imported since) may still point
+        // at a reference chapter (R14: the filter covers existing manuscripts too, since it keys on
+        // contentKind, not a migration flag) - fall back to the first recorded one instead.
+        const resolvedActive = chapterId(state.activeChapter);
+        const activeChapter = nextChapters.find((item) => item.id === resolvedActive && isListableChapter(item)) ? resolvedActive : firstChapter;
+        // Built from the already-resolved activeChapter (not the raw, possibly-hidden state.activeChapter),
+        // so a reader state saved before this phase still opens expanded on the chapter it now falls back
+        // to, instead of rendering that chapter's header collapsed with nothing expanded underneath.
+        const expandedChapters = (state.expandedChapters ?? [activeChapter])
+          .map(chapterId)
+          .filter((id): id is string => Boolean(id))
+          .filter((id) => nextChapters.find((item) => item.id === id && isListableChapter(item)));
         setLoadError(undefined);
         setChapters(nextChapters);
         setNotes(nextNotes);
         setEntities(nextEntities);
-        setReaderState({ ...state, activeChapter: chapterId(state.activeChapter) || firstChapter, expandedChapters });
+        setReaderState({ ...state, activeChapter, expandedChapters });
       } catch (error) {
         // Nothing to read without these four lists, so the page says so inline and offers Retry (ADR 0069).
         setLoadError(describeApiError(error));
@@ -167,7 +182,15 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   const showChapter = useCallback(
     (chapter: string, paragraph?: number) => {
       if (!chapter) return;
-      const chapterId = chapters.find((item) => item.id === chapter || item.title === chapter)?.id || chapter;
+      const target = chapters.find((item) => item.id === chapter || item.title === chapter);
+      const chapterId = target?.id || chapter;
+      // Every caller (search results, Story Bible "Go to line", hash links, ...) funnels through
+      // here, so this one guard covers all of them (R13/ADR 0090) rather than duplicating it at
+      // each call site - a reference chapter is never a page the reader shows.
+      if (target && !isListableChapter(target)) {
+        notify("That link points to reference material, which isn't shown in the manuscript reader.");
+        return;
+      }
       const next = { ...readerState, activeChapter: chapterId, expandedChapters: Array.from(new Set([...(readerState.expandedChapters || []), chapterId])) };
       void saveState(next);
       const selector = paragraph === undefined ? `[data-chapter-id="${escapeSelector(chapterId)}"]` : `[data-paragraph="${paragraph}"]`;
@@ -191,7 +214,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
       };
       requestAnimationFrame(attempt);
     },
-    [chapters, readerState, saveState],
+    [chapters, readerState, saveState, notify],
   );
   // Deep links into a specific paragraph/chapter arrive as a URL anchor -
   // "#p123" for paragraph 123 (its globally unique index, assigned at
@@ -210,19 +233,24 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
       return;
     }
     if (handledHash.current === hash) return;
+    let chapter: string | undefined;
+    let paragraph: number | undefined;
     if (hash.startsWith('#p')) {
-      const paragraph = Number(hash.slice(2));
+      paragraph = Number(hash.slice(2));
       if (Number.isNaN(paragraph)) return;
-      const chapter = chapters.find((item) => item.paragraphIds?.some((row) => row.index === paragraph))?.id;
+      chapter = chapters.find((item) => item.paragraphIds?.some((row) => row.index === paragraph))?.id;
       if (!chapter) return;
-      handledHash.current = hash;
-      showChapter(chapter, paragraph);
     } else if (hash.startsWith('#c')) {
-      handledHash.current = hash;
-      showChapter(decodeURIComponent(hash.slice(2)));
+      const target = decodeURIComponent(hash.slice(2));
+      chapter = chapters.find((item) => item.id === target || item.title === target)?.id || target;
     } else {
       return;
     }
+    handledHash.current = hash;
+    // showChapter itself guards against a reference chapter (R13/ADR 0090: a no-op with a message,
+    // the reader has no "reference chapter's own view" to redirect to instead), so every caller -
+    // this hash link, a search result, Story Bible "Go to line" - gets the same behavior for free.
+    showChapter(chapter, paragraph);
     routerNavigate('/manuscript', { replace: true });
   }, [location.hash, chapters, routerNavigate, showChapter]);
   const toggleManualChapter = (chapter: string) => {
@@ -369,7 +397,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
               <TooltipTarget text="Expand all chapters">
                 <IconButton
                   label="Expand all chapters"
-                  onClick={() => void saveState({ ...readerState, expandedChapters: chapters.map((chapter) => chapter.id) })}
+                  onClick={() => void saveState({ ...readerState, expandedChapters: recordedChapters.map((chapter) => chapter.id) })}
                 >
                   <FontAwesomeIcon icon={faAnglesDown} />
                 </IconButton>
@@ -384,7 +412,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
         </div>
       </div>
       <div ref={readerRef} className="reader-chapters pt-3">
-        {chapters.map((chapter) => {
+        {recordedChapters.map((chapter) => {
           const expanded = (readerState.expandedChapters || []).includes(chapter.id);
           const chapterBookmark = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapterId === chapter.id);
           return (
