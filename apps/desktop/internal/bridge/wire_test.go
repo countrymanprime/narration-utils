@@ -27,6 +27,8 @@ var realEvents = map[string][]string{
 	"PICKUP_RESOLVED":       {"PICKUP_RESOLVED", "t1", "9.25", "narrator", "Mispronounced"},
 	"RENDER_CONFIGURED":     {"RENDER_CONFIGURED", "t1", "C:/p/renders", "2", "C:/p/renders/Chapter 1.wav;C:/p/renders/Chapter 2.wav"},
 	"PROJECT_STATE":         {"PROJECT_STATE", "t1", "7", "C:/p/Book.rpp"},
+	"TAKE_CREATED":          {"TAKE_CREATED", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}", "{BBBBBBBB-0000-4000-8000-000000000002}"},
+	"TAKE_STALE":            {"TAKE_STALE", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}"},
 }
 
 func TestEveryRealEventPassesItsTable(t *testing.T) {

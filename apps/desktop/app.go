@@ -43,7 +43,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 26
+const hostAPIVersion = 27
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -83,7 +83,12 @@ type Host struct {
 	projectState *projectstate.Service
 	renderConfig *renderconfig.Service
 	teleprompter *teleprompter.Service
-	recents      *recents.Store
+	// bridge is the REAPER session's file-based IPC client (nil when launched
+	// without a REAPER session directory); take-review's create-take action
+	// (takereview.go) is its first direct consumer outside transcript.Service,
+	// which is handed the same client rather than building its own.
+	bridge  *bridge.Client
+	recents *recents.Store
 	// creditTemplates is the narrator's own credit-template library (audiobook-credits-templates.prd.md, Phase 1):
 	// user-level like recents, set once in NewHost and never swapped by a project switch.
 	creditTemplates *credits.TemplateStore
@@ -314,6 +319,7 @@ func (h *Host) configureLocked(next config) {
 	// Reachability subscribes to the same client transcript.New below also subscribes: both are independent
 	// consumers of bridge.Client's fan-out (events.go), so neither steals the other's events (ADR 0068).
 	h.reachability = daw.NewReachability(client)
+	h.bridge = client
 	h.transcript = transcript.New(transcript.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir, Python: h.config.comparePython, Backend: h.config.compareBackend}, client, h.settings, h.sidecars, h.emitTranscript)
 	h.transcript.SetPersist(h.persist)
 	h.transcript.SetFindings(h.findings, h.manuscript)

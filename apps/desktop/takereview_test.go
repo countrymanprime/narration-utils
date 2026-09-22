@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
@@ -184,4 +186,88 @@ func TestHostTakeReviewBindingsEncodeAJSONArray(t *testing.T) {
 	if len(readBack) != 1 || readBack[0].ID != scanned[0].ID {
 		t.Fatalf("readBack = %v, want the same finding TakeReviewScan just saved", readBack)
 	}
+}
+
+func TestTakeReviewCreateTakeRequiresAReaperBridgeConnection(t *testing.T) {
+	host := newTestHostForTakeReview(t, t.TempDir()) // no h.bridge: launched without a REAPER session
+	_, err := host.takeReviewCreateTake(takereview.CreateTakeRequest{TargetItemGUID: "{A}", SourceFile: "a.wav"})
+	if err == nil || !strings.Contains(err.Error(), "open the project from REAPER") {
+		t.Fatalf("err = %v, want a REAPER-connection message", err)
+	}
+}
+
+// TestTakeReviewCreateTakeBindingRoundTripsThroughARealBridgeClient exercises the Host binding end to end against a
+// real bridge.Client and its file-based command/events.log protocol (not the internal/takereview.CreateTake fake in
+// createtake_test.go): it sends the command file, waits for a command to appear (standing in for REAPER's defer
+// loop picking it up), and answers as narration_take_review.lua's create_take would.
+func TestTakeReviewCreateTakeBindingRoundTripsThroughARealBridgeClient(t *testing.T) {
+	sessionDir := t.TempDir()
+	client, err := bridge.New(sessionDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	host := &Host{bridge: client}
+	host.config.sessionDir = sessionDir
+
+	req := takereview.CreateTakeRequest{
+		FindingID:        "finding-1",
+		TargetItemGUID:   "{AAAAAAAA-0000-4000-8000-000000000001}",
+		SourceFile:       "candidate.wav",
+		SourceRangeStart: 1.5,
+		SourceRangeEnd:   4.5,
+	}
+	type outcome struct {
+		result takereview.CreateTakeResult
+		err    error
+	}
+	done := make(chan outcome, 1)
+	go func() {
+		result, err := host.takeReviewCreateTake(req)
+		done <- outcome{result, err}
+	}()
+
+	commandsDir := filepath.Join(sessionDir, "commands")
+	runID := waitForBridgeCommand(t, commandsDir)
+	writeFile(t, filepath.Join(sessionDir, "events.log"),
+		"TAKE_CREATED|"+runID+"|"+req.TargetItemGUID+"|{BBBBBBBB-0000-4000-8000-000000000002}\n")
+
+	select {
+	case got := <-done:
+		if got.err != nil {
+			t.Fatalf("unexpected error: %v", got.err)
+		}
+		if got.result.TargetItemGUID != req.TargetItemGUID || got.result.NewTakeGUID != "{BBBBBBBB-0000-4000-8000-000000000002}" {
+			t.Fatalf("result = %+v", got.result)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("takeReviewCreateTake did not return after the REAPER response was simulated")
+	}
+}
+
+// waitForBridgeCommand polls commandsDir for the one create_take command file bridge.Client.Send wrote, and
+// returns its run id (the third pipe-separated field: protocol version, action, run id).
+func waitForBridgeCommand(t *testing.T, commandsDir string) string {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		entries, err := os.ReadDir(commandsDir)
+		if err == nil {
+			for _, entry := range entries {
+				if !strings.HasSuffix(entry.Name(), ".cmd") {
+					continue
+				}
+				raw, err := os.ReadFile(filepath.Join(commandsDir, entry.Name()))
+				if err != nil {
+					continue
+				}
+				fields, err := bridge.DecodeFields(strings.TrimRight(string(raw), "\n"))
+				if err == nil && len(fields) >= 3 && fields[1] == "create_take" {
+					return fields[2]
+				}
+			}
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatal("no create_take command file appeared in time")
+	return ""
 }

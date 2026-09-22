@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TakeReviewPanel } from './TakeReviewPanel';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
@@ -66,5 +66,75 @@ describe('TakeReviewPanel', () => {
     renderPanel('');
 
     expect((screen.getByRole('button', { name: 'Scan for pickups & duplicates' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('adds a candidate as a new take after the narrator picks a target and a candidate and confirms', async () => {
+    const user = userEvent.setup();
+    let received: unknown;
+    const api = renderPanel('Chapter 1', {
+      takeReviewCreateTake: async (request) => {
+        received = request;
+        return { targetItemGuid: request.targetItemGuid, newTakeGuid: '{99999999-0000-4000-8000-000000000099}' };
+      },
+    });
+    void api;
+
+    await user.click(screen.getByRole('button', { name: 'Scan for pickups & duplicates' }));
+    await screen.findByRole('table', { name: 'Pickup and duplicate findings' });
+
+    const [addAsTake] = screen.getAllByRole('button', { name: 'Add as take' });
+    await user.click(addAsTake);
+
+    const dialog = await screen.findByRole('alertdialog', { name: 'Add candidate as a new take' });
+    await user.selectOptions(screen.getByLabelText('Target item'), '{11111111-0000-0000-0000-000000000001}');
+    await user.selectOptions(screen.getByLabelText('Candidate read'), '{11111111-0000-0000-0000-000000000002}');
+    await user.click(screen.getByRole('button', { name: 'Create take' }));
+
+    await screen.findByText('Take added');
+    expect(document.body.contains(dialog)).toBe(false);
+    expect(received).toMatchObject({
+      findingId: 'f24ca7396d9cf9e023f63fd8',
+      targetItemGuid: '{11111111-0000-0000-0000-000000000001}',
+      candidateItemGuid: '{11111111-0000-0000-0000-000000000002}',
+      sourceFile: 'C:/Projects/Alice-in-Wonderland/media/ch1_take2.wav',
+      sourceRangeStart: 10,
+      sourceRangeEnd: 13.1,
+    });
+  });
+
+  it('refuses to create a take until both a target and a candidate are chosen', async () => {
+    const user = userEvent.setup();
+    const createTake = vi.fn();
+    renderPanel('Chapter 1', { takeReviewCreateTake: createTake });
+
+    await user.click(screen.getByRole('button', { name: 'Scan for pickups & duplicates' }));
+    await screen.findByRole('table', { name: 'Pickup and duplicate findings' });
+    await user.click(screen.getAllByRole('button', { name: 'Add as take' })[0]);
+    await screen.findByRole('alertdialog', { name: 'Add candidate as a new take' });
+
+    await user.click(screen.getByRole('button', { name: 'Create take' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Choose a target item and a different candidate read.');
+    expect(createTake).not.toHaveBeenCalled();
+  });
+
+  it('shows a readable error when take creation fails', async () => {
+    const user = userEvent.setup();
+    renderPanel('Chapter 1', {
+      takeReviewCreateTake: async () => Promise.reject(new Error('the project has changed in REAPER since this finding was found')),
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Scan for pickups & duplicates' }));
+    await screen.findByRole('table', { name: 'Pickup and duplicate findings' });
+    await user.click(screen.getAllByRole('button', { name: 'Add as take' })[0]);
+    await screen.findByRole('alertdialog', { name: 'Add candidate as a new take' });
+    await user.selectOptions(screen.getByLabelText('Target item'), '{11111111-0000-0000-0000-000000000001}');
+    await user.selectOptions(screen.getByLabelText('Candidate read'), '{11111111-0000-0000-0000-000000000002}');
+
+    await user.click(screen.getByRole('button', { name: 'Create take' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('the project has changed in REAPER since this finding was found');
   });
 });

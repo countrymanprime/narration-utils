@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
@@ -35,6 +36,7 @@ type hostServices struct {
 	// reachability tracks the current bridge client's PROJECT_STATUS heartbeat (ADR 0092, Phase 7, W10). Nil when
 	// configureLocked built no bridge client (no session directory).
 	reachability *daw.Reachability
+	bridge       *bridge.Client
 }
 
 // services returns a snapshot of the swappable services. It is the only way a
@@ -76,5 +78,6 @@ func (h *Host) services() hostServices {
 		teleprompter: h.teleprompter,
 		transcript:   h.transcript,
 		reachability: h.reachability,
+		bridge:       h.bridge,
 	}
 }

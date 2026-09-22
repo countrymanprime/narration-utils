@@ -196,5 +196,23 @@
     "file": "narration_project_state.lua",
     "find": "local count = reaper.GetProjectStateChangeCount(0)",
     "replace": "local count = 0"
+  },
+  {
+    "name": "create_take's stale target item GUID resolves to another item",
+    "file": "narration_take_review.lua",
+    "find": "local target_item = items[normalized_target]",
+    "replace": "local target_item = items[normalized_target] or reaper.GetMediaItem(0, 0)"
+  },
+  {
+    "name": "create_take's stale candidate item GUID check is skipped",
+    "file": "narration_take_review.lua",
+    "find": "if normalized_candidate ~= '' and not items[normalized_candidate] then",
+    "replace": "if false then"
+  },
+  {
+    "name": "create_take does not check the candidate source file exists",
+    "file": "narration_take_review.lua",
+    "find": "if not core.file_exists(payload.source_file) then",
+    "replace": "if false then"
   }
 ]

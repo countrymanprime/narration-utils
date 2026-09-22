@@ -15,6 +15,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
+	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
@@ -694,6 +695,26 @@ func (h *Host) TakeReviewScan(chapterTrackName string) (string, error) {
 // chapterTrackName (every chapter when empty) without running a new scan.
 func (h *Host) TakeReviewFindings(chapterTrackName string) (string, error) {
 	return encodeBinding(h.takeReviewFindings(chapterTrackName))
+}
+
+// TakeReviewCreateTake adds a narrator-approved candidate's source range as a
+// new take on the target item (take-review phase 6): findingID is the
+// finding this candidate came from (provenance, ADR 0098); targetItemGUID
+// is the item the narrator explicitly chose (never preselected);
+// candidateItemGUID is the candidate's own item GUID when it has one (empty
+// skips that extra staleness check); sourceFile, sourceRangeStart and
+// sourceRangeEnd (seconds, source-file-relative) locate the candidate's
+// matched span within its own source. The previously active take and the
+// item's length are never touched (the phase 1 spike).
+func (h *Host) TakeReviewCreateTake(findingID, targetItemGUID, candidateItemGUID, sourceFile string, sourceRangeStart, sourceRangeEnd float64) (string, error) {
+	return encodeBinding(h.takeReviewCreateTake(takereview.CreateTakeRequest{
+		FindingID:         findingID,
+		TargetItemGUID:    targetItemGUID,
+		CandidateItemGUID: candidateItemGUID,
+		SourceFile:        sourceFile,
+		SourceRangeStart:  sourceRangeStart,
+		SourceRangeEnd:    sourceRangeEnd,
+	}))
 }
 
 // voiceAssetRequired is the answer to a preview that needs a voice that is not installed yet: which voice, its state and its

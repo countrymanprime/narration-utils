@@ -23,7 +23,7 @@ import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guideP
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { chapterTrackMappingSchema, trackMappingSchema } from './schemas/chapterTrackMap';
-import { takeReviewFindingsSchema } from './schemas/takeReview';
+import { takeReviewCreateTakeResultSchema, takeReviewFindingsSchema } from './schemas/takeReview';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
@@ -283,6 +283,19 @@ export const wailsClient: NarrationApi = {
   chapterTrackMapClear: (trackGuid) => decode(chapterTrackMappingSchema, 'ChapterTrackMapClear', host.ChapterTrackMapClear(trackGuid)),
   takeReviewScan: (chapterTrackName) => decode(takeReviewFindingsSchema, 'TakeReviewScan', host.TakeReviewScan(chapterTrackName)),
   takeReviewFindings: (chapterTrackName) => decode(takeReviewFindingsSchema, 'TakeReviewFindings', host.TakeReviewFindings(chapterTrackName)),
+  takeReviewCreateTake: (request) =>
+    decode(
+      takeReviewCreateTakeResultSchema,
+      'TakeReviewCreateTake',
+      host.TakeReviewCreateTake(
+        request.findingId,
+        request.targetItemGuid,
+        request.candidateItemGuid,
+        request.sourceFile,
+        request.sourceRangeStart,
+        request.sourceRangeEnd,
+      ),
+    ),
   teleprompterStart: (options) => decode(startResultSchema, 'TeleprompterStart', host.TeleprompterStart(options)),
   teleprompterStop: () => decode(voidResult, 'TeleprompterStop', host.TeleprompterStop()),
   teleprompterState: () => decode(teleprompterStateSchema, 'TeleprompterState', host.TeleprompterState()),

@@ -117,6 +117,7 @@ The feature files are `loadfile`d when the bridge module loads, so a missing or 
 | `count_pickups` | `run_id` | `PICKUPS_COUNTED\|run\|remaining\|total` |
 | `configure_chapter_render` | `run_id`, `output_folder` | `RENDER_CONFIGURED\|run\|folder\|count\|targets`, or `ERROR` |
 | `project_state` | `run_id` | `PROJECT_STATE\|run\|change_count\|project_path`, or `ERROR` |
+| `create_take` | `run_id`, `payload_path` (one row: `target_item_guid\|candidate_item_guid\|source_start\|source_end\|finding_id\|source_file`) | `TAKE_CREATED\|run\|target-item-guid\|new-take-guid`, `TAKE_STALE\|run\|guid`, or `ERROR` |
 | `close` | none | none; the loop stops |
 
 ### Pickups (`narration_pickups.lua`)

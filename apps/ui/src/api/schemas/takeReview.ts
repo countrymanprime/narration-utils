@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type {
+  TakeReviewCreateTakeResult,
   TakeReviewEvidence,
   TakeReviewFinding,
   TakeReviewManuscript,
@@ -98,3 +99,8 @@ export const takeReviewFindingSchema = z.object({
 }) satisfies z.ZodType<TakeReviewFinding>;
 
 export const takeReviewFindingsSchema = listFromNull(takeReviewFindingSchema);
+
+export const takeReviewCreateTakeResultSchema = z.object({
+  targetItemGuid: z.string(),
+  newTakeGuid: z.string(),
+}) satisfies z.ZodType<TakeReviewCreateTakeResult>;

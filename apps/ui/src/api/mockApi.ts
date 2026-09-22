@@ -1580,6 +1580,10 @@ export function createMockApi(
       return wireClone(fresh);
     },
     takeReviewFindings: async (chapterTrackName) => wireClone(takeReviewFindingsByTrack.get(chapterTrackName) ?? []),
+    takeReviewCreateTake: async (request) => ({
+      targetItemGuid: request.targetItemGuid,
+      newTakeGuid: '{99999999-0000-4000-8000-000000000099}',
+    }),
     subscribeNotices: (onNotice) => {
       const text = initial.notice;
       if (!text) return () => {};

@@ -85,6 +85,8 @@ function Fake:add_item(track, opts)
       midi = opts.midi or false,
       name = opts.take_name or '',
       markers = {},
+      ext = {},
+      guid = opts.take_guid or self:new_guid(),
     }
   end
   track.items[#track.items + 1] = item
@@ -414,8 +416,9 @@ function Fake:add_item_api(api)
 end
 
 function Fake:add_take_api(api)
+  local fake = self
   function api.GetActiveTake(item)
-    return item.takes[1]
+    return item.takes[item.active_index or 1]
   end
   function api.TakeIsMIDI(take)
     return take.midi
@@ -433,6 +436,62 @@ function Fake:add_take_api(api)
       return take.playrate
     end
     error('fake reaper: unmodelled take value ' .. tostring(key))
+  end
+  -- The setter counterpart of GetMediaItemTakeInfo_Value: only D_STARTOFFS is modelled (the take-review
+  -- source-offset alignment, Q4). Item D_LENGTH has no setter here on purpose - nothing in this bridge may touch it.
+  function api.SetMediaItemTakeInfo_Value(take, key, value)
+    if key == 'D_STARTOFFS' then
+      take.startoffs = value
+      return true
+    end
+    error('fake reaper: unmodelled take value setter ' .. tostring(key))
+  end
+  -- CountTakes/GetTake enumerate every take of an item (not just the active one), the way take-review's create_take
+  -- re-resolves a newly added take by GUID after Undo_EndBlock2.
+  function api.CountTakes(item)
+    return #item.takes
+  end
+  function api.GetTake(item, index)
+    return item.takes[index + 1]
+  end
+  -- AddTakeToMediaItem appends a new, inactive take (REAPER: it never touches I_CURTAKE - the previously active
+  -- take stays active, confirmed by the take-mechanics spike). No SetActiveTake is modelled anywhere in this fake,
+  -- so a bridge command that tried to switch the active take would fail loudly here rather than silently pass.
+  function api.AddTakeToMediaItem(item)
+    local take = { item = item, source = { file = '' }, startoffs = 0, playrate = 1, midi = false, name = '', markers = {}, ext = {}, guid = fake:new_guid() }
+    item.takes[#item.takes + 1] = take
+    return take
+  end
+  function api.SetMediaItemTake_Source(take, source)
+    take.source = source
+  end
+  -- PCM_Source_CreateFromFile does not check the file exists here; the fake's source is an opaque handle, the same
+  -- way REAPER's is. create_take checks the file itself (core.file_exists) before calling this.
+  function api.PCM_Source_CreateFromFile(path)
+    return { file = path }
+  end
+  -- GUID and take-level extension data (ADR 0098, extending ADR 0026's item-level P_EXT to take granularity). A
+  -- missing P_EXT key reads as `false, ''`, like REAPER, and like the item-level function above.
+  function api.GetSetMediaItemTakeInfo_String(take, key, value, set)
+    if key == 'GUID' then
+      if set then
+        take.guid = value
+      end
+      return true, take.guid
+    end
+    local ext = key:match('^P_EXT:(.+)$')
+    if ext then
+      if set then
+        take.ext[ext] = value
+        return true, value
+      end
+      local current = take.ext[ext]
+      if current == nil then
+        return false, ''
+      end
+      return true, current
+    end
+    return false, ''
   end
   function api.GetNumTakeMarkers(take)
     return #take.markers

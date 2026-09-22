@@ -20,7 +20,7 @@ import {
 } from './schemas/manuscript';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { settingsForScopeSchema } from './schemas/settings';
-import { takeReviewFindingsSchema } from './schemas/takeReview';
+import { takeReviewCreateTakeResultSchema, takeReviewFindingsSchema } from './schemas/takeReview';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { chapterTrackMappingSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
@@ -147,6 +147,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-tags-preview-ready.json': chapterTagsPreviewSchema,
   'chapter-tags-embed-success.json': chapterTagsEmbedResultSchema,
   'takereview-findings.json': takeReviewFindingsSchema,
+  'takereview-create-take.json': takeReviewCreateTakeResultSchema,
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -618,6 +619,20 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(empty).toEqual([]);
   });
 
+  it('the take-creation answer', async () => {
+    const api = createMockApi();
+    const result = await api.takeReviewCreateTake({
+      findingId: 'finding-1',
+      targetItemGuid: '{AAAAAAAA-0000-4000-8000-000000000001}',
+      candidateItemGuid: '',
+      sourceFile: 'C:/Projects/Alice/media/chapter1-take2.wav',
+      sourceRangeStart: 0,
+      sourceRangeEnd: 3,
+    });
+    expectMatches(takeReviewCreateTakeResultSchema, result, 'mock take creation');
+    expect(result.targetItemGuid).toBe('{AAAAAAAA-0000-4000-8000-000000000001}');
+  });
+
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
@@ -693,6 +708,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterTagsEmbed',
       'takeReviewScan',
       'takeReviewFindings',
+      'takeReviewCreateTake',
       'teleprompterStart',
       'teleprompterState',
       'teleprompterDevices',
