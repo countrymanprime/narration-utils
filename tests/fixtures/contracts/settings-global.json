@@ -50,6 +50,16 @@
       "kind": "choice",
       "label": "spaCy model",
       "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "true",
+      "isSet": false,
+      "key": "build_after_import",
+      "kind": "bool",
+      "label": "Build the Story Bible after import",
+      "value": ""
     }
   ],
   "Piper": [
