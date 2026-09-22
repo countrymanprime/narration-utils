@@ -270,6 +270,8 @@ function AppRoutes() {
           projectName={data.projectName}
           hasManuscript={Boolean(data.manuscript)}
           dawFileLinked={data.dawFileLinked}
+          dawReachable={data.dawReachable}
+          dawProjectMatches={data.dawProjectMatches}
           onLinkDawFile={() => void linkDawFile()}
           linkingDawFile={dawLink.isBusy}
         >

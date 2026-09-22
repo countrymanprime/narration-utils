@@ -52,6 +52,12 @@ var eventSpecs = map[string]eventSpec{
 	"LINES_STALE":     {required: []fieldSpec{text("run"), text("guid")}},
 	"LINES_CONFLICT":  {required: []fieldSpec{text("run"), text("guid")}},
 	"REGIONS_CREATED": {required: []fieldSpec{text("run"), count("created"), count("existing"), count("invalid")}},
+	// PROJECT_STATUS is the reachability heartbeat ADR 0092 (W10) recommends: narration_ui_bridge.lua's tick loop
+	// appends it periodically with an empty run (Fields[1] == ""), so events.go's existing fan-out (a run-less event
+	// reaches every subscriber, Subscription.wants) delivers it as a broadcast with no dedicated route needed. rpp is
+	// EnumProjects(-1, '')'s second return value verbatim (the empty string for an unsaved project, never omitted -
+	// spike S6 confirmed REAPER never returns nil there), and unsaved is "1" exactly when rpp is empty.
+	"PROJECT_STATUS": {required: []fieldSpec{text("run"), text("rpp"), count("unsaved")}},
 }
 
 // CheckEvent validates one decoded event line (the tag first) against the table. The error names the tag, the position and name of

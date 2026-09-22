@@ -24,7 +24,7 @@ import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
-import { dawLinkResultSchema, projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
+import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
@@ -88,6 +88,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'daw-link-selected.json': dawLinkResultSchema,
   'daw-link-folder-mismatch.json': dawLinkResultSchema,
   'daw-link-cancelled.json': dawLinkResultSchema,
+  'daw-launch.json': dawLaunchResultSchema,
   'system-notice.json': noticeSchema,
   'job-ended-success.json': jobEndedSchema,
   'job-ended-error.json': jobEndedSchema,
@@ -313,6 +314,10 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(dawLinkResultSchema, await createMockApi().linkDawFile(), 'mock link');
     expectMatches(dawLinkResultSchema, await createMockApi({}, { dawLinkMismatch: true }).linkDawFile(), 'mock link, folder mismatch');
   });
+
+  it('the DAW launch binding answers (Phase 8)', async () => {
+    expectMatches(dawLaunchResultSchema, await createMockApi().launchDaw(), 'mock launch');
+  });
 });
 
 describe('answers of the mock client for the settings, voice, model, transcript and tracks bindings', () => {
@@ -475,6 +480,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'createProject',
       'removeRecentProject',
       'linkDawFile',
+      'launchDaw',
       'tracksDiscover',
       'tracksSelect',
       'tracksList',

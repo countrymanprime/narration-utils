@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/countrymanprime/narration-utils/shell/internal/daw"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 )
@@ -15,15 +16,13 @@ import (
 //     project file that still resolves to a file on disk
 //     (project.DawLink.Resolve). This is a stored fact and is knowable today.
 //   - reachable: whether a running REAPER can be confirmed to be listening on
-//     this project's bridge right now. Always false ("unknown") here: nothing
-//     in the app today gives a liveness signal for the bridge (no heartbeat),
-//     and building one is Phase 6 of the PRD (the reachability/verification
-//     spike, W10). TODO(PRD Phase 6): replace this with a real check once the
-//     spike lands a bridge command or heartbeat.
-//   - matches: whether the DAW project REAPER has open right now is the
-//     linked file. Also always false ("unknown") here for the same reason:
-//     it needs the same Phase 6/7 bridge work (W10, W14, Phase 7 "Open-project
-//     verification") before it is observable at all.
+//     this project's bridge right now (Phase 7, ADR 0092/W10): reach's last
+//     PROJECT_STATUS heartbeat is fresh (daw.Reachability.Reachable).
+//   - matches: whether the DAW project REAPER has open right now (per that
+//     same heartbeat) is the linked file (daw.Reachability.Matches).
+//
+// reach is nil when no bridge client exists yet (no session directory, or no
+// project attached): reachable and matches both stay false in that case.
 //
 // projectFolder empty (no project attached yet) short-circuits to all-false:
 // there is nothing to link.
@@ -35,15 +34,17 @@ import (
 // live and the launcher knows the exact rpp - so a live `--daw REAPER` launch
 // counts as linked too, until Phase 5's --project-file matching (resolveProjectFile) is
 // wired all the way through the picker rather than just second-instance/startup attach.
-func dawLinkFacts(reporter *persist.Reporter, projectFolder, daw string) (linked, reachable, matches bool) {
+func dawLinkFacts(reporter *persist.Reporter, projectFolder, daw_ string, reach *daw.Reachability) (linked, reachable, matches bool) {
 	if projectFolder == "" {
 		return false, false, false
 	}
-	resolved := false
+	resolved, resolvedPath := false, ""
 	if manifest, ok, err := project.Load(reporter, projectFolder); err == nil && ok && manifest != nil && manifest.DawProjectFile != nil {
-		_, resolved = manifest.DawProjectFile.Resolve(projectFolder)
+		resolvedPath, resolved = manifest.DawProjectFile.Resolve(projectFolder)
 	}
-	// reachable and matches are always false/unknown for now; see the doc
-	// comment above (Phase 6 TODO).
-	return resolved || daw == "REAPER", false, false
+	if reach != nil {
+		reachable = reach.Reachable()
+		matches = resolved && reach.Matches(resolvedPath)
+	}
+	return resolved || daw_ == "REAPER", reachable, matches
 }

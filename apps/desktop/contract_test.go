@@ -9,6 +9,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
@@ -281,4 +282,36 @@ func TestContractProjectLinkDawFile(t *testing.T) {
 	contractfile.Check(t, "daw-link-folder-mismatch", stableMismatch)
 
 	contractfile.Check(t, "daw-link-cancelled", map[string]any{"selected": false, "linked": false})
+}
+
+// DawLaunch's result (Phase 8, docs/prds/project-workspace-and-daw-link.prd.md).
+func TestContractDawLaunch(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir()) // never read the real machine's global-settings.json
+	folder := t.TempDir()
+	rpp := filepath.Join(folder, "Alice.rpp")
+	if err := os.WriteFile(rpp, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link, err := project.BuildDawLink(folder, rpp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := project.New("Alice", time.Now())
+	manifest.DawProjectFile = &link
+	if err := manifest.Save(folder); err != nil {
+		t.Fatal(err)
+	}
+	svc := hostServices{config: config{projectFolder: folder}, settings: settings.New("", folder)}
+	locate := func() (string, string, error) {
+		return `C:\Program Files\REAPER (x64)\reaper.exe`, "uninstall_registry", nil
+	}
+	launched, err := launchReaper(svc, nil, locate, func(string, []string) error { return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	stable, err := contractfile.PortablePaths(launched, folder, "C:/Projects/Alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "daw-launch", stable)
 }

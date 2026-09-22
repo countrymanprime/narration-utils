@@ -22,6 +22,7 @@ var swappableHostFields = map[string]bool{
 	"settings":     true,
 	"teleprompter": true,
 	"transcript":   true,
+	"reachability": true,
 }
 
 // permanentDirectReaders may touch the swappable fields directly because the

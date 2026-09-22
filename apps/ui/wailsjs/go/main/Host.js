@@ -30,6 +30,10 @@ export function Bootstrap() {
   return window['go']['main']['Host']['Bootstrap']();
 }
 
+export function DawLaunch() {
+  return window['go']['main']['Host']['DawLaunch']();
+}
+
 export function GuideBuild(arg1) {
   return window['go']['main']['Host']['GuideBuild'](arg1);
 }

@@ -6,11 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/daw"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 )
 
 func TestDawLinkFactsWithNoProjectFolderIsAllFalse(t *testing.T) {
-	linked, reachable, matches := dawLinkFacts(nil, "", "REAPER")
+	linked, reachable, matches := dawLinkFacts(nil, "", "REAPER", nil)
 	if linked || reachable || matches {
 		t.Fatalf("facts = (%v, %v, %v), want all false with no project folder", linked, reachable, matches)
 	}
@@ -18,7 +20,7 @@ func TestDawLinkFactsWithNoProjectFolderIsAllFalse(t *testing.T) {
 
 func TestDawLinkFactsWithNoManifestIsAllFalse(t *testing.T) {
 	folder := t.TempDir()
-	linked, reachable, matches := dawLinkFacts(nil, folder, "")
+	linked, reachable, matches := dawLinkFacts(nil, folder, "", nil)
 	if linked || reachable || matches {
 		t.Fatalf("facts = (%v, %v, %v), want all false with no manifest yet", linked, reachable, matches)
 	}
@@ -30,7 +32,7 @@ func TestDawLinkFactsWithNoManifestIsAllFalse(t *testing.T) {
 // Proofing for a REAPER session that has no manifest link yet.
 func TestDawLinkFactsTreatsALiveReaperLaunchAsLinkedUntilPhase5sMatchingIsWiredThroughThePicker(t *testing.T) {
 	folder := t.TempDir()
-	linked, reachable, matches := dawLinkFacts(nil, folder, "REAPER")
+	linked, reachable, matches := dawLinkFacts(nil, folder, "REAPER", nil)
 	if !linked {
 		t.Fatal("linked = false, want true: a live --daw REAPER launch is linked (W18) even with no manifest link yet")
 	}
@@ -44,13 +46,13 @@ func TestDawLinkFactsTreatsALiveReaperLaunchAsLinkedUntilPhase5sMatchingIsWiredT
 // link means nothing is linked.
 func TestDawLinkFactsWithNoDawAndNoManifestIsNotLinked(t *testing.T) {
 	folder := t.TempDir()
-	linked, _, _ := dawLinkFacts(nil, folder, "Standalone")
+	linked, _, _ := dawLinkFacts(nil, folder, "Standalone", nil)
 	if linked {
 		t.Fatal("linked = true, want false: Standalone with no manifest link has nothing linked")
 	}
 }
 
-func TestDawLinkFactsWithAResolvingManifestLinkIsLinkedButNotReachableOrMatched(t *testing.T) {
+func TestDawLinkFactsWithAResolvingManifestLinkIsLinkedButNotReachableOrMatchedWithNoReachability(t *testing.T) {
 	folder := t.TempDir()
 	rpp := filepath.Join(folder, "Book.rpp")
 	if err := os.WriteFile(rpp, []byte("x"), 0o600); err != nil {
@@ -66,14 +68,13 @@ func TestDawLinkFactsWithAResolvingManifestLinkIsLinkedButNotReachableOrMatched(
 		t.Fatal(err)
 	}
 
-	linked, reachable, matches := dawLinkFacts(nil, folder, "")
+	linked, reachable, matches := dawLinkFacts(nil, folder, "", nil)
 	if !linked {
 		t.Fatal("linked = false, want true: the manifest's link resolves to a file that exists")
 	}
-	// reachable/matches need a REAPER bridge liveness check that doesn't exist
-	// yet (PRD Phase 6, W10); they must stay false until that lands.
+	// reachable/matches need a live daw.Reachability (nil here, as when no bridge client exists yet).
 	if reachable || matches {
-		t.Fatalf("facts = (linked %v, reachable %v, matches %v), want reachable and matches false until Phase 6", linked, reachable, matches)
+		t.Fatalf("facts = (linked %v, reachable %v, matches %v), want reachable and matches false with no reachability tracker", linked, reachable, matches)
 	}
 }
 
@@ -96,9 +97,70 @@ func TestDawLinkFactsWithAManifestLinkThatNoLongerResolvesIsNotLinked(t *testing
 		t.Fatal(err)
 	}
 
-	linked, _, _ := dawLinkFacts(nil, folder, "")
+	linked, _, _ := dawLinkFacts(nil, folder, "", nil)
 	if linked {
 		t.Fatal("linked = true, want false: the linked .rpp no longer exists on disk")
+	}
+}
+
+// TestDawLinkFactsIsReachableAndMatchesWhenTheHeartbeatAgreesWithTheLinkedFile is Phase 7 (ADR 0092, W10): a fresh
+// PROJECT_STATUS heartbeat naming the same file the manifest links makes both reachable and matches true.
+func TestDawLinkFactsIsReachableAndMatchesWhenTheHeartbeatAgreesWithTheLinkedFile(t *testing.T) {
+	folder := t.TempDir()
+	rpp := filepath.Join(folder, "Book.rpp")
+	if err := os.WriteFile(rpp, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link, err := project.BuildDawLink(folder, rpp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := project.New("Book", time.Now())
+	manifest.DawProjectFile = &link
+	if err := manifest.Save(folder); err != nil {
+		t.Fatal(err)
+	}
+
+	reach := daw.NewReachability(nil)
+	absRpp, err := filepath.Abs(rpp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", absRpp, "0"}})
+
+	linked, reachable, matches := dawLinkFacts(nil, folder, "", reach)
+	if !linked || !reachable || !matches {
+		t.Fatalf("facts = (linked %v, reachable %v, matches %v), want all true", linked, reachable, matches)
+	}
+}
+
+// TestDawLinkFactsIsReachableButNotMatchedWhenTheHeartbeatNamesADifferentFile covers a real REAPER session open on
+// the wrong project (the PRD's "Mismatch detection" success metric).
+func TestDawLinkFactsIsReachableButNotMatchedWhenTheHeartbeatNamesADifferentFile(t *testing.T) {
+	folder := t.TempDir()
+	rpp := filepath.Join(folder, "Book.rpp")
+	if err := os.WriteFile(rpp, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link, err := project.BuildDawLink(folder, rpp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := project.New("Book", time.Now())
+	manifest.DawProjectFile = &link
+	if err := manifest.Save(folder); err != nil {
+		t.Fatal(err)
+	}
+
+	reach := daw.NewReachability(nil)
+	reach.Record(bridge.Event{Fields: []string{"PROJECT_STATUS", "", filepath.Join(folder, "Other.rpp"), "0"}})
+
+	linked, reachable, matches := dawLinkFacts(nil, folder, "", reach)
+	if !linked || !reachable {
+		t.Fatalf("facts = (linked %v, reachable %v), want both true: REAPER is live", linked, reachable)
+	}
+	if matches {
+		t.Fatal("matches = true, want false: the open project is not the linked file")
 	}
 }
 

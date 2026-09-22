@@ -8,6 +8,12 @@ export type ProjectSwitchResult = { switched: boolean; reason?: string };
  * re-pointing the project, since that would orphan the imported manuscript and needs W4's Lua changes first).
  */
 export type DawLinkResult = { selected: boolean; linked: boolean; path?: string; folderMismatch?: boolean; message?: string };
+/**
+ * DawLaunch's result (PRD project-workspace-and-daw-link.prd.md, Phase 8): `source` names where the executable
+ * path came from (`settings_override`, `uninstall_registry` or `file_association`, apps/desktop/internal/daw),
+ * so the narrator can be told when a Settings override was used.
+ */
+export type DawLaunchResult = { launched: boolean; path: string; source: string };
 
 export interface ProjectApi {
   projectRecents(): Promise<RecentProject[]>;
@@ -23,4 +29,6 @@ export interface ProjectApi {
    * behind the header pill, the Tracks page and Settings' DAW category).
    */
   linkDawFile(): Promise<DawLinkResult>;
+  /** Starts REAPER on the current project's linked DAW file (Phase 8), a rejected promise on any refusal. */
+  launchDaw(): Promise<DawLaunchResult>;
 }

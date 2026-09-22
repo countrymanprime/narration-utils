@@ -589,7 +589,30 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     },
     choice('channel', 'Update channel', ['candidates', 'stable'], 'candidates'),
   ],
-  Daw: [],
+  // DAW.reaper_path/auto_start_launcher (Phase 8): keyed "DAW" to match apps/desktop/app.go's fieldSchemas, not
+  // the "Daw" Settings category key (which is a UI label, not the settings tool name).
+  DAW: [
+    {
+      key: 'reaper_path',
+      label: 'REAPER executable (override)',
+      kind: 'text',
+      choices: [],
+      value: '',
+      isSet: false,
+      effectiveValue: '',
+      effectiveSource: 'hardcoded',
+    },
+    {
+      key: 'auto_start_launcher',
+      label: 'Start the launcher script automatically',
+      kind: 'bool',
+      choices: [],
+      value: '',
+      isSet: false,
+      effectiveValue: 'false',
+      effectiveSource: 'repo default',
+    },
+  ],
 });
 export const WIRE_TRACKS_PROJECT: TracksProject = {
   path: 'C:/Projects/Alice-in-Wonderland/Alice.rpp',

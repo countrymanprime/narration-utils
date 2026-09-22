@@ -28,5 +28,8 @@
   "Teleprompter": {
     "engine": "whisper",
     "model": "tiny"
+  },
+  "DAW": {
+    "auto_start_launcher": "false"
   }
 }
