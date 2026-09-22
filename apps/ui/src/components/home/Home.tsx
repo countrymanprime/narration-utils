@@ -8,7 +8,8 @@ import type { GuideEntity, ManuscriptImportSelection, TranscriptState, WorkJob }
 import type { Bootstrap } from '../../types';
 import { Heading } from '../primitives/Heading';
 import { AudiobookEstimatePanel } from './AudiobookEstimatePanel';
-import { ImportReview } from './ImportReview';
+import { ImportReview, ImportSummary } from './ImportReview';
+import type { ReviewGroupKey, ReviewGroupOpen } from './importReviewModel';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
@@ -51,6 +52,9 @@ export function Home({
   // The file dialog is the host's, and pressing again while it is open would open a second one (ADR 0075).
   const choosing = usePendingAction();
   const [importSelection, setImportSelection] = useState<ManuscriptImportSelection>({});
+  // Which review groups the narrator opened or closed by hand. It lives here, above the review dialog, which is swapped for a progress
+  // dialog while a Markdown heading level is read again, and is reset only when a new file is chosen (a group has its own default until then).
+  const [groupOpen, setGroupOpen] = useState<ReviewGroupOpen>({});
   const [headingLevel, setHeadingLevel] = useState(1);
   const [, setDeclineCount] = useState(0);
   const candidate = data.manuscriptCandidate;
@@ -93,6 +97,8 @@ export function Home({
   }, [importJob?.phase, refreshBootstrap]);
   const beginImportPreview = async (jobId: string) => {
     setHeadingLevel(1);
+    setImportSelection({});
+    setGroupOpen({});
     setImportJob({ id: jobId, kind: 'manuscript_import', phase: 'preparing', message: 'Preparing manuscript import…', percent: 0, logs: [], elapsed: 0 });
     try {
       setImportJob(await api.manuscriptImportPreview(jobId, { markdownHeadingLevel: 1 }));
@@ -212,7 +218,7 @@ export function Home({
       {importJob?.phase === 'ready' && importJob.preview && (
         <ConfirmDialog
           title={`Import ${importJob.preview.sourceName}`}
-          body={`${importJob.preview.format.toUpperCase()} · ${importJob.preview.paragraphCount} paragraphs · ${importJob.preview.chapterTitles.length || 1} proposed chapters.${importJob.requiresReset ? ' This replaces the active manuscript and clears Story Bible, notes, bookmarks, statuses, and saved comparison results.' : ''}`}
+          body={<ImportSummary preview={importJob.preview} selection={importSelection} requiresReset={Boolean(importJob.requiresReset)} />}
           confirmLabel={importJob.requiresReset ? 'Replace and reset' : 'Import'}
           confirmVariant={importJob.requiresReset ? 'danger' : 'primary'}
           confirm={() => void commitImport()}
@@ -225,11 +231,12 @@ export function Home({
         >
           <ImportReview
             preview={importJob.preview}
-            job={importJob}
             selection={importSelection}
             onSelectionChange={setImportSelection}
             headingLevel={headingLevel}
             onHeadingLevelChange={changeHeadingLevel}
+            groupOpen={groupOpen}
+            onGroupOpenChange={(group: ReviewGroupKey, open: boolean) => setGroupOpen((current) => ({ ...current, [group]: open }))}
           />
         </ConfirmDialog>
       )}

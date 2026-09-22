@@ -54,7 +54,22 @@ export const STATE_CATALOG: StateEntry[] = [
   {
     page: 'home',
     state: 'import-confirm-markdown',
-    description: 'Home, import review dialog for a Markdown file: the same review plus the chapter heading level choice',
+    description: 'Home, import review dialog for a Markdown file: the same review plus the chapter heading level choice in an options group',
+  },
+  {
+    page: 'home',
+    state: 'import-review-collapsed',
+    description: 'Home, import review with every group folded: the summary and one line per group say what was found',
+  },
+  {
+    page: 'home',
+    state: 'import-review-characters',
+    description: 'Home, import review with the character suggestions open and one unchecked: the summary and the group count both say 2 of 3',
+  },
+  {
+    page: 'home',
+    state: 'import-review-repaired',
+    description: 'Home, import review of a Word file whose headings the importer repaired: the repairs are listed as a group',
   },
 
   {

@@ -79,6 +79,16 @@ func (s *Service) CanSwitchProject() bool {
 	return true
 }
 
+// previewPayload is what the review shows of a draft. The importer's repairs (notices) travel in it only when there are some, so the review can
+// say what was guessed at without the narrator reading the preview log for it (ADR 0013).
+func previewPayload(draft importer.Draft) map[string]any {
+	preview := map[string]any{"format": draft.Format, "sourceName": draft.SourceName, "paragraphCount": len(draft.Paragraphs), "chapterTitles": draft.ChapterTitles, "sections": draft.Sections, "characterCandidates": draft.CharacterCandidates}
+	if len(draft.Notices) > 0 {
+		preview["notices"] = draft.Notices
+	}
+	return preview
+}
+
 func newID() string {
 	bytes := make([]byte, 16)
 	if _, err := rand.Read(bytes); err != nil {
@@ -190,7 +200,7 @@ func (s *Service) runPreview(job *ImportJob, heading int) {
 		s.fail(job, err)
 		return
 	}
-	preview := map[string]any{"format": draft.Format, "sourceName": draft.SourceName, "paragraphCount": len(draft.Paragraphs), "chapterTitles": draft.ChapterTitles, "sections": draft.Sections, "characterCandidates": draft.CharacterCandidates}
+	preview := previewPayload(draft)
 	s.report(job, 99, fmt.Sprintf("Preview ready: %d paragraphs, %d chapters, %d character suggestions", len(draft.Paragraphs), len(draft.ChapterTitles), len(draft.CharacterCandidates)))
 	s.mu.Lock()
 	job.Draft = &draft

@@ -28,6 +28,9 @@ async function openReview(prepare: (api: NarrationApi) => void = () => {}, impor
   return { api, dialog: within(dialog) };
 }
 
+// The character suggestions start folded while every one is checked (nothing to decide), so a test that works on them opens the group.
+const openSuggestions = (dialog: ReturnType<typeof within>) => fireEvent.click(dialog.getByRole('button', { name: /^Story Bible character suggestions/ }));
+
 describe('the import review dialog, as the narrator meets it', () => {
   it('states the format and size, and lists every section the importer found with its kind', async () => {
     const { dialog } = await openReview();
@@ -48,6 +51,7 @@ describe('the import review dialog, as the narrator meets it', () => {
 
   it('shows the character suggestions checked, with their descriptions', async () => {
     const { dialog } = await openReview();
+    openSuggestions(dialog);
     for (const name of ['Alice', 'The White Rabbit', 'The Duchess'])
       expect(dialog.getByRole('checkbox', { name: new RegExp(`^${name}`) }).getAttribute('aria-checked')).toBe('true');
     expect(dialog.getByText(/A curious girl who follows a White Rabbit/)).toBeTruthy();
@@ -77,6 +81,7 @@ describe('the import review dialog, as the narrator meets it', () => {
   it('commits only the suggestions that are still checked, as an explicit list', async () => {
     let commit = vi.fn();
     const { dialog } = await openReview((api) => void (commit = vi.spyOn(api, 'manuscriptImportCommit')));
+    openSuggestions(dialog);
     fireEvent.click(dialog.getByRole('checkbox', { name: /^The White Rabbit/ }));
     expect(dialog.getByRole('checkbox', { name: /^The White Rabbit/ }).getAttribute('aria-checked')).toBe('false');
     expect(dialog.getByRole('checkbox', { name: /^Alice/ }).getAttribute('aria-checked')).toBe('true');
@@ -87,6 +92,7 @@ describe('the import review dialog, as the narrator meets it', () => {
 
   it('checks a suggestion again after it was cleared', async () => {
     const { dialog } = await openReview();
+    openSuggestions(dialog);
     const rabbit = () => dialog.getByRole('checkbox', { name: /^The White Rabbit/ });
     fireEvent.click(rabbit());
     fireEvent.click(rabbit());
@@ -139,6 +145,46 @@ describe('the import review dialog, as the narrator meets it', () => {
     fireEvent.click(dialog.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(cancel).toHaveBeenCalledWith('mock-import');
+  });
+});
+
+describe('the summary and the groups of the review', () => {
+  it('says in the dialog message what was found, and follows a reclassification', async () => {
+    const { dialog } = await openReview();
+    expect(dialog.getByText(/^DOCX · 221 paragraphs · 5 narration chapters\./)).toBeTruthy();
+    expect(dialog.getByText('1 front matter section · 2 reference sections · 3 of 3 character suggestions checked')).toBeTruthy();
+    fireEvent.change(dialog.getByRole('combobox', { name: 'Glossary content type' }), { target: { value: 'narration' } });
+    expect(dialog.getByText(/^DOCX · 221 paragraphs · 6 narration chapters\./)).toBeTruthy();
+    expect(dialog.getByText('1 front matter section · 1 reference section · 3 of 3 character suggestions checked')).toBeTruthy();
+  });
+
+  it('keeps the groups the narrator folded when another Markdown heading level is read', async () => {
+    const { dialog } = await openReview(() => {}, 'markdown');
+    fireEvent.click(dialog.getByRole('button', { name: /^Narration chapters/ }));
+    expect(dialog.queryByRole('combobox', { name: 'Chapter Three content type' })).toBeNull();
+    fireEvent.change(dialog.getByRole('combobox', { name: 'Markdown chapter heading level' }), { target: { value: '2' } });
+    await waitFor(() => expect((dialog.getByRole('combobox', { name: 'Markdown chapter heading level' }) as HTMLSelectElement).value).toBe('2'));
+    expect(dialog.getByRole('button', { name: /^Narration chapters/ }).getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('starts every group from its default, with no earlier choices, when another file is chosen', async () => {
+    const { dialog } = await openReview();
+    fireEvent.click(dialog.getByRole('button', { name: /^Narration chapters/ }));
+    fireEvent.change(dialog.getByRole('combobox', { name: 'Glossary content type' }), { target: { value: 'narration' } });
+    fireEvent.click(dialog.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Import manuscript' }));
+    const again = within(await screen.findByRole('alertdialog', { name: /^Import Alice\./ }));
+    expect(again.getByRole('button', { name: /^Narration chapters 5 chapters/ }).getAttribute('aria-expanded')).toBe('true');
+    expect((again.getByRole('combobox', { name: 'Glossary content type' }) as HTMLSelectElement).value).toBe('reference');
+  });
+
+  it('has no preview activity, and says what the importer repaired', async () => {
+    const { dialog } = await openReview(() => {}, 'repaired');
+    expect(dialog.queryByText('Preview activity')).toBeNull();
+    expect(dialog.queryByRole('progressbar')).toBeNull();
+    expect(dialog.getByText(/2 repairs made to the source/)).toBeTruthy();
+    expect(dialog.getByText(/CHAPTER TWOThe Pool of Tears/)).toBeTruthy();
   });
 });
 

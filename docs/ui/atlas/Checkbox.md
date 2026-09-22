@@ -14,4 +14,4 @@ Storybook title: `Primitives/Checkbox`. Source: `src/components/primitives/Check
 
 ## Used by
 
-- `src/components/home/Home.tsx`
+- `src/components/home/ImportReview.tsx`

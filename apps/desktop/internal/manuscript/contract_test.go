@@ -1,6 +1,7 @@
 package manuscript
 
 import (
+	"archive/zip"
 	"os"
 	"path/filepath"
 	"testing"
@@ -116,4 +117,43 @@ func TestContractReaderStateOfAManuscriptNobodyHasReadYet(t *testing.T) {
 	}
 	pin(t, "manuscript-reader-state-empty", service.ReaderState())
 	pin(t, "manuscript-notes-empty", service.Notes(""))
+}
+
+// A Word file whose heading has a title and a subtitle run together (ADR 0013): the importer splits it and says so in the preview's notices.
+func TestContractImportPreviewCarriesRepairs(t *testing.T) {
+	project := t.TempDir()
+	source := filepath.Join(project, "book.docx")
+	file, err := os.Create(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	archive := zip.NewWriter(file)
+	const ns = `xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"`
+	heading := `<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>CHAPTER ONE</w:t></w:r><w:r><w:t>Bad Ideas Look Great in Neon</w:t></w:r></w:p>`
+	body := `<w:p><w:r><w:t>The first line.</w:t></w:r></w:p>`
+	for name, content := range map[string]string{
+		"word/styles.xml":   `<w:styles ` + ns + `><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/></w:style></w:styles>`,
+		"word/document.xml": `<w:document ` + ns + `><w:body>` + heading + body + `</w:body></w:document>`,
+	} {
+		writer, err := archive.Create(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := writer.Write([]byte(content)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := archive.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
+	service := New(project)
+	job := service.Begin(source)
+	preview, err := service.Preview(job.ID, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pin(t, "manuscript-import-preview-repaired", volatileJob(preview))
 }

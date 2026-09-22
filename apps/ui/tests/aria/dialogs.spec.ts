@@ -52,3 +52,35 @@ test('the info icon is a button that says it is expanded, and its hint is a tool
   await expect(page.getByRole('button', { name: 'More information' }).first()).toMatchAriaSnapshot({ name: 'info-button-expanded.aria.yml' });
   await expect(page.getByRole('tooltip')).toMatchAriaSnapshot({ name: 'info-tooltip.aria.yml' });
 });
+
+// The note on the Reference material group is an info icon inside an alert dialog (ADR 0049): it is a button with the note as its
+// description, its popup is a tooltip that stays above the dialog, and the first Escape closes the note and only the second the dialog.
+test('the note on the reference material group of the import review is an info icon whose Escape closes it before the dialog', async ({ page }) => {
+  await openApp(page, DESKTOP, ['home', 'import-confirm']);
+  const dialog = page.getByRole('alertdialog', { name: 'Import Alice.docx' });
+  const info = dialog.getByRole('button', { name: 'About reference material' });
+  await expect(info).toHaveAttribute('aria-description', /Still readable in the manuscript/);
+  await info.hover();
+  const note = page.getByRole('tooltip');
+  await expect(note).toContainText('Excluded from audiobook totals, Proofing and the chapter list. Still readable in the manuscript.');
+  await page.keyboard.press('Escape');
+  await expect(note).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+});
+
+// The same, reached by keyboard: Tab to the icon opens its note, the first Escape closes the note only, the second the dialog.
+test('the note on reference material reached by keyboard also takes the first Escape', async ({ page }) => {
+  await openApp(page, DESKTOP, ['home', 'import-confirm']);
+  const dialog = page.getByRole('alertdialog', { name: 'Import Alice.docx' });
+  const info = dialog.getByRole('button', { name: 'About reference material' });
+  for (let presses = 0; presses < 20 && !(await info.evaluate((element) => element === document.activeElement)); presses++) await page.keyboard.press('Tab');
+  await expect(info).toBeFocused();
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+});

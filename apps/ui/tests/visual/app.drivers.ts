@@ -148,6 +148,19 @@ function confirmDialog(page: Page, name: string | RegExp) {
   return page.getByRole('dialog', { name }).or(page.getByRole('alertdialog', { name }));
 }
 
+// Opens the import review dialog with the mock's own preview (`?mockImportPreview=`, main.tsx): "Replace manuscript" begins the same
+// select, preview and confirm flow as "Import manuscript". Returns the dialog, so a driver can work inside it.
+async function openImportReview(page: Page, preview?: 'markdown' | 'repaired') {
+  if (preview) {
+    await page.goto(`/?mockImportPreview=${preview}`);
+    await settlePage(page);
+  }
+  await clickVisible(page, 'button', 'Replace manuscript');
+  const dialog = confirmDialog(page, preview === 'markdown' ? 'Import Alice.md' : 'Import Alice.docx');
+  await dialog.waitFor();
+  return dialog;
+}
+
 // Settings' own category rail (.settings-nav, a tab list) reuses the same labels as the
 // primary app nav ("Proofing", "Story Bible") - an unscoped role/name query
 // matches both and .first() can silently click the wrong one (navigating
@@ -276,6 +289,20 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'button', 'Replace manuscript');
       // The progress dialog that precedes it is titled "Import manuscript"; the confirm names the file.
       await confirmDialog(page, 'Import Alice.docx').waitFor();
+    },
+    'import-review-collapsed': async (page) => {
+      const review = await openImportReview(page);
+      for (const group of [/^Narration chapters/, /^Front matter/, /^Reference material/]) await review.getByRole('button', { name: group }).click();
+    },
+    'import-review-characters': async (page) => {
+      const review = await openImportReview(page);
+      await review.getByRole('button', { name: /^Story Bible character suggestions/ }).click();
+      await review.getByRole('checkbox', { name: /^The White Rabbit/ }).click();
+    },
+    'import-review-repaired': async (page) => {
+      const review = await openImportReview(page, 'repaired');
+      // The chapters are folded so the repairs, the last group, are on screen without scrolling the dialog.
+      await review.getByRole('button', { name: /^Narration chapters/ }).click();
     },
     'import-confirm-markdown': async (page) => {
       // The mock's Markdown seam (see main.tsx): the same book as a .md file, which is the one with the heading level choice.

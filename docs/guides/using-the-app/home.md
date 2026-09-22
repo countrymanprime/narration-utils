@@ -21,6 +21,18 @@ short in the row, and hovering it shows the whole line.
 
 ![Home - import manuscript confirm dialog with format/paragraph/chapter preview](../../images/ui/home-import-confirm.webp)
 
+The message at the top says what was found: the format, the number of paragraphs and of narration
+chapters, then how many front matter and reference sections, character suggestions and repairs the
+importer made. Below it the sections are grouped by what each will be: **Narration chapters**,
+**Front matter** and **Reference material**. Change a row's kind and it moves to its new group at
+once, and the counts follow. The small "i" next to Front matter and Reference material says what
+that kind is left out of (the audiobook totals and Proofing, and for reference material the chapter
+list too) and that it stays readable in the manuscript. Groups that need a decision start open, and
+long lists of chapters the importer got right start closed; open or close any group with its
+heading. The character suggestions have Select all and Select none. If the importer had to
+repair a heading (a title and a subtitle that were run together), the repairs are listed at the
+end. For a Markdown file an **Import options** group holds the chapter heading level.
+
 Every dialog in the app can be used from the keyboard. Focus starts inside the dialog (on its
 message, outlined when you opened it with the keyboard), Tab and Shift+Tab stay inside it, and the
 page behind is hidden from a screen reader until it closes. Escape declines a confirm, and focus
@@ -37,10 +49,9 @@ button on Home is always available to pick a different file.
 
 ![Home - offer to import a manuscript file found in the project folder](../../images/ui/home-manuscript-offer.webp)
 
-Importing runs in the background and reports what it is actually doing — reading the document,
-counting paragraphs and headings, copying the source into the project, adding checked
-characters to the Story Bible — in a live activity log, so the progress bar and log always match
-the real work.
+Once you confirm, importing runs in the background and reports what it is actually doing — copying
+the source into the project, writing the manuscript, adding checked characters to the Story Bible —
+in a live activity log, so the progress bar and log always match the real work.
 
 ![Home - a finished manuscript import with its real, step-by-step activity log](../../images/ui/home-import-activity.webp)
 

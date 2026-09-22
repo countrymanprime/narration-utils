@@ -1,6 +1,21 @@
-import type { ManuscriptContentKind, ManuscriptImportPreview, ManuscriptImportSection, ManuscriptImportSelection, WorkJob } from '../../types';
+import { useEffect, useRef } from 'react';
+import type { ManuscriptContentKind, ManuscriptImportPreview, ManuscriptImportSection, ManuscriptImportSelection } from '../../types';
+import { Button } from '../primitives/Button';
 import { Checkbox } from '../primitives/Checkbox';
+import { Disclosure } from '../primitives/Disclosure';
 import { Select } from '../primitives/Select';
+import { Tooltip } from '../primitives/Tooltip';
+import {
+  checkedCandidateIds,
+  describeReview,
+  effectiveKind,
+  groupSections,
+  isGroupOpen,
+  plural,
+  reviewCounts,
+  type ReviewGroupKey,
+  type ReviewGroupOpen,
+} from './importReviewModel';
 
 const SECTION_KIND_OPTIONS = [
   { value: 'narration', label: 'Narration chapter' },
@@ -8,113 +23,224 @@ const SECTION_KIND_OPTIONS = [
   { value: 'reference', label: 'Reference material' },
 ];
 
-const LABEL_CLASSES = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
-const LEGEND_CLASSES = `px-1 ${LABEL_CLASSES}`;
+// What each group is for, in one short string that is true for that group (the old sentence spoke of reference material only, and front
+// matter is left out of the audiobook totals and Proofing in just the same way). Reference material is filtered from the chapter lists
+// (ADR 0005); front matter is listed.
+const FRONT_MATTER_NOTE = 'Not counted as a chapter: excluded from audiobook totals and Proofing. Still listed and readable in the manuscript.';
+const REFERENCE_NOTE = 'Excluded from audiobook totals, Proofing and the chapter list. Still readable in the manuscript.';
+
+const LEGEND_CLASSES = "px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 
 // The title and, when the heading had one, the subtitle, the way the reader writes them ("Chapter One — Down the Rabbit-Hole").
 function sectionName(section: ManuscriptImportSection): string {
   return section.subtitle ? `${section.title} — ${section.subtitle}` : section.title;
 }
 
+/**
+ * The lines at the top of the review dialog that say what was found: the format and size with the number of narration chapters, then
+ * what else exists (front matter, reference material, suggestions, repairs), all counted from the narrator's choices as they stand.
+ */
+export function ImportSummary({
+  preview,
+  selection,
+  requiresReset,
+}: {
+  preview: ManuscriptImportPreview;
+  selection: ManuscriptImportSelection;
+  requiresReset: boolean;
+}) {
+  const { headline, detail } = describeReview(preview, reviewCounts(preview, selection));
+  return (
+    <>
+      <p>
+        {headline}
+        {requiresReset && ' This replaces the active manuscript and clears Story Bible, notes, bookmarks, statuses, and saved comparison results.'}
+      </p>
+      {detail && <p className="mt-1 text-xs">{detail}</p>}
+    </>
+  );
+}
+
 type ImportReviewProps = {
   preview: ManuscriptImportPreview;
-  // The preview job's progress and log, which the review shows as "Preview activity".
-  job: Pick<WorkJob, 'percent' | 'logs'>;
   selection: ManuscriptImportSelection;
   onSelectionChange: (update: (current: ManuscriptImportSelection) => ManuscriptImportSelection) => void;
   headingLevel: number;
   // Markdown only: the narrator chose another chapter heading level, so the host reads the file again.
   onHeadingLevelChange: (level: number) => void;
+  // Which groups the narrator opened or closed by hand. The caller holds it, above the dialog that is swapped for a progress dialog while a
+  // heading level is read again, so a re-read does not fold the groups back.
+  groupOpen: ReviewGroupOpen;
+  onGroupOpenChange: (group: ReviewGroupKey, open: boolean) => void;
+  // The seam for the per-import "Build the Story Bible after import" choice (owner decision D8: on by default). The choice and the build that
+  // follows an import belong to the Story Bible briefs work; this dialog only draws the checkbox when it is handed one, so that work adds the
+  // state and the chaining and touches nothing here. Home passes nothing yet, and nothing is shown that does nothing.
+  buildStoryBible?: { checked: boolean; onChange: (checked: boolean) => void };
 };
 
-// The body of the "Import <file>" review dialog: what the importer found, and the choices the narrator can change before it commits.
-// The choices are held by the caller (Home), which also sends them with the commit; this only shows them and reports a change.
-export function ImportReview({ preview, job, selection, onSelectionChange, headingLevel, onHeadingLevelChange }: ImportReviewProps) {
+// The body of the "Import <file>" review dialog: the choices the narrator can change before the import is written, grouped by what each
+// section will be, with a count for each group so a decision is easy to find. The choices are held by the caller (Home), which also sends
+// them with the commit; this only shows them and reports a change.
+export function ImportReview({
+  preview,
+  selection,
+  onSelectionChange,
+  headingLevel,
+  onHeadingLevelChange,
+  groupOpen,
+  onGroupOpenChange,
+  buildStoryBible,
+}: ImportReviewProps) {
   const candidates = preview.characterCandidates ?? [];
   const sections = preview.sections ?? [];
-  // No explicit list yet means every suggestion is checked, and a change writes the whole list out.
-  const checkedIds = selection.characterCandidateIds ?? candidates.map((item) => item.id);
+  const notices = preview.notices ?? [];
+  const counts = reviewCounts(preview, selection);
+  const groups = groupSections(sections, selection);
+  const checkedIds = checkedCandidateIds(preview, selection);
+  const open = (key: ReviewGroupKey) => isGroupOpen(key, groupOpen, counts);
+  const root = useRef<HTMLDivElement>(null);
+  // Reclassifying a row moves it to another group, which is a new place in the page: the select is put back in focus there, so a keyboard
+  // narrator does not lose their place, and a group the row moved into opens so the change can be seen.
+  const focusAfterMove = useRef<string | null>(null);
+  useEffect(() => {
+    const id = focusAfterMove.current;
+    if (id === null) return;
+    focusAfterMove.current = null;
+    // Matched by comparing, not by building a selector from a host-sent id.
+    [...(root.current?.querySelectorAll<HTMLElement>('[data-section-select]') ?? [])].find((select) => select.dataset.sectionSelect === id)?.focus();
+  });
+  const reclassify = (section: ManuscriptImportSection, kind: ManuscriptContentKind) => {
+    if (kind !== effectiveKind(section, selection)) {
+      focusAfterMove.current = section.id;
+      onGroupOpenChange(kind, true);
+    }
+    onSelectionChange((current) => ({ ...current, sectionKinds: { ...current.sectionKinds, [section.id]: kind } }));
+  };
+  const sectionGroup = (kind: ManuscriptContentKind, title: string, summary: string, note?: { label: string; text: string }) =>
+    groups[kind].length > 0 && (
+      <Disclosure
+        title={title}
+        summary={summary}
+        open={open(kind)}
+        onOpenChange={(next) => onGroupOpenChange(kind, next)}
+        className="border-t border-[var(--border)]"
+        aside={note && <Tooltip label={note.label} text={note.text} />}
+      >
+        <div className="space-y-1.5 pt-1 pb-3 pl-5">
+          {groups[kind].map((section) => (
+            <label key={section.id} className="flex items-center justify-between gap-3 text-sm">
+              <span className="min-w-0 truncate" title={sectionName(section)}>
+                {section.title}
+                {section.subtitle && <span className="text-[var(--text-muted)]"> — {section.subtitle}</span>}
+              </span>
+              <Select
+                label={`${sectionName(section)} content type`}
+                className="flex-none"
+                data-section-select={section.id}
+                value={effectiveKind(section, selection)}
+                options={SECTION_KIND_OPTIONS}
+                onChange={(value) => reclassify(section, value as ManuscriptContentKind)}
+              />
+            </label>
+          ))}
+        </div>
+      </Disclosure>
+    );
   return (
-    <>
-      {preview.format === 'markdown' && (
-        <label className="mt-4 flex items-center gap-2 text-sm">
-          Markdown chapter heading level
-          <Select
-            label="Markdown chapter heading level"
-            value={String(headingLevel)}
-            options={[1, 2, 3, 4, 5, 6].map((level) => ({ value: String(level), label: `H${level}` }))}
-            onChange={(value) => onHeadingLevelChange(Number(value))}
-          />
-        </label>
-      )}
-      {preview.format === 'pdf' && preview.chapterTitles.length > 0 && <p className="mt-3 text-xs">Detected chapters: {preview.chapterTitles.join(' · ')}</p>}
-      {sections.length > 0 && (
+    <div ref={root}>
+      {(preview.format === 'markdown' || buildStoryBible) && (
         <fieldset className="mt-4 min-w-0 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-          <legend className={LEGEND_CLASSES}>Review imported structure</legend>
-          <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-            Reference material stays readable but is excluded from audiobook totals and Proofing.
-          </p>
-          <div className="space-y-1.5">
-            {sections.map((section) => (
-              <label key={section.id} className="flex items-center justify-between gap-3 text-sm">
-                <span className="min-w-0 truncate" title={sectionName(section)}>
-                  {section.title}
-                  {section.subtitle && <span style={{ color: 'var(--text-muted)' }}> — {section.subtitle}</span>}
-                </span>
+          <legend className={LEGEND_CLASSES}>Import options</legend>
+          <div className="space-y-2">
+            {preview.format === 'markdown' && (
+              <label className="flex items-center gap-2 text-sm">
+                Markdown chapter heading level
                 <Select
-                  label={`${sectionName(section)} content type`}
-                  className="flex-none"
-                  value={selection.sectionKinds?.[section.id] ?? section.contentKind}
-                  options={SECTION_KIND_OPTIONS}
-                  onChange={(value) =>
-                    onSelectionChange((current) => ({ ...current, sectionKinds: { ...current.sectionKinds, [section.id]: value as ManuscriptContentKind } }))
-                  }
+                  label="Markdown chapter heading level"
+                  value={String(headingLevel)}
+                  options={[1, 2, 3, 4, 5, 6].map((level) => ({ value: String(level), label: `H${level}` }))}
+                  onChange={(value) => onHeadingLevelChange(Number(value))}
                 />
               </label>
-            ))}
+            )}
+            {buildStoryBible && (
+              <Checkbox checked={buildStoryBible.checked} onChange={buildStoryBible.onChange}>
+                Build the Story Bible after import
+              </Checkbox>
+            )}
           </div>
         </fieldset>
       )}
-      {candidates.length > 0 && (
-        <fieldset className="mt-4 min-w-0 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-          <legend className={LEGEND_CLASSES}>Story Bible character suggestions</legend>
-          <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-            Checked names become reviewable Character entries after import.
-          </p>
-          {candidates.map((candidate) => (
-            <Checkbox
-              key={candidate.id}
-              checked={checkedIds.includes(candidate.id)}
-              onChange={(next) => {
-                const selected = new Set(checkedIds);
-                if (next) selected.add(candidate.id);
-                else selected.delete(candidate.id);
-                onSelectionChange((current) => ({ ...current, characterCandidateIds: [...selected] }));
-              }}
+      {preview.format === 'pdf' && preview.chapterTitles.length > 0 && <p className="mt-3 text-xs">Detected chapters: {preview.chapterTitles.join(' · ')}</p>}
+      {(sections.length > 0 || candidates.length > 0 || notices.length > 0) && (
+        <fieldset className="mt-4 min-w-0">
+          <legend className={LEGEND_CLASSES}>Review what was found</legend>
+          {sectionGroup('narration', 'Narration chapters', `${counts.narration} ${plural(counts.narration, 'chapter')}`)}
+          {sectionGroup('opening', 'Front matter', `${counts.opening} ${plural(counts.opening, 'section')}`, {
+            label: 'About front matter',
+            text: FRONT_MATTER_NOTE,
+          })}
+          {sectionGroup('reference', 'Reference material', `${counts.reference} ${plural(counts.reference, 'section')}`, {
+            label: 'About reference material',
+            text: REFERENCE_NOTE,
+          })}
+          {candidates.length > 0 && (
+            <Disclosure
+              title="Story Bible character suggestions"
+              summary={`${counts.suggestionsChecked} of ${counts.suggestionsTotal} checked`}
+              open={open('characters')}
+              onOpenChange={(next) => onGroupOpenChange('characters', next)}
+              className="border-t border-[var(--border)]"
             >
-              {candidate.name}
-              {candidate.description && <span style={{ color: 'var(--text-muted)' }}> — {candidate.description}</span>}
-            </Checkbox>
-          ))}
+              <div className="pt-1 pb-3 pl-5">
+                <p className="mb-2 text-xs text-[var(--text-muted)]">Checked names become reviewable Character entries after import.</p>
+                <div className="mb-2 flex gap-2">
+                  <Button
+                    variant="ghost"
+                    className="text-xs"
+                    onClick={() => onSelectionChange((current) => ({ ...current, characterCandidateIds: candidates.map((item) => item.id) }))}
+                  >
+                    Select all
+                  </Button>
+                  <Button variant="ghost" className="text-xs" onClick={() => onSelectionChange((current) => ({ ...current, characterCandidateIds: [] }))}>
+                    Select none
+                  </Button>
+                </div>
+                {candidates.map((candidate) => (
+                  <Checkbox
+                    key={candidate.id}
+                    checked={checkedIds.includes(candidate.id)}
+                    onChange={(next) => {
+                      const selected = new Set(checkedIds);
+                      if (next) selected.add(candidate.id);
+                      else selected.delete(candidate.id);
+                      onSelectionChange((current) => ({ ...current, characterCandidateIds: [...selected] }));
+                    }}
+                  >
+                    {candidate.name}
+                    {candidate.description && <span className="text-[var(--text-muted)]"> — {candidate.description}</span>}
+                  </Checkbox>
+                ))}
+              </div>
+            </Disclosure>
+          )}
+          {notices.length > 0 && (
+            <Disclosure
+              title="Repairs"
+              summary={`${notices.length} made to the source`}
+              open={open('repairs')}
+              onOpenChange={(next) => onGroupOpenChange('repairs', next)}
+              className="border-t border-[var(--border)]"
+            >
+              <ul className="list-disc space-y-1 pt-1 pb-3 pl-9 text-xs break-words text-[var(--text-muted)]">
+                {notices.map((notice, index) => (
+                  <li key={`${index}-${notice}`}>{notice}</li>
+                ))}
+              </ul>
+            </Disclosure>
+          )}
         </fieldset>
       )}
-      <div className="mt-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-        <div className={`mb-1.5 ${LABEL_CLASSES}`}>Preview activity</div>
-        <div className="progressbar h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
-          <div className="h-full bg-[var(--accent)] transition-[width] duration-[0.4s] ease-in-out" style={{ width: `${job.percent}%` }} />
-        </div>
-        {/* A log longer than the box scrolls, so the keyboard must reach it (the same as the log of the running import). */}
-        <div
-          tabIndex={0}
-          className="mt-2 h-36 overflow-y-auto border border-[var(--border)] bg-[var(--surface-2)] font-['IBM_Plex_Mono',ui-monospace,monospace] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
-        >
-          {job.logs.map((line, index) => (
-            <div key={`${index}-${line}`} className="border-b border-[var(--border)] px-[0.45rem] py-1">
-              {line}
-            </div>
-          ))}
-        </div>
-      </div>
-    </>
+    </div>
   );
 }

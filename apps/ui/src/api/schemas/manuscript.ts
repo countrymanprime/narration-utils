@@ -119,6 +119,7 @@ const importPreviewSchema = z.object({
   chapterTitles: listFromNull(z.string()),
   sections: z.array(importSectionSchema).optional(),
   characterCandidates: z.array(characterCandidateSchema).optional(),
+  notices: z.array(z.string()).optional(),
 }) satisfies z.ZodType<ManuscriptImportPreview>;
 
 export const fileSelectionSchema = z.object({ selected: z.boolean(), jobId: z.string().optional() }) satisfies z.ZodType<ManuscriptFileSelection>;

@@ -1,6 +1,6 @@
 # Import Structure: Table of Contents and Characters
 
-**Source:** user requests of 2026-09-20 (items 3 importer side, 18, 19, and the Characters observations). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. Nothing here is built yet. Related: [import-review-redesign.prd.md](import-review-redesign.prd.md) (the dialog), [manuscript-reader-search-and-controls.prd.md](manuscript-reader-search-and-controls.prd.md) Phase 5 (hiding the result in the reader), [story-bible-entries-and-actions.prd.md](story-bible-entries-and-actions.prd.md) (entry properties).
+**Source:** user requests of 2026-09-20 (items 3 importer side, 18, 19, and the Characters observations). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. Nothing here is built yet. Related: [the import review](../architecture/import-review.md) (the dialog; its PRD is delivered and deleted), [manuscript-reader-search-and-controls.prd.md](manuscript-reader-search-and-controls.prd.md) Phase 5 (hiding the result in the reader), [story-bible-entries-and-actions.prd.md](story-bible-entries-and-actions.prd.md) (entry properties).
 
 ## Problem Statement
 

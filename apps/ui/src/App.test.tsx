@@ -529,7 +529,14 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
       percent: 100,
       logs: ['Selected manuscript', 'Import preview is ready.'],
       elapsed: 1,
-      preview: { format: 'docx' as const, sourceName: 'Alice.docx', paragraphCount: 240, chapterTitles: ['Chapter 1'] },
+      preview: {
+        format: 'docx' as const,
+        sourceName: 'Alice.docx',
+        paragraphCount: 240,
+        chapterTitles: ['Chapter 1'],
+        sections: [{ id: 'section-0001', title: 'Chapter 1', contentKind: 'narration' as const, paragraphCount: 240 }],
+        notices: ['Heading "Chapter 1Down" had no gap between its number and title; split into "Chapter 1" and "Down".'],
+      },
     };
     // The host is the single source of truth for a job; polling reads the same
     // state the preview/commit calls return.
@@ -578,8 +585,13 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Import manuscript' }));
     await screen.findByRole('alertdialog', { name: 'Import Alice.docx' });
     expect(preview).toHaveBeenCalledWith('mock-import', { markdownHeadingLevel: 1 });
-    expect(screen.getByText('Preview activity')).toBeTruthy();
-    expect(document.querySelector('.progressbar')).toBeTruthy();
+    // The review says what was found and what the importer repaired; the log and progress bar belong to the commit dialog that follows.
+    const review = within(screen.getByRole('alertdialog', { name: 'Import Alice.docx' }));
+    expect(review.getByText('DOCX · 240 paragraphs · 1 narration chapter.')).toBeTruthy();
+    expect(review.getByText(/1 repair made to the source/)).toBeTruthy();
+    expect(review.getByText(/had no gap between its number and title/)).toBeTruthy();
+    expect(review.queryByText('Preview activity')).toBeNull();
+    expect(document.querySelector('.progressbar')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
     const activity = await screen.findByRole('dialog', { name: 'Import manuscript' });

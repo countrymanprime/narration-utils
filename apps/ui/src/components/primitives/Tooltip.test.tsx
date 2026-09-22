@@ -25,6 +25,18 @@ describe('the info icon (Tooltip)', () => {
     expect(icon.getAttribute('aria-description')).toBe(TEXT);
   });
 
+  it('takes the name a page gives it, so two icons can be told apart', () => {
+    render(
+      <>
+        <Tooltip text={TEXT} label="About front matter" />
+        <Tooltip text={TEXT} label="About reference material" />
+      </>,
+    );
+    expect(screen.getByRole('button', { name: 'About front matter' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'About reference material' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'More information' })).toBeNull();
+  });
+
   it('shows its text as a tooltip when the keyboard reaches it, and Escape hides it', async () => {
     const user = userEvent.setup();
     render(<Tooltip text={TEXT} />);
@@ -34,6 +46,19 @@ describe('the info icon (Tooltip)', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('tooltip')).toBeNull();
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'More information' }));
+  });
+
+  it('after Escape a press opens the note again and the next press closes it (Escape forgets that focus opened it)', async () => {
+    const user = userEvent.setup();
+    render(<Tooltip text={TEXT} />);
+    await user.tab();
+    await screen.findByRole('tooltip');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('tooltip')).toBeNull();
+    await user.keyboard('{Enter}');
+    await screen.findByRole('tooltip');
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(screen.queryByRole('tooltip')).toBeNull());
   });
 
   it('hides the tooltip again when focus leaves, and focus lands on the next control', async () => {

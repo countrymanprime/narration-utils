@@ -1,0 +1,39 @@
+{
+  "elapsed": 1.5,
+  "id": "id-1",
+  "kind": "manuscript_import",
+  "logs": [
+    "Selected book.docx",
+    "Opening Word document book.docx",
+    "Reading document structure (0 KB of text)",
+    "Read 2 paragraphs, 1 of them headings",
+    "Heading \"CHAPTER ONEBad Ideas Look Great in Neon\" had no gap between its number and title; split into \"CHAPTER ONE\" and \"Bad Ideas Look Great in Neon\".",
+    "Classifying front matter, chapters and reference sections",
+    "Found 1 chapters in 1 sections",
+    "Preview ready: 1 paragraphs, 1 chapters, 0 character suggestions"
+  ],
+  "message": "Review the import preview before activating it.",
+  "percent": 100,
+  "phase": "ready",
+  "preview": {
+    "chapterTitles": [
+      "CHAPTER ONE"
+    ],
+    "characterCandidates": [],
+    "format": "docx",
+    "notices": [
+      "Heading \"CHAPTER ONEBad Ideas Look Great in Neon\" had no gap between its number and title; split into \"CHAPTER ONE\" and \"Bad Ideas Look Great in Neon\"."
+    ],
+    "paragraphCount": 1,
+    "sections": [
+      {
+        "contentKind": "narration",
+        "id": "section-0001",
+        "paragraphCount": 1,
+        "subtitle": "Bad Ideas Look Great in Neon",
+        "title": "CHAPTER ONE"
+      }
+    ],
+    "sourceName": "book.docx"
+  }
+}

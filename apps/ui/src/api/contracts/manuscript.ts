@@ -73,6 +73,8 @@ export type ManuscriptImportPreview = {
   chapterTitles: string[];
   sections?: ManuscriptImportSection[];
   characterCandidates?: ManuscriptCharacterCandidate[];
+  /** What the importer repaired in the source (a title and subtitle it found run together), as sentences. Omitted when it repaired nothing. */
+  notices?: string[];
 };
 export type ManuscriptFileSelection = { selected: boolean; jobId?: string };
 export type ManuscriptReader = { chapters: ManuscriptChapter[]; paragraphs: ManuscriptParagraph[]; notes: ManuscriptNote[] };
