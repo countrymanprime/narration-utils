@@ -199,3 +199,33 @@ export const AutoFocusChildWins: Story = {
     await waitFor(() => expect(document.activeElement).toBe(note));
   },
 };
+
+// teleprompter-manuscript-integration.prd.md Phase 1: `size="full"` fills the viewport with a 1rem margin and scrolls
+// its body; modality (Tab loop, Escape) is the one shell every size shares (ADR 0048), so this story reuses the same
+// Tab/Escape assertions as the default size instead of writing new ones.
+export const FullSize: Story = {
+  args: {
+    title: 'Read aloud',
+    size: 'full',
+    children: (
+      <div>
+        {Array.from({ length: 40 }, (_, index) => (
+          <p key={index} className="text-sm">
+            Line {index + 1} of the chapter.
+          </p>
+        ))}
+      </div>
+    ),
+  },
+  play: async ({ args, canvasElement }) => {
+    const dialog = await screen.findByRole('dialog', { name: 'Read aloud' });
+    await expect(dialog).toBeVisible();
+    for (let press = 0; press < 10; press += 1) {
+      await userEvent.tab({ shift: press % 3 === 2 });
+      await waitFor(() => expect(insidePortal(document.activeElement)).toBe(true));
+      await expect(canvasElement.contains(document.activeElement)).toBe(false);
+    }
+    await userEvent.keyboard('{Escape}');
+    await expect(args.onClose).toHaveBeenCalledOnce();
+  },
+};

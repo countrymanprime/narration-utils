@@ -210,3 +210,55 @@ describe('Dialog is a real modal', () => {
     await waitFor(() => expect(dialog.querySelector('[tabindex="0"]')).toBe(document.activeElement));
   });
 });
+
+// teleprompter-manuscript-integration.prd.md Phase 1: `size="full"` fills the viewport with a margin and scrolls its
+// body, with no change to the modal contract (ADR 0048) that every other size shares.
+describe('Dialog size="full"', () => {
+  it('defaults to the capped, content-sized popup', async () => {
+    render(
+      <Dialog title="Add note" onClose={() => undefined} actions={<Button variant="primary">Save</Button>}>
+        <p>Body</p>
+      </Dialog>,
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Add note' });
+    expect(dialog.className).toContain('max-w-[70vw]');
+    expect(dialog.style.maxHeight).toBe('80dvh');
+    expect(dialog.style.height).toBe('');
+  });
+
+  it('fills the viewport with a fixed margin and scrolls its body', async () => {
+    render(
+      <Dialog title="Read aloud" onClose={() => undefined} actions={<Button variant="primary">Close</Button>} size="full">
+        <p>Body</p>
+      </Dialog>,
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Read aloud' });
+    expect(dialog.className).toContain('max-w-[calc(100vw-2rem)]');
+    expect(dialog.style.height).toBe('calc(100dvh - 2rem)');
+    expect(dialog.style.maxHeight).toBe('calc(100dvh - 2rem)');
+    const body = within(dialog).getByText('Body').parentElement as HTMLElement;
+    expect(body.className).toContain('overflow-y-auto');
+  });
+
+  it('keeps the same modal contract at the full size: Tab loops inside, Escape closes', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(
+      <div>
+        <button>Behind the dialog</button>
+        <Dialog title="Read aloud" onClose={onClose} actions={<Button variant="primary">Close</Button>} size="full">
+          <p>Body</p>
+        </Dialog>
+      </div>,
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Read aloud' });
+    const page = screen.getByRole('button', { name: 'Behind the dialog', hidden: true });
+    for (let press = 0; press < 6; press += 1) {
+      const focused = await tabInsideTrap(user, { shift: press % 3 === 2 });
+      expect(focused, `press ${press}`).not.toBe(page);
+    }
+    expect(within(dialog).getByRole('heading', { name: 'Read aloud' })).toBeTruthy();
+    await user.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+});

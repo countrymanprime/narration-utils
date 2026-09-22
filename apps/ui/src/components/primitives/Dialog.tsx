@@ -15,6 +15,11 @@ type DialogProps = {
   // false: Escape is ignored even though there is an `onClose`. For a dialog whose close would abort work in flight (a
   // running download): the header button and Cancel are the deliberate ways out, a stray key is not.
   escapeCloses?: boolean;
+  // 'default' (ADR 0001): capped at 70vw wide and 80dvh tall, sized to its content. 'full': fills the viewport with a
+  // fixed 1rem margin on every side and scrolls its body, for a surface that needs the whole window (the teleprompter
+  // reading modal, teleprompter-manuscript-integration.prd.md Phase 1). Modality (focus trap, Escape, initial focus,
+  // hidden siblings) is unchanged by size: both variants are the one shell ADR 0048 describes.
+  size?: 'default' | 'full';
   // null when there is nothing to press (a running job that cannot be cancelled): no empty action row is drawn.
   actions: ReactNode;
   // WorkDialog only ever shows one action at a time - 'between' would strand
@@ -49,6 +54,7 @@ export function Dialog({
   escapeCloses = true,
   description,
   variant = 'dialog',
+  size = 'default',
   actions,
   actionsAlign = 'between',
   children,
@@ -91,8 +97,16 @@ export function Dialog({
             ref={popupRef}
             initialFocus={initialFocus}
             finalFocus={finalFocus}
-            className="flex w-full max-w-[70vw] flex-col overflow-hidden rounded-[0.55rem] border focus:outline-none"
-            style={{ maxHeight: '80dvh', background: 'var(--surface)', borderColor: 'var(--border)', boxShadow: 'var(--shadow-lg)' }}
+            className={`flex w-full flex-col overflow-hidden rounded-[0.55rem] border focus:outline-none ${
+              size === 'full' ? 'max-w-[calc(100vw-2rem)]' : 'max-w-[70vw]'
+            }`}
+            style={{
+              height: size === 'full' ? 'calc(100dvh - 2rem)' : undefined,
+              maxHeight: size === 'full' ? 'calc(100dvh - 2rem)' : '80dvh',
+              background: 'var(--surface)',
+              borderColor: 'var(--border)',
+              boxShadow: 'var(--shadow-lg)',
+            }}
           >
             <div className="flex flex-none items-center justify-between gap-3 border-b border-[var(--border)] px-[1.1rem] py-[0.85rem]">
               <Parts.Title className="font-semibold">{title}</Parts.Title>
