@@ -28,7 +28,13 @@ const evidenceSchema = z.object({
 // an empty object and a missing description with an empty one (guide/service.go). The schema reads all of those as the complete
 // shape, which replaces the hand-written normalizeGuideEntity and fixes the empty-object case it never handled.
 const pronunciationSchema = z
-  .object({ ipa: z.string().default(''), source: z.string().default(''), confidence: z.string().default('') })
+  .object({
+    ipa: z.string().default(''),
+    source: z.string().default(''),
+    confidence: z.string().default(''),
+    /** Set by `pronounce()` when the narrator explicitly chose this value; a rebuild's `merge_locked` keeps it (B11). Absent on an auto-generated value. */
+    chosen: z.boolean().optional(),
+  })
   .nullish()
   .transform((value): GuidePronunciation => value ?? { ipa: '', source: '', confidence: '' });
 

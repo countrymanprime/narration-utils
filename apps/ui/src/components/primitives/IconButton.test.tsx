@@ -62,6 +62,27 @@ describe('IconButton', () => {
     expect(screen.getByRole('group', { name: 'No manuscript source is available' })).toBeTruthy();
   });
 
+  it('a disabledReason keeps the button itself focusable and hoverable, unlike disabled (D6, WCAG 1.4.13)', async () => {
+    const onClick = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <TooltipTarget text="No pronunciation exists for this name yet.">
+        <IconButton label="Play preview" disabledReason="No pronunciation exists for this name yet." onClick={onClick}>
+          x
+        </IconButton>
+      </TooltipTarget>,
+    );
+    const button = screen.getByRole('button', { name: 'Play preview' });
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(button.hasAttribute('disabled')).toBe(false);
+    button.focus();
+    expect(document.activeElement).toBe(button);
+    await user.click(button);
+    expect(onClick).not.toHaveBeenCalled();
+    // The tooltip is on the button itself, not a wrapper - there is no separate reachable group.
+    expect(screen.queryByRole('group')).toBeNull();
+  });
+
   it('gives each variant its own look, exclusively', () => {
     render(
       <>

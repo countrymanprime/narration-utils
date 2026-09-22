@@ -151,6 +151,13 @@ func (h *Host) GuideRescan(id string) (string, error) {
 	}
 	return encodeBinding(nil, service.Rescan(id))
 }
+func (h *Host) GuidePronounce(id string, aliasIndex *int, source string) (string, error) {
+	service := h.services().guide
+	if service == nil {
+		return "", fmt.Errorf("the Story Bible is unavailable")
+	}
+	return encodeBinding(nil, service.Pronounce(id, aliasIndex, source))
+}
 func (h *Host) GuideCreate(name, category string, aliases []string) (string, error) {
 	service := h.services().guide
 	if service == nil {

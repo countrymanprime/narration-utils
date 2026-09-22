@@ -446,20 +446,25 @@ def arpabet_to_ipa(phones: str) -> str:
     return " ".join(output)
 
 
-def pronunciation(name: str, espeak_library: str | None) -> dict[str, str]:
-    # CMU is quick and high-quality for familiar names. It cannot cover most fantasy names.
-    # Read-only/generated-only: there is no user-editable "say it as" respelling
-    # any more, so this never needs to round-trip anything but the IPA itself.
-    try:
+PRONUNCIATION_SOURCES = {"cmu", "espeak"}
+
+
+def pronounce_source(name: str, espeak_library: str | None, source: str) -> dict[str, str]:
+    """Gets a pronunciation from exactly one named engine, raising when that engine has nothing for ``name``.
+
+    Unlike ``pronunciation()`` (the automatic CMU-then-eSpeak fallback used at build time, which never raises), this
+    is what the narrator's explicit Generate/Replace control uses (B10): the narrator chose the engine, so a miss is
+    reported, not silently swallowed into "not generated".
+    """
+    if source == "cmu":
         import pronouncing
 
         words = re.findall(r"[A-Za-z]+", name)
         phones = [pronouncing.phones_for_word(word.lower())[0] for word in words if pronouncing.phones_for_word(word.lower())]
-        if words and len(phones) == len(words):
-            return {"ipa": " ".join(arpabet_to_ipa(phone) for phone in phones), "source": "CMU dictionary", "confidence": "medium"}
-    except Exception as exc:  # noqa: BLE001
-        log(f"CMU pronunciation unavailable ({exc}).")
-    try:
+        if not (words and len(phones) == len(words)):
+            raise ValueError(f'The CMU dictionary has no entry for "{name}".')
+        return {"ipa": " ".join(arpabet_to_ipa(phone) for phone in phones), "source": "CMU dictionary", "confidence": "medium"}
+    if source == "espeak":
         from phonemizer import phonemize
 
         if espeak_library:
@@ -467,10 +472,24 @@ def pronunciation(name: str, espeak_library: str | None) -> dict[str, str]:
 
             EspeakWrapper.set_library(espeak_library)
         ipa = phonemize(name, language="en-us", backend="espeak", strip=True, with_stress=True)
-        if ipa:
-            return {"ipa": ipa, "source": "eSpeak NG", "confidence": "low"}
-    except Exception as exc:  # noqa: BLE001
-        log(f"eSpeak phonetic fallback unavailable ({exc}).")
+        if not ipa:
+            raise ValueError(f'eSpeak produced no pronunciation for "{name}".')
+        return {"ipa": ipa, "source": "eSpeak NG", "confidence": "low"}
+    raise ValueError(f"Unknown pronunciation source: {source!r}.")
+
+
+PRONUNCIATION_UNAVAILABLE_LOG = {"cmu": "CMU pronunciation unavailable", "espeak": "eSpeak phonetic fallback unavailable"}
+
+
+def pronunciation(name: str, espeak_library: str | None) -> dict[str, str]:
+    # CMU is quick and high-quality for familiar names. It cannot cover most fantasy names.
+    # Read-only/generated-only: there is no user-editable "say it as" respelling
+    # any more, so this never needs to round-trip anything but the IPA itself.
+    for source in ("cmu", "espeak"):
+        try:
+            return pronounce_source(name, espeak_library, source)
+        except Exception as exc:  # noqa: BLE001
+            log(f"{PRONUNCIATION_UNAVAILABLE_LOG[source]} ({exc}).")
     return {"ipa": "", "source": "not generated", "confidence": "unknown"}
 
 
@@ -696,6 +715,10 @@ def merge_locked(generated: list[dict[str, Any]], old: dict[str, Any] | None) ->
             entity["relationships"] = prior.get("relationships", [])
             # Properties are the narrator's own facts and extraction never produces them, so a rebuild keeps them all.
             entity["properties"] = entity_properties(prior)
+            # A pronunciation the narrator explicitly chose (pronounce(), marked "chosen") survives a rebuild too,
+            # the same as a locked entity's - only an auto-generated one is replaced by the fresh build (B11).
+            if (prior.get("pronunciation") or {}).get("chosen"):
+                entity["pronunciation"] = prior["pronunciation"]
             # An alias added by hand (typed in, or the product of a merge) can
             # never be "rediscovered" by extraction the way the automatic
             # title-prefix aliases can, so anything prior-only survives too.
@@ -931,6 +954,35 @@ def rescan(args: argparse.Namespace) -> None:
         entity["review_state"] = "reviewed"
     write_json(args.guide, guide)
     print(f"RESCANNED|{args.entity_id}|{entity['occurrence_count']}")
+
+
+def pronounce(args: argparse.Namespace) -> None:
+    """Sets the pronunciation of an entity's own name, or one of its aliases, from one named engine (D13/B9/B10).
+
+    Refused on a locked entity, the same as every other edit (ADR 0007). The value is marked ``chosen`` so a later
+    rebuild's ``merge_locked`` keeps it instead of overwriting it with a freshly generated one (B11).
+    """
+    guide = load_json(args.guide)
+    if not guide:
+        raise ValueError("Guide file does not exist; build it first.")
+    entity = find_entity(guide, args.entity_id)
+    if entity.get("locked"):
+        raise ValueError("This entity is locked. Unlock it before editing.")
+    if args.alias_index is None:
+        name = entity["canonical_name"]
+    else:
+        aliases = entity.get("aliases", [])
+        if not 0 <= args.alias_index < len(aliases):
+            raise ValueError("Alias index out of range.")
+        name = aliases[args.alias_index]["text"]
+    value = pronounce_source(name, args.espeak_library or None, args.source)
+    value["chosen"] = True
+    if args.alias_index is None:
+        entity["pronunciation"] = value
+    else:
+        aliases[args.alias_index]["pronunciation"] = value
+    write_json(args.guide, guide)
+    print(f"PRONOUNCED|{args.entity_id}|{value['source']}")
 
 
 def create(args: argparse.Namespace) -> None:
@@ -1316,6 +1368,12 @@ def main() -> None:
     rescan_parser.add_argument("--guide", required=True)
     rescan_parser.add_argument("--manuscript", required=True)
     rescan_parser.add_argument("--entity-id", required=True)
+    pronounce_parser = command.add_parser("pronounce")
+    pronounce_parser.add_argument("--guide", required=True)
+    pronounce_parser.add_argument("--entity-id", required=True)
+    pronounce_parser.add_argument("--alias-index", type=int, default=None)
+    pronounce_parser.add_argument("--source", required=True, choices=sorted(PRONUNCIATION_SOURCES))
+    pronounce_parser.add_argument("--espeak-library", default="")
     create_parser = command.add_parser("create")
     create_parser.add_argument("--guide", required=True)
     create_parser.add_argument("--manuscript", required=True)
@@ -1364,6 +1422,7 @@ def main() -> None:
             "status": status,
             "edit": edit,
             "rescan": rescan,
+            "pronounce": pronounce,
             "create": create,
             "merge": merge,
             "delete": delete,

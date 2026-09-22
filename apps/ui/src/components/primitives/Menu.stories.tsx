@@ -2,7 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { faRotate } from '@fortawesome/free-solid-svg-icons';
 import { Menu, type MenuItem } from './Menu';
+import { IconButton } from './IconButton';
 import { screen } from './portalScreen';
 
 const dot = (color: string) => <span className="size-2 flex-none rounded-full" style={{ background: color }} />;
@@ -36,6 +38,18 @@ type Story = StoryObj<typeof meta>;
 
 export const Closed: Story = {};
 export const Disabled: Story = { args: { disabled: true } };
+
+// An icon-only trigger renders as an IconButton instead of pasting its look (the Story Bible Replace-pronunciation control).
+export const IconOnlyTrigger: Story = {
+  args: { render: <IconButton label="Replace pronunciation" />, children: <FontAwesomeIcon icon={faRotate} /> },
+  play: async ({ canvasElement }) => {
+    const trigger = within(canvasElement).getByRole('button', { name: 'Replace pronunciation' });
+    await userEvent.click(trigger);
+    await expect(await screen.findAllByRole('menuitem')).toHaveLength(3);
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('menuitem')).toBeNull());
+  },
+};
 
 // A press opens the menu; the button reports it (aria-haspopup, aria-expanded) and the items are menuitems.
 export const OpensOnPress: Story = {

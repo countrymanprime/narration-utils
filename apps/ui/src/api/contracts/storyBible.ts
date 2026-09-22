@@ -4,7 +4,7 @@ import type { WorkJob } from './manuscript';
 
 export type GuideEvidence = { chapter: string; chapterId?: string; paragraph: number; paragraphId?: string; excerpt: string; sourceLine?: number };
 export type GuideRelationship = { id: string; name: string; label: string };
-export type GuidePronunciation = { ipa: string; source: string; confidence: string };
+export type GuidePronunciation = { ipa: string; source: string; confidence: string; chosen?: boolean };
 export type GuideNote = { text: string; evidence: { chapter?: string; excerpt?: string } };
 /** One labelled fact of an entry ("Codename": "Wren"). The list is ordered and a key is unique whatever its case; a value may be empty. */
 export type GuideProperty = { key: string; value: string };
@@ -75,4 +75,10 @@ export interface StoryBibleApi {
   guideRelate(id: string, otherId: string, label: string): Promise<void>;
   guideUnrelate(id: string, otherId: string, label: string): Promise<void>;
   guidePreview(id: string, aliasIndex?: number): Promise<GuidePreview>;
+  /**
+   * Sets the pronunciation of the entry's own name (`aliasIndex` omitted) or one of its aliases from exactly `source`
+   * ("cmu" or "espeak"), and marks it as the narrator's explicit choice so a rebuild keeps it (D13, B9-B11). Refused
+   * on a locked entity, and when the chosen engine has nothing for the name.
+   */
+  guidePronounce(id: string, source: 'cmu' | 'espeak', aliasIndex?: number): Promise<void>;
 }

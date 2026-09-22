@@ -555,6 +555,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Story Bible');
       await page.locator('tr[data-row]', { hasText: 'March Hare' }).click();
     },
+    'entry-pronunciation-missing': async (page) => {
+      await goToPage(page, 'Story Bible');
+      // March Hare has no pronunciation in the fixture data.
+      await page.locator('tr[data-row]', { hasText: 'March Hare' }).click();
+      await clickVisible(page, 'button', 'Edit this entry');
+    },
     'delete-confirm': async (page) => {
       await goToPage(page, 'Story Bible');
       await page.locator('tr[data-row]').first().click();

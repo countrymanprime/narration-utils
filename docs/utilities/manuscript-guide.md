@@ -16,6 +16,20 @@ Every entry carries `properties`: an ordered list of `{"key", "value"}` facts, t
 - **Creating with properties.** `create --properties=<JSON list>` sets them in the same run as the entry, for the import of a manuscript's cast blocks (`guide.Service.CreateFull` in the host). The list must be valid (a name on every property, no name twice); an invalid list creates nothing. The caller merges repeated labels before it asks.
 - **Rebuilding.** A build never produces properties, so `merge_locked` carries the prior list onto a regenerated entry, and a locked or manual entry is kept whole. `merge` unions by key: the target's value wins and the source adds the keys the target lacks.
 
+## Pronunciation: generate and replace
+
+Alongside the automatic CMU-then-eSpeak fallback used at build time (`pronunciation()`), a narrator can set a pronunciation
+explicitly from edit mode: `pronounce --entity-id <id> [--alias-index <n>] --source cmu|espeak` (`pronounce_source`) tries
+exactly the named engine and raises when it has nothing for the name, instead of quietly falling back or reporting "not
+generated". The value is marked `chosen: true`, so a rebuild's `merge_locked` keeps it instead of overwriting it with a
+freshly generated one; an auto-generated value (no `chosen` key) is still replaced by the fresh build as before. Blocked on
+a locked entity (ADR 0007), same as every other edit.
+
+The Go host exposes it as `GuidePronounce(id, aliasIndex *int, source string)` / the `GuidePronounce` binding
+(`hostAPIVersion` 13). The UI gates the play button on a pronunciation existing (the preview always speaks the name as
+spelled and ignores the IPA, so this is a UI policy, not a technical limit) and offers Generate (missing) or Replace
+(present) in edit mode only, each choosing explicitly between the CMU dictionary and eSpeak NG.
+
 ## Target workflow
 
 Run the guide after manuscript selection; review uncertain candidates; lock narrator-authored pronunciation and notes; export approved vocabulary for transcription; consult chapter/scene and dialogue information during recording.

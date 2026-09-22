@@ -50,6 +50,8 @@ const draftOf = (entity: GuideEntity): Draft => ({
   properties: draftFrom(entity.properties),
 });
 
+const NO_PRONUNCIATION_REASON = 'No pronunciation exists for this name yet.';
+
 export function GuideDetail({
   entity,
   isNewDraft = false,
@@ -177,6 +179,9 @@ export function GuideDetail({
   const reviewOverlayEntity = reviewOverlayId ? entities.find((row) => row.id === reviewOverlayId) : undefined;
   const evidence = allEvidence(entity);
   const highlightNames = [entity.canonical_name, ...entity.aliases.map((alias) => alias.text)];
+  // Play is gated on a pronunciation existing (B8): the preview always speaks the name as spelled and ignores the IPA, so this is a
+  // UI policy, not a technical limit - the reason says so.
+  const canonicalPlayReason = entity.pronunciation.ipa ? undefined : NO_PRONUNCIATION_REASON;
 
   const save = async (key: string, values: Record<string, string>, message: string): Promise<boolean> =>
     (await mutation.run(key, async () => {
@@ -222,6 +227,16 @@ export function GuideDetail({
       try {
         await api.guideRescan(entity.id);
         notify('Occurrences rescanned.');
+        await reloadFor(entity.id);
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+      }
+    });
+  const pronounceEntity = (source: 'cmu' | 'espeak') =>
+    mutation.run('pronounce', async () => {
+      try {
+        await api.guidePronounce(entity.id, source);
+        notify('Pronunciation generated.');
         await reloadFor(entity.id);
       } catch (error) {
         notify(describeApiError(error), 'error');
@@ -419,23 +434,40 @@ export function GuideDetail({
             <div style={{ position: 'relative', width: '100%' }}>
               <div
                 className="min-h-[var(--control-height)] w-full cursor-default rounded-[var(--control-radius)] border border-[var(--border)] bg-[var(--surface-2)] px-3 py-[0.6rem] font-['IBM_Plex_Mono',ui-monospace,monospace] text-[0.88rem] leading-[1.35] text-[var(--text)]"
-                style={{ paddingRight: '2.75rem' }}
+                style={{ paddingRight: canEdit && editing ? '5rem' : '2.75rem' }}
               >
                 {entity.pronunciation.ipa || 'Not generated'}
               </div>
-              <TooltipTarget
-                text={playingPreview === CANONICAL_PREVIEW ? 'Pause pronunciation preview' : 'Play provider-generated pronunciation'}
-                style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}
-              >
-                <IconButton
-                  label={playingPreview === CANONICAL_PREVIEW ? 'Pause preview' : 'Play preview'}
-                  disabled={isNewDraft}
-                  pending={loadingPreview === CANONICAL_PREVIEW}
-                  onClick={() => void playPreview()}
+              <div className="flex items-center gap-1" style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}>
+                <TooltipTarget
+                  text={playingPreview === CANONICAL_PREVIEW ? 'Pause pronunciation preview' : (canonicalPlayReason ?? 'Play provider-generated pronunciation')}
                 >
-                  <FontAwesomeIcon icon={playingPreview === CANONICAL_PREVIEW ? faPause : faWaveSquare} />
-                </IconButton>
-              </TooltipTarget>
+                  <IconButton
+                    label={playingPreview === CANONICAL_PREVIEW ? 'Pause preview' : 'Play preview'}
+                    disabledReason={playingPreview === CANONICAL_PREVIEW ? undefined : canonicalPlayReason}
+                    pending={loadingPreview === CANONICAL_PREVIEW}
+                    onClick={() => void playPreview()}
+                  >
+                    <FontAwesomeIcon icon={playingPreview === CANONICAL_PREVIEW ? faPause : faWaveSquare} />
+                  </IconButton>
+                </TooltipTarget>
+                {/* Generate/Replace live in edit mode only, blocked for locked entries by never reaching edit mode (D13, ADR 0007);
+                    they offer CMU and eSpeak explicitly (B10), and the chosen value is marked so a rebuild keeps it (B11). */}
+                {canEdit && editing && (
+                  <TooltipTarget text={entity.pronunciation.ipa ? 'Replace this pronunciation' : 'Generate a pronunciation for this name'}>
+                    <Menu
+                      disabled={mutation.isPending('pronounce') || waiting('pronounce')}
+                      render={<IconButton label={entity.pronunciation.ipa ? 'Replace pronunciation' : 'Generate pronunciation'} />}
+                      items={[
+                        { key: 'cmu', label: 'From the CMU dictionary', onSelect: () => void pronounceEntity('cmu') },
+                        { key: 'espeak', label: 'From eSpeak NG', onSelect: () => void pronounceEntity('espeak') },
+                      ]}
+                    >
+                      <FontAwesomeIcon icon={entity.pronunciation.ipa ? faRotate : faPlus} />
+                    </Menu>
+                  </TooltipTarget>
+                )}
+              </div>
             </div>
             <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
               Source: {entity.pronunciation.source} · Confidence: {entity.pronunciation.confidence}
@@ -467,11 +499,16 @@ export function GuideDetail({
                         {alias.pronunciation.ipa || 'Not generated'}
                       </div>
                       <TooltipTarget
-                        text={playingPreview === previewKey(index) ? 'Pause alias pronunciation preview' : 'Play this alias pronunciation'}
+                        text={
+                          playingPreview === previewKey(index)
+                            ? 'Pause alias pronunciation preview'
+                            : ((alias.pronunciation.ipa ? undefined : NO_PRONUNCIATION_REASON) ?? 'Play this alias pronunciation')
+                        }
                         style={{ position: 'absolute', right: '.25rem', top: '50%', transform: 'translateY(-50%)' }}
                       >
                         <IconButton
                           label={playingPreview === previewKey(index) ? 'Pause alias pronunciation' : 'Play alias pronunciation'}
+                          disabledReason={playingPreview === previewKey(index) ? undefined : alias.pronunciation.ipa ? undefined : NO_PRONUNCIATION_REASON}
                           pending={loadingPreview === previewKey(index)}
                           onClick={() => void playPreview(index)}
                         >

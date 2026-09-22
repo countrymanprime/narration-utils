@@ -1,6 +1,6 @@
 # Import Structure: Table of Contents and Characters
 
-**Source:** user requests of 2026-09-20 (items 3 importer side, 18, 19, and the Characters observations). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. Nothing here is built yet. Related: [the import review](../architecture/import-review.md) (the dialog; its PRD is delivered and deleted), [manuscript-reader-search-and-controls.prd.md](manuscript-reader-search-and-controls.prd.md) Phase 5 (hiding the result in the reader), [story-bible-entries-and-actions.prd.md](story-bible-entries-and-actions.prd.md) (entry properties).
+**Source:** user requests of 2026-09-20 (items 3 importer side, 18, 19, and the Characters observations). Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. Nothing here is built yet. Related: [the import review](../architecture/import-review.md) (the dialog; its PRD is delivered and deleted), [manuscript-reader-search-and-controls.prd.md](manuscript-reader-search-and-controls.prd.md) Phase 5 (hiding the result in the reader), the Story Bible entries properties schema (delivered, stack S19a, PRD deleted; see [Manuscript Guide](../utilities/manuscript-guide.md)'s "Entity properties" section for the `create --properties` contract this PRD's Phase 3 must keep stable).
 
 ## Problem Statement
 
