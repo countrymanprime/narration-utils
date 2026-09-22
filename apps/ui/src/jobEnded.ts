@@ -19,7 +19,7 @@ export function toastForJobEnd(event: JobEnded): { text: string; tone: ToastTone
 const NOTIFIABLE_JOB_KINDS = new Set(['story_bible', 'tts_install', 'whisper_install', 'spacy_install', 'transcript_compare', 'manuscript_import']);
 
 /** N3: fast jobs stay quiet so a notification means something. */
-export const NOTIFY_THRESHOLD_MS = 10_000;
+const NOTIFY_THRESHOLD_MS = 10_000;
 
 /**
  * Whether a host job ending is worth an OS notification (N1-N4). `focused` is `document.hasFocus()`: the host has no
