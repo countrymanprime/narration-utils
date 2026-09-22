@@ -16,12 +16,16 @@ export function SlideOver({
   title,
   closeLabel = 'Close',
   onClose,
+  onEscape,
   children,
 }: {
   open: boolean;
   title: ReactNode;
   closeLabel?: string;
   onClose: () => void;
+  // Runs before Escape closes the panel; returning true means the caller already handled the key
+  // itself (for example, clearing a search - R8) and the panel should stay open.
+  onEscape?: () => boolean;
   children: ReactNode;
 }) {
   const finalFocus = useReturnFocusTarget(open);
@@ -30,8 +34,13 @@ export function SlideOver({
       open={open}
       modal
       swipeDirection="right"
-      onOpenChange={(next) => {
-        if (!next) onClose();
+      onOpenChange={(next, eventDetails) => {
+        if (next) return;
+        if (eventDetails.reason === 'escape-key' && onEscape?.()) {
+          eventDetails.cancel();
+          return;
+        }
+        onClose();
       }}
     >
       <Drawer.Portal>
