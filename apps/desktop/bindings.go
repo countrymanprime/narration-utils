@@ -387,14 +387,29 @@ func seedCharacterCandidates(service *guide.Service, candidates []importer.Chara
 	}
 	for index, candidate := range chosen {
 		report(index*100/len(chosen), fmt.Sprintf("Adding Story Bible character %d of %d: %s", index+1, len(chosen), candidate.Name))
-		// The description goes in with the create: one sidecar process per candidate instead of two.
-		if _, err := service.CreateDescribed(candidate.Name, "Character", nil, candidate.Description); err != nil {
+		// The description and any labelled properties (import-structure-toc-and-characters PRD, Phase 3) go in with the create:
+		// one sidecar process per candidate instead of two or three.
+		if _, err := service.CreateFull(candidate.Name, "Character", nil, candidate.Description, toGuideProperties(candidate.Properties)); err != nil {
 			report(index*100/len(chosen), fmt.Sprintf("Skipped %s: %v", candidate.Name, err))
 		}
 	}
 	if len(chosen) > 0 {
 		report(100, fmt.Sprintf("Added %d Story Bible characters", len(chosen)))
 	}
+}
+
+// toGuideProperties converts a character candidate's labelled facts to the guide package's own Property type. The two are
+// structurally identical ({Key, Value string}), but Go has no structural typing across packages, so the boundary needs an
+// explicit copy; nil in, nil out keeps createArgs's "only send --properties when there are any" check working unchanged.
+func toGuideProperties(properties []importer.Property) []guide.Property {
+	if len(properties) == 0 {
+		return nil
+	}
+	converted := make([]guide.Property, len(properties))
+	for index, property := range properties {
+		converted[index] = guide.Property{Key: property.Key, Value: property.Value}
+	}
+	return converted
 }
 func (h *Host) ManuscriptImportCancel(jobID string) (string, error) {
 	return encodeBinding(nil, h.services().manuscript.Cancel(jobID))
