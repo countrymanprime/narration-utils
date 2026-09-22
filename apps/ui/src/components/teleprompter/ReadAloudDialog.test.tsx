@@ -99,6 +99,39 @@ describe('ReadAloudDialog', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  // The PRD's Open Questions, "Closing the modal during a live session": Escape must not silently stop a live
+  // session. `Dialog` routes Escape through the same `onClose` the header Close button uses (`dismiss = escapeCloses ?
+  // (onClose ?? onEscape) : undefined`, primitives/Dialog.tsx), and `ReadAloudDialog` passes `requestClose` (which
+  // confirms first when active) as that `onClose` - so Escape and the Close button are one code path, not two.
+  it('Escape asks for confirmation before closing a live session too, the same as the Close button', async () => {
+    const user = userEvent.setup();
+    const teleprompterStop = vi.fn().mockResolvedValue(undefined);
+    const { onClose, setState } = renderDialog({ teleprompterStop });
+    setState({ phase: 'running', message: 'Listening…', chapter: 'chapter-1' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy());
+
+    await user.keyboard('{Escape}');
+
+    const confirm = await screen.findByRole('alertdialog', { name: 'Stop reading?' });
+    expect(onClose).not.toHaveBeenCalled();
+
+    await user.click(within(confirm).getByRole('button', { name: 'Stop and close' }));
+
+    expect(teleprompterStop).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('Escape closes without a confirm when no session is running', async () => {
+    const user = userEvent.setup();
+    const { onClose } = renderDialog();
+
+    await screen.findByRole('combobox', { name: 'Microphone' });
+    await user.keyboard('{Escape}');
+
+    expect(onClose).toHaveBeenCalled();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
   it('cancelling the close confirm leaves the session running and the dialog open', async () => {
     const user = userEvent.setup();
     const teleprompterStop = vi.fn().mockResolvedValue(undefined);

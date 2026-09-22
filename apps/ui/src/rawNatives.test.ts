@@ -35,6 +35,11 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // "Choose from the list" button are gone (no typed fallback - dropdown-only per the "Microphone is never typed"
     // decision, docs/prds/teleprompter-engines-and-input-devices.prd.md).
     'src/components/teleprompter/MicrophoneField.tsx': 1,
+    // The click-to-seek word ("Start here" / "Go back to here", teleprompter-manuscript-integration.prd.md Phase 4):
+    // one word among hundreds inside running prose, so it needs `Button`'s bare click/keyboard semantics without its
+    // padded, uppercase button chrome, which would break the text flow and read as a real action button rather than a
+    // word. One JSX `<button>` in the source (it is written once, inside the words `.map()`, not once per word).
+    'src/components/teleprompter/ReaderText.tsx': 1,
     'src/components/storybible/GuideDetail.tsx': 1,
     'src/components/tracks/TracksPage.tsx': 2,
   },

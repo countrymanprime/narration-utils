@@ -357,6 +357,20 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'button', 'Read Chapter 1 aloud');
       await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
     },
+    // Word-click seek (teleprompter-manuscript-integration.prd.md Phase 4): from the same listening state as above, click
+    // the earliest "Go back to here" word (word 0) and wait for the highlight to land there without restarting.
+    'read-aloud-seek-back': async (page) => {
+      await page.goto('/?mockTeleprompter=listening');
+      await settlePage(page);
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+      await page
+        .getByRole('button', { name: /^Go back to here/ })
+        .first()
+        .click();
+      await page.locator('[data-word="0"] [data-highlight="Cursor"]').waitFor();
+    },
     'reader-text-small': async (page) => {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'small');

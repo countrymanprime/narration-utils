@@ -138,6 +138,16 @@ describe('nextCursor', () => {
     expect(nextCursor(7, position(4))).toBe(4);
     expect(nextCursor(7, position(6, { jump: 'restart' }))).toBe(6);
   });
+
+  // A seek (teleprompter-manuscript-integration.prd.md Phase 3's control channel) always reports its landing word as a
+  // `jump: 'restart'` position (see teleprompterMock.ts), specifically so the one-word-back case below does not get
+  // swallowed as a mid-sentence correction (Evidence: "A seek back by exactly one word would be swallowed... unless the
+  // seek marks its position event as a jump").
+  it('a seek always lands immediately, forward or backward, including one word back', () => {
+    expect(nextCursor(3, position(10, { jump: 'restart' }))).toBe(10);
+    expect(nextCursor(7, position(6, { jump: 'restart' }))).toBe(6);
+    expect(nextCursor(7, position(2, { jump: 'restart' }))).toBe(2);
+  });
 });
 
 describe('pacedStep', () => {
