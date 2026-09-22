@@ -1,9 +1,10 @@
 import type { Discrepancy, GuideEntity, GuideEvidence, ManuscriptChapter, ManuscriptParagraph, TranscriptState } from './types';
 
 export const isTranscriptActive = (phase: TranscriptState['phase']) => phase === 'preparing' || phase === 'running' || phase === 'inspecting';
-// Reference-material sections (Contents, Characters, ...) stay in manuscript.json
-// for data integrity but shouldn't clutter chapter navigation/listing surfaces -
-// see ChapterNav.tsx. The continuous reader view intentionally does not use this.
+// Reference-material sections (Contents, Characters, ...) stay in manuscript.json for data
+// integrity but shouldn't clutter chapter navigation/listing surfaces or the continuous reader
+// itself - see ChapterNav.tsx and Manuscript.tsx (ADR 0090, which reverses the reader-view clause
+// of ADR 0005; this predicate's original scope was the panel only).
 export const isListableChapter = (chapter: Pick<ManuscriptChapter, 'contentKind'>): boolean => (chapter.contentKind ?? 'narration') !== 'reference';
 export const selectDiscrepancy = (rows: Discrepancy[], id?: string): Discrepancy | undefined => rows.find((row) => row.id === id) ?? rows[0];
 export const canAddEquivalence = (row?: Discrepancy): boolean =>

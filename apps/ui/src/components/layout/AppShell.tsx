@@ -15,6 +15,7 @@ import {
 import { NavButton } from '../primitives/NavButton';
 import { NavDrawer } from '../primitives/NavDrawer';
 import { IconButton } from '../primitives/IconButton';
+import { combinedRequiredReason } from '../../dawAvailability';
 
 // alwaysEnabled items don't depend on an imported manuscript - Tracks reads
 // the project's REAPER file directly, independent of the manuscript feature.
@@ -26,7 +27,9 @@ const NAV = [
   { name: 'Teleprompter', path: '/teleprompter', icon: faScroll, alwaysEnabled: false },
   { name: 'Tracks', path: '/tracks', icon: faLayerGroup, alwaysEnabled: true },
 ];
-const MANUSCRIPT_REQUIRED_REASON = 'Import a manuscript to unlock this page.';
+// combinedRequiredReason(W17) always returns a string here since `manuscript` is always true; the DAW half of the
+// combined reason (`dawFile`) is wired in once Tracks/Proofing actually gate on the DAW link (a later phase).
+const MANUSCRIPT_REQUIRED_REASON = combinedRequiredReason({ manuscript: true, dawFile: false }) as string;
 const isActivePath = (pathname: string, path: string) => (path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`));
 
 export function AppShell({

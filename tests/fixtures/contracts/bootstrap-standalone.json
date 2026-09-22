@@ -1,6 +1,9 @@
 {
-  "apiVersion": 13,
+  "apiVersion": 14,
   "daw": "Standalone",
+  "dawFileLinked": false,
+  "dawProjectMatches": false,
+  "dawReachable": false,
   "diagnosticId": "go-1789000000000000000",
   "manuscript": null,
   "manuscriptCandidate": null,

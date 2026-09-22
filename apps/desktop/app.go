@@ -33,7 +33,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 13
+const hostAPIVersion = 14
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -655,7 +655,21 @@ func (h *Host) Bootstrap() map[string]any {
 	if svc.transcript != nil {
 		transcriptState = svc.transcript.Snapshot()
 	}
-	return map[string]any{"apiVersion": hostAPIVersion, "diagnosticId": h.diagnostic, "version": h.version, "projectFolder": config.projectFolder, "projectName": config.projectName, "daw": config.daw, "manuscript": imported, "manuscriptCandidate": manuscriptCandidate, "runtime": map[string]any{"ManuscriptGuide": map[string]string{"python_exe": config.manuscriptPython, "backend": config.manuscriptBackend}, "TranscriptCompare": map[string]string{"python_exe": config.comparePython, "compare_script": config.compareBackend}, "Reaper": map[string]string{"launcherPath": config.reaperLauncher}}, "transcript": transcriptState}
+	dawFileLinked, dawReachable, dawProjectMatches := dawLinkFacts(h.persist, config.projectFolder)
+	return map[string]any{
+		"apiVersion": hostAPIVersion, "diagnosticId": h.diagnostic, "version": h.version,
+		"projectFolder": config.projectFolder, "projectName": config.projectName, "daw": config.daw,
+		// dawFileLinked/dawReachable/dawProjectMatches are the three separate facts PRD
+		// project-workspace-and-daw-link.prd.md W13 asks for, modeled apart from `daw` (see dawfacts.go).
+		"dawFileLinked": dawFileLinked, "dawReachable": dawReachable, "dawProjectMatches": dawProjectMatches,
+		"manuscript": imported, "manuscriptCandidate": manuscriptCandidate,
+		"runtime": map[string]any{
+			"ManuscriptGuide":   map[string]string{"python_exe": config.manuscriptPython, "backend": config.manuscriptBackend},
+			"TranscriptCompare": map[string]string{"python_exe": config.comparePython, "compare_script": config.compareBackend},
+			"Reaper":            map[string]string{"launcherPath": config.reaperLauncher},
+		},
+		"transcript": transcriptState,
+	}
 }
 
 func narratableManuscriptStats(data map[string]any) (int, int) {
