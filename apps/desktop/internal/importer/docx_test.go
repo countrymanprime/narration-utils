@@ -407,3 +407,131 @@ func TestAFlatCastHeadingFlushesACandidateLeftOpenByThePriorPerCharacterHeading(
 		t.Fatalf("a stray label with no candidate open and the legacy form already used must not fabricate one, got %#v", candidateNames(draft))
 	}
 }
+
+// --- Phase 4: TOC as the chapter list (import-structure-toc-and-characters PRD, S6, S8) ---
+
+func wordBookmarkStart(name string) string {
+	return `<w:bookmarkStart w:id="0" w:name="` + name + `"/>`
+}
+func wordBookmarkEnd() string { return `<w:bookmarkEnd w:id="0"/>` }
+
+// wordHyperlink wraps runs the way a TOC entry's title text is stored: a w:hyperlink whose w:anchor cites the "_Toc" bookmark
+// Word opened around the heading it names.
+func wordHyperlink(anchor string, runs ...string) string {
+	return `<w:hyperlink w:anchor="` + anchor + `">` + strings.Join(runs, "") + `</w:hyperlink>`
+}
+
+// The TOC field's own begin/instrText/separate/end runs are inert to text extraction (only <w:t> populates visible text), so
+// including them proves the parser does not leak field-code instructions into a paragraph's text - not that it needs them for
+// recognition, which goes by the "TOC N" style and the hyperlink's own anchor instead.
+const (
+	wordFieldBegin    = `<w:r><w:fldChar w:fldCharType="begin"/></w:r>`
+	wordFieldInstr    = `<w:r><w:instrText xml:space="preserve"> TOC \o "1-3" \h \z \u </w:instrText></w:r>`
+	wordFieldSeparate = `<w:r><w:fldChar w:fldCharType="separate"/></w:r>`
+	wordFieldEnd      = `<w:r><w:fldChar w:fldCharType="end"/></w:r>`
+)
+
+func TestStripTOCPageNumber(t *testing.T) {
+	cases := []struct{ input, want string }{
+		{"Chapter One\t3", "Chapter One"},
+		{"Chapter One .......... 12", "Chapter One"},
+		{"Chapter One", "Chapter One"},
+		{"Chapter 12", "Chapter"}, // a chapter literally titled with a trailing number is indistinguishable from a page number; documented, not fixed
+	}
+	for _, tc := range cases {
+		if got := stripTOCPageNumber(tc.input); got != tc.want {
+			t.Errorf("stripTOCPageNumber(%q) = %q, want %q", tc.input, got, tc.want)
+		}
+	}
+}
+
+// TestDocxTOCWithBookmarksBecomesTheAuthoritativeChapterList covers Phase 4's Must (S6, S8): a docx whose own table of contents
+// - a real field (inert begin/instrText/separate/end included), "TOC 1" styled entries, each a w:hyperlink citing a "_Toc"
+// bookmark Word opened around its target heading - names every real chapter and nothing else, in order. The proposed chapter
+// list becomes exactly the TOC's own order; Title and Contents, never in the heuristic titles list to begin with, stay excluded
+// without any special-casing. Sections/grouping are untouched: only chapterTitles is affected.
+func TestDocxTOCWithBookmarksBecomesTheAuthoritativeChapterList(t *testing.T) {
+	draft := importDocx(t, wordParagraph("Title", wordRun("My Book"))+
+		wordParagraph("TOCHeading", wordFieldBegin, wordFieldInstr, wordFieldSeparate, wordRun("Contents"))+
+		wordParagraph("TOC1", wordHyperlink("_Toc1", wordRun("Chapter One")), "<w:r><w:tab/></w:r>", wordRun("1"))+
+		wordParagraph("TOC1", wordHyperlink("_Toc2", wordRun("Chapter Two")), "<w:r><w:tab/></w:r>", wordRun("5"))+
+		wordParagraph("TOC1", wordHyperlink("_Toc3", wordRun("Chapter Three")), "<w:r><w:tab/></w:r>", wordRun("9"), wordFieldEnd)+
+		wordParagraph("Heading1", wordBookmarkStart("_Toc1"), wordRun("Chapter One"), wordBookmarkEnd())+
+		wordParagraph("", wordRun("First chapter text."))+
+		wordParagraph("Heading1", wordBookmarkStart("_Toc2"), wordRun("Chapter Two"), wordBookmarkEnd())+
+		wordParagraph("", wordRun("Second chapter text."))+
+		wordParagraph("Heading1", wordBookmarkStart("_Toc3"), wordRun("Chapter Three"), wordBookmarkEnd())+
+		wordParagraph("", wordRun("Third chapter text.")))
+	want := []string{"Chapter One", "Chapter Two", "Chapter Three"}
+	if len(draft.ChapterTitles) != len(want) {
+		t.Fatalf("ChapterTitles = %#v, want %#v", draft.ChapterTitles, want)
+	}
+	for index := range want {
+		if draft.ChapterTitles[index] != want[index] {
+			t.Fatalf("ChapterTitles = %#v, want %#v", draft.ChapterTitles, want)
+		}
+	}
+	for _, notice := range draft.Notices {
+		if strings.Contains(notice, "table of contents") {
+			t.Fatalf("no mismatch notice expected when every entry matched, got %#v", draft.Notices)
+		}
+	}
+	if got := sectionNamed(t, draft, "Chapter One").ParagraphCount; got != 1 {
+		t.Fatalf("Chapter One paragraph count = %d, sections must be unaffected by TOC authority", got)
+	}
+}
+
+// TestDocxAnOrdinaryCrossReferenceHyperlinkIsNotCountedAsATOCEntry covers a review finding: Word reuses a heading's own "_Toc"
+// bookmark, rather than minting a "_Ref" one, for an ordinary in-body cross-reference to that heading ("Insert cross-reference >
+// insert as hyperlink"). A body paragraph carrying such a hyperlink is not itself "TOC N"-styled, so it must not be counted as one
+// more (necessarily unmatched, since its title is already claimed) TOC entry - which would otherwise drag a fully accurate TOC
+// below the match threshold and add a misleading mismatch notice about a document whose real TOC was never wrong.
+func TestDocxAnOrdinaryCrossReferenceHyperlinkIsNotCountedAsATOCEntry(t *testing.T) {
+	draft := importDocx(t, wordParagraph("TOCHeading", wordRun("Contents"))+
+		wordParagraph("TOC1", wordHyperlink("_Toc1", wordRun("Chapter One")))+
+		wordParagraph("TOC1", wordHyperlink("_Toc2", wordRun("Chapter Two")))+
+		wordParagraph("Heading1", wordBookmarkStart("_Toc1"), wordRun("Chapter One"), wordBookmarkEnd())+
+		wordParagraph("", wordRun("First chapter text."))+
+		wordParagraph("Heading1", wordBookmarkStart("_Toc2"), wordRun("Chapter Two"), wordBookmarkEnd())+
+		// An ordinary body sentence with a cross-reference hyperlink back to Chapter Two's own "_Toc" bookmark - not a TOC entry.
+		wordParagraph("", wordRun("As we saw in "), wordHyperlink("_Toc2", wordRun("Chapter Two")), wordRun(", the plan changed.")))
+	want := []string{"Chapter One", "Chapter Two"}
+	if len(draft.ChapterTitles) != len(want) || draft.ChapterTitles[0] != want[0] || draft.ChapterTitles[1] != want[1] {
+		t.Fatalf("ChapterTitles = %#v, want %#v (the cross-reference must not count as a third, unmatched entry)", draft.ChapterTitles, want)
+	}
+	for _, notice := range draft.Notices {
+		if strings.Contains(notice, "table of contents") {
+			t.Fatalf("no mismatch notice expected: the TOC's own two entries both matched, got %#v", draft.Notices)
+		}
+	}
+}
+
+// TestDocxTOCBelowThresholdFallsBackToHeuristicAndReportsAMismatch covers S6's fallback: a stale or hand-typed TOC whose entries
+// mostly do not match any real heading must not override the heading heuristic, but is still reported.
+func TestDocxTOCBelowThresholdFallsBackToHeuristicAndReportsAMismatch(t *testing.T) {
+	draft := importDocx(t, wordParagraph("TOCHeading", wordRun("Contents"))+
+		wordParagraph("TOC1", wordRun("Chapter One"))+
+		wordParagraph("TOC1", wordRun("An Old Chapter That Was Removed"))+
+		wordParagraph("TOC1", wordRun("Another Stale Entry"))+
+		wordParagraph("TOC1", wordRun("Yet Another Stale Entry"))+
+		wordParagraph("Heading1", wordRun("Chapter One"))+
+		wordParagraph("", wordRun("First chapter text."))+
+		wordParagraph("Heading1", wordRun("Chapter Two"))+
+		wordParagraph("", wordRun("Second chapter text.")))
+	want := []string{"Chapter One", "Chapter Two"}
+	if len(draft.ChapterTitles) != len(want) || draft.ChapterTitles[0] != want[0] || draft.ChapterTitles[1] != want[1] {
+		t.Fatalf("ChapterTitles = %#v, want the heuristic list %#v unchanged (below the match threshold)", draft.ChapterTitles, want)
+	}
+	// "Chapter One" matches by normalised text; the ordinal fallback (last resort) then pairs the next stale entry with the one
+	// remaining unmatched title ("Chapter Two") positionally, so 2 of the 4 entries match something - not just the 1 that
+	// actually names a real chapter. 2/4 = 50% still clears nothing against the 80% threshold, so the heuristic list still wins.
+	found := false
+	for _, notice := range draft.Notices {
+		if strings.Contains(notice, "The table of contents listed 4 entries; 2 matched a chapter in the manuscript.") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected the mismatch notice, got %#v", draft.Notices)
+	}
+}

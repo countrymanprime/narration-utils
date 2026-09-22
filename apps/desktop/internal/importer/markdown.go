@@ -1,6 +1,7 @@
 package importer
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -50,6 +51,7 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 	// heading (level == headingLevel) sits at the same depth, chapter or not, so any later one - not only a "Chapter N"-shaped
 	// title - now ends the section instead of leaking every later short heading in as a candidate.
 	headingLevels := map[string]int{}
+	notices := []string{}
 	flush := func() {
 		if len(pending) == 0 {
 			return
@@ -95,7 +97,11 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 					}
 					continue
 				}
-				chapter, subtitle, _ = headingParts(text)
+				var glued bool
+				chapter, subtitle, glued = headingParts(text)
+				if glued {
+					notices = append(notices, fmt.Sprintf("Heading %q had no gap between its number and title; split into %q and %q.", collapse(text), chapter, subtitle))
+				}
 				section = ""
 				titles = append(titles, chapter)
 				if _, seen := headingLevels[chapter]; !seen {
@@ -125,8 +131,12 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 		paragraphs[preIndexes[index]].Chapter = kind
 	}
 	progress.report(60, "Read %d paragraphs under %d chapter headings", len(paragraphs), len(titles))
+	for _, notice := range notices {
+		progress.report(70, "%s", notice)
+	}
 	progress.report(80, "Classifying front matter, chapters and reference sections")
 	draft, err := newDraft("markdown", filepath.Base(path), paragraphs, titles, headingLevels)
+	draft.Notices = notices
 	if err == nil {
 		progress.report(95, "Found %d chapters in %d sections", len(titles), len(draft.Sections))
 	}
