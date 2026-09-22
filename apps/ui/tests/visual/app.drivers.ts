@@ -95,6 +95,15 @@ const PAGE_CONTENT: Partial<Record<AppPage, (page: Page) => Locator>> = {
 // and "Story Bible", so an unscoped query can land on the wrong control. The shell renders one of two navigation asides
 // per width (the full sidebar from 1400 px, the icon rail below), the other is display:none, and both come before <main>
 // in the DOM, so the first visible aside is the navigation.
+/** Opens the Story Bible on the first entry and presses its Play, so the app asks to download the local preview voice. */
+async function askForThePreviewVoice(page: Page, url: string): Promise<void> {
+  await page.goto(url);
+  await settlePage(page);
+  await clickNav(page, 'Story Bible');
+  await page.locator('tr[data-row]').first().click();
+  await page.getByRole('button', { name: 'Play preview' }).first().click();
+}
+
 async function clickNav(page: Page, name: AppPage): Promise<void> {
   // Below `md` the navigation is behind an "Open navigation" button (the reflow viewport, ADR 0061): open the drawer, pick
   // the item, and wait for the drawer to close so the page behind it is the one photographed. Only when the menu button
@@ -420,6 +429,21 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickNav(page, 'Story Bible');
       await page.getByText('The app received data it could not read.').waitFor();
     },
+    'voice-download-confirm': async (page) => {
+      await askForThePreviewVoice(page, '/');
+      await page.getByRole('alertdialog', { name: 'Download local preview voice?' }).waitFor();
+    },
+    'voice-download-progress': async (page) => {
+      await askForThePreviewVoice(page, '/?mockAssets=downloading');
+      await page.getByRole('button', { name: 'Download voice' }).click();
+      await page.getByRole('dialog', { name: 'Downloading preview voice' }).waitFor();
+      await page.getByText(/44 of 109 MB/).waitFor();
+    },
+    'voice-download-failed': async (page) => {
+      await askForThePreviewVoice(page, '/?mockAssets=download-fails');
+      await page.getByRole('button', { name: 'Download voice' }).click();
+      await page.getByRole('alert').filter({ hasText: 'did not match the approved one' }).waitFor();
+    },
     'category-all': async (page) => {
       await goToPage(page, 'Story Bible');
       await clickVisible(page, 'tab', /^All · \d+$/);
@@ -540,6 +564,18 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'setup-default': async (page) => {
       await goToPage(page, 'Teleprompter');
       await page.getByText('Alice was beginning').first().waitFor();
+    },
+    // The Whisper model is not installed under ?mockAssets, so Start reading asks to download it; the mock holds the download at 40 percent.
+    'model-download-progress': async (page) => {
+      await page.goto('/?mockAssets=downloading');
+      await settlePage(page);
+      await goToPage(page, 'Teleprompter');
+      await page.getByText('Alice was beginning').first().waitFor();
+      await page.getByPlaceholder('Microphone (USB Audio Device)').fill('Studio microphone');
+      await page.getByRole('button', { name: 'Start reading' }).click();
+      await page.getByRole('button', { name: 'Download model' }).click();
+      await page.getByRole('dialog', { name: 'Downloading Whisper model' }).waitFor();
+      await page.getByText(/185 of 464 MB/).waitFor();
     },
     // The seams boot a session already 30 words into the first paragraph (word
     // 35 of the chapter). Wait for the highlight to land there so the shot is

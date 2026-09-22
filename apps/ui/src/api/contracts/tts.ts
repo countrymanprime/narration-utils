@@ -1,3 +1,5 @@
+import type { AssetInstallJob } from './assets';
+
 export type TtsInstallState = 'installed' | 'not_installed' | 'verification_failed';
 
 export type TtsVoice = {
@@ -23,14 +25,7 @@ export type TtsCatalog = {
   voices: TtsVoice[];
 };
 
-export type TtsInstallJob = {
-  id: string | null;
-  voiceId: string;
-  phase: 'downloading' | 'success' | 'cancelled' | 'error';
-  percent: number;
-  message: string;
-  error: string;
-};
+export type TtsInstallJob = AssetInstallJob & { voiceId: string };
 
 export interface TtsApi {
   ttsCatalog(): Promise<TtsCatalog>;

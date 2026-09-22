@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone, faStop } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
+import { useAssetInstall } from '../../hooks/useAssetInstall';
+import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { Button } from '../primitives/Button';
-import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { ToggleGroup } from '../primitives/ToggleGroup';
@@ -74,28 +75,14 @@ function statusText(host: TeleprompterState, session: Session): string {
   return 'Listening';
 }
 
-function ModelDownloadDialog({ prompt, job, confirm, cancel }: { prompt: ModelPrompt; job?: WhisperInstallJob; confirm: () => void; cancel: () => void }) {
-  const downloading = job?.phase === 'running';
+function ModelFacts({ prompt }: { prompt: ModelPrompt }) {
   return (
-    <ConfirmDialog
-      title={downloading ? 'Downloading Whisper model' : 'Download local Whisper model?'}
-      body={
-        downloading
-          ? job.message
-          : `The ${prompt.model.displayName} Whisper model listens for your voice. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`
-      }
-      confirmLabel={downloading ? 'Downloading…' : 'Download model'}
-      confirm={confirm}
-      cancel={cancel}
-      escapeCancels={!downloading}
-    >
-      <p className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-        {Math.ceil(prompt.downloadSize / (1024 * 1024))} MB · {prompt.model.publisher} ·{' '}
-        <a className="link" href={prompt.model.licenseUrl} target="_blank" rel="noreferrer">
-          {prompt.model.license}
-        </a>
-      </p>
-    </ConfirmDialog>
+    <p className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+      {Math.ceil(prompt.downloadSize / (1024 * 1024))} MB · {prompt.model.publisher} ·{' '}
+      <a className="link" href={prompt.model.licenseUrl} target="_blank" rel="noreferrer">
+        {prompt.model.license}
+      </a>
+    </p>
   );
 }
 
@@ -110,21 +97,26 @@ export function TeleprompterPage() {
   const [loaded, setLoaded] = useState<{ chapterId: string; paragraphs: ManuscriptParagraph[] }>();
   const [error, setError] = useState('');
   const [prompt, setPrompt] = useState<ModelPrompt>();
-  const [job, setJob] = useState<WhisperInstallJob>();
+  // The model download: the shared install-poll hook (D4). A session must not start on a page the narrator has already left: the hook
+  // stops and never calls onSuccess once this page has gone.
+  const modelInstall = useAssetInstall<WhisperInstallJob>({
+    start: () => {
+      if (!prompt) return Promise.reject(new Error('Start reading first.'));
+      return api.whisperInstall(prompt.model.id);
+    },
+    state: (jobId) => api.whisperInstallState(jobId),
+    cancel: (jobId) => api.whisperInstallCancel(jobId),
+    onSuccess: async () => {
+      setPrompt(undefined);
+      await start();
+    },
+  });
 
   const active = ACTIVE_PHASES.includes(host.phase);
   // A session in progress (or just finished) decides which chapter is shown.
   const chapterId = session.script?.chapter.id ?? chosenChapter;
   const chapter = chapters?.find((item) => item.id === chapterId);
   const cursor = usePacedCursor(session.cursor);
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-
   useEffect(() => {
     const stopEvents = api.subscribeTeleprompterEvent((event) => dispatch({ kind: 'event', event }));
     const stopState = api.subscribeTeleprompterState((next) => {
@@ -183,7 +175,7 @@ export function TeleprompterPage() {
     try {
       const result = await api.teleprompterStart({ chapter: chapterId, device: device.trim(), model });
       if (result.status === 'asset_required') {
-        setJob(undefined);
+        modelInstall.reset();
         setPrompt(result);
       }
     } catch (reason) {
@@ -192,38 +184,9 @@ export function TeleprompterPage() {
   };
   const stop = () => void api.teleprompterStop().catch((reason) => setError(errorText(reason)));
 
-  const installModel = async () => {
-    if (!prompt || job?.phase === 'running') return;
-    try {
-      let current = await api.whisperInstall(prompt.model.id);
-      setJob(current);
-      while (current.id && current.phase === 'running' && mounted.current) {
-        await new Promise((resolve) => window.setTimeout(resolve, 400));
-        current = await api.whisperInstallState(current.id);
-        setJob(current);
-      }
-      // A session must not start on a page the narrator has already left.
-      if (!mounted.current) return;
-      if (current.phase === 'success') {
-        setPrompt(undefined);
-        setJob(undefined);
-        await start();
-      } else if (current.phase !== 'cancelled') setError(current.message);
-    } catch (reason) {
-      setError(errorText(reason));
-    }
-  };
-  const cancelModelDownload = async () => {
-    if (job?.id && job.phase === 'running') {
-      try {
-        setJob(await api.whisperInstallCancel(job.id));
-      } catch (reason) {
-        setError(errorText(reason));
-      }
-      return;
-    }
+  const closeModelPrompt = () => {
     setPrompt(undefined);
-    setJob(undefined);
+    modelInstall.reset();
   };
 
   const selectChapter = (id: string) => {
@@ -336,7 +299,20 @@ export function TeleprompterPage() {
           <ReaderText rows={rows} cursor={cursor} skipped={session.skipped} follow={active} />
         </Panel>
       )}
-      {prompt && <ModelDownloadDialog prompt={prompt} job={job} confirm={() => void installModel()} cancel={() => void cancelModelDownload()} />}
+      {prompt && (
+        <AssetInstallPrompt
+          ask={{
+            title: 'Download local Whisper model?',
+            body: `The ${prompt.model.displayName} Whisper model listens for your voice. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`,
+            confirmLabel: 'Download model',
+          }}
+          workTitle="Downloading Whisper model"
+          install={modelInstall}
+          dismiss={closeModelPrompt}
+        >
+          <ModelFacts prompt={prompt} />
+        </AssetInstallPrompt>
+      )}
     </div>
   );
 }

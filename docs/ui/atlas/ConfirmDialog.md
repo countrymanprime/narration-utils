@@ -24,9 +24,8 @@ Storybook title: `Primitives/ConfirmDialog`. Source: `src/components/primitives/
 ## Used by
 
 - `src/App.tsx`
+- `src/components/assets/AssetInstallPrompt.tsx`
 - `src/components/home/Home.tsx`
-- `src/components/proofing/Transcript.tsx`
 - `src/components/settings/Settings.tsx`
 - `src/components/settings/UpdatesPanel.tsx`
 - `src/components/storybible/GuideDetail.tsx`
-- `src/components/teleprompter/TeleprompterPage.tsx`

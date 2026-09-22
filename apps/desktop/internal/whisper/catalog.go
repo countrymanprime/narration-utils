@@ -88,11 +88,16 @@ func (m *Manager) State(model Model) string {
 // Install downloads only a catalog-owned URL. Files are verified in an
 // adjacent staging directory and become visible only after every file passes.
 func (m *Manager) Install(ctx context.Context, id string) error {
+	return m.InstallWith(ctx, id, assets.Options{})
+}
+
+// InstallWith is Install with the options of assets.Options: progress and the check hook of a job that reports them.
+func (m *Manager) InstallWith(ctx context.Context, id string, options assets.Options) error {
 	model, ok := m.Model(id)
 	if !ok {
 		return fmt.Errorf("the selected Whisper model is not in the approved catalog")
 	}
-	return assets.Install(ctx, m.root, model.Provider, model.ID, model.Version, model.Files)
+	return assets.InstallWith(ctx, m.root, model.Provider, model.ID, model.Version, model.Files, options)
 }
 func (m *Manager) Remove(id string) error {
 	model, ok := m.Model(id)

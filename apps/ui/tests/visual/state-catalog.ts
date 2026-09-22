@@ -116,6 +116,21 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'entry-saving',
     description: 'Story Bible, an entry being saved: the Save button is busy and the other actions are off (ADR 0075, ?mockHoldEdits=1)',
   },
+  {
+    page: 'storybible',
+    state: 'voice-download-confirm',
+    description: 'Story Bible, the first-use question before the local preview voice is downloaded: what it is, its size, publisher and licence',
+  },
+  {
+    page: 'storybible',
+    state: 'voice-download-progress',
+    description: 'Story Bible, the voice download with real bytes, 39 percent and Cancel (?mockAssets=downloading)',
+  },
+  {
+    page: 'storybible',
+    state: 'voice-download-failed',
+    description: 'Story Bible, the voice download after it failed: the reason as an alert and Close (?mockAssets=download-fails)',
+  },
   { page: 'storybible', state: 'category-all', description: 'Story Bible, All category tab' },
   { page: 'storybible', state: 'category-character', description: 'Story Bible, Character category tab' },
   { page: 'storybible', state: 'category-place', description: 'Story Bible, Place/Location category tab' },
@@ -187,6 +202,11 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'teleprompter',
     state: 'setup-default',
     description: 'Teleprompter, before a session - chapter, microphone and model choices with the chapter text below (no highlight yet)',
+  },
+  {
+    page: 'teleprompter',
+    state: 'model-download-progress',
+    description: 'Teleprompter, the Whisper model download after Start reading, with real bytes and Cancel (?mockAssets=downloading)',
   },
   {
     page: 'teleprompter',

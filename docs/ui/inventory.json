@@ -92,12 +92,11 @@
       ],
       "consumers": [
         "src/App.tsx",
+        "src/components/assets/AssetInstallPrompt.tsx",
         "src/components/home/Home.tsx",
-        "src/components/proofing/Transcript.tsx",
         "src/components/settings/Settings.tsx",
         "src/components/settings/UpdatesPanel.tsx",
-        "src/components/storybible/GuideDetail.tsx",
-        "src/components/teleprompter/TeleprompterPage.tsx"
+        "src/components/storybible/GuideDetail.tsx"
       ],
       "a11yDebt": false
     },
@@ -633,6 +632,7 @@
         "Escape Closes When Finished"
       ],
       "consumers": [
+        "src/components/assets/AssetInstallPrompt.tsx",
         "src/components/home/Home.tsx",
         "src/components/settings/UpdateDownloadDialog.tsx",
         "src/components/settings/UpdatesPanel.tsx",

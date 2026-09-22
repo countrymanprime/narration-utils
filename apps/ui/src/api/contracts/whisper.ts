@@ -1,3 +1,5 @@
+import type { AssetInstallJob } from './assets';
+
 export type WhisperInstallState = 'installed' | 'not_installed' | 'verification_failed';
 
 export type WhisperModel = {
@@ -21,12 +23,7 @@ export type WhisperCatalog = {
   models: WhisperModel[];
 };
 
-export type WhisperInstallJob = {
-  id: string | null;
-  modelId: string;
-  phase: 'running' | 'success' | 'cancelled' | 'error';
-  message: string;
-};
+export type WhisperInstallJob = AssetInstallJob & { modelId: string };
 
 export interface WhisperApi {
   whisperCatalog(): Promise<WhisperCatalog>;

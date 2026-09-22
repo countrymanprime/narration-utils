@@ -52,7 +52,7 @@ The payload is a wire contract ([wire contracts](wire-contracts.md)): `jobEndedS
 - **`apps/ui/src/interactionFeedback.catalog.ts`** has one row for every call of a `NarrationApi` method outside `src/api/`. A site is `<file>::<method>#<n>` (the n-th call of that method in that file, in source order). A row says what triggers the call, what the host does (`instant`, `file-io`, `python`, `job`, `download`, `os-dialog`), how it acknowledges, guards and completes, where a failure goes, whether the outcome survives leaving the page, and a verdict.
 - **Verdicts.** `ok` meets the standard. `gap` does not, and its `plan` is a GitHub issue (`#123`). `owned` belongs to other work named in `plan`. `exempt` is on purpose and the note says why (a mount-time load with a page error state, a diagnostic that must never throw).
 - **`apps/ui/src/interactionFeedback.test.ts`** fails on a call with no row, a row whose call is gone, a `gap` with no issue, an `ok` row that fails silently or leaves a Python call unacknowledged or unguarded, and any bare catch (`catch {}`, `.catch(() => {})`, `.catch(() => undefined)`) that is not in `SILENT_CATCHES` with its reason. It reads the contracts and the source with the TypeScript parser, so a comment that mentions `api.guideEdit(` is not a call. `SILENT_CATCHES` may only shrink, and a narrator's action never belongs on it.
-- **State today:** 110 call sites; no `gap`; 9 `owned` (the voice and Whisper install flows, [#209](https://github.com/countrymanprime/narration-utils/issues/209)); the rest `ok` or `exempt`.
+- **State today:** 110 call sites; no `gap`, no `owned` (the nine install rows became `ok` when the install flows were rebuilt, [ADR 0077](../adr/0077-every-asset-install-is-one-job-with-real-bytes-a-second-start-joins-it-and-one-hook-follows-it.md)); the rest `ok` or `exempt`.
 
 ## Adding a call to the host, or a job
 
@@ -66,6 +66,6 @@ The payload is a wire contract ([wire contracts](wire-contracts.md)): `jobEndedS
 
 ## What is not done
 
-- **The install flows** (voice and Whisper downloads): real byte progress, a guard against a second install job and one shared poll hook are release-readiness Phase 1's ([#209](https://github.com/countrymanprime/narration-utils/issues/209)).
+- **The install flows** are done ([ADR 0077](../adr/0077-every-asset-install-is-one-job-with-real-bytes-a-second-start-joins-it-and-one-hook-follows-it.md)): real bytes, a host that joins a running install, one `useAssetInstall` hook.
 - **Operating system notifications** are the Story Bible and import briefs PRD's (owner decision D8: on by default); they subscribe to `job:ended`.
 - **Owner steps** ([#210](https://github.com/countrymanprime/narration-utils/issues/210)): a screen-reader pass on the live regions and busy buttons, a real desktop run of the job-end toast, and the measurements that need a spaCy model, a Piper voice or antivirus.

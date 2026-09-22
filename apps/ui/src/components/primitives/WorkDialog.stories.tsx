@@ -48,6 +48,20 @@ export const RunningWithProgress: Story = {
   },
 };
 
+// A download shows its bytes next to the message, outside the live region (they change on every poll, so only the progress bar carries them
+// for a screen reader).
+export const DownloadWithBytes: Story = {
+  args: {
+    title: 'Downloading preview voice',
+    job: { ...runningJob, kind: 'asset_install', message: 'Downloading and verifying the approved voice…', detail: '44 of 109 MB', percent: 40, logs: [] },
+  },
+  play: async () => {
+    const bar = await screen.findByRole('progressbar', { name: 'Downloading preview voice progress' });
+    await expect(bar).toHaveAttribute('aria-valuetext', '44 of 109 MB');
+    await expect(screen.getByRole('status')).not.toHaveTextContent('MB');
+  },
+};
+
 // The import while it writes to the project has no Cancel, so it shows the notice.
 export const Committing: Story = {
   args: {

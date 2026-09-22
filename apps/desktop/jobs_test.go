@@ -124,7 +124,7 @@ func TestAStoryBibleBuildEndsWithOneEventAndAFailureCarriesItsReason(t *testing.
 func TestAVoiceInstallEndsWithAJobEvent(t *testing.T) {
 	fixture := newPreviewHost(t, "ok")
 	host := fixture.host
-	host.ttsJobs = map[string]*ttsJob{}
+	host.installJobs = map[string]*installJob{}
 	events := collectJobEnds(host)
 	started, err := host.startTtsInstall(previewVoiceID)
 	if err != nil {

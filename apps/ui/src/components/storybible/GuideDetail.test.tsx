@@ -122,6 +122,57 @@ describe('Story Bible local TTS preview', () => {
     await waitFor(() => expect(screen.queryByRole('heading', { name: /preview voice/i })).toBeNull());
   });
 
+  it('shows the real bytes of the voice download and lets the narrator cancel it', async () => {
+    vi.stubGlobal('Audio', PreviewAudio);
+    const api = createMockApi({}, { assets: 'downloading' });
+    render(
+      <ApiProvider api={api}>
+        <GuideDetail
+          entity={WIRE_ENTITIES[0]}
+          entities={WIRE_ENTITIES}
+          reload={vi.fn().mockResolvedValue(undefined)}
+          notify={vi.fn()}
+          goToManuscript={vi.fn()}
+        />
+      </ApiProvider>,
+    );
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Play preview' })[0]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Download voice' }));
+
+    expect(await screen.findByText(/of 109 MB/)).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('39'));
+    expect(screen.getByText(/44 of 109 MB/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect((await screen.findAllByText('Voice download cancelled.')).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('says why the voice download failed and leaves the narrator able to try again', async () => {
+    vi.stubGlobal('Audio', PreviewAudio);
+    const api = createMockApi({}, { assets: 'download-fails' });
+    render(
+      <ApiProvider api={api}>
+        <GuideDetail
+          entity={WIRE_ENTITIES[0]}
+          entities={WIRE_ENTITIES}
+          reload={vi.fn().mockResolvedValue(undefined)}
+          notify={vi.fn()}
+          goToManuscript={vi.fn()}
+        />
+      </ApiProvider>,
+    );
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Play preview' })[0]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Download voice' }));
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(/did not match the approved one/);
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getAllByRole('button', { name: 'Play preview' })[0]).toBeTruthy();
+  });
+
   it('plays a ready preview without rendering a native audio control and toggles pause', async () => {
     const previews = renderReadyPreview();
 
@@ -185,7 +236,8 @@ describe('Story Bible local TTS preview', () => {
   it('shows the host failure the mock preview-error seam simulates once the voice is installed', async () => {
     vi.stubGlobal('Audio', PreviewAudio);
     const api = createMockApi({}, { previewError: 'the preview voice could not be loaded (missing file)' });
-    await api.ttsInstall('en_US-ljspeech-high');
+    let installing = await api.ttsInstall('en_US-ljspeech-high');
+    while (installing.phase !== 'success') installing = await api.ttsInstallState(installing.id);
     const notify = vi.fn();
     render(
       <ApiProvider api={api}>

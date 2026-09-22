@@ -64,11 +64,15 @@ export function WorkDialog({
     >
       <div className="flex justify-between gap-3 text-sm">
         {/* A live region, so a screen reader hears each step; a failure interrupts (alert), progress does not (status). */}
-        <span role={job.error ? 'alert' : 'status'}>{job.error || job.message}</span>
+        <span>
+          <span role={job.error ? 'alert' : 'status'}>{job.error || job.message}</span>
+          {/* The numbers move on nearly every poll, so they sit outside the live region: the progress bar carries them for a screen reader. */}
+          {job.detail && !job.error && <span> {job.detail}</span>}
+        </span>
         <span className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs">{Math.floor(job.elapsed)}s</span>
       </div>
       {/* Progress carries the semantics (role, aria-valuenow only when determinate); the fill below keeps the current look. */}
-      <Progress.Root value={indeterminate ? null : job.percent} aria-label={`${title} progress`} className="mt-3">
+      <Progress.Root value={indeterminate ? null : job.percent} aria-label={`${title} progress`} aria-valuetext={job.detail} className="mt-3">
         <Progress.Track className="progressbar h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
           <div
             // motion-safe: the fill neither eases nor slides for people who have asked for reduced motion.

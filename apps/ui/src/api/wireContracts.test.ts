@@ -89,7 +89,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'tts-install-error.json': ttsInstallJobSchema,
   'tts-install-cancelled.json': ttsInstallJobSchema,
   'whisper-catalog.json': whisperCatalogSchema,
-  'whisper-install-running.json': whisperInstallJobSchema,
+  'whisper-install-downloading.json': whisperInstallJobSchema,
+  'tts-install-verifying.json': ttsInstallJobSchema,
   'whisper-install-success.json': whisperInstallJobSchema,
   'transcript-start-asset-required.json': startResultSchema,
   'transcript-start-started.json': startResultSchema,
@@ -286,12 +287,25 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const api = createMockApi();
     expectMatches(ttsCatalogSchema, await api.ttsCatalog(), 'mock voice catalog');
     const voice = (await api.ttsCatalog()).voices[0]?.id ?? '';
-    for (const job of [await api.ttsInstall(voice), await api.ttsInstallState('tts-1'), await api.ttsInstallCancel('tts-1')]) {
+    const started = await api.ttsInstall(voice);
+    for (const job of [
+      started,
+      await api.ttsInstallState(started.id),
+      await api.ttsInstallState(started.id),
+      await api.ttsInstallState(started.id),
+      await api.ttsInstallCancel(started.id),
+    ]) {
       expectMatches(ttsInstallJobSchema, job, 'mock voice install job');
     }
     expectMatches(whisperCatalogSchema, await api.whisperCatalog(), 'mock model catalog');
     const model = (await api.whisperCatalog()).models[0]?.id ?? '';
-    for (const job of [await api.whisperInstall(model), await api.whisperInstallState('w-1'), await api.whisperInstallCancel('w-1')]) {
+    const running = await api.whisperInstall(model);
+    for (const job of [
+      running,
+      await api.whisperInstallState(running.id),
+      await api.whisperInstallState(running.id),
+      await api.whisperInstallState(running.id),
+    ]) {
       expectMatches(whisperInstallJobSchema, job, 'mock model install job');
     }
   });

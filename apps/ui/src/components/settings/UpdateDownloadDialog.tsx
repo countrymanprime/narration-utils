@@ -10,10 +10,10 @@ const BYTES_PER_MB = 1024 * 1024;
 const isFinished = (phase: UpdateJob['phase']) => phase === 'ready' || phase === 'error' || phase === 'cancelled';
 const megabytes = (bytes: number) => Math.round(bytes / BYTES_PER_MB);
 
-/** The words for a step: while it downloads, the real bytes so far, so the narrator sees it move and knows how far it has to go. */
-function stepMessage(job: UpdateJob): string {
-  if (job.phase !== 'downloading' || job.bytesTotal <= 0) return job.message;
-  return `${job.message} ${megabytes(job.bytesDone)} of ${megabytes(job.bytesTotal)} MB`;
+/** While it downloads, the real bytes so far, so the narrator sees it move and knows how far it has to go. */
+function bytesDetail(job: UpdateJob): string | undefined {
+  if (job.phase !== 'downloading' || job.bytesTotal <= 0) return undefined;
+  return `${megabytes(job.bytesDone)} of ${megabytes(job.bytesTotal)} MB`;
 }
 
 const WORK_PHASE: Record<UpdateJob['phase'], WorkJob['phase']> = {
@@ -69,7 +69,7 @@ export function UpdateDownloadDialog({ available, close }: { available: UpdateAv
     };
   }, [api]);
 
-  const message = job ? stepMessage(job) : '';
+  const message = job?.message ?? '';
   const jobMessage = job?.message;
   useEffect(() => {
     if (jobMessage) setLog((current) => (current.includes(jobMessage) ? current : [...current, jobMessage]));
@@ -82,6 +82,7 @@ export function UpdateDownloadDialog({ available, close }: { available: UpdateAv
         kind: 'app_update',
         phase: job ? WORK_PHASE[job.phase] : 'preparing',
         message,
+        detail: job ? bytesDetail(job) : undefined,
         percent: job?.percent ?? 0,
         logs: log,
         elapsed: seconds,
