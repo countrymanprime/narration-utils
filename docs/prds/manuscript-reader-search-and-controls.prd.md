@@ -137,7 +137,7 @@ Decided 2026-09-21 (owner instruction, `docs/prds/implementation-plan.md` D22): 
 | 2 | Debounce and subset | Debounce hook, chapter-title subset, searching state, server cache/cap/offset, tests, visual state | complete | - | 1 | - |
 | 3 | Result rows | Left-aligned rows, `[icon] Line n: text`, windowing helper, match highlight, subtitle line, states | complete | - | 2 | - |
 | 4 | Controls bar | Inline chapters/search, font icon, right-aligned cluster, tooltip home, screenshots | complete | 3 | primitives Phase 1 (soft) | - |
-| 5 | Hide non-recorded chapters | `isRecordedChapter`, ADR, default chapter, Expand all, hash links, tests | pending | 3, 4 | import-structure Phase 2 (soft) | - |
+| 5 | Hide non-recorded chapters | `isRecordedChapter`, ADR, default chapter, Expand all, hash links, tests | complete | 3, 4 | import-structure Phase 2 (soft) | - |
 
 **Phase 1 - Search defects and small fixes.** Goal: correct behavior before restyling. Scope: `paragraphIds`-based numbering, "No matches" when hits are hidden, `select` clears (bump `searchRequest`), `SearchField` clear icon (copy `Guide.tsx:188-205`), `JUMP_HIGHLIGHT_MS = 30_000` with the docs at `design-system.md:42`, `manuscript.md:8,52,54`, `state-catalog.ts:62`, `doc-screenshots.json`, `ChapterNav` bookmark to `--bookmark`. Success: Vitest for each; PNGs reviewed.
 
@@ -147,7 +147,7 @@ Decided 2026-09-21 (owner instruction, `docs/prds/implementation-plan.md` D22): 
 
 **Phase 4 - Controls bar.** Goal: one right-aligned control cluster. Scope: markup change, `faFont` icon with accessible name, tooltip re-homed, all screenshots regenerated. Success: no wrap or overflow at 390 px in the suite.
 
-**Phase 5 - Hide non-recorded chapters.** Goal: the reader shows only what is recorded (and opening material if kept). Scope: helper, gates, ADR, tests including a reference-first manuscript. Success: audio totals unchanged; page opens on the first recorded chapter.
+**Phase 5 - Hide non-recorded chapters.** Goal: the reader shows only what is recorded (and opening material if kept). Scope: helper, gates, ADR, tests including a reference-first manuscript. Success: audio totals unchanged; page opens on the first recorded chapter. Delivered: reused the existing `isListableChapter` (`state.ts`) rather than a second `isRecordedChapter` helper, since the two checks were already the same rule; `Manuscript.tsx`'s render loop, default active chapter (on load and when a saved reader state points at a now-hidden chapter, R14), and "Expand all" all filter through it, and a `#p`/`#c` link into a reference chapter is a no-op with a `notify` message rather than a redirect (no per-chapter reference view exists to redirect to). `AudiobookEstimatePanel.tsx` needed no change (its own `narration`-only filter is already stricter). See [ADR 0090](../adr/0090-the-page-flip-reader-hides-reference-chapters-superseding-the-reader-half-of-adr-0005.md).
 
 **Parallelism Notes**: Phases 1-3 edit `ChapterNav.tsx` and `Manuscript.tsx`, so serialize them; Phase 4 touches the controls markup and can run beside Phase 3 with a rebase; Phase 5 is independent of 2-4 apart from `Manuscript.tsx` conflicts.
 
@@ -172,6 +172,7 @@ Cross-cutting: re-check ADR numbering and `hostAPIVersion` at merge time; `visua
 | Highlight halving | 30 s tint, pulse unchanged (decided 2026-09-21, D22) | Also the pulse | "Halve it for now" |
 | Bookmark token | `--bookmark` (decided 2026-09-21, D22) | `--accent` | Docs already call it blue; added to the palette's AA token-pair test (`paletteContrast.test.ts`), passes 3:1 in both themes with no colour change needed |
 | Match highlight kind | A dedicated `Search` kind on `Highlight`, not a local `<mark>` style (decided 2026-09-21, D22) | Reuse an existing kind; a local mark style | The palette's colour-mix Highlight work (S12a) is delivered; reusing it keeps one highlighted-text primitive (ADR 0016) |
+| Reference chapters in the reader (R13) | All `reference` chapters hidden from the page-flip view, reusing `isListableChapter`; a hidden-target link is a no-op with a message (decided 2026-09-21, D22; [ADR 0090](../adr/0090-the-page-flip-reader-hides-reference-chapters-superseding-the-reader-half-of-adr-0005.md)) | Contents only; redirect a hidden link to a per-chapter reference view | Nothing reference is recorded; the reader has no standalone reference-chapter view to redirect to |
 
 ## Research Summary
 

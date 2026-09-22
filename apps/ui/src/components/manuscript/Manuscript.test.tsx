@@ -13,12 +13,12 @@ afterEach(() => {
   cleanup();
 });
 
-function renderManuscript(overrides: Parameters<typeof createMockApi>[0] = {}, focusStoryBibleEntity = vi.fn()) {
+function renderManuscript(overrides: Parameters<typeof createMockApi>[0] = {}, focusStoryBibleEntity = vi.fn(), initialEntries = ['/manuscript']) {
   const api = createMockApi(overrides);
   const notify = vi.fn();
   render(
     <div className="shell-content">
-      <MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>
         <ApiProvider api={api}>
           <Manuscript notify={notify} focusStoryBibleEntity={focusStoryBibleEntity} />
         </ApiProvider>
@@ -27,6 +27,19 @@ function renderManuscript(overrides: Parameters<typeof createMockApi>[0] = {}, f
   );
   return { api, focusStoryBibleEntity, notify };
 }
+
+// A reference chapter (Contents) placed before the narration chapters, the shape Phase 5 hides
+// from the continuous reader (R13) - mirrors ChapterNav.test.tsx's fixture, plus paragraphIds so a
+// "#p" deep link can resolve into it.
+const referenceChapter = {
+  id: 'contents',
+  title: 'Contents',
+  index: 0,
+  wordCount: 40,
+  status: 'not_started' as const,
+  contentKind: 'reference' as const,
+  paragraphIds: [{ id: 'p-contents-0', index: 900 }],
+};
 
 // Finds the text node containing `phrase` and selects exactly that
 // substring, then fires the mouseup the app listens for - simulating a real
@@ -350,6 +363,42 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
       expect(await screen.findByRole('button', { name: 'Text size' })).toBeTruthy();
       expect(chapters).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('hides reference material from the continuous reader (R13, Phase 5)', () => {
+    it('opens on the first recorded chapter even when a reference chapter sorts first', async () => {
+      renderManuscript({ manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())] });
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      expect(document.querySelector('[data-chapter-id="contents"]')).toBeNull();
+    });
+
+    it('never renders a reference chapter as an article in the page-flip view', async () => {
+      renderManuscript({ manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())] });
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      expect(screen.queryByText('Contents')).toBeNull();
+      expect(document.querySelector('[data-chapter-id="contents"]')).toBeNull();
+    });
+
+    it('Expand all chapters never requests paragraphs for a reference chapter', async () => {
+      const paragraphsSpy = vi.fn(async () => []);
+      renderManuscript({
+        manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())],
+        manuscriptParagraphs: paragraphsSpy,
+      });
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Expand all chapters' }));
+      await waitFor(() => expect(paragraphsSpy).toHaveBeenCalled());
+      expect(paragraphsSpy).not.toHaveBeenCalledWith('contents');
+    });
+
+    it('a "#p" deep link into a hidden paragraph tells the narrator instead of navigating there', async () => {
+      const { notify } = renderManuscript({ manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())] }, vi.fn(), [
+        '/manuscript#p900',
+      ]);
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('reference material')));
+      expect(document.querySelector('[data-chapter-id="contents"]')).toBeNull();
     });
   });
 });
