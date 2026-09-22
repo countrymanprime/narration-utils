@@ -91,6 +91,11 @@ A compiled release is one program, `narration-utils` (`narration-utils.exe` on W
 it off there), and on Windows, after your confirmed click, it downloads that release, checks it and replaces itself; it
 never downloads or installs anything on its own. See [in-app update](docs/architecture/in-app-update.md).
 
+A built program can check itself without opening a window: `narration-utils --smoke` unpacks its bundled resources, starts
+each frozen sidecar, checks the Story Bible sidecar's dictionary and speech data and the approved asset catalogs, and exits
+non-zero on any failure. CI runs it on the Windows build before packaging; see
+[CI and releases](docs/operations/ci-and-releases.md#the-packaged-app-smoke-test).
+
 Legacy `.piper`, `.runtime` and `.bootstrap` directories created by the retired
 bootstrap scripts are ignored, never adopted: a voice or model in one of them is not
 treated as installed, because nothing verified it against the catalog (see

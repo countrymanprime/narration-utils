@@ -38,7 +38,7 @@ class FakePyInstaller:
         name = args[args.index("--name") + 1]
         env = kwargs.get("env") or {}
         with self._lock:
-            self.calls.append({"name": name, "env": env})
+            self.calls.append({"name": name, "env": env, "args": list(args)})
         if self._barrier:
             self._barrier.wait()
         failed = name in self._fail
@@ -158,6 +158,27 @@ def test_output_the_console_cannot_encode_does_not_crash_the_build(script, monke
     script.main()
 
     assert len(fake.calls) == len(SIDECARS)
+
+
+def flag_values(call, flag: str) -> list[str]:
+    args = call["args"]
+    return [args[index + 1] for index, value in enumerate(args) if value == flag]
+
+
+def test_the_guide_freeze_carries_piper_data_and_the_cmu_dictionary(script, monkeypatch):
+    # Piper needs piper/espeak-ng-data to speak (about 19 MB), and cmudict needs its data and its package metadata: PyInstaller has
+    # no hook for either, and the frozen guide logged "CMU pronunciation unavailable (No package metadata was found for cmudict)"
+    # (release-readiness phase 4 spike). The packaged smoke test proves it end to end.
+    fake = FakePyInstaller()
+    install(monkeypatch, script, fake)
+
+    script.main()
+
+    guide = next(call for call in fake.calls if call["name"] == "manuscript-guide")
+    assert {"piper", "cmudict"} <= set(flag_values(guide, "--collect-data"))
+    assert "cmudict" in flag_values(guide, "--copy-metadata")
+    for other in (call for call in fake.calls if call["name"] != "manuscript-guide"):
+        assert "piper" not in flag_values(other, "--collect-data"), "only the guide speaks; the others must not grow by 19 MB"
 
 
 def test_sidecar_flag_freezes_only_that_sidecar(script, monkeypatch):

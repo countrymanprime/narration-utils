@@ -47,6 +47,28 @@ runs:
         cd apps/desktop
         wails doctor
         node ../../scripts/release/wails-build.mjs -s "${wails_args[@]}"
+    # The packaged app proves it can start: `--smoke` unpacks the embedded resources, starts every frozen sidecar, checks that the frozen
+    # Story Bible sidecar can load its dictionary and espeak-ng data, loads the three asset catalogs, writes the asset cache and checks the
+    # REAPER package, then exits (no window, no download; apps/desktop/smoke.go). It runs before packaging, so a build that cannot start
+    # is never published. Windows is the supported platform; the macOS and Linux previews are not smoked yet. LocalAppData points at an
+    # empty folder so the run leaves the runner's real cache alone. (A composite step has no timeout-minutes; the smoke test bounds every
+    # sidecar command itself, at 90 seconds, and the calling job has its own limit.)
+    - name: Smoke test the packaged app
+      if: inputs.platform == 'windows-x64'
+      shell: bash
+      env:
+        SMOKE_CACHE: ${{ runner.temp }}\smoke-cache
+        SMOKE_REPORT: ${{ runner.temp }}\smoke-report.json
+      run: |
+        mkdir -p "$SMOKE_CACHE"
+        status=0
+        LOCALAPPDATA="$SMOKE_CACHE" apps/desktop/build/bin/narration-utils.exe --smoke --report "$SMOKE_REPORT" || status=$?
+        # A GUI-subsystem program's stdout can be lost, so the report file is what is shown and summarised.
+        if [ -f "$SMOKE_REPORT" ]; then
+          cat "$SMOKE_REPORT"
+          { echo '### Packaged app smoke test'; echo '```json'; cat "$SMOKE_REPORT"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+        fi
+        exit "$status"
     - name: Package the release asset
       shell: bash
       env:

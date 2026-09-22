@@ -2,8 +2,8 @@
 
 **Status: Implemented for every asset kind the app ships: Piper preview voices, Whisper transcription models and Story Bible
 spaCy language models.** The catalog, asset manager, registry, Local assets page, the no-download-at-startup proof and the
-legacy-cache policy are delivered (release-readiness phases 1 to 7); what remains is the packaged-release smoke test and the
-installer, planned in [release-readiness-provisioning-and-docs-site.prd.md](../prds/release-readiness-provisioning-and-docs-site.prd.md).
+legacy-cache policy and the packaged-release smoke test (`narration-utils --smoke`, run by CI on the Windows build) are
+delivered (release-readiness phases 1 to 8); what remains is the installer, planned in [release-readiness-provisioning-and-docs-site.prd.md](../prds/release-readiness-provisioning-and-docs-site.prd.md).
 Each shipped artifact's record (publisher, version, URL, SHA-256, licences, install location, update policy) is in
 [local dependency evaluation](../research/local-dependency-evaluation.md#shipped-assets).
 
@@ -13,7 +13,7 @@ Each shipped artifact's record (publisher, version, URL, SHA-256, licences, inst
 | Asset manager | `apps/desktop/internal/assets` ("The asset manager" below) |
 | State APIs, UI, catalog-backed choices | `Assets*` bindings, Settings > Local assets, catalog-backed spaCy choices ("The asset registry", "The local assets page") |
 | Piper, Whisper, spaCy; later assets | Shipped; a new kind is a catalog file and a provider |
-| Docs, legacy caches, release smoke | Records and policy below and in the research record (phase 7); the packaged smoke test is phase 8 |
+| Docs, legacy caches, release smoke | Records and policy below and in the research record (phase 7); the packaged smoke test ("The packaged smoke test" below, phase 8) |
 
 ## Problem
 
@@ -151,6 +151,15 @@ Every kind of asset is one provider in a registry that is built once at start an
 ## The local assets page (implemented)
 
 Settings > Local assets (Global scope) is the one place to see, verify, repair and remove what the app keeps on this computer. `apps/ui/src/components/assets/LocalAssets.tsx` lists `AssetsList`, so a new kind of asset appears there with no page work. Each row shows the kind, name, exact version, publisher, licence, model card and provenance links, the download and disk sizes and one of five states: not installed, downloading (real bytes and percent from the install job, with Cancel while bytes arrive), verifying, installed and needs repair (`verification_failed`). The row owns its download through `useAssetInstall`, and a download that was already running when the page opened is followed through the list's `activeJobId`, so leaving the page never loses one. Not installed offers Download, installed offers Verify (a busy button, because it reads every byte) and Remove, and needs repair offers Repair (the install call, which repairs) and Remove. Remove is a danger confirm that says what it frees and what will ask to download it again. A failed download, verification or removal is written in the row, never silent. The page also shows the total the installed assets use and the cache folder; the folder is shown and never changed or emptied from here (owner decision Q3), and only the narrator's Remove deletes an asset. The mock seeds `?mockAssets=installing|checking|damaged` reach every state without a host, and the visual suite captures each one at every viewport including the 390 px reflow width.
+
+## The packaged smoke test (implemented)
+
+`narration-utils --smoke` proves what "the release contains everything needed to start" claims, on the executable that ships: it
+unpacks the bundled resources, starts every frozen sidecar, checks that the frozen Story Bible sidecar can load its dictionary and
+start its speech phonemizer (the data a freeze silently loses), loads the three approved catalogs, writes the asset cache and checks
+the REAPER package, prints a JSON report and exits non-zero on any failure, with no window and no download. CI runs it on the
+Windows build before the asset is packaged; details, the checks and the decision not to download the voice in CI are in
+[CI and releases](../operations/ci-and-releases.md#the-packaged-app-smoke-test).
 
 ## Acceptance criteria
 

@@ -1158,6 +1158,73 @@ def remove_stale_partials(destination: Path, keep: Path) -> None:
             entry.unlink(missing_ok=True)
 
 
+SELF_CHECK_WORD = "hello"
+
+
+def check_cmudict() -> str:
+    """Looks a common word up in the CMU dictionary. A frozen build without the dictionary's data or package metadata fails here."""
+    import pronouncing
+
+    phones = pronouncing.phones_for_word(SELF_CHECK_WORD)
+    if not phones:
+        raise ValueError(f"the CMU dictionary has no entry for {SELF_CHECK_WORD!r}")
+    return f"{SELF_CHECK_WORD} = {phones[0]}"
+
+
+def check_espeak(data_dir: Path | None = None) -> str:
+    """Starts Piper's bundled espeak-ng and phonemizes a common word. A frozen build without ``piper/espeak-ng-data`` fails here."""
+    from piper.phonemize_espeak import ESPEAK_DATA_DIR, EspeakPhonemizer
+
+    directory = Path(data_dir) if data_dir is not None else Path(ESPEAK_DATA_DIR)
+    if not directory.is_dir():
+        raise ValueError(f"the espeak-ng data directory was not found: {directory}")
+    sentences = EspeakPhonemizer(directory).phonemize("en-us", SELF_CHECK_WORD)
+    phonemes = "".join("".join(sentence) for sentence in sentences)
+    if not phonemes.strip():
+        raise ValueError(f"espeak-ng produced no phonemes for {SELF_CHECK_WORD!r}")
+    return f"{SELF_CHECK_WORD} = {phonemes}"
+
+
+def check_synthesis(piper_model: str) -> str:
+    """Loads a voice and speaks one word into a temporary file, the whole render-audio path without a project."""
+    import tempfile
+
+    voice = load_voice(piper_model)
+    with tempfile.TemporaryDirectory() as temporary:
+        destination = Path(temporary) / "self-check.wav"
+        synthesize_to_file(voice, SELF_CHECK_WORD, destination)
+        with wave.open(str(destination), "rb") as wav_file:
+            frames = wav_file.getnframes()
+    return f"spoke {SELF_CHECK_WORD!r}: {frames} frames"
+
+
+def run_self_check(piper_model: str | None = None, espeak_data_dir: Path | None = None) -> list[dict[str, Any]]:
+    """Runs every check, never stopping at the first failure, and returns one result per check.
+
+    The packaged-app smoke test (``narration-utils --smoke``) runs this against the frozen sidecar. The dictionary and the espeak-ng
+    data are what a freeze can silently lose (PyInstaller has no hook for either), and losing them made previews fail and names lose
+    their pronunciation. The 114 MB voice is not needed for them; pass ``piper_model`` to also speak a word.
+    """
+    checks: list[tuple[str, Any]] = [("cmudict", check_cmudict), ("espeak", lambda: check_espeak(espeak_data_dir))]
+    if piper_model:
+        checks.append(("synthesis", lambda: check_synthesis(piper_model)))
+    results: list[dict[str, Any]] = []
+    for name, check in checks:
+        try:
+            results.append({"name": name, "ok": True, "detail": check()})
+        except Exception as exc:  # noqa: BLE001 - the report says why, whatever it was
+            results.append({"name": name, "ok": False, "detail": str(exc) or type(exc).__name__})
+    return results
+
+
+def self_check(args: argparse.Namespace) -> None:
+    results = run_self_check(piper_model=args.piper_model or None)
+    ok = all(entry["ok"] for entry in results)
+    print(json.dumps({"ok": ok, "checks": results}))
+    if not ok:
+        sys.exit(1)
+
+
 def use_utf8_stdio() -> None:
     """Writes UTF-8 to the pipes the host reads.
 
@@ -1229,6 +1296,8 @@ def main() -> None:
     audio_parser.add_argument("--piper-model", required=True)
     audio_parser.add_argument("--alias-index", type=int, default=None)
     audio_parser.add_argument("--output-name", default="")
+    check_parser = command.add_parser("self-check", help="prove the dictionary and the espeak-ng data this program carries load (the packaged smoke test)")
+    check_parser.add_argument("--piper-model", default="", help="also load this voice and speak one word")
     args = parser.parse_args()
     log_handle = None
     if getattr(args, "log", None):
@@ -1248,6 +1317,7 @@ def main() -> None:
             "relate": relate,
             "unrelate": unrelate,
             "render-audio": render_audio,
+            "self-check": self_check,
         }[args.command](args)
     except Exception as exc:  # noqa: BLE001
         log(f"ERROR: {exc}")

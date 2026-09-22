@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 // developmentVersion is what a build with no stamp reports: `go run`, `go test` and `wails dev`. The update check treats it as
 // a build that must not replace itself (docs/architecture/in-app-update.md).
 const developmentVersion = "0.0.0-dev"
@@ -17,5 +15,3 @@ var version = developmentVersion
 func isVersionRequest(arguments []string) bool {
 	return len(arguments) == 1 && arguments[0] == "--version"
 }
-
-func printVersion() { fmt.Println(version) }

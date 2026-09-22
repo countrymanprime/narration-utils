@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
 	"embed"
+	"fmt"
+	"io"
+	"io/fs"
 	"log"
 	"os"
 
@@ -22,12 +26,13 @@ var frontendAssets embed.FS
 // from a checkout at runtime.
 //
 //go:embed all:cmd/narration-utils/resources
-var resources embed.FS
+var resources embed.FS // its root inside the file system is resourcesRoot (smoke.go)
 
 func main() {
-	if isVersionRequest(os.Args[1:]) {
-		printVersion()
-		return
+	// The modes that answer and exit come before everything that starts the program for real: the update relaunch logic, the
+	// single-instance lock and the window.
+	if code, handled := runEarlyModes(os.Args[1:], resources, os.Stdout, os.Stderr); handled {
+		os.Exit(code)
 	}
 	if !startAfterUpdate() {
 		return
@@ -48,4 +53,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+// runEarlyModes runs the modes that print something and exit (`--version`, and `--smoke`, smoke.go) and reports whether the arguments
+// were one of them, with the exit code. A program started any other way carries on to open its window.
+func runEarlyModes(arguments []string, embedded fs.FS, stdout, stderr io.Writer) (code int, handled bool) {
+	switch {
+	case isVersionRequest(arguments):
+		_, _ = fmt.Fprintln(stdout, version)
+		return 0, true
+	case isSmokeRequest(arguments):
+		return runSmoke(context.Background(), arguments, embedded, stdout, stderr), true
+	}
+	return 0, false
 }

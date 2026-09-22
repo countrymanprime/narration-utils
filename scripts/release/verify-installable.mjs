@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { REAPER_FILES } from './reaper-files.mjs';
@@ -21,6 +21,26 @@ const guideInternal = resolve(runtime, 'manuscript-guide', '_internal');
 const previewRuntimeMissing = ['piper', 'onnxruntime'].filter((name) => !existsSync(resolve(guideInternal, name)));
 if (previewRuntimeMissing.length) {
   throw new Error(`Release preview runtime is incomplete: ${previewRuntimeMissing.join(', ')}. Manuscript Guide must embed Piper and ONNX Runtime.`);
+}
+// The frozen Story Bible sidecar must carry the data its Piper voice and its pronunciations read: PyInstaller has no hook for
+// piper/espeak-ng-data or for cmudict (its dictionary and its package metadata), and losing them made previews fail (TTS PRD, cause 4).
+// `narration-utils --smoke` proves they load; this proves they are in the tree before it is embedded.
+const guideDataMissing = [
+  ['piper', 'espeak-ng-data'],
+  ['cmudict', 'data'],
+]
+  .filter((parts) => !existsSync(resolve(guideInternal, ...parts)))
+  .map((parts) => parts.join('/'));
+if (!(existsSync(guideInternal) && readdirSync(guideInternal).some((name) => /^cmudict-.+\.dist-info$/.test(name)))) {
+  guideDataMissing.push('cmudict-<version>.dist-info');
+}
+if (guideDataMissing.length) {
+  throw new Error(`Release Story Bible data is incomplete: ${guideDataMissing.join(', ')}. Manuscript Guide must collect the Piper and cmudict data and the cmudict metadata (scripts/release/prepare-resources.py).`);
+}
+// The three approved asset catalogs travel with the release: the app reads them to know what it may offer to download.
+const catalogsMissing = ['tts-assets.json', 'whisper-assets.json', 'spacy-assets.json'].filter((name) => !existsSync(resolve(resources, 'config', name)));
+if (catalogsMissing.length) {
+  throw new Error(`Release asset catalogs are missing: ${catalogsMissing.join(', ')}. prepare-resources.py copies config/ into the resources.`);
 }
 const reaperMissing = REAPER_FILES
   .filter((name) => !existsSync(resolve(resources, 'reaper', name)));
