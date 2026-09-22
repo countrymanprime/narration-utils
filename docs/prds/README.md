@@ -68,6 +68,9 @@ Phase counts are the rows of each PRD's phase table.
 | UI Primitives and a Headless Library (PRD deleted, delivered) | Feature (infrastructure) | 6 (including a phase 0 decision) | None; reopens Q1 of Dialog Modality and WorkDialog Accessibility (PRD deleted, delivered) |
 | [TypeScript 7 and Typed Linting](typescript-7-and-typed-linting.prd.md) | Feature (tooling) | 3 (the last blocked on typescript-eslint and TypeScript 7.1) | None |
 | [Public App Demo on GitHub Pages](public-app-demo.prd.md) | Feature | 2 | None; extends `pages.yml` beyond `release-readiness-provisioning-and-docs-site.prd.md` Phases 9-13 |
+| [Audacity Integration](audacity-integration.prd.md) | Feature | 11 (0-10) | None; corrects the "Audacity adapters" deferral of `docs/roadmap.md` and `config/roadmap.json` (D23) |
+| [Native Recording Suite](native-recording-suite.prd.md) | Feature | 6 | None; long-term/deferred like the Audacity adapters in `docs/roadmap.md`, coexists with the REAPER bridge |
+| [DAW Selection and Acquisition](daw-selection-and-acquisition.prd.md) | Feature | 4 | None; upstream of [Project Workspace: DAW Link](project-workspace-and-daw-link.prd.md), which assumes a DAW is already installed |
 
 ## Replaced briefs
 
