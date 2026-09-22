@@ -1,6 +1,6 @@
 # Interaction latency baseline
 
-**Measured 2026-09-21.** Phase 1 of the [interaction feedback audit](../prds/interaction-feedback-audit.prd.md): how long the Story Bible operations and the heavier Go calls take, so the feedback standard ([ADR 0075](../adr/0075-every-action-that-leaves-the-interface-acknowledges-within-100-ms-cannot-be-fired-twice-and-tells-the-narrator-when-it-ends.md)) rests on numbers. The numbers are one machine's, and the frozen sidecar was measured from a build made for this run, not from a release.
+**Measured 2026-09-21.** Phase 1 of the interaction feedback audit (stack S14; its PRD is deleted, see [interaction feedback](../architecture/interaction-feedback.md)): how long the Story Bible operations and the heavier Go calls take, so the feedback standard ([ADR 0075](../adr/0075-every-action-that-leaves-the-interface-acknowledges-within-100-ms-cannot-be-fired-twice-and-tells-the-narrator-when-it-ends.md)) rests on numbers. The numbers are one machine's, and the frozen sidecar was measured from a build made for this run, not from a release.
 
 ## Method
 
