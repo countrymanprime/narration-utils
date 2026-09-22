@@ -48,6 +48,9 @@ import type { AssetInstallState } from './contracts/assets';
 
 const DEFAULT_PROJECT_FOLDER = 'C:/Projects/Alice-in-Wonderland';
 const DEFAULT_PROJECT_NAME = 'Alice’s Adventures in Wonderland';
+// Mirrors the Go host's Phase 1 default (`~/NarrationUtils`, project.DefaultDirName): what an empty parent
+// resolves to in ProjectCreateIn.
+const DEFAULT_PROJECTS_DIRECTORY = 'C:/Users/Mock/NarrationUtils';
 
 /** Mirrors the Go backend's `filepath.Base(path)` default-naming rule for a folder chosen with no explicit name. */
 /** What the sidecar does with the `properties` value of an edit: a JSON list of pairs, a name on every one and no name twice (whatever its case). */
@@ -1007,7 +1010,7 @@ export function createMockApi(
     projectRecents: async () => wireClone(recentProjects),
     selectProjectFolder: async () => ({ selected: true, path: 'C:/Projects/Mock-Project' }),
     switchProject: async (path, name) => attachProject(path, name),
-    createProject: async (path, name) => attachProject(path, name),
+    createProject: async (parent, name) => attachProject(`${parent || DEFAULT_PROJECTS_DIRECTORY}/${name}`, name),
     removeRecentProject: async (path) => {
       recentProjects = recentProjects.filter((entry) => entry.path.toLowerCase() !== path.toLowerCase());
       return wireClone(recentProjects);

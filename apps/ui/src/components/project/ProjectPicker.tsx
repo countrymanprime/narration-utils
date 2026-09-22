@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolderOpen, faFolderPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
+import { NewProjectDialog } from './NewProjectDialog';
 import type { ProjectSwitchResult, RecentProject } from '../../types';
 
 // The application-data empty state for "no project folder was given" - a
@@ -16,6 +17,7 @@ export function ProjectPicker() {
   const [recentsFailed, setRecentsFailed] = useState(false);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const [newProjectOpen, setNewProjectOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -97,12 +99,10 @@ export function ProjectPicker() {
       applyResult(await api.switchProject(selection.path));
     });
 
-  const createNew = () =>
-    runAction(async () => {
-      const selection = await api.selectProjectFolder();
-      if (!selection.selected || !selection.path) return;
-      applyResult(await api.createProject(selection.path));
-    });
+  const projectCreated = (result: ProjectSwitchResult) => {
+    setNewProjectOpen(false);
+    applyResult(result);
+  };
 
   return (
     // tabIndex -1 like AppShell's <main>: a dialog that closes with nothing to give focus back to sends it here, not to <body>.
@@ -175,7 +175,7 @@ export function ProjectPicker() {
           <button
             type="button"
             className="inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase disabled:pointer-events-none disabled:opacity-40"
-            onClick={() => void createNew()}
+            onClick={() => setNewProjectOpen(true)}
             disabled={busy}
           >
             <FontAwesomeIcon icon={faFolderPlus} />
@@ -183,6 +183,7 @@ export function ProjectPicker() {
           </button>
         </div>
       </div>
+      {newProjectOpen && <NewProjectDialog onClose={() => setNewProjectOpen(false)} onCreated={projectCreated} />}
     </main>
   );
 }

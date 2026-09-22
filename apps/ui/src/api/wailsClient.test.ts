@@ -253,12 +253,20 @@ describe('wailsClient', () => {
     await expect(wailsClient.switchProject('C:/Projects/Alice')).resolves.toEqual({ switched: false, reason: 'Narration Utils is busy.' });
   });
 
-  it('creates a new project, defaulting an omitted name to an empty string for the backend to fill in', async () => {
+  it('creates a new project under a parent directory and a name, through ProjectCreateIn', async () => {
     const createProject = vi.fn().mockResolvedValue(JSON.stringify({ switched: true }));
-    window.go = { main: { Host: { ProjectCreate: createProject } } };
+    window.go = { main: { Host: { ProjectCreateIn: createProject } } };
 
-    await expect(wailsClient.createProject('C:/Projects/New-Project')).resolves.toEqual({ switched: true });
-    expect(createProject).toHaveBeenCalledWith('C:/Projects/New-Project', '');
+    await expect(wailsClient.createProject('C:/Projects', 'New Project')).resolves.toEqual({ switched: true });
+    expect(createProject).toHaveBeenCalledWith('C:/Projects', 'New Project');
+  });
+
+  it('creates a new project with an empty parent, letting the backend default to the projects directory', async () => {
+    const createProject = vi.fn().mockResolvedValue(JSON.stringify({ switched: true }));
+    window.go = { main: { Host: { ProjectCreateIn: createProject } } };
+
+    await expect(wailsClient.createProject('', 'New Project')).resolves.toEqual({ switched: true });
+    expect(createProject).toHaveBeenCalledWith('', 'New Project');
   });
 
   it('removes a recent project via the native binding and resolves with the updated list', async () => {
