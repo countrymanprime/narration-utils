@@ -110,3 +110,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0085](0085-the-third-party-notices-are-generated-from-the-release-and-ship-as-their-own-asset-and-not-inside-the-update-zip.md) | The third-party notices are generated from the release and ship as their own asset, not inside the update zip | Proposed |
 | [0086](0086-the-import-review-is-grouped-by-what-each-section-will-be-and-reports-repairs-instead-of-a-log.md) | The import review is grouped by what each section will be, and reports the importer's repairs instead of its log | Accepted |
 | [0087](0087-story-bible-header-actions-are-mode-based-and-lock-cannot-happen-mid-edit.md) | Story Bible header actions are mode-based, and Lock cannot happen mid-edit | Accepted |
+| [0088](0088-contents-and-characters-stay-reference-hidden-by-the-reader.md) | Contents and Characters stay stored as reference chapters; hiding them in the reader is the reader PRD's own phase | Accepted |
