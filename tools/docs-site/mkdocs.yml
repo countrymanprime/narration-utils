@@ -12,6 +12,18 @@ strict: true
 hooks:
   - hooks.py
 
+# Diagrams are fenced ```mermaid blocks (they render natively on GitHub too). Material draws them in the browser with the mermaid
+# bundle that hooks.py copies to assets/vendor/, so no page loads a script from another site.
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+extra_javascript:
+  - assets/vendor/mermaid.min.js
+
 theme:
   name: material
   # System fonts: no request to Google Fonts. (`repo_url` is not set for the same reason: Material would ask api.github.com for the
@@ -54,6 +66,8 @@ extra:
       name: narration-utils on GitHub
   # Read by hooks.py. Paths are relative to this file.
   include_manifest: include.txt
+  # The mermaid bundle hooks.py ships with the site (from the root package's node_modules; `pnpm install` provides it).
+  mermaid_bundle: ../../node_modules/mermaid/dist/mermaid.min.js
   # Section titles for the folders of docs/ (relative path from docs/) that the navigation generator would otherwise name after the folder,
   # and the order of the top level. A page's own title is its first heading.
   nav_titles:

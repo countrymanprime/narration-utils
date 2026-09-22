@@ -7,7 +7,10 @@ the site alive:
 * `on_page_markdown` rewrites a relative link that leaves the published set, that is, a link to a file outside `docs/`, to a
   page `include.txt` leaves out, or to a folder with no published index, into the GitHub file view of that path at the ref
   being built. A link to something that does not exist is left alone, so the strict build reports it;
-* `on_nav` names the sections and puts the top level in the order `mkdocs.yml` asks for.
+* `on_nav` names the sections and puts the top level in the order `mkdocs.yml` asks for;
+* `on_post_build` copies the mermaid bundle (a pinned devDependency of the root package) beside the pages. Material loads
+  mermaid from unpkg.com when no `mermaid` global exists, which would make every visitor's browser ask a third party; the site
+  ships it instead, the way it ships system fonts rather than Google Fonts.
 
 The functions that do the work take plain values and are tested without MkDocs (`tests/test_hooks.py`); the `on_*` functions
 at the bottom only unpack MkDocs' arguments.
@@ -18,6 +21,7 @@ from __future__ import annotations
 import os
 import posixpath
 import re
+import shutil
 from collections.abc import Callable, Iterable
 from pathlib import Path
 from urllib.parse import quote, unquote
@@ -294,3 +298,29 @@ def on_nav(nav, config, files):
     ordered = order_keys(keys, settings.get("nav_order", []))
     nav.items[:] = [nav.items[i] for i in [*home, *[j for j in ordered if j not in home]]]
     return nav
+
+
+def vendor_mermaid(bundle: Path, site_dir: Path) -> Path:
+    """Copy the mermaid bundle and its licence into `<site>/assets/vendor/`; the page loads it through `extra_javascript`."""
+    if not bundle.is_file():
+        raise FileNotFoundError(f"the mermaid bundle {bundle} is missing: run `pnpm install` (mermaid is a devDependency of the root package)")
+    target = site_dir / "assets" / "vendor"
+    target.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(bundle, target / bundle.name)
+    # The licence sits beside the bundle or, for the npm package, one folder up (`dist/mermaid.min.js`, `LICENSE`).
+    licence = next((path for path in (bundle.parent / "LICENSE", bundle.parent.parent / "LICENSE") if path.is_file()), None)
+    if licence is not None:
+        shutil.copyfile(licence, target / "LICENSE-mermaid.txt")
+    return target / bundle.name
+
+
+def on_post_build(config):
+    from mkdocs.exceptions import PluginError
+
+    bundle = _settings(config).get("mermaid_bundle")
+    if not bundle:
+        return
+    try:
+        vendor_mermaid((Path(config.config_file_path).parent / bundle).resolve(), Path(config.site_dir))
+    except FileNotFoundError as error:
+        raise PluginError(str(error)) from error

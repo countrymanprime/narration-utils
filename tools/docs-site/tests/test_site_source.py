@@ -4,7 +4,14 @@ import hooks
 import yaml
 from conftest import REPO_ROOT, SITE_PROJECT
 
-CONFIG = yaml.safe_load((SITE_PROJECT / "mkdocs.yml").read_text(encoding="utf-8"))
+
+class _MkdocsLoader(yaml.SafeLoader):
+    """mkdocs.yml names a Python function with `!!python/name:` (the mermaid fence); this test only reads the plain settings."""
+
+
+_MkdocsLoader.add_multi_constructor("tag:yaml.org,2002:python/name:", lambda loader, suffix, node: suffix)
+
+CONFIG = yaml.load((SITE_PROJECT / "mkdocs.yml").read_text(encoding="utf-8"), Loader=_MkdocsLoader)
 
 
 def docs_files():
