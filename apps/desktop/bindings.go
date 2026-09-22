@@ -683,6 +683,19 @@ func (h *Host) TracksSelect(path string) (string, error) {
 }
 func (h *Host) TracksList() (string, error) { return encodeBinding(h.tracksList()) }
 
+// TakeReviewScan runs one pickup/duplicate scan of chapterTrackName (take-review
+// phase 5's scan-and-review surface) and saves the fresh findings into the
+// project's findings store, returning the merged result.
+func (h *Host) TakeReviewScan(chapterTrackName string) (string, error) {
+	return encodeBinding(h.takeReviewScan(chapterTrackName))
+}
+
+// TakeReviewFindings reads the take-review analyzer's saved findings for
+// chapterTrackName (every chapter when empty) without running a new scan.
+func (h *Host) TakeReviewFindings(chapterTrackName string) (string, error) {
+	return encodeBinding(h.takeReviewFindings(chapterTrackName))
+}
+
 // voiceAssetRequired is the answer to a preview that needs a voice that is not installed yet: which voice, its state and its
 // download size, so the UI can offer to install it. The UI validates it as `GuidePreview` (ADR 0069).
 func voiceAssetRequired(voice tts.Voice, installState, installPath string) map[string]any {

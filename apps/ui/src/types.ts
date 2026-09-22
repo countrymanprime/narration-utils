@@ -18,6 +18,7 @@ export * from './api/contracts/lineidentity';
 export * from './api/contracts/pickups';
 export * from './api/contracts/renderconfig';
 export * from './api/contracts/chaptertags';
+export * from './api/contracts/takeReview';
 
 import type { ChapterTrackMapApi } from './api/contracts/chapterTrackMap';
 import type { DawCatalogApi } from './api/contracts/dawCatalog';
@@ -25,6 +26,7 @@ import type { ManuscriptApi } from './api/contracts/manuscript';
 import type { ProjectApi } from './api/contracts/project';
 import type { StoryBibleApi } from './api/contracts/storyBible';
 import type { SystemApi } from './api/contracts/system';
+import type { TakeReviewApi } from './api/contracts/takeReview';
 import type { TeleprompterApi } from './api/contracts/teleprompter';
 import type { TracksApi } from './api/contracts/tracks';
 import type { TranscriptApi } from './api/contracts/transcript';
@@ -58,4 +60,5 @@ export interface NarrationApi
     LineIdentityApi,
     PickupsApi,
     RenderConfigApi,
-    ChapterTagsApi {}
+    ChapterTagsApi,
+    TakeReviewApi {}

@@ -15,6 +15,7 @@ import type {
   ReaderState,
   RenderConfigState,
   ScopedSettingField,
+  TakeReviewFinding,
   TeleprompterDevice,
   TextSpan,
   TracksProject,
@@ -911,5 +912,109 @@ export const WIRE_CHAPTER_TAGS_PREVIEW_NOT_RENDERED: ChapterTagsPreview = {
 export const WIRE_CHAPTER_TAGS_EMBED_SUCCESS: ChapterTagsEmbedResult = {
   outputPath: 'C:\\Books\\Alice\\renders\\Alice in Wonderland.chapters.mp3',
 };
+
+// take-review's scan-and-review surface (phase 5): one restart-kind pickup (a partial re-read,
+// below the near-duplicate quality bar) and one near-identical duplicate_read, both against
+// "Chapter 1" of WIRE_TRACKS_PROJECT above - the same shape apps/desktop/contract_test.go's
+// TestContractTakeReviewFindings pins as tests/fixtures/contracts/takereview-findings.json. No
+// composite score anywhere in this fixture (Q9): only per-category evidence.
+export const WIRE_TAKE_REVIEW_FINDINGS: TakeReviewFinding[] = [
+  {
+    schema_version: 1,
+    id: 'f24ca7396d9cf9e023f63fd8',
+    analyzer: 'take-review',
+    project: { path: 'C:/Projects/Alice-in-Wonderland/Alice.rpp' },
+    source: {
+      file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take1.wav',
+      item_guid: '{11111111-0000-0000-0000-000000000001}',
+      take_guid: '{22222222-0000-0000-0000-000000000001}',
+    },
+    manuscript: { chapter_id: 'chapter-1', chapter_title: 'Chapter 1' },
+    category: 'pickup',
+    severity: 'info',
+    confidence: 0.6,
+    evidence_version: 'eacc64471bdeb17eef5941fd',
+    confidence_reason: "average of 2 member(s)' alignment match quality (fraction of aligned tokens that matched the manuscript exactly)",
+    evidence: {
+      kind: 'pickup',
+      matched_span_first: 3,
+      matched_span_last: 7,
+      members: [
+        {
+          item_index: 0,
+          item_guid: '{11111111-0000-0000-0000-000000000001}',
+          take_guid: '{22222222-0000-0000-0000-000000000001}',
+          source_file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take1.wav',
+          source_start: 0,
+          source_length: 4.5,
+          coverage: 1,
+          quality: 0.62,
+          exact_copy_group: '',
+        },
+        {
+          item_index: 1,
+          item_guid: '{11111111-0000-0000-0000-000000000002}',
+          take_guid: '{22222222-0000-0000-0000-000000000002}',
+          source_file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take2.wav',
+          source_start: 10,
+          source_length: 3.1,
+          coverage: 0.7,
+          quality: 0.58,
+          exact_copy_group: '',
+        },
+      ],
+    },
+    suggested_action: { kind: 'create_take', requires_confirmation: true },
+    review: { status: 'unreviewed' },
+  },
+  {
+    schema_version: 1,
+    id: 'b6a3478016f49b07a31f3f74',
+    analyzer: 'take-review',
+    project: { path: 'C:/Projects/Alice-in-Wonderland/Alice.rpp' },
+    source: {
+      file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take3.wav',
+      item_guid: '{11111111-0000-0000-0000-000000000003}',
+      take_guid: '{22222222-0000-0000-0000-000000000003}',
+    },
+    manuscript: { chapter_id: 'chapter-1', chapter_title: 'Chapter 1' },
+    category: 'duplicate_read',
+    severity: 'info',
+    confidence: 0.985,
+    evidence_version: '35c8e618317e757af0ac0678',
+    confidence_reason: "average of 2 member(s)' alignment match quality (fraction of aligned tokens that matched the manuscript exactly)",
+    evidence: {
+      kind: 'near_duplicate',
+      matched_span_first: 12,
+      matched_span_last: 15,
+      members: [
+        {
+          item_index: 2,
+          item_guid: '{11111111-0000-0000-0000-000000000003}',
+          take_guid: '{22222222-0000-0000-0000-000000000003}',
+          source_file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take3.wav',
+          source_start: 0,
+          source_length: 2.2,
+          coverage: 1,
+          quality: 0.99,
+          exact_copy_group: '',
+        },
+        {
+          item_index: 3,
+          item_guid: '{11111111-0000-0000-0000-000000000004}',
+          take_guid: '{22222222-0000-0000-0000-000000000004}',
+          source_file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take4.wav',
+          source_start: 0,
+          source_length: 2.2,
+          coverage: 1,
+          quality: 0.98,
+          exact_copy_group: '',
+        },
+      ],
+    },
+    suggested_action: { kind: 'create_take', requires_confirmation: true },
+    review: { status: 'unreviewed' },
+  },
+];
 
 export const wireClone = <T>(value: T): T => structuredClone(value);
