@@ -3,9 +3,18 @@ import { describeApiError } from '../../api/errorMessage';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faFont, faList } from '@fortawesome/free-solid-svg-icons';
+import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faFont, faList, faMicrophone } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
-import type { CreditsRenderResult, CreditTemplate, GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderState, SearchHit } from '../../types';
+import type {
+  CreditsRenderResult,
+  CreditTemplate,
+  GuideEntity,
+  ManuscriptChapter,
+  ManuscriptNote,
+  ManuscriptParagraph,
+  ReaderState,
+  SearchHit,
+} from '../../types';
 import { categoryCssName, chapterLineNumbers, chapterTextMatches, isListableChapter, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
@@ -25,6 +34,11 @@ import { AddNoteDialog } from './AddNoteDialog';
 import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from './EntitySummary';
 import { IconButton } from '../primitives/IconButton';
 import type { Notify } from '../primitives/Toast';
+import { ReadAloudDialog } from '../teleprompter/ReadAloudDialog';
+
+// Read aloud (teleprompter-manuscript-integration.prd.md) reads narration chapters only, matching the standalone
+// Teleprompter page's own chapter filter.
+const isNarrationChapter = (chapter: Pick<ManuscriptChapter, 'contentKind'>) => (chapter.contentKind ?? 'narration') === 'narration';
 
 const TEXT_SIZES = ['small', 'medium', 'large'] as const;
 const TEXT_SIZE_OPTIONS = TEXT_SIZES.map((value) => ({ value, label: value }));
@@ -65,6 +79,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   const [detail, setDetail] = useState<{ entity?: GuideEntity; note?: ManuscriptNote }>();
   const [pendingNote, setPendingNote] = useState<{ paragraphIndex: number; anchorStart: number; anchorEnd: number; anchorText: string }>();
   const [jumpTarget, setJumpTarget] = useState<number>();
+  const [readAloudChapter, setReadAloudChapter] = useState<ManuscriptChapter>();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
   // The query text a result was actually fetched for - not the debounce hook's own state, so an
@@ -497,10 +512,19 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
                     )}
                   </h2>
                 </button>
-                <div className="justify-self-end text-right max-md:col-start-2 max-md:flex max-md:gap-2 max-md:justify-self-start">
-                  <div className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs">{chapter.wordCount.toLocaleString()} words</div>
-                  <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                    ~{Math.max(1, Math.round(chapter.wordCount / 200))} min read
+                <div className="flex items-center gap-3 justify-self-end text-right max-md:col-start-2 max-md:justify-self-start">
+                  {isNarrationChapter(chapter) && (
+                    <TooltipTarget text="Read this chapter aloud and follow along">
+                      <Button variant="ghost" className="text-xs" aria-label={`Read ${chapter.title} aloud`} onClick={() => setReadAloudChapter(chapter)}>
+                        <FontAwesomeIcon icon={faMicrophone} /> Read aloud
+                      </Button>
+                    </TooltipTarget>
+                  )}
+                  <div>
+                    <div className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs">{chapter.wordCount.toLocaleString()} words</div>
+                    <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                      ~{Math.max(1, Math.round(chapter.wordCount / 200))} min read
+                    </div>
                   </div>
                 </div>
               </header>
@@ -646,6 +670,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
           </>
         )}
       </SlideOver>
+      {readAloudChapter && <ReadAloudDialog chapter={readAloudChapter} onClose={() => setReadAloudChapter(undefined)} />}
     </div>
   );
 }

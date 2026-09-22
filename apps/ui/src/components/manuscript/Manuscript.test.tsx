@@ -462,4 +462,26 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       expect(screen.queryByRole('heading', { name: 'Closing credits' })).toBeNull();
     });
   });
+
+  describe('Read aloud (teleprompter-manuscript-integration.prd.md Phase 2)', () => {
+    it('opens the read-aloud modal for a narration chapter, with no separate chapter picker', async () => {
+      renderManuscript();
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Read Chapter 1 aloud' }));
+
+      expect(await screen.findByRole('dialog', { name: /Read aloud.*Chapter 1/ })).toBeTruthy();
+    });
+
+    it('closing the modal returns to the Manuscript reader', async () => {
+      renderManuscript();
+      await waitFor(() => expect(screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' })).toBeTruthy());
+      fireEvent.click(screen.getByRole('button', { name: 'Read Chapter 1 aloud' }));
+      await screen.findByRole('dialog', { name: /Read aloud/ });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: /Read aloud/ })).toBeNull());
+    });
+  });
 });

@@ -275,22 +275,34 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/storybible/GuideDetail.tsx::guideDelete#1': row('click', 'python', 'pending', 'pending', 'toast', 'toast', 'na', 'ok', 'The confirm dialog stays open and busy until the delete ends and cannot be cancelled away (phase 3).'),
   'src/components/storybible/GuideDetail.tsx::guideMerge#1': row('click', 'python', 'pending', 'pending', 'toast', 'toast', 'na', 'ok', 'The confirm dialog stays open and busy until the merge ends and cannot be cancelled away (phase 3).'),
 
-  // Teleprompter
-  'src/components/teleprompter/TeleprompterPage.tsx::subscribeTeleprompterEvent#1': subscription('The live session events.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::subscribeTeleprompterState#1': subscription('The live session state.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::teleprompterState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Hydrates a session that was already running; the state event follows anyway.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::teleprompterDevices#1': row('effect', 'python', 'na', 'disabled', 'ui', 'inline', 'na', 'ok', 'Loads the device list on mount and again on a manual Refresh click in the picker (disabled while a listing is already in flight); a listing failure shows inline instead of blocking Start with a previously-chosen device (the host never fails this call outright).'),
-  'src/components/teleprompter/TeleprompterPage.tsx::settingsForScope#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Loads the persisted microphone (docs/prds/teleprompter-engines-and-input-devices.prd.md Phase 2) and runs the one-time browser-storage migration; if it fails the field just starts empty, exactly as it did before Phase 2.'),
+  // Teleprompter. Phase 2 (teleprompter-manuscript-integration.prd.md) extracted the session core into
+  // `useTeleprompterSession` so the standalone page and the `ReadAloudDialog` modal share it; the rows below moved
+  // with the calls they describe, and `TeleprompterPage.tsx` keeps only what stayed there (chapter selection).
   'src/components/teleprompter/TeleprompterPage.tsx::manuscriptChapters#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'An inline error.'),
   'src/components/teleprompter/TeleprompterPage.tsx::readerState#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only picks the chapter the narrator last read; the first chapter is used without it.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::manuscriptParagraphs#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'An inline error.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::teleprompterStart#1': row('click', 'job', 'disabled', 'host', 'ui', 'inline', 'no', 'ok', 'The state event moves the page to "starting" and disables Start; the host refuses a second session.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::teleprompterStop#1': row('click', 'job', 'none', 'none', 'ui', 'inline', 'no', 'ok', 'The state event moves the page on; an inline error otherwise.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::whisperInstall#1': row('click', 'download', 'dialog', 'host', 'dialog', 'dialog', 'no', 'ok', 'The first-use dialog says Starting at once; the host joins a download that is already running for the same asset (S16), so a second press starts no second one. Real bytes, the check, Cancel while bytes arrive, and a failure sentence in the dialog, through useAssetInstall.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::whisperInstallState#1': row('timer', 'download', 'dialog', 'na', 'poll', 'dialog', 'no', 'ok', 'The one install-poll loop (useAssetInstall), every 400 ms: the dialog shows the bytes as they arrive, and a failed poll is shown in the dialog. The download outlives the dialog and ends with job:ended.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::whisperInstallCancel#1': row('click', 'download', 'dialog', 'dialog', 'dialog', 'dialog', 'no', 'ok', 'Cancel stops the download and the dialog says it was cancelled; it is drawn only while bytes arrive, and a failed cancel is shown in the dialog.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::saveSettings#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'The one-time browser-storage-to-settings migration write; a failure leaves the device in local state for this visit and the migration is retried next load since the settings value never got marked set.'),
-  'src/components/teleprompter/TeleprompterPage.tsx::saveSettings#2': row('input', 'file-io', 'none', 'none', 'ui', 'inline', 'no', 'ok', 'The chosen microphone (global settings, docs/prds/teleprompter-engines-and-input-devices.prd.md Phase 2) is saved as it is picked or typed; a save failure shows as the page inline error, and the value picked stays selected in the field either way.'),
+  'src/components/teleprompter/useTeleprompterSession.ts::subscribeTeleprompterEvent#1': subscription('The live session events.'),
+  'src/components/teleprompter/useTeleprompterSession.ts::subscribeTeleprompterState#1': subscription('The live session state.'),
+  'src/components/teleprompter/useTeleprompterSession.ts::teleprompterState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Hydrates a session that was already running; the state event follows anyway.'),
+  'src/components/teleprompter/useTeleprompterSession.ts::teleprompterDevices#1': row('effect', 'python', 'na', 'disabled', 'ui', 'inline', 'na', 'ok', 'Loads the device list on mount and again on a manual Refresh click in the picker (disabled while a listing is already in flight); a listing failure shows inline instead of blocking Start with a previously-chosen device (the host never fails this call outright).'),
+  'src/components/teleprompter/useTeleprompterSession.ts::settingsForScope#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Loads the persisted microphone (docs/prds/teleprompter-engines-and-input-devices.prd.md Phase 2) and runs the one-time browser-storage migration on the standalone page; if it fails the field just starts empty, exactly as it did before Phase 2.'),
+  'src/components/teleprompter/useTeleprompterSession.ts::manuscriptParagraphs#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'An inline error.'),
+  'src/components/teleprompter/useTeleprompterSession.ts::teleprompterStart#1': row('click', 'job', 'disabled', 'host', 'ui', 'inline', 'no', 'ok', 'The state event moves the page to "starting" and disables Start; the host refuses a second session.'),
+  'src/components/teleprompter/useTeleprompterSession.ts::teleprompterStop#1': row('click', 'job', 'none', 'none', 'ui', 'inline', 'no', 'ok', 'The state event moves the page on; an inline error otherwise.'),
+  'src/components/teleprompter/useTeleprompterSession.ts::whisperInstall#1': row('click', 'download', 'dialog', 'host', 'dialog', 'dialog', 'no', 'ok', 'The first-use dialog says Starting at once; the host joins a download that is already running for the same asset (S16), so a second press starts no second one. Real bytes, the check, Cancel while bytes arrive, and a failure sentence in the dialog, through useAssetInstall.'),
+  'src/components/teleprompter/useTeleprompterSession.ts::whisperInstallState#1': row('timer', 'download', 'dialog', 'na', 'poll', 'dialog', 'no', 'ok', 'The one install-poll loop (useAssetInstall), every 400 ms: the dialog shows the bytes as they arrive, and a failed poll is shown in the dialog. The download outlives the dialog and ends with job:ended.'),
+  'src/components/teleprompter/useTeleprompterSession.ts::whisperInstallCancel#1': row('click', 'download', 'dialog', 'dialog', 'dialog', 'dialog', 'no', 'ok', 'Cancel stops the download and the dialog says it was cancelled; it is drawn only while bytes arrive, and a failed cancel is shown in the dialog.'),
+  'src/components/teleprompter/useTeleprompterSession.ts::saveSettings#1': row('effect', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'The one-time browser-storage-to-settings migration write (standalone page only); a failure leaves the device in local state for this visit and the migration is retried next load since the settings value never got marked set.'),
+  'src/components/teleprompter/useTeleprompterSession.ts::saveSettings#2': row(
+    'input',
+    'file-io',
+    'none',
+    'none',
+    'ui',
+    'inline',
+    'no',
+    'ok',
+    "The chosen microphone (global settings, docs/prds/teleprompter-engines-and-input-devices.prd.md Phase 2) is saved as it is picked or typed; a save failure shows as the inline error (the page's or the ReadAloudDialog modal's), and the value picked stays selected in the field either way.",
+  ),
 
   // Tracks
   'src/components/tracks/TracksPage.tsx::tracksDiscover#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'An inline error.'),
@@ -391,14 +403,16 @@ export const SILENT_CATCHES: Record<string, string> = {
   'src/components/manuscript/Manuscript.tsx#2': 'Renders the Closing credits pseudo-entry preview; same fallback as the opening one above.',
   'src/components/proofing/Transcript.tsx#1': 'Reads the last model and chunk choice; the defaults stay usable and Settings reports a real error.',
   'src/components/proofing/Transcript.tsx#2': 'Only offers to review the last run; without it the offer is absent.',
-  'src/components/teleprompter/TeleprompterPage.tsx#1':
+  // Phase 2 (teleprompter-manuscript-integration.prd.md) moved the device/settings catches into `useTeleprompterSession.ts`;
+  // `TeleprompterPage.tsx` keeps only the chapter-selection catch it never shared with the modal.
+  'src/components/teleprompter/TeleprompterPage.tsx#1': 'Only picks the chapter the narrator last read; the first chapter is used without it.',
+  'src/components/teleprompter/useTeleprompterSession.ts#1':
     'Clearing the migrated browser-storage device once it is written to settings; if storage cannot be reached the stale value is simply left behind and never read again (the settings value now wins).',
-  'src/components/teleprompter/TeleprompterPage.tsx#2': 'Hydrates a session that was already running; the state event follows anyway.',
-  'src/components/teleprompter/TeleprompterPage.tsx#3':
-    'The one-time browser-storage-to-settings migration write; a failure leaves the device in local state for this visit and the migration is retried next load since the settings value never got marked set.',
-  'src/components/teleprompter/TeleprompterPage.tsx#4':
+  'src/components/teleprompter/useTeleprompterSession.ts#2': 'Hydrates a session that was already running; the state event follows anyway.',
+  'src/components/teleprompter/useTeleprompterSession.ts#3':
     'Loads the persisted device and runs the one-time migration; if it fails the field just starts empty, exactly as it did before Phase 2.',
-  'src/components/teleprompter/TeleprompterPage.tsx#5': 'Only picks the chapter the narrator last read; the first chapter is used without it.',
+  'src/components/teleprompter/useTeleprompterSession.ts#4':
+    'The one-time browser-storage-to-settings migration write; a failure leaves the device in local state for this visit and the migration is retried next load since the settings value never got marked set.',
   'src/theme/ThemeContext.tsx#1': 'Remembering the theme in localStorage; the preference just does not persist when storage is disabled.',
   'src/components/tracks/TracksPage.tsx#1':
     'Only decides whether the "Link chapters…" button shows; without it the button is absent, same as a project with no chapters.',
