@@ -160,7 +160,7 @@ Cross-cutting: `hostAPIVersion` re-checked at merge; ADR numbering re-checked; `
 | Renderer | One Go renderer (proposed) | Per-surface rendering | One source of truth |
 | Missing tokens | Warn, block only at read time (proposed) | Block saving | Editing must stay possible |
 | Credits time model (Phase 2) | Reuse `WORDS_PER_FINISHED_HOUR` (155 wpm); a separate "Credits" stat; room tone defaults to 0 with no Settings field yet | A second 155/60 constant; folding into the narration total; a WPM setting now | Avoids the constants-disagree risk named in Technical Risks; keeps the narration total stable per its own Success Metric; room tone Settings UI is Phase 5 scope |
-| Which template the estimate times (Phase 2, no per-project selection yet) | The first `opening`- and first `closing`-kind template in the library, by list order (ADR 0090, Proposed) | Sum every template of each kind; show no Credits stat until selection exists | Matches the PRD's own "pick a standard template" user flow closely enough to ship Phase 2 now; documented as provisional pending real per-project template selection |
+| Which template the estimate times (Phase 2, no per-project selection yet) | The first `opening`- and first `closing`-kind template in the library, by list order (ADR 0093, Proposed) | Sum every template of each kind; show no Credits stat until selection exists | Matches the PRD's own "pick a standard template" user flow closely enough to ship Phase 2 now; documented as provisional pending real per-project template selection |
 
 ## Research Summary
 

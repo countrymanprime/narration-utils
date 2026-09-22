@@ -84,7 +84,7 @@ export function AudiobookEstimatePanel({
         // No per-project "chosen template" exists yet (Phase 1 shipped only a library to edit and preview) - the
         // first opening and first closing template in the library, in the order the store returns them (shipped
         // defaults first), stand in for "the" credits until a later phase lets a narrator pick one explicitly. See
-        // ADR 0090.
+        // ADR 0093.
         const segments = (['opening', 'closing'] as const)
           .map((kind) => templates.find((template): template is CreditTemplate => template.kind === kind))
           .filter((template): template is CreditTemplate => template !== undefined);
