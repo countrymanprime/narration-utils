@@ -33,8 +33,9 @@ const READER_TEXT_CLASSES = {
   medium: 'text-base leading-6 [--hl-pad-y:0.09em]',
   large: 'text-xl leading-7 [--hl-pad-y:0.07em]',
 } as const;
-// How long "Go to line" keeps its destination highlighted.
-const JUMP_HIGHLIGHT_MS = 60_000;
+// How long "Go to line" keeps its destination highlighted (ADR: halved from 60s so it settles
+// sooner once the narrator has found the line - see the reader search and controls PRD, R7).
+const JUMP_HIGHLIGHT_MS = 30_000;
 const LINE_NUMBER_PADDING_CLASSES = { small: '!pt-2', medium: '!pt-2.5', large: '!pt-3' } as const;
 const defaultState: ReaderState = { expandedChapters: [], bookmarks: [] };
 const escapeSelector = (value: string) =>
@@ -79,6 +80,13 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   const closeSheet = () => {
     setSheet(undefined);
     setDetail(undefined);
+  };
+  // Discards any in-flight search response too (the same guard runSearch checks), so a slow
+  // response that resolves after a clear can never repopulate results the narrator just dismissed.
+  const clearSearch = () => {
+    searchRequest.current += 1;
+    setSearchQuery('');
+    setSearchResults([]);
   };
   const saveState = useCallback(
     async (next: ReaderState) => {
@@ -139,14 +147,6 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
         );
     }
   }, [readerState.expandedChapters, api, notify]);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeSheet();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-
   const showChapter = useCallback(
     (chapter: string, paragraph?: number) => {
       if (!chapter) return;
@@ -437,7 +437,22 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
         />
       )}
       {pendingNote && <AddNoteDialog anchorText={pendingNote.anchorText} confirm={(text) => void confirmNote(text)} cancel={() => setPendingNote(undefined)} />}
-      <SlideOver open={Boolean(sheet)} title={detail?.note ? 'Note' : detail?.entity?.canonical_name || 'Chapters & Search'} onClose={closeSheet}>
+      <SlideOver
+        open={Boolean(sheet)}
+        title={detail?.note ? 'Note' : detail?.entity?.canonical_name || 'Chapters & Search'}
+        onClose={closeSheet}
+        // Escape clears an in-progress search before it closes the panel, so a narrator who
+        // mistypes doesn't lose the panel along with the query (R8): the first Escape is handled
+        // right here (inside Base UI's own dismiss flow, which is the only listener that reliably
+        // sees the key - a separate window-level handler raced it and lost, since Base UI's Drawer
+        // stops the native event from reaching window once it decides to act on Escape) and keeps
+        // the panel open; a second Escape returns false and the panel closes as normal.
+        onEscape={() => {
+          if (sheet !== 'chapters' || !searchQuery.trim()) return false;
+          clearSearch();
+          return true;
+        }}
+      >
         {detail?.note ? (
           <>
             <div className="mb-3">
@@ -471,7 +486,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
           </>
         ) : (
           <>
-            <SearchBar query={searchQuery} onQueryChange={(value) => void runSearch(value)} />
+            <SearchBar query={searchQuery} onQueryChange={(value) => void runSearch(value)} autoFocus />
             <div className="mt-4 border-t pt-3">
               <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 Chapters
@@ -486,6 +501,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
                 select={(id, paragraph) => {
                   const chapter = chapters.find((item) => item.id === id);
                   if (chapter) {
+                    clearSearch();
                     closeSheet();
                     showChapter(chapter.id, paragraph);
                   }

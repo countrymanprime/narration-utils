@@ -48,6 +48,7 @@ const PAIRS: PairSpec[] = [
   text('text', 'body text', 'var(--text)', SURFACES),
   text('text-muted', 'secondary text, labels, helper text', 'var(--text-muted)', SURFACES),
   mark('non-text', 'icons, status dots, the info icon border and decorative glyphs: the one colour for what is seen and not read', 'var(--non-text)', SURFACES),
+  mark('bookmark', 'the bookmark icon: chapter header, chapter row badge and line/note bookmark rows, all on one token (R9)', 'var(--bookmark)', SURFACES),
   text('toast', 'Toast: page colour on the text colour', 'var(--bg)', ['surface'], 'var(--text)'),
   text('on-accent', 'primary button and logo: accent-contrast on accent', 'var(--accent-contrast)', ['surface'], 'var(--accent)'),
   text('on-accent-strong', 'primary button hover: accent-contrast on accent-strong', 'var(--accent-contrast)', ['surface'], 'var(--accent-strong)'),
