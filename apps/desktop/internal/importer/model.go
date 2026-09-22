@@ -215,12 +215,19 @@ func newDraft(format, sourceName string, paragraphs []Paragraph, titles []string
 			characterListActive = false
 		}
 		if charactersHeading {
-			characterListActive = true
-			if hasLevel {
-				charactersLevel = level
-			} else {
-				charactersLevel = 1
+			// charactersLevel is only (re)baselined when this heading is opening a fresh scope (characterListActive is false going
+			// into it, whether it never started or a shallower heading just ended it above). A heading that also matches
+			// isCharacterHeading (a "Cast" subheading nested inside an outer "Characters" section, for instance) must not overwrite
+			// the level the outer heading set, or a later sibling of the outer heading would wrongly compare against the nested
+			// one's deeper level and never end the section.
+			if !characterListActive {
+				if hasLevel {
+					charactersLevel = level
+				} else {
+					charactersLevel = 1
+				}
 			}
+			characterListActive = true
 		}
 		if charactersHeading {
 			for _, paragraphIndex := range group.indexes {

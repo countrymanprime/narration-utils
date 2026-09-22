@@ -15,6 +15,7 @@ import (
 const defaultDocxStyles = `<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">` +
 	`<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/></w:style>` +
 	`<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/></w:style>` +
+	`<w:style w:type="paragraph" w:styleId="Heading3"><w:name w:val="heading 3"/></w:style>` +
 	`<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/></w:style>` +
 	`<w:style w:type="paragraph" w:styleId="TOCHeading"><w:name w:val="TOC Heading"/></w:style>` +
 	`<w:style w:type="paragraph" w:styleId="TOC1"><w:name w:val="toc 1"/></w:style>` +
@@ -333,6 +334,37 @@ func TestCharacterSubheadingStaysInScopeButTheNextChapterEndsIt(t *testing.T) {
 	}
 	if hasCandidate(draft, "Chapter One") {
 		t.Fatalf("Chapter One must not become a candidate, got %#v", candidateNames(draft))
+	}
+	if got := sectionNamed(t, draft, "Chapter One").ContentKind; got != "narration" {
+		t.Fatalf("Chapter One content kind = %q, want narration", got)
+	}
+}
+
+// TestNestedCastSubheadingDoesNotRebaselineTheCharactersScopeLevel covers a review finding on S3: a subheading that itself matches
+// isCharacterHeading (a "Cast" H2 nested under a "Characters" H1) must not move the level the scope compares later headings
+// against. If it did, a later, non-character H2 ("Notes") would wrongly end the scope early (since its level would no longer be
+// deeper than the rebaselined one), and an H3 nested under that H2 ("Tom") would never be reached as a candidate.
+func TestNestedCastSubheadingDoesNotRebaselineTheCharactersScopeLevel(t *testing.T) {
+	draft := importDocx(t, wordParagraph("Heading1", wordRun("Characters"))+
+		wordParagraph("Heading2", wordRun("Cast"))+
+		wordParagraph("", wordRun("Wren — a spy."))+
+		wordParagraph("Heading2", wordRun("Notes"))+
+		wordParagraph("", wordRun("Some editorial note."))+
+		wordParagraph("Heading3", wordRun("Tom"))+
+		wordParagraph("", wordRun("A thief."))+
+		wordParagraph("Heading1", wordRun("Chapter One"))+
+		wordParagraph("", wordRun("Story text.")))
+	if !hasCandidate(draft, "Wren") {
+		t.Fatalf("expected a Wren candidate from the Cast block, got %#v", candidateNames(draft))
+	}
+	if got := sectionNamed(t, draft, "Notes").ContentKind; got != "reference" {
+		t.Fatalf("Notes content kind = %q, want reference (Cast must not have rebaselined the scope level)", got)
+	}
+	if !hasCandidate(draft, "Tom") {
+		t.Fatalf("expected a Tom candidate nested under Notes, got %#v", candidateNames(draft))
+	}
+	if hasCandidate(draft, "Chapter One") {
+		t.Fatalf("Chapter One must still end the scope and not become a candidate, got %#v", candidateNames(draft))
 	}
 	if got := sectionNamed(t, draft, "Chapter One").ContentKind; got != "narration" {
 		t.Fatalf("Chapter One content kind = %q, want narration", got)
