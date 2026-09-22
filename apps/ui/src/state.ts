@@ -122,6 +122,20 @@ export const chapterLineNumber = (
   return loadedLineNumbers.get(paragraphIndex) ?? paragraphIndex;
 };
 
+// The chapter-title/subtitle subset (R2): filtered client-side from the already-loaded `chapters`
+// list, so it costs no request and updates on every keystroke - unlike the debounced line search,
+// which waits (SEARCH_DEBOUNCE_MS) and hits Go. Returns the matching chapter ids; a blank query
+// matches nothing (an empty search shows the plain chapter list, not "everything").
+export const chapterTextMatches = (chapters: Pick<ManuscriptChapter, 'id' | 'title' | 'subtitle'>[], query: string): Set<string> => {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return new Set();
+  return new Set(
+    chapters
+      .filter((chapter) => chapter.title.toLowerCase().includes(needle) || (chapter.subtitle ?? '').toLowerCase().includes(needle))
+      .map((chapter) => chapter.id),
+  );
+};
+
 export type EntitySort = { key: 'name' | 'occurrences'; dir: 'asc' | 'desc' };
 export const sortEntities = (entities: GuideEntity[], sort: EntitySort): GuideEntity[] => {
   const factor = sort.dir === 'asc' ? 1 : -1;
