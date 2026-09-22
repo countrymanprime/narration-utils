@@ -98,6 +98,31 @@
       "kind": "text",
       "label": "Microphone",
       "value": ""
+    },
+    {
+      "choices": [
+        "whisper"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "whisper",
+      "isSet": false,
+      "key": "engine",
+      "kind": "choice",
+      "label": "Live engine",
+      "value": ""
+    },
+    {
+      "choices": [
+        "tiny",
+        "small"
+      ],
+      "effectiveSource": "repo_default",
+      "effectiveValue": "tiny",
+      "isSet": false,
+      "key": "model",
+      "kind": "choice",
+      "label": "Model",
+      "value": ""
     }
   ],
   "TranscriptCompare": [

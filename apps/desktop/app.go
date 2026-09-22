@@ -840,10 +840,17 @@ var fieldSchemas = map[string][]fieldSchema{
 	"Updates":           {{"check_on_startup", "Check for updates on startup", "bool", nil}, {"channel", "Update channel", "choice", []string{"candidates", "stable"}}},
 	"TranscriptCompare": {{"model_size", "Default Whisper model", "choice", []string{"tiny", "small", "medium", "large-v3-turbo", "large-v3"}}, {"chunk_seconds", "Default chunk length", "choice", []string{"30", "60", "300", "600"}}, {"color_misread", "Misread marker color", "color", nil}, {"color_skipped", "Skipped marker color", "color", nil}, {"color_extra", "Extra marker color", "color", nil}},
 	// Global scope only (docs/prds/teleprompter-engines-and-input-devices.prd.md, "Where the device, engine and model
-	// choices are stored"): the chosen capture device is a machine fact (hardware wired to this computer), not a
-	// per-project preference, and the host validates it only as free text - the sidecar's own open call is what proves
-	// a device name is real. The "text" kind already accepts any string, including empty (unset).
-	"Teleprompter": {{"input_device", "Microphone", "text", nil}},
+	// choices are stored"): the device, engine and model are machine facts (hardware and CPU wired to this computer),
+	// not a per-project preference. The chosen capture device is validated only as free text - the sidecar's own open
+	// call is what proves a device name is real; the "text" kind already accepts any string, including empty (unset).
+	// The engine choice stays limited to "whisper" until Phase 7 wires Moonshine end to end (this PRD's phase table);
+	// the model choice is Whisper tiny and small only (the PRD's "Model choices exposed per engine" recommendation),
+	// since only tiny has measured live-lag data and Moonshine is not provisioned yet.
+	"Teleprompter": {
+		{"input_device", "Microphone", "text", nil},
+		{"engine", "Live engine", "choice", []string{"whisper"}},
+		{"model", "Model", "choice", []string{"tiny", "small"}},
+	},
 }
 
 // settingsSchemas is the settings the app offers with each choice that comes from an approved catalog filled in from it: the spaCy model

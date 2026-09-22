@@ -58,9 +58,73 @@ func TestSaveSettingsRejectsAProjectScopedTeleprompterDevice(t *testing.T) {
 func TestSaveSettingsRejectsAnUnknownTeleprompterField(t *testing.T) {
 	host := newTestHostForTeleprompterSettings(t, "")
 
+	value := "24khz"
+	if err := host.saveSettings("Teleprompter", "global", map[string]*string{"sample_rate": &value}); err == nil || !strings.Contains(err.Error(), "unsupported setting") {
+		t.Fatalf("saveSettings() = %v, want an unknown field rejected", err)
+	}
+}
+
+// Phase 3 ("Teleprompter settings section"): the engine choice, per the PRD's phase table, stays limited to
+// "whisper" until Phase 7 wires Moonshine end to end.
+func TestSaveSettingsAcceptsAndPersistsTheTeleprompterEngineChoice(t *testing.T) {
+	host := newTestHostForTeleprompterSettings(t, "")
+
+	value := "whisper"
+	if err := host.saveSettings("Teleprompter", "global", map[string]*string{"engine": &value}); err != nil {
+		t.Fatalf("saveSettings() = %v, want the whisper engine choice accepted", err)
+	}
+
+	effective, source := host.settings.Effective("Teleprompter", "engine", "")
+	if effective != value || source != "global" {
+		t.Fatalf("Effective() = (%q, %q), want (%q, %q)", effective, source, value, "global")
+	}
+}
+
+func TestSaveSettingsRejectsAnEngineNotYetOffered(t *testing.T) {
+	host := newTestHostForTeleprompterSettings(t, "")
+
+	// Moonshine is provisioned in a later phase (Phase 6/7); the schema does not offer it yet.
 	value := "moonshine"
-	if err := host.saveSettings("Teleprompter", "global", map[string]*string{"engine": &value}); err == nil || !strings.Contains(err.Error(), "unsupported setting") {
-		t.Fatalf("saveSettings() = %v, want the engine field rejected: it is a later phase's scope, not this one's", err)
+	if err := host.saveSettings("Teleprompter", "global", map[string]*string{"engine": &value}); err == nil || !strings.Contains(err.Error(), "unsupported value") {
+		t.Fatalf("saveSettings() = %v, want the moonshine engine rejected: it is a later phase's scope, not this one's", err)
+	}
+}
+
+// Model choices exposed per engine (the PRD's Decisions Log recommendation): Whisper tiny and small only, since only
+// tiny has measured live-lag data.
+func TestSaveSettingsAcceptsAndPersistsTheTeleprompterModelChoice(t *testing.T) {
+	host := newTestHostForTeleprompterSettings(t, "")
+
+	value := "small"
+	if err := host.saveSettings("Teleprompter", "global", map[string]*string{"model": &value}); err != nil {
+		t.Fatalf("saveSettings() = %v, want the small model choice accepted", err)
+	}
+
+	effective, source := host.settings.Effective("Teleprompter", "model", "")
+	if effective != value || source != "global" {
+		t.Fatalf("Effective() = (%q, %q), want (%q, %q)", effective, source, value, "global")
+	}
+}
+
+func TestSaveSettingsRejectsATeleprompterModelOutsideTinyOrSmall(t *testing.T) {
+	host := newTestHostForTeleprompterSettings(t, "")
+
+	value := "medium"
+	if err := host.saveSettings("Teleprompter", "global", map[string]*string{"model": &value}); err == nil || !strings.Contains(err.Error(), "unsupported value") {
+		t.Fatalf("saveSettings() = %v, want a model outside tiny/small rejected: no live-lag data for it", err)
+	}
+}
+
+func TestSaveSettingsRejectsAProjectScopedTeleprompterEngineOrModel(t *testing.T) {
+	host := newTestHostForTeleprompterSettings(t, t.TempDir())
+
+	engine := "whisper"
+	if err := host.saveSettings("Teleprompter", "project", map[string]*string{"engine": &engine}); err == nil || !strings.Contains(err.Error(), "global") {
+		t.Fatalf("saveSettings() = %v, want the engine rejected as global-only, same as the device", err)
+	}
+	model := "small"
+	if err := host.saveSettings("Teleprompter", "project", map[string]*string{"model": &model}); err == nil || !strings.Contains(err.Error(), "global") {
+		t.Fatalf("saveSettings() = %v, want the model rejected as global-only, same as the device", err)
 	}
 }
 
@@ -72,11 +136,23 @@ func TestSettingsForScopeReportsTheTeleprompterInputDeviceField(t *testing.T) {
 		t.Fatal(err)
 	}
 	fields, _ := scoped["Teleprompter"].([]map[string]any)
-	if len(fields) != 1 {
-		t.Fatalf("Teleprompter fields = %v, want exactly input_device", scoped["Teleprompter"])
+	if len(fields) != 3 {
+		t.Fatalf("Teleprompter fields = %v, want exactly input_device, engine and model", scoped["Teleprompter"])
 	}
-	field := fields[0]
-	if field["key"] != "input_device" || field["kind"] != "text" || field["isSet"] != false {
-		t.Fatalf("input_device field = %v, want an unset text field before any device is chosen", field)
+	byKey := map[string]map[string]any{}
+	for _, field := range fields {
+		byKey[field["key"].(string)] = field
+	}
+	device := byKey["input_device"]
+	if device["kind"] != "text" || device["isSet"] != false {
+		t.Fatalf("input_device field = %v, want an unset text field before any device is chosen", device)
+	}
+	engine := byKey["engine"]
+	if engine["kind"] != "choice" || engine["isSet"] != false || engine["effectiveValue"] != "whisper" || engine["effectiveSource"] != "repo_default" {
+		t.Fatalf("engine field = %v, want an unset choice field defaulting to whisper from the repo defaults", engine)
+	}
+	model := byKey["model"]
+	if model["kind"] != "choice" || model["isSet"] != false || model["effectiveValue"] != "tiny" || model["effectiveSource"] != "repo_default" {
+		t.Fatalf("model field = %v, want an unset choice field defaulting to tiny from the repo defaults", model)
 	}
 }

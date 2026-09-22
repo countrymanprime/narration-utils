@@ -21,5 +21,12 @@ export const proofingChoiceLabel = (key: string, value: string) => {
         stable: 'Stable only',
       }[value] ?? value
     );
+  if (key === 'engine')
+    return (
+      {
+        whisper: 'Whisper',
+        moonshine: 'Moonshine',
+      }[value] ?? value
+    );
   return value;
 };

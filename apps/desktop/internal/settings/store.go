@@ -62,6 +62,7 @@ var builtinDefaults = map[string]Values{
 	"Updates":           {"check_on_startup": "true", "channel": "candidates"},
 	"Manuscript":        {"color_note": "B85C1E"},
 	"TranscriptCompare": {"chunk_seconds": "60", "model_size": "small", "color_misread": "FF4040", "color_skipped": "FFC000", "color_extra": "40A0FF"},
+	"Teleprompter":      {"engine": "whisper", "model": "tiny"},
 }
 
 // Defaults returns the repo file's values for tool, with any key the file does

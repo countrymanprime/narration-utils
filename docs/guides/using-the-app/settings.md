@@ -16,6 +16,10 @@ Appearance controls the light/dark theme.
 Other categories mix dropdowns and color pickers — Manuscript's own category, for example,
 controls the color used to mark reader notes in the text.
 
+The **Teleprompter** category (Global scope only — the microphone, engine and model are machine facts, not a
+per-project preference) remembers the microphone you last chose on the [Teleprompter](teleprompter.md) page and the
+default live model it starts with. The live engine is Whisper for now; Moonshine appears here once it is provisioned.
+
 ![Settings - Global scope, Manuscript category (note color picker)](../../images/ui/settings-manuscript.webp)
 
 This Project's "Project data" category is a project-only danger zone: it clears the imported

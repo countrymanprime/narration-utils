@@ -24,5 +24,9 @@
     "color_misread": "FF4040",
     "color_skipped": "FFC000",
     "color_extra": "40A0FF"
+  },
+  "Teleprompter": {
+    "engine": "whisper",
+    "model": "tiny"
   }
 }
