@@ -27,16 +27,23 @@ import (
 //
 // projectFolder empty (no project attached yet) short-circuits to all-false:
 // there is nothing to link.
-func dawLinkFacts(reporter *persist.Reporter, projectFolder string) (linked, reachable, matches bool) {
+//
+// daw is the launch's own `daw` fact ("REAPER" or "" / "Standalone").
+// Open Question W18: a REAPER-launched project the manifest has not linked
+// yet (several rpp files in the launched folder, or the narrator simply has
+// not linked one) would otherwise gate Proofing shut even though REAPER is
+// live and the launcher knows the exact rpp - so a live `--daw REAPER` launch
+// counts as linked too, until Phase 5's --project-file matching (resolveProjectFile) is
+// wired all the way through the picker rather than just second-instance/startup attach.
+func dawLinkFacts(reporter *persist.Reporter, projectFolder, daw string) (linked, reachable, matches bool) {
 	if projectFolder == "" {
 		return false, false, false
 	}
-	manifest, ok, err := project.Load(reporter, projectFolder)
-	if err != nil || !ok || manifest == nil || manifest.DawProjectFile == nil {
-		return false, false, false
+	resolved := false
+	if manifest, ok, err := project.Load(reporter, projectFolder); err == nil && ok && manifest != nil && manifest.DawProjectFile != nil {
+		_, resolved = manifest.DawProjectFile.Resolve(projectFolder)
 	}
-	_, resolved := manifest.DawProjectFile.Resolve(projectFolder)
 	// reachable and matches are always false/unknown for now; see the doc
 	// comment above (Phase 6 TODO).
-	return resolved, false, false
+	return resolved || daw == "REAPER", false, false
 }
