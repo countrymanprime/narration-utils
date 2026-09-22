@@ -542,6 +542,11 @@ export function createMockApi(
       projectFolder,
       projectName,
       daw,
+      // Mirrors `daw`: the mock has no separate stored link, so "linked" tracks whatever the mock currently shows as the DAW label.
+      // reachable/matches stay false/unknown, same as the real host until Phase 6 (PRD W13, W14).
+      dawFileLinked: daw === 'REAPER',
+      dawReachable: false,
+      dawProjectMatches: false,
       manuscript:
         initial.noManuscript || initial.manuscriptCandidate
           ? null
