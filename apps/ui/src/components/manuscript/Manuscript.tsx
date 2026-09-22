@@ -3,13 +3,14 @@ import { describeApiError } from '../../api/errorMessage';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faList } from '@fortawesome/free-solid-svg-icons';
+import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faFont, faList } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderState, SearchHit } from '../../types';
-import { categoryCssName, chapterLineNumbers, STORY_BIBLE_TABS } from '../../state';
+import { categoryCssName, chapterLineNumbers, chapterTextMatches, isListableChapter, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import { useTextSelection } from '../../hooks/useTextSelection';
+import { SEARCH_DEBOUNCE_MS, useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { ToggleGroup } from '../primitives/ToggleGroup';
@@ -33,8 +34,9 @@ const READER_TEXT_CLASSES = {
   medium: 'text-base leading-6 [--hl-pad-y:0.09em]',
   large: 'text-xl leading-7 [--hl-pad-y:0.07em]',
 } as const;
-// How long "Go to line" keeps its destination highlighted.
-const JUMP_HIGHLIGHT_MS = 60_000;
+// How long "Go to line" keeps its destination highlighted (ADR: halved from 60s so it settles
+// sooner once the narrator has found the line - see the reader search and controls PRD, R7).
+const JUMP_HIGHLIGHT_MS = 30_000;
 const LINE_NUMBER_PADDING_CLASSES = { small: '!pt-2', medium: '!pt-2.5', large: '!pt-3' } as const;
 const defaultState: ReaderState = { expandedChapters: [], bookmarks: [] };
 const escapeSelector = (value: string) =>
@@ -64,9 +66,27 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   const [jumpTarget, setJumpTarget] = useState<number>();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
+  // The query text a result was actually fetched for - not the debounce hook's own state, so an
+  // Enter that jumps the debounce (R1) still reads as settled right away, instead of "Searching..."
+  // lingering for the rest of the window a keystroke already bypassed.
+  const [lastFetchedQuery, setLastFetchedQuery] = useState('');
+  // Mirrors lastFetchedQuery for the debounce effect below to read without depending on it (a
+  // dependency would also fire the effect right when Enter's own fetch settles, one render before
+  // the debounced value itself has caught up - re-firing fetchSearch with the *old*, not-yet-caught-up
+  // debouncedQuery. A ref lets the effect stay keyed on debouncedQuery alone.
+  const lastFetchedQueryRef = useRef('');
+  const debouncedQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
   const { selection, clear: clearSelection } = useTextSelection(readerRef);
-  const active = readerState.activeChapter || chapters[0]?.id;
+  // Reference material (Contents, Characters, ...) stays in manuscript.json and the chapter list,
+  // but is never a page the narrator flips through - see isListableChapter and the reader search and
+  // controls PRD Phase 5 (supersedes the reader half of ADR 0005; ADR 0090).
+  const recordedChapters = useMemo(() => chapters.filter(isListableChapter), [chapters]);
+  const active = readerState.activeChapter || recordedChapters[0]?.id;
   const lineNumbers = useMemo(() => chapterLineNumbers(paragraphs), [paragraphs]);
+  const titleMatches = useMemo(() => chapterTextMatches(chapters, searchQuery), [chapters, searchQuery]);
+  // True once there is a query the panel has not shown results for yet - the debounce wait, or
+  // (briefly) the request itself - so "No matches" never flashes before a settled answer exists (R1).
+  const searchPending = Boolean(searchQuery.trim()) && searchQuery !== lastFetchedQuery;
 
   useEffect(() => {
     const element = bandRef.current;
@@ -79,6 +99,15 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   const closeSheet = () => {
     setSheet(undefined);
     setDetail(undefined);
+  };
+  // Discards any in-flight search response too (the same guard fetchSearch checks), so a slow
+  // response that resolves after a clear can never repopulate results the narrator just dismissed.
+  const clearSearch = () => {
+    searchRequest.current += 1;
+    setSearchQuery('');
+    setSearchResults([]);
+    lastFetchedQueryRef.current = '';
+    setLastFetchedQuery('');
   };
   const saveState = useCallback(
     async (next: ReaderState) => {
@@ -107,14 +136,25 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
           api.readerState(),
           api.noteList(),
         ]);
-        const firstChapter = nextChapters[0]?.id;
+        const firstChapter = nextChapters.filter(isListableChapter)[0]?.id;
         const chapterId = (value: string | undefined) => nextChapters.find((item) => item.id === value || item.title === value)?.id || value;
-        const expandedChapters = (state.expandedChapters ?? [state.activeChapter || firstChapter]).map(chapterId).filter((id): id is string => Boolean(id));
+        // A reader state saved before this phase (or a manuscript re-imported since) may still point
+        // at a reference chapter (R14: the filter covers existing manuscripts too, since it keys on
+        // contentKind, not a migration flag) - fall back to the first recorded one instead.
+        const resolvedActive = chapterId(state.activeChapter);
+        const activeChapter = nextChapters.find((item) => item.id === resolvedActive && isListableChapter(item)) ? resolvedActive : firstChapter;
+        // Built from the already-resolved activeChapter (not the raw, possibly-hidden state.activeChapter),
+        // so a reader state saved before this phase still opens expanded on the chapter it now falls back
+        // to, instead of rendering that chapter's header collapsed with nothing expanded underneath.
+        const expandedChapters = (state.expandedChapters ?? [activeChapter])
+          .map(chapterId)
+          .filter((id): id is string => Boolean(id))
+          .filter((id) => nextChapters.find((item) => item.id === id && isListableChapter(item)));
         setLoadError(undefined);
         setChapters(nextChapters);
         setNotes(nextNotes);
         setEntities(nextEntities);
-        setReaderState({ ...state, activeChapter: chapterId(state.activeChapter) || firstChapter, expandedChapters });
+        setReaderState({ ...state, activeChapter, expandedChapters });
       } catch (error) {
         // Nothing to read without these four lists, so the page says so inline and offers Retry (ADR 0069).
         setLoadError(describeApiError(error));
@@ -139,18 +179,18 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
         );
     }
   }, [readerState.expandedChapters, api, notify]);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeSheet();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-
   const showChapter = useCallback(
     (chapter: string, paragraph?: number) => {
       if (!chapter) return;
-      const chapterId = chapters.find((item) => item.id === chapter || item.title === chapter)?.id || chapter;
+      const target = chapters.find((item) => item.id === chapter || item.title === chapter);
+      const chapterId = target?.id || chapter;
+      // Every caller (search results, Story Bible "Go to line", hash links, ...) funnels through
+      // here, so this one guard covers all of them (R13/ADR 0090) rather than duplicating it at
+      // each call site - a reference chapter is never a page the reader shows.
+      if (target && !isListableChapter(target)) {
+        notify("That link points to reference material, which isn't shown in the manuscript reader.");
+        return;
+      }
       const next = { ...readerState, activeChapter: chapterId, expandedChapters: Array.from(new Set([...(readerState.expandedChapters || []), chapterId])) };
       void saveState(next);
       const selector = paragraph === undefined ? `[data-chapter-id="${escapeSelector(chapterId)}"]` : `[data-paragraph="${paragraph}"]`;
@@ -174,7 +214,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
       };
       requestAnimationFrame(attempt);
     },
-    [chapters, readerState, saveState],
+    [chapters, readerState, saveState, notify],
   );
   // Deep links into a specific paragraph/chapter arrive as a URL anchor -
   // "#p123" for paragraph 123 (its globally unique index, assigned at
@@ -193,19 +233,24 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
       return;
     }
     if (handledHash.current === hash) return;
+    let chapter: string | undefined;
+    let paragraph: number | undefined;
     if (hash.startsWith('#p')) {
-      const paragraph = Number(hash.slice(2));
+      paragraph = Number(hash.slice(2));
       if (Number.isNaN(paragraph)) return;
-      const chapter = chapters.find((item) => item.paragraphIds?.some((row) => row.index === paragraph))?.id;
+      chapter = chapters.find((item) => item.paragraphIds?.some((row) => row.index === paragraph))?.id;
       if (!chapter) return;
-      handledHash.current = hash;
-      showChapter(chapter, paragraph);
     } else if (hash.startsWith('#c')) {
-      handledHash.current = hash;
-      showChapter(decodeURIComponent(hash.slice(2)));
+      const target = decodeURIComponent(hash.slice(2));
+      chapter = chapters.find((item) => item.id === target || item.title === target)?.id || target;
     } else {
       return;
     }
+    handledHash.current = hash;
+    // showChapter itself guards against a reference chapter (R13/ADR 0090: a no-op with a message,
+    // the reader has no "reference chapter's own view" to redirect to instead), so every caller -
+    // this hash link, a search result, Story Bible "Go to line" - gets the same behavior for free.
+    showChapter(chapter, paragraph);
     routerNavigate('/manuscript', { replace: true });
   }, [location.hash, chapters, routerNavigate, showChapter]);
   const toggleManualChapter = (chapter: string) => {
@@ -229,20 +274,39 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
       notify(describeApiError(error), 'error');
     }
   };
-  const runSearch = async (query: string) => {
-    setSearchQuery(query);
-    const request = ++searchRequest.current;
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    try {
-      const results = await api.manuscriptSearch(query);
-      if (request === searchRequest.current) setSearchResults(results);
-    } catch (error) {
-      if (request === searchRequest.current) notify(describeApiError(error), 'error');
-    }
-  };
+  // The one place that ever calls the Go search: from the debounce effect below once it settles,
+  // and directly on Enter (R1). searchRequest guards a stale response the same way it always did.
+  const fetchSearch = useCallback(
+    async (query: string) => {
+      const request = ++searchRequest.current;
+      const settle = () => {
+        lastFetchedQueryRef.current = query;
+        setLastFetchedQuery(query);
+      };
+      if (!query.trim()) {
+        setSearchResults([]);
+        settle();
+        return;
+      }
+      try {
+        const results = await api.manuscriptSearch(query);
+        if (request !== searchRequest.current) return;
+        setSearchResults(results);
+        settle();
+      } catch (error) {
+        if (request !== searchRequest.current) return;
+        notify(describeApiError(error), 'error');
+        settle();
+      }
+    },
+    [api, notify],
+  );
+  useEffect(() => {
+    // Enter (R1) already fetched this exact query directly - skip the redundant repeat once the
+    // debounce hook's own timer independently catches up to the same settled value a moment later.
+    if (debouncedQuery === lastFetchedQueryRef.current) return;
+    void fetchSearch(debouncedQuery);
+  }, [debouncedQuery, fetchSearch]);
   const addNote = () => {
     if (!selection || selection.paragraphIndex === undefined || selection.anchorStart === undefined || selection.anchorEnd === undefined) {
       notify('Select text within a single line to add a note.');
@@ -290,8 +354,35 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
       >
         <div className="px-[var(--reader-inline)] pt-4 pb-3">
           <div className="mb-4 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
-            <div className="flex items-center gap-3">
-              <Heading title="Manuscript" />
+            <Heading title="Manuscript" />
+            <div className="flex flex-wrap gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] tracking-wider text-[var(--text-muted)] uppercase">
+              {[...STORY_BIBLE_TABS.filter((item) => item !== 'All'), 'Note'].map((name) => (
+                <span key={name} className="flex items-center gap-1">
+                  <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(name === 'Location' ? 'Place' : name)] }} />
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
+          {/* One control cluster: text size on the left, chapters/search and expand/collapse on the right (R12) - wraps to
+              a second line only below 400px, since ml-auto pushes the right group down with the row rather than
+              overlapping it once the row can no longer fit both groups side by side. */}
+          <div className="mb-4 flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Tooltip
+                label="Text size"
+                icon={<FontAwesomeIcon icon={faFont} />}
+                text="The manuscript always uses the full reading width - adjust text size instead."
+              />
+              <ToggleGroup
+                label="Text size"
+                className="gap-1"
+                value={textSize}
+                onChange={(value) => setTextSize(value as (typeof TEXT_SIZES)[number])}
+                options={TEXT_SIZE_OPTIONS}
+              />
+            </div>
+            <div className="ml-auto flex items-center gap-2">
               <TooltipTarget text="Chapters & Search">
                 <IconButton
                   label="Chapters & Search"
@@ -303,45 +394,25 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
                   <FontAwesomeIcon icon={faList} />
                 </IconButton>
               </TooltipTarget>
+              <TooltipTarget text="Expand all chapters">
+                <IconButton
+                  label="Expand all chapters"
+                  onClick={() => void saveState({ ...readerState, expandedChapters: recordedChapters.map((chapter) => chapter.id) })}
+                >
+                  <FontAwesomeIcon icon={faAnglesDown} />
+                </IconButton>
+              </TooltipTarget>
+              <TooltipTarget text="Collapse all chapters">
+                <IconButton label="Collapse all chapters" onClick={() => void saveState({ ...readerState, expandedChapters: [] })}>
+                  <FontAwesomeIcon icon={faAnglesUp} />
+                </IconButton>
+              </TooltipTarget>
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-[0.65rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] tracking-wider text-[var(--text-muted)] uppercase">
-              {[...STORY_BIBLE_TABS.filter((item) => item !== 'All'), 'Note'].map((name) => (
-                <span key={name} className="flex items-center gap-1">
-                  <span className={CAT_DOT_CLASS} style={{ background: CAT_DOT_BG[categoryCssName(name === 'Location' ? 'Place' : name)] }} />
-                  {name}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="mb-4 flex flex-wrap items-center gap-4">
-            <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
-              Text size <Tooltip text="The manuscript always uses the full reading width - adjust text size instead." />
-            </span>
-            <ToggleGroup
-              label="Text size"
-              className="gap-1"
-              value={textSize}
-              onChange={(value) => setTextSize(value as (typeof TEXT_SIZES)[number])}
-              options={TEXT_SIZE_OPTIONS}
-            />
-            <TooltipTarget text="Expand all chapters">
-              <IconButton
-                label="Expand all chapters"
-                onClick={() => void saveState({ ...readerState, expandedChapters: chapters.map((chapter) => chapter.id) })}
-              >
-                <FontAwesomeIcon icon={faAnglesDown} />
-              </IconButton>
-            </TooltipTarget>
-            <TooltipTarget text="Collapse all chapters">
-              <IconButton label="Collapse all chapters" onClick={() => void saveState({ ...readerState, expandedChapters: [] })}>
-                <FontAwesomeIcon icon={faAnglesUp} />
-              </IconButton>
-            </TooltipTarget>
           </div>
         </div>
       </div>
       <div ref={readerRef} className="reader-chapters pt-3">
-        {chapters.map((chapter) => {
+        {recordedChapters.map((chapter) => {
           const expanded = (readerState.expandedChapters || []).includes(chapter.id);
           const chapterBookmark = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapterId === chapter.id);
           return (
@@ -437,7 +508,22 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
         />
       )}
       {pendingNote && <AddNoteDialog anchorText={pendingNote.anchorText} confirm={(text) => void confirmNote(text)} cancel={() => setPendingNote(undefined)} />}
-      <SlideOver open={Boolean(sheet)} title={detail?.note ? 'Note' : detail?.entity?.canonical_name || 'Chapters & Search'} onClose={closeSheet}>
+      <SlideOver
+        open={Boolean(sheet)}
+        title={detail?.note ? 'Note' : detail?.entity?.canonical_name || 'Chapters & Search'}
+        onClose={closeSheet}
+        // Escape clears an in-progress search before it closes the panel, so a narrator who
+        // mistypes doesn't lose the panel along with the query (R8): the first Escape is handled
+        // right here (inside Base UI's own dismiss flow, which is the only listener that reliably
+        // sees the key - a separate window-level handler raced it and lost, since Base UI's Drawer
+        // stops the native event from reaching window once it decides to act on Escape) and keeps
+        // the panel open; a second Escape returns false and the panel closes as normal.
+        onEscape={() => {
+          if (sheet !== 'chapters' || !searchQuery.trim()) return false;
+          clearSearch();
+          return true;
+        }}
+      >
         {detail?.note ? (
           <>
             <div className="mb-3">
@@ -471,7 +557,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
           </>
         ) : (
           <>
-            <SearchBar query={searchQuery} onQueryChange={(value) => void runSearch(value)} />
+            <SearchBar query={searchQuery} onQueryChange={setSearchQuery} onEnter={() => void fetchSearch(searchQuery)} autoFocus />
             <div className="mt-4 border-t pt-3">
               <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 Chapters
@@ -482,10 +568,13 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
                 bookmarks={readerState.bookmarks}
                 searchQuery={searchQuery}
                 searchResults={searchResults}
+                titleMatches={titleMatches}
+                pending={searchPending}
                 lineNumbers={lineNumbers}
                 select={(id, paragraph) => {
                   const chapter = chapters.find((item) => item.id === id);
                   if (chapter) {
+                    clearSearch();
                     closeSheet();
                     showChapter(chapter.id, paragraph);
                   }

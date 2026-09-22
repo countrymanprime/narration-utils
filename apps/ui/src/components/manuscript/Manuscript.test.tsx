@@ -1,20 +1,24 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Manuscript } from './Manuscript';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { WireError } from '../../api/wire/WireError';
+import { SEARCH_DEBOUNCE_MS } from '../../hooks/useDebouncedValue';
 
-afterEach(cleanup);
+afterEach(() => {
+  vi.useRealTimers();
+  cleanup();
+});
 
-function renderManuscript(overrides: Parameters<typeof createMockApi>[0] = {}, focusStoryBibleEntity = vi.fn()) {
+function renderManuscript(overrides: Parameters<typeof createMockApi>[0] = {}, focusStoryBibleEntity = vi.fn(), initialEntries = ['/manuscript']) {
   const api = createMockApi(overrides);
   const notify = vi.fn();
   render(
     <div className="shell-content">
-      <MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>
         <ApiProvider api={api}>
           <Manuscript notify={notify} focusStoryBibleEntity={focusStoryBibleEntity} />
         </ApiProvider>
@@ -23,6 +27,19 @@ function renderManuscript(overrides: Parameters<typeof createMockApi>[0] = {}, f
   );
   return { api, focusStoryBibleEntity, notify };
 }
+
+// A reference chapter (Contents) placed before the narration chapters, the shape Phase 5 hides
+// from the continuous reader (R13) - mirrors ChapterNav.test.tsx's fixture, plus paragraphIds so a
+// "#p" deep link can resolve into it.
+const referenceChapter = {
+  id: 'contents',
+  title: 'Contents',
+  index: 0,
+  wordCount: 40,
+  status: 'not_started' as const,
+  contentKind: 'reference' as const,
+  paragraphIds: [{ id: 'p-contents-0', index: 900 }],
+};
 
 // Finds the text node containing `phrase` and selects exactly that
 // substring, then fires the mouseup the app listens for - simulating a real
@@ -208,7 +225,9 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     renderManuscript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
-    fireEvent.change(screen.getByLabelText('Search manuscript'), { target: { value: 'Rabbit' } });
+    const input = screen.getByLabelText('Search manuscript');
+    fireEvent.change(input, { target: { value: 'Rabbit' } });
+    fireEvent.keyDown(input, { key: 'Enter' }); // fires the search immediately, bypassing the debounce (R1)
 
     const [result] = await screen.findAllByRole('button', { name: /Search result in Chapter 1/ });
     expect(within(document.querySelector('[data-slide-over]')!).queryByRole('button', { name: /Chapter 3/ })).toBeNull();
@@ -229,12 +248,97 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
     const input = screen.getByLabelText('Search manuscript');
+    // Each Enter fires immediately (R1), simulating two real requests racing - the debounce itself
+    // (see the dedicated debounce test below) would collapse two edits this close together into one.
     fireEvent.change(input, { target: { value: 'old' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
     fireEvent.change(input, { target: { value: 'new' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
 
     await screen.findByLabelText(/Search result in Chapter 2/);
     resolveOld([{ chapter: 'Chapter 1', paragraph: 0, sourceLine: 10, excerpt: 'old result' }]);
     await waitFor(() => expect(screen.queryByLabelText(/Search result in Chapter 1/)).toBeNull());
+  });
+
+  it('debounces the line search 2s behind the last keystroke; chapter-title matches show at once and Enter fires immediately (R1, R2)', async () => {
+    const searchSpy = vi.fn(async () => []);
+    renderManuscript({ manuscriptSearch: searchSpy });
+    await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+    fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
+    const input = screen.getByLabelText('Search manuscript');
+
+    vi.useFakeTimers();
+    fireEvent.change(input, { target: { value: 'Pool of Tears' } });
+
+    // The chapter-title/subtitle subset is client-side and never debounced (R2).
+    expect(screen.getAllByRole('button', { name: /Chapter 2/ }).length).toBeGreaterThan(0);
+    expect(searchSpy).not.toHaveBeenCalled();
+    expect(screen.getByText('Searching…')).toBeTruthy();
+
+    await act(() => vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS - 1));
+    expect(searchSpy).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(searchSpy).toHaveBeenCalledTimes(1);
+    expect(searchSpy).toHaveBeenCalledWith('Pool of Tears');
+  });
+
+  it('does not repeat the search 2s after Enter already fetched it (code review: the debounce catching up must not re-fire)', async () => {
+    const searchSpy = vi.fn(async () => []);
+    renderManuscript({ manuscriptSearch: searchSpy });
+    await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+    fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
+    const input = screen.getByLabelText('Search manuscript');
+
+    vi.useFakeTimers();
+    fireEvent.change(input, { target: { value: 'Rabbit' } });
+    await act(() => vi.advanceTimersByTimeAsync(0)); // let the Enter-triggered fetch's promise settle
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(searchSpy).toHaveBeenCalledTimes(1);
+
+    // The debounce hook's own timer, still armed from the keystroke, now catches up to the same
+    // already-settled query - it must not fire fetchSearch a second time for it.
+    await act(() => vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS));
+    expect(searchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears the query and results when a search result is selected (R8)', async () => {
+    renderManuscript();
+    await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+    fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
+    fireEvent.change(screen.getByLabelText('Search manuscript'), { target: { value: 'Rabbit' } });
+    const [result] = await screen.findAllByRole('button', { name: /Search result in Chapter 1/ });
+    fireEvent.click(result);
+
+    fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
+    expect((screen.getByLabelText('Search manuscript') as HTMLInputElement).value).toBe('');
+    expect(screen.queryByRole('button', { name: /Search result in/ })).toBeNull();
+  });
+
+  it('Escape clears an in-progress search before it closes the panel (R8)', async () => {
+    renderManuscript();
+    await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+    fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
+    fireEvent.change(screen.getByLabelText('Search manuscript'), { target: { value: 'Rabbit' } });
+    await screen.findAllByRole('button', { name: /Search result in Chapter 1/ });
+
+    // Fired on the focused input itself (not window directly) so it bubbles through Base UI's own
+    // document-level Escape listener exactly as a real keypress would - dispatching straight on
+    // window would skip that listener entirely and prove nothing about production behavior.
+    const input = screen.getByLabelText('Search manuscript');
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect((screen.getByLabelText('Search manuscript') as HTMLInputElement).value).toBe('');
+    expect(document.querySelector('[data-slide-over]')).toBeTruthy();
+
+    fireEvent.keyDown(screen.getByLabelText('Search manuscript'), { key: 'Escape' });
+    await waitFor(() => expect(document.querySelector('[data-slide-over]')).toBeNull());
+  });
+
+  it('autofocuses the search input when the Chapters & Search panel opens (R8)', async () => {
+    renderManuscript();
+    await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+    fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Search manuscript')));
   });
 
   describe('when the data it loads cannot be read (ADR 0069)', () => {
@@ -257,8 +361,56 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       renderManuscript({ manuscriptChapters: chapters });
       fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
       await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
-      expect(await screen.findByText('Text size')).toBeTruthy();
+      expect(await screen.findByRole('button', { name: 'Text size' })).toBeTruthy();
       expect(chapters).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('hides reference material from the continuous reader (R13, Phase 5)', () => {
+    it('opens on the first recorded chapter even when a reference chapter sorts first', async () => {
+      renderManuscript({ manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())] });
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      expect(document.querySelector('[data-chapter-id="contents"]')).toBeNull();
+    });
+
+    it('falls back to expanded, not collapsed, when a reader state saved before this phase points at a hidden chapter', async () => {
+      // No expandedChapters saved (the shape a pre-Phase-5 project's reader state can be in) - the
+      // default used to be [state.activeChapter], which would have resolved to the now-filtered-out
+      // 'contents' id and left the fallback chapter's header rendered but its body collapsed.
+      renderManuscript({
+        manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())],
+        readerState: async () => ({ activeChapter: 'contents', bookmarks: [] }),
+      });
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      await waitFor(() => expect(paragraph(0)).toBeTruthy());
+    });
+
+    it('never renders a reference chapter as an article in the page-flip view', async () => {
+      renderManuscript({ manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())] });
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      expect(screen.queryByText('Contents')).toBeNull();
+      expect(document.querySelector('[data-chapter-id="contents"]')).toBeNull();
+    });
+
+    it('Expand all chapters never requests paragraphs for a reference chapter', async () => {
+      const paragraphsSpy = vi.fn(async () => []);
+      renderManuscript({
+        manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())],
+        manuscriptParagraphs: paragraphsSpy,
+      });
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Expand all chapters' }));
+      await waitFor(() => expect(paragraphsSpy).toHaveBeenCalled());
+      expect(paragraphsSpy).not.toHaveBeenCalledWith('contents');
+    });
+
+    it('a "#p" deep link into a hidden paragraph tells the narrator instead of navigating there', async () => {
+      const { notify } = renderManuscript({ manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())] }, vi.fn(), [
+        '/manuscript#p900',
+      ]);
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('reference material')));
+      expect(document.querySelector('[data-chapter-id="contents"]')).toBeNull();
     });
   });
 });

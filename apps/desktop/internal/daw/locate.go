@@ -3,7 +3,7 @@
 // future launch action (Phase 8) never needs the narrator to type a path by
 // hand. The evidence behind the two auto-detect sources this package tries is
 // recorded in docs/research/reaper-spike-s6-daw-reachability.md and
-// docs/adr/0090-reaper-reachability-spike-daw-executable-discovery-and-a-file-heartbeat.md.
+// docs/adr/0092-reaper-executable-discovery-heartbeat-mechanism-and-script-plus-project-launch-are-resolved.md.
 //
 // Auto-detect is preferred over asking the narrator, and a Settings override
 // always wins when it points at a real file (Resolve below): the owner

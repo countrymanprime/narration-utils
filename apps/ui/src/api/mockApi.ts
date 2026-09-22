@@ -965,10 +965,20 @@ export function createMockApi(
     },
     manuscriptSearch: async (query) => {
       await manuscriptReady;
+      const needle = query.toLowerCase();
       return wireClone(
         paragraphs
-          .filter((paragraph) => paragraph.text.toLowerCase().includes(query.toLowerCase()))
-          .map((paragraph) => ({ chapter: paragraph.chapter, paragraph: paragraph.index, sourceLine: paragraph.sourceLine, excerpt: paragraph.text })),
+          .map((paragraph) => ({ paragraph, matchStart: paragraph.text.toLowerCase().indexOf(needle) }))
+          .filter(({ matchStart }) => matchStart >= 0)
+          .map(({ paragraph, matchStart }) => ({
+            chapter: paragraph.chapter,
+            chapterId: paragraph.chapterId,
+            paragraph: paragraph.index,
+            paragraphId: paragraph.id,
+            sourceLine: paragraph.sourceLine,
+            excerpt: paragraph.text,
+            matchStart,
+          })),
       );
     },
     manuscriptSetChapterStatus: async (chapter, status) => {
