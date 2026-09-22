@@ -321,7 +321,20 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'settings', state: 'global-appearance', description: 'Settings, Global scope / Appearance category (theme switcher)', ...REFLOW },
   { page: 'settings', state: 'global-proofing', description: 'Settings, Global scope / Proofing category', ...REFLOW },
   { page: 'settings', state: 'global-storybible', description: 'Settings, Global scope / Story Bible category', ...REFLOW },
-  { page: 'settings', state: 'global-daw', description: 'Settings, Global scope / DAW Integration category', ...REFLOW },
+  {
+    page: 'settings',
+    state: 'global-daw',
+    description:
+      'Settings, Global scope / DAW Integration category, with the DAW catalog panel showing REAPER detected (docs/prds/daw-selection-and-acquisition.prd.md Phase 2)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'global-daw-not-detected',
+    description:
+      'Settings, Global scope / DAW Integration category with REAPER not detected (?mockDawNotDetected=1, PRD daw-selection-and-acquisition.prd.md Phase 2): the not-detected dot and the "Get REAPER" button that opens the vendor\'s download page',
+    ...REFLOW,
+  },
   { page: 'settings', state: 'global-manuscript', description: 'Settings, Global scope / Manuscript category (note color picker)', ...REFLOW },
   { page: 'settings', state: 'global-tts', description: 'Settings, Global scope / TTS category', ...REFLOW },
   {

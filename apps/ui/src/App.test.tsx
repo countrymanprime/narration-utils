@@ -720,4 +720,31 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect((launchButton as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText(/Link a REAPER project \(\.rpp\) file before starting REAPER\./)).toBeTruthy();
   });
+
+  // The DAW catalog and "Get it" flow (docs/prds/daw-selection-and-acquisition.prd.md Phase 2): a machine-wide
+  // detection fact shown in the same global Settings DAW panel, above the project-scoped launcher fields.
+  it('shows REAPER detected in the DAW catalog panel when it is already installed', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    expect(await screen.findByText('REAPER detected')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Get REAPER' })).toBeNull();
+  });
+
+  it('offers to open REAPER’s download page when it is not detected', async () => {
+    const dawCatalogOpenDownloadPage = vi.fn(createMockApi().dawCatalogOpenDownloadPage);
+    renderApp({ dawCatalogOpenDownloadPage }, { dawCatalogInstalled: false });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    expect(await screen.findByText('REAPER not detected')).toBeTruthy();
+    const getButton = screen.getByRole('button', { name: 'Get REAPER' });
+    fireEvent.click(getButton);
+    await waitFor(() => expect(dawCatalogOpenDownloadPage).toHaveBeenCalledWith('reaper'));
+  });
 });

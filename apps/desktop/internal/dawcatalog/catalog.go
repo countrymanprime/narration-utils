@@ -54,3 +54,17 @@ var REAPER = Entry{
 
 // Catalog lists every DAW this suite can use today, in display order.
 var Catalog = []Entry{REAPER}
+
+// Lookup finds the catalog entry with the given ID. Phase 2's
+// DawCatalogOpenDownloadPage binding uses this, never a UI-supplied URL, to
+// resolve which page to open server-side (see the package doc and this
+// PRD's architecture notes: "the id, not a URL, crosses the Wails boundary,
+// so nothing UI-supplied can pick an arbitrary destination").
+func Lookup(id string) (Entry, bool) {
+	for _, entry := range Catalog {
+		if entry.ID == id {
+			return entry, true
+		}
+	}
+	return Entry{}, false
+}

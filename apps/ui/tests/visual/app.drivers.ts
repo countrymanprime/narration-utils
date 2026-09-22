@@ -796,6 +796,15 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'DAW Integration');
+      await page.getByText('REAPER detected').waitFor();
+    },
+    'global-daw-not-detected': async (page) => {
+      await page.goto('/?mockDawNotDetected=1');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'DAW Integration');
+      await page.getByRole('button', { name: 'Get REAPER' }).waitFor();
     },
     'global-tts': async (page) => {
       await goToPage(page, 'Settings');

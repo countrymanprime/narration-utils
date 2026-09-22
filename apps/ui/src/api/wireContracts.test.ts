@@ -26,6 +26,7 @@ import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
 import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
 import { creditsProjectValuesResultSchema, creditsRenderResultSchema, creditTemplateSchema, creditTemplatesSchema } from './schemas/credits';
+import { dawCatalogListSchema } from './schemas/dawCatalog';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
@@ -347,6 +348,18 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expect(preview.text).toBe('Neon, written by A. Writer, narrated by [Narrator].');
     expect(preview.unresolved).toEqual(['Narrator']);
   });
+
+  it('the DAW catalog list and open-download-page answers, detected and not detected (Phase 2)', async () => {
+    const detected = await createMockApi().dawCatalogList();
+    expectMatches(dawCatalogListSchema, detected, 'mock catalog, detected');
+    expect(detected[0]?.installed).toBe(true);
+    const notDetected = await createMockApi({}, { dawCatalogInstalled: false }).dawCatalogList();
+    expectMatches(dawCatalogListSchema, notDetected, 'mock catalog, not detected');
+    expect(notDetected[0]?.installed).toBe(false);
+    expect(notDetected[0]?.path).toBeUndefined();
+    await expect(createMockApi().dawCatalogOpenDownloadPage('reaper')).resolves.toBeUndefined();
+    await expect(createMockApi().dawCatalogOpenDownloadPage('not-a-real-daw')).rejects.toThrow(/Unknown DAW catalog entry/);
+  });
 });
 
 describe('answers of the mock client for the settings, voice, model, transcript and tracks bindings', () => {
@@ -510,6 +523,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'removeRecentProject',
       'linkDawFile',
       'launchDaw',
+      'dawCatalogList',
       'tracksDiscover',
       'tracksSelect',
       'tracksList',
@@ -551,6 +565,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'transcriptExportMarkers',
       'transcriptSaveHints',
       'teleprompterStop',
+      'dawCatalogOpenDownloadPage',
       'reportClientDiagnostic',
       'systemNotify',
       'updateOpenNotes',

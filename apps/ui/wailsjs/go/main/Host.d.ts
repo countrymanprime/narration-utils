@@ -29,6 +29,10 @@ export function CreditsSaveTemplate(arg1:string,arg2:string,arg3:string,arg4:str
 
 export function CreditsTemplates():Promise<string>;
 
+export function DawCatalogList():Promise<string>;
+
+export function DawCatalogOpenDownloadPage(arg1:string):Promise<string>;
+
 export function DawLaunch():Promise<string>;
 
 export function GuideBuild(arg1:boolean):Promise<string>;

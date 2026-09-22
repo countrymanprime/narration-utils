@@ -9,6 +9,7 @@ import type {
   CreditsRenderResult,
   CreditTemplate,
   CreditValues,
+  DawCatalogEntry,
   GuideEntity,
   GuideEvidence,
   GuideProperty,
@@ -304,6 +305,11 @@ export function createMockApi(
     dawFileLinked?: boolean;
     /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
     dawLinkMismatch?: boolean;
+    /**
+     * Whether `dawCatalogList()`'s REAPER entry reports installed (docs/prds/daw-selection-and-acquisition.prd.md
+     * Phase 2). Defaults to true; false shows the not-detected state and its "Get REAPER" button.
+     */
+    dawCatalogInstalled?: boolean;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -340,6 +346,20 @@ export function createMockApi(
   // project would have no link yet.
   let dawFileLinked = initial.dawFileLinked ?? true;
   let dawRppPath = `${projectFolder}/${basename(projectFolder)}.rpp`;
+  // Independent of dawFileLinked/dawReachable: a Phase 1 detection fact about the machine, not about this
+  // project's link (PRD daw-selection-and-acquisition.prd.md). Defaults to true so the default capture shows
+  // REAPER detected; ?mockDawNotDetected=1 flips it for the not-detected + "Get REAPER" state.
+  const dawCatalogInstalled = initial.dawCatalogInstalled ?? true;
+  const DAW_CATALOG: DawCatalogEntry[] = [
+    {
+      id: 'reaper',
+      name: 'REAPER',
+      publisher: 'Cockos Incorporated',
+      licenseNote: "A fully-functional evaluation license from the publisher's own site; see their page for terms.",
+      installed: dawCatalogInstalled,
+      ...(dawCatalogInstalled ? { path: 'C:/Program Files/REAPER (x64)/reaper.exe', source: 'uninstall_registry' } : {}),
+    },
+  ];
   // One candidate auto-selects (like the Go host); several leave the choice to the narrator.
   const tracksCandidates = initial.tracksCandidates ?? [WIRE_TRACKS_PROJECT.path];
   let tracksDiscovery: TracksDiscovery = { candidates: tracksCandidates, selected: tracksCandidates.length === 1 ? tracksCandidates[0] : '' };
@@ -1195,6 +1215,12 @@ export function createMockApi(
     creditsPreview: async (body) => {
       const narratorGlobal = settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '';
       return renderMockCredits(body, resolveMockCreditValues(creditValues, narratorGlobal));
+    },
+    dawCatalogList: async () => wireClone(DAW_CATALOG),
+    dawCatalogOpenDownloadPage: async (id) => {
+      if (!DAW_CATALOG.some((entry) => entry.id === id)) throw new Error(`Unknown DAW catalog entry "${id}"`);
+      // The mock has no real browser to open; it only proves the call reached a known id (Vitest's "no navigation
+      // without a click" success metric is exercised at the component level, not here).
     },
     tracksDiscover: async () => wireClone(tracksDiscovery),
     tracksSelect: async (path) => {
