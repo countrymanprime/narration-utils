@@ -29,6 +29,11 @@ apps/desktop/build/*
 !apps/desktop/build/windows/
 apps/desktop/build/windows/*
 !apps/desktop/build/windows/icon.ico
+# The one installer file that differs from Wails' default (docs/adr/0082); wails_tools.nsh is regenerated on every build and tmp/ holds the
+# WebView2 bootstrapper Wails downloads.
+!apps/desktop/build/windows/installer/
+apps/desktop/build/windows/installer/*
+!apps/desktop/build/windows/installer/project.nsi
 .release-build/
 .nx/
 .test-tmp/

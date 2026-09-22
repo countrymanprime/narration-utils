@@ -27,6 +27,18 @@ for (const [key, title] of sections) {
   const entries = grouped.get(key);
   if (entries.length) output.push(`## ${title}`, '', ...entries, '');
 }
+// The first stable release is unsigned (owner decision D7), and Windows shows a warning for a program it does not know. Say so
+// before a narrator meets it. The names are the release assets (scripts/release/assets.mjs).
+output.push(
+  '## Installing on Windows',
+  '',
+  'Download `narration-utils-windows-x64-setup.exe` and run it. It installs Narration Utils for your user account only (no administrator prompt) and adds a Start Menu entry and, if you leave it ticked, a desktop shortcut. Uninstall it from Settings > Apps; that removes the program and the shortcuts and leaves your settings, your downloaded voices and models and your project folders alone.',
+  '',
+  'This release is **unsigned**. Windows SmartScreen may say it "prevented an unrecognized app from starting": choose **More info**, then **Run anyway**. That warning is about the missing signature, not about a problem found in the file; to check the file came from this repository, follow the steps below.',
+  '',
+  'Once installed, the app updates itself from these releases after you click **Install and restart** (Settings > About & updates). `narration-utils-windows-x64.zip` is that update package, not something to run by hand.',
+  '',
+);
 // Every asset is attested by the release workflow (docs/adr/0071); say how a narrator checks one.
 const repository = process.env.GITHUB_REPOSITORY || '<owner>/<repo>';
 output.push(

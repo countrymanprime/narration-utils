@@ -1,12 +1,24 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { PLATFORMS, assetName, attestationArgs, checksumName, packageAsset, sha256File, verifyAssets, verifyAttestations } from './assets.mjs';
+import {
+  PLATFORMS,
+  WINDOWS_INSTALLER,
+  assetName,
+  attestationArgs,
+  checksumName,
+  installerName,
+  packageAsset,
+  releaseFiles,
+  sha256File,
+  verifyAssets,
+  verifyAttestations,
+} from './assets.mjs';
 
 const scratch = (prefix) => mkdtempSync(join(tmpdir(), `${prefix}-`));
 const hasTool = (name) => !spawnSync(name, ['--version'], { stdio: 'ignore' }).error;
@@ -33,14 +45,55 @@ test('assetName rejects a platform the release does not ship', () => {
   assert.throws(() => assetName('freebsd-x64'), /Unknown platform/);
 });
 
-// The Windows runner has no NSIS, so Wails only warns and the raw executable is the real output.
-// It is zipped (a 400 MB download otherwise) and keeps the name the REAPER launcher looks for.
+// Windows ships two files (docs/adr/0082): the zip the in-app updater downloads (a 400 MB download otherwise, and it keeps the
+// name the REAPER launcher looks for) and the setup program a narrator runs the first time, which Wails builds with NSIS.
+test('windows ships a zip for the updater and an unversioned setup program for a first install', () => {
+  assert.equal(WINDOWS_INSTALLER, 'narration-utils-windows-x64-setup.exe');
+  assert.equal(installerName('windows-x64'), WINDOWS_INSTALLER);
+  assert.equal(installerName('macos-arm64'), undefined);
+  assert.equal(installerName('linux-x64'), undefined);
+  assert.deepEqual(releaseFiles('windows-x64'), [
+    'narration-utils-windows-x64.zip',
+    'narration-utils-windows-x64.zip.sha256',
+    'narration-utils-windows-x64-setup.exe',
+    'narration-utils-windows-x64-setup.exe.sha256',
+  ]);
+  assert.deepEqual(releaseFiles('linux-x64'), ['narration-utils-linux-x64.tar.gz', 'narration-utils-linux-x64.tar.gz.sha256']);
+});
+
+test('the updater still finds its zip: the setup program does not change what assetName returns', () => {
+  assert.equal(assetName('windows-x64'), 'narration-utils-windows-x64.zip');
+});
+
 test('windows packaging fails when the exe is missing', () => {
-  assert.throws(() => packageAsset({ platform: 'windows-x64', binDir: scratch('bin'), outDir: scratch('out') }), /narration-utils\.exe/);
+  const bin = stageWailsOutput({ [WINDOWS_INSTALLER]: 'setup bytes' });
+
+  assert.throws(() => packageAsset({ platform: 'windows-x64', binDir: bin, outDir: scratch('out') }), /narration-utils\.exe/);
+});
+
+// `wails build -nsis` only warns when makensis is missing, so the setup program can be absent from a build that otherwise
+// succeeded. Packaging must refuse that, and must do so before it spends time zipping 400 MB.
+test('windows packaging fails, naming the setup program and makensis, when only the exe was built', () => {
+  const bin = stageWailsOutput({ 'narration-utils.exe': 'raw exe' });
+  const out = scratch('out');
+
+  assert.throws(() => packageAsset({ platform: 'windows-x64', binDir: bin, outDir: out }), /narration-utils-windows-x64-setup\.exe.*makensis/s);
+  assert.deepEqual(readdirSync(out), []);
+});
+
+test('windows packaging copies the setup program under its release name and checksums it', { skip: process.platform !== 'win32' }, () => {
+  const bin = stageWailsOutput({ 'narration-utils.exe': 'raw exe', [WINDOWS_INSTALLER]: 'setup bytes' });
+  const out = scratch('out');
+
+  packageAsset({ platform: 'windows-x64', binDir: bin, outDir: out });
+
+  assert.equal(readFileSync(join(out, WINDOWS_INSTALLER), 'utf8'), 'setup bytes');
+  assert.equal(readFileSync(join(out, `${WINDOWS_INSTALLER}.sha256`), 'utf8'), `${sha256File(join(out, WINDOWS_INSTALLER))}  ${WINDOWS_INSTALLER}\n`);
+  assert.deepEqual(readdirSync(out).sort(), releaseFiles('windows-x64').sort());
 });
 
 test('windows packaging zips the exe under its own name', { skip: process.platform !== 'win32' }, () => {
-  const bin = stageWailsOutput({ 'narration-utils.exe': 'raw exe' });
+  const bin = stageWailsOutput({ 'narration-utils.exe': 'raw exe', [WINDOWS_INSTALLER]: 'setup bytes' });
   const out = scratch('out');
 
   const asset = packageAsset({ platform: 'windows-x64', binDir: bin, outDir: out });
@@ -94,9 +147,11 @@ test('macos packaging zips the app bundle', { skip: !hasTool('zip') || !hasTool(
 function stageRelease(platforms) {
   const dir = scratch('release');
   for (const platform of platforms) {
-    const asset = join(dir, assetName(platform));
-    writeFileSync(asset, `bytes of ${platform}`);
-    writeFileSync(join(dir, checksumName(platform)), `${sha256File(asset)}  ${assetName(platform)}\n`);
+    for (const name of [assetName(platform), installerName(platform)].filter(Boolean)) {
+      const asset = join(dir, name);
+      writeFileSync(asset, `bytes of ${name}`);
+      writeFileSync(join(dir, `${name}.sha256`), `${sha256File(asset)}  ${name}\n`);
+    }
   }
   return dir;
 }
@@ -124,7 +179,35 @@ test('verifyAssets reports a missing Windows asset and checksum', () => {
   assert.deepEqual(verifyAssets(stageRelease(['linux-x64'])), [
     'Missing narration-utils-windows-x64.zip',
     'Missing narration-utils-windows-x64.zip.sha256',
+    'Missing narration-utils-windows-x64-setup.exe',
+    'Missing narration-utils-windows-x64-setup.exe.sha256',
   ]);
+});
+
+// A build that lost its installer (makensis missing, the Wails step skipped) must never become a release.
+test('verifyAssets reports a Windows release that has the zip but no setup program', () => {
+  const dir = stageRelease(['windows-x64']);
+  rmSync(join(dir, WINDOWS_INSTALLER));
+  rmSync(join(dir, `${WINDOWS_INSTALLER}.sha256`));
+
+  assert.deepEqual(verifyAssets(dir), ['Missing narration-utils-windows-x64-setup.exe', 'Missing narration-utils-windows-x64-setup.exe.sha256']);
+});
+
+test('verifyAssets reports a setup program that no longer matches its checksum', () => {
+  const dir = stageRelease(['windows-x64']);
+  writeFileSync(join(dir, WINDOWS_INSTALLER), 'tampered');
+
+  const problems = verifyAssets(dir);
+
+  assert.equal(problems.length, 1);
+  assert.match(problems[0], /narration-utils-windows-x64-setup\.exe.*checksum/);
+});
+
+test('verifyAssets reports a setup program whose checksum is missing', () => {
+  const dir = stageRelease(['windows-x64']);
+  rmSync(join(dir, `${WINDOWS_INSTALLER}.sha256`));
+
+  assert.deepEqual(verifyAssets(dir), ['Missing narration-utils-windows-x64-setup.exe.sha256']);
 });
 
 test('verifyAssets reports an empty checksum file', () => {
@@ -199,7 +282,7 @@ test('macOS and Linux are signed by the reusable attach workflow, not by the wor
   }
 });
 
-test('verifyAttestations checks the archive and the checksum of every platform that is present', () => {
+test('verifyAttestations checks every file of every platform that is present, the setup program included', () => {
   const dir = stageRelease(['windows-x64', 'linux-x64']);
   const { calls, run } = fakeGh();
 
@@ -210,6 +293,8 @@ test('verifyAttestations checks the archive and the checksum of every platform t
     [
       'narration-utils-windows-x64.zip',
       'narration-utils-windows-x64.zip.sha256',
+      'narration-utils-windows-x64-setup.exe',
+      'narration-utils-windows-x64-setup.exe.sha256',
       'narration-utils-linux-x64.tar.gz',
       'narration-utils-linux-x64.tar.gz.sha256',
     ],
@@ -221,7 +306,7 @@ test('verifyAttestations does not ask about a platform that was never shipped', 
 
   verifyAttestations(stageRelease(['windows-x64']), { repository: REPOSITORY, run });
 
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 4);
 });
 
 test('verifyAttestations names every file that has no valid attestation and why', () => {
@@ -243,7 +328,7 @@ test('verifyAttestations keeps going after a failure so every problem is reporte
   });
 
   assert.equal(verifyAttestations(dir, { repository: REPOSITORY, run }).length, 2);
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 4);
 });
 
 test('verifyAttestations reports a missing gh instead of passing', () => {
@@ -254,7 +339,7 @@ test('verifyAttestations reports a missing gh instead of passing', () => {
 
   const problems = verifyAttestations(dir, { repository: REPOSITORY, run });
 
-  assert.equal(problems.length, 2);
+  assert.equal(problems.length, 4);
   assert.match(problems[0], /ENOENT/);
 });
 
@@ -279,9 +364,11 @@ test('the verify command stays offline unless --attestations is passed, and then
 test('verifyAssets rejects a file that is not one of the release assets or their checksums', () => {
   const dir = stageRelease(['windows-x64']);
   writeFileSync(join(dir, 'Setup.exe'), 'not built by the release workflow');
+  writeFileSync(join(dir, 'Narration Utils-amd64-installer.exe'), 'the raw name Wails gives an installer, never a release asset');
   writeFileSync(join(dir, `${assetName('windows-x64')}.bak`), 'a stray copy');
 
   assert.deepEqual(verifyAssets(dir), [
+    'Unexpected file Narration Utils-amd64-installer.exe: promote publishes every file, and only the release assets are built and attested by the workflows',
     'Unexpected file Setup.exe: promote publishes every file, and only the release assets are built and attested by the workflows',
     'Unexpected file narration-utils-windows-x64.zip.bak: promote publishes every file, and only the release assets are built and attested by the workflows',
   ]);

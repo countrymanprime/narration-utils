@@ -82,16 +82,17 @@ jobs:
         with:
           platform: windows-x64
           version: ${{ needs.version.outputs.version }}
-      # Build provenance (SLSA Build L2) for everything a narrator can download, and for the executable inside the zip so it
-      # can be verified after extraction. Before the prune and the release on purpose: if this step fails the run stops and
-      # no release without provenance is published. The subjects are digests, so promote does not attest again: the same
-      # bytes keep the release candidate's attestation.
+      # Build provenance (SLSA Build L2) for everything a narrator can download (the zip, the setup program and their checksums, all in
+      # release-assets), and for the executable inside the zip so it can be verified after extraction. The setup program in build/bin is
+      # not named separately: the copy in release-assets is the same bytes. Before the prune and the release on purpose: if this step
+      # fails the run stops and no release without provenance is published. The subjects are digests, so promote does not attest
+      # again: the same bytes keep the release candidate's attestation.
       - name: Attest the release assets and the executable
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: |
             release-assets/*
-            apps/desktop/build/bin/narration-utils*
+            apps/desktop/build/bin/narration-utils.exe
       # Keep the newest 10 RCs including the one being published, so nx still
       # finds the latest RC tag and bumps past it instead of re-stamping the same version.
       - name: Prune old release candidates
@@ -108,7 +109,7 @@ jobs:
         run: |
           git tag "$TAG"
           node scripts/release/generate-notes.mjs "$TAG"
-      - name: Create the prerelease with the Windows zip
+      - name: Create the prerelease with the Windows zip and setup program
         run: gh release create "$TAG" release-assets/* --target "$GITHUB_SHA" --prerelease --title "$TAG" --notes-file release-notes.md
       # Each starts its own run, so a failed macOS or Linux build neither turns this run red nor
       # blocks promotion. Retry one by re-running its workflow, or dispatching it with the tag.

@@ -1,18 +1,24 @@
 #!/usr/bin/env node
 
-// Names, packages and verifies the one downloadable per platform:
-// narration-utils-<platform>.<ext> plus a narration-utils-<platform>.<ext>.sha256 beside it.
+// Names, packages and verifies what each platform releases:
+// narration-utils-<platform>.<ext> plus a narration-utils-<platform>.<ext>.sha256 beside it, and on Windows also the setup
+// program narration-utils-windows-x64-setup.exe with its own .sha256 (docs/adr/0082). The archive is what the in-app updater
+// downloads; the setup program is for a first install.
 // Every platform builds and uploads its own asset at a different time, so checksums are per
 // asset rather than one SHA256SUMS.txt that would need every platform to have finished.
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const APP_BINARY = 'narration-utils';
 const MAC_APP_BUNDLE = 'Narration Utils.app';
+
+// The setup program NSIS builds (apps/desktop/build/windows/installer/project.nsi names its OutFile the same, and a test keeps the
+// two equal). The name carries no version, like every asset (docs/adr/0073).
+export const WINDOWS_INSTALLER = 'narration-utils-windows-x64-setup.exe';
 
 // The workflows that build and attest an asset (docs/adr/0071). Windows is built and attested by the release job of
 // prerelease.yml; the others by the reusable _attach-platform.yml, which is the signer named in the certificate even
@@ -25,14 +31,23 @@ function requireInBin(binDir, name) {
   if (!existsSync(join(binDir, name))) throw new Error(`Expected ${name} in ${binDir}; did the Wails build run?`);
 }
 
+// `wails build -nsis` only warns, and still exits 0, when makensis is missing, so a build can succeed without its setup program.
+export function requireInstaller(binDir, name = WINDOWS_INSTALLER) {
+  if (!existsSync(join(binDir, name))) {
+    throw new Error(`Expected the setup program ${name} in ${binDir}. Wails builds it with NSIS when the build is run with -nsis and makensis is on PATH; without makensis it only warns.`);
+  }
+}
+
 // `archive` turns Wails' output in binDir into the asset at `target` (an absolute path in `outDir`).
 // `required` platforms must be on a release before it can be promoted; the others ship when their
-// (separate, re-runnable) build succeeds and are simply absent when it did not.
+// (separate, re-runnable) build succeeds and are simply absent when it did not. `installer` is a second file of the platform, copied
+// from the Wails output as it is: it is as required as the archive, so a build that lost it cannot be promoted.
 export const PLATFORMS = {
-  // The runner has no NSIS, so `wails build -nsis` only warns and the raw self-contained exe is the
-  // real output. It is zipped (about 400 MB otherwise) and keeps the name the REAPER launcher looks for (narration-utils.exe).
+  // The self-contained exe is zipped (about 400 MB otherwise) and keeps the name the REAPER launcher looks for (narration-utils.exe);
+  // that zip is what the in-app updater downloads. The setup program is what a narrator runs first.
   'windows-x64': {
     extension: '.zip',
+    installer: WINDOWS_INSTALLER,
     required: true,
     signerWorkflow: PRERELEASE_WORKFLOW,
     archive({ binDir, outDir, target }) {
@@ -75,16 +90,32 @@ function platformEntry(platform) {
 
 export const assetName = (platform) => `narration-utils-${platform}${platformEntry(platform).extension}`;
 export const checksumName = (platform) => `${assetName(platform)}.sha256`;
+export const installerName = (platform) => platformEntry(platform).installer;
 export const sha256File = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
 
+// Every downloadable of a platform: the archive and, when there is one, the setup program. Each has a .sha256 beside it.
+const platformAssets = (platform) => [assetName(platform), installerName(platform)].filter(Boolean);
+
+// Every file a platform puts on a release, each asset followed by its checksum.
+export const releaseFiles = (platform) => platformAssets(platform).flatMap((name) => [name, `${name}.sha256`]);
+
+const writeChecksum = (out, name) => writeFileSync(join(out, `${name}.sha256`), `${sha256File(join(out, name))}  ${name}\n`);
+
 export function packageAsset({ platform, binDir, outDir }) {
-  const { archive } = platformEntry(platform);
+  const { archive, installer } = platformEntry(platform);
+  const bin = resolve(binDir);
   const out = resolve(outDir);
   const target = join(out, assetName(platform));
+  // Before anything is written or zipped: a build without its setup program is not a release.
+  if (installer) requireInstaller(bin, installer);
   mkdirSync(out, { recursive: true });
   rmSync(target, { force: true });
-  archive({ binDir: resolve(binDir), outDir: out, target });
-  writeFileSync(join(out, checksumName(platform)), `${sha256File(target)}  ${assetName(platform)}\n`);
+  archive({ binDir: bin, outDir: out, target });
+  writeChecksum(out, assetName(platform));
+  if (installer) {
+    copyFileSync(join(bin, installer), join(out, installer));
+    writeChecksum(out, installer);
+  }
   return target;
 }
 
@@ -93,27 +124,29 @@ export function packageAsset({ platform, binDir, outDir }) {
 export function verifyAssets(dir) {
   const problems = [];
   for (const [platform, { required }] of Object.entries(PLATFORMS)) {
-    const name = assetName(platform);
-    const sumName = checksumName(platform);
-    const present = [name, sumName].filter((file) => existsSync(join(dir, file)));
+    const files = releaseFiles(platform);
+    const present = files.filter((file) => existsSync(join(dir, file)));
     if (present.length === 0 && !required) continue;
-    if (present.length < 2 && required) {
-      problems.push(...[name, sumName].filter((file) => !present.includes(file)).map((file) => `Missing ${file}`));
+    const absent = files.filter((file) => !present.includes(file));
+    if (absent.length && required) {
+      problems.push(...absent.map((file) => `Missing ${file}`));
       continue;
     }
-    if (present.length < 2) {
-      // An optional upload was interrupted between the asset and its checksum.
-      const absent = [name, sumName].find((file) => !present.includes(file));
-      problems.push(`Incomplete upload: ${present[0]} has no ${absent}`);
+    if (absent.length) {
+      // An optional upload was interrupted between an asset and its checksum.
+      problems.push(`Incomplete upload: ${present[0]} has no ${absent[0]}`);
       continue;
     }
-    const expected = readFileSync(join(dir, sumName), 'utf8').trim().split(/\s+/)[0];
-    if (!/^[0-9a-f]{64}$/.test(expected)) problems.push(`${sumName} does not contain a SHA-256 checksum`);
-    else if (sha256File(join(dir, name)) !== expected) problems.push(`${name} does not match its checksum in ${sumName}`);
+    for (const name of platformAssets(platform)) {
+      const sumName = `${name}.sha256`;
+      const expected = readFileSync(join(dir, sumName), 'utf8').trim().split(/\s+/)[0];
+      if (!/^[0-9a-f]{64}$/.test(expected)) problems.push(`${sumName} does not contain a SHA-256 checksum`);
+      else if (sha256File(join(dir, name)) !== expected) problems.push(`${name} does not match its checksum in ${sumName}`);
+    }
   }
   // Promote publishes every file in the directory, so a file that is not a release asset must stop it: nothing built or
   // attested it.
-  const known = new Set(Object.keys(PLATFORMS).flatMap((platform) => [assetName(platform), checksumName(platform)]));
+  const known = new Set(Object.keys(PLATFORMS).flatMap(releaseFiles));
   for (const name of readdirSync(dir).sort()) {
     if (!known.has(name)) {
       problems.push(`Unexpected file ${name}: promote publishes every file, and only the release assets are built and attested by the workflows`);
@@ -147,7 +180,7 @@ export function verifyAttestations(dir, { repository, run = runGh } = {}) {
   if (!repository) throw new Error('Verifying attestations needs the repository, for example countrymanprime/narration-utils.');
   const problems = [];
   for (const [platform, { signerWorkflow }] of Object.entries(PLATFORMS)) {
-    for (const name of [assetName(platform), checksumName(platform)]) {
+    for (const name of releaseFiles(platform)) {
       const file = join(dir, name);
       if (!existsSync(file)) continue;
       try {

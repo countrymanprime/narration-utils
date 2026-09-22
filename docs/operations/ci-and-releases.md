@@ -144,8 +144,7 @@ uses the squash commit title to calculate the synchronized application version:
 `chore`, and `revert` are patch. Pre-1.0 breaking changes are handled as the
 next minor release. The workflow tags `v<version>-rc`, builds the Windows
 package, and in that same job creates the GitHub pre-release with the Windows
-zip. There is no installer: the Windows runner has no NSIS, so Wails only warns
-and the self-contained `narration-utils.exe` is the real output. The last step starts the optional **Build macOS** and **Build Linux**
+zip and the Windows setup program ([The Windows setup program](#the-windows-setup-program)). The last step starts the optional **Build macOS** and **Build Linux**
 workflows, which build the release tag and attach their asset
 ([ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)). They are
 separate runs, so a failed non-Windows build never delays or reddens the Windows
@@ -155,11 +154,13 @@ release. To retry one, re-run its workflow run, or start **Build macOS** /
 Other workflows can call them with `uses:` and a `tag` input.
 
 Each platform ships one asset named `narration-utils-<platform>.<ext>`, with a
-`.sha256` beside it. Only Windows is required:
+`.sha256` beside it; Windows also ships its setup program, named and checksummed the same way. Only Windows is required
+(and for Windows both files are: a build that lost its setup program is not promotable):
 
 | Platform | Asset | Contents |
 | --- | --- | --- |
-| `windows-x64` | `narration-utils-windows-x64.zip` | `narration-utils.exe` |
+| `windows-x64` | `narration-utils-windows-x64.zip` | `narration-utils.exe` (what the in-app updater downloads) |
+| `windows-x64` | `narration-utils-windows-x64-setup.exe` | the NSIS setup program (what a narrator runs first; [below](#the-windows-setup-program)) |
 | `macos-arm64` | `narration-utils-macos-arm64.zip` | `Narration Utils.app` |
 | `linux-x64` | `narration-utils-linux-x64.tar.gz` | `narration-utils` binary |
 
@@ -205,7 +206,40 @@ a contract: the asset is `narration-utils-windows-x64.zip` with a `narration-uti
 `sha256sum` format naming that zip; the zip holds exactly one entry, `narration-utils.exe`; the tag is `v<version>-rc` for a
 candidate (a pre-release) and `v<version>` for its promotion; and the program reports its own bare version for `--version`.
 The updater refuses anything else, so changing one of these means changing `apps/desktop/internal/update` in the same pull request
-(`scripts/release/assets.mjs` and the updater's `PlatformFor` mirror each other).
+(`scripts/release/assets.mjs` and the updater's `PlatformFor` mirror each other). The setup program is not part of that contract: the
+updater matches its zip and checksum by exact name and ignores every other asset.
+
+## The Windows setup program
+
+A narrator installs from `narration-utils-windows-x64-setup.exe`, an NSIS installer that Wails builds ([ADR 0082](../adr/0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md)).
+
+- **How it is built.** `.github/actions/build-native` passes `-nsis` to `scripts/release/wails-build.mjs` on `windows-x64`, after a step
+  that installs NSIS (`choco install nsis`, version pinned in the step) when `makensis` is not already on the runner. `wails doctor`
+  on the hosted runner lists `nsis` as available, not installed, and Wails only warns, and exits 0, when `makensis` is missing. So
+  `wails-build.mjs` removes a setup program left by an earlier build before it runs and fails when `-nsis` was passed and the file is not
+  there afterwards, and `assets.mjs package` refuses to package Windows without it. The log shows `makensis version:` and Wails'
+  `Building 'amd64' installer` line, and the job summary lists the release files with their sizes.
+- **What it does.** Per user (no elevation, `%LOCALAPPDATA%\Programs\Narration Utils`, uninstall entry under `HKCU`), `narration-utils.exe`
+  as the program name, a Start Menu shortcut, a desktop shortcut the narrator can untick, the WebView2 runtime installed by Microsoft's
+  bootstrapper only when it is missing, and an uninstaller that removes the program, the update copies (`.new`, `.old`, `.failed`) and the
+  shortcuts and leaves settings, downloaded assets, the WebView2 data and project folders alone. The definition is
+  `apps/desktop/build/windows/installer/project.nsi`; `wails_tools.nsh` beside it is regenerated on every build and is not checked in. The
+  publisher, product name and version come from `apps/desktop/wails.json` (`info`), whose version `sync-version.mjs` keeps equal to the
+  release version.
+- **What CI showed** (the `Build (Windows)` job of pull request 224, 2026-09-21): `makensis` was not on the runner; the pinned step installed `nsis.install` 3.11.0 and printed `makensis version: v3.11`; Wails printed `Building 'amd64' installer: Done.`; the setup program was 196,676,207 bytes and the zip 195,290,110; the bootstrapper check printed `Valid, CN=Microsoft Corporation`. The NSIS step adds about 15 seconds and the installer build about a minute.
+- **Why per user.** The in-app updater renames the running program in its folder and never asks for elevation; under Program Files
+  it would answer that it cannot replace itself. Per machine is not offered.
+- **The WebView2 bootstrapper** Wails embeds is downloaded from Microsoft while the installer is built and nothing pins it, so the build
+  checks that `installer/tmp/MicrosoftEdgeWebview2Setup.exe` has a valid Authenticode signature from Microsoft Corporation before the
+  release is packaged.
+- **Unsigned.** The setup program is not signed (owner decision D7); the release notes say so and tell a narrator to choose **More info**
+  then **Run anyway** on the SmartScreen warning (`scripts/release/generate-notes.mjs`). No workflow here signs anything.
+- **Tests.** `scripts/release/installer.test.mjs` holds the definition to the decisions of the ADR (the file names, per user, what the
+  uninstaller deletes, no network, no signing, that the file is tracked); `assets.test.mjs` and `wails-build.test.mjs` cover packaging, the
+  checksum, the promote checks and the missing-installer failure. `makensis` is not on a development machine, so the compile is proven only by the
+  `Build (Windows)` job; an install on a clean machine is the owner's check (the first stable rehearsal, PRD phase 16).
+- **Install and uninstall by hand** for a check: run the setup program; `narration-utils-windows-x64-setup.exe /S` installs silently
+  (both shortcuts) and `"%LOCALAPPDATA%\Programs\Narration Utils\uninstall.exe" /S` removes it.
 
 ## The packaged-app smoke test
 
@@ -260,7 +294,7 @@ level 3). The subjects are identified by digest:
 
 | Platform | Signed by (the workflow the certificate names) | Subjects |
 | --- | --- | --- |
-| Windows | `.github/workflows/prerelease.yml`, the `release` job | `narration-utils-windows-x64.zip`, its `.sha256`, and `narration-utils.exe` (so the executable can be checked after the zip is extracted, which an in-app update can do) |
+| Windows | `.github/workflows/prerelease.yml`, the `release` job | `narration-utils-windows-x64.zip`, `narration-utils-windows-x64-setup.exe`, their `.sha256` files, and `narration-utils.exe` (so the executable can be checked after the zip is extracted, which an in-app update can do) |
 | macOS | `.github/workflows/_attach-platform.yml` (the reusable workflow, not `build-macos.yml`) | the zip and its `.sha256` |
 | Linux | `.github/workflows/_attach-platform.yml` | the archive, its `.sha256`, and `narration-utils` |
 
@@ -297,7 +331,7 @@ level 3). The subjects are identified by digest:
 With the [GitHub CLI](https://cli.github.com), in the folder holding the file:
 
 ```bash
-gh attestation verify narration-utils-windows-x64.zip --repo countrymanprime/narration-utils
+gh attestation verify narration-utils-windows-x64-setup.exe --repo countrymanprime/narration-utils
 ```
 
 Success prints the workflow, commit and run that built the file; a modified or unattested file fails. To insist on the
