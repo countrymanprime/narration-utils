@@ -346,7 +346,7 @@ func (h *Host) ManuscriptSelectFile() (string, error) {
 	if ctx == nil {
 		return "", fmt.Errorf("the desktop host is not ready")
 	}
-	path, err := runtime.OpenFileDialog(ctx, runtime.OpenDialogOptions{Title: "Select manuscript", Filters: []runtime.FileFilter{{DisplayName: "Manuscripts", Pattern: "*.docx;*.md;*.markdown"}}})
+	path, err := runtime.OpenFileDialog(ctx, runtime.OpenDialogOptions{Title: "Select manuscript", Filters: []runtime.FileFilter{{DisplayName: "Manuscripts", Pattern: importer.PickerPattern()}}})
 	if err != nil {
 		return "", err
 	}
