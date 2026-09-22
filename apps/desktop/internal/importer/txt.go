@@ -133,7 +133,7 @@ func txtWithProgress(path string, progress Progress) (Draft, error) {
 	}
 
 	progress.report(80, "Classifying front matter, chapters and reference sections")
-	draft, err := newDraft("txt", filepath.Base(path), paragraphs, titles, headingLevels)
+	draft, err := newDraft("txt", filepath.Base(path), paragraphs, titles, headingLevels, nil)
 	draft.Notices = notices
 	if err == nil {
 		progress.report(95, "Found %d chapters in %d sections", len(titles), len(draft.Sections))
