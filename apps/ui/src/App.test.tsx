@@ -582,6 +582,13 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
       manuscriptImportPreview: preview,
       manuscriptImportState: async () => hostJob,
       manuscriptChapters: async () => (imported ? importedChapters : []),
+      // This test is about the import dialog's own activity log and Home's refresh, not the B1-B3 chained build
+      // (default on, D8): turn it off so the import dialog stays open with a manual Close, as asserted below.
+      settingsForScope: async () => ({
+        ManuscriptGuide: [
+          { key: 'build_after_import', label: '', kind: 'bool', choices: [], value: 'false', isSet: true, effectiveValue: 'false', effectiveSource: 'project' },
+        ],
+      }),
       manuscriptImportCommit: async (): Promise<WorkJob> => {
         imported = true;
         return (hostJob = {

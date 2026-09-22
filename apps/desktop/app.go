@@ -739,7 +739,7 @@ type fieldSchema struct {
 var fieldSchemas = map[string][]fieldSchema{
 	"General":           {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}, {"notifications", "Notify me when a long task finishes while I'm away", "bool", nil}},
 	"Manuscript":        {{"color_note", "Note color", "color", nil}},
-	"ManuscriptGuide":   {{"spacy_model", "spaCy model", "choice", []string{"en_core_web_sm", "en_core_web_lg"}}},
+	"ManuscriptGuide":   {{"spacy_model", "spaCy model", "choice", []string{"en_core_web_sm", "en_core_web_lg"}}, {"build_after_import", "Build the Story Bible after import", "bool", nil}},
 	"Piper":             {{"tts_provider", "TTS provider", "choice", []string{"piper"}}, {"tts_voice_id", "Preview voice", "choice", []string{"en_US-ljspeech-high"}}},
 	"Updates":           {{"check_on_startup", "Check for updates on startup", "bool", nil}, {"channel", "Update channel", "choice", []string{"candidates", "stable"}}},
 	"TranscriptCompare": {{"model_size", "Default Whisper model", "choice", []string{"tiny", "small", "medium", "large-v3-turbo", "large-v3"}}, {"chunk_seconds", "Default chunk length", "choice", []string{"30", "60", "300", "600"}}, {"color_misread", "Misread marker color", "color", nil}, {"color_skipped", "Skipped marker color", "color", nil}, {"color_extra", "Extra marker color", "color", nil}},
@@ -753,7 +753,17 @@ func (h *Host) settingsSchemas() map[string][]fieldSchema {
 		schemas[tool] = fields
 	}
 	if models := h.registry().spacy; models != nil {
-		schemas["ManuscriptGuide"] = []fieldSchema{{"spacy_model", "spaCy model", "choice", models.IDs()}}
+		// Replace only the spacy_model choices with the catalog's models; a bug fixed on the way in (found while adding
+		// build_after_import, N19d): this used to replace the whole ManuscriptGuide list, silently dropping every other
+		// field in it whenever the spaCy registry was built.
+		updated := make([]fieldSchema, len(schemas["ManuscriptGuide"]))
+		for i, field := range schemas["ManuscriptGuide"] {
+			if field.key == "spacy_model" {
+				field.choices = models.IDs()
+			}
+			updated[i] = field
+		}
+		schemas["ManuscriptGuide"] = updated
 	}
 	return schemas
 }

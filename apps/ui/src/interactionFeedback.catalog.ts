@@ -89,6 +89,9 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/home/Home.tsx::manuscriptImportCancel#1': row('click', 'instant', 'none', 'none', 'ui', 'toast', 'no', 'ok', 'Instant: it only marks the import cancelled.'),
   'src/components/home/Home.tsx::manuscriptImportPreview#2': row('input', 'job', 'dialog', 'host', 'poll', 'toast', 'no', 'ok', 'A new heading level re-runs the preview inside the same dialog with progress.'),
   'src/components/home/Home.tsx::manuscriptImportCancel#2': row('click', 'instant', 'none', 'none', 'ui', 'toast', 'no', 'ok', 'Cancel from the progress dialog: a refused cancel is now a toast (phase 6).'),
+  'src/components/home/Home.tsx::settingsForScope#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only pre-fills the "Build the Story Bible after import" checkbox; the on-by-default (D8) local state stays usable without it.'),
+  'src/components/home/Home.tsx::guideBuild#1': row('event', 'job', 'dialog', 'na', 'poll', 'toast', 'no', 'ok', 'B1-B3: chained after a successful import. A "Manuscript imported." toast precedes it, so the narrator is never left wondering whether the import itself worked; a build failure is its own toast and never unmakes the import.'),
+  'src/components/home/Home.tsx::guideBuildState#1': row('timer', 'instant', 'dialog', 'na', 'poll', 'dialog', 'no', 'ok', 'Polls the chained build the same way Guide.tsx polls its own; the app-level job:ended subscriber raises the completion toast (ADR 0076), so this dialog only shows progress.'),
 
   // Manuscript
   'src/components/manuscript/Manuscript.tsx::readerStateSave#1': row('effect', 'file-io', 'na', 'na', 'ui', 'toast', 'na', 'ok', 'A small file write on every reader change; the reader has already moved.'),
@@ -215,6 +218,8 @@ export const SILENT_CATCHES: Record<string, string> = {
   'src/App.tsx#4': "Cosmetic: the narrator's entity colours. The built-in colours stay if the settings cannot be read, and Settings reports the real error.",
   'src/App.tsx#5': 'Best effort when leaving Proofing: a reset that fails leaves the finished results in place, which is harmless.',
   'src/components/home/Home.tsx#1': 'Only decides whether the "entries need review" nudge shows; without it the nudge is absent.',
+  'src/components/home/Home.tsx#2':
+    'Only pre-fills the "Build the Story Bible after import" checkbox from Settings; it keeps its on-by-default (D8) local state without it, and the narrator can still change it per import.',
   'src/components/proofing/Transcript.tsx#1': 'Reads the last model and chunk choice; the defaults stay usable and Settings reports a real error.',
   'src/components/proofing/Transcript.tsx#2': 'Only offers to review the last run; without it the offer is absent.',
   'src/components/teleprompter/TeleprompterPage.tsx#1': 'Remembering the microphone name in localStorage; the field still works for this visit.',

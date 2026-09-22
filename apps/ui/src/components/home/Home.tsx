@@ -1,5 +1,5 @@
 import { apiErrorMessage, describeApiError } from '../../api/errorMessage';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileArrowUp, faFileLines } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
@@ -57,6 +57,21 @@ export function Home({
   const [groupOpen, setGroupOpen] = useState<ReviewGroupOpen>({});
   const [headingLevel, setHeadingLevel] = useState(1);
   const [, setDeclineCount] = useState(0);
+  // B1-B3: "Build the Story Bible after import", pre-filled from Settings (ManuscriptGuide.build_after_import, on by
+  // default per owner decision D8) and changeable per import. buildStarted guards against starting the chained build
+  // twice for the same import job (the poller can report 'success' more than once before its interval is cleared).
+  const [buildAfterImport, setBuildAfterImport] = useState(true);
+  const [buildAfterImportJob, setBuildAfterImportJob] = useState<WorkJob>();
+  const buildStarted = useRef(false);
+  useEffect(() => {
+    void api
+      .settingsForScope('global')
+      .then((settings) => {
+        const field = settings.ManuscriptGuide?.find((item) => item.key === 'build_after_import');
+        if (field) setBuildAfterImport(field.effectiveValue !== 'false');
+      })
+      .catch(() => {});
+  }, [api]);
   const candidate = data.manuscriptCandidate;
   const offerCandidate = !found && candidate && !declinedCandidates.has(candidate.path) && !importJob;
   useEffect(() => {
@@ -90,15 +105,64 @@ export function Home({
       window.clearInterval(timer);
     };
   }, [api, importJob?.id, importJob?.phase]);
-  // The host finishes writing the manuscript before it reports success, so the
-  // shared application state is refreshed exactly once, on that transition.
+  // The host finishes writing the manuscript before it reports success, so the shared application state is refreshed
+  // exactly once, on that transition. A checked "Build the Story Bible after import" chains straight into
+  // api.guideBuild() (B3, UI-chained for the MVP: no binding change, and a build failure never unmakes the import,
+  // which is already written and reported). The import dialog closes itself (like a successful Story Bible rebuild
+  // already does, ADR 0076) and a second WorkDialog picks up the build's own progress, its own toast on the app's job:ended
+  // subscriber included.
   useEffect(() => {
-    if (importJob?.phase === 'success') void refreshBootstrap();
-  }, [importJob?.phase, refreshBootstrap]);
+    if (importJob?.phase !== 'success') return;
+    void refreshBootstrap();
+    if (!buildAfterImport || buildStarted.current) return;
+    buildStarted.current = true;
+    notify('Manuscript imported.');
+    setImportJob(undefined);
+    void api
+      .guideBuild({})
+      .then((result) => {
+        if (result.status === 'asset_required') {
+          notify('Manuscript imported. Build the Story Bible from the Story Bible page to download its language model first.');
+          return;
+        }
+        if (result.job.phase !== 'success') setBuildAfterImportJob(result.job);
+      })
+      .catch((error) => notify(`Manuscript imported. Story Bible build failed: ${apiErrorMessage(error)}`, 'error'));
+  }, [importJob?.phase, buildAfterImport, api, notify, refreshBootstrap]);
+  // Polls the chained build the same way Guide.tsx polls its own (ADR-0015: real progress only), and clears the dialog
+  // the moment the host reports success rather than waiting for a click - the app's job:ended subscriber already
+  // raises the "Story Bible rebuild complete" toast (ADR 0076), so this dialog does not also announce it.
+  useEffect(() => {
+    if (!buildAfterImportJob?.id || !['preparing', 'running'].includes(buildAfterImportJob.phase)) return;
+    let active = true;
+    const refresh = () =>
+      void api
+        .guideBuildState()
+        .then((next) => {
+          if (!active) return;
+          if (next.phase === 'success') setBuildAfterImportJob(undefined);
+          else setBuildAfterImportJob(next);
+        })
+        .catch(
+          (error) =>
+            active &&
+            setBuildAfterImportJob((current) =>
+              current ? { ...current, phase: 'error', error: describeApiError(error), message: describeApiError(error) } : current,
+            ),
+        );
+    refresh();
+    const timer = window.setInterval(refresh, 250);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [api, buildAfterImportJob?.id, buildAfterImportJob?.phase]);
   const beginImportPreview = async (jobId: string) => {
     setHeadingLevel(1);
     setImportSelection({});
     setGroupOpen({});
+    buildStarted.current = false;
+    setBuildAfterImportJob(undefined);
     setImportJob({ id: jobId, kind: 'manuscript_import', phase: 'preparing', message: 'Preparing manuscript import…', percent: 0, logs: [], elapsed: 0 });
     try {
       setImportJob(await api.manuscriptImportPreview(jobId, { markdownHeadingLevel: 1 }));
@@ -237,6 +301,7 @@ export function Home({
             onHeadingLevelChange={changeHeadingLevel}
             groupOpen={groupOpen}
             onGroupOpenChange={(group: ReviewGroupKey, open: boolean) => setGroupOpen((current) => ({ ...current, [group]: open }))}
+            buildStoryBible={{ checked: buildAfterImport, onChange: setBuildAfterImport }}
           />
         </ConfirmDialog>
       )}
@@ -256,6 +321,7 @@ export function Home({
           close={() => setImportJob(undefined)}
         />
       )}
+      {buildAfterImportJob && <WorkDialog title="Build the Story Bible" job={buildAfterImportJob} close={() => setBuildAfterImportJob(undefined)} />}
       <AudiobookEstimatePanel
         notify={notify}
         goToManuscript={goToManuscript}
