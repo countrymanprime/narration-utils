@@ -67,8 +67,8 @@ func readOneUninstallEntry(root, name string) installEntry {
 // (verified in the Phase 6 spike); both are tried since a different REAPER
 // build may use the plain key.
 func readAssociationCommand() (string, bool) {
-	for _, verb := range []string{`shell\open64\command`, `shell\open\command`} {
-		key, err := registry.OpenKey(registry.CLASSES_ROOT, `Reaper.Project\`+verb, registry.QUERY_VALUE)
+	for _, verb := range []string{"open64", "open"} {
+		key, err := registry.OpenKey(registry.CLASSES_ROOT, `Reaper.Project\shell\`+verb+`\command`, registry.QUERY_VALUE)
 		if err != nil {
 			continue
 		}
