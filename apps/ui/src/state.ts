@@ -1,9 +1,10 @@
 import type { Discrepancy, GuideEntity, GuideEvidence, ManuscriptChapter, ManuscriptParagraph, TranscriptState } from './types';
 
 export const isTranscriptActive = (phase: TranscriptState['phase']) => phase === 'preparing' || phase === 'running' || phase === 'inspecting';
-// Reference-material sections (Contents, Characters, ...) stay in manuscript.json
-// for data integrity but shouldn't clutter chapter navigation/listing surfaces -
-// see ChapterNav.tsx. The continuous reader view intentionally does not use this.
+// Reference-material sections (Contents, Characters, ...) stay in manuscript.json for data
+// integrity but shouldn't clutter chapter navigation/listing surfaces or the continuous reader
+// itself - see ChapterNav.tsx and Manuscript.tsx (ADR 0090, which reverses the reader-view clause
+// of ADR 0005; this predicate's original scope was the panel only).
 export const isListableChapter = (chapter: Pick<ManuscriptChapter, 'contentKind'>): boolean => (chapter.contentKind ?? 'narration') !== 'reference';
 export const selectDiscrepancy = (rows: Discrepancy[], id?: string): Discrepancy | undefined => rows.find((row) => row.id === id) ?? rows[0];
 export const canAddEquivalence = (row?: Discrepancy): boolean =>
@@ -105,6 +106,78 @@ export const chapterLineNumbers = (paragraphs: ManuscriptParagraph[]): Map<numbe
   });
   return map;
 };
+
+// The line number a search hit or bookmark should show for a global paragraph index, in a chapter
+// that may not be loaded (collapsed, never expanded). `chapter.paragraphIds` already carries each
+// paragraph's position within its own chapter as imported, so this needs no paragraph body to be
+// fetched (R5). Manuscripts imported before `paragraphIds` existed fall back to `loadedLineNumbers`
+// (chapterLineNumbers of whatever chapters happen to be expanded), and finally to the raw global
+// paragraph index if neither source has it - never undefined, so a row always shows something.
+export const chapterLineNumber = (
+  chapter: Pick<ManuscriptChapter, 'paragraphIds'> | undefined,
+  paragraphIndex: number,
+  loadedLineNumbers: Map<number, number>,
+): number => {
+  const position = chapter?.paragraphIds?.findIndex((row) => row.index === paragraphIndex) ?? -1;
+  if (position >= 0) return position + 1;
+  return loadedLineNumbers.get(paragraphIndex) ?? paragraphIndex;
+};
+
+// The chapter-title/subtitle subset (R2): filtered client-side from the already-loaded `chapters`
+// list, so it costs no request and updates on every keystroke - unlike the debounced line search,
+// which waits (SEARCH_DEBOUNCE_MS) and hits Go. Returns the matching chapter ids; a blank query
+// matches nothing (an empty search shows the plain chapter list, not "everything").
+export const chapterTextMatches = (chapters: Pick<ManuscriptChapter, 'id' | 'title' | 'subtitle'>[], query: string): Set<string> => {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return new Set();
+  return new Set(
+    chapters
+      .filter((chapter) => chapter.title.toLowerCase().includes(needle) || (chapter.subtitle ?? '').toLowerCase().includes(needle))
+      .map((chapter) => chapter.id),
+  );
+};
+
+// The result row's character budget (R3): measured from the panel's own layout, not a guess. The
+// panel is `w-[min(20rem,100vw)]` with `p-[1.1rem]` padding (SlideOver.tsx), leaving a hit row about
+// 220-230px wide at the row's 0.74rem font size - about 35-40 characters - so this is that measured
+// width, taken once rather than re-measured live (a ResizeObserver/canvas.measureText round trip)
+// since the panel's width and the row font size are both fixed layout constants, not user-resizable.
+// Not exported: the only caller is windowExcerpt's own default; tests pass an explicit budget.
+const SEARCH_EXCERPT_BUDGET = 38;
+
+export type WindowedExcerpt = { text: string; matchStart: number; matchLength: number };
+
+// Windows a long excerpt around its match to fit a result row (R3). The match is never cut, except
+// when the match term alone is wider than the budget, which then truncates the term itself. When the
+// match already falls within the first `budget` characters, only the tail is cut (ellipsis on the
+// right - the common case, a match near the start of a paragraph). Otherwise the window shifts to
+// keep the match in view, extending right with whatever budget the match itself did not use, then
+// falling back to left context with what remains - an ellipsis appears on the left (and the right
+// too, if text remains after the window).
+export function windowExcerpt(text: string, matchStart: number, matchLength: number, budget: number = SEARCH_EXCERPT_BUDGET): WindowedExcerpt {
+  const length = text.length;
+  const start = Math.min(Math.max(matchStart, 0), length);
+  const matchLen = Math.min(Math.max(matchLength, 0), length - start);
+  const end = start + matchLen;
+  if (length <= budget) return { text, matchStart: start, matchLength: matchLen };
+  if (matchLen >= budget) {
+    const cut = Math.max(0, budget - 1);
+    return { text: `${text.slice(start, start + cut)}…`, matchStart: 0, matchLength: cut };
+  }
+  if (end <= budget) return { text: `${text.slice(0, budget)}…`, matchStart: start, matchLength: matchLen };
+  const remaining = budget - matchLen;
+  const rightBudget = Math.min(remaining, length - end);
+  const leftBudget = remaining - rightBudget;
+  const windowStart = Math.max(0, start - leftBudget);
+  const windowEnd = Math.min(length, end + rightBudget);
+  const prefix = windowStart > 0 ? '…' : '';
+  const suffix = windowEnd < length ? '…' : '';
+  return {
+    text: `${prefix}${text.slice(windowStart, windowEnd)}${suffix}`,
+    matchStart: start - windowStart + prefix.length,
+    matchLength: matchLen,
+  };
+}
 
 export type EntitySort = { key: 'name' | 'occurrences'; dir: 'asc' | 'desc' };
 export const sortEntities = (entities: GuideEntity[], sort: EntitySort): GuideEntity[] => {

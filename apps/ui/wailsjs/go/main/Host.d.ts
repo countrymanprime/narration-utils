@@ -79,7 +79,7 @@ export function ManuscriptSelectFile():Promise<string>;
 
 export function ManuscriptSetChapterStatus(arg1:string,arg2:string):Promise<string>;
 
-export function ProjectCreate(arg1:string,arg2:string):Promise<string>;
+export function ProjectCreateIn(arg1:string,arg2:string):Promise<string>;
 
 export function ProjectRecents():Promise<string>;
 

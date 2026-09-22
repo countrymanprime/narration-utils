@@ -48,6 +48,7 @@ const PAIRS: PairSpec[] = [
   text('text', 'body text', 'var(--text)', SURFACES),
   text('text-muted', 'secondary text, labels, helper text', 'var(--text-muted)', SURFACES),
   mark('non-text', 'icons, status dots, the info icon border and decorative glyphs: the one colour for what is seen and not read', 'var(--non-text)', SURFACES),
+  mark('bookmark', 'the bookmark icon: chapter header, chapter row badge and line/note bookmark rows, all on one token (R9)', 'var(--bookmark)', SURFACES),
   text('toast', 'Toast: page colour on the text colour', 'var(--bg)', ['surface'], 'var(--text)'),
   text('on-accent', 'primary button and logo: accent-contrast on accent', 'var(--accent-contrast)', ['surface'], 'var(--accent)'),
   text('on-accent-strong', 'primary button hover: accent-contrast on accent-strong', 'var(--accent-contrast)', ['surface'], 'var(--accent-strong)'),
@@ -97,6 +98,13 @@ const PAIRS: PairSpec[] = [
     ),
   ),
   text('highlight-note', 'Highlight (note): the text colour on the note tint', 'var(--text)', READING_SURFACES, tint('note', 20)),
+  text(
+    'highlight-search',
+    "Highlight (search): the derived search text colour on the search kind's own 20% tint (R4)",
+    'var(--search-text)',
+    READING_SURFACES,
+    tint('search', 20),
+  ),
   text('badge-character', 'entity badge (Character): the derived text colour on the soft fill', 'var(--character-text)', ['surface'], 'var(--character-soft)'),
   text('badge-place', 'entity badge (Place)', 'var(--place-text)', ['surface'], 'var(--place-soft)'),
   text('badge-org', 'entity badge (Organization)', 'var(--org-text)', ['surface'], 'var(--org-soft)'),
@@ -117,7 +125,7 @@ const PAIRS: PairSpec[] = [
       `color-mix(in srgb, var(--${kind}) 18%, var(--surface))`,
     ),
   ),
-  ...[...KINDS, 'note'].map((kind) => mark(`mark-${kind}`, `the ${kind} highlight underline and category dot`, `var(--${kind})`, READING_SURFACES)),
+  ...[...KINDS, 'note', 'search'].map((kind) => mark(`mark-${kind}`, `the ${kind} highlight underline and category dot`, `var(--${kind})`, READING_SURFACES)),
   mark('mark-warn', 'the Editing status dot and meter segment, and the dotted underline of a skipped word: warn on the surface', 'var(--warn)', ['surface']),
   mark('mark-info', 'the Recording status dot and meter segment: info on the surface', 'var(--info)', ['surface']),
 ];
@@ -306,6 +314,7 @@ const tokensUsedAsText = (): Set<string> => new Set([...textColourUses().values(
 const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
   'chapterStatus.ts': { count: 1, what: 'the Not Started status colour: a dot and a meter segment, never text' },
   'components/layout/AppShell.tsx': { count: 1, what: 'the folder icon beside the project name' },
+  'components/manuscript/ChapterNav.tsx': { count: 1, what: 'a line-hit result row icon (faParagraph)' },
   'components/manuscript/Manuscript.tsx': { count: 1, what: 'the idle chapter bookmark icon' },
   'components/primitives/Tooltip.tsx': { count: 1, what: 'the border of the info icon' },
   'components/proofing/Transcript.tsx': { count: 2, what: 'the arrows between the Setup, Running and Results steps' },

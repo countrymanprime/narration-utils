@@ -279,6 +279,10 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'import-activity-log': async (page) => {
       await clickVisible(page, 'button', 'Replace manuscript');
+      // This state is about the import dialog's own activity log, not the chained Story Bible build (B1-B3, on by
+      // default): uncheck it so the import dialog stays open with "Manuscript imported" instead of closing itself
+      // into a second dialog.
+      await clickVisible(page, 'checkbox', 'Build the Story Bible after import');
       await clickVisible(page, 'button', 'Import');
       await page.getByText('Manuscript imported', { exact: true }).first().waitFor();
     },
@@ -339,6 +343,20 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'chapters-overlay-open': async (page) => {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'Chapters & Search');
+    },
+    'chapters-overlay-searching': async (page) => {
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Chapters & Search');
+      // Captured right after typing, before the debounce settles (R1) - the chapter-title subset
+      // (R2) and the "Searching…" hint are what this state exists to show.
+      await page.getByPlaceholder('Search manuscript…').fill('Pool');
+    },
+    'chapters-overlay-search': async (page) => {
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Chapters & Search');
+      await page.getByPlaceholder('Search manuscript…').fill('Alice');
+      // Waits out the real 2s debounce for the settled, highlighted result row (R3, R4).
+      await page.locator('[data-highlight="Search"]').first().waitFor();
     },
     'detail-sidebar-note': async (page) => {
       await goToPage(page, 'Manuscript');

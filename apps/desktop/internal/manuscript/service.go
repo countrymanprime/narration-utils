@@ -38,12 +38,26 @@ type ImportJob struct {
 }
 
 type Service struct {
-	mu      sync.Mutex
-	notesMu sync.Mutex
-	project string
-	jobs    map[string]*ImportJob
-	persist atomic.Pointer[persist.Reporter]
-	onEnd   atomic.Pointer[func(ImportJob)]
+	mu       sync.Mutex
+	notesMu  sync.Mutex
+	project  string
+	jobs     map[string]*ImportJob
+	persist  atomic.Pointer[persist.Reporter]
+	onEnd    atomic.Pointer[func(ImportJob)]
+	manCache atomic.Pointer[manuscriptCache]
+}
+
+// The parsed manuscript, kept only as long as the file's own mtime and size say it is still the
+// file that produced it. Search, Chapters, Paragraphs, Reader and SetChapterStatus all call Load()
+// and only ever read the returned map, so sharing one parse across calls is safe: a search fires
+// per keystroke (debounced client-side, but still repeat reads of an 88,000-word file), and
+// re-parsing it every time was measurable (interaction-latency-baseline.md). A write (re-import, a
+// repair) changes the file's mtime, which invalidates the cache on the next Load().
+type manuscriptCache struct {
+	path    string
+	modTime time.Time
+	size    int64
+	data    map[string]any
 }
 
 func New(project string) *Service            { return &Service{project: project, jobs: map[string]*ImportJob{}} }
@@ -335,7 +349,15 @@ func (s *Service) Load() (map[string]any, error) {
 	if project == "" {
 		return nil, fmt.Errorf("save the REAPER project and import a manuscript first")
 	}
-	bytes, err := os.ReadFile(filepath.Join(project, "narration-utils", "manuscript", "manuscript.json"))
+	path := filepath.Join(project, "narration-utils", "manuscript", "manuscript.json")
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, fmt.Errorf("import a manuscript first")
+	}
+	if cached := s.manCache.Load(); cached != nil && cached.path == path && cached.modTime.Equal(info.ModTime()) && cached.size == info.Size() {
+		return cached.data, nil
+	}
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("import a manuscript first")
 	}
@@ -346,6 +368,7 @@ func (s *Service) Load() (map[string]any, error) {
 	if data["schemaVersion"] != float64(1) {
 		return nil, fmt.Errorf("this manuscript data uses an unsupported schema version")
 	}
+	s.manCache.Store(&manuscriptCache{path: path, modTime: info.ModTime(), size: info.Size(), data: data})
 	return data, nil
 }
 

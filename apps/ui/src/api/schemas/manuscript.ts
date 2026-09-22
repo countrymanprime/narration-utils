@@ -89,6 +89,7 @@ const searchHitSchema = z.object({
   paragraphId: optionalFromNull(z.string()),
   sourceLine: optionalFromNull(z.number()),
   excerpt: z.string(),
+  matchStart: optionalFromNull(z.number()),
 }) satisfies z.ZodType<SearchHit>;
 
 export const readerSchema = z.object({

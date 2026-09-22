@@ -48,6 +48,9 @@ import type { AssetInstallState } from './contracts/assets';
 
 const DEFAULT_PROJECT_FOLDER = 'C:/Projects/Alice-in-Wonderland';
 const DEFAULT_PROJECT_NAME = 'Alice’s Adventures in Wonderland';
+// Mirrors the Go host's Phase 1 default (`~/NarrationUtils`, project.DefaultDirName): what an empty parent
+// resolves to in ProjectCreateIn.
+const DEFAULT_PROJECTS_DIRECTORY = 'C:/Users/Mock/NarrationUtils';
 
 /** Mirrors the Go backend's `filepath.Base(path)` default-naming rule for a folder chosen with no explicit name. */
 /** What the sidecar does with the `properties` value of an edit: a JSON list of pairs, a name on every one and no name twice (whatever its case). */
@@ -539,6 +542,11 @@ export function createMockApi(
       projectFolder,
       projectName,
       daw,
+      // Mirrors `daw`: the mock has no separate stored link, so "linked" tracks whatever the mock currently shows as the DAW label.
+      // reachable/matches stay false/unknown, same as the real host until Phase 6 (PRD W13, W14).
+      dawFileLinked: daw === 'REAPER',
+      dawReachable: false,
+      dawProjectMatches: false,
       manuscript:
         initial.noManuscript || initial.manuscriptCandidate
           ? null
@@ -944,10 +952,20 @@ export function createMockApi(
     },
     manuscriptSearch: async (query) => {
       await manuscriptReady;
+      const needle = query.toLowerCase();
       return wireClone(
         paragraphs
-          .filter((paragraph) => paragraph.text.toLowerCase().includes(query.toLowerCase()))
-          .map((paragraph) => ({ chapter: paragraph.chapter, paragraph: paragraph.index, sourceLine: paragraph.sourceLine, excerpt: paragraph.text })),
+          .map((paragraph) => ({ paragraph, matchStart: paragraph.text.toLowerCase().indexOf(needle) }))
+          .filter(({ matchStart }) => matchStart >= 0)
+          .map(({ paragraph, matchStart }) => ({
+            chapter: paragraph.chapter,
+            chapterId: paragraph.chapterId,
+            paragraph: paragraph.index,
+            paragraphId: paragraph.id,
+            sourceLine: paragraph.sourceLine,
+            excerpt: paragraph.text,
+            matchStart,
+          })),
       );
     },
     manuscriptSetChapterStatus: async (chapter, status) => {
@@ -1008,7 +1026,7 @@ export function createMockApi(
     projectRecents: async () => wireClone(recentProjects),
     selectProjectFolder: async () => ({ selected: true, path: 'C:/Projects/Mock-Project' }),
     switchProject: async (path, name) => attachProject(path, name),
-    createProject: async (path, name) => attachProject(path, name),
+    createProject: async (parent, name) => attachProject(`${parent || DEFAULT_PROJECTS_DIRECTORY}/${name}`, name),
     removeRecentProject: async (path) => {
       recentProjects = recentProjects.filter((entry) => entry.path.toLowerCase() !== path.toLowerCase());
       return wireClone(recentProjects);

@@ -1,6 +1,9 @@
 {
   "apiVersion": 14,
   "daw": "REAPER",
+  "dawFileLinked": false,
+  "dawProjectMatches": false,
+  "dawReachable": false,
   "diagnosticId": "go-1789000000000000000",
   "manuscript": {
     "format": "docx",
