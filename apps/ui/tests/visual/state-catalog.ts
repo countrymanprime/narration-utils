@@ -358,6 +358,34 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Tracks, "Prepare chapter render" dialog when REAPER reports a problem - inline error message, nothing rendered (reached via the ?mockRenderConfig=error mock seam)',
   },
+  {
+    page: 'tracks',
+    state: 'chapter-tags-idle',
+    description: 'Tracks, "Embed chapter tags" dialog open before any chapter render is configured - "Prepare chapter render first" message, Embed disabled',
+  },
+  {
+    page: 'tracks',
+    state: 'chapter-tags-ready',
+    description:
+      'Tracks, "Embed chapter tags" dialog with two rendered chapters known - the chapter list, destination field and confirm checkbox, Embed enabled once both are filled in (reached via the ?mockChapterTags=ready mock seam)',
+  },
+  {
+    page: 'tracks',
+    state: 'chapter-tags-not-rendered',
+    description:
+      'Tracks, "Embed chapter tags" dialog with a chapter configured but not yet rendered - "not rendered yet" and the press-Render-first message, Embed disabled (reached via the ?mockChapterTags=not-rendered mock seam)',
+  },
+  {
+    page: 'tracks',
+    state: 'chapter-tags-success',
+    description: 'Tracks, "Embed chapter tags" dialog after a completed embed - the new tagged file\'s path shown, the original file unmentioned as changed',
+  },
+  {
+    page: 'tracks',
+    state: 'chapter-tags-error',
+    description:
+      'Tracks, "Embed chapter tags" dialog when the embed fails - inline error message (reached via the ?mockChapterTags=ready&mockChapterTagsEmbedError=1 mock seam)',
+  },
 
   // Teleprompter
   {

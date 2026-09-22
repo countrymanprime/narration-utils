@@ -10,6 +10,7 @@ import { useTrackPlayback } from './useTrackPlayback';
 import { LinkChaptersDialog } from './LinkChaptersDialog';
 import { PickupsDialog } from './PickupsDialog';
 import { RenderConfigDialog } from './RenderConfigDialog';
+import { ChapterTagsDialog } from './ChapterTagsDialog';
 import type { ManuscriptChapter, Track, TracksDiscovery, TracksProject } from '../../types';
 
 function basename(path: string): string {
@@ -138,6 +139,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
   const [linkChaptersOpen, setLinkChaptersOpen] = useState(false);
   const [pickupsOpen, setPickupsOpen] = useState(false);
   const [renderConfigOpen, setRenderConfigOpen] = useState(false);
+  const [chapterTagsOpen, setChapterTagsOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -217,6 +219,9 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
             <Button variant="ghost" onClick={() => setRenderConfigOpen(true)}>
               Prepare chapter render…
             </Button>
+            <Button variant="ghost" onClick={() => setChapterTagsOpen(true)}>
+              Embed chapter tags…
+            </Button>
           </div>
         )}
       </div>
@@ -224,6 +229,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
       {linkChaptersOpen && project && <LinkChaptersDialog chapters={chapters} tracks={project.tracks} onClose={() => setLinkChaptersOpen(false)} />}
       {pickupsOpen && <PickupsDialog onClose={() => setPickupsOpen(false)} />}
       {renderConfigOpen && <RenderConfigDialog onClose={() => setRenderConfigOpen(false)} />}
+      {chapterTagsOpen && <ChapterTagsDialog onClose={() => setChapterTagsOpen(false)} />}
       {error && (
         <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
           {error}

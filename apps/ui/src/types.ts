@@ -17,6 +17,7 @@ export * from './api/contracts/credits';
 export * from './api/contracts/lineidentity';
 export * from './api/contracts/pickups';
 export * from './api/contracts/renderconfig';
+export * from './api/contracts/chaptertags';
 
 import type { ChapterTrackMapApi } from './api/contracts/chapterTrackMap';
 import type { DawCatalogApi } from './api/contracts/dawCatalog';
@@ -35,6 +36,7 @@ import type { CreditsApi } from './api/contracts/credits';
 import type { LineIdentityApi } from './api/contracts/lineidentity';
 import type { PickupsApi } from './api/contracts/pickups';
 import type { RenderConfigApi } from './api/contracts/renderconfig';
+import type { ChapterTagsApi } from './api/contracts/chaptertags';
 
 /** The app compatibility facade; domain interfaces remain independently testable. */
 export interface NarrationApi
@@ -55,4 +57,5 @@ export interface NarrationApi
     CreditsApi,
     LineIdentityApi,
     PickupsApi,
-    RenderConfigApi {}
+    RenderConfigApi,
+    ChapterTagsApi {}

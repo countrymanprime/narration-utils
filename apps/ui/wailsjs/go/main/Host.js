@@ -30,6 +30,14 @@ export function Bootstrap() {
   return window['go']['main']['Host']['Bootstrap']();
 }
 
+export function ChapterTagsEmbed(arg1) {
+  return window['go']['main']['Host']['ChapterTagsEmbed'](arg1);
+}
+
+export function ChapterTagsPreview() {
+  return window['go']['main']['Host']['ChapterTagsPreview']();
+}
+
 export function ChapterTrackMapClear(arg1) {
   return window['go']['main']['Host']['ChapterTrackMapClear'](arg1);
 }

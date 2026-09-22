@@ -346,6 +346,18 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
     'ok',
     'Configuration only (Phase 11, Open Question 7): sets the render bounds, pattern and output folder, never triggers a render. A completed run shows the resulting file names and the manual-render instruction; a failure shows inline as an alert.',
   ),
+  'src/components/tracks/ChapterTagsDialog.tsx::chapterTagsPreview#1': row('mount', 'instant', 'na', 'na', 'ui', 'inline', 'na', 'exempt', 'Loads the known chapters from the last chapter render; a failure shows inline instead of the chapter list.'),
+  'src/components/tracks/ChapterTagsDialog.tsx::chapterTagsEmbed#1': row(
+    'click',
+    'file-io',
+    'disabled',
+    'disabled',
+    'ui',
+    'inline',
+    'no',
+    'ok',
+    'Phase 12: writes ID3 CHAP/CTOC tags into a new copy of the narrator-chosen file. Gated on the confirm checkbox and a non-blank destination; the button and the confirm checkbox stay disabled while it runs. A success shows the new file path, a failure shows inline as an alert.',
+  ),
 
   // Credits (audiobook-credits-templates.prd.md, Phase 1)
   'src/components/settings/CreditsPanel.tsx::creditsTemplates#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The template library load; an inline error banner otherwise.'),

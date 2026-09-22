@@ -6,6 +6,7 @@ import { chaptersSchema } from './schemas/manuscript';
 import { guideEntitiesSchema, guidePropertiesSchema } from './schemas/storyBible';
 import { bootstrapSchema } from './schemas/system';
 import type {
+  ChapterTagsPreview,
   CreditsRenderResult,
   CreditTemplate,
   CreditValues,
@@ -54,6 +55,10 @@ import {
   WIRE_PICKUPS_NEXT_SUCCESS,
   withFormatting,
   WIRE_READER_STATE,
+  WIRE_CHAPTER_TAGS_EMBED_SUCCESS,
+  WIRE_CHAPTER_TAGS_PREVIEW_IDLE,
+  WIRE_CHAPTER_TAGS_PREVIEW_NOT_RENDERED,
+  WIRE_CHAPTER_TAGS_PREVIEW_READY,
   WIRE_RENDER_CONFIG_ERROR,
   WIRE_RENDER_CONFIG_IDLE,
   WIRE_RENDER_CONFIG_NO_REGIONS,
@@ -337,6 +342,10 @@ export function createMockApi(
     pickups?: 'import-success' | 'next-success' | 'export-success' | 'error';
     /** Boots RenderConfigState already at this result, so "Prepare chapter render" states can be seen without stepping through a run. */
     renderConfig?: 'success' | 'no-regions' | 'error';
+    /** Boots ChapterTagsPreview already at this result, so "Embed chapter tags" states can be seen without a real render. */
+    chapterTags?: 'idle' | 'ready' | 'not-rendered';
+    /** Makes chapterTagsEmbed always reject, to review the error state. */
+    chapterTagsEmbedAlwaysErrors?: boolean;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -574,6 +583,17 @@ export function createMockApi(
   const renderConfigAlwaysErrors = initial.renderConfig === 'error';
   const renderConfigSubscribers = new Set<(state: RenderConfigState) => void>();
   const publishRenderConfig = () => renderConfigSubscribers.forEach((fn) => fn(wireClone(renderConfig)));
+  // Chapter tag embedding (Phase 12) never talks to REAPER: its preview is a fixed seed, not derived from
+  // renderConfig's live state, since the two are independent bindings on the real host too (ChapterTagsPreview
+  // reads renderConfig.Snapshot() itself, server-side).
+  const chapterTagsPreview: ChapterTagsPreview = wireClone(
+    initial.chapterTags === 'ready'
+      ? WIRE_CHAPTER_TAGS_PREVIEW_READY
+      : initial.chapterTags === 'not-rendered'
+        ? WIRE_CHAPTER_TAGS_PREVIEW_NOT_RENDERED
+        : WIRE_CHAPTER_TAGS_PREVIEW_IDLE,
+  );
+  const chapterTagsEmbedAlwaysErrors = initial.chapterTagsEmbedAlwaysErrors === true;
   const jobEndListeners = new Set<(event: JobEnded) => void>();
   const endJob = (event: JobEnded) => void setTimeout(() => jobEndListeners.forEach((listener) => listener(event)), 0);
   let runTimers: ReturnType<typeof setTimeout>[] = [];
@@ -1445,6 +1465,12 @@ export function createMockApi(
       renderConfigSubscribers.add(onUpdate);
       onUpdate(wireClone(renderConfig));
       return () => renderConfigSubscribers.delete(onUpdate);
+    },
+    chapterTagsPreview: async () => wireClone(chapterTagsPreview),
+    chapterTagsEmbed: async (destPath) => {
+      if (!destPath.trim()) throw new Error('choose the MP3 file to add chapters to');
+      if (chapterTagsEmbedAlwaysErrors) throw new Error('could not write chapter tags to the new copy');
+      return wireClone(WIRE_CHAPTER_TAGS_EMBED_SUCCESS);
     },
     subscribeProjectAttach: (onUpdate) => {
       projectAttachSubscribers.add(onUpdate);

@@ -33,6 +33,7 @@ import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSch
 import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
+import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
 import type { NarrationApi } from '../types';
 import * as host from '../../wailsjs/go/main/Host';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
@@ -239,6 +240,8 @@ export const wailsClient: NarrationApi = {
   renderConfigSuggestFolder: () => decode(renderConfigSuggestedFolderSchema, 'RenderConfigSuggestFolder', host.RenderConfigSuggestFolder()),
   renderConfigState: () => decode(renderConfigStateSchema, 'RenderConfigState', host.RenderConfigState()),
   subscribeRenderConfig: (onUpdate) => subscribeChecked('renderconfig:state', renderConfigStateSchema, onUpdate),
+  chapterTagsPreview: () => decode(chapterTagsPreviewSchema, 'ChapterTagsPreview', host.ChapterTagsPreview()),
+  chapterTagsEmbed: (destPath) => decode(chapterTagsEmbedResultSchema, 'ChapterTagsEmbed', host.ChapterTagsEmbed(destPath)),
   projectRecents: () => decode(recentProjectsSchema, 'ProjectRecents', host.ProjectRecents()),
   selectProjectFolder: () => decode(projectFolderSelectionSchema, 'ProjectSelectFolder', host.ProjectSelectFolder()),
   switchProject: (path, name) => decode(projectSwitchResultSchema, 'ProjectSwitch', host.ProjectSwitch(path, name ?? '')),
