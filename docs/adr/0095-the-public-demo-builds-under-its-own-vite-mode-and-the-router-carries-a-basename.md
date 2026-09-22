@@ -29,7 +29,7 @@ the real UI" success state.
 - `apps/ui/vite.config.ts` is a mode-keyed function (`defineConfig(({ mode }) => ({...}))`) rather
   than a static object. A new `demo` mode (`apps/ui/.env.demo`: `VITE_USE_MOCK_API=1`, `VITE_DEMO=1`)
   sets `base: '/narration-utils/demo/'`; every other mode (dev, `mock`, `test`, production) keeps
-  `base: '/'`. `apps/ui/package.json` gets `build:demo` (`vite build --mode demo --outDir dist-demo`)
+  `base: '/'`. `apps/ui/package.json` gets `build:demo` (`vite build --mode demo --outDir dist/demo`)
   alongside the existing `build:mock`.
 - `apps/ui/src/components/layout/DemoBanner.tsx` self-gates on `import.meta.env.VITE_DEMO === '1'`,
   not `MODE === 'mock'`, so it renders only from the `demo` build and never from the `mock` build the

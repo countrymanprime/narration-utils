@@ -67,7 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           cp -r apps/ui/storybook-static tools/docs-site/build/site/storybook
-          cp -r apps/ui/dist-demo tools/docs-site/build/site/demo
+          cp -r apps/ui/dist/demo tools/docs-site/build/site/demo
           .venv/bin/python tools/docs-site/check_site.py tools/docs-site/build/site --base /narration-utils/ \
             --site-url https://countrymanprime.github.io/narration-utils/ --require storybook/index.html --require index.html \
             --require demo/index.html
