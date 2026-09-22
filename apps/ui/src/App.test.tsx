@@ -639,7 +639,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect((await screen.findAllByText('Manuscript import complete.')).length).toBeGreaterThanOrEqual(2);
     await waitFor(() => expect(bootstrap.mock.calls.length).toBeGreaterThanOrEqual(2));
     expect(await screen.findByText(/Manuscript found/)).toBeTruthy();
-    expect(await screen.findByText('1,234 words · 1 chapters · ~150 words/min narrated')).toBeTruthy();
+    expect(await screen.findByText('1,234 words · 1 chapters · ~155 words/min narrated')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(screen.queryByRole('dialog', { name: 'Import manuscript' })).toBeNull();

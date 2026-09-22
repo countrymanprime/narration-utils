@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
-import type { ChapterStatus, ManuscriptChapter } from '../../types';
-import { estimateFinishedHours } from '../../state';
+import type { ChapterStatus, CreditTemplate, ManuscriptChapter } from '../../types';
+import { estimateCreditsSeconds, estimateFinishedHours } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '../primitives/Collapsible';
 import { MeterBar } from '../primitives/MeterBar';
@@ -20,6 +20,12 @@ const fmtHours = (hours: number) => {
   const minutes = Math.round((hours - whole) * 60);
   return whole > 0 ? `${whole}h ${minutes}m` : `${minutes}m`;
 };
+
+// Credits (audiobook-credits-templates.prd.md, Phase 2, Open Question C9): unlike the narration stats above, credits
+// are typically well under a minute, and fmtHours alone rounds anything under 30s down to "0m" - a narrator would
+// read that as "no credits time" rather than "eighteen seconds". Show seconds below a minute; fall back to fmtHours'
+// hour/minute format once a template runs a minute or longer.
+const fmtCreditsSeconds = (seconds: number) => (seconds < 60 ? `${Math.round(seconds)}s` : fmtHours(seconds / 3600));
 
 const RECORDED_FRACTION: Record<ChapterStatus, number> = { not_started: 0, recording: 0.5, editing: 1, proofing: 1, finalized: 1 };
 
@@ -53,6 +59,10 @@ export function AudiobookEstimatePanel({
   const api = useApi();
   const [chapters, setChapters] = useState<ManuscriptChapter[]>();
   const [breakdownOpen, setBreakdownOpen] = useState(false);
+  // Credits stat (Phase 2): undefined while loading or on failure, in which case the row is simply left out - this is
+  // a secondary stat next to the narration estimate above, so a credits-specific problem should not blank the page
+  // or throw a toast over an estimate the narrator did not ask about (mirrors CreditsPanel's own preview fallback).
+  const [creditsSeconds, setCreditsSeconds] = useState<number>();
 
   useEffect(() => {
     (async () => {
@@ -65,6 +75,33 @@ export function AudiobookEstimatePanel({
       }
     })();
   }, [api, notify, refreshKey]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const templates = await api.creditsTemplates();
+        // No per-project "chosen template" exists yet (Phase 1 shipped only a library to edit and preview) - the
+        // first opening and first closing template in the library, in the order the store returns them (shipped
+        // defaults first), stand in for "the" credits until a later phase lets a narrator pick one explicitly. See
+        // ADR 0090.
+        const segments = (['opening', 'closing'] as const)
+          .map((kind) => templates.find((template): template is CreditTemplate => template.kind === kind))
+          .filter((template): template is CreditTemplate => template !== undefined);
+        if (segments.length === 0) {
+          if (active) setCreditsSeconds(undefined);
+          return;
+        }
+        const rendered = await Promise.all(segments.map((template) => api.creditsPreview(template.body)));
+        if (active) setCreditsSeconds(estimateCreditsSeconds(rendered.map((result) => result.words)));
+      } catch {
+        if (active) setCreditsSeconds(undefined);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [api, refreshKey]);
 
   if (!chapters) return null;
   const narrationChapters = chapters.filter((chapter) => (chapter.contentKind ?? 'narration') === 'narration');
@@ -80,6 +117,9 @@ export function AudiobookEstimatePanel({
     { label: 'Est. record time', value: fmtHours(finishedHours * 3) },
     { label: 'Est. edit time', value: fmtHours(finishedHours * 2) },
     { label: 'Est. proof time', value: fmtHours(finishedHours * 1) },
+    // Credits time is separate from the narration total above (never folded into finishedHours/narratableWordCount,
+    // Phase 2 Success Metric "the narration total is unchanged") and only shown once it is known.
+    ...(creditsSeconds !== undefined ? [{ label: 'Credits', value: fmtCreditsSeconds(creditsSeconds) }] : []),
   ];
   const finalizedCount = narrationChapters.filter((c) => c.status === 'finalized').length;
   const statusTotals = rollupChapterStatuses(narrationChapters);
@@ -94,7 +134,7 @@ export function AudiobookEstimatePanel({
         <div>
           <h2 className="text-sm font-semibold">Audiobook estimate</h2>
           <div className="mt-0.5 flex items-center text-xs" style={{ color: 'var(--text-muted)' }}>
-            {totalWords.toLocaleString()} words · {narrationChapters.length} chapters · ~150 words/min narrated{' '}
+            {totalWords.toLocaleString()} words · {narrationChapters.length} chapters · ~155 words/min narrated{' '}
             <Tooltip text="Fixed industry rule of thumb (~9,300 words per finished hour). Record, edit, and proof use standard multipliers of that finished length." />
           </div>
         </div>
@@ -105,7 +145,7 @@ export function AudiobookEstimatePanel({
         </TooltipTarget>
       </div>
       <div className="space-y-4 p-[1.1rem]">
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}>
           {stats.map((stat) => (
             <div key={stat.label}>
               <div className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">

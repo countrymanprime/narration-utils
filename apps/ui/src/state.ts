@@ -87,10 +87,20 @@ export const highlightEntitiesInText = (text: string, entities: { name: string; 
 };
 
 // Fixed industry rule of thumb used by the Home audiobook-estimate panel:
-// ~150 spoken words/minute narrated, ~9,300 words per finished audio hour.
+// ~155 spoken words/minute narrated, ~9,300 words per finished audio hour.
 // Record/edit/proof phases use standard multipliers of that finished length.
 const WORDS_PER_FINISHED_HOUR = 9300;
 export const estimateFinishedHours = (wordCount: number): number => wordCount / WORDS_PER_FINISHED_HOUR;
+
+// Credits time (audiobook-credits-templates.prd.md, Phase 2, Open Question C9): the same 155 wpm figure as
+// estimateFinishedHours above ("Estimate constants disagree" is the PRD's own named risk, so this reuses
+// WORDS_PER_FINISHED_HOUR rather than a second 155/60 constant). Credits are read as separate files from the
+// narration chapters (ACX convention, Open Question C11), so each segment (an opening or closing template's
+// rendered text) is timed on its own and may carry its own room-tone padding. Room tone has no Settings field yet
+// (that is Phase 5's "Could" item), so it defaults to 0 seconds per file until that phase ships one (C9).
+export const CREDITS_ROOM_TONE_SECONDS_PER_FILE = 0;
+export const estimateCreditsSeconds = (segmentWordCounts: number[], roomToneSecondsPerFile = CREDITS_ROOM_TONE_SECONDS_PER_FILE): number =>
+  segmentWordCounts.reduce((total, words) => total + (words / WORDS_PER_FINISHED_HOUR) * 3600 + roomToneSecondsPerFile, 0);
 
 // The reader numbers each paragraph 1, 2, 3... within its own chapter (see
 // ParagraphView's chapterParagraphIndex) rather than by its global index or

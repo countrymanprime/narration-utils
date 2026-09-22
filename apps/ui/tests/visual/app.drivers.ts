@@ -976,6 +976,11 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Project data');
     },
+    'project-credits': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'This Project');
+      await clickSettingsCategory(page, 'Credits');
+    },
     'dirty-footer': async (page) => {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'Global');

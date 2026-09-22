@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { AudiobookEstimatePanel, rollupChapterStatuses } from './AudiobookEstimatePanel';
 import { ApiProvider } from '../../api/ApiContext';
@@ -38,6 +38,61 @@ describe('AudiobookEstimatePanel', () => {
     expect(screen.getByRole('table')).toBeTruthy();
     expect(screen.getByRole('link', { name: /Chapter 1 — Down the Rabbit-Hole/ })).toBeTruthy();
     expect(screen.getAllByText((_, node) => node?.textContent === 'Chapter 1 — Down the Rabbit-Hole').length).toBeGreaterThan(0);
+  });
+
+  it('shows a Credits stat timed from the first opening and closing templates at 155 wpm', async () => {
+    const api = createMockApi({
+      creditsTemplates: async () => [
+        { id: 'o', kind: 'opening', name: 'Opening', body: 'word '.repeat(155).trim() },
+        { id: 'c', kind: 'closing', name: 'Closing', body: 'word '.repeat(155).trim() },
+      ],
+      creditsPreview: async (body: string) => ({ text: body, words: body.split(/\s+/).filter(Boolean).length, unresolved: [] }),
+    });
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText('Audiobook estimate')).toBeTruthy());
+    // Two 155-word segments at 155 wpm read 60s each; the room-tone allowance defaults to 0 (Open Question C9, no
+    // Settings field until Phase 5), so the total is exactly 2 minutes.
+    await waitFor(() => expect(screen.getByText('Credits')).toBeTruthy());
+    expect(screen.getByText('2m')).toBeTruthy();
+  });
+
+  it('leaves the Credits stat out when the credit template library has no opening or closing template', async () => {
+    const api = createMockApi({ creditsTemplates: async () => [] });
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText('Audiobook estimate')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Est. finished audio')).toBeTruthy());
+    expect(screen.queryByText('Credits')).toBeNull();
+  });
+
+  it('leaves the Credits stat out rather than toasting when the credits calls fail', async () => {
+    const api = createMockApi({
+      creditsTemplates: async () => {
+        throw new Error('boom');
+      },
+    });
+    const notify = vi.fn();
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={notify} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText('Est. finished audio')).toBeTruthy());
+    expect(screen.queryByText('Credits')).toBeNull();
+    expect(notify).not.toHaveBeenCalled();
   });
 
   it('renders nothing when there are no manuscript chapters yet', async () => {

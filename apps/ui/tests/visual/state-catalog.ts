@@ -448,6 +448,13 @@ export const STATE_CATALOG: StateEntry[] = [
     ...REFLOW,
   },
   { page: 'settings', state: 'project-data', description: 'Settings, Project scope / Project data category (clear derived project data)', ...REFLOW },
+  {
+    page: 'settings',
+    state: 'project-credits',
+    description:
+      'Settings, Project scope / Credits category (PRD audiobook-credits-templates.prd.md, Phase 1): template library, live preview and project credit values',
+    ...REFLOW,
+  },
   { page: 'settings', state: 'dirty-footer', description: 'Settings, unsaved-changes footer visible', ...REFLOW },
   { page: 'settings', state: 'navigate-away-confirm', description: 'Settings, navigate-away-while-dirty confirm dialog', ...REFLOW },
   {
