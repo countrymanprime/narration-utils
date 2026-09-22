@@ -322,6 +322,9 @@ function Fake:add_item_api(api)
   function api.SetEditCurPos(position, moveview, seekplay)
     fake.cursor, fake.cursor_moveview, fake.cursor_seekplay = position, moveview, seekplay
   end
+  function api.GetCursorPosition()
+    return fake.cursor or 0
+  end
   -- GUID and extension data. A missing P_EXT key reads as `false, ''`, like REAPER.
   function api.GetSetMediaItemInfo_String(item, key, value, set)
     if key == 'GUID' then
@@ -419,6 +422,19 @@ function Fake:add_marker_api(api)
       return wantidx
     end
     return fake:insert_marker(marker)
+  end
+  -- Renames or repositions a marker or region found by its markrgnindexnumber (the sixth EnumProjectMarkers3
+  -- return value); unlike SetProjectMarker4 it cannot clear a name, which none of this bridge's callers need
+  -- (research: `reaper-automation-surface.md:97`).
+  function api.SetProjectMarker3(_, markrgnindexnumber, is_region, pos, rgnend, name, color)
+    for _, marker in ipairs(fake.markers) do
+      if marker.index == markrgnindexnumber and marker.is_region == is_region then
+        marker.pos, marker.rgnend, marker.name, marker.color = pos, rgnend, name, color or marker.color
+        table.sort(fake.markers, by_position)
+        return true
+      end
+    end
+    return false
   end
 end
 

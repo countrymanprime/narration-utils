@@ -9,7 +9,7 @@
 | `NarrationUtils_Launcher.lua` | The one REAPER action. Finds the app executable, starts it with the session directory, project and DAW arguments, then runs the bridge loop. Its name and path are stable: the narrator imports it into REAPER's action list. |
 | `narration_ui_bridge.lua` | The command loop and the registry it dispatches through: polls `commands/` from a `reaper.defer` loop, looks each command up, appends results to `events.log`. Lists the feature files in `FEATURE_FILES` and loads them next to itself. |
 | `narration_bridge_core.lua` | Shared by the bridge and every feature file: the percent-encoding and field-splitting helpers, `event`, file and path helpers, and `new_registry()`. |
-| `narration_compare.lua`, `narration_line_identity.lua` | The commands, one file per feature (Transcript Compare; manuscript line identity and chapter regions). |
+| `narration_compare.lua`, `narration_line_identity.lua`, `narration_pickups.lua` | The commands, one file per feature (Transcript Compare; manuscript line identity and chapter regions; the pickup list). |
 | `reaper_common_core.lua`, `reaper_common_process.lua` | Small helpers the launcher loads: files and paths, hidden process launch, pipe splitting. |
 | `tests/` | The harness (below). Not shipped: `scripts/release/prepare-resources.py` leaves `tests/`, `spikes/` and `project.json` out of the app's embedded REAPER package. |
 | `spikes/` | Scripts that run inside a real REAPER, isolated in a temp resource directory, to find out what a fake cannot ([README](../../integrations/reaper/spikes/README.md); the S0 result is [reaper-spike-s0-item-extension-data.md](../research/reaper-spike-s0-item-extension-data.md)). Research tools, not product code. |
@@ -110,7 +110,16 @@ The feature files are `loadfile`d when the bridge module loads, so a missing or 
 | `export_compare_markers` | `run_id`, `results_path`, three `RRGGBB` colours | `COMPARE_EXPORT_MARKER\|run\|row\|state\|existing-name` per row, then `COMPARE_EXPORTED\|run\|added\|skipped` |
 | `jump_to_compare_marker` | `run_id`, `row_id` | none, or `ERROR` |
 | `stamp_item_lines`, `read_line_ids`, `create_chapter_regions` | see [manuscript line identity](manuscript-line-identity.md) | `LINES_*`, `REGIONS_CREATED` |
+| `import_pickups` | `run_id`, `payload_path` (`start\|tag\|note` rows) | `PICKUPS_IMPORTED\|run\|added\|already-there\|invalid`, or `ERROR` |
+| `export_pickups` | `run_id`, `output_path` | `PICKUPS_EXPORTED\|run\|path\|count`, or `ERROR` |
+| `next_pickup` | `run_id` | `PICKUP_NEXT\|run\|pos\|tag\|note`, or `ERROR` when none remain |
+| `resolve_pickup` | `run_id`, `position` | `PICKUP_RESOLVED\|run\|pos\|tag\|note`, or `ERROR` |
+| `count_pickups` | `run_id` | `PICKUPS_COUNTED\|run\|remaining\|total` |
 | `close` | none | none; the loop stops |
+
+### Pickups (`narration_pickups.lua`)
+
+A pickup is a project marker named `PICKUP: <body>` while open, renamed to `PICKUP_DONE: <body>` once resolved (`resolve_pickup`), reusing the `PREFIX:` naming convention `narration_compare.lua` already uses for take markers ([Open Question 6](../prds/reaper-automation-follow-through.prd.md) of the follow-through PRD: this PRD owns the convention, the take-review PRD only consumes it). `<body>` is the note, or `[tag] note` when the payload row carried a tag, so `export_pickups` can round-trip a pickup through one marker name (generic CSV first, Open Question 5; the Go side parses and validates the narrator's CSV and writes the pipe-delimited payload file the Lua command reads). Duplicate detection uses the same 0.15 s window as the compare export's take markers; `import_pickups` treats a pickup already present (open or resolved) at that time and body as existing, so re-importing a proofer's list is always safe. `next_pickup` jumps to the nearest open pickup after the edit cursor, wrapping to the earliest one once the cursor is past all of them.
 
 `COMPARE_MARKER` carries 16 fields (see `inspect_results` in the bridge and the transcript service that reads it); the harness pins them.
 
@@ -123,7 +132,7 @@ The feature files are `loadfile`d when the bridge module loads, so a missing or 
 | `run_lua_tests.py` | The runner. Gives each `*_test.lua` its own Lua state (the `lupa` wheel, Lua 5.4), injects the few things Lua's standard library lacks (a temp directory, listing and creating directories), and exits non-zero on a failure. `--mutations` adds the mutation checks. |
 | `fake_reaper.lua` | The fake API and an in-memory project: tracks, items, takes and their markers, item extension data (a missing `P_EXT` key reads as `false, ''`), markers and regions (`EnumProjectMarkers3` returns index plus one), an undo log, a `defer` queue that `pump()` runs one frame at a time. `remove_api(name)` makes `APIExists` answer false, the way an older REAPER lacks a function. |
 | `harness.lua` | Tests, assertions, and `session()`: builds a fake REAPER, loads the bridge from `host.reaper_dir`, and offers `send(command, ...)` (writes a `.cmd` file and runs one tick) and `events()` (the new events, decoded). |
-| `*_test.lua` | Characterization tests: `protocol_test` (the loop), `registry_test` (the registry and the feature-file convention), `compare_test`, `line_identity_test`, `launcher_test` (the launcher from an installed-bundle layout), `common_test` (the helpers). |
+| `*_test.lua` | Characterization tests: `protocol_test` (the loop), `registry_test` (the registry and the feature-file convention), `compare_test`, `line_identity_test`, `pickups_test`, `launcher_test` (the launcher from an installed-bundle layout), `common_test` (the helpers). |
 | `mutations.json`, `mutations.py` | Each entry breaks one guard in the Lua source (a stale GUID resolving to another item, an overwrite without asking, a spurious undo point, a widened duplicate window) and the suite must fail. A mutation that survives, or whose text is no longer in the source, fails the run. |
 
 ### Writing a test

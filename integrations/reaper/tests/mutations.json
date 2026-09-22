@@ -112,5 +112,65 @@
     "file": "narration_bridge_core.lua",
     "find": "reaper.EnumerateFiles(directory, -1)\n  local names",
     "replace": "local names"
+  },
+  {
+    "name": "a duplicate pickup is imported again",
+    "file": "narration_pickups.lua",
+    "find": "if pickup_exists(markers, row.start, body) then",
+    "replace": "if false then"
+  },
+  {
+    "name": "import opens an undo block even when nothing changed",
+    "file": "narration_pickups.lua",
+    "find": "if #pending > 0 then\n    reaper.Undo_BeginBlock2(0)",
+    "replace": "if true then\n    reaper.Undo_BeginBlock2(0)"
+  },
+  {
+    "name": "the pickup duplicate tolerance widens",
+    "file": "narration_pickups.lua",
+    "find": "local PICKUP_TOLERANCE = 0.15",
+    "replace": "local PICKUP_TOLERANCE = 5"
+  },
+  {
+    "name": "a malformed pickup row is accepted",
+    "file": "narration_pickups.lua",
+    "find": "if start and start == start and start >= 0 and start < math.huge and note ~= '' then",
+    "replace": "if start then"
+  },
+  {
+    "name": "export reports a resolved pickup as still open",
+    "file": "narration_pickups.lua",
+    "find": "for _, marker in ipairs(project_markers()) do\n    if marker_kind(marker.name) == 'PICKUP' then\n      local tag, note = split_pickup_body(marker_body(marker.name))",
+    "replace": "for _, marker in ipairs(project_markers()) do\n    if marker_kind(marker.name) ~= 'PICKUP_DONE' then\n      local tag, note = split_pickup_body(marker_body(marker.name))"
+  },
+  {
+    "name": "count_pickups counts a resolved pickup as remaining",
+    "file": "narration_pickups.lua",
+    "find": "if kind == 'PICKUP' then\n      remaining, total = remaining + 1, total + 1",
+    "replace": "if kind == 'PICKUP' or kind == 'PICKUP_DONE' then\n      remaining, total = remaining + 1, total + 1"
+  },
+  {
+    "name": "next_pickup ignores the edit cursor",
+    "file": "narration_pickups.lua",
+    "find": "for _, marker in ipairs(pickups) do\n    if marker.pos > cursor then",
+    "replace": "for _, marker in ipairs(pickups) do\n    if true then"
+  },
+  {
+    "name": "next_pickup can land on a resolved pickup",
+    "file": "narration_pickups.lua",
+    "find": "for _, marker in ipairs(project_markers()) do\n    if marker_kind(marker.name) == 'PICKUP' then\n      pickups[#pickups + 1] = marker",
+    "replace": "for _, marker in ipairs(project_markers()) do\n    if marker_kind(marker.name) ~= 'PICKUP_DONE' then\n      pickups[#pickups + 1] = marker"
+  },
+  {
+    "name": "resolve_pickup ignores the position tolerance",
+    "file": "narration_pickups.lua",
+    "find": "if gap <= PICKUP_TOLERANCE and (not best_gap or gap < best_gap) then",
+    "replace": "if (not best_gap or gap < best_gap) then"
+  },
+  {
+    "name": "resolve_pickup can resolve an already-resolved pickup",
+    "file": "narration_pickups.lua",
+    "find": "for _, marker in ipairs(project_markers()) do\n    if marker_kind(marker.name) == 'PICKUP' then\n      local gap = math.abs(marker.pos - target)",
+    "replace": "for _, marker in ipairs(project_markers()) do\n    if marker_kind(marker.name) ~= '' then\n      local gap = math.abs(marker.pos - target)"
   }
 ]
