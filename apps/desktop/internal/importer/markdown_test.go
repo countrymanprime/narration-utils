@@ -3,6 +3,7 @@ package importer
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -117,5 +118,18 @@ func TestMarkdownCharacterListActiveEndsAtTheNextChapterLevelHeading(t *testing.
 	}
 	if got := sectionNamed(t, draft, "Notes").ContentKind; got != "narration" {
 		t.Fatalf("Notes content kind = %q, want narration", got)
+	}
+}
+
+// TestMarkdownGluedHeadingSplitIsReportedAsANotice covers import-structure-toc-and-characters Phase 4 (S9): markdown.go used to
+// discard headingParts' glued flag, so a repaired heading (as docx.go already reports) was silently split with nothing telling
+// the narrator it happened.
+func TestMarkdownGluedHeadingSplitIsReportedAsANotice(t *testing.T) {
+	draft := importMarkdown(t, "# CHAPTER ONEBad Ideas Look Great in Neon\nBody.\n")
+	if draft.Paragraphs[0].Chapter != "CHAPTER ONE" || subtitleOf(draft.Paragraphs[0]) != "Bad Ideas Look Great in Neon" {
+		t.Fatalf("got chapter %q subtitle %q", draft.Paragraphs[0].Chapter, subtitleOf(draft.Paragraphs[0]))
+	}
+	if len(draft.Notices) != 1 || !strings.Contains(draft.Notices[0], "CHAPTER ONE") {
+		t.Fatalf("expected one notice describing the split, got %#v", draft.Notices)
 	}
 }
