@@ -397,6 +397,12 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'take-review-empty',
     description: 'Tracks, a pickup/duplicate scan on a track with no repeats - "No repeated reads found on this track." with no results table',
   },
+  {
+    page: 'tracks',
+    state: 'take-review-audition',
+    description:
+      'Tracks, Audition pressed on a pickup finding - the side-by-side A/B dialog with the "Raw source, no FX or edits applied" label and Read A/Read B pickers (phase 7, Q7)',
+  },
 
   // Teleprompter
   {
