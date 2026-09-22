@@ -35,6 +35,24 @@ func TestNewDraftGivesContentsItsOwnGroupInsteadOfLeakingIntoPriorSection(t *tes
 	}
 }
 
+// TestNewDraftClassifiesACharactersHeadingAsReference pins ADR 0088 (import-structure-toc-and-characters Phase 2, S1/S2): a
+// Characters section stays classified `reference` - it is not dropped and gets no special non-chapter kind - so the Story Bible
+// entries seeded from its candidates (Phase 3) are its readable form, and the reader can hide it the same way it will hide Contents
+// once manuscript-reader-search-and-controls Phase 5 lands.
+func TestNewDraftClassifiesACharactersHeadingAsReference(t *testing.T) {
+	paragraphs := []Paragraph{
+		{Chapter: "Chapter One", Text: "Chapter one text.", SourceIndex: 0},
+		{Chapter: "Characters", Text: "Wren — a spy.", SourceIndex: 1},
+	}
+	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := sectionNamed(t, draft, "Characters").ContentKind; got != "reference" {
+		t.Fatalf("Characters content kind = %q, want reference", got)
+	}
+}
+
 func TestNewDraftClassifiesFrontMatterAsOpening(t *testing.T) {
 	paragraphs := []Paragraph{
 		{Chapter: "Front Matter", Text: "By Jane Author", SourceIndex: 0},
