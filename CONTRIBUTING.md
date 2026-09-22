@@ -26,8 +26,8 @@ Details, including the Git hooks and CI, are in [CI and releases](docs/operation
    Put code in the folder that names its role (see the [codebase map](docs/architecture/codebase-map.md)); tests follow
    the toolchain, with one `tests/` folder per project where it does not want them beside the code.
 2. Run `pnpm run check` before you push. If you changed `apps/ui`, also review the visual-suite screenshots at every
-   viewport and run `pnpm --dir apps/ui atlas`. If you changed `integrations/reaper` (Lua), verify it by hand inside
-   REAPER, because nothing automated covers it.
+   viewport and run `pnpm --dir apps/ui atlas`. If you changed `integrations/reaper` (Lua), the bridge harness in `pnpm run check` covers its protocol, but
+   REAPER's own API behaviour is only checked by hand inside REAPER.
 3. Open a pull request whose **title is a Conventional Commit** (`feat: …`, `fix(scope): …`). It becomes the squash
    commit and decides the next version. Put `Closes #<issue>` in the description and fill in the template.
 4. If you settled a real design decision, record it as an ADR in `docs/adr/`.
