@@ -378,7 +378,9 @@ func TestStartupRecordsAnAttemptAndIgnoresARecordThatIsNotAboutThisProgram(t *te
 	dir := t.TempDir()
 	exe := filepath.Join(dir, appFileName())
 	path := filepath.Join(dir, "pending.json")
-	if err := writePending(path, Pending{From: "1.0.0", To: "2.0.0", Executable: exe}); err != nil {
+	// StartedAt is set: a record with no time is never "older than a week", so the leftover check below would fall through to the
+	// rollback branch, which asks whether process 4321 is alive, and on a busy CI machine it can be.
+	if err := writePending(path, Pending{From: "1.0.0", To: "2.0.0", Executable: exe, StartedAt: time.Now()}); err != nil {
 		t.Fatal(err)
 	}
 	Startup(StartupOptions{Executable: exe, PendingPath: path, Version: "2.0.0", PID: 4321})

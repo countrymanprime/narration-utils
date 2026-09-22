@@ -1,9 +1,11 @@
 # Local Dependency Evaluation and License Plan
 
-**Status: Planned evaluation.** Nothing in this document is an implemented
-dependency or an authorization to download it. It defines how Narration Utils
-will decide whether a local tool or model materially improves a narrator's
-workflow and may be offered as an optional dependency.
+**Status: Three artifact kinds are shipped as first-use assets; every candidate below is still
+a planned evaluation.** The artifacts recorded under [Shipped assets](#shipped-assets) (the
+Piper preview voice, the five Whisper models and the two spaCy language models) are approved and
+downloaded by the app on first use. Nothing else in this document is an implemented dependency
+or an authorization to download it. It defines how Narration Utils decides whether a local tool
+or model materially improves a narrator's workflow and may be offered as an optional dependency.
 
 ## Purpose and boundary
 
@@ -13,16 +15,20 @@ not silently edit source audio, rewrite a manuscript, choose a take, diagnose
 an acting performance, or identify a fictional character from voice alone.
 
 Third-party executables, packages, and model weights are not committed to this
-repository or bundled into the published source tree. Setup may download an
-approved, version-pinned dependency directly from its upstream publisher into
-a gitignored, tool-specific cache. The product must make the upstream name,
-publisher, version, source URL, license, model-card URL (when applicable), and
-local install location visible to the user.
+repository. The release bundles the code and runtime libraries the app needs to start
+(the frozen Python sidecars carry their Python packages); model weights, voices,
+dictionaries and external tool packs are **assets**, and an asset is provisioned at first use,
+never at setup. `pnpm run bootstrap` preloads nothing. When a narrator first uses a feature that
+needs an asset, the app names it, shows its publisher, version, size, source, license and where
+it will be kept, and downloads the approved, version-pinned artifact directly from its upstream
+publisher into the per-user asset cache only after the narrator chooses **Download**
+([first-use dependency provisioning](../architecture/first-use-dependency-provisioning.md)).
+The product makes the upstream name, publisher, version, source URL, license, model-card URL
+(when applicable), and local install location visible to the user.
 
-Downloading at setup time avoids redistributing an upstream binary or model in
-this repository. It does **not** remove the need to honor its license, preserve
-required notices, or check the license of model weights separately from the
-license of the Python package that downloads them.
+Downloading at first use avoids redistributing an upstream model in the release. It does **not**
+remove the need to honor its license, preserve required notices, or check the license of model
+weights separately from the license of the Python package that loads them.
 
 This is engineering guidance, not legal advice. The release checklist must
 recheck all upstream terms at the exact version being offered.
@@ -71,6 +77,87 @@ flow, per the required record below.
   `TranscriptStart` first-use gate); every catalog URL/hash was verified
   against the live upstream repository before being recorded.
 - **Feature enabled**: Transcript Compare's ASR backend.
+
+## Shipped assets
+
+Each row below is the record the [required dependency record](#required-dependency-record) asks
+for, taken from the catalogs the release carries (`config/tts-assets.json`,
+`config/whisper-assets.json`, `config/spacy-assets.json`) and, for spaCy, from the
+[provisioning spike](spacy-model-provisioning-spike.md). Every asset is installed by the one
+lifecycle in `apps/desktop/internal/assets` (stage, check size and SHA-256, rename into place,
+manifest), under the per-user cache `<user cache>/narration-utils/assets/<kind>/<provider>/<id>/<version>/`
+(`%LocalAppData%` on Windows), and is removable from Settings > Local assets. **Update policy for
+all of them:** none automatic. Each is pinned in the catalog to a commit or tag, an exact size and
+a SHA-256; a newer version needs a reviewed catalog change, a new hash, a license recheck and a
+release, and never replaces an installed asset by itself. The app's own update check
+([ADR 0072](../adr/0072-the-app-updates-itself-from-this-repositorys-releases-and-never-installs-without-a-click.md))
+reads release metadata only and downloads no asset. The files were checked against the live
+upstream when they were pinned; where a host publishes no digest (GitHub release assets), the
+SHA-256 is the hash of the first download and is the pin.
+
+### Piper preview voice (Story Bible name preview)
+
+| Field | Record |
+| --- | --- |
+| Asset | `en_US-ljspeech-high`, kind `tts`, provider `piper` (`config/tts-assets.json`) |
+| Publisher, version | rhasspy (Piper Voices), catalog version `1.0.0`, revision `375a0fe641dea077c2a47b4e9a056d6da521eed3` of `rhasspy/piper-voices` |
+| URLs | `https://huggingface.co/rhasspy/piper-voices/resolve/375a0fe641dea077c2a47b4e9a056d6da521eed3/en/en_US/ljspeech/high/en_US-ljspeech-high.onnx` and the same path with `.onnx.json` |
+| SHA-256, size | `.onnx` `5d4f08ba6a2a48c44592eed3ce56bf85e9de3dd4e20df90541ae68a8310c029a`, 114,199,011 bytes; `.onnx.json` `7e1f4634af596d83cca997fb7a931ba80b70f8a316a2655ee69c55365e0ace14`, 4,970 bytes |
+| Licences | Training data (LJ Speech) is public domain; the Piper Voices repository is MIT ([LJ Speech](https://keithito.com/LJ-Speech-Dataset/)). Attribution kept in the catalog: "LJ Speech Dataset (public domain); Piper voice model by rhasspy contributors." |
+| Model card, provenance | `.../piper-voices/blob/v1.0.0/en/en_US/ljspeech/high/MODEL_CARD`; `.../tree/v1.0.0/en/en_US/ljspeech/high` |
+| Install location | `<cache>/assets/tts/piper/en_US-ljspeech-high/1.0.0/` |
+| Runtime | `piper-tts` 1.8.0 and its phonemizer and eSpeak NG data are bundled in the frozen Story Bible sidecar (GPL-family code inside an AGPL-3.0-or-later program, [ADR 0039](../adr/0039-the-project-is-licensed-agpl-3-0-or-later.md)); only the voice is an asset |
+| Feature | Story Bible name and alias preview |
+
+### Whisper models (Transcript Compare, Teleprompter)
+
+All five are CTranslate2 conversions loaded in-process by `faster-whisper` with `local_files_only=True`;
+the license of every one is MIT (each entry's `licenseUrl`); model card and provenance point at the
+pinned revision (`https://huggingface.co/<repo>/tree/<revision>`); install location
+`<cache>/assets/whisper/faster-whisper/<id>/<revision>/`. Each file has its own URL, size and
+SHA-256 in `config/whisper-assets.json` (URL `https://huggingface.co/<repo>/resolve/<revision>/<file>`).
+
+| Id | Publisher and repository | Pinned revision | Installed size |
+| --- | --- | --- | --- |
+| `tiny` | Systran, `faster-whisper-tiny` | `d90ca5fe260221311c53c58e660288d3deb8d356` | 78,203,619 bytes |
+| `small` | Systran, `faster-whisper-small` | `536b0662742c02347bc0e980a01041f333bce120` | 486,212,372 bytes |
+| `medium` | Systran, `faster-whisper-medium` | `08e178d48790749d25932bbc082711ddcfdfbc4f` | 1,530,571,735 bytes |
+| `large-v3-turbo` | deepdml, `faster-whisper-large-v3-turbo-ct2` | `4df90f75321148c3a29a9e2351b7ddf8f5b115a8` | 1,621,665,983 bytes |
+| `large-v3` | Systran, `faster-whisper-large-v3` | `edaa852ec7e145841d8ffdb056a99866b5f0a478` | 3,090,835,702 bytes |
+
+The weight file of each, whose SHA-256 identifies the model (`model.bin`): `tiny`
+`dcb76c6586fc06cbdac6dd21f14cfd129cc4cdd9dce19bf4ffa62e59cbe6e6d1` (75,538,270 bytes); `small`
+`3e305921506d8872816023e4c273e75d2419fb89b24da97b4fe7bce14170d671` (483,546,902); `medium`
+`9b45e1009dcc4ab601eff815b61d80e60ce3fd8c74c1a14f4a282258286b51ae` (1,527,906,378); `large-v3-turbo`
+`e76620f83d5f5b69efd3d87e3dc180c1bd21df9fbebacfd4335e5e1efcc018da` (1,617,884,929); `large-v3`
+`69f74147e3334731bc3a76048724833325d2ec74642fb52620eda87352e3d4f1` (3,087,284,237). The remaining
+files of each (`config.json`, tokenizer and vocabulary files) are in the catalog with their hashes.
+The default is `small`; the Teleprompter defaults to `tiny`.
+
+### spaCy language models (Story Bible)
+
+Both are `py3-none-any` wheels from the model publisher's release, downloaded, checked against the
+pinned hash, **unpacked into the install folder and deleted** (the wheel is not kept), and loaded by
+directory path (`spacy.load(<folder>)`), so nothing is ever `pip install`ed at run time.
+
+| Field | `en_core_web_sm` | `en_core_web_lg` |
+| --- | --- | --- |
+| Publisher, version | Explosion, 3.8.0 (compatible with spaCy `>=3.8.0,<3.9.0`) | Explosion, 3.8.0 (same range) |
+| URL | `https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl` | `https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl` |
+| SHA-256 | `1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85` | `293e9547a655b25499198ab15a525b05b9407a75f10255e405e8c3854329ab63` |
+| Download, installed size | 12,806,118 bytes; 15,251,718 bytes unpacked | 400,658,291 bytes; 445,159,665 bytes unpacked |
+| Licence | MIT, Copyright 2021 ExplosionAI GmbH. Training data notices (OntoNotes 5, ClearNLP conversion, WordNet 3.0 License) travel in the unpacked `LICENSES_SOURCES`; the catalog carries the attribution | The same, plus Explosion Vectors (OSCAR 2109, Wikipedia, OpenSubtitles, WMT News Crawl) |
+| Model card, provenance | `https://github.com/explosion/spacy-models/releases/tag/en_core_web_sm-3.8.0` | `https://github.com/explosion/spacy-models/releases/tag/en_core_web_lg-3.8.0` |
+| Install location | `<cache>/assets/spacy/spacy/en_core_web_sm/3.8.0/` (model at `model/en_core_web_sm/en_core_web_sm-3.8.0`) | `<cache>/assets/spacy/spacy/en_core_web_lg/3.8.0/` |
+| Feature | Story Bible extraction with a language model (the default); without it the build asks first and can run rules-only | The same, more accurate and slower |
+
+### Not assets
+
+The code the release itself carries (the frozen Story Bible, Transcript Compare and Teleprompter
+sidecars, `faster-whisper`, `piper-tts`, `spacy`, `cmudict` and their data) is the base release and
+not a first-use download; it is pinned by the lock files (`uv.lock`, `go.sum`), and the
+[packaged smoke test](../operations/ci-and-releases.md) checks that the frozen Story Bible sidecar can start its
+phonemizer and load its dictionary.
 
 ## License and provenance policy
 
@@ -281,7 +368,7 @@ stable threshold cannot be calibrated for that narrator/book.
 
 **License/provenance.** The Resemblyzer repository is Apache-2.0 and includes
 a pretrained encoder. Still record the exact package/model hash and its stated
-provenance before setup downloads it. [Upstream project](https://github.com/resemble-ai/resemblyzer)
+provenance before the app downloads it on first use. [Upstream project](https://github.com/resemble-ai/resemblyzer)
 
 **Risk.** Voice embeddings are biometric-like personal data. Keep them local,
 project-scoped, removable, and created only from narrator-approved clips. They

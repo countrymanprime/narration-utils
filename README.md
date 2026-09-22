@@ -91,9 +91,18 @@ A compiled release is one program, `narration-utils` (`narration-utils.exe` on W
 it off there), and on Windows, after your confirmed click, it downloads that release, checks it and replaces itself; it
 never downloads or installs anything on its own. See [in-app update](docs/architecture/in-app-update.md).
 
-Legacy `.runtime` and `.bootstrap` directories created by the retired Windows
-bootstrap are ignored but unused. After a successful bootstrap, review and
-remove them manually if no older checkout still needs them.
+Legacy `.piper`, `.runtime` and `.bootstrap` directories created by the retired
+bootstrap scripts are ignored, never adopted: a voice or model in one of them is not
+treated as installed, because nothing verified it against the catalog (see
+[first-use dependency provisioning](docs/architecture/first-use-dependency-provisioning.md#migration-from-the-retired-bootstrap)).
+After a successful bootstrap, review and remove them manually if no older checkout still
+needs them; the app downloads and verifies its own copy on first use.
+
+Developers who need the optional assets without waiting for the first-use download (offline
+tests, packaging checks) can seed them explicitly. `pnpm run assets:seed -- --list` shows
+every approved asset and whether it is installed; `pnpm run assets:seed -- tts whisper/tiny
+spacy/en_core_web_sm` (a kind, `kind/id`, or `all`) installs them into the same per-user cache
+the app reads, hash-verified, from the same pinned catalogs. Bootstrap never runs it.
 
 While iterating on the shell without a full release build, `pnpm --dir apps/desktop run
 dev` runs the native Wails window directly. The shipped Go importer accepts

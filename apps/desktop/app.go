@@ -66,6 +66,8 @@ type Host struct {
 	// stager downloads and unpacks an update into the per-user cache; updateJob is the download in progress or the last one (h.mu).
 	stager    *update.Stager
 	updateJob *updateJob
+	// updateDelay is a seam for tests: how long Startup waits before the automatic update check; zero means startupUpdateDelay.
+	updateDelay time.Duration
 	// updateEvents and openURL are seams for tests: nil means the Wails runtime.
 	updateEvents func(updateStatus)
 	openURL      func(ctx context.Context, address string)
@@ -165,10 +167,13 @@ func (h *Host) Startup(ctx context.Context) {
 	h.ctx, h.cancel = context.WithCancel(ctx)
 	h.configureLocked(parseConfig(h.config.repoRoot))
 	h.assets = h.buildAssetRegistry()
-	runtimeContext := h.ctx
+	runtimeContext, delay := h.ctx, h.updateDelay
 	h.mu.Unlock()
+	if delay == 0 {
+		delay = startupUpdateDelay
+	}
 	go h.transcriptLoop(runtimeContext)
-	go h.startupUpdateCheck(runtimeContext, startupUpdateDelay)
+	go h.startupUpdateCheck(runtimeContext, delay)
 	go h.cleanStaleDownloads()
 }
 

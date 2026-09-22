@@ -9,6 +9,7 @@
     "prepare": "husky",
     "bootstrap": "node scripts/bootstrap.mjs",
     "test:bootstrap": "node --test scripts/bootstrap.test.mjs",
+    "assets:seed": "go -C apps/desktop run ./cmd/seed-assets",
     "check": "node scripts/quality.mjs check",
     "check:fast": "node scripts/quality.mjs staged",
     "knip": "knip",
