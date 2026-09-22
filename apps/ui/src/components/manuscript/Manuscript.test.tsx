@@ -1,13 +1,17 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Manuscript } from './Manuscript';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { WireError } from '../../api/wire/WireError';
+import { SEARCH_DEBOUNCE_MS } from '../../hooks/useDebouncedValue';
 
-afterEach(cleanup);
+afterEach(() => {
+  vi.useRealTimers();
+  cleanup();
+});
 
 function renderManuscript(overrides: Parameters<typeof createMockApi>[0] = {}, focusStoryBibleEntity = vi.fn()) {
   const api = createMockApi(overrides);
@@ -208,7 +212,9 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     renderManuscript();
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
-    fireEvent.change(screen.getByLabelText('Search manuscript'), { target: { value: 'Rabbit' } });
+    const input = screen.getByLabelText('Search manuscript');
+    fireEvent.change(input, { target: { value: 'Rabbit' } });
+    fireEvent.keyDown(input, { key: 'Enter' }); // fires the search immediately, bypassing the debounce (R1)
 
     const [result] = await screen.findAllByRole('button', { name: /Search result in Chapter 1/ });
     expect(within(document.querySelector('[data-slide-over]')!).queryByRole('button', { name: /Chapter 3/ })).toBeNull();
@@ -229,12 +235,58 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
     fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
     const input = screen.getByLabelText('Search manuscript');
+    // Each Enter fires immediately (R1), simulating two real requests racing - the debounce itself
+    // (see the dedicated debounce test below) would collapse two edits this close together into one.
     fireEvent.change(input, { target: { value: 'old' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
     fireEvent.change(input, { target: { value: 'new' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
 
     await screen.findByLabelText(/Search result in Chapter 2/);
     resolveOld([{ chapter: 'Chapter 1', paragraph: 0, sourceLine: 10, excerpt: 'old result' }]);
     await waitFor(() => expect(screen.queryByLabelText(/Search result in Chapter 1/)).toBeNull());
+  });
+
+  it('debounces the line search 2s behind the last keystroke; chapter-title matches show at once and Enter fires immediately (R1, R2)', async () => {
+    const searchSpy = vi.fn(async () => []);
+    renderManuscript({ manuscriptSearch: searchSpy });
+    await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+    fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
+    const input = screen.getByLabelText('Search manuscript');
+
+    vi.useFakeTimers();
+    fireEvent.change(input, { target: { value: 'Pool of Tears' } });
+
+    // The chapter-title/subtitle subset is client-side and never debounced (R2).
+    expect(screen.getAllByRole('button', { name: /Chapter 2/ }).length).toBeGreaterThan(0);
+    expect(searchSpy).not.toHaveBeenCalled();
+    expect(screen.getByText('Searching…')).toBeTruthy();
+
+    await act(() => vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS - 1));
+    expect(searchSpy).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(searchSpy).toHaveBeenCalledTimes(1);
+    expect(searchSpy).toHaveBeenCalledWith('Pool of Tears');
+  });
+
+  it('does not repeat the search 2s after Enter already fetched it (code review: the debounce catching up must not re-fire)', async () => {
+    const searchSpy = vi.fn(async () => []);
+    renderManuscript({ manuscriptSearch: searchSpy });
+    await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+    fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
+    const input = screen.getByLabelText('Search manuscript');
+
+    vi.useFakeTimers();
+    fireEvent.change(input, { target: { value: 'Rabbit' } });
+    await act(() => vi.advanceTimersByTimeAsync(0)); // let the Enter-triggered fetch's promise settle
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(searchSpy).toHaveBeenCalledTimes(1);
+
+    // The debounce hook's own timer, still armed from the keystroke, now catches up to the same
+    // already-settled query - it must not fire fetchSearch a second time for it.
+    await act(() => vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS));
+    expect(searchSpy).toHaveBeenCalledTimes(1);
   });
 
   it('clears the query and results when a search result is selected (R8)', async () => {

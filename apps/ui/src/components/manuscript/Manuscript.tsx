@@ -6,10 +6,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faList } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderState, SearchHit } from '../../types';
-import { categoryCssName, chapterLineNumbers, STORY_BIBLE_TABS } from '../../state';
+import { categoryCssName, chapterLineNumbers, chapterTextMatches, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
 import { useTextSelection } from '../../hooks/useTextSelection';
+import { SEARCH_DEBOUNCE_MS, useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { ToggleGroup } from '../primitives/ToggleGroup';
@@ -65,9 +66,23 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   const [jumpTarget, setJumpTarget] = useState<number>();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
+  // The query text a result was actually fetched for - not the debounce hook's own state, so an
+  // Enter that jumps the debounce (R1) still reads as settled right away, instead of "Searching..."
+  // lingering for the rest of the window a keystroke already bypassed.
+  const [lastFetchedQuery, setLastFetchedQuery] = useState('');
+  // Mirrors lastFetchedQuery for the debounce effect below to read without depending on it (a
+  // dependency would also fire the effect right when Enter's own fetch settles, one render before
+  // the debounced value itself has caught up - re-firing fetchSearch with the *old*, not-yet-caught-up
+  // debouncedQuery. A ref lets the effect stay keyed on debouncedQuery alone.
+  const lastFetchedQueryRef = useRef('');
+  const debouncedQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
   const { selection, clear: clearSelection } = useTextSelection(readerRef);
   const active = readerState.activeChapter || chapters[0]?.id;
   const lineNumbers = useMemo(() => chapterLineNumbers(paragraphs), [paragraphs]);
+  const titleMatches = useMemo(() => chapterTextMatches(chapters, searchQuery), [chapters, searchQuery]);
+  // True once there is a query the panel has not shown results for yet - the debounce wait, or
+  // (briefly) the request itself - so "No matches" never flashes before a settled answer exists (R1).
+  const searchPending = Boolean(searchQuery.trim()) && searchQuery !== lastFetchedQuery;
 
   useEffect(() => {
     const element = bandRef.current;
@@ -81,12 +96,14 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
     setSheet(undefined);
     setDetail(undefined);
   };
-  // Discards any in-flight search response too (the same guard runSearch checks), so a slow
+  // Discards any in-flight search response too (the same guard fetchSearch checks), so a slow
   // response that resolves after a clear can never repopulate results the narrator just dismissed.
   const clearSearch = () => {
     searchRequest.current += 1;
     setSearchQuery('');
     setSearchResults([]);
+    lastFetchedQueryRef.current = '';
+    setLastFetchedQuery('');
   };
   const saveState = useCallback(
     async (next: ReaderState) => {
@@ -229,20 +246,39 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
       notify(describeApiError(error), 'error');
     }
   };
-  const runSearch = async (query: string) => {
-    setSearchQuery(query);
-    const request = ++searchRequest.current;
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    try {
-      const results = await api.manuscriptSearch(query);
-      if (request === searchRequest.current) setSearchResults(results);
-    } catch (error) {
-      if (request === searchRequest.current) notify(describeApiError(error), 'error');
-    }
-  };
+  // The one place that ever calls the Go search: from the debounce effect below once it settles,
+  // and directly on Enter (R1). searchRequest guards a stale response the same way it always did.
+  const fetchSearch = useCallback(
+    async (query: string) => {
+      const request = ++searchRequest.current;
+      const settle = () => {
+        lastFetchedQueryRef.current = query;
+        setLastFetchedQuery(query);
+      };
+      if (!query.trim()) {
+        setSearchResults([]);
+        settle();
+        return;
+      }
+      try {
+        const results = await api.manuscriptSearch(query);
+        if (request !== searchRequest.current) return;
+        setSearchResults(results);
+        settle();
+      } catch (error) {
+        if (request !== searchRequest.current) return;
+        notify(describeApiError(error), 'error');
+        settle();
+      }
+    },
+    [api, notify],
+  );
+  useEffect(() => {
+    // Enter (R1) already fetched this exact query directly - skip the redundant repeat once the
+    // debounce hook's own timer independently catches up to the same settled value a moment later.
+    if (debouncedQuery === lastFetchedQueryRef.current) return;
+    void fetchSearch(debouncedQuery);
+  }, [debouncedQuery, fetchSearch]);
   const addNote = () => {
     if (!selection || selection.paragraphIndex === undefined || selection.anchorStart === undefined || selection.anchorEnd === undefined) {
       notify('Select text within a single line to add a note.');
@@ -486,7 +522,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
           </>
         ) : (
           <>
-            <SearchBar query={searchQuery} onQueryChange={(value) => void runSearch(value)} autoFocus />
+            <SearchBar query={searchQuery} onQueryChange={setSearchQuery} onEnter={() => void fetchSearch(searchQuery)} autoFocus />
             <div className="mt-4 border-t pt-3">
               <div className="section-label mb-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 Chapters
@@ -497,6 +533,8 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
                 bookmarks={readerState.bookmarks}
                 searchQuery={searchQuery}
                 searchResults={searchResults}
+                titleMatches={titleMatches}
+                pending={searchPending}
                 lineNumbers={lineNumbers}
                 select={(id, paragraph) => {
                   const chapter = chapters.find((item) => item.id === id);

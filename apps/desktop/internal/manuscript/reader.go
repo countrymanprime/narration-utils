@@ -69,15 +69,28 @@ func (s *Service) Search(query string) ([]map[string]any, error) {
 	needle := strings.ToLower(query)
 	result := []map[string]any{}
 	for _, paragraph := range objects(data["paragraphs"]) {
-		if strings.Contains(strings.ToLower(text(paragraph, "text")), needle) {
-			result = append(result, map[string]any{
-				"chapter": text(paragraph, "chapterTitle"), "chapterId": text(paragraph, "chapterId"),
-				"paragraph": paragraph["index"], "paragraphId": text(paragraph, "id"), "excerpt": text(paragraph, "text"),
-			})
+		body := text(paragraph, "text")
+		offset := strings.Index(strings.ToLower(body), needle)
+		if offset < 0 {
+			continue
+		}
+		result = append(result, map[string]any{
+			"chapter": text(paragraph, "chapterTitle"), "chapterId": text(paragraph, "chapterId"),
+			"paragraph": paragraph["index"], "paragraphId": text(paragraph, "id"), "excerpt": body,
+			"matchStart": offset,
+		})
+		if len(result) >= maxSearchResults {
+			break
 		}
 	}
 	return result, nil
 }
+
+// A cap, not a hard limit the narrator would notice in practice: a query that matches every
+// paragraph of an 88,000-word manuscript still returns in a few milliseconds
+// (interaction-latency-baseline.md), so this exists to bound the response and the panel's own
+// rendering, not to fix a measured slowness.
+const maxSearchResults = 200
 
 func (s *Service) SetChapterStatus(chapterID, status string) (map[string]any, error) {
 	if !validChapterStatus(status) {
