@@ -157,7 +157,11 @@ export function Results({
                             </IconButton>
                           </TooltipTarget>
                           <TooltipTarget className="flex-none" text={`Play heard audio at ${seconds(row.projectTime)}`}>
-                            <IconButton label="Play recorded audio" disabled={!row.projectTime} onClick={() => void api.transcriptJump(row.id)}>
+                            <IconButton
+                              label="Play recorded audio"
+                              disabled={!row.projectTime}
+                              onClick={() => void api.transcriptJump(row.id).catch((error) => notify(describeApiError(error), 'error'))}
+                            >
                               <FontAwesomeIcon icon={faHeadphones} />
                             </IconButton>
                           </TooltipTarget>

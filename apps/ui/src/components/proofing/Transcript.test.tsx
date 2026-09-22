@@ -9,6 +9,43 @@ import { WIRE_DISCREPANCIES } from '../../api/mockFixtures';
 
 afterEach(cleanup);
 
+describe('Transcript actions that answer late or fail (ADR 0075)', () => {
+  it('Cancel says it was heard, ignores a second press, and reports a cancel the host refuses', async () => {
+    const hang = vi.fn(() => new Promise<void>(() => {}));
+    const notify = vi.fn();
+    const { unmount } = render(
+      <ApiProvider api={createMockApi({ transcriptCancel: hang })}>
+        <Transcript state={{ ...WIRE_TRANSCRIPT, phase: 'running' }} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} />
+      </ApiProvider>,
+    );
+    const cancel = screen.getByRole('button', { name: 'Cancel' });
+    fireEvent.click(cancel);
+    fireEvent.click(cancel);
+    await waitFor(() => expect(cancel.getAttribute('aria-busy')).toBe('true'));
+    expect(hang).toHaveBeenCalledTimes(1);
+    unmount();
+
+    render(
+      <ApiProvider api={createMockApi({ transcriptCancel: () => Promise.reject(new Error('the comparison already ended')) })}>
+        <Transcript state={{ ...WIRE_TRANSCRIPT, phase: 'running' }} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} />
+      </ApiProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('the comparison already ended'), 'error'));
+  });
+
+  it('a jump to the recorded audio that fails is reported, not an unhandled rejection', async () => {
+    const notify = vi.fn();
+    render(
+      <ApiProvider api={createMockApi({ transcriptJump: () => Promise.reject(new Error('REAPER is not running')) })}>
+        <Transcript state={{ ...WIRE_TRANSCRIPT, phase: 'success', rows: WIRE_DISCREPANCIES }} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} />
+      </ApiProvider>,
+    );
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Play recorded audio' })).find((button) => !(button as HTMLButtonElement).disabled)!);
+    await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('REAPER is not running'), 'error'));
+  });
+});
+
 describe('Transcript chapter choice', () => {
   it('asks which chapter the track belongs to in a named region under the page heading', () => {
     render(

@@ -5,6 +5,7 @@ import { faArrowLeft, faPlay, faWandMagicSparkles } from '@fortawesome/free-soli
 import type { Discrepancy, TranscriptState, TranscriptStartResult, WhisperInstallJob } from '../../types';
 import { isTranscriptActive } from '../../state';
 import { useApi } from '../../api/ApiContext';
+import { usePendingAction } from '../../hooks/usePendingAction';
 import { Button } from '../primitives/Button';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Heading } from '../primitives/Heading';
@@ -81,6 +82,16 @@ export function Transcript({
   const [whisperJob, setWhisperJob] = useState<WhisperInstallJob>();
   const [pendingChapterTitle, setPendingChapterTitle] = useState<string>();
   const running = isTranscriptActive(state.phase);
+  // Cancel is answered by the next state event, which can be a moment away: the button says it was heard and a second press does nothing.
+  const stopping = usePendingAction();
+  const cancelComparison = () =>
+    stopping.run('cancel', async () => {
+      try {
+        await api.transcriptCancel();
+      } catch (error) {
+        notify(describeApiError(error), 'error');
+      }
+    });
 
   useEffect(() => {
     let active = true;
@@ -418,11 +429,15 @@ export function Transcript({
             </div>
             <div className="mt-4 flex items-center justify-between border-t pt-3" style={{ borderColor: 'var(--border)' }}>
               {import.meta.env.MODE === 'mock' && (
-                <Button variant="ghost" className="text-xs" onClick={() => void api.transcriptReset()}>
+                <Button
+                  variant="ghost"
+                  className="text-xs"
+                  onClick={() => void api.transcriptReset().catch((error) => notify(describeApiError(error), 'error'))}
+                >
                   Skip to results (demo)
                 </Button>
               )}
-              <Button variant="danger" onClick={() => void api.transcriptCancel()}>
+              <Button variant="danger" pending={stopping.isPending('cancel')} onClick={() => void cancelComparison()}>
                 Cancel
               </Button>
             </div>
@@ -438,7 +453,7 @@ export function Transcript({
           reset={() => {
             setSelected(undefined);
             setReviewingLast(false);
-            if (!reviewingLast) void api.transcriptReset();
+            if (!reviewingLast) void api.transcriptReset().catch((error) => notify(describeApiError(error), 'error'));
           }}
           canExportMarkers={!reviewingLast}
           goToManuscript={(row) => goToManuscript(row.chapter || '', row.paragraph || 0)}

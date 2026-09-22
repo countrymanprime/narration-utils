@@ -58,11 +58,13 @@ export function AudiobookEstimatePanel({
     (async () => {
       try {
         setChapters(await api.manuscriptChapters());
-      } catch {
+      } catch (error) {
+        // Say why the estimate is empty: an empty table alone reads as a manuscript with no chapters.
         setChapters([]);
+        notify(describeApiError(error), 'error');
       }
     })();
-  }, [api, refreshKey]);
+  }, [api, notify, refreshKey]);
 
   if (!chapters) return null;
   const narrationChapters = chapters.filter((chapter) => (chapter.contentKind ?? 'narration') === 'narration');

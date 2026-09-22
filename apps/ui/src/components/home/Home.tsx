@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileArrowUp, faFileLines } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
+import { usePendingAction } from '../../hooks/usePendingAction';
 import type { GuideEntity, ManuscriptImportSelection, TranscriptState, WorkJob } from '../../types';
 import type { Bootstrap } from '../../types';
 import { Heading } from '../primitives/Heading';
@@ -53,6 +54,8 @@ export function Home({
   const [lastCompleted, setLastCompleted] = useState<TranscriptState>();
   const found = Boolean(data.manuscript);
   const [importJob, setImportJob] = useState<WorkJob>();
+  // The file dialog is the host's, and pressing again while it is open would open a second one (ADR 0075).
+  const choosing = usePendingAction();
   const [importSelection, setImportSelection] = useState<ManuscriptImportSelection>({});
   const [headingLevel, setHeadingLevel] = useState(1);
   const [, setDeclineCount] = useState(0);
@@ -157,37 +160,33 @@ export function Home({
               </IconButton>
             </TooltipTarget>
           )}
-          {found ? (
-            <TooltipTarget text="Replace manuscript — confirmation clears Story Bible, notes, bookmarks, chapter statuses, and saved proofing results.">
-              <IconButton
-                label="Replace manuscript"
-                onClick={async () => {
-                  const result = await api.selectManuscript();
-                  if (result.selected && result.jobId) {
-                    setImportSelection({});
-                    void beginImportPreview(result.jobId);
-                  } else notify('No manuscript selected');
-                }}
-              >
-                <FontAwesomeIcon icon={faFileArrowUp} />
-              </IconButton>
-            </TooltipTarget>
-          ) : (
-            <TooltipTarget text="Import manuscript">
-              <IconButton
-                label="Import manuscript"
-                onClick={async () => {
-                  const result = await api.selectManuscript();
-                  if (result.selected && result.jobId) {
-                    setImportSelection({});
-                    void beginImportPreview(result.jobId);
-                  } else notify('No manuscript selected');
-                }}
-              >
-                <FontAwesomeIcon icon={faFileArrowUp} />
-              </IconButton>
-            </TooltipTarget>
-          )}
+          <TooltipTarget
+            text={
+              found
+                ? 'Replace manuscript — confirmation clears Story Bible, notes, bookmarks, chapter statuses, and saved proofing results.'
+                : 'Import manuscript'
+            }
+          >
+            <IconButton
+              label={found ? 'Replace manuscript' : 'Import manuscript'}
+              pending={choosing.isPending('choose')}
+              onClick={() =>
+                void choosing.run('choose', async () => {
+                  try {
+                    const result = await api.selectManuscript();
+                    if (result.selected && result.jobId) {
+                      setImportSelection({});
+                      void beginImportPreview(result.jobId);
+                    } else notify('No manuscript selected');
+                  } catch (error) {
+                    notify(describeApiError(error), 'error');
+                  }
+                })
+              }
+            >
+              <FontAwesomeIcon icon={faFileArrowUp} />
+            </IconButton>
+          </TooltipTarget>
         </div>
       </section>
       {offerCandidate && (
@@ -323,7 +322,15 @@ export function Home({
         <WorkDialog
           title="Import manuscript"
           job={importJob}
-          cancel={importJob.phase === 'preparing' ? () => void api.manuscriptImportCancel(importJob.id!).then(() => setImportJob(undefined)) : undefined}
+          cancel={
+            importJob.phase === 'preparing'
+              ? () =>
+                  void api
+                    .manuscriptImportCancel(importJob.id!)
+                    .then(() => setImportJob(undefined))
+                    .catch((error) => notify(describeApiError(error), 'error'))
+              : undefined
+          }
           close={() => setImportJob(undefined)}
         />
       )}

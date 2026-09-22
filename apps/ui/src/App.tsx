@@ -20,6 +20,7 @@ import { TooltipProvider } from './components/primitives/Tooltip';
 import { ErrorBoundary } from './components/primitives/ErrorBoundary';
 import { DESKTOP_HOST_API_VERSION } from './hostApi';
 import { isWireError } from './api/wire/WireError';
+import { describeApiError } from './api/errorMessage';
 
 const LIVE_UPDATES_DEGRADED = 'Some live updates from the desktop host could not be read, so what you see may be out of date. Reopen the page to refresh it.';
 
@@ -54,10 +55,15 @@ function AppRoutes() {
   // payload in place instead of reloading the browser, which could interrupt
   // the completion dialog before its activity log is visible.
   const refreshBootstrap = useCallback(async () => {
-    const next = await api.bootstrap();
-    setDiagnosticId(next.diagnosticId);
-    setData(next);
-  }, [api]);
+    try {
+      const next = await api.bootstrap();
+      setDiagnosticId(next.diagnosticId);
+      setData(next);
+    } catch (error) {
+      // Every caller runs this from an event or a `void`, so a failure has nowhere to go but the narrator.
+      setNotice(describeApiError(error), 'error');
+    }
+  }, [api, setNotice]);
 
   // Startup verifies the host and then loads its bootstrap payload.
   useEffect(() => {

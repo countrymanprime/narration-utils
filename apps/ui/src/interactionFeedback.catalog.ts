@@ -61,7 +61,7 @@ const OWNED_INSTALL = 'release-readiness Phase 1 (the install flow and its share
 // prettier-ignore
 export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   // App.tsx
-  'src/App.tsx::bootstrap#1': row('event', 'file-io', 'na', 'na', 'ui', 'unhandled', 'na', 'gap', 'refreshBootstrap runs from `void`, so a failed refresh is an unhandled rejection.', 'P6'),
+  'src/App.tsx::bootstrap#1': row('event', 'file-io', 'na', 'na', 'ui', 'toast', 'na', 'ok', 'refreshBootstrap catches its own failure and says so (phase 6); every caller runs it from an event or a `void`.'),
   'src/App.tsx::ready#1': startup('Startup: the startup screen shows the error and Retry.'),
   'src/App.tsx::bootstrap#2': startup('Startup: the startup screen shows the error and Retry.'),
   'src/App.tsx::reportClientDiagnostic#1': row('effect', 'file-io', 'na', 'na', 'na', 'silent', 'na', 'exempt', 'A diagnostic must never throw or show a second error while one is already being reported.'),
@@ -77,19 +77,18 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/App.tsx::transcriptReset#1': row('click', 'instant', 'na', 'na', 'na', 'silent', 'na', 'exempt', 'Best effort when leaving Proofing: a reset that fails leaves the finished results in place, which is harmless.'),
 
   // Home
-  'src/components/home/AudiobookEstimatePanel.tsx::manuscriptChapters#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'gap', 'A failed load shows an empty estimate as if the manuscript had no chapters.', 'P6'),
+  'src/components/home/AudiobookEstimatePanel.tsx::manuscriptChapters#1': row('mount', 'file-io', 'na', 'na', 'ui', 'toast', 'na', 'ok', 'A failed load empties the estimate and says why, instead of reading as a manuscript with no chapters (phase 6).'),
   'src/components/home/AudiobookEstimatePanel.tsx::manuscriptSetChapterStatus#1': row('input', 'file-io', 'none', 'none', 'ui', 'toast', 'na', 'ok', 'A small file write; the select shows the new status when it returns.'),
   'src/components/home/Home.tsx::guideEntities#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only decides whether the "entries need review" nudge shows; without it the nudge is absent.'),
   'src/components/home/Home.tsx::transcriptLastCompleted#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only fills the last-run card, which is empty when the run cannot be read.'),
   'src/components/home/Home.tsx::manuscriptImportState#1': row('timer', 'instant', 'dialog', 'dialog', 'poll', 'dialog', 'no', 'ok', 'The import dialog is modal, so the narrator cannot leave Home while it runs; a job-end event carries the outcome for the notifier (ADR 0076).'),
   'src/components/home/Home.tsx::manuscriptImportPreview#1': row('click', 'job', 'dialog', 'host', 'poll', 'dialog', 'no', 'ok', 'Modal import dialog with real progress; the host refuses a second run.'),
   'src/components/home/Home.tsx::manuscriptImportCommit#1': row('click', 'job', 'dialog', 'host', 'poll', 'dialog', 'no', 'ok', 'Modal import dialog with real progress; a job-end event carries the outcome (ADR 0076).'),
-  'src/components/home/Home.tsx::selectManuscript#1': row('click', 'os-dialog', 'none', 'none', 'ui', 'unhandled', 'no', 'gap', 'The file dialog can fail and nothing catches it; two clicks open two dialogs.', 'P6'),
-  'src/components/home/Home.tsx::selectManuscript#2': row('click', 'os-dialog', 'none', 'none', 'ui', 'unhandled', 'no', 'gap', 'The file dialog can fail and nothing catches it; two clicks open two dialogs.', 'P6'),
+  'src/components/home/Home.tsx::selectManuscript#1': row('click', 'os-dialog', 'pending', 'pending', 'ui', 'toast', 'no', 'ok', 'One choose-a-file button for import and replace: busy while the host dialog is open, so a second press cannot open a second dialog, and a failure is a toast (phase 6).'),
   'src/components/home/Home.tsx::manuscriptBeginImport#1': row('click', 'instant', 'none', 'none', 'dialog', 'toast', 'no', 'ok', 'Instant: it only registers the detected file; the import dialog follows.'),
   'src/components/home/Home.tsx::manuscriptImportCancel#1': row('click', 'instant', 'none', 'none', 'ui', 'toast', 'no', 'ok', 'Instant: it only marks the import cancelled.'),
   'src/components/home/Home.tsx::manuscriptImportPreview#2': row('input', 'job', 'dialog', 'host', 'poll', 'toast', 'no', 'ok', 'A new heading level re-runs the preview inside the same dialog with progress.'),
-  'src/components/home/Home.tsx::manuscriptImportCancel#2': row('click', 'instant', 'none', 'none', 'ui', 'unhandled', 'no', 'gap', 'Cancel from the progress dialog has no catch: a refused cancel is an unhandled rejection.', 'P6'),
+  'src/components/home/Home.tsx::manuscriptImportCancel#2': row('click', 'instant', 'none', 'none', 'ui', 'toast', 'no', 'ok', 'Cancel from the progress dialog: a refused cancel is now a toast (phase 6).'),
 
   // Manuscript
   'src/components/manuscript/Manuscript.tsx::readerStateSave#1': row('effect', 'file-io', 'na', 'na', 'ui', 'toast', 'na', 'ok', 'A small file write on every reader change; the reader has already moved.'),
@@ -117,7 +116,7 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
 
   // Proofing
   'src/components/proofing/Results.tsx::transcriptExportMarkers#1': row('click', 'job', 'disabled', 'disabled', 'ui', 'toast', 'na', 'ok', 'The button turns into "Exporting…" and disables from the transcript state event.'),
-  'src/components/proofing/Results.tsx::transcriptJump#1': row('click', 'instant', 'none', 'none', 'ui', 'unhandled', 'na', 'gap', 'A failed jump (REAPER not running) is an unhandled rejection: nothing tells the narrator.', 'P6'),
+  'src/components/proofing/Results.tsx::transcriptJump#1': row('click', 'instant', 'none', 'none', 'ui', 'toast', 'na', 'ok', 'A failed jump (REAPER not running) is a toast (phase 6).'),
   'src/components/proofing/Results.tsx::transcriptAddEquivalence#1': row('click', 'file-io', 'none', 'none', 'toast', 'toast', 'na', 'ok', 'A small file write; the toast is the result.'),
   'src/components/proofing/Transcript.tsx::transcriptHints#1': row('mount', 'file-io', 'na', 'na', 'ui', 'toast', 'na', 'ok', 'A failed load says so; the page stays usable.'),
   'src/components/proofing/Transcript.tsx::settingsForScope#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Reads the last model and chunk choice; the defaults stay usable and Settings reports a real error.'),
@@ -128,19 +127,19 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/proofing/Transcript.tsx::whisperInstall#1': row('click', 'download', 'dialog', 'disabled', 'dialog', 'toast', 'no', 'owned', 'The download flow; its progress and poll hook are not this audit\'s.', OWNED_INSTALL),
   'src/components/proofing/Transcript.tsx::whisperInstallState#1': row('timer', 'download', 'dialog', 'na', 'poll', 'toast', 'no', 'owned', 'The download poll loop, one of three copies.', OWNED_INSTALL),
   'src/components/proofing/Transcript.tsx::whisperInstallCancel#1': row('click', 'download', 'none', 'none', 'dialog', 'toast', 'no', 'owned', 'Cancel of the download.', OWNED_INSTALL),
-  'src/components/proofing/Transcript.tsx::transcriptReset#1': row('click', 'instant', 'none', 'none', 'ui', 'unhandled', 'na', 'exempt', 'A demo-only button, rendered in the mock build (`import.meta.env.MODE === "mock"`).'),
-  'src/components/proofing/Transcript.tsx::transcriptCancel#1': row('click', 'instant', 'none', 'none', 'ui', 'unhandled', 'na', 'gap', 'Cancel gives no sign it was heard and a refused cancel is an unhandled rejection.', 'P6'),
-  'src/components/proofing/Transcript.tsx::transcriptReset#2': row('click', 'instant', 'none', 'none', 'ui', 'unhandled', 'na', 'gap', 'Leaving the results calls a reset that has no catch.', 'P6'),
+  'src/components/proofing/Transcript.tsx::transcriptReset#1': row('click', 'instant', 'none', 'none', 'ui', 'toast', 'na', 'exempt', 'A demo-only button, rendered in the mock build (`import.meta.env.MODE === "mock"`).'),
+  'src/components/proofing/Transcript.tsx::transcriptCancel#1': row('click', 'instant', 'pending', 'pending', 'ui', 'toast', 'na', 'ok', 'Cancel is busy until the host answers and a refused cancel is a toast (phase 6).'),
+  'src/components/proofing/Transcript.tsx::transcriptReset#2': row('click', 'instant', 'none', 'none', 'ui', 'toast', 'na', 'ok', 'Leaving the results resets the run; a refusal is a toast (phase 6).'),
 
   // Settings
   'src/components/settings/Settings.tsx::settingsForScope#1': row('mount', 'file-io', 'na', 'na', 'ui', 'toast', 'na', 'ok', 'A failed load shows an error and a toast.'),
   'src/components/settings/Settings.tsx::ttsCatalog#1': row('mount', 'file-io', 'na', 'na', 'ui', 'toast', 'na', 'ok', 'Loaded with the settings.'),
   'src/components/settings/Settings.tsx::whisperCatalog#1': row('mount', 'file-io', 'na', 'na', 'ui', 'toast', 'na', 'ok', 'Loaded with the settings.'),
-  'src/components/settings/Settings.tsx::saveSettings#1': row('click', 'file-io', 'none', 'none', 'toast', 'toast', 'na', 'gap', 'A settings file write with no in-flight state; measure it and add pending only if it is over 100 ms.', 'P6'),
-  'src/components/settings/Settings.tsx::saveSettings#2': row('click', 'file-io', 'none', 'none', 'toast', 'toast', 'na', 'gap', 'Clearing a project override: same as Save.', 'P6'),
-  'src/components/settings/Settings.tsx::clearProjectData#1': row('click', 'file-io', 'none', 'none', 'toast', 'toast', 'no', 'gap', 'The confirm stays clickable while the files are removed, so it can be confirmed twice.', 'P6'),
-  'src/components/settings/Settings.tsx::ttsRemove#1': row('click', 'file-io', 'none', 'none', 'toast', 'toast', 'no', 'gap', 'The confirm stays clickable while the voice is removed.', 'P6'),
-  'src/components/settings/Settings.tsx::whisperRemove#1': row('click', 'file-io', 'none', 'none', 'toast', 'toast', 'no', 'gap', 'The confirm stays clickable while the model is removed.', 'P6'),
+  'src/components/settings/Settings.tsx::saveSettings#1': row('click', 'file-io', 'none', 'none', 'toast', 'toast', 'na', 'ok', 'Measured at about 3 ms (docs/research/interaction-latency-baseline.md), tier 1: nothing to acknowledge, and a second save writes the same values.'),
+  'src/components/settings/Settings.tsx::saveSettings#2': row('click', 'file-io', 'none', 'none', 'toast', 'toast', 'na', 'ok', 'Clearing a project override is the same one-field write, about 3 ms: tier 1.'),
+  'src/components/settings/Settings.tsx::clearProjectData#1': row('click', 'file-io', 'pending', 'pending', 'toast', 'toast', 'no', 'ok', 'The confirm stays open and busy until the files are removed, and cannot be confirmed twice (phase 6).'),
+  'src/components/settings/Settings.tsx::ttsRemove#1': row('click', 'file-io', 'pending', 'pending', 'toast', 'toast', 'no', 'ok', 'The confirm stays open and busy until the voice is removed (phase 6).'),
+  'src/components/settings/Settings.tsx::whisperRemove#1': row('click', 'file-io', 'pending', 'pending', 'toast', 'toast', 'no', 'ok', 'The confirm stays open and busy until the model is removed (phase 6).'),
   'src/components/settings/UpdateDownloadDialog.tsx::updateJobState#1': row('timer', 'download', 'dialog', 'na', 'poll', 'dialog', 'no', 'ok', 'Modal dialog with real byte progress (ADR 0072); a job-end event carries the outcome (ADR 0076).'),
   'src/components/settings/UpdateDownloadDialog.tsx::updateDownload#1': row('click', 'download', 'dialog', 'dialog', 'poll', 'dialog', 'no', 'ok', 'Modal dialog with real byte progress and Cancel; the host refuses a second download.'),
   'src/components/settings/UpdateDownloadDialog.tsx::updateJobCancel#1': row('click', 'download', 'dialog', 'dialog', 'poll', 'dialog', 'no', 'ok', 'Cancel while downloading; the next poll shows it.'),
