@@ -40,7 +40,7 @@ func readUninstallEntries() []installEntry {
 			continue
 		}
 		names, err := key.ReadSubKeyNames(-1)
-		key.Close()
+		_ = key.Close()
 		if err != nil {
 			continue
 		}
@@ -56,7 +56,7 @@ func readOneUninstallEntry(root, name string) installEntry {
 	if err != nil {
 		return installEntry{}
 	}
-	defer sub.Close()
+	defer func() { _ = sub.Close() }()
 	displayName, _, _ := sub.GetStringValue("DisplayName")
 	installLocation, _, _ := sub.GetStringValue("InstallLocation")
 	return installEntry{DisplayName: displayName, InstallLocation: installLocation}
@@ -73,7 +73,7 @@ func readAssociationCommand() (string, bool) {
 			continue
 		}
 		value, _, err := key.GetStringValue("")
-		key.Close()
+		_ = key.Close()
 		if err == nil && value != "" {
 			return value, true
 		}
