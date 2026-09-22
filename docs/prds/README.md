@@ -67,6 +67,7 @@ Phase counts are the rows of each PRD's phase table.
 | [Audiobook Credits Templates](audiobook-credits-templates.prd.md) | Feature | 5 | None |
 | UI Primitives and a Headless Library (PRD deleted, delivered) | Feature (infrastructure) | 6 (including a phase 0 decision) | None; reopens Q1 of Dialog Modality and WorkDialog Accessibility (PRD deleted, delivered) |
 | [TypeScript 7 and Typed Linting](typescript-7-and-typed-linting.prd.md) | Feature (tooling) | 3 (the last blocked on typescript-eslint and TypeScript 7.1) | None |
+| [Audacity Integration](audacity-integration.prd.md) | Feature | 11 (0-10) | None; corrects the "Audacity adapters" deferral of `docs/roadmap.md` and `config/roadmap.json` (D23) |
 
 ## Replaced briefs
 
