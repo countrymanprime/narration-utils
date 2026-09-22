@@ -295,6 +295,10 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'import-activity-log': async (page) => {
       await clickVisible(page, 'button', 'Replace manuscript');
+      // This state is about the import dialog's own activity log, not the chained Story Bible build (B1-B3, on by
+      // default): uncheck it so the import dialog stays open with "Manuscript imported" instead of closing itself
+      // into a second dialog.
+      await clickVisible(page, 'checkbox', 'Build the Story Bible after import');
       await clickVisible(page, 'button', 'Import');
       await page.getByText('Manuscript imported', { exact: true }).first().waitFor();
     },
