@@ -1,0 +1,42 @@
+version 7.80/x64 os Win64
+
+== A. Same-length candidate: active take, undo, redo, provenance ==
+before add: CountTakes 1 I_CURTAKE 0.0
+before add: active take guid {18C22CBA-849F-43F3-B3BA-74D58DD91859} D_LENGTH 3.0
+after add: CountTakes 2 I_CURTAKE 0.0
+after add: active take guid {18C22CBA-849F-43F3-B3BA-74D58DD91859} unchanged from before true
+after add: D_LENGTH 3.0 unchanged true
+after add: candidate provenance finding-0001 take_b.wav 0.000000|3.000000
+after add: previous active take provenance (should be empty)   
+probing the item_a pointer after undo (still valid because item_a had its own undo point before the take-add): true 1
+after undo (re-resolved by GUID): CountTakes 1 active take guid {18C22CBA-849F-43F3-B3BA-74D58DD91859}
+after redo (re-resolved by GUID): CountTakes 2 active take guid {18C22CBA-849F-43F3-B3BA-74D58DD91859}
+after redo: candidate provenance restored finding-0001 true
+after explicit SetActiveTake(candidate): I_CURTAKE 1.0
+
+== B. Longer candidate than the target item ==
+before add: D_LENGTH 3.0
+after add: D_LENGTH 3.0 unchanged true
+after add: candidate source file media/take_long.wav source length 0.0 is QN false I_CURTAKE (should still be 0, target active) 0.0
+
+== C. Shorter candidate than the target item ==
+before add: D_LENGTH 3.0
+after add: D_LENGTH 3.0 unchanged true
+after add: candidate source file media/take_short.wav source length 0.0 is QN false I_CURTAKE (should still be 0, target active) 0.0
+
+== D. Source-offset alignment to a manuscript span start ==
+before offset set: D_STARTOFFS 0.0
+after offset set: D_STARTOFFS 1.5
+item D_LENGTH still the target span, unaffected by offset 2.0
+
+== E. Provenance does not collide with item-level line identity (ADR 0026) ==
+item-level line id line-000001 take-level provenance still separate finding-0001
+
+== F. Provenance persists through save and reload ==
+save
+reload
+re-resolved item by GUID after reload true
+re-resolved candidate take by GUID after reload true
+provenance after reload finding-0001 take_b.wav 0.000000|3.000000
+provenance survived reload intact true
+item-level line id after reload line-000001

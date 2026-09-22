@@ -118,6 +118,7 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0094](0094-dialog-gains-a-full-size-variant-that-fills-the-viewport-with-a-margin.md) | Dialog gains a full-size variant that fills the viewport with a margin | Accepted |
 | [0095](0095-txt-import-decodes-by-bom-utf-8-windows-1252-and-a-chapterless-file-becomes-one-narration-chapter.md) | TXT import decodes by BOM/UTF-8/Windows-1252, and a chapterless file becomes one narration chapter | Accepted |
 | [0096](0096-the-public-demo-builds-under-its-own-vite-mode-and-the-router-carries-a-basename.md) | The public demo builds under its own Vite mode, and the router carries a basename | Accepted |
+| [0098](0098-take-provenance-in-take-extension-data-extends-adr-0026.md) | Take provenance is stored in take-level extension data, extending ADR 0026 to takes | Accepted |
 | [0100](0100-analysis-evidence-is-two-hash-keys-one-ledger-record-per-run-and-a-narrator-confirmed-track-map.md) | Analysis evidence is two hash keys, one ledger record per run, and a narrator-confirmed track map | Accepted |
 | [0101](0101-epub-import-reads-nav-then-ncx-for-chapters-caps-entries-and-refuses-drm.md) | EPUB import reads nav then NCX for chapters, caps entries, and refuses DRM | Accepted |
 | [0102](0102-epub-content-kind-overrides-by-title-rather-than-canonical-title-renaming.md) | EPUB `epub:type` forces a section's content kind by an explicit override, not by renaming its title to one the classifier already knows | Proposed |

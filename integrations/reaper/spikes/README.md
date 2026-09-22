@@ -1,6 +1,6 @@
 # REAPER spike scripts
 
-Scripts that run **inside a real REAPER** to answer questions a fake cannot: how REAPER stores and returns things. They are research tools, not product code: they are not part of the app or its installer (`scripts/release/prepare-resources.py` leaves this folder out), and the results are written up in [`docs/research/`](../../../docs/research/) (S0: [reaper-spike-s0-item-extension-data.md](../../../docs/research/reaper-spike-s0-item-extension-data.md)).
+Scripts that run **inside a real REAPER** to answer questions a fake cannot: how REAPER stores and returns things. They are research tools, not product code: they are not part of the app or its installer (`scripts/release/prepare-resources.py` leaves this folder out), and the results are written up in [`docs/research/`](../../../docs/research/) (S0: [reaper-spike-s0-item-extension-data.md](../../../docs/research/reaper-spike-s0-item-extension-data.md); take-review phase 1: [take-review-spike-p1-take-mechanics.md](../../../docs/research/take-review-spike-p1-take-mechanics.md)).
 
 ## Rules (owner decision D3)
 
@@ -25,6 +25,8 @@ Scripts that run **inside a real REAPER** to answer questions a fake cannot: how
 | `real_project.lua` | Opens a copy of a real project, re-saves it unchanged, stamps its first five items through the real bridge and saves again, so the two saved files can be compared. |
 | `results/` | The recorded outputs of the runs described in the S0 research doc (paths removed). |
 | `checklist.lua` | Loads the real bridge in REAPER and runs the line identity checklist (stamp, undo, idempotence, conflict, stale, split, duplicate, save and reload, notes untouched, regions, and the Transcript Compare commands with a hand-made results file), writing PASS/FAIL per step. |
+| `make_length_media.py` | Writes a 1 s, a 5 s and a 4 s synthetic tone into `<out>/media`, for the take-mechanics spike's longer/shorter/offset-alignment cases. |
+| `take_mechanics.lua` | Take-review PRD phase 1 (Q4, Q5): builds a target item with one active take, adds a candidate as a new take by source range (same length, longer, shorter, and one needing a source-offset alignment), and checks which take is active, whether item length changes, undo and redo, and namespaced take `P_EXT` provenance (write, read, isolation from item-level line identity, and survival through save and reload). |
 
 ## Running one
 
