@@ -574,7 +574,7 @@ for why two live engines are supported and how they are compared.
 
 **Decision: adopt.** `Decided by stack S19d, docs/prds/story-bible-and-import-ux-briefs.prd.md` Phase 6 (D1: local dataset only,
 provisioned as a downloadable asset, never a cloud API; D2: single-word definitions, synonyms and antonyms from one dataset, US
-English). See [ADR 0090](../adr/0090-the-manuscript-reader-word-lookup-uses-the-open-english-wordnet-as-a-downloadable-asset.md) (Proposed).
+English). See [ADR 0097](../adr/0097-the-manuscript-reader-word-lookup-uses-the-open-english-wordnet-as-a-downloadable-asset.md) (Proposed).
 
 **What it contributes.** A single offline dataset covering definitions, synonyms (same-synset members) and antonyms (an explicit
 lexical relation in WordNet-style data) for single US English words, looked up from the reader's selection menu (D-phase 8,
