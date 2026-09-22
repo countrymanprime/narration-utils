@@ -143,7 +143,10 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
         // contentKind, not a migration flag) - fall back to the first recorded one instead.
         const resolvedActive = chapterId(state.activeChapter);
         const activeChapter = nextChapters.find((item) => item.id === resolvedActive && isListableChapter(item)) ? resolvedActive : firstChapter;
-        const expandedChapters = (state.expandedChapters ?? [state.activeChapter || firstChapter])
+        // Built from the already-resolved activeChapter (not the raw, possibly-hidden state.activeChapter),
+        // so a reader state saved before this phase still opens expanded on the chapter it now falls back
+        // to, instead of rendering that chapter's header collapsed with nothing expanded underneath.
+        const expandedChapters = (state.expandedChapters ?? [activeChapter])
           .map(chapterId)
           .filter((id): id is string => Boolean(id))
           .filter((id) => nextChapters.find((item) => item.id === id && isListableChapter(item)));
@@ -179,7 +182,15 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   const showChapter = useCallback(
     (chapter: string, paragraph?: number) => {
       if (!chapter) return;
-      const chapterId = chapters.find((item) => item.id === chapter || item.title === chapter)?.id || chapter;
+      const target = chapters.find((item) => item.id === chapter || item.title === chapter);
+      const chapterId = target?.id || chapter;
+      // Every caller (search results, Story Bible "Go to line", hash links, ...) funnels through
+      // here, so this one guard covers all of them (R13/ADR 0090) rather than duplicating it at
+      // each call site - a reference chapter is never a page the reader shows.
+      if (target && !isListableChapter(target)) {
+        notify("That link points to reference material, which isn't shown in the manuscript reader.");
+        return;
+      }
       const next = { ...readerState, activeChapter: chapterId, expandedChapters: Array.from(new Set([...(readerState.expandedChapters || []), chapterId])) };
       void saveState(next);
       const selector = paragraph === undefined ? `[data-chapter-id="${escapeSelector(chapterId)}"]` : `[data-paragraph="${paragraph}"]`;
@@ -203,7 +214,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
       };
       requestAnimationFrame(attempt);
     },
-    [chapters, readerState, saveState],
+    [chapters, readerState, saveState, notify],
   );
   // Deep links into a specific paragraph/chapter arrive as a URL anchor -
   // "#p123" for paragraph 123 (its globally unique index, assigned at
@@ -236,17 +247,12 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
       return;
     }
     handledHash.current = hash;
-    // Reference chapters (Contents, Characters, ...) are never a page the reader shows (R13,
-    // Phase 5) - a link into one is a no-op with a message rather than landing on a hidden chapter
-    // or silently doing nothing (the reader has no "reference chapter's own view" to redirect to).
-    const targetChapter = chapters.find((item) => item.id === chapter);
-    if (targetChapter && !isListableChapter(targetChapter)) {
-      notify("That link points to reference material, which isn't shown in the manuscript reader.");
-    } else {
-      showChapter(chapter, paragraph);
-    }
+    // showChapter itself guards against a reference chapter (R13/ADR 0090: a no-op with a message,
+    // the reader has no "reference chapter's own view" to redirect to instead), so every caller -
+    // this hash link, a search result, Story Bible "Go to line" - gets the same behavior for free.
+    showChapter(chapter, paragraph);
     routerNavigate('/manuscript', { replace: true });
-  }, [location.hash, chapters, routerNavigate, showChapter, notify]);
+  }, [location.hash, chapters, routerNavigate, showChapter]);
   const toggleManualChapter = (chapter: string) => {
     const expanded = new Set(readerState.expandedChapters || []);
     if (expanded.has(chapter)) expanded.delete(chapter);

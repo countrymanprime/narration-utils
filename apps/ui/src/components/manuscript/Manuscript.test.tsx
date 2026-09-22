@@ -373,6 +373,18 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       expect(document.querySelector('[data-chapter-id="contents"]')).toBeNull();
     });
 
+    it('falls back to expanded, not collapsed, when a reader state saved before this phase points at a hidden chapter', async () => {
+      // No expandedChapters saved (the shape a pre-Phase-5 project's reader state can be in) - the
+      // default used to be [state.activeChapter], which would have resolved to the now-filtered-out
+      // 'contents' id and left the fallback chapter's header rendered but its body collapsed.
+      renderManuscript({
+        manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())],
+        readerState: async () => ({ activeChapter: 'contents', bookmarks: [] }),
+      });
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      await waitFor(() => expect(paragraph(0)).toBeTruthy());
+    });
+
     it('never renders a reference chapter as an article in the page-flip view', async () => {
       renderManuscript({ manuscriptChapters: async () => [referenceChapter, ...(await createMockApi().manuscriptChapters())] });
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
