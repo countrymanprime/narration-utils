@@ -1,7 +1,7 @@
 {
   "apiVersion": 14,
   "daw": "REAPER",
-  "dawFileLinked": false,
+  "dawFileLinked": true,
   "dawProjectMatches": false,
   "dawReachable": false,
   "diagnosticId": "go-1789000000000000000",
