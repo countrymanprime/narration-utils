@@ -280,17 +280,19 @@ describe('Story Bible delete confirmation', () => {
     if (!entity) throw new Error('fixture must include an unlocked entity');
     const user = userEvent.setup();
     renderDetail(entity);
+    // Delete only exists in edit mode (ADR 0087).
+    await user.click(screen.getByRole('button', { name: 'Edit this entry' }));
     const opener = screen.getByRole('button', { name: 'Delete entity' });
     await user.click(opener);
 
     const dialog = await screen.findByRole('alertdialog', { name: 'Delete entry' });
     expect(within(dialog).getByRole('button', { name: 'Delete entry' }).className).toContain('text-[var(--danger-text)]');
     // The page behind is out of the accessibility tree while the dialog is open.
-    expect(screen.queryByRole('button', { name: 'Edit this entry' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Save changes to this entry' })).toBeNull();
 
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(document.activeElement).toBe(opener);
-    expect(screen.getByRole('button', { name: 'Edit this entry' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Save changes to this entry' })).toBeTruthy();
   });
 });

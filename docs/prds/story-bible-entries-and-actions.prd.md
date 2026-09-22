@@ -140,7 +140,7 @@ We believe composable properties, mode-appropriate actions and an honest pronunc
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Properties | Schema, sidecar, Go, TS, UI, rebuild carry-over, tests | complete | - | - | - |
-| 2 | Actions and icon-only Go to line | Mode-based actions, red Delete, lock/edit fix, ADR, `IconButton` use | pending | 1 | primitives Phase 1 | - |
+| 2 | Actions and icon-only Go to line | Mode-based actions, red Delete, lock/edit fix, ADR, `IconButton` use | complete | 1 | primitives Phase 1 | - |
 | 3 | Pronunciation controls | Play gating, Generate, replace icon, binding, API bump | pending | - | 2 (soft); briefs Phase 9 (provider question) | - |
 
 **Phase 1 - Properties.** Goal: entries hold ordered key/value facts. Success: round-trip, rebuild, lock and old-file tests; PNGs for read and edit.
