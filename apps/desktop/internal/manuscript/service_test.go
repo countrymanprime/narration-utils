@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 )
@@ -249,5 +250,53 @@ func TestResetDerivedClearsTheFindingsDirectory(t *testing.T) {
 	}
 	if _, err := os.Stat(settingsFile); err != nil {
 		t.Fatalf("resetDerived must not touch narration-utils/settings.json: %v", err)
+	}
+}
+
+// resetDerived clears everything a re-import or an explicit Clear invalidates. The analysis evidence ledger PRD's Q3
+// ("Add the directory to resetDerived") adds evidence.LedgerDir alongside the existing entries: a ledger record names
+// fingerprints computed against the manuscript that produced its chapter IDs, so it must not survive a re-import that
+// assigns new ones (Q9), the same reasoning ManuscriptGuide and TranscriptCompare already follow here.
+func TestResetDerivedClearsTheAnalysisLedgerDirectory(t *testing.T) {
+	project := t.TempDir()
+	ledgerDir := evidence.LedgerDir(project)
+	if err := os.MkdirAll(ledgerDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ledgerDir, "record.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resetDerived(project); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(ledgerDir); !os.IsNotExist(err) {
+		t.Fatalf("resetDerived left the analysis ledger directory behind: %v", err)
+	}
+}
+
+func TestClearRemovesTheAnalysisLedgerDirectoryAlongsideManuscriptData(t *testing.T) {
+	project := t.TempDir()
+	service := New(project)
+	job := service.Begin(layout.RepoFile(layout.FixturesDir + "/alice.md"))
+	if _, err := service.Preview(job.ID, 1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Commit(job.ID, false, nil); err != nil {
+		t.Fatal(err)
+	}
+	ledgerDir := evidence.LedgerDir(project)
+	if err := os.MkdirAll(ledgerDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ledgerDir, "record.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := service.Clear(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(ledgerDir); !os.IsNotExist(err) {
+		t.Fatalf("Clear left the analysis ledger directory behind: %v", err)
 	}
 }
