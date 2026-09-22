@@ -1,0 +1,51 @@
+{
+  "catalogVersion": 1,
+  "models": [
+    {
+      "id": "tiny",
+      "provider": "moonshine",
+      "displayName": "Tiny",
+      "version": "quantized_26_08_21",
+      "publisher": "Moonshine AI",
+      "license": "MIT",
+      "licenseUrl": "https://github.com/moonshine-ai/moonshine/blob/main/LICENSE",
+      "modelCardUrl": "https://github.com/moonshine-ai/moonshine",
+      "provenanceUrl": "https://download.moonshine.ai/model/tiny-streaming-en/quantized_26_08_21",
+      "attribution": "Moonshine tiny-streaming-en, published by Moonshine AI (Useful Sensors), MIT licensed (English streaming models are MIT under the repository's LICENSE; the non-English legacy non-streaming models it excludes are the only ones under the separate Community License).",
+      "files": [
+        { "name": "adapter.ort", "url": "https://download.moonshine.ai/model/tiny-streaming-en/quantized_26_08_21/adapter.ort", "sha256": "22ecc949e146c49667fda28d102d4e30749a107dc88a396292aa8f277ef1347c", "size": 1319664 },
+        { "name": "cross_kv.ort", "url": "https://download.moonshine.ai/model/tiny-streaming-en/quantized_26_08_21/cross_kv.ort", "sha256": "143a36667b8d05fd9d04e8c337b7ee121f37ef299aea6b3d82bdb3d3401950b4", "size": 1287544 },
+        { "name": "decoder_kv.ort", "url": "https://download.moonshine.ai/model/tiny-streaming-en/quantized_26_08_21/decoder_kv.ort", "sha256": "8852553f312adb6c9aa4d17418015049b30f412209ee569d336548c0044627de", "size": 32583720 },
+        { "name": "encoder.ort", "url": "https://download.moonshine.ai/model/tiny-streaming-en/quantized_26_08_21/encoder.ort", "sha256": "a8414e1a5dedf9f2093d7680601dd8a9b0433e7020260eafe0e370ead91134ca", "size": 7675440 },
+        { "name": "frontend.model.ort", "url": "https://download.moonshine.ai/model/tiny-streaming-en/quantized_26_08_21/frontend.model.ort", "sha256": "5121b561417b638afce0c6c31b760e37c93cf97f80d9b0031aad1fe7b6f25d61", "size": 23344 },
+        { "name": "frontend.weights.ort", "url": "https://download.moonshine.ai/model/tiny-streaming-en/quantized_26_08_21/frontend.weights.ort", "sha256": "217da24ac6f522ebf02da8ef288e77d1ac68d50d4a6821433182e4fbf4204bbd", "size": 2093464 },
+        { "name": "streaming_config.json", "url": "https://download.moonshine.ai/model/tiny-streaming-en/quantized_26_08_21/streaming_config.json", "sha256": "74fe5ddebd63b17caf59e8a3b18c17547ff7bce1642050edbb1c3962674f8950", "size": 509 },
+        { "name": "tokenizer.bin", "url": "https://download.moonshine.ai/model/tiny-streaming-en/quantized_26_08_21/tokenizer.bin", "sha256": "6884b35fd6377d4c4d32336a0bc152f36b64d1e45b6503683cdc238250a8472d", "size": 249974 },
+        { "name": "decoder_kv_with_attention.ort", "url": "https://download.moonshine.ai/model/tiny-streaming-en/quantized_26_08_21/decoder_kv_with_attention.ort", "sha256": "c1b41adca4ef75ad8dfdfc71875b5d0ae9be959865a14498da01cbddab8c02b8", "size": 32515016 }
+      ]
+    },
+    {
+      "id": "small",
+      "provider": "moonshine",
+      "displayName": "Small",
+      "version": "quantized_26_08_21",
+      "publisher": "Moonshine AI",
+      "license": "MIT",
+      "licenseUrl": "https://github.com/moonshine-ai/moonshine/blob/main/LICENSE",
+      "modelCardUrl": "https://github.com/moonshine-ai/moonshine",
+      "provenanceUrl": "https://download.moonshine.ai/model/small-streaming-en/quantized_26_08_21",
+      "attribution": "Moonshine small-streaming-en, published by Moonshine AI (Useful Sensors), MIT licensed (English streaming models are MIT under the repository's LICENSE; the non-English legacy non-streaming models it excludes are the only ones under the separate Community License).",
+      "files": [
+        { "name": "adapter.ort", "url": "https://download.moonshine.ai/model/small-streaming-en/quantized_26_08_21/adapter.ort", "sha256": "c665f742364febad597cc9ac1e0b341ffbee0e24a1466e2f3bde95e6e4771762", "size": 2870368 },
+        { "name": "cross_kv.ort", "url": "https://download.moonshine.ai/model/small-streaming-en/quantized_26_08_21/cross_kv.ort", "sha256": "e2d3417144e9514055ebfefe8dcc4c0a55a55adcb8530435844c75c53e352bf6", "size": 5356536 },
+        { "name": "decoder_kv.ort", "url": "https://download.moonshine.ai/model/small-streaming-en/quantized_26_08_21/decoder_kv.ort", "sha256": "1a05465b1dd955858dfcbee039c0020fb5dd982b0f5094c34e61735d518d771b", "size": 81878600 },
+        { "name": "encoder.ort", "url": "https://download.moonshine.ai/model/small-streaming-en/quantized_26_08_21/encoder.ort", "sha256": "2d4d973e91e8aca08c51e7e7efa28a46ab265b63d809d5294d18b86bcd85b993", "size": 44148576 },
+        { "name": "frontend.model.ort", "url": "https://download.moonshine.ai/model/small-streaming-en/quantized_26_08_21/frontend.model.ort", "sha256": "09b1210ae30dc5f0f3e45f0ebab914c254741323114f53fbbe5ae62cca35058f", "size": 26944 },
+        { "name": "frontend.weights.ort", "url": "https://download.moonshine.ai/model/small-streaming-en/quantized_26_08_21/frontend.weights.ort", "sha256": "7ef97521bd4bad3928f5bb6808586f4fcc6e92bd5990394112eed7d4052ec338", "size": 7769464 },
+        { "name": "streaming_config.json", "url": "https://download.moonshine.ai/model/small-streaming-en/quantized_26_08_21/streaming_config.json", "sha256": "26f02b6afb22d60871a5efd85c3d38e569cc0ddb6c5eb6e93d3260152ae8a47a", "size": 512 },
+        { "name": "tokenizer.bin", "url": "https://download.moonshine.ai/model/small-streaming-en/quantized_26_08_21/tokenizer.bin", "sha256": "6884b35fd6377d4c4d32336a0bc152f36b64d1e45b6503683cdc238250a8472d", "size": 249974 },
+        { "name": "decoder_kv_with_attention.ort", "url": "https://download.moonshine.ai/model/small-streaming-en/quantized_26_08_21/decoder_kv_with_attention.ort", "sha256": "19653ca93362cd0445837cbaabc9f36f462410b357dd4a102d9c8ca1c3d13c8c", "size": 81766608 }
+      ]
+    }
+  ]
+}

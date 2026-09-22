@@ -82,7 +82,7 @@ flow, per the required record below.
 
 Each row below is the record the [required dependency record](#required-dependency-record) asks
 for, taken from the catalogs the release carries (`config/tts-assets.json`,
-`config/whisper-assets.json`, `config/spacy-assets.json`) and, for spaCy, from the
+`config/whisper-assets.json`, `config/spacy-assets.json`, `config/moonshine-assets.json`) and, for spaCy, from the
 [provisioning spike](spacy-model-provisioning-spike.md). Every asset is installed by the one
 lifecycle in `apps/desktop/internal/assets` (stage, check size and SHA-256, rename into place,
 manifest), under the per-user cache `<user cache>/narration-utils/assets/<kind>/<provider>/<id>/<version>/`
@@ -150,6 +150,24 @@ directory path (`spacy.load(<folder>)`), so nothing is ever `pip install`ed at r
 | Model card, provenance | `https://github.com/explosion/spacy-models/releases/tag/en_core_web_sm-3.8.0` | `https://github.com/explosion/spacy-models/releases/tag/en_core_web_lg-3.8.0` |
 | Install location | `<cache>/assets/spacy/spacy/en_core_web_sm/3.8.0/` (model at `model/en_core_web_sm/en_core_web_sm-3.8.0`) | `<cache>/assets/spacy/spacy/en_core_web_lg/3.8.0/` |
 | Feature | Story Bible extraction with a language model (the default); without it the build asks first and can run rules-only | The same, more accurate and slower |
+
+### Moonshine live-engine models (Teleprompter, catalog and provisioning only - not yet launchable)
+
+Both are the English streaming architecture, word-timestamp variant (9 files each, including the attention
+decoder), loaded flat (no unpacking) from `config/moonshine-assets.json`. Provisioned by phase 5; the live
+Teleprompter does not launch Moonshine yet (phases 6 and 7). See [entry 10](#10-moonshine-voice--streaming-asr-candidate-for-the-live-teleprompter-path)
+for the full license and provenance record.
+
+| Field | `tiny` | `small` |
+| --- | --- | --- |
+| Publisher, version | Moonshine AI, `quantized_26_08_21` | Moonshine AI, `quantized_26_08_21` |
+| URL base | `https://download.moonshine.ai/model/tiny-streaming-en/quantized_26_08_21/` | `https://download.moonshine.ai/model/small-streaming-en/quantized_26_08_21/` |
+| Total download size | 77,748,675 bytes (about 74.1 MB) | 224,067,582 bytes (about 213.7 MB) |
+| Attention decoder (`decoder_kv_with_attention.ort`) | 32,515,016 bytes | 81,766,608 bytes |
+| Licence | MIT (repository `LICENSE`, English streaming models) | MIT (same) |
+| Model card, provenance | `https://github.com/moonshine-ai/moonshine` | `https://github.com/moonshine-ai/moonshine` |
+| Install location | `<cache>/assets/moonshine/moonshine/tiny/quantized_26_08_21/` | `<cache>/assets/moonshine/moonshine/small/quantized_26_08_21/` |
+| Feature | Live Teleprompter engine choice (phase 7, pending) | Same |
 
 ### Not assets
 
@@ -532,11 +550,13 @@ segment length (capped by `MAX_BUFFER_SECONDS`).
 
 ### 10. Moonshine Voice — streaming ASR candidate for the live teleprompter path
 
-**Status: candidate under evaluation. Not a project dependency.** It is
-imported only by the optional `--engine moonshine` path of
-[`live_asr.py`](../../sidecars/manuscript-teleprompter/core/live_asr.py) and run in
-an ephemeral `uv` environment; `pyproject.toml` and `uv.lock` are untouched.
-It cannot ship until the record below is completed.
+**Status: models provisioned through the hashed asset catalog (`teleprompter-engines-and-input-devices.prd.md` phase 5, D17
+compatibility re-verified). The `moonshine-voice` Python package itself is still not a project dependency** - it is imported only
+by the optional `--engine moonshine` path of
+[`live_asr.py`](../../sidecars/manuscript-teleprompter/core/live_asr.py) and run in an ephemeral `uv` environment; `pyproject.toml`
+and `uv.lock` gain the pinned wheel only in phase 6 ("Moonshine in the sidecar and packaging"), which also does the PyInstaller
+collection and picks the removal/update policy for the *package*. This entry's own "missing before adoption" list for the
+*models* is now closed.
 
 **What it contributes.** Streaming speech recognition that caches encoder state
 instead of re-decoding, partial and final line events, word timestamps in
@@ -544,29 +564,53 @@ streaming mode, and `set_context()` / `set_keyterms()` biasing toward script
 text. See the [Manuscript Teleprompter brief](../architecture/manuscript-teleprompter.md)
 for why two live engines are supported and how they are compared.
 
-**Record so far.**
+**Record.**
 
 - **Package**: `moonshine-voice` 0.1.5 on PyPI, MIT
   ([repository](https://github.com/moonshine-ai/moonshine)); pure-Python wheel
-  with bundled native libraries (Windows x64 wheel 16.5 MB; Linux x86-64/arm64
-  and macOS arm64 wheels exist; **no macOS Intel wheel**). Runtime dependencies:
-  `numpy`, `sounddevice`, `requests`, `tqdm`, `filelock`, `platformdirs`,
+  with bundled native libraries (Windows x64 wheel 16.5 MB - re-verified 2026-09-22 by downloading
+  `moonshine_voice-0.1.5-py3-none-win_amd64.whl` from PyPI, exact size 16,542,073 bytes; Linux x86-64/arm64
+  and macOS arm64 wheels exist; **no macOS Intel wheel**). Runtime dependencies (re-verified against the
+  same PyPI release metadata): `numpy`, `sounddevice`, `requests`, `tqdm`, `filelock`, `platformdirs`,
   `google-crc32c`.
-- **Model license**: the project states its English streaming models are MIT
-  (the non-commercial Moonshine Community License covers only legacy
-  non-streaming models for other languages). GitHub's license detector reports
-  the repository as unrecognized, so the exact per-model license text must be
-  confirmed at the pinned artifact before adoption.
-- **Model artifacts** (English streaming; sizes observed downloading, about 10
-  files each): Small about 215 MB including the 78 MB attention decoder that
-  word timestamps require; Tiny about 74 MB. The library fetches them from
-  Moonshine's own servers.
-- **Missing before adoption**: immutable URL and SHA-256 for every file, model
-  card/provenance, and loading from a pre-placed directory through the
-  hashed, versioned asset catalog (the product must not let the library
-  download models itself); PyInstaller packaging of the native libraries on
-  each supported platform; removal and update policy.
-- **Observed behavior** (small samples, Windows CPU): about 0.26x real time
+- **Model and code license, confirmed at the pinned artifact (2026-09-22, D17 AGPL-3.0-or-later
+  compatibility check)**: PyPI's own `license` field for 0.1.5 reads `MIT`. The repository's `LICENSE`
+  file (`https://raw.githubusercontent.com/moonshine-ai/moonshine/main/LICENSE`, fetched directly - GitHub's
+  license detector reports the repository as `NOASSERTION`/"Other", which is why the file itself was read
+  rather than trusting the detector) states: "the code in this repo... is licensed under the MIT License.
+  Moonshine models are released under the MIT License by default, in every language and at every size.
+  This includes all streaming speech-to-text models and all English-language models." Only listed legacy
+  *non-streaming, non-English* models (Arabic, Japanese, Korean, Mandarin, Spanish, Ukrainian, Vietnamese)
+  fall under the separate, non-commercial Moonshine Community License - this catalog uses only the English
+  streaming models (`tiny-streaming-en`, `small-streaming-en`), which are unambiguously MIT. MIT is
+  AGPL-3.0-or-later compatible (permissive, no additional restriction): approved.
+- **Model artifacts** (English streaming, word-timestamp variant, 9 files each; sizes and SHA-256 below are
+  exact, from a real download and hash of every file on 2026-09-22, not estimates): **Tiny** 77,748,675 bytes
+  total (about 74.1 MB, matching the prior "about 74 MB" observation); **Small** 224,067,582 bytes total
+  (about 213.7 MB) including the attention decoder (Tiny: `decoder_kv_with_attention.ort`, 32,515,016 bytes
+  (about 31 MB); Small: 81,766,608 bytes (about 78.0 MB), matching the prior "78 MB attention decoder"
+  observation). Every file's pinned URL, exact size and this repository's own SHA-256 (not Moonshine's
+  internal CRC32C, which `assets.File` does not use) are in
+  [`config/moonshine-assets.json`](../../config/moonshine-assets.json). URLs are pinned to the dated release
+  path `.../quantized_26_08_21`, obtained from the official `moonshine_get_stt_dependencies` manifest API
+  (`moonshine-voice` 0.1.5, language `en`, `model_arch` 2/4, `word_timestamps: true`) - the same immutable,
+  dated path the library itself resolves to, never `latest`.
+- **Provisioning (delivered, phase 5)**: `internal/moonshine` (mirrors `internal/whisper`'s `Manager`
+  exactly), registered as a fourth `assetProvider` (kind `moonshine`) in the existing asset registry
+  ([ADR 0079](../adr/0079-every-downloadable-asset-is-listed-installed-verified-and-removed-through-one-registry-of-providers.md)),
+  so it is installed, verified, repaired and removed through the same generic `Assets*` bindings and appears
+  on Settings > Local assets with no new binding and no `hostAPIVersion` bump. Files are flat (no nested
+  layout needed, unlike the risk register anticipated) and load from a pre-placed, hash-verified directory;
+  the library's own downloader (`get_model_for_language`) is never called by the host.
+- **Still missing before the live engine ships (phase 6 and 7, unchanged from before)**: pinning
+  `moonshine-voice` itself in `pyproject.toml`/`uv.lock`, PyInstaller collection of its native libraries into
+  the frozen `manuscript-teleprompter` sidecar, wiring `--model-dir` from the catalog's install directory,
+  and the engine choice end to end in the UI.
+- **Removal and update policy**: the same as every other catalog asset (`first-use-dependency-provisioning.md`) -
+  pinned per release, no automatic "update available" state, replaced only by the narrator's Remove and
+  Download or Repair. A future Moonshine release (a new `quantized_*` date) is a new catalog version, not a
+  silent replacement of these pinned files.
+- **Observed behavior** (small samples, Windows CPU, prior spike): about 0.26x real time
   for Small and 0.17x for Tiny; partial updates every 0.5s; word timestamps
   noisy in partials; final line identical to the last partial in 27 of 27 lines.
 

@@ -1,5 +1,6 @@
-// Command seed-assets installs approved catalog assets (the Piper voice, Whisper models and spaCy language models) into the per-user asset
-// cache, hash-verified, without the app. It is a developer-only tool for offline tests and packaging checks: the release never runs it,
+// Command seed-assets installs approved catalog assets (the Piper voice, Whisper models, spaCy language models and Moonshine live-engine
+// models) into the per-user asset cache, hash-verified, without the app. It is a developer-only tool for offline tests and packaging
+// checks: the release never runs it,
 // `pnpm run bootstrap` never runs it (bootstrap preloads nothing), and a narrator uses the app's own first-use download instead.
 //
 // It uses the same managers, catalogs and cache layout as the desktop host, so what it installs is exactly what the app would have
@@ -24,6 +25,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
@@ -109,5 +111,9 @@ func newSeeder(repoRoot, cacheDir string, out io.Writer) (*seeder, error) {
 	if err != nil {
 		return nil, fmt.Errorf("the spaCy catalog: %w", err)
 	}
-	return &seeder{kinds: []kind{ttsKind{voices}, whisperKind{models}, spacyKind{languageModels}}, out: out, now: time.Now}, nil
+	liveModels, err := moonshine.New(catalog(layout.MoonshineCatalogFile), filepath.Join(base, assets.MoonshineDir))
+	if err != nil {
+		return nil, fmt.Errorf("the Moonshine catalog: %w", err)
+	}
+	return &seeder{kinds: []kind{ttsKind{voices}, whisperKind{models}, spacyKind{languageModels}, moonshineKind{liveModels}}, out: out, now: time.Now}, nil
 }

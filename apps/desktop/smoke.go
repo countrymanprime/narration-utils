@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
@@ -277,8 +278,10 @@ func checkFrozenGuide(ctx context.Context, options smokeOptions, root string) []
 	return checks
 }
 
-// checkCatalogs loads the three approved asset catalogs the release carries (config/*-assets.json in the unpacked resources) and requires
-// each to name at least one asset: an empty or unreadable catalog would leave the narrator nothing to download.
+// checkCatalogs loads the four approved asset catalogs the release carries (config/*-assets.json in the unpacked resources) and requires
+// each to name at least one asset: an empty or unreadable catalog would leave the narrator nothing to download. The Moonshine catalog is
+// checked here (catalog integrity) even though the frozen sidecar cannot run `--engine moonshine` yet (phase 6, teleprompter-engines-and-
+// input-devices.prd.md): a release-readiness check on the sidecar's own Moonshine support is phase 6's, not this one's.
 func checkCatalogs(root string) (string, error) {
 	configDir := filepath.Join(root, "config")
 	voices, err := tts.New(filepath.Join(configDir, "tts-assets.json"), "")
@@ -293,13 +296,17 @@ func checkCatalogs(root string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("the spaCy catalog could not be loaded: %w", err)
 	}
-	counts := map[string]int{"voices": len(voices.Voices()), "Whisper models": len(models.Models()), "spaCy models": len(languageModels.Models())}
-	for _, kind := range []string{"voices", "Whisper models", "spaCy models"} {
+	liveModels, err := moonshine.New(filepath.Join(configDir, "moonshine-assets.json"), "")
+	if err != nil {
+		return "", fmt.Errorf("the Moonshine catalog could not be loaded: %w", err)
+	}
+	counts := map[string]int{"voices": len(voices.Voices()), "Whisper models": len(models.Models()), "spaCy models": len(languageModels.Models()), "Moonshine models": len(liveModels.Models())}
+	for _, kind := range []string{"voices", "Whisper models", "spaCy models", "Moonshine models"} {
 		if counts[kind] == 0 {
 			return "", fmt.Errorf("the catalog of %s names no assets", kind)
 		}
 	}
-	return fmt.Sprintf("%d voice(s), %d Whisper model(s), %d spaCy model(s)", counts["voices"], counts["Whisper models"], counts["spaCy models"]), nil
+	return fmt.Sprintf("%d voice(s), %d Whisper model(s), %d spaCy model(s), %d Moonshine model(s)", counts["voices"], counts["Whisper models"], counts["spaCy models"], counts["Moonshine models"]), nil
 }
 
 // checkReaper requires the REAPER launcher and every script it loads in the unpacked resources, and the pointer file that tells the

@@ -14,9 +14,10 @@ import (
 
 // The kinds of asset install. The wrappers over the voice and model bindings (TtsInstall, WhisperInstall) each start one.
 const (
-	installKindTts     = "tts"
-	installKindWhisper = "whisper"
-	installKindSpacy   = "spacy"
+	installKindTts       = "tts"
+	installKindWhisper   = "whisper"
+	installKindSpacy     = "spacy"
+	installKindMoonshine = "moonshine"
 )
 
 // The phases of an asset install, the words the UI polls for (apps/ui/src/api/contracts/assets.ts). Whisper used to say "running"; every

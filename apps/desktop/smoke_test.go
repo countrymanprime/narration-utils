@@ -31,14 +31,14 @@ func sidecarFile(name string) string {
 	return name
 }
 
-// healthyTree is what a good build embeds: the three sidecars, the three approved catalogs and the REAPER scripts.
+// healthyTree is what a good build embeds: the three sidecars, the four approved catalogs and the REAPER scripts.
 func healthyTree(t *testing.T) fstest.MapFS {
 	t.Helper()
 	tree := fstest.MapFS{}
 	for _, name := range smokeSidecars {
 		tree[resourcesRoot+"/runtime/"+name+"/"+sidecarFile(name)] = &fstest.MapFile{Data: []byte("frozen " + name)}
 	}
-	for _, catalog := range []string{"tts-assets.json", "whisper-assets.json", "spacy-assets.json"} {
+	for _, catalog := range []string{"tts-assets.json", "whisper-assets.json", "spacy-assets.json", "moonshine-assets.json"} {
 		body, err := os.ReadFile(layout.RepoFile("config/" + catalog))
 		if err != nil {
 			t.Fatal(err)

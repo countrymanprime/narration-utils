@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
@@ -153,3 +154,53 @@ func (p spacyProvider) install(ctx context.Context, id string, options assets.Op
 
 func (p spacyProvider) verify(id string) (string, error) { return p.manager.Verify(id) }
 func (p spacyProvider) remove(id string) error           { return p.manager.Remove(id) }
+
+// moonshineProvider serves the Moonshine streaming speech-to-text models the live Teleprompter engine uses (phase 5). Its ids (`tiny`,
+// `small`) are the same words the Whisper catalog uses; the two never collide because assetItem.dir is built from the catalog entry's own
+// Provider ("moonshine" here), not the kind alone.
+type moonshineProvider struct{ manager *moonshine.Manager }
+
+func (moonshineProvider) kind() string      { return installKindMoonshine }
+func (moonshineProvider) label() string     { return "Moonshine model" }
+func (moonshineProvider) noun() string      { return "Moonshine model" }
+func (moonshineProvider) endedKind() string { return jobKindMoonshineInstall }
+
+func (p moonshineProvider) items() []assetItem {
+	models := p.manager.Models()
+	items := make([]assetItem, 0, len(models))
+	for _, model := range models {
+		items = append(items, p.itemFor(model))
+	}
+	return items
+}
+
+func (p moonshineProvider) itemFor(model moonshine.Model) assetItem {
+	return assetItem{kind: installKindMoonshine, id: model.ID, displayName: model.DisplayName, version: model.Version, publisher: model.Publisher, license: model.License,
+		licenseURL: model.LicenseURL, modelCardURL: model.ModelCardURL, provenanceURL: model.ProvenanceURL, attribution: model.Attribution, files: model.Files, dir: p.manager.InstallDir(model.ID)}
+}
+
+func (p moonshineProvider) item(id string) (assetItem, bool) {
+	model, ok := p.manager.Model(id)
+	if !ok {
+		return assetItem{}, false
+	}
+	return p.itemFor(model), true
+}
+
+func (p moonshineProvider) state(id string) string {
+	model, ok := p.manager.Model(id)
+	if !ok {
+		return "not_installed"
+	}
+	return p.manager.State(model)
+}
+
+func (p moonshineProvider) install(ctx context.Context, id string, options assets.Options) error {
+	if p.state(id) == "installed" {
+		return nil
+	}
+	return p.manager.Repair(ctx, id, options)
+}
+
+func (p moonshineProvider) verify(id string) (string, error) { return p.manager.Verify(id) }
+func (p moonshineProvider) remove(id string) error           { return p.manager.Remove(id) }

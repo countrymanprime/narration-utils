@@ -68,6 +68,7 @@ func TestEveryRepoRelativePathNamesSomethingInTheCheckout(t *testing.T) {
 		"TTSCatalogFile":           TTSCatalogFile,
 		"WhisperCatalogFile":       WhisperCatalogFile,
 		"SpacyCatalogFile":         SpacyCatalogFile,
+		"MoonshineCatalogFile":     MoonshineCatalogFile,
 		"ReaperDir":                ReaperDir,
 		"LauncherFile":             LauncherFile,
 		"FixturesDir":              FixturesDir,
