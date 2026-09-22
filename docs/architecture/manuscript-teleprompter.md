@@ -272,6 +272,41 @@ will not switch REAPER projects underneath it, and `Shutdown` stops it before
 closing the supervisor (without holding the host lock, because the service's
 state callback needs it).
 
+**One session, step by step.**
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor N as Narrator
+  participant UI as apps/ui: components/teleprompter
+  participant B as apps/desktop: bindings.go, app.go
+  participant S as internal/teleprompter: Service
+  participant P as internal/process: Supervisor
+  participant T as manuscript-teleprompter (frozen sidecar)
+  N->>UI: Choose a chapter and a microphone, Start
+  UI->>B: TeleprompterStart(options)
+  B->>B: first-use model gate, modelDir from the installed model
+  B->>S: Start(options)
+  S->>S: plan: argv slice, stop file in the session folder
+  S->>P: StartStream(onLine, program, args)
+  P->>T: exec, no shell, assigned to the Job Object
+  S-->>UI: teleprompter:state starting, then running
+  T-->>P: stdout NDJSON: script, then partial, word, position, segment_end
+  P->>S: onLine(line) on its own goroutine
+  S->>S: valid JSON object with a string type, else dropped and counted
+  S-->>UI: teleprompter:event, the line verbatim (emitTeleprompterEvent)
+  UI->>UI: Zod schema per event, a wrong one is dropped and counted
+  N->>UI: Stop
+  UI->>B: TeleprompterStop()
+  B->>S: Stop()
+  S->>T: create the stop file
+  T->>T: flush what it heard, exit 0
+  Note over S,T: the child is killed after 8 s if it has not exited
+  S-->>UI: teleprompter:state stopping, then stopped
+```
+
+*Verified 2026-09-21 against `bindings.go` (`TeleprompterStart`), `app.go` (`emitTeleprompterEvent`, `emitTeleprompterState`, `Shutdown`), `internal/teleprompter/service.go` (`plan`, `Start`, `onLine`, `Stop`, `watch`, `defaultGrace`), `internal/process/stream.go` (`StartStream`), `sidecars/manuscript-teleprompter/core/live_asr.py` (`--stop-file`) and `apps/ui/src/api/wailsClient.ts`. `Shutdown` stops a live session first and waits up to 12 s. A page opened mid-session catches up from the last `script` and `position` events the service keeps. The threats at each step are rows 4a to 4d of the [threat model](threat-model.md#4-the-go-host-to-the-sidecars-securitymd-bullet-4) ([ADR 0022](../adr/0022-live-sidecar-events-over-wails-and-stop-file.md)).*
+
 **Packaging.** The sidecar is frozen as `manuscript-teleprompter` by
 `scripts/release/prepare-resources.py` and required by
 `scripts/release/verify-installable.mjs`. `moonshine-voice` is deliberately
