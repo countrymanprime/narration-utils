@@ -20,6 +20,9 @@ type NativeTag = (typeof NATIVE_TAGS)[number];
 // Native elements written in JSX per file, outside the primitives, at the time of ADR 0053 (phase 5: no native select, input, textarea or table part is left).
 const CEILING: Record<NativeTag, Record<string, number>> = {
   button: {
+    // The header pill (PRD project-workspace-and-daw-link.prd.md, W15/W19): a pill shape with a status dot that
+    // `Button`'s fixed base classes (rounded-md, border, px-4/py-2) cannot express through an appended className.
+    'src/components/layout/AppShell.tsx': 1,
     'src/components/home/Home.tsx': 2,
     'src/components/manuscript/ChapterNav.tsx': 4,
     'src/components/manuscript/Manuscript.tsx': 2,

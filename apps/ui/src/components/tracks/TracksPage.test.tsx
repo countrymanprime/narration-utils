@@ -19,7 +19,7 @@ function renderTracksPage(overrides: Partial<NarrationApi> = {}, initial: Parame
   const api = createMockApi(overrides, initial);
   render(
     <ApiProvider api={api}>
-      <TracksPage />
+      <TracksPage dawFileLinked onLinkDawFile={() => {}} />
     </ApiProvider>,
   );
   return api;
@@ -148,5 +148,26 @@ describe('TracksPage', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toContain('open a project before viewing tracks');
+  });
+
+  it('offers the shared DAW-link binding, worded for whether a file is already linked', async () => {
+    const onLinkDawFile = vi.fn();
+    const api = createMockApi();
+    render(
+      <ApiProvider api={api}>
+        <TracksPage dawFileLinked={false} onLinkDawFile={onLinkDawFile} />
+      </ApiProvider>,
+    );
+    const link = await screen.findByRole('button', { name: 'Link a REAPER project file' });
+    link.click();
+    expect(onLinkDawFile).toHaveBeenCalledTimes(1);
+    cleanup();
+
+    render(
+      <ApiProvider api={api}>
+        <TracksPage dawFileLinked onLinkDawFile={onLinkDawFile} />
+      </ApiProvider>,
+    );
+    expect(await screen.findByRole('button', { name: 'Link a different REAPER project file' })).toBeTruthy();
   });
 });

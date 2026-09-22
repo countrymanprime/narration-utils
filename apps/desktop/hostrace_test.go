@@ -93,7 +93,7 @@ var stressReaders = []stressReader{
 	{"WhisperInstallState", func(h *Host) { _, _ = h.WhisperInstallState("missing") }},
 	{"WhisperRemove (unknown model)", func(h *Host) { _, _ = h.WhisperRemove("missing") }},
 	{"pollTranscript (one transcriptLoop tick)", func(h *Host) { h.pollTranscript() }},
-	{"canAttach (ProjectCreate's pre-check)", func(h *Host) { _ = h.canAttach() }},
+	{"canAttach (ProjectCreateIn's pre-check)", func(h *Host) { _ = h.canAttach() }},
 	{"emit callbacks", func(h *Host) {
 		h.emitTranscript(emptyTranscript())
 		h.emitTeleprompterState(map[string]any{"phase": "idle"})

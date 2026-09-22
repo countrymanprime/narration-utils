@@ -19,6 +19,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
+	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
@@ -33,7 +34,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 14
+const hostAPIVersion = 16
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -102,10 +103,17 @@ type workJob struct {
 }
 
 type config struct {
-	repoRoot                                string
-	sessionDir                              string
-	projectFolder                           string
-	projectName                             string
+	repoRoot      string
+	sessionDir    string
+	projectFolder string
+	projectName   string
+	// projectFile is the REAPER-launched rpp's own path (PRD
+	// project-workspace-and-daw-link.prd.md Phase 5, --project-file). It maps
+	// back to whichever project's manifest links it (resolveProjectFile),
+	// which may not be projectFolder: the launcher only ever sets projectFolder
+	// to the rpp's own containing folder (W4/W6), and the two can diverge once
+	// the rpp is linked from a project that lives elsewhere.
+	projectFile                             string
 	daw                                     string
 	manuscriptPython                        string
 	manuscriptBackend                       string
@@ -165,10 +173,22 @@ func recentProjectsPath() string {
 func (h *Host) Startup(ctx context.Context) {
 	h.mu.Lock()
 	h.ctx, h.cancel = context.WithCancel(ctx)
-	h.configureLocked(parseConfig(h.config.repoRoot))
+	next := h.resolveProjectFileLocked(parseConfig(h.config.repoRoot))
+	// A REAPER launch (--daw REAPER, set unconditionally by
+	// NarrationUtils_Launcher.lua) that still has no project folder after
+	// matching means the narrator lands on the picker with nothing chosen for
+	// them (W5): an unsaved rpp (next.projectFile empty) or a saved one no
+	// project has linked yet. Captured before configureLocked so the reason
+	// text can tell those two cases apart.
+	unresolvedReaperLaunch := next.daw != "" && next.projectFolder == ""
+	unresolvedReason := startupProjectFileReason(next.projectFile)
+	h.configureLocked(next)
 	h.assets = h.buildAssetRegistry()
 	runtimeContext, delay := h.ctx, h.updateDelay
 	h.mu.Unlock()
+	if unresolvedReaperLaunch {
+		runtime.EventsEmit(runtimeContext, "system:attached", map[string]any{"attached": false, "reason": unresolvedReason})
+	}
 	if delay == 0 {
 		delay = startupUpdateDelay
 	}
@@ -493,9 +513,9 @@ func (h *Host) onSecondInstance(instance options.SecondInstanceData) {
 	ctx := h.ctx
 	attached, reason := false, ""
 	if hasArgument(instance.Args, "--project-folder") {
-		next := parseConfigArgs(h.config.repoRoot, instance.Args)
+		next := h.resolveProjectFileLocked(parseConfigArgs(h.config.repoRoot, instance.Args))
 		if next.projectFolder == "" {
-			reason = "The second launch did not include a project folder."
+			reason = startupProjectFileReason(next.projectFile)
 		} else {
 			attached, reason = h.attachProjectLocked(next)
 		}
@@ -522,7 +542,7 @@ func parseConfigArgs(defaultRoot string, arguments []string) config {
 	result := config{repoRoot: defaultRoot}
 	values := map[string]*string{
 		"--repo-root": &result.repoRoot, "--session-dir": &result.sessionDir, "--project-folder": &result.projectFolder,
-		"--project-name": &result.projectName, "--daw": &result.daw, "--manuscript-python": &result.manuscriptPython,
+		"--project-name": &result.projectName, "--project-file": &result.projectFile, "--daw": &result.daw, "--manuscript-python": &result.manuscriptPython,
 		"--manuscript-backend": &result.manuscriptBackend, "--compare-python": &result.comparePython, "--compare-backend": &result.compareBackend,
 		"--teleprompter-python": &result.teleprompterPython, "--teleprompter-backend": &result.teleprompterBackend,
 	}
@@ -545,6 +565,58 @@ func hasArgument(arguments []string, wanted string) bool {
 		}
 	}
 	return false
+}
+
+// resolveProjectFile maps next.projectFile (the REAPER-launched rpp's own
+// path, PRD project-workspace-and-daw-link.prd.md Phase 5) back to whichever
+// project's manifest links it, scanning projectsDir with
+// project.FindByDawFile (W5: "match by linked file"). A match always wins
+// over next.projectFolder/projectName, because those are only ever the rpp's
+// own containing folder as the launcher sees it (Lua has no notion of the
+// link, W4): once a project has claimed this rpp, later launches must keep
+// attaching that project even if the rpp now lives outside its folder.
+//
+// With no match - an rpp nothing has linked yet, or projectFile empty (an
+// unsaved REAPER project, W5) - next is returned unchanged, so the caller's
+// existing behaviour keeps working: an existing REAPER session with no link
+// still attaches the rpp's own folder (W6), and an unsaved project (empty
+// projectFolder too) still falls through to the picker.
+func resolveProjectFile(reporter *persist.Reporter, projectsDir string, next config) config {
+	if next.projectFile == "" {
+		return next
+	}
+	folder, name, ok := project.FindByDawFile(reporter, projectsDir, next.projectFile)
+	if !ok {
+		return next
+	}
+	next.projectFolder = folder
+	next.projectName = name
+	return next
+}
+
+// resolveProjectFileLocked resolves the real projects directory and applies
+// resolveProjectFile. A failure to resolve the projects directory (W7: an
+// unresolvable home folder) is non-fatal here too, matching every other use
+// of project.ResolveDir: next is returned unchanged and the caller's existing
+// fallback takes over.
+func (h *Host) resolveProjectFileLocked(next config) config {
+	projectsDir, err := project.ResolveDir("")
+	if err != nil {
+		return next
+	}
+	return resolveProjectFile(h.persist, projectsDir, next)
+}
+
+// startupProjectFileReason is the narrator-facing explanation emitted (W5)
+// when a REAPER launch could not be resolved to any project: an unsaved
+// REAPER project has no file to match at all, and a saved one may simply not
+// be linked to a Narration Utils project yet. Either way the picker (already
+// shown whenever projectFolder is empty) is where the narrator resolves it.
+func startupProjectFileReason(projectFile string) string {
+	if projectFile == "" {
+		return "This REAPER project has not been saved yet, so it has no file to link. Save it in REAPER, or choose or create a Narration Utils project."
+	}
+	return "This REAPER project isn't linked to a Narration Utils project yet. Choose or create one to link it."
 }
 
 // canAttachLocked implements the REAPER single-instance rule: attach a new
@@ -655,7 +727,21 @@ func (h *Host) Bootstrap() map[string]any {
 	if svc.transcript != nil {
 		transcriptState = svc.transcript.Snapshot()
 	}
-	return map[string]any{"apiVersion": hostAPIVersion, "diagnosticId": h.diagnostic, "version": h.version, "projectFolder": config.projectFolder, "projectName": config.projectName, "daw": config.daw, "manuscript": imported, "manuscriptCandidate": manuscriptCandidate, "runtime": map[string]any{"ManuscriptGuide": map[string]string{"python_exe": config.manuscriptPython, "backend": config.manuscriptBackend}, "TranscriptCompare": map[string]string{"python_exe": config.comparePython, "compare_script": config.compareBackend}, "Reaper": map[string]string{"launcherPath": config.reaperLauncher}}, "transcript": transcriptState}
+	dawFileLinked, dawReachable, dawProjectMatches := dawLinkFacts(h.persist, config.projectFolder, config.daw)
+	return map[string]any{
+		"apiVersion": hostAPIVersion, "diagnosticId": h.diagnostic, "version": h.version,
+		"projectFolder": config.projectFolder, "projectName": config.projectName, "daw": config.daw,
+		// dawFileLinked/dawReachable/dawProjectMatches are the three separate facts PRD
+		// project-workspace-and-daw-link.prd.md W13 asks for, modeled apart from `daw` (see dawfacts.go).
+		"dawFileLinked": dawFileLinked, "dawReachable": dawReachable, "dawProjectMatches": dawProjectMatches,
+		"manuscript": imported, "manuscriptCandidate": manuscriptCandidate,
+		"runtime": map[string]any{
+			"ManuscriptGuide":   map[string]string{"python_exe": config.manuscriptPython, "backend": config.manuscriptBackend},
+			"TranscriptCompare": map[string]string{"python_exe": config.comparePython, "compare_script": config.compareBackend},
+			"Reaper":            map[string]string{"launcherPath": config.reaperLauncher},
+		},
+		"transcript": transcriptState,
+	}
 }
 
 func narratableManuscriptStats(data map[string]any) (int, int) {

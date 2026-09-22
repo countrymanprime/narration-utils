@@ -28,6 +28,11 @@ const mockNoProject = mockParams.has('mockNoProject');
 const mockMultipleRpp = mockParams.has('mockMultipleRpp');
 // `?mockNoRpp=1` seeds zero candidates: the project folder has no .rpp file.
 const mockNoRpp = mockParams.has('mockNoRpp');
+// `?mockNoDaw=1` boots a project with no linked REAPER project (.rpp) file (PRD project-workspace-and-daw-link.prd.md,
+// Phase 4): the header pill reads "No REAPER project linked", Proofing's nav item/Home card/Start are gated, and
+// Tracks/Settings show their unlinked DAW-link controls. The mock otherwise defaults `dawFileLinked` to true so every
+// other capture (and App.test.tsx's default click into Proofing) keeps working without this param.
+const mockNoDaw = mockParams.has('mockNoDaw');
 // `?mockNoManuscript=1` boots a project with no manuscript imported yet, so
 // Home shows its manuscript-not-found banner and Proofing/Story Bible are locked.
 const mockNoManuscript = mockParams.has('mockNoManuscript');
@@ -76,6 +81,7 @@ const mockInitial = {
   ...(mockHoldEdits ? { holdEdits: true } : {}),
   ...(mockInvalidPayload ? { invalidPayload: mockInvalidPayload } : {}),
   ...(mockNoManuscript ? { noManuscript: true } : {}),
+  ...(mockNoDaw ? { dawFileLinked: false } : {}),
   ...(mockPreviewError ? { previewError: mockPreviewError } : {}),
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),

@@ -77,6 +77,12 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'live-updates-degraded',
     description: 'Home, the notice that live updates from the desktop host could not be read and the page may be out of date (ADR 0069)',
   },
+  {
+    page: 'home',
+    state: 'daw-not-linked',
+    description:
+      'Home with no linked REAPER project file (?mockNoDaw=1, PRD project-workspace-and-daw-link.prd.md W13-W16): the header pill reads "No REAPER project linked" and the Proofing nav item is locked',
+  },
 
   // Manuscript
   { page: 'manuscript', state: 'reader-text-small', description: 'Manuscript, small text size' },
@@ -136,6 +142,17 @@ export const STATE_CATALOG: StateEntry[] = [
     pointer: 'keep',
   },
   { page: 'proofing', state: 'toast', description: 'Proofing, a toast visible' },
+  {
+    page: 'proofing',
+    state: 'no-daw',
+    description: 'Proofing setup with no linked REAPER project file (?mockNoDaw=1, PRD W16): Start comparison is disabled',
+  },
+  {
+    page: 'proofing',
+    state: 'no-daw-review',
+    description:
+      'Proofing reviewing the last completed comparison with no linked REAPER project file (?mockNoDaw=1, PRD W16): offline review stays reachable, but every Play recorded audio button and the marker Export button are disabled',
+  },
 
   // Story Bible
   {
@@ -234,6 +251,12 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'tracks',
     state: 'no-rpp',
     description: 'Tracks, no .rpp file in the project folder - "No REAPER project file found" empty state (reached via the ?mockNoRpp=1 mock seam)',
+  },
+  {
+    page: 'tracks',
+    state: 'no-daw-link',
+    description:
+      'Tracks with no linked REAPER project file (?mockNoDaw=1, PRD W19): the page’s own DAW-link control reads "Link a REAPER project file" instead of "Link a different REAPER project file" - Tracks itself stays usable since it reads its .rpp through its own discovery flow',
   },
   {
     page: 'tracks',
@@ -404,6 +427,20 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   { page: 'settings', state: 'project-proofing', description: 'Settings, Project scope / Proofing category', ...REFLOW },
   { page: 'settings', state: 'project-storybible', description: 'Settings, Project scope / Story Bible category', ...REFLOW },
+  {
+    page: 'settings',
+    state: 'project-daw',
+    description:
+      'Settings, Project scope / DAW Integration category (PRD project-workspace-and-daw-link.prd.md W19, new: previously global-only): "REAPER project linked" and Change linked project file',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'project-daw-not-linked',
+    description:
+      'Settings, Project scope / DAW Integration category with no linked REAPER project file (?mockNoDaw=1): "No REAPER project linked" and Link a REAPER project file',
+    ...REFLOW,
+  },
   { page: 'settings', state: 'project-data', description: 'Settings, Project scope / Project data category (clear derived project data)', ...REFLOW },
   { page: 'settings', state: 'dirty-footer', description: 'Settings, unsaved-changes footer visible', ...REFLOW },
   { page: 'settings', state: 'navigate-away-confirm', description: 'Settings, navigate-away-while-dirty confirm dialog', ...REFLOW },

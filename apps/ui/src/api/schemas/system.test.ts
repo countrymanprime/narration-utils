@@ -30,6 +30,9 @@ const bootstrap = {
   projectFolder: 'C:/Projects/Alice',
   projectName: 'Alice',
   daw: 'reaper',
+  dawFileLinked: true,
+  dawReachable: false,
+  dawProjectMatches: false,
   manuscript: { id: 'm1', format: 'docx', sourceName: 'alice.docx', importedAt: '2026-09-01T00:00:00Z', narratableWordCount: 10, narratableChapterCount: 1 },
   manuscriptCandidate: null,
   runtime: { Reaper: { launcherPath: '' } },
@@ -54,6 +57,14 @@ describe('bootstrapSchema', () => {
     expect(parsed.manuscriptCandidate).toBeNull();
     expect(parsed.manuscript?.narratableWordCount).toBe(10);
     expect(parsed.version).toBe('0.2.7');
+  });
+
+  it('defaults dawFileLinked/dawReachable/dawProjectMatches to false for a host that predates them (W13)', () => {
+    const withoutDawFacts = Object.fromEntries(Object.entries(bootstrap).filter(([key]) => !key.startsWith('daw') || key === 'daw'));
+    const parsed = parseWire(bootstrapSchema, withoutDawFacts, ctx);
+    expect(parsed.dawFileLinked).toBe(false);
+    expect(parsed.dawReachable).toBe(false);
+    expect(parsed.dawProjectMatches).toBe(false);
   });
 
   it('needs the application version, which every host of this API version sends', () => {
