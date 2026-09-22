@@ -1,4 +1,4 @@
-# 0094. TXT import decodes by BOM/UTF-8/Windows-1252, and a chapterless file becomes one narration chapter
+# 0095. TXT import decodes by BOM/UTF-8/Windows-1252, and a chapterless file becomes one narration chapter
 
 **Status:** Accepted
 **Date:** 2026-09-22

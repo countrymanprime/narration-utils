@@ -116,4 +116,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0092](0092-reaper-executable-discovery-heartbeat-mechanism-and-script-plus-project-launch-are-resolved.md) | REAPER executable discovery, heartbeat mechanism and script-plus-project launch are resolved | Accepted |
 | [0093](0093-the-home-estimate-times-the-first-opening-and-closing-template-until-a-project-can-choose-one.md) | The Home estimate times the first opening and closing template until a project can choose one | Proposed |
 | [0094](0094-dialog-gains-a-full-size-variant-that-fills-the-viewport-with-a-margin.md) | Dialog gains a full-size variant that fills the viewport with a margin | Accepted |
-| [0094](0094-txt-import-decodes-by-bom-utf-8-windows-1252-and-a-chapterless-file-becomes-one-narration-chapter.md) | TXT import decodes by BOM/UTF-8/Windows-1252, and a chapterless file becomes one narration chapter | Accepted |
+| [0095](0095-txt-import-decodes-by-bom-utf-8-windows-1252-and-a-chapterless-file-becomes-one-narration-chapter.md) | TXT import decodes by BOM/UTF-8/Windows-1252, and a chapterless file becomes one narration chapter | Accepted |
