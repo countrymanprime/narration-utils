@@ -93,6 +93,9 @@ var stressReaders = []stressReader{
 	{"WhisperInstallState", func(h *Host) { _, _ = h.WhisperInstallState("missing") }},
 	{"WhisperRemove (unknown model)", func(h *Host) { _, _ = h.WhisperRemove("missing") }},
 	{"pollTranscript (one transcriptLoop tick)", func(h *Host) { h.pollTranscript() }},
+	{"LineIdentityState", func(h *Host) { _, _ = h.LineIdentityState() }},
+	{"LineIdentityStamp (empty rows)", func(h *Host) { _, _ = h.LineIdentityStamp(nil, false) }},
+	{"LineIdentityRead (no bridge)", func(h *Host) { _, _ = h.LineIdentityRead() }},
 	{"canAttach (ProjectCreateIn's pre-check)", func(h *Host) { _ = h.canAttach() }},
 	{"emit callbacks", func(h *Host) {
 		h.emitTranscript(emptyTranscript())

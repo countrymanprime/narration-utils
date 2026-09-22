@@ -134,6 +134,18 @@ export function GuideUnrelate(arg1, arg2, arg3) {
   return window['go']['main']['Host']['GuideUnrelate'](arg1, arg2, arg3);
 }
 
+export function LineIdentityRead() {
+  return window['go']['main']['Host']['LineIdentityRead']();
+}
+
+export function LineIdentityStamp(arg1, arg2) {
+  return window['go']['main']['Host']['LineIdentityStamp'](arg1, arg2);
+}
+
+export function LineIdentityState() {
+  return window['go']['main']['Host']['LineIdentityState']();
+}
+
 export function ManuscriptBeginImport(arg1) {
   return window['go']['main']['Host']['ManuscriptBeginImport'](arg1);
 }

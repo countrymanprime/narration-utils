@@ -18,6 +18,7 @@ import (
 var swappableHostFields = map[string]bool{
 	"findings":     true,
 	"guide":        true,
+	"lineIdentity": true,
 	"manuscript":   true,
 	"settings":     true,
 	"teleprompter": true,
