@@ -24,6 +24,14 @@ cd tests/fixtures
 python -c "import importlib.util; from pathlib import Path; spec = importlib.util.spec_from_file_location('gen', 'generate_alice.py'); mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); mod.write_epub(mod.parse_chapters(Path('alice_raw.txt')), Path('alice.epub'))"
 ```
 
+## alice.txt
+
+A Gutenberg-shaped, hard-wrapped plain-text export of the same three chapters (`write_txt` in
+`generate_alice.py`): a `*** START OF ... ***`/`*** END OF ... ***` boilerplate pair, lines
+wrapped at about 70 columns, and `_word_` underscore italics, matching `alice_raw.txt`'s own
+shape (PRD Evidence). Used by the TXT importer's parity and hazard tests
+(`apps/desktop/internal/importer/txt_test.go`).
+
 ## alice.docx / alice.md / alice.pdf
 
 The first three chapters of *Alice's Adventures in Wonderland* (Lewis

@@ -31,7 +31,7 @@ REAPER never parses this JSON. The Wails host owns setting resolution and passes
 
 - Store generated, reviewable metadata beside the `.rpp` project in a tool-specific folder.
 - Do not rewrite source media or make user choices in place. Keep analyzer output, decision state, and cache data distinct.
-- Use `<project>/narration-utils/manuscript/manuscript.json` as the common manuscript input. Source DOCX and Markdown files are copied into the manuscript source folder at explicit import time; runtime tools never parse them. Existing canonical PDF-derived v1 data remains readable, but new PDF import is fail-closed pending corpus parity.
+- Use `<project>/narration-utils/manuscript/manuscript.json` as the common manuscript input. Source DOCX, Markdown, plain-text and EPUB files are copied into the manuscript source folder at explicit import time; runtime tools never parse them. Existing canonical PDF-derived v1 data remains readable, but new PDF import is fail-closed pending corpus parity.
 - A project's settings overrides live in one shared sidecar, `<project>/narration-utils/settings.json` (sectioned by tool name), separate from each tool's own generated-output folder - it holds user-set overrides, not analyzer output.
 - Findings (the shared record every analyzer emits, [findings-contract.md](findings-contract.md)) live under `<project>/narration-utils/findings/`: one regenerated JSON file per analyzer and scope, plus one shared append-only `review.json` decision history. Only the Go host writes there; `resetDerived` clears the whole folder when the manuscript it is anchored to is replaced or cleared.
 
