@@ -265,6 +265,12 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'teleprompter',
+    state: 'no-microphone-blocked',
+    description:
+      'Teleprompter, device enumeration found nothing - "No microphone found" blocking message, no dropdown and no typed fallback, Start reading disabled (?mockNoDevices=1)',
+  },
+  {
+    page: 'teleprompter',
     state: 'listening',
     description:
       'Teleprompter, mid-session and listening - the setup fields collapse to a status bar with Stop, the current word has the solid accent highlight and read words are dimmed (reached via the ?mockTeleprompter=listening mock seam)',

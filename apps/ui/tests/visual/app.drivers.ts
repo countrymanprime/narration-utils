@@ -673,11 +673,20 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await settlePage(page);
       await goToPage(page, 'Teleprompter');
       await page.getByText('Alice was beginning').first().waitFor();
-      await page.getByLabel('Microphone').selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
+      // A plain `getByLabel('Microphone')` also matches the disabled Start button's tooltip wrapper (aria-label
+      // "Choose a microphone first.") while no device is chosen yet, so this scopes to the select itself.
+      await page.getByRole('combobox', { name: 'Microphone' }).selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
       await page.getByRole('button', { name: 'Start reading' }).click();
       await page.getByRole('button', { name: 'Download model' }).click();
       await page.getByRole('dialog', { name: 'Downloading Whisper model' }).waitFor();
       await page.getByText(/185 of 464 MB/).waitFor();
+    },
+    'no-microphone-blocked': async (page) => {
+      await page.goto('/?mockNoDevices=1');
+      await settlePage(page);
+      await goToPage(page, 'Teleprompter');
+      await page.getByText('Alice was beginning').first().waitFor();
+      await page.getByText('No microphone found').waitFor();
     },
     // The seams boot a session already 30 words into the first paragraph (word
     // 35 of the chapter). Wait for the highlight to land there so the shot is

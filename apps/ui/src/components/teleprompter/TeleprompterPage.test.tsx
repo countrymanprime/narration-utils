@@ -99,6 +99,23 @@ describe('TeleprompterPage', () => {
     expect(Array.from(field.options).map((option) => option.textContent)).toContain(DEVICE_NAME);
   });
 
+  it('blocks Start with a clear message when device enumeration returns nothing, and offers no typed fallback', async () => {
+    renderPage({}, { teleprompterDevices: [] });
+
+    expect(await screen.findByText(/No microphone found/)).toBeTruthy();
+    expect(screen.queryByRole('combobox', { name: 'Microphone' })).toBeNull();
+    const start = screen.getByRole('button', { name: 'Start reading' }) as HTMLButtonElement;
+    expect(start.disabled).toBe(true);
+  });
+
+  it('blocks Start with a distinct message when device enumeration fails outright', async () => {
+    renderPage({ teleprompterDevices: async () => ({ devices: [], error: 'Could not list input devices' }) });
+
+    expect(await screen.findByText(/Couldn't list microphones/)).toBeTruthy();
+    const start = screen.getByRole('button', { name: 'Start reading' }) as HTMLButtonElement;
+    expect(start.disabled).toBe(true);
+  });
+
   it('remembers the microphone between visits, persisted through the global settings, not browser storage', async () => {
     const user = userEvent.setup();
     const { api } = renderPage();

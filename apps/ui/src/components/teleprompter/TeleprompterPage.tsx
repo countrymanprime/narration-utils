@@ -10,6 +10,7 @@ import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { Select } from '../primitives/Select';
+import { TooltipTarget } from '../primitives/Tooltip';
 import { MicrophoneField } from './MicrophoneField';
 import { ReaderText } from './ReaderText';
 import { buildRows, hydrateSession, initialSession, previewRows, reduceEvent, type Session } from './readerModel';
@@ -240,7 +241,17 @@ export function TeleprompterPage() {
   };
 
   const status = statusText(host, session);
-  const canStart = Boolean(chapterId) && device.trim() !== '';
+  // A failed or empty device listing blocks the phase (the PRD's "Microphone is never typed" decision): there is no
+  // typed fallback to start with, so Start stays disabled until a device can be chosen from the list.
+  const micBlockedReason = devices.length === 0 ? (devicesError ? "Couldn't list microphones." : 'No microphone found.') : undefined;
+  const canStart = Boolean(chapterId) && device.trim() !== '' && !micBlockedReason;
+  const startReason = !chapterId
+    ? 'Choose a chapter first.'
+    : micBlockedReason
+      ? micBlockedReason
+      : device.trim() === ''
+        ? 'Choose a microphone first.'
+        : 'Start reading';
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <Heading title="Teleprompter">Read a chapter aloud and follow along - the highlight moves with your voice.</Heading>
@@ -314,9 +325,11 @@ export function TeleprompterPage() {
                   <FontAwesomeIcon icon={faStop} /> Stop
                 </Button>
               ) : (
-                <Button onClick={() => void start()} disabled={!canStart}>
-                  <FontAwesomeIcon icon={faMicrophone} /> Start reading
-                </Button>
+                <TooltipTarget text={startReason}>
+                  <Button onClick={() => void start()} disabled={!canStart}>
+                    <FontAwesomeIcon icon={faMicrophone} /> Start reading
+                  </Button>
+                </TooltipTarget>
               )}
             </div>
           </Panel>

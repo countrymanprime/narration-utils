@@ -112,4 +112,3 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0087](0087-story-bible-header-actions-are-mode-based-and-lock-cannot-happen-mid-edit.md) | Story Bible header actions are mode-based, and Lock cannot happen mid-edit | Accepted |
 | [0088](0088-contents-and-characters-stay-reference-hidden-by-the-reader.md) | Contents and Characters stay stored as reference chapters; hiding them in the reader is the reader PRD's own phase | Accepted |
 | [0089](0089-a-docx-table-of-contents-becomes-the-authoritative-chapter-list-above-a-match-threshold.md) | A docx's own table of contents becomes the authoritative chapter list above a match threshold | Accepted |
-| [0090](0090-the-microphone-picker-keeps-a-typed-other-fallback-instead-of-dropdown-only.md) | The microphone picker keeps a typed "Other…" fallback instead of dropdown-only | Proposed |

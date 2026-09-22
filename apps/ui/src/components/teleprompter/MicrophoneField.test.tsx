@@ -17,9 +17,9 @@ function ControlledMicrophoneField({ initial = '', devices = DEVICES }: { initia
   return <MicrophoneField value={value} onChange={setValue} devices={devices} />;
 }
 
-// The picker Phase 2 swaps Phase 1's typed-name seam for (docs/prds/teleprompter-engines-and-input-devices.prd.md
-// Phase 2): a dropdown of enumerated devices, with a typed "Other…" fallback for an empty listing or an unlisted
-// remembered device.
+// The picker (docs/prds/teleprompter-engines-and-input-devices.prd.md Phase 2, "Microphone is never typed" Decisions
+// Log row): a dropdown of enumerated devices only, never a typed field. A failed or empty listing blocks the phase
+// instead of offering one.
 describe('MicrophoneField', () => {
   it('labels the control "Microphone"', () => {
     render(<MicrophoneField value="" onChange={() => {}} devices={DEVICES} />);
@@ -27,12 +27,12 @@ describe('MicrophoneField', () => {
     expect(screen.getByLabelText('Microphone')).not.toBeNull();
   });
 
-  it('lists the enumerated devices as options, plus a placeholder and an Other… entry', () => {
+  it('lists the enumerated devices as options, plus a placeholder, and no "Other…" entry', () => {
     render(<MicrophoneField value="" onChange={() => {}} devices={DEVICES} />);
 
     const select = screen.getByLabelText('Microphone') as HTMLSelectElement;
     const optionLabels = Array.from(select.options).map((option) => option.textContent);
-    expect(optionLabels).toEqual(['Choose a microphone…', 'Microphone Array (Realtek(R) Audio)', 'Headset Microphone (USB Audio Device)', 'Other…']);
+    expect(optionLabels).toEqual(['Choose a microphone…', 'Microphone Array (Realtek(R) Audio)', 'Headset Microphone (USB Audio Device)']);
   });
 
   it('calls onChange with the chosen device name', async () => {
@@ -60,41 +60,43 @@ describe('MicrophoneField', () => {
     expect(screen.getByRole('alert').textContent).toMatch(/not found in the current device list/);
   });
 
-  it('falls back to a typed field when the enumerated list is empty', () => {
+  it('has no free-text input at all, in any state', () => {
+    const { container, rerender } = render(<MicrophoneField value="" onChange={() => {}} devices={DEVICES} />);
+    expect(container.querySelector('input')).toBeNull();
+    expect(container.querySelector('textarea')).toBeNull();
+
+    rerender(<MicrophoneField value="Old USB Mic" onChange={() => {}} devices={DEVICES} />);
+    expect(container.querySelector('input')).toBeNull();
+
+    rerender(<MicrophoneField value="" onChange={() => {}} devices={[]} />);
+    expect(container.querySelector('input')).toBeNull();
+  });
+
+  it('blocks with a clear message when the enumerated list is empty, and offers no dropdown', () => {
     render(<MicrophoneField value="" onChange={() => {}} devices={[]} />);
 
-    const field = screen.getByLabelText('Microphone') as HTMLInputElement;
-    expect(field.tagName).toBe('INPUT');
-    expect(screen.getByText(/No microphones were found/)).not.toBeNull();
+    expect(screen.queryByRole('combobox')).toBeNull();
+    expect(screen.getByRole('alert').textContent).toMatch(/No microphone found/);
   });
 
-  it('typing into the empty-list fallback calls onChange with the typed text', async () => {
+  it('blocks with a distinct message when the listing failed, rather than an empty-but-fine list', () => {
+    render(<MicrophoneField value="" onChange={() => {}} devices={[]} error="Could not list input devices" />);
+
+    expect(screen.getByRole('alert').textContent).toMatch(/Couldn't list microphones/);
+    expect(screen.getByText('Could not list input devices')).not.toBeNull();
+  });
+
+  it('offers a refresh action from the blocked, empty-list state', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
-    render(<MicrophoneField value="U" onChange={onChange} devices={[]} />);
+    const onRefresh = vi.fn();
+    render(<MicrophoneField value="" onChange={() => {}} devices={[]} onRefresh={onRefresh} />);
 
-    await user.type(screen.getByLabelText('Microphone'), 'S');
+    await user.click(screen.getByRole('button', { name: 'Refresh' }));
 
-    expect(onChange).toHaveBeenCalledWith('US');
+    expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 
-  it('switches to a typed "Other…" field when chosen from the list, and back again', async () => {
-    const user = userEvent.setup();
-    render(<ControlledMicrophoneField />);
-
-    await user.selectOptions(screen.getByLabelText('Microphone'), 'Other…');
-
-    const typed = screen.getByLabelText('Microphone') as HTMLInputElement;
-    expect(typed.tagName).toBe('INPUT');
-    await user.type(typed, 'Scarlett Solo');
-    expect((screen.getByLabelText('Microphone') as HTMLInputElement).value).toBe('Scarlett Solo');
-
-    await user.click(screen.getByRole('button', { name: 'Choose from the list' }));
-
-    expect((screen.getByLabelText('Microphone') as HTMLSelectElement).tagName).toBe('SELECT');
-  });
-
-  it('shows a listing error without hiding the control', () => {
+  it('shows a listing error without hiding the control when devices are still listed', () => {
     render(<MicrophoneField value="" onChange={() => {}} devices={DEVICES} error="Could not list input devices" />);
 
     expect(screen.getByRole('alert').textContent).toBe('Could not list input devices');
@@ -109,5 +111,18 @@ describe('MicrophoneField', () => {
     await user.click(screen.getByRole('button', { name: 'Refresh' }));
 
     expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Keeps the ControlledMicrophoneField helper exercised (device persistence across a re-pick), even though the typed
+// "Other…" round trip it used to cover is gone.
+describe('MicrophoneField (controlled)', () => {
+  it('keeps the chosen device selected after a re-render with the same devices', async () => {
+    const user = userEvent.setup();
+    render(<ControlledMicrophoneField />);
+
+    await user.selectOptions(screen.getByLabelText('Microphone'), 'Headset Microphone (USB Audio Device)');
+
+    expect((screen.getByLabelText('Microphone') as HTMLSelectElement).value).toBe('Headset Microphone (USB Audio Device)');
   });
 });
