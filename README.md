@@ -3,13 +3,23 @@
 A group of utilities and plugins to assist with audio narration workflows. Each tool's business
 logic is DAW-agnostic; a thin per-DAW driver wires it into a specific host.
 
-- [`sidecars/manuscript-guide/`](sidecars/manuscript-guide/README.md) — builds a narrator reference
-  (characters, places, organizations, pronunciations) from a Word manuscript.
-- [`sidecars/transcript-compare/`](sidecars/transcript-compare/README.md) — transcribes a recorded
-  chapter and diffs it against the manuscript, dropping take markers at every discrepancy.
+- [Manuscript Guide](docs/utilities/manuscript-guide.md) (`sidecars/manuscript-guide/`, the Story Bible page) — builds a
+  narrator reference (characters, places, organizations, pronunciations) from a manuscript. A downloadable spaCy language
+  model makes it more accurate; without one it uses its rules-only fallback.
+- [Transcript Compare](docs/utilities/transcript-compare.md) (`sidecars/transcript-compare/`, the Proofing page) —
+  transcribes a recorded chapter with a local Whisper model and diffs it against the manuscript, dropping take markers at
+  every discrepancy.
+- [Tracks](docs/utilities/tracks.md) (the Tracks page) — lists the tracks of a project's REAPER `.rpp` file and plays their
+  audio, with no running REAPER needed.
+- [Manuscript Teleprompter](docs/architecture/manuscript-teleprompter.md) (`sidecars/manuscript-teleprompter/`, the
+  Teleprompter page) — first cut: listens to a microphone with a local Whisper model and highlights the word you are
+  reading in a chosen chapter.
 
-Both tools share one native UI, shown below on the Home page. See
-[Using the app](docs/guides/using-the-app/README.md) for a full screenshot walkthrough.
+The tools share one native UI, shown below on the Home page, plus a manuscript reader and a Settings page that also lists,
+verifies and removes the voices and models the app has downloaded (Settings > Local assets). See
+[Using the app](docs/guides/using-the-app/README.md) for a full screenshot walkthrough. The UI's component library is a
+Storybook atlas (`pnpm --dir apps/ui run storybook`, checked in CI by the `ui-atlas` job); its generated reference is in
+[`docs/ui/atlas/`](docs/ui/atlas/index.md) and the design rules in the [design system reference](docs/design/design-system.md).
 
 ![Home, manuscript found](docs/images/ui/home-default.webp)
 
@@ -18,7 +28,8 @@ Both tools share one native UI, shown below on the Home page. See
 ```
 narration-utils/
   apps/
-    desktop/                   Go/Wails desktop host: app.go, bindings.go, internal/, build/ icons
+    desktop/                   Go/Wails desktop host: app.go, bindings*.go, internal/ (domain services, the asset manager),
+                               cmd/ (seed-assets, manuscript-import), build/ (icons, the Windows setup program definition)
     ui/                        React + Tailwind workspace (built static assets); its tests/ hold the visual and atlas suites
   sidecars/                    Python programs frozen into the app and run on demand
     manuscript-guide/          core/ CLI backend, tests/
@@ -84,7 +95,7 @@ if you want them gone. macOS and Linux builds are previews without an installer.
 
 The UI is a local React + Tailwind workspace, shown in its own native window
 (`apps/desktop/`, a Go/Wails app) with generated native bindings. Python is
-used only for the two analysis tools the shell starts on demand. From the
+used only for the three sidecar tools the shell starts on demand. From the
 checkout root, run:
 
 ```sh
@@ -106,9 +117,10 @@ On Windows the command uses the Python Launcher (`py -3.12`) by default. Use
 recreate them from the committed lockfiles, or `--release` to build the Wails
 release binary. It does not build the Windows setup program (CI does, see [CI and
 releases](docs/operations/ci-and-releases.md#the-windows-setup-program)) and
-does not download spaCy models or Piper voices. Without a spaCy model, Story
-Bible uses its supported rules-only extraction fallback; Piper voices remain
-catalog-managed, explicit first-use downloads.
+does not download any spaCy model, Whisper model or Piper voice: they are
+catalog-managed and the app asks before it downloads each one, the first time a
+feature needs it. Without a spaCy model, Story Bible offers its supported
+rules-only extraction fallback.
 
 This is the current **developer-checkout** workflow, not the intended release
 installation path. Compiled GitHub releases package their own sidecars and
@@ -147,17 +159,17 @@ requests while the window is open.
 
 ## Shared library
 
-Both tools retain their own DAW-agnostic Python backends. What they share:
+The tools keep their own DAW-agnostic Python backends. What they share:
 
 - **`<project folder>\narration-utils\manuscript\manuscript.json`** — the one intentional,
-  project-owned data contract between the two tools. DOCX and Markdown files are imported once;
+  project-owned data contract between the tools. DOCX and Markdown files are imported once;
   their preserved source copies are provenance only and are never reparsed. Existing v1
   PDF-derived canonical data remains readable, but new PDF import is fail-closed pending corpus
   parity.
 - **`integrations/reaper/`** — `reaper_common_core.lua` (ExtState access, file/path helpers) and
   `reaper_common_process.lua` (hidden-subprocess launching, the pipe-delimited protocol used by
-  each tool's Python backend). Every reascript loads these via `dofile`, resolved relative to
-  its own script path.
+  each tool's Python backend). The launcher loads these via `dofile`, resolved relative to
+  its own script path; the bridge's file protocol is in [the REAPER bridge](docs/architecture/reaper-bridge.md).
 - **`libs/python/narration_common/`** — cross-tool contracts including canonical manuscript,
   settings, bridge, logging, and `progress.py` (the `stage|pct|message` progress-file writer,
   retry-hardened against Windows sharing violations), and `logging_utils.py` (stderr[+file]
@@ -168,7 +180,7 @@ ownership and the staged module boundaries.
 
 ## Dependencies
 
-All first-party Python tools (Manuscript Guide and Transcript Compare) share one
+All first-party Python tools (the three sidecars) share one
 gitignored virtual environment at the repo root (`.venv/`), built from the
 committed `uv.lock` by `pnpm run bootstrap`.
 

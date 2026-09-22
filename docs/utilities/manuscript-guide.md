@@ -12,7 +12,7 @@ Run the guide after manuscript selection; review uncertain candidates; lock narr
 
 ## Inputs and outputs
 
-- Inputs: Word manuscript, local spaCy model when available, optional eSpeak, the selected catalog-managed Piper voice, and existing guide JSON.
+- Inputs: Word manuscript, the selected catalog-managed spaCy language model (downloaded after a confirmation; without one the build offers a rules-only run), optional eSpeak, the selected catalog-managed Piper voice, and existing guide JSON.
 - Outputs: `<project>/ManuscriptGuide/manuscript_guide.json`, optional audio previews, then shared entity/pronunciation findings.
 - Narrator actions: edit, lock, merge/reject candidates, approve pronunciations, and choose exports.
 

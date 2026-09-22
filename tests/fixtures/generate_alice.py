@@ -14,7 +14,8 @@ and typographic punctuation (curly quotes, em dashes) to exercise import
 behavior without carrying a whole novel in the repo. Chapter II's body
 starts with a "Contents"-style aside deliberately turned into its own
 Heading-1 "Contents" paragraph in the .docx, to exercise the
-NON_CHAPTER_HEADINGS skip path (see docx_chapters.py) with a real heading
+non-chapter-heading skip path (isNonChapterHeading in
+apps/desktop/internal/importer) with a real heading
 rather than only a synthetic unit-test one.
 """
 

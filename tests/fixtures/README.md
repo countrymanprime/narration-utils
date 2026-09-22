@@ -13,8 +13,8 @@ typographic punctuation (curly quotes, em dashes) that a purely synthetic
 fixture wouldn't exercise.
 
 `alice.docx` also has a "Contents" Heading-1 paragraph inserted before
-Chapter II specifically to exercise the `NON_CHAPTER_HEADINGS` skip path
-(see `libs/python/narration_common/docx_chapters.py`) against a real
+Chapter II specifically to exercise the non-chapter-heading skip path
+(`isNonChapterHeading` in `apps/desktop/internal/importer/`) against a real
 heading, not just a synthetic unit-test one.
 
 Regenerate with:

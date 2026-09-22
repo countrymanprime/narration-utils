@@ -20,6 +20,8 @@ This folder documents a local-first audiobook narration toolkit: how it is built
 | [Teleprompter–Manuscript integration](prds/teleprompter-manuscript-integration.prd.md) | Planned | Plans the teleprompter as a reading mode of the Manuscript page: modal, story bible and notes, misread marks, seek to a word, resume from the DAW track's last audio, and punch-and-roll cursor moves. |
 | [REAPER shared helpers](architecture/daw-integration.md) | Implemented | Provides ExtState, path, and hidden-process helpers for ReaScripts. |
 | [The REAPER bridge and its test harness](architecture/reaper-bridge.md) | Implemented | The file protocol between the app and REAPER's Lua bridge, every command and event, and the Lua 5.4 harness (a fake `reaper` table plus mutation checks) that tests it without REAPER. |
+| [First-use dependency provisioning and Local assets](architecture/first-use-dependency-provisioning.md) | Implemented | Voices (Piper), transcription models (Whisper) and the Story Bible language model (spaCy) are catalog-managed downloads that start only after the narrator confirms; Settings > Local assets lists, verifies, repairs and removes them. Nothing downloads at startup and no model is bundled. |
+| [Windows release, setup program and in-app update](operations/ci-and-releases.md#the-windows-setup-program) | Implemented (Windows); macOS and Linux are previews | A per-user NSIS setup program and an update zip on each GitHub release, both unsigned, with build provenance; the app checks for a newer release once a day at most (two hours after a failed check) and replaces itself only after a confirmed click ([in-app update](architecture/in-app-update.md)). |
 | Audacity adapters | Deferred | Placeholder directories only; no driver has been implemented. |
 
 ## Reading order
@@ -31,8 +33,8 @@ This folder documents a local-first audiobook narration toolkit: how it is built
 3. Use the workflow documents to understand how utilities combine: [manuscript/editorial](workflows/manuscript-and-editorial-review.md), [recording/comping](workflows/recording-and-comping.md), [character continuity](workflows/character-continuity.md), and [technical QC/handoff](workflows/technical-qc-and-handoff.md).
 4. Planned utilities and known defects are specified as PRDs in [prds/](prds/README.md), which indexes them; [utilities/](utilities/) keeps the docs for implemented tools ([Manuscript Guide](utilities/manuscript-guide.md), [Transcript Compare](utilities/transcript-compare.md), [Tracks](utilities/tracks.md)).
 5. Before adding a local model, executable, or model pack, use the [local dependency evaluation and license plan](research/local-dependency-evaluation.md).
-6. For the planned move from developer bootstrap downloads to packaged-release
-   first-use downloads, use the [first-use dependency provisioning brief](architecture/first-use-dependency-provisioning.md).
+6. Before adding a downloadable model, voice or tool pack, or changing how one is installed, verified or removed, use the
+   [first-use dependency provisioning](architecture/first-use-dependency-provisioning.md) rules and their implementation notes.
 7. For developer checks, GitHub Actions, release promotion, and the required
    one-time repository settings, use [CI and releases](operations/ci-and-releases.md);
    for coverage, property tests, fuzzing, dead-code and import checks, use
