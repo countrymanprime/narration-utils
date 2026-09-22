@@ -237,6 +237,41 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     await waitFor(() => expect(screen.queryByLabelText(/Search result in Chapter 1/)).toBeNull());
   });
 
+  it('clears the query and results when a search result is selected (R8)', async () => {
+    renderManuscript();
+    await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+    fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
+    fireEvent.change(screen.getByLabelText('Search manuscript'), { target: { value: 'Rabbit' } });
+    const [result] = await screen.findAllByRole('button', { name: /Search result in Chapter 1/ });
+    fireEvent.click(result);
+
+    fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
+    expect((screen.getByLabelText('Search manuscript') as HTMLInputElement).value).toBe('');
+    expect(screen.queryByRole('button', { name: /Search result in/ })).toBeNull();
+  });
+
+  it('Escape clears an in-progress search before it closes the panel (R8)', async () => {
+    renderManuscript();
+    await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+    fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
+    fireEvent.change(screen.getByLabelText('Search manuscript'), { target: { value: 'Rabbit' } });
+    await screen.findAllByRole('button', { name: /Search result in Chapter 1/ });
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect((screen.getByLabelText('Search manuscript') as HTMLInputElement).value).toBe('');
+    expect(document.querySelector('[data-slide-over]')).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    await waitFor(() => expect(document.querySelector('[data-slide-over]')).toBeNull());
+  });
+
+  it('autofocuses the search input when the Chapters & Search panel opens (R8)', async () => {
+    renderManuscript();
+    await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+    fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Search manuscript')));
+  });
+
   describe('when the data it loads cannot be read (ADR 0069)', () => {
     const unreadable = () =>
       new WireError('host.binding', 'ManuscriptChapters', [{ path: '[0].index', message: 'Invalid input: expected number, received string' }]);

@@ -59,20 +59,22 @@ We believe a debounced, left-aligned, highlighted search with correct line numbe
 
 ## Open Questions
 
-- [ ] **R1. Debounce length.** The request says line options should not appear for "about 2s at least". Options: 2 s flat; 2 s but Enter fires immediately; shorter (500 ms) with the chapter subset in between. Recommendation: 2 s constant `SEARCH_DEBOUNCE_MS`, Enter fires now, and a visible "Searching..." hint so "No matches" never flashes.
-- [ ] **R2. Pre-debounce subset.** Chapter titles and subtitles filtered client-side from `chapters` state (free, no request). Recommendation: yes, immediately per keystroke.
-- [ ] **R3. Windowing.** Character budget (approximate, no measuring) or pixel measurement (`canvas.measureText`, or a `ResizeObserver` on the row)? The request shows ASCII `...`. Recommendation: character budget from the measured row width, `...` on either or both ends only when text is cut, first match only, and the match term alone wider than the row truncates the term.
-- [ ] **R4. Match highlight.** Add a `Search` kind to `Highlight` (union, `TOKEN`, story) or reuse an existing kind? The palette work is delivered: a new kind needs a colour with a dark value, a derived `--<kind>-text` and pairs in `paletteContrast.test.ts` ([colour and contrast](../design/colour-and-contrast.md)), and the tint nests with other highlights. Recommendation: a dedicated kind with those, or a local `<mark>` style.
-- [ ] **R5. Line number source.** `paragraphIds` position (recommended) versus loading paragraphs.
-- [ ] **R6. Result types and icons.** Line (`faParagraph`?), chapter title, note, bookmark: which icon each, and are notes searchable? Recommendation: line, chapter-title hits only in this PRD.
-- [ ] **R7. Jump highlight scope.** Halve the 60 s tint only, or also the 1.6 s pulse? "Halve it for now" reads as the tint. Recommendation: 30 s tint, pulse unchanged.
-- [ ] **R8. Clear on Escape and close.** Only on selecting a result and the clear icon, or also on close and Escape? Recommendation: clear on select and icon; Escape clears first, closes second; autofocus the input on open.
-- [ ] **R9. Bookmark colour.** Unify on `--bookmark` (blue, as the docs say) or `--accent`? Recommendation: `--bookmark`, add it to the token table, and colour line/note bookmark rows the same.
-- [ ] **R10. Subtitles in browse mode too?** Recommendation: yes, second line, truncated.
-- [ ] **R11. Text-size tooltip.** Where does "always uses the full reading width" go once the label is a `faFont` icon? Recommendation: on the icon (its accessible name "Text size"), delivered with the Tooltip PRD's button-based tooltip.
-- [ ] **R12. Controls grouping at 390 px.** Order and wrap: recommendation text-size group left, chapters/search plus expand/collapse right, wrapping to a second line only below 400 px.
-- [ ] **R13. What to hide (item 3).** Contents only, or all `reference` sections (Characters, Glossary)? Recommendation: all reference sections, since none is recorded; the ADR supersedes only the reader half of ADR 0005. Also decide the default open chapter, "Expand all", and `#p` links to hidden paragraphs (recommendation: a hidden target redirects to the reference chapter's own view or is a no-op with a message).
-- [ ] **R14. Existing imports.** Contents stays visible until re-import (ADR 0013). Recommendation: the reader filter covers existing manuscripts too, since it keys on `contentKind`.
+Decided 2026-09-21 (owner instruction, `docs/prds/implementation-plan.md` D22): every recommendation below is adopted as written, with two clarifications the plan makes explicit. R4 takes the dedicated `Search` highlight kind, not the "or a local `<mark>` style" fallback - the palette PRD's colour-mix work is delivered, so a local style would duplicate it. R13's three follow-on decisions (default open chapter, "Expand all", `#p` links to a hidden target) are settled in Phase 5 below rather than left to the recommendation's parenthetical, and are recorded in the superseding ADR, not here.
+
+- [x] **R1. Debounce length.** The request says line options should not appear for "about 2s at least". Options: 2 s flat; 2 s but Enter fires immediately; shorter (500 ms) with the chapter subset in between. Recommendation: 2 s constant `SEARCH_DEBOUNCE_MS`, Enter fires now, and a visible "Searching..." hint so "No matches" never flashes.
+- [x] **R2. Pre-debounce subset.** Chapter titles and subtitles filtered client-side from `chapters` state (free, no request). Recommendation: yes, immediately per keystroke.
+- [x] **R3. Windowing.** Character budget (approximate, no measuring) or pixel measurement (`canvas.measureText`, or a `ResizeObserver` on the row)? The request shows ASCII `...`. Recommendation: character budget from the measured row width, `...` on either or both ends only when text is cut, first match only, and the match term alone wider than the row truncates the term.
+- [x] **R4. Match highlight.** Add a `Search` kind to `Highlight` (union, `TOKEN`, story) or reuse an existing kind? The palette work is delivered: a new kind needs a colour with a dark value, a derived `--<kind>-text` and pairs in `paletteContrast.test.ts` ([colour and contrast](../design/colour-and-contrast.md)), and the tint nests with other highlights. Decided: a dedicated `Search` kind, built on the delivered colour-mix infrastructure (not a local `<mark>` style).
+- [x] **R5. Line number source.** `paragraphIds` position (recommended) versus loading paragraphs.
+- [x] **R6. Result types and icons.** Line (`faParagraph`?), chapter title, note, bookmark: which icon each, and are notes searchable? Recommendation: line, chapter-title hits only in this PRD.
+- [x] **R7. Jump highlight scope.** Halve the 60 s tint only, or also the 1.6 s pulse? "Halve it for now" reads as the tint. Recommendation: 30 s tint, pulse unchanged.
+- [x] **R8. Clear on Escape and close.** Only on selecting a result and the clear icon, or also on close and Escape? Recommendation: clear on select and icon; Escape clears first, closes second; autofocus the input on open.
+- [x] **R9. Bookmark colour.** Unify on `--bookmark` (blue, as the docs say) or `--accent`? Recommendation: `--bookmark`, add it to the token table, and colour line/note bookmark rows the same.
+- [x] **R10. Subtitles in browse mode too?** Recommendation: yes, second line, truncated.
+- [x] **R11. Text-size tooltip.** Where does "always uses the full reading width" go once the label is a `faFont` icon? Recommendation: on the icon (its accessible name "Text size"), delivered with the Tooltip PRD's button-based tooltip.
+- [x] **R12. Controls grouping at 390 px.** Order and wrap: recommendation text-size group left, chapters/search plus expand/collapse right, wrapping to a second line only below 400 px.
+- [x] **R13. What to hide (item 3).** Contents only, or all `reference` sections (Characters, Glossary)? Recommendation: all reference sections, since none is recorded; the ADR supersedes only the reader half of ADR 0005. Also decide the default open chapter, "Expand all", and `#p` links to hidden paragraphs (recommendation: a hidden target redirects to the reference chapter's own view or is a no-op with a message).
+- [x] **R14. Existing imports.** Contents stays visible until re-import (ADR 0013). Recommendation: the reader filter covers existing manuscripts too, since it keys on `contentKind`.
 
 ## Users & Context
 
@@ -131,7 +133,7 @@ We believe a debounced, left-aligned, highlighted search with correct line numbe
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Search defects and small fixes | Line numbers, empty state, clear on select and clear icon, 30 s highlight, one bookmark colour, docs | pending | - | - | - |
+| 1 | Search defects and small fixes | Line numbers, empty state, clear on select and clear icon, 30 s highlight, one bookmark colour, docs | complete | - | - | - |
 | 2 | Debounce and subset | Debounce hook, chapter-title subset, searching state, server cache/cap/offset, tests, visual state | pending | - | 1 | - |
 | 3 | Result rows | Left-aligned rows, `[icon] Line n: text`, windowing helper, match highlight, subtitle line, states | pending | - | 2 | - |
 | 4 | Controls bar | Inline chapters/search, font icon, right-aligned cluster, tooltip home, screenshots | pending | 3 | primitives Phase 1 (soft) | - |
@@ -166,9 +168,10 @@ Cross-cutting: re-check ADR numbering and `hostAPIVersion` at merge time; `visua
 | Reference material filtered only at the listing layer (prior, ADR 0005) | Reader half reversed by a new ADR; backend never filters | Keep the reader unfiltered | Requested; nothing reference is recorded |
 | Highlights use the `Highlight` primitive (prior, ADR 0016) | Match highlight through it | A separate mark style | One highlighted-text primitive |
 | Mutually exclusive state classes (prior, ADR 0017) | Bookmark colour as one class | Base plus override | Recorded bug class |
-| Debounce | 2 s, Enter immediate (proposed) | Shorter | Requested "about 2s at least" |
-| Highlight halving | 30 s tint, pulse unchanged (proposed) | Also the pulse | "Halve it for now" |
-| Bookmark token | `--bookmark` (proposed) | `--accent` | Docs already call it blue |
+| Debounce | 2 s, Enter immediate (decided 2026-09-21, D22) | Shorter | Requested "about 2s at least" |
+| Highlight halving | 30 s tint, pulse unchanged (decided 2026-09-21, D22) | Also the pulse | "Halve it for now" |
+| Bookmark token | `--bookmark` (decided 2026-09-21, D22) | `--accent` | Docs already call it blue; added to the palette's AA token-pair test (`paletteContrast.test.ts`), passes 3:1 in both themes with no colour change needed |
+| Match highlight kind | A dedicated `Search` kind on `Highlight`, not a local `<mark>` style (decided 2026-09-21, D22) | Reuse an existing kind; a local mark style | The palette's colour-mix Highlight work (S12a) is delivered; reusing it keeps one highlighted-text primitive (ADR 0016) |
 
 ## Research Summary
 

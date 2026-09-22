@@ -103,7 +103,7 @@ The custom-CSS system (`.btn`, `.panel-head`/`.panel-body`, `.progressbar`, etc.
 - **Alternating rows.** Paragraph rows alternate between `--surface` and `--row-alt` (a touch darker in light theme, a touch lighter in dark) with a 1px `--border` line between rows, like banded table rows. Highlights tint with `transparent` mixes so they read on either row.
 - **Highlights** are the `Highlight` primitive only ([ADR 0016](../adr/0016-highlight-primitive.md)): entity, note and review share one look, filling the full line height, tinted and underlined in the kind's color and drawn in its derived `--<kind>-text` ([ADR 0059](../adr/0059-text-colours-meet-wcag-aa-with-two-text-levels-a-non-text-token-and-derived-on-tint-text.md)).
 - **Sticky chapter headers** are opaque (`bg-[var(--surface)]`) with a soft shadow once stuck; they must never be transparent over scrolling text.
-- **"Go to line" target** stays highlighted (accent edge and tint) for 60 seconds (`JUMP_HIGHLIGHT_MS` in `Manuscript.tsx`), with a brief ring pulse on arrival.
+- **"Go to line" target** stays highlighted (accent edge and tint) for 30 seconds (`JUMP_HIGHLIGHT_MS` in `Manuscript.tsx`), with a brief ring pulse on arrival.
 - **Formatting and line breaks** from import (`spans`, `\n`) render as `<strong>`/`<em>`/`<u>` and `white-space: pre-line` ([ADR 0014](../adr/0014-inline-formatting-as-offset-spans.md)).
 - **Side panels** use `SlideOver`; state-dependent classes are mutually exclusive ([ADR 0017](../adr/0017-no-legacy-css-shadowing-tailwind.md)).
 
