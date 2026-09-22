@@ -8,12 +8,11 @@ import type { GuideEntity, ManuscriptImportSelection, TranscriptState, WorkJob }
 import type { Bootstrap } from '../../types';
 import { Heading } from '../primitives/Heading';
 import { AudiobookEstimatePanel } from './AudiobookEstimatePanel';
-import { Checkbox } from '../primitives/Checkbox';
+import { ImportReview } from './ImportReview';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { IconButton } from '../primitives/IconButton';
-import { Select } from '../primitives/Select';
 import type { Notify } from '../primitives/Toast';
 
 // Import runs as a host-side job; the UI only ever displays the percent and log
@@ -24,11 +23,6 @@ const IMPORT_POLL_MS = 200;
 // the next time the app starts (ADR-0019).
 const declinedCandidates = new Set<string>();
 const POLLED_PHASES: WorkJob['phase'][] = ['preparing', 'committing'];
-const SECTION_KIND_OPTIONS = [
-  { value: 'narration', label: 'Narration chapter' },
-  { value: 'opening', label: 'Front Matter' },
-  { value: 'reference', label: 'Reference material' },
-];
 
 function completedLabel(value?: string) {
   if (!value) return 'completed previously';
@@ -106,6 +100,15 @@ export function Home({
       const message = apiErrorMessage(error);
       setImportJob((current) => (current ? { ...current, phase: 'error', error: message, message } : current));
     }
+  };
+  // Another Markdown heading level means other sections, so the choices made for the old ones are dropped and the host reads the file again.
+  const changeHeadingLevel = (level: number) => {
+    setHeadingLevel(level);
+    setImportSelection({});
+    void api
+      .manuscriptImportPreview(importJob!.id!, { markdownHeadingLevel: level })
+      .then(setImportJob)
+      .catch((error) => notify(error.message, 'error'));
   };
   const commitImport = async () => {
     if (!importJob?.id) return;
@@ -220,102 +223,14 @@ export function Home({
               .catch((error) => notify(error.message, 'error'))
           }
         >
-          {importJob.preview.format === 'markdown' && (
-            <label className="mt-4 flex items-center gap-2 text-sm">
-              Markdown chapter heading level
-              <Select
-                label="Markdown chapter heading level"
-                value={String(headingLevel)}
-                options={[1, 2, 3, 4, 5, 6].map((level) => ({ value: String(level), label: `H${level}` }))}
-                onChange={(value) => {
-                  const level = Number(value);
-                  setHeadingLevel(level);
-                  setImportSelection({});
-                  void api
-                    .manuscriptImportPreview(importJob.id!, { markdownHeadingLevel: level })
-                    .then(setImportJob)
-                    .catch((error) => notify(error.message, 'error'));
-                }}
-              />
-            </label>
-          )}
-          {importJob.preview.format === 'pdf' && importJob.preview.chapterTitles.length > 0 && (
-            <p className="mt-3 text-xs">Detected chapters: {importJob.preview.chapterTitles.join(' · ')}</p>
-          )}
-          {importJob.preview.sections && importJob.preview.sections.length > 0 && (
-            <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
-                Review imported structure
-              </legend>
-              <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-                Reference material stays readable but is excluded from audiobook totals and Proofing.
-              </p>
-              <div className="space-y-1.5">
-                {importJob.preview.sections.map((section) => (
-                  <label key={section.id} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="min-w-0 truncate">{section.title}</span>
-                    <Select
-                      label={`${section.title} content type`}
-                      className="flex-none"
-                      value={importSelection.sectionKinds?.[section.id] ?? section.contentKind}
-                      options={SECTION_KIND_OPTIONS}
-                      onChange={(value) =>
-                        setImportSelection((current) => ({
-                          ...current,
-                          sectionKinds: { ...current.sectionKinds, [section.id]: value as 'narration' | 'opening' | 'reference' },
-                        }))
-                      }
-                    />
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          )}
-          {importJob.preview.characterCandidates && importJob.preview.characterCandidates.length > 0 && (
-            <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
-              <legend className="px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
-                Story Bible character suggestions
-              </legend>
-              <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-                Checked names become reviewable Character entries after import.
-              </p>
-              {importJob.preview.characterCandidates.map((candidate) => {
-                const checked = (importSelection.characterCandidateIds ?? importJob.preview!.characterCandidates!.map((item) => item.id)).includes(
-                  candidate.id,
-                );
-                return (
-                  <Checkbox
-                    key={candidate.id}
-                    checked={checked}
-                    onChange={(next) => {
-                      const selected = new Set(importSelection.characterCandidateIds ?? importJob.preview!.characterCandidates!.map((item) => item.id));
-                      if (next) selected.add(candidate.id);
-                      else selected.delete(candidate.id);
-                      setImportSelection((current) => ({ ...current, characterCandidateIds: [...selected] }));
-                    }}
-                  >
-                    {candidate.name}
-                    {candidate.description && <span style={{ color: 'var(--text-muted)' }}> — {candidate.description}</span>}
-                  </Checkbox>
-                );
-              })}
-            </fieldset>
-          )}
-          <div className="mt-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-            <div className="mb-1.5 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
-              Preview activity
-            </div>
-            <div className="progressbar h-4 overflow-hidden rounded-full bg-[var(--surface-3)]">
-              <div className="h-full bg-[var(--accent)] transition-[width] duration-[0.4s] ease-in-out" style={{ width: `${importJob.percent}%` }} />
-            </div>
-            <div className="mt-2 h-36 overflow-y-auto border border-[var(--border)] bg-[var(--surface-2)] font-['IBM_Plex_Mono',ui-monospace,monospace]">
-              {importJob.logs.map((line, index) => (
-                <div key={`${index}-${line}`} className="border-b border-[var(--border)] px-[0.45rem] py-1">
-                  {line}
-                </div>
-              ))}
-            </div>
-          </div>
+          <ImportReview
+            preview={importJob.preview}
+            job={importJob}
+            selection={importSelection}
+            onSelectionChange={setImportSelection}
+            headingLevel={headingLevel}
+            onHeadingLevelChange={changeHeadingLevel}
+          />
         </ConfirmDialog>
       )}
       {importJob && importJob.phase !== 'ready' && (
