@@ -1,0 +1,6 @@
+SUMMARY|MATCH: 'Chapter One' (score 0.87) - 4 discrepancy marker(s)
+DIFF|C:\project\TranscriptCompare\diffs\Chapter_One_run-fixture.diff
+MARKER|0|12.340|MISREAD|MISREAD: 'the quick brown fox' as 'the quick brown socks'|the quick brown fox|the quick brown socks|Chapter One|3|The quick brown fox jumped over the lazy dog.|The quick brown socks jumped over the lazy dog.|high|0.420
+MARKER|0|45.100|SKIPPED|SKIPPED: 'jumped over'|jumped over||Chapter One|3|The quick brown fox jumped over the lazy dog.|The quick brown fox the lazy dog.|low|0.050
+MARKER|0|67.890|EXTRA|EXTRA: 'and then'||and then|Chapter One|4|It was a dark and stormy night.|It was and then a dark and stormy night.|unknown|
+MARKER|1|90.000|MISREAD|MISREAD: 'the quick brown fox' as 'the quick brown mittens'|the quick brown fox|the quick brown mittens|Chapter One|3|The quick brown fox jumped over the lazy dog.|The quick brown mittens jumped over the lazy dog.|medium|0.200

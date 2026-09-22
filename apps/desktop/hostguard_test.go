@@ -16,6 +16,7 @@ import (
 // h.mu, races with that reassignment; every reader goes through h.services()
 // (see services.go).
 var swappableHostFields = map[string]bool{
+	"findings":     true,
 	"guide":        true,
 	"manuscript":   true,
 	"settings":     true,

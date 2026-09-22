@@ -161,7 +161,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Findings store and contract amendments | Go store for analyzer output and review decisions in the project sidecar; merge on re-run; `evidence_version`; nullable confidence; `resetDerived` decision; docs | complete | - | - | - |
-| 2 | Transcript Compare to findings | Go adapter over `results_<run>.txt` plus bridge events; ids per Q2; ingest on `COMPARE_INSPECTED`; UI type gains confidence | pending | 3, 4, 6 | 1 | - |
+| 2 | Transcript Compare to findings | Go adapter over `results_<run>.txt` plus bridge events; ids per Q2; ingest on `COMPARE_INSPECTED`; UI type gains confidence | complete (UI `Discrepancy` type deferred to phase 5 per this phase's own scope: "only if the existing page consumes them") | 3, 4, 6 | 1 | - |
 | 3 | Manuscript Guide to findings | Go adapter over `manuscript_guide.json`; entity and pronunciation conditions per Q7; resolved-upstream handling | pending | 2, 4, 6 | 1 | - |
 | 4 | Host bindings for review | List/get/review bindings with a filter query, `contracts/findings.ts`, mock, wailsClient, wailsjs, host API 5 to 6 | pending | 2, 3, 6 | 1 | - |
 | 5 | Review page | `/review` list, filters, sort, detail, decisions, stale states, stories, catalog states, docs and screenshots | pending | 6 | 4 (2 and 3 for real data) | - |

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
@@ -54,10 +55,15 @@ type Host struct {
 	// installJobs are the asset downloads, voices and models alike (installjobs.go); h.mu guards the map and each job its own fields.
 	installJobs map[string]*installJob
 	// removing holds the assets (kind/id) that are being removed, so a download of the same asset cannot start under the removal (h.mu).
-	removing     map[string]bool
-	guide        *guide.Service
-	guideJob     *workJob
-	transcript   *transcript.Service
+	removing   map[string]bool
+	guide      *guide.Service
+	guideJob   *workJob
+	transcript *transcript.Service
+	// findings is the store Transcript Compare's adapter saves into on
+	// every completed run (review-dashboard-and-findings-adoption.prd.md
+	// Phase 2). No binding reads it yet (Phase 4 does that); it exists
+	// here only so the adapter has somewhere durable to write.
+	findings     *findings.Store
 	teleprompter *teleprompter.Service
 	recents      *recents.Store
 	log          *hostlog.Log
@@ -243,6 +249,8 @@ func (h *Host) configureLocked(next config) {
 	}
 	h.manuscript = manuscript.New(h.config.projectFolder)
 	h.manuscript.SetPersist(h.persist)
+	h.findings = findings.NewStore(h.config.projectFolder)
+	h.findings.SetPersist(h.persist)
 	h.settings.SetProject(h.config.projectFolder)
 	h.guide = guide.New(h.config.projectFolder, h.config.manuscriptPython, h.config.manuscriptBackend, h.settings, h.sidecars)
 	h.guide.SetPersist(h.persist)
@@ -255,6 +263,7 @@ func (h *Host) configureLocked(next config) {
 	}
 	h.transcript = transcript.New(transcript.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir, Python: h.config.comparePython, Backend: h.config.compareBackend}, client, h.settings, h.sidecars, h.emitTranscript)
 	h.transcript.SetPersist(h.persist)
+	h.transcript.SetFindings(h.findings, h.manuscript)
 	teleprompterDir := h.config.sessionDir
 	if teleprompterDir == "" {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")

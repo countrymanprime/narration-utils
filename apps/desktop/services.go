@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
@@ -9,13 +10,14 @@ import (
 )
 
 // hostServices is one consistent view of the project-scoped state of a Host:
-// the launch config and the five service pointers that configureLocked
-// replaces whenever a project is attached (the picker, "open recent", and a
-// REAPER second launch). A service can legitimately be nil, so callers keep their nil checks. The
-// asset managers are not here: they are not project-scoped, and the registry
-// that holds them is built once (assetregistry.go).
+// the launch config and the service pointers that configureLocked replaces
+// whenever a project is attached (the picker, "open recent", and a REAPER
+// second launch). A service can legitimately be nil, so callers keep their
+// nil checks. The asset managers are not here: they are not project-scoped,
+// and the registry that holds them is built once (assetregistry.go).
 type hostServices struct {
 	config       config
+	findings     *findings.Store
 	guide        *guide.Service
 	manuscript   *manuscript.Service
 	settings     *settings.Store
@@ -51,6 +53,7 @@ func (h *Host) services() hostServices {
 	defer h.mu.RUnlock()
 	return hostServices{
 		config:       h.config,
+		findings:     h.findings,
 		guide:        h.guide,
 		manuscript:   h.manuscript,
 		settings:     h.settings,
