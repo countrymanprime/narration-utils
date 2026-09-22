@@ -184,5 +184,17 @@
     "file": "narration_render.lua",
     "find": "if not reaper.APIExists('GetSetProjectInfo_String') or not reaper.APIExists('GetSetProjectInfo') then",
     "replace": "if false then"
+  },
+  {
+    "name": "project_state runs without the change-count API",
+    "file": "narration_project_state.lua",
+    "find": "if not reaper.APIExists('GetProjectStateChangeCount') then",
+    "replace": "if false then"
+  },
+  {
+    "name": "project_state reports a hardcoded 0 instead of the real change count",
+    "file": "narration_project_state.lua",
+    "find": "local count = reaper.GetProjectStateChangeCount(0)",
+    "replace": "local count = 0"
   }
 ]

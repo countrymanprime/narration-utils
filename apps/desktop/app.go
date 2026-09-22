@@ -26,6 +26,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/pickups"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
+	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
@@ -41,7 +42,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 24
+const hostAPIVersion = 25
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -76,6 +77,7 @@ type Host struct {
 	reachability *daw.Reachability
 	lineIdentity *lineidentity.Service
 	pickups      *pickups.Service
+	projectState *projectstate.Service
 	renderConfig *renderconfig.Service
 	teleprompter *teleprompter.Service
 	recents      *recents.Store
@@ -322,6 +324,11 @@ func (h *Host) configureLocked(next config) {
 	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does for line identity
 	// and pickups above.
 	h.renderConfig = renderconfig.New(renderconfig.Config{SessionDir: h.config.sessionDir}, client, h.emitRenderConfig)
+	// The project-state service (reaper-automation-follow-through PRD Phase 13, "Change-driven re-compare
+	// indicator"; analysis-evidence-ledger PRD Open Question 12, answered (B)) is the bridge's fifth real
+	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does above. It is a
+	// Could-tier, on-demand check (Check/ProjectStateCheck), not a poll of its own.
+	h.projectState = projectstate.New(projectstate.Config{SessionDir: h.config.sessionDir}, client, h.emitProjectState)
 	teleprompterDir := h.config.sessionDir
 	if teleprompterDir == "" {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")
@@ -541,6 +548,18 @@ func (h *Host) emitRenderConfig(state map[string]any) {
 	h.mu.RUnlock()
 	if ctx != nil {
 		runtime.EventsEmit(ctx, "renderconfig:state", state)
+	}
+}
+
+// emitProjectState relays a projectstate.Service snapshot to the frontend (Phase 13's live "project changed
+// since this check" hint), the same simple relay emitRenderConfig uses. Nothing subscribes to it yet: the
+// binding is available for a future UI phase, or for a staleness evaluator, to poll or watch.
+func (h *Host) emitProjectState(state map[string]any) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "projectstate:state", state)
 	}
 }
 

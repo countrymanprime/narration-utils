@@ -21,6 +21,7 @@ var swappableHostFields = map[string]bool{
 	"lineIdentity": true,
 	"manuscript":   true,
 	"pickups":      true,
+	"projectState": true,
 	"renderConfig": true,
 	"settings":     true,
 	"teleprompter": true,

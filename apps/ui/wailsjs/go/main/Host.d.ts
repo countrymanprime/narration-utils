@@ -138,6 +138,12 @@ export function ProjectRemoveRecent(arg1:string):Promise<string>;
 
 export function ProjectSelectFolder():Promise<string>;
 
+export function ProjectStateChangedSince(arg1:number,arg2:number):Promise<string>;
+
+export function ProjectStateCheck():Promise<string>;
+
+export function ProjectStateState():Promise<string>;
+
 export function ProjectSwitch(arg1:string,arg2:string):Promise<string>;
 
 export function Ready():Promise<Record<string, any>>;
