@@ -20,6 +20,7 @@ var swappableHostFields = map[string]bool{
 	"guide":        true,
 	"lineIdentity": true,
 	"manuscript":   true,
+	"pickups":      true,
 	"settings":     true,
 	"teleprompter": true,
 	"transcript":   true,

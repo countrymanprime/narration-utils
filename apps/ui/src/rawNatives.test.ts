@@ -39,7 +39,10 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     'src/components/tracks/TracksPage.tsx': 2,
   },
   select: {},
-  input: {},
+  // Reaper-automation-follow-through PRD Phase 9: `PickupsDialog`'s CSV picker is a hidden native `<input type="file">`
+  // triggered by a `Button` (ADR 0053's own escape hatch for file-choosing, since a file picker's OS chrome cannot be
+  // restyled the way a text input or select can - the same reason `ManuscriptSelectFile` uses a native OS dialog).
+  input: { 'src/components/tracks/PickupsDialog.tsx': 1 },
   textarea: {},
   table: {},
   thead: {},

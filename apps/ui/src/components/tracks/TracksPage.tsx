@@ -8,6 +8,7 @@ import { Button } from '../primitives/Button';
 import { ChapterLinksTable } from './ChapterLinksTable';
 import { useTrackPlayback } from './useTrackPlayback';
 import { LinkChaptersDialog } from './LinkChaptersDialog';
+import { PickupsDialog } from './PickupsDialog';
 import type { ManuscriptChapter, Track, TracksDiscovery, TracksProject } from '../../types';
 
 function basename(path: string): string {
@@ -134,6 +135,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
   const [activeIndex, setActiveIndex] = useState(0);
   const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
   const [linkChaptersOpen, setLinkChaptersOpen] = useState(false);
+  const [pickupsOpen, setPickupsOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -200,14 +202,22 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
         <div className="min-w-0">
           <Heading title="Tracks">{discovery?.selected ? basename(discovery.selected) : 'Detected from the project’s REAPER file.'}</Heading>
         </div>
-        {project && project.tracks.length > 0 && chapters.length > 0 && (
-          <Button variant="ghost" onClick={() => setLinkChaptersOpen(true)}>
-            Link chapters…
-          </Button>
+        {project && project.tracks.length > 0 && (
+          <div className="flex flex-none flex-wrap gap-2">
+            {chapters.length > 0 && (
+              <Button variant="ghost" onClick={() => setLinkChaptersOpen(true)}>
+                Link chapters…
+              </Button>
+            )}
+            <Button variant="ghost" onClick={() => setPickupsOpen(true)}>
+              Pickups…
+            </Button>
+          </div>
         )}
       </div>
       <DawFileLink dawFileLinked={dawFileLinked} onLinkDawFile={onLinkDawFile} />
       {linkChaptersOpen && project && <LinkChaptersDialog chapters={chapters} tracks={project.tracks} onClose={() => setLinkChaptersOpen(false)} />}
+      {pickupsOpen && <PickupsDialog onClose={() => setPickupsOpen(false)} />}
       {error && (
         <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
           {error}

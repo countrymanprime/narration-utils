@@ -23,6 +23,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/lineidentity"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
+	"github.com/countrymanprime/narration-utils/shell/internal/pickups"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
@@ -39,7 +40,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 21
+const hostAPIVersion = 22
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -73,6 +74,7 @@ type Host struct {
 	// client (no session directory).
 	reachability *daw.Reachability
 	lineIdentity *lineidentity.Service
+	pickups      *pickups.Service
 	teleprompter *teleprompter.Service
 	recents      *recents.Store
 	// creditTemplates is the narrator's own credit-template library (audiobook-credits-templates.prd.md, Phase 1):
@@ -310,6 +312,10 @@ func (h *Host) configureLocked(next config) {
 	// (reaper-automation-follow-through PRD) is the UI trigger, so it now emits h.emitLineIdentity the way
 	// h.transcript emits h.emitTranscript.
 	h.lineIdentity = lineidentity.New(lineidentity.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir}, client, h.manuscript, h.emitLineIdentity)
+	// The pickup-list service (reaper-automation-follow-through PRD Phase 9) is the bridge's third real
+	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does for line
+	// identity above.
+	h.pickups = pickups.New(pickups.Config{SessionDir: h.config.sessionDir}, client, h.emitPickups)
 	teleprompterDir := h.config.sessionDir
 	if teleprompterDir == "" {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")
@@ -507,6 +513,17 @@ func (h *Host) emitLineIdentity(state map[string]any) {
 	h.mu.RUnlock()
 	if ctx != nil {
 		runtime.EventsEmit(ctx, "lineidentity:state", state)
+	}
+}
+
+// emitPickups relays a pickups.Service snapshot to the frontend (Phase 9's pickup list view): a narrator-
+// triggered import, export, jump, resolve or count, the same simple relay emitLineIdentity uses.
+func (h *Host) emitPickups(state map[string]any) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "pickups:state", state)
 	}
 }
 

@@ -78,7 +78,7 @@ client.Subscribe(bridge.Subscription{
 
 - **Routing.** An event goes to each consumer whose `Tags` match it and, when it carries a run ID, whose `Owns` is nil or true for that run. An event with an empty run ID goes to every consumer whose tags match. An event nobody accepts (an unowned run, an unwanted tag) is dropped and counted (`Undelivered()`); a line that does not decode is skipped and counted (`Malformed()`).
 - **Delivery.** `Dispatch()` reads the lines appended since the last call and delivers them in log order, once, on the calling goroutine, serialised across callers; the host's 150 ms loop already calls it through `transcript.Service.Drain`, so a second consumer only subscribes. Only whole lines are consumed: a line REAPER is still writing waits for the next call.
-- **Consumers today:** the Transcript Compare service subscribes to `COMPARE_*` and `ERROR` for its own run. Line identity and the teleprompter integration subscribe the same way when they land.
+- **Consumers today:** the Transcript Compare service subscribes to `COMPARE_*`/`ERROR`, `apps/desktop/internal/lineidentity` to `LINES_*`/`ERROR`, and `apps/desktop/internal/pickups` to the pickup tags (`PICKUPS_IMPORTED`, `PICKUPS_EXPORTED`, `PICKUPS_COUNTED`, `PICKUP_NEXT`, `PICKUP_RESOLVED`) and `ERROR`, each for its own run. The teleprompter integration subscribes the same way when it lands.
 
 ### Checking events before they are delivered
 

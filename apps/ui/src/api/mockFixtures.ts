@@ -9,6 +9,7 @@ import type {
   ManuscriptChapter,
   ManuscriptNote,
   ManuscriptParagraph,
+  PickupsState,
   ReaderState,
   ScopedSettingField,
   TeleprompterDevice,
@@ -789,6 +790,58 @@ export const WIRE_LINE_IDENTITY_ERROR: LineIdentityState = {
   stamp: { ...idleLineIdentityStamp },
   lines: [],
   linesRead: 0,
+};
+
+/** The Go host's PickupsState answer before any run (mirrors tests/fixtures/contracts/pickups-idle.json). */
+export const WIRE_PICKUPS_IDLE: PickupsState = {
+  phase: 'idle',
+  message: '',
+  remaining: 0,
+  total: 0,
+  csv: '',
+};
+
+/** A completed Import (mirrors tests/fixtures/contracts/pickups-import-success.json). */
+export const WIRE_PICKUPS_IMPORT_SUCCESS: PickupsState = {
+  runId: '1790000000000000',
+  phase: 'success',
+  message: 'Imported 2 pickups.',
+  remaining: 2,
+  total: 2,
+  importReport: { added: 2, existing: 0, invalid: 0 },
+  csv: '',
+};
+
+/** A completed Next, so the "jump to the next pickup" state can be seen without a real REAPER. */
+export const WIRE_PICKUPS_NEXT_SUCCESS: PickupsState = {
+  runId: '1790000000000001',
+  phase: 'success',
+  message: 'Jumped to the next pickup.',
+  remaining: 2,
+  total: 2,
+  next: { position: 9.25, tag: 'narrator', note: 'Mispronounced "labyrinthine"' },
+  csv: '',
+};
+
+/** A completed Export, with CSV text ready to offer as a download. */
+export const WIRE_PICKUPS_EXPORT_SUCCESS: PickupsState = {
+  runId: '1790000000000002',
+  phase: 'success',
+  message: 'Exported 2 pickups.',
+  remaining: 2,
+  total: 2,
+  csv: 'start,note,tag\n9.250000,Mispronounced "labyrinthine",narrator\n42.000000,Dog barked in the background,\n',
+};
+
+/** REAPER reported a problem importing, exporting, jumping, resolving or counting pickups. */
+export const WIRE_PICKUPS_ERROR: PickupsState = {
+  runId: '1790000000000003',
+  phase: 'error',
+  message:
+    'The Narration Utils script in REAPER sent a message this app could not read. Import the script from this app’s REAPER folder again, then try again.',
+  remaining: 0,
+  total: 0,
+  csv: '',
 };
 
 export const wireClone = <T>(value: T): T => structuredClone(value);

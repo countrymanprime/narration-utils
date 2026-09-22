@@ -46,12 +46,17 @@ var eventSpecs = map[string]eventSpec{
 	"COMPARE_EXPORT_MARKER": {required: []fieldSpec{text("run"), text("row"), text("state")}, optional: []fieldSpec{text("existingName")}},
 	"COMPARE_EXPORTED":      {required: []fieldSpec{text("run"), count("added"), count("skipped")}},
 	// ERROR|<message> is the shape before the run id was added (ADR 0068); it stays readable and consumers ignore it.
-	"ERROR":           {required: []fieldSpec{text("run")}, optional: []fieldSpec{text("message")}},
-	"LINES_STAMPED":   {required: []fieldSpec{text("run"), count("applied"), count("unchanged"), count("missing"), count("conflicts")}},
-	"LINES_READ":      {required: []fieldSpec{text("run"), text("path"), count("count")}},
-	"LINES_STALE":     {required: []fieldSpec{text("run"), text("guid")}},
-	"LINES_CONFLICT":  {required: []fieldSpec{text("run"), text("guid")}},
-	"REGIONS_CREATED": {required: []fieldSpec{text("run"), count("created"), count("existing"), count("invalid")}},
+	"ERROR":            {required: []fieldSpec{text("run")}, optional: []fieldSpec{text("message")}},
+	"LINES_STAMPED":    {required: []fieldSpec{text("run"), count("applied"), count("unchanged"), count("missing"), count("conflicts")}},
+	"LINES_READ":       {required: []fieldSpec{text("run"), text("path"), count("count")}},
+	"LINES_STALE":      {required: []fieldSpec{text("run"), text("guid")}},
+	"LINES_CONFLICT":   {required: []fieldSpec{text("run"), text("guid")}},
+	"REGIONS_CREATED":  {required: []fieldSpec{text("run"), count("created"), count("existing"), count("invalid")}},
+	"PICKUPS_IMPORTED": {required: []fieldSpec{text("run"), count("added"), count("existing"), count("invalid")}},
+	"PICKUPS_EXPORTED": {required: []fieldSpec{text("run"), text("path"), count("count")}},
+	"PICKUPS_COUNTED":  {required: []fieldSpec{text("run"), count("remaining"), count("total")}},
+	"PICKUP_NEXT":      {required: []fieldSpec{text("run"), number("position"), text("tag"), text("note")}},
+	"PICKUP_RESOLVED":  {required: []fieldSpec{text("run"), number("position"), text("tag"), text("note")}},
 	// PROJECT_STATUS is the reachability heartbeat ADR 0092 (W10) recommends: narration_ui_bridge.lua's tick loop
 	// appends it periodically with an empty run (Fields[1] == ""), so events.go's existing fan-out (a run-less event
 	// reaches every subscriber, Subscription.wants) delivers it as a broadcast with no dedicated route needed. rpp is

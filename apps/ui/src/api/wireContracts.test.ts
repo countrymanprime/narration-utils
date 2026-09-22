@@ -33,6 +33,7 @@ import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema
 import { teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
 import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
+import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
 import { unknownKeys } from './schemas/strictness';
 import { parseWire, type WireContext } from './wire/parseWire';
 import { WireError } from './wire/WireError';
@@ -135,6 +136,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-track-map-list.json': chapterTrackMappingSchema,
   'line-identity-idle.json': lineIdentityStateSchema,
   'line-identity-read-success.json': lineIdentityStateSchema,
+  'pickups-idle.json': pickupsStateSchema,
+  'pickups-import-success.json': pickupsStateSchema,
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -525,6 +528,38 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(createMockApi().lineIdentityStamp([], false)).rejects.toThrow(/select at least one item/);
   });
 
+  it('the pickups state through import, export, next, resolve and count, and its seeded states', async () => {
+    vi.useFakeTimers();
+    const api = createMockApi();
+    const seen: unknown[] = [];
+    api.subscribePickups((state) => seen.push(structuredClone(state)));
+    const imported = await api.pickupsImport('start,note,tag\n1.5,Mispronounced,narrator\n9.25,Second pickup,\n');
+    expectMatches(pickupsImportResultSchema, imported, 'mock import start');
+    expect(imported.rowErrors).toEqual([]);
+    await vi.advanceTimersByTimeAsync(300);
+    expectMatches(pickupsStartResultSchema, await api.pickupsNext(), 'mock next start');
+    await vi.advanceTimersByTimeAsync(300);
+    expectMatches(pickupsStartResultSchema, await api.pickupsResolve(1.5), 'mock resolve start');
+    await vi.advanceTimersByTimeAsync(300);
+    expectMatches(pickupsStartResultSchema, await api.pickupsExport(), 'mock export start');
+    await vi.advanceTimersByTimeAsync(300);
+    expectMatches(pickupsStartResultSchema, await api.pickupsCount(), 'mock count start');
+    await vi.advanceTimersByTimeAsync(300);
+    expect(seen.length).toBeGreaterThan(5);
+    for (const state of seen) expectMatches(pickupsStateSchema, state, 'mock pickups:state');
+    expectMatches(pickupsStateSchema, await api.pickupsState(), 'mock pickups state');
+    for (const seed of ['import-success', 'next-success', 'export-success', 'error'] as const) {
+      expectMatches(pickupsStateSchema, await createMockApi({}, { pickups: seed }).pickupsState(), `mock pickups seed ${seed}`);
+    }
+  });
+
+  it('pickupsImport reports every unusable row and throws when none are usable', async () => {
+    const api = createMockApi();
+    await expect(api.pickupsImport('not-a-number,First\n')).rejects.toThrow(/no valid pickups/);
+    const result = await api.pickupsImport('1.5,Good row\nnot-a-number,Bad row\n');
+    expect(result.rowErrors).toEqual(['line 2: could not parse this row']);
+  });
+
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
@@ -587,6 +622,12 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'lineIdentityStamp',
       'lineIdentityRead',
       'lineIdentityState',
+      'pickupsImport',
+      'pickupsExport',
+      'pickupsNext',
+      'pickupsResolve',
+      'pickupsCount',
+      'pickupsState',
       'teleprompterStart',
       'teleprompterState',
       'teleprompterDevices',
@@ -643,6 +684,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeTeleprompterState',
       'subscribeUpdate',
       'subscribeLineIdentity',
+      'subscribePickups',
     ];
     expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());
   });

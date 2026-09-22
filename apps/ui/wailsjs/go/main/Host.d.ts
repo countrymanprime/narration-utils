@@ -112,6 +112,18 @@ export function ManuscriptSelectFile():Promise<string>;
 
 export function ManuscriptSetChapterStatus(arg1:string,arg2:string):Promise<string>;
 
+export function PickupsCount():Promise<string>;
+
+export function PickupsExport():Promise<string>;
+
+export function PickupsImport(arg1:string):Promise<string>;
+
+export function PickupsNext():Promise<string>;
+
+export function PickupsResolve(arg1:number):Promise<string>;
+
+export function PickupsState():Promise<string>;
+
 export function ProjectCreateIn(arg1:string,arg2:string):Promise<string>;
 
 export function ProjectLinkDawFile():Promise<string>;
