@@ -1,6 +1,6 @@
 /**
  * One catalog entry as `DawCatalogList` answers it (Go: `apps/desktop/dawcatalog.go`'s `DawCatalogEntry`,
- * PRD daw-selection-and-acquisition.prd.md Phase 2): the Phase 1 catalog copy plus an on-demand detection fact.
+ * docs/architecture/daw-integration.md): the catalog copy plus an on-demand detection fact.
  * `path` and `source` are only set when `installed` is true (`source` mirrors `apps/desktop/internal/daw`'s
  * `Source*` constants, e.g. `uninstall_registry`), so the UI can tell the narrator how confident the detection is.
  */

@@ -721,7 +721,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(screen.getByText(/Link a REAPER project \(\.rpp\) file before starting REAPER\./)).toBeTruthy();
   });
 
-  // The DAW catalog and "Get it" flow (docs/prds/daw-selection-and-acquisition.prd.md Phase 2): a machine-wide
+  // The DAW catalog and "Get it" flow (docs/architecture/daw-integration.md): a machine-wide
   // detection fact shown in the same global Settings DAW panel, above the project-scoped launcher fields.
   it('shows REAPER detected in the DAW catalog panel when it is already installed', async () => {
     renderApp();
@@ -746,5 +746,46 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     const getButton = screen.getByRole('button', { name: 'Get REAPER' });
     fireEvent.click(getButton);
     await waitFor(() => expect(dawCatalogOpenDownloadPage).toHaveBeenCalledWith('reaper'));
+  });
+
+  // docs/architecture/daw-integration.md: a manual re-check, since detection otherwise only runs
+  // when the panel mounts, and a narrator who just installed REAPER should not have to leave and reopen Settings.
+  it('re-checks the DAW catalog on Check again', async () => {
+    const dawCatalogList = vi.fn(createMockApi().dawCatalogList);
+    renderApp({ dawCatalogList });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    await screen.findByText('REAPER detected');
+    const calls = dawCatalogList.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
+    await waitFor(() => expect(dawCatalogList.mock.calls.length).toBeGreaterThan(calls));
+  });
+
+  // Phase 3's "Could" item: a handoff into the DAW Link flow (project-workspace-and-daw-link.prd.md, W19) once a
+  // DAW is detected, reusing the same shared linkDawFile() action the header pill and Tracks page already use.
+  it('offers to link a REAPER project from the DAW catalog panel once REAPER is detected and nothing is linked yet', async () => {
+    renderApp({}, { dawFileLinked: false });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    await screen.findByText('REAPER detected');
+    fireEvent.click(screen.getByRole('button', { name: 'Link a REAPER project file' }));
+    await waitFor(() => expect(screen.getByText('REAPER project linked.')).toBeTruthy());
+  });
+
+  it('does not offer the DAW catalog handoff link once a REAPER project is already linked', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    await screen.findByText('REAPER detected');
+    expect(screen.queryByRole('button', { name: 'Link a REAPER project file' })).toBeNull();
   });
 });

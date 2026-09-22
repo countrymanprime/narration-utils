@@ -806,6 +806,16 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickSettingsCategory(page, 'DAW Integration');
       await page.getByRole('button', { name: 'Get REAPER' }).waitFor();
     },
+    'global-daw-handoff': async (page) => {
+      // Reload with the mock's no-linked-DAW seam (see main.tsx): REAPER stays detected (dawCatalogInstalled
+      // defaults true), only dawFileLinked flips, so the catalog panel's handoff button appears.
+      await page.goto('/?mockNoDaw=1');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'DAW Integration');
+      await page.getByRole('button', { name: 'Link a REAPER project file' }).waitFor();
+    },
     'global-tts': async (page) => {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'Global');
