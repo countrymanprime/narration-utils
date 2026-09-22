@@ -6,7 +6,7 @@ import { AppShell } from './components/layout/AppShell';
 import { StartupScreen, type StartupState } from './components/layout/StartupScreen';
 import { ToastRegion } from './components/primitives/Toast';
 import { useToasts } from './hooks/useToasts';
-import { toastForJobEnd } from './jobEnded';
+import { notificationForJobEnd, shouldNotifyForJobEnd, toastForJobEnd } from './jobEnded';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
 import { Home } from './components/home/Home';
 import { Manuscript } from './components/manuscript/Manuscript';
@@ -126,12 +126,18 @@ function AppRoutes() {
     return api.subscribeNotices(setNotice);
   }, [api, hasBootstrap, setNotice]);
 
-  // A host job that ends is announced from here, so leaving the page that started it loses nothing (ADR 0076).
+  // A host job that ends is announced from here, so leaving the page that started it loses nothing (ADR 0076). The same
+  // event decides whether it is also worth an OS notification (N1-N4): document.hasFocus() is read fresh for each job,
+  // here, because it is the webview's to know, not the host's.
   useEffect(() => {
     if (!hasBootstrap) return;
     return api.subscribeJobEnded((event) => {
       const announcement = toastForJobEnd(event);
       if (announcement) setNotice(announcement.text, announcement.tone);
+      if (shouldNotifyForJobEnd(event, document.hasFocus())) {
+        const { title, body } = notificationForJobEnd(event);
+        void api.systemNotify(event.kind, title, body);
+      }
     });
   }, [api, hasBootstrap, setNotice]);
 

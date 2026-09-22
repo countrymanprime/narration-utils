@@ -53,6 +53,12 @@ export interface SystemApi {
   saveSettings(tool: string, scope: Scope, values: Record<string, string | null>): Promise<Bootstrap>;
   settingsForScope(scope: Scope): Promise<Record<string, ScopedSettingField[]>>;
   reportClientDiagnostic(kind: string, message: string): Promise<void>;
+  /**
+   * Asks the host to raise one OS notification (N1-N4). The host silently does nothing when General.notifications is
+   * off, and never surfaces a failed or unavailable sender: call this only after deciding the window is unfocused and
+   * the job ran long enough to be worth interrupting the narrator for (see `shouldNotifyForJobEnd` in `jobEnded.ts`).
+   */
+  systemNotify(kind: string, title: string, body: string): Promise<void>;
   subscribeProjectAttach(onUpdate: (state: ProjectAttachState) => void): () => void;
   /** Calls `onNotice` with text the host wants the narrator to read (a file it could not read and kept aside, for one). */
   subscribeNotices(onNotice: (text: string) => void): () => void;

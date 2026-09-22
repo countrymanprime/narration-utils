@@ -13,6 +13,16 @@
       "kind": "choice",
       "label": "Log verbosity",
       "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "true",
+      "isSet": false,
+      "key": "notifications",
+      "kind": "bool",
+      "label": "Notify me when a long task finishes while I'm away",
+      "value": ""
     }
   ],
   "Manuscript": [
