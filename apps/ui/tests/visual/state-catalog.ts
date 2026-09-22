@@ -291,6 +291,26 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Tracks, a chapter confirmed to a track GUID no longer in the project - Track missing, with the missing-track message and Change/Clear (reached via the ?mockChapterLink=missing mock seam)',
   },
+  {
+    page: 'tracks',
+    state: 'link-chapters-preview',
+    description: 'Tracks, "Link chapters" dialog open with one chapter mapped to a track - preview of the items that will be stamped, nothing written yet',
+  },
+  {
+    page: 'tracks',
+    state: 'link-chapters-success',
+    description: 'Tracks, "Link chapters" dialog after a completed Read - every row status shown at once (ok, drift, stale-source, removed, unrecognized)',
+  },
+  {
+    page: 'tracks',
+    state: 'link-chapters-conflict',
+    description: 'Tracks, "Link chapters" dialog after a Stamp that hit a stale item and a conflict - both GUID lists shown',
+  },
+  {
+    page: 'tracks',
+    state: 'link-chapters-error',
+    description: 'Tracks, "Link chapters" dialog when REAPER reports a problem - inline error message, nothing written',
+  },
 
   // Teleprompter
   {

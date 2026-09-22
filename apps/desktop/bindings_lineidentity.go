@@ -6,11 +6,14 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/lineidentity"
 )
 
-// The Phase 6 (Go client) bindings for manuscript line identity (reaper-automation-follow-through PRD). They
-// are deliberately not yet wired into apps/ui: Phase 7 owns the UI trigger, the chapter-to-track matcher
-// that supplies real rows, and the wire-contract schema, golden payload and mock these results will need
-// once the frontend actually calls them (docs/architecture/wire-contracts.md). Until then these three
-// methods exist on Host (and bump hostAPIVersion, since they are new bindings) with no frontend caller.
+// The Phase 6 (Go client) bindings for manuscript line identity (reaper-automation-follow-through PRD). Phase 7
+// wires them into apps/ui (the "Link chapters" flow): the wire-contract schema, golden payload, mock and
+// wireContracts.test.ts row live in apps/ui/src/api (docs/architecture/wire-contracts.md), and h.emitLineIdentity
+// (app.go) relays every state change as the "lineidentity:state" live event, the way h.emitTranscript does for
+// Transcript Compare. Phase 7 also does not have a chapter-to-track matcher to call (that PRD phase, from
+// teleprompter-manuscript-integration.prd.md Phase 8, does not exist yet): the UI collects a narrator-confirmed
+// chapter-to-track mapping instead and supplies the rows itself; see reaper-automation-follow-through.prd.md's
+// Phase 7 row.
 
 // LineIdentityStampRow is one row of LineIdentityStamp's input: an item GUID, the manuscript entity ID it
 // should carry (a paragraph or chapter ID), and that entity's current text.

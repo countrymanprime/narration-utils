@@ -7,6 +7,7 @@
       "index": 0,
       "items": [
         {
+          "guid": "{4DA91027-F908-FE46-98A0-950A8D5A4661}",
           "length": 12.5,
           "name": "ch1_take1.wav",
           "position": 0,
@@ -26,6 +27,7 @@
       "index": 1,
       "items": [
         {
+          "guid": "{816A96BA-02D1-214C-BB0F-A3D2FCD96160}",
           "length": 4,
           "name": "click MIDI item",
           "position": 0,
@@ -45,6 +47,7 @@
       "index": 2,
       "items": [
         {
+          "guid": "{0A607125-0D79-C34E-8E66-054BC8FE3AFD}",
           "length": 8,
           "name": "ch2_take1.wav",
           "position": 0,

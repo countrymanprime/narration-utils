@@ -1,6 +1,6 @@
 # Manuscript line identity in the REAPER project
 
-**Status: Lua commands implemented, tested in the harness and verified in a scripted REAPER 7.80 run; not yet driven by the Go host or UI.** Nothing in the app calls these commands yet. Two steps of the checklist below need the owner (a real paste of a stamped item, and Transcript Compare through the app); the rest is recorded in the [verification record](#verification-record).
+**Status: Lua commands implemented, tested in the harness and verified in a scripted REAPER 7.80 run. `stamp_item_lines` and `read_line_ids` are now driven from the app** (`apps/desktop/internal/lineidentity`, the "Link chapters" dialog on the Tracks page, `apps/ui/src/components/tracks/LinkChaptersDialog.tsx`) **; `create_chapter_regions` is not yet.** Two steps of the checklist below need the owner (a real paste of a stamped item, and Transcript Compare through the app); the rest is recorded in the [verification record](#verification-record). The narrator maps each chapter to a REAPER track by hand for now — the automatic chapter-to-track matcher planned in `teleprompter-manuscript-integration.prd.md` Phase 8 does not exist yet (`reaper-automation-follow-through.prd.md` Phase 7).
 
 ## Why
 
@@ -60,8 +60,8 @@ Run steps 6 (the paste part) and 10 by hand, in REAPER with the app open; the re
 
 ## Later phases
 
-1. **Go client.** Add bridge methods and payload writers in `apps/desktop/internal`, with tests that mirror `transcript/service_test.go`, a subscription for the `LINES_*`, `REGIONS_CREATED` and `ERROR` events of its own runs (see [the REAPER bridge](reaper-bridge.md#reading-events-in-the-host-the-fan-out)), and a UI trigger. Decide where line IDs come from: the natural source is the item-to-manuscript-span alignment Transcript Compare already computes.
-2. **Chapter regions from the manuscript.** Regions need project-time bounds; derive them from the `tracks` package's item extents per chapter track.
+1. **Go client.** Done for `stamp_item_lines` and `read_line_ids` (`apps/desktop/internal/lineidentity`, tests mirroring `transcript/service_test.go`) and its UI trigger, the Tracks page's "Link chapters" dialog. Line IDs are chapter-level (Open Question 3 of the reaper-automation-follow-through PRD, answered (a)): the manuscript entity ID (a chapter ID, or a paragraph ID once that granularity is built) plus the manuscript's source SHA-256 (Open Question 4, answered (a)), not the item-to-manuscript-span alignment. `REGIONS_CREATED` still has no Go client or subscriber.
+2. **Chapter regions from the manuscript.** Not yet built. Regions need project-time bounds; derive them from the `tracks` package's item extents per chapter track.
 3. **Static read (optional).** Spike S0 checked how item `P_EXT` appears in a REAPER-saved `.rpp` ([the result](../research/reaper-spike-s0-item-extension-data.md)): an `<EXTI` block of `key value` lines per item, stable across save, reload, split and duplicate, so `tracks` could read line IDs without a running REAPER (a chunk reader that handles the four value forms, and `IGUID` for the item GUID). The fixtures are under `apps/desktop/internal/tracks/testdata/reaper/`. Until then use `read_line_ids`.
 4. **Lua test harness.** Done ([ADR 0066](../adr/0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md)): the commands above have harness tests, and new ones come with theirs.
 5. **Consumers.** Timeline-anchored live flags and the punch-and-roll navigator (research items 1 and 2) now that the live ASR sidecar and its Go event relay are on main.

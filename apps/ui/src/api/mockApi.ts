@@ -14,6 +14,7 @@ import type {
   GuideEvidence,
   GuideProperty,
   GuidePronunciation,
+  LineIdentityState,
   ManuscriptNote,
   NarrationApi,
   ProjectAttachState,
@@ -36,6 +37,10 @@ import {
   WIRE_CHAPTERS,
   WIRE_DISCREPANCIES,
   WIRE_ENTITIES,
+  WIRE_LINE_IDENTITY_ERROR,
+  WIRE_LINE_IDENTITY_IDLE,
+  WIRE_LINE_IDENTITY_READ_SUCCESS,
+  WIRE_LINE_IDENTITY_STAMP_CONFLICT,
   WIRE_LOGS,
   WIRE_NOTES,
   WIRE_PARAGRAPHS,
@@ -314,6 +319,8 @@ export function createMockApi(
     /** Seeds the confirmed chapter-track mapping (analysis evidence ledger PRD, Phase 5/7), so a link's state (a
      * missing track, in particular) can be seen without going through Confirm in the UI first. */
     chapterTrackMappings?: TrackMapping[];
+    /** Boots LineIdentityState already at this result, so "Link chapters" states can be seen without stepping through a run. */
+    lineIdentity?: 'success' | 'conflict' | 'error';
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -478,6 +485,17 @@ export function createMockApi(
   };
   const subscribers = new Set<(state: TranscriptState) => void>();
   let nextId = 1;
+  let lineIdentity: LineIdentityState = wireClone(
+    initial.lineIdentity === 'success'
+      ? WIRE_LINE_IDENTITY_READ_SUCCESS
+      : initial.lineIdentity === 'conflict'
+        ? WIRE_LINE_IDENTITY_STAMP_CONFLICT
+        : initial.lineIdentity === 'error'
+          ? WIRE_LINE_IDENTITY_ERROR
+          : WIRE_LINE_IDENTITY_IDLE,
+  );
+  const lineIdentitySubscribers = new Set<(state: LineIdentityState) => void>();
+  const publishLineIdentity = () => lineIdentitySubscribers.forEach((fn) => fn(wireClone(lineIdentity)));
   // A job that ends tells whoever listens, after the call that started it has returned, the way the host does (ADR 0076). The mock ends
   // only the Story Bible rebuild this way: its comparison run is driven by a timer the visual suite steps through, and a toast raised at
   // the end of one would land in every screenshot of the results.
@@ -1152,6 +1170,50 @@ export function createMockApi(
       subscribers.add(onUpdate);
       onUpdate(wireClone(transcript));
       return () => subscribers.delete(onUpdate);
+    },
+    lineIdentityStamp: async (rows, overwrite) => {
+      if (rows.length === 0) throw new Error('select at least one item to stamp');
+      lineIdentity = {
+        ...wireClone(WIRE_LINE_IDENTITY_IDLE),
+        runId: String(Date.now()),
+        phase: 'stamping',
+        message: 'Stamping manuscript line identity in REAPER…',
+      };
+      publishLineIdentity();
+      setTimeout(() => {
+        if (lineIdentity.phase !== 'stamping') return;
+        const applied = rows.length;
+        lineIdentity = {
+          ...lineIdentity,
+          phase: 'success',
+          message: `Stamped ${applied} line${applied === 1 ? '' : 's'}.`,
+          stamp: { applied, unchanged: 0, missingCount: 0, conflictsCount: 0, missing: [], conflicts: [] },
+        };
+        publishLineIdentity();
+      }, 300);
+      void overwrite; // the mock never simulates a real conflict from a second stamp; WIRE_LINE_IDENTITY_STAMP_CONFLICT covers that state directly (initial.lineIdentity)
+      return { status: 'started' };
+    },
+    lineIdentityRead: async () => {
+      lineIdentity = {
+        ...wireClone(WIRE_LINE_IDENTITY_IDLE),
+        runId: String(Date.now()),
+        phase: 'reading',
+        message: 'Reading manuscript line identity from REAPER…',
+      };
+      publishLineIdentity();
+      setTimeout(() => {
+        if (lineIdentity.phase !== 'reading') return;
+        lineIdentity = { ...wireClone(WIRE_LINE_IDENTITY_READ_SUCCESS), runId: lineIdentity.runId };
+        publishLineIdentity();
+      }, 300);
+      return { status: 'started' };
+    },
+    lineIdentityState: async () => wireClone(lineIdentity),
+    subscribeLineIdentity: (onUpdate) => {
+      lineIdentitySubscribers.add(onUpdate);
+      onUpdate(wireClone(lineIdentity));
+      return () => lineIdentitySubscribers.delete(onUpdate);
     },
     subscribeProjectAttach: (onUpdate) => {
       projectAttachSubscribers.add(onUpdate);

@@ -14,6 +14,7 @@ export * from './api/contracts/chapterTrackMap';
 export * from './api/contracts/teleprompter';
 export * from './api/contracts/update';
 export * from './api/contracts/credits';
+export * from './api/contracts/lineidentity';
 
 import type { ChapterTrackMapApi } from './api/contracts/chapterTrackMap';
 import type { DawCatalogApi } from './api/contracts/dawCatalog';
@@ -29,6 +30,7 @@ import type { TtsApi } from './api/contracts/tts';
 import type { UpdateApi } from './api/contracts/update';
 import type { WhisperApi } from './api/contracts/whisper';
 import type { CreditsApi } from './api/contracts/credits';
+import type { LineIdentityApi } from './api/contracts/lineidentity';
 
 /** The app compatibility facade; domain interfaces remain independently testable. */
 export interface NarrationApi
@@ -46,4 +48,5 @@ export interface NarrationApi
     ChapterTrackMapApi,
     TeleprompterApi,
     UpdateApi,
-    CreditsApi {}
+    CreditsApi,
+    LineIdentityApi {}

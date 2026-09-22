@@ -32,6 +32,7 @@ import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guideP
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
+import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
 import { unknownKeys } from './schemas/strictness';
 import { parseWire, type WireContext } from './wire/parseWire';
 import { WireError } from './wire/WireError';
@@ -132,6 +133,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-track-map-empty.json': chapterTrackMappingSchema,
   'chapter-track-map-confirmed.json': trackMappingSchema,
   'chapter-track-map-list.json': chapterTrackMappingSchema,
+  'line-identity-idle.json': lineIdentityStateSchema,
+  'line-identity-read-success.json': lineIdentityStateSchema,
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -497,6 +500,31 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.chapterTrackMapConfirm('{0E4D1D7F-D039-674D-87E6-719376DE95EC}', 'not-a-real-chapter')).rejects.toThrow();
   });
 
+  it('the line-identity state through a stamp and a read run, and its seeded states', async () => {
+    vi.useFakeTimers();
+    const api = createMockApi();
+    const seen: unknown[] = [];
+    api.subscribeLineIdentity((state) => seen.push(structuredClone(state)));
+    expectMatches(
+      lineIdentityStartResultSchema,
+      await api.lineIdentityStamp([{ itemGuid: '{A}', lineId: 'c-0001', text: 'Chapter One' }], false),
+      'mock stamp start',
+    );
+    await vi.advanceTimersByTimeAsync(300);
+    expectMatches(lineIdentityStartResultSchema, await api.lineIdentityRead(), 'mock read start');
+    await vi.advanceTimersByTimeAsync(300);
+    expect(seen.length).toBeGreaterThan(3);
+    for (const state of seen) expectMatches(lineIdentityStateSchema, state, 'mock lineidentity:state');
+    expectMatches(lineIdentityStateSchema, await api.lineIdentityState(), 'mock line-identity state');
+    for (const seed of ['success', 'conflict', 'error'] as const) {
+      expectMatches(lineIdentityStateSchema, await createMockApi({}, { lineIdentity: seed }).lineIdentityState(), `mock line-identity seed ${seed}`);
+    }
+  });
+
+  it('lineIdentityStamp refuses an empty row list, the way the Go service does', async () => {
+    await expect(createMockApi().lineIdentityStamp([], false)).rejects.toThrow(/select at least one item/);
+  });
+
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
@@ -556,6 +584,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterTrackMapList',
       'chapterTrackMapConfirm',
       'chapterTrackMapClear',
+      'lineIdentityStamp',
+      'lineIdentityRead',
+      'lineIdentityState',
       'teleprompterStart',
       'teleprompterState',
       'teleprompterDevices',
@@ -611,6 +642,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeTeleprompterEvent',
       'subscribeTeleprompterState',
       'subscribeUpdate',
+      'subscribeLineIdentity',
     ];
     expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());
   });

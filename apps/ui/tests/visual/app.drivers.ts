@@ -744,6 +744,39 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await table.scrollIntoViewIfNeeded();
       await page.getByText('Track missing').waitFor();
     },
+    'link-chapters-preview': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Link chapters…');
+      await page.getByRole('combobox', { name: 'Track for Chapter 1', exact: true }).selectOption({ label: 'Chapter 1' });
+      await page.getByRole('button', { name: /^Stamp \d+ items?$/ }).waitFor();
+    },
+    'link-chapters-success': async (page) => {
+      await page.goto('/?mockLineIdentity=success');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Link chapters…');
+      const message = page.getByText('Read 5 stamped lines.');
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
+    'link-chapters-conflict': async (page) => {
+      await page.goto('/?mockLineIdentity=conflict');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Link chapters…');
+      const message = page.getByText(/Stamped 1 line, 1 stale item, 1 conflict\./);
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
+    'link-chapters-error': async (page) => {
+      await page.goto('/?mockLineIdentity=error');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Link chapters…');
+      const message = page.getByText(/Narration Utils script/).first();
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
   },
   teleprompter: {
     'setup-default': async (page) => {

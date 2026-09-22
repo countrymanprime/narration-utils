@@ -1,0 +1,62 @@
+{
+  "lines": [
+    {
+      "currentText": "It was the worst of times.",
+      "entityId": "p-000002",
+      "itemGuid": "{GUID-DRIFT}",
+      "length": 3.1,
+      "lineId": "p-000002@sha-v1",
+      "position": 4.2,
+      "status": "drift",
+      "text": "It was the worst of times, once."
+    },
+    {
+      "entityId": "p-000001",
+      "itemGuid": "{GUID-OK}",
+      "length": 4.2,
+      "lineId": "p-000001@sha-v1",
+      "position": 0,
+      "status": "ok",
+      "text": "It was the best of times."
+    },
+    {
+      "entityId": "p-999999",
+      "itemGuid": "{GUID-REMOVED}",
+      "length": 2,
+      "lineId": "p-999999@sha-v1",
+      "position": 7.3,
+      "status": "removed",
+      "text": "A paragraph that got deleted."
+    },
+    {
+      "entityId": "p-000001",
+      "itemGuid": "{GUID-STALE}",
+      "length": 4.2,
+      "lineId": "p-000001@old-sha",
+      "position": 9.3,
+      "status": "stale-source",
+      "text": "It was the best of times."
+    },
+    {
+      "entityId": "",
+      "itemGuid": "{GUID-UNRECOGNIZED}",
+      "length": 2.5,
+      "lineId": "line-000004",
+      "position": 13.5,
+      "status": "unrecognized",
+      "text": "An identity from an older stamp scheme."
+    }
+  ],
+  "linesRead": 5,
+  "message": "Read 5 stamped lines.",
+  "phase": "success",
+  "runId": "1790000000000000",
+  "stamp": {
+    "applied": 0,
+    "conflicts": [],
+    "conflictsCount": 0,
+    "missing": [],
+    "missingCount": 0,
+    "unchanged": 0
+  }
+}

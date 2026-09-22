@@ -306,10 +306,10 @@ func (h *Host) configureLocked(next config) {
 	h.transcript.SetPersist(h.persist)
 	h.transcript.SetFindings(h.findings, h.manuscript)
 	// The line-identity service is the second consumer of the same bridge client (bridge.Client fans events
-	// out by tag and run, ADR 0068), so pollTranscript's Drain call already pumps its events too; it needs no
-	// event emission of its own yet, since no UI subscribes (that lands with the UI trigger, Phase 7 of the
-	// REAPER automation follow-through PRD).
-	h.lineIdentity = lineidentity.New(lineidentity.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir}, client, h.manuscript, nil)
+	// out by tag and run, ADR 0068), so pollTranscript's Drain call already pumps its events too. Phase 7
+	// (reaper-automation-follow-through PRD) is the UI trigger, so it now emits h.emitLineIdentity the way
+	// h.transcript emits h.emitTranscript.
+	h.lineIdentity = lineidentity.New(lineidentity.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir}, client, h.manuscript, h.emitLineIdentity)
 	teleprompterDir := h.config.sessionDir
 	if teleprompterDir == "" {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")
@@ -495,6 +495,18 @@ func (h *Host) emitTeleprompterState(state map[string]any) {
 	h.mu.RUnlock()
 	if ctx != nil {
 		runtime.EventsEmit(ctx, "teleprompter:state", state)
+	}
+}
+
+// emitLineIdentity relays a lineidentity.Service snapshot to the frontend (Phase 7's "Link chapters" flow and
+// its stale/conflict/drift states), the same simple relay emitTeleprompterState uses: line identity is a narrator-
+// triggered stamp or read, not a long background job, so it needs no job:ended tracking of its own.
+func (h *Host) emitLineIdentity(state map[string]any) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "lineidentity:state", state)
 	}
 }
 
