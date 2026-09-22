@@ -18,8 +18,11 @@ type Paragraph struct {
 }
 
 type DraftSection struct {
-	ID             string `json:"id"`
-	Title          string `json:"title"`
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	// Subtitle is the first paragraph's chapter subtitle, the one the chapter takes when the manuscript is written
+	// (manuscript.canonicalize), so the review shows what the chapter will be called. Empty when the heading had none.
+	Subtitle       string `json:"subtitle,omitempty"`
 	ContentKind    string `json:"contentKind"`
 	ParagraphCount int    `json:"paragraphCount"`
 }
@@ -143,6 +146,19 @@ func characterLine(value string) (string, string, bool) {
 	return name, description, looksLikeName(name)
 }
 
+// firstSubtitle is the subtitle of the first of the given paragraphs, or "" when it has none or there are no paragraphs. It is what the
+// chapter takes when the manuscript is written (manuscript.canonicalize reads the paragraph that starts the chapter), so a repeated
+// title, which is merged into one section, shows the first heading's subtitle and a heading with no text under it has none.
+func firstSubtitle(paragraphs []Paragraph, indexes []int) string {
+	if len(indexes) == 0 {
+		return ""
+	}
+	if subtitle := paragraphs[indexes[0]].ChapterSubtitle; subtitle != nil {
+		return *subtitle
+	}
+	return ""
+}
+
 func newDraft(format, sourceName string, paragraphs []Paragraph, titles []string) (Draft, error) {
 	if len(paragraphs) == 0 {
 		return Draft{}, &Error{"The manuscript has no readable text paragraphs."}
@@ -207,7 +223,7 @@ func newDraft(format, sourceName string, paragraphs []Paragraph, titles []string
 			}
 			candidates = append(candidates, CharacterCandidate{ID: fmt.Sprintf("candidate-%s-%03d", id, len(candidates)+1), Name: group.title, Description: description, SourceSectionID: id})
 		}
-		sections = append(sections, DraftSection{ID: id, Title: group.title, ContentKind: contentKind, ParagraphCount: len(group.indexes)})
+		sections = append(sections, DraftSection{ID: id, Title: group.title, Subtitle: firstSubtitle(paragraphs, group.indexes), ContentKind: contentKind, ParagraphCount: len(group.indexes)})
 	}
 	return Draft{Format: format, SourceName: sourceName, Paragraphs: paragraphs, Sections: sections, CharacterCandidates: candidates, ChapterTitles: titles}, nil
 }

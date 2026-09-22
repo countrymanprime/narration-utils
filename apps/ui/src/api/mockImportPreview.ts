@@ -7,10 +7,16 @@ export type MockImportKind = 'docx' | 'markdown';
 // are in the order the host sends them: the titles the parser read come first, in document order, and "Front Matter" (the
 // paragraphs before the first heading) is added after them, so it is last (apps/desktop/internal/importer/model.go, newDraft).
 const SECTIONS: readonly ManuscriptImportSection[] = [
-  { id: 'section-0001', title: 'Chapter One', contentKind: 'narration', paragraphCount: 42 },
-  { id: 'section-0002', title: 'Chapter Two', contentKind: 'narration', paragraphCount: 38 },
+  { id: 'section-0001', title: 'Chapter One', subtitle: 'Down the Rabbit-Hole', contentKind: 'narration', paragraphCount: 42 },
+  { id: 'section-0002', title: 'Chapter Two', subtitle: 'The Pool of Tears', contentKind: 'narration', paragraphCount: 38 },
   { id: 'section-0003', title: 'Chapter Three', contentKind: 'narration', paragraphCount: 35 },
-  { id: 'section-0004', title: 'Chapter Four', contentKind: 'narration', paragraphCount: 40 },
+  {
+    id: 'section-0004',
+    title: 'Chapter Four',
+    subtitle: 'In Which Alice Considers a Great Many Things About Cats, Dinah, Bats and the Improbable Business of Falling',
+    contentKind: 'narration',
+    paragraphCount: 40,
+  },
   { id: 'section-0005', title: 'Chapter Five', contentKind: 'narration', paragraphCount: 45 },
   { id: 'section-0006', title: 'Glossary', contentKind: 'reference', paragraphCount: 12 },
   { id: 'section-0007', title: 'Characters', contentKind: 'reference', paragraphCount: 6 },

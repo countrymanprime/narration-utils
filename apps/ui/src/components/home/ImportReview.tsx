@@ -1,4 +1,4 @@
-import type { ManuscriptContentKind, ManuscriptImportPreview, ManuscriptImportSelection, WorkJob } from '../../types';
+import type { ManuscriptContentKind, ManuscriptImportPreview, ManuscriptImportSection, ManuscriptImportSelection, WorkJob } from '../../types';
 import { Checkbox } from '../primitives/Checkbox';
 import { Select } from '../primitives/Select';
 
@@ -10,6 +10,11 @@ const SECTION_KIND_OPTIONS = [
 
 const LABEL_CLASSES = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 const LEGEND_CLASSES = `px-1 ${LABEL_CLASSES}`;
+
+// The title and, when the heading had one, the subtitle, the way the reader writes them ("Chapter One — Down the Rabbit-Hole").
+function sectionName(section: ManuscriptImportSection): string {
+  return section.subtitle ? `${section.title} — ${section.subtitle}` : section.title;
+}
 
 type ImportReviewProps = {
   preview: ManuscriptImportPreview;
@@ -44,7 +49,7 @@ export function ImportReview({ preview, job, selection, onSelectionChange, headi
       )}
       {preview.format === 'pdf' && preview.chapterTitles.length > 0 && <p className="mt-3 text-xs">Detected chapters: {preview.chapterTitles.join(' · ')}</p>}
       {sections.length > 0 && (
-        <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+        <fieldset className="mt-4 min-w-0 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
           <legend className={LEGEND_CLASSES}>Review imported structure</legend>
           <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
             Reference material stays readable but is excluded from audiobook totals and Proofing.
@@ -52,9 +57,12 @@ export function ImportReview({ preview, job, selection, onSelectionChange, headi
           <div className="space-y-1.5">
             {sections.map((section) => (
               <label key={section.id} className="flex items-center justify-between gap-3 text-sm">
-                <span className="min-w-0 truncate">{section.title}</span>
+                <span className="min-w-0 truncate" title={sectionName(section)}>
+                  {section.title}
+                  {section.subtitle && <span style={{ color: 'var(--text-muted)' }}> — {section.subtitle}</span>}
+                </span>
                 <Select
-                  label={`${section.title} content type`}
+                  label={`${sectionName(section)} content type`}
                   className="flex-none"
                   value={selection.sectionKinds?.[section.id] ?? section.contentKind}
                   options={SECTION_KIND_OPTIONS}
@@ -68,7 +76,7 @@ export function ImportReview({ preview, job, selection, onSelectionChange, headi
         </fieldset>
       )}
       {candidates.length > 0 && (
-        <fieldset className="mt-4 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+        <fieldset className="mt-4 min-w-0 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
           <legend className={LEGEND_CLASSES}>Story Bible character suggestions</legend>
           <p className="mb-2 text-xs" style={{ color: 'var(--text-muted)' }}>
             Checked names become reviewable Character entries after import.

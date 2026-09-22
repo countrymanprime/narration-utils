@@ -93,3 +93,13 @@ func TestMarkdownHeadingBrSplitsSubtitleAndStripsMarkers(t *testing.T) {
 		t.Fatalf("got chapter %q subtitle %q", paragraph.Chapter, subtitleOf(paragraph))
 	}
 }
+
+func TestMarkdownHeadingSubtitleReachesTheSectionForTheReview(t *testing.T) {
+	draft := importMarkdown(t, "# **CHAPTER ONE**<br>Bad Ideas Look Great in Neon\nBody.\n\n# CHAPTER TWO\nMore.\n")
+	if got := sectionNamed(t, draft, "CHAPTER ONE").Subtitle; got != "Bad Ideas Look Great in Neon" {
+		t.Fatalf("CHAPTER ONE subtitle = %q", got)
+	}
+	if got := sectionNamed(t, draft, "CHAPTER TWO").Subtitle; got != "" {
+		t.Fatalf("CHAPTER TWO has no subtitle, got %q", got)
+	}
+}

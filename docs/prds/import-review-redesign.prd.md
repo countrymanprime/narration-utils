@@ -132,7 +132,7 @@ We believe showing each chapter's subtitle and summarizing what was detected bef
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Coverage and extraction | Mock preview with sections/candidates/subtitle, Vitest, visual states, extract the review component; no behavior change | complete | - | - | - |
-| 2 | Show subtitles | `Subtitle` in `DraftSection` and the contract, render in rows, Go and Vitest tests, screenshot and guide refresh, amend the briefs PRD (I12) | pending | - | 1 | - |
+| 2 | Show subtitles | `Subtitle` in `DraftSection` and the contract, render in rows, Go and Vitest tests, screenshot and guide refresh, amend the briefs PRD (I12) | complete | - | 1 | - |
 | 3 | Grouped summary layout | Summary, groups, counts and plurals, tooltip replacing the sentence, options group, optional `Disclosure`, states, screenshots, guide | pending | - | 1 (2 preferred) | - |
 
 ### Phase Details

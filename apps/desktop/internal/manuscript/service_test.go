@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 )
 
@@ -168,5 +169,42 @@ func TestReplacementRequiresExplicitConfirmation(t *testing.T) {
 	job, err := service.Commit(second.ID, false, nil)
 	if err != nil || !job.RequiresReset {
 		t.Fatalf("expected reset confirmation, got %#v, %v", job, err)
+	}
+}
+
+// The review shows each section's subtitle, and the chapter is written from the paragraph that starts it: the two must agree, or the
+// review would promise a name the reader never shows. A repeated title merges, and the first heading's subtitle wins in both.
+func TestPreviewSectionSubtitlesAreTheSubtitlesTheWrittenChaptersGet(t *testing.T) {
+	project := t.TempDir()
+	source := filepath.Join(project, "book.md")
+	content := "# Chapter One<br>Down the Rabbit-Hole\nText.\n\n# Chapter Two\nMore.\n\n# Chapter One<br>A Later Subtitle\nLater.\n"
+	if err := os.WriteFile(source, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	service := New(project)
+	job := service.Begin(source)
+	preview, err := service.Preview(job.ID, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sections, ok := preview.Preview["sections"].([]importer.DraftSection)
+	if !ok || len(sections) != 2 {
+		t.Fatalf("preview sections = %#v", preview.Preview["sections"])
+	}
+	if _, err := service.Commit(job.ID, false, nil); err != nil {
+		t.Fatal(err)
+	}
+	chapters, err := service.Chapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for index, section := range sections {
+		written, _ := chapters[index]["subtitle"].(string)
+		if chapters[index]["title"] != section.Title || written != section.Subtitle {
+			t.Errorf("section %q shows subtitle %q but the chapter is written with %q", section.Title, section.Subtitle, written)
+		}
+	}
+	if sections[0].Subtitle != "Down the Rabbit-Hole" || sections[1].Subtitle != "" {
+		t.Errorf("subtitles = %q and %q", sections[0].Subtitle, sections[1].Subtitle)
 	}
 }
