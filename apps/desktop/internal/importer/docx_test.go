@@ -12,7 +12,23 @@ import (
 // given WordprocessingML. Building the archive in-test keeps hostile
 // formatting (soft breaks, tabs, split runs) reviewable next to its assertion
 // instead of hiding it inside a binary fixture.
+const defaultDocxStyles = `<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">` +
+	`<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/></w:style>` +
+	`<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/></w:style>` +
+	`<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/></w:style>` +
+	`<w:style w:type="paragraph" w:styleId="TOCHeading"><w:name w:val="TOC Heading"/></w:style>` +
+	`<w:style w:type="paragraph" w:styleId="TOC1"><w:name w:val="toc 1"/></w:style>` +
+	`<w:style w:type="character" w:styleId="Emphasis"><w:name w:val="Emphasis"/></w:style>` +
+	`<w:style w:type="character" w:styleId="Strong"><w:name w:val="Strong"/></w:style></w:styles>`
+
 func docxFixture(t *testing.T, body string) string {
+	t.Helper()
+	return docxFixtureWithStyles(t, defaultDocxStyles, body)
+}
+
+// docxFixtureWithStyles is docxFixture with a caller-chosen word/styles.xml, for tests that need styles the default set does not
+// define (a "TOC Heading" style with its real outlineLvl 9, for example).
+func docxFixtureWithStyles(t *testing.T, stylesXML, body string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "book.docx")
 	file, err := os.Create(path)
@@ -21,10 +37,7 @@ func docxFixture(t *testing.T, body string) string {
 	}
 	archive := zip.NewWriter(file)
 	entries := map[string]string{
-		"word/styles.xml": `<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">` +
-			`<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/></w:style>` +
-			`<w:style w:type="character" w:styleId="Emphasis"><w:name w:val="Emphasis"/></w:style>` +
-			`<w:style w:type="character" w:styleId="Strong"><w:name w:val="Strong"/></w:style></w:styles>`,
+		"word/styles.xml":   stylesXML,
 		"word/document.xml": `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>` + body + `</w:body></w:document>`,
 	}
 	for name, content := range entries {
@@ -43,6 +56,12 @@ func docxFixture(t *testing.T, body string) string {
 		t.Fatal(err)
 	}
 	return path
+}
+
+// wordParagraphWithOutline is wordParagraph with an explicit <w:outlineLvl>, the way Word marks "TOC Heading" as outlineLvl 9 (kept
+// out of the navigation pane) even though it renders as a section heading.
+func wordParagraphWithOutline(style, outline string, runs ...string) string {
+	return "<w:p><w:pPr><w:pStyle w:val=\"" + style + "\"/><w:outlineLvl w:val=\"" + outline + "\"/></w:pPr>" + strings.Join(runs, "") + "</w:p>"
 }
 
 func wordRun(text string, props ...string) string {
@@ -204,5 +223,118 @@ func TestDocxSoftBreakSubtitleReachesTheSectionForTheReview(t *testing.T) {
 	}
 	if got := sectionNamed(t, draft, "CHAPTER TWO").Subtitle; got != "" {
 		t.Fatalf("CHAPTER TWO has no subtitle, got %q", got)
+	}
+}
+
+func candidateNames(draft Draft) []string {
+	names := make([]string, len(draft.CharacterCandidates))
+	for index, candidate := range draft.CharacterCandidates {
+		names[index] = candidate.Name
+	}
+	return names
+}
+
+func hasCandidate(draft Draft, name string) bool {
+	for _, got := range candidateNames(draft) {
+		if got == name {
+			return true
+		}
+	}
+	return false
+}
+
+// TestDocxTOCHeadingStyleIsRecognizedDespiteItsOutlineLvl9 covers PRD import-structure-toc-and-characters Phase 1 (S1/S6/S8):
+// Word's built-in "TOC Heading" style carries outlineLvl 9, which documentRecords otherwise reads as "not an outline heading", so the
+// paragraph fell through to plain body text and its entries leaked into whatever chapter preceded it.
+func TestDocxTOCHeadingStyleIsRecognizedDespiteItsOutlineLvl9(t *testing.T) {
+	draft := importDocx(t, wordParagraph("Heading1", wordRun("Chapter One"))+wordParagraph("", wordRun("Chapter one text."))+
+		wordParagraphWithOutline("TOCHeading", "9", wordRun("Contents"))+
+		wordParagraph("", wordRun("Chapter One .... 1"))+
+		wordParagraph("Heading1", wordRun("Chapter Two"))+wordParagraph("", wordRun("Chapter two text.")))
+	contents := sectionNamed(t, draft, "Contents")
+	if contents.ContentKind != "reference" {
+		t.Fatalf("Contents content kind = %q, want reference", contents.ContentKind)
+	}
+	if contents.ParagraphCount != 1 {
+		t.Fatalf("Contents paragraph count = %d, want 1 (the TOC entry, not absorbed into Chapter One)", contents.ParagraphCount)
+	}
+	if got := sectionNamed(t, draft, "Chapter One").ParagraphCount; got != 1 {
+		t.Fatalf("Chapter One paragraph count = %d, want 1", got)
+	}
+	if len(draft.ChapterTitles) != 2 {
+		t.Fatalf("expected Contents excluded from chapter titles, got %#v", draft.ChapterTitles)
+	}
+}
+
+// TestDocxTOCBeforeFirstChapterWithNoTitleIsNotSweptIntoFrontMatter covers S1: a TOC before the first chapter heading, with no Title
+// paragraph ahead of it, used to have both its own heading and its entries fall into the pre-heading Cover/Front-Matter heuristic.
+func TestDocxTOCBeforeFirstChapterWithNoTitleIsNotSweptIntoFrontMatter(t *testing.T) {
+	draft := importDocx(t, wordParagraphWithOutline("TOCHeading", "9", wordRun("Contents"))+
+		wordParagraph("", wordRun("Chapter One .... 1"))+
+		wordParagraph("Heading1", wordRun("Chapter One"))+wordParagraph("", wordRun("Chapter one text.")))
+	contents := sectionNamed(t, draft, "Contents")
+	if contents.ParagraphCount != 1 {
+		t.Fatalf("Contents paragraph count = %d, want 1", contents.ParagraphCount)
+	}
+	for _, section := range draft.Sections {
+		if (section.Title == "Front Matter" || section.Title == "Cover") && section.ParagraphCount != 0 {
+			t.Fatalf("expected the TOC entry not to land in %q, got %d paragraphs", section.Title, section.ParagraphCount)
+		}
+	}
+}
+
+// TestDocxTOCAfterTitleIsNotAbsorbedIntoTheTitleChapter covers S1: a TOC heading right after a Title-styled paragraph used to leak
+// its entries into the "Title" group as narration, because nothing before it ended that group.
+func TestDocxTOCAfterTitleIsNotAbsorbedIntoTheTitleChapter(t *testing.T) {
+	draft := importDocx(t, wordParagraph("Title", wordRun("My Book"))+
+		wordParagraphWithOutline("TOCHeading", "9", wordRun("Contents"))+
+		wordParagraph("", wordRun("Chapter One .... 1"))+
+		wordParagraph("Heading1", wordRun("Chapter One"))+wordParagraph("", wordRun("Chapter one text.")))
+	contents := sectionNamed(t, draft, "Contents")
+	if contents.ParagraphCount != 1 {
+		t.Fatalf("Contents paragraph count = %d, want 1", contents.ParagraphCount)
+	}
+	if got := sectionNamed(t, draft, "My Book").ParagraphCount; got != 0 {
+		t.Fatalf("Title section %q absorbed %d paragraphs that belong to Contents", "My Book", got)
+	}
+}
+
+// TestCharacterListActiveEndsAtAnySiblingHeadingNotOnlyANarrativeMarker covers S3: the old rule kept the Characters section "active"
+// until a chapter/part/book/prologue/epilogue/afterword heading, so any other heading that followed (an "Appendix", a mistitled
+// Contents) was read as one more character candidate.
+func TestCharacterListActiveEndsAtAnySiblingHeadingNotOnlyANarrativeMarker(t *testing.T) {
+	draft := importDocx(t, wordParagraph("Heading1", wordRun("Characters"))+
+		wordParagraph("", wordRun("Wren — a spy."))+
+		wordParagraph("Heading1", wordRun("Appendix"))+
+		wordParagraph("", wordRun("Appendix text."))+
+		wordParagraphWithOutline("TOCHeading", "9", wordRun("Contents"))+
+		wordParagraph("", wordRun("Chapter One .... 1")))
+	if !hasCandidate(draft, "Wren") {
+		t.Fatalf("expected a Wren candidate, got %#v", candidateNames(draft))
+	}
+	if hasCandidate(draft, "Appendix") || hasCandidate(draft, "Contents") {
+		t.Fatalf("Appendix and Contents must not become candidates, got %#v", candidateNames(draft))
+	}
+	if got := sectionNamed(t, draft, "Appendix").ContentKind; got != "narration" {
+		t.Fatalf("Appendix content kind = %q, want narration", got)
+	}
+}
+
+// TestCharacterSubheadingStaysInScopeButTheNextChapterEndsIt covers S3's "own subheadings" half: a per-character heading nested
+// under Characters must still become a candidate, and the chapter that follows the Characters section must not.
+func TestCharacterSubheadingStaysInScopeButTheNextChapterEndsIt(t *testing.T) {
+	draft := importDocx(t, wordParagraph("Heading1", wordRun("Characters"))+
+		wordParagraph("Heading2", wordRun("Wren"))+
+		wordParagraph("", wordRun("A spy for the crown."))+
+		wordParagraph("Heading1", wordRun("Chapter One"))+
+		wordParagraph("", wordRun("Story text.")))
+	if !hasCandidate(draft, "Wren") {
+		t.Fatalf("expected a Wren candidate from the subheading, got %#v", candidateNames(draft))
+	}
+	if hasCandidate(draft, "Chapter One") {
+		t.Fatalf("Chapter One must not become a candidate, got %#v", candidateNames(draft))
+	}
+	if got := sectionNamed(t, draft, "Chapter One").ContentKind; got != "narration" {
+		t.Fatalf("Chapter One content kind = %q, want narration", got)
 	}
 }

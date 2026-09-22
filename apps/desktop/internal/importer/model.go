@@ -159,7 +159,11 @@ func firstSubtitle(paragraphs []Paragraph, indexes []int) string {
 	return ""
 }
 
-func newDraft(format, sourceName string, paragraphs []Paragraph, titles []string) (Draft, error) {
+// newDraft groups paragraphs into sections by their (already-detected) chapter title, in first-seen order with any titles named up
+// front (so an expected chapter with no paragraphs still gets an empty section). headingLevels gives the outline depth of every
+// heading-derived title the caller saw - chapter headings and non-chapter ones like "Contents" alike - keyed by its exact text; a
+// title absent from the map (a synthetic group such as "Front Matter" that never had its own heading paragraph) has no known level.
+func newDraft(format, sourceName string, paragraphs []Paragraph, titles []string, headingLevels map[string]int) (Draft, error) {
 	if len(paragraphs) == 0 {
 		return Draft{}, &Error{"The manuscript has no readable text paragraphs."}
 	}
@@ -190,21 +194,33 @@ func newDraft(format, sourceName string, paragraphs []Paragraph, titles []string
 	candidates := []CharacterCandidate{}
 	candidateNames := map[string]bool{}
 	characterListActive := false
+	charactersLevel := 0
 	for sectionIndex, group := range groups {
 		id := fmt.Sprintf("section-%04d", sectionIndex+1)
 		charactersHeading := isCharacterHeading(group.title)
 		narrative := isNarrativeMarker(group.title)
+		level, hasLevel := headingLevels[group.title]
+		// endsCharacterScope bounds the Characters section to its own subheadings (S3): a heading whose level is as shallow as or
+		// shallower than the Characters heading's own (a sibling chapter, or the book's Title) ends it, the same way a Contents
+		// heading now does since docx.go/markdown.go record its level too. A heading whose level cannot be determined (a synthetic
+		// group that never had its own heading paragraph) falls back to the old narrative-marker check.
+		endsCharacterScope := characterListActive && ((hasLevel && level <= charactersLevel) || (!hasLevel && narrative))
 		contentKind := "narration"
 		if normalizedHeading(group.title) == "cover" || normalizedHeading(group.title) == "opening pages" || normalizedHeading(group.title) == "front matter" {
 			contentKind = "opening"
-		} else if isReferenceHeading(group.title) || (characterListActive && !narrative) {
+		} else if isReferenceHeading(group.title) || (characterListActive && !endsCharacterScope) {
 			contentKind = "reference"
 		}
-		if narrative {
+		if endsCharacterScope {
 			characterListActive = false
 		}
 		if charactersHeading {
 			characterListActive = true
+			if hasLevel {
+				charactersLevel = level
+			} else {
+				charactersLevel = 1
+			}
 		}
 		if charactersHeading {
 			for _, paragraphIndex := range group.indexes {
