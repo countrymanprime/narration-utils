@@ -2,7 +2,10 @@ import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 
 // `Cursor` is the Teleprompter's current word - a solid accent fill rather than a
 // tint, so it reads as a position marker and never as an entity or note.
-export type HighlightKind = 'Character' | 'Place' | 'Organization' | 'Lore' | 'Item' | 'Event' | 'Review' | 'Note' | 'Cursor';
+// `Search` is a manuscript search hit's matched term (reader search and controls PRD, R4) - never
+// reached through highlightKind below (nothing maps a Story Bible category to it); callers pass it
+// directly.
+export type HighlightKind = 'Character' | 'Place' | 'Organization' | 'Lore' | 'Item' | 'Event' | 'Review' | 'Note' | 'Search' | 'Cursor';
 
 // Story Bible categories arrive under several spellings ("Needs Review",
 // "Location", the transient "Draft"). Every highlight funnels through this one
@@ -34,6 +37,7 @@ const TOKEN: Record<HighlightKind, string> = {
   Event: '--event',
   Review: '--review',
   Note: '--note',
+  Search: '--search',
   Cursor: '--accent',
 };
 
@@ -47,6 +51,7 @@ const TEXT_TOKEN: Partial<Record<HighlightKind, string>> = {
   Item: '--item-text',
   Event: '--event-text',
   Review: '--review-text',
+  Search: '--search-text',
 };
 
 // Tints mix with `transparent`, not a surface color, so the same highlight

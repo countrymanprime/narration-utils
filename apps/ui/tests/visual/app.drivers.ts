@@ -356,6 +356,20 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'Chapters & Search');
     },
+    'chapters-overlay-searching': async (page) => {
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Chapters & Search');
+      // Captured right after typing, before the debounce settles (R1) - the chapter-title subset
+      // (R2) and the "Searching…" hint are what this state exists to show.
+      await page.getByPlaceholder('Search manuscript…').fill('Pool');
+    },
+    'chapters-overlay-search': async (page) => {
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Chapters & Search');
+      await page.getByPlaceholder('Search manuscript…').fill('Alice');
+      // Waits out the real 2s debounce for the settled, highlighted result row (R3, R4).
+      await page.locator('[data-highlight="Search"]').first().waitFor();
+    },
     'detail-sidebar-note': async (page) => {
       await goToPage(page, 'Manuscript');
       // The default chapter's seeded note spans a whole paragraph, and an
