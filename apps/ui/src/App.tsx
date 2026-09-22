@@ -4,7 +4,9 @@ import type { Bootstrap } from './types';
 import { useApi } from './api/ApiContext';
 import { AppShell } from './components/layout/AppShell';
 import { StartupScreen, type StartupState } from './components/layout/StartupScreen';
-import { Toast } from './components/layout/Toast';
+import { ToastRegion } from './components/primitives/Toast';
+import { useToasts } from './hooks/useToasts';
+import { toastForJobEnd } from './jobEnded';
 import { ConfirmDialog } from './components/primitives/ConfirmDialog';
 import { Home } from './components/home/Home';
 import { Manuscript } from './components/manuscript/Manuscript';
@@ -34,13 +36,9 @@ function AppRoutes() {
   const navigate = useNavigate();
   const location = useLocation();
   const [data, setData] = useState<Bootstrap>();
-  // Each message gets a new id, so repeating the same text remounts the toast and restarts its timer:
-  // a second click on the same action gives a new signal instead of looking like nothing happened.
-  const [notice, setNoticeState] = useState({ text: '', id: 0 });
-  const setNotice = useCallback((text: string) => setNoticeState((current) => ({ text, id: current.id + 1 })), []);
-  // A stable dismiss: Toast restarts its timers whenever this changes, so an inline arrow would keep a toast
-  // on screen for as long as the app kept re-rendering (transcript updates during a run).
-  const dismissNotice = useCallback(() => setNotice(''), [setNotice]);
+  // One queue for the whole app: messages stack instead of replacing each other, an identical one that is showing starts its time again, and
+  // an error stays until it is dismissed (ADR 0075). `notify` and `dismiss` keep their identity, so a page effect that lists them never re-runs.
+  const { messages, notify: setNotice, dismiss: dismissMessage } = useToasts();
   const [startup, setStartup] = useState<StartupState>('connecting');
   const [startupError, setStartupError] = useState('');
   const [startupDetails, setStartupDetails] = useState<string>();
@@ -120,6 +118,15 @@ function AppRoutes() {
   useEffect(() => {
     if (!hasBootstrap) return;
     return api.subscribeNotices(setNotice);
+  }, [api, hasBootstrap, setNotice]);
+
+  // A host job that ends is announced from here, so leaving the page that started it loses nothing (ADR 0076).
+  useEffect(() => {
+    if (!hasBootstrap) return;
+    return api.subscribeJobEnded((event) => {
+      const announcement = toastForJobEnd(event);
+      if (announcement) setNotice(announcement.text, announcement.tone);
+    });
   }, [api, hasBootstrap, setNotice]);
 
   // A check the app makes on its own found a release newer than this build (ADR 0072): the narrator is told once, and Settings > About
@@ -273,7 +280,7 @@ function AppRoutes() {
               />
             </Routes>
           </ErrorBoundary>
-          {notice.text && <Toast key={notice.id} text={notice.text} dismiss={dismissNotice} />}
+          <ToastRegion messages={messages} dismiss={dismissMessage} />
         </AppShell>
       </TooltipProvider>
       {pendingPath && (

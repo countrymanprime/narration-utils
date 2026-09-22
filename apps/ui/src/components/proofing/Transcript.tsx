@@ -15,6 +15,7 @@ import { Tooltip } from '../primitives/Tooltip';
 import { Results } from './Results';
 import { hasHint, splitHintTerms, suggestionMessage } from './hints';
 import { PROOFING_CHUNK_OPTIONS } from './options';
+import type { Notify } from '../primitives/Toast';
 
 /** The host rejects with its error text as a plain string; an Error carries it in `message`. */
 const errorText = apiErrorMessage;
@@ -59,7 +60,7 @@ export function Transcript({
   goHome,
 }: {
   state: TranscriptState;
-  notify: (text: string) => void;
+  notify: Notify;
   goToManuscript: (chapter: string, paragraph: number) => void;
   goHome: () => void;
 }) {
@@ -90,7 +91,7 @@ export function Transcript({
       } catch (error) {
         // Non-blocking: the page stays usable. Adding a hint saves a fresh list over the unreadable file
         // (the host keeps the old one as vocab_hints.json.corrupt).
-        if (active) notify(`The saved vocabulary hints could not be loaded: ${errorText(error)}. Hints you add now will replace them.`);
+        if (active) notify(`The saved vocabulary hints could not be loaded: ${errorText(error)}. Hints you add now will replace them.`, 'error');
       }
     })();
     return () => {
@@ -139,7 +140,7 @@ export function Transcript({
     try {
       await api.transcriptSaveHints(next);
     } catch (error) {
-      notify(describeApiError(error));
+      notify(describeApiError(error), 'error');
     }
   };
   const acceptHint = (term: string) => {
@@ -160,7 +161,7 @@ export function Transcript({
       setPendingHints((current) => [...current, ...added.filter((term) => !hasHint(current, term))]);
       notify(suggestionMessage(found, fresh.length, added.length));
     } catch (error) {
-      notify(errorText(error));
+      notify(errorText(error), 'error');
     }
   };
 
@@ -173,7 +174,7 @@ export function Transcript({
         setPendingChapterTitle(chapterTitle);
       }
     } catch (error) {
-      notify(describeApiError(error));
+      notify(describeApiError(error), 'error');
     }
   };
   const installWhisperModel = async () => {
@@ -192,9 +193,9 @@ export function Transcript({
         setWhisperJob(undefined);
         notify('Whisper model installed.');
         await start(chapterTitle);
-      } else if (job.phase !== 'cancelled') notify(job.message);
+      } else if (job.phase !== 'cancelled') notify(job.message, 'error');
     } catch (error) {
-      notify(describeApiError(error));
+      notify(describeApiError(error), 'error');
     }
   };
   const cancelWhisperModelInstall = async () => {
@@ -202,7 +203,7 @@ export function Transcript({
       try {
         setWhisperJob(await api.whisperInstallCancel(whisperJob.id));
       } catch (error) {
-        notify(describeApiError(error));
+        notify(describeApiError(error), 'error');
       }
       return;
     }

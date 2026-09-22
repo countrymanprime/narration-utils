@@ -1,5 +1,10 @@
-# The page behind a modal is aria-hidden, so <body> holds the alert dialog and nothing else.
+# The page behind a modal is aria-hidden, so <body> holds the alert dialog and the two empty toast live regions, nothing else.
 - /children: equal
+# The two toast live regions stay in the tree on purpose: Base UI leaves live regions exposed behind a modal, so an error raised
+# from inside a dialog is still announced. They are empty here, and they are the only thing under <main>.
+- main:
+  - alert
+  - status
 - alertdialog "Unsaved settings":
   - heading "Unsaved settings" [level=2]
   - button "Close"

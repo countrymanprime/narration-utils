@@ -17,6 +17,7 @@ Storybook title: `Primitives/Panel`. Source: `src/components/primitives/Panel.ts
 ## Used by
 
 - `src/components/home/AudiobookEstimatePanel.tsx`
+- `src/components/layout/LoadError.tsx`
 - `src/components/proofing/Transcript.tsx`
 - `src/components/teleprompter/TeleprompterPage.tsx`
 - `src/components/tracks/TracksPage.tsx`

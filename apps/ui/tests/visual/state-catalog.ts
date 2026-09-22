@@ -105,6 +105,12 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'proofing', state: 'toast', description: 'Proofing, a toast visible' },
 
   // Story Bible
+  {
+    page: 'storybible',
+    state: 'rebuild-running',
+    description:
+      'Story Bible, a rebuild still running: its dialog says the step cannot be cancelled but can go on in the background (ADR 0076, ?mockRebuildRunning=1)',
+  },
   { page: 'storybible', state: 'category-all', description: 'Story Bible, All category tab' },
   { page: 'storybible', state: 'category-character', description: 'Story Bible, Character category tab' },
   { page: 'storybible', state: 'category-place', description: 'Story Bible, Place/Location category tab' },
@@ -297,7 +303,10 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'global',
     state: 'toast',
     description: 'Global toast overlay',
-    sameAs: { of: 'proofing/toast', reason: 'The global overlay is captured by adding a vocabulary term, the same flow as the Proofing toast.' },
+    sameAs: {
+      of: 'proofing/toast',
+      reason: 'The global overlay is captured by asking Proofing to suggest vocabulary hints, the same flow as the Proofing toast.',
+    },
   },
   {
     page: 'global',

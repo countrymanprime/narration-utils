@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { WorkJob } from '../../types';
 import { WorkDialog } from './WorkDialog';
@@ -62,6 +62,19 @@ describe('WorkDialog', () => {
       expect(screen.queryByText(/cannot be cancelled/i)).toBeNull();
       cleanup();
     }
+  });
+
+  it('lets a job that the app announces on its own be sent to the background, by button and by Escape, and only while it runs', () => {
+    const background = vi.fn();
+    render(<WorkDialog title="Rebuild Story Bible" job={job({ phase: 'running' })} close={vi.fn()} background={background} />);
+    expect(screen.getByText(/keeps running, and a message appears/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Continue in background' }));
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(background).toHaveBeenCalled();
+    cleanup();
+    render(<WorkDialog title="Rebuild Story Bible" job={job({ phase: 'success', percent: 100 })} close={vi.fn()} background={background} />);
+    expect(screen.queryByRole('button', { name: 'Continue in background' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Close' })).toBeTruthy();
   });
 
   it('slides and fills only for people who have not asked for reduced motion', () => {

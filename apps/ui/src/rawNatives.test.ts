@@ -21,7 +21,6 @@ type NativeTag = (typeof NATIVE_TAGS)[number];
 const CEILING: Record<NativeTag, Record<string, number>> = {
   button: {
     'src/components/home/Home.tsx': 2,
-    'src/components/layout/Toast.tsx': 1,
     'src/components/manuscript/ChapterNav.tsx': 4,
     'src/components/manuscript/Manuscript.tsx': 2,
     'src/components/project/ProjectPicker.tsx': 3,

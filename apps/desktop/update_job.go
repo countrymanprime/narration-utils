@@ -28,6 +28,7 @@ type updateJob struct {
 	id, version, phase, message, errorText string
 	done, total                            int64
 	cancel                                 context.CancelFunc
+	started                                time.Time
 	staged                                 update.Staged
 	hasStaged                              bool
 }
@@ -70,7 +71,7 @@ func (h *Host) startUpdateDownload() (map[string]any, error) {
 		parent = context.Background()
 	}
 	ctx, cancel := context.WithCancel(parent)
-	job := &updateJob{id: fmt.Sprintf("update-%d", time.Now().UnixNano()), version: release.Version.String(), phase: updatePhaseDownloading, total: release.Asset.Size, cancel: cancel,
+	job := &updateJob{id: fmt.Sprintf("update-%d", time.Now().UnixNano()), version: release.Version.String(), phase: updatePhaseDownloading, total: release.Asset.Size, cancel: cancel, started: time.Now(),
 		message: "Downloading Narration Utils " + release.Version.String() + "…"}
 	h.updateJob = job
 	stager := h.stager
@@ -102,7 +103,6 @@ func (h *Host) runUpdateDownload(ctx context.Context, stager *update.Stager, rel
 		narratorText = update.UserMessage(err, "The update could not be downloaded.")
 	}
 	job.mu.Lock()
-	defer job.mu.Unlock()
 	switch {
 	case err == nil:
 		job.phase, job.message, job.staged, job.hasStaged = updatePhaseReady, "Version "+job.version+" is downloaded and checked.", staged, true
@@ -113,6 +113,11 @@ func (h *Host) runUpdateDownload(ctx context.Context, stager *update.Stager, rel
 		// The narrator reads a sentence; the log keeps what actually happened.
 		job.phase, job.errorText = updatePhaseError, narratorText
 		job.message = job.errorText
+	}
+	event, ok := endedJob(job.id, jobKindAppUpdate, job.phase, job.message, job.started)
+	job.mu.Unlock()
+	if ok {
+		h.publishJobEnded(event)
 	}
 }
 

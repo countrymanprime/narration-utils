@@ -21,6 +21,7 @@ import { SelectionMenu } from './SelectionMenu';
 import { AddNoteDialog } from './AddNoteDialog';
 import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from './EntitySummary';
 import { IconButton } from '../primitives/IconButton';
+import type { Notify } from '../primitives/Toast';
 
 const TEXT_SIZES = ['small', 'medium', 'large'] as const;
 const TEXT_SIZE_OPTIONS = TEXT_SIZES.map((value) => ({ value, label: value }));
@@ -38,7 +39,7 @@ const defaultState: ReaderState = { expandedChapters: [], bookmarks: [] };
 const escapeSelector = (value: string) =>
   typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(value) : value.replace(/(["\\])/g, '\\$1');
 
-export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: string) => void; focusStoryBibleEntity: (id: string) => void }) {
+export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; focusStoryBibleEntity: (id: string) => void }) {
   const api = useApi();
   const location = useLocation();
   const routerNavigate = useNavigate();
@@ -87,7 +88,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
           expandedChapters: next.expandedChapters || [],
         });
       } catch (error) {
-        notify(describeApiError(error));
+        notify(describeApiError(error), 'error');
       }
     },
     [api, notify],
@@ -126,7 +127,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
       void api
         .manuscriptParagraphs(chapterId)
         .then((next) => setParagraphs((current) => [...current.filter((paragraph) => paragraph.chapterId !== chapterId), ...next]))
-        .catch((error) => notify(describeApiError(error)))
+        .catch((error) => notify(describeApiError(error), 'error'))
         .finally(() =>
           setLoadingChapters((current) => {
             const next = new Set(current);
@@ -223,7 +224,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
         setReaderState({ ...readerState, bookmarks: [...readerState.bookmarks, next] });
       }
     } catch (error) {
-      notify(describeApiError(error));
+      notify(describeApiError(error), 'error');
     }
   };
   const runSearch = async (query: string) => {
@@ -237,7 +238,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
       const results = await api.manuscriptSearch(query);
       if (request === searchRequest.current) setSearchResults(results);
     } catch (error) {
-      if (request === searchRequest.current) notify(describeApiError(error));
+      if (request === searchRequest.current) notify(describeApiError(error), 'error');
     }
   };
   const addNote = () => {
@@ -263,7 +264,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
       setNotes((current) => [...current, created]);
       notify('Note added.');
     } catch (error) {
-      notify(describeApiError(error));
+      notify(describeApiError(error), 'error');
     }
   };
   const deleteNote = async (id: string) => {
@@ -273,7 +274,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
       closeSheet();
       notify('Note deleted.');
     } catch (error) {
-      notify(describeApiError(error));
+      notify(describeApiError(error), 'error');
     }
   };
 
@@ -484,7 +485,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: (text: s
                   void api
                     .readerBookmarkDelete(id)
                     .then(() => setReaderState((current) => ({ ...current, bookmarks: current.bookmarks.filter((item) => item.id !== id) })))
-                    .catch((error) => notify(describeApiError(error)))
+                    .catch((error) => notify(describeApiError(error), 'error'))
                 }
               />
             </div>

@@ -16,6 +16,7 @@ import { IconButton } from '../primitives/IconButton';
 import { SearchField } from '../primitives/SearchField';
 import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
+import type { Notify } from '../primitives/Toast';
 
 type EntitySort = { key: 'name' | 'occurrences'; dir: 'asc' | 'desc' };
 const TAB_PLURAL: Record<string, string> = {
@@ -46,7 +47,7 @@ const emptyGuideEntity = (name: string): GuideEntity => ({
   review_state: 'reviewed',
 });
 
-export function Guide({ notify, goToManuscript }: { notify: (text: string) => void; goToManuscript: (chapter: string, paragraph: number) => void }) {
+export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscript: (chapter: string, paragraph: number) => void }) {
   const api = useApi();
   const location = useLocation();
   const routerNavigate = useNavigate();
@@ -77,7 +78,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
         setRows(next);
         setSelectedId((current) => (next.find((row) => row.id === (selectId ?? current)) || next.find((row) => row.category !== 'Draft'))?.id);
       } catch (error) {
-        if (loadedOnce.current) notify(describeApiError(error));
+        if (loadedOnce.current) notify(describeApiError(error), 'error');
         else setLoadError(describeApiError(error));
       }
     },
@@ -87,6 +88,20 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
     void load(entityId);
     if (entityId) routerNavigate('/story-bible', { replace: true });
   }, [entityId, load, routerNavigate]);
+  // A rebuild that was started before the narrator left this page and is still going shows its dialog again on return; one that ended while
+  // they were away needs nothing here, because the page just loaded its rows and the app already said it finished.
+  useEffect(() => {
+    let active = true;
+    api
+      .guideBuildState()
+      .then((job) => active && ['preparing', 'running'].includes(job.phase) && setBuildJob(job))
+      .catch((error) => active && notify(describeApiError(error), 'error'));
+    return () => {
+      active = false;
+    };
+  }, [api, notify]);
+  // A rebuild that ends while its dialog is dismissed or the narrator is elsewhere on this page still refreshes the entries.
+  useEffect(() => api.subscribeJobEnded((event) => event.kind === 'story_bible' && void load()), [api, load]);
   useEffect(() => {
     if (!buildJob?.id || !['preparing', 'running'].includes(buildJob.phase)) return;
     let active = true;
@@ -95,15 +110,14 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
         .guideBuildState()
         .then(async (next) => {
           if (!active) return;
-          setBuildJob(next);
-          if (next.phase === 'success') {
-            // Await the reload before dismissing the dialog/showing success,
-            // so the page never briefly renders on stale (pre-build) rows -
-            // that render used to trip the route ErrorBoundary once, which
-            // looked exactly like the build itself had failed.
+          if (next.phase !== 'success') setBuildJob(next);
+          else {
+            // Await the reload before dismissing the dialog, so the page never
+            // briefly renders on stale (pre-build) rows - that render used to
+            // trip the route ErrorBoundary once, which looked exactly like the
+            // build itself had failed. The app says the build is done: the
+            // host's job-end event is the one place that does (ADR 0076).
             await load();
-            if (!active) return;
-            notify(next.result?.message || 'Story Bible rebuilt.');
             setBuildJob(undefined);
           }
         })
@@ -118,7 +132,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
       active = false;
       window.clearInterval(timer);
     };
-  }, [api, buildJob?.id, buildJob?.phase, load, notify]);
+  }, [api, buildJob?.id, buildJob?.phase, load]);
 
   // A Draft entry (a brand new, not-yet-categorized entity) is hidden from
   // every tab/search except while it's the one open in the detail pane - it
@@ -167,12 +181,10 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
                 onClick={async () => {
                   try {
                     const job = await api.guideBuild();
-                    if (job.phase === 'success') {
-                      await load();
-                      notify(job.result?.message || 'Story Bible rebuilt.');
-                    } else setBuildJob(job);
+                    if (job.phase === 'success') await load();
+                    else setBuildJob(job);
                   } catch (error) {
-                    notify(describeApiError(error));
+                    notify(describeApiError(error), 'error');
                   }
                 }}
               >
@@ -254,7 +266,7 @@ export function Guide({ notify, goToManuscript }: { notify: (text: string) => vo
           />
         </div>
       </div>
-      {buildJob && <WorkDialog title="Rebuild Story Bible" job={buildJob} close={() => setBuildJob(undefined)} />}
+      {buildJob && <WorkDialog title="Rebuild Story Bible" job={buildJob} close={() => setBuildJob(undefined)} background={() => setBuildJob(undefined)} />}
     </Tabs>
   );
 }

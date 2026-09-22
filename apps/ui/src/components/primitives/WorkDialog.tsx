@@ -8,25 +8,46 @@ const active = new Set<WorkJob['phase']>(['preparing', 'committing', 'running'])
 // Shown while a job runs with no Cancel (the Story Bible rebuild, an import that is writing): the dialog stays blocking, so
 // it says why nothing can be pressed and what will change. It is the dialog's description, so a screen reader hears it on open.
 const NOT_CANCELLABLE_NOTICE = 'This step cannot be cancelled. Close appears when it finishes.';
+// The same, for a job the caller lets keep running without the dialog (ADR 0076): the app tells the narrator when it ends.
+const BACKGROUND_NOTICE = 'This step cannot be cancelled. You can close this window: it keeps running, and a message appears when it finishes.';
 
-export function WorkDialog({ title, job, close, cancel }: { title: string; job: WorkJob; close?: () => void; cancel?: () => void }) {
+export function WorkDialog({
+  title,
+  job,
+  close,
+  cancel,
+  background,
+}: {
+  title: string;
+  job: WorkJob;
+  close?: () => void;
+  cancel?: () => void;
+  /** Lets the narrator dismiss the dialog while the job runs. Only for a job whose end the app announces on its own (ADR 0076). */
+  background?: () => void;
+}) {
   const running = active.has(job.phase);
   // A running job that has reported no progress yet (percent 0) is indeterminate: no value, and the bar slides.
   const indeterminate = running && job.percent === 0;
   const showCancel = Boolean(cancel) && running;
   const showClose = Boolean(close) && !running;
+  const showBackground = Boolean(background) && running;
   const notCancellable = running && !cancel;
   return (
     <Dialog
       title={title}
       actionsAlign="end"
       // Escape is ignored while a job runs (Cancel is a deliberate action) and works as Close once it has finished.
-      onEscape={close && !running ? close : undefined}
+      onEscape={close && !running ? close : showBackground ? background : undefined}
       // A running job with no Cancel has nothing to press: no action row is drawn, and the description says why.
-      description={notCancellable ? <span className="mb-3 block">{NOT_CANCELLABLE_NOTICE}</span> : undefined}
+      description={notCancellable ? <span className="mb-3 block">{showBackground ? BACKGROUND_NOTICE : NOT_CANCELLABLE_NOTICE}</span> : undefined}
       actions={
-        showCancel || showClose ? (
+        showCancel || showClose || showBackground ? (
           <>
+            {showBackground && (
+              <Button variant="ghost" onClick={background}>
+                Continue in background
+              </Button>
+            )}
             {showCancel && (
               <Button variant="ghost" onClick={cancel}>
                 Cancel

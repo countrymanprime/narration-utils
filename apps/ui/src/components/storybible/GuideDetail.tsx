@@ -32,6 +32,7 @@ import { IconButton } from '../primitives/IconButton';
 import { Select } from '../primitives/Select';
 import { TextField } from '../primitives/TextField';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
+import type { Notify } from '../primitives/Toast';
 
 export function GuideDetail({
   entity,
@@ -53,7 +54,7 @@ export function GuideDetail({
   onCreatedNewDraft?: (id: string) => void;
   entities: GuideEntity[];
   reload: (selectId?: string) => Promise<void>;
-  notify: (text: string) => void;
+  notify: Notify;
   goToManuscript: (chapter: string, paragraph: number) => void;
 }) {
   const api = useApi();
@@ -137,7 +138,7 @@ export function GuideDetail({
       await reload(entity.id);
       return true;
     } catch (error) {
-      notify(describeApiError(error));
+      notify(describeApiError(error), 'error');
       return false;
     }
   };
@@ -169,9 +170,9 @@ export function GuideDetail({
         setTtsJob(undefined);
         notify('Preview voice installed.');
         await playPreview(aliasIndex);
-      } else if (job.phase !== 'cancelled') notify(job.error || job.message);
+      } else if (job.phase !== 'cancelled') notify(job.error || job.message, 'error');
     } catch (error) {
-      notify(describeApiError(error));
+      notify(describeApiError(error), 'error');
     }
   };
   const cancelVoiceInstall = async () => {
@@ -179,7 +180,7 @@ export function GuideDetail({
       try {
         setTtsJob(await api.ttsInstallCancel(ttsJob.id));
       } catch (error) {
-        notify(describeApiError(error));
+        notify(describeApiError(error), 'error');
       }
       return;
     }
@@ -192,7 +193,7 @@ export function GuideDetail({
       notify('Entity created.');
       onCreatedNewDraft?.(id);
     } catch (error) {
-      notify(describeApiError(error));
+      notify(describeApiError(error), 'error');
     }
   };
   const rescanOccurrences = async () => {
@@ -201,7 +202,7 @@ export function GuideDetail({
       notify('Occurrences rescanned.');
       await reload(entity.id);
     } catch (error) {
-      notify(describeApiError(error));
+      notify(describeApiError(error), 'error');
     }
   };
   const onAliasKeyDown = (event: React.KeyboardEvent) => {
@@ -264,7 +265,7 @@ export function GuideDetail({
                     notify(locked ? 'Entry unlocked.' : 'Entry locked.');
                     await reload(entity.id);
                   } catch (error) {
-                    notify(describeApiError(error));
+                    notify(describeApiError(error), 'error');
                   }
                 }}
               >
@@ -597,7 +598,7 @@ export function GuideDetail({
                           await api.guideUnrelate(entity.id, rel.id, rel.label);
                           await reload(entity.id);
                         } catch (error) {
-                          notify(describeApiError(error));
+                          notify(describeApiError(error), 'error');
                         }
                       }}
                     >
@@ -643,7 +644,7 @@ export function GuideDetail({
                   setRelationLabel('');
                   await reload(entity.id);
                 } catch (error) {
-                  notify(describeApiError(error));
+                  notify(describeApiError(error), 'error');
                 }
               }}
             >
@@ -766,7 +767,7 @@ export function GuideDetail({
                   notify('Entity deleted.');
                   return reload();
                 })
-                .catch((error) => notify(describeApiError(error)));
+                .catch((error) => notify(describeApiError(error), 'error'));
             }}
             cancel={() => setConfirmation(undefined)}
           />
@@ -786,7 +787,7 @@ export function GuideDetail({
                   notify(`Merged ${selectedAliasMatch.canonical_name} into ${entity.canonical_name}.`);
                   return reload(entity.id);
                 })
-                .catch((error) => notify(describeApiError(error)));
+                .catch((error) => notify(describeApiError(error), 'error'));
             }}
             cancel={() => setConfirmation(undefined)}
           />
