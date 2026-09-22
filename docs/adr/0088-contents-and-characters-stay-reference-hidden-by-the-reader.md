@@ -18,8 +18,10 @@ this PRD (ADR 0004, ADR 0005). The Manuscript page's chapter-navigation panel al
 renders every chapter it is handed, `reference` included, so a narrator who pages through the book still meets Contents and
 Characters as ordinary, readable chapters.
 
-Fixing that read-through view is [manuscript-reader-search-and-controls.prd.md](../prds/manuscript-reader-search-and-controls.prd.md)
-Phase 5, which reverses the reader half of ADR 0005. That PRD had not landed (stack S19b of `implementation-plan.md`'s train, section
+Fixing that read-through view is manuscript-reader-search-and-controls Phase 5 (delivered since, PRD
+deleted, see [the manuscript guide](../guides/using-the-app/manuscript.md) and
+[ADR 0090](0090-the-page-flip-reader-hides-reference-chapters-superseding-the-reader-half-of-adr-0005.md)),
+which reverses the reader half of ADR 0005. That PRD had not landed (stack S19b of `implementation-plan.md`'s train, section
 4) when this stack ran, so this PRD's Phase 2 cannot itself change what the reader displays without duplicating or pre-empting that
 phase's own design. This ADR records the decision the storage side has already settled, and leaves the reader wiring to the PRD that
 owns `Manuscript.tsx`.
@@ -33,11 +35,12 @@ owns `Manuscript.tsx`.
 - An accepted Characters section is not dropped and gets no special non-chapter treatment beyond the existing `reference`
   classification; the Story Bible entries created from its candidates (Phase 3 of this PRD) are its readable form, matching S2's
   recommendation.
-- Hiding these `reference` chapters from the reader's own page-flip view (not just the chapter-navigation panel) is left to
-  [manuscript-reader-search-and-controls.prd.md](../prds/manuscript-reader-search-and-controls.prd.md) Phase 5, which owns
-  `Manuscript.tsx` and reverses the reader half of ADR 0005 when it lands. This PRD's Phase 2 is `partial` for that reason: the
-  decision and the storage-side classification are settled now, and the read-through hiding is deferred to that phase rather than
-  built twice.
+- Hiding these `reference` chapters from the reader's own page-flip view (not just the chapter-navigation panel) was left to
+  manuscript-reader-search-and-controls Phase 5, which owned `Manuscript.tsx` and reverses the reader half of ADR 0005 - now
+  delivered as [ADR 0090](0090-the-page-flip-reader-hides-reference-chapters-superseding-the-reader-half-of-adr-0005.md). This
+  PRD's own Phase 2 was `partial` for that reason at the time this ADR was written: the decision and the storage-side
+  classification were settled here, and the read-through hiding was deferred to that phase rather than built twice; that phase has
+  since landed, and import-structure-toc-and-characters.prd.md's own Phase 2 row now reads `complete`.
 
 ## Consequences
 

@@ -15,7 +15,7 @@ describe('Transcript actions that answer late or fail (ADR 0075)', () => {
     const notify = vi.fn();
     const { unmount } = render(
       <ApiProvider api={createMockApi({ transcriptCancel: hang })}>
-        <Transcript state={{ ...WIRE_TRANSCRIPT, phase: 'running' }} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} />
+        <Transcript state={{ ...WIRE_TRANSCRIPT, phase: 'running' }} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked />
       </ApiProvider>,
     );
     const cancel = screen.getByRole('button', { name: 'Cancel' });
@@ -27,7 +27,7 @@ describe('Transcript actions that answer late or fail (ADR 0075)', () => {
 
     render(
       <ApiProvider api={createMockApi({ transcriptCancel: () => Promise.reject(new Error('the comparison already ended')) })}>
-        <Transcript state={{ ...WIRE_TRANSCRIPT, phase: 'running' }} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} />
+        <Transcript state={{ ...WIRE_TRANSCRIPT, phase: 'running' }} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked />
       </ApiProvider>,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -38,11 +38,53 @@ describe('Transcript actions that answer late or fail (ADR 0075)', () => {
     const notify = vi.fn();
     render(
       <ApiProvider api={createMockApi({ transcriptJump: () => Promise.reject(new Error('REAPER is not running')) })}>
-        <Transcript state={{ ...WIRE_TRANSCRIPT, phase: 'success', rows: WIRE_DISCREPANCIES }} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} />
+        <Transcript
+          state={{ ...WIRE_TRANSCRIPT, phase: 'success', rows: WIRE_DISCREPANCIES }}
+          notify={notify}
+          goHome={vi.fn()}
+          goToManuscript={vi.fn()}
+          dawFileLinked
+        />
       </ApiProvider>,
     );
     fireEvent.click((await screen.findAllByRole('button', { name: 'Play recorded audio' })).find((button) => !(button as HTMLButtonElement).disabled)!);
     await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('REAPER is not running'), 'error'));
+  });
+});
+
+describe('Transcript DAW-link gating (PRD project-workspace-and-daw-link.prd.md, W16)', () => {
+  it('disables Start comparison without a linked DAW file, and enables it once linked', () => {
+    const { rerender } = render(
+      <ApiProvider api={createMockApi()}>
+        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked={false} />
+      </ApiProvider>,
+    );
+    expect((screen.getByRole('button', { name: /Start comparison/ }) as HTMLButtonElement).disabled).toBe(true);
+
+    rerender(
+      <ApiProvider api={createMockApi()}>
+        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked />
+      </ApiProvider>,
+    );
+    expect((screen.getByRole('button', { name: /Start comparison/ }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('disables Play recorded audio and marker export without a linked DAW file, but keeps them for review after linking', () => {
+    render(
+      <ApiProvider api={createMockApi()}>
+        <Transcript
+          state={{ ...WIRE_TRANSCRIPT, phase: 'success', rows: WIRE_DISCREPANCIES, markerExport: { phase: 'idle', message: '', added: 0, skipped: 0 } }}
+          notify={vi.fn()}
+          goHome={vi.fn()}
+          goToManuscript={vi.fn()}
+          dawFileLinked={false}
+        />
+      </ApiProvider>,
+    );
+    for (const button of screen.getAllByRole('button', { name: 'Play recorded audio' })) {
+      expect((button as HTMLButtonElement).disabled).toBe(true);
+    }
+    expect((screen.getByRole('button', { name: /Export/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
 
@@ -55,6 +97,7 @@ describe('Transcript chapter choice', () => {
           notify={vi.fn()}
           goHome={vi.fn()}
           goToManuscript={vi.fn()}
+          dawFileLinked
         />
       </ApiProvider>,
     );
@@ -70,7 +113,7 @@ describe('Transcript vocabulary suggestions', () => {
     const api = createMockApi();
     render(
       <ApiProvider api={api}>
-        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} />
+        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked />
       </ApiProvider>,
     );
     await screen.findByText('Vocabulary hints');
@@ -100,6 +143,7 @@ describe('Transcript vocabulary suggestions', () => {
           notify={vi.fn()}
           goHome={vi.fn()}
           goToManuscript={vi.fn()}
+          dawFileLinked
         />
       </ApiProvider>,
     );
@@ -144,7 +188,7 @@ describe('Transcript vocabulary suggestions', () => {
     const api = createMockApi({ transcriptStart, whisperInstall });
     render(
       <ApiProvider api={api}>
-        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} />
+        <Transcript state={WIRE_TRANSCRIPT} notify={vi.fn()} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked />
       </ApiProvider>,
     );
 
@@ -166,6 +210,7 @@ describe('Transcript vocabulary suggestions', () => {
           notify={vi.fn()}
           goHome={vi.fn()}
           goToManuscript={vi.fn()}
+          dawFileLinked
         />
       </ApiProvider>,
     );
@@ -181,7 +226,7 @@ describe('Transcript vocabulary hints feedback', () => {
     const api = createMockApi(overrides);
     render(
       <ApiProvider api={api}>
-        <Transcript state={WIRE_TRANSCRIPT} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} />
+        <Transcript state={WIRE_TRANSCRIPT} notify={notify} goHome={vi.fn()} goToManuscript={vi.fn()} dawFileLinked />
       </ApiProvider>,
     );
     return notify;

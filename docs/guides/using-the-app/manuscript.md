@@ -53,6 +53,19 @@ keeps it highlighted for 30 seconds, so you can see where you landed after the s
 
 ![Manuscript - the line reached from the Story Bible stays highlighted so it is easy to find](../../images/ui/manuscript-go-to-line.webp)
 
+The Chapters & Search icon opens a panel with the chapter list and a search box. Typing filters
+matching chapter titles and subtitles right away; matching lines appear about two seconds after you
+stop typing (or immediately on Enter), so a fast typist never sees a flash of "No matches" for a
+query that was never finished. Each line result shows the surrounding text with the match
+highlighted; choosing one clears the search box, closes the panel, and jumps to that line. The
+clear (×) icon empties the box and returns focus to it; Escape clears the box first, then closes
+the panel on a second press.
+
+The reader shows only the manuscript's narratable chapters. A table of contents or a Characters
+section the importer recognized stays in the project's data (the Story Bible has the readable form
+of Characters) but is never a page you page through in the reader, and a saved or shared link into
+one tells you so instead of landing there.
+
 ---
 
 [← Home](home.md) · [Index](README.md) · [Proofing →](proofing.md)
