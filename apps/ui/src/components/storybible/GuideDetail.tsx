@@ -336,7 +336,8 @@ export function GuideDetail({
           <span className="mr-1 font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>
             {entity.occurrence_count} occurrences
           </span>
-          {!isNewDraft && (
+          {/* Lock/Unlock is read-view only (ADR 0087): it can never be pressed mid-edit, so an edit is never silently discarded by a lock. */}
+          {!isNewDraft && !editing && (
             <TooltipTarget text={locked ? 'Unlock entry' : 'Lock entry'}>
               <IconButton
                 label={locked ? 'Unlock entry' : 'Lock entry'}
@@ -350,7 +351,7 @@ export function GuideDetail({
           )}
           {canEdit && !editing && (
             <TooltipTarget text="Edit this entry">
-              <IconButton label="Edit this entry" onClick={() => setEditing(true)}>
+              <IconButton label="Edit this entry" disabled={mutation.isBusy} onClick={() => setEditing(true)}>
                 <FontAwesomeIcon icon={faPen} />
               </IconButton>
             </TooltipTarget>
@@ -373,14 +374,16 @@ export function GuideDetail({
                   <FontAwesomeIcon icon={faXmark} />
                 </IconButton>
               </TooltipTarget>
+              {/* Delete only exists in edit mode (ADR 0087): unreachable from the read view, and set off from Save/Cancel by a divider
+                  so it cannot be mis-clicked beside them (B5). A locked entry never reaches edit mode (ADR 0007), so it never has one. */}
+              <div className="ml-1 border-l pl-2" style={{ borderColor: 'var(--border)' }}>
+                <TooltipTarget text="Delete entity">
+                  <IconButton label="Delete entity" variant="danger" disabled={mutation.isBusy} onClick={() => setConfirmation('delete')}>
+                    <FontAwesomeIcon icon={faTrash} />
+                  </IconButton>
+                </TooltipTarget>
+              </div>
             </>
-          )}
-          {!locked && !isNewDraft && (
-            <TooltipTarget text="Delete entity">
-              <IconButton label="Delete entity" disabled={mutation.isBusy} onClick={() => setConfirmation('delete')}>
-                <FontAwesomeIcon icon={faTrash} />
-              </IconButton>
-            </TooltipTarget>
           )}
           {isNewDraft && (
             <TooltipTarget text="Discard this new entry">
@@ -780,11 +783,10 @@ export function GuideDetail({
                     )}
                   </p>
                 </div>
-                <TooltipTarget text="Open this evidence in Manuscript">
-                  <Button variant="ghost" className="flex-none text-xs" onClick={() => goToManuscript(item.chapter, item.paragraph)}>
+                <TooltipTarget text="Go to this line in Manuscript">
+                  <IconButton label="Go to line in Manuscript" className="flex-none" onClick={() => goToManuscript(item.chapter, item.paragraph)}>
                     <FontAwesomeIcon icon={faFileLines} />
-                    Go to line
-                  </Button>
+                  </IconButton>
                 </TooltipTarget>
               </div>
             ))

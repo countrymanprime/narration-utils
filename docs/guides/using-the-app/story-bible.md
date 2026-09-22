@@ -14,8 +14,11 @@ words, so add unusual names by hand with the + button.
 
 ![Story Bible entity detail panel](../../images/ui/storybible-entity.webp)
 
-Pressing Edit switches the entry to edit mode, where Save and Cancel appear. Locked entries show
-neither Edit nor Save.
+Pressing Edit switches the entry to edit mode, where Save, Cancel and a red Delete appear on the far
+side of the header, set apart from Save so it can't be mis-clicked. Lock only appears in the read
+view: an entry can never be locked while it is being edited, so unlocking always returns you to a
+read-only entry, never back into an edit in progress. Locked entries show only Unlock; a brand-new
+entry starts unlocked and can be locked once it has been saved.
 
 Each entry also has **Properties**: a list of labelled facts, such as "Codename: Wren" or "Abilities: flight",
 that you keep in the order you give them. In edit mode each property is a row with a name and a value, buttons to

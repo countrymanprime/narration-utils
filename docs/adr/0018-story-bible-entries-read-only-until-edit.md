@@ -1,6 +1,6 @@
 # 0018. Story Bible entries are read-only until Edit is pressed
 
-**Status:** Accepted
+**Status:** Accepted (its "read-only actions stay available regardless of mode" clause is superseded by [ADR 0087](0087-story-bible-header-actions-are-mode-based-and-lock-cannot-happen-mid-edit.md); the rest stands)
 **Date:** 2026-09-18
 
 ## Context

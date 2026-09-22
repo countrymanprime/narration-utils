@@ -558,11 +558,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'delete-confirm': async (page) => {
       await goToPage(page, 'Story Bible');
       await page.locator('tr[data-row]').first().click();
-      // The delete button is hidden while the selected entity is locked -
-      // unlock it first if needed so this state is reachable regardless of
-      // which entity the fixture data happens to sort first.
+      // Delete only exists in edit mode (ADR 0087); the delete button is unreachable
+      // while the selected entity is locked, and unlocking never happens mid-edit,
+      // so unlock it first if needed - regardless of which entity sorts first.
       const unlock = page.getByRole('button', { name: 'Unlock entry' });
       if (await unlock.count()) await unlock.click();
+      await clickVisible(page, 'button', 'Edit this entry');
       await clickVisible(page, 'button', 'Delete entity');
       await confirmDialog(page, 'Delete entry').waitFor();
     },
@@ -944,6 +945,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.locator('tr[data-row]').first().click();
       const unlock = page.getByRole('button', { name: 'Unlock entry' });
       if (await unlock.count()) await unlock.click();
+      await clickVisible(page, 'button', 'Edit this entry');
       await clickVisible(page, 'button', 'Delete entity');
       await confirmDialog(page, 'Delete entry').waitFor();
     },

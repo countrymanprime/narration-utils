@@ -162,6 +162,8 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: /Character/ }));
     await waitFor(() => expect(guideCreate).toHaveBeenCalledTimes(1));
     expect(guideCreate).toHaveBeenCalledWith(expect.stringMatching(/New entity/), 'Character', []);
+    // Delete only exists in edit mode (ADR 0087): the new entry opens read-only, like any other.
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit this entry' }));
     expect(await screen.findByRole('button', { name: 'Delete entity' })).toBeTruthy();
   });
 

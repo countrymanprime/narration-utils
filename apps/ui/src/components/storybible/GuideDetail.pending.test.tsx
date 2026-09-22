@@ -79,9 +79,9 @@ describe('Story Bible actions acknowledge within 100 ms and cannot be fired twic
 
   it('keeps an alias the narrator typed while another action was running, instead of clearing it and adding nothing', () => {
     const guideEdit = neverAnswers<void>();
-    renderDetail({ guideEdit, guideSetLocked: neverAnswers<void>() });
+    renderDetail({ guideEdit, guideRescan: neverAnswers<void>() });
     edit();
-    press('Lock entry', 1);
+    press('Rescan occurrences', 1);
     const box = screen.getByRole('combobox', { name: 'Add an alias or find a matching entry' });
     fireEvent.change(box, { target: { value: 'Ali' } });
     fireEvent.keyDown(box, { key: 'Enter' });
@@ -106,6 +106,7 @@ describe('Story Bible actions acknowledge within 100 ms and cannot be fired twic
   it('Delete: the confirm says it is working, ignores a second press, and cannot be cancelled away', () => {
     const guideDelete = neverAnswers<void>();
     renderDetail({ guideDelete });
+    edit();
     fireEvent.click(screen.getByRole('button', { name: 'Delete entity' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Delete entry' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Delete entry' }));
@@ -129,7 +130,7 @@ describe('Story Bible actions acknowledge within 100 ms and cannot be fired twic
     renderDetail({ guideSetLocked: neverAnswers<void>() });
     press('Lock entry', 1);
     acknowledged();
-    expect((screen.getByRole('button', { name: 'Delete entity' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Edit this entry' }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole('button', { name: 'Rescan occurrences' }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
