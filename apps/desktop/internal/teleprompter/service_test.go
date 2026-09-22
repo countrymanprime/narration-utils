@@ -282,6 +282,50 @@ func TestSeekErrorsWhenNoSessionIsRunning(t *testing.T) {
 	}
 }
 
+func TestSeekErrorsWhenTheControlFileCannotBeOpened(t *testing.T) {
+	f := newFixture(t, "stream")
+	if err := f.service.Start(validOptions()); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, "the position event", func() bool { return f.recorder.firstEvent("position") != nil })
+
+	// Remove the session directory the control file lives in, so the next
+	// OpenFile call fails: a realistic failure mode (the project or its
+	// session directory disappears mid-session, e.g. an external clean-up).
+	if err := os.RemoveAll(f.session); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := f.service.Seek(5); err == nil {
+		t.Fatal("expected an error once the session directory is gone")
+	}
+}
+
+func TestFailSetsTheErrorPhaseAndNotifies(t *testing.T) {
+	f := newFixture(t, "stream")
+	f.service.config.Python = filepath.Join(t.TempDir(), "does-not-exist.exe")
+
+	if err := f.service.Start(validOptions()); err == nil {
+		t.Fatal("expected Start to fail when the sidecar executable does not exist")
+	}
+
+	if got := phase(f.service); got != "error" {
+		t.Fatalf("phase = %q, want %q", got, "error")
+	}
+	f.service.mu.RLock()
+	message, _ := f.service.state["message"].(string)
+	f.service.mu.RUnlock()
+	if message == "" {
+		t.Fatal("expected a non-empty failure message")
+	}
+	f.recorder.mu.Lock()
+	states := len(f.recorder.states)
+	f.recorder.mu.Unlock()
+	if states == 0 {
+		t.Fatal("expected at least one changed notification")
+	}
+}
+
 func TestSeekErrorsAfterTheSessionHasStopped(t *testing.T) {
 	f := newFixture(t, "stream")
 	if err := f.service.Start(validOptions()); err != nil {
