@@ -300,3 +300,52 @@ func TestClearRemovesTheAnalysisLedgerDirectoryAlongsideManuscriptData(t *testin
 		t.Fatalf("Clear left the analysis ledger directory behind: %v", err)
 	}
 }
+
+// The evidence ledger PRD's Phase 4 (Q5) adds the per-item result cache
+// directory alongside LedgerDir for the same reason: a cache entry's key
+// includes the source identity but not the chapter ID, yet its value was
+// produced for items under a chapter ID a re-import invalidates (Q9), so it
+// must not survive either.
+func TestResetDerivedClearsTheAnalysisCacheDirectory(t *testing.T) {
+	project := t.TempDir()
+	cacheDir := evidence.CacheDir(project)
+	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cacheDir, "entry.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resetDerived(project); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(cacheDir); !os.IsNotExist(err) {
+		t.Fatalf("resetDerived left the analysis cache directory behind: %v", err)
+	}
+}
+
+func TestClearRemovesTheAnalysisCacheDirectoryAlongsideManuscriptData(t *testing.T) {
+	project := t.TempDir()
+	service := New(project)
+	job := service.Begin(layout.RepoFile(layout.FixturesDir + "/alice.md"))
+	if _, err := service.Preview(job.ID, 1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Commit(job.ID, false, nil); err != nil {
+		t.Fatal(err)
+	}
+	cacheDir := evidence.CacheDir(project)
+	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cacheDir, "entry.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := service.Clear(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(cacheDir); !os.IsNotExist(err) {
+		t.Fatalf("Clear left the analysis cache directory behind: %v", err)
+	}
+}
