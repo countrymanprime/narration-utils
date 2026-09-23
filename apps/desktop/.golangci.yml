@@ -39,7 +39,31 @@ linters:
               desc: "the Go host imports networking only in internal/assets (the first-use download flow), internal/update (the app's own update, ADR 0072) and the root media.go (the track media route); see ADR 0032 point 4 and ADR 0012"
             - pkg: crypto/tls
               desc: "the Go host imports networking only in internal/assets, internal/update and the root media.go; see ADR 0032 point 4"
-            - pkg: golang.org/x/net
+            # golang.org/x/net's actual networking subpackages, denied individually rather than the whole module tree:
+            # the module also holds non-networking packages (golang.org/x/net/html, the XHTML parser
+            # internal/importer/epub_xhtml.go and epub_toc.go use to read EPUB content documents and its nav TOC,
+            # txt-and-epub-import PRD Phase 2, recorded in ADR 0101) that this rule was never meant to block - its
+            # own desc names "networking", not "parsing". A denylist entry keyed to the whole tree pre-dated any
+            # non-networking use of the module and was broader than its stated intent.
+            - pkg: golang.org/x/net/http2
+              desc: "the Go host imports networking only in internal/assets, internal/update and the root media.go; see ADR 0032 point 4"
+            - pkg: golang.org/x/net/proxy
+              desc: "the Go host imports networking only in internal/assets, internal/update and the root media.go; see ADR 0032 point 4"
+            - pkg: golang.org/x/net/websocket
+              desc: "the Go host imports networking only in internal/assets, internal/update and the root media.go; see ADR 0032 point 4"
+            - pkg: golang.org/x/net/webdav
+              desc: "the Go host imports networking only in internal/assets, internal/update and the root media.go; see ADR 0032 point 4"
+            - pkg: golang.org/x/net/icmp
+              desc: "the Go host imports networking only in internal/assets, internal/update and the root media.go; see ADR 0032 point 4"
+            - pkg: golang.org/x/net/ipv4
+              desc: "the Go host imports networking only in internal/assets, internal/update and the root media.go; see ADR 0032 point 4"
+            - pkg: golang.org/x/net/ipv6
+              desc: "the Go host imports networking only in internal/assets, internal/update and the root media.go; see ADR 0032 point 4"
+            - pkg: golang.org/x/net/dns
+              desc: "the Go host imports networking only in internal/assets, internal/update and the root media.go; see ADR 0032 point 4"
+            - pkg: golang.org/x/net/nettest
+              desc: "the Go host imports networking only in internal/assets, internal/update and the root media.go; see ADR 0032 point 4"
+            - pkg: golang.org/x/net/netutil
               desc: "the Go host imports networking only in internal/assets, internal/update and the root media.go; see ADR 0032 point 4"
         analyzers-report-they-do-not-write:
           # ADR 0032 point 1: an analyzer's output is a finding; it does not edit audio or the manuscript, and the

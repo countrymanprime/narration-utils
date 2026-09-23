@@ -221,7 +221,7 @@ export function Home({
               </>
             ) : (
               <>
-                <strong>No imported manuscript</strong> — import a Word, Markdown or plain text manuscript
+                <strong>No imported manuscript</strong> — import a Word, Markdown, plain text or EPUB manuscript
               </>
             )}
           </span>
