@@ -143,7 +143,7 @@ H.test('inspect_compare_results reports a missing results file', function()
 end)
 
 H.test('inspect_compare_results emits one COMPARE_MARKER per row with project-time positions', function()
-  local s, _, _, write_results = prepared_run('r1')
+  local s, a, _, write_results = prepared_run('r1')
   local path = write_results({
     'SUMMARY|2 discrepancy(s) found.',
     marker_line(0, '12.500000', 'MISREAD', 'MISREAD: alice', 'Alice', 'Alyss'),
@@ -172,6 +172,11 @@ H.test('inspect_compare_results emits one COMPARE_MARKER per row with project-ti
     'pending',
     '',
     '12.5',
+    -- The trailing identity (review-dashboard PRD Phase 6): item, take and track GUIDs, so a finding can be navigated
+    -- to by GUID instead of by a row that only lives as long as this run.
+    a.guid,
+    a.takes[1].guid,
+    a.track.guid,
   }
   H.eq(events[1], first)
   -- Item 1 starts at 200 s, offset 0, rate 2: project time 200 + 3 / 2.
@@ -189,6 +194,17 @@ H.test('inspect_compare_results falls back to a count summary and flags markers 
   H.eq(events[1][14], 'existing')
   H.eq(events[1][15], 'MISREAD: previous')
   H.eq(events[2], { 'COMPARE_INSPECTED', 'r1', '1 discrepancy(s) found.', '1', '1' })
+end)
+
+H.test('the GUIDs on a marker are the ones the item had when the comparison was prepared', function()
+  local s, a, _, write_results = prepared_run('r1')
+  local prepared_item, prepared_take = a.guid, a.takes[1].guid
+  -- The narrator edits while the sidecar runs; the audio the rows describe is the audio prepared, so the identity is too.
+  a.guid = '{AAAAAAAA-0000-4000-8000-0000000000AA}'
+  local path = write_results({ marker_line(0, '12.500000', 'MISREAD', 'MISREAD: alice', 'Alice', 'Alyss') })
+  s:send('inspect_compare_results', 'r1', path)
+  local marker = s:events()[1]
+  H.eq({ marker[17], marker[18] }, { prepared_item, prepared_take })
 end)
 
 H.test('an existing marker only counts within 0.15 s and with the same prefix', function()

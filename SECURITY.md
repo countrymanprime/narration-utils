@@ -35,7 +35,7 @@ especially welcome:
 - The arguments and session files the app hands its local sidecars, for example a value from the interface becoming a
   sidecar option, or the teleprompter's stop, control and credits-text files in the session folder
   ([ADR 0150](docs/adr/0150-the-teleprompter-reads-credits-as-a-host-rendered-script-file-not-a-chapter.md)).
-- The file protocol between the app and REAPER (the session folder under REAPER's resource path, the command files the Lua bridge reads, and the paths it opens from a command), the arguments a DAW or a shortcut starts the app with (`--daw REAPER` from the REAPER launcher, `--daw Audacity` from the installer's "Narration Utils for Audacity" Start Menu entry, `--project-folder`, `--session-dir`), and the local `/media` route that plays a project's audio.
+- The file protocol between the app and REAPER (the session folder under REAPER's resource path, the command files the Lua bridge reads, and the paths it opens from a command, and the commands that move REAPER's selection, cursor, time selection and transport), the arguments a DAW or a shortcut starts the app with (`--daw REAPER` from the REAPER launcher, `--daw Audacity` from the installer's "Narration Utils for Audacity" Start Menu entry, `--project-folder`, `--session-dir`), and the local `/media` route that plays a project's audio.
 
 Problems in a third-party dependency belong upstream, but tell us if we ship a version that is affected.
 

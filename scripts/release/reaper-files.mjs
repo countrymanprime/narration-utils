@@ -6,6 +6,7 @@ export const REAPER_FILES = [
   'narration_bridge_core.lua',
   'narration_compare.lua',
   'narration_line_identity.lua',
+  'narration_navigation.lua',
   'narration_pickups.lua',
   'narration_project_state.lua',
   'narration_render.lua',

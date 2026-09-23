@@ -1,0 +1,45 @@
+version 7.80/x64 os Win64 Lua 5.4
+PASS 0 the scratch project is open from -Out :: <out>\navigation.rpp
+time selection after setting only the loop points to 0.5..2.5: 0.500..2.500
+loop points after setting only the time selection to 1..2: 1.000..2.000
+baseline: time selection 1.000..2.000 loop points 1.000..2.000 repeat 0 undo '' dirty 0
+PASS 1 ping answers PONG with version 1, no loop, not playing :: PONG|p1|1|0|0
+PASS 2 ... makes no undo point :: '' -> ''
+PASS 2 loop_context answers LOOP_STARTED 10.5..12.5 :: LOOP_STARTED|l1|{757A69FD-9121-4DEE-ACC1-B7E363BCE354}|10.500000|12.500000
+PASS 2 ... REAPER reads the time selection back as 10.5..12.5 :: 10.500..12.500
+PASS 2 ... and the loop points :: 10.500..12.500
+PASS 2 ... repeat is on :: 1
+PASS 2 ... the edit cursor is at the window start :: 10.5
+PASS 2 ... the bridge asked REAPER to play once (not executed, D3) :: 1
+   project dirty after loop_context: 0
+PASS 2 ... ping reports the loop held :: PONG|p2|1|1|0
+PASS 3 ... makes no undo point :: '' -> ''
+PASS 3 a second loop re-targets to 11..12 :: 11.000..12.000
+PASS 4 ... makes no undo point :: '' -> ''
+PASS 4 stop_loop answers LOOP_STOPPED with all three restored :: LOOP_STOPPED|s1|3|0
+PASS 4 ... the time selection is the narrator's again :: 1.000..2.000
+PASS 4 ... the loop points are the narrator's again :: 1.000..2.000
+PASS 4 ... repeat is off again :: 0
+PASS 5 a time selection the narrator changed during the loop is kept :: 20.000..21.000
+PASS 5 ... and reported as kept (linked loop points with it), repeat restored :: LOOP_STOPPED|s2|1|2
+PASS 6 stop_loop with no loop running changes nothing :: LOOP_STOPPED|s3|0|0
+PASS 7 ... makes no undo point :: '' -> ''
+PASS 7 a GUID that is not in the project is FINDING_STALE item :: FINDING_STALE|n1|{FFFFFFFF-0000-4000-8000-00000000FFFF}|item
+PASS 7 ... and nothing is selected :: 0
+PASS 8 ... makes no undo point :: '' -> ''
+PASS 8 navigate_item answers NAVIGATED at 11.5 s :: NAVIGATED|n2|{757A69FD-9121-4DEE-ACC1-B7E363BCE354}|11.500000
+PASS 8 ... the edit cursor is at 11.5 s :: 11.5
+PASS 8 ... only the finding item is selected
+   project dirty after navigate_item: 0
+PASS 9 a take GUID not on the item is FINDING_STALE take :: FINDING_STALE|n3|{FFFFFFFF-0000-4000-8000-0000000000AA}|take
+PASS 10 a spot past the end of the item is FINDING_STALE range, never the neighbour :: FINDING_STALE|n4|{757A69FD-9121-4DEE-ACC1-B7E363BCE354}|range
+PASS 10 ... the cursor stayed at 11.5 s :: 11.5
+PASS 11 after the item moved to 30 s the finding is at 31.5 s :: NAVIGATED|n5|{757A69FD-9121-4DEE-ACC1-B7E363BCE354}|31.500000
+PASS 12 prepare_compare prepares the selected item :: COMPARE_PREPARED|c1|<out>\manifest_c1.txt|<out>\narration-utils\manuscript\manuscript.json|Track 1|<out>\TranscriptCompare\diffs\Track 1_c1.diff|1
+PASS 12 COMPARE_MARKER ends with the item, take and track GUIDs :: COMPARE_MARKER|c1|0@1.500000|MISREAD|MISREAD: alice|Alice|Alyss|11.5|0|Chapter 1|4|script|audio|pending||1.5|{757A69FD-9121-4DEE-ACC1-B7E363BCE354}|{6632433F-DB2B-436A-86DA-6EBFB53D1E8D}|{70502B1D-7FE1-4542-B87B-C3F53B84CC11}
+PASS 12 ... and navigate_item goes to that marker by them :: NAVIGATED|n6|{757A69FD-9121-4DEE-ACC1-B7E363BCE354}|11.500000
+probe: SetMediaItemSelected undo '' -> ''
+probe: SelectAllMediaItems undo '' -> ''
+GUID shapes: {757A69FD-9121-4DEE-ACC1-B7E363BCE354} {6632433F-DB2B-436A-86DA-6EBFB53D1E8D} {70502B1D-7FE1-4542-B87B-C3F53B84CC11}
+
+34 passed, 0 failed

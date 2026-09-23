@@ -45,6 +45,16 @@ function Fake.new(host)
   -- like a freshly opened project; a test bumps it directly (`s.fake.change_count = s.fake.change_count + 1`) to
   -- model an edit, the way REAPER increments it on any change.
   self.change_count = 0
+  -- Transport and loop state (narration_navigation.lua). A new project has an empty time selection and loop range
+  -- (both 0..0), repeat off and the transport stopped. The time selection and the loop points are kept apart unless a
+  -- test sets linked_loop: REAPER 7.80 links them by default (the Phase 6 check) but the link is a preference, so a
+  -- bridge that wants repeat to loop a window must set both, and the unlinked fake proves it does.
+  -- play_state is GetPlayState's bit field: 1 playing, 2 paused, 4 recording.
+  self.time_selection = { 0, 0 }
+  self.loop_points = { 0, 0 }
+  self.repeat_on = 0
+  self.play_state = 0
+  self.exit_handlers = {}
   self.reaper = self:build_api()
   return self
 end
@@ -169,6 +179,26 @@ function Fake:pump()
   for _, fn in ipairs(queue) do
     fn()
   end
+end
+
+-- Ends the script the way REAPER does when the narrator terminates it or quits: every reaper.atexit handler runs once.
+function Fake:exit()
+  local handlers = self.exit_handlers
+  self.exit_handlers = {}
+  for _, fn in ipairs(handlers) do
+    fn()
+  end
+end
+
+-- The transport buttons pressed, in order (OnPlayButton, OnStopButton).
+function Fake:transport_calls()
+  local out = {}
+  for _, call in ipairs(self.calls) do
+    if call.name == 'OnPlayButton' or call.name == 'OnStopButton' then
+      out[#out + 1] = call.name
+    end
+  end
+  return out
 end
 
 function Fake:undo_labels()
@@ -328,6 +358,52 @@ function Fake:add_project_api(api)
       return true, value
     end
     return true, fake.render_info_string[key] or ''
+  end
+end
+
+-- Transport, time selection, loop points and repeat (narration_navigation.lua).
+function Fake:add_transport_api(api)
+  local fake = self
+  -- GetSet_LoopTimeRange2(proj, isSet, isLoop, start, end, allowautoseek): isLoop picks the loop points over the time
+  -- selection; it answers the (new) start and end either way.
+  -- With fake.linked_loop (REAPER 7.80's default, "Loop points linked to time selection", seen in the Phase 6 check),
+  -- setting either one sets both.
+  function api.GetSet_LoopTimeRange2(_, is_set, is_loop, first, last, _)
+    local range = is_loop and fake.loop_points or fake.time_selection
+    if is_set then
+      range[1], range[2] = first, last
+      if fake.linked_loop then
+        local other = is_loop and fake.time_selection or fake.loop_points
+        other[1], other[2] = first, last
+      end
+    end
+    return range[1], range[2]
+  end
+  -- GetSetRepeat(val): -1 asks, 0 clears, 1 sets, anything above 1 toggles; it answers the (new) state.
+  function api.GetSetRepeat(value)
+    if value == 0 or value == 1 then
+      fake.repeat_on = value
+    elseif value > 1 then
+      fake.repeat_on = 1 - fake.repeat_on
+    end
+    return fake.repeat_on
+  end
+  function api.GetPlayState()
+    return fake.play_state
+  end
+  function api.OnPlayButton()
+    fake.calls[#fake.calls + 1] = { name = 'OnPlayButton' }
+    fake.play_state = 1
+  end
+  function api.OnStopButton()
+    fake.calls[#fake.calls + 1] = { name = 'OnStopButton' }
+    fake.play_state = 0
+  end
+  function api.GetTrackGUID(track)
+    return track.guid
+  end
+  function api.atexit(fn)
+    fake.exit_handlers[#fake.exit_handlers + 1] = fn
   end
 end
 
@@ -561,6 +637,7 @@ function Fake:build_api()
   self:add_item_api(api)
   self:add_take_api(api)
   self:add_marker_api(api)
+  self:add_transport_api(api)
   return api
 end
 

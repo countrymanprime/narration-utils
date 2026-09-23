@@ -34,6 +34,14 @@ import (
 
 const analyzerName = "transcript-compare"
 
+// The row keys holding the REAPER identity COMPARE_MARKER carries after srcpos (review-dashboard PRD Phase 6): the item,
+// take and track GUIDs as they were when the comparison was prepared. Host-only: Service.snapshotLocked drops them.
+const (
+	rowItemGUID  = "itemGuid"
+	rowTakeGUID  = "takeGuid"
+	rowTrackGUID = "trackGuid"
+)
+
 // timingToleranceSeconds quantizes project time before it enters
 // EvidenceVersion, so ASR-model jitter under the tolerance does not reset a
 // narrator's decision. The PRD's Q2 marks the tolerance value itself
@@ -151,7 +159,9 @@ func buildFinding(row map[string]any, evidence map[string]markerEvidence, source
 		ID:            id,
 		Analyzer:      analyzerName,
 		Project:       project,
-		Source:        findings.Source{File: sourceFile},
+		Source: findings.Source{
+			File: sourceFile, ItemGUID: textOf(row, rowItemGUID), TakeGUID: textOf(row, rowTakeGUID), TrackGUID: textOf(row, rowTrackGUID),
+		},
 		TimeRange: &findings.TimeRange{
 			Start: projectTime, End: projectTime,
 			SourceStart: &sourceStart, SourceEnd: &sourceEnd,

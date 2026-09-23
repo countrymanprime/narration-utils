@@ -72,3 +72,65 @@ func TestServiceNeverSavesFindingsWhenFindingsIsNotWired(t *testing.T) {
 		t.Fatalf("findings directory exists though SetFindings was never called: %v", err)
 	}
 }
+
+// The REAPER identity narration_compare.lua appends to COMPARE_MARKER (review-dashboard PRD Phase 6), after srcpos.
+const (
+	markerItemGUID  = "{AAAAAAAA-0000-4000-8000-000000000001}"
+	markerTakeGUID  = "{AAAAAAAA-0000-4000-8000-0000000000A1}"
+	markerTrackGUID = "{00000001-0000-4000-8000-000000000001}"
+)
+
+func TestServiceCarriesTheMarkerGUIDsIntoTheSavedFindings(t *testing.T) {
+	service, _ := testService(t)
+	store := findings.NewStore(service.config.Project)
+	service.SetFindings(store, &fakeLookup{chapterID: "chapter-1", chapterOK: true, paragraphID: "para-3", paragraphOK: true})
+	service.state = empty()
+	service.state["runId"], service.state["phase"], service.state["output"] = "run-1", "inspecting", resultsFixture()
+	service.Handle(append(compareMarkerEvent("run-1", fixtureRows()[0]), markerItemGUID, markerTakeGUID, markerTrackGUID))
+	service.Handle([]string{"COMPARE_INSPECTED", "run-1", "1 discrepancy found.", "1", "0"})
+
+	saved, err := store.List(findings.Query{})
+	if err != nil || len(saved) != 1 {
+		t.Fatalf("saved %d findings, err %v", len(saved), err)
+	}
+	want := findings.Source{File: saved[0].Source.File, ItemGUID: markerItemGUID, TakeGUID: markerTakeGUID, TrackGUID: markerTrackGUID}
+	if saved[0].Source != want {
+		t.Fatalf("Source = %+v, want %+v", saved[0].Source, want)
+	}
+}
+
+func TestAMarkerFromAScriptOlderThanTheGUIDsStillSavesAFindingWithoutThem(t *testing.T) {
+	service, _ := testService(t)
+	store := findings.NewStore(service.config.Project)
+	service.SetFindings(store, nil)
+	service.state = empty()
+	service.state["runId"], service.state["phase"], service.state["output"] = "run-1", "inspecting", resultsFixture()
+	service.Handle(compareMarkerEvent("run-1", fixtureRows()[0]))
+	service.Handle([]string{"COMPARE_INSPECTED", "run-1", "1 discrepancy found.", "1", "0"})
+
+	saved, err := store.List(findings.Query{})
+	if err != nil || len(saved) != 1 {
+		t.Fatalf("saved %d findings, err %v", len(saved), err)
+	}
+	if saved[0].Source.ItemGUID != "" || saved[0].Source.TakeGUID != "" || saved[0].Source.TrackGUID != "" {
+		t.Fatalf("Source = %+v, want no GUIDs", saved[0].Source)
+	}
+}
+
+func TestTheMarkerGUIDsStayInTheHostAndAreNotAddedToTheSnapshotRows(t *testing.T) {
+	// The Transcript page's rows are a wire contract (apps/ui/src/api/schemas/transcript.ts); the GUIDs are for
+	// findings, and navigation reaches the UI through the findings bindings, so the rows are unchanged.
+	service, _ := testService(t)
+	service.state = empty()
+	service.state["runId"], service.state["phase"] = "run-1", "inspecting"
+	service.Handle(append(compareMarkerEvent("run-1", fixtureRows()[0]), markerItemGUID, markerTakeGUID, markerTrackGUID))
+	rows, _ := service.Snapshot()["rows"].([]any)
+	if len(rows) != 1 {
+		t.Fatalf("rows = %v", service.Snapshot()["rows"])
+	}
+	for _, key := range []string{"itemGuid", "takeGuid", "trackGuid"} {
+		if _, present := rows[0].(map[string]any)[key]; present {
+			t.Errorf("snapshot row carries %s", key)
+		}
+	}
+}

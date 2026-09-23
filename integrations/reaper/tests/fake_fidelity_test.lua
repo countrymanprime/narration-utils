@@ -75,3 +75,15 @@ H.test('EnumerateFiles lists a cached snapshot until it is cleared with index -1
   os.remove(H.join(dir, 'a.cmd'))
   H.truthy(reaper_api.EnumerateFiles(dir, 0) ~= nil and reaper_api.EnumerateFiles(dir, 1) ~= nil, 'a removed file is still listed until the cache is cleared')
 end)
+
+H.test('with the default link the time selection and the loop points move together, and GetSetRepeat asks, sets and toggles', function()
+  -- REAPER 7.80, the review-dashboard Phase 6 check (integrations/reaper/spikes/results/navigation-check-report.txt):
+  -- setting only the loop points moved the time selection, and setting only the time selection moved the loop points.
+  local reaper_api, fake = api()
+  fake.linked_loop = true
+  reaper_api.GetSet_LoopTimeRange2(0, true, true, 0.5, 2.5, false)
+  H.eq({ reaper_api.GetSet_LoopTimeRange2(0, false, false, 0, 0, false) }, { 0.5, 2.5 })
+  reaper_api.GetSet_LoopTimeRange2(0, true, false, 1, 2, false)
+  H.eq({ reaper_api.GetSet_LoopTimeRange2(0, false, true, 0, 0, false) }, { 1, 2 })
+  H.eq({ reaper_api.GetSetRepeat(-1), reaper_api.GetSetRepeat(1), reaper_api.GetSetRepeat(2), reaper_api.GetSetRepeat(0) }, { 0, 1, 0, 0 })
+end)

@@ -63,7 +63,10 @@
       "schema_version": 1,
       "severity": "info",
       "source": {
-        "file": "C:\\audio\\chapter-one-take3.wav"
+        "file": "C:\\audio\\chapter-one-take3.wav",
+        "item_guid": "{A1B2C3D4-0000-4000-8000-000000000001}",
+        "take_guid": "{A1B2C3D4-0000-4000-8000-0000000000A1}",
+        "track_guid": "{A1B2C3D4-0000-4000-8000-0000000000F1}"
       },
       "time_range": {
         "end": 155.89,
@@ -133,7 +136,10 @@
       "schema_version": 1,
       "severity": "warning",
       "source": {
-        "file": "C:\\audio\\chapter-one-take3.wav"
+        "file": "C:\\audio\\chapter-one-take3.wav",
+        "item_guid": "{A1B2C3D4-0000-4000-8000-000000000001}",
+        "take_guid": "{A1B2C3D4-0000-4000-8000-0000000000A1}",
+        "track_guid": "{A1B2C3D4-0000-4000-8000-0000000000F1}"
       },
       "time_range": {
         "end": 133.1,
@@ -176,7 +182,10 @@
       "schema_version": 1,
       "severity": "warning",
       "source": {
-        "file": "C:\\audio\\chapter-one-take3.wav"
+        "file": "C:\\audio\\chapter-one-take3.wav",
+        "item_guid": "{A1B2C3D4-0000-4000-8000-000000000001}",
+        "take_guid": "{A1B2C3D4-0000-4000-8000-0000000000A1}",
+        "track_guid": "{A1B2C3D4-0000-4000-8000-0000000000F1}"
       },
       "time_range": {
         "end": 100.34,
