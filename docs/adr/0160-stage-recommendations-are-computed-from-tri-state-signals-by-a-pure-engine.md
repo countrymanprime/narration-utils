@@ -1,6 +1,6 @@
 # 0160. Stage recommendations are computed from tri-state signals by a pure engine
 
-**Status:** Accepted
+**Status:** Proposed
 **Date:** 2026-09-23
 
 ## Context
