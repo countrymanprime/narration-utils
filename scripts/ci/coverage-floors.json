@@ -34,7 +34,8 @@
     {"tool":"pytest","project":"sidecars/manuscript-teleprompter","path":"sidecars/manuscript-teleprompter/core/chapter_script.py","floor":98},
     {"tool":"pytest","project":"sidecars/manuscript-teleprompter","path":"sidecars/manuscript-teleprompter/core/replay.py","floor":83},
     {"tool":"pytest","project":"sidecars/manuscript-teleprompter","path":"sidecars/manuscript-teleprompter/core/script_tracker.py","floor":99},
-    {"tool":"pytest","project":"sidecars/transcript-compare","path":"sidecars/transcript-compare/core/compare.py","floor":20,"reason":"Baseline of 2026-09-20 was 14%; the Hypothesis properties of phase 4 (tokenizing, number merging, sentence splitting) lifted it to 20%. The alignment, diffing and CLI paths of this 900-statement module are still largely untested; the floor rises as they get tests."},
+    {"tool":"pytest","project":"sidecars/transcript-compare","path":"sidecars/transcript-compare/core/compare.py","floor":38,"reason":"Baseline of 2026-09-20 was 14%; the Hypothesis properties of phase 4 (tokenizing, number merging, sentence splitting) lifted it to 20%, and the marker and golden tests of recording-coverage phase 2 to 38%. Decoding, transcription (chunked included) and the CLI paths are still untested; the floor rises as they get tests."},
+    {"tool":"pytest","project":"sidecars/transcript-compare","path":"sidecars/transcript-compare/core/coverage.py","floor":100},
     {"tool":"pytest","project":"sidecars/transcript-compare","path":"sidecars/transcript-compare/tests/coverage_harness.py","floor":99,"reason":"The recording-coverage ground-truth harness (recording-coverage-analysis PRD Phase 1). It lives under tests/ because it is test tooling, but Phase 8 calibrates the shipped thresholds with it, so it is gated like logic. 99.7% measured; the one uncovered line is the script entry point."}
   ]
 }

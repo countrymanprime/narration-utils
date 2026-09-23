@@ -1158,8 +1158,13 @@ def diff_and_build_markers(chapter_tokens, chapter_unit_idx, chapter_raw_words, 
     # opcodes above actually use, so the audio-line renderer can reuse this
     # exact alignment instead of guessing sentence boundaries independently.
     chapter_norm_unit_idx = [chapter_unit_idx[orig_i] for orig_i in chapter_index_map]
+    # doc_tokens and audio_tokens are the two sequences the opcodes index;
+    # recording coverage (core/coverage.py) reads them from this same
+    # alignment so coverage and markers can never disagree.
     alignment = {
         "opcodes": opcodes,
+        "doc_tokens": chapter_norm,
+        "audio_tokens": filtered_tokens,
         "unit_idx": chapter_norm_unit_idx,
         "index_map": index_map,
         "chapter_index_map": chapter_index_map,
