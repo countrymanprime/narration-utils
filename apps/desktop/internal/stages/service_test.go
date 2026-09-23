@@ -160,13 +160,13 @@ func TestRecommendationsBuildTheEvidenceViewOncePerEvaluation(t *testing.T) {
 		Providers: providers.all(),
 		View: func(_ context.Context, documentID string) EvidenceView {
 			views++
-			return EvidenceView{DocumentID: documentID, ProjectFolder: "shared"}
+			return EvidenceView{DocumentID: documentID, ProjectFolder: "one-view"}
 		},
 	})
 	if _, err := service.Recommendations(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if views != 1 || providers.recording.calls != 2 || providers.recording.gotView.ProjectFolder != "shared" {
+	if views != 1 || providers.recording.calls != 2 || providers.recording.gotView.ProjectFolder != "one-view" {
 		t.Fatalf("views %d, provider calls %d, view %+v", views, providers.recording.calls, providers.recording.gotView)
 	}
 }
