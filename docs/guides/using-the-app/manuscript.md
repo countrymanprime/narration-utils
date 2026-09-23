@@ -52,6 +52,16 @@ read-along for that chapter in a full-screen dialog titled "Read aloud — " and
 same microphone and model choices, Start reading and Stop. Closing the dialog while it is still listening
 asks first ("Stop reading?"); Stop and close ends the session, and nothing recorded in REAPER is affected.
 
+Above the microphone, a **Where you stopped** card looks for the chapter's track in the project's REAPER
+file and listens to the last 30 seconds recorded on it (with the same local Whisper model, which it asks
+to download first if it is missing). It shows the track, that this is as of the project's last save, and
+the word to resume at inside the sentence it matched, with how sure it is. **Resume from here** makes
+Start reading begin at that word; **Start from the top** and **Pick a word** (start reading, then click
+the word you want) are the other choices, and nothing starts until you press Start reading. When more
+than one track could hold the chapter, or none does, the card asks you to choose the track instead of
+guessing, and when the recording cannot be read or does not match the chapter it says why and reading
+starts from the top.
+
 Selecting a stretch of text offers actions for it — adding a reader note or sending it to the
 Story Bible as a new entry.
 

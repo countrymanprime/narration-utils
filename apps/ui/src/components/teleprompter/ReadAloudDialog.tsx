@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Dialog } from '../primitives/Dialog';
 import { ReadAlongView } from './ReadAlongView';
+import { ResumeCard } from './ResumeCard';
 import { useTeleprompterSession } from './useTeleprompterSession';
 import type { ManuscriptChapter } from '../../types';
 
@@ -14,7 +15,8 @@ type Props = {
  * Reading mode as a Manuscript chapter action (teleprompter-manuscript-integration.prd.md Phase 2): a full-size
  * `Dialog` around the same session core and reader view the standalone Teleprompter page uses (`useTeleprompterSession`,
  * `ReadAlongView`), opened already pointed at one chapter, so there is no chapter picker here. This phase covers only
- * start/stop; seek, marks, flags, resume and punch are later phases (3-12) and are not built here.
+ * start/stop; seek, marks, flags and punch are other phases (3-12). The resume card above the view is Phase 10's
+ * (`ResumeCard`).
  *
  * Closing while a session is active stops it first (the PRD's Open Questions, "Closing the modal during a live
  * session", recommendation (a)): an orphaned live microphone capture is a privacy and CPU surprise, so a confirm asks
@@ -40,6 +42,12 @@ export function ReadAloudDialog({ chapter, onClose }: Props) {
   return (
     <>
       <Dialog title={`Read aloud — ${chapter.title}`} size="full" onClose={requestClose} actions={null}>
+        {/* The resume card (Phase 10) sits above the reading view between sessions only; a running session moves by word click. */}
+        {!session.active && (
+          <div className="mx-auto mb-4 max-w-3xl">
+            <ResumeCard chapterId={chapter.id} model={session.model} onStartWord={session.setStartWord} />
+          </div>
+        )}
         <ReadAlongView session={session} />
       </Dialog>
       {confirmClose && (

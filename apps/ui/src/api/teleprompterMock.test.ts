@@ -135,6 +135,22 @@ describe('teleprompter mock', () => {
     expect((await mock.teleprompterState()).phase).toBe('stopped');
   });
 
+  // Resuming (teleprompter-manuscript-integration.prd.md Phase 10) starts the tracker at the resume word, as the host's
+  // --start-word does: the first position is that word and the replay never goes back before it.
+  it('starts at the requested word and replays onward from it', async () => {
+    const mock = build();
+    const events: TeleprompterEvent[] = [];
+    mock.subscribeTeleprompterEvent((event) => events.push(event));
+
+    await mock.teleprompterStart({ ...options, startWord: 12 });
+    await vi.runAllTimersAsync();
+
+    const reads = events.flatMap((event) => (event.type === 'position' ? [event.read] : []));
+    expect(reads[0]).toBe(12);
+    expect(Math.min(...reads)).toBe(12);
+    expect(reads.at(-1)).toBe(35);
+  });
+
   it('asks for the model first when it is not installed', async () => {
     const needed = {
       status: 'asset_required' as const,

@@ -6,6 +6,7 @@ import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
 import { WIRE_CHAPTERS } from './api/mockFixtures';
 import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
+import { MOCK_RESUME_SEEDS } from './api/resumeMockSeed';
 import { ThemeProvider } from './theme/ThemeContext';
 import './fonts';
 import './styles.css';
@@ -49,6 +50,10 @@ const mockManuscriptCandidate = mockParams.has('mockManuscriptCandidate');
 // through the first chapter, as a session the host kept running; `ended` boots one that
 // already stopped itself at the end of the chapter (the host's auto-stop).
 const mockTeleprompter = (['listening', 'waiting', 'done', 'ended'] as const).find((seed) => seed === mockParams.get('mockTeleprompter'));
+// `?mockResume=low_confidence|not_found|ambiguous|none|no_recording|source_missing|source_unsupported|error` makes the
+// read-aloud dialog's resume card (teleprompter-manuscript-integration.prd.md Phase 10) show that state for any chapter,
+// so each can be seen without a REAPER project, a recording or a Whisper run.
+const mockResume = MOCK_RESUME_SEEDS.find((seed) => seed === mockParams.get('mockResume'));
 // `?mockNoDevices=1` boots the teleprompter with an empty device listing, so the
 // blocked "No microphone found" state (no typed fallback) can be seen without a host.
 const mockNoDevices = mockParams.has('mockNoDevices');
@@ -118,6 +123,7 @@ const mockInitial = {
   ...(mockPreviewError ? { previewError: mockPreviewError } : {}),
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
+  ...(mockResume ? { resume: mockResume } : {}),
   ...(mockNoProject ? { projectFolder: '' } : {}),
   ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),
   ...(mockNoRpp ? { tracksCandidates: [] } : {}),

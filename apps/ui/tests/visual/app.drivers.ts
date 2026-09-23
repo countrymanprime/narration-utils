@@ -59,6 +59,20 @@ async function freezeClock(page: Page): Promise<void> {
   await page.clock.pauseAt(new Date(now + 10));
 }
 
+// Opens Chapter 1's read-aloud dialog (after a reload with a mock seam, when one is given) and waits for its resume card
+// to have answered (teleprompter-manuscript-integration.prd.md Phase 10): the lookup's "Finding where..." line is gone.
+async function openResumeCard(page: Page, query = ''): Promise<void> {
+  if (query) {
+    await page.goto(`/${query}`);
+    await settlePage(page);
+  }
+  await goToPage(page, 'Manuscript');
+  await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+  const card = page.getByRole('dialog', { name: /Read aloud/ }).getByRole('region', { name: 'Where you stopped' });
+  await card.waitFor();
+  await card.getByText(/Finding where your recording/).waitFor({ state: 'detached' });
+}
+
 async function clickVisible(page: Page, role: Parameters<Page['getByRole']>[0], name: string | RegExp): Promise<void> {
   // The nav rail is visible at every captured viewport except the reflow one, where only Settings states are captured
   // and they navigate through clickNav, so the click's own auto-wait is enough.
@@ -393,9 +407,62 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.locator('[data-tone="error"]').getByText('The app received data it could not read.').waitFor();
     },
     'read-aloud-setup': async (page) => {
-      await goToPage(page, 'Manuscript');
-      await clickVisible(page, 'button', 'Read Chapter 1 aloud');
-      await page.getByRole('dialog', { name: /Read aloud/ }).waitFor();
+      await openResumeCard(page);
+      await page.getByRole('button', { name: 'Resume from here' }).waitFor();
+    },
+    'read-aloud-resume-chosen': async (page) => {
+      await openResumeCard(page);
+      await page.getByRole('button', { name: 'Resume from here' }).click();
+      await page.getByText(/Start reading picks up at word/).waitFor();
+    },
+    // Reduced motion lands the highlight on the start word at once (usePacedCursor), and the frozen clock holds the mock's
+    // replay, so the shot shows the session exactly at the resume word.
+    'read-aloud-resumed': async (page) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await openResumeCard(page);
+      await page.getByRole('button', { name: 'Resume from here' }).click();
+      const summary = await page.getByText(/Start reading picks up at word/).textContent();
+      const word = Number(/word ([\d,]+)/.exec(summary ?? '')?.[1]?.replace(/,/g, ''));
+      await page.getByRole('combobox', { name: 'Microphone' }).selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
+      await freezeClock(page);
+      await page.getByRole('button', { name: 'Start reading' }).click();
+      await page.locator(`[data-word="${word}"] [data-highlight="Cursor"]`).waitFor();
+    },
+    'read-aloud-resume-low-confidence': async (page) => {
+      await openResumeCard(page, '?mockResume=low_confidence');
+      await page.getByText(/could also fit elsewhere/).waitFor();
+    },
+    'read-aloud-resume-not-found': async (page) => {
+      await openResumeCard(page, '?mockResume=not_found');
+      await page.getByText(/did not match this chapter/).waitFor();
+    },
+    'read-aloud-resume-pick-track': async (page) => {
+      await openResumeCard(page, '?mockResume=ambiguous');
+      await page.getByRole('combobox', { name: 'Track' }).waitFor();
+    },
+    'read-aloud-resume-no-track': async (page) => {
+      await openResumeCard(page, '?mockResume=none');
+      await page.getByText(/No track in Alice.rpp matches this chapter/).waitFor();
+    },
+    'read-aloud-resume-no-recording': async (page) => {
+      await openResumeCard(page, '?mockResume=no_recording');
+      await page.getByText(/has no recorded audio yet/).waitFor();
+    },
+    'read-aloud-resume-source-missing': async (page) => {
+      await openResumeCard(page, '?mockResume=source_missing');
+      await page.getByText(/audio file is missing/).waitFor();
+    },
+    'read-aloud-resume-source-unsupported': async (page) => {
+      await openResumeCard(page, '?mockResume=source_unsupported');
+      await page.getByText(/cannot be read as audio/).waitFor();
+    },
+    'read-aloud-resume-model-required': async (page) => {
+      await openResumeCard(page, '?mockAssets=missing');
+      await page.getByRole('button', { name: 'Download model…' }).waitFor();
+    },
+    'read-aloud-resume-error': async (page) => {
+      await openResumeCard(page, '?mockResume=error');
+      await page.getByRole('button', { name: 'Try again' }).waitFor();
     },
     // Same mock seam and word as the standalone Teleprompter page's `listening` state, opened through the modal instead.
     'read-aloud-listening': async (page) => {
