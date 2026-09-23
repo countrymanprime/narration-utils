@@ -120,6 +120,13 @@ type Track struct {
 	// a take's <TAKEFX>); not yet part of the wire contract (json:"-"), see
 	// Item's doc comment.
 	HasFXChain bool `json:"-"`
+
+	// Selected and Armed are the track's selection (SEL 1) and record-arm (the
+	// first REC field) as of the .rpp's last save. The chapter suggestion
+	// (chaptermatch.Suggest, ADR 0113) reads them to find the track the
+	// narrator is recording; not on the TracksList wire contract (json:"-").
+	Selected bool `json:"-"`
+	Armed    bool `json:"-"`
 }
 
 type Project struct {

@@ -16,6 +16,8 @@ export function AssetsVerify(arg1:string,arg2:string):Promise<string>;
 
 export function Bootstrap():Promise<Record<string, any>>;
 
+export function ChapterSuggestion():Promise<string>;
+
 export function ChapterTagsEmbed(arg1:string):Promise<string>;
 
 export function ChapterTagsPreview():Promise<string>;

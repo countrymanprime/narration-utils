@@ -145,6 +145,27 @@ func TestParseDecodesMuteSoloAndCustomColor(t *testing.T) {
 	}
 }
 
+func TestParseReadsARecordArmedTrackAndIgnoresAnItemsSelection(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "armed.rpp")
+	text := "<REAPER_PROJECT 0.1 \"7.80/x64\" 1\n" +
+		"  <TRACK {A}\n    NAME \"Chapter 2\"\n    SEL 0\n    REC 1 0 1 0 0 0 0 0\n" +
+		"    <ITEM\n      POSITION 0\n      LENGTH 1\n      SEL 1\n    >\n  >\n" +
+		"  <TRACK {B}\n    NAME \"Chapter 3\"\n  >\n>\n"
+	if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	project, err := Parse(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !project.Tracks[0].Armed || project.Tracks[0].Selected {
+		t.Fatalf("Chapter 2 = armed %v selected %v, want armed only", project.Tracks[0].Armed, project.Tracks[0].Selected)
+	}
+	if project.Tracks[1].Armed || project.Tracks[1].Selected {
+		t.Fatal("a track without SEL or REC lines is neither selected nor armed")
+	}
+}
+
 func TestParseOnNonProjectFileReturnsError(t *testing.T) {
 	folder := t.TempDir()
 	path := filepath.Join(folder, "not-a-project.rpp")

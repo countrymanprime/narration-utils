@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeleprompterPage } from './TeleprompterPage';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
-import { WIRE_TELEPROMPTER_DEVICES } from '../../api/mockFixtures';
-import type { NarrationApi, TeleprompterEvent, TeleprompterPosition, TeleprompterScript, TeleprompterState } from '../../types';
+import { WIRE_CHAPTERS, WIRE_TELEPROMPTER_DEVICES, WIRE_TRACKS_PROJECT } from '../../api/mockFixtures';
+import type { ChapterSuggestion, NarrationApi, TeleprompterEvent, TeleprompterPosition, TeleprompterScript, TeleprompterState } from '../../types';
 
 const DEVICE_NAME = WIRE_TELEPROMPTER_DEVICES[0].name;
 const OTHER_DEVICE_NAME = WIRE_TELEPROMPTER_DEVICES[1].name;
@@ -427,5 +427,102 @@ describe('TeleprompterPage', () => {
 
     const region = await screen.findByRole('region', { name: /no chapters to read/i });
     expect(within(region).getByRole('heading', { level: 2 })).toBeTruthy();
+  });
+});
+
+// Chapter from REAPER track name (teleprompter-engines-and-input-devices PRD Phase 11, ADR 0113).
+describe('TeleprompterPage chapter suggestion from REAPER', () => {
+  const [chapter1Track, chapter2Track] = WIRE_TRACKS_PROJECT.tracks;
+  const chapterPicker = () => screen.getByLabelText('Chapter') as HTMLSelectElement;
+  const suggestion = (overrides: Partial<ChapterSuggestion>): ChapterSuggestion => ({
+    projectFile: WIRE_TRACKS_PROJECT.path,
+    savedAt: '2026-09-21T10:00:00Z',
+    basis: 'armed',
+    track: { guid: 'guid-x', name: 'Chaptr 2', index: 3 },
+    status: 'none',
+    chapter: null,
+    candidates: [],
+    warnings: [],
+    ...overrides,
+  });
+  const candidate = (index: number) => ({
+    chapterId: WIRE_CHAPTERS[index].id,
+    chapterTitle: WIRE_CHAPTERS[index].title,
+    score: 0.8,
+    source: 'track-name' as const,
+    region: null,
+  });
+
+  it('preselects the chapter the armed track is named for, over the last chapter read, and says why', async () => {
+    renderPage({ readerState: async () => ({ activeChapter: WIRE_CHAPTERS[2].id }) as never }, { armedTracks: [chapter2Track.guid] });
+
+    await waitFor(() => expect(chapterPicker().value).toBe(WIRE_CHAPTERS[1].id));
+    expect(screen.getByText(/Chosen from REAPER's armed track, “Chapter 2” in Alice\.rpp, which is named for this chapter/)).toBeTruthy();
+  });
+
+  it('offers the suggestion back once the narrator picks another chapter', async () => {
+    const user = userEvent.setup();
+    renderPage({}, { armedTracks: [chapter2Track.guid] });
+    await waitFor(() => expect(chapterPicker().value).toBe(WIRE_CHAPTERS[1].id));
+
+    await user.selectOptions(chapterPicker(), WIRE_CHAPTERS[3].id);
+    await user.click(await screen.findByRole('button', { name: 'Use Chapter 2' }));
+
+    expect(chapterPicker().value).toBe(WIRE_CHAPTERS[1].id);
+  });
+
+  it('never picks for the narrator when two armed tracks name different chapters, and offers both', async () => {
+    const user = userEvent.setup();
+    renderPage({}, { armedTracks: [chapter1Track.guid, chapter2Track.guid] });
+
+    const choices = await screen.findByRole('group', { name: 'Chapters suggested by REAPER' });
+    expect(chapterPicker().value).toBe(WIRE_CHAPTERS[0].id);
+    expect(screen.getByText(/could be for more than one chapter/)).toBeTruthy();
+    // The chapter already chosen is not offered again.
+    expect(
+      within(choices)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['Chapter 2']);
+
+    await user.click(within(choices).getByRole('button', { name: 'Chapter 2' }));
+    expect(chapterPicker().value).toBe(WIRE_CHAPTERS[1].id);
+  });
+
+  it('only offers an uncertain match, never preselecting it', async () => {
+    renderPage({ chapterSuggestion: async () => suggestion({ status: 'uncertain', candidates: [candidate(1)] }) });
+
+    const choices = await screen.findByRole('group', { name: 'Chapters suggested by REAPER' });
+    expect(within(choices).getByRole('button', { name: 'Chapter 2' })).toBeTruthy();
+    expect(screen.getByText(/“Chaptr 2” in Alice\.rpp, as of its last save, may be for:/)).toBeTruthy();
+    expect(chapterPicker().value).toBe(WIRE_CHAPTERS[0].id);
+  });
+
+  it('matches the Chapter 1 track to Chapter 1, never Chapter 10, 11 or 12', async () => {
+    renderPage({}, { armedTracks: [chapter1Track.guid] });
+
+    await screen.findByText(/Chosen from REAPER's armed track, “Chapter 1”/);
+    expect(chapterPicker().value).toBe(WIRE_CHAPTERS[0].id);
+  });
+
+  it('keeps the usual default and shows no hint when nothing is armed, or the project has no .rpp', async () => {
+    renderPage({ chapterSuggestion: async () => Promise.reject(new Error('no REAPER project (.rpp) file was found in this project folder')) });
+
+    await waitFor(() => expect(chapterPicker().value).toBe(WIRE_CHAPTERS[0].id));
+    expect(screen.queryByText(/REAPER/)).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+    cleanup();
+
+    renderPage();
+    await waitFor(() => expect(chapterPicker().value).toBe(WIRE_CHAPTERS[0].id));
+    expect(screen.queryByText(/REAPER/)).toBeNull();
+  });
+
+  it('does not move a session the host kept running to the suggested chapter', async () => {
+    const manuscriptParagraphs = vi.fn(createMockApi().manuscriptParagraphs);
+    renderPage({ manuscriptParagraphs }, { teleprompter: 'listening', armedTracks: [chapter2Track.guid] });
+
+    await waitFor(() => expect(currentWord()).toBeTruthy());
+    expect(manuscriptParagraphs.mock.calls.map(([id]) => id)).not.toContain(WIRE_CHAPTERS[1].id);
   });
 });

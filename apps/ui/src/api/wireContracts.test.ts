@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import { createMockApi } from './mockApi';
-import { WIRE_TRANSCRIPT } from './mockFixtures';
+import { WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from './mockFixtures';
 import {
   bookmarkSchema,
   chapterSchema,
@@ -23,7 +23,7 @@ import { settingsForScopeSchema } from './schemas/settings';
 import { takeReviewCreateTakeResultSchema, takeReviewFindingsSchema } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
-import { chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
+import { chapterSuggestionSchema, chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
@@ -156,6 +156,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-track-match-matched.json': chapterTrackMatchSchema,
   'chapter-track-match-ambiguous.json': chapterTrackMatchSchema,
   'chapter-track-match-none.json': chapterTrackMatchSchema,
+  'chapter-suggestion-matched.json': chapterSuggestionSchema,
+  'chapter-suggestion-ambiguous.json': chapterSuggestionSchema,
+  'chapter-suggestion-none.json': chapterSuggestionSchema,
   'line-identity-idle.json': lineIdentityStateSchema,
   'line-identity-read-success.json': lineIdentityStateSchema,
   'pickups-idle.json': pickupsStateSchema,
@@ -682,6 +685,31 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.chapterTrackMatch('not-a-real-chapter')).rejects.toThrow();
   });
 
+  it('the ChapterSuggestion answers', async () => {
+    const none = await createMockApi().chapterSuggestion();
+    expectMatches(chapterSuggestionSchema, none, 'mock chapter suggestion, nothing armed');
+    expect(none.basis).toBe('none');
+
+    const [chapter1, chapter2] = WIRE_TRACKS_PROJECT.tracks;
+    const matched = await createMockApi({}, { armedTracks: [chapter2.guid] }).chapterSuggestion();
+    expectMatches(chapterSuggestionSchema, matched, 'mock chapter suggestion, armed track matched');
+    expect(matched.status).toBe('matched');
+    expect(matched.chapter?.chapterTitle).toBe('Chapter 2');
+
+    const ambiguous = await createMockApi({}, { armedTracks: [chapter1.guid, chapter2.guid] }).chapterSuggestion();
+    expectMatches(chapterSuggestionSchema, ambiguous, 'mock chapter suggestion, two armed tracks');
+    expect(ambiguous.status).toBe('ambiguous');
+    expect(ambiguous.chapter).toBeNull();
+
+    const linkedApi = createMockApi({}, { armedTracks: [chapter2.guid] });
+    const chapters = await linkedApi.manuscriptChapters();
+    await linkedApi.chapterTrackMapConfirm(chapter2.guid, chapters[4].id);
+    const confirmed = await linkedApi.chapterSuggestion();
+    expectMatches(chapterSuggestionSchema, confirmed, 'mock chapter suggestion, confirmed link');
+    expect(confirmed.status).toBe('confirmed');
+    expect(confirmed.chapter?.chapterId).toBe(chapters[4].id);
+  });
+
   it('the line-identity state through a stamp and a read run, and its seeded states', async () => {
     vi.useFakeTimers();
     const api = createMockApi();
@@ -914,6 +942,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterTrackMapConfirm',
       'chapterTrackMapClear',
       'chapterTrackMatch',
+      'chapterSuggestion',
       'lineIdentityStamp',
       'lineIdentityRead',
       'lineIdentityState',

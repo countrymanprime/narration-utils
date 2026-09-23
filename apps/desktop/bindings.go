@@ -755,6 +755,14 @@ func (h *Host) ChapterTrackMatch(chapterID string) (string, error) {
 	return encodeBinding(h.chapterTrackMatchFor(chapterID))
 }
 
+// ChapterSuggestion suggests the chapter the narrator is recording from the
+// selected .rpp's record-armed (else selected) track as of its last save
+// (teleprompter-engines-and-input-devices PRD Phase 11, ADR 0113): the matcher's
+// other direction, track to chapter, with the same statuses. Read-only.
+func (h *Host) ChapterSuggestion() (string, error) {
+	return encodeBinding(h.chapterSuggestionFor())
+}
+
 // TakeReviewScan runs one pickup/duplicate scan of chapterTrackName (take-review
 // phase 5's scan-and-review surface) and saves the fresh findings into the
 // project's findings store, returning the merged result.
