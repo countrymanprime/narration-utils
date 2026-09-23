@@ -20,6 +20,46 @@ chapter with its word count, estimated and actual recorded length, and status.
 
 ![Home, per-chapter breakdown expanded](../../images/ui/home-chapter-table-expanded.webp)
 
+Under each actual recorded length a small label says where the number comes from. **measured**
+means a recording check of the saved REAPER project found that share of the chapter's words in
+the audio. **estimated from status** means the chapter has no current check, so the length is
+guessed from its status (half for Recording, all of it from Editing on). A check that is out of
+date no longer counts as measured.
+
+### Checking a chapter's recording
+
+**Check** at the end of a row opens the chapter's recording check. Nothing runs until you ask:
+the dialog first shows the last result, or says the chapter was never checked, and names the
+saved project file it reads ("Based on the saved REAPER project, file modified ..."). Save the
+project in REAPER before checking, because the check reads the saved file, not the open session.
+
+**Check recording** (or **Check again**) transcribes the audio items on the chapter's REAPER
+track with the Whisper model chosen in Settings, then compares the words with the chapter's text
+in order. The progress is real, from the transcription itself; **Cancel** stops it and keeps the
+items already transcribed, so the next check is quicker, and **Continue in background** closes
+the dialog while the row keeps its percent. The app tells you when it ends, wherever you are.
+If the Whisper model is not installed yet, the app asks before downloading it, as Proofing does.
+
+![Home - a chapter's recording check with text still to record](../../images/ui/home-recording-check.webp)
+
+The result reads "Text present: N of M words", then lists the missing text: where it is (the
+start or the end not read, a skipped block, a short read, or different text read), which
+paragraphs, how many words, the first and last missing words, and where the gap sits in the
+audio (the item on the track and the time in its audio file). **Go to paragraph** opens the
+manuscript there. The paragraph list shows how many words of each short paragraph were
+recorded. Misreads, false starts, retakes and a spoken chapter title never count against you.
+The check changes nothing: it never edits the project or moves a chapter's status.
+
+A result goes **out of date** when the saved project changes under it (an item added, removed,
+trimmed, moved, muted or switched to another take, an audio file changed) or the chapter's text
+changes. The dialog says which, keeps the old counts labelled as from then, and offers
+**Check again**; only the changed items are transcribed again.
+
+When a chapter cannot be checked, the dialog says why in plain words and where to fix it: a
+chapter that is not linked to its REAPER track gets the track picker right there (the same link
+as on the [Tracks](tracks.md) page), a missing project file points to Tracks, and a missing
+Transcript Compare tool points to [Settings](settings.md).
+
 Importing (or replacing) the manuscript opens a confirm dialog previewing the detected format,
 paragraph count, and proposed chapters before anything changes. Each section is listed with its
 subtitle after the title ("Chapter One — Down the Rabbit-Hole") when the heading had one, so you can

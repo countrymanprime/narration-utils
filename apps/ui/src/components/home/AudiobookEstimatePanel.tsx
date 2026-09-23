@@ -1,9 +1,9 @@
 import { describeApiError } from '../../api/errorMessage';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
-import type { ChapterStatus, CreditTemplate, ManuscriptChapter } from '../../types';
+import type { ChapterStatus, CoverageState, CreditTemplate, ManuscriptChapter } from '../../types';
 import { estimateCreditsSeconds, estimateFinishedHours } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '../primitives/Collapsible';
@@ -14,6 +14,8 @@ import { STATUS_COLOR, STATUS_LABELS, STATUS_ORDER } from '../../chapterStatus';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
 import type { Notify } from '../primitives/Toast';
+import { Button } from '../primitives/Button';
+import { RecordingCheck } from './RecordingCheck';
 
 const fmtHours = (hours: number) => {
   const whole = Math.floor(hours);
@@ -50,7 +52,8 @@ export function AudiobookEstimatePanel({
   refreshKey,
 }: {
   notify: Notify;
-  goToManuscript: (chapter: string) => void;
+  /** Opens the manuscript at a chapter, or at a paragraph (its index in the whole manuscript) when one is given. */
+  goToManuscript: (chapter: string, paragraph?: number) => void;
   // The owning Home page changes this after a manuscript import/replacement.
   // Chapter estimates are derived from a separate request, so they cannot
   // rely on the Bootstrap payload alone to invalidate their cached rows.
@@ -63,6 +66,21 @@ export function AudiobookEstimatePanel({
   // a secondary stat next to the narration estimate above, so a credits-specific problem should not blank the page
   // or throw a toast over an estimate the narrator did not ask about (mirrors CreditsPanel's own preview fallback).
   const [creditsSeconds, setCreditsSeconds] = useState<number>();
+  // Recording coverage (recording-coverage-analysis.prd.md Phase 6): the live state of the one check the host runs at a time, so a row
+  // shows its percent even after its dialog was sent to the background, and the chapter whose check dialog is open.
+  const [coverage, setCoverage] = useState<CoverageState>({ phase: 'idle', percent: 0, message: '' });
+  const [checking, setChecking] = useState<ManuscriptChapter>();
+  // A check that completes changes the chapter's measured recordedFraction, so the list is read again, once per run.
+  const [measuredRun, setMeasuredRun] = useState<string>();
+  const lastCompleted = useRef<string>(undefined);
+
+  useEffect(() => api.subscribeCoverage(setCoverage), [api]);
+
+  useEffect(() => {
+    if (coverage.phase !== 'complete' || !coverage.runId || lastCompleted.current === coverage.runId) return;
+    lastCompleted.current = coverage.runId;
+    setMeasuredRun(coverage.runId);
+  }, [coverage.phase, coverage.runId]);
 
   useEffect(() => {
     (async () => {
@@ -74,7 +92,7 @@ export function AudiobookEstimatePanel({
         notify(describeApiError(error), 'error');
       }
     })();
-  }, [api, notify, refreshKey]);
+  }, [api, notify, refreshKey, measuredRun]);
 
   useEffect(() => {
     let active = true;
@@ -194,11 +212,17 @@ export function AudiobookEstimatePanel({
                 <TableHeader align="right">Est. finished length</TableHeader>
                 <TableHeader align="right">Actual recorded</TableHeader>
                 <TableHeader>Status</TableHeader>
+                <TableHeader hiddenLabel="Recording check" />
               </TableRow>
             </TableHead>
             <TableBody>
               {narrationChapters.map((chapter) => {
                 const finished = estimateFinishedHours(chapter.wordCount);
+                // D11/Q12: a measured share of the chapter's words from a current recording check wins; without one, the status guess stays
+                // and says it is a guess.
+                const measured = chapter.recordedFraction !== undefined;
+                const fraction = chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status];
+                const running = coverage.phase === 'running' && coverage.chapterId === chapter.id;
                 return (
                   <TableRow key={chapter.id}>
                     <TableCell>
@@ -230,9 +254,10 @@ export function AudiobookEstimatePanel({
                       {fmtHours(finished)}
                     </TableCell>
                     <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
-                      {(chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status]) > 0
-                        ? fmtHours(finished * (chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status]))
-                        : '—'}
+                      {fraction > 0 ? fmtHours(finished * fraction) : '—'}
+                      <span className="block font-['IBM_Plex_Sans',sans-serif] text-[0.7rem] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
+                        {measured ? 'measured' : 'estimated from status'}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <Select
@@ -255,6 +280,19 @@ export function AudiobookEstimatePanel({
                         }}
                       />
                     </TableCell>
+                    <TableCell align="right">
+                      <Button
+                        variant="ghost"
+                        className="px-3 py-1 whitespace-nowrap"
+                        // The visible words start the name (label in name), and the chapter tells twelve Check buttons apart.
+                        aria-label={
+                          running ? `Checking ${Math.floor(coverage.percent)}%, recording of ${chapter.title}` : `Check recording of ${chapter.title}`
+                        }
+                        onClick={() => setChecking(chapter)}
+                      >
+                        {running ? `Checking ${Math.floor(coverage.percent)}%` : 'Check'}
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -262,6 +300,16 @@ export function AudiobookEstimatePanel({
           </Table>
         </CollapsiblePanel>
       </div>
+      {checking && (
+        <RecordingCheck
+          key={checking.id}
+          chapter={checking}
+          coverage={coverage}
+          notify={notify}
+          close={() => setChecking(undefined)}
+          goToParagraph={(paragraph) => goToManuscript(checking.id, paragraph)}
+        />
+      )}
     </Collapsible>
   );
 }

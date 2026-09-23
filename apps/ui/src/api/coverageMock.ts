@@ -21,6 +21,8 @@ export type CoverageSeed = {
   refusal?: CoverageRefusalReason;
   /** Chapters whose check reads stale (an item was trimmed since), so they carry no recordedFraction. */
   stale?: string[];
+  /** A started check stops at its last transcribing step and never ends, so the running dialog can be seen without a race. */
+  hold?: boolean;
 };
 
 type Deps = {
@@ -188,7 +190,8 @@ export function createCoverageMock(deps: Deps): CoverageApi & {
         startedAt: new Date(startedAt).toISOString(),
       };
       publish();
-      PROGRESS_STEPS.forEach((step, index) =>
+      const steps = deps.seed?.hold ? PROGRESS_STEPS.filter((step) => step.stage === 'TRANSCRIBE') : PROGRESS_STEPS;
+      steps.forEach((step, index) =>
         timers.push(
           setTimeout(
             () => {
@@ -200,14 +203,15 @@ export function createCoverageMock(deps: Deps): CoverageApi & {
           ),
         ),
       );
-      timers.push(
-        setTimeout(
-          () => {
-            if (state.runId === runId && state.phase === 'running') finish(chapter, runId, startedAt);
-          },
-          STEP_MS * (PROGRESS_STEPS.length + 1),
-        ),
-      );
+      if (!deps.seed?.hold)
+        timers.push(
+          setTimeout(
+            () => {
+              if (state.runId === runId && state.phase === 'running') finish(chapter, runId, startedAt);
+            },
+            STEP_MS * (PROGRESS_STEPS.length + 1),
+          ),
+        );
       return { status: 'started', state: { ...state } };
     },
     coverageState: async () => ({ ...state }),

@@ -97,6 +97,47 @@ export const STATE_CATALOG: StateEntry[] = [
       'Home with no linked REAPER project file (?mockNoDaw=1, PRD project-workspace-and-daw-link.prd.md W13-W16): the header pill reads "No REAPER project linked" and the Proofing nav item is locked',
   },
 
+  // The recording check (recording-coverage-analysis.prd.md Phase 6), from a row of the per-chapter breakdown. The mock's chapters 1-3 have a
+  // current check with every word, 4-6 a current check with a third of the text missing, the rest were never checked.
+  {
+    page: 'home',
+    state: 'recording-check-never',
+    description: 'Home, recording check dialog for a chapter never checked: the saved-project basis, what a check does, and Check recording',
+  },
+  {
+    page: 'home',
+    state: 'recording-check-running',
+    description:
+      'Home, a recording check running (?mockCoverage=hold): the work dialog with the real percent from the host, its activity log, Cancel and Continue in background',
+    ...LIVE_PROGRESS_MOVES_ON,
+  },
+  {
+    page: 'home',
+    state: 'recording-check-complete',
+    description: 'Home, recording check result for a chapter read in full: all the text is recorded, the paragraph list folded',
+  },
+  {
+    page: 'home',
+    state: 'recording-check-incomplete',
+    description:
+      'Home, recording check result with text missing: the count, the missing region with its paragraphs, first and last words and audio position, and every paragraph',
+  },
+  {
+    page: 'home',
+    state: 'recording-check-stale',
+    description: 'Home, a stored recording check that is out of date (?mockCoverage=stale): the plain-language reason and the old counts labelled as from then',
+  },
+  {
+    page: 'home',
+    state: 'recording-check-refused',
+    description:
+      'Home, a recording check refused because the chapter has no confirmed track (?mockCoverageRefusal=unmapped): the reason in plain words and the track link in place',
+  },
+  {
+    page: 'home',
+    state: 'recording-check-model-required',
+    description: 'Home, a recording check that needs the Whisper model first (?mockAssets=missing): the first-use download question, never a silent download',
+  },
   // Manuscript
   { page: 'manuscript', state: 'reader-text-small', description: 'Manuscript, small text size' },
   { page: 'manuscript', state: 'reader-text-medium', description: 'Manuscript, medium text size' },

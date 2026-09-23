@@ -227,7 +227,9 @@ export const WIRE_CHAPTERS: ManuscriptChapter[] = aliceChapters.map((chapter, in
     index: paragraphIndex,
   })),
   wordCount: chapter.paragraphs.join(' ').split(/\s+/).length * 4,
-  recordedFraction: index < 3 ? 1 : index < 6 ? 0.65 : 0,
+  // Chapters 1-3 were checked and read in full, 4-6 were checked with a third of their text still to record, the rest were never
+  // checked, so their recorded length is the estimate from their status (recording-coverage-analysis.prd.md D11, Q12).
+  ...(index < 6 ? { recordedFraction: index < 3 ? 1 : 0.65 } : {}),
   status: index < 3 ? 'finalized' : index < 6 ? 'recording' : index < 8 ? 'editing' : index < 10 ? 'proofing' : 'not_started',
 }));
 
