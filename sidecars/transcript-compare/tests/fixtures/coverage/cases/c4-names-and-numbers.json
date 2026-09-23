@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "c4-names-and-numbers",
+  "chapter": "c-0004",
+  "conditions": [
+    "names_and_numbers",
+    "complete",
+    "title_read",
+    "subtitle_read"
+  ],
+  "split": "tune",
+  "description": "Numbers are spoken as words and the invented names come out of a transcriber spelled differently; every paragraph is read in full.",
+  "recording": {
+    "items": [
+      {
+        "id": "item-1",
+        "segments": [
+          {
+            "say": "Chapter four. The Quillenbrook Ledger."
+          },
+          {
+            "pause": 1.0
+          },
+          {
+            "read": "p-000015",
+            "as": "Maylis Quillenbrook opened the ledger at page two hundred fourteen and ran her finger down the column for eighteen forty-seven."
+          },
+          {
+            "read": "p-000016",
+            "as": "Her cousin Tobias Varrow had written three entries in a cramped hand: twelve barrels of salt, forty yards of sailcloth, and one brass astrolabe."
+          },
+          {
+            "read": "p-000017",
+            "as": "\"Farrow never bought anything he could not sell twice,\" she said, and closed the book on the second of March."
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "textComplete": true,
+    "paragraphs": {
+      "p-000015": "present",
+      "p-000016": "present",
+      "p-000017": "present"
+    },
+    "regions": []
+  }
+}

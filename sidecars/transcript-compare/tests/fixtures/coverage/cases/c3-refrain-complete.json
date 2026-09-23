@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "c3-refrain-complete",
+  "chapter": "c-0003",
+  "conditions": [
+    "repeated_refrain",
+    "complete"
+  ],
+  "split": "tune",
+  "description": "The chapter repeats a refrain paragraph; both occurrences are read in place.",
+  "recording": {
+    "items": [
+      {
+        "id": "item-1",
+        "segments": [
+          {
+            "read": "p-000010"
+          },
+          {
+            "read": "p-000011"
+          },
+          {
+            "read": "p-000012"
+          },
+          {
+            "read": "p-000013"
+          },
+          {
+            "read": "p-000014"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "textComplete": true,
+    "paragraphs": {
+      "p-000010": "present",
+      "p-000011": "present",
+      "p-000012": "present",
+      "p-000013": "present",
+      "p-000014": "present"
+    },
+    "regions": []
+  }
+}

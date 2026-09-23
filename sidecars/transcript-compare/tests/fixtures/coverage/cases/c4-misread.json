@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "c4-misread",
+  "chapter": "c-0004",
+  "conditions": [
+    "misread",
+    "complete"
+  ],
+  "split": "held_out",
+  "description": "Paragraph two is read with a few words wrong (misreads count as present, the PRD's Definitions, Present); every paragraph is read.",
+  "recording": {
+    "items": [
+      {
+        "id": "item-1",
+        "segments": [
+          {
+            "read": "p-000015"
+          },
+          {
+            "read": "p-000016",
+            "as": "Her cousin Tobiah Varrow had written 3 entries in a crabbed hand: 12 barrels of salt, 40 yards of sail cloth, and a brass astrolabe."
+          },
+          {
+            "read": "p-000017"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "textComplete": true,
+    "paragraphs": {
+      "p-000015": "present",
+      "p-000016": "present",
+      "p-000017": "present"
+    },
+    "regions": []
+  }
+}

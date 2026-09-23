@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "c2-skipped-sentence",
+  "chapter": "c-0002",
+  "conditions": [
+    "skipped_sentence"
+  ],
+  "split": "held_out",
+  "description": "The second sentence of paragraph two (sixteen words) is skipped; the paragraph is partial.",
+  "recording": {
+    "items": [
+      {
+        "id": "item-1",
+        "segments": [
+          {
+            "read": "p-000006"
+          },
+          {
+            "read": "p-000007",
+            "sentences": [
+              0,
+              1
+            ]
+          },
+          {
+            "read": "p-000008"
+          },
+          {
+            "read": "p-000009"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "textComplete": false,
+    "paragraphs": {
+      "p-000006": "present",
+      "p-000007": "partial",
+      "p-000008": "present",
+      "p-000009": "present"
+    },
+    "regions": [
+      {
+        "kind": "skip",
+        "paragraphs": [
+          "p-000007"
+        ]
+      }
+    ]
+  }
+}
