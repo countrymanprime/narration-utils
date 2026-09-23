@@ -857,7 +857,11 @@ export function createMockApi(
               ...field,
               value: values[field.key] ?? '',
               isSet: values[field.key] !== null,
-              effectiveValue: values[field.key] ?? settings.global[tool]?.find((item) => item.key === field.key)?.effectiveValue ?? '',
+              // A cleared project field falls back to Global, a cleared Global field to the value the mock started with (its default).
+              effectiveValue:
+                values[field.key] ??
+                (scope === 'project' ? settings.global[tool] : wireSettings()[tool])?.find((item) => item.key === field.key)?.effectiveValue ??
+                '',
             }
           : field,
       );

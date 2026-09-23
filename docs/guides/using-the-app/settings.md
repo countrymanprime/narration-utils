@@ -21,6 +21,13 @@ controls the color used to mark reader notes in the text. **General** (Global on
   for misread, skipped and extra words. It shows whether the chosen model is installed, with
   **Remove local model…** once it is.
 - **Story Bible** picks the spaCy model and whether to **Build the Story Bible after import**.
+- **Delivery** holds your own limits for measured chapter audio: the lowest and highest integrated
+  loudness (LUFS) and RMS level (dBFS), and the highest sample peak (dBFS), true peak (dBTP) and noise
+  floor (dBFS). None is set until you type one, and no distributor's numbers are built in, so the
+  category says **No limits set** until you do; a measurement with no limit is reported without being
+  checked. Each box shows its unit and allowed range, says what is wrong with a value it cannot save,
+  and refuses a lowest limit above its highest. Empty a box to remove a limit; in This Project, a
+  blank box uses the Global limit.
 - **TTS** picks the provider and the preview voice used to [hear a name](story-bible.md#hearing-a-name),
   with **Remove local voice…** once the voice is installed.
 

@@ -125,6 +125,66 @@ describe('ScopedSetting controls', () => {
     );
     expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
   });
+  describe('a number', () => {
+    const LIMIT: ScopedSettingField = {
+      ...FIELD,
+      key: 'true_peak_dbtp_max',
+      label: 'True peak, highest',
+      kind: 'number',
+      choices: [],
+      effectiveValue: '',
+      effectiveSource: 'hardcoded',
+      number: { min: -60, max: 0, step: 0.1, unit: 'dBTP' },
+    };
+    const renderNumber = (field: ScopedSettingField, scope: 'global' | 'project', value = field.value, change = vi.fn()) => {
+      render(
+        <TooltipProvider>
+          <ScopedSetting field={field} scope={scope} value={value} change={change} onClearOverride={vi.fn()} />
+        </TooltipProvider>,
+      );
+      return change;
+    };
+
+    it('is a named decimal box with its unit and range, and reports what is typed', () => {
+      const change = renderNumber(LIMIT, 'global');
+      const box = screen.getByRole('textbox', { name: 'True peak, highest' }) as HTMLInputElement;
+      expect(box.inputMode).toBe('decimal');
+      expect(box.value).toBe('');
+      expect(box.placeholder).toBe('Not set');
+      expect(screen.getByText('dBTP')).toBeTruthy();
+      expect(screen.getByText('From -60 to 0 dBTP')).toBeTruthy();
+      fireEvent.change(box, { target: { value: '-3' } });
+      expect(change).toHaveBeenCalledWith('-3');
+    });
+
+    it('can be emptied, since an empty number is "not set", not the inherited value typed back in', () => {
+      renderNumber({ ...LIMIT, value: '-3', isSet: true, effectiveValue: '-3', effectiveSource: 'global' }, 'global', '');
+      expect((screen.getByRole('textbox', { name: 'True peak, highest' }) as HTMLInputElement).value).toBe('');
+    });
+
+    it('shows the inherited value as the placeholder of an unset project field', () => {
+      renderNumber({ ...LIMIT, effectiveValue: '-3', effectiveSource: 'global' }, 'project');
+      expect(screen.getByPlaceholderText('Inherits -3')).toBeTruthy();
+      cleanup();
+      // A global field never shows a project's value as if it were inherited.
+      renderNumber({ ...LIMIT, effectiveValue: '-1', effectiveSource: 'project' }, 'global');
+      expect(screen.getByPlaceholderText('Not set')).toBeTruthy();
+      cleanup();
+      // A project override being cleared inherits a value the page does not know yet.
+      renderNumber({ ...LIMIT, value: '-1', isSet: true, effectiveValue: '-1', effectiveSource: 'project' }, 'project', '');
+      expect(screen.getByPlaceholderText('Inherits Global')).toBeTruthy();
+    });
+
+    it('says what is wrong with a value that cannot be saved, in place of the range', () => {
+      renderNumber(LIMIT, 'global', '5');
+      const box = screen.getByRole('textbox', { name: 'True peak, highest' });
+      expect(box.getAttribute('aria-invalid')).toBe('true');
+      const message = screen.getByText('Enter a value from -60 to 0 dBTP.');
+      expect(box.getAttribute('aria-describedby')).toBe(message.id);
+      expect(screen.queryByText('From -60 to 0 dBTP')).toBeNull();
+    });
+  });
+
   it('shows the update channel in words, not as the stored names', () => {
     renderSetting({ ...FIELD, key: 'channel', label: 'Update channel', choices: ['candidates', 'stable'], effectiveValue: 'candidates' });
     const select = screen.getByRole('combobox', { name: 'Update channel' }) as HTMLSelectElement;

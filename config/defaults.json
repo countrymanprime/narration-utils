@@ -32,6 +32,7 @@
   "DAW": {
     "auto_start_launcher": "false"
   },
+  "Delivery": {},
   "TakeReview": {
     "full_coverage_threshold": "0.9",
     "near_duplicate_quality_threshold": "0.97",

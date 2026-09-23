@@ -26,6 +26,21 @@ describe('settingsForScopeSchema', () => {
     expect(parseWire(settingsForScopeSchema, { Manuscript: [field({ kind: 'color' })] }, ctx).Manuscript?.[0]?.choices).toEqual([]);
   });
 
+  it('accepts a number field with its range, whose value is still text', () => {
+    const range = { min: -60, max: 0, step: 0.1, unit: 'dBTP' };
+    const parsed = parseWire(settingsForScopeSchema, { Delivery: [field({ kind: 'number', value: '-3', number: range })] }, ctx);
+    expect(parsed.Delivery?.[0]).toMatchObject({ kind: 'number', value: '-3', number: range });
+    const unbounded = { min: null, max: null, step: null, unit: '' };
+    expect(parseWire(settingsForScopeSchema, { Delivery: [field({ kind: 'number', number: unbounded })] }, ctx).Delivery?.[0]?.number).toEqual(unbounded);
+  });
+
+  it('rejects a number field without its range, a range on another kind, and a step that is not positive', () => {
+    expect(() => parseWire(settingsForScopeSchema, { Delivery: [field({ kind: 'number' })] }, ctx)).toThrow(WireError);
+    const range = { min: null, max: null, step: 1, unit: '' };
+    expect(() => parseWire(settingsForScopeSchema, { General: [field({ number: range })] }, ctx)).toThrow(WireError);
+    expect(() => parseWire(settingsForScopeSchema, { Delivery: [field({ kind: 'number', number: { ...range, step: 0 } })] }, ctx)).toThrow(WireError);
+  });
+
   it('rejects a field kind the page cannot render, and a value that is not text', () => {
     expect(() => parseWire(settingsForScopeSchema, { General: [field({ kind: 'slider' })] }, ctx)).toThrow(WireError);
     expect(() => parseWire(settingsForScopeSchema, { General: [field({ value: true })] }, ctx)).toThrow(WireError);

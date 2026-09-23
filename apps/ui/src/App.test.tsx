@@ -482,6 +482,29 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(saveSettings).toHaveBeenCalledWith('TranscriptCompare', 'project', { model_size: 'large-v3' });
   });
 
+  it('offers the delivery limits empty, saves a typed limit, and clears one with null rather than an empty string', async () => {
+    // One mock answers both calls, so what is saved is what the page reads back.
+    const store = createMockApi();
+    const saveSettings = vi.fn(store.saveSettings);
+    renderApp({ saveSettings, settingsForScope: store.settingsForScope });
+    await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Delivery' }));
+    expect(await screen.findByText('No limits set')).toBeTruthy();
+    const peak = await screen.findByRole('textbox', { name: 'True peak, highest' });
+    fireEvent.change(peak, { target: { value: '-3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(saveSettings).toHaveBeenCalledWith('Delivery', 'global', { true_peak_dbtp_max: '-3' }));
+    await waitFor(() => expect(screen.queryByText('No limits set')).toBeNull());
+
+    fireEvent.change(await screen.findByRole('textbox', { name: 'True peak, highest' }), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(saveSettings).toHaveBeenLastCalledWith('Delivery', 'global', { true_peak_dbtp_max: null }));
+    expect(await screen.findByText('No limits set')).toBeTruthy();
+  });
+
   it('does not call the host when an edit was put back, and leaves nothing marked unsaved', async () => {
     const saveSettings = vi.fn(createMockApi().saveSettings);
     renderApp({ saveSettings });

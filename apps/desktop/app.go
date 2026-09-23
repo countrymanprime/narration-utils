@@ -43,7 +43,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 28
+const hostAPIVersion = 29
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -982,6 +982,18 @@ var fieldSchemas = map[string][]fieldSchema{
 	// W12), so the bridge is live without the narrator running the action by hand - but only when this is on, and
 	// it defaults off.
 	"DAW": {{"reaper_path", "REAPER executable (override)", "text", nil}, {"auto_start_launcher", "Start the launcher script automatically", "bool", nil}},
+	// Delivery holds the narrator's own measurement limits (docs/prds/diagnostics-delivery-and-cleanup-tools.prd.md
+	// Phase 2), read by measure.ProfileFromLimits. Every field is a "number" whose range is in numberSpecs; none has a
+	// default, so an empty section is a profile with no limits.
+	"Delivery": {
+		{"integrated_lufs_min", "Integrated loudness, lowest", "number", nil},
+		{"integrated_lufs_max", "Integrated loudness, highest", "number", nil},
+		{"rms_dbfs_min", "RMS level, lowest", "number", nil},
+		{"rms_dbfs_max", "RMS level, highest", "number", nil},
+		{"sample_peak_dbfs_max", "Sample peak, highest", "number", nil},
+		{"true_peak_dbtp_max", "True peak, highest", "number", nil},
+		{"noise_floor_dbfs_max", "Noise floor, highest", "number", nil},
+	},
 }
 
 // settingsSchemas is the settings the app offers with each choice that comes from an approved catalog filled in from it: the spaCy model
@@ -1022,7 +1034,11 @@ func (h *Host) settingsForScope(scope string) (map[string]any, error) {
 		for _, schema := range schemas {
 			effective, source := store.Effective(tool, schema.key, "")
 			current, set := scoped[schema.key]
-			values = append(values, map[string]any{"key": schema.key, "label": schema.label, "kind": schema.kind, "choices": schema.choices, "value": current, "isSet": set, "effectiveValue": effective, "effectiveSource": source})
+			field := map[string]any{"key": schema.key, "label": schema.label, "kind": schema.kind, "choices": schema.choices, "value": current, "isSet": set, "effectiveValue": effective, "effectiveSource": source}
+			if spec, ok := numberSpecs[tool][schema.key]; ok {
+				field["number"] = spec.wire()
+			}
+			values = append(values, field)
 		}
 		result[tool] = values
 	}
@@ -1051,17 +1067,27 @@ func (h *Host) saveSettings(tool, scope string, values map[string]*string) error
 		if value == nil {
 			continue
 		}
-		if err := validateSettingValue(schema, *value); err != nil {
+		if err := validateSettingValue(tool, schema, *value); err != nil {
 			return err
 		}
+	}
+	if err := h.checkNumberPairs(tool, scope, values); err != nil {
+		return err
 	}
 	return h.services().settings.Save(tool, scope, values)
 }
 
 // validateSettingValue checks one value against its field's kind. Every value is a string in the settings files, so a
-// bool is stored as "true" or "false". An unknown kind fails closed: it would otherwise be written as it came.
-func validateSettingValue(schema fieldSchema, value string) error {
+// bool is stored as "true" or "false" and a number as its decimal text; clearing a number is a nil value, not "". An
+// unknown kind, or a number field with no range, fails closed: it would otherwise be written as it came.
+func validateSettingValue(tool string, schema fieldSchema, value string) error {
 	switch schema.kind {
+	case "number":
+		spec, ok := numberSpecs[tool][schema.key]
+		if !ok {
+			return fmt.Errorf("setting %s has no declared range", schema.key)
+		}
+		return validateNumberSetting(schema.key, spec, value)
 	case "text":
 		return nil
 	case "color":

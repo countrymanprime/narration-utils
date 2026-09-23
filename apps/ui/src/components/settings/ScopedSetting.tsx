@@ -1,11 +1,26 @@
+import { useId, type ReactNode } from 'react';
+import type { NumberSettingRange } from '../../api/contracts/system';
 import type { Scope, ScopedSettingField } from '../../types';
 import { Select } from '../primitives/Select';
 import { Switch } from '../primitives/Switch';
 import { TextField } from '../primitives/TextField';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { proofingChoiceLabel } from '../proofing/options';
+import { describeNumberRange, numberProblem } from './numberSetting';
 
+const DELIVERY_LIMIT_TIP =
+  "Your own limit for this measurement. Leave it blank and the measurement is reported without being checked. No distributor's numbers are built in.";
+const DELIVERY_LIMIT_KEYS = [
+  'integrated_lufs_min',
+  'integrated_lufs_max',
+  'rms_dbfs_min',
+  'rms_dbfs_max',
+  'sample_peak_dbfs_max',
+  'true_peak_dbtp_max',
+  'noise_floor_dbfs_max',
+];
 const TOOLTIP: Record<string, string> = {
+  ...Object.fromEntries(DELIVERY_LIMIT_KEYS.map((key) => [key, DELIVERY_LIMIT_TIP])),
   spacy_model: 'Controls Story Bible detection quality and build speed.',
   model_size: 'Default Whisper model for new comparisons.',
   chunk_seconds: 'Default transcription chunk length.',
@@ -55,6 +70,67 @@ const GROWING_CONTROL_CLASSES = 'min-w-0 flex-[1_1_10rem]';
 // under it, and takes whatever is left.
 const HEX_CONTROL_CLASSES = 'min-w-[4.5rem] flex-[1_1_0%]';
 
+// What an empty number box stands for. Unlike the other kinds, a number box shows only this scope's own value, so it can
+// be emptied (empty is "not set", saved as null): what it inherits is the placeholder. A global box never shows a
+// project's value as inherited, and a project override being cleared inherits a value the page has not been sent yet.
+function numberPlaceholder(field: ScopedSettingField, scope: Scope): string {
+  const inherits = !field.isSet && field.effectiveValue !== '' && !(scope === 'global' && field.effectiveSource === 'project');
+  if (inherits) return `Inherits ${field.effectiveValue}`;
+  return scope === 'project' && field.isSet ? 'Inherits Global' : 'Not set';
+}
+
+function NumberSetting({
+  field,
+  range,
+  scope,
+  value,
+  change,
+  resetButton,
+}: {
+  field: ScopedSettingField;
+  range: NumberSettingRange;
+  scope: Scope;
+  value: string;
+  change: (value: string) => void;
+  resetButton: ReactNode;
+}) {
+  const hintId = useId();
+  const problem = numberProblem(range, value);
+  const hint = problem ?? describeNumberRange(range);
+  return (
+    <div className={ROW_CLASSES}>
+      <div className="text-[0.82rem] font-medium text-[var(--text-muted)] md:pt-2">
+        {field.label}
+        <Tooltip text={TOOLTIP[field.key] || `Configure ${field.label.toLowerCase()}.`} />
+      </div>
+      <div className={CONTROLS_CLASSES}>
+        {/* The unit stays beside its box at every width (the box shrinks, never below the collapsed-control floor of ADR 0060),
+            so it never wraps to a line of its own the way a separate flex item would in the narrow tablet column. */}
+        <div className={`flex items-center gap-[0.6rem] ${GROWING_CONTROL_CLASSES}`}>
+          <TextField
+            label={field.label}
+            mono
+            inputMode="decimal"
+            className="min-w-0 flex-1"
+            placeholder={numberPlaceholder(field, scope)}
+            value={value}
+            onChange={(next) => change(next.trim())}
+            aria-invalid={problem ? true : undefined}
+            aria-describedby={hint ? hintId : undefined}
+          />
+          {range.unit && <span className="flex-none text-[0.82rem] text-[var(--text-muted)]">{range.unit}</span>}
+        </div>
+        {resetButton}
+        {hint && (
+          <p id={hintId} className="basis-full text-xs" style={{ color: problem ? 'var(--danger-text)' : 'var(--text-muted)' }}>
+            {hint}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ScopedSetting({
   field,
   scope,
@@ -74,6 +150,9 @@ export function ScopedSetting({
       Reset
     </button>
   );
+  if (field.kind === 'number' && field.number) {
+    return <NumberSetting field={field} range={field.number} scope={scope} value={value} change={change} resetButton={resetButton} />;
+  }
   if (field.kind === 'bool') {
     // A switch is its own label (the setting's name), so the row is the switch, the hint icon and Reset, not a label column
     // and a control column. Only the stored string "true" is on: anything else the host never validated reads as off.

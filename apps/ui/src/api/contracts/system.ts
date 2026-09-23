@@ -5,13 +5,17 @@ export type ScopedSettingField = {
   key: string;
   label: string;
   // A `bool` is stored as the string "true" or "false" (every setting value is a string) and shown as a Switch.
-  kind: 'text' | 'choice' | 'color' | 'bool';
+  // A `number` is stored as its decimal text ("-3.5"); clearing one saves `null`, never "". Its range is in `number`.
+  kind: 'text' | 'choice' | 'color' | 'bool' | 'number';
   choices: string[];
   value: string;
   isSet: boolean;
   effectiveValue: string;
   effectiveSource: string;
+  /** The range of a `number` field (present on every one, absent on every other kind); a null bound or step is unbounded. */
+  number?: NumberSettingRange;
 };
+export type NumberSettingRange = { min: number | null; max: number | null; step: number | null; unit: string };
 export type Bootstrap = {
   apiVersion: number;
   diagnosticId: string;

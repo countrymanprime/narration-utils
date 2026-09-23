@@ -492,6 +492,20 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'settings', state: 'global-storybible', description: 'Settings, Global scope / Story Bible category', ...REFLOW },
   {
     page: 'settings',
+    state: 'global-delivery',
+    description:
+      'Settings, Global scope / Delivery category (diagnostics PRD Phase 2): the narrator’s own measurement limits as number boxes with units and ranges, none set, so the summary says "No limits set" (no distributor numbers ship, ADR 0025)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'global-delivery-invalid',
+    description:
+      'Settings, Global scope / Delivery with two unsaved limits typed: a valid true peak and an out-of-range sample peak whose row names the range instead of the hint',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
     state: 'global-daw',
     description:
       'Settings, Global scope / DAW Integration category, with the DAW catalog panel showing REAPER detected and a REAPER project already linked, so only the "Check again" action shows (docs/architecture/daw-integration.md)',
@@ -628,6 +642,13 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   { page: 'settings', state: 'project-proofing', description: 'Settings, Project scope / Proofing category', ...REFLOW },
   { page: 'settings', state: 'project-storybible', description: 'Settings, Project scope / Story Bible category', ...REFLOW },
+  {
+    page: 'settings',
+    state: 'project-delivery',
+    description:
+      'Settings, Project scope / Delivery category: every limit unset here and in Global, with the note that a blank project limit uses the Global one',
+    ...REFLOW,
+  },
   {
     page: 'settings',
     state: 'project-daw',

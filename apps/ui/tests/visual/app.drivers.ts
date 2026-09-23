@@ -1012,6 +1012,20 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Story Bible');
     },
+    'global-delivery': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'Delivery');
+      await page.getByText('No limits set').waitFor();
+    },
+    'global-delivery-invalid': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'Delivery');
+      await page.getByRole('textbox', { name: 'True peak, highest' }).fill('-3');
+      await page.getByRole('textbox', { name: 'Sample peak, highest' }).fill('5');
+      await page.getByText('Enter a value from -60 to 0 dBFS.').scrollIntoViewIfNeeded();
+    },
     'global-daw': async (page) => {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'Global');
@@ -1201,6 +1215,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Story Bible');
+    },
+    'project-delivery': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'This Project');
+      await clickSettingsCategory(page, 'Delivery');
+      await page.getByText('A limit left blank here uses the Global one.').waitFor();
     },
     'project-daw': async (page) => {
       await goToPage(page, 'Settings');
