@@ -26,6 +26,14 @@ export function ChapterTrackMapConfirm(arg1:string,arg2:string):Promise<string>;
 
 export function ChapterTrackMapList():Promise<string>;
 
+export function CoverageCancel():Promise<string>;
+
+export function CoverageResult(arg1:string):Promise<string>;
+
+export function CoverageStart(arg1:string):Promise<string>;
+
+export function CoverageState():Promise<string>;
+
 export function CreditsDeleteTemplate(arg1:string):Promise<string>;
 
 export function CreditsDuplicateTemplate(arg1:string):Promise<string>;
@@ -162,21 +170,21 @@ export function SystemSaveSettings(arg1:string,arg2:string,arg3:Record<string, a
 
 export function SystemSettingsForScope(arg1:string):Promise<string>;
 
-export function TeleprompterDevices():Promise<string>;
-
-export function TeleprompterStart(arg1:Record<string, string>):Promise<string>;
-
-export function TeleprompterState():Promise<string>;
-
-export function TeleprompterStop():Promise<string>;
-
 export function TakeReviewCreateTake(arg1:string,arg2:string,arg3:string,arg4:string,arg5:number,arg6:number):Promise<string>;
 
 export function TakeReviewFindings(arg1:string):Promise<string>;
 
 export function TakeReviewScan(arg1:string):Promise<string>;
 
+export function TeleprompterDevices():Promise<string>;
+
 export function TeleprompterSeek(arg1:number):Promise<string>;
+
+export function TeleprompterStart(arg1:Record<string, string>):Promise<string>;
+
+export function TeleprompterState():Promise<string>;
+
+export function TeleprompterStop():Promise<string>;
 
 export function TracksDiscover():Promise<string>;
 

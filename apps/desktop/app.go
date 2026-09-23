@@ -44,7 +44,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 29
+const hostAPIVersion = 30
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -69,8 +69,8 @@ type Host struct {
 	guideJob   *workJob
 	transcript *transcript.Service
 	// coverage is the recording-coverage service (recording-coverage-analysis.prd.md Phase 4, ADR 0128): it reads the saved .rpp and
-	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; no binding reaches it yet
-	// (Phase 5).
+	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; the Coverage* bindings
+	// reach it (Phase 5, bindings_coverage.go) and it fills the manuscript chapters' recordedFraction.
 	coverage *coverage.Service
 	// findings is the project's findings store: Transcript Compare's and the
 	// Guide's adapters save into it on every completed run
@@ -118,6 +118,10 @@ type Host struct {
 	// jobEvents is a seam for tests: nil means the Wails runtime (jobs.go). transcriptRuns turns transcript states into job ends.
 	jobEvents      func(jobEnded)
 	transcriptRuns transcriptWatch
+	// coverageRuns turns recording check states into job ends (bindings_coverage.go).
+	coverageRuns coverageWatch
+	// coverageLauncher is a seam for tests: nil means the recording check's sidecar starts under h.sidecars.
+	coverageLauncher coverage.Launcher
 	// installUpdate, quitApp, executable and pendingPath are seams for tests: nil or empty means the real thing.
 	installUpdate func(context.Context, update.InstallOptions) error
 	quitApp       func()
@@ -337,7 +341,10 @@ func (h *Host) configureLocked(next config) {
 		ProjectFile:    func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
 		LoadManuscript: h.manuscript.Load,
 		Reporter:       h.persist,
-	}, coverage.SupervisorLauncher(h.sidecars), nil)
+	}, h.coverageLauncherLocked(), h.emitCoverage)
+	// A chapter's recordedFraction is the measured share of its words from a current, complete check, and absent otherwise (D11,
+	// Q12 A); reading it never starts a check (Q14).
+	h.manuscript.SetRecordedFractions(coverageRecordedFractions(h.coverage))
 	// The line-identity service is the second consumer of the same bridge client (bridge.Client fans events
 	// out by tag and run, ADR 0068), so pollTranscript's Drain call already pumps its events too. Phase 7
 	// (reaper-automation-follow-through PRD) is the UI trigger, so it now emits h.emitLineIdentity the way
@@ -509,6 +516,14 @@ func sidecarPath(root, name string) string {
 		return ""
 	}
 	return candidate
+}
+
+// coverageLauncherLocked starts a recording check's sidecar under the host's supervisor unless a test set a launcher.
+func (h *Host) coverageLauncherLocked() coverage.Launcher {
+	if h.coverageLauncher != nil {
+		return h.coverageLauncher
+	}
+	return coverage.SupervisorLauncher(h.sidecars)
 }
 
 func (h *Host) emitTranscript(state map[string]any) {

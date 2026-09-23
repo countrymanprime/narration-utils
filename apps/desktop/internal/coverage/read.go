@@ -2,6 +2,7 @@ package coverage
 
 import (
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
+	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
 
 // Result reads the chapter's newest complete coverage run back and says
@@ -34,6 +35,64 @@ func (s *Service) result(chapterID string, alignment AlignmentParams) (ChapterRe
 	if err != nil {
 		return ChapterResult{}, err
 	}
+	return s.evaluate(project, projectFile, basis, alignment)
+}
+
+// RecordedFractions is the measured ManuscriptChapter.recordedFraction (D11):
+// for every chapter whose newest complete coverage run is current, the share
+// of its body words present. A chapter with no current complete result -
+// never checked, stale, partial, failed, unmapped, or anything that cannot be
+// read - is absent, so the UI keeps its labeled status estimate (Q12 A). It
+// never runs anything (Q14), and it reads the saved project once, and only
+// when the ledger holds a complete coverage record at all.
+func (s *Service) RecordedFractions(alignment AlignmentParams) map[string]float64 {
+	fractions := map[string]float64{}
+	if s.config.Project == "" || alignment.validate() != nil {
+		return fractions
+	}
+	chapters := s.checkedChapters()
+	if len(chapters) == 0 {
+		return fractions
+	}
+	project, projectFile, err := s.savedProject()
+	if err != nil {
+		return fractions
+	}
+	for _, chapterID := range chapters {
+		basis, err := s.chapter(chapterID)
+		if err != nil {
+			continue
+		}
+		result, err := s.evaluate(project, projectFile, basis, alignment)
+		if err == nil && result.Current() {
+			fractions[chapterID] = result.Result.Report.PresentFraction()
+		}
+	}
+	return fractions
+}
+
+// checkedChapters lists the chapters with at least one complete coverage
+// record, each once.
+func (s *Service) checkedChapters() []string {
+	records, err := s.ledger.List(AnalyzerID, "")
+	if err != nil {
+		return nil
+	}
+	seen := map[string]bool{}
+	chapters := []string{}
+	for _, record := range records {
+		if record.Outcome != evidence.LedgerComplete || seen[record.Scope.ChapterID] {
+			continue
+		}
+		seen[record.Scope.ChapterID] = true
+		chapters = append(chapters, record.Scope.ChapterID)
+	}
+	return chapters
+}
+
+// evaluate compares the chapter's newest complete run against the parsed
+// saved project, the confirmed track, the parameters and the manuscript.
+func (s *Service) evaluate(project tracks.Project, projectFile evidence.LedgerProjectFile, basis ChapterBasis, alignment AlignmentParams) (ChapterResult, error) {
 	if _, err := confirmedTrack(s.mapping, basis.DocumentID, basis.ChapterID); err != nil {
 		return ChapterResult{}, err
 	}

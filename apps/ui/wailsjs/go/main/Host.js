@@ -50,6 +50,22 @@ export function ChapterTrackMapList() {
   return window['go']['main']['Host']['ChapterTrackMapList']();
 }
 
+export function CoverageCancel() {
+  return window['go']['main']['Host']['CoverageCancel']();
+}
+
+export function CoverageResult(arg1) {
+  return window['go']['main']['Host']['CoverageResult'](arg1);
+}
+
+export function CoverageStart(arg1) {
+  return window['go']['main']['Host']['CoverageStart'](arg1);
+}
+
+export function CoverageState() {
+  return window['go']['main']['Host']['CoverageState']();
+}
+
 export function CreditsDeleteTemplate(arg1) {
   return window['go']['main']['Host']['CreditsDeleteTemplate'](arg1);
 }
@@ -322,22 +338,6 @@ export function SystemSettingsForScope(arg1) {
   return window['go']['main']['Host']['SystemSettingsForScope'](arg1);
 }
 
-export function TeleprompterDevices() {
-  return window['go']['main']['Host']['TeleprompterDevices']();
-}
-
-export function TeleprompterStart(arg1) {
-  return window['go']['main']['Host']['TeleprompterStart'](arg1);
-}
-
-export function TeleprompterState() {
-  return window['go']['main']['Host']['TeleprompterState']();
-}
-
-export function TeleprompterStop() {
-  return window['go']['main']['Host']['TeleprompterStop']();
-}
-
 export function TakeReviewCreateTake(arg1, arg2, arg3, arg4, arg5, arg6) {
   return window['go']['main']['Host']['TakeReviewCreateTake'](arg1, arg2, arg3, arg4, arg5, arg6);
 }
@@ -350,8 +350,24 @@ export function TakeReviewScan(arg1) {
   return window['go']['main']['Host']['TakeReviewScan'](arg1);
 }
 
+export function TeleprompterDevices() {
+  return window['go']['main']['Host']['TeleprompterDevices']();
+}
+
 export function TeleprompterSeek(arg1) {
   return window['go']['main']['Host']['TeleprompterSeek'](arg1);
+}
+
+export function TeleprompterStart(arg1) {
+  return window['go']['main']['Host']['TeleprompterStart'](arg1);
+}
+
+export function TeleprompterState() {
+  return window['go']['main']['Host']['TeleprompterState']();
+}
+
+export function TeleprompterStop() {
+  return window['go']['main']['Host']['TeleprompterStop']();
 }
 
 export function TracksDiscover() {

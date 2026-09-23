@@ -30,7 +30,7 @@ export const chapterSchema = z.object({
   subtitle: z.string().optional(),
   index: z.number(),
   wordCount: z.number(),
-  recordedFraction: z.number().optional(),
+  recordedFraction: z.number().min(0).max(1).optional(),
   status: z.enum(['not_started', 'recording', 'editing', 'proofing', 'finalized']),
   contentKind: contentKindFromWire,
   paragraphIds: z.array(z.object({ id: z.string(), index: z.number() })).optional(),

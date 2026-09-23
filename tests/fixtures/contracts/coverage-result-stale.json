@@ -1,0 +1,73 @@
+{
+  "basis": {
+    "label": "saved project, file modified 2026-09-21T10:00:00Z",
+    "modifiedAt": "2026-09-21T10:00:00Z",
+    "stale": false
+  },
+  "chapterId": "c-0001",
+  "reasons": [
+    "item_trimmed"
+  ],
+  "record": {
+    "completedAt": "2026-09-21T10:00:00Z",
+    "id": "id-1",
+    "outcome": "complete",
+    "startedAt": "2026-09-21T10:00:00Z"
+  },
+  "result": {
+    "alignment": {
+      "maxMisreadRun": 8,
+      "minAnchorRun": 3
+    },
+    "bodyTokens": 10,
+    "extraTokens": 0,
+    "items": [
+      {
+        "index": 0,
+        "itemGuid": "{ITEM-A}",
+        "language": "en",
+        "model": "small",
+        "playedSeconds": 10,
+        "status": "analyzed",
+        "wordCount": 1,
+        "words": "transcribed"
+      },
+      {
+        "index": 1,
+        "itemGuid": "{ITEM-B}",
+        "language": "en",
+        "model": "small",
+        "playedSeconds": 6,
+        "status": "analyzed",
+        "wordCount": 1,
+        "words": "transcribed"
+      }
+    ],
+    "longestMissingRun": 2,
+    "missingTokens": 2,
+    "model": "small",
+    "paragraphs": [
+      {
+        "id": "p-000001",
+        "longestMissingRun": 2,
+        "present": 8,
+        "tokens": 10
+      }
+    ],
+    "playedSeconds": 0,
+    "presentTokens": 8,
+    "regions": [
+      {
+        "firstWord": "very",
+        "kind": "tail",
+        "lastWord": "tired.",
+        "paragraphIds": [
+          "p-000001"
+        ],
+        "position": null,
+        "tokenCount": 2
+      }
+    ]
+  },
+  "state": "stale"
+}

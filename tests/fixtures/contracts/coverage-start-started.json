@@ -1,0 +1,12 @@
+{
+  "state": {
+    "chapterId": "c-0001",
+    "message": "Starting the recording check...",
+    "percent": 0,
+    "phase": "running",
+    "runId": "1789970042000000000",
+    "stage": "START",
+    "startedAt": "2026-09-21T10:00:00Z"
+  },
+  "status": "started"
+}

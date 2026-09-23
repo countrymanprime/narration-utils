@@ -74,6 +74,7 @@ import {
 import { loadAliceManuscript } from './aliceManuscript';
 import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './mockImportPreview';
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
+import { createCoverageMock, type CoverageSeed } from './coverageMock';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
 
@@ -348,6 +349,8 @@ export function createMockApi(
     chapterTags?: 'idle' | 'ready' | 'not-rendered';
     /** Makes chapterTagsEmbed always reject, to review the error state. */
     chapterTagsEmbedAlwaysErrors?: boolean;
+    /** Seeds the recording coverage mock (a refusal for every start, or stale chapters), see `CoverageSeed`. */
+    coverage?: CoverageSeed;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -748,6 +751,18 @@ export function createMockApi(
           ? moonshineInstall
           : modelInstall;
   const mockWhisperModel = { ...mockWhisperIdentity, downloadSize: 483546902 + 2370 + 2203239 + 459861, installState: 'not_installed' as const };
+  // The first-use gate every Whisper start has (teleprompter, recording coverage): undefined once the model is installed.
+  const whisperAssetRequired = () =>
+    whisperInstalled
+      ? undefined
+      : {
+          status: 'asset_required' as const,
+          model: mockWhisperIdentity,
+          installState: 'not_installed' as const,
+          downloadSize: mockWhisperModel.downloadSize,
+          diskSize: mockWhisperModel.downloadSize,
+          installPath: MOCK_ASSET_ROOT + '/whisper/faster-whisper/small',
+        };
   const teleprompter = createTeleprompterMock({
     ready: manuscriptReady,
     chapters: () => chapters,
@@ -780,6 +795,12 @@ export function createMockApi(
     },
     seed: initial.teleprompter,
     devices: initial.teleprompterDevices ?? WIRE_TELEPROMPTER_DEVICES,
+  });
+  const { withMeasurement, ...coverage } = createCoverageMock({
+    chapters: () => chapters,
+    assetRequired: whisperAssetRequired,
+    endJob,
+    seed: initial.coverage,
   });
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));
@@ -1249,7 +1270,7 @@ export function createMockApi(
     systemNotify: async () => {},
     manuscriptChapters: async () => {
       await manuscriptReady;
-      return wireClone(chapters);
+      return wireClone(chapters.map(withMeasurement));
     },
     manuscriptParagraphs: async (chapter) => {
       await manuscriptReady;
@@ -1278,12 +1299,12 @@ export function createMockApi(
       const found = chapters.find((item) => item.id === chapter || item.title === chapter);
       if (!found) throw new Error(`Unknown chapter: ${chapter}`);
       found.status = status;
-      return wireClone(found);
+      return wireClone(withMeasurement(found));
     },
     noteList: async (chapter) => wireClone(chapter ? notes.filter((note) => note.chapter === chapter) : notes),
     manuscriptReader: async () => {
       await manuscriptReady;
-      return { chapters: wireClone(chapters), paragraphs: wireClone(paragraphs), notes: wireClone(notes) };
+      return { chapters: wireClone(chapters.map(withMeasurement)), paragraphs: wireClone(paragraphs), notes: wireClone(notes) };
     },
     readerState: async () => wireClone(readerState),
     readerStateSave: async (values) => {
@@ -1728,6 +1749,7 @@ export function createMockApi(
       return () => clearTimeout(timer);
     },
     ...teleprompter,
+    ...coverage,
     mediaUrl: (sourceFile) => mockAudioSource() ?? sourceFile,
   };
   const api = initial.invalidPayload ? { ...base, ...invalidPayloadOverrides(initial.invalidPayload, base) } : base;

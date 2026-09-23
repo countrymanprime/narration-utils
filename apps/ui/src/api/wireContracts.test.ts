@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import { createMockApi } from './mockApi';
 import { WIRE_TRANSCRIPT } from './mockFixtures';
@@ -21,6 +21,7 @@ import {
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { settingsForScopeSchema } from './schemas/settings';
 import { takeReviewCreateTakeResultSchema, takeReviewFindingsSchema } from './schemas/takeReview';
+import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { chapterTrackMappingSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
@@ -150,6 +151,17 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-tags-embed-success.json': chapterTagsEmbedResultSchema,
   'takereview-findings.json': takeReviewFindingsSchema,
   'takereview-create-take.json': takeReviewCreateTakeResultSchema,
+  'manuscript-chapters-measured.json': chaptersSchema,
+  'coverage-result-current.json': coverageResultSchema,
+  'coverage-result-stale.json': coverageResultSchema,
+  'coverage-result-never.json': coverageResultSchema,
+  'coverage-result-unmapped.json': coverageResultSchema,
+  'coverage-start-started.json': coverageStartResultSchema,
+  'coverage-start-refused.json': coverageStartResultSchema,
+  'coverage-state-idle.json': coverageStateSchema,
+  'coverage-state-complete.json': coverageStateSchema,
+  // Not a payload: the reason words the host can send, which the schema's lists must equal (the test below).
+  'coverage-reasons.json': z.object({ refusal: z.array(z.string()), evaluator: z.array(z.string()) }),
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -168,6 +180,19 @@ describe('golden payloads written by the Go host and the Python sidecars', () =>
 
   it('the golden Bootstrap carries the API version this UI is built for', () => {
     expect(parseWire(bootstrapSchema, readGolden('bootstrap-manuscript.json'), ctx('bootstrap')).apiVersion).toBe(DESKTOP_HOST_API_VERSION);
+  });
+
+  it('the coverage reason lists are the ones the host declares', () => {
+    const declared = z.object({ refusal: z.array(z.string()), evaluator: z.array(z.string()) }).parse(readGolden('coverage-reasons.json'));
+    expect([...COVERAGE_REFUSAL_REASONS]).toEqual(declared.refusal);
+    expect([...COVERAGE_EVALUATOR_REASONS]).toEqual(declared.evaluator);
+  });
+
+  it('recordedFraction is only on the chapter the coverage measured', () => {
+    const chapters = parseWire(chaptersSchema, readGolden('manuscript-chapters-measured.json'), ctx('chapters'));
+    expect(chapters.map((chapter) => chapter.recordedFraction)).toEqual([0.75, ...chapters.slice(1).map(() => undefined)]);
+    const unmeasured = parseWire(chaptersSchema, readGolden('manuscript-chapters.json'), ctx('chapters'));
+    expect(unmeasured.every((chapter) => chapter.recordedFraction === undefined)).toBe(true);
   });
 
   it('the golden completed run keeps its rows and marker states through the schema', () => {
@@ -663,6 +688,58 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(result.targetItemGuid).toBe('{AAAAAAAA-0000-4000-8000-000000000001}');
   });
 
+  it('the recording coverage answers: a current, a never and a stale result, a check to its end, and every refusal', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const measured = chapters.find((chapter) => chapter.recordedFraction !== undefined);
+    if (!measured) throw new Error('the mock chapters carry a measured recordedFraction');
+    const current = await api.coverageResult(measured.id);
+    expectMatches(coverageResultSchema, current, 'mock coverage result, current');
+    expect(current.state).toBe('current');
+    expect(current.recordedFraction).toBe(measured.recordedFraction);
+    const unknown = await api.coverageResult('no-such-chapter');
+    expectMatches(coverageResultSchema, unknown, 'mock coverage result, never');
+    expect(unknown).toMatchObject({ state: 'never', reasons: ['chapter_not_found'] });
+    expectMatches(coverageStateSchema, await api.coverageState(), 'mock coverage state, idle');
+
+    const staleApi = createMockApi({}, { coverage: { stale: [measured.id] } });
+    const stale = await staleApi.coverageResult(measured.id);
+    expectMatches(coverageResultSchema, stale, 'mock coverage result, stale');
+    expect(stale.state).toBe('stale');
+    expect(stale.recordedFraction).toBeUndefined();
+    const staleChapter = (await staleApi.manuscriptChapters()).find((chapter) => chapter.id === measured.id);
+    expect(staleChapter?.recordedFraction).toBeUndefined();
+
+    vi.useFakeTimers();
+    try {
+      const states: unknown[] = [];
+      const ended: string[] = [];
+      api.subscribeCoverage((state) => states.push(state));
+      api.subscribeJobEnded((event) => ended.push(`${event.kind}:${event.outcome}`));
+      const started = await api.coverageStart(measured.id);
+      expectMatches(coverageStartResultSchema, started, 'mock coverage start');
+      expect(started.status).toBe('started');
+      const busy = await api.coverageStart(measured.id);
+      expectMatches(coverageStartResultSchema, busy, 'mock coverage start, busy');
+      expect(busy).toMatchObject({ status: 'refused', reason: 'busy' });
+      await vi.runAllTimersAsync();
+      states.forEach((state, index) => expectMatches(coverageStateSchema, state, `mock coverage:state ${index}`));
+      expect(await api.coverageState()).toMatchObject({ phase: 'complete', percent: 100 });
+      expect(ended).toEqual(['recording_coverage:success']);
+    } finally {
+      vi.useRealTimers();
+    }
+
+    for (const reason of COVERAGE_REFUSAL_REASONS) {
+      const refused = await createMockApi({}, { coverage: { refusal: reason } }).coverageStart(measured.id);
+      expectMatches(coverageStartResultSchema, refused, `mock coverage start, refused ${reason}`);
+      expect(refused).toMatchObject({ status: 'refused', reason });
+    }
+    const gated = await createMockApi({}, { assets: 'missing' }).coverageStart(measured.id);
+    expectMatches(coverageStartResultSchema, gated, 'mock coverage start, model not installed');
+    expect(gated.status).toBe('asset_required');
+  });
+
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
@@ -739,6 +816,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'takeReviewScan',
       'takeReviewFindings',
       'takeReviewCreateTake',
+      'coverageStart',
+      'coverageState',
+      'coverageResult',
       'teleprompterStart',
       'teleprompterState',
       'teleprompterDevices',
@@ -772,6 +852,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'whisperRemove',
       'assetsRemove',
       'transcriptCancel',
+      'coverageCancel',
       'transcriptReset',
       'transcriptJump',
       'transcriptExportMarkers',
@@ -792,6 +873,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeNotices',
       'subscribeJobEnded',
       'subscribeTranscript',
+      'subscribeCoverage',
       'subscribeTeleprompterEvent',
       'subscribeTeleprompterState',
       'subscribeUpdate',

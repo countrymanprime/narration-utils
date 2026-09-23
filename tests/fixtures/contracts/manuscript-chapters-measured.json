@@ -1,0 +1,36 @@
+[
+  {
+    "contentKind": "narration",
+    "id": "c-0001",
+    "index": 0,
+    "paragraphIds": [
+      {
+        "id": "p-000001",
+        "index": 0
+      },
+      {
+        "id": "p-000002",
+        "index": 1
+      }
+    ],
+    "recordedFraction": 0.75,
+    "status": "recording",
+    "subtitle": "Down the Rabbit-Hole",
+    "title": "Chapter One",
+    "wordCount": 13
+  },
+  {
+    "contentKind": "narration",
+    "id": "c-0002",
+    "index": 1,
+    "paragraphIds": [
+      {
+        "id": "p-000003",
+        "index": 2
+      }
+    ],
+    "status": "not_started",
+    "title": "Chapter Two",
+    "wordCount": 7
+  }
+]
