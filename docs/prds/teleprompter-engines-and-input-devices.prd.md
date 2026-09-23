@@ -190,7 +190,7 @@ Phases 1 to 3 (device picker and settings, Whisper only) are shippable on their 
 | 6 | Moonshine in the sidecar and packaging | Load from a verified pre-placed dir, pinned dependency, PyInstaller collection, release smoke check | pending | 9, 10 | 5 | - |
 | 7 | Engine choice end to end | Host and UI launch either engine, engine-aware download dialog, settings enable Moonshine, visual states | pending | 9, 10 | 3, 4, 5, 6 | - |
 | 8 | Engine evaluation and default ADR | Real-UI A/B protocol, lag capture aid, ADR, default set in settings | pending | 9, 10, 11 | 7 | - |
-| 9 | Auto-stop at Done | Go timer on `done`, message, tests | pending | 1, 5, 6, 10 | - | - |
+| 9 | Auto-stop at Done | Go timer on `done`, message, tests | complete | 1, 5, 6, 10 | - | - |
 | 10 | Manual scroll without pull-back | `useFollowCursor`, intent detection, Follow control, tests | pending | all except PRD 1 phases 4, 5, 7 | - | - |
 | 11 | Chapter from REAPER track name | Chapter suggestions from `.rpp` track names using the shared matcher | pending | 8, 9, 10 | PRD 1 phase 8 (or builds the matcher first) | - |
 | 12 | Roadmap and status bookkeeping | `roadmap.md` and `roadmap.json` together, README inventory, brief status line | pending | - | 2, 8 (and PRD 1 phase 7 per the roadmap question) | - |
@@ -246,6 +246,7 @@ Phases 1 to 3 (device picker and settings, Whisper only) are shippable on their 
 - **Goal**: the session ends itself at the end of the chapter.
 - **Scope**: `apps/desktop/internal/teleprompter/service.go` timer and state (delay above 1.5 s, no setting at first, owner decision 2026-09-23), service tests with a fake sidecar (existing pattern), UI message.
 - **Success signal**: stops after the delay; a later position cancels it; a crash still reports an error.
+- **Done (2026-09-23):** `apps/desktop/internal/teleprompter/autostop.go` arms a 5 s timer on the first `done` position of a running session, cancels it on any later non-`done` position (repeated `done` positions keep the first timer), and when it fires stops the session through the unchanged stop-file/grace-kill path; the final state message is "Stopped at the end of the chapter." and the session's script and last position stay in the snapshot. Delay and behavior recorded in [ADR 0106](../adr/0106-a-teleprompter-session-stops-itself-five-seconds-after-the-tracker-reports-done.md) (Proposed). Each part of the success signal is a Go test with the fake sidecar and a fake clock (`autostop_test.go`: stops after the delay, a later position cancels it, a crash after `done` is still an error, plus manual Stop while pending, a stale timer from an earlier session, and a `done` with no session). No `teleprompter:state` field was added (the message carries it), so no wire-contract or `hostAPIVersion` change. The UI shows the host's message for `stopped` and "Done - stopping in a few seconds unless you read on" while done; the browser mock mirrors the host, and `?mockTeleprompter=ended` drives the new `teleprompter/stopped-at-end` visual state. **Pending:** the Success Metrics row's 10 manual reads with a real microphone (owner) to confirm 5 s produces no premature stop when the last sentence is re-read.
 
 **Phase 10 - Manual scroll without pull-back**
 - **Goal**: reading and scrolling coexist.

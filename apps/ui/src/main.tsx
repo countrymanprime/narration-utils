@@ -45,8 +45,9 @@ const mockNoManuscript = mockParams.has('mockNoManuscript');
 // manuscript.docx in its folder, so Home shows the import offer.
 const mockManuscriptCandidate = mockParams.has('mockManuscriptCandidate');
 // `?mockTeleprompter=listening|waiting|done` boots the teleprompter already part-way
-// through the first chapter, as a session the host kept running.
-const mockTeleprompter = (['listening', 'waiting', 'done'] as const).find((seed) => seed === mockParams.get('mockTeleprompter'));
+// through the first chapter, as a session the host kept running; `ended` boots one that
+// already stopped itself at the end of the chapter (the host's auto-stop).
+const mockTeleprompter = (['listening', 'waiting', 'done', 'ended'] as const).find((seed) => seed === mockParams.get('mockTeleprompter'));
 // `?mockNoDevices=1` boots the teleprompter with an empty device listing, so the
 // blocked "No microphone found" state (no typed fallback) can be seen without a host.
 const mockNoDevices = mockParams.has('mockNoDevices');

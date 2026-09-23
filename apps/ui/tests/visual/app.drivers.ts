@@ -990,6 +990,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Teleprompter');
       await page.getByRole('status').filter({ hasText: 'Done' }).waitFor();
     },
+    'stopped-at-end': async (page) => {
+      await page.goto('/?mockTeleprompter=ended');
+      await settlePage(page);
+      await goToPage(page, 'Teleprompter');
+      await page.getByRole('status').filter({ hasText: 'Stopped at the end of the chapter.' }).waitFor();
+    },
   },
   settings: {
     'global-general': async (page) => {

@@ -268,6 +268,19 @@ describe('TeleprompterPage', () => {
     await waitFor(() => expect(screen.getByRole('status').textContent).toMatch(/Done/));
   });
 
+  it('says the session will stop itself once the chapter is done', async () => {
+    renderPage({}, { teleprompter: 'done' });
+
+    await waitFor(() => expect(screen.getByRole('status').textContent).toMatch(/Done - stopping in a few seconds unless you read on/));
+  });
+
+  it('says when a session stopped itself at the end of the chapter', async () => {
+    renderPage({}, { teleprompter: 'ended' });
+
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Stopped at the end of the chapter.'));
+    expect(screen.getByRole('button', { name: 'Start reading' })).toBeTruthy();
+  });
+
   it('stops the session and offers to start again', async () => {
     const user = userEvent.setup();
     const teleprompterStop = vi.fn().mockResolvedValue(undefined);

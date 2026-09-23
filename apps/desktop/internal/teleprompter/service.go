@@ -46,6 +46,12 @@ type Service struct {
 	stopFile    string
 	controlFile string
 	stopping    bool
+	// afterFunc schedules the auto-stop (time.AfterFunc outside tests); autoStop is the pending one, autoStopRound
+	// tells a stale callback from the current one, and autoStopped records that the session ended itself at Done.
+	afterFunc     func(time.Duration, func()) stoppable
+	autoStop      stoppable
+	autoStopRound int
+	autoStopped   bool
 	// finished is closed by the watcher once it has recorded the session's
 	// final state, which is later than the child process exiting.
 	finished chan struct{}
@@ -54,7 +60,7 @@ type Service struct {
 // New builds the service. emit receives every JSON line the sidecar prints;
 // changed receives a state snapshot whenever the phase changes.
 func New(config Config, sidecars *process.Supervisor, emit func(json.RawMessage), changed func(map[string]any)) *Service {
-	return &Service{config: config, sidecars: sidecars, emit: emit, changed: changed, grace: defaultGrace, state: idleState()}
+	return &Service{config: config, sidecars: sidecars, emit: emit, changed: changed, grace: defaultGrace, state: idleState(), afterFunc: realAfterFunc}
 }
 
 func idleState() map[string]any {
@@ -233,6 +239,8 @@ func (s *Service) Start(options map[string]string) error {
 	}
 	s.state = map[string]any{"phase": "starting", "message": "Starting the teleprompter…", "engine": plan.engine, "chapter": plan.chapter}
 	s.script, s.position, s.stopping, s.stopFile, s.controlFile = nil, nil, false, plan.stopFile, plan.controlFile
+	s.cancelAutoStopLocked()
+	s.autoStopped = false
 	s.mu.Unlock()
 	s.notify()
 
@@ -249,7 +257,10 @@ func (s *Service) Start(options map[string]string) error {
 	finished := make(chan struct{})
 	s.mu.Lock()
 	s.child, s.finished = child, finished
-	s.state["phase"], s.state["message"] = "running", "Listening…"
+	s.state["phase"] = "running"
+	if s.autoStop == nil { // a done position that arrived while starting has already set the auto-stop message
+		s.state["message"] = listeningMessage
+	}
 	s.mu.Unlock()
 	s.notify()
 	go s.watch(child, cancel, finished)
@@ -325,10 +336,14 @@ func (s *Service) onLine(line string) {
 		s.mu.Lock()
 		s.script = raw
 		s.mu.Unlock()
-	case "position":
+	case positionEventType:
 		s.mu.Lock()
 		s.position = raw
+		changed := s.trackAutoStopLocked(positionStatus(raw) == positionDoneStatus)
 		s.mu.Unlock()
+		if changed {
+			defer s.notify()
+		}
 	}
 	if s.emit != nil {
 		s.emit(raw)
@@ -356,8 +371,12 @@ func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc, f
 	code, _ := child.ExitCode()
 	s.mu.Lock()
 	stopFile, controlFile := s.stopFile, s.controlFile
+	s.cancelAutoStopLocked()
 	if s.stopping || code == 0 {
-		s.state["phase"], s.state["message"] = "stopped", "Stopped."
+		s.state["phase"], s.state["message"] = "stopped", stoppedMessage
+		if s.autoStopped {
+			s.state["message"] = autoStoppedMessage
+		}
 	} else {
 		s.state["phase"], s.state["message"] = "error", failureMessage(code, child.StderrTail(), "The teleprompter stopped unexpectedly")
 	}
@@ -373,14 +392,21 @@ func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc, f
 // creating its stop file, and kills it if it has not exited after the grace
 // period. It returns immediately; the phase reaches "stopped" when it is done.
 func (s *Service) Stop() {
+	s.stop("Stopping…", false)
+}
+
+// stop is Stop with the message to show while stopping and whether the session is ending itself at Done (the
+// auto-stop), which only changes the final message: the cooperative stop and grace kill are the same (ADR 0022).
+func (s *Service) stop(message string, auto bool) {
 	s.mu.Lock()
 	child := s.child
 	if child == nil || s.stopping {
 		s.mu.Unlock()
 		return
 	}
-	s.stopping = true
-	s.state["phase"], s.state["message"] = "stopping", "Stopping…"
+	s.cancelAutoStopLocked()
+	s.stopping, s.autoStopped = true, auto
+	s.state["phase"], s.state["message"] = "stopping", message
 	stopFile, grace := s.stopFile, s.grace
 	s.mu.Unlock()
 	s.notify()

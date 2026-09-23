@@ -14,7 +14,7 @@ const REFLOW = { extraViewports: [REFLOW_VIEWPORT] };
 
 // `reloadPerViewport` (lib/types.ts), with the reason as the constant's name: these rows' pictures at a smaller width
 // differ from a fresh load at that width when the suite drives the page once at desktop width and resizes (found by
-// comparing every PNG when the suite moved to one load per state, ADR 0105). A tooltip closes when the window resizes; a
+// comparing every PNG when the suite moved to one load per state, ADR 0106). A tooltip closes when the window resizes; a
 // scroll offset the driver set (a dialog body, a table, a tab strip) stays where the desktop layout put it; a popup keeps
 // the place it opened at; live progress keeps running while the other viewports are captured. A driver that freezes the
 // page clock cannot share a load at all (lib/capture.ts says why, and fails the row without this).
@@ -482,7 +482,14 @@ export const STATE_CATALOG: StateEntry[] = [
   {
     page: 'teleprompter',
     state: 'done',
-    description: 'Teleprompter, chapter finished - every word dimmed, no current word, "Done" status (reached via the ?mockTeleprompter=done mock seam)',
+    description:
+      'Teleprompter, chapter finished - every word dimmed, no current word, "Done - stopping in a few seconds unless you read on" status (the host auto-stop is pending) (reached via the ?mockTeleprompter=done mock seam)',
+  },
+  {
+    page: 'teleprompter',
+    state: 'stopped-at-end',
+    description:
+      'Teleprompter, the session stopped itself at the end of the chapter (the host auto-stop, ADR 0106) - "Stopped at the end of the chapter." with Start reading offered again and the chapter still dimmed (reached via the ?mockTeleprompter=ended mock seam)',
   },
 
   // Settings
