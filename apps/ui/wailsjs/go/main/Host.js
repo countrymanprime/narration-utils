@@ -406,6 +406,18 @@ export function SystemSettingsForScope(arg1) {
   return window['go']['main']['Host']['SystemSettingsForScope'](arg1);
 }
 
+export function TakeComparisonCancel() {
+  return window['go']['main']['Host']['TakeComparisonCancel']();
+}
+
+export function TakeComparisonStart(arg1) {
+  return window['go']['main']['Host']['TakeComparisonStart'](arg1);
+}
+
+export function TakeComparisonState() {
+  return window['go']['main']['Host']['TakeComparisonState']();
+}
+
 export function TakeReviewCreateTake(arg1, arg2, arg3, arg4, arg5, arg6) {
   return window['go']['main']['Host']['TakeReviewCreateTake'](arg1, arg2, arg3, arg4, arg5, arg6);
 }

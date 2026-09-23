@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage } from '../../api/errorMessage';
-import { usePendingAction } from '../../hooks/usePendingAction';
-import type { Finding, FindingNavigation, ReaperStatus, TakeReviewEvidence } from '../../types';
+import type { Finding, ReaperStatus, TakeComparisonJob, TakeReviewEvidence } from '../../types';
 import { Button } from '../primitives/Button';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Select } from '../primitives/Select';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { AuditionDialog } from './AuditionDialog';
 import { formatTime } from './findingFormat';
-import { doneMessage } from './ReaperControls';
+import { TakeComparisonDialog } from './TakeComparisonDialog';
 import { coverageLabel, memberLabel, sourceFileName } from './takeReviewFormat';
+import { useReadNavigation } from './useReadNavigation';
 
-const CHECKING = 'Checking whether REAPER is connected…';
 const NO_ITEM = 'This read has no REAPER item to go to. Scan the chapter again to find it where it is now.';
 const NOT_ACCEPTED = 'Accept this finding first. A take is only added for a finding you accepted.';
 const CHOOSE_BOTH = 'Choose a target item and a different candidate read.';
@@ -24,46 +23,31 @@ const CHOOSE_BOTH = 'Choose a target item and a different candidate read.';
  * GUID (ADR 0121, through FindingsGoToRead and FindingsLoopRead), in place of the finding-level controls a single-spot finding
  * has. Audition plays two reads side by side from their raw source (Phase 7). Add as take (Phase 6) is offered once the
  * narrator accepted the finding: they pick the target item and the candidate read, never preselected (Q4/Q8), and confirm
- * before REAPER adds the take in one undo step.
+ * before REAPER adds the take in one undo step. Compare takes (Phase 10) sets the reads' evidence side by side, category by
+ * category, as a take comparison; `onCompared` opens it.
  */
 export function TakeReviewReads({
   finding,
   evidence,
   status,
   onStatusChange,
+  onCompared,
 }: {
   finding: Finding;
   evidence: TakeReviewEvidence;
   status: ReaperStatus | undefined;
   onStatusChange: () => Promise<void>;
+  /** A comparison of this group finished and was saved: the page shows it. */
+  onCompared: (ended: TakeComparisonJob) => void;
 }) {
-  const api = useApi();
-  const action = usePendingAction();
-  const [problem, setProblem] = useState<string>();
-  const [done, setDone] = useState<string>();
+  const { action, problem, setProblem, done, setDone, connectionReason, looping, goTo, loop, stop } = useReadNavigation(finding, status, onStatusChange);
   const [auditioning, setAuditioning] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [comparing, setComparing] = useState(false);
   const reads = evidence.members;
 
-  const connected = status?.connection === 'connected';
-  const connectionReason = status === undefined ? CHECKING : connected ? undefined : status.message;
-  const looping = connected && status?.loopingFindingId === finding.id;
   const offersTake = finding.suggested_action?.kind === 'create_take' && reads.length >= 2;
   const takeBlocked = (finding.review.status === 'accepted' ? undefined : NOT_ACCEPTED) ?? connectionReason;
-
-  const send = (key: string, request: () => Promise<FindingNavigation>) =>
-    action.run(key, async () => {
-      setProblem(undefined);
-      setDone(undefined);
-      try {
-        const result = await request();
-        if (result.outcome === 'refused') setProblem(result.message);
-        else setDone(doneMessage(result));
-      } catch (error) {
-        setProblem(`REAPER was not asked: ${apiErrorMessage(error)}`);
-      }
-      await onStatusChange();
-    });
 
   return (
     <section aria-label="Reads" className="mt-4">
@@ -92,7 +76,7 @@ export function TakeReviewReads({
                     <Button
                       variant="ghost"
                       aria-label={`Go to ${name} in REAPER`}
-                      onClick={() => void send(`goto-${index}`, () => api.findingsGoToRead(finding.id, index))}
+                      onClick={() => void goTo(index)}
                       disabled={Boolean(blocked) || action.isBlockedFor(`goto-${index}`)}
                       pending={action.isPending(`goto-${index}`)}
                     >
@@ -103,7 +87,7 @@ export function TakeReviewReads({
                     <Button
                       variant="ghost"
                       aria-label={`Loop ${name} in REAPER`}
-                      onClick={() => void send(`loop-${index}`, () => api.findingsLoopRead(finding.id, index))}
+                      onClick={() => void loop(index)}
                       disabled={Boolean(blocked) || action.isBlockedFor(`loop-${index}`)}
                       pending={action.isPending(`loop-${index}`)}
                     >
@@ -118,12 +102,7 @@ export function TakeReviewReads({
       </ol>
       <div className="mt-3 flex flex-wrap gap-2">
         {looping && (
-          <Button
-            variant="ghost"
-            onClick={() => void send('stop', () => api.findingsStopLoop())}
-            disabled={action.isBlockedFor('stop')}
-            pending={action.isPending('stop')}
-          >
+          <Button variant="ghost" onClick={() => void stop()} disabled={action.isBlockedFor('stop')} pending={action.isPending('stop')}>
             Stop loop
           </Button>
         )}
@@ -131,6 +110,13 @@ export function TakeReviewReads({
           <TooltipTarget text="Play two reads side by side from their own audio files, without REAPER">
             <Button variant="ghost" onClick={() => setAuditioning(true)} disabled={action.isBusy}>
               Audition reads
+            </Button>
+          </TooltipTarget>
+        )}
+        {reads.length >= 2 && (
+          <TooltipTarget text="Set each read's evidence side by side: how it read the script, and its clipping, noise, level, length and pauses">
+            <Button variant="ghost" onClick={() => setComparing(true)} disabled={action.isBusy}>
+              Compare takes…
             </Button>
           </TooltipTarget>
         )}
@@ -160,7 +146,16 @@ export function TakeReviewReads({
       <p role="status" className="mt-2 text-sm empty:hidden">
         {done ?? (looping ? 'This finding is looping in REAPER.' : undefined)}
       </p>
-      {auditioning && <AuditionDialog members={reads} onClose={() => setAuditioning(false)} />}
+      {auditioning && <AuditionDialog members={reads} label={memberLabel} onClose={() => setAuditioning(false)} />}
+      {comparing && (
+        <TakeComparisonDialog
+          findingId={finding.id}
+          onClose={(ended) => {
+            setComparing(false);
+            if (ended?.phase === 'success') onCompared(ended);
+          }}
+        />
+      )}
       {adding && (
         <AddTakeDialog
           finding={finding}

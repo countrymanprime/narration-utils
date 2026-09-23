@@ -1,0 +1,14 @@
+{
+  "id": "take-comparison-1",
+  "kind": "take_comparison",
+  "phase": "error",
+  "message": "The comparison did not finish.",
+  "percent": 64,
+  "logs": [
+    "Comparing 3 reads.",
+    "The comparison did not finish."
+  ],
+  "elapsed": 3.5,
+  "error": "takecompare: the take aligner exited 1: no chapter with id 'ch-1'",
+  "findingId": "group-1"
+}

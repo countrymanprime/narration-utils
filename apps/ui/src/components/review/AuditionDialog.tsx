@@ -7,10 +7,16 @@ import { Button } from '../primitives/Button';
 import { Select } from '../primitives/Select';
 import { Checkbox } from '../primitives/Checkbox';
 import { AUDITION_POST_ROLL_SECONDS, AUDITION_PRE_ROLL_SECONDS, useRangePlayer, type AuditionRange } from '../tracks/useRangePlayer';
-import { memberLabel } from './takeReviewFormat';
+import { sourceFileName } from './takeReviewFormat';
 import type { TakeReviewMember } from '../../types';
 
-function rangeFor(member: TakeReviewMember | undefined): AuditionRange | undefined {
+/** What a read needs to be auditioned: where it is in its own source file. */
+export type AuditionSource = Pick<TakeReviewMember, 'source_file' | 'source_start' | 'source_length'>;
+
+/** How a read is named in the pickers, unless the caller names it: its number and file. */
+const defaultLabel = (member: AuditionSource, index: number): string => `Read ${index + 1} — ${sourceFileName(member.source_file)}`;
+
+function rangeFor(member: AuditionSource | undefined): AuditionRange | undefined {
   if (!member) return undefined;
   return { sourceFile: member.source_file, rangeStart: member.source_start, rangeEnd: member.source_start + member.source_length };
 }
@@ -18,14 +24,15 @@ function rangeFor(member: TakeReviewMember | undefined): AuditionRange | undefin
 // A read is chosen by its place in the finding: two takes of one item share an item GUID, so the GUID cannot name a read.
 type SideProps = {
   side: 'A' | 'B';
-  members: TakeReviewMember[];
+  members: AuditionSource[];
+  label: (index: number) => string;
   selected: number;
   onSelect: (read: number) => void;
   player: ReturnType<typeof useRangePlayer>;
   onToggle: () => void;
 };
 
-function AuditionSide({ side, members, selected, onSelect, player, onToggle }: SideProps) {
+function AuditionSide({ side, members, label, selected, onSelect, player, onToggle }: SideProps) {
   const member = members[selected];
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-[var(--border)] p-3">
@@ -40,7 +47,7 @@ function AuditionSide({ side, members, selected, onSelect, player, onToggle }: S
         value={String(selected)}
         onChange={(value) => onSelect(Number(value))}
         fullWidth
-        options={members.map((candidate, index) => ({ value: String(index), label: memberLabel(candidate, index) }))}
+        options={members.map((_, index) => ({ value: String(index), label: label(index) }))}
       />
       <Checkbox checked={player.loop} onChange={player.setLoop}>
         Loop
@@ -65,7 +72,17 @@ function AuditionSide({ side, members, selected, onSelect, player, onToggle }: S
  * plays here, so the dialog says so plainly (the risk the PRD names under "Comparing takes across
  * different processing chains misleads").
  */
-export function AuditionDialog({ members, onClose }: { members: TakeReviewMember[]; onClose: () => void }) {
+export function AuditionDialog<T extends AuditionSource>({
+  members,
+  label = defaultLabel,
+  onClose,
+}: {
+  members: T[];
+  /** How a read is named in the Read A and Read B pickers; its number and file when not given. */
+  label?: (member: T, index: number) => string;
+  onClose: () => void;
+}) {
+  const nameOf = (index: number) => label(members[index], index);
   const api = useApi();
   const [a, setA] = useState(0);
   const [b, setB] = useState(members.length > 1 ? 1 : 0);
@@ -103,8 +120,8 @@ export function AuditionDialog({ members, onClose }: { members: TakeReviewMember
         span. REAPER&rsquo;s processing chain (FX, gain, edits) is not applied, so this can sound different from the project.
       </p>
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <AuditionSide side="A" members={members} selected={a} onSelect={setA} player={playerA} onToggle={toggleA} />
-        <AuditionSide side="B" members={members} selected={b} onSelect={setB} player={playerB} onToggle={toggleB} />
+        <AuditionSide side="A" members={members} label={nameOf} selected={a} onSelect={setA} player={playerA} onToggle={toggleA} />
+        <AuditionSide side="B" members={members} label={nameOf} selected={b} onSelect={setB} player={playerB} onToggle={toggleB} />
       </div>
     </Dialog>
   );

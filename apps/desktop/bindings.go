@@ -810,6 +810,24 @@ func (h *Host) TakeReviewScanCancel() (string, error) {
 	return encodeBinding(h.cancelTakeReviewScan(), nil)
 }
 
+// TakeComparisonStart compares the takes of one take-review group as a job (take-review phase 10, ADR 0165): findingID
+// names the group; the reads, their audio and the manuscript span all come from the store and the saved project. It
+// answers the job; TakeComparisonState reports its real progress and TakeComparisonCancel stops it. The comparison is a
+// take_comparison finding, read and decided through the generic findings bindings.
+func (h *Host) TakeComparisonStart(findingID string) (string, error) {
+	return encodeBinding(h.startTakeComparison(findingID))
+}
+
+// TakeComparisonState answers the comparison job: idle, running, or how it ended (with the comparison's finding id).
+func (h *Host) TakeComparisonState() (string, error) {
+	return encodeBinding(h.takeComparisonState(), nil)
+}
+
+// TakeComparisonCancel stops a running comparison; nothing is saved. With none running it changes nothing.
+func (h *Host) TakeComparisonCancel() (string, error) {
+	return encodeBinding(h.cancelTakeComparison(), nil)
+}
+
 // TakeReviewCreateTake adds a narrator-approved candidate's source range as a
 // new take on the target item (take-review phase 6): findingID is the
 // finding this candidate came from (provenance, ADR 0098); targetItemGUID

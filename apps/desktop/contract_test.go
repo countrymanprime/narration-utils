@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/repeats"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
+	"github.com/countrymanprime/narration-utils/shell/internal/takecompare"
 	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
@@ -627,6 +629,60 @@ func TestContractTakeReviewFindings(t *testing.T) {
 
 // What TakeReviewScanStart, TakeReviewScanState and TakeReviewScanCancel send (take-review phase 5): the idle job
 // offering the project's saved pickup track, a scan running at the sidecar's own stage, and each way one ends.
+// What TakeComparisonStart, TakeComparisonState and TakeComparisonCancel send (take-review phase 10): the idle job, a
+// comparison running at the sidecar's own stage, and each way one ends.
+func TestContractTakeComparisonJob(t *testing.T) {
+	pin := func(name string, job TakeComparisonJob) {
+		t.Helper()
+		job.Elapsed = 3.5
+		contractfile.Check(t, name, job)
+	}
+	pin("takecomparison-idle", (&Host{}).takeComparisonState())
+	running := &takeComparisonJob{id: "take-comparison-1", phase: "running", message: "Transcribing take 2/3", percent: 33,
+		logs: []string{"Comparing 3 reads.", "Transcribing take 2/3"}, started: time.Now(), findingID: "group-1"}
+	pin("takecomparison-running", running.snapshot())
+	finished := func(saved findings.Finding, err error, cancelled bool) TakeComparisonJob {
+		job := &takeComparisonJob{id: "take-comparison-1", phase: "running", message: "Transcribing take 3/3", percent: 64,
+			logs: []string{"Comparing 3 reads."}, started: time.Now(), findingID: "group-1"}
+		job.finish(saved, err, cancelled)
+		return job.snapshot()
+	}
+	pin("takecomparison-success", finished(findings.Finding{ID: "comparison-1"}, nil, false))
+	pin("takecomparison-cancelled", finished(findings.Finding{}, context.Canceled, true))
+	pin("takecomparison-error", finished(findings.Finding{}, fmt.Errorf("takecompare: the take aligner exited 1: no chapter with id 'ch-1'"), false))
+}
+
+// A take_comparison finding as the Review page lists it (take-review phase 10): three reads of one span compared by
+// the real Comparer over tone fixtures, from the sidecar's own pinned results, so every per-take category is filled.
+// The temporary project folder is replaced by a fixed one before pinning.
+func TestContractTakeComparisonFinding(t *testing.T) {
+	runner := &fakeTakeCompareRunner{raw: pinnedDivergenceResults(t)}
+	host, groupID, _ := compareReadyHost(t, runner)
+	if _, err := host.TakeComparisonStart(groupID); err != nil {
+		t.Fatal(err)
+	}
+	if done := waitForComparison(t, host); done.Phase != "success" {
+		t.Fatalf("comparison = %+v", done)
+	}
+	payload, err := host.FindingsList(FindingsQuery{Analyzer: takecompare.AnalyzerName})
+	if err != nil {
+		t.Fatal(err)
+	}
+	folder := host.config.projectFolder
+	for _, form := range []string{strings.ReplaceAll(folder, `\`, `\\`), filepath.ToSlash(folder)} {
+		payload = strings.ReplaceAll(payload, form, "C:/Projects/Alice")
+	}
+	payload = strings.ReplaceAll(payload, `C:/Projects/Alice\\media\\`, "C:/Projects/Alice/media/")
+	// The id and evidence version hash the project folder too, so they are fixed with it.
+	var page map[string]any
+	if err := json.Unmarshal([]byte(payload), &page); err != nil {
+		t.Fatal(err)
+	}
+	listed := page["findings"].([]any)[0].(map[string]any)
+	listed["id"], listed["evidence_version"] = "5c0ffee0c0ffee0c0ffee0c0", "e71dence0e71dence0e71de0"
+	contractfile.Check(t, "findings-list-take-comparison", page)
+}
+
 func TestContractTakeReviewScanJob(t *testing.T) {
 	pin := func(name string, job TakeReviewScanJob) {
 		t.Helper()

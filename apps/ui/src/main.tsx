@@ -139,8 +139,11 @@ const mockReaper = (['standalone', 'not-running', 'stale', 'recording', 'outdate
 // `?mockTakeReviewScan=running` holds a started pickup and duplicate scan part way through (take review Phase 5), so its real
 // progress and Cancel can be seen; without it a mock scan runs to the end in a few polls.
 const mockTakeReviewScanHold = mockParams.get('mockTakeReviewScan') === 'running';
+// `?mockTakeComparison=running` does the same for a take comparison (take review Phase 10).
+const mockTakeComparisonHold = mockParams.get('mockTakeComparison') === 'running';
 const mockInitial = {
   ...(mockTakeReviewScanHold ? { takeReviewScanHold: true } : {}),
+  ...(mockTakeComparisonHold ? { takeComparisonHold: true } : {}),
   ...(mockReaper ? { reaper: mockReaper } : {}),
   ...(mockFindings === 'empty' ? { findings: [] } : {}),
   ...(mockFindings === 'changed' ? { findingsRerun: true } : {}),

@@ -1,6 +1,6 @@
 # Take-review spike, phase 1: take-creation mechanics and provenance
 
-**Status: done, 2026-09-22. Everything below was observed in REAPER 7.80 on Windows; a different version may differ.** Phase 1 of [`take-review-pickups-duplicates-take-intelligence.prd.md`](../prds/take-review-pickups-duplicates-take-intelligence.prd.md), answering Open Questions 4 and 5. It ran unattended under owner decision D3 (all six REAPER spikes approved; isolated `-cfgfile`, a copy of `Challenges_001.rpp`'s pattern reused — this spike built its own scratch project rather than opening the copy, see Method).
+**Status: done, 2026-09-22. Everything below was observed in REAPER 7.80 on Windows; a different version may differ.** Phase 1 of `take-review-pickups-duplicates-take-intelligence.prd.md` (delivered and deleted; [Take review](../utilities/take-review.md)), answering Open Questions 4 and 5. It ran unattended under owner decision D3 (all six REAPER spikes approved; isolated `-cfgfile`, a copy of `Challenges_001.rpp`'s pattern reused — this spike built its own scratch project rather than opening the copy, see Method).
 
 ## What it settles
 

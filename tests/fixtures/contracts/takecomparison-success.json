@@ -1,0 +1,14 @@
+{
+  "id": "take-comparison-1",
+  "kind": "take_comparison",
+  "phase": "success",
+  "message": "Compared the takes. Each one's evidence is shown side by side.",
+  "percent": 100,
+  "logs": [
+    "Comparing 3 reads.",
+    "Compared the takes. Each one's evidence is shown side by side."
+  ],
+  "elapsed": 3.5,
+  "findingId": "group-1",
+  "comparisonId": "comparison-1"
+}

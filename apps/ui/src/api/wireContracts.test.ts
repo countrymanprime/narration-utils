@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import { createMockApi } from './mockApi';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from './mockFixtures';
+import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import {
   bookmarkSchema,
   chapterSchema,
@@ -20,7 +21,13 @@ import {
 } from './schemas/manuscript';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { settingsForScopeSchema } from './schemas/settings';
-import { takeReviewCreateTakeResultSchema, takeReviewEvidenceSchema, takeReviewScanJobSchema } from './schemas/takeReview';
+import {
+  takeComparisonEvidenceSchema,
+  takeComparisonJobSchema,
+  takeReviewCreateTakeResultSchema,
+  takeReviewEvidenceSchema,
+  takeReviewScanJobSchema,
+} from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
@@ -206,6 +213,15 @@ const GOLDEN: Record<string, z.ZodType> = {
   'coverage-state-complete.json': coverageStateSchema,
   // Not a payload: the reason words the host can send, which the schema's lists must equal (the test below).
   'coverage-reasons.json': z.object({ refusal: z.array(z.string()), evaluator: z.array(z.string()) }),
+  'findings-list-take-comparison.json': findingsPageSchema,
+  'takecomparison-idle.json': takeComparisonJobSchema,
+  'takecomparison-running.json': takeComparisonJobSchema,
+  'takecomparison-success.json': takeComparisonJobSchema,
+  'takecomparison-cancelled.json': takeComparisonJobSchema,
+  'takecomparison-error.json': takeComparisonJobSchema,
+  // compare.py --take-divergence's results file, pinned by its pytest suite and read by the Go host's parser
+  // (internal/takecompare), never by the UI: the host turns it into take_comparison evidence, checked above.
+  'take-divergence-results.json': z.object({ lines: z.array(z.string()) }),
   'findings-list.json': findingsPageSchema,
   'findings-review.json': findingSchema,
   'findings-summary.json': findingsSummarySchema,
@@ -941,6 +957,32 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.takeReviewScanStart({ chapterTrackName: '' })).rejects.toThrow(/choose a track/);
   });
 
+  it('the evidence of the take comparison the host pins, and of the mock fixture', () => {
+    const pinned = findingsPageSchema.parse(readGolden('findings-list-take-comparison.json'));
+    expect(pinned.findings).toHaveLength(1);
+    for (const finding of [...pinned.findings, WIRE_TAKE_COMPARISON_FINDING]) {
+      expectMatches(takeComparisonEvidenceSchema, finding.evidence, `take-comparison evidence of ${finding.id}`);
+    }
+  });
+
+  it('the take comparison job answers, and the comparison it saves', async () => {
+    const api = createMockApi({}, { findings: WIRE_TAKE_REVIEW_FINDINGS });
+    expectMatches(takeComparisonJobSchema, await api.takeComparisonState(), 'mock take comparison, idle');
+    let job = await api.takeComparisonStart(WIRE_TAKE_REVIEW_FINDINGS[0].id);
+    expectMatches(takeComparisonJobSchema, job, 'mock take comparison, started');
+    await expect(api.takeComparisonStart(WIRE_TAKE_REVIEW_FINDINGS[0].id)).rejects.toThrow(/already running/);
+    while (job.phase === 'running') {
+      job = await api.takeComparisonState();
+      expectMatches(takeComparisonJobSchema, job, `mock take comparison, ${job.phase} at ${job.percent}%`);
+    }
+    expect(job.phase).toBe('success');
+    const saved = await api.findingsGet(job.comparisonId ?? '');
+    expectMatches(takeComparisonEvidenceSchema, saved.evidence, 'mock take comparison evidence');
+    await api.takeComparisonStart(WIRE_TAKE_REVIEW_FINDINGS[1].id);
+    expectMatches(takeComparisonJobSchema, await api.takeComparisonCancel(), 'mock take comparison, cancelled');
+    await expect(api.takeComparisonStart('missing')).rejects.toThrow(/not in the review list/);
+  });
+
   it('the evidence of every take-review finding the host pins, and of the mock fixture', () => {
     const pinned = findingsPageSchema.parse(readGolden('findings-list-take-review.json'));
     for (const finding of [...pinned.findings, ...WIRE_TAKE_REVIEW_FINDINGS]) {
@@ -1168,6 +1210,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'coverageStart',
       'coverageState',
       'coverageResult',
+      'takeComparisonStart',
+      'takeComparisonState',
+      'takeComparisonCancel',
       'findingsList',
       'findingsGet',
       'findingsReview',

@@ -1,0 +1,632 @@
+{
+  "findings": [
+    {
+      "analyzer": "take-comparison",
+      "category": "take_comparison",
+      "confidence": null,
+      "confidence_reason": "A comparison shows each take's evidence per category, side by side. It does not add the categories up or pick a take: you choose the take in REAPER.",
+      "evidence": {
+        "compared": 3,
+        "members": [
+          {
+            "compared": true,
+            "counts": {
+              "extra_words": 0,
+              "matched": 12,
+              "misread": 0,
+              "skipped": 0,
+              "unread": 0
+            },
+            "divergences": [],
+            "fidelity": 1,
+            "item_guid": "{ITEM-A}",
+            "metrics": {
+              "audio": {
+                "channels": 1,
+                "clip_run_count": 0,
+                "clip_runs": [],
+                "digital_silent_windows": 0,
+                "duration_seconds": 8,
+                "file": "C:/Projects/Alice/media/read-a.wav",
+                "full_scale_samples": 0,
+                "integrated_lufs": -16.91656294958627,
+                "noise_floor_dbfs": -69.0609578547269,
+                "range": {
+                  "length_seconds": 8,
+                  "start_seconds": 0
+                },
+                "rms_dbfs": -18.062028847622233,
+                "sample_peak_dbfs": -12.024251743839539,
+                "sample_rate": 16000,
+                "true_peak_dbtp": -12.023609380121488
+              },
+              "clipping": {
+                "clip_run_count": 0,
+                "clip_runs": [],
+                "full_scale_samples": 0,
+                "status": "measured"
+              },
+              "coverage": {
+                "measured": 5,
+                "total": 5,
+                "unavailable": []
+              },
+              "duration": {
+                "audio_seconds": 8,
+                "item_seconds": 8,
+                "source_seconds": 8,
+                "speech_seconds": 5.9,
+                "status": "measured",
+                "words_per_minute": 122.03389830508473
+              },
+              "level_consistency": {
+                "delta_lu": 0.0925564094743585,
+                "integrated_lufs": -16.91656294958627,
+                "neighbor_median_lufs": -17.00911935906063,
+                "neighbors_measured": 1,
+                "neighbors_unavailable": 0,
+                "status": "measured"
+              },
+              "noise": {
+                "digital_silent_windows": 0,
+                "noise_floor_dbfs": -69.0609578547269,
+                "status": "measured"
+              },
+              "pause_profile": {
+                "count": 0,
+                "leading_seconds": 0,
+                "long_pause_seconds": 2,
+                "long_pauses": [],
+                "longest_seconds": 0,
+                "median_seconds": 0,
+                "min_pause_seconds": 0.3,
+                "status": "measured",
+                "total_seconds": 0,
+                "trailing_seconds": 2.0999999999999996
+              },
+              "source": {
+                "file": "C:/Projects/Alice/media/read-a.wav",
+                "kind": "WAVE",
+                "range": {
+                  "length_seconds": 8,
+                  "start_seconds": 0
+                }
+              },
+              "take_guid": "{TAKE-A}",
+              "take_index": 0
+            },
+            "source_file": "C:/Projects/Alice/media/read-a.wav",
+            "source_length": 8,
+            "source_start": 0,
+            "take_guid": "{TAKE-A}",
+            "words": [
+              {
+                "end": 0.4,
+                "index": 0,
+                "start": 0,
+                "status": "matched"
+              },
+              {
+                "end": 0.9,
+                "index": 1,
+                "start": 0.5,
+                "status": "matched"
+              },
+              {
+                "end": 1.4,
+                "index": 2,
+                "start": 1,
+                "status": "matched"
+              },
+              {
+                "end": 1.9,
+                "index": 3,
+                "start": 1.5,
+                "status": "matched"
+              },
+              {
+                "end": 2.4,
+                "index": 4,
+                "start": 2,
+                "status": "matched"
+              },
+              {
+                "end": 2.9,
+                "index": 5,
+                "start": 2.5,
+                "status": "matched"
+              },
+              {
+                "end": 3.4,
+                "index": 6,
+                "start": 3,
+                "status": "matched"
+              },
+              {
+                "end": 3.9,
+                "index": 7,
+                "start": 3.5,
+                "status": "matched"
+              },
+              {
+                "end": 4.4,
+                "index": 8,
+                "start": 4,
+                "status": "matched"
+              },
+              {
+                "end": 4.9,
+                "index": 9,
+                "start": 4.5,
+                "status": "matched"
+              },
+              {
+                "end": 5.4,
+                "index": 10,
+                "start": 5,
+                "status": "matched"
+              },
+              {
+                "end": 5.9,
+                "index": 11,
+                "start": 5.5,
+                "status": "matched"
+              }
+            ]
+          },
+          {
+            "compared": true,
+            "counts": {
+              "extra_words": 0,
+              "matched": 11,
+              "misread": 1,
+              "skipped": 0,
+              "unread": 0
+            },
+            "divergences": [
+              {
+                "audio_text": "tried",
+                "end": 4.9,
+                "first_word": 6,
+                "kind": "misread",
+                "last_word": 6,
+                "manuscript_text": "tired.",
+                "position": "within",
+                "start": 4.5
+              }
+            ],
+            "fidelity": 0.9167,
+            "item_guid": "{ITEM-B}",
+            "metrics": {
+              "audio": {
+                "channels": 1,
+                "clip_run_count": 0,
+                "clip_runs": [],
+                "digital_silent_windows": 0,
+                "duration_seconds": 8,
+                "file": "C:/Projects/Alice/media/read-b.wav",
+                "full_scale_samples": 0,
+                "integrated_lufs": -17.00911935906063,
+                "noise_floor_dbfs": -69.0609578547269,
+                "range": {
+                  "length_seconds": 8,
+                  "start_seconds": 1.5
+                },
+                "rms_dbfs": -18.062029359602946,
+                "sample_peak_dbfs": -12.024251743839539,
+                "sample_rate": 16000,
+                "true_peak_dbtp": -12.023609380121488
+              },
+              "clipping": {
+                "clip_run_count": 0,
+                "clip_runs": [],
+                "full_scale_samples": 0,
+                "status": "measured"
+              },
+              "coverage": {
+                "measured": 5,
+                "total": 5,
+                "unavailable": []
+              },
+              "duration": {
+                "audio_seconds": 8,
+                "item_seconds": 8,
+                "source_seconds": 8,
+                "speech_seconds": 5.9,
+                "status": "measured",
+                "words_per_minute": 122.03389830508473
+              },
+              "level_consistency": {
+                "delta_lu": -0.0925564094743585,
+                "integrated_lufs": -17.00911935906063,
+                "neighbor_median_lufs": -16.91656294958627,
+                "neighbors_measured": 2,
+                "neighbors_unavailable": 0,
+                "status": "measured"
+              },
+              "noise": {
+                "digital_silent_windows": 0,
+                "noise_floor_dbfs": -69.0609578547269,
+                "status": "measured"
+              },
+              "pause_profile": {
+                "count": 0,
+                "leading_seconds": 0,
+                "long_pause_seconds": 2,
+                "long_pauses": [],
+                "longest_seconds": 0,
+                "median_seconds": 0,
+                "min_pause_seconds": 0.3,
+                "status": "measured",
+                "total_seconds": 0,
+                "trailing_seconds": 2.0999999999999996
+              },
+              "source": {
+                "file": "C:/Projects/Alice/media/read-b.wav",
+                "kind": "WAVE",
+                "range": {
+                  "length_seconds": 8,
+                  "start_seconds": 1.5
+                }
+              },
+              "take_guid": "{TAKE-B}",
+              "take_index": 0
+            },
+            "source_file": "C:/Projects/Alice/media/read-b.wav",
+            "source_length": 8,
+            "source_start": 1.5,
+            "take_guid": "{TAKE-B}",
+            "words": [
+              {
+                "end": 1.9,
+                "index": 0,
+                "start": 1.5,
+                "status": "matched"
+              },
+              {
+                "end": 2.4,
+                "index": 1,
+                "start": 2,
+                "status": "matched"
+              },
+              {
+                "end": 2.9,
+                "index": 2,
+                "start": 2.5,
+                "status": "matched"
+              },
+              {
+                "end": 3.4,
+                "index": 3,
+                "start": 3,
+                "status": "matched"
+              },
+              {
+                "end": 3.9,
+                "index": 4,
+                "start": 3.5,
+                "status": "matched"
+              },
+              {
+                "end": 4.4,
+                "index": 5,
+                "start": 4,
+                "status": "matched"
+              },
+              {
+                "end": 4.9,
+                "index": 6,
+                "start": 4.5,
+                "status": "misread"
+              },
+              {
+                "end": 5.4,
+                "index": 7,
+                "start": 5,
+                "status": "matched"
+              },
+              {
+                "end": 5.9,
+                "index": 8,
+                "start": 5.5,
+                "status": "matched"
+              },
+              {
+                "end": 6.4,
+                "index": 9,
+                "start": 6,
+                "status": "matched"
+              },
+              {
+                "end": 6.9,
+                "index": 10,
+                "start": 6.5,
+                "status": "matched"
+              },
+              {
+                "end": 7.4,
+                "index": 11,
+                "start": 7,
+                "status": "matched"
+              }
+            ]
+          },
+          {
+            "compared": true,
+            "counts": {
+              "extra_words": 0,
+              "matched": 11,
+              "misread": 0,
+              "skipped": 1,
+              "unread": 0
+            },
+            "divergences": [
+              {
+                "audio_text": "",
+                "end": 2.5,
+                "first_word": 5,
+                "kind": "skipped",
+                "last_word": 5,
+                "manuscript_text": "very",
+                "position": "within",
+                "start": 2.4
+              }
+            ],
+            "fidelity": 0.9167,
+            "item_guid": "{ITEM-C}",
+            "metrics": {
+              "audio": {
+                "channels": 1,
+                "clip_run_count": 0,
+                "clip_runs": [],
+                "digital_silent_windows": 0,
+                "duration_seconds": 8,
+                "file": "C:/Projects/Alice/media/read-c.wav",
+                "full_scale_samples": 0,
+                "integrated_lufs": -16.91656294958627,
+                "noise_floor_dbfs": -69.0609578547269,
+                "range": {
+                  "length_seconds": 8,
+                  "start_seconds": 0
+                },
+                "rms_dbfs": -18.062028847622233,
+                "sample_peak_dbfs": -12.024251743839539,
+                "sample_rate": 16000,
+                "true_peak_dbtp": -12.023609380121488
+              },
+              "clipping": {
+                "clip_run_count": 0,
+                "clip_runs": [],
+                "full_scale_samples": 0,
+                "status": "measured"
+              },
+              "coverage": {
+                "measured": 5,
+                "total": 5,
+                "unavailable": []
+              },
+              "duration": {
+                "audio_seconds": 8,
+                "item_seconds": 8,
+                "source_seconds": 8,
+                "speech_seconds": 5.4,
+                "status": "measured",
+                "words_per_minute": 122.2222222222222
+              },
+              "level_consistency": {
+                "delta_lu": 0.0925564094743585,
+                "integrated_lufs": -16.91656294958627,
+                "neighbor_median_lufs": -17.00911935906063,
+                "neighbors_measured": 1,
+                "neighbors_unavailable": 0,
+                "status": "measured"
+              },
+              "noise": {
+                "digital_silent_windows": 0,
+                "noise_floor_dbfs": -69.0609578547269,
+                "status": "measured"
+              },
+              "pause_profile": {
+                "count": 0,
+                "leading_seconds": 0,
+                "long_pause_seconds": 2,
+                "long_pauses": [],
+                "longest_seconds": 0,
+                "median_seconds": 0,
+                "min_pause_seconds": 0.3,
+                "status": "measured",
+                "total_seconds": 0,
+                "trailing_seconds": 2.5999999999999996
+              },
+              "source": {
+                "file": "C:/Projects/Alice/media/read-c.wav",
+                "kind": "WAVE",
+                "range": {
+                  "length_seconds": 8,
+                  "start_seconds": 0
+                }
+              },
+              "take_guid": "{TAKE-C}",
+              "take_index": 0
+            },
+            "source_file": "C:/Projects/Alice/media/read-c.wav",
+            "source_length": 8,
+            "source_start": 0,
+            "take_guid": "{TAKE-C}",
+            "words": [
+              {
+                "end": 0.4,
+                "index": 0,
+                "start": 0,
+                "status": "matched"
+              },
+              {
+                "end": 0.9,
+                "index": 1,
+                "start": 0.5,
+                "status": "matched"
+              },
+              {
+                "end": 1.4,
+                "index": 2,
+                "start": 1,
+                "status": "matched"
+              },
+              {
+                "end": 1.9,
+                "index": 3,
+                "start": 1.5,
+                "status": "matched"
+              },
+              {
+                "end": 2.4,
+                "index": 4,
+                "start": 2,
+                "status": "matched"
+              },
+              {
+                "end": null,
+                "index": 5,
+                "start": null,
+                "status": "skipped"
+              },
+              {
+                "end": 2.9,
+                "index": 6,
+                "start": 2.5,
+                "status": "matched"
+              },
+              {
+                "end": 3.4,
+                "index": 7,
+                "start": 3,
+                "status": "matched"
+              },
+              {
+                "end": 3.9,
+                "index": 8,
+                "start": 3.5,
+                "status": "matched"
+              },
+              {
+                "end": 4.4,
+                "index": 9,
+                "start": 4,
+                "status": "matched"
+              },
+              {
+                "end": 4.9,
+                "index": 10,
+                "start": 4.5,
+                "status": "matched"
+              },
+              {
+                "end": 5.4,
+                "index": 11,
+                "start": 5,
+                "status": "matched"
+              }
+            ]
+          }
+        ],
+        "model": "small",
+        "source_finding_id": "0123456789abcdef01234567",
+        "span": {
+          "first_unit": 0,
+          "last_unit": 1,
+          "words": [
+            {
+              "index": 0,
+              "paragraph": 0,
+              "text": "Alice",
+              "unit": 0
+            },
+            {
+              "index": 1,
+              "paragraph": 0,
+              "text": "was",
+              "unit": 0
+            },
+            {
+              "index": 2,
+              "paragraph": 0,
+              "text": "beginning",
+              "unit": 0
+            },
+            {
+              "index": 3,
+              "paragraph": 0,
+              "text": "to",
+              "unit": 0
+            },
+            {
+              "index": 4,
+              "paragraph": 0,
+              "text": "get",
+              "unit": 0
+            },
+            {
+              "index": 5,
+              "paragraph": 0,
+              "text": "very",
+              "unit": 0
+            },
+            {
+              "index": 6,
+              "paragraph": 0,
+              "text": "tired.",
+              "unit": 0
+            },
+            {
+              "index": 7,
+              "paragraph": 0,
+              "text": "She",
+              "unit": 1
+            },
+            {
+              "index": 8,
+              "paragraph": 0,
+              "text": "had",
+              "unit": 1
+            },
+            {
+              "index": 9,
+              "paragraph": 0,
+              "text": "nothing",
+              "unit": 1
+            },
+            {
+              "index": 10,
+              "paragraph": 0,
+              "text": "to",
+              "unit": 1
+            },
+            {
+              "index": 11,
+              "paragraph": 0,
+              "text": "do.",
+              "unit": 1
+            }
+          ]
+        }
+      },
+      "evidence_version": "e71dence0e71dence0e71de0",
+      "id": "5c0ffee0c0ffee0c0ffee0c0",
+      "manuscript": {
+        "chapter_id": "ch-1",
+        "chapter_title": "Chapter One",
+        "expected": "Alice was beginning to get very tired. She had nothing to do."
+      },
+      "project": {
+        "path": "C:/Projects/Alice"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "schema_version": 1,
+      "severity": "info",
+      "source": {}
+    }
+  ],
+  "total": 1
+}
