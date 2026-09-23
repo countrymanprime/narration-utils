@@ -30,7 +30,6 @@ import type {
   RetailSampleAnswer,
   Scope,
   ScopedSettingField,
-  TakeReviewFinding,
   Finding,
   TeleprompterDevice,
   TrackMapping,
@@ -69,7 +68,6 @@ import {
   WIRE_RENDER_CONFIG_NO_REGIONS,
   WIRE_RENDER_CONFIG_SUCCESS,
   WIRE_FINDINGS,
-  WIRE_TAKE_REVIEW_FINDINGS,
   WIRE_TELEPROMPTER_DEVICES,
   WIRE_TRACKS_PROJECT,
   WIRE_TRANSCRIPT,
@@ -84,6 +82,7 @@ import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMoc
 import { createCoverageMock, type CoverageSeed } from './coverageMock';
 import type { MockResumeSeed } from './resumeMockSeed';
 import { createFindingsMock, type MockReaper } from './findingsMock';
+import { createTakeReviewScanMock } from './takeReviewMock';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
 import { MOCK_DICTIONARY, MOCK_DICTIONARY_DISK_SIZE, MOCK_DICTIONARY_DOWNLOAD_SIZE, mockDictionaryLookup } from './dictionaryMock';
@@ -427,6 +426,8 @@ export function createMockApi(
     findingsRerun?: boolean;
     /** What the Review page's REAPER does for Go to, Loop and Stop; connected when not given. */
     reaper?: MockReaper;
+    /** Holds a started pickup and duplicate scan part way through, so its real progress can be looked at (take review Phase 5). */
+    takeReviewScanHold?: boolean;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -484,10 +485,6 @@ export function createMockApi(
   // mock always has exactly one manuscript document loaded.
   const mockDocumentId = 'mock-document-1';
   let chapterTrackMappings: TrackMapping[] = wireClone(initial.chapterTrackMappings ?? []);
-  // take-review findings, keyed by chapter track name (the same scope the Go store partitions
-  // by, apps/desktop/takereview.go's takeReviewChapterID): a scan of "Chapter 1" seeds the fixture
-  // group, any other track name scans clean and finds nothing, matching a chapter with no repeats.
-  const takeReviewFindingsByTrack = new Map<string, TakeReviewFinding[]>();
   let recentProjects: RecentProject[] = [
     { path: 'C:/Projects/Alice-in-Wonderland', name: 'Alice’s Adventures in Wonderland', lastOpened: '2026-09-15T09:00:00Z' },
     { path: 'C:/Projects/Voltage-and-the-Undercroft', name: 'Voltage and the Undercroft', lastOpened: '2026-09-10T18:30:00Z' },
@@ -934,7 +931,11 @@ export function createMockApi(
     endJob,
     seed: initial.coverage,
   });
-  const findings = createFindingsMock(initial.findings ?? WIRE_FINDINGS, { rerunAfterFirstList: initial.findingsRerun, reaper: initial.reaper });
+  const { saveAnalyzerFindings, ...findings } = createFindingsMock(initial.findings ?? WIRE_FINDINGS, {
+    rerunAfterFirstList: initial.findingsRerun,
+    reaper: initial.reaper,
+  });
+  const takeReviewScan = createTakeReviewScanMock(saveAnalyzerFindings, endJob, initial.takeReviewScanHold);
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));
   };
@@ -1837,12 +1838,7 @@ export function createMockApi(
       await manuscriptReady;
       return wireClone(mockChapterSuggestion(chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings, initial.armedTracks ?? []));
     },
-    takeReviewScan: async (chapterTrackName) => {
-      const fresh: TakeReviewFinding[] = chapterTrackName === 'Chapter 1' ? wireClone(WIRE_TAKE_REVIEW_FINDINGS) : [];
-      takeReviewFindingsByTrack.set(chapterTrackName, fresh);
-      return wireClone(fresh);
-    },
-    takeReviewFindings: async (chapterTrackName) => wireClone(takeReviewFindingsByTrack.get(chapterTrackName) ?? []),
+    ...takeReviewScan,
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,
       newTakeGuid: '{99999999-0000-4000-8000-000000000099}',

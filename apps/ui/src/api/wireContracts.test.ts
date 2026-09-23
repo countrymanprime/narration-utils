@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import { createMockApi } from './mockApi';
-import { WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from './mockFixtures';
+import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from './mockFixtures';
 import {
   bookmarkSchema,
   chapterSchema,
@@ -20,7 +20,7 @@ import {
 } from './schemas/manuscript';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { settingsForScopeSchema } from './schemas/settings';
-import { takeReviewCreateTakeResultSchema, takeReviewFindingsSchema } from './schemas/takeReview';
+import { takeReviewCreateTakeResultSchema, takeReviewEvidenceSchema, takeReviewScanJobSchema } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
@@ -188,7 +188,12 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-tags-preview-idle.json': chapterTagsPreviewSchema,
   'chapter-tags-preview-ready.json': chapterTagsPreviewSchema,
   'chapter-tags-embed-success.json': chapterTagsEmbedResultSchema,
-  'takereview-findings.json': takeReviewFindingsSchema,
+  'findings-list-take-review.json': findingsPageSchema,
+  'takereview-scan-idle.json': takeReviewScanJobSchema,
+  'takereview-scan-running.json': takeReviewScanJobSchema,
+  'takereview-scan-success.json': takeReviewScanJobSchema,
+  'takereview-scan-cancelled.json': takeReviewScanJobSchema,
+  'takereview-scan-error.json': takeReviewScanJobSchema,
   'takereview-create-take.json': takeReviewCreateTakeResultSchema,
   'manuscript-chapters-measured.json': chaptersSchema,
   'coverage-result-current.json': coverageResultSchema,
@@ -208,6 +213,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'findings-reaper-status-not-running.json': reaperStatusSchema,
   'findings-reaper-status-standalone.json': reaperStatusSchema,
   'findings-go-to.json': findingNavigationSchema,
+  'findings-go-to-read.json': findingNavigationSchema,
+  'findings-loop-read.json': findingNavigationSchema,
   'findings-loop.json': findingNavigationSchema,
   'findings-stop-loop.json': findingNavigationSchema,
   'findings-navigation-stale.json': findingNavigationSchema,
@@ -915,17 +922,43 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     ).rejects.toThrow();
   });
 
-  it('the take-review scan and findings answers', async () => {
+  it('the take-review scan job answers, and the reads of every finding it saves', async () => {
     const api = createMockApi();
-    const scanned = await api.takeReviewScan('Chapter 1');
-    expectMatches(takeReviewFindingsSchema, scanned, 'mock take-review scan');
-    expect(scanned.length).toBeGreaterThan(0);
-    const readBack = await api.takeReviewFindings('Chapter 1');
-    expectMatches(takeReviewFindingsSchema, readBack, 'mock take-review findings');
-    expect(readBack).toEqual(scanned);
-    const empty = await api.takeReviewScan('Chapter 2');
-    expectMatches(takeReviewFindingsSchema, empty, 'mock take-review scan, no repeats');
-    expect(empty).toEqual([]);
+    expectMatches(takeReviewScanJobSchema, await api.takeReviewScanState(), 'mock take-review scan, idle');
+    const started = await api.takeReviewScanStart({ chapterTrackName: 'Chapter 1' });
+    expectMatches(takeReviewScanJobSchema, started, 'mock take-review scan, started');
+    let job = started;
+    while (job.phase === 'running') {
+      job = await api.takeReviewScanState();
+      expectMatches(takeReviewScanJobSchema, job, `mock take-review scan, ${job.phase} at ${job.percent}%`);
+    }
+    expect(job).toMatchObject({ phase: 'success', found: 2 });
+    const { findings } = await api.findingsList({ analyzer: 'take-review' });
+    expect(findings).toHaveLength(2);
+    for (const finding of findings) expectMatches(takeReviewEvidenceSchema, finding.evidence, `mock take-review evidence of ${finding.id}`);
+    await api.takeReviewScanStart({ chapterTrackName: 'Chapter 2' });
+    expectMatches(takeReviewScanJobSchema, await api.takeReviewScanCancel(), 'mock take-review scan, cancelled');
+    await expect(api.takeReviewScanStart({ chapterTrackName: '' })).rejects.toThrow(/choose a track/);
+  });
+
+  it('the evidence of every take-review finding the host pins, and of the mock fixture', () => {
+    const pinned = findingsPageSchema.parse(readGolden('findings-list-take-review.json'));
+    for (const finding of [...pinned.findings, ...WIRE_TAKE_REVIEW_FINDINGS]) {
+      expectMatches(takeReviewEvidenceSchema, finding.evidence, `take-review evidence of ${finding.id}`);
+    }
+  });
+
+  it('the answers for going to and looping one read of a take-review finding', async () => {
+    const api = createMockApi();
+    await api.takeReviewScanStart({ chapterTrackName: 'Chapter 1' });
+    while ((await api.takeReviewScanState()).phase === 'running');
+    const [finding] = (await api.findingsList({ analyzer: 'take-review' })).findings;
+    expectMatches(findingNavigationSchema, await api.findingsGoToRead(finding.id, 1), 'mock go to read');
+    expectMatches(findingNavigationSchema, await api.findingsLoopRead(finding.id, 1), 'mock loop read');
+    for (const reaper of ['standalone', 'stale'] as const) {
+      const refusing = createMockApi({}, { reaper, findings: WIRE_TAKE_REVIEW_FINDINGS });
+      expectMatches(findingNavigationSchema, await refusing.findingsGoToRead(WIRE_TAKE_REVIEW_FINDINGS[0].id, 0), `mock ${reaper} go to read`);
+    }
   });
 
   it('the review bindings answers', async () => {
@@ -1128,8 +1161,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'renderConfigState',
       'chapterTagsPreview',
       'chapterTagsEmbed',
-      'takeReviewScan',
-      'takeReviewFindings',
+      'takeReviewScanStart',
+      'takeReviewScanState',
+      'takeReviewScanCancel',
       'takeReviewCreateTake',
       'coverageStart',
       'coverageState',
@@ -1141,6 +1175,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'findingsReaperStatus',
       'findingsGoTo',
       'findingsLoop',
+      'findingsGoToRead',
+      'findingsLoopRead',
       'findingsStopLoop',
       'findingsAddMarker',
       'teleprompterStart',

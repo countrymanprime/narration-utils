@@ -633,24 +633,6 @@ export const STATE_CATALOG: StateEntry[] = [
       'Tracks, "Embed chapter tags" dialog when the embed fails - inline error message (reached via the ?mockChapterTags=ready&mockChapterTagsEmbedError=1 mock seam)',
     ...KEEPS_DESKTOP_SCROLL,
   },
-  {
-    page: 'tracks',
-    state: 'take-review-results',
-    description:
-      'Tracks, Scan for pickups & duplicates pressed on Chapter 1 - a pickup and a duplicate_read row, per-category evidence only (Q9, no composite score column)',
-  },
-  {
-    page: 'tracks',
-    state: 'take-review-empty',
-    description: 'Tracks, a pickup/duplicate scan on a track with no repeats - "No repeated reads found on this track." with no results table',
-  },
-  {
-    page: 'tracks',
-    state: 'take-review-audition',
-    description:
-      'Tracks, Audition pressed on a pickup finding - the side-by-side A/B dialog with the "Raw source, no FX or edits applied" label and Read A/Read B pickers (phase 7, Q7)',
-    ...KEEPS_DESKTOP_SCROLL,
-  },
 
   // Teleprompter
   {
@@ -825,6 +807,49 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'reaper-marker-added',
     description: 'Review, the approved marker confirmed - the take marker REAPER added is announced by name under the REAPER controls',
     ...KEEPS_DESKTOP_SCROLL,
+  },
+  // Pickups and duplicates on the Review page (take-review-pickups-duplicates-take-intelligence.prd.md Phase 5)
+  {
+    page: 'review',
+    state: 'take-review-scan-form',
+    description:
+      'Review, Find pickups and duplicates pressed - the scan dialog with the track to scan and the optional pickup track or stretch of the timeline (Q3)',
+  },
+  {
+    page: 'review',
+    state: 'take-review-scan-progress',
+    description:
+      "Review, a pickup and duplicate scan running - the sidecar's own percent and stage, the live activity, Cancel and Continue in background (reached via the ?mockTakeReviewScan=running mock seam)",
+  },
+  {
+    page: 'review',
+    state: 'take-review-results',
+    description: 'Review, a scan of Chapter 1 closed - the list narrowed to take review, one partial pickup and one near duplicate, no ranking column (Q9)',
+  },
+  {
+    page: 'review',
+    state: 'take-review-group',
+    description:
+      'Review, a pickup group selected - every read with its range in its own file, coverage and script match, each with Go to and Loop in REAPER, Audition reads and Add as take (off until accepted)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'review',
+    state: 'take-review-read-looping',
+    description: 'Review, Loop pressed on one read of a pickup group - the looped window is announced and Stop loop is offered under the reads',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'review',
+    state: 'take-review-audition',
+    description:
+      'Review, Audition reads pressed on a pickup group - the side-by-side A/B dialog with the "Raw source, no FX or edits applied" label and Read A/Read B pickers (phase 7, Q7)',
+  },
+  {
+    page: 'review',
+    state: 'take-review-add-take',
+    description:
+      'Review, a pickup group accepted and Add as take pressed - the confirm with the target item and the candidate read chosen by the narrator, never preselected (Q4/Q8)',
   },
 
   // Settings

@@ -1,0 +1,18 @@
+{
+  "id": "take-review-1",
+  "kind": "take_review",
+  "phase": "cancelled",
+  "message": "Scan cancelled. Nothing was saved.",
+  "percent": 92,
+  "logs": [
+    "Scanning Chapter 1 for pickups and duplicates.",
+    "Scan cancelled. Nothing was saved."
+  ],
+  "elapsed": 2.5,
+  "scope": {
+    "chapterTrackName": "Chapter 1",
+    "pickupRangeStart": 1800,
+    "pickupRangeEnd": 2400
+  },
+  "found": 0
+}

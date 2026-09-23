@@ -213,6 +213,13 @@ export interface FindingsApi {
   findingsGoTo(id: string): Promise<FindingNavigation>;
   /** Loops the finding's context in REAPER: time selection, loop points, repeat on, Play (Q6). */
   findingsLoop(id: string): Promise<FindingNavigation>;
+  /**
+   * Go to for one read of a finding that groups several (a take-review pickup or duplicate read): `read` is its index in
+   * `evidence.members`, and REAPER goes to that read's own item and take (take review Phase 5).
+   */
+  findingsGoToRead(id: string, read: number): Promise<FindingNavigation>;
+  /** Loop for one read of such a finding, over its own range; the loop is the finding's, so Stop loop stops it. */
+  findingsLoopRead(id: string, read: number): Promise<FindingNavigation>;
   /** Stops the loop and puts back the time selection, loop points and repeat the narrator had. */
   findingsStopLoop(): Promise<FindingNavigation>;
   /** Adds one take marker in REAPER at an accepted finding's spot, named like Transcript Compare's (ADR 0123). */

@@ -71,9 +71,13 @@ export function FindingsGet(arg1:string):Promise<string>;
 
 export function FindingsGoTo(arg1:string):Promise<string>;
 
+export function FindingsGoToRead(arg1:string,arg2:number):Promise<string>;
+
 export function FindingsList(arg1:main.FindingsQuery):Promise<string>;
 
 export function FindingsLoop(arg1:string):Promise<string>;
+
+export function FindingsLoopRead(arg1:string,arg2:number):Promise<string>;
 
 export function FindingsReaperStatus():Promise<string>;
 
@@ -203,9 +207,11 @@ export function SystemSettingsForScope(arg1:string):Promise<string>;
 
 export function TakeReviewCreateTake(arg1:string,arg2:string,arg3:string,arg4:string,arg5:number,arg6:number):Promise<string>;
 
-export function TakeReviewFindings(arg1:string):Promise<string>;
+export function TakeReviewScanCancel():Promise<string>;
 
-export function TakeReviewScan(arg1:string):Promise<string>;
+export function TakeReviewScanStart(arg1:main.TakeReviewScanScope):Promise<string>;
+
+export function TakeReviewScanState():Promise<string>;
 
 export function TeleprompterDevices():Promise<string>;
 

@@ -9,6 +9,8 @@ import { Field } from '../primitives/Field';
 import { Panel } from '../primitives/Panel';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { hasAudio, ReaperControls } from './ReaperControls';
+import { TakeReviewReads } from './TakeReviewReads';
+import { takeReviewEvidence } from './takeReviewFormat';
 import {
   analyzerLabel,
   categoryLabel,
@@ -50,7 +52,7 @@ function Facts({ rows, label }: { rows: Array<{ label: string; value: string }>;
  * sent with the evidence version shown here; when the host refuses it because the check ran again meanwhile (ADR 0120), the
  * latest version is fetched and shown, the typed note is kept, and the narrator is told in plain words to look again.
  * A finding with audio also has Go to, Loop and Stop in REAPER (Phase 7, ReaperControls), available while the page's REAPER
- * status says REAPER is listening.
+ * status says REAPER is listening. A take-review group lists its reads instead, each with its own (TakeReviewReads).
  */
 export function FindingDetail({
   finding,
@@ -140,6 +142,8 @@ export function FindingDetail({
     { label: 'Severity', value: severityLabel(finding.severity) },
   ];
   const decidedAt = formatDecidedAt(finding.review.timestamp);
+  // A take-review group has several reads, each in its own place: they are listed with their own REAPER controls.
+  const reads = takeReviewEvidence(finding);
   const decided = finding.review.status !== 'unreviewed';
 
   return (
@@ -169,7 +173,11 @@ export function FindingDetail({
           </Button>
         )}
       </div>
-      {hasAudio(finding) && <ReaperControls finding={finding} status={reaperStatus} onStatusChange={onReaperStatusChange} />}
+      {reads ? (
+        <TakeReviewReads finding={finding} evidence={reads} status={reaperStatus} onStatusChange={onReaperStatusChange} />
+      ) : (
+        hasAudio(finding) && <ReaperControls finding={finding} status={reaperStatus} onStatusChange={onReaperStatusChange} />
+      )}
 
       <h3 className="mt-5 text-sm font-semibold">Decision</h3>
       <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>

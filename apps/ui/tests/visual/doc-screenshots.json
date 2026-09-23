@@ -418,5 +418,33 @@
     "viewport": "desktop",
     "docName": "review-reaper-marker-confirm",
     "caption": "Review - the confirm before an accepted finding gets its marker in REAPER"
+  },
+  {
+    "page": "review",
+    "state": "take-review-scan-form",
+    "viewport": "desktop",
+    "docName": "review-take-review-scan",
+    "caption": "Review - Find pickups and duplicates: the track to scan and the optional pickup track or stretch of the timeline"
+  },
+  {
+    "page": "review",
+    "state": "take-review-scan-progress",
+    "viewport": "desktop",
+    "docName": "review-take-review-progress",
+    "caption": "Review - a pickup and duplicate scan running, with its real progress and Cancel"
+  },
+  {
+    "page": "review",
+    "state": "take-review-group",
+    "viewport": "desktop",
+    "docName": "review-take-review-group",
+    "caption": "Review - a pickup group: every read with its own Go to and Loop in REAPER, Audition reads and Add as take"
+  },
+  {
+    "page": "review",
+    "state": "take-review-add-take",
+    "viewport": "desktop",
+    "docName": "review-take-review-add-take",
+    "caption": "Review - Add as take on an accepted group: the target item and the candidate read, chosen by you"
   }
 ]

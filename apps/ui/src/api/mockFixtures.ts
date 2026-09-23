@@ -16,7 +16,6 @@ import type {
   ReaderState,
   RenderConfigState,
   ScopedSettingField,
-  TakeReviewFinding,
   TeleprompterDevice,
   TextSpan,
   TracksProject,
@@ -960,12 +959,12 @@ export const WIRE_CHAPTER_TAGS_EMBED_SUCCESS: ChapterTagsEmbedResult = {
   outputPath: 'C:\\Books\\Alice\\renders\\Alice in Wonderland.chapters.mp3',
 };
 
-// take-review's scan-and-review surface (phase 5): one restart-kind pickup (a partial re-read,
-// below the near-duplicate quality bar) and one near-identical duplicate_read, both against
-// "Chapter 1" of WIRE_TRACKS_PROJECT above - the same shape apps/desktop/contract_test.go's
-// TestContractTakeReviewFindings pins as tests/fixtures/contracts/takereview-findings.json. No
-// composite score anywhere in this fixture (Q9): only per-category evidence.
-export const WIRE_TAKE_REVIEW_FINDINGS: TakeReviewFinding[] = [
+// What a pickup and duplicate scan of "Chapter 1" of WIRE_TRACKS_PROJECT saves (take review Phase 5): one partial pickup (a
+// re-read of part of the span, below the near-duplicate quality bar) and one near-identical duplicate_read, in the shape
+// apps/desktop/contract_test.go's TestContractTakeReviewFindings pins as tests/fixtures/contracts/findings-list-take-review.json.
+// The mock scan saves them into the findings store, so they reach the Review page the way the host's do. No composite score
+// anywhere in this fixture (Q9): only per-category evidence.
+export const WIRE_TAKE_REVIEW_FINDINGS: Finding[] = [
   {
     schema_version: 1,
     id: 'f24ca7396d9cf9e023f63fd8',

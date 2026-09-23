@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/dictionary"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
@@ -586,11 +589,11 @@ func TestContractCreditsRetailSample(t *testing.T) {
 	check("credits-retail-sample-stale", stale)
 }
 
-// The findings TakeReviewScan and TakeReviewFindings send (take-review phase 5, ADR 0069): one
-// restart-kind pickup (a partial re-read, below the near-duplicate quality bar) and one
-// near-identical duplicate_read (full coverage, both members above it), so the review surface's
-// two states are both pinned. Built straight from internal/repeats.ToFindings, the same adapter
-// the scan binding calls, rather than running a scan end to end: no sidecar, no temp project.
+// The take-review findings as the Review page lists them (FindingsList filtered to the take-review analyzer,
+// take-review phase 5, ADR 0069): one partial pickup (a read below full coverage) and one near-identical
+// duplicate_read (full coverage, both reads above the quality bar), each with its reads in evidence.members, which
+// the page decodes with its own schema. Built from internal/repeats.ToFindings, the adapter the scan job saves
+// through, into a real findings store: no sidecar, no REAPER project.
 func TestContractTakeReviewFindings(t *testing.T) {
 	groups := []repeats.Group{
 		{
@@ -610,8 +613,64 @@ func TestContractTakeReviewFindings(t *testing.T) {
 	}
 	project := findings.Project{Path: "C:/Projects/Alice"}
 	manuscript := findings.Manuscript{ChapterID: "chapter-1", ChapterTitle: "Chapter 1"}
-	result := repeats.ToFindings(groups, project, manuscript, repeats.DefaultThresholds())
-	contractfile.Check(t, "takereview-findings", result)
+	store := findings.NewStore(t.TempDir())
+	if _, err := store.SaveAnalyzerFindings(repeats.AnalyzerName, "chapter-1", repeats.ToFindings(groups, project, manuscript, repeats.DefaultThresholds())); err != nil {
+		t.Fatal(err)
+	}
+	host := &Host{findings: store}
+	listed, err := host.FindingsList(FindingsQuery{Analyzer: repeats.AnalyzerName})
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkBindingContract(t, "findings-list-take-review", listed)
+}
+
+// What TakeReviewScanStart, TakeReviewScanState and TakeReviewScanCancel send (take-review phase 5): the idle job
+// offering the project's saved pickup track, a scan running at the sidecar's own stage, and each way one ends.
+func TestContractTakeReviewScanJob(t *testing.T) {
+	pin := func(name string, job TakeReviewScanJob) {
+		t.Helper()
+		job.Elapsed = 2.5
+		contractfile.Check(t, name, job)
+	}
+	host := newTestHostForTakeReview(t, t.TempDir())
+	pickups := "Pickups"
+	if err := host.settings.Save("TakeReview", "project", map[string]*string{"pickup_track_name": &pickups}); err != nil {
+		t.Fatal(err)
+	}
+	pin("takereview-scan-idle", host.takeReviewScanState())
+
+	start, end := 1800.0, 2400.0
+	scope := TakeReviewScanScope{ChapterTrackName: "Chapter 1", PickupRangeStart: &start, PickupRangeEnd: &end}
+	running := &takeReviewScanJob{id: "take-review-1", phase: "running", message: "Transcribing read 2/4", percent: 47,
+		logs: []string{"Scanning Chapter 1 for pickups and duplicates.", "Transcribing read 2/4"}, started: time.Now(), scope: scope}
+	pin("takereview-scan-running", running.snapshot())
+
+	finished := func(saved []findings.Finding, err error, cancelled bool) TakeReviewScanJob {
+		job := &takeReviewScanJob{id: "take-review-1", phase: "running", message: "Transcribing read 4/4", percent: 92,
+			logs: []string{"Scanning Chapter 1 for pickups and duplicates."}, started: time.Now(), scope: scope}
+		job.finish(saved, err, cancelled)
+		return job.snapshot()
+	}
+	pin("takereview-scan-success", finished([]findings.Finding{{ID: "a"}, {ID: "b"}, {ID: "c", NotInLatestRun: true}}, nil, false))
+	pin("takereview-scan-cancelled", finished(nil, context.Canceled, true))
+	pin("takereview-scan-error", finished(nil, fmt.Errorf("takereview: repeated-span detector exited 1: no manuscript chapter matched"), false))
+}
+
+// FindingsGoToRead and FindingsLoopRead answer in FindingNavigation's shape, pinned here for the read a take-review
+// finding names (take-review phase 5); every refusal is the one FindingsGoTo pins.
+func TestContractFindingsReadNavigation(t *testing.T) {
+	fake := &fakeNavigator{navigate: bridge.Navigated{ItemGUID: readItemB, ProjectTime: 40.25}, loop: bridge.LoopStarted{ItemGUID: readItemB, Start: 38.25, End: 45.35}}
+	host, id := newReadsHost(t, fake)
+	payload, err := host.FindingsGoToRead(id, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkBindingContract(t, "findings-go-to-read", payload)
+	if payload, err = host.FindingsLoopRead(id, 1); err != nil {
+		t.Fatal(err)
+	}
+	checkBindingContract(t, "findings-loop-read", payload)
 }
 
 // The result TakeReviewCreateTake sends once REAPER confirms a take was added (take-review

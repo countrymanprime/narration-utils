@@ -211,6 +211,39 @@ async function confirmApprovedMarker(page: Page): Promise<Locator> {
   return dialog;
 }
 
+// Opens Find pickups and duplicates (take review Phase 5) once the tracks have filled the form.
+async function openScanDialog(page: Page): Promise<Locator> {
+  await openReview(page);
+  await page.getByRole('button', { name: 'Find pickups and duplicates…' }).click();
+  const form = page.getByRole('dialog', { name: 'Find pickups and duplicates' });
+  await form.getByRole('option', { name: 'Chapter 1' }).waitFor({ state: 'attached' });
+  return form;
+}
+
+// Scans Chapter 1 through the dialog to its end and closes it: the mock scan saves its two groups, and the list is narrowed to
+// take review.
+async function scanChapterOne(page: Page): Promise<void> {
+  const form = await openScanDialog(page);
+  await form.getByRole('button', { name: 'Start scan' }).click();
+  const progress = page.getByRole('dialog', { name: 'Finding pickups and duplicates' });
+  await progress.getByRole('status').filter({ hasText: 'Found 2 groups of repeated reads in Chapter 1.' }).waitFor();
+  await progress.getByRole('button', { name: 'Close' }).click();
+  await waitForFindingRows(page, 2);
+  // The scan's end is also a toast (job:ended, ADR 0076) that removes itself on a real timer, which would race the screenshot:
+  // dismiss it, unless a slow run already let it expire, and wait until it is gone either way.
+  const dismissToast = page.getByRole('button', { name: 'Dismiss message' });
+  await dismissToast.click({ timeout: 1_000 }).catch(() => undefined);
+  await dismissToast.waitFor({ state: 'detached' });
+}
+
+// Scans, opens the partial pickup group and waits for its reads' REAPER controls to know REAPER is connected.
+async function openPickupGroup(page: Page): Promise<Locator> {
+  await scanChapterOne(page);
+  await openFindingRow(page, /Partial pickup/, 'Pickup');
+  await page.getByText('Checking whether REAPER is connected…').waitFor({ state: 'detached' });
+  return page.getByRole('region', { name: 'Reads' });
+}
+
 async function showReaperControls(page: Page, shown: Locator): Promise<void> {
   await shown.waitFor();
   await page.getByRole('region', { name: 'In REAPER' }).scrollIntoViewIfNeeded();
@@ -1276,25 +1309,6 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await message.waitFor();
       await message.scrollIntoViewIfNeeded();
     },
-    'take-review-results': async (page) => {
-      await goToPage(page, 'Tracks');
-      // Chapter 1 is already the active track; the mock seeds findings for it.
-      await clickVisible(page, 'button', 'Scan for pickups & duplicates');
-      await page.getByRole('table', { name: 'Pickup and duplicate findings' }).waitFor();
-    },
-    'take-review-empty': async (page) => {
-      await goToPage(page, 'Tracks');
-      await clickVisible(page, 'button', /Chapter 2/); // the mock only seeds findings for Chapter 1
-      await clickVisible(page, 'button', 'Scan for pickups & duplicates');
-      await page.getByText('No repeated reads found on this track.').waitFor();
-    },
-    'take-review-audition': async (page) => {
-      await goToPage(page, 'Tracks');
-      await clickVisible(page, 'button', 'Scan for pickups & duplicates');
-      await page.getByRole('table', { name: 'Pickup and duplicate findings' }).waitFor();
-      await clickVisible(page, 'button', 'Audition');
-      await page.getByRole('dialog', { name: 'Audition candidate reads' }).waitFor();
-    },
   },
   review: {
     default: async (page) => {
@@ -1369,6 +1383,44 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'reaper-marker-confirm': async (page) => {
       await confirmApprovedMarker(page);
+    },
+    'take-review-scan-form': async (page) => {
+      await openScanDialog(page);
+    },
+    'take-review-scan-progress': async (page) => {
+      await page.goto('/?mockTakeReviewScan=running');
+      await settlePage(page);
+      const form = await openScanDialog(page);
+      await form.getByRole('button', { name: 'Start scan' }).click();
+      const progress = page.getByRole('dialog', { name: 'Finding pickups and duplicates' });
+      await progress.getByRole('status').filter({ hasText: 'Transcribing read 2/4' }).waitFor();
+    },
+    'take-review-results': async (page) => {
+      await scanChapterOne(page);
+    },
+    'take-review-group': async (page) => {
+      await openPickupGroup(page);
+      await page.getByRole('region', { name: 'Reads' }).scrollIntoViewIfNeeded();
+    },
+    'take-review-read-looping': async (page) => {
+      const reads = await openPickupGroup(page);
+      await reads.getByRole('button', { name: 'Loop read 2 in REAPER' }).click();
+      await reads.getByRole('button', { name: 'Stop loop' }).waitFor();
+      await reads.scrollIntoViewIfNeeded();
+    },
+    'take-review-audition': async (page) => {
+      const reads = await openPickupGroup(page);
+      await reads.getByRole('button', { name: 'Audition reads' }).click();
+      await page.getByRole('dialog', { name: 'Audition candidate reads' }).waitFor();
+    },
+    'take-review-add-take': async (page) => {
+      await openPickupGroup(page);
+      await page.getByRole('button', { name: 'Accept', exact: true }).click();
+      await page.getByText('Saved as accepted.').waitFor();
+      await page.getByRole('region', { name: 'Reads' }).getByRole('button', { name: 'Add as take…' }).click();
+      const dialog = page.getByRole('alertdialog', { name: 'Add candidate as a new take' });
+      await dialog.getByRole('combobox', { name: 'Target item' }).selectOption({ index: 1 });
+      await dialog.getByRole('combobox', { name: 'Candidate read' }).selectOption({ index: 1 });
     },
     'reaper-marker-added': async (page) => {
       const dialog = await confirmApprovedMarker(page);

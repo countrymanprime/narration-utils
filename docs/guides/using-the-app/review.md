@@ -3,8 +3,9 @@
 # Review
 
 Review gathers what the app's checks found into one list, so you can work through them in one place:
-the differences a [Proofing](proofing.md) comparison heard between the script and the recording, and
-the [Story Bible](story-bible.md) entries and pronunciations that need a look. Each finding waits in
+the differences a [Proofing](proofing.md) comparison heard between the script and the recording, the
+[Story Bible](story-bible.md) entries and pronunciations that need a look, and the lines you recorded
+more than once ([pickups and duplicates](#pickups-and-duplicates)). Each finding waits in
 the list until you accept, dismiss or defer it, and your decision is kept with the project. Running a
 check again keeps your decision on a finding whose evidence did not change.
 
@@ -108,6 +109,50 @@ action stopped, start it again; the buttons turn back on by themselves. A Story 
 audio, so it has no REAPER row.
 
 ![Go to and Loop off because REAPER is not answering](../../images/ui/review-reaper-not-connected.webp)
+
+## Pickups and duplicates
+
+**Find pickups and duplicates…** beside the page title looks for lines you recorded more than once on
+a track: a restart after a stumble, a pickup of part of a line, an exact copy, or a near-identical
+re-read. Choose the **Track to scan**. To include pickups recorded somewhere else, choose **Also look
+for pickups on** a pickup track, or on a stretch of the timeline (type the times as `30:00` or in
+seconds). If the project's settings name a pickup track or stretch, the dialog starts with it chosen.
+Nothing in REAPER changes while it scans.
+
+![Find pickups and duplicates, choosing the track to scan](../../images/ui/review-take-review-scan.webp)
+
+**Start scan** transcribes every take of every item in scope, which takes a while for a long chapter.
+The bar and the stage under it are the scan's own. **Cancel** stops it and keeps nothing it found;
+**Continue in background** closes the window and the scan goes on, and the app says when it has
+finished. Opening the dialog again while it runs shows its progress.
+
+![A pickup and duplicate scan running, with Cancel and Continue in background](../../images/ui/review-take-review-progress.webp)
+
+When it finishes, the list shows what it found, filtered to **Take review** (**Clear filters** brings
+everything back). Each group is one part of the script you read more than once: the list says what kind
+it is and how many reads it has, for example "Partial pickup: 2 reads of sentences 4–8".
+
+Select a group to see its **Reads**: each read's audio file and where in it the read is, whether it
+covers the whole part of the script or only some of it, and how many of its words match the script.
+Nothing ranks one read over another; listen and choose.
+
+- **Go to** and **Loop** on a read work like the [REAPER buttons](#going-to-a-finding-in-reaper) above,
+  for that read's own item. REAPER plays the item's active take, so to hear a read that is another take
+  of its item, use Audition.
+- **Audition reads** plays two reads side by side (Read A and Read B, each with Play and Loop), with a
+  little audio before and after. It plays each read straight from its file, so REAPER's FX, gain and
+  edits are not applied and it can sound different from the project. Nothing in REAPER changes.
+- **Add as take…** is on once you accept the group. Choose the **Target item** (the item the take is
+  added to) and the **Candidate read** (the read that becomes the new take); nothing is chosen for you.
+  **Create take** adds it in REAPER: the item's active take and length stay as they were, and one Undo
+  in REAPER removes the new take. You choose which take plays in REAPER yourself.
+
+![A pickup group with its reads, Audition reads and Add as take](../../images/ui/review-take-review-group.webp)
+
+![Add as take, with the target item and the candidate read chosen](../../images/ui/review-take-review-add-take.webp)
+
+Dismiss a group that is a line repeated on purpose. Scanning the track again keeps your decision on a
+group whose reads did not change.
 
 ---
 

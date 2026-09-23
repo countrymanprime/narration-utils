@@ -6,8 +6,8 @@
 // independent of both the project model and the findings store so it can
 // be unit-tested and reused on its own), and saves them into the
 // milestone-1 findings store under repeats.AnalyzerName ("take-review").
-// It intentionally has no bindings or UI: the scan dialog, real progress
-// and cancellation, and the Review page's group detail are phase 5 work.
+// The host runs it as a cancellable job with real progress
+// (apps/desktop/takereview.go), started from the Review page's scan dialog.
 package takereview
 
 import (
@@ -34,6 +34,30 @@ type Scope struct {
 	PickupTrackName  string
 	PickupRangeStart *float64
 	PickupRangeEnd   *float64
+}
+
+// ValidateScope refuses a scope the narrator chose that a scan could not honour, in words the scan dialog can
+// show: no chapter track, a pickup track that is the chapter track itself, both a pickup track and a range (Q3:
+// never both), or a range that is half given, backwards or before the project start. Whether the named tracks
+// exist is buildManifest's check, against the project as it is when the scan runs.
+func ValidateScope(scope Scope) error {
+	start, end := scope.PickupRangeStart, scope.PickupRangeEnd
+	hasRange := start != nil || end != nil
+	switch {
+	case scope.ChapterTrackName == "":
+		return fmt.Errorf("choose a track to scan for pickups and duplicates")
+	case scope.PickupTrackName != "" && scope.PickupTrackName == scope.ChapterTrackName:
+		return fmt.Errorf("choose a different track for pickups than the one you are scanning")
+	case scope.PickupTrackName != "" && hasRange:
+		return fmt.Errorf("add a pickup track or a time range, not both")
+	case hasRange && (start == nil || end == nil):
+		return fmt.Errorf("a pickup time range needs a start and an end")
+	case hasRange && *start < 0:
+		return fmt.Errorf("a pickup time range starts at zero or later")
+	case hasRange && *end <= *start:
+		return fmt.Errorf("a pickup time range must end after its start")
+	}
+	return nil
 }
 
 // Segment is one read (an item, or one take of an item) to hand the
@@ -76,6 +100,8 @@ type Request struct {
 	Scope          Scope
 	Thresholds     repeats.Thresholds
 	SidecarOptions SidecarOptions
+	// ProgressPath is handed to the sidecar for its real progress (ADR 0015); empty runs it without.
+	ProgressPath string
 }
 
 // Scanner runs a pickup/duplicate scan and saves the result.
@@ -129,6 +155,7 @@ func (s *Scanner) Scan(ctx context.Context, req Request) ([]findings.Finding, er
 		Model:          req.SidecarOptions.Model,
 		Language:       req.SidecarOptions.Language,
 		MinSpanOverlap: req.SidecarOptions.MinSpanOverlap,
+		ProgressPath:   req.ProgressPath,
 	})
 	if err != nil {
 		return nil, err

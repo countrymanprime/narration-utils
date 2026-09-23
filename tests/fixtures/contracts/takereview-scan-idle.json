@@ -1,0 +1,14 @@
+{
+  "id": null,
+  "kind": "take_review",
+  "phase": "idle",
+  "message": "Ready to scan for pickups and duplicates.",
+  "percent": 0,
+  "logs": [],
+  "elapsed": 2.5,
+  "scope": {
+    "chapterTrackName": "",
+    "pickupTrackName": "Pickups"
+  },
+  "found": 0
+}

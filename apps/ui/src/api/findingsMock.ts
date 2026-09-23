@@ -19,6 +19,7 @@ import type {
 } from '../types';
 import { FINDING_CATEGORIES, MAX_REVIEW_NOTE_LENGTH } from './contracts/findings';
 import { wireClone } from './mockFixtures';
+import { takeReviewEvidenceSchema } from './schemas/takeReview';
 
 const SEVERITY_ORDER: FindingSeverity[] = ['error', 'warning', 'info'];
 
@@ -160,6 +161,15 @@ const markerRefused = (reason: FindingMarkerRefusal, message: string): FindingMa
 /** The REAPER side of the review bindings, refusing in the host's order: the finding first, then the connection, then REAPER. */
 function createReaperMock(mode: MockReaper, find: (id: string) => Finding) {
   let loopingId: string | undefined;
+  // A read stands in for its finding: its own item, and its range in its own source (bindings_navigation.go's readTarget).
+  const readOf = (id: string, read: number) => {
+    const members = takeReviewEvidenceSchema.safeParse(find(id).evidence);
+    const member = members.success ? members.data.members[read] : undefined;
+    if (!member) throw new Error(`this finding has no read ${read + 1}; reload the list`);
+    const start = member.source_start;
+    const finding: Finding = { ...find(id), source: { file: member.source_file, item_guid: member.item_guid || undefined } };
+    return { finding, start, end: start + member.source_length };
+  };
   const marked = new Set<string>();
   const status = (): ReaperStatus => {
     if (mode === 'standalone') return { connection: 'standalone', message: REAPER_MESSAGES.standalone };
@@ -190,6 +200,18 @@ function createReaperMock(mode: MockReaper, find: (id: string) => Finding) {
       const range = finding.time_range ?? { start: 0, end: 0 };
       return { outcome: 'looping', loopStart: Math.max(range.start - LOOP_PADDING_SECONDS, 0), loopEnd: range.end + LOOP_PADDING_SECONDS };
     },
+    // One read of a take-review group (take review Phase 5): placed by the read's own item and range, refused like the finding.
+    findingsGoToRead: async (id: string, read: number): Promise<FindingNavigation> => {
+      const { finding, start } = readOf(id, read);
+      return refusalOf(finding, false) ?? { outcome: 'navigated', projectTime: start };
+    },
+    findingsLoopRead: async (id: string, read: number): Promise<FindingNavigation> => {
+      const { finding, start, end } = readOf(id, read);
+      const refusal = refusalOf(finding, false);
+      if (refusal) return refusal;
+      loopingId = id;
+      return { outcome: 'looping', loopStart: Math.max(start - LOOP_PADDING_SECONDS, 0), loopEnd: end + LOOP_PADDING_SECONDS };
+    },
     findingsAddMarker: async (id: string): Promise<FindingMarker> => {
       const finding = find(id);
       if (finding.review.status !== 'accepted') return markerRefused('not_accepted', REAPER_MESSAGES.notAccepted);
@@ -215,7 +237,15 @@ function createReaperMock(mode: MockReaper, find: (id: string) => Finding) {
   };
 }
 
-export function createFindingsMock(seed: Finding[], options: FindingsMockOptions = {}): FindingsApi {
+/**
+ * The mock store and one more door the host has and the page does not: what an analyzer run saves (the take-review scan
+ * mock writes through it), replacing that analyzer's findings for one chapter the way findings.Store.SaveAnalyzerFindings does
+ * for a fresh run (decisions on a finding found again are kept; one not found again is dropped here, not carried forward).
+ */
+export function createFindingsMock(
+  seed: Finding[],
+  options: FindingsMockOptions = {},
+): FindingsApi & { saveAnalyzerFindings: (analyzer: string, chapterId: string, fresh: Finding[]) => void } {
   let store = wireClone(seed);
   let pendingRerun = options.rerunAfterFirstList === true;
   const find = (id: string): Finding => {
@@ -253,5 +283,10 @@ export function createFindingsMock(seed: Finding[], options: FindingsMockOptions
     },
     findingsSummary: async () => summarize(store),
     ...createReaperMock(options.reaper ?? 'connected', find),
+    saveAnalyzerFindings: (analyzer, chapterId, fresh) => {
+      const kept = store.filter((finding) => finding.analyzer !== analyzer || chapterOf(finding) !== chapterId);
+      const decided = new Map(store.map((finding) => [finding.id, finding.review]));
+      store = [...kept, ...wireClone(fresh).map((finding) => ({ ...finding, review: decided.get(finding.id) ?? finding.review }))];
+    },
   };
 }

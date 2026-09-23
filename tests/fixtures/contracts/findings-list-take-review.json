@@ -1,0 +1,121 @@
+{
+  "findings": [
+    {
+      "analyzer": "take-review",
+      "category": "duplicate_read",
+      "confidence": 0.985,
+      "confidence_reason": "average of 2 member(s)' alignment match quality (fraction of aligned tokens that matched the manuscript exactly)",
+      "evidence": {
+        "kind": "near_duplicate",
+        "matched_span_first": 12,
+        "matched_span_last": 15,
+        "members": [
+          {
+            "coverage": 1,
+            "exact_copy_group": "",
+            "item_guid": "{11111111-0000-0000-0000-000000000003}",
+            "item_index": 2,
+            "quality": 0.99,
+            "source_file": "C:/Projects/Alice/media/chapter1-take3.wav",
+            "source_length": 2.2,
+            "source_start": 0,
+            "take_guid": "{22222222-0000-0000-0000-000000000003}"
+          },
+          {
+            "coverage": 1,
+            "exact_copy_group": "",
+            "item_guid": "{11111111-0000-0000-0000-000000000004}",
+            "item_index": 3,
+            "quality": 0.98,
+            "source_file": "C:/Projects/Alice/media/chapter1-take4.wav",
+            "source_length": 2.2,
+            "source_start": 0,
+            "take_guid": "{22222222-0000-0000-0000-000000000004}"
+          }
+        ]
+      },
+      "evidence_version": "35c8e618317e757af0ac0678",
+      "id": "b6a3478016f49b07a31f3f74",
+      "manuscript": {
+        "chapter_id": "chapter-1",
+        "chapter_title": "Chapter 1"
+      },
+      "project": {
+        "path": "C:/Projects/Alice"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "schema_version": 1,
+      "severity": "info",
+      "source": {
+        "file": "C:/Projects/Alice/media/chapter1-take3.wav",
+        "item_guid": "{11111111-0000-0000-0000-000000000003}",
+        "take_guid": "{22222222-0000-0000-0000-000000000003}"
+      },
+      "suggested_action": {
+        "kind": "create_take",
+        "requires_confirmation": true
+      }
+    },
+    {
+      "analyzer": "take-review",
+      "category": "pickup",
+      "confidence": 0.6,
+      "confidence_reason": "average of 2 member(s)' alignment match quality (fraction of aligned tokens that matched the manuscript exactly)",
+      "evidence": {
+        "kind": "pickup",
+        "matched_span_first": 3,
+        "matched_span_last": 7,
+        "members": [
+          {
+            "coverage": 1,
+            "exact_copy_group": "",
+            "item_guid": "{11111111-0000-0000-0000-000000000001}",
+            "item_index": 0,
+            "quality": 0.62,
+            "source_file": "C:/Projects/Alice/media/chapter1-take1.wav",
+            "source_length": 4.5,
+            "source_start": 0,
+            "take_guid": "{22222222-0000-0000-0000-000000000001}"
+          },
+          {
+            "coverage": 0.7,
+            "exact_copy_group": "",
+            "item_guid": "{11111111-0000-0000-0000-000000000002}",
+            "item_index": 1,
+            "quality": 0.58,
+            "source_file": "C:/Projects/Alice/media/chapter1-take2.wav",
+            "source_length": 3.1,
+            "source_start": 10,
+            "take_guid": "{22222222-0000-0000-0000-000000000002}"
+          }
+        ]
+      },
+      "evidence_version": "eacc64471bdeb17eef5941fd",
+      "id": "f24ca7396d9cf9e023f63fd8",
+      "manuscript": {
+        "chapter_id": "chapter-1",
+        "chapter_title": "Chapter 1"
+      },
+      "project": {
+        "path": "C:/Projects/Alice"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "schema_version": 1,
+      "severity": "info",
+      "source": {
+        "file": "C:/Projects/Alice/media/chapter1-take1.wav",
+        "item_guid": "{11111111-0000-0000-0000-000000000001}",
+        "take_guid": "{22222222-0000-0000-0000-000000000001}"
+      },
+      "suggested_action": {
+        "kind": "create_take",
+        "requires_confirmation": true
+      }
+    }
+  ],
+  "total": 2
+}

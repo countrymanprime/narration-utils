@@ -1,0 +1,18 @@
+{
+  "id": "take-review-1",
+  "kind": "take_review",
+  "phase": "success",
+  "message": "Found 2 groups of repeated reads in Chapter 1.",
+  "percent": 100,
+  "logs": [
+    "Scanning Chapter 1 for pickups and duplicates.",
+    "Found 2 groups of repeated reads in Chapter 1."
+  ],
+  "elapsed": 2.5,
+  "scope": {
+    "chapterTrackName": "Chapter 1",
+    "pickupRangeStart": 1800,
+    "pickupRangeEnd": 2400
+  },
+  "found": 2
+}

@@ -21,7 +21,7 @@ const MARKER_NO_SOURCE_TIME = 'This finding has no time in its audio to put a ma
 export const hasAudio = (finding: Finding): boolean => Boolean(finding.source.item_guid || finding.time_range);
 
 /** What REAPER did, in the narrator's words, for the status line. A refusal is shown as an alert instead. */
-function doneMessage(result: Exclude<FindingNavigation, { outcome: 'refused' }>): string {
+export function doneMessage(result: Exclude<FindingNavigation, { outcome: 'refused' }>): string {
   switch (result.outcome) {
     case 'navigated':
       return `REAPER selected the item and moved the cursor to ${formatTime(result.projectTime)}.`;

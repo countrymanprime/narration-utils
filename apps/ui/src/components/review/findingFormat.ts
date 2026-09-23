@@ -2,6 +2,7 @@
 // everything here is display only, and an unknown value (a newer host, a later analyzer) shows as itself rather than
 // failing.
 import type { Finding, FindingReviewStatus, FindingSeverity } from '../../types';
+import { readKindLabel, spanLabel, takeReviewEvidence } from './takeReviewFormat';
 
 const CATEGORY_LABELS: Record<string, string> = {
   transcript_discrepancy: 'Transcript difference',
@@ -67,6 +68,8 @@ export const chapterLabel = (finding: Finding): string => finding.manuscript?.ch
 
 /** One line that says what the finding is about, for the list: what was expected and what was heard, or the entry it names. */
 export function findingSummary(finding: Finding): string {
+  const reads = takeReviewEvidence(finding);
+  if (reads) return `${readKindLabel(reads.kind)}: ${reads.members.length} reads of ${spanLabel(reads).toLowerCase()}`;
   const expected = finding.manuscript?.expected;
   const recorded = finding.manuscript?.recorded;
   if (expected && recorded) return `“${expected}” read as “${recorded}”`;
@@ -81,6 +84,15 @@ const text = (value: unknown): string | undefined => (typeof value === 'string' 
 
 /** The analyzer-specific evidence the page knows how to word, as label and value pairs in reading order; unknown keys are left out. */
 export function evidenceRows(finding: Finding): Array<{ label: string; value: string }> {
+  const reads = takeReviewEvidence(finding);
+  if (reads) {
+    // A take-review group: its reads are listed on their own, under the evidence.
+    return [
+      { label: 'Kind', value: readKindLabel(reads.kind) },
+      { label: 'In the script', value: spanLabel(reads) },
+      { label: 'Reads', value: String(reads.members.length) },
+    ];
+  }
   const evidence = finding.evidence ?? {};
   const rows: Array<{ label: string; value: string }> = [];
   const add = (label: string, value: string | undefined) => value && rows.push({ label, value });

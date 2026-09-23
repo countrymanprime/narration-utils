@@ -11,7 +11,6 @@ import { LinkChaptersDialog } from './LinkChaptersDialog';
 import { PickupsDialog } from './PickupsDialog';
 import { RenderConfigDialog } from './RenderConfigDialog';
 import { ChapterTagsDialog } from './ChapterTagsDialog';
-import { TakeReviewPanel } from './TakeReviewPanel';
 import type { ManuscriptChapter, Track, TracksDiscovery, TracksProject } from '../../types';
 
 function basename(path: string): string {
@@ -257,7 +256,6 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
               <TrackRow key={track.guid || index} track={track} active={index === activeIndex} onSelect={() => setActiveIndex(index)} />
             ))}
           </ul>
-          {project.tracks[activeIndex] && <TakeReviewPanel chapterTrackName={project.tracks[activeIndex].name} />}
         </>
       )}
       {project && <ChapterLinksTable tracks={project.tracks} />}

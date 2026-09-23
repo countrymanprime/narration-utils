@@ -45,7 +45,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 39
+const hostAPIVersion = 40
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -65,10 +65,12 @@ type Host struct {
 	// installJobs are the asset downloads, voices and models alike (installjobs.go); h.mu guards the map and each job its own fields.
 	installJobs map[string]*installJob
 	// removing holds the assets (kind/id) that are being removed, so a download of the same asset cannot start under the removal (h.mu).
-	removing   map[string]bool
-	guide      *guide.Service
-	guideJob   *workJob
-	transcript *transcript.Service
+	removing map[string]bool
+	guide    *guide.Service
+	guideJob *workJob
+	// takeReviewJob is the Review page's pickup and duplicate scan (takereview_job.go); h.mu guards the pointer, the job its fields.
+	takeReviewJob *takeReviewScanJob
+	transcript    *transcript.Service
 	// coverage is the recording-coverage service (docs/utilities/recording-coverage.md, ADR 0128): it reads the saved .rpp and
 	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; the Coverage* bindings
 	// reach it (Phase 5, bindings_coverage.go) and it fills the manuscript chapters' recordedFraction.
@@ -827,6 +829,9 @@ func (h *Host) idleLocked() bool {
 		if running {
 			return false
 		}
+	}
+	if h.takeReviewJob != nil && h.takeReviewJob.running() {
+		return false
 	}
 	for _, job := range h.installJobs {
 		if job.running() {

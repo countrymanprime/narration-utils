@@ -1,0 +1,19 @@
+{
+  "id": "take-review-1",
+  "kind": "take_review",
+  "phase": "error",
+  "message": "The scan did not finish.",
+  "percent": 92,
+  "logs": [
+    "Scanning Chapter 1 for pickups and duplicates.",
+    "The scan did not finish."
+  ],
+  "elapsed": 2.5,
+  "error": "takereview: repeated-span detector exited 1: no manuscript chapter matched",
+  "scope": {
+    "chapterTrackName": "Chapter 1",
+    "pickupRangeStart": 1800,
+    "pickupRangeEnd": 2400
+  },
+  "found": 0
+}
