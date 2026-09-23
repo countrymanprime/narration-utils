@@ -46,10 +46,10 @@ const mockNoManuscript = mockParams.has('mockNoManuscript');
 // `?mockManuscriptCandidate=1` boots a project with no imported manuscript but a
 // manuscript.docx in its folder, so Home shows the import offer.
 const mockManuscriptCandidate = mockParams.has('mockManuscriptCandidate');
-// `?mockTeleprompter=listening|waiting|done` boots the teleprompter already part-way
-// through the first chapter, as a session the host kept running; `ended` boots one that
-// already stopped itself at the end of the chapter (the host's auto-stop).
-const mockTeleprompter = (['listening', 'waiting', 'done', 'ended'] as const).find((seed) => seed === mockParams.get('mockTeleprompter'));
+// `?mockTeleprompter=listening|waiting|done|flagged` boots the teleprompter already part-way
+// through the first chapter, as a session the host kept running (`flagged`: further in, with suspected flags raised);
+// `ended` boots one that already stopped itself at the end of the chapter (the host's auto-stop).
+const mockTeleprompter = (['listening', 'waiting', 'done', 'ended', 'flagged'] as const).find((seed) => seed === mockParams.get('mockTeleprompter'));
 // `?mockResume=low_confidence|not_found|ambiguous|none|no_recording|source_missing|source_unsupported|error` makes the
 // read-aloud dialog's resume card (teleprompter-manuscript-integration.prd.md Phase 10) show that state for any chapter,
 // so each can be seen without a REAPER project, a recording or a Whisper run.

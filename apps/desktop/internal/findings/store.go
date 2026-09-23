@@ -104,6 +104,27 @@ func (s *Store) scopePath(analyzer, scope string) (string, error) {
 // set as written. Callers validate each fresh Finding themselves; this only
 // merges and persists.
 func (s *Store) SaveAnalyzerFindings(analyzer, scope string, fresh []Finding) ([]Finding, error) {
+	return s.mergeScope(analyzer, scope, fresh, true)
+}
+
+// MergeAnalyzerFindings adds fresh to analyzer's findings for scope without
+// treating the run as a full one: a stored finding the run did not reproduce
+// is kept exactly as it was (never marked NotInLatestRun), because an analyzer
+// whose runs each cover only part of a scope says nothing about the rest. A
+// live read-aloud session is one (ADR 0117): the narrator reads some of a
+// chapter, so a later session that did not flag a word is no evidence the
+// earlier flag went away. Otherwise it merges exactly as SaveAnalyzerFindings
+// does: the same id is one finding (the last copy in fresh wins), and a
+// decision is kept only while id and EvidenceVersion both match. It returns
+// the scope's merged set as written.
+func (s *Store) MergeAnalyzerFindings(analyzer, scope string, fresh []Finding) ([]Finding, error) {
+	return s.mergeScope(analyzer, scope, fresh, false)
+}
+
+// mergeScope writes fresh over scope's stored findings. markAbsent says the
+// run was a full one, so a stored finding it did not reproduce is carried
+// forward marked NotInLatestRun; otherwise that finding is kept unchanged.
+func (s *Store) mergeScope(analyzer, scope string, fresh []Finding, markAbsent bool) ([]Finding, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -122,19 +143,25 @@ func (s *Store) SaveAnalyzerFindings(analyzer, scope string, fresh []Finding) ([
 	latest := latestDecisions(history)
 
 	merged := make([]Finding, 0, len(fresh)+len(previous))
-	seen := make(map[string]bool, len(fresh))
+	position := make(map[string]int, len(fresh))
 	for _, f := range fresh {
 		f = applyDecision(f, latest[f.ID])
 		f.NotInLatestRun = false
+		if at, repeated := position[f.ID]; repeated {
+			merged[at] = f
+			continue
+		}
+		position[f.ID] = len(merged)
 		merged = append(merged, f)
-		seen[f.ID] = true
 	}
 	for _, prior := range previous {
-		if seen[prior.ID] {
+		if _, seen := position[prior.ID]; seen {
 			continue
 		}
 		carried := applyDecision(prior, latest[prior.ID])
-		carried.NotInLatestRun = true
+		if markAbsent {
+			carried.NotInLatestRun = true
+		}
 		merged = append(merged, carried)
 	}
 	sortByID(merged)

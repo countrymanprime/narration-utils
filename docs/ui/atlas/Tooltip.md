@@ -18,6 +18,7 @@ Storybook title: `Primitives/Tooltip`. Source: `src/components/primitives/Toolti
 - Hides Tooltip On Blur
 - On Disabled Button
 - Disabled Button Explains Why On Focus
+- Inline In Running Text
 
 ## Used by
 
@@ -41,3 +42,6 @@ Storybook title: `Primitives/Tooltip`. Source: `src/components/primitives/Toolti
 - `src/components/storybible/GuideDetail.tsx`
 - `src/components/storybible/PropertiesSection.tsx`
 - `src/components/teleprompter/ReadAlongView.tsx`
+- `src/components/teleprompter/ReaderFlagsPanel.tsx`
+- `src/components/teleprompter/ReaderRail.tsx`
+- `src/components/teleprompter/ReaderText.tsx`

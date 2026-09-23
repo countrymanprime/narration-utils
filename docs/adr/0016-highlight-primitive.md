@@ -1,6 +1,6 @@
 # 0016. One `Highlight` primitive for entity, note and review highlights
 
-**Status:** Accepted (amended by [ADR 0063](0063-the-proofing-diff-marks-its-own-words-and-adr-0016-covers-entry-highlights.md), which reads "the only way to render highlighted text" as covering entry highlights, so the proofing diff's own word marks are outside it; the rest stands)
+**Status:** Accepted (amended by [ADR 0063](0063-the-proofing-diff-marks-its-own-words-and-adr-0016-covers-entry-highlights.md), which reads "the only way to render highlighted text" as covering entry highlights, so the proofing diff's own word marks are outside it; and by [ADR 0118](0118-read-aloud-flags-are-highlight-kinds-with-an-inline-hint-and-skips-and-restarts-show-by-default.md), proposed, which adds the read-aloud flag kinds; the rest stands)
 **Date:** 2026-09-18
 **Amends:** ADR-0009 (replaces the `HL_STYLE`/`hlClassName` lookups it lists)
 

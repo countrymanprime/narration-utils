@@ -6,6 +6,7 @@ import type {
   TeleprompterEngine,
   TeleprompterEvent,
   TeleprompterFlag,
+  TeleprompterFlagFinding,
   TeleprompterLocateResult,
   TeleprompterLocated,
   TeleprompterPosition,
@@ -43,7 +44,7 @@ const teleprompterPositionSchema = z.object({
   skipped: z.tuple([z.number(), z.number()]).nullable(),
 }) satisfies z.ZodType<TeleprompterPosition>;
 
-// A suspected flag (flags.py, ADR 0105): `start`/`end` are script word indices, equal for an extra.
+// A suspected flag (flags.py, ADR 0115): `start`/`end` are script word indices, equal for an extra.
 const teleprompterFlagSchema = z
   .object({
     type: z.literal('flag'),
@@ -135,3 +136,52 @@ export const teleprompterLocateResultSchema = z.union([
     located: teleprompterLocatedSchema.nullable(),
   }),
 ]) satisfies z.ZodType<TeleprompterLocateResult>;
+
+const flagKindSchema = z.enum(['misread', 'extra', 'skipped', 'restart']);
+
+/**
+ * A kept flag as `TeleprompterSaveFlags` answers it (`apps/desktop/internal/liveflags`, ADR 0117): a findings record
+ * (docs/architecture/findings-contract.md) in the contract's snake_case. It is always suspected, so its confidence is null.
+ */
+const teleprompterFlagFindingSchema = z.object({
+  schema_version: z.number(),
+  id: z.string(),
+  analyzer: z.string(),
+  project: z.object({ path: z.string().optional(), output_path: z.string().optional() }),
+  source: z.object({
+    file: z.string().optional(),
+    track_guid: z.string().optional(),
+    item_guid: z.string().optional(),
+    take_guid: z.string().optional(),
+  }),
+  manuscript: z.object({
+    chapter_id: z.string().optional(),
+    chapter_title: z.string().optional(),
+    expected: z.string().optional(),
+    recorded: z.string().optional(),
+    span: z
+      .object({ paragraph_id: z.string().optional(), start: z.number().optional(), end: z.number().optional(), ordinal: z.number().optional() })
+      .optional(),
+  }),
+  category: z.enum(['transcript_discrepancy', 'pickup']),
+  severity: z.enum(['info', 'warning', 'error']),
+  confidence: z.null(),
+  evidence_version: z.string().optional(),
+  confidence_reason: z.string(),
+  evidence: z.object({
+    kind: flagKindSchema,
+    heard: z.string(),
+    suspected: z.literal(true),
+    script_words: z.tuple([z.number(), z.number()]),
+    before: z.string().optional(),
+  }),
+  review: z.object({
+    status: z.enum(['unreviewed', 'accepted', 'dismissed', 'deferred']),
+    note: z.string().optional(),
+    timestamp: z.string().optional(),
+  }),
+  not_in_latest_run: z.boolean().optional(),
+}) satisfies z.ZodType<TeleprompterFlagFinding>;
+
+/** `TeleprompterSaveFlags`: one finding per flag sent, in order. */
+export const teleprompterFlagFindingsSchema = z.array(teleprompterFlagFindingSchema);

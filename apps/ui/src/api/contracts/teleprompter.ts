@@ -27,13 +27,57 @@ export type TeleprompterPosition = {
 export type TeleprompterFlagKind = 'misread' | 'extra' | 'skipped' | 'restart';
 
 /**
- * A suspected reading error the sidecar raised when a speech segment closed (`flags.py`, ADR 0105). Always only suspected:
+ * A suspected reading error the sidecar raised when a speech segment closed (`flags.py`, ADR 0115). Always only suspected:
  * live recognition is not proof, and Transcript Compare over the recorded take stays authoritative. `start`/`end` are script
  * word indices (the space of `TeleprompterPosition.read`): the misread, skipped or re-read words are `[start, end)`, and an
  * `extra` is zero-width (`start === end`), sitting before the word at `start`. `heard` is what was heard in their place ('' for
  * `skipped`). `id` counts a session's flags from 1. The kind is carried so a view can choose which kinds to show.
  */
 export type TeleprompterFlag = { type: 'flag'; id: number; kind: TeleprompterFlagKind; start: number; end: number; heard: string };
+
+/**
+ * One flag as the read-aloud dialog sends it to be kept (`TeleprompterSaveFlags`, Phase 7, ADR 0117): its words within one
+ * manuscript paragraph (`[wordStart, wordEnd)`, the reader's own word split; an `extra` covers the one word it was heard
+ * before), the event's chapter word indices as evidence, what was heard, and whether the narrator dismissed it. The host
+ * reads the paragraph itself, so the expected text and the finding's id come from the manuscript.
+ */
+export type TeleprompterFlagSave = {
+  kind: TeleprompterFlagKind;
+  paragraphId: string;
+  wordStart: number;
+  wordEnd: number;
+  scriptStart: number;
+  scriptEnd: number;
+  heard: string;
+  dismissed: boolean;
+};
+
+/**
+ * A kept flag, as the findings store holds it (`apps/desktop/internal/liveflags`, docs/architecture/findings-contract.md). The
+ * field names are the contract's own snake_case. Always suspected: `confidence` is null and `confidence_reason` says why.
+ */
+export type TeleprompterFlagFinding = {
+  schema_version: number;
+  id: string;
+  analyzer: string;
+  project: { path?: string; output_path?: string };
+  source: { file?: string; track_guid?: string; item_guid?: string; take_guid?: string };
+  manuscript: {
+    chapter_id?: string;
+    chapter_title?: string;
+    expected?: string;
+    recorded?: string;
+    span?: { paragraph_id?: string; start?: number; end?: number; ordinal?: number };
+  };
+  category: 'transcript_discrepancy' | 'pickup';
+  severity: 'info' | 'warning' | 'error';
+  confidence: null;
+  evidence_version?: string;
+  confidence_reason: string;
+  evidence: { kind: TeleprompterFlagKind; heard: string; suspected: true; script_words: [number, number]; before?: string };
+  review: { status: 'unreviewed' | 'accepted' | 'dismissed' | 'deferred'; note?: string; timestamp?: string };
+  not_in_latest_run?: boolean;
+};
 
 export type HeardWord = { word: string; start: number; end: number };
 export type TeleprompterEvent =
@@ -155,6 +199,8 @@ export interface TeleprompterApi {
   teleprompterStop(): Promise<void>;
   /** Move a running session's tracker straight to script word `word` ("Start here" / "Go back to here"). */
   teleprompterSeek(word: number): Promise<void>;
+  /** Keep a session's flags as suspected, unreviewed findings; answers one finding per flag, in order (ADR 0117). */
+  teleprompterSaveFlags(chapterId: string, flags: TeleprompterFlagSave[]): Promise<TeleprompterFlagFinding[]>;
   teleprompterState(): Promise<TeleprompterState>;
   teleprompterDevices(): Promise<TeleprompterDevicesResult>;
   /** Where to resume `chapterId` from its recorded audio (the last seconds of its track, placed in the chapter); read-only. */

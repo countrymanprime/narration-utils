@@ -19,7 +19,7 @@ type Props = {
   session: TeleprompterSession;
   /** Extra setup fields shown above the microphone/model row while idle (the standalone page's chapter picker). */
   extraSetupFields?: ReactNode;
-  /** Story bible and note marks by row key, and what opening one does (teleprompter-manuscript-integration.prd.md Phase 5; see `ReaderText`). */
+  /** Story bible, note and flag marks by row key, and what opening one does (teleprompter-manuscript-integration.prd.md Phases 5 and 7; see `ReaderText`). */
   marks?: Map<string, ReaderMark[]>;
   onOpenMark?: (mark: ReaderMark) => void;
   /**

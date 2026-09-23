@@ -366,6 +366,10 @@ export function TeleprompterLocate(arg1, arg2, arg3) {
   return window['go']['main']['Host']['TeleprompterLocate'](arg1, arg2, arg3);
 }
 
+export function TeleprompterSaveFlags(arg1, arg2) {
+  return window['go']['main']['Host']['TeleprompterSaveFlags'](arg1, arg2);
+}
+
 export function TeleprompterSeek(arg1) {
   return window['go']['main']['Host']['TeleprompterSeek'](arg1);
 }

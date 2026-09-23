@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/liveflags"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 )
 
@@ -73,6 +74,9 @@ var stressReaders = []stressReader{
 	{"ChapterTrackMatch", func(h *Host) { _, _ = h.ChapterTrackMatch("c-0001") }},
 	{"ChapterSuggestion", func(h *Host) { _, _ = h.ChapterSuggestion() }},
 	{"TeleprompterLocate", func(h *Host) { _, _ = h.TeleprompterLocate("c-0001", "", "") }},
+	{"TeleprompterSaveFlags", func(h *Host) {
+		_, _ = h.TeleprompterSaveFlags("ch-1", []liveflags.Flag{{Kind: "misread", ParagraphID: "p-1", WordStart: 0, WordEnd: 1}})
+	}},
 	{"TracksDiscover", func(h *Host) { _, _ = h.TracksDiscover() }},
 	{"TracksList", func(h *Host) { _, _ = h.TracksList() }},
 	{"TracksSelect", func(h *Host) { _, _ = h.TracksSelect("not-a-project-file.rpp") }},

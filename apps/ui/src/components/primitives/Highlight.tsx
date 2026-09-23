@@ -2,10 +2,13 @@ import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 
 // `Cursor` is the Teleprompter's current word - a solid accent fill rather than a
 // tint, so it reads as a position marker and never as an entity or note.
+// `Misread`, `Extra`, `Skipped` and `Restart` are the read-aloud dialog's suspected flags (teleprompter-manuscript-integration.prd.md
+// Phase 7): a decoration in the Transcript Compare colour of the same kind, never a tint, so they layer over an entity or note mark.
 // `Search` is a manuscript search hit's matched term (reader search and controls PRD, R4) - never
 // reached through highlightKind below (nothing maps a Story Bible category to it); callers pass it
 // directly.
-export type HighlightKind = 'Character' | 'Place' | 'Organization' | 'Lore' | 'Item' | 'Event' | 'Review' | 'Note' | 'Search' | 'Cursor';
+export type HighlightKind =
+  'Character' | 'Place' | 'Organization' | 'Lore' | 'Item' | 'Event' | 'Review' | 'Note' | 'Search' | 'Cursor' | 'Misread' | 'Extra' | 'Skipped' | 'Restart';
 
 // Story Bible categories arrive under several spellings ("Needs Review",
 // "Location", the transient "Draft"). Every highlight funnels through this one
@@ -39,6 +42,20 @@ const TOKEN: Record<HighlightKind, string> = {
   Note: '--note',
   Search: '--search',
   Cursor: '--accent',
+  Misread: '--danger',
+  Extra: '--info',
+  Skipped: '--warn',
+  Restart: '--accent',
+};
+
+// The flag decorations. Misread and Skipped reuse Transcript Compare's colours for the same kinds (`KIND_STYLES`, the pure
+// status colour as the 3:1 non-text mark), and skipped is the dotted underline the reader already draws under a skip-ahead,
+// so the two coincide. An extra is zero-width in the text, so it is an insertion bar before the word it was heard before. A
+// restart has no Transcript Compare kind; it takes the accent (the colour of the reading position it sends back).
+const FLAG_DECORATION: Partial<Record<HighlightKind, string>> = {
+  Misread: 'wavy',
+  Skipped: 'dotted',
+  Restart: 'dashed',
 };
 
 // The text of an entity is the kind colour mixed toward --text (ADR 0059), which reaches 4.5:1 on the tint where the pure
@@ -62,6 +79,10 @@ function highlightStyle(kind: HighlightKind): CSSProperties {
   const token = `var(${TOKEN[kind]})`;
   // The negative margin cancels the mark's horizontal padding, so moving the cursor never changes where a line wraps.
   if (kind === 'Cursor') return { background: token, color: 'var(--accent-contrast)', margin: '0 -0.05em' };
+  if (kind === 'Extra') return { background: 'transparent', boxShadow: `inset 0.14em 0 0 ${token}`, paddingLeft: '0.2em' };
+  const decoration = FLAG_DECORATION[kind];
+  if (decoration)
+    return { background: 'transparent', textDecoration: `underline ${decoration} ${token}`, textDecorationThickness: '1.5px', textUnderlineOffset: '0.25em' };
   return {
     background: `color-mix(in srgb, ${token} 20%, transparent)`,
     color: TEXT_TOKEN[kind] ? `var(${TEXT_TOKEN[kind]})` : undefined,
@@ -71,10 +92,20 @@ function highlightStyle(kind: HighlightKind): CSSProperties {
 
 const BASE = 'ms-highlight rounded-[0.15rem] px-[0.05em] py-[var(--hl-pad-y,0.08em)] text-inherit [box-decoration-break:clone]';
 
-export function Highlight({ kind, children, onActivate }: { kind: HighlightKind; children: ReactNode; onActivate?: () => void }) {
+type Props = {
+  kind: HighlightKind;
+  children: ReactNode;
+  onActivate?: () => void;
+  /** The control's accessible name, when its words alone would not say what it is (an extra-words flag is named by what it marks). */
+  label?: string;
+  /** More about the mark for a screen reader (what a flag heard), which the sighted reader gets from its hint. */
+  description?: string;
+};
+
+export function Highlight({ kind, children, onActivate, label, description }: Props) {
   if (!onActivate)
     return (
-      <mark className={BASE} style={highlightStyle(kind)} data-highlight={kind}>
+      <mark className={BASE} style={highlightStyle(kind)} data-highlight={kind} aria-description={description}>
         {children}
       </mark>
     );
@@ -87,6 +118,8 @@ export function Highlight({ kind, children, onActivate }: { kind: HighlightKind;
       role="button"
       tabIndex={0}
       data-highlight={kind}
+      aria-label={label}
+      aria-description={description}
       className={`${BASE} cursor-pointer`}
       style={highlightStyle(kind)}
       onClick={activate}

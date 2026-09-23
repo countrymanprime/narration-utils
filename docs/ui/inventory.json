@@ -1,5 +1,5 @@
 {
-  "generatedBy": "ui-atlas 0.3.4",
+  "generatedBy": "ui-atlas 0.3.5",
   "components": [
     {
       "title": "Primitives/Button",
@@ -43,6 +43,7 @@
         "src/components/settings/UpdatesPanel.tsx",
         "src/components/storybible/GuideDetail.tsx",
         "src/components/teleprompter/ReadAlongView.tsx",
+        "src/components/teleprompter/ReaderFlagsPanel.tsx",
         "src/components/tracks/AuditionDialog.tsx",
         "src/components/tracks/ChapterTagsDialog.tsx",
         "src/components/tracks/LinkChaptersDialog.tsx",
@@ -66,6 +67,7 @@
       ],
       "consumers": [
         "src/components/home/ImportReview.tsx",
+        "src/components/teleprompter/ReaderFlagsPanel.tsx",
         "src/components/tracks/AuditionDialog.tsx",
         "src/components/tracks/ChapterTagsDialog.tsx",
         "src/components/tracks/LinkChaptersDialog.tsx"
@@ -261,6 +263,11 @@
         "Review",
         "Note",
         "Cursor",
+        "Misread",
+        "Extra",
+        "Skipped",
+        "Restart",
+        "Flags In Running Text",
         "In Running Text",
         "Interactive",
         "Click Activates",
@@ -273,6 +280,7 @@
         "src/components/manuscript/ParagraphView.tsx",
         "src/components/settings/CreditsPanel.tsx",
         "src/components/storybible/GuideDetail.tsx",
+        "src/components/teleprompter/ReaderKey.tsx",
         "src/components/teleprompter/ReaderText.tsx"
       ],
       "a11yDebt": false
@@ -306,7 +314,8 @@
         "src/components/proofing/Results.tsx",
         "src/components/storybible/Guide.tsx",
         "src/components/storybible/GuideDetail.tsx",
-        "src/components/storybible/PropertiesSection.tsx"
+        "src/components/storybible/PropertiesSection.tsx",
+        "src/components/teleprompter/ReaderRail.tsx"
       ],
       "a11yDebt": false
     },
@@ -564,7 +573,8 @@
       ],
       "consumers": [
         "src/components/settings/Settings.tsx",
-        "src/components/storybible/Guide.tsx"
+        "src/components/storybible/Guide.tsx",
+        "src/components/teleprompter/ReaderRail.tsx"
       ],
       "a11yDebt": false
     },
@@ -675,7 +685,8 @@
         "Escape Hides Tooltip",
         "Hides Tooltip On Blur",
         "On Disabled Button",
-        "Disabled Button Explains Why On Focus"
+        "Disabled Button Explains Why On Focus",
+        "Inline In Running Text"
       ],
       "consumers": [
         ".storybook/preview.tsx",
@@ -697,7 +708,10 @@
         "src/components/storybible/Guide.tsx",
         "src/components/storybible/GuideDetail.tsx",
         "src/components/storybible/PropertiesSection.tsx",
-        "src/components/teleprompter/ReadAlongView.tsx"
+        "src/components/teleprompter/ReadAlongView.tsx",
+        "src/components/teleprompter/ReaderFlagsPanel.tsx",
+        "src/components/teleprompter/ReaderRail.tsx",
+        "src/components/teleprompter/ReaderText.tsx"
       ],
       "a11yDebt": false
     },

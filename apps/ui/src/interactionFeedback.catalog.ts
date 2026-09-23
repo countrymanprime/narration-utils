@@ -305,6 +305,17 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/teleprompter/useTeleprompterSession.ts::manuscriptParagraphs#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'An inline error.'),
   'src/components/teleprompter/useTeleprompterSession.ts::teleprompterStart#1': row('click', 'job', 'disabled', 'host', 'ui', 'inline', 'no', 'ok', 'The state event moves the page to "starting" and disables Start; the host refuses a second session.'),
   'src/components/teleprompter/useTeleprompterSession.ts::teleprompterStop#1': row('click', 'job', 'none', 'none', 'ui', 'inline', 'no', 'ok', 'The state event moves the page on; an inline error otherwise.'),
+  'src/components/teleprompter/ReadAloudDialog.tsx::teleprompterSaveFlags#1': row(
+    'effect',
+    'file-io',
+    'none',
+    'none',
+    'ui',
+    'inline',
+    'no',
+    'ok',
+    'Keeps the session’s suspected flags as findings when reading stops, when the dialog closes and on a dismiss after the session (ADR 0117); the Flags tab says they were kept, or shows the failure. Saving again is idempotent on the host, so there is nothing to guard.',
+  ),
   'src/components/teleprompter/useTeleprompterSession.ts::teleprompterSeek#1': row('click', 'file-io', 'none', 'none', 'event', 'inline', 'no', 'ok', 'The tracker\'s next position event (jump: "restart") shows the move; an inline error otherwise. No caller triggers this yet (teleprompter-manuscript-integration.prd.md Phase 4 adds the word-click affordance); the seek channel itself is Phase 3.'),
   'src/components/teleprompter/useTeleprompterSession.ts::assetsInstall#1': row('click', 'download', 'dialog', 'host', 'dialog', 'dialog', 'no', 'ok', 'The first-use dialog says Starting at once; the host joins a download that is already running for the same asset (S16), so a second press starts no second one. The asset is the model of the chosen engine (Whisper or Moonshine), named by the gate. Real bytes, the check, Cancel while bytes arrive, and a failure sentence in the dialog, through useAssetInstall.'),
   'src/components/teleprompter/useTeleprompterSession.ts::assetsInstallState#1': row('timer', 'download', 'dialog', 'na', 'poll', 'dialog', 'no', 'ok', 'The one install-poll loop (useAssetInstall), every 400 ms: the dialog shows the bytes as they arrive, and a failed poll is shown in the dialog. The download outlives the dialog and ends with job:ended.'),
@@ -437,6 +448,8 @@ export const SILENT_CATCHES: Record<string, string> = {
     'The one-time browser-storage-to-settings migration write; a failure leaves the device in local state for this visit and the migration is retried next load since the settings value never got marked set.',
   'src/components/teleprompter/readerPreferences.ts#1':
     'Remembering the read-aloud rail (open, tab) in localStorage; the choice lasts for this dialog only when storage is disabled.',
+  'src/components/teleprompter/readerPreferences.ts#2':
+    'Remembering which flag kinds the read-aloud dialog shows in localStorage (Phase 7); the choice lasts for this dialog only when storage is disabled.',
   'src/theme/ThemeContext.tsx#1': 'Remembering the theme in localStorage; the preference just does not persist when storage is disabled.',
   'src/components/tracks/TracksPage.tsx#1':
     'Only decides whether the "Link chapters…" button shows; without it the button is absent, same as a project with no chapters.',

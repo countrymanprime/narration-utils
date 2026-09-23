@@ -38,7 +38,7 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0013](0013-import-preserves-structural-whitespace.md) | Manuscript import preserves structural whitespace and repairs glued headings | Accepted |
 | [0014](0014-inline-formatting-as-offset-spans.md) | Inline formatting is stored as offset spans over canonical plain text | Accepted |
 | [0015](0015-real-progress-only.md) | Progress bars and activity logs show real work only | Accepted |
-| [0016](0016-highlight-primitive.md) | One `Highlight` primitive for entity, note and review highlights | Accepted (amends ADR-0009; amended by ADR-0063) |
+| [0016](0016-highlight-primitive.md) | One `Highlight` primitive for entity, note and review highlights | Accepted (amends ADR-0009; amended by ADR-0063 and, proposed, ADR-0118) |
 | [0017](0017-no-legacy-css-shadowing-tailwind.md) | No unlayered legacy CSS or contradictory utilities shadow Tailwind | Accepted (amends ADR-0009) |
 | [0018](0018-story-bible-entries-read-only-until-edit.md) | Story Bible entries are read-only until Edit is pressed | Accepted (amended by ADR-0036; its read-only-actions clause is superseded by ADR-0087) |
 | [0019](0019-detected-manuscript-is-offered-not-imported.md) | A manuscript found in the project folder is offered, never imported automatically | Accepted (extension list amended by ADR-0103) |
@@ -134,6 +134,8 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0113](0113-the-teleprompter-suggests-a-chapter-from-the-saved-armed-track-and-preselects-only-a-confident-match.md) | The Teleprompter suggests a chapter from the saved armed track, and preselects only a confident match | Proposed |
 | [0115](0115-live-flags-are-suspected-judged-per-closed-segment-and-forgive-what-transcript-compare-forgives.md) | Live flags are suspected, judged per closed segment, and forgive what Transcript Compare forgives | Proposed |
 | [0116](0116-read-aloud-marks-cover-whole-words-the-innermost-is-the-control-and-a-mark-never-seeks.md) | Read-aloud marks cover whole words, the innermost is the control, and a mark never seeks | Proposed |
+| [0117](0117-live-flags-are-kept-as-suspected-findings-merged-per-chapter-when-a-session-ends.md) | Live flags are kept as suspected findings, merged per chapter, when a session ends | Proposed |
+| [0118](0118-read-aloud-flags-are-highlight-kinds-with-an-inline-hint-and-skips-and-restarts-show-by-default.md) | Read-aloud flags are Highlight kinds with an inline hint, and skips and restarts show by default | Proposed (amends ADR-0016) |
 | [0125](0125-recording-coverage-ground-truth-is-scripted-recordings-with-paragraph-labels-and-a-corpus-directory-variable.md) | Recording-coverage ground truth is scripted recordings with paragraph labels, and a real corpus plugs in through a directory variable | Proposed |
 | [0126](0126-recording-coverage-reads-the-take-markers-sequencematcher-alignment-and-folds-chance-matches-into-gaps.md) | Recording coverage reads the take markers' SequenceMatcher alignment and folds chance matches into gaps | Proposed |
 | [0127](0127-the-coverage-sidecar-mode-reads-a-json-manifest-keeps-one-words-file-per-item-and-writes-tagged-json-lines.md) | The coverage sidecar mode reads a JSON manifest, keeps one words file per item, and writes tagged JSON lines | Proposed |

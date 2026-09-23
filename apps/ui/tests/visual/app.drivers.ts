@@ -222,6 +222,18 @@ async function openLocalAssets(page: Page, seed?: string): Promise<void> {
   await page.getByRole('heading', { level: 3, name: 'Small', exact: true }).waitFor();
 }
 
+// The read-aloud dialog on the `flagged` mock session (teleprompter-manuscript-integration.prd.md Phase 7), once its first
+// default-visible flag (a skip) is drawn as a control in the text.
+async function openFlaggedReadAloud(page: Page) {
+  await page.goto('/?mockTeleprompter=flagged');
+  await settlePage(page);
+  await goToPage(page, 'Manuscript');
+  await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+  const dialog = page.getByRole('dialog', { name: /Read aloud/ });
+  await dialog.locator('[data-highlight="Skipped"][role="button"]').first().waitFor();
+  return dialog;
+}
+
 // Playwright's synthetic page.mouse.down/move/up drag doesn't reliably
 // produce a non-empty window.getSelection() range for useTextSelection.ts's
 // mouseup listener to pick up (unlike a real Chromium user drag, or RTL's
@@ -511,6 +523,25 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const dialog = page.getByRole('dialog', { name: /Read aloud/ });
       await dialog.getByRole('button', { name: 'Hide reading panel' }).click();
       await dialog.getByRole('button', { name: 'Show reading panel' }).waitFor();
+    },
+    // Suspected flags (teleprompter-manuscript-integration.prd.md Phase 7): the `flagged` mock seam is a session further into
+    // the chapter whose flags arrive as the dialog subscribes. The rail's key has flag swatches too, so marks are found as controls.
+    'read-aloud-flags': async (page) => {
+      await openFlaggedReadAloud(page);
+    },
+    'read-aloud-flag-open': async (page) => {
+      const dialog = await openFlaggedReadAloud(page);
+      await dialog.locator('[data-highlight="Restart"][role="button"]').first().click();
+      await dialog.getByRole('tab', { name: 'Flags', selected: true }).waitFor();
+      await dialog.getByRole('region', { name: 'Suspected restart' }).waitFor();
+    },
+    'read-aloud-flags-all-kinds': async (page) => {
+      const dialog = await openFlaggedReadAloud(page);
+      await dialog.getByRole('tab', { name: 'Flags' }).click();
+      await dialog.getByRole('checkbox', { name: 'Misreads' }).click();
+      await dialog.getByRole('checkbox', { name: 'Extra words' }).click();
+      await dialog.locator('[data-highlight="Misread"][role="button"]').first().waitFor();
+      await dialog.locator('[data-highlight="Extra"][role="button"]').first().waitFor();
     },
     'reader-text-small': async (page) => {
       await goToPage(page, 'Manuscript');

@@ -22,14 +22,28 @@ export function TooltipProvider({ children }: { children: ReactNode }) {
 
 // A hint for a control that carries its own label: the tooltip is for sighted users (the library documents it that way),
 // so the child must already have an accessible name. A disabled child cannot take focus or hover, so the wrapper becomes
-// the tab stop and carries the reason as its name.
-export function TooltipTarget({ text, children, className = '', style }: { text: string; children: ReactNode; className?: string; style?: CSSProperties }) {
+// the tab stop and carries the reason as its name. `inline` is for a control inside running text (a read-aloud flag, a
+// `<mark role="button">` that can wrap across lines): the trigger is then an inline box that flows with the line, where the
+// default inline-flex box would pull the whole mark onto one line.
+export function TooltipTarget({
+  text,
+  children,
+  className = '',
+  style,
+  inline = false,
+}: {
+  text: string;
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+  inline?: boolean;
+}) {
   const disabledChild = isValidElement(children) && Boolean((children.props as { disabled?: boolean }).disabled);
   return (
     <BaseTooltip.Root>
       <BaseTooltip.Trigger
         delay={HOVER_DELAY_MS}
-        className={`inline-flex ${className}`}
+        className={`${inline ? 'inline' : 'inline-flex'} ${className}`}
         style={style}
         render={<span tabIndex={disabledChild ? 0 : undefined} role={disabledChild ? 'group' : undefined} aria-label={disabledChild ? text : undefined} />}
       >

@@ -17,3 +17,4 @@ Storybook title: `Primitives/Tabs`. Source: `src/components/primitives/Tabs.tsx`
 
 - `src/components/settings/Settings.tsx`
 - `src/components/storybible/Guide.tsx`
+- `src/components/teleprompter/ReaderRail.tsx`

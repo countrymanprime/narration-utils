@@ -9,13 +9,17 @@ const KNOWN = ['Character', 'Place', 'Organization', 'Lore', 'Item', 'Event', 'N
 const AWKWARD = ['__proto__', 'constructor', 'toString', 'hasOwnProperty', 'character', 'CHARACTER', ' Character', 'Needs Review', 'Draft', ''];
 
 describe('highlightKind properties', () => {
-  it('answers a highlight kind for any string, and never the Teleprompter cursor', () => {
+  it('answers a highlight kind for any string, and never the Teleprompter cursor or a read-aloud flag', () => {
     fc.assert(
-      fc.property(fc.oneof(fc.string({ unit: 'binary' }), fc.constantFrom(...AWKWARD, ...KNOWN, 'Location', 'Cursor')), (category) => {
-        const kind = highlightKind(category);
-        expect(KINDS).toContain(kind);
-        expect(kind).not.toBe('Cursor');
-      }),
+      fc.property(
+        fc.oneof(fc.string({ unit: 'binary' }), fc.constantFrom(...AWKWARD, ...KNOWN, 'Location', 'Cursor', 'Misread', 'Extra', 'Skipped', 'Restart')),
+        (category) => {
+          const kind = highlightKind(category);
+          expect(KINDS).toContain(kind);
+          expect(kind).not.toBe('Cursor');
+          expect(['Misread', 'Extra', 'Skipped', 'Restart']).not.toContain(kind);
+        },
+      ),
     );
   });
 
