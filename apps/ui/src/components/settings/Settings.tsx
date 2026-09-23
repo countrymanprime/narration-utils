@@ -26,6 +26,7 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'] },
   { key: 'Daw', label: 'DAW Integration', scopes: ['global', 'project'] },
   { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global', 'project'] },
+  { key: 'Teleprompter', label: 'Teleprompter', tool: 'Teleprompter', scopes: ['global'] },
   { key: 'LocalAssets', label: 'Local assets', scopes: ['global'] },
   { key: 'ProjectData', label: 'Project data', scopes: ['project'] },
   { key: 'About', label: 'About & updates', tool: 'Updates', scopes: ['global'] },

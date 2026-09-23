@@ -318,6 +318,12 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'settings', state: 'global-daw', description: 'Settings, Global scope / DAW Integration category', ...REFLOW },
   { page: 'settings', state: 'global-manuscript', description: 'Settings, Global scope / Manuscript category (note color picker)', ...REFLOW },
   { page: 'settings', state: 'global-tts', description: 'Settings, Global scope / TTS category', ...REFLOW },
+  {
+    page: 'settings',
+    state: 'global-teleprompter',
+    description: 'Settings, Global scope / Teleprompter category (microphone, live engine and model choice)',
+    ...REFLOW,
+  },
   { page: 'settings', state: 'global-about', description: 'Settings, Global scope / About and updates category (the version, nothing checked yet)', ...REFLOW },
   {
     page: 'settings',

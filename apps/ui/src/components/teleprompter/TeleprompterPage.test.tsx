@@ -165,6 +165,23 @@ describe('TeleprompterPage', () => {
     expect(teleprompterStart).toHaveBeenCalledWith({ chapter: 'chapter-1', device: DEVICE_NAME, model: 'tiny' });
   });
 
+  // Phase 3 ("Teleprompter settings section"): the page reads the Settings section's default model on load, so a
+  // session starts with whichever model the narrator set in Settings rather than always Tiny.
+  it('reads the default model from the Teleprompter settings section', async () => {
+    const user = userEvent.setup();
+    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
+    const api = createMockApi({ teleprompterStart });
+    await api.saveSettings('Teleprompter', 'global', { model: 'small' });
+
+    renderPage({}, {}, api);
+
+    const small = await screen.findByRole('button', { name: 'Small' });
+    await waitFor(() => expect(small.getAttribute('aria-pressed')).toBe('true'));
+
+    await startReading(user);
+    expect(teleprompterStart).toHaveBeenCalledWith({ chapter: 'chapter-1', device: DEVICE_NAME, model: 'small' });
+  });
+
   it('follows the reading word by word', async () => {
     const user = userEvent.setup();
     const { emit, setState } = renderPage({ teleprompterStart: async () => ({ status: 'started' }) });

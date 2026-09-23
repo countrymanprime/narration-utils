@@ -39,6 +39,7 @@ const MODELS = [
 const LEGACY_DEVICE_KEY = 'narration.teleprompter.device';
 const SETTINGS_TOOL = 'Teleprompter';
 const INPUT_DEVICE_KEY = 'input_device';
+const MODEL_KEY = 'model';
 const ACTIVE_PHASES: TeleprompterPhase[] = ['starting', 'running', 'stopping'];
 const IDLE_STATE: TeleprompterState = { phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null };
 
@@ -152,25 +153,31 @@ export function TeleprompterPage() {
     loadDevices();
   }, [loadDevices]);
 
-  // Loads the persisted device once (global settings, D-"Where the device, engine and model choices are stored"), and
+  // Loads the persisted device once (global settings, "Where the device, engine and model choices are stored"), and
   // migrates the pre-Phase-2 browser-storage value into it exactly once: only when the settings value has never been
   // set, so a narrator who has already picked a device from the new picker is never overwritten by a stale browser value.
+  // Also reads the Teleprompter settings section's default model (Phase 3) so a session starts with whichever model
+  // the narrator set in Settings, without forcing a per-session choice here.
   useEffect(() => {
     let live = true;
     void api
       .settingsForScope('global')
       .then((settings) => {
         if (!live) return;
-        const field = settings[SETTINGS_TOOL]?.find((item) => item.key === INPUT_DEVICE_KEY);
-        if (field?.isSet) {
-          setDevice(field.value);
-          return;
+        const fields = settings[SETTINGS_TOOL] ?? [];
+        const deviceField = fields.find((item) => item.key === INPUT_DEVICE_KEY);
+        if (deviceField?.isSet) {
+          setDevice(deviceField.value);
+        } else {
+          const legacy = readLegacyDevice();
+          if (legacy) {
+            setDevice(legacy);
+            clearLegacyDevice();
+            void api.saveSettings(SETTINGS_TOOL, 'global', { [INPUT_DEVICE_KEY]: legacy }).catch(() => {});
+          }
         }
-        const legacy = readLegacyDevice();
-        if (!legacy) return;
-        setDevice(legacy);
-        clearLegacyDevice();
-        void api.saveSettings(SETTINGS_TOOL, 'global', { [INPUT_DEVICE_KEY]: legacy }).catch(() => {});
+        const modelField = fields.find((item) => item.key === MODEL_KEY);
+        if (modelField?.effectiveValue) setModel(modelField.effectiveValue);
       })
       .catch(() => {});
     return () => {
