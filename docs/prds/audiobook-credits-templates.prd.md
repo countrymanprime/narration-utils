@@ -126,7 +126,7 @@ We believe templated credits filled from project data, previewed as they will be
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Templates, tokens and preview | Renderer, template store, project values, Settings Credits category, preview, ADR | pending | - | C7, C12 | - |
 | 2 | Estimate | Credits stat, seconds formatting, tests | complete | - | 1 | - |
-| 3 | Manuscript entries | Read-only credits before/after chapters | pending | 4 | 1; reader PRD | - |
+| 3 | Manuscript entries | Read-only credits before/after chapters | complete | 4 | 1; reader PRD | - |
 | 4 | Teleprompter | Credits selectable, sidecar spans, Go contract | pending | 3 | 1; teleprompter PRDs | - |
 | 5 | Extras | Optional segments, chapter announcements, room tone, retail sample marker | pending | - | 1-4 | - |
 
@@ -161,6 +161,8 @@ Cross-cutting: `hostAPIVersion` re-checked at merge; ADR numbering re-checked; `
 | Missing tokens | Warn, block only at read time (proposed) | Block saving | Editing must stay possible |
 | Credits time model (Phase 2) | Reuse `WORDS_PER_FINISHED_HOUR` (155 wpm); a separate "Credits" stat; room tone defaults to 0 with no Settings field yet | A second 155/60 constant; folding into the narration total; a WPM setting now | Avoids the constants-disagree risk named in Technical Risks; keeps the narration total stable per its own Success Metric; room tone Settings UI is Phase 5 scope |
 | Which template the estimate times (Phase 2, no per-project selection yet) | The first `opening`- and first `closing`-kind template in the library, by list order (ADR 0093, Proposed) | Sum every template of each kind; show no Credits stat until selection exists | Matches the PRD's own "pick a standard template" user flow closely enough to ship Phase 2 now; documented as provisional pending real per-project template selection |
+| Which template the Manuscript pseudo-entries render (Phase 3) | Same convention as Phase 2 (ADR 0093): the first `opening`- and first `closing`-kind template in the library | A new per-project "which template plays here" selection now | ADR 0093 named this exact gap and recommended closing it "most naturally alongside Phase 3's Manuscript entries"; a real per-project selection is still future work (ADR 0093's own accepted consequence), not re-litigated as a new Proposed ADR here |
+| Where credits pseudo-entries render (Phase 3) | Inline in the Manuscript reader's own chapter list (`Manuscript.tsx`), before the first and after the last chapter; excluded from `ChapterNav`'s list and search by construction (never added to the `chapters` array, no `manuscript.json` entry) | A separate page or panel; adding them to `ChapterNav`'s own chapter array with a filter | Matches "using the existing reader components, not a new page" and the Success Metric "not counted twice"; exclusion-by-construction cannot be forgotten the way a filter could |
 
 ## Research Summary
 

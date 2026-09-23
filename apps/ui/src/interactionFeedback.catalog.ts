@@ -140,6 +140,39 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/manuscript/Manuscript.tsx::noteDelete#1': row('click', 'file-io', 'none', 'none', 'toast', 'toast', 'na', 'ok', 'A small file write.'),
   'src/components/manuscript/Manuscript.tsx::guideCreate#1': row('click', 'python', 'pending', 'pending', 'ui', 'toast', 'no', 'ok', '"Add to Story Bible" shows the button busy while the entry is created (a Python process, about 0.6 s), ignores a second press and shows a failure (phase 3).'),
   'src/components/manuscript/Manuscript.tsx::readerBookmarkDelete#2': row('click', 'file-io', 'none', 'none', 'ui', 'toast', 'na', 'ok', 'A small file write.'),
+  'src/components/manuscript/Manuscript.tsx::creditsTemplates#1': row(
+    'mount',
+    'file-io',
+    'na',
+    'na',
+    'ui',
+    'silent',
+    'na',
+    'exempt',
+    'Loads the credits template library behind the Phase 3 Opening/Closing credits pseudo-entries (audiobook-credits-templates.prd.md); a failed load simply renders no credits entries rather than a toast over the manuscript itself, which already has its own load-error state for the chapters it cannot do without.',
+  ),
+  'src/components/manuscript/Manuscript.tsx::creditsPreview#1': row(
+    'effect',
+    'instant',
+    'na',
+    'na',
+    'ui',
+    'inline',
+    'na',
+    'exempt',
+    'Renders the first opening-kind template (ADR 0093\'s convention) with the current project values for the Opening credits entry; a failed render leaves that entry showing "Nothing to preview yet." (same fallback as CreditsPanel.tsx) rather than a toast.',
+  ),
+  'src/components/manuscript/Manuscript.tsx::creditsPreview#2': row(
+    'effect',
+    'instant',
+    'na',
+    'na',
+    'ui',
+    'inline',
+    'na',
+    'exempt',
+    'Renders the first closing-kind template (ADR 0093\'s convention) with the current project values for the Closing credits entry; a failed render leaves that entry showing "Nothing to preview yet." rather than a toast.',
+  ),
 
   // Project picker: every action runs through runAction, which sets busy, catches and shows the reason.
   'src/components/project/ProjectPicker.tsx::projectRecents#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'exempt', 'An unreadable list shows as an empty one with the picker still usable.'),
@@ -287,6 +320,9 @@ export const SILENT_CATCHES: Record<string, string> = {
   'src/components/home/Home.tsx#1': 'Only decides whether the "entries need review" nudge shows; without it the nudge is absent.',
   'src/components/home/Home.tsx#2':
     'Only pre-fills the "Build the Story Bible after import" checkbox from Settings; it keeps its on-by-default (D8) local state without it, and the narrator can still change it per import.',
+  'src/components/manuscript/Manuscript.tsx#1':
+    'Renders the Opening credits pseudo-entry preview; a failed render just leaves that entry showing "Nothing to preview yet." rather than a toast over the manuscript itself.',
+  'src/components/manuscript/Manuscript.tsx#2': 'Renders the Closing credits pseudo-entry preview; same fallback as the opening one above.',
   'src/components/proofing/Transcript.tsx#1': 'Reads the last model and chunk choice; the defaults stay usable and Settings reports a real error.',
   'src/components/proofing/Transcript.tsx#2': 'Only offers to review the last run; without it the offer is absent.',
   'src/components/teleprompter/TeleprompterPage.tsx#1':

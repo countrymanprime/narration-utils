@@ -413,4 +413,53 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       expect(document.querySelector('[data-chapter-id="contents"]')).toBeNull();
     });
   });
+
+  describe('credits pseudo-entries (PRD audiobook-credits-templates.prd.md, Phase 3)', () => {
+    it('shows an Opening credits entry before the first chapter and a Closing credits entry after the last, both collapsed by default', async () => {
+      renderManuscript();
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 12 — Alice’s Evidence' }));
+
+      const opening = screen.getByRole('heading', { name: 'Opening credits' }).closest('[data-credits-entry]')!;
+      const closing = screen.getByRole('heading', { name: 'Closing credits' }).closest('[data-credits-entry]')!;
+      const reader = document.querySelector('.reader-chapters')!;
+      const order = [...reader.children].map((el) => el.getAttribute('data-credits-entry') || el.getAttribute('data-chapter'));
+      expect(order[0]).toBe('opening');
+      expect(order.at(-1)).toBe('closing');
+
+      // Collapsed by default: no rendered preview text or unresolved-token count is shown yet.
+      expect(within(opening as HTMLElement).queryByText(/unresolved token/)).toBeNull();
+      expect(within(closing as HTMLElement).queryByText(/unresolved token/)).toBeNull();
+    });
+
+    it('expanding the Opening credits entry shows the rendered preview with an unresolved-token chip, never silent empty text (C6)', async () => {
+      renderManuscript();
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+
+      fireEvent.click(screen.getByRole('button', { name: /Opening credits/ }));
+      // The mock's default project has no Title/Author/Narrator value set, so the shipped opening template's
+      // tokens are all unresolved - each renders as its own bracketed chip rather than empty text.
+      expect(await screen.findByText('[Title]')).toBeTruthy();
+      expect(screen.getByText('[Author]')).toBeTruthy();
+      expect(screen.getByText('[Narrator]')).toBeTruthy();
+      expect(screen.getByText(/3 unresolved tokens: Title, Author, Narrator/)).toBeTruthy();
+    });
+
+    it('a credits entry is not a chapter: it is absent from Chapters & Search and never counted in the chapter list', async () => {
+      renderManuscript();
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      fireEvent.click(screen.getByRole('button', { name: /Chapters & Search/ }));
+      const chaptersPanel = await screen.findByText('Chapters');
+      const nav = chaptersPanel.closest('div')!.parentElement!;
+      expect(within(nav as HTMLElement).queryByText('Opening credits')).toBeNull();
+      expect(within(nav as HTMLElement).queryByText('Closing credits')).toBeNull();
+    });
+
+    it('renders no credits entries when the template library has no opening or closing template', async () => {
+      renderManuscript({ creditsTemplates: async () => [] });
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      expect(screen.queryByRole('heading', { name: 'Opening credits' })).toBeNull();
+      expect(screen.queryByRole('heading', { name: 'Closing credits' })).toBeNull();
+    });
+  });
 });

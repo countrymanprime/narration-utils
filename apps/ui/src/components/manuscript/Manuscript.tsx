@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faFont, faList } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
-import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderState, SearchHit } from '../../types';
+import type { CreditsRenderResult, CreditTemplate, GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderState, SearchHit } from '../../types';
 import { categoryCssName, chapterLineNumbers, chapterTextMatches, isListableChapter, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
@@ -17,6 +17,7 @@ import { ToggleGroup } from '../primitives/ToggleGroup';
 import { SlideOver } from '../primitives/SlideOver';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { ChapterNav } from './ChapterNav';
+import { CreditsEntry } from './CreditsEntry';
 import { SearchBar } from './SearchBar';
 import { ParagraphView } from './ParagraphView';
 import { SelectionMenu } from './SelectionMenu';
@@ -76,6 +77,14 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   // debouncedQuery. A ref lets the effect stay keyed on debouncedQuery alone.
   const lastFetchedQueryRef = useRef('');
   const debouncedQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
+  // Credits pseudo-entries (PRD audiobook-credits-templates.prd.md, Phase 3): read-only, never chapters, so they
+  // live entirely in local state - no readerState field, no manuscript.json entry, nothing ChapterNav or search
+  // iterates over. Per ADR 0093's convention (the Home estimate's own reading default until a project can choose
+  // its own opening/closing template), this uses the first opening-kind and first closing-kind template the
+  // library returns, rendered with the current project's values.
+  const [creditsTemplates, setCreditsTemplates] = useState<CreditTemplate[]>([]);
+  const [creditsPreviews, setCreditsPreviews] = useState<{ opening?: CreditsRenderResult; closing?: CreditsRenderResult }>({});
+  const [creditsExpanded, setCreditsExpanded] = useState<{ opening: boolean; closing: boolean }>({ opening: false, closing: false });
   const { selection, clear: clearSelection } = useTextSelection(readerRef);
   // Reference material (Contents, Characters, ...) stays in manuscript.json and the chapter list,
   // but is never a page the narrator flips through - see isListableChapter and the reader search and
@@ -87,6 +96,8 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   // True once there is a query the panel has not shown results for yet - the debounce wait, or
   // (briefly) the request itself - so "No matches" never flashes before a settled answer exists (R1).
   const searchPending = Boolean(searchQuery.trim()) && searchQuery !== lastFetchedQuery;
+  const openingTemplate = creditsTemplates.find((template) => template.kind === 'opening');
+  const closingTemplate = creditsTemplates.find((template) => template.kind === 'closing');
 
   useEffect(() => {
     const element = bandRef.current;
@@ -161,6 +172,35 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
       }
     })();
   }, [api, loadAttempt]);
+  // Credits templates (Phase 3): a secondary read, like AudiobookEstimatePanel's own credits stat - a failure here
+  // should not block the manuscript itself, so it is swallowed and simply leaves no credits entries rendered.
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const templates = await api.creditsTemplates();
+        if (active) setCreditsTemplates(templates);
+      } catch {
+        if (active) setCreditsTemplates([]);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [api, loadAttempt]);
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const [opening, closing] = await Promise.all([
+        openingTemplate ? api.creditsPreview(openingTemplate.body).catch(() => undefined) : Promise.resolve(undefined),
+        closingTemplate ? api.creditsPreview(closingTemplate.body).catch(() => undefined) : Promise.resolve(undefined),
+      ]);
+      if (active) setCreditsPreviews({ opening, closing });
+    })();
+    return () => {
+      active = false;
+    };
+  }, [api, openingTemplate, closingTemplate]);
   useEffect(() => {
     for (const chapterId of readerState.expandedChapters || []) {
       if (requestedChapters.current.has(chapterId)) continue;
@@ -412,6 +452,14 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
         </div>
       </div>
       <div ref={readerRef} className="reader-chapters pt-3">
+        {openingTemplate && (
+          <CreditsEntry
+            kind="opening"
+            preview={creditsPreviews.opening}
+            expanded={creditsExpanded.opening}
+            onToggle={() => setCreditsExpanded((current) => ({ ...current, opening: !current.opening }))}
+          />
+        )}
         {recordedChapters.map((chapter) => {
           const expanded = (readerState.expandedChapters || []).includes(chapter.id);
           const chapterBookmark = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapterId === chapter.id);
@@ -487,6 +535,14 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
             </article>
           );
         })}
+        {closingTemplate && (
+          <CreditsEntry
+            kind="closing"
+            preview={creditsPreviews.closing}
+            expanded={creditsExpanded.closing}
+            onToggle={() => setCreditsExpanded((current) => ({ ...current, closing: !current.closing }))}
+          />
+        )}
       </div>
       {selection && !pendingNote && (
         <SelectionMenu

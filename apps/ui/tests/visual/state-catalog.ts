@@ -117,6 +117,12 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'manuscript', state: 'chapter-bookmarked', description: 'Manuscript, a chapter bookmarked (blue bookmark icon)' },
   { page: 'manuscript', state: 'go-to-line-highlight', description: 'Manuscript, arrived via Story Bible "Go to line" with the target line highlighted' },
   { page: 'manuscript', state: 'reader-dark', description: 'Manuscript, reader in the Dark theme (readable active controls, opaque sticky header)' },
+  {
+    page: 'manuscript',
+    state: 'credits-entries',
+    description:
+      'Manuscript, the Opening credits pseudo-entry expanded before Chapter 1 with an unresolved-token chip (audiobook-credits-templates.prd.md Phase 3)',
+  },
 
   {
     page: 'manuscript',
