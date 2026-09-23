@@ -499,6 +499,18 @@ const bool = (key: string, label: string, value: 'true' | 'false'): ScopedSettin
   effectiveValue: value,
   effectiveSource: 'repo default',
 });
+// A delivery limit as the host sends it with nothing set: no limit ships by default (ADR 0025), so every one is empty.
+const deliveryLimit = (key: string, label: string, min: number, unit: string): ScopedSettingField => ({
+  key,
+  label,
+  kind: 'number',
+  choices: [],
+  value: '',
+  isSet: false,
+  effectiveValue: '',
+  effectiveSource: 'hardcoded',
+  number: { min, max: 0, step: 0.1, unit },
+});
 export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
   General: [
     choice('log_verbosity', 'Log verbosity', ['quiet', 'normal', 'verbose'], 'normal'),
@@ -629,6 +641,17 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
       effectiveValue: 'false',
       effectiveSource: 'repo default',
     },
+  ],
+  // The narrator's own delivery limits (docs/prds/diagnostics-delivery-and-cleanup-tools.prd.md Phase 2), mirroring the host's
+  // fieldSchemas and numberSpecs.
+  Delivery: [
+    deliveryLimit('integrated_lufs_min', 'Integrated loudness, lowest', -70, 'LUFS'),
+    deliveryLimit('integrated_lufs_max', 'Integrated loudness, highest', -70, 'LUFS'),
+    deliveryLimit('rms_dbfs_min', 'RMS level, lowest', -100, 'dBFS'),
+    deliveryLimit('rms_dbfs_max', 'RMS level, highest', -100, 'dBFS'),
+    deliveryLimit('sample_peak_dbfs_max', 'Sample peak, highest', -60, 'dBFS'),
+    deliveryLimit('true_peak_dbtp_max', 'True peak, highest', -60, 'dBTP'),
+    deliveryLimit('noise_floor_dbfs_max', 'Noise floor, highest', -120, 'dBFS'),
   ],
 });
 export const WIRE_TRACKS_PROJECT: TracksProject = {

@@ -24,8 +24,20 @@ type Profile struct {
 	Name           string
 	IntegratedLUFS Limit
 	RMSdBFS        Limit
+	SamplePeakdBFS Limit
 	TruePeakdBTP   Limit
 	NoiseFloordBFS Limit
+}
+
+// HasLimits reports whether any metric is checked. A profile built from empty
+// settings has none, so Evaluate raises nothing and a page can say "no limits set".
+func (p Profile) HasLimits() bool {
+	for _, limit := range []Limit{p.IntegratedLUFS, p.RMSdBFS, p.SamplePeakdBFS, p.TruePeakdBTP, p.NoiseFloordBFS} {
+		if limit.set() {
+			return true
+		}
+	}
+	return false
 }
 
 // metricCheck pairs a report value with the profile limit that governs it.
@@ -43,6 +55,7 @@ func Evaluate(report Report, profile Profile) []findings.Finding {
 	checks := []metricCheck{
 		{"integrated_lufs", report.IntegratedLUFS, profile.IntegratedLUFS},
 		{"rms_dbfs", report.RMSdBFS, profile.RMSdBFS},
+		{"sample_peak_dbfs", report.SamplePeakdBFS, profile.SamplePeakdBFS},
 		{"true_peak_dbtp", report.TruePeakdBTP, profile.TruePeakdBTP},
 		{"noise_floor_dbfs", report.NoiseFloordBFS, profile.NoiseFloordBFS},
 	}

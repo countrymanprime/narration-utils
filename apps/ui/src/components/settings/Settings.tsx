@@ -26,6 +26,8 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'Manuscript', label: 'Manuscript', tool: 'Manuscript', scopes: ['global', 'project'] },
   { key: 'TranscriptCompare', label: 'Proofing', tool: 'TranscriptCompare', scopes: ['global', 'project'] },
   { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'] },
+  // The narrator's own measurement limits (docs/prds/diagnostics-delivery-and-cleanup-tools.prd.md Phase 2); none ship.
+  { key: 'Delivery', label: 'Delivery', tool: 'Delivery', scopes: ['global', 'project'] },
   { key: 'Daw', label: 'DAW Integration', tool: 'DAW', scopes: ['global', 'project'] },
   { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global', 'project'] },
   { key: 'Teleprompter', label: 'Teleprompter', tool: 'Teleprompter', scopes: ['global'] },
@@ -46,9 +48,28 @@ const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
 // form failed every save in a scope that had any unset field (a project has none set until one is saved).
 // A field with no value of its own shows the value it inherits, so putting it back to that value is no change either: sending
 // it would pin the inherited value as an override (a two-state switch makes that easy to do by accident).
-function changedValues(fields: readonly ScopedSettingField[], values: Record<string, string>): Record<string, string> {
+// An emptied number is "not set", which the host takes as null (a number is never saved as "").
+function changedValues(fields: readonly ScopedSettingField[], values: Record<string, string>): Record<string, string | null> {
   const isChanged = (field: ScopedSettingField, next: string) => next !== field.value && !(field.value === '' && next === field.effectiveValue);
-  return Object.fromEntries(fields.filter((field) => isChanged(field, values[field.key] ?? field.value)).map((field) => [field.key, values[field.key]]));
+  const saved = (field: ScopedSettingField, next: string) => (field.kind === 'number' && next === '' ? null : next);
+  return Object.fromEntries(
+    fields.filter((field) => isChanged(field, values[field.key] ?? field.value)).map((field) => [field.key, saved(field, values[field.key] ?? '')]),
+  );
+}
+
+// What the Delivery limits amount to, as saved: none ship (ADR 0025), so until the narrator sets one every measurement is
+// reported without being checked, and the page says so rather than implying a pass.
+function DeliveryLimitsSummary({ fields, scope }: { fields: readonly ScopedSettingField[]; scope: Scope }) {
+  const set = fields.filter((field) => field.effectiveValue !== '').length;
+  return (
+    <div className="mb-4 space-y-1 rounded-md p-3 text-sm" style={{ background: 'var(--surface-2)' }}>
+      <div className="font-medium">{set === 0 ? 'No limits set' : `${set} of ${fields.length} limits set`}</div>
+      <div style={{ color: 'var(--text-muted)' }}>
+        These are your own limits: no distributor&apos;s numbers are built in. A measurement with no limit is reported without being checked; one outside its
+        limit is listed for you to review. {scope === 'project' ? 'A limit left blank here uses the Global one.' : ''}
+      </div>
+    </div>
+  );
 }
 
 export function Settings({
@@ -411,6 +432,7 @@ export function Settings({
                       )}
                     </div>
                   )}
+                  {category === 'Delivery' && <DeliveryLimitsSummary fields={fields} scope={scope} />}
                   {category === 'Piper' && (
                     <div className="mb-4 space-y-3 rounded-md p-3 text-sm" style={{ background: 'var(--surface-2)' }}>
                       <div>

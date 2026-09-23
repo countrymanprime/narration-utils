@@ -21,6 +21,120 @@
       "value": ""
     }
   ],
+  "Delivery": [
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "integrated_lufs_min",
+      "kind": "number",
+      "label": "Integrated loudness, lowest",
+      "number": {
+        "max": 0,
+        "min": -70,
+        "step": 0.1,
+        "unit": "LUFS"
+      },
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "integrated_lufs_max",
+      "kind": "number",
+      "label": "Integrated loudness, highest",
+      "number": {
+        "max": 0,
+        "min": -70,
+        "step": 0.1,
+        "unit": "LUFS"
+      },
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "rms_dbfs_min",
+      "kind": "number",
+      "label": "RMS level, lowest",
+      "number": {
+        "max": 0,
+        "min": -100,
+        "step": 0.1,
+        "unit": "dBFS"
+      },
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "rms_dbfs_max",
+      "kind": "number",
+      "label": "RMS level, highest",
+      "number": {
+        "max": 0,
+        "min": -100,
+        "step": 0.1,
+        "unit": "dBFS"
+      },
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "sample_peak_dbfs_max",
+      "kind": "number",
+      "label": "Sample peak, highest",
+      "number": {
+        "max": 0,
+        "min": -60,
+        "step": 0.1,
+        "unit": "dBFS"
+      },
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "true_peak_dbtp_max",
+      "kind": "number",
+      "label": "True peak, highest",
+      "number": {
+        "max": 0,
+        "min": -60,
+        "step": 0.1,
+        "unit": "dBTP"
+      },
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "noise_floor_dbfs_max",
+      "kind": "number",
+      "label": "Noise floor, highest",
+      "number": {
+        "max": 0,
+        "min": -120,
+        "step": 0.1,
+        "unit": "dBFS"
+      },
+      "value": ""
+    }
+  ],
   "General": [
     {
       "choices": [

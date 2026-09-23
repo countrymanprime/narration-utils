@@ -36,7 +36,7 @@ func TestValidateSettingValueAcceptsWhatEachKindStores(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateSettingValue(tc.schema, tc.value)
+			err := validateSettingValue("General", tc.schema, tc.value)
 			if tc.wantErr == "" {
 				if err != nil {
 					t.Fatalf("validateSettingValue(%q) = %v, want no error", tc.value, err)
@@ -52,7 +52,7 @@ func TestValidateSettingValueAcceptsWhatEachKindStores(t *testing.T) {
 
 // A kind the host does not know must fail closed: an unchecked value would be written to the settings file as it came.
 func TestValidateSettingValueRejectsAnUnknownKind(t *testing.T) {
-	err := validateSettingValue(fieldSchema{key: "x", label: "X", kind: "number"}, "3")
+	err := validateSettingValue("General", fieldSchema{key: "x", label: "X", kind: "slider"}, "3")
 	if err == nil || !strings.Contains(err.Error(), "unsupported setting kind") {
 		t.Fatalf("got %v, want an unsupported setting kind error", err)
 	}
@@ -60,7 +60,7 @@ func TestValidateSettingValueRejectsAnUnknownKind(t *testing.T) {
 
 // The wire kinds the UI is written against; changing one is a contract change (hostAPIVersion).
 func TestFieldSchemasUseOnlyKindsTheUIKnows(t *testing.T) {
-	known := map[string]bool{"choice": true, "color": true, "text": true, "bool": true}
+	known := map[string]bool{"choice": true, "color": true, "text": true, "bool": true, "number": true}
 	for tool, schemas := range fieldSchemas {
 		for _, schema := range schemas {
 			if !known[schema.kind] {
