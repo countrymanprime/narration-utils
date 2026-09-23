@@ -1,0 +1,5 @@
+{
+  "message": "This finding's item is no longer in the REAPER project, so no marker was added. Run the check again to find it where it is now.",
+  "outcome": "refused",
+  "reason": "stale"
+}

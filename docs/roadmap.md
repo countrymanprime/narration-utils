@@ -19,6 +19,8 @@ The suite helps a narrator find and review issues faster. It may analyze local m
 
 ### 1. Dashboard foundation
 
+**Status: built; checks in REAPER pending with the owner.** The [Review page](guides/using-the-app/review.md) lists the findings of Transcript Compare and the Story Bible, records decisions in the project sidecar, and goes to, loops and marks a finding in REAPER ([review dashboard PRD](prds/review-dashboard-and-findings-adoption.prd.md) Phases 1 to 8). The owner's checks in REAPER are in [the checklist](architecture/reaper-navigation.md#manual-verification-checklist).
+
 - Adapt Manuscript Guide and Transcript Compare outputs into structured findings.
 - Add a review page in the app with filters and review decisions; REAPER only carries out its navigate, loop and marker actions.
 - Store user decisions in a project sidecar; no analyzer may silently change audio.

@@ -11,6 +11,7 @@ import type {
   FindingTimeRange,
   FindingsPage,
   FindingsSummary,
+  FindingMarker,
   FindingNavigation,
   ReaperStatus,
 } from '../contracts/findings';
@@ -111,13 +112,21 @@ export const reaperStatusSchema = z.object({
   loopingFindingId: z.string().optional(),
 }) satisfies z.ZodType<ReaperStatus>;
 
+const navigationRefusals = ['standalone', 'not_running', 'no_item', 'no_source_time', 'stale', 'recording', 'script_outdated', 'failed'] as const;
+
 export const findingNavigationSchema = z.discriminatedUnion('outcome', [
   z.object({ outcome: z.literal('navigated'), projectTime: z.number() }),
   z.object({ outcome: z.literal('looping'), loopStart: z.number(), loopEnd: z.number() }),
   z.object({ outcome: z.literal('stopped'), restored: z.number(), kept: z.number() }),
   z.object({
     outcome: z.literal('refused'),
-    reason: z.enum(['standalone', 'not_running', 'no_item', 'no_source_time', 'stale', 'recording', 'script_outdated', 'failed']),
+    reason: z.enum(navigationRefusals),
     message: z.string(),
   }),
 ]) satisfies z.ZodType<FindingNavigation>;
+
+export const findingMarkerSchema = z.discriminatedUnion('outcome', [
+  z.object({ outcome: z.literal('added'), name: z.string(), sourceTime: z.number() }),
+  z.object({ outcome: z.literal('existing'), name: z.string(), sourceTime: z.number() }),
+  z.object({ outcome: z.literal('refused'), reason: z.enum([...navigationRefusals, 'not_accepted']), message: z.string() }),
+]) satisfies z.ZodType<FindingMarker>;

@@ -22,7 +22,7 @@ import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } fr
 import { settingsForScopeSchema } from './schemas/settings';
 import { takeReviewCreateTakeResultSchema, takeReviewFindingsSchema } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
-import { findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
+import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { chapterSuggestionSchema, chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
@@ -214,6 +214,10 @@ const GOLDEN: Record<string, z.ZodType> = {
   'findings-navigation-recording.json': findingNavigationSchema,
   'findings-navigation-no-item.json': findingNavigationSchema,
   'findings-navigation-not-running.json': findingNavigationSchema,
+  'findings-add-marker.json': findingMarkerSchema,
+  'findings-add-marker-existing.json': findingMarkerSchema,
+  'findings-add-marker-not-accepted.json': findingMarkerSchema,
+  'findings-add-marker-stale.json': findingMarkerSchema,
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -965,6 +969,23 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     }
   });
 
+  it('the approved marker answers, every outcome and refusal', async () => {
+    const api = createMockApi();
+    const { findings } = await api.findingsList({ includeNotInLatestRun: true });
+    const placed = findings.find((finding) => finding.source.item_guid && finding.time_range?.source_start !== undefined);
+    if (!placed) throw new Error('the mock findings lost the finding with an item');
+    const accept = { id: placed.id, evidenceVersion: placed.evidence_version ?? '', status: 'accepted', note: '' } as const;
+    const answers: Array<[string, unknown]> = [['not accepted', await api.findingsAddMarker(placed.id)]];
+    await api.findingsReview(accept);
+    answers.push(['added', await api.findingsAddMarker(placed.id)], ['existing', await api.findingsAddMarker(placed.id)]);
+    for (const reaper of ['standalone', 'not-running', 'stale', 'recording', 'outdated'] as const) {
+      const refusing = createMockApi({}, { reaper });
+      await refusing.findingsReview(accept);
+      answers.push([reaper, await refusing.findingsAddMarker(placed.id)]);
+    }
+    for (const [name, answer] of answers) expectMatches(findingMarkerSchema, answer, `mock add marker, ${name}`);
+  });
+
   it('the take-creation answer', async () => {
     const api = createMockApi();
     const result = await api.takeReviewCreateTake({
@@ -1121,6 +1142,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'findingsGoTo',
       'findingsLoop',
       'findingsStopLoop',
+      'findingsAddMarker',
       'teleprompterStart',
       'teleprompterState',
       'teleprompterDevices',

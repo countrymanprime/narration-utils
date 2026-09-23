@@ -411,5 +411,12 @@
     "viewport": "desktop",
     "docName": "review-reaper-not-connected",
     "caption": "Review - Go to and Loop off because REAPER is not answering"
+  },
+  {
+    "page": "review",
+    "state": "reaper-marker-confirm",
+    "viewport": "desktop",
+    "docName": "review-reaper-marker-confirm",
+    "caption": "Review - the confirm before an accepted finding gets its marker in REAPER"
   }
 ]

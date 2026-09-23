@@ -186,6 +186,18 @@ export type FindingNavigation =
   | { outcome: 'stopped'; restored: number; kept: number }
   | { outcome: 'refused'; reason: FindingNavigationRefusal; message: string };
 
+/** Why no approved marker was added: the navigation refusals, and a finding the narrator has not accepted. */
+export type FindingMarkerRefusal = FindingNavigationRefusal | 'not_accepted';
+
+/**
+ * What adding the approved marker did (review dashboard Phase 8, ADR 0123): `added` (REAPER added the take marker `name`, in
+ * one undo point), `existing` (the take already had a marker of the same kind within 0.15 s, named `name`; nothing changed)
+ * or `refused` (nothing in REAPER changed; `message` says why in the narrator's words). `sourceTime` is in the take's
+ * source seconds.
+ */
+export type FindingMarker =
+  { outcome: 'added' | 'existing'; name: string; sourceTime: number } | { outcome: 'refused'; reason: FindingMarkerRefusal; message: string };
+
 export interface FindingsApi {
   /** One page of the findings that match the query, filtered, sorted and paged by the host. */
   findingsList(query: FindingsQuery): Promise<FindingsPage>;
@@ -203,4 +215,6 @@ export interface FindingsApi {
   findingsLoop(id: string): Promise<FindingNavigation>;
   /** Stops the loop and puts back the time selection, loop points and repeat the narrator had. */
   findingsStopLoop(): Promise<FindingNavigation>;
+  /** Adds one take marker in REAPER at an accepted finding's spot, named like Transcript Compare's (ADR 0123). */
+  findingsAddMarker(id: string): Promise<FindingMarker>;
 }

@@ -306,6 +306,7 @@ describe('ReviewPage in REAPER', () => {
     expect(await inReaper().findByText(reason)).toBeTruthy();
     expect(button('Go to in REAPER').disabled).toBe(true);
     expect(button('Loop in REAPER').disabled).toBe(true);
+    expect(button('Add marker in REAPER').disabled).toBe(true);
     expect(goTo).not.toHaveBeenCalled();
   });
 
@@ -336,5 +337,68 @@ describe('ReviewPage in REAPER', () => {
     await openFinding(user, /pink eyes/);
     expect(await inReaper().findByText('Could not check whether REAPER is connected: host gone')).toBeTruthy();
     expect(button('Go to in REAPER').disabled).toBe(true);
+  });
+});
+
+// The approved marker (review dashboard Phase 8, ADR 0123): one take marker for an accepted finding, after a confirm.
+describe('ReviewPage adds an approved marker in REAPER', () => {
+  const inReaper = () => within(screen.getByRole('region', { name: 'In REAPER' }));
+  const addMarker = () => inReaper().getByRole('button', { name: 'Add marker in REAPER' }) as HTMLButtonElement;
+  const MARKER = "MISREAD: 'a White Rabbit with pink eyes' as 'a white rabbit with pale eyes'";
+
+  const acceptPinkEyes = async (user: ReturnType<typeof userEvent.setup>) => {
+    await openFinding(user, /pink eyes/);
+    await waitFor(() => expect(inReaper().getByRole('button', { name: 'Go to in REAPER' }).hasAttribute('disabled')).toBe(false));
+    expect(addMarker().disabled).toBe(true);
+    await user.click(screen.getByRole('button', { name: 'Accept' }));
+    await screen.findByText('Saved as accepted.');
+    await waitFor(() => expect(addMarker().disabled).toBe(false));
+  };
+
+  it('is off until the finding is accepted, asks first, then says what REAPER added', async () => {
+    const user = userEvent.setup();
+    const { api } = renderPage();
+    const add = vi.spyOn(api, 'findingsAddMarker');
+    await acceptPinkEyes(user);
+    await user.click(addMarker());
+    const dialog = await screen.findByRole('alertdialog', { name: 'Add a marker in REAPER' });
+    expect(dialog.textContent).toContain('one Undo in REAPER removes it');
+    expect(add).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Add marker' }));
+    expect(await inReaper().findByText(`Marker added in REAPER: ${MARKER}. One Undo in REAPER removes it.`)).toBeTruthy();
+    expect(add).toHaveBeenCalledWith('1a2b3c4d5e6f708192a3b4c5');
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+  });
+
+  it('adds nothing when the narrator cancels', async () => {
+    const user = userEvent.setup();
+    const { api } = renderPage();
+    const add = vi.spyOn(api, 'findingsAddMarker');
+    await acceptPinkEyes(user);
+    await user.click(addMarker());
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect(add).not.toHaveBeenCalled();
+  });
+
+  it('says so when the take already has the marker', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await acceptPinkEyes(user);
+    for (let press = 0; press < 2; press += 1) {
+      await user.click(addMarker());
+      await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Add marker' }));
+      await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    }
+    expect(await inReaper().findByText(`This take already has a marker here (${MARKER}), so none was added.`)).toBeTruthy();
+  });
+
+  it('shows a stale finding as an alert and adds nothing', async () => {
+    const user = userEvent.setup();
+    renderPage({ initial: { reaper: 'stale' } });
+    await acceptPinkEyes(user);
+    await user.click(addMarker());
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Add marker' }));
+    expect((await inReaper().findByRole('alert')).textContent).toContain('so no marker was added');
   });
 });

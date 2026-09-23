@@ -13,6 +13,10 @@
       "summary": "List and play the tracks of a project's REAPER file, with no running REAPER needed."
     },
     {
+      "title": "Review",
+      "summary": "One queue of the findings from Transcript Compare and the Story Bible, with decisions kept in the project and Go to, Loop and an approved marker in REAPER."
+    },
+    {
       "title": "Manuscript Teleprompter (first cut)",
       "summary": "Listen with a local Whisper model and highlight the word being read in a chosen chapter."
     }

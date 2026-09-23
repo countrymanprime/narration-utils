@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { createFindingsMock, REAPER_MESSAGES } from './findingsMock';
+import { approvedMarkerName, createFindingsMock, REAPER_MESSAGES } from './findingsMock';
 import { WIRE_FINDINGS } from './mockFixtures';
 import { FINDING_CATEGORIES } from './contracts/findings';
 
@@ -158,6 +158,62 @@ describe("the browser mock's REAPER follows the host's navigation rules", () => 
       await expect(api.findingsGoTo('1a2b3c4d5e6f708192a3b4c5')).resolves.toMatchObject({ outcome: 'refused', reason });
       await expect(api.findingsLoop('1a2b3c4d5e6f708192a3b4c5')).resolves.toMatchObject({ outcome: 'refused', reason });
       expect((await api.findingsReaperStatus()).loopingFindingId).toBeUndefined();
+    }
+  });
+});
+
+// The approved marker (review dashboard Phase 8): only an accepted finding gets one, in the host's order and words.
+describe("the browser mock's REAPER adds an approved marker as the host does", () => {
+  const golden = (file: string): { message?: string; name?: string } =>
+    JSON.parse(readFileSync(fileURLToPath(new URL(`../../../../tests/fixtures/contracts/${file}`, import.meta.url)), 'utf8'));
+  const accept = async (api: ReturnType<typeof createFindingsMock>, id: string) => {
+    const finding = await api.findingsGet(id);
+    await api.findingsReview({ id, evidenceVersion: finding.evidence_version ?? '', status: 'accepted', note: '' });
+  };
+
+  it('uses the words the host sends, as its golden payloads pin them', () => {
+    expect(REAPER_MESSAGES.notAccepted).toBe(golden('findings-add-marker-not-accepted.json').message);
+    expect(REAPER_MESSAGES.markerStale).toBe(golden('findings-add-marker-stale.json').message);
+  });
+
+  it('names the marker the way the host does', () => {
+    const [misread, skipped, extra, entity] = WIRE_FINDINGS;
+    expect(approvedMarkerName(misread)).toBe("MISREAD: 'a White Rabbit with pink eyes' as 'a white rabbit with pale eyes'");
+    expect(approvedMarkerName(skipped)).toBe("SKIPPED: 'Oh dear!'");
+    expect(approvedMarkerName(extra)).toBe("EXTRA: 'and then'");
+    expect(approvedMarkerName(entity)).toBe("ENTITY: 'White Rabbit'");
+    expect(approvedMarkerName({ ...misread, manuscript: { expected: 'one two three four five six seven eight nine' } })).toBe(
+      "MISREAD: 'one two three four five six seven eight ...'",
+    );
+  });
+
+  it('refuses a finding that is not accepted, then adds the marker once and says the second is already there', async () => {
+    const api = createFindingsMock(WIRE_FINDINGS);
+    await expect(api.findingsAddMarker('1a2b3c4d5e6f708192a3b4c5')).resolves.toMatchObject({ outcome: 'refused', reason: 'not_accepted' });
+    await accept(api, '1a2b3c4d5e6f708192a3b4c5');
+    await expect(api.findingsAddMarker('1a2b3c4d5e6f708192a3b4c5')).resolves.toEqual({
+      outcome: 'added',
+      name: "MISREAD: 'a White Rabbit with pink eyes' as 'a white rabbit with pale eyes'",
+      sourceTime: 12.4,
+    });
+    await expect(api.findingsAddMarker('1a2b3c4d5e6f708192a3b4c5')).resolves.toMatchObject({ outcome: 'existing' });
+  });
+
+  it('refuses an accepted finding with no item, and every REAPER mode that cannot add it', async () => {
+    const older = createFindingsMock(WIRE_FINDINGS);
+    await accept(older, '3c4d5e6f708192a3b4c5d6e7');
+    await expect(older.findingsAddMarker('3c4d5e6f708192a3b4c5d6e7')).resolves.toMatchObject({ outcome: 'refused', reason: 'no_item' });
+    const reasons = [
+      ['standalone', 'standalone'],
+      ['not-running', 'not_running'],
+      ['stale', 'stale'],
+      ['recording', 'recording'],
+      ['outdated', 'script_outdated'],
+    ] as const;
+    for (const [reaper, reason] of reasons) {
+      const api = createFindingsMock(WIRE_FINDINGS, { reaper });
+      await accept(api, '1a2b3c4d5e6f708192a3b4c5');
+      await expect(api.findingsAddMarker('1a2b3c4d5e6f708192a3b4c5')).resolves.toMatchObject({ outcome: 'refused', reason });
     }
   });
 });

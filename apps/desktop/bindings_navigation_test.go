@@ -27,6 +27,8 @@ type fakeNavigator struct {
 	navigate bridge.Navigated
 	loop     bridge.LoopStarted
 	stop     bridge.LoopStopped
+	marker   bridge.MarkerResult
+	markers  []bridge.Marker
 }
 
 func (f *fakeNavigator) record(request string, target bridge.Target) error {
@@ -47,6 +49,13 @@ func (f *fakeNavigator) Loop(_ context.Context, target bridge.Target) (bridge.Lo
 
 func (f *fakeNavigator) StopLoop(context.Context) (bridge.LoopStopped, error) {
 	return f.stop, f.record("stop", bridge.Target{})
+}
+
+func (f *fakeNavigator) AddMarker(_ context.Context, target bridge.Target, marker bridge.Marker) (bridge.MarkerResult, error) {
+	f.mu.Lock()
+	f.markers = append(f.markers, marker)
+	f.mu.Unlock()
+	return f.marker, f.record("marker", target)
 }
 
 func (f *fakeNavigator) sent() []string {

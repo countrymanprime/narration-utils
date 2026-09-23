@@ -49,7 +49,7 @@
   },
   {
     "name": "the duplicate marker window widens",
-    "file": "narration_compare.lua",
+    "file": "narration_bridge_core.lua",
     "find": "math.abs(marker_pos - srcpos) <= 0.15",
     "replace": "math.abs(marker_pos - srcpos) <= 5"
   },
@@ -230,8 +230,8 @@
   {
     "name": "navigate_item goes to a spot the item no longer covers",
     "file": "narration_navigation.lua",
-    "find": "if target < first - EDGE_TOLERANCE or target > last + EDGE_TOLERANCE then",
-    "replace": "if false then"
+    "find": "    target = project_time(item, take, source_time)\n    if target < first - EDGE_TOLERANCE or target > last + EDGE_TOLERANCE then",
+    "replace": "    target = project_time(item, take, source_time)\n    if false then"
   },
   {
     "name": "a loop window outside the item is played anyway",
@@ -286,5 +286,29 @@
     "file": "narration_compare.lua",
     "find": "          entry.item_guid,\n",
     "replace": "          select(2, reaper.GetSetMediaItemInfo_String(entry.item, 'GUID', '', false)),\n"
+  },
+  {
+    "name": "the approved marker is added outside an undo block",
+    "file": "narration_navigation.lua",
+    "find": "  reaper.Undo_BeginBlock2(0)\n  reaper.SetTakeMarker(take, -1, name, source_time, color ~= '' and core.color(color) or 0)\n  reaper.Undo_EndBlock2(0, UNDO_ADD_MARKER, -1)",
+    "replace": "  reaper.SetTakeMarker(take, -1, name, source_time, color ~= '' and core.color(color) or 0)"
+  },
+  {
+    "name": "the approved marker doubles a marker the take already has",
+    "file": "narration_navigation.lua",
+    "find": "local existing_name = core.existing_take_marker(take, core.marker_kind(name), source_time)",
+    "replace": "local existing_name = nil"
+  },
+  {
+    "name": "the approved marker is added while REAPER is recording",
+    "file": "narration_navigation.lua",
+    "find": "'The marker has no name.')\n    return\n  end\n  if recording() then",
+    "replace": "'The marker has no name.')\n    return\n  end\n  if false then"
+  },
+  {
+    "name": "the approved marker is added at a spot the item no longer covers",
+    "file": "narration_navigation.lua",
+    "find": "  local target = project_time(item, take, source_time)\n  if target < first - EDGE_TOLERANCE",
+    "replace": "  local target = first\n  if target < first - EDGE_TOLERANCE"
   }
 ]

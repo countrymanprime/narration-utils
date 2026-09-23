@@ -813,6 +813,19 @@ export const STATE_CATALOG: StateEntry[] = [
       'Review, the app opened on its own rather than from REAPER - Go to and Loop disabled, and how to connect REAPER (reached via the ?mockReaper=standalone mock seam)',
     ...KEEPS_DESKTOP_SCROLL,
   },
+  // The approved marker (review-dashboard-and-findings-adoption.prd.md Phase 8): one take marker for an accepted finding, after a confirm
+  {
+    page: 'review',
+    state: 'reaper-marker-confirm',
+    description:
+      'Review, a transcript difference accepted and Add marker in REAPER pressed - the confirm dialog that says what REAPER will add and that one Undo removes it',
+  },
+  {
+    page: 'review',
+    state: 'reaper-marker-added',
+    description: 'Review, the approved marker confirmed - the take marker REAPER added is announced by name under the REAPER controls',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
 
   // Settings
   { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category', ...REFLOW },

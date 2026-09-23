@@ -199,6 +199,18 @@ async function pressInReaper(page: Page, name: string, answer: Locator): Promise
   await showReaperControls(page, answer);
 }
 
+// Accepts the open finding (only an accepted finding gets an approved marker, review dashboard Phase 8) and opens the
+// Add a marker in REAPER confirm.
+async function confirmApprovedMarker(page: Page): Promise<Locator> {
+  await openReaperControls(page);
+  await page.getByRole('button', { name: 'Accept', exact: true }).click();
+  await page.getByText('Saved as accepted.').waitFor();
+  await page.getByRole('region', { name: 'In REAPER' }).getByRole('button', { name: 'Add marker in REAPER' }).click();
+  const dialog = page.getByRole('alertdialog', { name: 'Add a marker in REAPER' });
+  await dialog.waitFor();
+  return dialog;
+}
+
 async function showReaperControls(page: Page, shown: Locator): Promise<void> {
   await shown.waitFor();
   await page.getByRole('region', { name: 'In REAPER' }).scrollIntoViewIfNeeded();
@@ -1354,6 +1366,15 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'reaper-standalone': async (page) => {
       await openReaperControls(page, 'standalone');
       await showReaperControls(page, page.getByText(/open this app from the Narration Utils action in REAPER/));
+    },
+    'reaper-marker-confirm': async (page) => {
+      await confirmApprovedMarker(page);
+    },
+    'reaper-marker-added': async (page) => {
+      const dialog = await confirmApprovedMarker(page);
+      await dialog.getByRole('button', { name: 'Add marker', exact: true }).click();
+      await dialog.waitFor({ state: 'detached' });
+      await showReaperControls(page, page.getByText(/^Marker added in REAPER: MISREAD:/));
     },
   },
   teleprompter: {

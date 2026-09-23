@@ -1,0 +1,5 @@
+{
+  "message": "Accept this finding first. Only a finding you accepted gets a marker in REAPER.",
+  "outcome": "refused",
+  "reason": "not_accepted"
+}

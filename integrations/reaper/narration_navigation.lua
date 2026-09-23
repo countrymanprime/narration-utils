@@ -1,19 +1,22 @@
 -- Going to and looping a finding over the bridge: navigate_item, loop_context, stop_loop and ping (review-dashboard
--- PRD Phase 6 and its Q6 answer; docs/architecture/reaper-navigation.md, ADR 0121). Loaded by narration_ui_bridge.lua,
--- which passes the shared helpers as the chunk argument.
+-- PRD Phase 6 and its Q6 answer; docs/architecture/reaper-navigation.md, ADR 0121), and add_finding_marker, the one
+-- approved marker for a finding (Phase 8, Q8, ADR 0123). Loaded by narration_ui_bridge.lua, which passes the shared
+-- helpers as the chunk argument.
 --
 -- A finding is found by its item GUID (and take GUID when it has one), and its time is a source time inside that
 -- take, so it follows the item when the narrator moves it. A GUID that no longer resolves, a take that is no longer on
 -- the item and a spot the item no longer covers are all reported as FINDING_STALE: nothing here ever falls back to a
 -- neighbouring item or to the project time the finding had when it was made.
 --
--- These commands change selection and transport state only (item selection, edit cursor, time selection, loop points,
+-- The first four change selection and transport state only (item selection, edit cursor, time selection, loop points,
 -- repeat, play), never the project's content, so they make no undo point: an undo point per click would put "go to
 -- finding" between the narrator and their last real edit. A loop is undone by stop_loop instead, which puts back the
--- time selection, loop points and repeat the narrator had before the first loop_context.
+-- time selection, loop points and repeat the narrator had before the first loop_context. add_finding_marker is the one
+-- that edits the project: it adds one take marker inside one undo block, so one Undo in REAPER takes it away.
 
 local core = ...
 local event = core.event
+local UNDO_ADD_MARKER = 'Narration Utils: add approved marker'
 
 -- Answered by ping, so the host can tell a script that knows these commands from an older one (which answers
 -- "Unsupported workspace command").
@@ -268,6 +271,56 @@ local function stop_loop(session_dir, state, run_id)
   event(session_dir, 'LOOP_STOPPED', run_id, restored, kept)
 end
 
+-- Adds one take marker for a finding the narrator accepted, at its source time on its take, so the marker follows the
+-- item. Found and refused like navigate_item (stale item, take or spot; recording). A marker of the same kind already
+-- within 0.15 s (core.existing_take_marker, the rule Transcript Compare's export uses) is answered `existing` and
+-- nothing changes, so sending this twice adds one marker. `color` is RRGGBB hex, empty for REAPER's default.
+local function add_finding_marker(session_dir, run_id, item_text, take_text, time_text, color, name)
+  if not reaper.APIExists('SetTakeMarker') then
+    event(session_dir, 'ERROR', run_id, 'This REAPER version cannot add take markers.')
+    return
+  end
+  local ok, source_time = number_field(time_text, true)
+  if not ok then
+    event(session_dir, 'ERROR', run_id, 'The finding has no usable time.')
+    return
+  end
+  if not name:match('%S') then
+    event(session_dir, 'ERROR', run_id, 'The marker has no name.')
+    return
+  end
+  if recording() then
+    event(session_dir, 'ERROR', run_id, 'REAPER is recording. Stop recording first.')
+    return
+  end
+  local item, take, stale_guid, reason = resolve(item_text, take_text)
+  if not item then
+    event(session_dir, 'FINDING_STALE', run_id, stale_guid, reason)
+    return
+  end
+  if not take then
+    event(session_dir, 'FINDING_STALE', run_id, item_text, 'take')
+    return
+  end
+  local first, last = bounds(item)
+  local target = project_time(item, take, source_time)
+  if target < first - EDGE_TOLERANCE or target > last + EDGE_TOLERANCE then
+    event(session_dir, 'FINDING_STALE', run_id, item_text, 'range')
+    return
+  end
+  local at = string.format('%.6f', source_time)
+  local existing_name = core.existing_take_marker(take, core.marker_kind(name), source_time)
+  if existing_name then
+    event(session_dir, 'FINDING_MARKER', run_id, 'existing', take_guid(take), at, existing_name)
+    return
+  end
+  reaper.Undo_BeginBlock2(0)
+  reaper.SetTakeMarker(take, -1, name, source_time, color ~= '' and core.color(color) or 0)
+  reaper.Undo_EndBlock2(0, UNDO_ADD_MARKER, -1)
+  reaper.UpdateArrange()
+  event(session_dir, 'FINDING_MARKER', run_id, 'added', take_guid(take), at, name)
+end
+
 local function ping(session_dir, state, run_id)
   event(session_dir, 'PONG', run_id, NAVIGATION_VERSION, state.loop and 1 or 0, playing() and 1 or 0)
 end
@@ -282,6 +335,9 @@ return function(registry)
   end)
   registry.register('stop_loop', function(ctx, args)
     stop_loop(ctx.session_dir, state, args[1] or '')
+  end)
+  registry.register('add_finding_marker', function(ctx, args)
+    add_finding_marker(ctx.session_dir, args[1] or '', args[2] or '', args[3] or '', args[4] or '', args[5] or '', args[6] or '')
   end)
   registry.register('ping', function(ctx, args)
     ping(ctx.session_dir, state, args[1] or '')

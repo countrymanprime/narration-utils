@@ -382,6 +382,18 @@ describe('wailsClient', () => {
     await expect(wailsClient.findingsReaperStatus()).resolves.toEqual({ connection: 'connected', loopingFindingId: 'f1' });
   });
 
+  it('sends Add marker for a finding to the host and decodes what REAPER added', async () => {
+    const addMarker = vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'added', name: "MISREAD: 'a' as 'b'", sourceTime: 12.5 }));
+    window.go = { main: { Host: { FindingsAddMarker: addMarker } } };
+    await expect(wailsClient.findingsAddMarker('f1')).resolves.toEqual({ outcome: 'added', name: "MISREAD: 'a' as 'b'", sourceTime: 12.5 });
+    expect(addMarker).toHaveBeenCalledWith('f1');
+  });
+
+  it('rejects a marker answer the host never sends', async () => {
+    window.go = { main: { Host: { FindingsAddMarker: vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'added', name: 'x' })) } } };
+    await expect(wailsClient.findingsAddMarker('f1')).rejects.toBeInstanceOf(WireError);
+  });
+
   it('rejects a navigation answer the host never sends', async () => {
     window.go = { main: { Host: { FindingsGoTo: vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'refused', reason: 'busy', message: 'x' })) } } };
     await expect(wailsClient.findingsGoTo('f1')).rejects.toBeInstanceOf(WireError);

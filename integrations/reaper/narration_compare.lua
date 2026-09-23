@@ -100,20 +100,7 @@ local function prepare_compare(session_dir, runs, run_id)
   event(session_dir, 'COMPARE_PREPARED', run_id, manifest_path, manuscript, track_name, diff_path, tostring(#manifest))
 end
 
-local function marker_kind(name)
-  local prefix = tostring(name or ''):match('^%s*([%a_]+)%s*:')
-  return prefix and prefix:upper() or ''
-end
-local function existing(take, kind, srcpos)
-  local count = reaper.GetNumTakeMarkers(take)
-  for index = 0, count - 1 do
-    local marker_pos, marker_name = reaper.GetTakeMarker(take, index)
-    if marker_kind(marker_name) == tostring(kind or ''):upper() and math.abs(marker_pos - srcpos) <= 0.15 then
-      return marker_name
-    end
-  end
-  return nil
-end
+local existing = core.existing_take_marker
 local function inspect_results(session_dir, runs, run_id, path)
   local run = runs[run_id]
   if not run then
