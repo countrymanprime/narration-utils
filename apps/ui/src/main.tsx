@@ -5,6 +5,7 @@ import { ApiProvider } from './api/ApiContext';
 import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
 import { WIRE_CHAPTERS } from './api/mockFixtures';
+import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
 import { ThemeProvider } from './theme/ThemeContext';
 import './fonts';
 import './styles.css';
@@ -98,6 +99,11 @@ const mockRenderConfig = (['success', 'no-regions', 'error'] as const).find((see
 // `?mockChapterTagsEmbedError=1` makes the embed action always fail, so the error state can be seen too.
 const mockChapterTags = (['ready', 'not-rendered'] as const).find((seed) => seed === mockParams.get('mockChapterTags'));
 const mockChapterTagsEmbedError = mockParams.has('mockChapterTagsEmbedError');
+// `?mockCoverage=hold|stale` holds a started recording check at its last transcribing step (so the running dialog can be seen), or
+// makes Chapter 4's stored check read stale (an item was trimmed since), and `?mockCoverageRefusal=<reason>` answers every start
+// with that refusal (recording-coverage-analysis.prd.md Phase 6).
+const mockCoverage = (['hold', 'stale'] as const).find((seed) => seed === mockParams.get('mockCoverage'));
+const mockCoverageRefusal = COVERAGE_REFUSAL_REASONS.find((reason) => reason === mockParams.get('mockCoverageRefusal'));
 const mockInitial = {
   ...(mockImportPreview ? { importPreview: mockImportPreview } : {}),
   ...(mockAssets ? { assets: mockAssets } : {}),
@@ -128,6 +134,15 @@ const mockInitial = {
   ...(mockRenderConfig ? { renderConfig: mockRenderConfig } : {}),
   ...(mockChapterTags ? { chapterTags: mockChapterTags } : {}),
   ...(mockChapterTagsEmbedError ? { chapterTagsEmbedAlwaysErrors: true } : {}),
+  ...(mockCoverage || mockCoverageRefusal
+    ? {
+        coverage: {
+          ...(mockCoverage === 'hold' ? { hold: true } : {}),
+          ...(mockCoverage === 'stale' ? { stale: [WIRE_CHAPTERS[3].id] } : {}),
+          ...(mockCoverageRefusal ? { refusal: mockCoverageRefusal } : {}),
+        },
+      }
+    : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

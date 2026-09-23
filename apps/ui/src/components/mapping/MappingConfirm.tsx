@@ -19,8 +19,8 @@ type Props = {
 };
 
 // A reusable inline "link this chapter to a track" prompt (analysis evidence ledger PRD, Phase 7, Q7): the Tracks
-// page's list uses one per chapter, and it is built to be dropped beside a future check (a Home row's "Check
-// recording", an evidence view) without needing the Tracks page around it. It owns only the pending pick in the
+// page's list uses one per chapter, and Home's recording check (components/home/RecordingCheck.tsx) shows one when a
+// chapter has no confirmed track, without needing the Tracks page around it. It owns only the pending pick in the
 // track dropdown; the confirmed link itself lives in the caller's state, refreshed from `chapterTrackMapList` after
 // `onConfirm`/`onClear` resolve.
 export function MappingConfirm({ chapterTitle, tracks, linkedTrackGuid, linkedTrackName, busy = false, onConfirm, onClear }: Props) {

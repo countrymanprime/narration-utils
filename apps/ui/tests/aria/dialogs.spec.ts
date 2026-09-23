@@ -24,6 +24,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['manuscript', 'chapters-overlay-open'],
     snapshot: 'slide-over-chapters.aria.yml',
   },
+  {
+    name: 'the recording check is a modal dialog with its count, the missing region and its paragraph link, and Check again',
+    state: ['home', 'recording-check-incomplete'],
+    snapshot: 'dialog-recording-check.aria.yml',
+  },
 ];
 
 for (const modal of MODALS) {
@@ -33,7 +38,7 @@ for (const modal of MODALS) {
   });
 }
 
-// A canary for the mechanism the five snapshots above rely on: the root `children: equal` only proves the page behind a modal
+// A canary for the mechanism the six snapshots above rely on: the root `children: equal` only proves the page behind a modal
 // is hidden if it fails when the page is not. Take the hiding away and the same snapshot must stop matching.
 test('the isolation check fails when the page behind a modal is exposed', async ({ page }) => {
   await openApp(page, DESKTOP, ['storybible', 'delete-confirm']);

@@ -1,0 +1,21 @@
+# The recording check (recording-coverage-analysis.prd.md Phase 6): a modal dialog named for its chapter, with the count as a heading,
+# the missing text as a named region whose region has a button to its paragraph, the paragraph list as a disclosure over a named table,
+# and one action. The page behind it is aria-hidden.
+- /children: equal
+# The two toast live regions stay in the tree on purpose (see dialog-add-note.aria.yml).
+- main:
+  - alert
+  - status
+- 'dialog "Recording check: Chapter 4"':
+  - 'heading "Recording check: Chapter 4" [level=2]'
+  - button "Close"
+  - heading /\d+ words not recorded/ [level=3]
+  - region "Missing text":
+    - heading "Missing text" [level=3]
+    - list:
+      - listitem:
+        - strong: End not read
+        - button /Go to paragraph \d+/
+  - button /Paragraphs \d+ of \d+ fully recorded/ [expanded]
+  - table "Paragraphs"
+  - button "Check again"

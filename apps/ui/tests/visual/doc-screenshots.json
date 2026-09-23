@@ -78,6 +78,13 @@
   },
   {
     "page": "home",
+    "state": "recording-check-incomplete",
+    "viewport": "desktop",
+    "docName": "home-recording-check",
+    "caption": "Home - a chapter's recording check with text still to record: the count, the missing region and the short paragraphs"
+  },
+  {
+    "page": "home",
     "state": "import-confirm",
     "viewport": "desktop",
     "docName": "home-import-confirm",

@@ -171,6 +171,22 @@ async function openImportReview(page: Page, preview?: 'markdown' | 'repaired') {
   return dialog;
 }
 
+// Opens a chapter's recording check from the per-chapter breakdown (recording-coverage-analysis.prd.md Phase 6), optionally booted with a
+// mock seed (main.tsx), and waits until the stored result has been read into the dialog. Returns the dialog.
+async function openRecordingCheck(page: Page, chapter: string, seed?: string) {
+  if (seed) {
+    await page.goto(`/?${seed}`);
+    await settlePage(page);
+  }
+  await homeLoaded(page);
+  await clickVisible(page, 'button', /Show per-chapter breakdown/);
+  await clickVisible(page, 'button', `Check recording of ${chapter}`);
+  const dialog = page.getByRole('dialog', { name: `Recording check: ${chapter}` });
+  await dialog.getByRole('button', { name: /^Check (recording|again)$/ }).waitFor();
+  await dialog.getByText('Reading the last check…').waitFor({ state: 'detached' });
+  return dialog;
+}
+
 // Settings' own category rail (.settings-nav, a tab list) reuses the same labels as the
 // primary app nav ("Proofing", "Story Bible") - an unscoped role/name query
 // matches both and .first() can silently click the wrong one (navigating
@@ -323,6 +339,38 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const review = await openImportReview(page, 'repaired');
       // The chapters are folded so the repairs, the last group, are on screen without scrolling the dialog.
       await review.getByRole('button', { name: /^Narration chapters/ }).click();
+    },
+    'recording-check-never': async (page) => {
+      const dialog = await openRecordingCheck(page, 'Chapter 7');
+      await dialog.getByText(/^Not checked yet/).waitFor();
+    },
+    'recording-check-running': async (page) => {
+      const dialog = await openRecordingCheck(page, 'Chapter 7', 'mockCoverage=hold');
+      await dialog.getByRole('button', { name: 'Check recording' }).click();
+      // The mock holds the run at its last transcribing step, so the percent and message are the same at every viewport.
+      await page.getByRole('dialog', { name: 'Checking Chapter 7' }).getByRole('status').getByText('Transcribing item 2 of 2…').waitFor();
+    },
+    'recording-check-complete': async (page) => {
+      const dialog = await openRecordingCheck(page, 'Chapter 1');
+      await dialog.getByText('All the text is recorded').waitFor();
+    },
+    'recording-check-incomplete': async (page) => {
+      const dialog = await openRecordingCheck(page, 'Chapter 4');
+      await dialog.getByText('End not read').waitFor();
+    },
+    'recording-check-stale': async (page) => {
+      const dialog = await openRecordingCheck(page, 'Chapter 4', 'mockCoverage=stale');
+      await dialog.getByText('This result is out of date').waitFor();
+    },
+    'recording-check-refused': async (page) => {
+      const dialog = await openRecordingCheck(page, 'Chapter 7', 'mockCoverageRefusal=unmapped');
+      await dialog.getByRole('button', { name: 'Check recording' }).click();
+      await dialog.getByRole('alert').getByRole('combobox', { name: 'Track for Chapter 7' }).waitFor();
+    },
+    'recording-check-model-required': async (page) => {
+      const dialog = await openRecordingCheck(page, 'Chapter 7', 'mockAssets=missing');
+      await dialog.getByRole('button', { name: 'Check recording' }).click();
+      await confirmDialog(page, 'Download local Whisper model?').waitFor();
     },
     'import-confirm-markdown': async (page) => {
       // The mock's Markdown seam (see main.tsx): the same book as a .md file, which is the one with the heading level choice.

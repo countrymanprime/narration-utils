@@ -42,7 +42,7 @@ export function Home({
   data: Bootstrap;
   go: (page: string) => void;
   notify: Notify;
-  goToManuscript: (chapter: string) => void;
+  goToManuscript: (chapter: string, paragraph?: number) => void;
   refreshBootstrap: () => Promise<void>;
 }) {
   const api = useApi();
