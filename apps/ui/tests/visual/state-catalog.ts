@@ -142,6 +142,12 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Manuscript, the "Read aloud" dialog mid-session and listening - the setup fields collapse to a status bar with Stop, the current word highlighted and read words dimmed (reached via the ?mockTeleprompter=listening mock seam)',
   },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-seek-back',
+    description:
+      'Manuscript, the "Read aloud" dialog after clicking an earlier word ("Go back to here", teleprompter-manuscript-integration.prd.md Phase 4) - the highlight has jumped back to the clicked word without restarting the session',
+  },
 
   // Proofing
   { page: 'proofing', state: 'setup-default', description: 'Proofing, setup panel default selection' },

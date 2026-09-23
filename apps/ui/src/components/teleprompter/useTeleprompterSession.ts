@@ -214,9 +214,11 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
     }
   };
   const stop = () => void api.teleprompterStop().catch((reason) => setError(errorText(reason)));
-  // Moves a running tracker straight to a chosen script word ("Start here" / "Go back to here", Phase 4 of
-  // teleprompter-manuscript-integration.prd.md wires this to a click; this phase only adds the channel itself).
-  const seek = (word: number) => void api.teleprompterSeek(word).catch((reason) => setError(errorText(reason)));
+  // Moves a running tracker straight to a chosen script word ("Start here" / "Go back to here", wired to a word click by
+  // Phase 4 of teleprompter-manuscript-integration.prd.md via `ReaderText`'s `onSeek`). `useCallback` keeps this a stable
+  // reference across renders: `ReaderText` passes it into a `memo`-wrapped per-row component, and a fresh closure every
+  // render would defeat that row-level memoization (see `ReaderText.tsx`).
+  const seek = useCallback((word: number) => void api.teleprompterSeek(word).catch((reason) => setError(errorText(reason))), [api]);
 
   const closeModelPrompt = () => {
     setPrompt(undefined);

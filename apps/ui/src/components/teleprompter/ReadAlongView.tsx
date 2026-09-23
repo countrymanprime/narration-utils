@@ -18,7 +18,7 @@ const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
 // review-item) are Phase 7's. The swatches copy `ReaderText`'s own styling by hand rather than rendering a real
 // `Highlight`/`data-word`, so this legend is never mistaken for the actual current word by a `[data-highlight="Cursor"]`
 // or `[data-word]` query (the reader's own tests and the mock-driven visual states rely on those being unique).
-function ReaderKey() {
+function ReaderKey({ seekable }: { seekable: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" style={{ color: 'var(--text-muted)' }} aria-label="Key">
       <span className="font-medium">Key:</span>
@@ -34,6 +34,9 @@ function ReaderKey() {
       <span className="flex items-center gap-1.5">
         <span style={{ textDecoration: 'underline dotted var(--warn)', textUnderlineOffset: '0.25em' }}>word</span> skipped
       </span>
+      {/* Click-to-seek (teleprompter-manuscript-integration.prd.md Phase 4): only reachable once a session is
+          running, so the hint only shows then - it would be misleading while idle, when no word is clickable. */}
+      {seekable && <span className="ml-auto">Click a word to start or go back to it.</span>}
     </div>
   );
 }
@@ -120,9 +123,9 @@ export function ReadAlongView({ session: t, extraSetupFields }: Props) {
       )}
       {t.rows.length > 0 && (
         <Panel>
-          <ReaderKey />
+          <ReaderKey seekable={t.active} />
           <div className="mt-3">
-            <ReaderText rows={t.rows} cursor={t.cursor} skipped={t.session.skipped} follow={t.active} />
+            <ReaderText rows={t.rows} cursor={t.cursor} skipped={t.session.skipped} follow={t.active} onSeek={t.active ? t.seek : undefined} />
           </div>
         </Panel>
       )}
