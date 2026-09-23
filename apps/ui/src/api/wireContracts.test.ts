@@ -21,6 +21,7 @@ import {
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
+import { chapterTrackMappingSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
@@ -128,6 +129,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'tracks-discovery-none.json': tracksDiscoverySchema,
   'tracks-discovery-several.json': tracksDiscoverySchema,
   'tracks-discovery-selected.json': tracksDiscoverySchema,
+  'chapter-track-map-empty.json': chapterTrackMappingSchema,
+  'chapter-track-map-confirmed.json': trackMappingSchema,
+  'chapter-track-map-list.json': chapterTrackMappingSchema,
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -471,6 +475,28 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expectMatches(tracksDiscoverySchema, await createMockApi({}, { tracksCandidates: [] }).tracksDiscover(), 'mock tracks discovery, none found');
   });
 
+  it('the ChapterTrackMap answers', async () => {
+    const api = createMockApi();
+    const empty = await api.chapterTrackMapList();
+    expectMatches(chapterTrackMappingSchema, empty, 'mock chapter-track map, none confirmed');
+    expect(empty.mappings).toHaveLength(0);
+
+    const chapters = await api.manuscriptChapters();
+    const confirmed = await api.chapterTrackMapConfirm('{0E4D1D7F-D039-674D-87E6-719376DE95EC}', chapters[0].id);
+    expectMatches(trackMappingSchema, confirmed, 'mock chapter-track map confirmation');
+    expect(confirmed.chapterTitle).toBe(chapters[0].title);
+
+    const listed = await api.chapterTrackMapList();
+    expectMatches(chapterTrackMappingSchema, listed, 'mock chapter-track map, one confirmed');
+    expect(listed.mappings).toHaveLength(1);
+
+    const cleared = await api.chapterTrackMapClear(confirmed.trackGuid);
+    expectMatches(chapterTrackMappingSchema, cleared, 'mock chapter-track map after clear');
+    expect(cleared.mappings).toHaveLength(0);
+
+    await expect(api.chapterTrackMapConfirm('{0E4D1D7F-D039-674D-87E6-719376DE95EC}', 'not-a-real-chapter')).rejects.toThrow();
+  });
+
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
@@ -527,6 +553,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'tracksDiscover',
       'tracksSelect',
       'tracksList',
+      'chapterTrackMapList',
+      'chapterTrackMapConfirm',
+      'chapterTrackMapClear',
       'teleprompterStart',
       'teleprompterState',
       'teleprompterDevices',
