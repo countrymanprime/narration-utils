@@ -4,7 +4,7 @@
 `SequenceMatcher` opcodes `compare.py` already computes unless the spike's fixtures fail, then move
 to a DP alignment). This module is test tooling, not product code:
 
-- `coverage_analyzer(aligner)` turns `core/coverage.py` into a harness analyzer, aligning through
+- `coverage_analyzer(aligner)` turns `core/recording_coverage.py` into a harness analyzer, aligning through
   `compare.py`'s own tokenizing (homophones, number words, hyphen fusing) with either aligner;
 - `lcs_opcodes` is the DP prototype: a longest-common-subsequence alignment over the same tokens
   (vectorized by row with numpy), converted to `difflib` opcodes so coverage reads it unchanged;
@@ -49,7 +49,7 @@ def _load(name: str, filename: str):
 
 
 compare = _load("transcript_compare_core", "compare.py")
-cov = _load("transcript_coverage_core", "coverage.py")
+cov = _load("transcript_coverage_core", "recording_coverage.py")
 
 Aligner = Callable[[Sequence[str], Sequence[str]], list[tuple[str, int, int, int, int]]]
 # The DP keeps its whole score matrix: uint16 cells, so both sides stay under 65,535 tokens.

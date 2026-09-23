@@ -11,7 +11,7 @@
 | `sidecars/transcript-compare/tests/coverage_harness.py` | Loads and validates a corpus, renders scripted recordings into timed transcript words, scores an analyzer and prints the label table. Also holds the order-blind stub analyzer. |
 | `sidecars/transcript-compare/tests/test_coverage_harness.py` | Tests for the format rules, the scoring, the stub and the corpus hook, and checks on the committed set: every condition has a case, both verdicts appear in each split, no audio, under 64 KiB. |
 
-Nothing here is product code. The analyzer being measured is `core/coverage.py` (Phase 2). `tests/coverage_spike.py` turns it into a harness analyzer, and Phase 8 runs the shipped path through this harness. `build_case` builds a case from its JSON form without a file, so generated cases (the Phase 2 stress set) obey the same labeling rules.
+Nothing here is product code. The analyzer being measured is `core/recording_coverage.py` (Phase 2). `tests/coverage_spike.py` turns it into a harness analyzer, and Phase 8 runs the shipped path through this harness. `build_case` builds a case from its JSON form without a file, so generated cases (the Phase 2 stress set) obey the same labeling rules.
 
 ## A case
 

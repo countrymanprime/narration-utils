@@ -1,4 +1,4 @@
-"""Tests for the recording-coverage model (`core/coverage.py`), the PRD's Definitions made
+"""Tests for the recording-coverage model (`core/recording_coverage.py`), the PRD's Definitions made
 executable: `docs/prds/recording-coverage-analysis.prd.md` Phase 2, Q1, Q3 and Q11."""
 
 import difflib
