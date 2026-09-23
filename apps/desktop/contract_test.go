@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
+	"github.com/countrymanprime/narration-utils/shell/internal/repeats"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
@@ -436,4 +438,32 @@ func TestContractCreditsProjectValuesAndPreview(t *testing.T) {
 		t.Fatal(err)
 	}
 	contractfile.Check(t, "credits-preview-unresolved", decodedPreview)
+}
+
+// The findings TakeReviewScan and TakeReviewFindings send (take-review phase 5, ADR 0069): one
+// restart-kind pickup (a partial re-read, below the near-duplicate quality bar) and one
+// near-identical duplicate_read (full coverage, both members above it), so the review surface's
+// two states are both pinned. Built straight from internal/repeats.ToFindings, the same adapter
+// the scan binding calls, rather than running a scan end to end: no sidecar, no temp project.
+func TestContractTakeReviewFindings(t *testing.T) {
+	groups := []repeats.Group{
+		{
+			ID: 0, FirstUnit: 3, LastUnit: 7,
+			Members: []repeats.Member{
+				{ItemIndex: 0, ItemGUID: "{11111111-0000-0000-0000-000000000001}", TakeGUID: "{22222222-0000-0000-0000-000000000001}", SourceFile: "C:/Projects/Alice/media/chapter1-take1.wav", StartOffset: 0, Length: 4.5, FirstUnit: 3, LastUnit: 7, Coverage: 1, Quality: 0.62},
+				{ItemIndex: 1, ItemGUID: "{11111111-0000-0000-0000-000000000002}", TakeGUID: "{22222222-0000-0000-0000-000000000002}", SourceFile: "C:/Projects/Alice/media/chapter1-take2.wav", StartOffset: 10, Length: 3.1, FirstUnit: 3, LastUnit: 7, Coverage: 0.7, Quality: 0.58},
+			},
+		},
+		{
+			ID: 1, FirstUnit: 12, LastUnit: 15,
+			Members: []repeats.Member{
+				{ItemIndex: 2, ItemGUID: "{11111111-0000-0000-0000-000000000003}", TakeGUID: "{22222222-0000-0000-0000-000000000003}", SourceFile: "C:/Projects/Alice/media/chapter1-take3.wav", StartOffset: 0, Length: 2.2, FirstUnit: 12, LastUnit: 15, Coverage: 1, Quality: 0.99},
+				{ItemIndex: 3, ItemGUID: "{11111111-0000-0000-0000-000000000004}", TakeGUID: "{22222222-0000-0000-0000-000000000004}", SourceFile: "C:/Projects/Alice/media/chapter1-take4.wav", StartOffset: 0, Length: 2.2, FirstUnit: 12, LastUnit: 15, Coverage: 1, Quality: 0.98},
+			},
+		},
+	}
+	project := findings.Project{Path: "C:/Projects/Alice"}
+	manuscript := findings.Manuscript{ChapterID: "chapter-1", ChapterTitle: "Chapter 1"}
+	result := repeats.ToFindings(groups, project, manuscript, repeats.DefaultThresholds())
+	contractfile.Check(t, "takereview-findings", result)
 }

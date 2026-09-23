@@ -30,6 +30,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
+	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
@@ -42,7 +43,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 25
+const hostAPIVersion = 26
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -66,10 +67,12 @@ type Host struct {
 	guide      *guide.Service
 	guideJob   *workJob
 	transcript *transcript.Service
-	// findings is the store Transcript Compare's adapter saves into on
-	// every completed run (review-dashboard-and-findings-adoption.prd.md
-	// Phase 2). No binding reads it yet (Phase 4 does that); it exists
-	// here only so the adapter has somewhere durable to write.
+	// findings is the project's findings store: Transcript Compare's and the
+	// Guide's adapters save into it on every completed run
+	// (review-dashboard-and-findings-adoption.prd.md Phases 2-3), and
+	// take-review's scan binding (takereview.go) writes and reads it back,
+	// all through the same swap-on-project-switch pattern as
+	// guide/manuscript/transcript.
 	findings *findings.Store
 	// reachability tracks the current project's bridge client PROJECT_STATUS heartbeat (ADR 0092, Phase 7).
 	// Swappable like transcript: configureLocked rebuilds it on every project switch. Nil when there is no bridge
@@ -85,6 +88,9 @@ type Host struct {
 	// user-level like recents, set once in NewHost and never swapped by a project switch.
 	creditTemplates *credits.TemplateStore
 	log             *hostlog.Log
+	// takeReviewRunner is a seam for tests: nil means the real
+	// takereview.ProcessRunner built from project config (takereview.go).
+	takeReviewRunner takereview.SidecarRunner
 	// updates asks GitHub for a newer release and remembers the answer (ADR 0072). It is set once in NewHost and never swapped, so it is
 	// read directly, like recents.
 	updates *update.Checker

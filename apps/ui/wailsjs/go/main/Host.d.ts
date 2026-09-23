@@ -170,6 +170,10 @@ export function TeleprompterState():Promise<string>;
 
 export function TeleprompterStop():Promise<string>;
 
+export function TakeReviewFindings(arg1:string):Promise<string>;
+
+export function TakeReviewScan(arg1:string):Promise<string>;
+
 export function TracksDiscover():Promise<string>;
 
 export function TracksList():Promise<string>;

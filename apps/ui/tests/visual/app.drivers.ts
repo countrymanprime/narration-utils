@@ -896,6 +896,18 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await message.waitFor();
       await message.scrollIntoViewIfNeeded();
     },
+    'take-review-results': async (page) => {
+      await goToPage(page, 'Tracks');
+      // Chapter 1 is already the active track; the mock seeds findings for it.
+      await clickVisible(page, 'button', 'Scan for pickups & duplicates');
+      await page.getByRole('table', { name: 'Pickup and duplicate findings' }).waitFor();
+    },
+    'take-review-empty': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', /Chapter 2/); // the mock only seeds findings for Chapter 1
+      await clickVisible(page, 'button', 'Scan for pickups & duplicates');
+      await page.getByText('No repeated reads found on this track.').waitFor();
+    },
   },
   teleprompter: {
     'setup-default': async (page) => {

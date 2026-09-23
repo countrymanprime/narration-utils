@@ -20,6 +20,7 @@ import {
 } from './schemas/manuscript';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { settingsForScopeSchema } from './schemas/settings';
+import { takeReviewFindingsSchema } from './schemas/takeReview';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { chapterTrackMappingSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
@@ -145,6 +146,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-tags-preview-idle.json': chapterTagsPreviewSchema,
   'chapter-tags-preview-ready.json': chapterTagsPreviewSchema,
   'chapter-tags-embed-success.json': chapterTagsEmbedResultSchema,
+  'takereview-findings.json': takeReviewFindingsSchema,
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -603,6 +605,19 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     ).rejects.toThrow();
   });
 
+  it('the take-review scan and findings answers', async () => {
+    const api = createMockApi();
+    const scanned = await api.takeReviewScan('Chapter 1');
+    expectMatches(takeReviewFindingsSchema, scanned, 'mock take-review scan');
+    expect(scanned.length).toBeGreaterThan(0);
+    const readBack = await api.takeReviewFindings('Chapter 1');
+    expectMatches(takeReviewFindingsSchema, readBack, 'mock take-review findings');
+    expect(readBack).toEqual(scanned);
+    const empty = await api.takeReviewScan('Chapter 2');
+    expectMatches(takeReviewFindingsSchema, empty, 'mock take-review scan, no repeats');
+    expect(empty).toEqual([]);
+  });
+
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
@@ -676,6 +691,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'renderConfigState',
       'chapterTagsPreview',
       'chapterTagsEmbed',
+      'takeReviewScan',
+      'takeReviewFindings',
       'teleprompterStart',
       'teleprompterState',
       'teleprompterDevices',

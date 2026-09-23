@@ -386,6 +386,17 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Tracks, "Embed chapter tags" dialog when the embed fails - inline error message (reached via the ?mockChapterTags=ready&mockChapterTagsEmbedError=1 mock seam)',
   },
+  {
+    page: 'tracks',
+    state: 'take-review-results',
+    description:
+      'Tracks, Scan for pickups & duplicates pressed on Chapter 1 - a pickup and a duplicate_read row, per-category evidence only (Q9, no composite score column)',
+  },
+  {
+    page: 'tracks',
+    state: 'take-review-empty',
+    description: 'Tracks, a pickup/duplicate scan on a track with no repeats - "No repeated reads found on this track." with no results table',
+  },
 
   // Teleprompter
   {

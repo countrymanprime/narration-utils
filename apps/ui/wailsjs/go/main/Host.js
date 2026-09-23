@@ -338,6 +338,14 @@ export function TeleprompterStop() {
   return window['go']['main']['Host']['TeleprompterStop']();
 }
 
+export function TakeReviewFindings(arg1) {
+  return window['go']['main']['Host']['TakeReviewFindings'](arg1);
+}
+
+export function TakeReviewScan(arg1) {
+  return window['go']['main']['Host']['TakeReviewScan'](arg1);
+}
+
 export function TracksDiscover() {
   return window['go']['main']['Host']['TracksDiscover']();
 }

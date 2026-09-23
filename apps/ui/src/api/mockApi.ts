@@ -27,6 +27,7 @@ import type {
   RenderConfigState,
   Scope,
   ScopedSettingField,
+  TakeReviewFinding,
   TeleprompterDevice,
   TrackMapping,
   TracksDiscovery,
@@ -63,6 +64,7 @@ import {
   WIRE_RENDER_CONFIG_IDLE,
   WIRE_RENDER_CONFIG_NO_REGIONS,
   WIRE_RENDER_CONFIG_SUCCESS,
+  WIRE_TAKE_REVIEW_FINDINGS,
   WIRE_TELEPROMPTER_DEVICES,
   WIRE_TRACKS_PROJECT,
   WIRE_TRANSCRIPT,
@@ -403,6 +405,10 @@ export function createMockApi(
   // mock always has exactly one manuscript document loaded.
   const mockDocumentId = 'mock-document-1';
   let chapterTrackMappings: TrackMapping[] = wireClone(initial.chapterTrackMappings ?? []);
+  // take-review findings, keyed by chapter track name (the same scope the Go store partitions
+  // by, apps/desktop/takereview.go's takeReviewChapterID): a scan of "Chapter 1" seeds the fixture
+  // group, any other track name scans clean and finds nothing, matching a chapter with no repeats.
+  const takeReviewFindingsByTrack = new Map<string, TakeReviewFinding[]>();
   let recentProjects: RecentProject[] = [
     { path: 'C:/Projects/Alice-in-Wonderland', name: 'Alice’s Adventures in Wonderland', lastOpened: '2026-09-15T09:00:00Z' },
     { path: 'C:/Projects/Voltage-and-the-Undercroft', name: 'Voltage and the Undercroft', lastOpened: '2026-09-10T18:30:00Z' },
@@ -1568,6 +1574,12 @@ export function createMockApi(
       chapterTrackMappings = chapterTrackMappings.filter((existing) => existing.trackGuid !== trackGuid);
       return { documentId: mockDocumentId, mappings: wireClone(chapterTrackMappings) };
     },
+    takeReviewScan: async (chapterTrackName) => {
+      const fresh: TakeReviewFinding[] = chapterTrackName === 'Chapter 1' ? wireClone(WIRE_TAKE_REVIEW_FINDINGS) : [];
+      takeReviewFindingsByTrack.set(chapterTrackName, fresh);
+      return wireClone(fresh);
+    },
+    takeReviewFindings: async (chapterTrackName) => wireClone(takeReviewFindingsByTrack.get(chapterTrackName) ?? []),
     subscribeNotices: (onNotice) => {
       const text = initial.notice;
       if (!text) return () => {};
