@@ -15,6 +15,25 @@
 // anything that you think you need my decision on, create an open ADR for
 // and keep going. callout any new adrs on the pr that you created them so i
 // can review."
+//
+// Phase 6 addition (staleness.go, docs/prds/analysis-evidence-ledger.prd.md
+// #phase-6---staleness-evaluator): LedgerFingerprint gained ItemFacts, and
+// this file gained the LedgerItemFact type. A record's ItemFingerprints and
+// AnalysisKeys are opaque hashes by design (Architecture Notes: "Fingerprints
+// hash a canonical encoding... never the raw chunk text"), which is exactly
+// right for detecting *that* an item changed but cannot say *why* - hashes
+// don't invert. Q4/Phase 6's evaluator needs to name the edit-type table's
+// reason (item_moved vs item_trimmed vs item_muted vs take_switched vs
+// source_changed) for the narrator, not just flag a mismatch, so ItemFacts
+// keeps a small, plain (non-hashed) snapshot of exactly the fields the
+// fingerprint hashes already commit to (Position, Length, Muted, ActiveTake,
+// and a summary of SourceIdentity) beside the hash - never anything the
+// fingerprint doesn't already cover, so this stays additive to "fingerprint"
+// in spirit, not a second, independent record of item state. It is additive
+// and backward compatible: ledgerSchemaVersion stays 1, and a record written
+// before this field existed decodes with a nil ItemFacts map, which the
+// evaluator treats as "identity unknown" and falls back to a coarser but
+// still-correct reason (see staleness.go's itemChangeReason).
 package evidence
 
 import (
@@ -66,11 +85,32 @@ type LedgerScope struct {
 
 // LedgerFingerprint is the fingerprint state a record was computed against,
 // so Phase 6's evaluator can compare it to the project's fingerprints now.
-// ItemFingerprints and AnalysisKeys are keyed by item GUID.
+// ItemFingerprints, AnalysisKeys and ItemFacts are all keyed by item GUID.
 type LedgerFingerprint struct {
 	TrackFingerprint TrackFingerprint           `json:"trackFingerprint"`
 	ItemFingerprints map[string]ItemFingerprint `json:"itemFingerprints,omitempty"`
 	AnalysisKeys     map[string]AnalysisKey     `json:"analysisKeys,omitempty"`
+	// ItemFacts is Phase 6's addition (see this file's header comment): a
+	// plain, unhashed snapshot of the same fields ItemFingerprints already
+	// hashes, so the staleness evaluator can name why an item's fingerprint
+	// changed instead of only that it did. Absent (nil) on a record written
+	// before Phase 6, which the evaluator treats as "identity unknown".
+	ItemFacts map[string]LedgerItemFact `json:"itemFacts,omitempty"`
+}
+
+// LedgerItemFact is one item's plain-value snapshot at the moment a ledger
+// record was written: exactly the fields ItemFingerprint hashes (Q2), plus a
+// content-addressed summary of the active take's SourceIdentity (Path, Size,
+// PartialHash - never ModTime, matching AnalysisKey's own reasoning in
+// fingerprint.go) so the evaluator can tell "source replaced on disk" apart
+// from "trimmed" or "playrate changed" without ever storing a raw file path
+// or hash it would have to reconcile against a different project checkout.
+type LedgerItemFact struct {
+	Position       float64 `json:"position"`
+	Length         float64 `json:"length"`
+	Muted          bool    `json:"muted"`
+	ActiveTake     int     `json:"activeTake"`
+	SourceIdentity string  `json:"sourceIdentity"`
 }
 
 // LedgerProjectFile is the saved .rpp a record was computed against. D6:
