@@ -1,7 +1,7 @@
 """The Phase 2 alignment spike, pinned: coverage over `SequenceMatcher` scores every committed
 recording-coverage case correctly and never calls an incomplete chapter complete, and the DP
 prototype it was measured against is a valid alignment
-(`docs/prds/recording-coverage-analysis.prd.md` Phase 2, Q2; `docs/research/recording-coverage-alignment-spike.md`)."""
+(docs/utilities/recording-coverage.md, ADR 0126, Q2; `docs/research/recording-coverage-alignment-spike.md`)."""
 
 import difflib
 
@@ -47,7 +47,7 @@ def test_the_only_generated_label_misses_are_pickups_longer_than_what_follows(st
 
 def test_unrelated_speech_of_a_paragraphs_length_credits_none_of_it(stress):
     for case in (case for case in stress if "-unrelated-" in case.id):
-        result = spike.cov.compute_coverage(spike.align_case(case.chapter, case.items))
+        result = spike.cov.compute_coverage(spike.align_case(case.chapter, case.items), spike.SPIKE_PARAMS)
         (missing,) = [pid for pid, value in case.expected.paragraphs.items() if value == "missing"]
         assert result.by_id[missing].present == 0, case.id
 

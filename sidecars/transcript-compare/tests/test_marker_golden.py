@@ -1,5 +1,5 @@
 """The take markers `diff_and_build_markers` writes for every committed recording-coverage case,
-pinned byte for byte (`docs/prds/recording-coverage-analysis.prd.md` Phase 2, success signal:
+pinned byte for byte (docs/utilities/recording-coverage.md, ADR 0126, success signal:
 the marker output is byte-identical before and after coverage is added).
 
 Coverage reads the same alignment the markers come from (Q2), so a change to that alignment

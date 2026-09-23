@@ -66,7 +66,7 @@ export function AudiobookEstimatePanel({
   // a secondary stat next to the narration estimate above, so a credits-specific problem should not blank the page
   // or throw a toast over an estimate the narrator did not ask about (mirrors CreditsPanel's own preview fallback).
   const [creditsSeconds, setCreditsSeconds] = useState<number>();
-  // Recording coverage (recording-coverage-analysis.prd.md Phase 6): the live state of the one check the host runs at a time, so a row
+  // Recording coverage (docs/utilities/recording-coverage.md, ADR 0130): the live state of the one check the host runs at a time, so a row
   // shows its percent even after its dialog was sent to the background, and the chapter whose check dialog is open.
   const [coverage, setCoverage] = useState<CoverageState>({ phase: 'idle', percent: 0, message: '' });
   const [checking, setChecking] = useState<ManuscriptChapter>();

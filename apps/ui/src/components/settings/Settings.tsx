@@ -25,7 +25,7 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'General', label: 'General', tool: 'General', scopes: ['global'] },
   { key: 'Appearance', label: 'Appearance', scopes: ['global'] },
   { key: 'Manuscript', label: 'Manuscript', tool: 'Manuscript', scopes: ['global', 'project'] },
-  // The recording check's thresholds and alignment (docs/prds/recording-coverage-analysis.prd.md Phase 7), Proposed and uncalibrated.
+  // The recording check's thresholds and alignment (docs/utilities/recording-coverage.md, ADR 0131), Proposed and uncalibrated.
   { key: 'RecordingCoverage', label: 'Recording check', tool: 'RecordingCoverage', scopes: ['global', 'project'] },
   { key: 'TranscriptCompare', label: 'Proofing', tool: 'TranscriptCompare', scopes: ['global', 'project'] },
   { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'] },

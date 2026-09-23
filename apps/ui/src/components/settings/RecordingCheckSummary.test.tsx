@@ -13,7 +13,7 @@ afterEach(cleanup);
 describe('RecordingCheckSummary', () => {
   it('states the rule the effective values make, as a percentage and a word count', () => {
     expect(recordingRule(fields())).toBe(
-      'A chapter counts as recorded when each paragraph has at least 95% of its words read and no more than 3 words in a row are missing.',
+      'A chapter counts as recorded when each paragraph has at least 80% of its words read and no more than 3 words in a row are missing.',
     );
   });
 
@@ -29,7 +29,7 @@ describe('RecordingCheckSummary', () => {
   it('labels the values Proposed and uncalibrated and says which settings make earlier checks out of date', () => {
     render(<RecordingCheckSummary fields={fields()} scope="global" />);
     expect(screen.getByText('Proposed values, not yet calibrated')).toBeTruthy();
-    expect(screen.getByText(/have not been checked against real recordings yet/)).toBeTruthy();
+    expect(screen.getByText(/chosen on synthetic test recordings and have not been checked against real recordings yet/)).toBeTruthy();
     expect(screen.getByText(/makes earlier checks out of date/)).toBeTruthy();
     expect(screen.queryByText(/uses the Global one/)).toBeNull();
   });

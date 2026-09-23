@@ -17,7 +17,7 @@ actually said.
   reuses or writes one words file per item, and writes `COVERAGE` lines with JSON payloads
   (measurements only; the host applies the thresholds). Its module docstring and ADR 0127 give
   the manifest, words-file and output formats and the exit codes. The Go service that starts it
-  is Phase 4 of `docs/prds/recording-coverage-analysis.prd.md`.
+  is `apps/desktop/internal/coverage` (ADR 0128, docs/utilities/recording-coverage.md).
 - `tests/` — the pytest suite for the backend, plus the recording-coverage ground-truth harness
   (`coverage_harness.py`) and its synthetic labeled fixtures (`fixtures/coverage/`), and the
   alignment spike that scores `core/recording_coverage.py` on them (`coverage_spike.py`); see

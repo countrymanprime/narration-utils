@@ -1,7 +1,7 @@
 import type { Scope, ScopedSettingField } from '../../types';
 
-// What the recording check's settings amount to (docs/prds/recording-coverage-analysis.prd.md Q3, Phase 7). The values are
-// Proposed and uncalibrated (Q15) until the fixtures run through the shipped check (Phase 8), and the page says so. The two
+// What the recording check's settings amount to (docs/utilities/recording-coverage.md Q3, ADR 0131). The values are
+// chosen on synthetic fixtures (ADR 0132) and stay Proposed and uncalibrated on real narration (Q15), and the page says so. The two
 // thresholds only change how a stored check is judged; the two alignment settings change which words count, so the host
 // reads earlier checks as out of date once one changes (Q13).
 
@@ -31,8 +31,8 @@ export function RecordingCheckSummary({ fields, scope }: { fields: readonly Scop
       <div className="font-medium">Proposed values, not yet calibrated</div>
       <div>{recordingRule(fields)} Misreads, extra words and a spoken title never count against it.</div>
       <div style={{ color: 'var(--text-muted)' }}>
-        These starting values have not been checked against real recordings yet. Changing the first two only changes how a stored check is judged; changing
-        either of the last two makes earlier checks out of date, so check those chapters again.{' '}
+        These values were chosen on synthetic test recordings and have not been checked against real recordings yet. Changing the first two only changes how a
+        stored check is judged; changing either of the last two makes earlier checks out of date, so check those chapters again.{' '}
         {scope === 'project' ? 'A value left blank here uses the Global one.' : ''}
       </div>
     </div>

@@ -1,6 +1,6 @@
 # Recording coverage: the synthetic fixture set and harness
 
-**Status: in place, 2026-09-23.** Phase 1 of [`recording-coverage-analysis.prd.md`](../prds/recording-coverage-analysis.prd.md), under D12 and Q15 as amended on 2026-09-23: no coverage threshold ships until it has been scored against labeled chapters. For now the labeled chapters are synthetic. The owner chose constructed fixtures over an owner-supplied corpus, so the defaults that Phase 8 ships stay Proposed and labeled uncalibrated until a real, permissioned corpus recalibrates them. [ADR 0125](../adr/0125-recording-coverage-ground-truth-is-scripted-recordings-with-paragraph-labels-and-a-corpus-directory-variable.md) records the format choice.
+**Status: in place, 2026-09-23.** Phase 1 of the recording-coverage PRD (delivered and deleted; the steady state is [the recording check](../utilities/recording-coverage.md)), under D12 and Q15 as amended on 2026-09-23: no coverage threshold ships until it has been scored against labeled chapters. For now the labeled chapters are synthetic. The owner chose constructed fixtures over an owner-supplied corpus, so the defaults that Phase 8 ships stay Proposed and labeled uncalibrated until a real, permissioned corpus recalibrates them. [ADR 0125](../adr/0125-recording-coverage-ground-truth-is-scripted-recordings-with-paragraph-labels-and-a-corpus-directory-variable.md) records the format choice.
 
 ## What is here
 
@@ -11,7 +11,7 @@
 | `sidecars/transcript-compare/tests/coverage_harness.py` | Loads and validates a corpus, renders scripted recordings into timed transcript words, scores an analyzer and prints the label table. Also holds the order-blind stub analyzer. |
 | `sidecars/transcript-compare/tests/test_coverage_harness.py` | Tests for the format rules, the scoring, the stub and the corpus hook, and checks on the committed set: every condition has a case, both verdicts appear in each split, no audio, under 64 KiB. |
 
-Nothing here is product code. The analyzer being measured is `core/recording_coverage.py` (Phase 2). `tests/coverage_spike.py` turns it into a harness analyzer, and Phase 8 runs the shipped path through this harness. `build_case` builds a case from its JSON form without a file, so generated cases (the Phase 2 stress set) obey the same labeling rules.
+Nothing here is product code. The analyzer being measured is `core/recording_coverage.py` (Phase 2). `tests/coverage_spike.py` turns it into a harness analyzer, and `tests/coverage_calibration.py` runs the shipped path over its cases ([the calibration](recording-coverage-calibration.md)). `build_case` builds a case from its JSON form without a file, so generated cases (the Phase 2 stress set) obey the same labeling rules.
 
 ## A case
 
@@ -97,7 +97,7 @@ Nothing in the repo points the variable at anything by default, and the harness 
 
 ## Limits
 
-- The words are synthetic text, so nothing here measures how often Whisper drops or garbles words in a clean read. That rate decides the false "not met" rate and is a Phase 8 measurement on audio.
+- The words are synthetic text, so nothing here measures how often Whisper drops or garbles words in a clean read. That rate decides the false "not met" rate. Phase 8 simulated it and measured it on Piper renders: see [the calibration](recording-coverage-calibration.md).
 - One synthetic speaking rate and no ASR timing jitter. Positions are only as good as `WORD_SECONDS`.
 - Sixteen cases over four short chapters is enough to exercise every condition, but too few to make a rate meaningful. Report counts, not percentages.
 - The editing-readiness PRD (ER Phase 1) needs its own audio corpus for clicks and breaths. It can reuse this layout (`manuscript.json`, `cases/*.json` with a `split`, a `*_CORPUS` directory variable), but its labels are time ranges, so it cannot reuse these files.

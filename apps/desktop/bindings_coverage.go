@@ -12,7 +12,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 )
 
-// The recording coverage bindings (recording-coverage-analysis.prd.md Phase 5). A check runs only when the narrator
+// The recording coverage bindings (docs/utilities/recording-coverage.md, ADR 0129). A check runs only when the narrator
 // asks (Q14): nothing here starts one on its own, and the chapter payload's recordedFraction only reads stored
 // results. A running check reports every state change as the "coverage:state" live event and ends with one job:ended
 // event (ADR 0076).

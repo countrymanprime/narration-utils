@@ -11,7 +11,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 )
 
-// The recording check's four settings (docs/prds/recording-coverage-analysis.prd.md Q3, Phase 7) are exactly the keys
+// The recording check's four settings (docs/utilities/recording-coverage.md Q3, ADR 0131) are exactly the keys
 // coverage.ResolveSettings reads: a field it did not read would change nothing.
 func TestTheRecordingCoverageFieldsAreTheCoverageSettings(t *testing.T) {
 	var fields []string
@@ -29,9 +29,9 @@ func TestTheRecordingCoverageFieldsAreTheCoverageSettings(t *testing.T) {
 	}
 }
 
-// With nothing set, the effective settings are the Proposed, uncalibrated defaults (Q3: 0.95, 3, 8, 3), and every
+// With nothing set, the effective settings are the shipped defaults (ADR 0132: 0.8, 3, 8, 3), and every
 // default passes its own field's range.
-func TestTheRecordingCoverageDefaultsAreTheProposedValues(t *testing.T) {
+func TestTheRecordingCoverageDefaultsAreTheShippedValues(t *testing.T) {
 	host := newTestHostForDeliverySettings(t, t.TempDir())
 	if got := coverageSettings(host.settings); got != coverage.DefaultSettings {
 		t.Fatalf("coverageSettings = %+v, want %+v", got, coverage.DefaultSettings)

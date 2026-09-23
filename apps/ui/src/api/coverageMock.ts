@@ -1,4 +1,4 @@
-// The browser mock's recording coverage (docs/prds/recording-coverage-analysis.prd.md Phase 5). It answers the same
+// The browser mock's recording coverage (docs/utilities/recording-coverage.md, ADR 0129). It answers the same
 // states the host does: a chapter whose fixture carries a recordedFraction has a current check with that share of its
 // words present, any other chapter was never checked, a seeded chapter reads stale (and so loses its recordedFraction),
 // a started check steps through real-looking progress to a result and one job end, and a seeded refusal answers every

@@ -84,8 +84,8 @@ func TestAFreshRunTranscribesEveryItemAndWritesACompleteRecordAndResult(t *testi
 	if !strings.HasPrefix(result.Basis.Label, "saved project, file modified ") {
 		t.Fatalf("basis = %+v", result.Basis)
 	}
-	if len(result.Result.Report.Regions) != 1 || result.Result.Report.TextComplete(DefaultThresholds) {
-		t.Fatalf("a two-word tail must be reported and fail the default thresholds: %+v", result.Result.Report)
+	if len(result.Result.Report.Regions) != 1 || result.Result.Report.TextComplete(Thresholds{MinParagraphPresent: DefaultThresholds.MinParagraphPresent, MaxMissingRun: 1}) {
+		t.Fatalf("a two-word tail must be reported and fail a one-word missing-run limit: %+v", result.Result.Report)
 	}
 }
 

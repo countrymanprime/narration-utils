@@ -218,8 +218,9 @@ type Thresholds struct {
 	MaxMissingRun       int
 }
 
-// DefaultThresholds are the Proposed, uncalibrated defaults (Q3, Q15).
-var DefaultThresholds = Thresholds{MinParagraphPresent: 0.95, MaxMissingRun: 3}
+// DefaultThresholds are the shipped defaults (ADR 0132): calibrated on the
+// synthetic fixtures only, so still Proposed and uncalibrated on real narration (Q15).
+var DefaultThresholds = Thresholds{MinParagraphPresent: 0.8, MaxMissingRun: 3}
 
 // TextComplete is the PRD's chapter `text_complete`: every paragraph's present
 // fraction is at or above the minimum and no missing run, head and tail

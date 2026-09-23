@@ -97,7 +97,7 @@ export const STATE_CATALOG: StateEntry[] = [
       'Home with no linked REAPER project file (?mockNoDaw=1, PRD project-workspace-and-daw-link.prd.md W13-W16): the header pill reads "No REAPER project linked" and the Proofing nav item is locked',
   },
 
-  // The recording check (recording-coverage-analysis.prd.md Phase 6), from a row of the per-chapter breakdown. The mock's chapters 1-3 have a
+  // The recording check (docs/utilities/recording-coverage.md, ADR 0130), from a row of the per-chapter breakdown. The mock's chapters 1-3 have a
   // current check with every word, 4-6 a current check with a third of the text missing, the rest were never checked.
   {
     page: 'home',
@@ -546,7 +546,7 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'settings',
     state: 'global-recording-check',
     description:
-      'Settings, Global scope / Recording check category (recording-coverage PRD Phase 7): the four number settings at their Proposed defaults (0.95, 3, 8, 3 words), under a summary that labels them uncalibrated and states the rule they make',
+      'Settings, Global scope / Recording check category (ADR 0131): the four number settings at their defaults (0.8, 3, 8, 3 words; ADR 0132), under a summary that labels them uncalibrated and states the rule they make',
     ...REFLOW,
   },
   { page: 'settings', state: 'global-proofing', description: 'Settings, Global scope / Proofing category', ...REFLOW },

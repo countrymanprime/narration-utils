@@ -16,11 +16,11 @@ func TestResolveSettingsReadsEveryKey(t *testing.T) {
 	}
 }
 
-func TestResolveSettingsWithNothingSetIsTheProposedDefaults(t *testing.T) {
+func TestResolveSettingsWithNothingSetIsTheShippedDefaults(t *testing.T) {
 	got := ResolveSettings(lookupFrom(nil))
-	want := Settings{Alignment: AlignmentParams{MaxMisreadRun: 8, MinAnchorRun: 3}, Thresholds: Thresholds{MinParagraphPresent: 0.95, MaxMissingRun: 3}}
+	want := Settings{Alignment: AlignmentParams{MaxMisreadRun: 8, MinAnchorRun: 3}, Thresholds: Thresholds{MinParagraphPresent: 0.8, MaxMissingRun: 3}}
 	if got != want || got != DefaultSettings {
-		t.Fatalf("ResolveSettings = %+v, want the Q3 defaults %+v", got, want)
+		t.Fatalf("ResolveSettings = %+v, want the shipped defaults (ADR 0132) %+v", got, want)
 	}
 }
 

@@ -1,5 +1,5 @@
 // Package coverage is the recording-coverage analysis PRD's Go service
-// (docs/prds/recording-coverage-analysis.prd.md, Phase 4; ADR 0128). For one
+// (docs/utilities/recording-coverage.md, ADR 0128). For one
 // manuscript chapter and its narrator-confirmed track, it builds the list of
 // played items from the saved REAPER project only (never live REAPER state),
 // seeds each item's words from the analysis evidence cache, runs the Transcript

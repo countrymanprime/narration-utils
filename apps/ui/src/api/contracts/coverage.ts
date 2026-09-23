@@ -1,6 +1,6 @@
 import type { WhisperInstallState, WhisperModel } from './whisper';
 
-// Recording coverage (docs/prds/recording-coverage-analysis.prd.md Phase 5): a check of one chapter's saved recording
+// Recording coverage (docs/utilities/recording-coverage.md, ADR 0129): a check of one chapter's saved recording
 // against its manuscript text, run only when the narrator asks (Q14), and the stored result read back as current,
 // stale or never. The host shapes are apps/desktop/bindings_coverage.go and apps/desktop/internal/coverage/view.go.
 

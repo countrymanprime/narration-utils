@@ -1,5 +1,5 @@
 """Tests for the recording-coverage model (`core/recording_coverage.py`), the PRD's Definitions made
-executable: `docs/prds/recording-coverage-analysis.prd.md` Phase 2, Q1, Q3 and Q11."""
+executable: docs/utilities/recording-coverage.md, ADR 0126, Q1, Q3 and Q11."""
 
 import difflib
 
@@ -219,8 +219,8 @@ def test_out_of_range_parameters_are_rejected(build, message):
         build()
 
 
-def test_the_defaults_are_the_prds_proposed_starting_values():
-    assert (cov.Thresholds().min_paragraph_present, cov.Thresholds().max_missing_run) == (0.95, 3)
+def test_the_defaults_are_the_shipped_calibrated_values():
+    assert (cov.Thresholds().min_paragraph_present, cov.Thresholds().max_missing_run) == (0.8, 3)
     assert (cov.AlignmentParams().max_misread_run, cov.AlignmentParams().min_anchor_run) == (8, 3)
 
 

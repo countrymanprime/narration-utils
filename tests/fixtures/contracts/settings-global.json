@@ -238,7 +238,7 @@
     {
       "choices": null,
       "effectiveSource": "repo_default",
-      "effectiveValue": "0.95",
+      "effectiveValue": "0.8",
       "isSet": false,
       "key": "min_paragraph_present",
       "kind": "number",

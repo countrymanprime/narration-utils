@@ -94,7 +94,7 @@ func TestContractImportJobsAndReaderPayloads(t *testing.T) {
 	}
 	pin(t, "manuscript-reader", reader)
 
-	// A chapter the recording coverage measured carries recordedFraction (recording-coverage-analysis.prd.md D11);
+	// A chapter the recording coverage measured carries recordedFraction (docs/utilities/recording-coverage.md D11);
 	// the others still carry none.
 	service.SetRecordedFractions(func() map[string]float64 { return map[string]float64{first: 0.75} })
 	measured, err := service.Chapters()

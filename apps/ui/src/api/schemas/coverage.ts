@@ -12,7 +12,7 @@ import type {
 import { listFromNull, optionalFromNull } from './base';
 import { modelAssetRequiredSchema } from './whisper';
 
-// The recording coverage payloads (docs/prds/recording-coverage-analysis.prd.md Phase 5). The reason lists are pinned
+// The recording coverage payloads (docs/utilities/recording-coverage.md, ADR 0129). The reason lists are pinned
 // against the host by tests/fixtures/contracts/coverage-reasons.json, which a Go test writes from coverage.RefusalReasons.
 
 export const COVERAGE_REFUSAL_REASONS = [

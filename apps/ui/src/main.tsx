@@ -101,7 +101,7 @@ const mockChapterTags = (['ready', 'not-rendered'] as const).find((seed) => seed
 const mockChapterTagsEmbedError = mockParams.has('mockChapterTagsEmbedError');
 // `?mockCoverage=hold|stale` holds a started recording check at its last transcribing step (so the running dialog can be seen), or
 // makes Chapter 4's stored check read stale (an item was trimmed since), and `?mockCoverageRefusal=<reason>` answers every start
-// with that refusal (recording-coverage-analysis.prd.md Phase 6).
+// with that refusal (docs/utilities/recording-coverage.md, ADR 0130).
 const mockCoverage = (['hold', 'stale'] as const).find((seed) => seed === mockParams.get('mockCoverage'));
 const mockCoverageRefusal = COVERAGE_REFUSAL_REASONS.find((reason) => reason === mockParams.get('mockCoverageRefusal'));
 const mockInitial = {

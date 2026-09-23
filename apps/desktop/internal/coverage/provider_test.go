@@ -90,6 +90,7 @@ func TestProviderAppliesAThresholdChangeOnReadWithoutRunningAnything(t *testing.
 	service := p.service(sidecar)
 	run(t, service, testRequest())
 	settings, unavailable := DefaultSettings, ""
+	settings.Thresholds.MinParagraphPresent = 0.95
 	provider := providerFor(service, &settings, &unavailable)
 
 	notMet := oneSignal(t, provider, chapterOne(), viewOf(t, p))

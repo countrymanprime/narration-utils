@@ -43,7 +43,7 @@ function coverageWorkJob(state: CoverageState, logs: string[], now: number): Wor
 }
 
 /**
- * One chapter's recording check (docs/prds/recording-coverage-analysis.prd.md Phase 6): the stored result (current, stale or never, with
+ * One chapter's recording check (docs/utilities/recording-coverage.md, ADR 0130): the stored result (current, stale or never, with
  * its reasons and the saved-project basis), the check itself on demand (never on its own, Q14) with real progress and Cancel in the shared
  * work dialog, the Whisper model's first-use question when it is not installed (the download is never silent), and the chapter-track link
  * right in the dialog when the check needs one.
