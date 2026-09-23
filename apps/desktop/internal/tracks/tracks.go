@@ -54,6 +54,11 @@ type Item struct {
 	// Ext is the item's own extension data (<EXTI>, REAPER's P_EXT), nil
 	// when the item carries none.
 	Ext map[string]string `json:"-"`
+	// Lane is the item's fixed item lane (0 is the top lane) on a track in
+	// fixed-lane mode (Track.FixedLanes), and 0 on any other track. The .rpp
+	// has no lane number: it is read from the item's YPOS top fraction and
+	// the track's ITEMLANES (spike S7, ADR 0147).
+	Lane int `json:"-"`
 }
 
 // Active returns the item's active take (Takes[ActiveTake]) - the take
@@ -127,6 +132,28 @@ type Track struct {
 	// narrator is recording; not on the TracksList wire contract (json:"-").
 	Selected bool `json:"-"`
 	Armed    bool `json:"-"`
+	// FixedLanes is true for a track in fixed item lane mode (FREEMODE 2).
+	// Several items at one position on such a track are retakes on separate
+	// lanes, not overlapping audio (spike S7, ADR 0147). The next two fields
+	// are zero on any other track.
+	FixedLanes bool `json:"-"`
+	// LaneCount is the track's lane count (ITEMLANES).
+	LaneCount int `json:"-"`
+	// PlayingLanes lists, in order, the lanes REAPER plays: the bits set in
+	// LANESOLO, or every lane when the track has no LANESOLO line.
+	PlayingLanes []int `json:"-"`
+}
+
+// LanePlays reports whether REAPER plays the given lane of a fixed-lane
+// track. It is false for a lane the track does not have, and on a track that
+// is not in fixed-lane mode.
+func (track Track) LanePlays(lane int) bool {
+	for _, playing := range track.PlayingLanes {
+		if playing == lane {
+			return true
+		}
+	}
+	return false
 }
 
 type Project struct {

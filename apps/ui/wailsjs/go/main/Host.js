@@ -394,6 +394,18 @@ export function RenderConfigSuggestFolder() {
   return window['go']['main']['Host']['RenderConfigSuggestFolder']();
 }
 
+export function RetakeLanesList() {
+  return window['go']['main']['Host']['RetakeLanesList']();
+}
+
+export function RetakeLanesPick(arg1, arg2) {
+  return window['go']['main']['Host']['RetakeLanesPick'](arg1, arg2);
+}
+
+export function RetakeLanesState() {
+  return window['go']['main']['Host']['RetakeLanesState']();
+}
+
 export function SystemLookup(arg1) {
   return window['go']['main']['Host']['SystemLookup'](arg1);
 }

@@ -16,6 +16,8 @@ import type {
   ReaderState,
   RenderConfigState,
   CleanupToolsState,
+  RetakeLanesList,
+  RetakeLanesState,
   ScopedSettingField,
   TeleprompterDevice,
   TextSpan,
@@ -953,6 +955,61 @@ export const WIRE_CLEANUP_TOOLS_ERROR: CleanupToolsState = {
   message: 'Magnolius DeClick is not installed in REAPER. Install it yourself (ReaPack, or Actions > Load ReaScript); Narration Utils never installs it.',
   tool: 'magnolius_declick',
   action: '',
+};
+
+/** Two lines of Chapter 1 recorded as retakes on fixed lanes, lane 1 (index 0) playing in the saved project. Same shape
+ * as tests/fixtures/contracts/retake-lanes-list.json, which is the S7 spike project and so has test-case track names. */
+export const WIRE_RETAKE_LANES_LIST: RetakeLanesList = {
+  laneTracks: 1,
+  lines: [
+    {
+      lineId: 'line-000012',
+      trackGuid: '{0E4D1D7F-D039-674D-87E6-719376DE95EC}',
+      trackName: 'Chapter 1',
+      retakes: [
+        { itemGuid: '{3A1F0C2E-5B6D-4E7F-8091-A2B3C4D5E601}', name: 'ch1_pass1.wav', lane: 0, plays: true, position: 42.5, length: 6.2 },
+        { itemGuid: '{3A1F0C2E-5B6D-4E7F-8091-A2B3C4D5E602}', name: 'ch1_pass2.wav', lane: 1, plays: false, position: 42.5, length: 5.9 },
+        { itemGuid: '{3A1F0C2E-5B6D-4E7F-8091-A2B3C4D5E603}', name: 'ch1_pass3.wav', lane: 2, plays: false, position: 42.5, length: 6.0 },
+      ],
+    },
+    {
+      lineId: 'line-000013',
+      trackGuid: '{0E4D1D7F-D039-674D-87E6-719376DE95EC}',
+      trackName: 'Chapter 1',
+      retakes: [
+        { itemGuid: '{3A1F0C2E-5B6D-4E7F-8091-A2B3C4D5E611}', name: 'ch1_pass1.wav', lane: 0, plays: true, position: 49.1, length: 4.4 },
+        { itemGuid: '{3A1F0C2E-5B6D-4E7F-8091-A2B3C4D5E612}', name: 'ch1_pass2.wav', lane: 1, plays: false, position: 49.1, length: 4.1 },
+      ],
+    },
+  ],
+};
+
+/** A project with no track in fixed-lane mode (the list answer, e.g. tests/fixtures/contracts/basic.rpp's). */
+export const WIRE_RETAKE_LANES_NONE: RetakeLanesList = { laneTracks: 0, lines: [] };
+
+/** The Go host's RetakeLanesState before any pick (mirrors tests/fixtures/contracts/retake-lanes-idle.json). */
+export const WIRE_RETAKE_LANES_IDLE: RetakeLanesState = { phase: 'idle', message: '', lineId: '', itemGuid: '', trackName: '' };
+
+/** A pick REAPER confirmed: lane 2 of Chapter 1 now plays alone (same shape as tests/fixtures/contracts/retake-lanes-picked.json). */
+export const WIRE_RETAKE_LANES_PICKED: RetakeLanesState = {
+  runId: '1790000000000000',
+  phase: 'picked',
+  message: 'Lane 2 is now the only lane playing on Chapter 1. To go back, use Undo in REAPER: it restores what played before.',
+  lineId: 'line-000012',
+  itemGuid: '{3A1F0C2E-5B6D-4E7F-8091-A2B3C4D5E602}',
+  trackName: 'Chapter 1',
+  lane: 1,
+};
+
+/** REAPER refused the pick: the narrator turned lanes off since the project was saved (narration_retake_lanes.lua's message). */
+export const WIRE_RETAKE_LANES_ERROR: RetakeLanesState = {
+  runId: '1790000000000001',
+  phase: 'error',
+  message:
+    'The track "Chapter 1" is not in fixed item lane mode, so it has no lanes to choose from. Narration Utils never turns lanes on or converts takes to lanes: do that in REAPER if you want to.',
+  lineId: 'line-000012',
+  itemGuid: '{3A1F0C2E-5B6D-4E7F-8091-A2B3C4D5E602}',
+  trackName: 'Chapter 1',
 };
 
 /** No chapter render has been configured yet (mirrors tests/fixtures/contracts/chapter-tags-preview-idle.json). */

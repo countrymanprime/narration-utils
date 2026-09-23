@@ -411,6 +411,20 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
     'ok',
     'Opens an allow-listed repair dialog in REAPER (Phase 23, ADR 0146) and changes nothing itself. The pressed tool shows pending and the other is disabled until REAPER answers; the opened state or REAPER\'s refusal (no selection, not installed) shows inline.',
   ),
+  'src/components/tracks/RetakeLanesDialog.tsx::subscribeRetakeLanes#1': subscription('The retake-lane state event, for the pick this dialog starts.'),
+  'src/components/tracks/RetakeLanesDialog.tsx::retakeLanesState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Hydrates whatever pick was already in flight when the dialog reopened; the live event follows anyway.'),
+  'src/components/tracks/RetakeLanesDialog.tsx::retakeLanesList#1': startup('Reads the saved .rpp for lines with retakes on fixed lanes; a failure shows inline as an alert instead of the list.'),
+  'src/components/tracks/RetakeLanesDialog.tsx::retakeLanesPick#1': row(
+    'click',
+    'job',
+    'pending',
+    'pending',
+    'ui',
+    'inline',
+    'no',
+    'ok',
+    'Makes one retake\'s lane the only one playing on its track (Phase 25, ADR 0147), one REAPER undo step and nothing else. The pressed lane shows pending and every other lane and Close are disabled until REAPER answers; the new play state or REAPER\'s refusal (stale retake, lanes off) shows inline.',
+  ),
   'src/components/tracks/ChapterTagsDialog.tsx::chapterTagsPreview#1': row('mount', 'instant', 'na', 'na', 'ui', 'inline', 'na', 'exempt', 'Loads the known chapters from the last chapter render; a failure shows inline instead of the chapter list.'),
   'src/components/tracks/ChapterTagsDialog.tsx::chapterTagsEmbed#1': row(
     'click',
@@ -514,6 +528,8 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Hydrates whatever run was already in flight, then refreshes the count; a failure here leaves the count at its last known value, and every narrator-triggered action still shows its own failure inline.',
   'src/components/review/FindingDetail.tsx#1':
     'Re-reads a finding after the host refused a decision, only to tell changed evidence apart; when the re-read fails too, the inline alert still shows the host reason for the refusal, so nothing is hidden.',
+  'src/components/tracks/RetakeLanesDialog.tsx#1':
+    'Hydrates whatever pick was already in flight when the dialog reopened; the list still loads and every pick shows its own failure inline.',
   'src/components/tracks/CleanupToolsDialog.tsx#1':
     'Hydrates whatever launch was already in flight when the dialog reopened; the narrator can press Open either way, and a launch shows its own failure inline.',
   'src/components/tracks/RenderConfigDialog.tsx#1':

@@ -87,3 +87,39 @@ H.test('with the default link the time selection and the loop points move togeth
   H.eq({ reaper_api.GetSet_LoopTimeRange2(0, false, true, 0, 0, false) }, { 1, 2 })
   H.eq({ reaper_api.GetSetRepeat(-1), reaper_api.GetSetRepeat(1), reaper_api.GetSetRepeat(2), reaper_api.GetSetRepeat(0) }, { 0, 1, 0, 0 })
 end)
+
+-- Spike S7 (REAPER 7.80, docs/research/reaper-spike-s7-fixed-lanes.md): track C_LANEPLAYS:N=1 silences every other
+-- lane, =2 adds a lane alongside (the exclusive one reads 2 from then on), and =0 on the only playing lane leaves no
+-- lane playing.
+H.test('a lane play state of 1 plays that lane alone, 2 adds a lane, and 0 can leave no lane playing', function()
+  local reaper_api, fake = api()
+  local track = fake:add_track('T')
+  fake:set_fixed_lanes(track, 3)
+  local function plays()
+    return {
+      reaper_api.GetMediaTrackInfo_Value(track, 'C_LANEPLAYS:0'),
+      reaper_api.GetMediaTrackInfo_Value(track, 'C_LANEPLAYS:1'),
+      reaper_api.GetMediaTrackInfo_Value(track, 'C_LANEPLAYS:2'),
+    }
+  end
+  H.eq(plays(), { 2, 2, 2 }, 'every lane plays after retakes are placed on lanes')
+  reaper_api.SetMediaTrackInfo_Value(track, 'C_LANEPLAYS:1', 1)
+  H.eq(plays(), { 0, 1, 0 })
+  reaper_api.SetMediaTrackInfo_Value(track, 'C_LANEPLAYS:2', 2)
+  H.eq(plays(), { 0, 2, 2 })
+  reaper_api.SetMediaTrackInfo_Value(track, 'C_LANEPLAYS:1', 0)
+  reaper_api.SetMediaTrackInfo_Value(track, 'C_LANEPLAYS:2', 0)
+  H.eq(plays(), { 0, 0, 0 })
+end)
+
+H.test('a track not in fixed-lane mode reads I_FREEMODE 0 and one lane that plays; an item reads its lane', function()
+  local reaper_api, fake = api()
+  local plain = fake:add_track('Plain')
+  H.eq({ reaper_api.GetMediaTrackInfo_Value(plain, 'I_FREEMODE'), reaper_api.GetMediaTrackInfo_Value(plain, 'I_NUMFIXEDLANES') }, { 0, 1 })
+  H.eq(reaper_api.GetMediaTrackInfo_Value(plain, 'C_LANEPLAYS:0'), 1)
+  local lanes = fake:add_track('Lanes')
+  fake:set_fixed_lanes(lanes, 3, { 0, 0, 1 })
+  local item = fake:add_item(lanes, { lane = 2 })
+  H.eq({ reaper_api.GetMediaTrackInfo_Value(lanes, 'I_FREEMODE'), reaper_api.GetMediaItemInfo_Value(item, 'I_FIXEDLANE') }, { 2, 2 })
+  H.eq(reaper_api.GetMediaItemInfo_Value(item, 'C_LANEPLAYS'), 1, 'the item-level value reads its lane state')
+end)

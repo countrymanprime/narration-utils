@@ -55,6 +55,7 @@ import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSug
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
 import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
 import { dictionaryLookupResultSchema } from './schemas/dictionary';
+import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
 import type { NarrationApi } from '../types';
 import * as host from '../../wailsjs/go/main/Host';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
@@ -283,6 +284,10 @@ export const wailsClient: NarrationApi = {
   cleanupToolsLaunch: (tool) => decode(cleanupToolsStartResultSchema, 'CleanupToolsLaunch', host.CleanupToolsLaunch(tool)),
   cleanupToolsState: () => decode(cleanupToolsStateSchema, 'CleanupToolsState', host.CleanupToolsState()),
   subscribeCleanupTools: (onUpdate) => subscribeChecked('cleanuptools:state', cleanupToolsStateSchema, onUpdate),
+  retakeLanesList: () => decode(retakeLanesListSchema, 'RetakeLanesList', host.RetakeLanesList()),
+  retakeLanesPick: (lineId, itemGuid) => decode(retakeLanesStartResultSchema, 'RetakeLanesPick', host.RetakeLanesPick(lineId, itemGuid)),
+  retakeLanesState: () => decode(retakeLanesStateSchema, 'RetakeLanesState', host.RetakeLanesState()),
+  subscribeRetakeLanes: (onUpdate) => subscribeChecked('retakelanes:state', retakeLanesStateSchema, onUpdate),
   chapterTagsPreview: () => decode(chapterTagsPreviewSchema, 'ChapterTagsPreview', host.ChapterTagsPreview()),
   chapterTagsEmbed: (destPath) => decode(chapterTagsEmbedResultSchema, 'ChapterTagsEmbed', host.ChapterTagsEmbed(destPath)),
   projectRecents: () => decode(recentProjectsSchema, 'ProjectRecents', host.ProjectRecents()),

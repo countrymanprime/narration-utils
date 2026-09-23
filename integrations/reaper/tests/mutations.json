@@ -340,5 +340,47 @@
     "file": "narration_cleanup.lua",
     "find": "if category == 'script' or category == 'custom' then",
     "replace": "if false then"
+  },
+  {
+    "name": "pick_retake_lane plays a lane on a track that is not in fixed-lane mode",
+    "file": "narration_retake_lanes.lua",
+    "find": "if reaper.GetMediaTrackInfo_Value(track, 'I_FREEMODE') ~= FIXED_LANE_MODE then",
+    "replace": "if false then"
+  },
+  {
+    "name": "pick_retake_lane turns lanes on for a track that has none, instead of refusing it",
+    "file": "narration_retake_lanes.lua",
+    "find": "  reaper.Undo_BeginBlock2(0)\n  reaper.SetMediaTrackInfo_Value(track, 'C_LANEPLAYS:' .. lane, PLAYS_EXCLUSIVELY)",
+    "replace": "  reaper.Undo_BeginBlock2(0)\n  reaper.SetMediaTrackInfo_Value(track, 'I_FREEMODE', FIXED_LANE_MODE)\n  reaper.SetMediaTrackInfo_Value(track, 'C_LANEPLAYS:' .. lane, PLAYS_EXCLUSIVELY)"
+  },
+  {
+    "name": "pick_retake_lane plays an item that no longer carries the line",
+    "file": "narration_retake_lanes.lua",
+    "find": "if stamped ~= line_id then",
+    "replace": "if false then"
+  },
+  {
+    "name": "pick_retake_lane adds the lane alongside the others instead of playing it alone",
+    "file": "narration_retake_lanes.lua",
+    "find": "local PLAYS_EXCLUSIVELY = 1",
+    "replace": "local PLAYS_EXCLUSIVELY = 2"
+  },
+  {
+    "name": "pick_retake_lane plays the lane through the read-only item-level C_LANEPLAYS",
+    "file": "narration_retake_lanes.lua",
+    "find": "reaper.SetMediaTrackInfo_Value(track, 'C_LANEPLAYS:' .. lane, PLAYS_EXCLUSIVELY)",
+    "replace": "reaper.SetMediaItemInfo_Value(item, 'C_LANEPLAYS', PLAYS_EXCLUSIVELY)"
+  },
+  {
+    "name": "pick_retake_lane changes the play state outside an undo block",
+    "file": "narration_retake_lanes.lua",
+    "find": "  reaper.Undo_BeginBlock2(0)\n  reaper.SetMediaTrackInfo_Value(track, 'C_LANEPLAYS:' .. lane, PLAYS_EXCLUSIVELY)\n  reaper.Undo_EndBlock2(0, 'Narration Utils: play retake lane ' .. (lane + 1), -1)",
+    "replace": "  reaper.SetMediaTrackInfo_Value(track, 'C_LANEPLAYS:' .. lane, PLAYS_EXCLUSIVELY)"
+  },
+  {
+    "name": "pick_retake_lane runs without the fixed-lane API",
+    "file": "narration_retake_lanes.lua",
+    "find": "if not has_lane_api() then",
+    "replace": "if false then"
   }
 ]

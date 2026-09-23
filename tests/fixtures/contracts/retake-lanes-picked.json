@@ -1,0 +1,9 @@
+{
+  "itemGuid": "{1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C}",
+  "lane": 1,
+  "lineId": "line-000004",
+  "message": "Lane 2 is now the only lane playing on B - retakes on lanes. To go back, use Undo in REAPER: it restores what played before.",
+  "phase": "picked",
+  "runId": "1790000000000000",
+  "trackName": "B - retakes on lanes"
+}

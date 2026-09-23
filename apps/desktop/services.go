@@ -12,6 +12,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/pickups"
 	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
+	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
@@ -33,6 +34,7 @@ type hostServices struct {
 	projectState *projectstate.Service
 	renderConfig *renderconfig.Service
 	cleanupTools *cleanuptools.Service
+	retakeLanes  *retakelanes.Service
 	settings     *settings.Store
 	teleprompter *teleprompter.Service
 	transcript   *transcript.Service
@@ -81,6 +83,7 @@ func (h *Host) services() hostServices {
 		projectState: h.projectState,
 		renderConfig: h.renderConfig,
 		cleanupTools: h.cleanupTools,
+		retakeLanes:  h.retakeLanes,
 		settings:     h.settings,
 		teleprompter: h.teleprompter,
 		transcript:   h.transcript,

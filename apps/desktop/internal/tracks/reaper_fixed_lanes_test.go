@@ -5,9 +5,9 @@ import (
 )
 
 // testdata/reaper/fixed-lanes.rpp was written by REAPER 7.80 during spike S7 (docs/research/reaper-spike-s7-fixed-lanes.md).
-// The parser does not model fixed item lanes yet: a lane is only the item's YPOS line and the track's ITEMLANES,
-// LANESOLO and LINKEDLANE lines, none of which it reads. These tests pin that it still parses such a project, and
-// what it sees, so the phase that teaches it lanes changes them on purpose.
+// A lane is only the item's YPOS line and the track's FREEMODE, ITEMLANES and LANESOLO lines. Phase 25 of the reaper
+// automation follow-through PRD (ADR 0147) taught the parser to read them, so retakes on lanes are no longer seen as
+// overlapping items; LINKEDLANE (comp areas) and LANENAME are still not read.
 
 const lineIDKey = "narration_utils_line_id"
 
@@ -31,23 +31,97 @@ func TestAFixedLaneProjectParsesEveryTrack(t *testing.T) {
 	}
 }
 
-// Track B holds three retakes of one line on lanes 0, 1 and 2, only lane 2 playing (LANESOLO 4). The parser reports
-// them as three overlapping items at the same position and cannot tell which one REAPER plays.
-func TestTheParserSeesRetakesOnLanesAsOverlappingItems(t *testing.T) {
+// Track B holds three retakes of one line on lanes 0, 1 and 2 of a 7-lane track, only lane 2 playing (LANESOLO 4),
+// plus a fourth item (another line) on lane 0. The parser now places each retake on its own lane and knows which
+// one REAPER plays.
+func TestTheParserPlacesRetakesOnTheirLanesAndKnowsWhichLanePlays(t *testing.T) {
 	track := trackNamed(t, parseReaperFixture(t, "fixed-lanes.rpp"), "B - retakes on lanes")
 
-	var retakes []Item
+	if !track.FixedLanes || track.LaneCount != 7 {
+		t.Fatalf("fixed lanes = %v, lane count = %d; want true, 7", track.FixedLanes, track.LaneCount)
+	}
+	if got := track.PlayingLanes; len(got) != 1 || got[0] != 2 {
+		t.Fatalf("playing lanes = %v, want [2]", got)
+	}
+	var lanes []int
 	for _, item := range track.Items {
-		if item.Ext[lineIDKey] == "line-000004" {
-			retakes = append(retakes, item)
+		if item.Ext[lineIDKey] != "line-000004" {
+			continue
 		}
-	}
-	if len(retakes) != 3 {
-		t.Fatalf("items stamped line-000004 = %d, want the three retakes", len(retakes))
-	}
-	for _, item := range retakes {
 		if item.Position != 0 || item.Length != 3 || !item.SourceAvailable {
 			t.Errorf("retake %q: position %v length %v available %v, want 0, 3, true", item.Name, item.Position, item.Length, item.SourceAvailable)
+		}
+		lanes = append(lanes, item.Lane)
+		if want := item.Lane == 2; track.LanePlays(item.Lane) != want {
+			t.Errorf("retake %q on lane %d plays = %v, want %v", item.Name, item.Lane, !want, want)
+		}
+	}
+	if len(lanes) != 3 || lanes[0] != 0 || lanes[1] != 1 || lanes[2] != 2 {
+		t.Fatalf("retake lanes = %v, want [0 1 2]", lanes)
+	}
+}
+
+// Lanes turned on by the API alone write ITEMLANES 1 with items at half the track height (YPOS 0 0.5 2), and REAPER
+// reopens that as two lanes (ITEMLANES 2 after a re-save). Either way every item is on lane 0, and with no LANESOLO
+// line every lane plays.
+func TestLanesTurnedOnByTheAPIAloneKeepEveryItemOnLaneZeroBeforeAndAfterAResave(t *testing.T) {
+	for _, fixture := range []struct {
+		file  string
+		lanes int
+	}{{"fixed-lanes.rpp", 1}, {"fixed-lanes-resaved.rpp", 2}} {
+		track := trackNamed(t, parseReaperFixture(t, fixture.file), "A2 - overlapping then lanes")
+		if !track.FixedLanes || track.LaneCount != fixture.lanes {
+			t.Fatalf("%s: fixed lanes = %v, lane count = %d; want true, %d", fixture.file, track.FixedLanes, track.LaneCount, fixture.lanes)
+		}
+		if len(track.PlayingLanes) != fixture.lanes {
+			t.Errorf("%s: playing lanes = %v, want every lane", fixture.file, track.PlayingLanes)
+		}
+		for _, item := range track.Items {
+			if item.Lane != 0 || !track.LanePlays(item.Lane) {
+				t.Errorf("%s: item %q lane %d plays %v, want lane 0 playing", fixture.file, item.Name, item.Lane, track.LanePlays(item.Lane))
+			}
+		}
+	}
+}
+
+// LANESOLO is a bitmask over several 32-bit words. E3 (takes exploded to two lanes) wrote 4294967293, every bit but
+// bit 1, then all-ones words: of its two lanes only lane 0 plays, the lane REAPER plays after a conversion.
+func TestLaneSoloIsABitmaskAndLanesPastTheTrackAreIgnored(t *testing.T) {
+	track := trackNamed(t, parseReaperFixture(t, "fixed-lanes.rpp"), "E3 - takes, then explode to lanes")
+
+	if track.LaneCount != 2 || len(track.PlayingLanes) != 1 || track.PlayingLanes[0] != 0 {
+		t.Fatalf("lane count = %d, playing = %v; want 2 lanes, [0]", track.LaneCount, track.PlayingLanes)
+	}
+	if track.Items[0].Lane != 0 || track.Items[1].Lane != 1 {
+		t.Fatalf("lanes = %d, %d; want 0, 1", track.Items[0].Lane, track.Items[1].Lane)
+	}
+	if track.LanePlays(5) || track.LanePlays(-1) {
+		t.Fatalf("a lane outside the track must not play")
+	}
+}
+
+// A track that is not in fixed-lane mode has no lanes to choose, even when a LANESOLO line survived a conversion
+// back (E2 has no FREEMODE line, and its one item reads YPOS 0 1 0): every item is on lane 0 and no lane is listed.
+func TestATrackWithoutFixedLaneModeHasNoLanes(t *testing.T) {
+	project := parseReaperFixture(t, "fixed-lanes.rpp")
+	for _, name := range []string{"E2 - takes, then convert to lanes", "E5 - lanes, lane 1 plays, convert to takes"} {
+		track := trackNamed(t, project, name)
+		if track.FixedLanes || track.LaneCount != 0 || track.PlayingLanes != nil {
+			t.Errorf("%s: fixed lanes = %v, count = %d, playing = %v; want false, 0, nil", name, track.FixedLanes, track.LaneCount, track.PlayingLanes)
+		}
+		for _, item := range track.Items {
+			if item.Lane != 0 {
+				t.Errorf("%s: item %q lane = %d, want 0", name, item.Name, item.Lane)
+			}
+		}
+	}
+	legacy, err := Parse("testdata/basic.rpp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, track := range legacy.Tracks {
+		if track.FixedLanes || track.LaneCount != 0 || track.LanePlays(0) {
+			t.Errorf("basic.rpp %q reads as a lane track", track.Name)
 		}
 	}
 }
@@ -96,6 +170,15 @@ func TestACompAreaCopyCarriesTheLineIDOfItsSource(t *testing.T) {
 	}
 	if len(guids) != 4 || named != 2 {
 		t.Fatalf("distinct GUIDs = %d, items named retake 3 = %d; want 4 and 2", len(guids), named)
+	}
+	// The comp lane "C1" was inserted at the top: the copy is on lane 0, the only lane playing (LANESOLO 1), and
+	// the three retakes moved down to lanes 1 to 3.
+	lanes := map[int]string{}
+	for _, item := range track.Items {
+		lanes[item.Lane] = item.GUID
+	}
+	if len(lanes) != 4 || len(track.PlayingLanes) != 1 || track.PlayingLanes[0] != 0 {
+		t.Fatalf("lanes = %v, playing = %v; want four lanes, [0]", lanes, track.PlayingLanes)
 	}
 }
 

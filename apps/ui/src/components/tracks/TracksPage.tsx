@@ -11,6 +11,7 @@ import { LinkChaptersDialog } from './LinkChaptersDialog';
 import { PickupsDialog } from './PickupsDialog';
 import { RenderConfigDialog } from './RenderConfigDialog';
 import { CleanupToolsDialog } from './CleanupToolsDialog';
+import { RetakeLanesDialog } from './RetakeLanesDialog';
 import { ChapterTagsDialog } from './ChapterTagsDialog';
 import type { ManuscriptChapter, Track, TracksDiscovery, TracksProject } from '../../types';
 
@@ -141,6 +142,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
   const [pickupsOpen, setPickupsOpen] = useState(false);
   const [renderConfigOpen, setRenderConfigOpen] = useState(false);
   const [cleanupToolsOpen, setCleanupToolsOpen] = useState(false);
+  const [retakeLanesOpen, setRetakeLanesOpen] = useState(false);
   const [chapterTagsOpen, setChapterTagsOpen] = useState(false);
 
   useEffect(() => {
@@ -227,6 +229,9 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
             <Button variant="ghost" onClick={() => setCleanupToolsOpen(true)}>
               Cleanup tools…
             </Button>
+            <Button variant="ghost" onClick={() => setRetakeLanesOpen(true)}>
+              Retakes on lanes…
+            </Button>
           </div>
         )}
       </div>
@@ -236,6 +241,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
       {renderConfigOpen && <RenderConfigDialog onClose={() => setRenderConfigOpen(false)} />}
       {chapterTagsOpen && <ChapterTagsDialog onClose={() => setChapterTagsOpen(false)} />}
       {cleanupToolsOpen && <CleanupToolsDialog onClose={() => setCleanupToolsOpen(false)} />}
+      {retakeLanesOpen && <RetakeLanesDialog onClose={() => setRetakeLanesOpen(false)} />}
       {error && (
         <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
           {error}
