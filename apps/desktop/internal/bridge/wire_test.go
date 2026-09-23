@@ -20,6 +20,11 @@ var realEvents = map[string][]string{
 	"LINES_CONFLICT":        {"LINES_CONFLICT", "t1", "{AAAAAAAA-0000-4000-8000-000000000002}"},
 	"REGIONS_CREATED":       {"REGIONS_CREATED", "t1", "4", "0", "0"},
 	"PROJECT_STATUS":        {"PROJECT_STATUS", "", "C:/p/Book.rpp", "0"},
+	"PICKUPS_IMPORTED":      {"PICKUPS_IMPORTED", "t1", "2", "0", "0"},
+	"PICKUPS_EXPORTED":      {"PICKUPS_EXPORTED", "t1", "C:/s/pickups.txt", "2"},
+	"PICKUPS_COUNTED":       {"PICKUPS_COUNTED", "t1", "1", "2"},
+	"PICKUP_NEXT":           {"PICKUP_NEXT", "t1", "9.25", "narrator", "Mispronounced"},
+	"PICKUP_RESOLVED":       {"PICKUP_RESOLVED", "t1", "9.25", "narrator", "Mispronounced"},
 }
 
 func TestEveryRealEventPassesItsTable(t *testing.T) {

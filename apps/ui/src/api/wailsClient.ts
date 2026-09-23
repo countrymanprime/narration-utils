@@ -31,6 +31,7 @@ import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema
 import { TELEPROMPTER_EVENT_TYPES, teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
 import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
+import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
 import type { NarrationApi } from '../types';
 import * as host from '../../wailsjs/go/main/Host';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
@@ -226,6 +227,13 @@ export const wailsClient: NarrationApi = {
   lineIdentityRead: () => decode(lineIdentityStartResultSchema, 'LineIdentityRead', host.LineIdentityRead()),
   lineIdentityState: () => decode(lineIdentityStateSchema, 'LineIdentityState', host.LineIdentityState()),
   subscribeLineIdentity: (onUpdate) => subscribeChecked('lineidentity:state', lineIdentityStateSchema, onUpdate),
+  pickupsImport: (csvText) => decode(pickupsImportResultSchema, 'PickupsImport', host.PickupsImport(csvText)),
+  pickupsExport: () => decode(pickupsStartResultSchema, 'PickupsExport', host.PickupsExport()),
+  pickupsNext: () => decode(pickupsStartResultSchema, 'PickupsNext', host.PickupsNext()),
+  pickupsResolve: (position) => decode(pickupsStartResultSchema, 'PickupsResolve', host.PickupsResolve(position)),
+  pickupsCount: () => decode(pickupsStartResultSchema, 'PickupsCount', host.PickupsCount()),
+  pickupsState: () => decode(pickupsStateSchema, 'PickupsState', host.PickupsState()),
+  subscribePickups: (onUpdate) => subscribeChecked('pickups:state', pickupsStateSchema, onUpdate),
   projectRecents: () => decode(recentProjectsSchema, 'ProjectRecents', host.ProjectRecents()),
   selectProjectFolder: () => decode(projectFolderSelectionSchema, 'ProjectSelectFolder', host.ProjectSelectFolder()),
   switchProject: (path, name) => decode(projectSwitchResultSchema, 'ProjectSwitch', host.ProjectSwitch(path, name ?? '')),

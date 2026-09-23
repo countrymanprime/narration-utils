@@ -311,6 +311,31 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'link-chapters-error',
     description: 'Tracks, "Link chapters" dialog when REAPER reports a problem - inline error message, nothing written',
   },
+  {
+    page: 'tracks',
+    state: 'pickups-empty',
+    description: 'Tracks, "Pickups" dialog open before any import - "No pickups yet", Next disabled, Export disabled',
+  },
+  {
+    page: 'tracks',
+    state: 'pickups-imported',
+    description: 'Tracks, "Pickups" dialog after a completed CSV import - remaining count and the import summary shown',
+  },
+  {
+    page: 'tracks',
+    state: 'pickups-import-errors',
+    description: 'Tracks, "Pickups" dialog after importing a CSV with an unusable row - the row error listed, the usable row still counted',
+  },
+  {
+    page: 'tracks',
+    state: 'pickups-next',
+    description: 'Tracks, "Pickups" dialog after "Next pickup" - the pickup\'s tag and note shown with "Mark this pickup done"',
+  },
+  {
+    page: 'tracks',
+    state: 'pickups-error',
+    description: 'Tracks, "Pickups" dialog when REAPER reports a problem - inline error message (reached via the ?mockPickups=error mock seam)',
+  },
 
   // Teleprompter
   {

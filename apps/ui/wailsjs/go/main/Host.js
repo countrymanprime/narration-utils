@@ -222,6 +222,30 @@ export function ManuscriptSetChapterStatus(arg1, arg2) {
   return window['go']['main']['Host']['ManuscriptSetChapterStatus'](arg1, arg2);
 }
 
+export function PickupsCount() {
+  return window['go']['main']['Host']['PickupsCount']();
+}
+
+export function PickupsExport() {
+  return window['go']['main']['Host']['PickupsExport']();
+}
+
+export function PickupsImport(arg1) {
+  return window['go']['main']['Host']['PickupsImport'](arg1);
+}
+
+export function PickupsNext() {
+  return window['go']['main']['Host']['PickupsNext']();
+}
+
+export function PickupsResolve(arg1) {
+  return window['go']['main']['Host']['PickupsResolve'](arg1);
+}
+
+export function PickupsState() {
+  return window['go']['main']['Host']['PickupsState']();
+}
+
 export function ProjectCreateIn(arg1, arg2) {
   return window['go']['main']['Host']['ProjectCreateIn'](arg1, arg2);
 }

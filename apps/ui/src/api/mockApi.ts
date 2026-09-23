@@ -17,6 +17,8 @@ import type {
   LineIdentityState,
   ManuscriptNote,
   NarrationApi,
+  PickupsMoment,
+  PickupsState,
   ProjectAttachState,
   ReaderBookmark,
   ReaderState,
@@ -44,6 +46,11 @@ import {
   WIRE_LOGS,
   WIRE_NOTES,
   WIRE_PARAGRAPHS,
+  WIRE_PICKUPS_ERROR,
+  WIRE_PICKUPS_EXPORT_SUCCESS,
+  WIRE_PICKUPS_IDLE,
+  WIRE_PICKUPS_IMPORT_SUCCESS,
+  WIRE_PICKUPS_NEXT_SUCCESS,
   withFormatting,
   WIRE_READER_STATE,
   WIRE_TELEPROMPTER_DEVICES,
@@ -321,6 +328,8 @@ export function createMockApi(
     chapterTrackMappings?: TrackMapping[];
     /** Boots LineIdentityState already at this result, so "Link chapters" states can be seen without stepping through a run. */
     lineIdentity?: 'success' | 'conflict' | 'error';
+    /** Boots PickupsState already at this result, so the pickup list's states can be seen without stepping through a run. */
+    pickups?: 'import-success' | 'next-success' | 'export-success' | 'error';
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -496,6 +505,49 @@ export function createMockApi(
   );
   const lineIdentitySubscribers = new Set<(state: LineIdentityState) => void>();
   const publishLineIdentity = () => lineIdentitySubscribers.forEach((fn) => fn(wireClone(lineIdentity)));
+  let pickups: PickupsState = wireClone(
+    initial.pickups === 'import-success'
+      ? WIRE_PICKUPS_IMPORT_SUCCESS
+      : initial.pickups === 'next-success'
+        ? WIRE_PICKUPS_NEXT_SUCCESS
+        : initial.pickups === 'export-success'
+          ? WIRE_PICKUPS_EXPORT_SUCCESS
+          : initial.pickups === 'error'
+            ? WIRE_PICKUPS_ERROR
+            : WIRE_PICKUPS_IDLE,
+  );
+  // The pickups a real REAPER project would still have open: seeded to match whichever WIRE_PICKUPS_* fixture
+  // booted above, so Next and Resolve behave consistently with what the seed already shows as remaining.
+  let pickupsOpen: PickupsMoment[] =
+    initial.pickups === undefined || initial.pickups === 'error'
+      ? []
+      : [
+          { position: 9.25, tag: 'narrator', note: 'Mispronounced "labyrinthine"' },
+          { position: 42, tag: '', note: 'Dog barked in the background' },
+        ];
+  let pickupsResolvedCount = 0;
+  // The 'error' seed models a broken REAPER script (the recurring cause a real ERROR event reports), not a
+  // one-off: every action keeps failing the same way until the narrator fixes REAPER and reopens, the same as
+  // a real session import_pickups/next_pickup/etc. would if the script itself is what's wrong.
+  const pickupsAlwaysErrors = initial.pickups === 'error';
+  const pickupsSubscribers = new Set<(state: PickupsState) => void>();
+  const publishPickups = () => pickupsSubscribers.forEach((fn) => fn(wireClone(pickups)));
+  // Mirrors the Go service's begin(): every new run starts from a clean state (no stale next/resolved/importReport/csv
+  // from a previous run), except remaining/total, which survive so the count does not flash back to zero.
+  const beginPickups = (phase: PickupsState['phase'], message: string) => {
+    pickups = { ...wireClone(WIRE_PICKUPS_IDLE), runId: String(Date.now()), phase, message, remaining: pickups.remaining, total: pickups.total };
+  };
+  // A run's settled outcome is either onSuccess (the normal path) or, when pickupsAlwaysErrors, the same
+  // REAPER error every time. Every action's setTimeout callback runs this instead of writing its own success
+  // state directly, so the 'error' seed stays broken across every action, not just the first.
+  const settlePickups = (onSuccess: () => void) => {
+    if (pickupsAlwaysErrors) {
+      pickups = { ...pickups, phase: 'error', message: WIRE_PICKUPS_ERROR.message };
+    } else {
+      onSuccess();
+    }
+    publishPickups();
+  };
   // A job that ends tells whoever listens, after the call that started it has returned, the way the host does (ADR 0076). The mock ends
   // only the Story Bible rebuild this way: its comparison run is driven by a timer the visual suite steps through, and a toast raised at
   // the end of one would land in every screenshot of the results.
@@ -1214,6 +1266,122 @@ export function createMockApi(
       lineIdentitySubscribers.add(onUpdate);
       onUpdate(wireClone(lineIdentity));
       return () => lineIdentitySubscribers.delete(onUpdate);
+    },
+    pickupsImport: async (csvText) => {
+      const lines = csvText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      const dataLines = lines.length > 0 && lines[0].toLowerCase().startsWith('start') ? lines.slice(1) : lines;
+      const rowErrors: string[] = [];
+      const added: PickupsMoment[] = [];
+      dataLines.forEach((line, index) => {
+        const [startRaw, note, tag] = line.split(',');
+        const position = Number(startRaw);
+        if (!Number.isFinite(position) || position < 0 || !note) {
+          rowErrors.push(`line ${index + 1}: could not parse this row`);
+          return;
+        }
+        added.push({ position, note: note.trim(), tag: (tag ?? '').trim() });
+      });
+      if (added.length === 0) throw new Error(`no valid pickups were found in the file${rowErrors[0] ? `: ${rowErrors[0]}` : ''}`);
+      pickupsOpen = [...pickupsOpen, ...added];
+      beginPickups('importing', 'Importing pickups into REAPER…');
+      publishPickups();
+      setTimeout(() => {
+        if (pickups.phase !== 'importing') return;
+        settlePickups(() => {
+          pickups = {
+            ...pickups,
+            phase: 'success',
+            message: `Imported ${added.length} pickup${added.length === 1 ? '' : 's'}.`,
+            importReport: { added: added.length, existing: 0, invalid: 0 },
+            remaining: pickupsOpen.length,
+            total: pickupsOpen.length + pickupsResolvedCount,
+          };
+        });
+      }, 300);
+      return { status: 'started', rowErrors };
+    },
+    pickupsExport: async () => {
+      beginPickups('exporting', 'Exporting pickups from REAPER…');
+      publishPickups();
+      setTimeout(() => {
+        if (pickups.phase !== 'exporting') return;
+        settlePickups(() => {
+          const rows = pickupsOpen.map((row) => `${row.position.toFixed(6)},${row.note},${row.tag}`);
+          const csv = ['start,note,tag', ...rows].join('\n') + (rows.length > 0 ? '\n' : '');
+          pickups = {
+            ...pickups,
+            phase: 'success',
+            message: `Exported ${pickupsOpen.length} pickup${pickupsOpen.length === 1 ? '' : 's'}.`,
+            csv,
+            remaining: pickupsOpen.length,
+            total: pickupsOpen.length + pickupsResolvedCount,
+          };
+        });
+      }, 300);
+      return { status: 'started' };
+    },
+    pickupsNext: async () => {
+      beginPickups('jumping', 'Jumping to the next pickup…');
+      publishPickups();
+      setTimeout(() => {
+        if (pickups.phase !== 'jumping') return;
+        settlePickups(() => {
+          if (pickupsOpen.length === 0) {
+            pickups = { ...pickups, phase: 'error', message: 'No pickups remain.' };
+          } else {
+            pickups = { ...pickups, phase: 'success', message: 'Jumped to the next pickup.', next: pickupsOpen[0] };
+          }
+        });
+      }, 300);
+      return { status: 'started' };
+    },
+    pickupsResolve: async (position) => {
+      beginPickups('resolving', 'Resolving this pickup…');
+      publishPickups();
+      setTimeout(() => {
+        if (pickups.phase !== 'resolving') return;
+        settlePickups(() => {
+          const index = pickupsOpen.findIndex((row) => Math.abs(row.position - position) <= 0.15);
+          if (index < 0) {
+            pickups = { ...pickups, phase: 'error', message: 'No open pickup was found at that position.' };
+          } else {
+            const resolved = pickupsOpen[index];
+            pickupsOpen = pickupsOpen.filter((_, candidateIndex) => candidateIndex !== index);
+            pickupsResolvedCount += 1;
+            pickups = {
+              ...pickups,
+              phase: 'success',
+              message: 'Marked this pickup done.',
+              resolved,
+              remaining: pickupsOpen.length,
+              total: pickupsOpen.length + pickupsResolvedCount,
+            };
+          }
+        });
+      }, 300);
+      return { status: 'started' };
+    },
+    pickupsCount: async () => {
+      beginPickups('counting', 'Counting pickups…');
+      publishPickups();
+      setTimeout(() => {
+        if (pickups.phase !== 'counting') return;
+        settlePickups(() => {
+          const remaining = pickupsOpen.length;
+          const total = remaining + pickupsResolvedCount;
+          pickups = { ...pickups, phase: 'success', message: `${remaining} pickup${remaining === 1 ? '' : 's'} remaining of ${total}.`, remaining, total };
+        });
+      }, 300);
+      return { status: 'started' };
+    },
+    pickupsState: async () => wireClone(pickups),
+    subscribePickups: (onUpdate) => {
+      pickupsSubscribers.add(onUpdate);
+      onUpdate(wireClone(pickups));
+      return () => pickupsSubscribers.delete(onUpdate);
     },
     subscribeProjectAttach: (onUpdate) => {
       projectAttachSubscribers.add(onUpdate);

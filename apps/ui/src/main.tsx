@@ -83,6 +83,10 @@ const mockChapterLinkMissing = mockParams.get('mockChapterLink') === 'missing';
 // `?mockLineIdentity=success|conflict|error` boots the Tracks page's "Link chapters" dialog with LineIdentityState already at that
 // result, so its stale/conflict/drift and error states can be seen without a real REAPER round trip.
 const mockLineIdentity = (['success', 'conflict', 'error'] as const).find((seed) => seed === mockParams.get('mockLineIdentity'));
+// `?mockPickups=import-success|next-success|export-success|error` boots the Tracks page's "Pickups" dialog with
+// PickupsState already at that result, so the remaining-count, next and export states can be seen without a real
+// REAPER round trip.
+const mockPickups = (['import-success', 'next-success', 'export-success', 'error'] as const).find((seed) => seed === mockParams.get('mockPickups'));
 const mockInitial = {
   ...(mockImportPreview ? { importPreview: mockImportPreview } : {}),
   ...(mockAssets ? { assets: mockAssets } : {}),
@@ -109,6 +113,7 @@ const mockInitial = {
       }
     : {}),
   ...(mockLineIdentity ? { lineIdentity: mockLineIdentity } : {}),
+  ...(mockPickups ? { pickups: mockPickups } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

@@ -305,6 +305,23 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/tracks/LinkChaptersDialog.tsx::subscribeLineIdentity#1': subscription('The line-identity state event, shared by the Stamp and Read runs this dialog starts.'),
   'src/components/tracks/LinkChaptersDialog.tsx::lineIdentityStamp#1': row('click', 'job', 'pending', 'disabled', 'ui', 'inline', 'no', 'ok', 'Approve. The dialog cannot be closed while a stamp runs (Dialog\'s onClose is undefined then), so the result is always seen; a failure shows inline as an alert and in the phase message.'),
   'src/components/tracks/LinkChaptersDialog.tsx::lineIdentityRead#1': row('click', 'job', 'pending', 'disabled', 'ui', 'inline', 'no', 'ok', 'Read-only and idempotent; a failure shows inline in the "Currently stamped" section.'),
+  'src/components/tracks/PickupsDialog.tsx::pickupsState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Hydrates whatever run was already in flight when the dialog reopened; the live event follows anyway.'),
+  'src/components/tracks/PickupsDialog.tsx::subscribePickups#1': subscription('The pickups state event, shared by every import, export, next, resolve and count run this dialog starts.'),
+  'src/components/tracks/PickupsDialog.tsx::pickupsCount#1': row(
+    'mount',
+    'job',
+    'na',
+    'na',
+    'ui',
+    'silent',
+    'na',
+    'exempt',
+    'An automatic refresh right after the hydrate above settles, so the remaining count is current without an extra press; a failure here just leaves the count at whatever the hydrate answered, and the narrator can still press Import, Next or Export, each of which shows its own failure inline.',
+  ),
+  'src/components/tracks/PickupsDialog.tsx::pickupsImport#1': row('input', 'job', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'Choosing a CSV file. Row errors and the import summary show inline; a request failure shows as an alert.'),
+  'src/components/tracks/PickupsDialog.tsx::pickupsNext#1': row('click', 'job', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'A failure (no pickups remain) shows as an alert.'),
+  'src/components/tracks/PickupsDialog.tsx::pickupsResolve#1': row('click', 'job', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'A failure (no open pickup at that position) shows as an alert.'),
+  'src/components/tracks/PickupsDialog.tsx::pickupsExport#1': row('click', 'job', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'A completed export triggers the browser file-save download; a failure shows as an alert.'),
 
   // Credits (audiobook-credits-templates.prd.md, Phase 1)
   'src/components/settings/CreditsPanel.tsx::creditsTemplates#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The template library load; an inline error banner otherwise.'),
@@ -349,4 +366,6 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Only decides whether the "Link chapters…" button shows; without it the button is absent, same as a project with no chapters.',
   'src/components/tracks/LinkChaptersDialog.tsx#1':
     'Hydrates whatever stamp or read was already in flight when the dialog reopened; the live event follows anyway.',
+  'src/components/tracks/PickupsDialog.tsx#1':
+    'Hydrates whatever run was already in flight, then refreshes the count; a failure here leaves the count at its last known value, and every narrator-triggered action still shows its own failure inline.',
 };

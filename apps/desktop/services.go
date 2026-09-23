@@ -6,6 +6,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/lineidentity"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
+	"github.com/countrymanprime/narration-utils/shell/internal/pickups"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
@@ -23,6 +24,7 @@ type hostServices struct {
 	guide        *guide.Service
 	lineIdentity *lineidentity.Service
 	manuscript   *manuscript.Service
+	pickups      *pickups.Service
 	settings     *settings.Store
 	teleprompter *teleprompter.Service
 	transcript   *transcript.Service
@@ -63,6 +65,7 @@ func (h *Host) services() hostServices {
 		guide:        h.guide,
 		lineIdentity: h.lineIdentity,
 		manuscript:   h.manuscript,
+		pickups:      h.pickups,
 		settings:     h.settings,
 		teleprompter: h.teleprompter,
 		transcript:   h.transcript,
