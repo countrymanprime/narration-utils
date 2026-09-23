@@ -205,3 +205,62 @@ def test_the_reaper_package_ships_the_scripts_and_not_the_harness_or_the_spikes(
     script.main()
 
     assert {path.name for path in script.REAPER.iterdir()} == {"NarrationUtils_Launcher.lua"}
+
+
+def seed_freeze(module, name: str, *, tocs: bool = True) -> Path:
+    """Put a finished freeze of `name` under .release-build, as the build-output cache restores it."""
+    build = module.ROOT / ".release-build" / name
+    exe = build / "dist" / name / (f"{name}.exe" if sys.platform == "win32" else name)
+    exe.parent.mkdir(parents=True)
+    exe.write_text("cached")
+    (exe.parent / "_internal").mkdir()
+    (exe.parent / "_internal" / "base_library.zip").write_text("cached library")
+    if tocs:
+        work = build / "work" / name
+        work.mkdir(parents=True)
+        for toc in ("Analysis-00.toc", "PYZ-00.toc"):
+            (work / toc).write_text("[]")
+    return exe
+
+
+def test_reuse_installs_a_cached_freeze_without_running_pyinstaller(script, monkeypatch):
+    fake = FakePyInstaller()
+    install(monkeypatch, script, fake)
+    for name in SIDECARS:
+        seed_freeze(script, name)
+    monkeypatch.setattr(sys, "argv", ["prepare-resources.py", "--clean", "--reuse"])
+
+    script.main()
+
+    assert fake.calls == []
+    for name in SIDECARS:
+        runtime = script.RUNTIME / name
+        assert (runtime / "_internal" / "base_library.zip").read_text() == "cached library"
+        assert (runtime / (f"{name}.exe" if sys.platform == "win32" else name)).read_text() == "cached"
+
+
+def test_reuse_freezes_a_sidecar_whose_cached_freeze_is_incomplete(script, monkeypatch, capsys):
+    # THIRD-PARTY-NOTICES reads the tables of contents, so a freeze without them is not reusable.
+    fake = FakePyInstaller()
+    install(monkeypatch, script, fake)
+    seed_freeze(script, "manuscript-guide")
+    seed_freeze(script, "transcript-compare", tocs=False)
+    monkeypatch.setattr(sys, "argv", ["prepare-resources.py", "--clean", "--reuse"])
+
+    script.main()
+
+    assert {call["name"] for call in fake.calls} == {"transcript-compare", "manuscript-teleprompter"}
+    assert {path.name for path in script.RUNTIME.iterdir()} == SIDECARS
+    out = capsys.readouterr().out
+    assert "[manuscript-guide] reusing the cached freeze" in out
+
+
+def test_without_reuse_a_cached_freeze_is_frozen_again(script, monkeypatch):
+    fake = FakePyInstaller()
+    install(monkeypatch, script, fake)
+    for name in SIDECARS:
+        seed_freeze(script, name)
+
+    script.main()  # argv is `--clean` only
+
+    assert {call["name"] for call in fake.calls} == SIDECARS

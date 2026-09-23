@@ -11,6 +11,9 @@ inputs:
   tag:
     description: The git tag the release is built from, for the source offer in THIRD-PARTY-NOTICES.txt (Windows); empty means v<version>-rc
     default: ''
+  reuse-freeze:
+    description: Restore the frozen Python sidecars from the build-output cache when every input of the freeze is unchanged ('false' freezes from scratch)
+    default: 'true'
 
 # The caller checks the repository out and runs on the matching OS; the `ui-dist`
 # artifact must already exist in this workflow run (see _ui-dist.yml).
@@ -57,17 +60,37 @@ runs:
         # The installer puts makensis in Program Files (x86); the build step below adds that folder to its own PATH.
         PATH="$PATH:/c/Program Files (x86)/NSIS"
         echo "makensis version: $(makensis -VERSION)"
+    # The PyInstaller freeze of the three sidecars is a pure function of its inputs: the sidecar and shared Python sources, the locked
+    # dependencies, the freeze script and the interpreter. The key hashes all of them, so a hit is the same freeze a cold run would make
+    # (docs/operations/ci-and-releases.md "The sidecar freeze cache"). It is a build output, never a test verdict: the smoke test and
+    # the notices below still run on the packaged app every time. Only the executables and the tables of contents the notices read are
+    # kept, not PyInstaller's work files. Restored only on an exact key; saved only from `main` (below), so a pull request cannot
+    # write what a release is built from.
+    - id: freeze-key
+      if: inputs.reuse-freeze == 'true'
+      name: Key the sidecar freeze
+      shell: bash
+      run: echo "python=$(uv run python -c 'import platform; print(platform.python_version())')" >> "$GITHUB_OUTPUT"
+    - id: freeze-cache
+      if: inputs.reuse-freeze == 'true'
+      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      with:
+        path: |
+          .release-build/*/dist
+          .release-build/*/work/*/*.toc
+        key: sidecar-freeze-${{ runner.os }}-${{ runner.arch }}-py${{ steps.freeze-key.outputs.python }}-${{ hashFiles('sidecars/**', 'libs/python/**', 'pyproject.toml', 'uv.lock', 'scripts/release/prepare-resources.py') }}
     - name: Build native package
       shell: bash
       env:
         PLATFORM: ${{ inputs.platform }}
+        REUSE_FREEZE: ${{ steps.freeze-cache.outputs.cache-hit == 'true' && 'true' || '' }}
       run: |
         case "$PLATFORM" in
           linux-x64)   wails_args=(-tags webkit2_41) ;;
           windows-x64) wails_args=(-nsis); PATH="$PATH:/c/Program Files (x86)/NSIS" ;;
           *)           wails_args=() ;;
         esac
-        uv run python scripts/release/prepare-resources.py --clean
+        uv run python scripts/release/prepare-resources.py --clean ${REUSE_FREEZE:+--reuse}
         node scripts/release/verify-installable.mjs
         cd apps/desktop
         wails doctor
@@ -125,6 +148,14 @@ runs:
         # The commit is in the source offer too: a release candidate's tag is pruned once newer ones exist, and the promoted release keeps
         # these very bytes (prerelease.yml keeps the newest ten candidates).
         uv run python scripts/licenses/notices.py --version "$version" --tag "$tag" --commit "$COMMIT" --out apps/desktop/build/bin/THIRD-PARTY-NOTICES.txt
+    # After the smoke test and the notices (Windows), so a freeze that cannot start or cannot be read whole is never kept.
+    - if: inputs.reuse-freeze == 'true' && steps.freeze-cache.outputs.cache-hit != 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      with:
+        path: |
+          .release-build/*/dist
+          .release-build/*/work/*/*.toc
+        key: ${{ steps.freeze-cache.outputs.cache-primary-key }}
     - name: Package the release asset
       shell: bash
       env:

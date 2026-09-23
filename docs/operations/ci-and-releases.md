@@ -81,9 +81,9 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | Workflow | Starts on | Jobs and check names | Blocking? |
 | --- | --- | --- | --- |
 | `ci.yml` (`CI`) | pull request that is not docs- or Markdown-only; manual | `quality / *` and `ui-dist / build` (the reusable `_quality.yml` and `_ui-dist.yml`), `Build (Windows)` | no ruleset requires it |
-| `prerelease.yml` (`Prerelease`) | push to `main` that is not docs- or Markdown-only; manual | `quality / *`, `ui-dist / build`, `version`, `Windows build and release` (needs the three before it, and runs only when `version` found a releasable change) | not a pull request check |
+| `prerelease.yml` (`Prerelease`) | push to `main` that is not docs- or Markdown-only; manual | `quality / *`, `ui-dist / build`, `version`, `Windows build` (needs `ui-dist` and `version`, so it runs beside the quality jobs) and `Windows release` (needs the build and every quality job); both run only when `version` found a releasable change. A manual run can tick `cold-freeze` to freeze the sidecars without the [freeze cache](#the-sidecar-freeze-cache) | not a pull request check |
 | `promote-release.yml` | manual, with an RC tag; behind the `production` environment | `promote` | not a pull request check |
-| `build-macos.yml`, `build-linux.yml` | manual, or started by the release job | one reusable `_attach-platform.yml` run: `Check the release`, `ui-dist / build`, `Build and attach <platform>` | not a pull request check |
+| `build-macos.yml`, `build-linux.yml` | manual, or started by the `Windows release` job | one reusable `_attach-platform.yml` run: `Check the release`, `ui-dist / build`, `Build and attach <platform>` | not a pull request check |
 | `docs.yml` (`Docs`) | every pull request (no path filter), weekly (Monday 07:17 UTC), manual | `Links (offline)` (pull requests and manual) and `Links (online, advisory)` (weekly and manual) ([below](#the-docs-link-check)) | the offline job **fails the run** on a dead repository link; no ruleset requires it (owner-only setting) |
 | `zizmor.yml` | every pull request, push to `main`, manual | `zizmor` | advisory in GitHub terms (not required); a finding at the `regular` persona fails the run |
 | `security.yml` (`Security scan`) | every pull request, push to `main`, weekly (Tuesday 06:41 UTC), manual | `govulncheck`, `osv-scanner (pull request)` (only for a same-repository pull request that is not Dependabot's) or `osv-scanner` (every other trigger) | advisory: neither fails on a finding |
@@ -136,9 +136,10 @@ The permission model, so a change can be judged against it:
   `build-macos.yml` and `build-linux.yml`, whose `contents: write`, `id-token: write`, `attestations: write` and
   `artifact-metadata: write` are a workflow-level grant because a caller must grant everything the reusable
   `_attach-platform.yml` holds; only its `attach` job uses them.
-- The release job of `prerelease.yml` holds `contents: write` (create the release), `actions: write` (start the
+- The `publish` job (`Windows release`) of `prerelease.yml` holds `contents: write` (create the release), `actions: write` (start the
   optional macOS and Linux builds) and the three attestation permissions (`id-token`, `attestations`,
-  `artifact-metadata`: write); `promote-release.yml`'s one job holds `contents: write` (create the stable tag and
+  `artifact-metadata`: write). The `windows-build` job, which runs the third-party build tooling (PyInstaller, Wails, NSIS, pnpm),
+  holds only the workflow's `contents: read`; `promote-release.yml`'s one job holds `contents: write` (create the stable tag and
   release) and `attestations: read`, behind the `production` environment.
 - Every `actions/checkout` sets `persist-credentials: false`, so the token is not left in `.git/config` for later steps.
   Promote therefore creates the stable tag through the API (`gh api .../git/refs`) instead of `git push`.
@@ -185,12 +186,12 @@ the run log; a fork or Dependabot pull request scans but does not upload, becaus
 ## Version lifecycle
 
 The pre-release workflow runs after each push to `main` that changes more than `docs/**` or Markdown (and by hand). It runs the quality
-jobs first, and its Windows release job waits for them. Nx Release
+Windows build beside the quality jobs, and its Windows release job waits for both. Nx Release
 uses the squash commit title to calculate the synchronized application version:
 `feat` is minor; `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`,
 `chore`, and `revert` are patch. Pre-1.0 breaking changes are handled as the
 next minor release. The workflow tags `v<version>-rc`, builds the Windows
-package, and in that same job creates the GitHub pre-release with the Windows
+package, and once quality is green its `publish` job creates the GitHub pre-release with the Windows
 zip and the Windows setup program ([The Windows setup program](#the-windows-setup-program)). The last step starts the optional **Build macOS** and **Build Linux**
 workflows, which build the release tag and attach their asset
 ([ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)). They are
@@ -342,12 +343,13 @@ level 3). The subjects are identified by digest:
 
 | Platform | Signed by (the workflow the certificate names) | Subjects |
 | --- | --- | --- |
-| Windows | `.github/workflows/prerelease.yml`, the `release` job | `narration-utils-windows-x64.zip`, `narration-utils-windows-x64-setup.exe`, their `.sha256` files, and `narration-utils.exe` (so the executable can be checked after the zip is extracted, which an in-app update can do) |
+| Windows | `.github/workflows/prerelease.yml`, the `publish` job | `narration-utils-windows-x64.zip`, `narration-utils-windows-x64-setup.exe`, their `.sha256` files, and `narration-utils.exe` (so the executable can be checked after the zip is extracted, which an in-app update can do) |
 | macOS | `.github/workflows/_attach-platform.yml` (the reusable workflow, not `build-macos.yml`) | the zip and its `.sha256` |
 | Linux | `.github/workflows/_attach-platform.yml` | the archive, its `.sha256`, and `narration-utils` |
 
-- The step runs in the same job as the build and before anything is published. Windows attests before the prune and
-  `gh release create`; macOS and Linux attest before `gh release upload`. If it fails the job fails and nothing
+- The step runs before anything is published. Windows builds in `windows-build`, which records the SHA-256 of every file
+  as a job output; `publish` downloads the files, refuses any that do not match those digests (or that the build did not
+  record), and attests before the prune and `gh release create`, so it attests the bytes that were built; macOS and Linux attest before `gh release upload`. If it fails the job fails and nothing
   unattested is published; re-run the workflow to retry.
 - The jobs that attest hold `id-token: write`, `attestations: write` and `artifact-metadata: write`. A workflow that
   calls `build-macos.yml` or `build-linux.yml` has to grant the same, because a caller must grant what the reusable
@@ -640,7 +642,8 @@ pull requests, and the Go quality job runs on Windows only. pnpm's
 content-addressable store, uv's package cache, Go's module/build caches, the
 compiled Wails and golangci-lint binaries (keyed on `scripts/toolchain.json`), and
 Playwright's Chromium download (keyed on the Playwright version) are restored by
-the workflows; they never cache `node_modules`, `.venv`, or release artifacts.
+the workflows; they never cache `node_modules`, `.venv`, test results or release assets. The one build output that is
+cached is the [sidecar freeze](#the-sidecar-freeze-cache).
 `setup-node`, `setup-python`, and `setup-go` provision the exact pinned Node,
 Python, and Go versions. Wails v2.16.0 is installed only in jobs that run a
 native build, golangci-lint v2.13.2 (built with the pinned Go, config in `apps/desktop/.golangci.yml`) only in the Go quality job, and the standalone
@@ -648,6 +651,32 @@ StyLua v2.1.0 binary where needed, as declared in `scripts/toolchain.json`; none
 of them use Cargo. Lua 5.4 for the REAPER harness is the `lupa` wheel in the `lua` dependency group of `pyproject.toml` (hashed in `uv.lock`); the Lua job installs only that group. Platform-specific sidecars must be built on their target OS,
 so the built UI bundle is shared between jobs as a one-day artifact rather than
 rebuilt per platform.
+
+### The sidecar freeze cache
+
+Freezing the three Python sidecars with PyInstaller is most of the Windows build. `.github/actions/build-native` restores
+the finished freeze (the executables in `.release-build/*/dist` and the tables of contents `THIRD-PARTY-NOTICES` is
+written from) from `actions/cache`, keyed on the runner OS and architecture, the Python patch version and a hash of
+`sidecars/`, `libs/python/`, `pyproject.toml`, `uv.lock` and `scripts/release/prepare-resources.py`. Only an exact key
+counts (there are no fallback keys), and `prepare-resources.py --reuse` installs a sidecar from it only when its
+executable and both tables of contents are there; otherwise that sidecar is frozen as before. The rules:
+
+- **A build output, never a test verdict.** The packaged smoke test, the installability check and the notices run on
+  every build, hit or miss.
+- **Saved only from `main`**, after the smoke test and the notices passed. A pull request restores `main`'s entry and
+  never writes one, so a pull request cannot change what a release is built from.
+- **A cold freeze on demand.** Run `Prerelease` by hand with `cold-freeze` ticked; `build-native`'s `reuse-freeze: 'false'`
+  does the same for any caller.
+
+The Go toolchain is not cached on Windows: `setup-go` installs it on `D:` behind a junction in the tool cache, so a cache
+of the tool cache would hold the link, not Go.
+
+### Measuring a run
+
+`node scripts/ci/run-timings.mjs <run-id> [--steps]` prints a run's wall clock and, per job, when it started after the run
+was created, how long it ran and on which runner, as a Markdown table (with `--steps`, every step too). It reads the
+Actions API through `gh`. Queueing shows up as a large "Started after": the repository is public on the free plan, 20
+hosted jobs at once across the account.
 
 ## Runtime provenance
 
