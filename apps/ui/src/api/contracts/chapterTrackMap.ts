@@ -65,6 +65,33 @@ export type ChapterTrackMatch = {
   recordedEnd: RecordedEnd | null;
 };
 
+/** One chapter a track may hold (the matcher's track-to-chapter direction, ADR 0113). */
+export type ChapterCandidate = {
+  chapterId: string;
+  chapterTitle: string;
+  score: number;
+  source: ChapterTrackMatchSource;
+  region: { name: string; start: number; end: number } | null;
+};
+
+/** Which saved tracks a suggestion was read from: the record-armed ones, else the selected ones, else none. */
+export type ChapterSuggestionBasis = 'armed' | 'selected' | 'none';
+
+/** ChapterSuggestion's answer (teleprompter-engines-and-input-devices PRD Phase 11, ADR 0113): the chapter the narrator is
+ * most likely recording, read from the selected .rpp as of its last save. `chapter` is set only when `status` is
+ * confirmed or matched; otherwise `candidates` are choices to offer, never to preselect. `track` is the one track read,
+ * or null when several were (or none). */
+export type ChapterSuggestion = {
+  projectFile: string;
+  savedAt: string;
+  basis: ChapterSuggestionBasis;
+  track: { guid: string; name: string; index: number } | null;
+  status: ChapterTrackMatchStatus;
+  chapter: ChapterCandidate | null;
+  candidates: ChapterCandidate[];
+  warnings: Array<ChapterTrackMatchWarning | 'confirmed-chapter-missing'>;
+};
+
 export interface ChapterTrackMapApi {
   chapterTrackMapList(): Promise<ChapterTrackMapping>;
   /** Confirms trackGuid as chapterId's link; refuses a chapterId outside the current manuscript. */
@@ -73,4 +100,6 @@ export interface ChapterTrackMapApi {
   chapterTrackMapClear(trackGuid: string): Promise<ChapterTrackMapping>;
   /** Finds the track holding chapterId in the selected .rpp and where its recorded audio ends; read-only. */
   chapterTrackMatch(chapterId: string): Promise<ChapterTrackMatch>;
+  /** Suggests the chapter being recorded from the selected .rpp's armed (else selected) track; read-only. */
+  chapterSuggestion(): Promise<ChapterSuggestion>;
 }

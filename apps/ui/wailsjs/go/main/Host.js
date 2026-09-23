@@ -30,6 +30,10 @@ export function Bootstrap() {
   return window['go']['main']['Host']['Bootstrap']();
 }
 
+export function ChapterSuggestion() {
+  return window['go']['main']['Host']['ChapterSuggestion']();
+}
+
 export function ChapterTagsEmbed(arg1) {
   return window['go']['main']['Host']['ChapterTagsEmbed'](arg1);
 }

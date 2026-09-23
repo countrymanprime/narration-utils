@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import type { ChapterTrackCandidate, ChapterTrackMapping, ChapterTrackMatch, RecordedEnd, TrackMapping } from '../contracts/chapterTrackMap';
+import type {
+  ChapterCandidate,
+  ChapterSuggestion,
+  ChapterTrackCandidate,
+  ChapterTrackMapping,
+  ChapterTrackMatch,
+  RecordedEnd,
+  TrackMapping,
+} from '../contracts/chapterTrackMap';
 import { listFromNull } from './base';
 
 export const trackMappingSchema = z.object({
@@ -36,12 +44,33 @@ export const recordedEndSchema = z.object({
   approximate: z.boolean(),
 }) satisfies z.ZodType<RecordedEnd>;
 
+const matchStatusSchema = z.enum(['confirmed', 'matched', 'uncertain', 'ambiguous', 'none']);
+
+const chapterCandidateSchema = z.object({
+  chapterId: z.string(),
+  chapterTitle: z.string(),
+  score: z.number().min(0).max(1),
+  source: z.enum(['confirmed', 'track-name', 'region-name']),
+  region: z.object({ name: z.string(), start: z.number(), end: z.number() }).nullable(),
+}) satisfies z.ZodType<ChapterCandidate>;
+
+export const chapterSuggestionSchema = z.object({
+  projectFile: z.string(),
+  savedAt: z.string(),
+  basis: z.enum(['armed', 'selected', 'none']),
+  track: z.object({ guid: z.string(), name: z.string(), index: z.number().int() }).nullable(),
+  status: matchStatusSchema,
+  chapter: chapterCandidateSchema.nullable(),
+  candidates: z.array(chapterCandidateSchema),
+  warnings: z.array(z.enum(['confirmed-track-missing', 'confirmed-track-renamed', 'confirmed-links-conflict', 'confirmed-chapter-missing'])),
+}) satisfies z.ZodType<ChapterSuggestion>;
+
 export const chapterTrackMatchSchema = z.object({
   chapterId: z.string(),
   chapterTitle: z.string(),
   projectFile: z.string(),
   savedAt: z.string(),
-  status: z.enum(['confirmed', 'matched', 'uncertain', 'ambiguous', 'none']),
+  status: matchStatusSchema,
   track: chapterTrackCandidateSchema.nullable(),
   candidates: z.array(chapterTrackCandidateSchema),
   warnings: z.array(z.enum(['confirmed-track-missing', 'confirmed-track-renamed', 'confirmed-links-conflict'])),

@@ -1,0 +1,25 @@
+{
+  "basis": "armed",
+  "candidates": [
+    {
+      "chapterId": "c-0001",
+      "chapterTitle": "Chapter I: Down the Rabbit-Hole",
+      "region": null,
+      "score": 0.95,
+      "source": "track-name"
+    },
+    {
+      "chapterId": "c-0002",
+      "chapterTitle": "Chapter II: The Pool of Tears",
+      "region": null,
+      "score": 0.95,
+      "source": "track-name"
+    }
+  ],
+  "chapter": null,
+  "projectFile": "C:/Projects/Alice/Alice.rpp",
+  "savedAt": "2026-09-21T10:00:00Z",
+  "status": "ambiguous",
+  "track": null,
+  "warnings": []
+}

@@ -37,7 +37,7 @@ const tokens = (text: string): string[] =>
     return number >= 0 ? String(number) : token;
   });
 
-const nameScore = (chapterTitle: string, trackName: string): number => {
+export const nameScore = (chapterTitle: string, trackName: string): number => {
   const title = tokens(chapterTitle);
   const name = tokens(trackName);
   if (name.length === 0) return 0;

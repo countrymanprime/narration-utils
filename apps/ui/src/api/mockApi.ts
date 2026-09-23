@@ -73,6 +73,7 @@ import {
 } from './mockFixtures';
 import { loadAliceManuscript } from './aliceManuscript';
 import { mockChapterTrackMatch } from './chapterTrackMatchMock';
+import { mockChapterSuggestion } from './chapterSuggestionMock';
 import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './mockImportPreview';
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
 import { createCoverageMock, type CoverageSeed } from './coverageMock';
@@ -343,6 +344,9 @@ export function createMockApi(
     /** Seeds the confirmed chapter-track mapping (analysis evidence ledger PRD, Phase 5/7), so a link's state (a
      * missing track, in particular) can be seen without going through Confirm in the UI first. */
     chapterTrackMappings?: TrackMapping[];
+    /** The mock .rpp's record-armed track GUIDs, which `chapterSuggestion` reads (ADR 0113). Defaults to none, so the
+     * Teleprompter keeps its usual default chapter. */
+    armedTracks?: readonly string[];
     /** Boots LineIdentityState already at this result, so "Link chapters" states can be seen without stepping through a run. */
     lineIdentity?: 'success' | 'conflict' | 'error';
     /** Boots PickupsState already at this result, so the pickup list's states can be seen without stepping through a run. */
@@ -1664,6 +1668,10 @@ export function createMockApi(
     chapterTrackMatch: async (chapterId) => {
       await manuscriptReady;
       return wireClone(mockChapterTrackMatch(chapterId, chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings));
+    },
+    chapterSuggestion: async () => {
+      await manuscriptReady;
+      return wireClone(mockChapterSuggestion(chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings, initial.armedTracks ?? []));
     },
     takeReviewScan: async (chapterTrackName) => {
       const fresh: TakeReviewFinding[] = chapterTrackName === 'Chapter 1' ? wireClone(WIRE_TAKE_REVIEW_FINDINGS) : [];

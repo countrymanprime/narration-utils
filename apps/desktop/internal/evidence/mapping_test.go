@@ -319,6 +319,19 @@ func TestSuggestFromPreviousFollowsATitleThatGainedASubtitle(t *testing.T) {
 	}
 }
 
+// "The Rabit Hole" scores 0.97 against "The Rabbit Hole" through the fuzzy fallback, above ScoreContained: still a
+// guess, so it is not suggested (ADR 0110).
+func TestMatchSuggesterNeverSuggestsAFuzzyMatchWhateverItsScore(t *testing.T) {
+	tracks := []TrackCandidate{{TrackGUID: "track-guid-r", Name: "The Rabit Hole"}}
+	chapters := []ChapterCandidate{{ID: "c-0001", Title: "The Rabbit Hole"}, {ID: "c-0002", Title: "The Pool of Tears"}}
+	if _, score := chaptermatch.FindChapterByTrackName([]string{"The Rabbit Hole", "The Pool of Tears"}, "The Rabit Hole"); score < chaptermatch.ScoreContained {
+		t.Fatalf("fixture no longer exercises the case: fuzzy score %v", score)
+	}
+	if suggestions := MatchSuggester.Suggest(tracks, chapters); len(suggestions) != 0 {
+		t.Fatalf("suggestions = %#v, want none for a fuzzy match", suggestions)
+	}
+}
+
 func TestMatchSuggesterMatchesSpelledOutAndDigitChapterNumbers(t *testing.T) {
 	tracks := []TrackCandidate{{TrackGUID: "track-guid-a", Name: "Chapter 1"}, {TrackGUID: "track-guid-k", Name: "Chapter 11"}}
 	chapters := []ChapterCandidate{{ID: "c-0001", Title: "CHAPTER ONE"}, {ID: "c-0011", Title: "CHAPTER ELEVEN"}}

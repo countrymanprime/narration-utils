@@ -48,25 +48,9 @@ func (h *Host) chapterTrackMatchFor(chapterID string) (chapterTrackMatch, error)
 // chapterTrackMatchIn is chapterTrackMatchFor over one services snapshot; it also returns the parsed project, so a
 // caller (the tail-audio locate) can go on to a track the narrator picked without reading the .rpp again.
 func chapterTrackMatchIn(svc hostServices, chapterID string) (chapterTrackMatch, tracks.Project, error) {
-	documentID, store, err := mappingContext(svc)
+	chapters, project, confirmed, err := matchInputs(svc)
 	if err != nil {
 		return chapterTrackMatch{}, tracks.Project{}, err
-	}
-	chapters, err := manuscriptChapters(svc)
-	if err != nil {
-		return chapterTrackMatch{}, tracks.Project{}, err
-	}
-	project, err := selectedProject(svc)
-	if err != nil {
-		return chapterTrackMatch{}, tracks.Project{}, err
-	}
-	mappings, err := store.List(documentID)
-	if err != nil {
-		return chapterTrackMatch{}, tracks.Project{}, err
-	}
-	confirmed := make(map[string]string, len(mappings))
-	for _, mapping := range mappings {
-		confirmed[mapping.TrackGUID] = mapping.ChapterID
 	}
 
 	result, err := chaptermatch.ForChapter(chapterID, chapters, project, confirmed)
@@ -94,6 +78,58 @@ func chapterTrackMatchIn(svc hostServices, chapterID string) (chapterTrackMatch,
 		}
 	}
 	return match, project, nil
+}
+
+// matchInputs is what both matcher directions read, from one services
+// snapshot: the manuscript's chapters, the selected .rpp as of its last save,
+// and every narrator-confirmed link (track GUID -> chapter id).
+func matchInputs(svc hostServices) ([]chaptermatch.Chapter, tracks.Project, map[string]string, error) {
+	documentID, store, err := mappingContext(svc)
+	if err != nil {
+		return nil, tracks.Project{}, nil, err
+	}
+	chapters, err := manuscriptChapters(svc)
+	if err != nil {
+		return nil, tracks.Project{}, nil, err
+	}
+	project, err := selectedProject(svc)
+	if err != nil {
+		return nil, tracks.Project{}, nil, err
+	}
+	mappings, err := store.List(documentID)
+	if err != nil {
+		return nil, tracks.Project{}, nil, err
+	}
+	confirmed := make(map[string]string, len(mappings))
+	for _, mapping := range mappings {
+		confirmed[mapping.TrackGUID] = mapping.ChapterID
+	}
+	return chapters, project, confirmed, nil
+}
+
+// chapterSuggestion is ChapterSuggestion's payload: the chapter the narrator
+// is most likely recording, read from the selected .rpp's armed (else
+// selected) track as of its last save (teleprompter-engines-and-input-devices
+// PRD Phase 11, ADR 0113).
+type chapterSuggestion struct {
+	ProjectFile string `json:"projectFile"`
+	SavedAt     string `json:"savedAt"`
+	chaptermatch.Suggestion
+}
+
+// chapterSuggestionFor suggests a chapter from the saved project. It only
+// reads: it never creates a track or a link, and never follows a running
+// REAPER (that is teleprompter-manuscript-integration PRD Phase 11).
+func (h *Host) chapterSuggestionFor() (chapterSuggestion, error) {
+	chapters, project, confirmed, err := matchInputs(h.services())
+	if err != nil {
+		return chapterSuggestion{}, err
+	}
+	suggestion, err := chaptermatch.Suggest(chapters, project, confirmed)
+	if err != nil {
+		return chapterSuggestion{}, err
+	}
+	return chapterSuggestion{ProjectFile: project.Path, SavedAt: savedAt(project.Path), Suggestion: suggestion}, nil
 }
 
 // manuscriptChapters is the current manuscript's chapter list in the

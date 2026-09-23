@@ -306,15 +306,16 @@ func suggestByMatch(tracks []TrackCandidate, chapters []ChapterCandidate) []Mapp
 		if strings.TrimSpace(track.Name) == "" {
 			continue
 		}
-		index, score := chaptermatch.FindChapterByTrackName(titles, track.Name)
-		if index < 0 || score < chaptermatch.ScoreContained {
+		// Confident, not a score threshold: a fuzzy ratio can reach ScoreContained.
+		match := chaptermatch.MatchTitle(titles, track.Name)
+		if match.Index < 0 || !match.Confident {
 			continue
 		}
 		suggestions = append(suggestions, MappingSuggestion{
 			TrackGUID:    track.TrackGUID,
-			ChapterID:    chapters[index].ID,
-			ChapterTitle: chapters[index].Title,
-			Score:        score,
+			ChapterID:    chapters[match.Index].ID,
+			ChapterTitle: chapters[match.Index].Title,
+			Score:        match.Score,
 		})
 	}
 	return suggestions

@@ -1063,6 +1063,23 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Teleprompter');
       await page.getByText('Alice was beginning').first().waitFor();
     },
+    'chapter-suggested': async (page) => {
+      await page.goto('/?mockChapterSuggestion=matched');
+      await settlePage(page);
+      await goToPage(page, 'Teleprompter');
+      await page.getByText(/Chosen from REAPER's armed track/).waitFor();
+      await page
+        .getByText(/Curiouser and curiouser/)
+        .first()
+        .waitFor();
+    },
+    'chapter-suggestion-choices': async (page) => {
+      await page.goto('/?mockChapterSuggestion=ambiguous');
+      await settlePage(page);
+      await goToPage(page, 'Teleprompter');
+      await page.getByRole('group', { name: 'Chapters suggested by REAPER' }).waitFor();
+      await page.getByText('Alice was beginning').first().waitFor();
+    },
     // The Whisper model is not installed under ?mockAssets, so Start reading asks to download it; the mock holds the download at 40 percent.
     'model-download-progress': async (page) => {
       await page.goto('/?mockAssets=downloading');

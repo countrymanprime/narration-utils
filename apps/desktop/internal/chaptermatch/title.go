@@ -25,6 +25,25 @@ const (
 // then a difflib ratio of the joined tokens that must reach FuzzyThreshold
 // (the first of equal ratios wins).
 func FindChapterByTrackName(titles []string, name string) (int, float64) {
+	match := MatchTitle(titles, name)
+	return match.Index, match.Score
+}
+
+// TitleMatch is MatchTitle's answer: FindChapterByTrackName's index and score,
+// plus whether the match is one ADR 0110 counts as confident.
+type TitleMatch struct {
+	Index int
+	Score float64
+	// Confident is an exact or a single whole-token prefix/contained match.
+	// The ambiguous-prefix pick and the fuzzy fallback never are, whatever
+	// their score: a difflib ratio can reach ScoreContained or more ("The
+	// Rabit Hole" against "The Rabbit Hole" is 0.97), so the score alone does
+	// not say how the name matched.
+	Confident bool
+}
+
+// MatchTitle is FindChapterByTrackName with the kind of match kept.
+func MatchTitle(titles []string, name string) TitleMatch {
 	target := NormalizedTokens(name)
 	chapterTokens := make([][]string, len(titles))
 	for i, title := range titles {
@@ -33,7 +52,7 @@ func FindChapterByTrackName(titles []string, name string) (int, float64) {
 
 	for i, tokens := range chapterTokens {
 		if equalTokens(tokens, target) {
-			return i, ScoreExact
+			return TitleMatch{Index: i, Score: ScoreExact, Confident: true}
 		}
 	}
 
@@ -44,10 +63,10 @@ func FindChapterByTrackName(titles []string, name string) (int, float64) {
 		}
 	}
 	if len(contained) == 1 {
-		return contained[0], ScoreContained
+		return TitleMatch{Index: contained[0], Score: ScoreContained, Confident: true}
 	}
 	if len(contained) > 1 {
-		return shortestTitle(titles, contained), ScoreContainedAmbiguous
+		return TitleMatch{Index: shortestTitle(titles, contained), Score: ScoreContainedAmbiguous}
 	}
 
 	targetText := strings.Join(target, " ")
@@ -58,9 +77,9 @@ func FindChapterByTrackName(titles []string, name string) (int, float64) {
 		}
 	}
 	if best < 0 || bestScore < FuzzyThreshold {
-		return -1, 0
+		return TitleMatch{Index: -1}
 	}
-	return best, bestScore
+	return TitleMatch{Index: best, Score: bestScore}
 }
 
 func equalTokens(a, b []string) bool {

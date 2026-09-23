@@ -43,7 +43,7 @@ const SETTINGS_TOOL = 'Teleprompter';
 const INPUT_DEVICE_KEY = 'input_device';
 const MODEL_KEY = 'model';
 const ENGINE_KEY = 'engine';
-const ACTIVE_PHASES: TeleprompterPhase[] = ['starting', 'running', 'stopping'];
+export const ACTIVE_PHASES: TeleprompterPhase[] = ['starting', 'running', 'stopping'];
 const IDLE_STATE: TeleprompterState = { phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null };
 
 function sessionReducer(session: Session, action: SessionAction): Session {

@@ -289,6 +289,10 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   // with the calls they describe, and `TeleprompterPage.tsx` keeps only what stayed there (chapter selection).
   'src/components/teleprompter/TeleprompterPage.tsx::manuscriptChapters#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'An inline error.'),
   'src/components/teleprompter/TeleprompterPage.tsx::readerState#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only picks the chapter the narrator last read; the first chapter is used without it.'),
+  // Phase 11 of the input-devices PRD (ADR 0113): the REAPER suggestion is a hint beneath the picker, and the
+  // session-state read only stops it moving a session already running.
+  'src/components/teleprompter/TeleprompterPage.tsx::chapterSuggestion#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'A hint only: with no .rpp, or none chosen, the picker keeps its usual default and no hint shows.'),
+  'src/components/teleprompter/TeleprompterPage.tsx::teleprompterState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only guards the REAPER preselection; the session hook reads and reports the state itself.'),
   'src/components/teleprompter/useResumeLocate.ts::teleprompterLocate#1': row('mount', 'python', 'inline', 'pending', 'ui', 'inline', 'no', 'ok', 'The read-aloud resume card (teleprompter-manuscript-integration.prd.md Phase 10, ADR 0112) asks where the recording ends when the dialog opens and again on a track pick, Try again or a finished model download: "Finding where your recording of this chapter ends..." shows at once and replaces the choices, and only the latest lookup may answer; a failure is an inline alert with Try again.'),
   'src/components/teleprompter/useResumeLocate.ts::whisperInstall#1': row('click', 'download', 'dialog', 'host', 'dialog', 'dialog', 'no', 'ok', 'Only after Download model... and the first-use confirm; the host joins a download already running for the same asset. Bytes, the check, Cancel and a failure sentence in the dialog, through useAssetInstall; a finished download runs the lookup again.'),
   'src/components/teleprompter/useResumeLocate.ts::whisperInstallState#1': row('timer', 'download', 'dialog', 'na', 'poll', 'dialog', 'no', 'ok', 'The one install-poll loop (useAssetInstall), every 400 ms, as for the Start reading download.'),
@@ -420,6 +424,10 @@ export const SILENT_CATCHES: Record<string, string> = {
   // Phase 2 (teleprompter-manuscript-integration.prd.md) moved the device/settings catches into `useTeleprompterSession.ts`;
   // `TeleprompterPage.tsx` keeps only the chapter-selection catch it never shared with the modal.
   'src/components/teleprompter/TeleprompterPage.tsx#1': 'Only picks the chapter the narrator last read; the first chapter is used without it.',
+  'src/components/teleprompter/TeleprompterPage.tsx#2':
+    'The REAPER chapter suggestion (ADR 0113) is a hint: no .rpp, or none chosen, is normal for a narrator not using REAPER, so it means no hint.',
+  'src/components/teleprompter/TeleprompterPage.tsx#3':
+    'Only guards the REAPER preselection against a running session; useTeleprompterSession reads the state again and reports its failure.',
   'src/components/teleprompter/useTeleprompterSession.ts#1':
     'Clearing the migrated browser-storage device once it is written to settings; if storage cannot be reached the stale value is simply left behind and never read again (the settings value now wins).',
   'src/components/teleprompter/useTeleprompterSession.ts#2': 'Hydrates a session that was already running; the state event follows anyway.',

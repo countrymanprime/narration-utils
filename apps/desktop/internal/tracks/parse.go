@@ -110,7 +110,14 @@ func parseTrack(n *node, index int, projectFolder string) Track {
 		Soloed:     soloed,
 		Items:      itemList,
 		HasFXChain: n.firstChild("FXCHAIN") != nil,
+		Selected:   flagSet(n.attr0("SEL")),
+		Armed:      flagSet(n.attr0("REC")),
 	}
+}
+
+// flagSet reads a REAPER on/off field: anything but empty or "0" is on.
+func flagSet(value string) bool {
+	return value != "" && value != "0"
 }
 
 // parseItem reads an <ITEM> chunk's own scalars (POSITION, LENGTH, MUTE,

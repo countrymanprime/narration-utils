@@ -564,6 +564,18 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'teleprompter',
+    state: 'chapter-suggested',
+    description:
+      'Teleprompter, the chapter preselected from REAPER (teleprompter-engines-and-input-devices.prd.md Phase 11, ADR 0113) - the saved .rpp\'s armed track "Chapter 2" is named for Chapter 2, so the picker opens on it with "Chosen from REAPER\'s armed track ... as of its last save" beneath (?mockChapterSuggestion=matched)',
+  },
+  {
+    page: 'teleprompter',
+    state: 'chapter-suggestion-choices',
+    description:
+      'Teleprompter, two armed tracks naming different chapters (Phase 11, ADR 0113) - nothing is preselected (the picker keeps Chapter 1) and the other suggested chapter is offered as a button beneath, "could be for more than one chapter" (?mockChapterSuggestion=ambiguous)',
+  },
+  {
+    page: 'teleprompter',
     state: 'model-download-progress',
     description: 'Teleprompter, the Whisper model download after Start reading, with real bytes and Cancel (?mockAssets=downloading)',
   },

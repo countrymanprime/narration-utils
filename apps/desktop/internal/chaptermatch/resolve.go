@@ -84,6 +84,10 @@ type Candidate struct {
 	Score      float64    `json:"score"`
 	Source     Source     `json:"source"`
 	Region     *RegionRef `json:"region"`
+
+	// confident is TitleMatch.Confident (always true for a confirmed link):
+	// only a confident best candidate can be StatusMatched.
+	confident bool
 }
 
 // Result is ForChapter's answer. Track is set only when Status is
@@ -158,16 +162,16 @@ func nameCandidates(target int, titles []string, project tracks.Project, chapter
 		if strings.TrimSpace(track.Name) == "" || !eligible(track) {
 			continue
 		}
-		if index, score := FindChapterByTrackName(titles, track.Name); index == target {
-			add(Candidate{TrackGUID: track.GUID, TrackName: track.Name, TrackIndex: track.Index, Score: score, Source: SourceTrackName})
+		if match := MatchTitle(titles, track.Name); match.Index == target {
+			add(Candidate{TrackGUID: track.GUID, TrackName: track.Name, TrackIndex: track.Index, Score: match.Score, Source: SourceTrackName, confident: match.Confident})
 		}
 	}
 	for _, region := range project.Regions {
 		if strings.TrimSpace(region.Name) == "" {
 			continue
 		}
-		index, score := FindChapterByTrackName(titles, region.Name)
-		if index != target {
+		match := MatchTitle(titles, region.Name)
+		if match.Index != target {
 			continue
 		}
 		span := tracks.Span{Start: region.Start, End: region.End}
@@ -177,7 +181,7 @@ func nameCandidates(target int, titles []string, project tracks.Project, chapter
 			}
 			if _, audible := track.RecordedEnd(&span); audible {
 				ref := RegionRef{Name: region.Name, Start: region.Start, End: region.End}
-				add(Candidate{TrackGUID: track.GUID, TrackName: track.Name, TrackIndex: track.Index, Score: score, Source: SourceRegionName, Region: &ref})
+				add(Candidate{TrackGUID: track.GUID, TrackName: track.Name, TrackIndex: track.Index, Score: match.Score, Source: SourceRegionName, Region: &ref, confident: match.Confident})
 			}
 		}
 	}
@@ -204,7 +208,7 @@ func confirmedTracks(chapterID string, project tracks.Project, confirmed map[str
 	for _, track := range project.Tracks {
 		present[track.GUID] = true
 		if confirmed[track.GUID] == chapterID {
-			linked = append(linked, Candidate{TrackGUID: track.GUID, TrackName: track.Name, TrackIndex: track.Index, Score: ScoreExact, Source: SourceConfirmed})
+			linked = append(linked, Candidate{TrackGUID: track.GUID, TrackName: track.Name, TrackIndex: track.Index, Score: ScoreExact, Source: SourceConfirmed, confident: true})
 		}
 	}
 	missing := false
@@ -217,12 +221,24 @@ func confirmedTracks(chapterID string, project tracks.Project, confirmed map[str
 }
 
 func classify(candidates []Candidate) Status {
+	scores := make([]float64, len(candidates))
+	for i, candidate := range candidates {
+		scores[i] = candidate.Score
+	}
+	return classifyScores(scores, len(candidates) > 0 && candidates[0].confident)
+}
+
+// classifyScores is the one confidence rule both directions share (ForChapter
+// over tracks, ForTrack over chapters): scores are best first, and
+// bestConfident says whether the best one is a confident kind of match
+// (TitleMatch.Confident), since a fuzzy ratio can score as high as a prefix.
+func classifyScores(scores []float64, bestConfident bool) Status {
 	switch {
-	case len(candidates) == 0:
+	case len(scores) == 0:
 		return StatusNone
-	case len(candidates) > 1 && candidates[0].Score-candidates[1].Score < NearEqualMargin-scoreEpsilon:
+	case len(scores) > 1 && scores[0]-scores[1] < NearEqualMargin-scoreEpsilon:
 		return StatusAmbiguous
-	case candidates[0].Score >= ScoreContained-scoreEpsilon:
+	case bestConfident && scores[0] >= ScoreContained-scoreEpsilon:
 		return StatusMatched
 	default:
 		return StatusUncertain

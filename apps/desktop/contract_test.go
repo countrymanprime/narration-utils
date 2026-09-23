@@ -373,6 +373,31 @@ func TestContractChapterTrackMatch(t *testing.T) {
 	}
 }
 
+// ChapterSuggestion's payload (teleprompter-engines-and-input-devices PRD Phase 11, ADR 0113): the armed track's
+// chapter, two armed tracks naming different chapters (a choice), and nothing armed or selected.
+func TestContractChapterSuggestion(t *testing.T) {
+	for name, flags := range map[string]map[string]string{
+		"chapter-suggestion-matched":   {suggestTrackI: armLine},
+		"chapter-suggestion-ambiguous": {suggestTrackI: armLine, suggestTrackII: armLine},
+		"chapter-suggestion-none":      nil,
+	} {
+		host, _ := newTestHostForSuggestion(t, flags)
+		raw, err := host.ChapterSuggestion()
+		if err != nil {
+			t.Fatal(err)
+		}
+		var payload map[string]any
+		if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+			t.Fatal(err)
+		}
+		stable, err := contractfile.PortablePaths(payload, host.config.projectFolder, "C:/Projects/Alice")
+		if err != nil {
+			t.Fatal(err)
+		}
+		contractfile.Check(t, name, stable)
+	}
+}
+
 // The system:notice event: something the app did for the narrator that they should read (ADR 0069).
 func TestContractNarratorNotice(t *testing.T) {
 	contractfile.Check(t, "system-notice", noticePayload("Your notes file could not be read. It was kept as manuscript-notes.json.corrupt-20260921-101530 next to the original, and a fresh one was started."))

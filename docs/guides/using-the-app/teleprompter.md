@@ -21,6 +21,14 @@ Refresh.
 
 ![Teleprompter before a session, with the chapter, microphone, engine and model choices above the chapter text](../../images/ui/teleprompter-setup.webp)
 
+If the project has a REAPER project, the chapter can come from it. The app reads the project as it was
+last saved and looks at the track you have armed for recording (or, with none armed, the selected
+track). When that track is linked to a chapter on the [Tracks page](tracks.md), or its name clearly
+matches one ("Chapter 2" for Chapter 2, never Chapter 12), the chapter opens chosen, with a line
+beneath saying so. When the name is only a near match, or armed tracks point at different chapters,
+nothing is chosen for you: the likely chapters are offered as buttons under the picker. Save the
+REAPER project after arming a track for the app to see it.
+
 Press Start reading and begin at the top of the chapter, title first. The setup fields fold away
 into a bar that stays at the top with the status and a Stop button. Words you have read dim, the
 word you are on is filled in, and the page scrolls to keep it near the middle of the screen.

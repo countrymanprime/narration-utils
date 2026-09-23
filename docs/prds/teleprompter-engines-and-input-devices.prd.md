@@ -192,7 +192,7 @@ Phases 1 to 3 (device picker and settings, Whisper only) are shippable on their 
 | 8 | Engine evaluation and default ADR | Real-UI A/B protocol, lag capture aid, ADR, default set in settings | pending | 9, 10, 11 | 7 | - |
 | 9 | Auto-stop at Done | Go timer on `done`, message, tests | complete | 1, 5, 6, 10 | - | - |
 | 10 | Manual scroll without pull-back | `useFollowCursor`, intent detection, Follow control, tests | pending | all except PRD 1 phases 4, 5, 7 | - | - |
-| 11 | Chapter from REAPER track name | Chapter suggestions from `.rpp` track names using the shared matcher | pending | 8, 9, 10 | PRD 1 phase 8 (or builds the matcher first) | - |
+| 11 | Chapter from REAPER track name | Chapter suggestions from `.rpp` track names using the shared matcher | complete | 8, 9, 10 | PRD 1 phase 8 (or builds the matcher first) | - |
 | 12 | Roadmap and status bookkeeping | `roadmap.md` and `roadmap.json` together, README inventory, brief status line | pending | - | 2, 8 (and PRD 1 phase 7 per the roadmap question) | - |
 
 ### Phase Details
@@ -259,6 +259,7 @@ Phases 1 to 3 (device picker and settings, Whisper only) are shippable on their 
 - **Goal**: preselect the chapter the narrator is recording.
 - **Scope**: chapter picker suggestions from `.rpp` tracks with the shared matcher; never creates a track; no bridge work.
 - **Success signal**: "Chapter 1" never suggests "Chapter 11"; no match leaves the current default.
+- **Done (2026-09-23, [ADR 0113](../adr/0113-the-teleprompter-suggests-a-chapter-from-the-saved-armed-track-and-preselects-only-a-confident-match.md)):** the suggestion reads the saved `.rpp`'s record-armed track (else its selected one; `internal/tracks` now parses `SEL` and `REC`, off the TracksList wire) and maps it to a chapter with the new `chaptermatch.ForTrack` / `Suggest`, `ForChapter`'s other direction with parity tests (same candidates, scores, sources and statuses; a confirmed link from `chapter-track-map.json` wins). New binding `ChapterSuggestion` (host API 33) with Zod schema, three golden payloads, wire-contract rows and a mock (`?mockChapterSuggestion=matched|ambiguous`). The page preselects only a confirmed or matched narration chapter (never during a running session) and says why beneath the picker; uncertain and ambiguous answers are offered as buttons and never chosen; no `.rpp`, nothing armed or no match leaves the old default and shows nothing. Evidence: `TestTheChapter1TrackHoldsChapter1NotChapter11`, `TestSuggestReadsTheArmedTrackBeforeTheSelectedOne` (armed "Chapter 11" gives Chapter 11, never Chapter 1), the page tests "matches the Chapter 1 track to Chapter 1, never Chapter 10, 11 or 12" and "keeps the usual default and shows no hint when nothing is armed, or the project has no .rpp"; visual states `teleprompter/chapter-suggested` and `teleprompter/chapter-suggestion-choices` reviewed at desktop, small-desktop and tablet. Found and fixed on the way: the matcher called a fuzzy name scoring 0.95 or more `matched`, against ADR 0110; confidence now comes from the kind of match (`MatchTitle`), which also stops the evidence suggester proposing such a name. No bridge work; following the live armed track remains `teleprompter-manuscript-integration.prd.md` Phase 11.
 
 **Phase 12 - Roadmap and status bookkeeping**
 - **Goal**: docs say one true thing.

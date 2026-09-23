@@ -3,9 +3,10 @@ import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { Select } from '../primitives/Select';
 import { useApi } from '../../api/ApiContext';
+import { ChapterSuggestionHint, preselectedChapter } from './ChapterSuggestionHint';
 import { ReadAlongView } from './ReadAlongView';
-import { errorText, useTeleprompterSession } from './useTeleprompterSession';
-import type { ManuscriptChapter } from '../../types';
+import { ACTIVE_PHASES, errorText, useTeleprompterSession } from './useTeleprompterSession';
+import type { ChapterSuggestion, ManuscriptChapter } from '../../types';
 
 const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
 
@@ -13,17 +14,30 @@ export function TeleprompterPage() {
   const api = useApi();
   const [chapters, setChapters] = useState<ManuscriptChapter[]>();
   const [chosenChapter, setChosenChapter] = useState('');
+  const [suggestion, setSuggestion] = useState<ChapterSuggestion>();
   const [error, setError] = useState('');
 
   useEffect(() => {
     let live = true;
-    void Promise.all([api.manuscriptChapters(), api.readerState().catch(() => undefined)])
-      .then(([all, reader]) => {
+    void Promise.all([
+      api.manuscriptChapters(),
+      api.readerState().catch(() => undefined),
+      // The REAPER suggestion (ADR 0113) is only a hint: no .rpp in the project, or none chosen yet, is the normal case
+      // for a narrator not using REAPER, so a failure means no hint rather than an error on the page.
+      api.chapterSuggestion().catch(() => undefined),
+      api.teleprompterState().catch(() => undefined),
+    ])
+      .then(([all, reader, suggested, host]) => {
         if (!live) return;
         const narration = all.filter((item) => (item.contentKind ?? 'narration') === 'narration');
         setChapters(narration);
+        setSuggestion(suggested);
         const last = narration.find((item) => item.id === reader?.activeChapter || item.title === reader?.activeChapter);
-        setChosenChapter((current) => current || (last ?? narration[0])?.id || '');
+        // A confident suggestion names the chapter being recorded, so it wins over the last chapter read - but never
+        // over a session already running, whose chapter the reader is showing.
+        const sessionRunning = host && ACTIVE_PHASES.includes(host.phase);
+        const recording = sessionRunning ? undefined : preselectedChapter(suggested, narration);
+        setChosenChapter((current) => current || recording || (last ?? narration[0])?.id || '');
       })
       .catch((reason) => live && setError(errorText(reason)));
     return () => {
@@ -66,6 +80,7 @@ export function TeleprompterPage() {
                 onChange={selectChapter}
                 options={chapters.map((item) => ({ value: item.id, label: item.subtitle ? `${item.title}: ${item.subtitle}` : item.title }))}
               />
+              <ChapterSuggestionHint suggestion={suggestion} chapters={chapters} value={chapterId} onChoose={selectChapter} />
             </div>
           }
         />

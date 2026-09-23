@@ -4,7 +4,7 @@ import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
-import { WIRE_CHAPTERS } from './api/mockFixtures';
+import { WIRE_CHAPTERS, WIRE_TRACKS_PROJECT } from './api/mockFixtures';
 import { COVERAGE_REFUSAL_REASONS } from './api/schemas/coverage';
 import { MOCK_RESUME_SEEDS } from './api/resumeMockSeed';
 import { ThemeProvider } from './theme/ThemeContext';
@@ -109,6 +109,14 @@ const mockChapterTagsEmbedError = mockParams.has('mockChapterTagsEmbedError');
 // with that refusal (docs/utilities/recording-coverage.md, ADR 0130).
 const mockCoverage = (['hold', 'stale'] as const).find((seed) => seed === mockParams.get('mockCoverage'));
 const mockCoverageRefusal = COVERAGE_REFUSAL_REASONS.find((reason) => reason === mockParams.get('mockCoverageRefusal'));
+// `?mockChapterSuggestion=matched|ambiguous` arms tracks in the mock .rpp (teleprompter-engines-and-input-devices PRD
+// Phase 11, ADR 0113): the "Chapter 2" track alone, so the Teleprompter preselects Chapter 2 from it, or both chapter
+// tracks, so it offers the two chapters as a choice instead.
+const MOCK_ARMED_TRACKS = {
+  matched: [WIRE_TRACKS_PROJECT.tracks[1].guid],
+  ambiguous: [WIRE_TRACKS_PROJECT.tracks[0].guid, WIRE_TRACKS_PROJECT.tracks[1].guid],
+} as const;
+const mockChapterSuggestion = (['matched', 'ambiguous'] as const).find((seed) => seed === mockParams.get('mockChapterSuggestion'));
 const mockInitial = {
   ...(mockImportPreview ? { importPreview: mockImportPreview } : {}),
   ...(mockAssets ? { assets: mockAssets } : {}),
@@ -149,6 +157,7 @@ const mockInitial = {
         },
       }
     : {}),
+  ...(mockChapterSuggestion ? { armedTracks: MOCK_ARMED_TRACKS[mockChapterSuggestion] } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 
