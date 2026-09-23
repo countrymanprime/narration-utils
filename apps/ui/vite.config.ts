@@ -2,9 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-export default defineConfig({
+// The `demo` mode (`.env.demo`, `pnpm build:demo`) publishes the mock build under GitHub Pages'
+// `/narration-utils/demo/` subpath (see docs/prds/public-app-demo.prd.md D3); every other mode
+// (dev, `mock`, `test`, production) keeps the app at the site root.
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
-  base: '/',
+  base: mode === 'demo' ? '/narration-utils/demo/' : '/',
   build: { outDir: 'dist', emptyOutDir: true },
   test: {
     // tests/visual/**/*.spec.ts and tests/aria/**/*.spec.ts are Playwright specs (run via `pnpm run
@@ -21,4 +24,4 @@ export default defineConfig({
     // to instrument and compares them with scripts/ci/coverage-floors.json. `vitest --coverage` works by hand too.
     coverage: { provider: 'v8' },
   },
-});
+}));

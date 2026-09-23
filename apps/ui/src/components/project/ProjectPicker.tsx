@@ -5,6 +5,7 @@ import { faFolderOpen, faFolderPlus, faXmark } from '@fortawesome/free-solid-svg
 import { useApi } from '../../api/ApiContext';
 import { Button } from '../primitives/Button';
 import { NewProjectDialog } from './NewProjectDialog';
+import { DemoBanner } from '../layout/DemoBanner';
 import type { ProjectSwitchResult, RecentProject } from '../../types';
 
 // The application-data empty state for "no project folder was given" - a
@@ -106,84 +107,87 @@ export function ProjectPicker() {
 
   return (
     // tabIndex -1 like AppShell's <main>: a dialog that closes with nothing to give focus back to sends it here, not to <body>.
-    <main tabIndex={-1} className="grid min-h-screen place-items-center p-6 focus:outline-none">
-      {/* min-w-0: as a grid item the card otherwise grows to its longest nowrap child (a project path) and overflows narrow screens. */}
-      <div className="w-full max-w-2xl min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
-        <h1 className="text-lg font-semibold">Open a project</h1>
-        <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-          Choose a recent project, browse to an existing folder, or create a new one.
-        </p>
-        {reason && (
-          <p className="mt-3 text-sm" role="alert" style={{ color: 'var(--danger-text)' }}>
-            {reason}
+    <>
+      <DemoBanner />
+      <main tabIndex={-1} className="grid min-h-screen place-items-center p-6 focus:outline-none">
+        {/* min-w-0: as a grid item the card otherwise grows to its longest nowrap child (a project path) and overflows narrow screens. */}
+        <div className="w-full max-w-2xl min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
+          <h1 className="text-lg font-semibold">Open a project</h1>
+          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+            Choose a recent project, browse to an existing folder, or create a new one.
           </p>
-        )}
-        <section className="mt-5">
-          <div
-            className="mb-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase"
-            tabIndex={-1}
-            ref={recentsHeadingRef}
-          >
-            Open recent
-          </div>
-          {recentsFailed ? (
-            <p className="text-sm" style={{ color: 'var(--danger-text)' }}>
-              Couldn&apos;t load recent projects.
+          {reason && (
+            <p className="mt-3 text-sm" role="alert" style={{ color: 'var(--danger-text)' }}>
+              {reason}
             </p>
-          ) : recents.length === 0 ? (
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              No recent projects yet.
-            </p>
-          ) : (
-            <ul className="space-y-1.5">
-              {recents.map((entry) => (
-                <li key={entry.path} className="relative">
-                  <button
-                    type="button"
-                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] pr-10 text-left shadow-[var(--shadow)] transition hover:-translate-y-px"
-                    onClick={() => void openRecent(entry)}
-                    disabled={busy}
-                  >
-                    <div className="truncate font-semibold">{entry.name}</div>
-                    <div className="truncate font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm" style={{ color: 'var(--text-muted)' }}>
-                      {entry.path}
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    ref={(node) => {
-                      if (node) removeButtonRefs.current.set(entry.path, node);
-                      else removeButtonRefs.current.delete(entry.path);
-                    }}
-                    className="absolute top-2 right-2 inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase disabled:pointer-events-none disabled:opacity-40"
-                    aria-label={`Remove ${entry.name} from recent projects`}
-                    onClick={() => void removeRecent(entry)}
-                    disabled={busy}
-                  >
-                    <FontAwesomeIcon icon={faXmark} />
-                  </button>
-                </li>
-              ))}
-            </ul>
           )}
-        </section>
-        <div className="mt-5 flex gap-2">
-          <Button variant="primary" onClick={() => void browse()} disabled={busy}>
-            <FontAwesomeIcon icon={faFolderOpen} />
-            Browse…
-          </Button>
-          <button
-            type="button"
-            className="inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase disabled:pointer-events-none disabled:opacity-40"
-            onClick={() => setNewProjectOpen(true)}
-            disabled={busy}
-          >
-            <FontAwesomeIcon icon={faFolderPlus} />
-            Create new…
-          </button>
+          <section className="mt-5">
+            <div
+              className="mb-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase"
+              tabIndex={-1}
+              ref={recentsHeadingRef}
+            >
+              Open recent
+            </div>
+            {recentsFailed ? (
+              <p className="text-sm" style={{ color: 'var(--danger-text)' }}>
+                Couldn&apos;t load recent projects.
+              </p>
+            ) : recents.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                No recent projects yet.
+              </p>
+            ) : (
+              <ul className="space-y-1.5">
+                {recents.map((entry) => (
+                  <li key={entry.path} className="relative">
+                    <button
+                      type="button"
+                      className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] pr-10 text-left shadow-[var(--shadow)] transition hover:-translate-y-px"
+                      onClick={() => void openRecent(entry)}
+                      disabled={busy}
+                    >
+                      <div className="truncate font-semibold">{entry.name}</div>
+                      <div className="truncate font-['IBM_Plex_Mono',ui-monospace,monospace] text-sm" style={{ color: 'var(--text-muted)' }}>
+                        {entry.path}
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      ref={(node) => {
+                        if (node) removeButtonRefs.current.set(entry.path, node);
+                        else removeButtonRefs.current.delete(entry.path);
+                      }}
+                      className="absolute top-2 right-2 inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase disabled:pointer-events-none disabled:opacity-40"
+                      aria-label={`Remove ${entry.name} from recent projects`}
+                      onClick={() => void removeRecent(entry)}
+                      disabled={busy}
+                    >
+                      <FontAwesomeIcon icon={faXmark} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+          <div className="mt-5 flex gap-2">
+            <Button variant="primary" onClick={() => void browse()} disabled={busy}>
+              <FontAwesomeIcon icon={faFolderOpen} />
+              Browse…
+            </Button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-[0.4rem] rounded-md border border-transparent px-4 py-2 font-['Barlow_Condensed',sans-serif] text-[0.85rem] font-semibold tracking-[0.03em] uppercase disabled:pointer-events-none disabled:opacity-40"
+              onClick={() => setNewProjectOpen(true)}
+              disabled={busy}
+            >
+              <FontAwesomeIcon icon={faFolderPlus} />
+              Create new…
+            </button>
+          </div>
         </div>
-      </div>
-      {newProjectOpen && <NewProjectDialog onClose={() => setNewProjectOpen(false)} onCreated={projectCreated} />}
-    </main>
+        {newProjectOpen && <NewProjectDialog onClose={() => setNewProjectOpen(false)} onCreated={projectCreated} />}
+      </main>
+    </>
   );
 }
