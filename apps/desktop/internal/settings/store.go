@@ -143,7 +143,7 @@ func (s *Store) Save(tool, scope string, changes map[string]*string) error {
 	if scope == "project" {
 		path = projectPath(s.project)
 		if path == "" {
-			return fmt.Errorf("save the REAPER project before changing project settings")
+			return fmt.Errorf("open a project before changing project settings")
 		}
 	} else if scope != "global" {
 		return fmt.Errorf("unsupported settings scope")

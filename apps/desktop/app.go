@@ -16,6 +16,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/credits"
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawcatalog"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
@@ -250,14 +251,8 @@ func (h *Host) Startup(ctx context.Context) {
 	h.mu.Lock()
 	h.ctx, h.cancel = context.WithCancel(ctx)
 	next := h.resolveProjectFileLocked(parseConfig(h.config.repoRoot))
-	// A REAPER launch (--daw REAPER, set unconditionally by
-	// NarrationUtils_Launcher.lua) that still has no project folder after
-	// matching means the narrator lands on the picker with nothing chosen for
-	// them (W5): an unsaved rpp (next.projectFile empty) or a saved one no
-	// project has linked yet. Captured before configureLocked so the reason
-	// text can tell those two cases apart.
-	unresolvedReaperLaunch := next.daw != "" && next.projectFolder == ""
-	unresolvedReason := startupProjectFileReason(next.projectFile)
+	// Captured before configureLocked so the reason text can tell an unsaved rpp from an unlinked one (unresolvedLaunchReason).
+	unresolvedReason, unresolvedReaperLaunch := unresolvedLaunchReason(next)
 	h.configureLocked(next)
 	h.assets = h.buildAssetRegistry()
 	runtimeContext, delay := h.ctx, h.updateDelay
@@ -321,8 +316,10 @@ func (h *Host) configureLocked(next config) {
 	h.guide = guide.New(h.config.projectFolder, h.config.manuscriptPython, h.config.manuscriptBackend, h.settings, h.sidecars)
 	h.guide.SetPersist(h.persist)
 	h.guide.SetFindings(h.findings)
+	// The session directory is REAPER's file bridge (NarrationUtils_Launcher.lua makes it). An Audacity launch never opens it,
+	// even when one is passed, so nothing on that launch writes REAPER bridge commands (audacity-integration PRD Phase 5).
 	var client *bridge.Client
-	if h.config.sessionDir != "" {
+	if h.config.sessionDir != "" && dawadapter.Classify(h.config.daw) != dawadapter.KindAudacity {
 		client, _ = bridge.New(h.config.sessionDir)
 		if client != nil {
 			client.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
@@ -332,7 +329,10 @@ func (h *Host) configureLocked(next config) {
 	// consumers of bridge.Client's fan-out (events.go), so neither steals the other's events (ADR 0068).
 	h.reachability = daw.NewReachability(client)
 	h.bridge = client
-	h.transcript = transcript.New(transcript.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir, Python: h.config.comparePython, Backend: h.config.compareBackend}, client, h.settings, h.sidecars, h.emitTranscript)
+	// The review workflow's adapter follows the launch's --daw: REAPER's bridge (or none), or on an Audacity launch one that answers
+	// "not available yet" until the Audacity pipe client exists (dawadapter.ReviewForDAW).
+	review := dawadapter.ReviewForDAW(h.config.daw, client)
+	h.transcript = transcript.NewWithReview(transcript.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir, Python: h.config.comparePython, Backend: h.config.compareBackend}, review, h.settings, h.sidecars, h.emitTranscript)
 	h.transcript.SetPersist(h.persist)
 	h.transcript.SetFindings(h.findings, h.manuscript)
 	projectFolder, settingsStore := h.config.projectFolder, h.settings
@@ -783,6 +783,17 @@ func (h *Host) resolveProjectFileLocked(next config) config {
 // REAPER project has no file to match at all, and a saved one may simply not
 // be linked to a Narration Utils project yet. Either way the picker (already
 // shown whenever projectFolder is empty) is where the narrator resolves it.
+// unresolvedLaunchReason reports what to tell the narrator when a REAPER launch (--daw REAPER, set unconditionally by
+// NarrationUtils_Launcher.lua) still has no project folder after matching, so they land on the picker with nothing chosen for
+// them (W5): an unsaved rpp (next.projectFile empty) or a saved one no project has linked yet. Any other launch without a
+// folder, an Audacity one included, lands on the picker silently: both reasons are about a REAPER project it does not have.
+func unresolvedLaunchReason(next config) (string, bool) {
+	if next.projectFolder != "" || dawadapter.Classify(next.daw) != dawadapter.KindREAPER {
+		return "", false
+	}
+	return startupProjectFileReason(next.projectFile), true
+}
+
 func startupProjectFileReason(projectFile string) string {
 	if projectFile == "" {
 		return "This REAPER project has not been saved yet, so it has no file to link. Save it in REAPER, or choose or create a Narration Utils project."

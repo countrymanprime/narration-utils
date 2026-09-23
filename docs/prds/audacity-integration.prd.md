@@ -158,7 +158,7 @@ Phases 1 through 7 (spikes, the adapter boundary extraction, the pipe client, co
 | 2 | Spike S-A2: label identity and drift | Add a label, move/split the underlying clip, re-scan labels, record whether the added label is still identifiable and by what signal | pending | 1 | 1 (same session) | - |
 | 3 | `DAWAdapter` boundary extraction | Behavior-preserving Go refactor: define the interface from the REAPER bridge's existing operations; REAPER bridge becomes its first implementation; no consumer-visible change | complete | - | - | - |
 | 4 | Go pipe client | Connect, send, receive, timeout and explicit "Audacity not reachable" error path; tests against recorded pipe transcripts (Question 6) | pending | 5 | 1, 3 | - |
-| 5 | `--daw Audacity` config plumbing | Config parsing accepts `"Audacity"`; settings-store smoke test proves no REAPER-specific assumption is tripped | pending | 4 | - | - |
+| 5 | `--daw Audacity` config plumbing | Config parsing accepts `"Audacity"`; settings-store smoke test proves no REAPER-specific assumption is tripped | complete | 4 | - | - |
 | 6 | Import findings as labels | Idempotent label creation from findings (Question 5 scope), preview and approval before any write, one narrator-triggered action | pending | 7 | 2, 4 | - |
 | 7 | Navigate and mark reviewed | Selecting a finding moves Audacity's selection to its label; marking reviewed updates the label in place, never duplicates | pending | 6 | 6 | - |
 | 8 | Export reviewed labels | Writes the reviewed set to a hand-off file matching the reviewed findings exactly | pending | 9 | 7 | - |
@@ -196,6 +196,7 @@ Phases 1 through 7 (spikes, the adapter boundary extraction, the pipe client, co
 - **Goal:** prove the DAW-agnostic settings store actually works for a second DAW, not just in theory.
 - **Scope:** accept `"Audacity"` in `config.daw`; a settings-store integration test that resolves all three tiers with `daw=Audacity`.
 - **Success signal:** the smoke test passes with no code change to `narration_common/config.py` beyond what any new tool section would already need.
+- **Delivered:** `apps/desktop/audacity_test.go` (Go host: `--daw Audacity` parsed, all three tiers resolved and a project override saved for an `.aup3` project with no `.rpp`, `Bootstrap` carries `daw: "Audacity"`) and `libs/python/tests/test_config_audacity.py` (the same tiers through `narration_common/config.py`, which is unchanged). The one REAPER assumption the smoke test found was wording: the Go store's "save the REAPER project before changing project settings" now reads "open a project…". An Audacity launch opens no REAPER bridge and its review workflow fails with "Audacity support is not available yet. …" until Phase 4 ([ADR 0144](../adr/0144-a-launch-names-its-daw-with-daw-and-an-audacity-launch-opens-no-reaper-bridge.md)).
 
 **Phase 6 - Import findings as labels**
 - **Goal:** findings become labels, safely and idempotently.
