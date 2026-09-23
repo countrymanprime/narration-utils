@@ -31,6 +31,38 @@ export namespace liveflags {
 
 export namespace main {
 	
+	export class FindingsQuery {
+	    analyzer?: string;
+	    category?: string;
+	    severity?: string;
+	    status?: string;
+	    chapterId?: string;
+	    minConfidence?: number;
+	    includeNotInLatestRun?: boolean;
+	    sort?: string;
+	    descending?: boolean;
+	    limit?: number;
+	    offset?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new FindingsQuery(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.analyzer = source["analyzer"];
+	        this.category = source["category"];
+	        this.severity = source["severity"];
+	        this.status = source["status"];
+	        this.chapterId = source["chapterId"];
+	        this.minConfidence = source["minConfidence"];
+	        this.includeNotInLatestRun = source["includeNotInLatestRun"];
+	        this.sort = source["sort"];
+	        this.descending = source["descending"];
+	        this.limit = source["limit"];
+	        this.offset = source["offset"];
+	    }
+	}
 	export class LineIdentityStampRow {
 	    itemGuid: string;
 	    lineId: string;

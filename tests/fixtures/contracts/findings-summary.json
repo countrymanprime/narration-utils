@@ -1,0 +1,23 @@
+{
+  "accepted": 0,
+  "analyzers": [
+    "story-bible",
+    "transcript-compare"
+  ],
+  "categories": [
+    "entity",
+    "pronunciation",
+    "transcript_discrepancy"
+  ],
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "Chapter One"
+    }
+  ],
+  "deferred": 0,
+  "dismissed": 1,
+  "notInLatestRun": 1,
+  "total": 4,
+  "unreviewed": 3
+}

@@ -65,6 +65,14 @@ export function DawCatalogOpenDownloadPage(arg1:string):Promise<string>;
 
 export function DawLaunch():Promise<string>;
 
+export function FindingsGet(arg1:string):Promise<string>;
+
+export function FindingsList(arg1:main.FindingsQuery):Promise<string>;
+
+export function FindingsReview(arg1:string,arg2:string,arg3:string,arg4:string):Promise<string>;
+
+export function FindingsSummary():Promise<string>;
+
 export function GuideBuild(arg1:boolean):Promise<string>;
 
 export function GuideBuildState():Promise<string>;

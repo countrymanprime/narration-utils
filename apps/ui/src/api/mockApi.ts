@@ -31,6 +31,7 @@ import type {
   Scope,
   ScopedSettingField,
   TakeReviewFinding,
+  Finding,
   TeleprompterDevice,
   TrackMapping,
   TracksDiscovery,
@@ -67,6 +68,7 @@ import {
   WIRE_RENDER_CONFIG_IDLE,
   WIRE_RENDER_CONFIG_NO_REGIONS,
   WIRE_RENDER_CONFIG_SUCCESS,
+  WIRE_FINDINGS,
   WIRE_TAKE_REVIEW_FINDINGS,
   WIRE_TELEPROMPTER_DEVICES,
   WIRE_TRACKS_PROJECT,
@@ -81,6 +83,7 @@ import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
 import { createCoverageMock, type CoverageSeed } from './coverageMock';
 import type { MockResumeSeed } from './resumeMockSeed';
+import { createFindingsMock } from './findingsMock';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
 import { MOCK_DICTIONARY, MOCK_DICTIONARY_DISK_SIZE, MOCK_DICTIONARY_DOWNLOAD_SIZE, mockDictionaryLookup } from './dictionaryMock';
@@ -418,6 +421,8 @@ export function createMockApi(
      * gate (story-bible-and-import-ux-briefs.prd.md Phases 7-8). A download seed of `assets` boots without it too.
      */
     dictionary?: 'missing' | 'damaged';
+    /** Seeds the findings store the review bindings answer from; defaults to `WIRE_FINDINGS` (an empty list is an empty queue). */
+    findings?: Finding[];
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -925,6 +930,7 @@ export function createMockApi(
     endJob,
     seed: initial.coverage,
   });
+  const findings = createFindingsMock(initial.findings ?? WIRE_FINDINGS);
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));
   };
@@ -1930,6 +1936,7 @@ export function createMockApi(
     },
     ...teleprompter,
     ...coverage,
+    ...findings,
     mediaUrl: (sourceFile) => mockAudioSource() ?? sourceFile,
   };
   const api = initial.invalidPayload ? { ...base, ...invalidPayloadOverrides(initial.invalidPayload, base) } : base;

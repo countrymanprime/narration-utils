@@ -47,22 +47,6 @@ type reviewHistory struct {
 	Decisions     []Decision `json:"decisions"`
 }
 
-// Query filters and sorts a List call. A zero Query matches every finding
-// except ones absent from the latest run. Filtering and sorting run in Go,
-// not the UI (review-dashboard PRD Q9), so the same code serves every
-// analyzer and stays fast on a large book.
-type Query struct {
-	Analyzer      string
-	Category      Category
-	Severity      Severity
-	Status        Status
-	ChapterID     string
-	MinConfidence *float64
-	// IncludeNotInLatestRun, when true, also returns findings the latest
-	// run did not reproduce (still marked NotInLatestRun).
-	IncludeNotInLatestRun bool
-}
-
 // Store persists analyzer findings and narrator decisions for one project.
 type Store struct {
 	mu       sync.Mutex
@@ -228,30 +212,49 @@ func (s *Store) RecordDecision(id, evidenceVersion string, status Status, note, 
 	return findingsInFile[index], true, nil
 }
 
-// List returns findings across every analyzer and scope that match query,
-// sorted by chapter id then finding id for stable paging.
+// List returns the findings across every analyzer and scope that match
+// query, in query's sort order and page (see Page).
 func (s *Store) List(query Query) ([]Finding, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	page, err := s.Page(query)
+	return page.Findings, err
+}
 
-	all, err := s.readAll()
-	if err != nil {
-		return nil, err
+// Page returns one page of the findings that match query, sorted by its sort
+// key with ties broken by chapter id then finding id so paging is stable,
+// and the number of matches before paging. It refuses a query Validate
+// refuses.
+func (s *Store) Page(query Query) (Page, error) {
+	if err := query.Validate(); err != nil {
+		return Page{}, err
 	}
-	result := make([]Finding, 0, len(all))
+	s.mu.Lock()
+	all, err := s.readAll()
+	s.mu.Unlock()
+	if err != nil {
+		return Page{}, err
+	}
+	matched := make([]Finding, 0, len(all))
 	for _, f := range all {
 		if matches(f, query) {
-			result = append(result, f)
+			matched = append(matched, f)
 		}
 	}
-	sort.Slice(result, func(i, j int) bool {
-		ci, cj := chapterOf(result[i]), chapterOf(result[j])
-		if ci != cj {
-			return ci < cj
-		}
-		return result[i].ID < result[j].ID
-	})
-	return result, nil
+	sortFindings(matched, query.Sort, query.Descending)
+	return Page{Findings: pageOf(matched, query.Offset, query.Limit), Total: len(matched)}, nil
+}
+
+// Summary counts the findings the latest run produced by review status (the
+// Review page's badge is Unreviewed) and lists the analyzers, categories and
+// chapters present, including findings not in the latest run, so the page
+// can offer only filters that match something.
+func (s *Store) Summary() (Summary, error) {
+	s.mu.Lock()
+	all, err := s.readAll()
+	s.mu.Unlock()
+	if err != nil {
+		return Summary{}, err
+	}
+	return summarize(all), nil
 }
 
 // Get returns the finding with id, across every analyzer and scope.
