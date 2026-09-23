@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
@@ -245,7 +246,7 @@ func (h *Host) ProjectSwitch(path, name string) (string, error) {
 	h.mu.Lock()
 	ctx := h.ctx
 	next := h.config
-	next.projectFolder, next.projectName, next.daw = path, name, "Standalone"
+	next.projectFolder, next.projectName, next.daw = path, name, pickerSwitchDAW(h.config.daw)
 	attached, reason := h.attachProjectLocked(next)
 	h.mu.Unlock()
 	if attached && h.recents != nil {
@@ -253,6 +254,17 @@ func (h *Host) ProjectSwitch(path, name string) (string, error) {
 		_ = h.recents.Touch(path, name)
 	}
 	return reportAttach(ctx, attached, reason)
+}
+
+// pickerSwitchDAW is the `daw` a picker switch attaches with. An Audacity launch (the installer's "Narration Utils for Audacity"
+// shortcut starts the app with `--daw Audacity` and no folder, audacity-integration PRD Phase 10) stays one: the narrator's DAW is
+// still Audacity whichever folder they pick, and no bridge is tied to a project. Any other launch becomes "Standalone", a REAPER
+// one included, because the picked project is not the one REAPER has open.
+func pickerSwitchDAW(launched string) string {
+	if dawadapter.Classify(launched) == dawadapter.KindAudacity {
+		return launched
+	}
+	return "Standalone"
 }
 
 // reportAttach tells the window how an attach ended (the system:attached event)

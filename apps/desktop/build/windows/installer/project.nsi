@@ -10,7 +10,8 @@ Unicode true
 ##  - The program is narration-utils.exe, the name the REAPER launcher and the updater expect, not "Narration Utils.exe".
 ##  - The setup file has an unversioned name, narration-utils-windows-x64-setup.exe (scripts/release/assets.mjs, and a test keeps the
 ##    two equal), so it can be attested and promoted like every other release asset.
-##  - The Start Menu entry is always made; the desktop shortcut is a choice on the components page.
+##  - The Start Menu entries are always made: the app, and "for Audacity" (--daw Audacity, the Audacity launcher). The desktop
+##    shortcut is a choice on the components page.
 ##  - The uninstaller removes only what the installer and the updater put in the install folder, never the folder's other contents
 ##    (the Wails default removes the whole folder), and leaves the narrator's settings, downloaded assets and project sidecars alone.
 ##  - No network access of its own. The WebView2 runtime is installed by the bootstrapper Wails embeds, and only when it is missing.
@@ -95,6 +96,9 @@ Section "${INFO_PRODUCTNAME} (required)"
     !insertmacro wails.files
 
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
+    # The Audacity launcher (audacity-integration PRD Phase 10): Audacity cannot start a program, so this entry does it instead,
+    # with exactly --daw Audacity. The narrator picks the project in the app.
+    CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME} for Audacity.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}" "--daw Audacity"
 
     !insertmacro wails.associateFiles
     !insertmacro wails.associateCustomProtocols
@@ -119,6 +123,7 @@ Section "uninstall"
     Delete "$INSTDIR\${PRODUCT_EXECUTABLE}.failed"
 
     Delete "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk"
+    Delete "$SMPROGRAMS\${INFO_PRODUCTNAME} for Audacity.lnk"
     Delete "$DESKTOP\${INFO_PRODUCTNAME}.lnk"
 
     !insertmacro wails.unassociateFiles

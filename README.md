@@ -79,7 +79,8 @@ The supported way to get the app is a GitHub release. From the [releases page](h
 1. Download `narration-utils-windows-x64-setup.exe` (and, to check it, `narration-utils-windows-x64-setup.exe.sha256`).
 2. Run it. It installs for your user account only, so it asks for no administrator rights, puts the program in
    `%LOCALAPPDATA%\Programs\Narration Utils`, adds a Start Menu entry and, if you leave it ticked, a desktop shortcut, and
-   installs the Microsoft WebView2 runtime only if your computer does not have it yet.
+   installs the Microsoft WebView2 runtime only if your computer does not have it yet. A second Start Menu entry,
+   **Narration Utils for Audacity**, opens the app ready for a project you record in Audacity 3.x.
 3. **The release is unsigned**, so Windows SmartScreen may say it "prevented an unrecognized app from starting". Choose
    **More info**, then **Run anyway**. The warning is about the missing signature, not about anything found in the file. To
    check the file yourself before you run it:

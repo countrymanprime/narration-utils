@@ -66,6 +66,19 @@ test('the Start Menu entry is always made and the desktop shortcut is its own ch
   assert.match(desktop, /CreateShortCut "\$DESKTOP\\/i);
 });
 
+// Audacity cannot start a program itself (docs/research/audacity-launcher-feasibility.md), so the Audacity launcher is a Start Menu
+// entry beside the app's own (audacity-integration PRD Phase 10). It passes exactly `--daw Audacity`: no project path and nothing
+// else, since the narrator picks the project in the app.
+test('the Start Menu always gets a "for Audacity" entry that starts the program with --daw Audacity and nothing else', () => {
+  const [program, desktop] = code.split(/^Section /m).slice(1);
+  const shortcuts = [...program.matchAll(/^\s*CreateShortcut (.+)$/gim)].map((match) => match[1].trim());
+  assert.deepEqual(shortcuts, [
+    '"$SMPROGRAMS\\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\\${PRODUCT_EXECUTABLE}"',
+    '"$SMPROGRAMS\\${INFO_PRODUCTNAME} for Audacity.lnk" "$INSTDIR\\${PRODUCT_EXECUTABLE}" "--daw Audacity"',
+  ]);
+  assert.doesNotMatch(desktop, /Audacity/);
+});
+
 test('the WebView2 runtime is checked for and only installed when it is missing', () => {
   assert.match(code, /!insertmacro wails\.webview2runtime/);
 });
@@ -78,6 +91,7 @@ test('the uninstaller removes the program, the copies the updater leaves and the
     '$INSTDIR\\${PRODUCT_EXECUTABLE}.old',
     '$INSTDIR\\${PRODUCT_EXECUTABLE}.failed',
     '$SMPROGRAMS\\${INFO_PRODUCTNAME}.lnk',
+    '$SMPROGRAMS\\${INFO_PRODUCTNAME} for Audacity.lnk',
     '$DESKTOP\\${INFO_PRODUCTNAME}.lnk',
   ]);
 });

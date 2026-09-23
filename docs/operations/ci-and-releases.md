@@ -269,7 +269,8 @@ A narrator installs from `narration-utils-windows-x64-setup.exe`, an NSIS instal
   there afterwards, and `assets.mjs package` refuses to package Windows without it. The log shows `makensis version:` and Wails'
   `Building 'amd64' installer` line, and the job summary lists the release files with their sizes.
 - **What it does.** Per user (no elevation, `%LOCALAPPDATA%\Programs\Narration Utils`, uninstall entry under `HKCU`), `narration-utils.exe`
-  as the program name, a Start Menu shortcut, a desktop shortcut the narrator can untick, the WebView2 runtime installed by Microsoft's
+  as the program name, a Start Menu shortcut and a second one, "Narration Utils for Audacity", that passes `--daw Audacity` ([ADR 0145](../adr/0145-the-audacity-launcher-is-an-installer-start-menu-entry-and-a-picker-switch-keeps-an-audacity-launch.md)),
+  a desktop shortcut the narrator can untick, the WebView2 runtime installed by Microsoft's
   bootstrapper only when it is missing, and an uninstaller that removes the program, the update copies (`.new`, `.old`, `.failed`) and the
   shortcuts and leaves settings, downloaded assets, the WebView2 data and project folders alone. The definition is
   `apps/desktop/build/windows/installer/project.nsi`; `wails_tools.nsh` beside it is regenerated on every build and is not checked in. The
