@@ -4,7 +4,7 @@
     {"tool":"go","project":"apps/desktop","path":"internal/bridge","floor":96},
     {"tool":"go","project":"apps/desktop","path":"internal/contractfile","floor":93},
     {"tool":"go","project":"apps/desktop","path":"internal/evidence","floor":88},
-    {"tool":"go","project":"apps/desktop","path":"internal/findings","floor":100},
+    {"tool":"go","project":"apps/desktop","path":"internal/findings","floor":99,"reason":"Was 100 at baseline; real file-I/O error-path tests added 2026-09-22 (take-review pickups/duplicates chain) closed every gap but one: store.go's appendHistory calls persist.CanOverwrite(path) then readHistory(path), both doing a plain os.ReadFile on the same path with no seam between them, so readHistory's own error return (only reachable when the file exists and is unreadable) can only fire if permissions or the file itself change between those two sequential reads - a TOCTOU race a single-threaded test cannot trigger without modifying production code. 99.6% measured; rounded down to 99."},
     {"tool":"go","project":"apps/desktop","path":"internal/hostlog","floor":84},
     {"tool":"go","project":"apps/desktop","path":"internal/importer","floor":94},
     {"tool":"go","project":"apps/desktop","path":"internal/layout","floor":93},
