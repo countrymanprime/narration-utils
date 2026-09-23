@@ -367,6 +367,26 @@ describe('wailsClient', () => {
     await expect(wailsClient.findingsSummary()).resolves.toMatchObject({ dismissed: 1, analyzers: [], chapters: [] });
   });
 
+  it("sends Go to, Loop and Stop for a finding to the host and decodes REAPER's answer", async () => {
+    const goTo = vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'navigated', projectTime: 102.5 }));
+    const loop = vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'refused', reason: 'stale', message: 'Gone.' }));
+    const stop = vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'stopped', restored: 2, kept: 1 }));
+    const status = vi.fn().mockResolvedValue(JSON.stringify({ connection: 'connected', loopingFindingId: 'f1' }));
+    window.go = { main: { Host: { FindingsGoTo: goTo, FindingsLoop: loop, FindingsStopLoop: stop, FindingsReaperStatus: status } } };
+
+    await expect(wailsClient.findingsGoTo('f1')).resolves.toEqual({ outcome: 'navigated', projectTime: 102.5 });
+    expect(goTo).toHaveBeenCalledWith('f1');
+    await expect(wailsClient.findingsLoop('f1')).resolves.toEqual({ outcome: 'refused', reason: 'stale', message: 'Gone.' });
+    expect(loop).toHaveBeenCalledWith('f1');
+    await expect(wailsClient.findingsStopLoop()).resolves.toEqual({ outcome: 'stopped', restored: 2, kept: 1 });
+    await expect(wailsClient.findingsReaperStatus()).resolves.toEqual({ connection: 'connected', loopingFindingId: 'f1' });
+  });
+
+  it('rejects a navigation answer the host never sends', async () => {
+    window.go = { main: { Host: { FindingsGoTo: vi.fn().mockResolvedValue(JSON.stringify({ outcome: 'refused', reason: 'busy', message: 'x' })) } } };
+    await expect(wailsClient.findingsGoTo('f1')).rejects.toBeInstanceOf(WireError);
+  });
+
   it('rejects a finding whose review status the host never sends', async () => {
     const bad = {
       schema_version: 1,

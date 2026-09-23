@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { createFindingsMock } from './findingsMock';
+import { createFindingsMock, REAPER_MESSAGES } from './findingsMock';
 import { WIRE_FINDINGS } from './mockFixtures';
 import { FINDING_CATEGORIES } from './contracts/findings';
 
@@ -109,5 +111,53 @@ describe('the browser mock findings store follows the host rules', () => {
     await expect(api.findingsReview({ id: fresh.id, evidenceVersion: fresh.evidence_version ?? '', status: 'accepted', note: '' })).resolves.toMatchObject({
       review: { status: 'accepted' },
     });
+  });
+});
+
+// The mock's REAPER (review dashboard Phase 7) answers Go to, Loop and Stop in the host's order and words, so the Review page
+// built against it says what the app says.
+describe("the browser mock's REAPER follows the host's navigation rules", () => {
+  const golden = (file: string): { message?: string } =>
+    JSON.parse(readFileSync(fileURLToPath(new URL(`../../../../tests/fixtures/contracts/${file}`, import.meta.url)), 'utf8'));
+
+  it('uses the words the host sends, as its golden payloads pin them', () => {
+    expect(REAPER_MESSAGES.stale).toBe(golden('findings-navigation-stale.json').message);
+    expect(REAPER_MESSAGES.recording).toBe(golden('findings-navigation-recording.json').message);
+    expect(REAPER_MESSAGES.noItem).toBe(golden('findings-navigation-no-item.json').message);
+    expect(REAPER_MESSAGES.notRunning).toBe(golden('findings-navigation-not-running.json').message);
+    expect(REAPER_MESSAGES.notRunning).toBe(golden('findings-reaper-status-not-running.json').message);
+    expect(REAPER_MESSAGES.standalone).toBe(golden('findings-reaper-status-standalone.json').message);
+  });
+
+  it('goes to and loops a finding with an item, and Stop puts back what the loop changed', async () => {
+    const api = createFindingsMock(WIRE_FINDINGS);
+    await expect(api.findingsGoTo('1a2b3c4d5e6f708192a3b4c5')).resolves.toEqual({ outcome: 'navigated', projectTime: 12.4 });
+    await expect(api.findingsLoop('1a2b3c4d5e6f708192a3b4c5')).resolves.toEqual({ outcome: 'looping', loopStart: 10.4, loopEnd: 14.4 });
+    await expect(api.findingsReaperStatus()).resolves.toEqual({ connection: 'connected', loopingFindingId: '1a2b3c4d5e6f708192a3b4c5' });
+    await expect(api.findingsStopLoop()).resolves.toEqual({ outcome: 'stopped', restored: 3, kept: 0 });
+    await expect(api.findingsReaperStatus()).resolves.toEqual({ connection: 'connected' });
+    await expect(api.findingsStopLoop()).resolves.toEqual({ outcome: 'stopped', restored: 0, kept: 0 });
+  });
+
+  it('refuses a finding with no item before it looks at REAPER, and a gone finding is an error', async () => {
+    const api = createFindingsMock(WIRE_FINDINGS, { reaper: 'standalone' });
+    await expect(api.findingsGoTo('3c4d5e6f708192a3b4c5d6e7')).resolves.toMatchObject({ outcome: 'refused', reason: 'no_item' });
+    await expect(api.findingsGoTo('missing')).rejects.toThrow('no longer in this project');
+  });
+
+  it('refuses every action for the mode it is in, and a refused loop starts nothing', async () => {
+    const reasons = [
+      ['standalone', 'standalone'],
+      ['not-running', 'not_running'],
+      ['stale', 'stale'],
+      ['recording', 'recording'],
+      ['outdated', 'script_outdated'],
+    ] as const;
+    for (const [reaper, reason] of reasons) {
+      const api = createFindingsMock(WIRE_FINDINGS, { reaper });
+      await expect(api.findingsGoTo('1a2b3c4d5e6f708192a3b4c5')).resolves.toMatchObject({ outcome: 'refused', reason });
+      await expect(api.findingsLoop('1a2b3c4d5e6f708192a3b4c5')).resolves.toMatchObject({ outcome: 'refused', reason });
+      expect((await api.findingsReaperStatus()).loopingFindingId).toBeUndefined();
+    }
   });
 });

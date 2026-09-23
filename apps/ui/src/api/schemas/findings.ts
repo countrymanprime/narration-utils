@@ -11,6 +11,8 @@ import type {
   FindingTimeRange,
   FindingsPage,
   FindingsSummary,
+  FindingNavigation,
+  ReaperStatus,
 } from '../contracts/findings';
 import { listFromNull } from './base';
 
@@ -102,3 +104,20 @@ export const findingsSummarySchema = z.object({
   categories: listFromNull(z.string()),
   chapters: listFromNull(findingChapterFacetSchema),
 }) satisfies z.ZodType<FindingsSummary>;
+
+export const reaperStatusSchema = z.object({
+  connection: z.enum(['connected', 'not_running', 'standalone']),
+  message: z.string().optional(),
+  loopingFindingId: z.string().optional(),
+}) satisfies z.ZodType<ReaperStatus>;
+
+export const findingNavigationSchema = z.discriminatedUnion('outcome', [
+  z.object({ outcome: z.literal('navigated'), projectTime: z.number() }),
+  z.object({ outcome: z.literal('looping'), loopStart: z.number(), loopEnd: z.number() }),
+  z.object({ outcome: z.literal('stopped'), restored: z.number(), kept: z.number() }),
+  z.object({
+    outcome: z.literal('refused'),
+    reason: z.enum(['standalone', 'not_running', 'no_item', 'no_source_time', 'stale', 'recording', 'script_outdated', 'failed']),
+    message: z.string(),
+  }),
+]) satisfies z.ZodType<FindingNavigation>;

@@ -3,7 +3,18 @@
 // total before paging, counts over the latest run, and a decision refused when the evidence changed (ADR 0120).
 // It exists so the Review page can be built and screenshotted without a host; the host's rules are the ones that
 // count, and apps/desktop/internal/findings/query_test.go pins them.
-import type { Finding, FindingReviewStatus, FindingsApi, FindingsQuery, FindingsSummary, FindingSeverity, FindingSortKey } from '../types';
+import type {
+  Finding,
+  FindingNavigation,
+  FindingNavigationRefusal,
+  FindingReviewStatus,
+  FindingsApi,
+  FindingsQuery,
+  FindingsSummary,
+  FindingSeverity,
+  FindingSortKey,
+  ReaperStatus,
+} from '../types';
 import { FINDING_CATEGORIES, MAX_REVIEW_NOTE_LENGTH } from './contracts/findings';
 import { wireClone } from './mockFixtures';
 
@@ -91,10 +102,76 @@ function summarize(all: Finding[]): FindingsSummary {
 const rerun = (findings: Finding[]): Finding[] =>
   findings.map((finding) => ({ ...finding, evidence_version: `${finding.evidence_version ?? ''}-rerun`, review: { ...finding.review, status: 'unreviewed' } }));
 
+/**
+ * What the mock's REAPER is doing (review dashboard Phase 7): connected, not there at all, or connected and refusing every Go to and
+ * Loop for one reason, so each state the Review page words differently can be seen without REAPER.
+ */
+export type MockReaper = 'connected' | 'standalone' | 'not-running' | 'stale' | 'recording' | 'outdated';
+
+// The host's words (apps/desktop/bindings_navigation.go); findingsMock.test.ts checks them against its golden payloads.
+export const REAPER_MESSAGES = {
+  standalone: 'REAPER is not connected to this app. To go to findings in REAPER, open this app from the Narration Utils action in REAPER.',
+  notRunning: 'REAPER is not answering. Check that REAPER is open and the Narration Utils action is running, then try again.',
+  noItem: 'This finding has no REAPER item to go to, because it came from an older check. Run the check again to record one.',
+  noSourceTime: 'This finding has no time in its audio to loop. Go to it instead.',
+  stale: "This finding's item is no longer in the REAPER project, so nothing was moved. Run the check again to find it where it is now.",
+  recording: 'REAPER is recording, so nothing was moved. Stop recording first.',
+  outdated: "The Narration Utils script in REAPER is older than this app. Import it again from this app's REAPER folder, then try again.",
+} as const;
+
+/** ContextPaddingSeconds (apps/desktop/internal/bridge/navigation.go): the audio a loop plays either side of a finding. */
+const LOOP_PADDING_SECONDS = 2;
+
 type FindingsMockOptions = {
   /** After the first list the page gets, the analyzer runs again, so a decision on what that list showed is refused as stale. */
   rerunAfterFirstList?: boolean;
+  /** What the mock's REAPER does; `connected` when not given. */
+  reaper?: MockReaper;
 };
+
+const refused = (reason: FindingNavigationRefusal, message: string): FindingNavigation => ({ outcome: 'refused', reason, message });
+
+/** The REAPER side of the review bindings, refusing in the host's order: the finding first, then the connection, then REAPER. */
+function createReaperMock(mode: MockReaper, find: (id: string) => Finding) {
+  let loopingId: string | undefined;
+  const status = (): ReaperStatus => {
+    if (mode === 'standalone') return { connection: 'standalone', message: REAPER_MESSAGES.standalone };
+    if (mode === 'not-running') return { connection: 'not_running', message: REAPER_MESSAGES.notRunning };
+    return loopingId ? { connection: 'connected', loopingFindingId: loopingId } : { connection: 'connected' };
+  };
+  const refusalOf = (finding: Finding, needsTime: boolean): FindingNavigation | undefined => {
+    if (!finding.source.item_guid) return refused('no_item', REAPER_MESSAGES.noItem);
+    if (needsTime && finding.time_range?.source_start === undefined) return refused('no_source_time', REAPER_MESSAGES.noSourceTime);
+    const now = status();
+    if (now.connection !== 'connected') return refused(now.connection, now.message ?? '');
+    if (mode === 'stale') return refused('stale', REAPER_MESSAGES.stale);
+    if (mode === 'recording') return refused('recording', REAPER_MESSAGES.recording);
+    if (mode === 'outdated') return refused('script_outdated', REAPER_MESSAGES.outdated);
+    return undefined;
+  };
+  return {
+    findingsReaperStatus: async () => status(),
+    findingsGoTo: async (id: string): Promise<FindingNavigation> => {
+      const finding = find(id);
+      return refusalOf(finding, false) ?? { outcome: 'navigated', projectTime: finding.time_range?.start ?? 0 };
+    },
+    findingsLoop: async (id: string): Promise<FindingNavigation> => {
+      const finding = find(id);
+      const refusal = refusalOf(finding, true);
+      if (refusal) return refusal;
+      loopingId = id;
+      const range = finding.time_range ?? { start: 0, end: 0 };
+      return { outcome: 'looping', loopStart: Math.max(range.start - LOOP_PADDING_SECONDS, 0), loopEnd: range.end + LOOP_PADDING_SECONDS };
+    },
+    findingsStopLoop: async (): Promise<FindingNavigation> => {
+      const now = status();
+      if (now.connection !== 'connected') return refused(now.connection, now.message ?? '');
+      const restored = loopingId ? 3 : 0;
+      loopingId = undefined;
+      return { outcome: 'stopped', restored, kept: 0 };
+    },
+  };
+}
 
 export function createFindingsMock(seed: Finding[], options: FindingsMockOptions = {}): FindingsApi {
   let store = wireClone(seed);
@@ -133,5 +210,6 @@ export function createFindingsMock(seed: Finding[], options: FindingsMockOptions
       return wireClone(decided);
     },
     findingsSummary: async () => summarize(store),
+    ...createReaperMock(options.reaper ?? 'connected', find),
   };
 }

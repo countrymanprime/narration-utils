@@ -106,7 +106,7 @@ var errFindingGone = fmt.Errorf("that finding is no longer in this project; relo
 func (h *Host) findingsStore() (*findings.Store, error) {
 	store := h.services().findings
 	if store == nil {
-		return nil, fmt.Errorf("no project is open")
+		return nil, errNoProject
 	}
 	return store, nil
 }

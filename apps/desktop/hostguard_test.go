@@ -29,6 +29,7 @@ var swappableHostFields = map[string]bool{
 	"coverage":     true,
 	"reachability": true,
 	"bridge":       true,
+	"navigation":   true,
 }
 
 // permanentDirectReaders may touch the swappable fields directly because the

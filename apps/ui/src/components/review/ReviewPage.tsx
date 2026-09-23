@@ -11,6 +11,7 @@ import { FindingsList } from './FindingsList';
 import { ReviewFilters } from './ReviewFilters';
 import { EMPTY_FILTERS, isFiltered, queryFor, REVIEW_PAGE_SIZE, type ReviewFilterValues } from './reviewQuery';
 import { STATUS_LABELS } from './findingFormat';
+import { useReaperStatus } from './useReaperStatus';
 
 const countsLine = (summary: FindingsSummary): string =>
   (['unreviewed', 'accepted', 'dismissed', 'deferred'] as const).map((status) => `${summary[status]} ${STATUS_LABELS[status].toLowerCase()}`).join(' · ');
@@ -40,6 +41,7 @@ export function ReviewPage({
   const [selected, setSelected] = useState<Finding>();
   const [reloadKey, setReloadKey] = useState(0);
   const loadedOnce = useRef(false);
+  const reaper = useReaperStatus();
 
   // A failure before anything is on screen is the page's load error with Retry; a later one keeps what is shown and is a toast.
   const failed = useCallback(
@@ -122,6 +124,8 @@ export function ReviewPage({
                   onChanged={changed}
                   goToManuscript={goToManuscript}
                   goToStoryBible={goToStoryBible}
+                  reaperStatus={reaper.status}
+                  onReaperStatusChange={reaper.refresh}
                 />
               ) : (
                 <Panel>

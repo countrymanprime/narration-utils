@@ -390,5 +390,26 @@
     "viewport": "desktop",
     "docName": "review-empty",
     "caption": "Review - nothing to review yet"
+  },
+  {
+    "page": "review",
+    "state": "reaper-looping",
+    "viewport": "desktop",
+    "docName": "review-reaper-looping",
+    "caption": "Review - a finding looping in REAPER, with Stop loop"
+  },
+  {
+    "page": "review",
+    "state": "reaper-stale",
+    "viewport": "desktop",
+    "docName": "review-reaper-stale",
+    "caption": "Review - Go to refused because the finding's item is no longer in the REAPER project"
+  },
+  {
+    "page": "review",
+    "state": "reaper-not-running",
+    "viewport": "desktop",
+    "docName": "review-reaper-not-connected",
+    "caption": "Review - Go to and Loop off because REAPER is not answering"
   }
 ]

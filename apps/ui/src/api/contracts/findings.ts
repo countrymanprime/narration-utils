@@ -159,6 +159,33 @@ export type FindingReviewRequest = {
   note: string;
 };
 
+/**
+ * Whether the Review page's REAPER controls can work now (review dashboard Phase 7, apps/desktop/bindings_navigation.go),
+ * read from the heartbeat REAPER's script already sends, so asking sends REAPER nothing. `standalone`: the app was opened
+ * on its own; `not_running`: REAPER has gone quiet. `message` says so in plain words when not connected.
+ */
+export type ReaperConnection = 'connected' | 'not_running' | 'standalone';
+
+export type ReaperStatus = {
+  connection: ReaperConnection;
+  message?: string;
+  /** The finding a loop this app started is on, while connected; Stop puts the narrator's selection and repeat back. */
+  loopingFindingId?: string;
+};
+
+/** Why REAPER was not asked, or did not move: the connection states, and what the finding or REAPER itself refused. */
+export type FindingNavigationRefusal = 'standalone' | 'not_running' | 'no_item' | 'no_source_time' | 'stale' | 'recording' | 'script_outdated' | 'failed';
+
+/**
+ * What Go to, Loop or Stop did. Times are project seconds. A refusal changed nothing in REAPER, and `message` says why
+ * and what to do in the narrator's words.
+ */
+export type FindingNavigation =
+  | { outcome: 'navigated'; projectTime: number }
+  | { outcome: 'looping'; loopStart: number; loopEnd: number }
+  | { outcome: 'stopped'; restored: number; kept: number }
+  | { outcome: 'refused'; reason: FindingNavigationRefusal; message: string };
+
 export interface FindingsApi {
   /** One page of the findings that match the query, filtered, sorted and paged by the host. */
   findingsList(query: FindingsQuery): Promise<FindingsPage>;
@@ -168,4 +195,12 @@ export interface FindingsApi {
   findingsReview(request: FindingReviewRequest): Promise<Finding>;
   /** Counts by status and the analyzers, categories and chapters present. */
   findingsSummary(): Promise<FindingsSummary>;
+  /** Whether REAPER is there for Go to and Loop; sends REAPER nothing, so the page may poll it. */
+  findingsReaperStatus(): Promise<ReaperStatus>;
+  /** Selects the finding's item in REAPER and puts the edit cursor on its spot (ADR 0121). */
+  findingsGoTo(id: string): Promise<FindingNavigation>;
+  /** Loops the finding's context in REAPER: time selection, loop points, repeat on, Play (Q6). */
+  findingsLoop(id: string): Promise<FindingNavigation>;
+  /** Stops the loop and puts back the time selection, loop points and repeat the narrator had. */
+  findingsStopLoop(): Promise<FindingNavigation>;
 }

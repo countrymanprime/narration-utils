@@ -45,6 +45,8 @@ var (
 	ErrNoItemIdentity = errors.New("this finding has no REAPER item to go to: run the check again to record one")
 	// ErrNoSourceTime: the finding has no usable time inside its audio.
 	ErrNoSourceTime = errors.New("this finding has no time in its audio to loop")
+	// ErrRecording: REAPER is recording, so nothing was moved (narration_navigation.lua refuses rather than interrupt a take).
+	ErrRecording = errors.New("REAPER is recording: stop recording first")
 	// ErrStale is what every StaleError is: the finding's audio is no longer where it was.
 	ErrStale = errors.New("this finding's audio is no longer in the REAPER project as it was")
 )
@@ -297,8 +299,14 @@ func errorAnswer(event Event) error {
 	if len(event.Fields) > 2 && event.Fields[2] != "" {
 		message = event.Fields[2]
 	}
-	if message == "Unsupported workspace command" {
+	// The script's own words for the refusals the host tells apart (narration_navigation.lua); anything else keeps its message.
+	switch message {
+	case "Unsupported workspace command":
 		return ErrScriptOutdated
+	case "REAPER is recording. Stop recording first.":
+		return ErrRecording
+	case "The finding has no usable time.":
+		return ErrNoSourceTime
 	}
 	return errors.New(message)
 }
