@@ -3,11 +3,12 @@ import type { ManuscriptChapter, ManuscriptParagraph } from '../types';
 // The browser demo uses the complete Project Gutenberg plain-text edition.
 // It is parsed into the same chapter/paragraph model as an imported project,
 // so scrolling, search, bookmarks, and source-line navigation run against a
-// normal novel rather than a small excerpt fixture.
-const ALICE_TEXT_URL = 'https://raw.githubusercontent.com/GITenberg/Alice-s-Adventures-in-Wonderland_11/master/11-0.txt';
-// A stalled download must not hold the mock client's manuscript calls forever:
-// past this limit the compact local seed fixture is used instead, as when offline.
-const ALICE_FETCH_TIMEOUT_MS = 5_000;
+// normal novel rather than a small excerpt fixture. The file ships with the mock
+// build (fixtures/alice-in-wonderland.txt, Project Gutenberg eBook #11 exactly as
+// published by GITenberg, 11-0.txt, with its licence), loaded as a chunk of its
+// own on first use: the demo makes no request to GitHub, and the desktop app,
+// which never runs the mock, never loads the chunk.
+const readBundledText = async (): Promise<string> => (await import('./fixtures/alice-in-wonderland.txt?raw')).default;
 
 type ChapterSeed = { title: string; subtitle: string };
 
@@ -87,13 +88,12 @@ export function parseAliceManuscript(
 
 export async function loadAliceManuscript(
   seeds: readonly ChapterSeed[],
+  readText: () => Promise<string> = readBundledText,
 ): Promise<{ chapters: ManuscriptChapter[]; paragraphs: ManuscriptParagraph[] } | undefined> {
-  if (typeof fetch !== 'function') return undefined;
   try {
-    const response = await fetch(ALICE_TEXT_URL, { signal: AbortSignal.timeout(ALICE_FETCH_TIMEOUT_MS) });
-    return response.ok ? parseAliceManuscript(await response.text(), seeds) : undefined;
+    return parseAliceManuscript(await readText(), seeds);
   } catch {
-    // Offline/test clients remain usable with the compact local seed fixture.
+    // A chunk that fails to load leaves the mock usable with the compact local seed fixture.
     return undefined;
   }
 }

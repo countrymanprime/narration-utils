@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ReadAloudDialog } from './ReadAloudDialog';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
@@ -11,12 +11,8 @@ import type { NarrationApi, TeleprompterEvent, TeleprompterState } from '../../t
 const DEVICE_NAME = WIRE_TELEPROMPTER_DEVICES[0].name;
 const CHAPTER = { id: 'chapter-1', title: 'Chapter 1', subtitle: 'Down the Rabbit-Hole' };
 
-beforeEach(() => {
-  vi.stubGlobal('fetch', () => Promise.reject(new Error('offline')));
-});
 afterEach(() => {
   cleanup();
-  vi.unstubAllGlobals();
 });
 
 function renderDialog(overrides: Partial<NarrationApi> = {}, onClose = vi.fn()) {

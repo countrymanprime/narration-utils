@@ -94,10 +94,8 @@ flowchart LR
   session[("session folder<br/>commands/, events.log")]
   huggingface["Hugging Face"]
   github["GitHub"]
-  fonts["Google Fonts"]
   ui --> bindings
   ui --> media
-  ui -.-> fonts
   bindings --> services
   bindings --> assets
   bindings --> update
@@ -122,7 +120,7 @@ flowchart LR
   update --> cache
   services --> project
   classDef offmachine stroke-dasharray: 5 5
-  class huggingface,github,fonts offmachine
+  class huggingface,github offmachine
 ```
 
 | Arrow | What it is | Read more |
@@ -135,9 +133,8 @@ flowchart LR
 | `internal/bridge` and `integrations/reaper` to the session folder | The host writes `commands/NNNNNNNN.cmd` atomically; the Lua bridge appends `events.log`; nothing listens on a socket | [the REAPER bridge](reaper-bridge.md) |
 | `internal/assets` to Hugging Face and GitHub | Pinned URLs, size and SHA-256, staging then rename, only after the narrator confirms | [first-use provisioning](first-use-dependency-provisioning.md) |
 | `internal/update` to GitHub | The release list once a day at most; a download only after two clicks; the program is replaced on Windows | [in-app update](in-app-update.md) |
-| `apps/ui` to Google Fonts | The webview loads fonts on every launch: the one request nobody asked for | [threat model](threat-model.md) row 3a |
 
-The settings, the recents list and the host log live in `%APPDATA%/narration-utils`, beside the user cache (`%LOCALAPPDATA%/narration-utils`); `services` reads and writes them and no arrow is drawn for it. *Verified 2026-09-21 against `apps/desktop/app.go` (`configureLocked`, `packagedResources`), `bindings.go`, `bindings_assets.go`, `media.go`, `internal/process/`, `internal/bridge/`, `internal/assets/`, `internal/update/`, `integrations/reaper/NarrationUtils_Launcher.lua` and `apps/ui/index.html`. A box names the folder or file that owns it, a dashed arrow or box is a request the narrator did not ask for or a host that is not ours, and a label names the mechanism, not the intent.*
+The settings, the recents list and the host log live in `%APPDATA%/narration-utils`, beside the user cache (`%LOCALAPPDATA%/narration-utils`); `services` reads and writes them and no arrow is drawn for it. *Verified 2026-09-21 against `apps/desktop/app.go` (`configureLocked`, `packagedResources`), `bindings.go`, `bindings_assets.go`, `media.go`, `internal/process/`, `internal/bridge/`, `internal/assets/`, `internal/update/`, `integrations/reaper/NarrationUtils_Launcher.lua` and `apps/ui/index.html` (the fonts are bundled since #238, so the webview asks no other host). A box names the folder or file that owns it, a dashed arrow or box is a request the narrator did not ask for or a host that is not ours, and a label names the mechanism, not the intent.*
 
 ## Go host ownership
 

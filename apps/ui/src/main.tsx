@@ -6,6 +6,7 @@ import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
 import { WIRE_CHAPTERS } from './api/mockFixtures';
 import { ThemeProvider } from './theme/ThemeContext';
+import './fonts';
 import './styles.css';
 
 // Mock mode runs the complete UI in a browser without the desktop host.
