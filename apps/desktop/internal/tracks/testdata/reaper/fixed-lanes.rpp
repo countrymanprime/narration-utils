@@ -1,0 +1,1406 @@
+<REAPER_PROJECT 0.1 "7.80/win64" 1790162536 0
+  <NOTES 0 2
+  >
+  RIPPLE 0 0
+  GROUPOVERRIDE 0 0 0 0
+  AUTOXFADE 129
+  ENVATTACH 3
+  POOLEDENVATTACH 0
+  TCPUIFLAGS 0
+  MIXERUIFLAGS 11 48 0
+  ENVFADESZ10 40
+  PEAKGAIN 1
+  FEEDBACK 0
+  PANLAW 1
+  PROJOFFS 0 0 0
+  MAXPROJLEN 0 0
+  GRID 3199 8 1 8 1 0 0 0
+  TIMEMODE 1 5 -1 30 0 0 -1 0
+  VIDEO_CONFIG 0 0 65792
+  PANMODE 3
+  PANLAWFLAGS 3
+  CURSOR 0
+  ZOOM 100 0 0
+  VZOOMEX 6 0
+  USE_REC_CFG 0
+  RECMODE 1
+  SMPTESYNC 0 30 100 40 1000 300 0 0 1 0 0
+  LOOP 0
+  LOOPGRAN 0 4
+  RECORD_PATH "media" ""
+  <RECORD_CFG
+    ZXZhdxgAAQ==
+  >
+  <APPLYFX_CFG
+  >
+  RENDER_FILE ""
+  RENDER_PATTERN ""
+  RENDER_FMT 0 2 0
+  RENDER_1X 0
+  RENDER_RANGE 1 0 0 0 1000
+  RENDER_RESAMPLE 3 0 1
+  RENDER_ADDTOPROJ 0
+  RENDER_STEMS 0
+  RENDER_DITHER 0
+  RENDER_TRIM 0.000001 0.000001 0 0
+  TIMELOCKMODE 1
+  TEMPOENVLOCKMODE 1
+  ITEMMIX 1
+  DEFPITCHMODE 589824 0
+  TAKELANE 1
+  SAMPLERATE 44100 0 0
+  <RENDER_CFG
+    ZXZhdxgAAQ==
+  >
+  LOCK 1
+  <METRONOME 6 2
+    VOL 0.25 0.125
+    BEATLEN 4
+    FREQ 1760 880 1
+    SAMPLES "" "" "" ""
+    SPLIGNORE 0 0
+    SPLDEF 2 660 "" 0 ""
+    SPLDEF 3 440 "" 0 ""
+    PATTERN 0 169
+    PATTERNSTR ABBB
+    MULT 1
+  >
+  GLOBAL_AUTO -1
+  TEMPO 120 4 4 0
+  PLAYRATE 1 0 0.25 4
+  SELECTION 0 0
+  SELECTION2 0 0
+  MASTERAUTOMODE 0
+  MASTERTRACKHEIGHT 0 0
+  MASTERPEAKCOL 16576
+  MASTERMUTESOLO 0
+  MASTERTRACKVIEW 0 0.6667 0.5 0.5 0 0 0 0 0 0 0 0 0 0 1
+  MASTERHWOUT 0 0 1 0 0 0 0 -1
+  MASTER_NCH 2 2
+  MASTER_VOLUME 1 0 -1 -1 1
+  MASTER_PANMODE 3
+  MASTER_PANLAWFLAGS 3
+  MASTER_FX 1
+  MASTER_TRACKID {C00561A1-DE75-4A1B-9D91-F35B58CDDD08}
+  MASTER_SEL 0
+  <MASTERPLAYSPEEDENV
+    EGUID {C0B3E32B-3154-499B-8944-3106D052D5A2}
+    ACT 0 -1
+    VIS 0 1 1
+    LANEHEIGHT 0 0
+    ARM 0
+    DEFSHAPE 0 -1 -1
+  >
+  <TEMPOENVEX
+    EGUID {31609E64-59C8-4513-9557-1893E9CAD702}
+    ACT 1 -1
+    VIS 1 0 1
+    LANEHEIGHT 0 0
+    ARM 0
+    DEFSHAPE 1 -1 -1
+  >
+  RULERHEIGHT 86 86
+  RULERLANE 1 4 "" 0 -1 0
+  RULERLANE 2 8 "" 0 -1 0
+  <PROJBAY
+  >
+  <TRACK {ECBBD0D5-ADAA-479E-A005-DDF41A84024A}
+    NAME "A - enable by API"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FREEMODE 2
+    FIXEDLANES 9 0 0 0 0
+    LANEREC -1 -1 -1 0
+    SEL 0
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {ECBBD0D5-ADAA-479E-A005-DDF41A84024A}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    ITEMLANES 1
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 0.5 2
+      IGUID {B5899082-843D-47F2-A45A-7854502B289E}
+      IID 1
+      <EXTI
+        narration_utils_line_id line-000001
+      >
+      NAME "line 1 read 1"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {EC4BD9BB-AC43-4EFF-9627-32F014D496A1}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+  >
+  <TRACK {53DB7EF8-ED18-4710-AAF0-ECEF4AD24AB2}
+    NAME "A2 - overlapping then lanes"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FREEMODE 2
+    FIXEDLANES 9 0 0 0 0
+    LANEREC -1 -1 -1 0
+    SEL 0
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {53DB7EF8-ED18-4710-AAF0-ECEF4AD24AB2}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    ITEMLANES 1
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 0.5 2
+      IGUID {5BFE533C-6CC5-4CFB-B47C-4BEF702C4601}
+      IID 2
+      <EXTI
+        narration_utils_line_id line-000002
+      >
+      NAME "read 1"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {070CA487-01F0-4639-B011-8AB17DF5A4C7}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+    <ITEM
+      POSITION 1
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 0.5 2
+      IGUID {167820F8-12B5-4020-BB5B-ABB5E8483D9B}
+      IID 3
+      <EXTI
+        narration_utils_line_id line-000002
+      >
+      NAME "read 2 (overlaps read 1)"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {243EA15B-6A4B-4BA7-B5C3-AC2D3537147F}
+      <SOURCE WAVE
+        FILE "media/take_b.wav"
+      >
+    >
+    <ITEM
+      POSITION 5
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 0.5 2
+      IGUID {79493E68-6DFE-4300-B3E9-572F539CA4B1}
+      IID 4
+      <EXTI
+        narration_utils_line_id line-000003
+      >
+      NAME "read 3 (no overlap)"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {593B2903-1E94-4342-A915-9A1ADD987158}
+      <SOURCE WAVE
+        FILE "media/take_c.wav"
+      >
+    >
+  >
+  <TRACK {5F05EE72-3B3B-415A-85EE-E8BF650E4D7B}
+    NAME "A3 - one item, action"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FREEMODE 2
+    FIXEDLANES 9 0 0 0 0
+    LANEREC -1 -1 -1 0
+    LANENAME 1
+    SEL 0
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {5F05EE72-3B3B-415A-85EE-E8BF650E4D7B}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    ITEMLANES 1
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 1 2
+      IGUID {7616F4AA-B74D-4C1D-8AC5-109744199CDA}
+      IID 5
+      <EXTI
+        narration_utils_line_id line-000001
+      >
+      NAME "line 1 read 1"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {67731C3B-B5B2-4DE7-B127-68D9BB3DBEBD}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+  >
+  <TRACK {8ACD6FCF-8B3D-4E6B-A7E3-9EAA66B4B882}
+    NAME "A4 - overlapping, action"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FREEMODE 2
+    FIXEDLANES 9 0 0 0 0
+    LANEREC -1 -1 -1 0
+    LANENAME 1
+    SEL 0
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {8ACD6FCF-8B3D-4E6B-A7E3-9EAA66B4B882}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    ITEMLANES 1
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 1 2
+      IGUID {3A5856D7-D785-4C44-9F1F-6F1483D53D4E}
+      IID 6
+      <EXTI
+        narration_utils_line_id line-000002
+      >
+      NAME "read 1"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {538B48BD-7865-43D5-8594-510EDAC4EBFB}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+    <ITEM
+      POSITION 1
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 1 2
+      IGUID {A7FAFD90-ECF3-4FC4-A7C8-9606457581D5}
+      IID 7
+      <EXTI
+        narration_utils_line_id line-000002
+      >
+      NAME "read 2 (overlaps read 1)"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {431DA5DE-F473-410B-9577-7D349EE3F269}
+      <SOURCE WAVE
+        FILE "media/take_b.wav"
+      >
+    >
+    <ITEM
+      POSITION 5
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 1 2
+      IGUID {34308271-B3DD-4894-A7A2-2FC3F32DE640}
+      IID 8
+      <EXTI
+        narration_utils_line_id line-000003
+      >
+      NAME "read 3 (no overlap)"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {E8A984CA-D749-44F5-8DEA-030617102F44}
+      <SOURCE WAVE
+        FILE "media/take_c.wav"
+      >
+    >
+  >
+  <TRACK {1FEFC744-352F-4FA8-AA83-BDFE89DFE8E6}
+    NAME "A5 - API enable plus I_NUMFIXEDLANES=1"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FREEMODE 2
+    FIXEDLANES 9 0 0 0 0
+    LANEREC -1 -1 -1 0
+    LANENAME 1
+    SEL 0
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {1FEFC744-352F-4FA8-AA83-BDFE89DFE8E6}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    ITEMLANES 1
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 1 2
+      IGUID {828EFE25-6527-4730-ACA1-F78B8925A09F}
+      IID 9
+      <EXTI
+        narration_utils_line_id line-000001
+      >
+      NAME "line 1 read 1"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {F21B2505-8169-4D96-8764-27A93AA2F4B1}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+  >
+  <TRACK {4EFF09FB-6766-43E4-BA84-C005ECCF994B}
+    NAME "B - retakes on lanes"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FREEMODE 2
+    FIXEDLANES 9 0 0 0 0
+    LANESOLO 4 0 0 0 0 0 0 0
+    LANEREC -1 -1 -1 1
+    LANENAME "Retake 1" "Retake 2" "Retake 3" 4 5 6 7
+    SEL 0
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {4EFF09FB-6766-43E4-BA84-C005ECCF994B}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    ITEMLANES 7
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 0.142857 2
+      IGUID {28424EE6-CD83-45A7-BCB7-A46112C7336E}
+      IID 10
+      <EXTI
+        narration_utils_line_id line-000004
+      >
+      NAME "retake 1"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {97409F48-5327-4223-A32D-611BDE2A90F4}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0.142857 0.142857 2
+      IGUID {1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C}
+      IID 11
+      <EXTI
+        narration_utils_line_id line-000004
+      >
+      NAME "retake 2"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {2085EDB9-DC9E-49E0-BD1D-FC928763E0C4}
+      <SOURCE WAVE
+        FILE "media/take_b.wav"
+      >
+    >
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0.285714 0.142857 2
+      IGUID {6AE40BB3-97F2-4822-9548-C6C269993C80}
+      IID 12
+      <EXTI
+        narration_utils_line_id line-000004
+      >
+      NAME "retake 3"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {3CB874EF-A2E9-4B86-BBC2-18939C0329D9}
+      <SOURCE WAVE
+        FILE "media/take_c.wav"
+      >
+    >
+    <ITEM
+      POSITION 4
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 0.142857 2
+      IGUID {905F2E56-AD94-4914-8532-BAC201E57F6B}
+      IID 13
+      <EXTI
+        narration_utils_line_id line-000005
+      >
+      NAME "out of range lane"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {F2D12A13-D357-418A-BB52-C13CB5AA5734}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+  >
+  <TRACK {66BBE396-4654-4638-8363-3A172B2E8A66}
+    NAME "E1 - takes, then I_FREEMODE=2"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FREEMODE 2
+    FIXEDLANES 9 0 0 0 0
+    LANEREC -1 -1 -1 0
+    SEL 0
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {66BBE396-4654-4638-8363-3A172B2E8A66}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    ITEMLANES 1
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 0.5 2
+      IGUID {97E61A71-95A2-47DD-8D30-02ED8E359E87}
+      IID 14
+      <EXTI
+        narration_utils_line_id line-000006
+      >
+      NAME "target (active)"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {1F5B1981-A63A-40F8-83B5-FB2CE5538A47}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+      TAKE
+      NAME candidate
+      TAKEVOLPAN 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {1A56D966-5523-45B8-AD57-859AF611B557}
+      <SOURCE WAVE
+        FILE "media/take_b.wav"
+      >
+      <EXT
+        narration_utils_take_finding_id finding-0001
+      >
+      TAKE
+      NAME "candidate added on a lane track"
+      TAKEVOLPAN 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {81C19540-3066-41CE-ADB9-050FC437CD5B}
+      <SOURCE WAVE
+        FILE "media/take_c.wav"
+      >
+    >
+  >
+  <TRACK {BBD49AD2-4D4F-40DC-9F17-8A175CDDBB63}
+    NAME "E2 - takes, then convert to lanes"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FIXEDLANES 9 0 0 0 0
+    LANESOLO 4294967293 4294967295 4294967295 4294967295 4294967295 4294967295 4294967295 4294967295
+    LANEREC -1 -1 -1 0
+    LANENAME 1 2
+    SEL 0
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {BBD49AD2-4D4F-40DC-9F17-8A175CDDBB63}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 1 0
+      IGUID {DCFB6758-AE92-4375-A832-D9DAC2D4173C}
+      IID 15
+      <EXTI
+        narration_utils_line_id line-000006
+      >
+      NAME "target (active)"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {A9119A78-827F-4D48-B28A-257515CAEF65}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+      TAKE
+      NAME candidate
+      TAKEVOLPAN 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {5C9AEDC2-E786-4F23-9813-BDB96AE820B0}
+      <SOURCE WAVE
+        FILE "media/take_b.wav"
+      >
+      <EXT
+        narration_utils_take_finding_id finding-0001
+      >
+    >
+  >
+  <TRACK {67D9F027-5BFC-49B2-8E09-78DFFB79A67A}
+    NAME "E3 - takes, then explode to lanes"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FREEMODE 2
+    FIXEDLANES 9 0 0 0 0
+    LANESOLO 4294967293 4294967295 4294967295 4294967295 4294967295 4294967295 4294967295 4294967295
+    LANEREC -1 -1 -1 0
+    LANENAME 1 2
+    SEL 0
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {67D9F027-5BFC-49B2-8E09-78DFFB79A67A}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    ITEMLANES 2
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 0.5 2
+      IGUID {58B979C8-6204-424F-8F35-7A833F5CE014}
+      IID 18
+      <EXTI
+        narration_utils_line_id line-000006
+      >
+      NAME "target (active)"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {6FF64B11-93A1-488F-B026-3AE8872A6F79}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0.5 0.5 2
+      IGUID {022CBE90-D08B-4870-AB3C-5AF9AD0E0583}
+      IID 19
+      <EXTI
+        narration_utils_line_id line-000006
+      >
+      NAME candidate
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {9B07E18D-4E68-4EF1-A03A-134A2BF28799}
+      <SOURCE WAVE
+        FILE "media/take_b.wav"
+      >
+      <EXT
+        narration_utils_take_finding_id finding-0001
+      >
+    >
+  >
+  <TRACK {E5D2612A-2D1F-4B49-AD50-D35ABBB2D6A1}
+    NAME "E4 - candidate active, then convert"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FREEMODE 2
+    FIXEDLANES 9 0 0 0 0
+    LANESOLO 4294967293 4294967295 4294967295 4294967295 4294967295 4294967295 4294967295 4294967295
+    LANEREC -1 -1 -1 0
+    LANENAME 1 2
+    SEL 0
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {E5D2612A-2D1F-4B49-AD50-D35ABBB2D6A1}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    ITEMLANES 2
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 0.5 2
+      IGUID {D021C51F-D03B-4EC9-86D6-794D6FA8F8F4}
+      IID 20
+      <EXTI
+        narration_utils_line_id line-000006
+      >
+      NAME "target (active)"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {898DC580-8F12-44D2-8B2A-B5B2B31F0CF5}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0.5 0.5 2
+      IGUID {A2D2A25D-B1D7-4751-8751-08FE3B3B465C}
+      IID 21
+      <EXTI
+        narration_utils_line_id line-000006
+      >
+      NAME candidate
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {5CDCD763-45BB-431B-9796-51F3DF84E2AF}
+      <SOURCE WAVE
+        FILE "media/take_b.wav"
+      >
+      <EXT
+        narration_utils_take_finding_id finding-0001
+      >
+    >
+  >
+  <TRACK {36B5C484-7DFE-469B-856E-CA3FE54FDF1D}
+    NAME "E5 - lanes, lane 1 plays, convert to takes"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FIXEDLANES 9 0 0 0 0
+    LANESOLO 2 0 0 0 0 0 0 0
+    LANEREC -1 -1 -1 1
+    LANENAME 1 2 3
+    SEL 0
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {36B5C484-7DFE-469B-856E-CA3FE54FDF1D}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 1 0
+      IGUID {4BF4F8DC-CF16-4CF3-9F04-9689FD2E3BA3}
+      IID 22
+      <EXTI
+        narration_utils_line_id line-000009
+      >
+      NAME "retake 1"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {770A4CBB-11F6-4D78-A0FC-7AAC5AA274C2}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+      <EXT
+        narration_utils_take_finding_id finding-e5-0
+      >
+      TAKE SEL
+      NAME "retake 2"
+      TAKEVOLPAN 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {C1AFCF48-943C-4EE7-961B-60106C1D94ED}
+      <SOURCE WAVE
+        FILE "media/take_b.wav"
+      >
+      <EXT
+        narration_utils_take_finding_id finding-e5-1
+      >
+      TAKE
+      NAME "retake 3"
+      TAKEVOLPAN 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {A8E4EDE1-446F-4327-8B22-99B0312B861E}
+      <SOURCE WAVE
+        FILE "media/take_c.wav"
+      >
+      <EXT
+        narration_utils_take_finding_id finding-e5-2
+      >
+    >
+  >
+  <TRACK {CD9E97F5-A831-4F69-B7A9-4EBE01FF40C9}
+    NAME "F - comp"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FREEMODE 2
+    FIXEDLANES 9 0 0 0 0
+    LANESOLO 1 0 0 0 0 0 0 0
+    LANEREC -1 -1 0 -1
+    LANENAME C1 1 2 3
+    SEL 0
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {CD9E97F5-A831-4F69-B7A9-4EBE01FF40C9}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    ITEMLANES 4
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0.25 0.25 2
+      IGUID {0DFFBA5C-C8FA-4C12-8D31-DFF1026ABA0A}
+      IID 25
+      <EXTI
+        narration_utils_line_id line-000007
+      >
+      NAME "retake 1"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {C8EA6F3C-20DB-4017-80BB-63BA008B9EAD}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0.5 0.25 2
+      IGUID {88A07AB3-A556-45D6-B9A8-87B052B8365D}
+      IID 26
+      <EXTI
+        narration_utils_line_id line-000007
+      >
+      NAME "retake 2"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {894835A6-D51B-45DE-BC7D-772180AFF762}
+      <SOURCE WAVE
+        FILE "media/take_b.wav"
+      >
+    >
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0.75 0.25 2
+      IGUID {FE01F8CE-ADAB-44D6-9721-2CA5DC745915}
+      IID 27
+      <EXTI
+        narration_utils_line_id line-000007
+      >
+      NAME "retake 3"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {3312C0AD-BD6E-49F9-B13B-952F6F653DB3}
+      <SOURCE WAVE
+        FILE "media/take_c.wav"
+      >
+    >
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 0.25 2
+      IGUID {569C2D4F-E5E5-4075-8A97-06B7912F3FD9}
+      IID 28
+      <EXTI
+        narration_utils_line_id line-000007
+      >
+      NAME "retake 2"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {51CA39F8-64D4-4173-A1AE-8007E19A786E}
+      <SOURCE WAVE
+        FILE "media/take_b.wav"
+      >
+    >
+  >
+  <TRACK {5972FBED-34C8-4FCD-87BF-6BB554F11787}
+    NAME "F2 - comp kept"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FREEMODE 2
+    FIXEDLANES 9 0 0 0 0
+    LANESOLO 1 0 0 0 0 0 0 0
+    LANEREC -1 0 -1 -1
+    LANENAME C1 1 2 3
+    SEL 1
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {5972FBED-34C8-4FCD-87BF-6BB554F11787}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    ITEMLANES 4
+    LINKEDLANE 0 3 3 0 -1 0.01 0.01
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0.25 0.25 2
+      IGUID {67CF871C-09DB-42CD-992D-825BC36D0C5E}
+      IID 30
+      <EXTI
+        narration_utils_line_id line-000010
+      >
+      NAME "retake 1"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {F09C60EB-7F8F-4EC9-8F0F-42395B8D12D5}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0.5 0.25 2
+      IGUID {3C5140F7-CD35-49A0-9E69-3197AED06887}
+      IID 31
+      <EXTI
+        narration_utils_line_id line-000010
+      >
+      NAME "retake 2"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {4B3F2961-54D9-496B-9AF9-8A7E4B17AD55}
+      <SOURCE WAVE
+        FILE "media/take_b.wav"
+      >
+    >
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 1
+      YPOS 0.75 0.25 2
+      IGUID {405E0477-A4D2-4EF4-8A25-D7F76E5BBDEE}
+      IID 32
+      <EXTI
+        narration_utils_line_id line-000010
+      >
+      NAME "retake 3"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {09BBF795-8202-46C1-8E47-C4740FF54300}
+      <SOURCE WAVE
+        FILE "media/take_c.wav"
+      >
+    >
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 0.25 2
+      IGUID {28DCE23F-5742-4ECE-A4C1-26C5E3E94569}
+      IID 33
+      <EXTI
+        narration_utils_line_id line-000010
+      >
+      NAME "retake 3"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {EF513EA3-D7D6-4C04-B549-35E2280B177B}
+      <SOURCE WAVE
+        FILE "media/take_c.wav"
+      >
+    >
+  >
+  <TRACK {1A4A1EAF-6A4A-4BFE-B042-D20D9F9EE885}
+    NAME "G - lanes off by API"
+    PEAKCOL 16576
+    BEAT -1
+    AUTOMODE 0
+    PANLAWFLAGS 3
+    VOLPAN 1 0 -1 -1 1
+    MUTESOLO 0 0 0
+    IPHASE 0
+    PLAYOFFS 0 1
+    ISBUS 0 0
+    BUSCOMP 0 0 0 0 0
+    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0 0
+    FREEMODE 2
+    FIXEDLANES 9 0 0 0 0
+    LANESOLO 2 0 0 0 0 0 0 0
+    LANEREC -1 -1 -1 1
+    LANENAME 1 2 3
+    SEL 0
+    REC 0 0 1 0 0 0 0 0
+    VU 64
+    TRACKHEIGHT 0 0 0 0 0 0 0
+    INQ 0 0 0 0.5 100 0 0 100
+    NCHAN 2
+    FX 1
+    TRACKID {1A4A1EAF-6A4A-4BFE-B042-D20D9F9EE885}
+    PERF 0
+    MIDIOUT -1 -1
+    MAINSEND 1 0
+    ITEMLANES 3
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0 0.333333 2
+      IGUID {EA1514F1-43D8-4D3C-B481-1C1047B10A12}
+      IID 34
+      <EXTI
+        narration_utils_line_id line-000008
+      >
+      NAME "retake 1"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {CCAE73B5-4709-485A-89BB-31060A3FE1E8}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0.333333 0.333333 2
+      IGUID {585585F2-5EE6-4CEA-8786-CD1EE04FDE73}
+      IID 35
+      <EXTI
+        narration_utils_line_id line-000008
+      >
+      NAME "retake 2"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {505D7BBF-E1C3-48AD-92D8-EA7BE10660A3}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+    <ITEM
+      POSITION 0
+      SNAPOFFS 0
+      LENGTH 3
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      YPOS 0.666667 0.333333 2
+      IGUID {295D82DC-9737-4343-A50A-2910648ED231}
+      IID 36
+      <EXTI
+        narration_utils_line_id line-000008
+      >
+      NAME "retake 3"
+      VOLPAN 1 0 1 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {F7619B5F-888F-457E-8314-E163F0E11922}
+      <SOURCE WAVE
+        FILE "media/take_a.wav"
+      >
+    >
+  >
+>
