@@ -4,17 +4,17 @@
 --
 -- This file owns the command loop and the registry that dispatches to the
 -- commands; every command lives in a feature file listed in FEATURE_FILES
--- (narration_compare.lua, narration_line_identity.lua). To add a command, put
--- it in a new narration_<feature>.lua that returns `function(registry)` and
--- calls `registry.register(name, function(ctx, args) ... end)`, list the file
--- below and in scripts/release/reaper-files.mjs, and write its harness tests.
--- See docs/architecture/reaper-bridge.md.
+-- (narration_compare.lua, narration_line_identity.lua, narration_pickups.lua).
+-- To add a command, put it in a new narration_<feature>.lua that returns
+-- `function(registry)` and calls `registry.register(name, function(ctx, args) ... end)`,
+-- list the file below and in scripts/release/reaper-files.mjs, and write its
+-- harness tests. See docs/architecture/reaper-bridge.md.
 
 local M = {}
 
 -- The feature files, loaded once next to this file. A missing or broken one fails
 -- the load, so the launcher reports it before it starts the app.
-M.FEATURE_FILES = { 'narration_compare.lua', 'narration_line_identity.lua' }
+M.FEATURE_FILES = { 'narration_compare.lua', 'narration_line_identity.lua', 'narration_pickups.lua' }
 
 local function own_directory()
   local source = debug and debug.getinfo and debug.getinfo(1, 'S').source or ''
