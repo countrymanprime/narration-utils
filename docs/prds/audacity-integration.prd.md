@@ -163,7 +163,7 @@ Phases 1 through 7 (spikes, the adapter boundary extraction, the pipe client, co
 | 7 | Navigate and mark reviewed | Selecting a finding moves Audacity's selection to its label; marking reviewed updates the label in place, never duplicates | pending | 6 | 6 | - |
 | 8 | Export reviewed labels | Writes the reviewed set to a hand-off file matching the reviewed findings exactly | pending | 9 | 7 | - |
 | 9 | Dashboard integration | Findings sourced from an Audacity project show only Audacity-appropriate actions (no take-management controls); visual states and docs | pending | 8 | 7, `DAWAdapter` (3) | - |
-| 10 | Audacity macro launcher | A saved Audacity macro that launches the app, analogous to `NarrationUtils_Launcher.lua` (Question 3); shipped in the release and listed in `scripts/release/verify-installable.mjs` like REAPER's Lua files (Question 7) | pending | 8, 9 | 5 | - |
+| 10 | Audacity macro launcher | A saved Audacity macro that launches the app, analogous to `NarrationUtils_Launcher.lua` (Question 3); shipped in the release and listed in `scripts/release/verify-installable.mjs` like REAPER's Lua files (Question 7) | blocked: Audacity macros and Nyquist plug-ins have no way to launch a program (the one side channel found is not a usable launcher), and Audacity 4.0 has no macros ([feasibility note](../research/audacity-launcher-feasibility.md)); Questions 3 and 7 need the owner | 8, 9 | 5 | - |
 
 ### Phase Details
 
