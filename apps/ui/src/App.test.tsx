@@ -234,7 +234,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
   });
 
   it('raises an OS notification for a slow job finishing while the window is unfocused, and not otherwise (N1-N4)', async () => {
-    let announce: (event: JobEnded) => void = () => {};
+    let announce: ((event: JobEnded) => void) | undefined;
     const systemNotify = vi.fn(async () => {});
     const hasFocus = vi.spyOn(document, 'hasFocus');
     renderApp({
@@ -245,16 +245,19 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
       systemNotify,
     });
     await screen.findByRole('heading', { name: 'Welcome back' });
+    // Home can render before App's job:ended subscription effect has run; announcing earlier would go nowhere.
+    await waitFor(() => expect(announce).toBeDefined());
+    const send = (event: JobEnded) => announce?.(event);
 
     hasFocus.mockReturnValue(true);
-    act(() => announce({ id: 'guide-1', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 40_000 }));
+    act(() => send({ id: 'guide-1', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 40_000 }));
     expect(systemNotify).not.toHaveBeenCalled();
 
     hasFocus.mockReturnValue(false);
-    act(() => announce({ id: 'guide-2', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 3_000 }));
+    act(() => send({ id: 'guide-2', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 3_000 }));
     expect(systemNotify).not.toHaveBeenCalled();
 
-    act(() => announce({ id: 'guide-3', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 40_000 }));
+    act(() => send({ id: 'guide-3', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 40_000 }));
     await waitFor(() => expect(systemNotify).toHaveBeenCalledWith('story_bible', 'Task finished', 'Story Bible rebuild complete.'), { timeout: 10_000 });
 
     hasFocus.mockRestore();
