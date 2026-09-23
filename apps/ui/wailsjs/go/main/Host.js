@@ -58,6 +58,14 @@ export function CreditsTemplates() {
   return window['go']['main']['Host']['CreditsTemplates']();
 }
 
+export function DawCatalogList() {
+  return window['go']['main']['Host']['DawCatalogList']();
+}
+
+export function DawCatalogOpenDownloadPage(arg1) {
+  return window['go']['main']['Host']['DawCatalogOpenDownloadPage'](arg1);
+}
+
 export function DawLaunch() {
   return window['go']['main']['Host']['DawLaunch']();
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/credits"
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawcatalog"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
@@ -37,7 +38,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 18
+const hostAPIVersion = 19
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -98,9 +99,13 @@ type Host struct {
 	pendingPath   string
 	// reaperLaunch and reaperLocate are seams for tests (dawlaunch.go): nil means daw.Launch and
 	// daw.LocateReaperExecutable, the real detached spawn and the real registry lookup.
-	reaperLaunch  func(program string, args []string) error
-	reaperLocate  func() (path, source string, err error)
-	confirmUpdate sync.Once
+	reaperLaunch func(program string, args []string) error
+	reaperLocate func() (path, source string, err error)
+	// dawCatalogDetectors is a seam for tests (dawcatalog.go): nil means dawcatalog.DefaultDetectors(), the real
+	// per-entry registry/path lookups. Detection is stateless and not project-scoped, so unlike the swappable
+	// services above it needs no lock or snapshot - it is set once (or left nil) and read directly.
+	dawCatalogDetectors map[string]dawcatalog.Detector
+	confirmUpdate       sync.Once
 	// writable* remember whether the install folder can be written to, for a short while (see writable).
 	writableMu  sync.Mutex
 	writableDir string

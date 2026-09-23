@@ -8,11 +8,13 @@ export * from './api/contracts/assets';
 export * from './api/contracts/tts';
 export * from './api/contracts/whisper';
 export * from './api/contracts/project';
+export * from './api/contracts/dawCatalog';
 export * from './api/contracts/tracks';
 export * from './api/contracts/teleprompter';
 export * from './api/contracts/update';
 export * from './api/contracts/credits';
 
+import type { DawCatalogApi } from './api/contracts/dawCatalog';
 import type { ManuscriptApi } from './api/contracts/manuscript';
 import type { ProjectApi } from './api/contracts/project';
 import type { StoryBibleApi } from './api/contracts/storyBible';
@@ -37,6 +39,7 @@ export interface NarrationApi
     WhisperApi,
     AssetsApi,
     ProjectApi,
+    DawCatalogApi,
     TracksApi,
     TeleprompterApi,
     UpdateApi,

@@ -80,3 +80,21 @@ func TestCatalogEntryIDsAreUnique(t *testing.T) {
 		seen[entry.ID] = true
 	}
 }
+
+// TestLookupFindsEveryCatalogEntryByIDAndRejectsUnknownOnes is Phase 2's own
+// seam: DawCatalogOpenDownloadPage resolves a narrator-chosen id through this
+// function alone, never a caller-supplied URL.
+func TestLookupFindsEveryCatalogEntryByIDAndRejectsUnknownOnes(t *testing.T) {
+	for _, want := range Catalog {
+		got, ok := Lookup(want.ID)
+		if !ok || got != want {
+			t.Errorf("Lookup(%q) = %+v, %v; want %+v, true", want.ID, got, ok, want)
+		}
+	}
+	if _, ok := Lookup("audacity"); ok {
+		t.Error(`Lookup("audacity") = true; Audacity is not in the catalog yet (Decisions Log)`)
+	}
+	if _, ok := Lookup(""); ok {
+		t.Error(`Lookup("") = true; want false`)
+	}
+}
