@@ -1741,6 +1741,12 @@ def main():
     )
     ap.add_argument("--hints-out", default=None, help="Path to write suggested hint terms to (used with --extract-hints)")
     ap.add_argument(
+        "--take-divergence",
+        action="store_true",
+        help="Additive mode (take-review phase 9): align every take in --manifest (a JSON manifest) to one fixed manuscript span "
+        "and write where each diverges, as TAKE_DIVERGENCE lines to --out (see core/take_divergence_mode.py)",
+    )
+    ap.add_argument(
         "--find-repeats",
         action="store_true",
         help="Additive mode (take-review Q1/Q2): instead of one concatenated compare, independently transcribe and "
@@ -1770,6 +1776,11 @@ def main():
             set_log_file(open(args.log, "w", encoding="utf-8"))  # noqa: SIM115
         except OSError:
             pass
+
+    if args.take_divergence:
+        import take_divergence_mode  # a sibling module: compare.py's own directory is on sys.path, frozen or not
+
+        os._exit(take_divergence_mode.main(ap, args, sys.modules[__name__]))
 
     if args.extract_hints:
         try:

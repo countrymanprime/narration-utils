@@ -28,7 +28,8 @@ especially welcome:
   recorded audio a REAPER project names (the teleprompter reads the last seconds of a chapter's recording to find where to resume,
   [ADR 0111](docs/adr/0111-the-resume-point-comes-from-transcribing-the-recorded-tail-and-placing-it-with-the-tracker.md)), or when a
   sidecar reads the audio and writes the per-item cache files an analysis names (for example the recording-coverage manifest,
-  which the host builds from the saved REAPER project; the app's only input to a check is a chapter id).
+  which the host builds from the saved REAPER project; the app's only input to a check is a chapter id), or the audio
+  an analysis manifest names (for example the per-take divergence manifest).
 - Weaknesses in the release pipeline (for example an installer or checksum that does not match the reviewed build, or a release asset without valid build provenance). What the pipeline promises, and what it does not: every release asset has a SHA-256 file (it detects a damaged download, not a tampered one) and a build-provenance attestation you can check with `gh attestation verify` ([Build provenance](docs/operations/ci-and-releases.md#build-provenance)); the releases are **unsigned** by decision, so Windows SmartScreen warns and that warning alone is not a vulnerability; and the owner-only settings that back the pipeline (rulesets, the `production` environment, immutable releases, action pinning) are listed in [Tracking work on GitHub](docs/operations/github-workflow.md#repository-settings-that-only-the-owner-can-change).
 
 - The arguments and session files the app hands its local sidecars, for example a value from the interface becoming a

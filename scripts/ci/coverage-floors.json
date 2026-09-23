@@ -40,6 +40,9 @@
     {"tool":"pytest","project":"sidecars/transcript-compare","path":"sidecars/transcript-compare/core/coverage_mode.py","floor":100},
     {"tool":"pytest","project":"sidecars/transcript-compare","path":"sidecars/transcript-compare/core/recording_coverage.py","floor":100},
     {"tool":"pytest","project":"sidecars/transcript-compare","path":"sidecars/transcript-compare/tests/coverage_harness.py","floor":99,"reason":"The recording-coverage ground-truth harness (ADR 0125, docs/utilities/recording-coverage.md). It lives under tests/ because it is test tooling, but the shipped thresholds are calibrated with it (ADR 0132), so it is gated like logic. 99.7% measured; the one uncovered line is the script entry point."},
-    {"tool":"pytest","project":"sidecars/transcript-compare","path":"sidecars/transcript-compare/tests/coverage_calibration.py","floor":100,"reason":"The recording-check calibration (ADR 0132, docs/research/recording-coverage-calibration.md): test tooling that chose the shipped defaults, so it is gated like logic. The Piper and Whisper runs and the command line are marked no cover: they need a voice or a model the gate does not have."}
+    {"tool":"pytest","project":"sidecars/transcript-compare","path":"sidecars/transcript-compare/tests/coverage_calibration.py","floor":100,"reason":"The recording-check calibration (ADR 0132, docs/research/recording-coverage-calibration.md): test tooling that chose the shipped defaults, so it is gated like logic. The Piper and Whisper runs and the command line are marked no cover: they need a voice or a model the gate does not have."},
+    {"tool":"pytest","project":"sidecars/transcript-compare","path":"sidecars/transcript-compare/core/take_divergence.py","floor":100},
+    {"tool":"pytest","project":"sidecars/transcript-compare","path":"sidecars/transcript-compare/core/take_divergence_mode.py","floor":100},
+    {"tool":"pytest","project":"sidecars/transcript-compare","path":"sidecars/transcript-compare/tests/divergence_harness.py","floor":99}
   ]
 }
