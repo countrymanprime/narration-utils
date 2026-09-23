@@ -223,6 +223,31 @@ func (w *WAVReader) Read(maxFrames int) ([][]float64, error) {
 	return w.decode(buf[:frames*w.frameBytes], frames)
 }
 
+// Skip discards up to frames whole frames without decoding them and reports
+// how many it discarded. Reaching the end of the audio is not an error; a
+// real I/O failure is.
+func (w *WAVReader) Skip(frames int64) (int64, error) {
+	if w.done || frames <= 0 {
+		return 0, nil
+	}
+	frames = min(frames, math.MaxInt64/int64(w.frameBytes))
+	want := frames * int64(w.frameBytes)
+	if w.remaining >= 0 && want > w.remaining {
+		want = w.remaining
+	}
+	n, err := io.CopyN(io.Discard, w.src, want)
+	if err != nil && !isShortRead(err) {
+		return 0, err
+	}
+	if err != nil {
+		w.done = true
+	}
+	if w.remaining >= 0 {
+		w.remaining -= n
+	}
+	return n / int64(w.frameBytes), nil
+}
+
 func (w *WAVReader) decode(buf []byte, frames int) ([][]float64, error) {
 	out := make([][]float64, w.format.Channels)
 	for c := range out {
