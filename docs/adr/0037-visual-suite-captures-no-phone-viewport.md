@@ -1,6 +1,6 @@
 # 0037. The visual suite captures no phone viewport
 
-**Status:** Accepted (amends ADR-0023)
+**Status:** Accepted (amends ADR-0023; amended by [ADR 0061](0061-settings-states-are-also-captured-at-a-390px-reflow-width.md), which also captures the Settings states at a 390 px reflow width; the default matrix below stands)
 **Date:** 2026-09-19
 **Supersedes:**
 

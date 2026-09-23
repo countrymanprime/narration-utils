@@ -1,6 +1,6 @@
 # 0102. EPUB `epub:type` forces a section's content kind by an explicit override, not by renaming its title to one the classifier already knows
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-22
 
 ## Context

@@ -1,6 +1,6 @@
 # 0057. A running job that cannot be cancelled keeps its dialog blocking and says so, and the progress bar respects reduced motion
 
-**Status:** Accepted
+**Status:** Accepted (its "stays blocking" rule is superseded for the Story Bible rebuild by [ADR 0076](0076-a-host-job-ends-with-one-job-ended-event-the-app-announces-it-and-the-story-bible-rebuild-may-continue-in-the-background.md), which lets that rebuild continue in the background; the rest stands)
 **Date:** 2026-09-20
 **Supersedes:**
 

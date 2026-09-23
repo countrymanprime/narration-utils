@@ -1,6 +1,6 @@
 # 0034. Live recognition is unconstrained and is never restricted to the script's words
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-19
 
 ## Context
@@ -14,7 +14,7 @@ Live recognition decodes the narrator's speech without a restricting grammar, an
 ## Consequences
 
 - Misreads and skipped words survive recognition as different words, so they can later become reviewable findings.
-- The tracker has to tolerate recognition noise: it ignores heard words that fit nothing nearby and matches with a close-spelling check, which costs some accuracy on invented names and spoken numbers (ADR 0032).
+- The tracker has to tolerate recognition noise: it ignores heard words that fit nothing nearby and matches with a close-spelling check, which costs some accuracy on invented names and spoken numbers ([ADR 0033](0033-the-teleprompter-follows-speech-with-continuous-alignment-and-pause-resume.md)).
 - Whisper is re-decoded over the growing segment every 0.5 s (`DECODE_INTERVAL_SECONDS`), which costs more CPU and adds lag than a streaming Kaldi decoder would. Vosk's low latency and small models are given up; those properties come from the design record and were not measured here.
 - The desktop host passes no hotwords and launches only the Whisper engine, so biasing is a CLI capability today and has no UI. Moonshine's script-text context works only when the sidecar is run by hand.
 - Whether biasing raises or lowers misread detection on real readings has not been measured.

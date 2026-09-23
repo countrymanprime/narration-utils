@@ -1,6 +1,6 @@
 # 0032. Analyzers report findings and never change the narrator's audio or manuscript on their own
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-19
 
 ## Context

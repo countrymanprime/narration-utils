@@ -1,6 +1,6 @@
 # 0033. The teleprompter follows what was said, with continuous alignment and pause/resume
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-19
 
 ## Context

@@ -43,7 +43,9 @@ credit template library (Settings, This Project, [Credits](settings.md#credits))
 closing template. Each shows its word count; open it to read the credits with the project's values
 filled in. A token with no value yet stays in brackets, highlighted, and a line below lists the
 unresolved tokens. These entries are read-only and are not chapters: they are not in the chapter list or
-search.
+search. Record the credits as their own files, as ACX expects, not inside a chapter file: Proofing
+compares a chapter file with that chapter's text only, so credits recorded inside it are reported as
+extra words.
 
 Each narration chapter's header has a **Read aloud** button. It opens the [Teleprompter](teleprompter.md)
 read-along for that chapter in a full-screen dialog titled "Read aloud — " and the chapter title, with the

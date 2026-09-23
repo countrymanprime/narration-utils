@@ -1,6 +1,6 @@
 # 0076. A host job ends with one `job:ended` event, the app announces it, and the Story Bible rebuild may continue in the background
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-21
 **Supersedes:** the "stays blocking" rule of [ADR 0057](0057-a-running-job-that-cannot-be-cancelled-keeps-its-dialog-blocking-and-says-so.md) for the Story Bible rebuild (the rest of ADR 0057 stands)
 
@@ -10,7 +10,7 @@
 
 Owner decision D8 turns OS notifications on by default (unfocused, jobs of about 10 seconds or more) and turns "Build Story Bible after import" on by default. The notification work (the briefs PRD) needs one host-side trigger that says which job ended, how, and how long it took; and a build that follows every import means a blocking, non-cancellable dialog appears after every import for as long as the build runs. [ADR 0057](0057-a-running-job-that-cannot-be-cancelled-keeps-its-dialog-blocking-and-says-so.md) kept that dialog blocking under option (a) of the retired dialog PRD and named this stack's completion events as what would make its option (b), "Close and let the job continue in the background", safe.
 
-The owner asked for a new ADR that supersedes or amends ADR 0057 if the audit relaxes it. It relaxes it for one job, so this is written as **Proposed**: it reverses a decision the owner accepted, on the path the audit recommends.
+The owner asked for a new ADR that supersedes or amends ADR 0057 if the audit relaxes it. It relaxes it for one job, so this was written as **Proposed**: it reverses a decision the owner accepted, on the path the audit recommends. The owner accepted it on 2026-09-23.
 
 ## Decision
 
