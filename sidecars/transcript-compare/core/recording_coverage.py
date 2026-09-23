@@ -1,13 +1,13 @@
 """Recording coverage: how much of a chapter's body text a recording contains, in order.
 
-`docs/prds/recording-coverage-analysis.prd.md` (Definitions, Q1, Q2, Q3, Q11). This module is
+docs/utilities/recording-coverage.md ("What counts as read"; Q1, Q2, Q3, Q11). This module is
 pure: it takes one word-level alignment between the chapter's tokens and the transcript's tokens
 (the opcodes `diff_and_build_markers` in `compare.py` already computes, so coverage and the take
 markers can never disagree) and reports, per paragraph (`p-NNNNNN`), how many body tokens were
 read in place, the longest run of missing tokens, and typed regions of missing text naming their
 first and last words.
 
-The rules, from the PRD's Definitions:
+The rules (the Definitions of the delivered PRD, now "What counts as read" in that page):
 
 - **Anchors.** An `equal` block of at least `min_anchor_run` tokens is read text. A shorter one
   with non-equal neighbours on both sides is a chance match (the odd "the" inside unrelated
@@ -29,8 +29,8 @@ The rules, from the PRD's Definitions:
 The narrator's thresholds (`min_paragraph_present`, `max_missing_run`) are applied on read by
 `ChapterCoverage.text_complete`, so changing one never re-aligns. The two alignment parameters
 (`max_misread_run`, `min_anchor_run`) change which tokens count, so a result is only valid for the
-parameters it was computed with (Q13). All four defaults are the PRD's Proposed starting values,
-uncalibrated until a real corpus exists (Q15).
+parameters it was computed with (Q13). The defaults are the ones the app ships (ADR 0132), chosen
+on the synthetic fixtures and still uncalibrated on real narration (Q15).
 """
 
 from __future__ import annotations
@@ -75,7 +75,7 @@ class AlignmentParams:
 class Thresholds:
     """The narrator's pass/fail settings, applied on read."""
 
-    min_paragraph_present: float = 0.95
+    min_paragraph_present: float = 0.8
     max_missing_run: int = 3
 
     def __post_init__(self) -> None:

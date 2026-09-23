@@ -17,7 +17,7 @@ var RefusalReasons = []Reason{
 }
 
 // ResultView is a ChapterResult as the CoverageResult binding sends it
-// (recording-coverage-analysis.prd.md Phase 5): the state and its reasons, the
+// (docs/utilities/recording-coverage.md, ADR 0129): the state and its reasons, the
 // basis every result states (Q8), which run it is, and the stored report with
 // the labels the parameter hash leaves out (model and language, Q13). The
 // ledger record's fingerprints and the stored hashes stay in the host.

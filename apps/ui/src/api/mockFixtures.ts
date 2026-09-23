@@ -228,7 +228,7 @@ export const WIRE_CHAPTERS: ManuscriptChapter[] = aliceChapters.map((chapter, in
   })),
   wordCount: chapter.paragraphs.join(' ').split(/\s+/).length * 4,
   // Chapters 1-3 were checked and read in full, 4-6 were checked with a third of their text still to record, the rest were never
-  // checked, so their recorded length is the estimate from their status (recording-coverage-analysis.prd.md D11, Q12).
+  // checked, so their recorded length is the estimate from their status (docs/utilities/recording-coverage.md D11, Q12).
   ...(index < 6 ? { recordedFraction: index < 3 ? 1 : 0.65 } : {}),
   status: index < 3 ? 'finalized' : index < 6 ? 'recording' : index < 8 ? 'editing' : index < 10 ? 'proofing' : 'not_started',
 }));
@@ -667,10 +667,10 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     deliveryLimit('true_peak_dbtp_max', 'True peak, highest', -60, 'dBTP'),
     deliveryLimit('noise_floor_dbfs_max', 'Noise floor, highest', -120, 'dBFS'),
   ],
-  // The recording check's four settings (docs/prds/recording-coverage-analysis.prd.md Phase 7), mirroring the host's fieldSchemas and
+  // The recording check's four settings (docs/utilities/recording-coverage.md, ADR 0131), mirroring the host's fieldSchemas and
   // numberSpecs.
   RecordingCoverage: [
-    recordingCheck('min_paragraph_present', 'Share of each paragraph that must be read', '0.95', { min: 0, max: 1, step: 0.01, unit: '' }),
+    recordingCheck('min_paragraph_present', 'Share of each paragraph that must be read', '0.8', { min: 0, max: 1, step: 0.01, unit: '' }),
     recordingCheck('max_missing_run', 'Longest run of missing words allowed', '3', { min: 0, max: 200, step: 1, unit: 'words' }),
     recordingCheck('max_misread_run', 'Longest misread still counted as read', '8', { min: 0, max: 200, step: 1, unit: 'words' }),
     recordingCheck('min_anchor_run', 'Shortest match that counts as read', '3', { min: 1, max: 50, step: 1, unit: 'words' }),

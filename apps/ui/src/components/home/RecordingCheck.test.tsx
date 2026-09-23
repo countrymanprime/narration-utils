@@ -12,7 +12,7 @@ afterEach(cleanup);
 
 type Initial = Parameters<typeof createMockApi>[1];
 
-// The recording check on Home (recording-coverage-analysis.prd.md Phase 6), driven through the panel against the coverage mock, which
+// The recording check on Home (docs/utilities/recording-coverage.md, ADR 0130), driven through the panel against the coverage mock, which
 // answers the same states the host does: chapters 1-3 have a current check with every word, 4-6 a current check with a third missing,
 // the rest were never checked.
 async function openBreakdown(initial: Initial = {}, overrides: Partial<NarrationApi> = {}) {

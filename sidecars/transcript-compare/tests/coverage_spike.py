@@ -1,6 +1,6 @@
 """The Phase 2 alignment spike: `SequenceMatcher` against a word-level DP, scored on the fixtures.
 
-`docs/prds/recording-coverage-analysis.prd.md` Phase 2 and Q2 (answered 2026-09-23: reuse the
+docs/utilities/recording-coverage.md, ADR 0126 and Q2 (answered 2026-09-23: reuse the
 `SequenceMatcher` opcodes `compare.py` already computes unless the spike's fixtures fail, then move
 to a DP alignment). This module is test tooling, not product code:
 
@@ -144,9 +144,15 @@ def label(paragraph, thresholds) -> str:
     return "missing" if paragraph.present_fraction < 1 - thresholds.min_paragraph_present else "partial"
 
 
+# The spike measured at the owner's Q3 starting values. The app's defaults moved in Phase 8 (ADR 0132,
+# docs/research/recording-coverage-calibration.md); the spike keeps its own so its record stays reproducible.
+SPIKE_PARAMS = cov.AlignmentParams(max_misread_run=8, min_anchor_run=3)
+SPIKE_THRESHOLDS = cov.Thresholds(min_paragraph_present=0.95, max_missing_run=3)
+
+
 def coverage_analyzer(aligner: Aligner = sequence_matcher_opcodes, params=None, thresholds=None) -> harness.Analyzer:
-    params = params or cov.AlignmentParams()
-    thresholds = thresholds or cov.Thresholds()
+    params = params or SPIKE_PARAMS
+    thresholds = thresholds or SPIKE_THRESHOLDS
 
     def analyze(chapter: harness.Chapter, items: tuple[harness.Item, ...]) -> harness.Report:
         if any(item.words is None for item in items):

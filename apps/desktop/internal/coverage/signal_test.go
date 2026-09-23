@@ -66,7 +66,7 @@ var (
 	// No long run, but paragraph 2 lost 3 of 20 words (85%).
 	thinParagraph = testReport([]ParagraphLine{
 		{ID: "p-000001", Tokens: 40, Present: 40},
-		{ID: "p-000002", Tokens: 20, Present: 17, LongestMissingRun: 1},
+		{ID: "p-000002", Tokens: 20, Present: 15, LongestMissingRun: 1},
 	})
 )
 
@@ -128,7 +128,7 @@ func TestRecordingSignalTable(t *testing.T) {
 			return input(result)
 		}(), stages.SignalMet, "", "Text present"},
 		{"a skipped block names the largest region", input(currentWith(skippedBlock)), stages.SignalNotMet, "", "paragraph 2: 14 words not read"},
-		{"a thin paragraph names its share", input(currentWith(thinParagraph)), stages.SignalNotMet, "", "paragraph 2: 17 of 20 words read"},
+		{"a thin paragraph names its share", input(currentWith(thinParagraph)), stages.SignalNotMet, "", "paragraph 2: 15 of 20 words read"},
 		{"a threshold change is read, not re-run: stricter", SignalInput{Result: currentWith(scatteredDrops), Latest: completeRecord("rec-1"), Settings: strict, ComputedAt: signalNow}, stages.SignalNotMet, "", "paragraph 2: 57 of 60 words read"},
 		{"a threshold change is read, not re-run: looser", SignalInput{Result: currentWith(skippedBlock), Latest: completeRecord("rec-1"), Settings: loose, ComputedAt: signalNow}, stages.SignalMet, "", "every paragraph passes"},
 		{"never analyzed", input(never()), stages.SignalUnknown, stages.CauseNeverAnalyzed, "has not been checked"},
@@ -229,7 +229,7 @@ func TestRecordingSignalEvidenceIsTyped(t *testing.T) {
 		t.Fatalf("items evidence %+v", items)
 	}
 	analysis := got.Evidence[4]
-	for _, part := range []string{"small", "misread run up to 8", "anchor run at least 3", "95%", "3 words", "uncalibrated"} {
+	for _, part := range []string{"small", "misread run up to 8", "anchor run at least 3", "80%", "3 words", "uncalibrated"} {
 		if !strings.Contains(analysis.Value, part) {
 			t.Fatalf("analysis evidence %q lacks %q", analysis.Value, part)
 		}

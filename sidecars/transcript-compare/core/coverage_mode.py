@@ -1,6 +1,6 @@
 """The sidecar's recording-coverage mode: `compare.py --coverage`.
 
-`docs/prds/recording-coverage-analysis.prd.md` Phase 3 and ADR 0127. For one chapter and the items
+docs/utilities/recording-coverage.md and ADR 0127. For one chapter and the items
 the host lists in a JSON manifest (active takes only, in play order; muted items are listed and
 skipped, Q5 and Q10), this mode:
 

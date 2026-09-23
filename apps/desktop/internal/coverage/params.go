@@ -33,8 +33,9 @@ type AlignmentParams struct {
 	MinAnchorRun  int `json:"minAnchorRun"`
 }
 
-// DefaultAlignmentParams are the Proposed, uncalibrated defaults (Q3, Q15),
-// the same values the sidecar uses when no flag is given.
+// DefaultAlignmentParams are the shipped defaults (ADR 0132): calibrated on the
+// synthetic fixtures only, so still Proposed and uncalibrated on real narration
+// (Q15). They are the values the sidecar uses when no flag is given.
 var DefaultAlignmentParams = AlignmentParams{MaxMisreadRun: 8, MinAnchorRun: 3}
 
 func (p AlignmentParams) validate() error {

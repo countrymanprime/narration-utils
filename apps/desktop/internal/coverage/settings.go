@@ -7,7 +7,7 @@ import (
 )
 
 // SettingsTool is the settings.Store tool the recording check's four settings
-// live under (recording-coverage-analysis.prd.md Q3, Phase 7), layered project
+// live under (docs/utilities/recording-coverage.md Q3, ADR 0131), layered project
 // over global over the built-in defaults in config/defaults.json like every
 // other tool.
 const SettingsTool = "RecordingCoverage"
@@ -29,9 +29,10 @@ type Settings struct {
 	Thresholds Thresholds
 }
 
-// DefaultSettings are the Proposed, uncalibrated starting values (Q3, Q15:
-// 0.95, 3, 8 and 3). No calibrated number exists until Phase 8 runs the
-// fixtures through the shipped path.
+// DefaultSettings are 0.8, 3, 8 and 3, chosen by running the synthetic
+// fixtures through the shipped path under simulated transcriber error (ADR
+// 0132; Q3 started at 0.95, 3, 8 and 3). No real narration has checked them,
+// so they stay Proposed and labelled uncalibrated (Q15).
 var DefaultSettings = Settings{Alignment: DefaultAlignmentParams, Thresholds: DefaultThresholds}
 
 func (t Thresholds) validate() error {

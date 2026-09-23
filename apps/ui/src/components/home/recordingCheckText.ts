@@ -1,4 +1,4 @@
-// The words of the recording check (docs/prds/recording-coverage-analysis.prd.md Phase 6): every reason the host can give
+// The words of the recording check (docs/utilities/recording-coverage.md, ADR 0130): every reason the host can give
 // for a check it refused or a result it cannot trust, in the narrator's terms, and the sentences a stored report is read
 // out as. Pure functions, so the dialog only lays them out.
 import type { CoverageReason, CoverageRegion, CoverageRegionKind, CoverageReport, ManuscriptChapter } from '../../types';

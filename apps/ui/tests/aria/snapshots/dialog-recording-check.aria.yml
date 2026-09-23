@@ -1,4 +1,4 @@
-# The recording check (recording-coverage-analysis.prd.md Phase 6): a modal dialog named for its chapter, with the count as a heading,
+# The recording check (docs/utilities/recording-coverage.md, ADR 0130): a modal dialog named for its chapter, with the count as a heading,
 # the missing text as a named region whose region has a button to its paragraph, the paragraph list as a disclosure over a named table,
 # and one action. The page behind it is aria-hidden.
 - /children: equal

@@ -1,5 +1,5 @@
 """Tests for the recording-coverage ground-truth harness and its committed synthetic fixtures
-(`docs/prds/recording-coverage-analysis.prd.md` Phase 1, Q15 and D12 as amended 2026-09-23).
+(docs/utilities/recording-coverage.md, ADR 0125, Q15 and D12 as amended 2026-09-23).
 
 The harness scores any analyzer against per-paragraph labels; these tests pin the fixture
 format, the label consistency rules, the scoring, the stub analyzer and the directory-variable

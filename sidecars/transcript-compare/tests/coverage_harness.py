@@ -1,6 +1,6 @@
 """Ground-truth harness for recording coverage.
 
-`docs/prds/recording-coverage-analysis.prd.md` Phase 1 (D12, Q15 as amended 2026-09-23): no
+docs/utilities/recording-coverage.md, ADR 0125 (D12, Q15 as amended 2026-09-23): no
 coverage threshold ships before it is scored against labeled chapters. The labeled set is
 synthetic for now: `fixtures/coverage/` holds a public-domain (and one constructed) manuscript
 and one JSON case per scripted recording, each with per-paragraph labels and the expected

@@ -52,7 +52,7 @@ type Service struct {
 }
 
 // RecordedFractions supplies the measured share of each chapter's words present, by chapter id: what fills a chapter
-// payload's recordedFraction (recording-coverage-analysis.prd.md D11). A chapter it leaves out has no measurement and
+// payload's recordedFraction (docs/utilities/recording-coverage.md D11). A chapter it leaves out has no measurement and
 // its payload carries no recordedFraction (Q12 A). The host wires the recording coverage service in, so this package
 // never imports it.
 type RecordedFractions func() map[string]float64

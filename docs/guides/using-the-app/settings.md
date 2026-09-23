@@ -18,11 +18,13 @@ controls the color used to mark reader notes in the text. **General** (Global on
 **Narrator name (default for credits)**. In both scopes:
 
 - **Recording check** holds the four numbers the [recording check](home.md) uses: the **Share of
-  each paragraph that must be read** (0.95) and the **Longest run of missing words allowed** (3)
+  each paragraph that must be read** (0.8) and the **Longest run of missing words allowed** (3)
   decide when a chapter counts as recorded, and the **Longest misread still counted as read** (8)
   and the **Shortest match that counts as read** (3) decide which words count as read at all. The
   category states the rule they make and labels them **Proposed values, not yet calibrated**: they
-  have not been checked against real recordings yet. Changing either of the first two only changes
+  were chosen on synthetic test recordings and have not been checked against real recordings yet
+  ([how they were chosen](../../utilities/recording-coverage.md#settings)). A skipped phrase of 3
+  words or fewer can pass, because a transcriber drops single words too. Changing either of the first two only changes
   how a stored check is judged. Changing either of the last two makes earlier checks out of date, so
   those chapters need checking again. In This Project, a blank box uses the Global value.
 - **Proofing** picks the default Whisper model and chunk length for a comparison and the marker colors

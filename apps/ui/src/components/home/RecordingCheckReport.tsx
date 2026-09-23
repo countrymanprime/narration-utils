@@ -9,7 +9,7 @@ const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace]";
 const EYEBROW = "font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 
 /**
- * A stored recording check read out (docs/prds/recording-coverage-analysis.prd.md Phase 6): how much of the chapter's text is in the
+ * A stored recording check read out (docs/utilities/recording-coverage.md, ADR 0130): how much of the chapter's text is in the
  * saved recording, each missing region with its paragraphs, first and last words and where it sits in the audio, and every paragraph's
  * count. It states counts only: whether they are good enough is the `recording` signal's call (Phase 7), not this view's.
  */

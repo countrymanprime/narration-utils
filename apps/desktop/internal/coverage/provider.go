@@ -19,7 +19,7 @@ type SignalSources struct {
 	Now         func() time.Time
 }
 
-// SignalProvider is the recording stage's stages.Provider (recording-coverage-analysis.prd.md
+// SignalProvider is the recording stage's stages.Provider (docs/utilities/recording-coverage.md
 // Phase 7). It reads stored coverage results, the ledger and the confirmed
 // mapping of the service's project, and never starts a check (Q14): the
 // narrator does that from Home.

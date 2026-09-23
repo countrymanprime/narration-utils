@@ -278,7 +278,7 @@ func TestResetDerivedClearsTheAnalysisLedgerDirectory(t *testing.T) {
 
 // The recording coverage service keeps its stored results (and a running check's folder) under coverage.Dir; they name
 // chapter and paragraph ids and the ledger records resetDerived also clears, so they go with them
-// (recording-coverage-analysis.prd.md Phase 4).
+// (docs/utilities/recording-coverage.md, ADR 0128).
 func TestResetDerivedClearsTheRecordingCoverageDirectory(t *testing.T) {
 	project := t.TempDir()
 	results := filepath.Join(coverage.Dir(project), "results")

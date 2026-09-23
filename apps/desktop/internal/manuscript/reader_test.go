@@ -309,7 +309,7 @@ func TestChapterIDByTitleAndParagraphIDFailWithoutAManuscript(t *testing.T) {
 	}
 }
 
-// recording-coverage-analysis.prd.md Phase 5 (D11): recordedFraction is set only from a measurement the provider
+// docs/utilities/recording-coverage.md, ADR 0129 (D11): recordedFraction is set only from a measurement the provider
 // gives, and absent for every other chapter, so the UI keeps its labeled status estimate (Q12 A).
 func TestRecordedFractionComesOnlyFromTheMeasurementProvider(t *testing.T) {
 	service, chapterID, _ := importReaderFixture(t)

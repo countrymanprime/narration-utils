@@ -12,7 +12,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 )
 
-// pinResult pins a CoverageResult answer (recording-coverage-analysis.prd.md Phase 5, ADR 0069). The basis label
+// pinResult pins a CoverageResult answer (docs/utilities/recording-coverage.md, ADR 0129, ADR 0069). The basis label
 // embeds the saved file's time, which Stabilize only replaces as a whole value, so it is fixed here.
 func pinResult(t *testing.T, name string, result ChapterResult) {
 	t.Helper()

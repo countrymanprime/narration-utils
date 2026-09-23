@@ -171,7 +171,7 @@ async function openImportReview(page: Page, preview?: 'markdown' | 'repaired') {
   return dialog;
 }
 
-// Opens a chapter's recording check from the per-chapter breakdown (recording-coverage-analysis.prd.md Phase 6), optionally booted with a
+// Opens a chapter's recording check from the per-chapter breakdown (docs/utilities/recording-coverage.md, ADR 0130), optionally booted with a
 // mock seed (main.tsx), and waits until the stored result has been read into the dialog. Returns the dialog.
 async function openRecordingCheck(page: Page, chapter: string, seed?: string) {
   if (seed) {

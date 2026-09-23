@@ -17,7 +17,7 @@ import (
 // the chapter's text is on its track, in order, even with mistakes.
 const RecordingSignalID = "recording.text_present"
 
-// SignalInput is everything the recording signal reads (recording-coverage-analysis.prd.md
+// SignalInput is everything the recording signal reads (docs/utilities/recording-coverage.md
 // Phase 7). It is gathered by SignalProvider from stored evidence only; the
 // signal itself reads no file and no clock.
 type SignalInput struct {

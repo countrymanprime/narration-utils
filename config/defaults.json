@@ -34,7 +34,7 @@
   },
   "Delivery": {},
   "RecordingCoverage": {
-    "min_paragraph_present": "0.95",
+    "min_paragraph_present": "0.8",
     "max_missing_run": "3",
     "max_misread_run": "8",
     "min_anchor_run": "3"

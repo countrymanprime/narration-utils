@@ -68,7 +68,7 @@ type Host struct {
 	guide      *guide.Service
 	guideJob   *workJob
 	transcript *transcript.Service
-	// coverage is the recording-coverage service (recording-coverage-analysis.prd.md Phase 4, ADR 0128): it reads the saved .rpp and
+	// coverage is the recording-coverage service (docs/utilities/recording-coverage.md, ADR 0128): it reads the saved .rpp and
 	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; the Coverage* bindings
 	// reach it (Phase 5, bindings_coverage.go) and it fills the manuscript chapters' recordedFraction.
 	coverage *coverage.Service
@@ -1042,7 +1042,7 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"true_peak_dbtp_max", "True peak, highest", "number", nil},
 		{"noise_floor_dbfs_max", "Noise floor, highest", "number", nil},
 	},
-	// RecordingCoverage is the recording check's four settings (docs/prds/recording-coverage-analysis.prd.md Q3, Phase 7),
+	// RecordingCoverage is the recording check's four settings (docs/utilities/recording-coverage.md Q3, ADR 0131),
 	// read by coverage.ResolveSettings. The two thresholds judge a stored result on read; the two alignment settings are
 	// in a result's parameter hash, so changing one makes older results stale (Q13 B). Their defaults are Proposed and
 	// uncalibrated (Q15) until Phase 8.
