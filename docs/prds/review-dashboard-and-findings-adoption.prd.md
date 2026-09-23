@@ -2,6 +2,13 @@
 
 **Supersedes:** `docs/utilities/review-dashboard.md` (planned-work brief, removed when this PRD landed; recoverable from git history)
 
+**Status (2026-09-23):** issue [#341](https://github.com/countrymanprime/narration-utils/issues/341).
+
+- **Delivered:** phases 1 (#342), 2 (#346), 3 (#349), 4 (#407, host bindings) and 5 (#413, the Review page).
+- **Partial:** phases 6 (#418, go to and loop by GUID), 7 (#423, the controls on the page) and 8 (#428, the approved marker). They are built and tested (phase 6 also in a scripted REAPER 7.80 run); the checks in REAPER are owed.
+- **Needs the owner:** steps 3 to 11 of [the REAPER checklist](../architecture/reaper-navigation.md#manual-verification-checklist) (hearing the loop, REAPER's own Stop, ping after a restart, ending the script mid-loop, navigation refused while recording, the end-to-end run from the page, the marker from the page); the Review page on a real project's findings.
+- **Agents without the owner:** with the owner's go-ahead, the scripted REAPER run of checklist step 10; after sign-off, the close-out PR (steady-state docs, delete this PRD).
+
 Roadmap milestone 1 ("Dashboard foundation", `docs/roadmap.md:20-24`). Citations are `file:line` on branch `claude/features-defects-prds-planning-87c378` (b9d348d) for anything checked in code; "per docs" marks a claim taken from a document and not verified. Re-checked against `main` at d5cc994 on 2026-09-19: none of the code files cited here changed since b9d348d, and the doc references were updated for the split "Using the app" guide, `docs/operations/github-workflow.md` and the current `docs/README.md`. Line citations to a superseded brief (for example `review-dashboard.md:40`) refer to that brief as of d5cc994; the briefs are removed from the tree, so read one with `git show d5cc994:docs/utilities/review-dashboard.md`. Sibling PRDs (all in `docs/prds/`; file names only): `take-review-pickups-duplicates-take-intelligence.prd.md` (milestone 2, prefix TR), `character-continuity-review.prd.md` (milestone 3, prefix CC), `teleprompter-manuscript-integration.prd.md`, `diagnostics-delivery-and-cleanup-tools.prd.md`, `reaper-automation-follow-through.prd.md`. In Depends columns this PRD's own phases are bare numbers and other PRDs' phases are `RD-n` (this PRD), `TR-n`, `CC-n`.
 
 ## Problem Statement
@@ -271,4 +278,4 @@ After phase 1, phases 2, 3, 4 and 6 touch disjoint code (transcript service, gui
 ---
 
 *Generated: 2026-09-19*
-*Status: DRAFT - needs validation*
+*Status: IN DELIVERY - see the status block under the title (2026-09-23)*

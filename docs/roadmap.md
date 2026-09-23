@@ -63,7 +63,7 @@ catalog, integrity, UX, migration, and acceptance criteria and the
 - macOS/Linux installers and adapters.
 - Languages beyond US English.
 - Team collaboration, cloud analysis, or shared project services.
-- Manuscript Teleprompter beyond its first cut (shipped: local microphone listening with a Whisper model and word highlighting): reviewable suspected word-level substitutions, skips, or misreads, other engines and a microphone picker; it never edits text or audio automatically. See the [Manuscript Teleprompter brief](architecture/manuscript-teleprompter.md) for the resolved design questions.
+- Manuscript Teleprompter beyond what has shipped (listening on a chosen microphone with a local Whisper model, or Moonshine on Windows, word highlighting, and reviewable suspected misreads, skips, extra words and restarts in the read-aloud dialog): a default engine chosen by evaluating both, following live REAPER state, and punch-in from a word; it never edits text or audio automatically. See the [Manuscript Teleprompter brief](architecture/manuscript-teleprompter.md) for the resolved design questions.
 
 ## Audacity adapter
 

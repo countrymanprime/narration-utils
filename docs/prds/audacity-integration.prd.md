@@ -2,6 +2,13 @@
 
 **Source:** owner instruction of 2026-09-21 (D23 in [implementation-plan.md](implementation-plan.md)): draft the first Audacity adapter PRD and run it as a parallel stack instead of waiting for the REAPER automation workflow (stack S22) to finish, reversing the "Audacity adapters after the shared contract and REAPER workflow are proven" line of `docs/roadmap.md`.
 
+**Status (2026-09-23):** issue [#402](https://github.com/countrymanprime/narration-utils/issues/402).
+
+- **Delivered:** phases 0 (#278), 3 (#404, the `DAWAdapter` boundary), 5 (#410, `--daw Audacity`) and 10 (#414, the installer's Start Menu launcher). Owner decision 2026-09-23: Audacity 3.x only; a macro launcher is infeasible ([the launcher feasibility note](../research/audacity-launcher-feasibility.md)).
+- **Left:** the S-A1/S-A2 spike session (phases 1 and 2), then phases 4 and 6 to 9.
+- **Needs the owner:** the S-A1/S-A2 session with Audacity 3.x installed and scripting enabled; installing the setup program on a real machine, starting "Narration Utils for Audacity" and checking the uninstaller removes it (#414).
+- **Agents without the owner:** nothing; phase 4 (the pipe client) needs the S-A1 result and every later phase follows it.
+
 **Reconciliation with the owner decisions:** [implementation-plan.md](implementation-plan.md) D23 overrides `docs/roadmap.md`'s prior deferral and `reaper-automation-follow-through.prd.md`'s "Won't Be Building" exclusion of Audacity; both are corrected in this PRD's Phase 0. Every other owner decision in section 1 (D2 Lua-only rules do not apply here since this PRD adds no Lua; D18 coverage ratchet; D19 the `Challenges_001` corpus is REAPER-only and gives this PRD no audio corpus of its own; D22 unanswered questions take the stated recommendation) applies as written.
 
 ## Problem Statement
@@ -276,4 +283,4 @@ Phases 1 and 2 run in one approved spike session (Phase 2 depends on Phase 1's p
 ---
 
 *Generated: 2026-09-21*
-*Status: DRAFT - open questions unanswered; phase 0 (roadmap reconciliation) lands with this PRD; phases 1 and 2 (spikes) need the owner present with Audacity installed and scripting enabled before anything else starts*
+*Status: IN DELIVERY - see the status block under the title (2026-09-23)*

@@ -2,6 +2,14 @@
 
 **Supersedes:** `docs/architecture/native-notifications.md`, `docs/architecture/story-bible-concurrent-build.md`, `docs/architecture/import-settings-workflow.md`, `docs/architecture/dictionary-thesaurus-integration.md`, `docs/architecture/pronunciation-provider-selection.md` (planned-work briefs, removed when this PRD landed; recoverable from git history)
 
+**Status (2026-09-23):** issue [#280](https://github.com/countrymanprime/narration-utils/issues/280); follow-ups [#387](https://github.com/countrymanprime/narration-utils/issues/387) and [#388](https://github.com/countrymanprime/narration-utils/issues/388).
+
+- **Delivered:** phases 1 and 2 (#285), 3 (#286, finished by #429: `useWorkJob` and the measured build), 4 (#383, heading misreads), 5 (#392, subtitle override), 6 (#288), 7 (#422, dictionary backend) and 8 (#426, dictionary look-up).
+- **Partial:** phase 9 (#290). The provider meaning and the licence review are decided (ADR 0091); Piper's phoneme input was not trial-run on real names.
+- **Left:** SB-9's listening trial, then phases 10 and 11.
+- **Needs the owner:** SB-9, the Piper listening trial on real names; a look-up in a real host session against the installed dictionary; an in-app import-then-build on the owner's own manuscript; N4 (toast identity on an installed build).
+- **Agents without the owner:** phases 10 and 11 wait on SB-9's trial; #387 and #388 can be picked up any time.
+
 Five small planned UX briefs (formerly in `docs/architecture/`, listed above) bundled as one PRD, one capability each (own MoSCoW rows, own phases): native OS notifications (N), Story Bible build after import (B), import settings review (I), dictionary/thesaurus lookup (D), pronunciation provider selection (P). Citations are `file:line` on branch `claude/features-defects-prds-planning-87c378` (b9d348d, re-checked unchanged at main d5cc994: `git diff b9d348d..HEAD -- shell apps/ui/src` touches only `apps/desktop/go.mod`, `apps/desktop/go.sum` and two doc-guide tests) for anything checked in code; "per docs" marks a claim taken from a brief or ADR and not re-verified. Two sibling briefs (`standalone-launch.md`, `story-bible-readonly-views.md`) were checked and are stale (already shipped); they get no PRD and are classified under Evidence. Outcome: `docs/architecture/standalone-launch.md` is kept and marked Implemented (its packaging section stays planned), and `story-bible-readonly-views.md` is removed (ADR 0018 and the Story Bible guide hold the behavior). The five superseded briefs named in the first table are removed from the tree; read one with `git show d5cc994:docs/architecture/<name>`.
 
 ## Problem Statement
@@ -322,4 +330,4 @@ Cross-cutting: every phase re-checks `docs/adr/` numbering immediately before wr
 ---
 
 *Generated: 2026-09-19*
-*Status: DRAFT - needs validation*
+*Status: IN DELIVERY - see the status block under the title (2026-09-23)*

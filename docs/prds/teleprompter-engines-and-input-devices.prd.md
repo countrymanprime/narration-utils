@@ -2,6 +2,13 @@
 
 **Supersedes:** in `docs/architecture/manuscript-teleprompter.md`, the "Open items for task planning" list (engine, Moonshine provisioning and packaging, device selection; the tracker-placement decision and the tracker-limits note stay as record), the "Still open here" list under "UI: what shipped and what is still open", and the "Direction, in order" item 4 (record the default in an ADR). **Source:** `manuscript-teleprompter.md` stays as the design record of the shipped sidecar, host relay and page (event contract, tracker behavior, measurements, prior-art survey, license and attribution notes); the older briefs' engine survey is carried into Research Summary below.
 
+**Status (2026-09-23):** issue [#299](https://github.com/countrymanprime/narration-utils/issues/299).
+
+- **Delivered:** phases 1 (#300), 2 (#304), 3 (#305), 4 (by the release-readiness stack), 5 (#307), 6 (#390, Moonshine frozen into the Windows sidecar), 7 (#395, Whisper or Moonshine end to end), 9 (#384, auto-stop at Done), 10 (#403, manual scroll without pull-back) and 11 (#406, the chapter suggested from the saved REAPER track).
+- **Left:** phase 8 (the engine A/B evaluation and the default-engine ADR), then phase 12 (roadmap and status bookkeeping), which waits on phase 8.
+- **Needs the owner:** ENG-8, the A/B of both engines on a real microphone; ENG-7, a live-microphone session with each engine in the packaged app on a clean Windows machine; ENG-9, ten real reads to confirm the 5 s auto-stop; ENG-10, momentum scrolling on a real touchpad or touchscreen in the packaged app; ENG-11, an armed chapter track in a real REAPER save.
+- **Agents without the owner:** nothing until ENG-8 has its result; ENG-12 follows it.
+
 This is "PR C" of the teleprompter initiative plus its open follow-ups. Sibling PRD: `teleprompter-manuscript-integration.prd.md` (PRD 1) owns the Manuscript reading-mode modal, flags, seek, DAW resume, punch-and-roll and microphone detection inside REAPER. This PRD owns the live engine choice, device enumeration and its settings, Moonshine provisioning and packaging, and the standalone reading-experience follow-ups (auto-stop, manual scroll). Citations are `file:line` on `main` (d5cc994; no code in the desktop host, the sidecars or the shared Python library changed since b9d348d apart from tests and dependency bumps) for anything checked in code; "per docs" marks a claim taken from a document and not verified.
 
 ## Problem Statement
@@ -353,4 +360,4 @@ Cross-cutting: every phase re-checks `docs/adr/` numbering immediately before wr
 ---
 
 *Generated: 2026-09-19*
-*Status: DRAFT - needs validation*
+*Status: IN DELIVERY - see the status block under the title (2026-09-23)*

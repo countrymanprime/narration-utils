@@ -2,6 +2,13 @@
 
 **Supersedes:** `docs/utilities/narration-diagnostics.md`, `docs/utilities/delivery-and-review-export.md`, `docs/utilities/silence-cleanup.md`, `docs/utilities/clause-split-and-level-normalize.md`, `docs/utilities/daw-project-scan.md` (planned-work briefs, removed when this PRD landed; recoverable from git history)
 
+**Status (2026-09-23):** issue [#408](https://github.com/countrymanprime/narration-utils/issues/408) (closed when #412 merged, although it tracks the whole PRD).
+
+- **Delivered:** phase 2 (#412, the settings number kind and the narrator's own delivery limits; ADR 0155, Proposed).
+- **Left:** phases 1 and 3 to 11.
+- **Needs the owner:** review ADR 0155; the REAPER checks of phase 10 (preview and apply) when it is built.
+- **Agents without the owner:** phases 1, 3 and 4 have no dependencies, then 5 to 7 and 9; phase 8 can use the chapter-track matcher (teleprompter manuscript integration phase 8, delivered).
+
 Roadmap milestone 4 ("Diagnostics and delivery") plus the adjacent planned utilities that share its measurement code: Narration Diagnostics, Delivery and Review Export, Silence Cleanup, Clause Splitting and Level Normalization, and the unbuilt remainder of DAW Project Scan. Citations are `file:line` on worktree HEAD `b9d348d` for anything checked in code; "per docs" marks a claim taken from a document and not verified. `origin/main` is now at `d5cc994`. Since `b9d348d` it gained documentation (the teleprompter integration plan, the split guide `docs/guides/using-the-app/*.md` with its index and `apps/ui/src/docsGuide.test.ts` guard, `docs/operations/github-workflow.md`), GitHub metadata and CI files (a `github-scripts` job in `_quality.yml`, so the `lua` job cited below moved to `:115-123`), and two dependency bumps. No other source file cited below changed, so its line cites still hold. The next free ADR number is whatever is free at merge time (0027 at `d5cc994`).
 
 ## Problem Statement
@@ -316,4 +323,4 @@ Cross-cutting: `docs/roadmap.md` and `config/roadmap.json` are edited by every P
 ---
 
 *Generated: 2026-09-19*
-*Status: DRAFT - needs validation*
+*Status: IN DELIVERY - see the status block under the title (2026-09-23)*

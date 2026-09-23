@@ -2,6 +2,14 @@
 
 **Supersedes:** `docs/architecture/teleprompter-manuscript-integration.md` (whole file; coverage audited, nothing left uncarried) and, in `docs/architecture/manuscript-teleprompter.md`, the sections "Confirming suspected misreads", "Findings and review", the "Still open here" list and flagged-word design under "UI: what shipped and what is still open", the "Planned next" pointer, and the flag-, punch- and resume-related "Open items". **Source:** `manuscript-teleprompter.md` stays as the shipped design record (see `teleprompter-engines-and-input-devices.prd.md` for what stays).
 
+**Status (2026-09-23):** issue [#309](https://github.com/countrymanprime/narration-utils/issues/309).
+
+- **Delivered:** phases 1 (#312), 2 (#352), 3 (#354), 4 (#357), 5 (#396, Story Bible and note marks), 7 (#400, flags UI and persistence), 8 (#386, chapter-track matcher and recorded end), 9 (#394, tail-audio locate) and 10 (#398, resume card).
+- **Partial:** phase 6 (#391, live flag events). It is measured only on synthetic speech, where `misread` misses its target, so the human microphone readings are owed.
+- **Left:** phase 11 (live REAPER state and input detection; spikes 2 and 4 with the owner), phase 12 (punch and roll; spike 1 with the owner, and the check of REAPER's pre-roll preference is approved) and phase 13 (retire the standalone page).
+- **Needs the owner:** microphone readings of real chapters for TMI-6 and TMI-7, with flags counted by hand, and the `misread` default; a real narrator recording for the locate and resume (TMI-9, TMI-10) and the "under 30 s" stopwatch run; an NVDA pass over the flag marks; the REAPER spikes above; and a decision: whether live flags keep every kind or only the kinds shown in the dialog ([ADR 0117](../adr/0117-live-flags-are-kept-as-suspected-findings-merged-per-chapter-when-a-session-ends.md), PR #400).
+- **Agents without the owner:** the harness-tested parts of phases 11 and 12 (read-only Lua commands, the play-position command) and the approved pre-roll check; each phase's REAPER sign-off stays with the owner.
+
 Source plan: PR #35, `docs/architecture/teleprompter-manuscript-integration.md` (merged to `main` as ce5d9aa; this PRD supersedes it and the docs-replacement change removes the brief from the tree; recover it with `git show d5cc994:docs/architecture/teleprompter-manuscript-integration.md`). Later mentions of "PR #35" or "the plan" mean that brief. This PRD turns that plan into PR-sized phases and adds the gaps found while verifying it against the code. Citations are `file:line` on `main` (d5cc994; no code in the desktop host, the sidecars or the shared Python library changed since b9d348d apart from tests and dependency bumps) for anything checked in code; "per docs" marks a claim taken from a document and not verified.
 
 ## Problem Statement
@@ -351,4 +359,4 @@ Cross-cutting: every phase re-checks `docs/adr/` numbering immediately before wr
 ---
 
 *Generated: 2026-09-19*
-*Status: DRAFT - needs validation*
+*Status: IN DELIVERY - see the status block under the title (2026-09-23)*

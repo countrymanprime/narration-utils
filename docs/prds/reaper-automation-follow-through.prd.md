@@ -2,6 +2,13 @@
 
 The unbuilt, high-value items from `docs/research/reaper-automation-surface.md` section 9 that the teleprompter integration does not own. Owned elsewhere: timeline-anchored live flags, punch-and-roll and resume from tail audio (`teleprompter-manuscript-integration.prd.md`); an ACX-style check per chapter (item 6, `diagnostics-delivery-and-cleanup-tools.prd.md`); pickup and duplicate detection (`take-review-pickups-duplicates-take-intelligence.prd.md`). Citations are `file:line` on worktree HEAD `b9d348d` for anything checked in code; "per docs" marks a claim taken from a document and not verified. `origin/main` is now at `d5cc994`. Since `b9d348d` it gained documentation (the teleprompter integration plan, the split guide `docs/guides/using-the-app/*.md` with its index and `apps/ui/src/docsGuide.test.ts` guard, `docs/operations/github-workflow.md`), GitHub metadata and CI files (a `github-scripts` job in `_quality.yml`, so the `lua` job cited below moved to `:115-123`), and two dependency bumps. No other source file cited here changed, so its line cites still hold. The next free ADR number is whatever is free at merge time (0027 at `d5cc994`). `docs/architecture/manuscript-line-identity.md` is kept as the shipped spec and manual checklist; this PRD is the plan for its "Later phases".
 
+**Status (2026-09-23):** part 1 is stack S09 (issue #162, closed; owner steps [#167](https://github.com/countrymanprime/narration-utils/issues/167)); the rest is stack S22 (issue [#320](https://github.com/countrymanprime/narration-utils/issues/320)).
+
+- **Delivered:** phases 2 to 5 (S09), 6 (#321), 8 (#329), 9 (#330), 10 (#331, spike S5), 12 (#334), 14 (#339, evaluated, condition not met) and 24 (#420, spike S7).
+- **Partial:** 1 (owner checklist steps), 7 (#325; chapter regions and the guide page not built), 11 (#332; pressing Render in REAPER not checked), 13 (#335; not wired into Transcript Compare or the ledger), 23 (#417) and 25 (#424). Phases 23 and 25 are built and harness-tested, but their checks in REAPER were not approved for those phases. Phases 15 to 22 are pending.
+- **Needs the owner:** checklist steps in #167; spikes S1, S3 and S4 (phases 17, 16, 15; audio hardware); REAPER-23, the scripted action-text check and a real repair undone in one step, plus Magnolius if installed; REAPER-25, the scripted lane pick and Undo check, recording passes into lanes and listening to the chosen lane.
+- **Agents without the owner:** spikes S2 and S6 (phases 18 and 19, approved under D3, no audio hardware), then phases 20 and 21; the unbuilt halves of phases 7 and 13.
+
 ## Reconciliation with the owner decisions
 
 [`implementation-plan.md`](implementation-plan.md) section 1 (2026-09-20) overrides the parts of this PRD it contradicts. The PRD is delivered in two stacks: **part 1, phases 1 to 5 (stack S09)** and the rest (stack S22). Where the text below disagrees with this section, this section wins.
@@ -410,4 +417,4 @@ Cross-cutting: `docs/roadmap.md` and `config/roadmap.json` change together; ADR 
 ---
 
 *Generated: 2026-09-19*
-*Status: IN DELIVERY - part 1 (phases 1 to 5) is delivered by stack S09, with the two owner-only checklist steps pending; stack S22 (phases 6 to 25) is in progress: phases 6, 8, 9, 12 and 14 are complete (14 as "evaluated, condition not met" - see its row and the [evaluation note](../research/reaper-phase14-static-line-id-read-evaluation.md)), phases 7, 11 and 13 are partial (see their rows), phases 15 to 25 are queued*
+*Status: IN DELIVERY - part 1 (phases 1 to 5) is delivered by stack S09, with the two owner-only checklist steps pending; stack S22 (phases 6 to 25) is in progress: phases 6, 8, 9, 10, 12, 14 and 24 are complete (14 as "evaluated, condition not met" - see its row and the [evaluation note](../research/reaper-phase14-static-line-id-read-evaluation.md)), phases 7, 11, 13, 23 and 25 are partial (see their rows), phases 15 to 22 are queued (status block under the title, 2026-09-23)*
