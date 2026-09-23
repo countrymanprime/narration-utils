@@ -4,6 +4,7 @@
     {"tool":"go","project":"apps/desktop","path":"internal/bridge","floor":96},
     {"tool":"go","project":"apps/desktop","path":"internal/chaptertags","floor":84},
     {"tool":"go","project":"apps/desktop","path":"internal/contractfile","floor":93},
+    {"tool":"go","project":"apps/desktop","path":"internal/coverage","floor":93},
     {"tool":"go","project":"apps/desktop","path":"internal/dawcatalog","floor":100},
     {"tool":"go","project":"apps/desktop","path":"internal/evidence","floor":92},
     {"tool":"go","project":"apps/desktop","path":"internal/findings","floor":96,"reason":"Was 100 at baseline (#342). The remaining uncovered statements are the permission-denied error paths in scopeFiles/readScope (an analyzer folder or scope file that exists but cannot be read). Tests simulate them with an icacls deny rule, but CI runs elevated and Go opens files with backup semantics, so the deny is not enforced there and those tests skip; they only run on a non-elevated Windows machine. 96.2% measured without them; rounded down to 96."},

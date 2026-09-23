@@ -1,10 +1,10 @@
 // This file is Phase 3 of the analysis evidence ledger PRD
 // (docs/prds/analysis-evidence-ledger.prd.md#phase-3---analysis-ledger,
 // Q3, D7): the ledger record type and its one-JSON-file-per-record store
-// under <project>/narration-utils/analysis/ledger/. Importers/callers: no
-// production code imports this yet (it lands ahead of the signal PRDs that
-// consume it, RC/ER/PS, and Phase 6's staleness evaluator in this same
-// package); apps/desktop/internal/manuscript/service.go's resetDerived adds
+// under <project>/narration-utils/analysis/ledger/. Importers/callers: the
+// recording coverage service (apps/desktop/internal/coverage) writes one
+// record per run, and Phase 6's staleness evaluator in this same package
+// reads them; apps/desktop/internal/manuscript/service.go's resetDerived adds
 // LedgerDir to the directories a manuscript reset clears. Public API added
 // here: LedgerRecord and its nested LedgerScope/LedgerFingerprint/
 // LedgerProjectFile types, LedgerOutcome and its three values, LedgerStore,

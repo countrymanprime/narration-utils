@@ -8,10 +8,9 @@
 // reasons and a recomposable flag, plus Q8's "saved project, file modified
 // <time>" basis label and its staleness warning. It writes nothing and
 // starts no analysis (Architecture Notes: "Evaluator is a pure read").
-// Importers/callers: no production code imports this yet - it is Phase 6's
-// deliverable for the signal PRDs (RC, ER, PS) and SR's engine to call once
-// they land; this same package's staleness_test.go is the only consumer so
-// far. Public API added here: EvaluatorState and its three values,
+// Importers/callers: the recording coverage service's result reader
+// (apps/desktop/internal/coverage, read.go) is the first; ER, PS and SR's
+// engine are to call it too. Public API added here: EvaluatorState and its three values,
 // EvaluatorReason and its twelve values, EvaluatorResult, EvaluationBasis,
 // ChapterEvaluationRequest, SourceIdentifier, EvaluateFingerprints,
 // ComputeChapterFingerprint, BuildBasis and EvaluateChapter. No data schema

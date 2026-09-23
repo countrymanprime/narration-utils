@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
@@ -272,6 +273,27 @@ func TestResetDerivedClearsTheAnalysisLedgerDirectory(t *testing.T) {
 	}
 	if _, err := os.Stat(ledgerDir); !os.IsNotExist(err) {
 		t.Fatalf("resetDerived left the analysis ledger directory behind: %v", err)
+	}
+}
+
+// The recording coverage service keeps its stored results (and a running check's folder) under coverage.Dir; they name
+// chapter and paragraph ids and the ledger records resetDerived also clears, so they go with them
+// (recording-coverage-analysis.prd.md Phase 4).
+func TestResetDerivedClearsTheRecordingCoverageDirectory(t *testing.T) {
+	project := t.TempDir()
+	results := filepath.Join(coverage.Dir(project), "results")
+	if err := os.MkdirAll(results, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(results, "record.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resetDerived(project); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(coverage.Dir(project)); !os.IsNotExist(err) {
+		t.Fatalf("resetDerived left the recording coverage directory behind: %v", err)
 	}
 }
 

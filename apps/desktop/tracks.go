@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/tracks"
 )
 
@@ -18,21 +19,47 @@ func (h *Host) tracksDiscover() (map[string]any, error) {
 }
 
 func discoverTracks(svc hostServices) (map[string]any, error) {
-	folder := svc.config.projectFolder
-	if folder == "" {
-		return nil, fmt.Errorf("open a project before viewing tracks")
-	}
-	candidates, err := tracks.Discover(folder)
+	candidates, selected, err := discoverProjectFiles(svc.config.projectFolder, svc.settings)
 	if err != nil {
-		return nil, fmt.Errorf("could not look for a REAPER project file: %w", err)
+		return nil, err
 	}
-	selected := ""
-	if saved, ok := svc.settings.Project("Tracks")["selectedRpp"]; ok && contains(candidates, saved) {
+	return map[string]any{"candidates": candidates, "selected": selected}, nil
+}
+
+// discoverProjectFiles lists the *.rpp files directly in folder and resolves
+// the selected one (the narrator's saved choice, or the only candidate), ""
+// when the choice is ambiguous.
+func discoverProjectFiles(folder string, store *settings.Store) (candidates []string, selected string, err error) {
+	if folder == "" {
+		return nil, "", fmt.Errorf("open a project before viewing tracks")
+	}
+	candidates, err = tracks.Discover(folder)
+	if err != nil {
+		return nil, "", fmt.Errorf("could not look for a REAPER project file: %w", err)
+	}
+	if saved, ok := store.Project("Tracks")["selectedRpp"]; ok && contains(candidates, saved) {
 		selected = saved
 	} else if len(candidates) == 1 {
 		selected = candidates[0]
 	}
-	return map[string]any{"candidates": candidates, "selected": selected}, nil
+	return candidates, selected, nil
+}
+
+// selectedProjectFile is the saved .rpp the analyses read (the recording
+// coverage service's Config.ProjectFile): the Tracks page's selection, with
+// the same errors tracksList gives when there is none.
+func selectedProjectFile(folder string, store *settings.Store) (string, error) {
+	candidates, selected, err := discoverProjectFiles(folder, store)
+	if err != nil {
+		return "", err
+	}
+	if selected == "" {
+		if len(candidates) == 0 {
+			return "", fmt.Errorf("no REAPER project (.rpp) file was found in this project folder")
+		}
+		return "", fmt.Errorf("choose which REAPER project file to use before viewing tracks")
+	}
+	return selected, nil
 }
 
 // tracksSelect persists the narrator's explicit choice among an ambiguous
@@ -61,17 +88,10 @@ func (h *Host) tracksSelect(path string) (map[string]any, error) {
 // rather than an empty track list, so the frontend can tell "no project
 // file exists yet" apart from "choose which one to use."
 func (h *Host) tracksList() (tracks.Project, error) {
-	discovery, err := h.tracksDiscover()
+	svc := h.services()
+	selected, err := selectedProjectFile(svc.config.projectFolder, svc.settings)
 	if err != nil {
 		return tracks.Project{}, err
-	}
-	selected, _ := discovery["selected"].(string)
-	if selected == "" {
-		candidates, _ := discovery["candidates"].([]string)
-		if len(candidates) == 0 {
-			return tracks.Project{}, fmt.Errorf("no REAPER project (.rpp) file was found in this project folder")
-		}
-		return tracks.Project{}, fmt.Errorf("choose which REAPER project file to use before viewing tracks")
 	}
 	project, err := tracks.Parse(selected)
 	if err != nil {
