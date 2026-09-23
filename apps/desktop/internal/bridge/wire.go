@@ -81,6 +81,8 @@ var eventSpecs = map[string]eventSpec{
 	"LOOP_STOPPED":  {required: []fieldSpec{text("run"), count("restored"), count("kept")}},
 	"PONG":          {required: []fieldSpec{text("run"), text("version"), count("looping"), count("playing")}},
 	"FINDING_STALE": {required: []fieldSpec{text("run"), text("guid"), text("reason")}},
+	// review-dashboard PRD Phase 8: the approved marker, "added" or "existing" (the take already had one; nothing changed).
+	"FINDING_MARKER": {required: []fieldSpec{text("run"), text("state"), text("takeGuid"), number("sourceTime"), text("name")}},
 }
 
 // CheckEvent validates one decoded event line (the tag first) against the table. The error names the tag, the position and name of

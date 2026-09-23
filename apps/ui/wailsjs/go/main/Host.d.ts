@@ -65,6 +65,8 @@ export function DawCatalogOpenDownloadPage(arg1:string):Promise<string>;
 
 export function DawLaunch():Promise<string>;
 
+export function FindingsAddMarker(arg1:string):Promise<string>;
+
 export function FindingsGet(arg1:string):Promise<string>;
 
 export function FindingsGoTo(arg1:string):Promise<string>;

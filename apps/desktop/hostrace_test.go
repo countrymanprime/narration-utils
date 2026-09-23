@@ -112,6 +112,7 @@ var stressReaders = []stressReader{
 	{"FindingsGoTo (unknown finding)", func(h *Host) { _, _ = h.FindingsGoTo("missing") }},
 	{"FindingsLoop (unknown finding)", func(h *Host) { _, _ = h.FindingsLoop("missing") }},
 	{"FindingsStopLoop (no bridge)", func(h *Host) { _, _ = h.FindingsStopLoop() }},
+	{"FindingsAddMarker (unknown finding)", func(h *Host) { _, _ = h.FindingsAddMarker("missing") }},
 	{"canAttach (ProjectCreateIn's pre-check)", func(h *Host) { _ = h.canAttach() }},
 	{"CoverageStart (asset gate)", func(h *Host) { _, _ = h.CoverageStart("c-0001") }},
 	{"CoverageState", func(h *Host) { _, _ = h.CoverageState() }},

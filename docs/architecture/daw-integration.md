@@ -15,7 +15,7 @@
 - The app can locate and start `reaper.exe` itself (project-workspace-and-daw-link PRD, Phases 6 and 8): `apps/desktop/internal/daw.LocateReaperExecutable` reads the Windows Uninstall registry key (falling back to the `.rpp` file association), `daw.Resolve` lets a `DAW.reaper_path` Settings override always win, and `daw.Launch` starts it detached - never through the sidecar supervisor's kill-on-close job object, so REAPER outlives the app. The `Host.DawLaunch` binding passes the current project's linked `.rpp`, plus `NarrationUtils_Launcher.lua` as a trailing script argument when the `DAW.auto_start_launcher` Settings toggle is on (owner decision D10, default off): REAPER 6.80+ auto-runs a script argument at startup with the project already open, confirmed on a real REAPER 7.80 ([spike S6](../research/reaper-spike-s6-daw-reachability.md), [ADR 0092](../adr/0092-reaper-executable-discovery-heartbeat-mechanism-and-script-plus-project-launch-are-resolved.md)).
 - Manuscript line identity is stored on items as namespaced extension data and read back through the bridge; see [manuscript-line-identity.md](manuscript-line-identity.md) and [ADR 0026](../adr/0026-manuscript-line-identity-in-item-extension-data.md).
 - All mutation actions must be explicitly triggered by the narrator, wrapped in REAPER undo blocks, and report failures without partially applying unrelated actions. Transcript Compare therefore inspects take markers after analysis and only writes its pending findings when the narrator selects **Export markers**.
-- Before export, the REAPER adapter marks a finding as already marked when the same active take has a marker within 0.15 seconds with the same case-insensitive issue prefix (`MISREAD:`, `SKIPPED:`, or `EXTRA:`). Export rechecks immediately before every add and reports added and skipped counts.
+- Before export, the REAPER adapter marks a finding as already marked when the same active take has a marker within 0.15 seconds with the same case-insensitive issue prefix (`MISREAD:`, `SKIPPED:`, or `EXTRA:`). Export rechecks immediately before every add and reports added and skipped counts. The Review page's approved marker for one accepted finding (`add_finding_marker`, [adding the approved marker](reaper-navigation.md#adding-the-approved-marker)) uses the same rule (`existing_take_marker` in `narration_bridge_core.lua`) and the same name, in one undo block.
 
 ## Settings layering
 
@@ -64,7 +64,7 @@ The review workflow (`apps/desktop/internal/transcript`, Transcript Compare) rea
 
 ## Acceptance criteria
 
-- A REAPER adapter can navigate, loop, and add an approved marker from a valid finding.
+- A REAPER adapter can navigate, loop, and add an approved marker from a valid finding. (Built: review dashboard PRD Phases 6 to 8; the checks in REAPER for the marker and from the Review page are pending with the owner, [checklist](reaper-navigation.md#manual-verification-checklist).)
 - Failure to resolve a stale GUID produces a reviewable warning and does not operate on an adjacent item.
 - Audacity planning never requires REAPER ExtState or take-marker semantics.
 

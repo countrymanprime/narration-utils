@@ -82,6 +82,15 @@ its old project time, so it is still found after you move the item.
 
 ![A finding looping in REAPER, with Stop loop](../../images/ui/review-reaper-looping.webp)
 
+- **Add marker in REAPER** puts one take marker on the finding's spot, after you confirm. It is off
+  until you accept the finding. The marker is named like the ones **Export markers** on the Proofing
+  page adds, for example `MISREAD: 'pink eyes' as 'pale eyes'`, so Export does not add it a second
+  time. If the take already has a marker of the same kind there, nothing is added and the page says
+  so. This is the only button here that changes your project, and one Undo in REAPER removes the
+  marker.
+
+![The confirm before an accepted finding gets its marker in REAPER](../../images/ui/review-reaper-marker-confirm.webp)
+
 When REAPER cannot do it, nothing in REAPER changes and the page says why:
 
 - **the finding's audio changed.** The item was deleted, lost the take the check heard, or was
@@ -93,7 +102,7 @@ When REAPER cannot do it, nothing in REAPER changes and the page says why:
 
 ![Go to refused because the finding's item is no longer in the REAPER project](../../images/ui/review-reaper-stale.webp)
 
-When REAPER is not connected, Go to and Loop are off and the reason is under them. If you opened the
+When REAPER is not connected, Go to, Loop and Add marker are off and the reason is under them. If you opened the
 app on its own, open it from the Narration Utils action in REAPER instead. If REAPER was closed or the
 action stopped, start it again; the buttons turn back on by themselves. A Story Bible finding has no
 audio, so it has no REAPER row.

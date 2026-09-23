@@ -21,6 +21,7 @@ type reaperNavigator interface {
 	Navigate(ctx context.Context, target bridge.Target) (bridge.Navigated, error)
 	Loop(ctx context.Context, target bridge.Target) (bridge.LoopStarted, error)
 	StopLoop(ctx context.Context) (bridge.LoopStopped, error)
+	AddMarker(ctx context.Context, target bridge.Target, marker bridge.Marker) (bridge.MarkerResult, error)
 }
 
 // findingNavigation is the project's navigator and what the host remembers of it: which finding a loop this app

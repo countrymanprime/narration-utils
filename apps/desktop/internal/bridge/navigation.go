@@ -12,7 +12,8 @@ import (
 
 // Navigator asks REAPER to go to a finding, loop its context and stop the loop, and whether the script is listening
 // (integrations/reaper/narration_navigation.lua; review-dashboard PRD Phase 6 and Q6; docs/architecture/
-// reaper-navigation.md; ADR 0121). Each request is one command and waits for its one answer.
+// reaper-navigation.md; ADR 0121), and to add one approved marker for a finding (AddMarker, marker.go; Phase 8, ADR 0123).
+// Each request is one command and waits for its one answer.
 //
 // A request returns only once the answer has been dispatched, and dispatching is the host's job (its 150 ms loop calls
 // Client.Dispatch through transcript.Service.Drain): so a request must never be made from a Subscription's Handle,
@@ -115,7 +116,7 @@ func NewNavigator(client *Client) *Navigator {
 	n := &Navigator{client: client, timeout: DefaultAnswerTimeout, pending: map[string]chan answer{}}
 	if client != nil {
 		client.Subscribe(Subscription{
-			Tags:    []string{"NAVIGATED", "LOOP_STARTED", "LOOP_STOPPED", "PONG", "FINDING_STALE", "ERROR"},
+			Tags:    []string{"NAVIGATED", "LOOP_STARTED", "LOOP_STOPPED", "PONG", "FINDING_MARKER", "FINDING_STALE", "ERROR"},
 			Owns:    n.owns,
 			Handle:  n.handle,
 			Invalid: n.invalid,

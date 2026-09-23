@@ -126,6 +126,10 @@ export function DawLaunch() {
   return window['go']['main']['Host']['DawLaunch']();
 }
 
+export function FindingsAddMarker(arg1) {
+  return window['go']['main']['Host']['FindingsAddMarker'](arg1);
+}
+
 export function FindingsGet(arg1) {
   return window['go']['main']['Host']['FindingsGet'](arg1);
 }

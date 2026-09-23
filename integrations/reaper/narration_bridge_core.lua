@@ -93,6 +93,25 @@ local function pipe_fields(value, count)
   return out
 end
 
+-- A take marker's issue prefix: "MISREAD: ..." is MISREAD. Case-insensitive, empty when the name has none.
+local function marker_kind(name)
+  local prefix = tostring(name or ''):match('^%s*([%a_]+)%s*:')
+  return prefix and prefix:upper() or ''
+end
+-- The name of a marker `take` already has for `kind` near `srcpos`, or nil: the same issue prefix within 0.15 s of source
+-- time (docs/architecture/daw-integration.md). Transcript Compare's export and the Review page's approved marker
+-- (narration_navigation.lua) both skip a marker this finds, so neither ever doubles one.
+local function existing_take_marker(take, kind, srcpos)
+  local count = reaper.GetNumTakeMarkers(take)
+  for index = 0, count - 1 do
+    local marker_pos, marker_name = reaper.GetTakeMarker(take, index)
+    if marker_kind(marker_name) == tostring(kind or ''):upper() and math.abs(marker_pos - srcpos) <= 0.15 then
+      return marker_name
+    end
+  end
+  return nil
+end
+
 -- The registry maps a command name to a handler `handler(ctx, args)`: `ctx` carries the session directory, `event`
 -- (append an event to events.log) and `stop` (end the loop); `args` are the command's fields after its name. A
 -- name may be registered once, so two features cannot silently shadow each other's command.
@@ -137,5 +156,7 @@ M.dirname = dirname
 M.safe_name = safe_name
 M.color = color
 M.pipe_fields = pipe_fields
+M.marker_kind = marker_kind
+M.existing_take_marker = existing_take_marker
 
 return M

@@ -35,6 +35,8 @@ var realEvents = map[string][]string{
 	"LOOP_STOPPED":  {"LOOP_STOPPED", "s1", "3", "0"},
 	"PONG":          {"PONG", "p1", "1", "0", "0"},
 	"FINDING_STALE": {"FINDING_STALE", "n1", "{FFFFFFFF-0000-4000-8000-00000000FFFF}", "item"},
+	// integrations/reaper/tests/finding_marker_test.lua (review-dashboard PRD Phase 8).
+	"FINDING_MARKER": {"FINDING_MARKER", "m1", "added", "{AAAAAAAA-0000-4000-8000-0000000000A1}", "12.500000", "MISREAD: 'pink eyes' as 'pink ice'"},
 }
 
 func TestEveryRealEventPassesItsTable(t *testing.T) {
