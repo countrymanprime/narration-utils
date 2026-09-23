@@ -113,6 +113,36 @@ func TestMediaMiddlewarePassesThroughEverythingElse(t *testing.T) {
 	}
 }
 
+// TestMediaMiddlewareAuthorizesOnlyTheActiveTakesSource proves Q10 of the
+// analysis evidence ledger PRD: a multi-take item's inactive takes are not
+// authorized, only the active one (TAKE SEL), even though every take's
+// source is a real file the project's own .rpp references.
+func TestMediaMiddlewareAuthorizesOnlyTheActiveTakesSource(t *testing.T) {
+	folder := t.TempDir()
+	writeFile(t, filepath.Join(folder, "Book.rpp"), multiTakeRppFixture("media/take_a.wav", "media/take_b.wav"))
+	if err := os.MkdirAll(filepath.Join(folder, "media"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(folder, "media", "take_a.wav"), "take A bytes")
+	writeFile(t, filepath.Join(folder, "media", "take_b.wav"), "take B bytes")
+	host := newTestHostForMedia(t, folder)
+	handler := host.mediaMiddleware(passthrough(t))
+
+	activeRequest := httptest.NewRequest(http.MethodGet, mediaRoute+"?path="+filepath.Join(folder, "media", "take_b.wav"), nil)
+	activeRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(activeRecorder, activeRequest)
+	if activeRecorder.Code != http.StatusOK {
+		t.Fatalf("active take: status = %d, want 200; body = %s", activeRecorder.Code, activeRecorder.Body.String())
+	}
+
+	inactiveRequest := httptest.NewRequest(http.MethodGet, mediaRoute+"?path="+filepath.Join(folder, "media", "take_a.wav"), nil)
+	inactiveRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(inactiveRecorder, inactiveRequest)
+	if inactiveRecorder.Code != http.StatusNotFound {
+		t.Fatalf("inactive take: status = %d, want 404 (only the active take's source is authorized)", inactiveRecorder.Code)
+	}
+}
+
 // rppFixture returns a minimal REAPER project with one track whose item
 // sources relativeFile, matching the grammar apps/desktop/internal/tracks parses.
 func rppFixture(relativeFile string) string {
@@ -125,6 +155,40 @@ func rppFixture(relativeFile string) string {
 		"      LENGTH 1\n" +
 		"      <SOURCE WAVE\n" +
 		"        FILE \"" + relativeFile + "\"\n" +
+		"      >\n" +
+		"    >\n" +
+		"  >\n" +
+		">\n"
+}
+
+// multiTakeRppFixture returns a project with one item holding two takes,
+// the second (takeB) active, matching the shape REAPER 7.x writes (see
+// apps/desktop/internal/tracks/testdata/reaper/README.md): a bare TAKE SEL
+// line, no wrapping chunk, between the two takes' own NAME/SOFFS/PLAYRATE/
+// GUID/<SOURCE> lines.
+func multiTakeRppFixture(takeA, takeB string) string {
+	return "<REAPER_PROJECT 0.1 \"7.80/win64\" 1\n" +
+		"  <TRACK {D584C631-7ADA-4513-BE2C-6FC19D775206}\n" +
+		"    NAME \"Multi-take\"\n" +
+		"    TRACKID {D584C631-7ADA-4513-BE2C-6FC19D775206}\n" +
+		"    <ITEM\n" +
+		"      POSITION 0\n" +
+		"      LENGTH 1\n" +
+		"      IGUID {83F2BBC9-F579-4D70-8EC2-63E9FCF1BE8C}\n" +
+		"      NAME \"take A\"\n" +
+		"      SOFFS 0\n" +
+		"      PLAYRATE 1\n" +
+		"      GUID {500C2AA4-471B-4A73-861C-10AB008DD3C0}\n" +
+		"      <SOURCE WAVE\n" +
+		"        FILE \"" + takeA + "\"\n" +
+		"      >\n" +
+		"      TAKE SEL\n" +
+		"      NAME \"take B\"\n" +
+		"      SOFFS 0\n" +
+		"      PLAYRATE 1\n" +
+		"      GUID {F5614A11-80D0-425B-82BB-B4D942CD241E}\n" +
+		"      <SOURCE WAVE\n" +
+		"        FILE \"" + takeB + "\"\n" +
 		"      >\n" +
 		"    >\n" +
 		"  >\n" +
