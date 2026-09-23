@@ -24,4 +24,4 @@ The sidecar reports where the narrator is as `read`, an index into a flat list o
 - The mock's pacing is the tracker's own but its narrator is scripted, so it shows behavior, not accuracy.
 - Line breaks inside a paragraph are kept for tracked rows (each word remembers the whitespace after it), so the teleprompter text matches the manuscript reader.
 - A page opened mid-session takes only what is missing from the host's snapshot: it never overrides a position that live events already delivered.
-- Auto-scroll only moves when the current word leaves the middle of the screen, so a narrator who scrolls by hand while reading can still be pulled back.
+- Auto-scroll only moves when the current word leaves the middle of the screen, so a narrator who scrolls by hand while reading can still be pulled back. [ADR 0119](0119-a-hand-scroll-pauses-following-until-the-current-word-is-back-in-the-band.md) (proposed) pauses following on a hand scroll instead.

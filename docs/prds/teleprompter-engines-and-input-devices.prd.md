@@ -191,7 +191,7 @@ Phases 1 to 3 (device picker and settings, Whisper only) are shippable on their 
 | 7 | Engine choice end to end | Host and UI launch either engine, engine-aware download dialog, settings enable Moonshine, visual states | complete | 9, 10 | 3, 4, 5, 6 | - |
 | 8 | Engine evaluation and default ADR | Real-UI A/B protocol, lag capture aid, ADR, default set in settings | pending | 9, 10, 11 | 7 | - |
 | 9 | Auto-stop at Done | Go timer on `done`, message, tests | complete | 1, 5, 6, 10 | - | - |
-| 10 | Manual scroll without pull-back | `useFollowCursor`, intent detection, Follow control, tests | pending | all except PRD 1 phases 4, 5, 7 | - | - |
+| 10 | Manual scroll without pull-back | `useFollowCursor`, intent detection, Follow control, tests | complete | all except PRD 1 phases 4, 5, 7 | - | - |
 | 11 | Chapter from REAPER track name | Chapter suggestions from `.rpp` track names using the shared matcher | complete | 8, 9, 10 | PRD 1 phase 8 (or builds the matcher first) | - |
 | 12 | Roadmap and status bookkeeping | `roadmap.md` and `roadmap.json` together, README inventory, brief status line | pending | - | 2, 8 (and PRD 1 phase 7 per the roadmap question) | - |
 

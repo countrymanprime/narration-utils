@@ -46,7 +46,7 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0021](0021-live-speech-engines-behind-one-event-contract.md) | Live speech engines are interchangeable behind one event contract | Accepted |
 | [0022](0022-live-sidecar-events-over-wails-and-stop-file.md) | The host relays live sidecar events over Wails events and stops the sidecar with a stop file | Accepted |
 | [0023](0023-visual-suite-capture-contract-and-storybook.md) | The visual suite is a validated capture contract, and Storybook is the component layer | Accepted |
-| [0024](0024-teleprompter-highlight-follows-the-sidecars-spans.md) | The teleprompter highlight follows the sidecar's spans and only ever catches up to the real position | Accepted (amends ADR-0016) |
+| [0024](0024-teleprompter-highlight-follows-the-sidecars-spans.md) | The teleprompter highlight follows the sidecar's spans and only ever catches up to the real position | Accepted (amends ADR-0016; amended, proposed, by ADR-0119) |
 | [0025](0025-delivery-measurements-in-go-profiles-deferred.md) | Delivery measurements are computed in Go, and no distributor profile ships yet | Accepted |
 | [0026](0026-manuscript-line-identity-in-item-extension-data.md) | Manuscript line identity is stored in REAPER item extension data and read back through the bridge | Accepted |
 | [0027](0027-windows-gates-and-creates-the-release.md) | Windows gates pull requests and creates the release; macOS and Linux are optional, separate builds | Accepted |
@@ -136,6 +136,7 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0116](0116-read-aloud-marks-cover-whole-words-the-innermost-is-the-control-and-a-mark-never-seeks.md) | Read-aloud marks cover whole words, the innermost is the control, and a mark never seeks | Proposed |
 | [0117](0117-live-flags-are-kept-as-suspected-findings-merged-per-chapter-when-a-session-ends.md) | Live flags are kept as suspected findings, merged per chapter, when a session ends | Proposed |
 | [0118](0118-read-aloud-flags-are-highlight-kinds-with-an-inline-hint-and-skips-and-restarts-show-by-default.md) | Read-aloud flags are Highlight kinds with an inline hint, and skips and restarts show by default | Proposed (amends ADR-0016) |
+| [0119](0119-a-hand-scroll-pauses-following-until-the-current-word-is-back-in-the-band.md) | A hand scroll pauses following until the current word is back in the band | Proposed (amends ADR-0024) |
 | [0125](0125-recording-coverage-ground-truth-is-scripted-recordings-with-paragraph-labels-and-a-corpus-directory-variable.md) | Recording-coverage ground truth is scripted recordings with paragraph labels, and a real corpus plugs in through a directory variable | Proposed |
 | [0126](0126-recording-coverage-reads-the-take-markers-sequencematcher-alignment-and-folds-chance-matches-into-gaps.md) | Recording coverage reads the take markers' SequenceMatcher alignment and folds chance matches into gaps | Proposed |
 | [0127](0127-the-coverage-sidecar-mode-reads-a-json-manifest-keeps-one-words-file-per-item-and-writes-tagged-json-lines.md) | The coverage sidecar mode reads a JSON manifest, keeps one words file per item, and writes tagged JSON lines | Proposed |

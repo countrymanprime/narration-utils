@@ -263,6 +263,12 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'manuscript',
+    state: 'read-aloud-following-paused',
+    description:
+      'Manuscript, the "Read aloud" dialog listening after the narrator scrolled the text by hand (teleprompter-engines-and-input-devices.prd.md Phase 10) - "Following paused" and an enabled Follow button beside Stop, the highlighted word scrolled out of view',
+  },
+  {
+    page: 'manuscript',
     state: 'read-aloud-seek-back',
     description:
       'Manuscript, the "Read aloud" dialog after clicking an earlier word ("Go back to here", teleprompter-manuscript-integration.prd.md Phase 4) - the highlight has jumped back to the clicked word without restarting the session',
@@ -631,6 +637,12 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'listening',
     description:
       'Teleprompter, mid-session and listening - the setup fields collapse to a status bar with Stop, the current word has the solid accent highlight and read words are dimmed (reached via the ?mockTeleprompter=listening mock seam)',
+  },
+  {
+    page: 'teleprompter',
+    state: 'following-paused',
+    description:
+      'Teleprompter, listening after the narrator scrolled the text by hand (teleprompter-engines-and-input-devices.prd.md Phase 10) - following is paused ("Following paused" under the status), the Follow button beside Stop is enabled, and the highlighted word has scrolled out of view without being pulled back',
   },
   {
     page: 'teleprompter',

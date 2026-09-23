@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMicrophone, faStop } from '@fortawesome/free-solid-svg-icons';
+import { faCrosshairs, faMicrophone, faStop } from '@fortawesome/free-solid-svg-icons';
 import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { Button } from '../primitives/Button';
@@ -11,6 +11,7 @@ import { MicrophoneField } from './MicrophoneField';
 import { ReaderKey } from './ReaderKey';
 import { ReaderText } from './ReaderText';
 import type { ReaderMark } from './readerModel';
+import { useFollowCursor } from './useFollowCursor';
 import { ENGINE_LABELS, MODELS, type TeleprompterSession } from './useTeleprompterSession';
 
 const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
@@ -37,6 +38,8 @@ type Props = {
  * nothing, when the chapter is fixed, as in the modal).
  */
 export function ReadAlongView({ session: t, extraSetupFields, marks, onOpenMark, aside }: Props) {
+  // Scrolling by hand pauses following until the current word is back in the band or Follow is pressed (engines PRD Phase 10).
+  const follow = useFollowCursor({ active: t.active, cursor: t.cursor });
   const main = (
     <div className="mx-auto w-full max-w-3xl min-w-0 space-y-4">
       <div className={t.active ? 'sticky top-0 z-10' : ''}>
@@ -91,11 +94,20 @@ export function ReadAlongView({ session: t, extraSetupFields, marks, onOpenMark,
                   Heard: {t.session.heard}
                 </div>
               )}
+              <div aria-live="polite" className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                {t.active && !follow.following && 'Following paused. Scroll back to the highlighted word or press Follow.'}
+              </div>
             </div>
             {t.active ? (
-              <Button variant="danger" onClick={t.stop} disabled={t.host.phase === 'stopping'}>
-                <FontAwesomeIcon icon={faStop} /> Stop
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Always shown while a session runs, so it is where the narrator expects it; enabled only while following is paused. */}
+                <Button variant="ghost" onClick={follow.resume} disabled={follow.following}>
+                  <FontAwesomeIcon icon={faCrosshairs} /> Follow
+                </Button>
+                <Button variant="danger" onClick={t.stop} disabled={t.host.phase === 'stopping'}>
+                  <FontAwesomeIcon icon={faStop} /> Stop
+                </Button>
+              </div>
             ) : (
               <TooltipTarget text={t.startReason}>
                 <Button onClick={() => void t.start()} disabled={!t.canStart}>
@@ -119,7 +131,8 @@ export function ReadAlongView({ session: t, extraSetupFields, marks, onOpenMark,
               rows={t.rows}
               cursor={t.cursor}
               skipped={t.session.skipped}
-              follow={t.active}
+              follow={t.active && follow.following}
+              readerRef={follow.readerRef}
               onSeek={t.active ? t.seek : undefined}
               marks={marks}
               onOpenMark={onOpenMark}
