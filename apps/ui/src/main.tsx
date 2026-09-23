@@ -80,6 +80,9 @@ const mockImportPreview = (['markdown', 'repaired'] as const).find((kind) => kin
 // REAPER project, so the Tracks page's "Track missing" state can be seen without confirming and then deleting a
 // track first (analysis evidence ledger PRD, Phase 7).
 const mockChapterLinkMissing = mockParams.get('mockChapterLink') === 'missing';
+// `?mockLineIdentity=success|conflict|error` boots the Tracks page's "Link chapters" dialog with LineIdentityState already at that
+// result, so its stale/conflict/drift and error states can be seen without a real REAPER round trip.
+const mockLineIdentity = (['success', 'conflict', 'error'] as const).find((seed) => seed === mockParams.get('mockLineIdentity'));
 const mockInitial = {
   ...(mockImportPreview ? { importPreview: mockImportPreview } : {}),
   ...(mockAssets ? { assets: mockAssets } : {}),
@@ -105,6 +108,7 @@ const mockInitial = {
         ],
       }
     : {}),
+  ...(mockLineIdentity ? { lineIdentity: mockLineIdentity } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

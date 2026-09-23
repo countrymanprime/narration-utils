@@ -1,0 +1,15 @@
+{
+  "lines": [],
+  "linesRead": 0,
+  "message": "",
+  "phase": "idle",
+  "runId": null,
+  "stamp": {
+    "applied": 0,
+    "conflicts": [],
+    "conflictsCount": 0,
+    "missing": [],
+    "missingCount": 0,
+    "unchanged": 0
+  }
+}

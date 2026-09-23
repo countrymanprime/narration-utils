@@ -4,6 +4,8 @@
 import type {
   Discrepancy,
   GuideEntity,
+  LineIdentityLine,
+  LineIdentityState,
   ManuscriptChapter,
   ManuscriptNote,
   ManuscriptParagraph,
@@ -636,6 +638,7 @@ export const WIRE_TRACKS_PROJECT: TracksProject = {
       soloed: false,
       items: [
         {
+          guid: '{7A6B5C4D-3E2F-4190-8A1B-2C3D4E5F6071}',
           position: 0,
           length: 612.4,
           name: 'ch1_take3.wav',
@@ -655,6 +658,7 @@ export const WIRE_TRACKS_PROJECT: TracksProject = {
       soloed: false,
       items: [
         {
+          guid: '{8B7C6D5E-4F30-42A1-9B2C-3D4E5F607182}',
           position: 0,
           length: 548.9,
           name: 'ch2_take1.wav',
@@ -672,9 +676,119 @@ export const WIRE_TRACKS_PROJECT: TracksProject = {
       color: '',
       muted: true,
       soloed: false,
-      items: [{ position: 0, length: 4, name: 'click', sourceKind: 'MIDI', sourceFile: '', sourceAvailable: false, supported: false }],
+      items: [
+        {
+          guid: '{9C8D7E6F-5041-43B2-AC3D-4E5F60718293}',
+          position: 0,
+          length: 4,
+          name: 'click',
+          sourceKind: 'MIDI',
+          sourceFile: '',
+          sourceAvailable: false,
+          supported: false,
+        },
+      ],
     },
   ],
+};
+
+const idleLineIdentityStamp: LineIdentityState['stamp'] = { applied: 0, unchanged: 0, missingCount: 0, conflictsCount: 0, missing: [], conflicts: [] };
+
+/** The Go host's LineIdentityState answer before any Stamp or Read has run (mirrors tests/fixtures/contracts/line-identity-idle.json). */
+export const WIRE_LINE_IDENTITY_IDLE: LineIdentityState = {
+  phase: 'idle',
+  message: '',
+  stamp: { ...idleLineIdentityStamp },
+  lines: [],
+  linesRead: 0,
+};
+
+/** One row of every status the classifier produces, keyed to WIRE_TRACKS_PROJECT's own chapter track item GUIDs where it helps a screenshot read naturally (mirrors tests/fixtures/contracts/line-identity-read-success.json). */
+export const WIRE_LINE_IDENTITY_LINES: LineIdentityLine[] = [
+  {
+    itemGuid: '{7A6B5C4D-3E2F-4190-8A1B-2C3D4E5F6071}',
+    lineId: 'c-0001@a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f708192a3b4c5d6e7f809',
+    entityId: 'c-0001',
+    position: 0,
+    length: 612.4,
+    text: 'Down the Rabbit-Hole',
+    status: 'ok',
+  },
+  {
+    itemGuid: '{8B7C6D5E-4F30-42A1-9B2C-3D4E5F607182}',
+    lineId: 'c-0002@a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f708192a3b4c5d6e7f809',
+    entityId: 'c-0002',
+    position: 0,
+    length: 548.9,
+    text: 'The Pool of Tears (revised)',
+    status: 'drift',
+    currentText: 'The Pool of Tears',
+  },
+  {
+    itemGuid: '{9C8D7E6F-5041-43B2-AC3D-4E5F60718293}',
+    lineId: 'c-0004@old0000000000000000000000000000000000000000000000000000000',
+    entityId: 'c-0004',
+    position: 0,
+    length: 4,
+    text: 'The Rabbit Sends in a Little Bill',
+    status: 'stale-source',
+  },
+  {
+    itemGuid: '{AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE}',
+    lineId: 'c-0099@a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f708192a3b4c5d6e7f809',
+    entityId: 'c-0099',
+    position: 0,
+    length: 12,
+    text: 'A chapter that no longer exists in the manuscript',
+    status: 'removed',
+  },
+  {
+    itemGuid: '{BBBBBBBB-CCCC-DDDD-EEEE-FFFFFFFFFFFF}',
+    lineId: 'line-000004',
+    entityId: '',
+    position: 0,
+    length: 9,
+    text: 'An identity from an older stamp scheme',
+    status: 'unrecognized',
+  },
+];
+
+/** A completed Read, with every status a narrator can hit shown at once, so the states are reviewable without stepping through a run. */
+export const WIRE_LINE_IDENTITY_READ_SUCCESS: LineIdentityState = {
+  runId: '1790000000000000',
+  phase: 'success',
+  message: `Read ${WIRE_LINE_IDENTITY_LINES.length} stamped lines.`,
+  stamp: { ...idleLineIdentityStamp },
+  lines: WIRE_LINE_IDENTITY_LINES,
+  linesRead: WIRE_LINE_IDENTITY_LINES.length,
+};
+
+/** A completed Stamp with a conflict and a stale item, so "Link chapters" can show them without a real REAPER. */
+export const WIRE_LINE_IDENTITY_STAMP_CONFLICT: LineIdentityState = {
+  runId: '1790000000000001',
+  phase: 'success',
+  message: 'Stamped 1 line, 1 stale item, 1 conflict.',
+  stamp: {
+    applied: 1,
+    unchanged: 0,
+    missingCount: 1,
+    conflictsCount: 1,
+    missing: ['{9C8D7E6F-5041-43B2-AC3D-4E5F60718293}'],
+    conflicts: ['{8B7C6D5E-4F30-42A1-9B2C-3D4E5F607182}'],
+  },
+  lines: [],
+  linesRead: 0,
+};
+
+/** REAPER reported a problem stamping or reading (a session-level ERROR event, e.g. the script not imported yet). */
+export const WIRE_LINE_IDENTITY_ERROR: LineIdentityState = {
+  runId: '1790000000000002',
+  phase: 'error',
+  message:
+    'The Narration Utils script in REAPER sent a message this app could not read. Import the script from this app’s REAPER folder again, then try again.',
+  stamp: { ...idleLineIdentityStamp },
+  lines: [],
+  linesRead: 0,
 };
 
 export const wireClone = <T>(value: T): T => structuredClone(value);

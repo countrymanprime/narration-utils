@@ -30,6 +30,7 @@ import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { TELEPROMPTER_EVENT_TYPES, teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
+import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
 import type { NarrationApi } from '../types';
 import * as host from '../../wailsjs/go/main/Host';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
@@ -221,6 +222,10 @@ export const wailsClient: NarrationApi = {
     decode(noteSchema, 'ManuscriptCreateNote', host.ManuscriptCreateNote(chapterId, paragraphId, text, anchorText ?? '', anchorStart, anchorEnd)),
   noteDelete: (id) => decode(voidResult, 'ManuscriptDeleteNote', host.ManuscriptDeleteNote(id)),
   subscribeTranscript: (onUpdate) => subscribeChecked('transcript:state', transcriptStateSchema, onUpdate),
+  lineIdentityStamp: (rows, overwrite) => decode(lineIdentityStartResultSchema, 'LineIdentityStamp', host.LineIdentityStamp(rows, overwrite)),
+  lineIdentityRead: () => decode(lineIdentityStartResultSchema, 'LineIdentityRead', host.LineIdentityRead()),
+  lineIdentityState: () => decode(lineIdentityStateSchema, 'LineIdentityState', host.LineIdentityState()),
+  subscribeLineIdentity: (onUpdate) => subscribeChecked('lineidentity:state', lineIdentityStateSchema, onUpdate),
   projectRecents: () => decode(recentProjectsSchema, 'ProjectRecents', host.ProjectRecents()),
   selectProjectFolder: () => decode(projectFolderSelectionSchema, 'ProjectSelectFolder', host.ProjectSelectFolder()),
   switchProject: (path, name) => decode(projectSwitchResultSchema, 'ProjectSwitch', host.ProjectSwitch(path, name ?? '')),

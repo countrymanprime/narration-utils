@@ -300,6 +300,11 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/tracks/ChapterLinksTable.tsx::chapterTrackMapList#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The confirmed links for the current manuscript document.'),
   'src/components/tracks/ChapterLinksTable.tsx::chapterTrackMapConfirm#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'Confirm on a chapter\'s MappingConfirm; the row is busy until the link is written and re-listed, and a refusal (an unknown chapter) is written inline.'),
   'src/components/tracks/ChapterLinksTable.tsx::chapterTrackMapClear#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'Clear on a chapter\'s MappingConfirm; the row is busy until the link is removed and re-listed.'),
+  'src/components/tracks/TracksPage.tsx::manuscriptChapters#1': row('mount', 'file-io', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Only decides whether the "Link chapters…" button shows; without it the button is absent, same as a project with no chapters.'),
+  'src/components/tracks/LinkChaptersDialog.tsx::lineIdentityState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Hydrates whatever stamp or read was already in flight when the dialog reopened; the live event follows anyway.'),
+  'src/components/tracks/LinkChaptersDialog.tsx::subscribeLineIdentity#1': subscription('The line-identity state event, shared by the Stamp and Read runs this dialog starts.'),
+  'src/components/tracks/LinkChaptersDialog.tsx::lineIdentityStamp#1': row('click', 'job', 'pending', 'disabled', 'ui', 'inline', 'no', 'ok', 'Approve. The dialog cannot be closed while a stamp runs (Dialog\'s onClose is undefined then), so the result is always seen; a failure shows inline as an alert and in the phase message.'),
+  'src/components/tracks/LinkChaptersDialog.tsx::lineIdentityRead#1': row('click', 'job', 'pending', 'disabled', 'ui', 'inline', 'no', 'ok', 'Read-only and idempotent; a failure shows inline in the "Currently stamped" section.'),
 
   // Credits (audiobook-credits-templates.prd.md, Phase 1)
   'src/components/settings/CreditsPanel.tsx::creditsTemplates#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The template library load; an inline error banner otherwise.'),
@@ -340,4 +345,8 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Loads the persisted device and runs the one-time migration; if it fails the field just starts empty, exactly as it did before Phase 2.',
   'src/components/teleprompter/TeleprompterPage.tsx#5': 'Only picks the chapter the narrator last read; the first chapter is used without it.',
   'src/theme/ThemeContext.tsx#1': 'Remembering the theme in localStorage; the preference just does not persist when storage is disabled.',
+  'src/components/tracks/TracksPage.tsx#1':
+    'Only decides whether the "Link chapters…" button shows; without it the button is absent, same as a project with no chapters.',
+  'src/components/tracks/LinkChaptersDialog.tsx#1':
+    'Hydrates whatever stamp or read was already in flight when the dialog reopened; the live event follows anyway.',
 };

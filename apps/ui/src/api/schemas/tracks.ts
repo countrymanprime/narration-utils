@@ -3,6 +3,7 @@ import type { Track, TrackItem, TracksDiscovery, TracksProject } from '../contra
 import { listFromNull } from './base';
 
 const trackItemSchema = z.object({
+  guid: z.string(),
   position: z.number(),
   length: z.number(),
   name: z.string(),

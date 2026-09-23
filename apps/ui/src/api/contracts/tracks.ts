@@ -1,4 +1,6 @@
 export type TrackItem = {
+  /** The item's own GUID (REAPER's IGUID), the identity a Link chapters stamp writes to and every LineIdentityLine row is keyed by. */
+  guid: string;
   position: number;
   length: number;
   name: string;
