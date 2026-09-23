@@ -6,10 +6,9 @@
 // range on read, not per-played-range results. A trim changes the played
 // range; a per-range entry would miss after every trim, while a whole-source
 // entry survives it, because the cache key deliberately excludes the played
-// range for a sliceable analyzer. Importers/callers: no production code
-// imports this yet (it lands ahead of RC/ER/PS, the signal PRDs that will
-// write and read cache entries, and ahead of Phase 6's staleness evaluator
-// in this same package); apps/desktop/internal/manuscript/service.go's
+// range for a sliceable analyzer. Importers/callers: the recording coverage
+// service (apps/desktop/internal/coverage, words.go) keeps each source's
+// transcript words here; apps/desktop/internal/manuscript/service.go's
 // resetDerived adds CacheDir to the directories a manuscript reset clears.
 // Public API added here: CacheDir, CacheEntryKey, CacheStore, NewCacheStore,
 // CacheStore's Write/Read/Delete/Prune/Hits/Misses methods, TimedFeature and

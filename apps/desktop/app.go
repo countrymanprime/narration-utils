@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/credits"
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawcatalog"
@@ -67,6 +68,10 @@ type Host struct {
 	guide      *guide.Service
 	guideJob   *workJob
 	transcript *transcript.Service
+	// coverage is the recording-coverage service (recording-coverage-analysis.prd.md Phase 4, ADR 0128): it reads the saved .rpp and
+	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; no binding reaches it yet
+	// (Phase 5).
+	coverage *coverage.Service
 	// findings is the project's findings store: Transcript Compare's and the
 	// Guide's adapters save into it on every completed run
 	// (review-dashboard-and-findings-adoption.prd.md Phases 2-3), and
@@ -326,6 +331,13 @@ func (h *Host) configureLocked(next config) {
 	h.transcript = transcript.New(transcript.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir, Python: h.config.comparePython, Backend: h.config.compareBackend}, client, h.settings, h.sidecars, h.emitTranscript)
 	h.transcript.SetPersist(h.persist)
 	h.transcript.SetFindings(h.findings, h.manuscript)
+	projectFolder, settingsStore := h.config.projectFolder, h.settings
+	h.coverage = coverage.New(coverage.Config{
+		Project: h.config.projectFolder, Python: h.config.comparePython, Backend: h.config.compareBackend,
+		ProjectFile:    func() (string, error) { return selectedProjectFile(projectFolder, settingsStore) },
+		LoadManuscript: h.manuscript.Load,
+		Reporter:       h.persist,
+	}, coverage.SupervisorLauncher(h.sidecars), nil)
 	// The line-identity service is the second consumer of the same bridge client (bridge.Client fans events
 	// out by tag and run, ADR 0068), so pollTranscript's Drain call already pumps its events too. Phase 7
 	// (reaper-automation-follow-through PRD) is the UI trigger, so it now emits h.emitLineIdentity the way
@@ -608,6 +620,11 @@ func (h *Host) Shutdown(context.Context) {
 		_ = live.Close(stopContext)
 		cancelStop()
 	}
+	// A recording check in progress is asked to stop through its .cancel file; closing the supervisor below kills it if it does not,
+	// and the words files it finished are already on disk.
+	if check := h.services().coverage; check != nil {
+		check.Cancel()
+	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.cancel != nil {
@@ -790,6 +807,9 @@ func (h *Host) idleLocked() bool {
 		case "preparing", "running", "inspecting", "need_chapter":
 			return false
 		}
+	}
+	if h.coverage != nil && h.coverage.Busy() {
+		return false
 	}
 	if h.teleprompter != nil && h.teleprompter.Busy() {
 		return false
