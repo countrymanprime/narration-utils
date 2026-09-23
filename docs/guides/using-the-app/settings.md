@@ -14,7 +14,17 @@ Appearance controls the light/dark theme.
 ![Home with Dark theme selected](../../images/ui/theme-dark.webp)
 
 Other categories mix dropdowns and color pickers — Manuscript's own category, for example,
-controls the color used to mark reader notes in the text.
+controls the color used to mark reader notes in the text. **General** (Global only) also holds the
+**Narrator name (default for credits)**. In both scopes:
+
+- **Proofing** picks the default Whisper model and chunk length for a comparison and the marker colors
+  for misread, skipped and extra words. It shows whether the chosen model is installed, with
+  **Remove local model…** once it is.
+- **Story Bible** picks the spaCy model and whether to **Build the Story Bible after import**.
+- **TTS** picks the provider and the preview voice used to [hear a name](story-bible.md#hearing-a-name),
+  with **Remove local voice…** once the voice is installed.
+
+Choosing a model or a voice here never downloads it; the app asks when a feature first needs it.
 
 The **Teleprompter** category (Global scope only — the microphone, engine and model are machine facts, not a
 per-project preference) remembers the microphone you last chose on the [Teleprompter](teleprompter.md) page and the
@@ -27,6 +37,39 @@ manuscript, Story Bible, proofing artifacts, and reader notes for the current pr
 leaving its settings in place.
 
 ![Settings - Project scope, Project data category (clear derived project data)](../../images/ui/settings-project-data.webp)
+
+## DAW Integration
+
+In the **Global** scope, **DAW Integration** says whether REAPER is installed on this computer (**Check
+again** looks again; the app never downloads or installs it for you) and whether it is reachable: a
+running REAPER has been heard from recently, and its open project does or does not match the linked one.
+**Launch REAPER** starts REAPER on the linked project and needs a linked `.rpp` first. Two settings go
+with it: **REAPER executable (override)**, for a REAPER the app does not find by itself, and **Start the
+launcher script automatically** (off by default), which has REAPER run the Narration Utils launcher when
+the app starts it. Where the app knows the launcher's path, it is shown with **Copy path**, to import
+once in REAPER as an action.
+
+In **This Project**, the same category shows whether a REAPER project is linked, with **Link a REAPER
+project file** or **Change linked project file**: the same link as the pill in the
+[header](navigation.md).
+
+## Credits
+
+**Credits** (This Project only) holds the audiobook's opening and closing credits.
+
+- **Templates**: pick a template to edit its **Name**, **Kind** (Opening or Closing) and **Body**, then
+  **Save template**. **New** starts a blank one, **Duplicate** copies the selected one and **Delete**
+  removes it.
+- **Tokens**: bracketed tokens in the body, such as `[Title]`, `[Author]` and `[Narrator]`, are filled
+  from the project values.
+- **Preview** shows the body with the values filled in, its word count, and any token that has no value
+  yet, highlighted and listed as unresolved.
+- **Project values**: Title, Subtitle, Author, Series, Book number, Copyright, Year, Copyright holder,
+  Publisher, and a Narrator that overrides the global default from General for this project only. A value
+  is saved as you type. Where the manuscript suggests a title or author, **Use suggestion** fills it in.
+
+The first opening and closing templates appear in the [Manuscript](manuscript.md) reader and in the
+Credits time on [Home](home.md).
 
 ## Local assets
 

@@ -38,6 +38,18 @@ jumping between chapters without scrolling through the full text.
 
 ![Manuscript, collapsed chapter list](../../images/ui/manuscript-chapter-list.webp)
 
+**Opening credits** sits before the first chapter and **Closing credits** after the last, when the
+credit template library (Settings, This Project, [Credits](settings.md#credits)) has an opening or a
+closing template. Each shows its word count; open it to read the credits with the project's values
+filled in. A token with no value yet stays in brackets, highlighted, and a line below lists the
+unresolved tokens. These entries are read-only and are not chapters: they are not in the chapter list or
+search.
+
+Each narration chapter's header has a **Read aloud** button. It opens the [Teleprompter](teleprompter.md)
+read-along for that chapter in a full-screen dialog titled "Read aloud — " and the chapter title, with the
+same microphone and model choices, Start reading and Stop. Closing the dialog while it is still listening
+asks first ("Stop reading?"); Stop and close ends the session, and nothing recorded in REAPER is affected.
+
 Selecting a stretch of text offers actions for it — adding a reader note or sending it to the
 Story Bible as a new entry.
 
