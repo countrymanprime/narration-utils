@@ -346,6 +346,33 @@ func normalizeMappingPayload(value any) (any, error) {
 	return decoded, nil
 }
 
+// ChapterTrackMatch's payload (teleprompter-manuscript-integration PRD Phase 8, ADR 0110): a matched chapter with its
+// recorded end, an ambiguous one and one with no track. The project folder is made portable; Stabilize fixes the .rpp's
+// save time.
+func TestContractChapterTrackMatch(t *testing.T) {
+	host, ids := newTestHostForChapterMatch(t)
+	folder := host.config.projectFolder
+	for name, id := range map[string]string{
+		"chapter-track-match-matched":   ids[0],
+		"chapter-track-match-ambiguous": ids[1],
+		"chapter-track-match-none":      ids[2],
+	} {
+		raw, err := host.ChapterTrackMatch(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var payload map[string]any
+		if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+			t.Fatal(err)
+		}
+		stable, err := contractfile.PortablePaths(payload, folder, "C:/Projects/Alice")
+		if err != nil {
+			t.Fatal(err)
+		}
+		contractfile.Check(t, name, stable)
+	}
+}
+
 // The system:notice event: something the app did for the narrator that they should read (ADR 0069).
 func TestContractNarratorNotice(t *testing.T) {
 	contractfile.Check(t, "system-notice", noticePayload("Your notes file could not be read. It was kept as manuscript-notes.json.corrupt-20260921-101530 next to the original, and a fresh one was started."))

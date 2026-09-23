@@ -1,0 +1,134 @@
+<REAPER_PROJECT 0.1 "7.80/x64" 1789000000
+  RIPPLE 0
+  MARKER 1 5 "PICKUP: a plain marker, not a region" 0 0 1 R {5A1B8E53-2B0D-4E1C-9A55-3E4C1B1D0A01} 0
+  MARKER 1 28 "Chapter Two" 1 0 1 R {5A1B8E53-2B0D-4E1C-9A55-3E4C1B1D0A02} 0 1
+  MARKER 1 40 "" 1
+  MARKER 2 60 "Epilogue" 1 0 1 R {5A1B8E53-2B0D-4E1C-9A55-3E4C1B1D0A03} 0 1
+  MARKER 2 70 "" 1
+  <TRACK {A0000000-0000-4000-8000-000000000001}
+    NAME "Chapter 1"
+    MUTESOLO 0 0 0
+    TRACKID {A0000000-0000-4000-8000-000000000001}
+    <ITEM
+      POSITION 0
+      LENGTH 10
+      IGUID {B0000000-0000-4000-8000-000000000001}
+      NAME "first read"
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      GUID {C0000000-0000-4000-8000-000000000001}
+      <SOURCE WAVE
+        FILE "media/ch1_take1.wav"
+      >
+    >
+    <ITEM
+      POSITION 12
+      LENGTH 5
+      IGUID {B0000000-0000-4000-8000-000000000002}
+      NAME "second read, trimmed and sped up"
+      SOFFS 2
+      PLAYRATE 1.5 1 0 -1 0 0.0025
+      GUID {C0000000-0000-4000-8000-000000000002}
+      <SOURCE WAVE
+        FILE "media/ch1_take1.wav"
+      >
+    >
+    <ITEM
+      POSITION 3
+      LENGTH 4
+      IGUID {B0000000-0000-4000-8000-000000000003}
+      NAME "an earlier item later in the file"
+      GUID {C0000000-0000-4000-8000-000000000003}
+      <SOURCE WAVE
+        FILE "media/ch1_take1.wav"
+      >
+    >
+  >
+  <TRACK {A0000000-0000-4000-8000-000000000011}
+    NAME "Chapter 11"
+    MUTESOLO 0 0 0
+    TRACKID {A0000000-0000-4000-8000-000000000011}
+    <ITEM
+      POSITION 0
+      LENGTH 4
+      IGUID {B0000000-0000-4000-8000-000000000011}
+      NAME "take one"
+      SOFFS 0
+      GUID {C0000000-0000-4000-8000-000000000011}
+      <SOURCE WAVE
+        FILE "media/ch11_take1.wav"
+      >
+      TAKE SEL
+      NAME "take two, the active one"
+      SOFFS 3
+      GUID {C0000000-0000-4000-8000-000000000012}
+      <SOURCE WAVE
+        FILE "media/ch11_take2.wav"
+      >
+    >
+  >
+  <TRACK {A0000000-0000-4000-8000-000000000020}
+    NAME "Narration"
+    MUTESOLO 0 0 0
+    TRACKID {A0000000-0000-4000-8000-000000000020}
+    <ITEM
+      POSITION 30
+      LENGTH 6
+      IGUID {B0000000-0000-4000-8000-000000000020}
+      NAME "a section of the long file"
+      SOFFS 1
+      GUID {C0000000-0000-4000-8000-000000000020}
+      <SOURCE SECTION
+        LENGTH 20
+        STARTPOS 40
+        OVERLAP 0.01
+        <SOURCE WAVE
+          FILE "media/long.wav"
+        >
+      >
+    >
+    <ITEM
+      POSITION 38
+      LENGTH 5
+      MUTE 1 0
+      IGUID {B0000000-0000-4000-8000-000000000021}
+      NAME "a muted item"
+      GUID {C0000000-0000-4000-8000-000000000021}
+      <SOURCE WAVE
+        FILE "media/long.wav"
+      >
+    >
+    <ITEM
+      POSITION 62
+      LENGTH 3
+      IGUID {B0000000-0000-4000-8000-000000000022}
+      NAME "the epilogue"
+      GUID {C0000000-0000-4000-8000-000000000022}
+      SM 0 0 + 1 1.2
+      <SOURCE WAVE
+        FILE "media/long.wav"
+      >
+    >
+  >
+  <TRACK {A0000000-0000-4000-8000-000000000030}
+    NAME "Room Tone"
+    MUTESOLO 0 0 0
+    TRACKID {A0000000-0000-4000-8000-000000000030}
+    <ITEM
+      POSITION 29
+      LENGTH 2
+      MUTE 1 0
+      IGUID {B0000000-0000-4000-8000-000000000030}
+      NAME "muted room tone"
+      GUID {C0000000-0000-4000-8000-000000000030}
+      <SOURCE WAVE
+        FILE "media/room.wav"
+      >
+    >
+  >
+  <TRACK {A0000000-0000-4000-8000-000000000040}
+    NAME "Chapter 1 pickups"
+    MUTESOLO 0 0 0
+    TRACKID {A0000000-0000-4000-8000-000000000040}
+  >
+>

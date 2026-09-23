@@ -1,8 +1,8 @@
 // This file is Phase 5 of the analysis evidence ledger PRD
 // (docs/prds/analysis-evidence-ledger.prd.md#phase-5---confirmed-chapter-track-mapping,
 // Q6, Q7, Q9, D5): the narrator-confirmed trackGuid -> chapterId mapping
-// store, plus the pure suggestion helper Phase 7's mapping-confirm UI (not
-// built here) and a future TM Phase 8 matcher will use. Q6 (option A): one
+// store, plus the pure suggestion helper over TM Phase 8's chapter-to-track
+// matcher (internal/chaptermatch). Q6 (option A): one
 // JSON file per project, narration-utils/chapter-track-map.json, keyed by
 // the manuscript's documentId, holding each mapping's chapter title and
 // confirmedAt beside the id - the stored title is what lets a re-import
@@ -16,7 +16,7 @@
 // then re-suggested). Public API added here: TrackMapping, MappingFile,
 // MappingStore, NewMappingStore, MappingStore's Confirm/Clear/List/Get
 // methods, ChapterCandidate, TrackCandidate, MappingSuggestion, Suggester,
-// SuggesterFunc, TitleSuggester and SuggestFromPrevious. Data schema: the
+// SuggesterFunc, MatchSuggester and SuggestFromPrevious. Data schema: the
 // mappingFileShape JSON below, versioned by its own SchemaVersion field
 // (mappingSchemaVersion). User's instruction (verbatim): "you should have
 // everythign you need to make decisions. anything that you think you need
@@ -34,6 +34,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/chaptermatch"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 )
 
@@ -258,20 +259,20 @@ type TrackCandidate struct {
 // has not yet confirmed. Suggesting one never writes to a MappingStore -
 // only MappingStore.Confirm does that - so "an unconfirmed suggestion is
 // never treated as a link" (D2: unconfirmed reads as unknown, never met).
+// Score is the chapter-to-track matcher's score (chaptermatch.ScoreExact or
+// chaptermatch.ScoreContained).
 type MappingSuggestion struct {
 	TrackGUID    string
 	ChapterID    string
 	ChapterTitle string
+	Score        float64
 }
 
 // Suggester proposes candidate links for a set of tracks against a set of
 // chapters, without persisting anything (Phase 5's scope: "a suggestion
 // adapter that calls TM Phase 8's matcher and returns candidates without
-// persisting them"). TM Phase 8's real matcher will implement this once it
-// lands (Q11); until then, and for Q9's re-suggestion after a re-import,
-// TitleSuggester below is the fallback this package ships with, and the
-// architecture notes call for shipping "the store and bindings with an
-// injected suggester" rather than waiting on TM-8.
+// persisting them"). MatchSuggester below is the implementation this package
+// ships with.
 type Suggester interface {
 	Suggest(tracks []TrackCandidate, chapters []ChapterCandidate) []MappingSuggestion
 }
@@ -284,34 +285,37 @@ func (f SuggesterFunc) Suggest(tracks []TrackCandidate, chapters []ChapterCandid
 	return f(tracks, chapters)
 }
 
-// TitleSuggester is the fallback Suggester this package ships with: an
-// exact, case- and whitespace-insensitive match between a track's name and
-// a chapter's title. It deliberately does not use the fuzzy scoring
-// Transcript Compare's Python matcher does (Evidence: exact, token prefix
-// or containment, then a 0.75 SequenceMatcher ratio) - Phase 5 stores
-// confirmations only and is not the matcher (D5, "Consume TM Phase 8; store
-// confirmations only"); an exact-title fallback never proposes a wrong
-// chapter with false confidence, and TM Phase 8's real matcher, once it
-// lands, is a drop-in Suggester replacement (same interface).
-var TitleSuggester Suggester = SuggesterFunc(suggestByTitle)
+// MatchSuggester is the Suggester backed by the shared chapter-to-track
+// matcher (internal/chaptermatch, the port of Transcript Compare's
+// find_chapter_by_track_name that teleprompter-manuscript-integration PRD
+// Phase 8 built, replacing Phase 5's exact-title placeholder). It proposes a
+// link only for a confident match - an exact token match ("CHAPTER ONE" and
+// "Chapter 1") or the one title a name is a whole-token prefix of ("Chapter
+// 1" and "Chapter 1: The Beginning") - never for the matcher's ambiguous-prefix
+// pick or its fuzzy fallback, so a suggestion is never a guess dressed as a
+// match (ADR 0110). The narrator still confirms each one.
+var MatchSuggester Suggester = SuggesterFunc(suggestByMatch)
 
-func suggestByTitle(tracks []TrackCandidate, chapters []ChapterCandidate) []MappingSuggestion {
+func suggestByMatch(tracks []TrackCandidate, chapters []ChapterCandidate) []MappingSuggestion {
+	titles := make([]string, len(chapters))
+	for i, chapter := range chapters {
+		titles[i] = chapter.Title
+	}
 	var suggestions []MappingSuggestion
 	for _, track := range tracks {
-		name := strings.TrimSpace(track.Name)
-		if name == "" {
+		if strings.TrimSpace(track.Name) == "" {
 			continue
 		}
-		for _, chapter := range chapters {
-			if strings.EqualFold(name, strings.TrimSpace(chapter.Title)) {
-				suggestions = append(suggestions, MappingSuggestion{
-					TrackGUID:    track.TrackGUID,
-					ChapterID:    chapter.ID,
-					ChapterTitle: chapter.Title,
-				})
-				break
-			}
+		index, score := chaptermatch.FindChapterByTrackName(titles, track.Name)
+		if index < 0 || score < chaptermatch.ScoreContained {
+			continue
 		}
+		suggestions = append(suggestions, MappingSuggestion{
+			TrackGUID:    track.TrackGUID,
+			ChapterID:    chapters[index].ID,
+			ChapterTitle: chapters[index].Title,
+			Score:        score,
+		})
 	}
 	return suggestions
 }
@@ -331,5 +335,5 @@ func SuggestFromPrevious(previous []TrackMapping, chapters []ChapterCandidate) [
 	for _, mapping := range previous {
 		tracks = append(tracks, TrackCandidate{TrackGUID: mapping.TrackGUID, Name: mapping.ChapterTitle})
 	}
-	return TitleSuggester.Suggest(tracks, chapters)
+	return MatchSuggester.Suggest(tracks, chapters)
 }

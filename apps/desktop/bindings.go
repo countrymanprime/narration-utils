@@ -727,6 +727,14 @@ func (h *Host) TracksSelect(path string) (string, error) {
 }
 func (h *Host) TracksList() (string, error) { return encodeBinding(h.tracksList()) }
 
+// ChapterTrackMatch finds the track holding chapterID and where its recorded
+// audio ends (teleprompter-manuscript-integration PRD Phase 8, ADR 0110): a
+// confirmed link first, then the shared chapter-to-track matcher over track
+// and region names. It only reads; it never creates a track or a link.
+func (h *Host) ChapterTrackMatch(chapterID string) (string, error) {
+	return encodeBinding(h.chapterTrackMatchFor(chapterID))
+}
+
 // TakeReviewScan runs one pickup/duplicate scan of chapterTrackName (take-review
 // phase 5's scan-and-review surface) and saves the fresh findings into the
 // project's findings store, returning the merged result.

@@ -1,0 +1,311 @@
+{
+  "_about": "Parity cases for find_chapter_by_track_name (sidecars/transcript-compare/core/compare.py) and its Go port (apps/desktop/internal/chaptermatch). Expected values are what the Python matcher returns; both test suites read this file. index is the matched chapter position or null; score is the matcher score.",
+  "normalizedTokens": [
+    {
+      "input": "CHAPTER ONE",
+      "tokens": [
+        "chapter",
+        "1"
+      ]
+    },
+    {
+      "input": "Chapter 1",
+      "tokens": [
+        "chapter",
+        "1"
+      ]
+    },
+    {
+      "input": "Chapter Eleven",
+      "tokens": [
+        "chapter",
+        "11"
+      ]
+    },
+    {
+      "input": "Chapter Twenty-Three: The End",
+      "tokens": [
+        "chapter",
+        "23",
+        "the",
+        "end"
+      ]
+    },
+    {
+      "input": "One Hundred and Five Days",
+      "tokens": [
+        "105",
+        "days"
+      ]
+    },
+    {
+      "input": "Two Thousand and Twenty",
+      "tokens": [
+        "2020"
+      ]
+    },
+    {
+      "input": "One Million",
+      "tokens": [
+        "1000000"
+      ]
+    },
+    {
+      "input": "zero hundred",
+      "tokens": [
+        "100"
+      ]
+    },
+    {
+      "input": "Part Three, Chapter Two",
+      "tokens": [
+        "part",
+        "3",
+        "chapter",
+        "2"
+      ]
+    },
+    {
+      "input": "and one",
+      "tokens": [
+        "and",
+        "1"
+      ]
+    },
+    {
+      "input": "Sentinel’s Watch",
+      "tokens": [
+        "sentinels",
+        "watch"
+      ]
+    },
+    {
+      "input": "The Knight Watch",
+      "tokens": [
+        "the",
+        "night",
+        "watch"
+      ]
+    },
+    {
+      "input": "CHAPTER ONE\nBad Ideas Look Great in Neon",
+      "tokens": [
+        "chapter",
+        "1",
+        "bad",
+        "ideas",
+        "look",
+        "great",
+        "in",
+        "neon"
+      ]
+    },
+    {
+      "input": "Prologue",
+      "tokens": [
+        "prologue"
+      ]
+    },
+    {
+      "input": "",
+      "tokens": []
+    },
+    {
+      "input": "Chapter 1 - Take 2 (pickups)",
+      "tokens": [
+        "chapter",
+        "1",
+        "take",
+        "2",
+        "pickups"
+      ]
+    }
+  ],
+  "matches": [
+    {
+      "name": "exact beats a longer number",
+      "chapters": [
+        "Chapter 1",
+        "Chapter 11"
+      ],
+      "track": "Chapter 1",
+      "index": 0,
+      "score": 1.0
+    },
+    {
+      "name": "exact on the longer number",
+      "chapters": [
+        "Chapter 1",
+        "Chapter 11"
+      ],
+      "track": "Chapter 11",
+      "index": 1,
+      "score": 1.0
+    },
+    {
+      "name": "spelled-out heading, digit track",
+      "chapters": [
+        "CHAPTER ONE",
+        "CHAPTER TWO"
+      ],
+      "track": "Chapter 1",
+      "index": 0,
+      "score": 1.0
+    },
+    {
+      "name": "digit heading, spelled-out track",
+      "chapters": [
+        "Chapter 1",
+        "Chapter 2"
+      ],
+      "track": "CHAPTER TWO",
+      "index": 1,
+      "score": 1.0
+    },
+    {
+      "name": "heading with a subtitle",
+      "chapters": [
+        "Chapter 1: The Beginning",
+        "Chapter 11: The End"
+      ],
+      "track": "Chapter 1",
+      "index": 0,
+      "score": 0.95
+    },
+    {
+      "name": "subtitle on a line of its own",
+      "chapters": [
+        "Prologue",
+        "CHAPTER ONE\nBad Ideas Look Great in Neon"
+      ],
+      "track": "Chapter 1",
+      "index": 1,
+      "score": 0.95
+    },
+    {
+      "name": "contained token run",
+      "chapters": [
+        "Prologue",
+        "The Long Road Home"
+      ],
+      "track": "Long Road",
+      "index": 1,
+      "score": 0.95
+    },
+    {
+      "name": "several prefix matches pick the shortest title",
+      "chapters": [
+        "Chapter 1: Part Two Extended",
+        "Chapter 1: Part"
+      ],
+      "track": "Chapter 1",
+      "index": 1,
+      "score": 0.9
+    },
+    {
+      "name": "prefix never matches inside a longer number",
+      "chapters": [
+        "Chapter 11",
+        "Chapter 12"
+      ],
+      "track": "Chapter 1",
+      "index": 0,
+      "score": 0.9473684210526315
+    },
+    {
+      "name": "fuzzy on a typo",
+      "chapters": [
+        "The Beginning",
+        "The Middle"
+      ],
+      "track": "The Begining",
+      "index": 0,
+      "score": 0.96
+    },
+    {
+      "name": "homophones are canonical",
+      "chapters": [
+        "The Knight Watch",
+        "The Day Watch"
+      ],
+      "track": "The Night Watch",
+      "index": 0,
+      "score": 1.0
+    },
+    {
+      "name": "no match is none",
+      "chapters": [
+        "Chapter 1",
+        "Chapter 2"
+      ],
+      "track": "Room Tone",
+      "index": null,
+      "score": 0.0
+    },
+    {
+      "name": "weak fuzzy is none",
+      "chapters": [
+        "Prologue"
+      ],
+      "track": "Narration Take 3",
+      "index": null,
+      "score": 0.0
+    },
+    {
+      "name": "empty track name",
+      "chapters": [
+        "Chapter 1"
+      ],
+      "track": "",
+      "index": 0,
+      "score": 0.95
+    },
+    {
+      "name": "first exact wins between equal titles",
+      "chapters": [
+        "Chapter 3",
+        "CHAPTER THREE"
+      ],
+      "track": "chapter three",
+      "index": 0,
+      "score": 1.0
+    },
+    {
+      "name": "no chapters",
+      "chapters": [],
+      "track": "Chapter 1",
+      "index": null,
+      "score": 0.0
+    },
+    {
+      "name": "fuzzy with a transposed word",
+      "chapters": [
+        "Chapter Seven: Night Falls",
+        "Characters"
+      ],
+      "track": "Chaptre 7 Nightfalls",
+      "index": 0,
+      "score": 0.926829268292683
+    },
+    {
+      "name": "fuzzy with a homophone and dropped words",
+      "chapters": [
+        "A Caucus-Race and a Long Tale",
+        "The Pool of Tears"
+      ],
+      "track": "Caucus Race Long Tail",
+      "index": 0,
+      "score": 0.84
+    },
+    {
+      "name": "fuzzy prefers the first of equal scores",
+      "chapters": [
+        "Chapter 8",
+        "Chapter 9"
+      ],
+      "track": "Chapter 0",
+      "index": 0,
+      "score": 0.8888888888888888
+    }
+  ]
+}

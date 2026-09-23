@@ -37,7 +37,54 @@ func Parse(path string) (Project, error) {
 	for index, trackNode := range reaperProject.childrenTagged("TRACK") {
 		trackList = append(trackList, parseTrack(trackNode, index, projectFolder))
 	}
-	return Project{Path: path, Tracks: trackList}, nil
+	return Project{Path: path, Tracks: trackList, Regions: parseRegions(reaperProject)}, nil
+}
+
+// regionFlag is the MARKER line's flags bit that marks a region rather than
+// a plain marker.
+const regionFlag = 1
+
+// parseRegions pairs the project chunk's region MARKER lines: the first line
+// of a region number opens it (name, start, GUID), the next line with the
+// same number closes it (its position is the end). Plain markers (flags bit
+// 1 clear) are skipped. A region with no end line is dropped.
+func parseRegions(project *node) []Region {
+	var regions []Region
+	open := map[int]int{} // region number -> index into regions, until its end line
+	for _, entry := range project.sequence {
+		if entry.key != "MARKER" || len(entry.values) < 4 {
+			continue
+		}
+		number, err := strconv.Atoi(entry.values[0])
+		flags, flagErr := strconv.Atoi(entry.values[3])
+		if err != nil || flagErr != nil || flags&regionFlag == 0 {
+			continue
+		}
+		position := parseFloat(entry.values[1])
+		if at, ok := open[number]; ok {
+			regions[at].End = position
+			delete(open, number)
+			continue
+		}
+		open[number] = len(regions)
+		regions = append(regions, Region{Index: number, Name: entry.values[2], Start: position, End: -1, GUID: markerGUID(entry.values[4:])})
+	}
+	var closed []Region
+	for _, region := range regions {
+		if region.End >= region.Start {
+			closed = append(closed, region)
+		}
+	}
+	return closed
+}
+
+func markerGUID(values []string) string {
+	for _, value := range values {
+		if strings.HasPrefix(value, "{") {
+			return value
+		}
+	}
+	return ""
 }
 
 func parseTrack(n *node, index int, projectFolder string) Track {

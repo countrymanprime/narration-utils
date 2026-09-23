@@ -88,7 +88,13 @@ func (h *Host) tracksSelect(path string) (map[string]any, error) {
 // rather than an empty track list, so the frontend can tell "no project
 // file exists yet" apart from "choose which one to use."
 func (h *Host) tracksList() (tracks.Project, error) {
-	svc := h.services()
+	return selectedProject(h.services())
+}
+
+// selectedProject parses the .rpp svc's project has selected, with
+// tracksList's errors when none is selected; shared by every binding that
+// reads the project's tracks.
+func selectedProject(svc hostServices) (tracks.Project, error) {
 	selected, err := selectedProjectFile(svc.config.projectFolder, svc.settings)
 	if err != nil {
 		return tracks.Project{}, err

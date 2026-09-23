@@ -23,7 +23,7 @@ import { settingsForScopeSchema } from './schemas/settings';
 import { takeReviewCreateTakeResultSchema, takeReviewFindingsSchema } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
-import { chapterTrackMappingSchema, trackMappingSchema } from './schemas/chapterTrackMap';
+import { chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
@@ -140,6 +140,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-track-map-empty.json': chapterTrackMappingSchema,
   'chapter-track-map-confirmed.json': trackMappingSchema,
   'chapter-track-map-list.json': chapterTrackMappingSchema,
+  'chapter-track-match-matched.json': chapterTrackMatchSchema,
+  'chapter-track-match-ambiguous.json': chapterTrackMatchSchema,
+  'chapter-track-match-none.json': chapterTrackMatchSchema,
   'line-identity-idle.json': lineIdentityStateSchema,
   'line-identity-read-success.json': lineIdentityStateSchema,
   'pickups-idle.json': pickupsStateSchema,
@@ -568,6 +571,28 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.chapterTrackMapConfirm('{0E4D1D7F-D039-674D-87E6-719376DE95EC}', 'not-a-real-chapter')).rejects.toThrow();
   });
 
+  it('the ChapterTrackMatch answers', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const matched = await api.chapterTrackMatch(chapters[0].id);
+    expectMatches(chapterTrackMatchSchema, matched, 'mock chapter-track match, matched by name');
+    expect(matched.status).toBe('matched');
+    expect(matched.recordedEnd).not.toBeNull();
+
+    const last = chapters[chapters.length - 1].id;
+    const unmatched = await api.chapterTrackMatch(last);
+    expectMatches(chapterTrackMatchSchema, unmatched, 'mock chapter-track match, no track');
+    expect(unmatched.status).toBe('none');
+    expect(unmatched.track).toBeNull();
+
+    await api.chapterTrackMapConfirm('{DA2D209F-D10F-5E46-93E7-098D96499ED0}', last);
+    const confirmed = await api.chapterTrackMatch(last);
+    expectMatches(chapterTrackMatchSchema, confirmed, 'mock chapter-track match, confirmed');
+    expect(confirmed.status).toBe('confirmed');
+
+    await expect(api.chapterTrackMatch('not-a-real-chapter')).rejects.toThrow();
+  });
+
   it('the line-identity state through a stamp and a read run, and its seeded states', async () => {
     vi.useFakeTimers();
     const api = createMockApi();
@@ -799,6 +824,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterTrackMapList',
       'chapterTrackMapConfirm',
       'chapterTrackMapClear',
+      'chapterTrackMatch',
       'lineIdentityStamp',
       'lineIdentityRead',
       'lineIdentityState',

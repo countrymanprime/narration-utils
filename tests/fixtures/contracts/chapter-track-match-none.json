@@ -1,0 +1,28 @@
+{
+  "candidates": [],
+  "chapterId": "c-0003",
+  "chapterTitle": "Chapter III: A Caucus-Race and a Long Tale",
+  "projectFile": "C:/Projects/Alice/Alice.rpp",
+  "recordedEnd": null,
+  "savedAt": "2026-09-21T10:00:00Z",
+  "status": "none",
+  "track": null,
+  "tracks": [
+    {
+      "guid": "{11111111-1111-4111-8111-111111111111}",
+      "index": 0,
+      "name": "Chapter I"
+    },
+    {
+      "guid": "{22222222-2222-4222-8222-222222222222}",
+      "index": 1,
+      "name": "Chapter II"
+    },
+    {
+      "guid": "{33333333-3333-4333-8333-333333333333}",
+      "index": 2,
+      "name": "Chapter II"
+    }
+  ],
+  "warnings": []
+}

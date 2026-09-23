@@ -72,6 +72,7 @@ import {
   wireSettings,
 } from './mockFixtures';
 import { loadAliceManuscript } from './aliceManuscript';
+import { mockChapterTrackMatch } from './chapterTrackMatchMock';
 import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './mockImportPreview';
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
 import { createCoverageMock, type CoverageSeed } from './coverageMock';
@@ -1653,6 +1654,10 @@ export function createMockApi(
     chapterTrackMapClear: async (trackGuid) => {
       chapterTrackMappings = chapterTrackMappings.filter((existing) => existing.trackGuid !== trackGuid);
       return { documentId: mockDocumentId, mappings: wireClone(chapterTrackMappings) };
+    },
+    chapterTrackMatch: async (chapterId) => {
+      await manuscriptReady;
+      return wireClone(mockChapterTrackMatch(chapterId, chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings));
     },
     takeReviewScan: async (chapterTrackName) => {
       const fresh: TakeReviewFinding[] = chapterTrackName === 'Chapter 1' ? wireClone(WIRE_TAKE_REVIEW_FINDINGS) : [];

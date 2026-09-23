@@ -4,6 +4,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/countrymanprime/narration-utils/shell/internal/chaptermatch"
 )
 
 // --- Confirm / List / Get round trip ---
@@ -248,10 +250,10 @@ func TestSuggestFromPreviousMatchesByTheStoredChapterTitle(t *testing.T) {
 
 	// Re-import assigns new chapter ids (Evidence: "c-%04d" regenerates with
 	// a new documentId); "Chapter One" survives the re-import, "Chapter Two"
-	// was retitled to something new.
+	// was retitled to something unrelated.
 	newChapters := []ChapterCandidate{
 		{ID: "c-0007", Title: "Chapter One"},
-		{ID: "c-0008", Title: "Chapter Two, Revised"},
+		{ID: "c-0008", Title: "The Long Way Round"},
 		{ID: "c-0009", Title: "Chapter Three"},
 	}
 
@@ -308,10 +310,37 @@ func TestSuggestFromPreviousIsCaseAndWhitespaceInsensitive(t *testing.T) {
 	}
 }
 
-func TestTitleSuggesterNeverProposesAnUnrelatedChapter(t *testing.T) {
+func TestSuggestFromPreviousFollowsATitleThatGainedASubtitle(t *testing.T) {
+	previous := []TrackMapping{{TrackGUID: "track-guid-b", ChapterID: "c-0002", ChapterTitle: "Chapter Two"}}
+	chapters := []ChapterCandidate{{ID: "c-0008", Title: "Chapter Two, Revised"}, {ID: "c-0009", Title: "Chapter Three"}}
+	suggestions := SuggestFromPrevious(previous, chapters)
+	if len(suggestions) != 1 || suggestions[0].ChapterID != "c-0008" || suggestions[0].Score != chaptermatch.ScoreContained {
+		t.Fatalf("suggestions = %#v, want the retitled chapter through a whole-token prefix", suggestions)
+	}
+}
+
+func TestMatchSuggesterMatchesSpelledOutAndDigitChapterNumbers(t *testing.T) {
+	tracks := []TrackCandidate{{TrackGUID: "track-guid-a", Name: "Chapter 1"}, {TrackGUID: "track-guid-k", Name: "Chapter 11"}}
+	chapters := []ChapterCandidate{{ID: "c-0001", Title: "CHAPTER ONE"}, {ID: "c-0011", Title: "CHAPTER ELEVEN"}}
+	suggestions := MatchSuggester.Suggest(tracks, chapters)
+	if len(suggestions) != 2 || suggestions[0].ChapterID != "c-0001" || suggestions[1].ChapterID != "c-0011" {
+		t.Fatalf("suggestions = %#v, want Chapter 1 -> CHAPTER ONE and Chapter 11 -> CHAPTER ELEVEN", suggestions)
+	}
+}
+
+func TestMatchSuggesterNeverProposesAFuzzyGuess(t *testing.T) {
+	// "Chapter 1" against only "Chapter 11" is only a 0.947 fuzzy ratio in the
+	// matcher, which a suggestion never trusts.
+	suggestions := MatchSuggester.Suggest([]TrackCandidate{{TrackGUID: "track-guid-a", Name: "Chapter 1"}}, []ChapterCandidate{{ID: "c-0011", Title: "Chapter 11"}})
+	if len(suggestions) != 0 {
+		t.Fatalf("suggestions = %#v, want none", suggestions)
+	}
+}
+
+func TestMatchSuggesterNeverProposesAnUnrelatedChapter(t *testing.T) {
 	tracks := []TrackCandidate{{TrackGUID: "track-guid-a", Name: "Narration - Take 3"}}
 	chapters := []ChapterCandidate{{ID: "c-0001", Title: "Chapter One"}}
-	suggestions := TitleSuggester.Suggest(tracks, chapters)
+	suggestions := MatchSuggester.Suggest(tracks, chapters)
 	if len(suggestions) != 0 {
 		t.Fatalf("suggestions = %#v, want none for an unrelated track name", suggestions)
 	}
