@@ -1,0 +1,327 @@
+{
+  "about": "Constructed heading cases for the import title/subtitle heuristic (story-bible-and-import-ux-briefs PRD, Phase 4). 'intended' is what the author meant; 'observed' is what the importer produced when this file was written and is pinned by TestHeadingMisreadFixtures (apps/desktop/internal/importer/heading_misreads_test.go). 'subtitleWentTo' says where the authored subtitle text ended up. 'lineToggleFixes' says whether a per-heading 'second line is subtitle' toggle over the importer's existing lines (PRD I2) is enough to reach 'intended'. See docs/research/import-heading-misreads.md.",
+  "cases": [
+    {
+      "id": "docx-soft-break-subtitle",
+      "file": "docx-soft-break-subtitle.docx",
+      "mode": "control",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Chapter One"],
+        "title": "Chapter One",
+        "subtitle": "The Storm",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "subtitle",
+      "lineToggleFixes": true
+    },
+    {
+      "id": "docx-epigraph-after-heading",
+      "file": "docx-epigraph-after-heading.docx",
+      "mode": "control",
+      "intended": { "title": "Chapter One", "subtitle": "" },
+      "observed": {
+        "chapterTitles": ["Chapter One"],
+        "title": "Chapter One",
+        "subtitle": "",
+        "firstParagraph": "“Water finds its level.”"
+      },
+      "subtitleWentTo": "none authored",
+      "lineToggleFixes": true
+    },
+    {
+      "id": "md-br-subtitle",
+      "file": "md-br-subtitle.md",
+      "mode": "control",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Chapter One"],
+        "title": "Chapter One",
+        "subtitle": "The Storm",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "subtitle",
+      "lineToggleFixes": true
+    },
+    {
+      "id": "txt-two-line-subtitle",
+      "file": "txt-two-line-subtitle.txt",
+      "mode": "control",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Chapter One"],
+        "title": "Chapter One",
+        "subtitle": "The Storm",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "subtitle",
+      "lineToggleFixes": true
+    },
+    {
+      "id": "epub-br-subtitle",
+      "file": "epub-br-subtitle.epub",
+      "mode": "control",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Chapter One"],
+        "title": "Chapter One",
+        "subtitle": "The Storm",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "subtitle",
+      "lineToggleFixes": true
+    },
+    {
+      "id": "docx-two-line-title",
+      "file": "docx-two-line-title.docx",
+      "mode": "F1",
+      "intended": { "title": "The Girl Who Fell Through the Ice", "subtitle": "" },
+      "observed": {
+        "chapterTitles": ["The Girl Who"],
+        "title": "The Girl Who",
+        "subtitle": "Fell Through the Ice",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "none authored; half the title became the subtitle",
+      "lineToggleFixes": true
+    },
+    {
+      "id": "md-two-line-title-br",
+      "file": "md-two-line-title-br.md",
+      "mode": "F1",
+      "intended": { "title": "The Girl Who Fell Through the Ice", "subtitle": "" },
+      "observed": {
+        "chapterTitles": ["The Girl Who"],
+        "title": "The Girl Who",
+        "subtitle": "Fell Through the Ice",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "none authored; half the title became the subtitle",
+      "lineToggleFixes": true
+    },
+    {
+      "id": "epub-two-line-title-br",
+      "file": "epub-two-line-title-br.epub",
+      "mode": "F1",
+      "intended": { "title": "The Girl Who Fell Through the Ice", "subtitle": "" },
+      "observed": {
+        "chapterTitles": ["The Girl Who"],
+        "title": "The Girl Who",
+        "subtitle": "Fell Through the Ice",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "none authored; half the title became the subtitle",
+      "lineToggleFixes": true
+    },
+    {
+      "id": "docx-three-line-heading",
+      "file": "docx-three-line-heading.docx",
+      "mode": "F2",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Part One"],
+        "title": "Part One",
+        "subtitle": "Chapter One The Storm",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "subtitle, joined with the chapter number line",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "txt-epigraph-under-heading",
+      "file": "txt-epigraph-under-heading.txt",
+      "mode": "F3",
+      "intended": { "title": "Chapter One", "subtitle": "" },
+      "observed": {
+        "chapterTitles": ["Chapter One"],
+        "title": "Chapter One",
+        "subtitle": "“Water finds its level.”",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "none authored; the epigraph became the subtitle and is no longer narrated as body text",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "docx-subtitle-style-paragraph",
+      "file": "docx-subtitle-style-paragraph.docx",
+      "mode": "F4",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Chapter One"],
+        "title": "Chapter One",
+        "subtitle": "",
+        "firstParagraph": "The Storm"
+      },
+      "subtitleWentTo": "first body paragraph",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "md-subtitle-emphasis-line",
+      "file": "md-subtitle-emphasis-line.md",
+      "mode": "F4",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Chapter One"],
+        "title": "Chapter One",
+        "subtitle": "",
+        "firstParagraph": "The Storm"
+      },
+      "subtitleWentTo": "first body paragraph",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "txt-subtitle-own-block",
+      "file": "txt-subtitle-own-block.txt",
+      "mode": "F4",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Chapter One"],
+        "title": "Chapter One",
+        "subtitle": "",
+        "firstParagraph": "The Storm"
+      },
+      "subtitleWentTo": "first body paragraph",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "epub-subtitle-class-paragraph",
+      "file": "epub-subtitle-class-paragraph.epub",
+      "mode": "F4",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Chapter One"],
+        "title": "Chapter One",
+        "subtitle": "",
+        "firstParagraph": "The Storm"
+      },
+      "subtitleWentTo": "first body paragraph",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "docx-subtitle-as-heading-2",
+      "file": "docx-subtitle-as-heading-2.docx",
+      "mode": "F5",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Chapter One", "The Storm"],
+        "title": "Chapter One",
+        "subtitle": "",
+        "firstParagraph": ""
+      },
+      "subtitleWentTo": "a second, separate chapter; 'Chapter One' is left empty",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "md-subtitle-as-h2",
+      "file": "md-subtitle-as-h2.md",
+      "mode": "F5",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Chapter One"],
+        "title": "Chapter One",
+        "subtitle": "",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "section name of every following paragraph",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "epub-subtitle-as-h2",
+      "file": "epub-subtitle-as-h2.epub",
+      "mode": "F5",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Chapter One"],
+        "title": "Chapter One",
+        "subtitle": "",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "dropped: not in the title, subtitle, section or body",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "docx-glued-all-caps",
+      "file": "docx-glued-all-caps.docx",
+      "mode": "F6",
+      "intended": { "title": "CHAPTER ONE", "subtitle": "THE STORM" },
+      "observed": {
+        "chapterTitles": ["CHAPTER ONETHE STORM"],
+        "title": "CHAPTER ONETHE STORM",
+        "subtitle": "",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "glued onto the title",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "docx-glued-one-letter-word",
+      "file": "docx-glued-one-letter-word.docx",
+      "mode": "F6",
+      "intended": { "title": "Chapter Two", "subtitle": "A Night on the Levee" },
+      "observed": {
+        "chapterTitles": ["Chapter TwoA Night on the Levee"],
+        "title": "Chapter TwoA Night on the Levee",
+        "subtitle": "",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "glued onto the title",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "docx-glued-two-word-number",
+      "file": "docx-glued-two-word-number.docx",
+      "mode": "F6",
+      "intended": { "title": "Chapter Twenty One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Chapter Twenty OneThe Storm"],
+        "title": "Chapter Twenty OneThe Storm",
+        "subtitle": "",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "glued onto the title",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "docx-separator-one-line",
+      "file": "docx-separator-one-line.docx",
+      "mode": "F7",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["Chapter One: The Storm"],
+        "title": "Chapter One: The Storm",
+        "subtitle": "",
+        "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
+      },
+      "subtitleWentTo": "kept in the title (by design today: alice.docx and alice.md rely on it)",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "txt-title-above-number",
+      "file": "txt-title-above-number.txt",
+      "mode": "F8",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["txt-title-above-number"],
+        "title": "txt-title-above-number",
+        "subtitle": "",
+        "firstParagraph": "The Storm\nChapter One"
+      },
+      "subtitleWentTo": "first body paragraph, with the chapter number; no heading was found at all",
+      "lineToggleFixes": false
+    },
+    {
+      "id": "txt-three-line-heading",
+      "file": "txt-three-line-heading.txt",
+      "mode": "F8",
+      "intended": { "title": "Chapter One", "subtitle": "The Storm" },
+      "observed": {
+        "chapterTitles": ["txt-three-line-heading"],
+        "title": "txt-three-line-heading",
+        "subtitle": "",
+        "firstParagraph": "Part One\nChapter One\nThe Storm"
+      },
+      "subtitleWentTo": "first body paragraph, with the part and chapter lines; no heading was found at all",
+      "lineToggleFixes": false
+    }
+  ]
+}

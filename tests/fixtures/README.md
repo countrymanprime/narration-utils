@@ -24,6 +24,20 @@ cd tests/fixtures
 python -c "import importlib.util; from pathlib import Path; spec = importlib.util.spec_from_file_location('gen', 'generate_alice.py'); mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); mod.write_epub(mod.parse_chapters(Path('alice_raw.txt')), Path('alice.epub'))"
 ```
 
+## heading-misreads/
+
+Small constructed manuscripts (DOCX, EPUB, Markdown and plain text, one chapter heading each) that exercise the
+importer's title/subtitle heuristic: 5 read correctly and 18 do not (story-bible-and-import-ux-briefs PRD, Phase 4).
+`cases.json` records each case's intended and observed title and subtitle, and `TestHeadingMisreadFixtures`
+(`apps/desktop/internal/importer/heading_misreads_test.go`) holds the importer to the observed values.
+[`docs/research/import-heading-misreads.md`](../../docs/research/import-heading-misreads.md) explains each failure
+mode, and the subtitle override (Phase 5) uses these cases as its fixtures. Regenerate with the standard library only:
+
+```powershell
+cd tests/fixtures/heading-misreads
+python generate.py
+```
+
 ## alice.txt
 
 A Gutenberg-shaped, hard-wrapped plain-text export of the same three chapters (`write_txt` in
