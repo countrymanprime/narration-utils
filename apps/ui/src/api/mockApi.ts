@@ -423,6 +423,8 @@ export function createMockApi(
     dictionary?: 'missing' | 'damaged';
     /** Seeds the findings store the review bindings answer from; defaults to `WIRE_FINDINGS` (an empty list is an empty queue). */
     findings?: Finding[];
+    /** The findings' analyzer runs again right after the page first lists them, so a decision on what it showed is refused as stale. */
+    findingsRerun?: boolean;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -930,7 +932,7 @@ export function createMockApi(
     endJob,
     seed: initial.coverage,
   });
-  const findings = createFindingsMock(initial.findings ?? WIRE_FINDINGS);
+  const findings = createFindingsMock(initial.findings ?? WIRE_FINDINGS, { rerunAfterFirstList: initial.findingsRerun });
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));
   };

@@ -3,10 +3,31 @@
 // total before paging, counts over the latest run, and a decision refused when the evidence changed (ADR 0120).
 // It exists so the Review page can be built and screenshotted without a host; the host's rules are the ones that
 // count, and apps/desktop/internal/findings/query_test.go pins them.
-import type { Finding, FindingsApi, FindingsQuery, FindingsSummary, FindingSeverity } from '../types';
+import type { Finding, FindingReviewStatus, FindingsApi, FindingsQuery, FindingsSummary, FindingSeverity, FindingSortKey } from '../types';
+import { FINDING_CATEGORIES, MAX_REVIEW_NOTE_LENGTH } from './contracts/findings';
 import { wireClone } from './mockFixtures';
 
 const SEVERITY_ORDER: FindingSeverity[] = ['error', 'warning', 'info'];
+
+const STATUSES: readonly FindingReviewStatus[] = ['unreviewed', 'accepted', 'dismissed', 'deferred'];
+const SORT_KEYS: readonly FindingSortKey[] = ['chapter', 'time', 'confidence', 'severity'];
+
+/** Query.Validate: the first field the host cannot answer, so a bad filter fails here as loudly as it does there. */
+function validateQuery(query: FindingsQuery): void {
+  const refuse = (message: string) => {
+    throw new Error(message);
+  };
+  if (query.category && !FINDING_CATEGORIES.some((category) => category === query.category))
+    refuse(`category "${query.category}" is not a documented category`);
+  if (query.severity && !SEVERITY_ORDER.includes(query.severity)) refuse(`severity "${query.severity}" is not info, warning, or error`);
+  if (query.status && !STATUSES.includes(query.status)) refuse(`review status "${query.status}" is not recognised`);
+  if (query.sort && !SORT_KEYS.includes(query.sort)) refuse(`sort "${query.sort}" is not chapter, time, confidence, or severity`);
+  if (query.minConfidence !== undefined && !(query.minConfidence >= 0 && query.minConfidence <= 1)) {
+    refuse(`minimum confidence ${query.minConfidence} is outside 0 to 1`);
+  }
+  if ((query.limit ?? 0) < 0) refuse(`limit ${query.limit} is negative`);
+  if ((query.offset ?? 0) < 0) refuse(`offset ${query.offset} is negative`);
+}
 
 const chapterOf = (finding: Finding): string => finding.manuscript?.chapter_id ?? '';
 
@@ -66,8 +87,18 @@ function summarize(all: Finding[]): FindingsSummary {
   };
 }
 
-export function createFindingsMock(seed: Finding[]): FindingsApi {
+/** The analyzer "runs again" once: every finding gets a new evidence version, as a re-run with changed evidence does. */
+const rerun = (findings: Finding[]): Finding[] =>
+  findings.map((finding) => ({ ...finding, evidence_version: `${finding.evidence_version ?? ''}-rerun`, review: { ...finding.review, status: 'unreviewed' } }));
+
+type FindingsMockOptions = {
+  /** After the first list the page gets, the analyzer runs again, so a decision on what that list showed is refused as stale. */
+  rerunAfterFirstList?: boolean;
+};
+
+export function createFindingsMock(seed: Finding[], options: FindingsMockOptions = {}): FindingsApi {
   let store = wireClone(seed);
+  let pendingRerun = options.rerunAfterFirstList === true;
   const find = (id: string): Finding => {
     const finding = store.find((candidate) => candidate.id === id);
     if (!finding) throw new Error('that finding is no longer in this project; reload the list');
@@ -75,15 +106,23 @@ export function createFindingsMock(seed: Finding[]): FindingsApi {
   };
   return {
     findingsList: async (query) => {
+      validateQuery(query);
       const matched = store
         .filter((finding) => matches(finding, query))
         .sort((a, b) => comparePrimary(a, b, query) || compareText(chapterOf(a), chapterOf(b)) || compareText(a.id, b.id));
       const offset = query.offset ?? 0;
       const end = query.limit ? offset + query.limit : undefined;
-      return { findings: wireClone(matched.slice(offset, end)), total: matched.length };
+      const page = { findings: wireClone(matched.slice(offset, end)), total: matched.length };
+      if (pendingRerun) {
+        pendingRerun = false;
+        store = rerun(store);
+      }
+      return page;
     },
     findingsGet: async (id) => wireClone(find(id)),
     findingsReview: async ({ id, evidenceVersion, status, note }) => {
+      if (!STATUSES.includes(status)) throw new Error(`review status "${status}" is not recognised`);
+      if ([...note].length > MAX_REVIEW_NOTE_LENGTH) throw new Error(`a note can be at most ${MAX_REVIEW_NOTE_LENGTH} characters`);
       const current = find(id);
       if ((current.evidence_version ?? '') !== evidenceVersion) {
         throw new Error('this finding changed since it was shown (its analyzer ran again); look at it again before deciding');

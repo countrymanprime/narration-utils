@@ -413,6 +413,13 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/tracks/TakeReviewPanel.tsx::takeReviewScan#1': row('click', 'job', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'Runs the repeated-span sidecar to completion (take-review phase 5); the Scan button shows pending and is disabled meanwhile, the results table renders when it returns, and a failure is an inline alert.'),
   'src/components/tracks/TakeReviewPanel.tsx::takeReviewCreateTake#1': row('click', 'job', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'The take-review "Add as take" confirm (phase 6): a bounded round trip to REAPER over the bridge. Every dialog control is disabled while pending, the row shows "Take added" on success, and a stale-target or REAPER-side failure is an inline alert inside the dialog.'),
 
+  // Review page (review-dashboard-and-findings-adoption.prd.md, Phase 5)
+  'src/components/review/ReviewPage.tsx::findingsSummary#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'exempt', 'Read together with the list: the first load failing is the page load error with Retry, a later one (after a filter change or a decision) is a toast and the list on screen stays.'),
+  'src/components/review/ReviewPage.tsx::findingsList#1': row('input', 'file-io', 'na', 'na', 'ui', 'toast', 'na', 'ok', 'Runs on opening and on every filter, sort or Show more change; an answer to an older request is dropped, the first load failing is the page load error with Retry and a later one is a toast.'),
+  'src/components/review/FindingDetail.tsx::findingsReview#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'inline', 'yes', 'ok', 'Accept, Dismiss, Defer and Reopen run one at a time through usePendingAction: the pressed button is busy, the others are off, "Saved as ..." is announced and the list and counts reload. A refusal is an inline alert: on changed evidence (ADR 0120) it says so in plain words and shows the latest version, otherwise it gives the host reason.'),
+  'src/components/review/FindingDetail.tsx::findingsGet#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Only after a refused decision, to tell changed evidence from any other refusal; if it fails too, the inline alert gives the host reason for the refusal.'),
+  'src/components/review/FindingDetail.tsx::manuscriptParagraphs#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'na', 'na', 'ok', 'Show in manuscript is busy while the finding paragraph is resolved to its line; if that read fails the manuscript still opens at the chapter, and the manuscript page reports its own load failure.'),
+
   // Credits (audiobook-credits-templates.prd.md, Phase 1)
   'src/components/settings/CreditsPanel.tsx::creditsTemplates#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The template library load; an inline error banner otherwise.'),
   'src/components/settings/CreditsPanel.tsx::creditsProjectValues#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The project values and manuscript-seeded suggestions load; an inline error banner otherwise.'),
@@ -474,6 +481,8 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Hydrates whatever stamp or read was already in flight when the dialog reopened; the live event follows anyway.',
   'src/components/tracks/PickupsDialog.tsx#1':
     'Hydrates whatever run was already in flight, then refreshes the count; a failure here leaves the count at its last known value, and every narrator-triggered action still shows its own failure inline.',
+  'src/components/review/FindingDetail.tsx#1':
+    'Re-reads a finding after the host refused a decision, only to tell changed evidence apart; when the re-read fails too, the inline alert still shows the host reason for the refusal, so nothing is hidden.',
   'src/components/tracks/RenderConfigDialog.tsx#1':
     'Hydrates whatever configure run was already in flight, then offers a suggested output folder when none was configured yet; the narrator can still type a folder and press Configure render either way.',
 };

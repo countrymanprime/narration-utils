@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createFindingsMock } from './findingsMock';
 import { WIRE_FINDINGS } from './mockFixtures';
+import { FINDING_CATEGORIES } from './contracts/findings';
 
 const ids = (findings: { id: string }[]) => findings.map((finding) => finding.id.slice(0, 2));
 
@@ -65,5 +66,48 @@ describe('the browser mock findings store follows the host rules', () => {
       ],
     });
     expect(await createFindingsMock([]).findingsSummary()).toMatchObject({ total: 0, analyzers: [], chapters: [] });
+  });
+
+  // Query.Validate (apps/desktop/internal/findings/query.go): a query the host would refuse is refused here too, so the mock
+  // cannot hide a page that sends one.
+  it.each([
+    [{ category: 'typo' }, 'category'],
+    [{ severity: 'fatal' as never }, 'severity'],
+    [{ status: 'done' as never }, 'review status'],
+    [{ sort: 'name' as never }, 'sort'],
+    [{ minConfidence: 1.5 }, 'minimum confidence'],
+    [{ minConfidence: -0.1 }, 'minimum confidence'],
+    [{ minConfidence: Number.NaN }, 'minimum confidence'],
+    [{ limit: -1 }, 'limit'],
+    [{ offset: -1 }, 'offset'],
+  ])('refuses the query %o the host refuses', async (query, field) => {
+    await expect(createFindingsMock(WIRE_FINDINGS).findingsList(query)).rejects.toThrow(field);
+  });
+
+  it('accepts every documented category and the edges of the confidence range', async () => {
+    const api = createFindingsMock(WIRE_FINDINGS);
+    for (const category of FINDING_CATEGORIES) await expect(api.findingsList({ category })).resolves.toBeDefined();
+    await expect(api.findingsList({ minConfidence: 0 })).resolves.toBeDefined();
+    await expect(api.findingsList({ minConfidence: 1 })).resolves.toBeDefined();
+  });
+
+  it('refuses a decision the host refuses: an unknown status or a note over the limit', async () => {
+    const api = createFindingsMock(WIRE_FINDINGS);
+    const [first] = WIRE_FINDINGS;
+    const request = { id: first.id, evidenceVersion: first.evidence_version ?? '', note: '' };
+    await expect(api.findingsReview({ ...request, status: 'done' as never })).rejects.toThrow('review status');
+    await expect(api.findingsReview({ ...request, status: 'accepted', note: 'x'.repeat(2001) })).rejects.toThrow('at most 2000');
+    await expect(api.findingsReview({ ...request, status: 'accepted', note: 'x'.repeat(2000) })).resolves.toBeDefined();
+  });
+
+  it('with rerunAfterFirstList, the analyzer runs again once the page has listed, so the first decision is refused', async () => {
+    const api = createFindingsMock(WIRE_FINDINGS, { rerunAfterFirstList: true });
+    const [shown] = (await api.findingsList({})).findings;
+    await expect(api.findingsReview({ id: shown.id, evidenceVersion: shown.evidence_version ?? '', status: 'accepted', note: '' })).rejects.toThrow('changed');
+    const fresh = await api.findingsGet(shown.id);
+    expect(fresh.evidence_version).not.toBe(shown.evidence_version);
+    await expect(api.findingsReview({ id: fresh.id, evidenceVersion: fresh.evidence_version ?? '', status: 'accepted', note: '' })).resolves.toMatchObject({
+      review: { status: 'accepted' },
+    });
   });
 });

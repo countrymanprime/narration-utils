@@ -17,6 +17,7 @@ import { Transcript } from './components/proofing/Transcript';
 import { Settings } from './components/settings/Settings';
 import { TeleprompterPage } from './components/teleprompter/TeleprompterPage';
 import { TracksPage } from './components/tracks/TracksPage';
+import { ReviewPage } from './components/review/ReviewPage';
 import { TooltipProvider } from './components/primitives/Tooltip';
 import { ErrorBoundary } from './components/primitives/ErrorBoundary';
 import { DESKTOP_HOST_API_VERSION } from './hostApi';
@@ -315,6 +316,12 @@ function AppRoutes() {
                 element={data.manuscript ? <TeleprompterPage onFixCredits={() => guardedNavigate('/settings#credits')} /> : <Navigate to="/" replace />}
               />
               <Route path="/tracks" element={<TracksPage dawFileLinked={data.dawFileLinked} onLinkDawFile={() => void linkDawFile()} />} />
+              <Route
+                path="/review"
+                element={
+                  <ReviewPage notify={setNotice} hasManuscript={Boolean(data.manuscript)} goToManuscript={goToManuscript} goToStoryBible={goToStoryBible} />
+                }
+              />
               <Route
                 path="/settings"
                 element={

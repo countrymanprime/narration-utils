@@ -83,7 +83,7 @@ async function clickVisible(page: Page, role: Parameters<Page['getByRole']>[0], 
     .click();
 }
 
-type AppPage = 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Settings';
+type AppPage = 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Review' | 'Settings';
 
 // Every page opens with the shared `Heading` primitive, an <h1>: it is what proves the page has arrived. Home's is "Welcome back".
 const PAGE_HEADING: Record<AppPage, string> = {
@@ -93,6 +93,7 @@ const PAGE_HEADING: Record<AppPage, string> = {
   'Story Bible': 'Story Bible',
   Teleprompter: 'Teleprompter',
   Tracks: 'Tracks',
+  Review: 'Review',
   Settings: 'Settings',
 };
 
@@ -158,6 +159,26 @@ async function goToProofingViaHomeCard(page: Page): Promise<void> {
   await homeLoaded(page);
   await clickVisible(page, 'button', 'Open Proofing');
   await page.getByRole('heading', { level: 1, name: 'Proofing', exact: true }).waitFor();
+}
+
+// The Review page has arrived once its list has rows: the heading renders before the findings do.
+async function openReview(page: Page): Promise<void> {
+  await goToPage(page, 'Review');
+  await waitForFindingRows(page, 4);
+}
+
+async function waitForFindingRows(page: Page, count: number): Promise<void> {
+  const rows = page.getByRole('table', { name: 'Findings' }).locator('tbody tr[data-row]');
+  await page.waitForFunction(([expected]) => document.querySelectorAll('table[aria-label="Findings"] tbody tr[data-row]').length === expected, [count]);
+  await rows.first().waitFor();
+}
+
+// Selects a finding by its row text and waits for its detail, a region named by the finding's kind. On the stacked layout (below
+// `lg`) the detail sits under the list, so its title is scrolled into view for the picture.
+async function openFindingRow(page: Page, text: RegExp, kind: string): Promise<void> {
+  await page.getByRole('table', { name: 'Findings' }).locator('tbody tr[data-row]').filter({ hasText: text }).click();
+  await page.getByRole('region', { name: kind }).waitFor();
+  await page.getByRole('heading', { level: 2, name: kind }).scrollIntoViewIfNeeded();
 }
 
 // Home's chapter breakdown control exists only once the chapter list has loaded, so it is the proof that the whole page
@@ -1238,6 +1259,58 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.getByRole('table', { name: 'Pickup and duplicate findings' }).waitFor();
       await clickVisible(page, 'button', 'Audition');
       await page.getByRole('dialog', { name: 'Audition candidate reads' }).waitFor();
+    },
+  },
+  review: {
+    default: async (page) => {
+      await openReview(page);
+    },
+    empty: async (page) => {
+      await page.goto('/?mockFindings=empty');
+      await settlePage(page);
+      await goToPage(page, 'Review');
+      await page.getByRole('heading', { name: 'Nothing to review yet' }).waitFor();
+    },
+    filtered: async (page) => {
+      await openReview(page);
+      await page.getByRole('combobox', { name: 'Check' }).selectOption({ label: 'Proofing comparison' });
+      await page.getByRole('switch', { name: 'Only findings scored 50% or more' }).click();
+      await waitForFindingRows(page, 1);
+    },
+    'filtered-empty': async (page) => {
+      await openReview(page);
+      await page.getByRole('combobox', { name: 'Status' }).selectOption({ label: 'Deferred' });
+      await page.getByText('No findings match these filters.').waitFor();
+    },
+    'detail-open': async (page) => {
+      await openReview(page);
+      await openFindingRow(page, /pink eyes/, 'Transcript difference');
+    },
+    'decision-saved': async (page) => {
+      await openReview(page);
+      await openFindingRow(page, /pink eyes/, 'Transcript difference');
+      await page.getByRole('textbox', { name: 'Note (optional)' }).fill('Re-record this line in the pickup session.');
+      await page.getByRole('button', { name: 'Accept' }).click();
+      const saved = page.getByText('Saved as accepted.');
+      await saved.waitFor();
+      await saved.scrollIntoViewIfNeeded();
+    },
+    'evidence-changed': async (page) => {
+      await page.goto('/?mockFindings=changed');
+      await settlePage(page);
+      await openReview(page);
+      await openFindingRow(page, /pink eyes/, 'Transcript difference');
+      await page.getByRole('textbox', { name: 'Note (optional)' }).fill('Pale is close enough.');
+      await page.getByRole('button', { name: 'Dismiss' }).click();
+      const refused = page.getByRole('alert').filter({ hasText: 'this finding changed since you opened it' });
+      await refused.waitFor();
+      await refused.scrollIntoViewIfNeeded();
+    },
+    'not-in-latest-run': async (page) => {
+      await openReview(page);
+      await page.getByRole('switch', { name: 'Include findings the latest run did not repeat' }).click();
+      await waitForFindingRows(page, 5);
+      await openFindingRow(page, /Antipathies/, 'Pronunciation');
     },
   },
   teleprompter: {

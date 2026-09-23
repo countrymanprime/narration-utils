@@ -355,5 +355,40 @@
     "viewport": "desktop",
     "docName": "manuscript-retail-sample",
     "caption": "Manuscript - the retail sample marked on lines 1 to 3 of Chapter 3"
+  },
+  {
+    "page": "review",
+    "state": "default",
+    "viewport": "desktop",
+    "docName": "review-default",
+    "caption": "Review - every check's findings in one list, with the counts by status"
+  },
+  {
+    "page": "review",
+    "state": "detail-open",
+    "viewport": "desktop",
+    "docName": "review-detail",
+    "caption": "Review - a transcript difference selected: what the script says, what was recorded, the evidence and the decision"
+  },
+  {
+    "page": "review",
+    "state": "filtered",
+    "viewport": "tablet",
+    "docName": "review-filtered",
+    "caption": "Review - filtered to the Proofing comparison and to findings scored 50% or more"
+  },
+  {
+    "page": "review",
+    "state": "evidence-changed",
+    "viewport": "desktop",
+    "docName": "review-evidence-changed",
+    "caption": "Review - a decision not saved because the check ran again since the finding was shown"
+  },
+  {
+    "page": "review",
+    "state": "empty",
+    "viewport": "desktop",
+    "docName": "review-empty",
+    "caption": "Review - nothing to review yet"
   }
 ]

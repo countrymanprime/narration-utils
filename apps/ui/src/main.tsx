@@ -130,7 +130,12 @@ const MOCK_ARMED_TRACKS = {
   ambiguous: [WIRE_TRACKS_PROJECT.tracks[0].guid, WIRE_TRACKS_PROJECT.tracks[1].guid],
 } as const;
 const mockChapterSuggestion = (['matched', 'ambiguous'] as const).find((seed) => seed === mockParams.get('mockChapterSuggestion'));
+// `?mockFindings=empty|changed` boots the Review page with no findings at all, or with an analyzer that runs again right after the page
+// lists its findings, so the empty queue and a decision refused on changed evidence (ADR 0120) can be seen without a host.
+const mockFindings = (['empty', 'changed'] as const).find((seed) => seed === mockParams.get('mockFindings'));
 const mockInitial = {
+  ...(mockFindings === 'empty' ? { findings: [] } : {}),
+  ...(mockFindings === 'changed' ? { findingsRerun: true } : {}),
   ...(mockImportPreview ? { importPreview: mockImportPreview } : {}),
   ...(mockAssets ? { assets: mockAssets } : {}),
   ...(mockDictionary ? { dictionary: mockDictionary } : {}),

@@ -6,6 +6,25 @@
 
 export type FindingSeverity = 'info' | 'warning' | 'error';
 
+/** Every category the contract documents, in its order (findings.Categories(), apps/desktop/internal/findings/findings.go). */
+export const FINDING_CATEGORIES = [
+  'transcript_discrepancy',
+  'pronunciation',
+  'entity',
+  'pickup',
+  'duplicate_read',
+  'take_comparison',
+  'character_continuity',
+  'pacing',
+  'audio_quality',
+  'delivery_qc',
+  'silence_cleanup',
+  'level_consistency',
+] as const;
+
+/** The longest note a decision may carry, in characters (maxReviewNoteRunes, apps/desktop/bindings_findings.go). */
+export const MAX_REVIEW_NOTE_LENGTH = 2000;
+
 export type FindingReviewStatus = 'unreviewed' | 'accepted' | 'dismissed' | 'deferred';
 
 /** Each key's natural order, which `descending` reverses; a finding with no value for the key sorts last either way. */
