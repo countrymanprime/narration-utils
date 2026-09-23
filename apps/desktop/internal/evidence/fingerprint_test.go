@@ -301,7 +301,7 @@ func TestSplitItemYieldsTwoDifferentFingerprintsWithANewGuidForOneHalf(t *testin
 		t.Fatalf("split halves must not share a GUID: both are %q", left.GUID)
 	}
 
-	identity := SourceIdentity{Path: "shared.wav", Size: 1, PartialHash: "shared"}
+	identity := SourceIdentity{Path: "source.wav", Size: 1, PartialHash: "abc123"}
 	_, leftFP := fingerprintOf(t, left, identity)
 	_, rightFP := fingerprintOf(t, right, identity)
 	if leftFP == rightFP {
