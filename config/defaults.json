@@ -28,5 +28,15 @@
   "Teleprompter": {
     "engine": "whisper",
     "model": "tiny"
+  },
+  "DAW": {
+    "auto_start_launcher": "false"
+  },
+  "TakeReview": {
+    "full_coverage_threshold": "0.9",
+    "near_duplicate_quality_threshold": "0.97",
+    "pickup_track_name": "",
+    "pickup_range_start_seconds": "",
+    "pickup_range_end_seconds": ""
   }
 }

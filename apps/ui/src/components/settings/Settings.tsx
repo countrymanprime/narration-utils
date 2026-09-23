@@ -13,6 +13,8 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useTheme } from '../../theme/ThemeContext';
 import type { ThemePreference } from '../../theme/theme';
 import { AboutPanel } from './AboutPanel';
+import { CreditsPanel } from './CreditsPanel';
+import { DawCatalogPanel } from './DawCatalogPanel';
 import { ScopedSetting } from './ScopedSetting';
 import { UpdatesPanel } from './UpdatesPanel';
 import type { Notify } from '../primitives/Toast';
@@ -24,11 +26,13 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'Manuscript', label: 'Manuscript', tool: 'Manuscript', scopes: ['global', 'project'] },
   { key: 'TranscriptCompare', label: 'Proofing', tool: 'TranscriptCompare', scopes: ['global', 'project'] },
   { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'] },
-  { key: 'Daw', label: 'DAW Integration', scopes: ['global', 'project'] },
+  { key: 'Daw', label: 'DAW Integration', tool: 'DAW', scopes: ['global', 'project'] },
   { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global', 'project'] },
   { key: 'Teleprompter', label: 'Teleprompter', tool: 'Teleprompter', scopes: ['global'] },
   { key: 'LocalAssets', label: 'Local assets', scopes: ['global'] },
   { key: 'ProjectData', label: 'Project data', scopes: ['project'] },
+  // Credit values are per-project (Open Question C2); the global narrator default lives in the General category.
+  { key: 'Credits', label: 'Credits', scopes: ['project'] },
   { key: 'About', label: 'About & updates', tool: 'Updates', scopes: ['global'] },
 ];
 const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
@@ -168,6 +172,20 @@ export function Settings({
   const selectedTtsVoice = ttsCatalog?.voices.find((voice) => voice.id === ttsCatalog.voice.id);
   const selectedWhisperModel = whisperCatalog?.models.find((model) => model.id === whisperCatalog.model.id);
   const reaperLauncher = data.runtime.Reaper?.launcherPath;
+  // launchingDaw guards DawLaunch (Phase 8) against a second click firing a second REAPER process while the
+  // first is still starting (ADR 0075's fired-once rule).
+  const [launchingDaw, setLaunchingDaw] = useState(false);
+  const handleLaunchDaw = useCallback(async () => {
+    setLaunchingDaw(true);
+    try {
+      const result = await api.launchDaw();
+      notify(`REAPER started (${result.path}).`);
+    } catch (error) {
+      notify(describeApiError(error), 'error');
+    } finally {
+      setLaunchingDaw(false);
+    }
+  }, [api, notify]);
   // The update panel asks the host what is available on the saved channel, so it starts over when that changes.
   const savedUpdateChannel = settings.Updates?.find((field) => field.key === 'channel')?.effectiveValue ?? '';
 
@@ -236,12 +254,62 @@ export function Settings({
                   </Button>
                 </div>
               ) : category === 'Daw' ? (
-                <div className="space-y-3 text-sm">
+                <form
+                  className="space-y-3 text-sm"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void save();
+                  }}
+                >
+                  {/* The DAW catalog and "Get it" flow (docs/architecture/daw-integration.md): a
+                      machine-wide detection fact, independent of any linked project, so it lives above the
+                      project-scoped DAW connection facts below. */}
+                  <DawCatalogPanel notify={notify} dawFileLinked={data.dawFileLinked} onLinkDawFile={onLinkDawFile} />
+                  {/* Truthful about what the host actually knows (PRD W15): reachability is a real Phase 7 fact now
+                      (a live heartbeat), not the permanent "Connected" claim Phase 3 shipped. */}
                   <div className="flex items-center gap-3 rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
-                    <span className="size-2 shrink-0 rounded-full" style={{ background: 'var(--character)' }} />
+                    <span className="size-2 shrink-0 rounded-full" style={{ background: data.dawReachable ? 'var(--character)' : 'var(--non-text)' }} />
                     <div>
-                      <div className="font-medium">{data.daw}</div>
-                      <div style={{ color: 'var(--text-muted)' }}>Connected — detected automatically from the running project.</div>
+                      <div className="font-medium">{data.dawReachable ? `${data.daw || 'REAPER'} is reachable` : 'REAPER is not reachable'}</div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {data.dawReachable
+                          ? data.dawProjectMatches
+                            ? 'Its open project matches the one linked here.'
+                            : 'Its open project does not match the one linked here.'
+                          : 'No recent signal from a running REAPER session. Start REAPER on the linked project, or use the button below.'}
+                      </div>
+                    </div>
+                  </div>
+                  <Button variant="ghost" type="button" disabled={!data.dawFileLinked || launchingDaw} onClick={() => void handleLaunchDaw()}>
+                    {launchingDaw ? 'Starting REAPER…' : 'Launch REAPER'}
+                  </Button>
+                  {!data.dawFileLinked && <p style={{ color: 'var(--text-muted)' }}>Link a REAPER project (.rpp) file before starting REAPER.</p>}
+                  <div className="space-y-3 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+                    {fields.map((field) => (
+                      <ScopedSetting
+                        key={field.key}
+                        field={field}
+                        scope={scope}
+                        value={values[field.key] ?? ''}
+                        change={(value) => {
+                          setValues((current) => ({ ...current, [field.key]: value }));
+                          setDirty(true);
+                        }}
+                        onClearOverride={() => clearOverride(field.key)}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-5 flex items-center justify-between gap-3 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+                    <span className="text-xs" style={{ color: 'var(--warn-text)' }}>
+                      {dirty && 'Unsaved changes'}
+                    </span>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" type="button" disabled={!dirty} onClick={() => void discard()}>
+                        Discard changes
+                      </Button>
+                      <Button variant="primary" type="submit" disabled={!dirty}>
+                        Save
+                      </Button>
                     </div>
                   </div>
                   {reaperLauncher && (
@@ -269,7 +337,7 @@ export function Settings({
                       </Button>
                     </div>
                   )}
-                </div>
+                </form>
               ) : category === 'Appearance' ? (
                 <div className="space-y-3 text-sm">
                   <div className="font-medium">Theme</div>
@@ -284,6 +352,8 @@ export function Settings({
                 </div>
               ) : category === 'LocalAssets' ? (
                 <LocalAssets notify={notify} />
+              ) : category === 'Credits' ? (
+                <CreditsPanel notify={notify} />
               ) : category === 'ProjectData' ? (
                 <div className="space-y-4 text-sm">
                   <div className="rounded-md p-3" style={{ background: 'var(--surface-2)' }}>

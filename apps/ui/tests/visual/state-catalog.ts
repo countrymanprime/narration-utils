@@ -117,12 +117,36 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'manuscript', state: 'chapter-bookmarked', description: 'Manuscript, a chapter bookmarked (blue bookmark icon)' },
   { page: 'manuscript', state: 'go-to-line-highlight', description: 'Manuscript, arrived via Story Bible "Go to line" with the target line highlighted' },
   { page: 'manuscript', state: 'reader-dark', description: 'Manuscript, reader in the Dark theme (readable active controls, opaque sticky header)' },
+  {
+    page: 'manuscript',
+    state: 'credits-entries',
+    description:
+      'Manuscript, the Opening credits pseudo-entry expanded before Chapter 1 with an unresolved-token chip (audiobook-credits-templates.prd.md Phase 3)',
+  },
 
   {
     page: 'manuscript',
     state: 'invalid-payload',
     description:
       'Manuscript, the inline error with Retry when the data it loads could not be read, beside the notice Home raised for the same data; navigation still works (ADR 0069, 0075)',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-setup',
+    description:
+      'Manuscript, the "Read aloud" full-size dialog (teleprompter-manuscript-integration.prd.md Phase 2) opened from a chapter header - Microphone and Whisper model fields, no chapter picker (the chapter is fixed)',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-listening',
+    description:
+      'Manuscript, the "Read aloud" dialog mid-session and listening - the setup fields collapse to a status bar with Stop, the current word highlighted and read words dimmed (reached via the ?mockTeleprompter=listening mock seam)',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-seek-back',
+    description:
+      'Manuscript, the "Read aloud" dialog after clicking an earlier word ("Go back to here", teleprompter-manuscript-integration.prd.md Phase 4) - the highlight has jumped back to the clicked word without restarting the session',
   },
 
   // Proofing
@@ -273,6 +297,130 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'last-track-selected',
     description: 'Tracks, the last track (muted, MIDI-only) selected - Muted badge shown and Next track disabled',
   },
+  {
+    page: 'tracks',
+    state: 'chapter-link-confirmed',
+    description:
+      'Tracks, the Chapter links list at the foot of the page - the first chapter confirmed to a track shows Linked with the track name, Change and Clear (analysis evidence ledger PRD, Phase 7)',
+  },
+  {
+    page: 'tracks',
+    state: 'chapter-link-missing',
+    description:
+      'Tracks, a chapter confirmed to a track GUID no longer in the project - Track missing, with the missing-track message and Change/Clear (reached via the ?mockChapterLink=missing mock seam)',
+  },
+  {
+    page: 'tracks',
+    state: 'link-chapters-preview',
+    description: 'Tracks, "Link chapters" dialog open with one chapter mapped to a track - preview of the items that will be stamped, nothing written yet',
+  },
+  {
+    page: 'tracks',
+    state: 'link-chapters-success',
+    description: 'Tracks, "Link chapters" dialog after a completed Read - every row status shown at once (ok, drift, stale-source, removed, unrecognized)',
+  },
+  {
+    page: 'tracks',
+    state: 'link-chapters-conflict',
+    description: 'Tracks, "Link chapters" dialog after a Stamp that hit a stale item and a conflict - both GUID lists shown',
+  },
+  {
+    page: 'tracks',
+    state: 'link-chapters-error',
+    description: 'Tracks, "Link chapters" dialog when REAPER reports a problem - inline error message, nothing written',
+  },
+  {
+    page: 'tracks',
+    state: 'pickups-empty',
+    description: 'Tracks, "Pickups" dialog open before any import - "No pickups yet", Next disabled, Export disabled',
+  },
+  {
+    page: 'tracks',
+    state: 'pickups-imported',
+    description: 'Tracks, "Pickups" dialog after a completed CSV import - remaining count and the import summary shown',
+  },
+  {
+    page: 'tracks',
+    state: 'pickups-import-errors',
+    description: 'Tracks, "Pickups" dialog after importing a CSV with an unusable row - the row error listed, the usable row still counted',
+  },
+  {
+    page: 'tracks',
+    state: 'pickups-next',
+    description: 'Tracks, "Pickups" dialog after "Next pickup" - the pickup\'s tag and note shown with "Mark this pickup done"',
+  },
+  {
+    page: 'tracks',
+    state: 'pickups-error',
+    description: 'Tracks, "Pickups" dialog when REAPER reports a problem - inline error message (reached via the ?mockPickups=error mock seam)',
+  },
+  {
+    page: 'tracks',
+    state: 'render-config-prefilled',
+    description: 'Tracks, "Prepare chapter render" dialog open before any configure - the suggested output folder prefilled, Configure render enabled',
+  },
+  {
+    page: 'tracks',
+    state: 'render-config-success',
+    description:
+      'Tracks, "Prepare chapter render" dialog after a completed configure - the resulting chapter file names and the "press Render in REAPER" instruction shown',
+  },
+  {
+    page: 'tracks',
+    state: 'render-config-no-regions',
+    description: 'Tracks, "Prepare chapter render" dialog after a configure with no chapter regions yet - 0 files, "create them before rendering"',
+  },
+  {
+    page: 'tracks',
+    state: 'render-config-error',
+    description:
+      'Tracks, "Prepare chapter render" dialog when REAPER reports a problem - inline error message, nothing rendered (reached via the ?mockRenderConfig=error mock seam)',
+  },
+  {
+    page: 'tracks',
+    state: 'chapter-tags-idle',
+    description: 'Tracks, "Embed chapter tags" dialog open before any chapter render is configured - "Prepare chapter render first" message, Embed disabled',
+  },
+  {
+    page: 'tracks',
+    state: 'chapter-tags-ready',
+    description:
+      'Tracks, "Embed chapter tags" dialog with two rendered chapters known - the chapter list, destination field and confirm checkbox, Embed enabled once both are filled in (reached via the ?mockChapterTags=ready mock seam)',
+  },
+  {
+    page: 'tracks',
+    state: 'chapter-tags-not-rendered',
+    description:
+      'Tracks, "Embed chapter tags" dialog with a chapter configured but not yet rendered - "not rendered yet" and the press-Render-first message, Embed disabled (reached via the ?mockChapterTags=not-rendered mock seam)',
+  },
+  {
+    page: 'tracks',
+    state: 'chapter-tags-success',
+    description: 'Tracks, "Embed chapter tags" dialog after a completed embed - the new tagged file\'s path shown, the original file unmentioned as changed',
+  },
+  {
+    page: 'tracks',
+    state: 'chapter-tags-error',
+    description:
+      'Tracks, "Embed chapter tags" dialog when the embed fails - inline error message (reached via the ?mockChapterTags=ready&mockChapterTagsEmbedError=1 mock seam)',
+  },
+  {
+    page: 'tracks',
+    state: 'take-review-results',
+    description:
+      'Tracks, Scan for pickups & duplicates pressed on Chapter 1 - a pickup and a duplicate_read row, per-category evidence only (Q9, no composite score column)',
+  },
+  {
+    page: 'tracks',
+    state: 'take-review-empty',
+    description: 'Tracks, a pickup/duplicate scan on a track with no repeats - "No repeated reads found on this track." with no results table',
+  },
+  {
+    page: 'tracks',
+    state: 'take-review-audition',
+    description:
+      'Tracks, Audition pressed on a pickup finding - the side-by-side A/B dialog with the "Raw source, no FX or edits applied" label and Read A/Read B pickers (phase 7, Q7)',
+  },
 
   // Teleprompter
   {
@@ -315,7 +463,27 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'settings', state: 'global-appearance', description: 'Settings, Global scope / Appearance category (theme switcher)', ...REFLOW },
   { page: 'settings', state: 'global-proofing', description: 'Settings, Global scope / Proofing category', ...REFLOW },
   { page: 'settings', state: 'global-storybible', description: 'Settings, Global scope / Story Bible category', ...REFLOW },
-  { page: 'settings', state: 'global-daw', description: 'Settings, Global scope / DAW Integration category', ...REFLOW },
+  {
+    page: 'settings',
+    state: 'global-daw',
+    description:
+      'Settings, Global scope / DAW Integration category, with the DAW catalog panel showing REAPER detected and a REAPER project already linked, so only the "Check again" action shows (docs/architecture/daw-integration.md)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'global-daw-not-detected',
+    description:
+      'Settings, Global scope / DAW Integration category with REAPER not detected (?mockDawNotDetected=1, docs/architecture/daw-integration.md): the not-detected dot and the "Get REAPER" button that opens the vendor\'s download page',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'global-daw-handoff',
+    description:
+      'Settings, Global scope / DAW Integration category with REAPER detected but no REAPER project linked yet (?mockNoDaw=1, docs/architecture/daw-integration.md): the "Link a REAPER project file" handoff button next to the detected entry, and the "Check again" action below it',
+    ...REFLOW,
+  },
   { page: 'settings', state: 'global-manuscript', description: 'Settings, Global scope / Manuscript category (note color picker)', ...REFLOW },
   { page: 'settings', state: 'global-tts', description: 'Settings, Global scope / TTS category', ...REFLOW },
   {
@@ -448,6 +616,13 @@ export const STATE_CATALOG: StateEntry[] = [
     ...REFLOW,
   },
   { page: 'settings', state: 'project-data', description: 'Settings, Project scope / Project data category (clear derived project data)', ...REFLOW },
+  {
+    page: 'settings',
+    state: 'project-credits',
+    description:
+      'Settings, Project scope / Credits category (PRD audiobook-credits-templates.prd.md, Phase 1): template library, live preview and project credit values',
+    ...REFLOW,
+  },
   { page: 'settings', state: 'dirty-footer', description: 'Settings, unsaved-changes footer visible', ...REFLOW },
   { page: 'settings', state: 'navigate-away-confirm', description: 'Settings, navigate-away-while-dirty confirm dialog', ...REFLOW },
   {

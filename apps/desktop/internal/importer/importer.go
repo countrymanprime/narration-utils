@@ -23,19 +23,19 @@ func BuildDraft(path string, markdownHeadingLevel int) (Draft, error) {
 	return BuildDraftProgress(path, markdownHeadingLevel, nil)
 }
 
-// BuildDraftProgress is BuildDraft with stage reporting.
+// BuildDraftProgress is BuildDraft with stage reporting. The format switch
+// itself lives in formats.go's list (txt-and-epub-import PRD, Phase 1): a new
+// format is a one-line addition there instead of a new case here.
 func BuildDraftProgress(path string, markdownHeadingLevel int, progress Progress) (Draft, error) {
-	switch strings.ToLower(strings.TrimPrefix(filepath.Ext(path), ".")) {
-	case "docx":
-		return docxWithProgress(path, progress)
-	case "md", "markdown":
-		return markdownWithProgress(path, markdownHeadingLevel, progress)
-	case "pdf":
+	extension := strings.ToLower(strings.TrimPrefix(filepath.Ext(path), "."))
+	if extension == "pdf" {
 		// PDF extraction remains a quarantined candidate behind the
 		// pdf_candidate test tag. Shipped builds never accept a format whose
 		// chapter-boundary gate has not passed.
 		return Draft{}, &Error{"PDF import is temporarily unavailable pending the approved corpus parity gate. Use DOCX or Markdown."}
-	default:
-		return Draft{}, &Error{"Choose a Word (.docx) or Markdown (.md) manuscript."}
 	}
+	if f := formatFor(extension); f != nil {
+		return f.build(path, markdownHeadingLevel, progress)
+	}
+	return Draft{}, &Error{unsupportedFormatMessage}
 }

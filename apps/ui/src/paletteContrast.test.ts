@@ -318,7 +318,11 @@ const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
   'components/manuscript/Manuscript.tsx': { count: 1, what: 'the idle chapter bookmark icon' },
   'components/primitives/Tooltip.tsx': { count: 1, what: 'the border of the info icon' },
   'components/proofing/Transcript.tsx': { count: 2, what: 'the arrows between the Setup, Running and Results steps' },
-  'components/settings/Settings.tsx': { count: 1, what: 'the DAW link status dot in the project-scope panel when nothing is linked' },
+  'components/settings/DawCatalogPanel.tsx': { count: 1, what: 'the not-detected DAW catalog entry dot (Phase 2)' },
+  'components/settings/Settings.tsx': {
+    count: 2,
+    what: 'the DAW link status dot in the project-scope panel when nothing is linked, and the global-scope reachability dot when REAPER has not sent a recent heartbeat (Phase 7)',
+  },
   'components/storybible/Guide.tsx': { count: 1, what: 'the lock icon beside a locked entry' },
   'components/tracks/TracksPage.tsx': { count: 1, what: 'the dot of a track that has no colour' },
 };

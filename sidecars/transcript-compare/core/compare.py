@@ -1429,6 +1429,236 @@ def write_unified_diff(chapter, transcript_words, diff_path, covered_range, sent
     return diff_path
 
 
+def build_chapter_units(chapter):
+    """Flatten a chapter's title and paragraphs into the token/unit
+    structures diff_and_build_markers() needs, shared by the ordinary
+    compare run and the repeated-span detector (find_repeated_spans) so
+    both align against exactly the same chapter representation.
+
+    Narrators typically read the chapter heading/title aloud before the
+    body text. The title is otherwise only used for track-name matching,
+    so without this, every spoken title shows up as a false "EXTRA IN
+    AUDIO" discrepancy - confirmed live. Prepending it here means the
+    spoken title aligns against real doc content instead. chapter_unit_idx
+    tracks which sentence unit (or -1 for the title) each token belongs
+    to, so the diff's own aligned span can drive the excerpt boundary
+    instead of a separate bag-of-words heuristic.
+
+    Returns (sentence_units, chapter_tokens, chapter_unit_idx, chapter_raw_words).
+    """
+    sentence_units = build_sentence_units(chapter["paragraphs"])
+    chapter_tokens, chapter_raw_words = tokenize_with_raw(chapter["title"])
+    chapter_unit_idx = [-1] * len(chapter_tokens)
+    for u_i, (sent, _p_i) in enumerate(sentence_units):
+        sent_tokens, sent_raw_words = tokenize_with_raw(sent)
+        for t, rw in zip(sent_tokens, sent_raw_words):
+            chapter_tokens.append(t)
+            chapter_raw_words.append(rw)
+            chapter_unit_idx.append(u_i)
+    return sentence_units, chapter_tokens, chapter_unit_idx, chapter_raw_words
+
+
+def read_repeat_segments(manifest_path):
+    """Manifest reader for --find-repeats: like read_segments(), but each
+    line names a distinct *read* (an item, or one take of an item) to be
+    transcribed and aligned on its own, plus the identity fields the
+    exact-copy check and the Go adapter need. Pipe-delimited, no header:
+
+        item_index|source_file|start_offset_seconds|length_seconds|item_guid|take_guid
+
+    item_guid/take_guid are opaque strings supplied by the Go caller (a
+    REAPER item/take GUID); this module never interprets them beyond
+    equality and pass-through, since take identity is REAPER's, not this
+    sidecar's (see compare.py module docstring and the take-review PRD's
+    Q2). Segments keep manifest order (unlike read_segments, which is only
+    ever used for one concatenated stream and sorts by item_index)."""
+    segments = []
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            item_index, source_file, start_offset, length, item_guid, take_guid = line.split("|")
+            segments.append(
+                {
+                    "item_index": int(item_index),
+                    "source_file": source_file,
+                    "start_offset": float(start_offset),
+                    "length": float(length),
+                    "item_guid": item_guid,
+                    "take_guid": take_guid,
+                }
+            )
+    return segments
+
+
+def detect_exact_copies(segments):
+    """Pure, ASR-free pass: groups segments whose *source identity* -
+    resolved source file plus source range - is identical, meaning they
+    would decode to the exact same audio bytes (e.g. a take duplicated
+    onto another item, or two items both trimmed to the same underlying
+    range). This is the "exact-copy detection from item source identity"
+    half of Q1's recommendation, and it needs no transcription at all.
+
+    Returns a dict mapping segment index -> copy-group label ("EC0",
+    "EC1", ...) for every segment that has at least one exact-copy peer;
+    segments with no peer are absent from the dict."""
+    by_identity = {}
+    for i, seg in enumerate(segments):
+        key = (os.path.normcase(os.path.abspath(seg["source_file"])), round(seg["start_offset"], 3), round(seg["length"], 3))
+        by_identity.setdefault(key, []).append(i)
+
+    result = {}
+    group_n = 0
+    for indices in by_identity.values():
+        if len(indices) < 2:
+            continue
+        label = f"EC{group_n}"
+        group_n += 1
+        for i in indices:
+            result[i] = label
+    return result
+
+
+def _alignment_quality(alignment):
+    """Fraction of the diff's aligned opcodes that were an exact ("equal")
+    match - a cheap, reproducible stand-in for match quality that reuses
+    the same opcodes diff_and_build_markers() already computed, rather
+    than running a second comparison."""
+    opcodes = alignment["opcodes"]
+    equal_len = sum(max(i2 - i1, j2 - j1) for tag, i1, i2, j1, j2 in opcodes if tag == "equal")
+    total_len = sum(max(i2 - i1, j2 - j1) for _tag, i1, i2, j1, j2 in opcodes)
+    if total_len == 0:
+        return 0.0
+    return equal_len / total_len
+
+
+def group_repeated_spans(covered_ranges, min_overlap=0.5):
+    """Pure clustering step: groups segment indices whose manuscript span
+    (a (first_unit, last_unit) sentence-unit range from diff_and_build_markers'
+    covered_range, inclusive) overlaps enough to be "the same read of the
+    same passage" rather than two different passages that happen to sit
+    near each other.
+
+    covered_ranges is a list parallel to the segment list; an entry is
+    None where a segment had no aligned span at all (nothing recognisable
+    of the chapter in that read) and such segments never join a group.
+
+    A segment joins the most recent open group if its span overlaps that
+    group's running union span by at least min_overlap of the shorter of
+    the two spans (so a short pickup fully inside a long read still
+    groups, while two spans that merely touch at one sentence do not).
+    Segments are processed in the order given by first_unit so a group's
+    union only grows forward; this is a simple greedy pass, not full
+    interval graph clustering, which is enough for the conservative,
+    narrator-reviewed groups this milestone wants (see Q1, Q12).
+
+    Returns a list of groups; each group is (first_unit, last_unit, [indices]),
+    sorted by first_unit. Only groups with 2 or more members are returned -
+    a single read of a span is not a "repeat"."""
+    indexed = [(i, r) for i, r in enumerate(covered_ranges) if r is not None]
+    indexed.sort(key=lambda pair: (pair[1][0], pair[1][1]))
+
+    groups = []  # each: {"first": int, "last": int, "members": [i, ...]}
+    for i, (first_u, last_u) in indexed:
+        placed = False
+        for g in groups:
+            overlap = min(g["last"], last_u) - max(g["first"], first_u) + 1
+            if overlap <= 0:
+                continue
+            shorter = min(g["last"] - g["first"] + 1, last_u - first_u + 1)
+            if shorter > 0 and overlap / shorter >= min_overlap:
+                g["first"] = min(g["first"], first_u)
+                g["last"] = max(g["last"], last_u)
+                g["members"].append(i)
+                placed = True
+                break
+        if not placed:
+            groups.append({"first": first_u, "last": last_u, "members": [i]})
+
+    return [(g["first"], g["last"], g["members"]) for g in groups if len(g["members"]) >= 2]
+
+
+def find_repeated_spans(args):
+    """Additive detector mode (Q1/Q2): independently transcribes and aligns
+    every read named in --manifest, clusters the reads that cover the same
+    manuscript span, and flags exact-copy pairs by source identity. Writes
+    new, additive tagged lines only - SUMMARY plus SPAN_GROUP/SPAN_MEMBER -
+    so the existing readers (the Lua bridge and the Go transcript service)
+    that only understand SUMMARY/MARKER/NEED_CHAPTER keep working unchanged
+    against this same --out file contract (see compare.py's module
+    docstring and the take-review PRD's Q2 evidence)."""
+    progress_path = args.progress
+
+    write_progress(progress_path, "START", 0, "Starting...")
+
+    equivalences_path = project_data_path(args.manuscript, "equivalences.csv")
+    custom_groups = load_equivalence_groups(equivalences_path)
+    if custom_groups:
+        _CUSTOM_CANON.update(_build_canon(custom_groups))
+        log(f"Loaded {len(custom_groups)} custom word equivalence group(s) from {equivalences_path}")
+
+    segments = read_repeat_segments(args.manifest)
+    if not segments:
+        raise ValueError("Manifest contained no segments.")
+
+    check_cancelled(progress_path)
+    write_progress(progress_path, "MATCH", 1, "Matching chapter to track name...")
+    chapters = load_manuscript_chapters(args.manuscript)
+
+    if args.chapter_title:
+        chapter = find_chapter_by_exact_title(chapters, args.chapter_title)
+        if chapter is None:
+            raise ValueError(f"Chapter title override '{args.chapter_title}' not found in the document.")
+    else:
+        chapter, _score, candidates = find_chapter_by_track_name(chapters, args.track_name)
+        if chapter is None:
+            raise NeedsChapterSelection(candidates)
+
+    _sentence_units, chapter_tokens, chapter_unit_idx, chapter_raw_words = build_chapter_units(chapter)
+
+    exact_copies = detect_exact_copies(segments)
+
+    covered_ranges = []
+    qualities = []
+    n = len(segments)
+    for i, seg in enumerate(segments):
+        check_cancelled(progress_path)
+        write_progress(progress_path, "TRANSCRIBE", 2 + int(90 * i / max(1, n)), f"Transcribing read {i + 1}/{n}")
+        log(
+            f"Transcribing read {i}: item {seg['item_index']} take {seg['take_guid']} ({seg['source_file']} [{seg['start_offset']:.2f}s, {seg['length']:.2f}s])"
+        )
+        audio = decode_segment(seg["source_file"], seg["start_offset"], seg["length"])
+        transcript_words = transcribe(audio, args.model, args.language, args.device, model_dir=args.model_dir)
+        _markers, covered_range, alignment = diff_and_build_markers(chapter_tokens, chapter_unit_idx, chapter_raw_words, transcript_words, args.min_words)
+        covered_ranges.append(covered_range)
+        qualities.append(_alignment_quality(alignment))
+
+    check_cancelled(progress_path)
+    write_progress(progress_path, "GROUP", 95, "Grouping repeated spans...")
+    groups = group_repeated_spans(covered_ranges, args.min_span_overlap)
+
+    write_progress(progress_path, "WRITE", 99, "Writing results...")
+    with open(args.out, "w", newline="", encoding="utf-8") as f:
+        total_members = sum(len(members) for _f, _l, members in groups)
+        f.write(f"SUMMARY|Found {len(groups)} repeated-span group(s) across {total_members} segment(s)\n")
+        for group_i, (group_first, group_last, members) in enumerate(groups):
+            f.write(f"SPAN_GROUP|{group_i}|{group_first}|{group_last}|{len(members)}\n")
+            union_len = group_last - group_first + 1
+            for idx in members:
+                seg = segments[idx]
+                first_u, last_u = covered_ranges[idx]
+                overlap = min(group_last, last_u) - max(group_first, first_u) + 1
+                coverage = max(0.0, overlap) / union_len if union_len > 0 else 0.0
+                f.write(
+                    f"SPAN_MEMBER|{group_i}|{seg['item_index']}|{seg['item_guid']}|{seg['take_guid']}|{seg['source_file']}|"
+                    f"{seg['start_offset']:.3f}|{seg['length']:.3f}|{first_u}|{last_u}|{coverage:.3f}|{qualities[idx]:.3f}|{exact_copies.get(idx, '')}\n"
+                )
+
+    log(f"Wrote {len(groups)} repeated-span group(s) to {args.out}")
+    write_progress(progress_path, "DONE", 100, "Finished")
+
+
 def run(args):
     progress_path = args.progress
 
@@ -1503,23 +1733,7 @@ def run(args):
 
     check_cancelled(progress_path)
 
-    # Narrators typically read the chapter heading/title aloud before the
-    # body text. The title is otherwise only used for track-name matching,
-    # so without this, every spoken title shows up as a false "EXTRA IN
-    # AUDIO" discrepancy - confirmed live. Prepending it here means the
-    # spoken title aligns against real doc content instead. chapter_unit_idx
-    # tracks which sentence unit (or -1 for the title) each token belongs
-    # to, so the diff's own aligned span can drive the excerpt boundary
-    # below instead of a separate bag-of-words heuristic.
-    sentence_units = build_sentence_units(chapter["paragraphs"])
-    chapter_tokens, chapter_raw_words = tokenize_with_raw(chapter["title"])
-    chapter_unit_idx = [-1] * len(chapter_tokens)
-    for u_i, (sent, _p_i) in enumerate(sentence_units):
-        sent_tokens, sent_raw_words = tokenize_with_raw(sent)
-        for t, rw in zip(sent_tokens, sent_raw_words):
-            chapter_tokens.append(t)
-            chapter_raw_words.append(rw)
-            chapter_unit_idx.append(u_i)
+    sentence_units, chapter_tokens, chapter_unit_idx, chapter_raw_words = build_chapter_units(chapter)
 
     check_cancelled(progress_path)
     write_progress(progress_path, "DIFF", 96, "Building diff and markers...")
@@ -1601,6 +1815,19 @@ def main():
         help="Instead of transcribing, scan --manuscript for candidate vocabulary-hint terms and write them to --hints-out",
     )
     ap.add_argument("--hints-out", default=None, help="Path to write suggested hint terms to (used with --extract-hints)")
+    ap.add_argument(
+        "--find-repeats",
+        action="store_true",
+        help="Additive mode (take-review Q1/Q2): instead of one concatenated compare, independently transcribe and "
+        "align every read in --manifest (item_index|source_file|start_offset|length|item_guid|take_guid) and write "
+        "SPAN_GROUP/SPAN_MEMBER lines grouping reads that cover the same manuscript span, plus exact-copy flags",
+    )
+    ap.add_argument(
+        "--min-span-overlap",
+        type=float,
+        default=0.5,
+        help="With --find-repeats: minimum fraction of the shorter span two reads' manuscript spans must overlap by to be grouped as the same repeated read (default 0.5)",
+    )
     args = ap.parse_args()
 
     if args.log:
@@ -1623,21 +1850,15 @@ def main():
             os._exit(1)
         os._exit(0)
 
-    missing = [
-        name
-        for name, val in (
-            ("--manifest", args.manifest),
-            ("--track-name", args.track_name),
-            ("--out", args.out),
-            ("--diff-out", args.diff_out),
-        )
-        if not val
-    ]
+    required = [("--manifest", args.manifest), ("--track-name", args.track_name), ("--out", args.out)]
+    if not args.find_repeats:
+        required.append(("--diff-out", args.diff_out))
+    missing = [name for name, val in required if not val]
     if missing:
         ap.error(", ".join(missing) + " required unless --extract-hints is given")
 
     try:
-        run(args)
+        find_repeated_spans(args) if args.find_repeats else run(args)
     except Cancelled:
         log("Cancelled by user.")
         write_progress(args.progress, "CANCELLED", 0, "Cancelled by user")

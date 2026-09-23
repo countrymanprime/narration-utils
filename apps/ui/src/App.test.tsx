@@ -234,7 +234,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
   });
 
   it('raises an OS notification for a slow job finishing while the window is unfocused, and not otherwise (N1-N4)', async () => {
-    let announce: (event: JobEnded) => void = () => {};
+    let announce: ((event: JobEnded) => void) | undefined;
     const systemNotify = vi.fn(async () => {});
     const hasFocus = vi.spyOn(document, 'hasFocus');
     renderApp({
@@ -245,16 +245,19 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
       systemNotify,
     });
     await screen.findByRole('heading', { name: 'Welcome back' });
+    // Home can render before App's job:ended subscription effect has run; announcing earlier would go nowhere.
+    await waitFor(() => expect(announce).toBeDefined());
+    const send = (event: JobEnded) => announce?.(event);
 
     hasFocus.mockReturnValue(true);
-    act(() => announce({ id: 'guide-1', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 40_000 }));
+    act(() => send({ id: 'guide-1', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 40_000 }));
     expect(systemNotify).not.toHaveBeenCalled();
 
     hasFocus.mockReturnValue(false);
-    act(() => announce({ id: 'guide-2', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 3_000 }));
+    act(() => send({ id: 'guide-2', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 3_000 }));
     expect(systemNotify).not.toHaveBeenCalled();
 
-    act(() => announce({ id: 'guide-3', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 40_000 }));
+    act(() => send({ id: 'guide-3', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 40_000 }));
     await waitFor(() => expect(systemNotify).toHaveBeenCalledWith('story_bible', 'Task finished', 'Story Bible rebuild complete.'), { timeout: 10_000 });
 
     hasFocus.mockRestore();
@@ -636,7 +639,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect((await screen.findAllByText('Manuscript import complete.')).length).toBeGreaterThanOrEqual(2);
     await waitFor(() => expect(bootstrap.mock.calls.length).toBeGreaterThanOrEqual(2));
     expect(await screen.findByText(/Manuscript found/)).toBeTruthy();
-    expect(await screen.findByText('1,234 words · 1 chapters · ~150 words/min narrated')).toBeTruthy();
+    expect(await screen.findByText('1,234 words · 1 chapters · ~155 words/min narrated')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(screen.queryByRole('dialog', { name: 'Import manuscript' })).toBeNull();
@@ -684,5 +687,105 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeTruthy());
     expect(screen.queryByText('Open a project')).toBeNull();
+  });
+
+  // Phase 8 (PRD project-workspace-and-daw-link.prd.md): the Settings DAW panel's launch action and its two new
+  // fields (reaper_path override, auto_start_launcher toggle, D10 default off).
+  it('launches REAPER from the global Settings DAW panel', async () => {
+    const launchDaw = vi.fn(createMockApi().launchDaw);
+    renderApp({ launchDaw });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    const launchButton = await screen.findByRole('button', { name: 'Launch REAPER' });
+    expect((launchButton as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(launchButton);
+    await waitFor(() => expect(launchDaw).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText(/REAPER started/)).toBeTruthy();
+
+    expect(await screen.findByLabelText('REAPER executable (override)')).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'Start the launcher script automatically' })).toBeTruthy();
+  });
+
+  it('disables Launch REAPER until a DAW project file is linked', async () => {
+    renderApp({ bootstrap: async () => ({ ...(await createMockApi().bootstrap()), dawFileLinked: false }) });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    const launchButton = await screen.findByRole('button', { name: 'Launch REAPER' });
+    expect((launchButton as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText(/Link a REAPER project \(\.rpp\) file before starting REAPER\./)).toBeTruthy();
+  });
+
+  // The DAW catalog and "Get it" flow (docs/architecture/daw-integration.md): a machine-wide
+  // detection fact shown in the same global Settings DAW panel, above the project-scoped launcher fields.
+  it('shows REAPER detected in the DAW catalog panel when it is already installed', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    expect(await screen.findByText('REAPER detected')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Get REAPER' })).toBeNull();
+  });
+
+  it('offers to open REAPER’s download page when it is not detected', async () => {
+    const dawCatalogOpenDownloadPage = vi.fn(createMockApi().dawCatalogOpenDownloadPage);
+    renderApp({ dawCatalogOpenDownloadPage }, { dawCatalogInstalled: false });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    expect(await screen.findByText('REAPER not detected')).toBeTruthy();
+    const getButton = screen.getByRole('button', { name: 'Get REAPER' });
+    fireEvent.click(getButton);
+    await waitFor(() => expect(dawCatalogOpenDownloadPage).toHaveBeenCalledWith('reaper'));
+  });
+
+  // docs/architecture/daw-integration.md: a manual re-check, since detection otherwise only runs
+  // when the panel mounts, and a narrator who just installed REAPER should not have to leave and reopen Settings.
+  it('re-checks the DAW catalog on Check again', async () => {
+    const dawCatalogList = vi.fn(createMockApi().dawCatalogList);
+    renderApp({ dawCatalogList });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    await screen.findByText('REAPER detected');
+    const calls = dawCatalogList.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
+    await waitFor(() => expect(dawCatalogList.mock.calls.length).toBeGreaterThan(calls));
+  });
+
+  // Phase 3's "Could" item: a handoff into the DAW Link flow (project-workspace-and-daw-link.prd.md, W19) once a
+  // DAW is detected, reusing the same shared linkDawFile() action the header pill and Tracks page already use.
+  it('offers to link a REAPER project from the DAW catalog panel once REAPER is detected and nothing is linked yet', async () => {
+    renderApp({}, { dawFileLinked: false });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    await screen.findByText('REAPER detected');
+    fireEvent.click(screen.getByRole('button', { name: 'Link a REAPER project file' }));
+    await waitFor(() => expect(screen.getByText('REAPER project linked.')).toBeTruthy());
+  });
+
+  it('does not offer the DAW catalog handoff link once a REAPER project is already linked', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    await screen.findByText('REAPER detected');
+    expect(screen.queryByRole('button', { name: 'Link a REAPER project file' })).toBeNull();
   });
 });

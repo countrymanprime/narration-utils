@@ -4,17 +4,25 @@
 --
 -- This file owns the command loop and the registry that dispatches to the
 -- commands; every command lives in a feature file listed in FEATURE_FILES
--- (narration_compare.lua, narration_line_identity.lua). To add a command, put
--- it in a new narration_<feature>.lua that returns `function(registry)` and
--- calls `registry.register(name, function(ctx, args) ... end)`, list the file
--- below and in scripts/release/reaper-files.mjs, and write its harness tests.
--- See docs/architecture/reaper-bridge.md.
+-- (narration_compare.lua, narration_line_identity.lua, narration_pickups.lua,
+-- narration_render.lua, narration_project_state.lua, narration_take_review.lua).
+-- To add a command, put it in a new narration_<feature>.lua that returns
+-- `function(registry)` and calls `registry.register(name, function(ctx, args) ... end)`,
+-- list the file below and in scripts/release/reaper-files.mjs, and write its
+-- harness tests. See docs/architecture/reaper-bridge.md.
 
 local M = {}
 
 -- The feature files, loaded once next to this file. A missing or broken one fails
 -- the load, so the launcher reports it before it starts the app.
-M.FEATURE_FILES = { 'narration_compare.lua', 'narration_line_identity.lua' }
+M.FEATURE_FILES = {
+  'narration_compare.lua',
+  'narration_line_identity.lua',
+  'narration_pickups.lua',
+  'narration_render.lua',
+  'narration_project_state.lua',
+  'narration_take_review.lua',
+}
 
 local function own_directory()
   local source = debug and debug.getinfo and debug.getinfo(1, 'S').source or ''
@@ -49,6 +57,11 @@ function M.new_registry()
   return registry
 end
 
+-- How often the reachability heartbeat (PROJECT_STATUS) is appended, in reaper.time_precise() seconds (Phase 7,
+-- ADR 0092 W10): frequent enough that the Go host's own poll (transcriptLoop, 150ms) notices REAPER closing
+-- quickly, rare enough not to grow events.log without bound over a long session.
+M.HEARTBEAT_INTERVAL_SECONDS = 1.5
+
 function M.run(session_dir, registry)
   registry = registry or M.new_registry()
   local commands_dir, active = core.join(session_dir, 'commands'), true
@@ -61,6 +74,23 @@ function M.run(session_dir, registry)
       active = false
     end,
   }
+  -- last_heartbeat_at is nil until the first tick, so the very first tick always sends one immediately: the app
+  -- should not wait a full interval after REAPER starts before it can tell REAPER is running.
+  local last_heartbeat_at = nil
+  local function heartbeat()
+    local now = reaper.time_precise()
+    if last_heartbeat_at and (now - last_heartbeat_at) < M.HEARTBEAT_INTERVAL_SECONDS then
+      return
+    end
+    last_heartbeat_at = now
+    -- EnumProjects(-1, '') returns the active tab's path for a saved project and the exact empty string (never
+    -- nil) for an unsaved one (spike S6, docs/research/reaper-spike-s6-daw-reachability.md); the run field
+    -- (second argument to ctx.event) is deliberately empty, the broadcast shape events.go's fan-out already
+    -- delivers to every subscriber regardless of which run they own (Subscription.wants).
+    local _, rpp = reaper.EnumProjects(-1, '')
+    rpp = rpp or ''
+    ctx.event('PROJECT_STATUS', '', rpp, rpp == '' and '1' or '0')
+  end
   local function tick()
     for _, name in ipairs(core.command_files(commands_dir)) do
       local path = core.join(commands_dir, name)
@@ -87,6 +117,7 @@ function M.run(session_dir, registry)
         end
       end
     end
+    heartbeat()
     if active then
       reaper.defer(tick)
     end

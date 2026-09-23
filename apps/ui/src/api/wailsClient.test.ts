@@ -298,6 +298,30 @@ describe('wailsClient', () => {
     await expect(wailsClient.tracksList()).resolves.toEqual(project);
   });
 
+  it('decodes the ChapterTrackMap list, confirm, and clear bindings', async () => {
+    const empty = { documentId: 'doc-1', mappings: [] };
+    const confirmed = { trackGuid: 'track-guid-a', chapterId: 'c-0001', chapterTitle: 'Chapter One', confirmedAt: '2026-09-22T00:00:00Z' };
+    const withOne = { documentId: 'doc-1', mappings: [confirmed] };
+    const confirm = vi.fn().mockResolvedValue(JSON.stringify(confirmed));
+    const clear = vi.fn().mockResolvedValue(JSON.stringify(empty));
+    window.go = {
+      main: {
+        Host: {
+          ChapterTrackMapList: vi.fn().mockResolvedValueOnce(JSON.stringify(empty)).mockResolvedValueOnce(JSON.stringify(withOne)),
+          ChapterTrackMapConfirm: confirm,
+          ChapterTrackMapClear: clear,
+        },
+      },
+    };
+
+    await expect(wailsClient.chapterTrackMapList()).resolves.toEqual(empty);
+    await expect(wailsClient.chapterTrackMapConfirm('track-guid-a', 'c-0001')).resolves.toEqual(confirmed);
+    expect(confirm).toHaveBeenCalledWith('track-guid-a', 'c-0001');
+    await expect(wailsClient.chapterTrackMapList()).resolves.toEqual(withOne);
+    await expect(wailsClient.chapterTrackMapClear('track-guid-a')).resolves.toEqual(empty);
+    expect(clear).toHaveBeenCalledWith('track-guid-a');
+  });
+
   it('starts, stops and reads the teleprompter through the native bindings', async () => {
     const start = vi.fn().mockResolvedValue(JSON.stringify({ status: 'started' }));
     const stop = vi.fn().mockResolvedValue('null');

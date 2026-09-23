@@ -13,16 +13,24 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/credits"
+	"github.com/countrymanprime/narration-utils/shell/internal/daw"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawcatalog"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/lineidentity"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
+	"github.com/countrymanprime/narration-utils/shell/internal/pickups"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
+	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
+	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
+	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
@@ -35,7 +43,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 16
+const hostAPIVersion = 28
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -59,14 +67,35 @@ type Host struct {
 	guide      *guide.Service
 	guideJob   *workJob
 	transcript *transcript.Service
-	// findings is the store Transcript Compare's adapter saves into on
-	// every completed run (review-dashboard-and-findings-adoption.prd.md
-	// Phase 2). No binding reads it yet (Phase 4 does that); it exists
-	// here only so the adapter has somewhere durable to write.
-	findings     *findings.Store
+	// findings is the project's findings store: Transcript Compare's and the
+	// Guide's adapters save into it on every completed run
+	// (review-dashboard-and-findings-adoption.prd.md Phases 2-3), and
+	// take-review's scan binding (takereview.go) writes and reads it back,
+	// all through the same swap-on-project-switch pattern as
+	// guide/manuscript/transcript.
+	findings *findings.Store
+	// reachability tracks the current project's bridge client PROJECT_STATUS heartbeat (ADR 0092, Phase 7).
+	// Swappable like transcript: configureLocked rebuilds it on every project switch. Nil when there is no bridge
+	// client (no session directory).
+	reachability *daw.Reachability
+	lineIdentity *lineidentity.Service
+	pickups      *pickups.Service
+	projectState *projectstate.Service
+	renderConfig *renderconfig.Service
 	teleprompter *teleprompter.Service
-	recents      *recents.Store
-	log          *hostlog.Log
+	// bridge is the REAPER session's file-based IPC client (nil when launched
+	// without a REAPER session directory); take-review's create-take action
+	// (takereview.go) is its first direct consumer outside transcript.Service,
+	// which is handed the same client rather than building its own.
+	bridge  *bridge.Client
+	recents *recents.Store
+	// creditTemplates is the narrator's own credit-template library (audiobook-credits-templates.prd.md, Phase 1):
+	// user-level like recents, set once in NewHost and never swapped by a project switch.
+	creditTemplates *credits.TemplateStore
+	log             *hostlog.Log
+	// takeReviewRunner is a seam for tests: nil means the real
+	// takereview.ProcessRunner built from project config (takereview.go).
+	takeReviewRunner takereview.SidecarRunner
 	// updates asks GitHub for a newer release and remembers the answer (ADR 0072). It is set once in NewHost and never swapped, so it is
 	// read directly, like recents.
 	updates *update.Checker
@@ -87,7 +116,15 @@ type Host struct {
 	executable    func() (string, error)
 	openFolder    func(dir string) error
 	pendingPath   string
-	confirmUpdate sync.Once
+	// reaperLaunch and reaperLocate are seams for tests (dawlaunch.go): nil means daw.Launch and
+	// daw.LocateReaperExecutable, the real detached spawn and the real registry lookup.
+	reaperLaunch func(program string, args []string) error
+	reaperLocate func() (path, source string, err error)
+	// dawCatalogDetectors is a seam for tests (dawcatalog.go): nil means dawcatalog.DefaultDetectors(), the real
+	// per-entry registry/path lookups. Detection is stateless and not project-scoped, so unlike the swappable
+	// services above it needs no lock or snapshot - it is set once (or left nil) and read directly.
+	dawCatalogDetectors map[string]dawcatalog.Detector
+	confirmUpdate       sync.Once
 	// writable* remember whether the install folder can be written to, for a short while (see writable).
 	writableMu  sync.Mutex
 	writableDir string
@@ -142,11 +179,13 @@ func NewHost() *Host {
 	var host *Host
 	reporter := &persist.Reporter{Log: func(kind, message string) { _ = logger.Report(kind, message) }, Notify: func(text string) { host.noticeNarrator(text) }}
 	store, notes, recent := settings.New(repoRoot, ""), manuscript.New(""), recents.New(recentProjectsPath())
+	templates := credits.NewTemplateStore(creditTemplatesPath())
 	store.SetPersist(reporter)
 	notes.SetPersist(reporter)
 	recent.SetPersist(reporter)
+	templates.SetPersist(reporter)
 	notes.SetOnJobEnd(func(job manuscript.ImportJob) { host.importJobEnded(job) })
-	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
 	return host
 }
 
@@ -178,6 +217,21 @@ func recentProjectsPath() string {
 		return filepath.Join(value, "AppData", "Roaming", "narration-utils", "recent-projects.json")
 	}
 	return filepath.Join("AppData", "Roaming", "narration-utils", "recent-projects.json")
+}
+
+// creditTemplatesPath resolves the per-user credit-templates file, alongside
+// recent-projects.json (PRD audiobook-credits-templates.prd.md, Open Question
+// C7). Like recentProjectsPath, this mirrors settings.Store's own %APPDATA%-
+// with-%USERPROFILE%-fallback chain rather than sharing it, since it is only
+// a few lines and user-level storage is not project-scoped.
+func creditTemplatesPath() string {
+	if value := os.Getenv("APPDATA"); value != "" {
+		return filepath.Join(value, "narration-utils", "credit-templates.json")
+	}
+	if value := os.Getenv("USERPROFILE"); value != "" {
+		return filepath.Join(value, "AppData", "Roaming", "narration-utils", "credit-templates.json")
+	}
+	return filepath.Join("AppData", "Roaming", "narration-utils", "credit-templates.json")
 }
 
 func (h *Host) Startup(ctx context.Context) {
@@ -262,9 +316,31 @@ func (h *Host) configureLocked(next config) {
 			client.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
 		}
 	}
+	// Reachability subscribes to the same client transcript.New below also subscribes: both are independent
+	// consumers of bridge.Client's fan-out (events.go), so neither steals the other's events (ADR 0068).
+	h.reachability = daw.NewReachability(client)
+	h.bridge = client
 	h.transcript = transcript.New(transcript.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir, Python: h.config.comparePython, Backend: h.config.compareBackend}, client, h.settings, h.sidecars, h.emitTranscript)
 	h.transcript.SetPersist(h.persist)
 	h.transcript.SetFindings(h.findings, h.manuscript)
+	// The line-identity service is the second consumer of the same bridge client (bridge.Client fans events
+	// out by tag and run, ADR 0068), so pollTranscript's Drain call already pumps its events too. Phase 7
+	// (reaper-automation-follow-through PRD) is the UI trigger, so it now emits h.emitLineIdentity the way
+	// h.transcript emits h.emitTranscript.
+	h.lineIdentity = lineidentity.New(lineidentity.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir}, client, h.manuscript, h.emitLineIdentity)
+	// The pickup-list service (reaper-automation-follow-through PRD Phase 9) is the bridge's third real
+	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does for line
+	// identity above.
+	h.pickups = pickups.New(pickups.Config{SessionDir: h.config.sessionDir}, client, h.emitPickups)
+	// The render-config service (reaper-automation-follow-through PRD Phase 11) is the bridge's fourth real
+	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does for line identity
+	// and pickups above.
+	h.renderConfig = renderconfig.New(renderconfig.Config{SessionDir: h.config.sessionDir}, client, h.emitRenderConfig)
+	// The project-state service (reaper-automation-follow-through PRD Phase 13, "Change-driven re-compare
+	// indicator"; analysis-evidence-ledger PRD Open Question 12, answered (B)) is the bridge's fifth real
+	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does above. It is a
+	// Could-tier, on-demand check (Check/ProjectStateCheck), not a poll of its own.
+	h.projectState = projectstate.New(projectstate.Config{SessionDir: h.config.sessionDir}, client, h.emitProjectState)
 	teleprompterDir := h.config.sessionDir
 	if teleprompterDir == "" {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")
@@ -450,6 +526,52 @@ func (h *Host) emitTeleprompterState(state map[string]any) {
 	h.mu.RUnlock()
 	if ctx != nil {
 		runtime.EventsEmit(ctx, "teleprompter:state", state)
+	}
+}
+
+// emitLineIdentity relays a lineidentity.Service snapshot to the frontend (Phase 7's "Link chapters" flow and
+// its stale/conflict/drift states), the same simple relay emitTeleprompterState uses: line identity is a narrator-
+// triggered stamp or read, not a long background job, so it needs no job:ended tracking of its own.
+func (h *Host) emitLineIdentity(state map[string]any) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "lineidentity:state", state)
+	}
+}
+
+// emitPickups relays a pickups.Service snapshot to the frontend (Phase 9's pickup list view): a narrator-
+// triggered import, export, jump, resolve or count, the same simple relay emitLineIdentity uses.
+func (h *Host) emitPickups(state map[string]any) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "pickups:state", state)
+	}
+}
+
+// emitRenderConfig relays a renderconfig.Service snapshot to the frontend (Phase 11's "Prepare chapter render"
+// action), the same simple relay emitPickups uses.
+func (h *Host) emitRenderConfig(state map[string]any) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "renderconfig:state", state)
+	}
+}
+
+// emitProjectState relays a projectstate.Service snapshot to the frontend (Phase 13's live "project changed
+// since this check" hint), the same simple relay emitRenderConfig uses. Nothing subscribes to it yet: the
+// binding is available for a future UI phase, or for a staleness evaluator, to poll or watch.
+func (h *Host) emitProjectState(state map[string]any) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "projectstate:state", state)
 	}
 }
 
@@ -741,7 +863,7 @@ func (h *Host) Bootstrap() map[string]any {
 	if svc.transcript != nil {
 		transcriptState = svc.transcript.Snapshot()
 	}
-	dawFileLinked, dawReachable, dawProjectMatches := dawLinkFacts(h.persist, config.projectFolder, config.daw)
+	dawFileLinked, dawReachable, dawProjectMatches := dawLinkFacts(h.persist, config.projectFolder, config.daw, svc.reachability)
 	return map[string]any{
 		"apiVersion": hostAPIVersion, "diagnosticId": h.diagnostic, "version": h.version,
 		"projectFolder": config.projectFolder, "projectName": config.projectName, "daw": config.daw,
@@ -833,7 +955,10 @@ type fieldSchema struct {
 }
 
 var fieldSchemas = map[string][]fieldSchema{
-	"General":           {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}, {"notifications", "Notify me when a long task finishes while I'm away", "bool", nil}},
+	// narrator_name is the global default for the [Narrator] credits token (PRD audiobook-credits-templates.prd.md,
+	// Open Questions C2 and C7: "a flat General.narrator_name text setting"); a project's own credits values may
+	// override it (project.Manifest.Credits.Narrator, credits.Values.Resolve).
+	"General":           {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}, {"notifications", "Notify me when a long task finishes while I'm away", "bool", nil}, {"narrator_name", "Narrator name (default for credits)", "text", nil}},
 	"Manuscript":        {{"color_note", "Note color", "color", nil}},
 	"ManuscriptGuide":   {{"spacy_model", "spaCy model", "choice", []string{"en_core_web_sm", "en_core_web_lg"}}, {"build_after_import", "Build the Story Bible after import", "bool", nil}},
 	"Piper":             {{"tts_provider", "TTS provider", "choice", []string{"piper"}}, {"tts_voice_id", "Preview voice", "choice", []string{"en_US-ljspeech-high"}}},
@@ -851,6 +976,12 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"engine", "Live engine", "choice", []string{"whisper"}},
 		{"model", "Model", "choice", []string{"tiny", "small"}},
 	},
+	// DAW.reaper_path is a global override for daw.Resolve (empty means auto-detect, apps/desktop/internal/daw).
+	// DAW.auto_start_launcher is owner decision D10 (docs/prds/implementation-plan.md section 1): the app may pass
+	// NarrationUtils_Launcher.lua as REAPER's trailing script argument when it starts REAPER (Phase 8, ADR 0092
+	// W12), so the bridge is live without the narrator running the action by hand - but only when this is on, and
+	// it defaults off.
+	"DAW": {{"reaper_path", "REAPER executable (override)", "text", nil}, {"auto_start_launcher", "Start the launcher script automatically", "bool", nil}},
 }
 
 // settingsSchemas is the settings the app offers with each choice that comes from an approved catalog filled in from it: the spaCy model

@@ -57,3 +57,25 @@ describe('AppShell header pill (PRD project-workspace-and-daw-link.prd.md, W15)'
     expect(screen.queryByText(/No DAW detected/i)).toBeNull();
   });
 });
+
+// Phase 7 (PRD project-workspace-and-daw-link.prd.md, ADR 0092): the mismatch state only appears once a live
+// heartbeat disagrees with the linked file, never from a linked-but-unconfirmed state.
+describe('AppShell header pill mismatch state (Phase 7)', () => {
+  it('still reads "REAPER project linked" when linked but not yet confirmed reachable', () => {
+    renderShell({ dawFileLinked: true, dawReachable: false, dawProjectMatches: false });
+    expect(screen.getByRole('button', { name: /REAPER project linked/ })).toBeTruthy();
+    expect(screen.queryByText(/Wrong REAPER project open/)).toBeNull();
+  });
+
+  it('shows "Wrong REAPER project open" only when REAPER is reachable and its open project does not match', () => {
+    renderShell({ dawFileLinked: true, dawReachable: true, dawProjectMatches: false });
+    const pill = screen.getByRole('button', { name: /Wrong REAPER project open/ });
+    expect(pill.textContent).toBe('Wrong REAPER project open');
+  });
+
+  it('reads "REAPER project linked" when reachable and the open project matches', () => {
+    renderShell({ dawFileLinked: true, dawReachable: true, dawProjectMatches: true });
+    expect(screen.getByRole('button', { name: /REAPER project linked/ })).toBeTruthy();
+    expect(screen.queryByText(/Wrong REAPER project open/)).toBeNull();
+  });
+});

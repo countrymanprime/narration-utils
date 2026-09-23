@@ -344,6 +344,33 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.getByRole('button', { name: 'Retry' }).waitFor();
       await page.locator('[data-tone="error"]').getByText('The app received data it could not read.').waitFor();
     },
+    'read-aloud-setup': async (page) => {
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+      await page.getByRole('dialog', { name: /Read aloud/ }).waitFor();
+    },
+    // Same mock seam and word as the standalone Teleprompter page's `listening` state, opened through the modal instead.
+    'read-aloud-listening': async (page) => {
+      await page.goto('/?mockTeleprompter=listening');
+      await settlePage(page);
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+    },
+    // Word-click seek (teleprompter-manuscript-integration.prd.md Phase 4): from the same listening state as above, click
+    // the earliest "Go back to here" word (word 0) and wait for the highlight to land there without restarting.
+    'read-aloud-seek-back': async (page) => {
+      await page.goto('/?mockTeleprompter=listening');
+      await settlePage(page);
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+      await page
+        .getByRole('button', { name: /^Go back to here/ })
+        .first()
+        .click();
+      await page.locator('[data-word="0"] [data-highlight="Cursor"]').waitFor();
+    },
     'reader-text-small': async (page) => {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'small');
@@ -443,6 +470,17 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickSettingsCategory(page, 'Appearance');
       await clickVisible(page, 'button', 'Dark');
       await goToPage(page, 'Manuscript');
+    },
+    'credits-entries': async (page) => {
+      await goToPage(page, 'Manuscript');
+      // Collapse the real chapters first: chapter 1's body has the seeded overlapping entity/note marks used by the
+      // 'overlapping-highlights' state (axe-debt.ts, #155) - collapsing keeps this state's own screenshot free of
+      // that unrelated, already-tracked issue instead of growing the axe-debt ratchet for an unrelated reason.
+      await clickVisible(page, 'button', 'Collapse all chapters');
+      // The default mock project has no Title/Author/Narrator value set, so the shipped opening template's tokens
+      // render as unresolved chips (C6) - expanding it shows both the chip and the "unresolved token(s)" count.
+      await clickVisible(page, 'button', 'Opening credits');
+      await page.getByText(/unresolved token/).waitFor();
     },
   },
   proofing: {
@@ -711,6 +749,199 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Tracks');
       await clickVisible(page, 'button', /Click Track/);
     },
+    'chapter-link-confirmed': async (page) => {
+      await goToPage(page, 'Tracks');
+      await page.getByRole('button', { name: 'Play', exact: true }).first().waitFor();
+      const table = page.getByRole('table', { name: 'Chapter links' });
+      await table.scrollIntoViewIfNeeded();
+      // The first body row, by position: filtering by "has a combobox" would stop matching this same row the
+      // instant Confirm turns it into the linked view (no combobox), so `waitFor` below would wait forever.
+      const firstRow = table.locator('tbody tr').first();
+      await firstRow.getByRole('combobox').selectOption({ index: 0 });
+      await firstRow.getByRole('button', { name: 'Confirm' }).click();
+      await firstRow.getByRole('button', { name: 'Change' }).waitFor();
+    },
+    'chapter-link-missing': async (page) => {
+      // Reload with the mock's missing-track seam (see main.tsx): a confirmed link whose
+      // trackGuid is not among the mock project's tracks.
+      await page.goto('/?mockChapterLink=missing');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      const table = page.getByRole('table', { name: 'Chapter links' });
+      await table.scrollIntoViewIfNeeded();
+      await page.getByText('Track missing').waitFor();
+    },
+    'link-chapters-preview': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Link chapters…');
+      await page.getByRole('combobox', { name: 'Track for Chapter 1', exact: true }).selectOption({ label: 'Chapter 1' });
+      await page.getByRole('button', { name: /^Stamp \d+ items?$/ }).waitFor();
+    },
+    'link-chapters-success': async (page) => {
+      await page.goto('/?mockLineIdentity=success');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Link chapters…');
+      const message = page.getByText('Read 5 stamped lines.');
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
+    'link-chapters-conflict': async (page) => {
+      await page.goto('/?mockLineIdentity=conflict');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Link chapters…');
+      const message = page.getByText(/Stamped 1 line, 1 stale item, 1 conflict\./);
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
+    'link-chapters-error': async (page) => {
+      await page.goto('/?mockLineIdentity=error');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Link chapters…');
+      const message = page.getByText(/Narration Utils script/).first();
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
+    'pickups-empty': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Pickups…');
+      await page.getByText('No pickups yet').waitFor();
+    },
+    'pickups-imported': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Pickups…');
+      await page.locator('input[type="file"]').setInputFiles({
+        name: 'pickups.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from('start,note,tag\n1.5,Mispronounced "labyrinthine",narrator\n42,Dog barked in the background,\n'),
+      });
+      await page.getByText('2 pickups remaining of 2').waitFor();
+    },
+    'pickups-import-errors': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Pickups…');
+      await page.locator('input[type="file"]').setInputFiles({
+        name: 'pickups.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from('1.5,Good row\nnot-a-number,Bad row\n'),
+      });
+      await page.getByText(/1 row could not be used/).waitFor();
+      // The row report lands immediately; the run itself settles 300ms later in the mock. Wait for the
+      // completed message too, so the screenshot shows the settled "1 pickup remaining" count, not a still-busy
+      // Import button over a stale "No pickups yet".
+      await page.getByText('Imported 1 pickup.').waitFor();
+    },
+    'pickups-next': async (page) => {
+      await page.goto('/?mockPickups=import-success');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Pickups…');
+      await clickVisible(page, 'button', 'Next pickup');
+      await page.getByRole('button', { name: 'Mark this pickup done' }).waitFor();
+    },
+    'pickups-error': async (page) => {
+      await page.goto('/?mockPickups=error');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Pickups…');
+      const message = page.getByText(/Narration Utils script/).first();
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
+    'render-config-prefilled': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Prepare chapter render…');
+      await page.getByRole('button', { name: 'Configure render' }).waitFor();
+    },
+    'render-config-success': async (page) => {
+      await page.goto('/?mockRenderConfig=success');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Prepare chapter render…');
+      const message = page.getByText(/Render is configured/);
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
+    'render-config-no-regions': async (page) => {
+      await page.goto('/?mockRenderConfig=no-regions');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Prepare chapter render…');
+      const message = page.getByText(/No chapter regions were found yet/);
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
+    'render-config-error': async (page) => {
+      await page.goto('/?mockRenderConfig=error');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Prepare chapter render…');
+      const message = page.getByText(/cannot configure render settings/).first();
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
+    'chapter-tags-idle': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Embed chapter tags…');
+      await page.getByText(/No chapter render is configured yet/).waitFor();
+    },
+    'chapter-tags-ready': async (page) => {
+      await page.goto('/?mockChapterTags=ready');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Embed chapter tags…');
+      await page.getByRole('dialog', { name: 'Embed chapter tags' }).getByText('Chapter 2').waitFor();
+    },
+    'chapter-tags-not-rendered': async (page) => {
+      await page.goto('/?mockChapterTags=not-rendered');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Embed chapter tags…');
+      await page.getByText('not rendered yet').waitFor();
+    },
+    'chapter-tags-success': async (page) => {
+      await page.goto('/?mockChapterTags=ready');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Embed chapter tags…');
+      await page.getByLabel('Combined book MP3 to add chapters to').fill('C:\\Books\\Alice\\Alice in Wonderland.mp3');
+      await page.getByRole('checkbox', { name: /I understand this writes a new file/ }).click();
+      await clickVisible(page, 'button', 'Embed chapter tags');
+      await page.getByText(/^Wrote /).waitFor();
+    },
+    'chapter-tags-error': async (page) => {
+      await page.goto('/?mockChapterTags=ready&mockChapterTagsEmbedError=1');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Embed chapter tags…');
+      await page.getByLabel('Combined book MP3 to add chapters to').fill('C:\\Books\\Alice\\Alice in Wonderland.mp3');
+      await page.getByRole('checkbox', { name: /I understand this writes a new file/ }).click();
+      await clickVisible(page, 'button', 'Embed chapter tags');
+      const message = page.getByText(/could not write chapter tags/).first();
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
+    'take-review-results': async (page) => {
+      await goToPage(page, 'Tracks');
+      // Chapter 1 is already the active track; the mock seeds findings for it.
+      await clickVisible(page, 'button', 'Scan for pickups & duplicates');
+      await page.getByRole('table', { name: 'Pickup and duplicate findings' }).waitFor();
+    },
+    'take-review-empty': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', /Chapter 2/); // the mock only seeds findings for Chapter 1
+      await clickVisible(page, 'button', 'Scan for pickups & duplicates');
+      await page.getByText('No repeated reads found on this track.').waitFor();
+    },
+    'take-review-audition': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Scan for pickups & duplicates');
+      await page.getByRole('table', { name: 'Pickup and duplicate findings' }).waitFor();
+      await clickVisible(page, 'button', 'Audition');
+      await page.getByRole('dialog', { name: 'Audition candidate reads' }).waitFor();
+    },
   },
   teleprompter: {
     'setup-default': async (page) => {
@@ -785,6 +1016,25 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'DAW Integration');
+      await page.getByText('REAPER detected').waitFor();
+    },
+    'global-daw-not-detected': async (page) => {
+      await page.goto('/?mockDawNotDetected=1');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'DAW Integration');
+      await page.getByRole('button', { name: 'Get REAPER' }).waitFor();
+    },
+    'global-daw-handoff': async (page) => {
+      // Reload with the mock's no-linked-DAW seam (see main.tsx): REAPER stays detected (dawCatalogInstalled
+      // defaults true), only dawFileLinked flips, so the catalog panel's handoff button appears.
+      await page.goto('/?mockNoDaw=1');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'DAW Integration');
+      await page.getByRole('button', { name: 'Link a REAPER project file' }).waitFor();
     },
     'global-tts': async (page) => {
       await goToPage(page, 'Settings');
@@ -975,6 +1225,11 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Project data');
+    },
+    'project-credits': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'This Project');
+      await clickSettingsCategory(page, 'Credits');
     },
     'dirty-footer': async (page) => {
       await goToPage(page, 'Settings');

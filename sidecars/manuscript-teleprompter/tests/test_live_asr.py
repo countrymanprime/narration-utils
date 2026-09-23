@@ -412,6 +412,8 @@ def test_the_cli_accepts_exactly_the_flags_the_desktop_host_passes():
             "c1",
             "--stop-file",
             "s.stop",
+            "--control-file",
+            "s.ctl",
             "--model-dir",
             "d",
             "--language",
@@ -421,20 +423,75 @@ def test_the_cli_accepts_exactly_the_flags_the_desktop_host_passes():
         ]
     )
     replay = parser.parse_args(
-        ["--engine", "whisper", "--model", "small", "--manuscript", "m.json", "--chapter", "c1", "--stop-file", "s.stop", "--wav", "r.wav"]
+        [
+            "--engine",
+            "whisper",
+            "--model",
+            "small",
+            "--manuscript",
+            "m.json",
+            "--chapter",
+            "c1",
+            "--stop-file",
+            "s.stop",
+            "--control-file",
+            "s.ctl",
+            "--wav",
+            "r.wav",
+        ]
     )
 
-    assert (mic.engine, mic.model, mic.manuscript, mic.chapter, mic.stop_file, mic.model_dir, mic.language, mic.mic) == (
+    assert (mic.engine, mic.model, mic.manuscript, mic.chapter, mic.stop_file, mic.control_file, mic.model_dir, mic.language, mic.mic) == (
         "whisper",
         "tiny",
         "m.json",
         "c1",
         "s.stop",
+        "s.ctl",
         "d",
         "en",
         "Mic",
     )
     assert replay.wav == "r.wav"
+
+
+def test_start_word_and_control_file_parse_from_the_cli():
+    parsed = live_asr.build_parser().parse_args(["--manuscript", "m.json", "--chapter", "c1", "--mic", "Mic", "--start-word", "40", "--control-file", "c.ctl"])
+
+    assert (parsed.start_word, parsed.control_file) == (40, "c.ctl")
+
+
+def test_start_word_defaults_to_none():
+    parsed = live_asr.build_parser().parse_args(["--manuscript", "m.json", "--chapter", "c1", "--mic", "Mic"])
+
+    assert parsed.start_word is None
+
+
+def test_start_word_needs_a_script_or_a_manuscript(capsys):
+    ap = live_asr.build_parser()
+    args = ap.parse_args(["--mic", "Mic", "--start-word", "5"])
+
+    with pytest.raises(SystemExit):
+        live_asr._check_engine_args(ap, args)
+
+    assert "--start-word needs --script or --manuscript" in capsys.readouterr().err
+
+
+def test_control_file_needs_a_script_or_a_manuscript(capsys):
+    ap = live_asr.build_parser()
+    args = ap.parse_args(["--mic", "Mic", "--control-file", "c.ctl"])
+
+    with pytest.raises(SystemExit):
+        live_asr._check_engine_args(ap, args)
+
+    assert "--control-file needs --script or --manuscript" in capsys.readouterr().err
+
+
+def test_start_word_and_control_file_are_accepted_together_with_a_script():
+    ap = live_asr.build_parser()
+    args = ap.parse_args(["--mic", "Mic", "--script", "s.txt", "--start-word", "5", "--control-file", "c.ctl"])
+
+    live_asr._check_engine_args(ap, args)  # must not raise
 
 
 def test_stoppable_passes_every_chunk_through_when_no_stop_file_is_given():

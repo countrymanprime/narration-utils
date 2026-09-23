@@ -18,10 +18,16 @@ import (
 var swappableHostFields = map[string]bool{
 	"findings":     true,
 	"guide":        true,
+	"lineIdentity": true,
 	"manuscript":   true,
+	"pickups":      true,
+	"projectState": true,
+	"renderConfig": true,
 	"settings":     true,
 	"teleprompter": true,
 	"transcript":   true,
+	"reachability": true,
+	"bridge":       true,
 }
 
 // permanentDirectReaders may touch the swappable fields directly because the

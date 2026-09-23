@@ -6,19 +6,30 @@ import { chaptersSchema } from './schemas/manuscript';
 import { guideEntitiesSchema, guidePropertiesSchema } from './schemas/storyBible';
 import { bootstrapSchema } from './schemas/system';
 import type {
+  ChapterTagsPreview,
+  CreditsRenderResult,
+  CreditTemplate,
+  CreditValues,
+  DawCatalogEntry,
   GuideEntity,
   GuideEvidence,
   GuideProperty,
   GuidePronunciation,
+  LineIdentityState,
   ManuscriptNote,
   NarrationApi,
+  PickupsMoment,
+  PickupsState,
   ProjectAttachState,
   ReaderBookmark,
   ReaderState,
   RecentProject,
+  RenderConfigState,
   Scope,
   ScopedSettingField,
+  TakeReviewFinding,
   TeleprompterDevice,
+  TrackMapping,
   TracksDiscovery,
   TranscriptState,
   WorkJob,
@@ -31,11 +42,29 @@ import {
   WIRE_CHAPTERS,
   WIRE_DISCREPANCIES,
   WIRE_ENTITIES,
+  WIRE_LINE_IDENTITY_ERROR,
+  WIRE_LINE_IDENTITY_IDLE,
+  WIRE_LINE_IDENTITY_READ_SUCCESS,
+  WIRE_LINE_IDENTITY_STAMP_CONFLICT,
   WIRE_LOGS,
   WIRE_NOTES,
   WIRE_PARAGRAPHS,
+  WIRE_PICKUPS_ERROR,
+  WIRE_PICKUPS_EXPORT_SUCCESS,
+  WIRE_PICKUPS_IDLE,
+  WIRE_PICKUPS_IMPORT_SUCCESS,
+  WIRE_PICKUPS_NEXT_SUCCESS,
   withFormatting,
   WIRE_READER_STATE,
+  WIRE_CHAPTER_TAGS_EMBED_SUCCESS,
+  WIRE_CHAPTER_TAGS_PREVIEW_IDLE,
+  WIRE_CHAPTER_TAGS_PREVIEW_NOT_RENDERED,
+  WIRE_CHAPTER_TAGS_PREVIEW_READY,
+  WIRE_RENDER_CONFIG_ERROR,
+  WIRE_RENDER_CONFIG_IDLE,
+  WIRE_RENDER_CONFIG_NO_REGIONS,
+  WIRE_RENDER_CONFIG_SUCCESS,
+  WIRE_TAKE_REVIEW_FINDINGS,
   WIRE_TELEPROMPTER_DEVICES,
   WIRE_TRACKS_PROJECT,
   WIRE_TRANSCRIPT,
@@ -179,6 +208,63 @@ function mockAudioSource(): string | undefined {
 
 const wireContext = (payload: string) => ({ boundary: 'host.binding', payload });
 
+// A JS mirror of apps/desktop/internal/credits.Render: `[Token]` placeholders resolved from `values`, and `{...}`
+// optional segments dropped whole (their own punctuation with them) when any token inside is unresolved (PRD
+// audiobook-credits-templates.prd.md, Open Questions C5/C6). Kept deliberately close to the Go renderer so the mock's
+// preview behaves like the real one; it does not need to be the same implementation, only the same behavior.
+function renderMockCredits(template: string, values: Record<string, string>): CreditsRenderResult {
+  const unresolved: string[] = [];
+  const noteUnresolved = (name: string) => {
+    if (!unresolved.includes(name)) unresolved.push(name);
+  };
+  const renderTokens = (fragment: string, onUnresolved?: (name: string) => void) =>
+    fragment.replace(/\[([^[\]{}]+)]/g, (match, name: string) => {
+      const value = values[name];
+      if (value) return value;
+      onUnresolved?.(name);
+      return match;
+    });
+  let text = '';
+  let remaining = template;
+  for (;;) {
+    const open = remaining.indexOf('{');
+    if (open === -1) {
+      text += renderTokens(remaining, noteUnresolved);
+      break;
+    }
+    const closeIndex = remaining.indexOf('}', open);
+    if (closeIndex === -1) {
+      text += renderTokens(remaining, noteUnresolved);
+      break;
+    }
+    text += renderTokens(remaining.slice(0, open), noteUnresolved);
+    const segment = remaining.slice(open + 1, closeIndex);
+    let complete = true;
+    const resolvedSegment = renderTokens(segment, () => {
+      complete = false;
+    });
+    if (complete) text += resolvedSegment;
+    remaining = remaining.slice(closeIndex + 1);
+  }
+  const words = text.split(/\s+/).filter(Boolean).length;
+  return { text, words, unresolved };
+}
+
+function resolveMockCreditValues(values: CreditValues, narratorGlobal: string): Record<string, string> {
+  return {
+    Title: values.title ?? '',
+    Subtitle: values.subtitle ?? '',
+    Author: values.author ?? '',
+    Series: values.series ?? '',
+    'Book Number': values.bookNumber ?? '',
+    Copyright: values.copyright ?? '',
+    Year: values.year ?? '',
+    'Copyright Holder': values.copyrightHolder ?? '',
+    Publisher: values.publisher ?? '',
+    Narrator: values.narrator || narratorGlobal,
+  };
+}
+
 /** Answers that go through the real `parseWire` with a payload of the wrong shape, so the failure screens can be seen without a host. */
 function invalidPayloadOverrides(which: 'bootstrap' | 'manuscript' | 'storybible', base: NarrationApi): Partial<NarrationApi> {
   switch (which) {
@@ -244,6 +330,24 @@ export function createMockApi(
     dawFileLinked?: boolean;
     /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
     dawLinkMismatch?: boolean;
+    /**
+     * Whether `dawCatalogList()`'s REAPER entry reports installed (docs/architecture/daw-integration.md).
+     * Defaults to true; false shows the not-detected state and its "Get REAPER" button.
+     */
+    dawCatalogInstalled?: boolean;
+    /** Seeds the confirmed chapter-track mapping (analysis evidence ledger PRD, Phase 5/7), so a link's state (a
+     * missing track, in particular) can be seen without going through Confirm in the UI first. */
+    chapterTrackMappings?: TrackMapping[];
+    /** Boots LineIdentityState already at this result, so "Link chapters" states can be seen without stepping through a run. */
+    lineIdentity?: 'success' | 'conflict' | 'error';
+    /** Boots PickupsState already at this result, so the pickup list's states can be seen without stepping through a run. */
+    pickups?: 'import-success' | 'next-success' | 'export-success' | 'error';
+    /** Boots RenderConfigState already at this result, so "Prepare chapter render" states can be seen without stepping through a run. */
+    renderConfig?: 'success' | 'no-regions' | 'error';
+    /** Boots ChapterTagsPreview already at this result, so "Embed chapter tags" states can be seen without a real render. */
+    chapterTags?: 'idle' | 'ready' | 'not-rendered';
+    /** Makes chapterTagsEmbed always reject, to review the error state. */
+    chapterTagsEmbedAlwaysErrors?: boolean;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -280,13 +384,62 @@ export function createMockApi(
   // project would have no link yet.
   let dawFileLinked = initial.dawFileLinked ?? true;
   let dawRppPath = `${projectFolder}/${basename(projectFolder)}.rpp`;
+  // Independent of dawFileLinked/dawReachable: a Phase 1 detection fact about the machine, not about this
+  // project's link (docs/architecture/daw-integration.md). Defaults to true so the default capture shows
+  // REAPER detected; ?mockDawNotDetected=1 flips it for the not-detected + "Get REAPER" state.
+  const dawCatalogInstalled = initial.dawCatalogInstalled ?? true;
+  const DAW_CATALOG: DawCatalogEntry[] = [
+    {
+      id: 'reaper',
+      name: 'REAPER',
+      publisher: 'Cockos Incorporated',
+      licenseNote: "A fully-functional evaluation license from the publisher's own site; see their page for terms.",
+      installed: dawCatalogInstalled,
+      ...(dawCatalogInstalled ? { path: 'C:/Program Files/REAPER (x64)/reaper.exe', source: 'uninstall_registry' } : {}),
+    },
+  ];
   // One candidate auto-selects (like the Go host); several leave the choice to the narrator.
   const tracksCandidates = initial.tracksCandidates ?? [WIRE_TRACKS_PROJECT.path];
   let tracksDiscovery: TracksDiscovery = { candidates: tracksCandidates, selected: tracksCandidates.length === 1 ? tracksCandidates[0] : '' };
+  // The confirmed chapter-track mapping (analysis evidence ledger PRD, Phase 5): keyed to one mock documentId, since the
+  // mock always has exactly one manuscript document loaded.
+  const mockDocumentId = 'mock-document-1';
+  let chapterTrackMappings: TrackMapping[] = wireClone(initial.chapterTrackMappings ?? []);
+  // take-review findings, keyed by chapter track name (the same scope the Go store partitions
+  // by, apps/desktop/takereview.go's takeReviewChapterID): a scan of "Chapter 1" seeds the fixture
+  // group, any other track name scans clean and finds nothing, matching a chapter with no repeats.
+  const takeReviewFindingsByTrack = new Map<string, TakeReviewFinding[]>();
   let recentProjects: RecentProject[] = [
     { path: 'C:/Projects/Alice-in-Wonderland', name: 'Alice’s Adventures in Wonderland', lastOpened: '2026-09-15T09:00:00Z' },
     { path: 'C:/Projects/Voltage-and-the-Undercroft', name: 'Voltage and the Undercroft', lastOpened: '2026-09-10T18:30:00Z' },
   ];
+  // Mirrors apps/desktop/internal/credits' shipped defaults (PRD audiobook-credits-templates.prd.md, Phase 1) so a
+  // mock session shows the same starting library as the real host.
+  let creditTemplates: CreditTemplate[] = [
+    {
+      id: 'default-opening-acx-minimum',
+      kind: 'opening',
+      name: 'ACX minimum (opening)',
+      body: '[Title], written by [Author], narrated by [Narrator].',
+      builtIn: true,
+    },
+    {
+      id: 'default-closing-acx-best-practice',
+      kind: 'closing',
+      name: 'ACX best practice (closing)',
+      body: 'You have been listening to [Title], written by [Author], narrated by [Narrator]. The End.',
+      builtIn: true,
+    },
+    {
+      id: 'default-with-copyright',
+      kind: 'closing',
+      name: 'With copyright (contractual)',
+      body: '[Title]. Written by [Author]. Read by [Narrator]. Copyright by [Copyright].',
+      builtIn: true,
+    },
+  ];
+  let nextCreditTemplateId = 1;
+  let creditValues: CreditValues = {};
   const projectAttachSubscribers = new Set<(state: ProjectAttachState) => void>();
   const attachProject = (path: string, name?: string) => {
     projectFolder = path;
@@ -363,9 +516,90 @@ export function createMockApi(
   };
   const subscribers = new Set<(state: TranscriptState) => void>();
   let nextId = 1;
+  let lineIdentity: LineIdentityState = wireClone(
+    initial.lineIdentity === 'success'
+      ? WIRE_LINE_IDENTITY_READ_SUCCESS
+      : initial.lineIdentity === 'conflict'
+        ? WIRE_LINE_IDENTITY_STAMP_CONFLICT
+        : initial.lineIdentity === 'error'
+          ? WIRE_LINE_IDENTITY_ERROR
+          : WIRE_LINE_IDENTITY_IDLE,
+  );
+  const lineIdentitySubscribers = new Set<(state: LineIdentityState) => void>();
+  const publishLineIdentity = () => lineIdentitySubscribers.forEach((fn) => fn(wireClone(lineIdentity)));
+  let pickups: PickupsState = wireClone(
+    initial.pickups === 'import-success'
+      ? WIRE_PICKUPS_IMPORT_SUCCESS
+      : initial.pickups === 'next-success'
+        ? WIRE_PICKUPS_NEXT_SUCCESS
+        : initial.pickups === 'export-success'
+          ? WIRE_PICKUPS_EXPORT_SUCCESS
+          : initial.pickups === 'error'
+            ? WIRE_PICKUPS_ERROR
+            : WIRE_PICKUPS_IDLE,
+  );
+  // The pickups a real REAPER project would still have open: seeded to match whichever WIRE_PICKUPS_* fixture
+  // booted above, so Next and Resolve behave consistently with what the seed already shows as remaining.
+  let pickupsOpen: PickupsMoment[] =
+    initial.pickups === undefined || initial.pickups === 'error'
+      ? []
+      : [
+          { position: 9.25, tag: 'narrator', note: 'Mispronounced "labyrinthine"' },
+          { position: 42, tag: '', note: 'Dog barked in the background' },
+        ];
+  let pickupsResolvedCount = 0;
+  // The 'error' seed models a broken REAPER script (the recurring cause a real ERROR event reports), not a
+  // one-off: every action keeps failing the same way until the narrator fixes REAPER and reopens, the same as
+  // a real session import_pickups/next_pickup/etc. would if the script itself is what's wrong.
+  const pickupsAlwaysErrors = initial.pickups === 'error';
+  const pickupsSubscribers = new Set<(state: PickupsState) => void>();
+  const publishPickups = () => pickupsSubscribers.forEach((fn) => fn(wireClone(pickups)));
+  // Mirrors the Go service's begin(): every new run starts from a clean state (no stale next/resolved/importReport/csv
+  // from a previous run), except remaining/total, which survive so the count does not flash back to zero.
+  const beginPickups = (phase: PickupsState['phase'], message: string) => {
+    pickups = { ...wireClone(WIRE_PICKUPS_IDLE), runId: String(Date.now()), phase, message, remaining: pickups.remaining, total: pickups.total };
+  };
+  // A run's settled outcome is either onSuccess (the normal path) or, when pickupsAlwaysErrors, the same
+  // REAPER error every time. Every action's setTimeout callback runs this instead of writing its own success
+  // state directly, so the 'error' seed stays broken across every action, not just the first.
+  const settlePickups = (onSuccess: () => void) => {
+    if (pickupsAlwaysErrors) {
+      pickups = { ...pickups, phase: 'error', message: WIRE_PICKUPS_ERROR.message };
+    } else {
+      onSuccess();
+    }
+    publishPickups();
+  };
   // A job that ends tells whoever listens, after the call that started it has returned, the way the host does (ADR 0076). The mock ends
   // only the Story Bible rebuild this way: its comparison run is driven by a timer the visual suite steps through, and a toast raised at
   // the end of one would land in every screenshot of the results.
+  let renderConfig: RenderConfigState = wireClone(
+    initial.renderConfig === 'success'
+      ? WIRE_RENDER_CONFIG_SUCCESS
+      : initial.renderConfig === 'no-regions'
+        ? WIRE_RENDER_CONFIG_NO_REGIONS
+        : initial.renderConfig === 'error'
+          ? WIRE_RENDER_CONFIG_ERROR
+          : WIRE_RENDER_CONFIG_IDLE,
+  );
+  // The 'no-regions' seed models a project with no chapter regions yet (Configure still succeeds - it is just
+  // project-info keys - but predicts 0 files); 'error' models a broken REAPER script, sticking the same way the
+  // pickups 'error' seed does.
+  const renderConfigHasRegions = initial.renderConfig !== 'no-regions';
+  const renderConfigAlwaysErrors = initial.renderConfig === 'error';
+  const renderConfigSubscribers = new Set<(state: RenderConfigState) => void>();
+  const publishRenderConfig = () => renderConfigSubscribers.forEach((fn) => fn(wireClone(renderConfig)));
+  // Chapter tag embedding (Phase 12) never talks to REAPER: its preview is a fixed seed, not derived from
+  // renderConfig's live state, since the two are independent bindings on the real host too (ChapterTagsPreview
+  // reads renderConfig.Snapshot() itself, server-side).
+  const chapterTagsPreview: ChapterTagsPreview = wireClone(
+    initial.chapterTags === 'ready'
+      ? WIRE_CHAPTER_TAGS_PREVIEW_READY
+      : initial.chapterTags === 'not-rendered'
+        ? WIRE_CHAPTER_TAGS_PREVIEW_NOT_RENDERED
+        : WIRE_CHAPTER_TAGS_PREVIEW_IDLE,
+  );
+  const chapterTagsEmbedAlwaysErrors = initial.chapterTagsEmbedAlwaysErrors === true;
   const jobEndListeners = new Set<(event: JobEnded) => void>();
   const endJob = (event: JobEnded) => void setTimeout(() => jobEndListeners.forEach((listener) => listener(event)), 0);
   let runTimers: ReturnType<typeof setTimeout>[] = [];
@@ -1038,6 +1272,212 @@ export function createMockApi(
       onUpdate(wireClone(transcript));
       return () => subscribers.delete(onUpdate);
     },
+    lineIdentityStamp: async (rows, overwrite) => {
+      if (rows.length === 0) throw new Error('select at least one item to stamp');
+      lineIdentity = {
+        ...wireClone(WIRE_LINE_IDENTITY_IDLE),
+        runId: String(Date.now()),
+        phase: 'stamping',
+        message: 'Stamping manuscript line identity in REAPER…',
+      };
+      publishLineIdentity();
+      setTimeout(() => {
+        if (lineIdentity.phase !== 'stamping') return;
+        const applied = rows.length;
+        lineIdentity = {
+          ...lineIdentity,
+          phase: 'success',
+          message: `Stamped ${applied} line${applied === 1 ? '' : 's'}.`,
+          stamp: { applied, unchanged: 0, missingCount: 0, conflictsCount: 0, missing: [], conflicts: [] },
+        };
+        publishLineIdentity();
+      }, 300);
+      void overwrite; // the mock never simulates a real conflict from a second stamp; WIRE_LINE_IDENTITY_STAMP_CONFLICT covers that state directly (initial.lineIdentity)
+      return { status: 'started' };
+    },
+    lineIdentityRead: async () => {
+      lineIdentity = {
+        ...wireClone(WIRE_LINE_IDENTITY_IDLE),
+        runId: String(Date.now()),
+        phase: 'reading',
+        message: 'Reading manuscript line identity from REAPER…',
+      };
+      publishLineIdentity();
+      setTimeout(() => {
+        if (lineIdentity.phase !== 'reading') return;
+        lineIdentity = { ...wireClone(WIRE_LINE_IDENTITY_READ_SUCCESS), runId: lineIdentity.runId };
+        publishLineIdentity();
+      }, 300);
+      return { status: 'started' };
+    },
+    lineIdentityState: async () => wireClone(lineIdentity),
+    subscribeLineIdentity: (onUpdate) => {
+      lineIdentitySubscribers.add(onUpdate);
+      onUpdate(wireClone(lineIdentity));
+      return () => lineIdentitySubscribers.delete(onUpdate);
+    },
+    pickupsImport: async (csvText) => {
+      const lines = csvText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      const dataLines = lines.length > 0 && lines[0].toLowerCase().startsWith('start') ? lines.slice(1) : lines;
+      const rowErrors: string[] = [];
+      const added: PickupsMoment[] = [];
+      dataLines.forEach((line, index) => {
+        const [startRaw, note, tag] = line.split(',');
+        const position = Number(startRaw);
+        if (!Number.isFinite(position) || position < 0 || !note) {
+          rowErrors.push(`line ${index + 1}: could not parse this row`);
+          return;
+        }
+        added.push({ position, note: note.trim(), tag: (tag ?? '').trim() });
+      });
+      if (added.length === 0) throw new Error(`no valid pickups were found in the file${rowErrors[0] ? `: ${rowErrors[0]}` : ''}`);
+      pickupsOpen = [...pickupsOpen, ...added];
+      beginPickups('importing', 'Importing pickups into REAPER…');
+      publishPickups();
+      setTimeout(() => {
+        if (pickups.phase !== 'importing') return;
+        settlePickups(() => {
+          pickups = {
+            ...pickups,
+            phase: 'success',
+            message: `Imported ${added.length} pickup${added.length === 1 ? '' : 's'}.`,
+            importReport: { added: added.length, existing: 0, invalid: 0 },
+            remaining: pickupsOpen.length,
+            total: pickupsOpen.length + pickupsResolvedCount,
+          };
+        });
+      }, 300);
+      return { status: 'started', rowErrors };
+    },
+    pickupsExport: async () => {
+      beginPickups('exporting', 'Exporting pickups from REAPER…');
+      publishPickups();
+      setTimeout(() => {
+        if (pickups.phase !== 'exporting') return;
+        settlePickups(() => {
+          const rows = pickupsOpen.map((row) => `${row.position.toFixed(6)},${row.note},${row.tag}`);
+          const csv = ['start,note,tag', ...rows].join('\n') + (rows.length > 0 ? '\n' : '');
+          pickups = {
+            ...pickups,
+            phase: 'success',
+            message: `Exported ${pickupsOpen.length} pickup${pickupsOpen.length === 1 ? '' : 's'}.`,
+            csv,
+            remaining: pickupsOpen.length,
+            total: pickupsOpen.length + pickupsResolvedCount,
+          };
+        });
+      }, 300);
+      return { status: 'started' };
+    },
+    pickupsNext: async () => {
+      beginPickups('jumping', 'Jumping to the next pickup…');
+      publishPickups();
+      setTimeout(() => {
+        if (pickups.phase !== 'jumping') return;
+        settlePickups(() => {
+          if (pickupsOpen.length === 0) {
+            pickups = { ...pickups, phase: 'error', message: 'No pickups remain.' };
+          } else {
+            pickups = { ...pickups, phase: 'success', message: 'Jumped to the next pickup.', next: pickupsOpen[0] };
+          }
+        });
+      }, 300);
+      return { status: 'started' };
+    },
+    pickupsResolve: async (position) => {
+      beginPickups('resolving', 'Resolving this pickup…');
+      publishPickups();
+      setTimeout(() => {
+        if (pickups.phase !== 'resolving') return;
+        settlePickups(() => {
+          const index = pickupsOpen.findIndex((row) => Math.abs(row.position - position) <= 0.15);
+          if (index < 0) {
+            pickups = { ...pickups, phase: 'error', message: 'No open pickup was found at that position.' };
+          } else {
+            const resolved = pickupsOpen[index];
+            pickupsOpen = pickupsOpen.filter((_, candidateIndex) => candidateIndex !== index);
+            pickupsResolvedCount += 1;
+            pickups = {
+              ...pickups,
+              phase: 'success',
+              message: 'Marked this pickup done.',
+              resolved,
+              remaining: pickupsOpen.length,
+              total: pickupsOpen.length + pickupsResolvedCount,
+            };
+          }
+        });
+      }, 300);
+      return { status: 'started' };
+    },
+    pickupsCount: async () => {
+      beginPickups('counting', 'Counting pickups…');
+      publishPickups();
+      setTimeout(() => {
+        if (pickups.phase !== 'counting') return;
+        settlePickups(() => {
+          const remaining = pickupsOpen.length;
+          const total = remaining + pickupsResolvedCount;
+          pickups = { ...pickups, phase: 'success', message: `${remaining} pickup${remaining === 1 ? '' : 's'} remaining of ${total}.`, remaining, total };
+        });
+      }, 300);
+      return { status: 'started' };
+    },
+    pickupsState: async () => wireClone(pickups),
+    subscribePickups: (onUpdate) => {
+      pickupsSubscribers.add(onUpdate);
+      onUpdate(wireClone(pickups));
+      return () => pickupsSubscribers.delete(onUpdate);
+    },
+    renderConfigConfigure: async (outputFolder) => {
+      const folder = outputFolder.trim();
+      if (!folder) throw new Error('an output folder is required');
+      renderConfig = { ...wireClone(WIRE_RENDER_CONFIG_IDLE), runId: String(Date.now()), phase: 'configuring', message: 'Configuring the chapter render…' };
+      publishRenderConfig();
+      setTimeout(() => {
+        if (renderConfig.phase !== 'configuring') return;
+        if (renderConfigAlwaysErrors) {
+          renderConfig = { ...renderConfig, phase: 'error', message: WIRE_RENDER_CONFIG_ERROR.message };
+        } else if (renderConfigHasRegions) {
+          const targets = [`${folder}\\Chapter 1.wav`, `${folder}\\Chapter 2.wav`];
+          renderConfig = {
+            ...renderConfig,
+            phase: 'success',
+            folder,
+            targets,
+            count: targets.length,
+            message: `Render configured for ${targets.length} chapter files. Press Render in REAPER to create them.`,
+          };
+        } else {
+          renderConfig = {
+            ...renderConfig,
+            phase: 'success',
+            folder,
+            targets: [],
+            count: 0,
+            message: 'Render configured. No chapter regions were found yet: create them before rendering.',
+          };
+        }
+        publishRenderConfig();
+      }, 300);
+      return { status: 'started' };
+    },
+    renderConfigSuggestFolder: async () => ({ folder: `${projectFolder}\\renders` }),
+    renderConfigState: async () => wireClone(renderConfig),
+    subscribeRenderConfig: (onUpdate) => {
+      renderConfigSubscribers.add(onUpdate);
+      onUpdate(wireClone(renderConfig));
+      return () => renderConfigSubscribers.delete(onUpdate);
+    },
+    chapterTagsPreview: async () => wireClone(chapterTagsPreview),
+    chapterTagsEmbed: async (destPath) => {
+      if (!destPath.trim()) throw new Error('choose the MP3 file to add chapters to');
+      if (chapterTagsEmbedAlwaysErrors) throw new Error('could not write chapter tags to the new copy');
+      return wireClone(WIRE_CHAPTER_TAGS_EMBED_SUCCESS);
+    },
     subscribeProjectAttach: (onUpdate) => {
       projectAttachSubscribers.add(onUpdate);
       return () => projectAttachSubscribers.delete(onUpdate);
@@ -1064,12 +1504,86 @@ export function createMockApi(
       dawFileLinked = true;
       return { selected: true, linked: true, path: dawRppPath };
     },
+    // The mock never grows a real heartbeat (dawReachable stays whatever Bootstrap already reports, ADR 0092
+    // Phase 7 is Go/Lua only): this just answers as if REAPER accepted the launch.
+    launchDaw: async () => ({ launched: true, path: 'C:/Program Files/REAPER (x64)/reaper.exe', source: 'uninstall_registry' }),
+    creditsTemplates: async () => wireClone(creditTemplates),
+    saveCreditsTemplate: async (id, kind, name, body) => {
+      if (id) {
+        const index = creditTemplates.findIndex((template) => template.id === id);
+        const updated: CreditTemplate = { id, kind, name, body, builtIn: index >= 0 ? creditTemplates[index].builtIn : false };
+        if (index >= 0) creditTemplates[index] = updated;
+        else creditTemplates.push(updated);
+        return wireClone(updated);
+      }
+      const created: CreditTemplate = { id: `mock-credit-template-${nextCreditTemplateId++}`, kind, name, body, builtIn: false };
+      creditTemplates.push(created);
+      return wireClone(created);
+    },
+    duplicateCreditsTemplate: async (id) => {
+      const original = creditTemplates.find((template) => template.id === id);
+      if (!original) throw new Error(`No credit template with id "${id}"`);
+      const duplicate: CreditTemplate = {
+        id: `mock-credit-template-${nextCreditTemplateId++}`,
+        kind: original.kind,
+        name: `${original.name} copy`,
+        body: original.body,
+        builtIn: false,
+      };
+      creditTemplates.push(duplicate);
+      return wireClone(duplicate);
+    },
+    deleteCreditsTemplate: async (id) => {
+      creditTemplates = creditTemplates.filter((template) => template.id !== id);
+    },
+    creditsProjectValues: async () => ({
+      values: wireClone(creditValues),
+      narratorGlobal: settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '',
+      suggestions: { Title: 'Alice’s Adventures in Wonderland', Author: 'Lewis Carroll' },
+    }),
+    saveCreditsProjectValues: async (values) => {
+      creditValues = wireClone(values);
+      return wireClone(creditValues);
+    },
+    creditsPreview: async (body) => {
+      const narratorGlobal = settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '';
+      return renderMockCredits(body, resolveMockCreditValues(creditValues, narratorGlobal));
+    },
+    dawCatalogList: async () => wireClone(DAW_CATALOG),
+    dawCatalogOpenDownloadPage: async (id) => {
+      if (!DAW_CATALOG.some((entry) => entry.id === id)) throw new Error(`Unknown DAW catalog entry "${id}"`);
+      // The mock has no real browser to open; it only proves the call reached a known id (Vitest's "no navigation
+      // without a click" success metric is exercised at the component level, not here).
+    },
     tracksDiscover: async () => wireClone(tracksDiscovery),
     tracksSelect: async (path) => {
       tracksDiscovery = { ...tracksDiscovery, selected: path };
       return wireClone(tracksDiscovery);
     },
     tracksList: async () => wireClone(WIRE_TRACKS_PROJECT),
+    chapterTrackMapList: async () => ({ documentId: mockDocumentId, mappings: wireClone(chapterTrackMappings) }),
+    chapterTrackMapConfirm: async (trackGuid, chapterId) => {
+      await manuscriptReady;
+      const chapter = chapters.find((candidate) => candidate.id === chapterId);
+      if (!chapter) throw new Error('that chapter is not part of the current manuscript');
+      const mapping: TrackMapping = { trackGuid, chapterId, chapterTitle: chapter.title, confirmedAt: new Date().toISOString() };
+      chapterTrackMappings = [...chapterTrackMappings.filter((existing) => existing.trackGuid !== trackGuid), mapping];
+      return wireClone(mapping);
+    },
+    chapterTrackMapClear: async (trackGuid) => {
+      chapterTrackMappings = chapterTrackMappings.filter((existing) => existing.trackGuid !== trackGuid);
+      return { documentId: mockDocumentId, mappings: wireClone(chapterTrackMappings) };
+    },
+    takeReviewScan: async (chapterTrackName) => {
+      const fresh: TakeReviewFinding[] = chapterTrackName === 'Chapter 1' ? wireClone(WIRE_TAKE_REVIEW_FINDINGS) : [];
+      takeReviewFindingsByTrack.set(chapterTrackName, fresh);
+      return wireClone(fresh);
+    },
+    takeReviewFindings: async (chapterTrackName) => wireClone(takeReviewFindingsByTrack.get(chapterTrackName) ?? []),
+    takeReviewCreateTake: async (request) => ({
+      targetItemGuid: request.targetItemGuid,
+      newTakeGuid: '{99999999-0000-4000-8000-000000000099}',
+    }),
     subscribeNotices: (onNotice) => {
       const text = initial.notice;
       if (!text) return () => {};

@@ -39,6 +39,17 @@ project folder and reopen the page.
 
 ![Tracks page explaining that no REAPER project file was found](../../images/ui/tracks-no-project-file.webp)
 
+## Linking chapters to tracks
+
+Below the track list, Chapter links shows every narration chapter with the track it's confirmed
+to, so checks that need to know "which audio is this chapter" (a future Home row, an evidence
+view) don't guess by name. A chapter starts **Not linked**; choose a track and press Confirm to
+link it. A confirmed chapter shows **Linked** with the track's name, and Change or Clear. If the
+confirmed track is deleted, or the project points somewhere else, the chapter shows **Track
+missing** until it's relinked or cleared.
+
+![Tracks page chapter links list with one chapter confirmed to a track](../../images/ui/tracks-chapter-links.webp)
+
 ---
 
 [← Teleprompter](teleprompter.md) · [Index](README.md) · [Settings →](settings.md)

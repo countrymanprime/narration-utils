@@ -25,6 +25,7 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     'src/components/layout/AppShell.tsx': 1,
     'src/components/home/Home.tsx': 2,
     'src/components/manuscript/ChapterNav.tsx': 4,
+    'src/components/manuscript/CreditsEntry.tsx': 1,
     'src/components/manuscript/Manuscript.tsx': 2,
     'src/components/project/ProjectPicker.tsx': 3,
     'src/components/proofing/Transcript.tsx': 1,
@@ -34,11 +35,19 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // "Choose from the list" button are gone (no typed fallback - dropdown-only per the "Microphone is never typed"
     // decision, docs/prds/teleprompter-engines-and-input-devices.prd.md).
     'src/components/teleprompter/MicrophoneField.tsx': 1,
+    // The click-to-seek word ("Start here" / "Go back to here", teleprompter-manuscript-integration.prd.md Phase 4):
+    // one word among hundreds inside running prose, so it needs `Button`'s bare click/keyboard semantics without its
+    // padded, uppercase button chrome, which would break the text flow and read as a real action button rather than a
+    // word. One JSX `<button>` in the source (it is written once, inside the words `.map()`, not once per word).
+    'src/components/teleprompter/ReaderText.tsx': 1,
     'src/components/storybible/GuideDetail.tsx': 1,
     'src/components/tracks/TracksPage.tsx': 2,
   },
   select: {},
-  input: {},
+  // Reaper-automation-follow-through PRD Phase 9: `PickupsDialog`'s CSV picker is a hidden native `<input type="file">`
+  // triggered by a `Button` (ADR 0053's own escape hatch for file-choosing, since a file picker's OS chrome cannot be
+  // restyled the way a text input or select can - the same reason `ManuscriptSelectFile` uses a native OS dialog).
+  input: { 'src/components/tracks/PickupsDialog.tsx': 1 },
   textarea: {},
   table: {},
   thead: {},

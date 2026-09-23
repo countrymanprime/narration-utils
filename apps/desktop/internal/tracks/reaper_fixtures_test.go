@@ -100,6 +100,40 @@ func TestAMultiTakeItemIsReportedAsItsActiveTake(t *testing.T) {
 	}
 }
 
+// Take review Phase 2 (Q6: the item GUID is the explicit target identity a
+// scan resolves to, no manuscript line-identity stamp required) needs to
+// resolve an item by its own GUID regardless of which track holds it or
+// which take is active, so a finding's target can be re-resolved against
+// the live project before any mutation.
+func TestItemByGUIDFindsAMultiTakeItemAcrossTracksByItsOwnGUIDNotATakes(t *testing.T) {
+	project := parseReaperFixture(t, "saved-cases.rpp")
+
+	track, item, ok := project.ItemByGUID("{83F2BBC9-F579-4D70-8EC2-63E9FCF1BE8C}")
+	if !ok {
+		t.Fatal("ItemByGUID did not find the multi-take item by its IGUID")
+	}
+	if track.Name != "Multi-take" {
+		t.Errorf("track = %q, want Multi-take", track.Name)
+	}
+	if len(item.Takes) != 3 || item.Name != "take B" {
+		t.Fatalf("item = %#v, want the multi-take item resolved to its active take", item)
+	}
+
+	// A take's own GUID is not an item GUID: looking one up must fail, not
+	// silently match the item that happens to hold it.
+	if _, _, ok := project.ItemByGUID("{F5614A11-80D0-425B-82BB-B4D942CD241E}"); ok {
+		t.Error("ItemByGUID matched a take GUID; it must only match IGUID")
+	}
+
+	if _, _, ok := project.ItemByGUID("{00000000-0000-0000-0000-000000000000}"); ok {
+		t.Error("ItemByGUID matched a GUID no item has")
+	}
+
+	if _, _, ok := project.ItemByGUID(""); ok {
+		t.Error("ItemByGUID matched the empty string; an item with no recorded GUID must never match a blank query")
+	}
+}
+
 // The parser superset (EL Phase 1) now reads the item GUID (from IGUID, not a take's own GUID), mute, every take
 // with its own GUID/source/SOFFS/PLAYRATE, which take is active, FX-chain presence and stretch-marker count as
 // evidence, and item/take extension data (P_EXT/TAKE EXT, including <BIN> blocks).

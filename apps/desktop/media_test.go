@@ -113,11 +113,17 @@ func TestMediaMiddlewarePassesThroughEverythingElse(t *testing.T) {
 	}
 }
 
-// TestMediaMiddlewareAuthorizesOnlyTheActiveTakesSource proves Q10 of the
-// analysis evidence ledger PRD: a multi-take item's inactive takes are not
-// authorized, only the active one (TAKE SEL), even though every take's
-// source is a real file the project's own .rpp references.
-func TestMediaMiddlewareAuthorizesOnlyTheActiveTakesSource(t *testing.T) {
+// TestMediaMiddlewareAuthorizesEveryTakesSourceNotJustTheActiveOne proves
+// the take-review PRD's Phase 2 extension of the analysis evidence ledger's
+// Q10 (adopted there as "B: only the active take's source", with the PRD's
+// own note "TR Phase 2 asks for all takes; it can extend from B" - see
+// docs/prds/analysis-evidence-ledger.prd.md and
+// docs/prds/take-review-pickups-duplicates-take-intelligence.prd.md Phase
+// 2). Take review's audition and comparison work (later phases) need to
+// play a candidate take's own source even when it is not the item's active
+// take, so every take of every item the selected project references is now
+// authorized, not only each item's active one.
+func TestMediaMiddlewareAuthorizesEveryTakesSourceNotJustTheActiveOne(t *testing.T) {
 	folder := t.TempDir()
 	writeFile(t, filepath.Join(folder, "Book.rpp"), multiTakeRppFixture("media/take_a.wav", "media/take_b.wav"))
 	if err := os.MkdirAll(filepath.Join(folder, "media"), 0o755); err != nil {
@@ -138,8 +144,69 @@ func TestMediaMiddlewareAuthorizesOnlyTheActiveTakesSource(t *testing.T) {
 	inactiveRequest := httptest.NewRequest(http.MethodGet, mediaRoute+"?path="+filepath.Join(folder, "media", "take_a.wav"), nil)
 	inactiveRecorder := httptest.NewRecorder()
 	handler.ServeHTTP(inactiveRecorder, inactiveRequest)
-	if inactiveRecorder.Code != http.StatusNotFound {
-		t.Fatalf("inactive take: status = %d, want 404 (only the active take's source is authorized)", inactiveRecorder.Code)
+	if inactiveRecorder.Code != http.StatusOK {
+		t.Fatalf("inactive take: status = %d, want 200 (every take's own source is authorized, not only the active take's); body = %s", inactiveRecorder.Code, inactiveRecorder.Body.String())
+	}
+	if inactiveRecorder.Body.String() != "take A bytes" {
+		t.Fatalf("inactive take body = %q, want the inactive take's own file content", inactiveRecorder.Body.String())
+	}
+}
+
+// TestMediaMiddlewareAuthorizesEveryTakeOfARealReaperSavedMultiTakeItem
+// reuses the S0 spike's REAPER-saved fixture pack (three real takes on one
+// item, the second active) rather than a hand-written project, per the
+// take-review PRD's instruction to test the take-aware model against real
+// REAPER output.
+func TestMediaMiddlewareAuthorizesEveryTakeOfARealReaperSavedMultiTakeItem(t *testing.T) {
+	folder := t.TempDir()
+	copyReaperFixture(t, folder, "saved-cases.rpp", "Book.rpp")
+
+	host := newTestHostForMedia(t, folder)
+	handler := host.mediaMiddleware(passthrough(t))
+
+	for _, take := range []string{"take_a.wav", "take_b.wav", "take_c.wav"} {
+		request := httptest.NewRequest(http.MethodGet, mediaRoute+"?path="+filepath.Join(folder, "media", take), nil)
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusOK {
+			t.Errorf("%s: status = %d, want 200 (every take of the real multi-take item is authorized)", take, recorder.Code)
+		}
+	}
+}
+
+// copyReaperFixture copies a REAPER-saved fixture from
+// apps/desktop/internal/tracks/testdata/reaper (see that folder's README)
+// and its media/ folder into folder as destName, so a media.go test can
+// authorize against a project REAPER itself wrote instead of a hand-built
+// one.
+func copyReaperFixture(t *testing.T, folder, fixtureName, destName string) {
+	t.Helper()
+	source := filepath.Join("internal", "tracks", "testdata", "reaper")
+	contents, err := os.ReadFile(filepath.Join(source, fixtureName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(folder, destName), string(contents))
+
+	mediaSource := filepath.Join(source, "media")
+	entries, err := os.ReadDir(mediaSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(folder, "media"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		bytes, err := os.ReadFile(filepath.Join(mediaSource, entry.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(folder, "media", entry.Name()), bytes, 0o600); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 

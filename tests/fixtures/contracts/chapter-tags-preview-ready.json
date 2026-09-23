@@ -1,0 +1,15 @@
+{
+  "chapters": [
+    {
+      "path": "C:\\Books\\Alice\\renders\\Chapter 1.mp3",
+      "rendered": true,
+      "title": "Chapter 1"
+    },
+    {
+      "path": "C:\\Books\\Alice\\renders\\Chapter 2.mp3",
+      "rendered": true,
+      "title": "Chapter 2"
+    }
+  ],
+  "ready": true
+}

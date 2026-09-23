@@ -63,6 +63,23 @@ var builtinDefaults = map[string]Values{
 	"Manuscript":        {"color_note": "B85C1E"},
 	"TranscriptCompare": {"chunk_seconds": "60", "model_size": "small", "color_misread": "FF4040", "color_skipped": "FFC000", "color_extra": "40A0FF"},
 	"Teleprompter":      {"engine": "whisper", "model": "tiny"},
+	// auto_start_launcher defaults off (owner decision D10): the spike that proved REAPER auto-runs a script
+	// argument (ADR 0092, W12) does not by itself decide whether the app should always do it.
+	"DAW": {"auto_start_launcher": "false"},
+	// TakeReview holds the pickup/duplicate detector's Q12 thresholds and
+	// Q3 scan-scope settings (internal/takereview), layered like every
+	// other tool here. Thresholds mirror repeats.DefaultThresholds();
+	// pickup_track_name and the pickup_range pair are mutually exclusive
+	// narrator-designated additions to the chapter track's own items (Q3
+	// option B) and both default empty (no pickup scope beyond the
+	// chapter track).
+	"TakeReview": {
+		"full_coverage_threshold":          "0.9",
+		"near_duplicate_quality_threshold": "0.97",
+		"pickup_track_name":                "",
+		"pickup_range_start_seconds":       "",
+		"pickup_range_end_seconds":         "",
+	},
 }
 
 // Defaults returns the repo file's values for tool, with any key the file does

@@ -1,0 +1,15 @@
+{
+  "csv": "",
+  "importReport": {
+    "added": 2,
+    "existing": 0,
+    "invalid": 0
+  },
+  "message": "Imported 2 pickups.",
+  "next": null,
+  "phase": "success",
+  "remaining": 0,
+  "resolved": null,
+  "runId": "1790000000000000",
+  "total": 0
+}

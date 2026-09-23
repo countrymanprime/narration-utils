@@ -15,6 +15,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
+	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
@@ -346,7 +347,7 @@ func (h *Host) ManuscriptSelectFile() (string, error) {
 	if ctx == nil {
 		return "", fmt.Errorf("the desktop host is not ready")
 	}
-	path, err := runtime.OpenFileDialog(ctx, runtime.OpenDialogOptions{Title: "Select manuscript", Filters: []runtime.FileFilter{{DisplayName: "Manuscripts", Pattern: "*.docx;*.md;*.markdown"}}})
+	path, err := runtime.OpenFileDialog(ctx, runtime.OpenDialogOptions{Title: "Select manuscript", Filters: []runtime.FileFilter{{DisplayName: "Manuscripts", Pattern: importer.PickerPattern()}}})
 	if err != nil {
 		return "", err
 	}
@@ -545,6 +546,18 @@ func (h *Host) TeleprompterStop() (string, error) {
 	return encodeBinding(nil, nil)
 }
 
+// TeleprompterSeek moves a running session's tracker straight to script word `word` (the read-aloud modal's "Start
+// here"/"Go back to here", teleprompter-manuscript-integration.prd.md Phase 3): one line appended to the session's
+// control file, the sentinel-file pattern service.Seek documents. Errors (no service, no running session, a write
+// failure) come back as a rejected promise, the same shape as every other teleprompter binding failure.
+func (h *Host) TeleprompterSeek(word int) (string, error) {
+	service := h.services().teleprompter
+	if service == nil {
+		return "", fmt.Errorf("the teleprompter service is unavailable")
+	}
+	return encodeBinding(nil, service.Seek(word))
+}
+
 // teleprompterDevicesTimeout bounds one `--list-devices` sidecar run: it prints one JSON line and exits, so this only
 // needs to cover process start-up and dshow's own listing time, not anything as slow as a model load.
 const teleprompterDevicesTimeout = 10 * time.Second
@@ -665,11 +678,56 @@ func (h *Host) TranscriptSaveHints(accepted []string) (string, error) {
 	return encodeBinding(nil, service.SaveHints(accepted))
 }
 
+// ChapterTrackMapList, ChapterTrackMapConfirm and ChapterTrackMapClear are
+// the narrator-confirmed chapter-track mapping's bindings (analysis
+// evidence ledger PRD, Phase 5, Q6/Q7): the mapping-confirm UI itself is
+// Phase 7 (not built here), but the store it will call is bound now.
+func (h *Host) ChapterTrackMapList() (string, error) { return encodeBinding(h.mappingList()) }
+func (h *Host) ChapterTrackMapConfirm(trackGUID, chapterID string) (string, error) {
+	return encodeBinding(h.mappingConfirm(trackGUID, chapterID))
+}
+func (h *Host) ChapterTrackMapClear(trackGUID string) (string, error) {
+	return encodeBinding(h.mappingClear(trackGUID))
+}
+
 func (h *Host) TracksDiscover() (string, error) { return encodeBinding(h.tracksDiscover()) }
 func (h *Host) TracksSelect(path string) (string, error) {
 	return encodeBinding(h.tracksSelect(path))
 }
 func (h *Host) TracksList() (string, error) { return encodeBinding(h.tracksList()) }
+
+// TakeReviewScan runs one pickup/duplicate scan of chapterTrackName (take-review
+// phase 5's scan-and-review surface) and saves the fresh findings into the
+// project's findings store, returning the merged result.
+func (h *Host) TakeReviewScan(chapterTrackName string) (string, error) {
+	return encodeBinding(h.takeReviewScan(chapterTrackName))
+}
+
+// TakeReviewFindings reads the take-review analyzer's saved findings for
+// chapterTrackName (every chapter when empty) without running a new scan.
+func (h *Host) TakeReviewFindings(chapterTrackName string) (string, error) {
+	return encodeBinding(h.takeReviewFindings(chapterTrackName))
+}
+
+// TakeReviewCreateTake adds a narrator-approved candidate's source range as a
+// new take on the target item (take-review phase 6): findingID is the
+// finding this candidate came from (provenance, ADR 0098); targetItemGUID
+// is the item the narrator explicitly chose (never preselected);
+// candidateItemGUID is the candidate's own item GUID when it has one (empty
+// skips that extra staleness check); sourceFile, sourceRangeStart and
+// sourceRangeEnd (seconds, source-file-relative) locate the candidate's
+// matched span within its own source. The previously active take and the
+// item's length are never touched (the phase 1 spike).
+func (h *Host) TakeReviewCreateTake(findingID, targetItemGUID, candidateItemGUID, sourceFile string, sourceRangeStart, sourceRangeEnd float64) (string, error) {
+	return encodeBinding(h.takeReviewCreateTake(takereview.CreateTakeRequest{
+		FindingID:         findingID,
+		TargetItemGUID:    targetItemGUID,
+		CandidateItemGUID: candidateItemGUID,
+		SourceFile:        sourceFile,
+		SourceRangeStart:  sourceRangeStart,
+		SourceRangeEnd:    sourceRangeEnd,
+	}))
+}
 
 // voiceAssetRequired is the answer to a preview that needs a voice that is not installed yet: which voice, its state and its
 // download size, so the UI can offer to install it. The UI validates it as `GuidePreview` (ADR 0069).

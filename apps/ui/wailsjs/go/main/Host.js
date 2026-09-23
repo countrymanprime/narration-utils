@@ -30,6 +30,66 @@ export function Bootstrap() {
   return window['go']['main']['Host']['Bootstrap']();
 }
 
+export function ChapterTagsEmbed(arg1) {
+  return window['go']['main']['Host']['ChapterTagsEmbed'](arg1);
+}
+
+export function ChapterTagsPreview() {
+  return window['go']['main']['Host']['ChapterTagsPreview']();
+}
+
+export function ChapterTrackMapClear(arg1) {
+  return window['go']['main']['Host']['ChapterTrackMapClear'](arg1);
+}
+
+export function ChapterTrackMapConfirm(arg1, arg2) {
+  return window['go']['main']['Host']['ChapterTrackMapConfirm'](arg1, arg2);
+}
+
+export function ChapterTrackMapList() {
+  return window['go']['main']['Host']['ChapterTrackMapList']();
+}
+
+export function CreditsDeleteTemplate(arg1) {
+  return window['go']['main']['Host']['CreditsDeleteTemplate'](arg1);
+}
+
+export function CreditsDuplicateTemplate(arg1) {
+  return window['go']['main']['Host']['CreditsDuplicateTemplate'](arg1);
+}
+
+export function CreditsPreview(arg1) {
+  return window['go']['main']['Host']['CreditsPreview'](arg1);
+}
+
+export function CreditsProjectValues() {
+  return window['go']['main']['Host']['CreditsProjectValues']();
+}
+
+export function CreditsSaveProjectValues(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) {
+  return window['go']['main']['Host']['CreditsSaveProjectValues'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+}
+
+export function CreditsSaveTemplate(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['Host']['CreditsSaveTemplate'](arg1, arg2, arg3, arg4);
+}
+
+export function CreditsTemplates() {
+  return window['go']['main']['Host']['CreditsTemplates']();
+}
+
+export function DawCatalogList() {
+  return window['go']['main']['Host']['DawCatalogList']();
+}
+
+export function DawCatalogOpenDownloadPage(arg1) {
+  return window['go']['main']['Host']['DawCatalogOpenDownloadPage'](arg1);
+}
+
+export function DawLaunch() {
+  return window['go']['main']['Host']['DawLaunch']();
+}
+
 export function GuideBuild(arg1) {
   return window['go']['main']['Host']['GuideBuild'](arg1);
 }
@@ -80,6 +140,18 @@ export function GuideSetLocked(arg1, arg2) {
 
 export function GuideUnrelate(arg1, arg2, arg3) {
   return window['go']['main']['Host']['GuideUnrelate'](arg1, arg2, arg3);
+}
+
+export function LineIdentityRead() {
+  return window['go']['main']['Host']['LineIdentityRead']();
+}
+
+export function LineIdentityStamp(arg1, arg2) {
+  return window['go']['main']['Host']['LineIdentityStamp'](arg1, arg2);
+}
+
+export function LineIdentityState() {
+  return window['go']['main']['Host']['LineIdentityState']();
 }
 
 export function ManuscriptBeginImport(arg1) {
@@ -158,6 +230,30 @@ export function ManuscriptSetChapterStatus(arg1, arg2) {
   return window['go']['main']['Host']['ManuscriptSetChapterStatus'](arg1, arg2);
 }
 
+export function PickupsCount() {
+  return window['go']['main']['Host']['PickupsCount']();
+}
+
+export function PickupsExport() {
+  return window['go']['main']['Host']['PickupsExport']();
+}
+
+export function PickupsImport(arg1) {
+  return window['go']['main']['Host']['PickupsImport'](arg1);
+}
+
+export function PickupsNext() {
+  return window['go']['main']['Host']['PickupsNext']();
+}
+
+export function PickupsResolve(arg1) {
+  return window['go']['main']['Host']['PickupsResolve'](arg1);
+}
+
+export function PickupsState() {
+  return window['go']['main']['Host']['PickupsState']();
+}
+
 export function ProjectCreateIn(arg1, arg2) {
   return window['go']['main']['Host']['ProjectCreateIn'](arg1, arg2);
 }
@@ -178,12 +274,36 @@ export function ProjectSelectFolder() {
   return window['go']['main']['Host']['ProjectSelectFolder']();
 }
 
+export function ProjectStateChangedSince(arg1, arg2) {
+  return window['go']['main']['Host']['ProjectStateChangedSince'](arg1, arg2);
+}
+
+export function ProjectStateCheck() {
+  return window['go']['main']['Host']['ProjectStateCheck']();
+}
+
+export function ProjectStateState() {
+  return window['go']['main']['Host']['ProjectStateState']();
+}
+
 export function ProjectSwitch(arg1, arg2) {
   return window['go']['main']['Host']['ProjectSwitch'](arg1, arg2);
 }
 
 export function Ready() {
   return window['go']['main']['Host']['Ready']();
+}
+
+export function RenderConfigConfigure(arg1) {
+  return window['go']['main']['Host']['RenderConfigConfigure'](arg1);
+}
+
+export function RenderConfigState() {
+  return window['go']['main']['Host']['RenderConfigState']();
+}
+
+export function RenderConfigSuggestFolder() {
+  return window['go']['main']['Host']['RenderConfigSuggestFolder']();
 }
 
 export function SystemNotify(arg1, arg2, arg3) {
@@ -216,6 +336,22 @@ export function TeleprompterState() {
 
 export function TeleprompterStop() {
   return window['go']['main']['Host']['TeleprompterStop']();
+}
+
+export function TakeReviewCreateTake(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['main']['Host']['TakeReviewCreateTake'](arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
+export function TakeReviewFindings(arg1) {
+  return window['go']['main']['Host']['TakeReviewFindings'](arg1);
+}
+
+export function TakeReviewScan(arg1) {
+  return window['go']['main']['Host']['TakeReviewScan'](arg1);
+}
+
+export function TeleprompterSeek(arg1) {
+  return window['go']['main']['Host']['TeleprompterSeek'](arg1);
 }
 
 export function TracksDiscover() {

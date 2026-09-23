@@ -5,8 +5,14 @@ import { useApi } from '../../api/ApiContext';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { Button } from '../primitives/Button';
+import { ChapterLinksTable } from './ChapterLinksTable';
 import { useTrackPlayback } from './useTrackPlayback';
-import type { Track, TracksDiscovery, TracksProject } from '../../types';
+import { LinkChaptersDialog } from './LinkChaptersDialog';
+import { PickupsDialog } from './PickupsDialog';
+import { RenderConfigDialog } from './RenderConfigDialog';
+import { ChapterTagsDialog } from './ChapterTagsDialog';
+import { TakeReviewPanel } from './TakeReviewPanel';
+import type { ManuscriptChapter, Track, TracksDiscovery, TracksProject } from '../../types';
 
 function basename(path: string): string {
   return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
@@ -130,6 +136,27 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
   const [project, setProject] = useState<TracksProject>();
   const [error, setError] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
+  const [chapters, setChapters] = useState<ManuscriptChapter[]>([]);
+  const [linkChaptersOpen, setLinkChaptersOpen] = useState(false);
+  const [pickupsOpen, setPickupsOpen] = useState(false);
+  const [renderConfigOpen, setRenderConfigOpen] = useState(false);
+  const [chapterTagsOpen, setChapterTagsOpen] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void api
+      .manuscriptChapters()
+      .then((next) => {
+        if (active) setChapters(next);
+      })
+      .catch(() => {
+        // Link chapters is an optional, secondary action on this page: a failed chapter load just leaves the button hidden
+        // (chapters stays empty) instead of raising the page's own error banner, which is reserved for the tracks it exists to show.
+      });
+    return () => {
+      active = false;
+    };
+  }, [api]);
 
   useEffect(() => {
     let active = true;
@@ -176,8 +203,34 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <Heading title="Tracks">{discovery?.selected ? basename(discovery.selected) : 'Detected from the project’s REAPER file.'}</Heading>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <Heading title="Tracks">{discovery?.selected ? basename(discovery.selected) : 'Detected from the project’s REAPER file.'}</Heading>
+        </div>
+        {project && project.tracks.length > 0 && (
+          <div className="flex flex-none flex-wrap gap-2">
+            {chapters.length > 0 && (
+              <Button variant="ghost" onClick={() => setLinkChaptersOpen(true)}>
+                Link chapters…
+              </Button>
+            )}
+            <Button variant="ghost" onClick={() => setPickupsOpen(true)}>
+              Pickups…
+            </Button>
+            <Button variant="ghost" onClick={() => setRenderConfigOpen(true)}>
+              Prepare chapter render…
+            </Button>
+            <Button variant="ghost" onClick={() => setChapterTagsOpen(true)}>
+              Embed chapter tags…
+            </Button>
+          </div>
+        )}
+      </div>
       <DawFileLink dawFileLinked={dawFileLinked} onLinkDawFile={onLinkDawFile} />
+      {linkChaptersOpen && project && <LinkChaptersDialog chapters={chapters} tracks={project.tracks} onClose={() => setLinkChaptersOpen(false)} />}
+      {pickupsOpen && <PickupsDialog onClose={() => setPickupsOpen(false)} />}
+      {renderConfigOpen && <RenderConfigDialog onClose={() => setRenderConfigOpen(false)} />}
+      {chapterTagsOpen && <ChapterTagsDialog onClose={() => setChapterTagsOpen(false)} />}
       {error && (
         <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
           {error}
@@ -204,8 +257,10 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
               <TrackRow key={track.guid || index} track={track} active={index === activeIndex} onSelect={() => setActiveIndex(index)} />
             ))}
           </ul>
+          {project.tracks[activeIndex] && <TakeReviewPanel chapterTrackName={project.tracks[activeIndex].name} />}
         </>
       )}
+      {project && <ChapterLinksTable tracks={project.tracks} />}
     </div>
   );
 }

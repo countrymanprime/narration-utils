@@ -20,15 +20,23 @@ import {
 } from './schemas/manuscript';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { settingsForScopeSchema } from './schemas/settings';
+import { takeReviewCreateTakeResultSchema, takeReviewFindingsSchema } from './schemas/takeReview';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
+import { chapterTrackMappingSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
-import { dawLinkResultSchema, projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
+import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
+import { creditsProjectValuesResultSchema, creditsRenderResultSchema, creditTemplateSchema, creditTemplatesSchema } from './schemas/credits';
+import { dawCatalogListSchema } from './schemas/dawCatalog';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
+import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
+import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
+import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
+import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
 import { unknownKeys } from './schemas/strictness';
 import { parseWire, type WireContext } from './wire/parseWire';
 import { WireError } from './wire/WireError';
@@ -88,6 +96,10 @@ const GOLDEN: Record<string, z.ZodType> = {
   'daw-link-selected.json': dawLinkResultSchema,
   'daw-link-folder-mismatch.json': dawLinkResultSchema,
   'daw-link-cancelled.json': dawLinkResultSchema,
+  'daw-launch.json': dawLaunchResultSchema,
+  'credits-templates.json': creditTemplatesSchema,
+  'credits-project-values-empty.json': creditsProjectValuesResultSchema,
+  'credits-preview-unresolved.json': creditsRenderResultSchema,
   'system-notice.json': noticeSchema,
   'job-ended-success.json': jobEndedSchema,
   'job-ended-error.json': jobEndedSchema,
@@ -122,6 +134,20 @@ const GOLDEN: Record<string, z.ZodType> = {
   'tracks-discovery-none.json': tracksDiscoverySchema,
   'tracks-discovery-several.json': tracksDiscoverySchema,
   'tracks-discovery-selected.json': tracksDiscoverySchema,
+  'chapter-track-map-empty.json': chapterTrackMappingSchema,
+  'chapter-track-map-confirmed.json': trackMappingSchema,
+  'chapter-track-map-list.json': chapterTrackMappingSchema,
+  'line-identity-idle.json': lineIdentityStateSchema,
+  'line-identity-read-success.json': lineIdentityStateSchema,
+  'pickups-idle.json': pickupsStateSchema,
+  'pickups-import-success.json': pickupsStateSchema,
+  'render-config-idle.json': renderConfigStateSchema,
+  'render-config-success.json': renderConfigStateSchema,
+  'chapter-tags-preview-idle.json': chapterTagsPreviewSchema,
+  'chapter-tags-preview-ready.json': chapterTagsPreviewSchema,
+  'chapter-tags-embed-success.json': chapterTagsEmbedResultSchema,
+  'takereview-findings.json': takeReviewFindingsSchema,
+  'takereview-create-take.json': takeReviewCreateTakeResultSchema,
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -215,6 +241,26 @@ describe('answers of the mock client (it must pass the schemas the real host ans
     expectMatches(teleprompterDevicesResultSchema, await api.teleprompterDevices(), 'mock teleprompter devices');
     const empty = createMockApi({}, { teleprompterDevices: [] });
     expectMatches(teleprompterDevicesResultSchema, await empty.teleprompterDevices(), 'mock teleprompter devices, none found');
+  });
+
+  it('teleprompterSeek moves a running session to the requested word, reported as a restart jump', async () => {
+    const api = createMockApi();
+    const events: unknown[] = [];
+    api.subscribeTeleprompterEvent((event) => events.push(event));
+    const chapter = (await api.manuscriptChapters())[0];
+    await api.teleprompterStart({ chapter: chapter?.id ?? '', device: 'Microphone' });
+
+    await api.teleprompterSeek(3);
+
+    const seek = events.at(-1);
+    expectMatches(teleprompterEventSchema, seek, 'mock teleprompter seek event');
+    expect(seek).toMatchObject({ type: 'position', read: 3, committed: 3, jump: 'restart' });
+  });
+
+  it('teleprompterSeek rejects when no session is running', async () => {
+    const api = createMockApi();
+
+    await expect(api.teleprompterSeek(3)).rejects.toThrow(/no teleprompter session/);
   });
 
   it('the project-attach event', () => {
@@ -312,6 +358,47 @@ describe('answers of the mock client for the manuscript, Story Bible and project
   it('the DAW link binding answers, linked and refused on a folder mismatch', async () => {
     expectMatches(dawLinkResultSchema, await createMockApi().linkDawFile(), 'mock link');
     expectMatches(dawLinkResultSchema, await createMockApi({}, { dawLinkMismatch: true }).linkDawFile(), 'mock link, folder mismatch');
+  });
+
+  it('the DAW launch binding answers (Phase 8)', async () => {
+    expectMatches(dawLaunchResultSchema, await createMockApi().launchDaw(), 'mock launch');
+  });
+
+  it('the credits template library, project values and preview answers (audiobook-credits-templates.prd.md, Phase 1)', async () => {
+    const api = createMockApi();
+    const templates = await api.creditsTemplates();
+    expectMatches(creditTemplatesSchema, templates, 'mock credit templates');
+    expect(templates.length).toBeGreaterThan(0);
+    const created = await api.saveCreditsTemplate('', 'opening', 'My opening', '[Title], by [Author].');
+    expectMatches(creditTemplateSchema, created, 'mock saved credit template');
+    const updated = await api.saveCreditsTemplate(created.id, 'opening', 'My opening (edited)', '[Title].');
+    expect(updated.id).toBe(created.id);
+    const duplicated = await api.duplicateCreditsTemplate(templates[0].id);
+    expectMatches(creditTemplateSchema, duplicated, 'mock duplicated credit template');
+    expect(duplicated.id).not.toBe(templates[0].id);
+    await api.deleteCreditsTemplate(created.id);
+    expect((await api.creditsTemplates()).some((template) => template.id === created.id)).toBe(false);
+
+    const values = await api.creditsProjectValues();
+    expectMatches(creditsProjectValuesResultSchema, values, 'mock credits project values');
+    const saved = await api.saveCreditsProjectValues({ title: 'Neon', author: 'A. Writer' });
+    expectMatches(creditsProjectValuesResultSchema.shape.values, saved, 'mock saved credits project values');
+    const preview = await api.creditsPreview('[Title], written by [Author], narrated by [Narrator].');
+    expectMatches(creditsRenderResultSchema, preview, 'mock credits preview');
+    expect(preview.text).toBe('Neon, written by A. Writer, narrated by [Narrator].');
+    expect(preview.unresolved).toEqual(['Narrator']);
+  });
+
+  it('the DAW catalog list and open-download-page answers, detected and not detected (Phase 2)', async () => {
+    const detected = await createMockApi().dawCatalogList();
+    expectMatches(dawCatalogListSchema, detected, 'mock catalog, detected');
+    expect(detected[0]?.installed).toBe(true);
+    const notDetected = await createMockApi({}, { dawCatalogInstalled: false }).dawCatalogList();
+    expectMatches(dawCatalogListSchema, notDetected, 'mock catalog, not detected');
+    expect(notDetected[0]?.installed).toBe(false);
+    expect(notDetected[0]?.path).toBeUndefined();
+    await expect(createMockApi().dawCatalogOpenDownloadPage('reaper')).resolves.toBeUndefined();
+    await expect(createMockApi().dawCatalogOpenDownloadPage('not-a-real-daw')).rejects.toThrow(/Unknown DAW catalog entry/);
   });
 });
 
@@ -424,6 +511,148 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expectMatches(tracksDiscoverySchema, await createMockApi({}, { tracksCandidates: [] }).tracksDiscover(), 'mock tracks discovery, none found');
   });
 
+  it('the ChapterTrackMap answers', async () => {
+    const api = createMockApi();
+    const empty = await api.chapterTrackMapList();
+    expectMatches(chapterTrackMappingSchema, empty, 'mock chapter-track map, none confirmed');
+    expect(empty.mappings).toHaveLength(0);
+
+    const chapters = await api.manuscriptChapters();
+    const confirmed = await api.chapterTrackMapConfirm('{0E4D1D7F-D039-674D-87E6-719376DE95EC}', chapters[0].id);
+    expectMatches(trackMappingSchema, confirmed, 'mock chapter-track map confirmation');
+    expect(confirmed.chapterTitle).toBe(chapters[0].title);
+
+    const listed = await api.chapterTrackMapList();
+    expectMatches(chapterTrackMappingSchema, listed, 'mock chapter-track map, one confirmed');
+    expect(listed.mappings).toHaveLength(1);
+
+    const cleared = await api.chapterTrackMapClear(confirmed.trackGuid);
+    expectMatches(chapterTrackMappingSchema, cleared, 'mock chapter-track map after clear');
+    expect(cleared.mappings).toHaveLength(0);
+
+    await expect(api.chapterTrackMapConfirm('{0E4D1D7F-D039-674D-87E6-719376DE95EC}', 'not-a-real-chapter')).rejects.toThrow();
+  });
+
+  it('the line-identity state through a stamp and a read run, and its seeded states', async () => {
+    vi.useFakeTimers();
+    const api = createMockApi();
+    const seen: unknown[] = [];
+    api.subscribeLineIdentity((state) => seen.push(structuredClone(state)));
+    expectMatches(
+      lineIdentityStartResultSchema,
+      await api.lineIdentityStamp([{ itemGuid: '{A}', lineId: 'c-0001', text: 'Chapter One' }], false),
+      'mock stamp start',
+    );
+    await vi.advanceTimersByTimeAsync(300);
+    expectMatches(lineIdentityStartResultSchema, await api.lineIdentityRead(), 'mock read start');
+    await vi.advanceTimersByTimeAsync(300);
+    expect(seen.length).toBeGreaterThan(3);
+    for (const state of seen) expectMatches(lineIdentityStateSchema, state, 'mock lineidentity:state');
+    expectMatches(lineIdentityStateSchema, await api.lineIdentityState(), 'mock line-identity state');
+    for (const seed of ['success', 'conflict', 'error'] as const) {
+      expectMatches(lineIdentityStateSchema, await createMockApi({}, { lineIdentity: seed }).lineIdentityState(), `mock line-identity seed ${seed}`);
+    }
+  });
+
+  it('lineIdentityStamp refuses an empty row list, the way the Go service does', async () => {
+    await expect(createMockApi().lineIdentityStamp([], false)).rejects.toThrow(/select at least one item/);
+  });
+
+  it('the pickups state through import, export, next, resolve and count, and its seeded states', async () => {
+    vi.useFakeTimers();
+    const api = createMockApi();
+    const seen: unknown[] = [];
+    api.subscribePickups((state) => seen.push(structuredClone(state)));
+    const imported = await api.pickupsImport('start,note,tag\n1.5,Mispronounced,narrator\n9.25,Second pickup,\n');
+    expectMatches(pickupsImportResultSchema, imported, 'mock import start');
+    expect(imported.rowErrors).toEqual([]);
+    await vi.advanceTimersByTimeAsync(300);
+    expectMatches(pickupsStartResultSchema, await api.pickupsNext(), 'mock next start');
+    await vi.advanceTimersByTimeAsync(300);
+    expectMatches(pickupsStartResultSchema, await api.pickupsResolve(1.5), 'mock resolve start');
+    await vi.advanceTimersByTimeAsync(300);
+    expectMatches(pickupsStartResultSchema, await api.pickupsExport(), 'mock export start');
+    await vi.advanceTimersByTimeAsync(300);
+    expectMatches(pickupsStartResultSchema, await api.pickupsCount(), 'mock count start');
+    await vi.advanceTimersByTimeAsync(300);
+    expect(seen.length).toBeGreaterThan(5);
+    for (const state of seen) expectMatches(pickupsStateSchema, state, 'mock pickups:state');
+    expectMatches(pickupsStateSchema, await api.pickupsState(), 'mock pickups state');
+    for (const seed of ['import-success', 'next-success', 'export-success', 'error'] as const) {
+      expectMatches(pickupsStateSchema, await createMockApi({}, { pickups: seed }).pickupsState(), `mock pickups seed ${seed}`);
+    }
+  });
+
+  it('pickupsImport reports every unusable row and throws when none are usable', async () => {
+    const api = createMockApi();
+    await expect(api.pickupsImport('not-a-number,First\n')).rejects.toThrow(/no valid pickups/);
+    const result = await api.pickupsImport('1.5,Good row\nnot-a-number,Bad row\n');
+    expect(result.rowErrors).toEqual(['line 2: could not parse this row']);
+  });
+
+  it('the render-config state through a configure run, and its seeded states', async () => {
+    vi.useFakeTimers();
+    const api = createMockApi();
+    const seen: unknown[] = [];
+    api.subscribeRenderConfig((state) => seen.push(structuredClone(state)));
+    expectMatches(renderConfigSuggestedFolderSchema, await api.renderConfigSuggestFolder(), 'mock suggested folder');
+    expectMatches(renderConfigStartResultSchema, await api.renderConfigConfigure('C:/Books/Alice/renders'), 'mock configure start');
+    await vi.advanceTimersByTimeAsync(300);
+    expect(seen.length).toBeGreaterThan(1);
+    for (const state of seen) expectMatches(renderConfigStateSchema, state, 'mock renderconfig:state');
+    expectMatches(renderConfigStateSchema, await api.renderConfigState(), 'mock render-config state');
+    for (const seed of ['success', 'no-regions', 'error'] as const) {
+      expectMatches(renderConfigStateSchema, await createMockApi({}, { renderConfig: seed }).renderConfigState(), `mock render-config seed ${seed}`);
+    }
+  });
+
+  it('renderConfigConfigure refuses an empty folder, the way the Go service does', async () => {
+    await expect(createMockApi().renderConfigConfigure('   ')).rejects.toThrow(/output folder is required/);
+  });
+
+  it('chapterTagsPreview and its seeded states', async () => {
+    expectMatches(chapterTagsPreviewSchema, await createMockApi().chapterTagsPreview(), 'mock chapter-tags preview idle');
+    for (const seed of ['ready', 'not-rendered'] as const) {
+      expectMatches(chapterTagsPreviewSchema, await createMockApi({}, { chapterTags: seed }).chapterTagsPreview(), `mock chapter-tags preview seed ${seed}`);
+    }
+  });
+
+  it('chapterTagsEmbed writes a tagged copy, refuses a blank destination, and can be seeded to error', async () => {
+    const api = createMockApi({}, { chapterTags: 'ready' });
+    expectMatches(chapterTagsEmbedResultSchema, await api.chapterTagsEmbed('C:/Books/Alice/renders/Alice.mp3'), 'mock chapter-tags embed success');
+    await expect(api.chapterTagsEmbed('   ')).rejects.toThrow(/choose the MP3 file/);
+    await expect(
+      createMockApi({}, { chapterTags: 'ready', chapterTagsEmbedAlwaysErrors: true }).chapterTagsEmbed('C:/Books/Alice/renders/Alice.mp3'),
+    ).rejects.toThrow();
+  });
+
+  it('the take-review scan and findings answers', async () => {
+    const api = createMockApi();
+    const scanned = await api.takeReviewScan('Chapter 1');
+    expectMatches(takeReviewFindingsSchema, scanned, 'mock take-review scan');
+    expect(scanned.length).toBeGreaterThan(0);
+    const readBack = await api.takeReviewFindings('Chapter 1');
+    expectMatches(takeReviewFindingsSchema, readBack, 'mock take-review findings');
+    expect(readBack).toEqual(scanned);
+    const empty = await api.takeReviewScan('Chapter 2');
+    expectMatches(takeReviewFindingsSchema, empty, 'mock take-review scan, no repeats');
+    expect(empty).toEqual([]);
+  });
+
+  it('the take-creation answer', async () => {
+    const api = createMockApi();
+    const result = await api.takeReviewCreateTake({
+      findingId: 'finding-1',
+      targetItemGuid: '{AAAAAAAA-0000-4000-8000-000000000001}',
+      candidateItemGuid: '',
+      sourceFile: 'C:/Projects/Alice/media/chapter1-take2.wav',
+      sourceRangeStart: 0,
+      sourceRangeEnd: 3,
+    });
+    expectMatches(takeReviewCreateTakeResultSchema, result, 'mock take creation');
+    expect(result.targetItemGuid).toBe('{AAAAAAAA-0000-4000-8000-000000000001}');
+  });
+
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
@@ -475,9 +704,31 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'createProject',
       'removeRecentProject',
       'linkDawFile',
+      'launchDaw',
+      'dawCatalogList',
       'tracksDiscover',
       'tracksSelect',
       'tracksList',
+      'chapterTrackMapList',
+      'chapterTrackMapConfirm',
+      'chapterTrackMapClear',
+      'lineIdentityStamp',
+      'lineIdentityRead',
+      'lineIdentityState',
+      'pickupsImport',
+      'pickupsExport',
+      'pickupsNext',
+      'pickupsResolve',
+      'pickupsCount',
+      'pickupsState',
+      'renderConfigConfigure',
+      'renderConfigSuggestFolder',
+      'renderConfigState',
+      'chapterTagsPreview',
+      'chapterTagsEmbed',
+      'takeReviewScan',
+      'takeReviewFindings',
+      'takeReviewCreateTake',
       'teleprompterStart',
       'teleprompterState',
       'teleprompterDevices',
@@ -487,6 +738,12 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'updateJobState',
       'updateJobCancel',
       'updateInstall',
+      'creditsTemplates',
+      'saveCreditsTemplate',
+      'duplicateCreditsTemplate',
+      'creditsProjectValues',
+      'saveCreditsProjectValues',
+      'creditsPreview',
     ];
     const VOID = [
       'manuscriptImportCancel',
@@ -510,10 +767,13 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'transcriptExportMarkers',
       'transcriptSaveHints',
       'teleprompterStop',
+      'dawCatalogOpenDownloadPage',
+      'teleprompterSeek',
       'reportClientDiagnostic',
       'systemNotify',
       'updateOpenNotes',
       'updateShowDownload',
+      'deleteCreditsTemplate',
     ];
     const NOT_A_REQUEST = [
       'mediaUrl',
@@ -525,6 +785,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeTeleprompterEvent',
       'subscribeTeleprompterState',
       'subscribeUpdate',
+      'subscribeLineIdentity',
+      'subscribePickups',
+      'subscribeRenderConfig',
     ];
     expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());
   });

@@ -45,7 +45,12 @@ turns them into these three event types:
     {"type": "position", "read": 12, "committed": 10, "status": "listening", "jump": null, "skipped": null}
         only with --script FILE or --manuscript FILE --chapter X: where the
         narrator is in the script, on change only (see script_tracker.py);
-        replay.py runs recorded output through the same tracker offline
+        replay.py runs recorded output through the same tracker offline. A
+        session can also start already at a word with --start-word N, and
+        while running the host can move it there with --control-file PATH,
+        which is tailed for lines shaped {"cmd": "seek", "word": N}
+        (control_channel.py) - both emit a "position" event with
+        jump: "restart", the same sentinel-file pattern as --stop-file
     {"type": "script", "chapter": {"id": "c1", "title": "..."}, "tokens": 512, "spans": [{"kind": "paragraph", "id": "p1", "index": 0, "start": 6, "count": 4}]}
         once, first, only with --manuscript: how the chapter was tokenized
         (title, then each paragraph split on whitespace) so a frontend can
@@ -578,6 +583,11 @@ def _check_engine_args(ap: argparse.ArgumentParser, args) -> None:
         ap.error("--context is only supported with --engine moonshine")
     if bool(args.manuscript) != bool(args.chapter):
         ap.error("--manuscript and --chapter go together")
+    has_tracker = bool(args.manuscript or args.script)
+    if args.start_word is not None and not has_tracker:
+        ap.error("--start-word needs --script or --manuscript")
+    if args.control_file and not has_tracker:
+        ap.error("--control-file needs --script or --manuscript")
 
 
 def _load_script(ap: argparse.ArgumentParser, args):
@@ -606,15 +616,26 @@ def _emit(event: dict) -> None:
 def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> None:
     """Stream engine events (and, with a tracker, the position events they
     cause) to stdout until the input ends or Ctrl+C."""
+    from control_channel import ControlChannel, seek_word
+
     capture_started = None
     try:
         if args.mic:
             chunks, capture_started = _anchor_capture_clock(chunks)
         clock = StreamClock(capture_started)
+        if tracker and args.start_word is not None:
+            for position in tracker.reset_to(args.start_word, clock.now()):
+                _emit(position)
         chunks = stoppable(chunks, args.stop_file)
         if tracker:
+            control = ControlChannel(args.control_file)
 
             def on_tick(now: float) -> None:
+                for command in control.poll():
+                    word = seek_word(command)
+                    if word is not None:
+                        for position in tracker.reset_to(word, now):
+                            _emit(position)
                 for position in tracker.tick(now):
                     _emit(position)
 
@@ -661,6 +682,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--manuscript", default=None, help="Canonical manuscript.json to read the script from (needs --chapter); also emits a `script` event"
     )
     ap.add_argument("--chapter", default=None, help="Chapter id or title in --manuscript (narration chapters only)")
+    ap.add_argument("--start-word", type=int, default=None, help="Start the tracker already at this script word index (needs --script or --manuscript)")
+    ap.add_argument(
+        "--control-file",
+        default=None,
+        help='Sentinel file the host appends seek commands to, one JSON object per line, e.g. {"cmd": "seek", "word": 12} '
+        "(needs --script or --manuscript); tailed once per chunk like --stop-file, no server or port",
+    )
     ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"], help="Inference device (default: cpu)")
     ap.add_argument(
         "--decode-interval",

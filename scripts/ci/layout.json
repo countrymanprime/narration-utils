@@ -48,7 +48,7 @@
   ],
   "patterns": [
     "(?<![A-Za-z0-9_.-])shared[\\/]",
-    "(?<![A-Za-z0-9_.\\\\-])shell\\\\",
+    "(?<![A-Za-z0-9_.\\\\-])shell\\\\(?!open)",
     "(?:-C|--dir|working-directory:|directory:)\\s+/?shell(?![A-Za-z0-9_./-])",
     "['\"]shared['\"]",
     "[,(]\\s*['\"]shell['\"]\\s*[,)]",

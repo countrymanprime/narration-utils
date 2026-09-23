@@ -16,14 +16,18 @@ import (
 )
 
 // Item is REAPER's <ITEM> chunk, still with Position/Length/Name/SourceKind/
-// SourceFile/SourceAvailable/Supported (the TracksList wire contract:
+// SourceFile/SourceAvailable/Supported/GUID (the TracksList wire contract:
 // tests/fixtures/contracts/tracks-project.json, apps/ui's Zod schema) always
 // describing the item's active take, not necessarily its first one (Q10 of
-// the analysis evidence ledger PRD). The remaining fields are the parser
-// superset (EL Phase 1) added for that PRD and its siblings; they are not
-// yet part of the wire contract (json:"-") because no UI or binding surface
-// consumes them in this phase - a later phase (5, 6 or 7) decides how much
-// of this an analyzer or the UI sees.
+// the analysis evidence ledger PRD). GUID joined the wire contract in the
+// reaper-automation-follow-through PRD's Phase 7 (Line-identity UI): the
+// "Link chapters" preview names, by GUID, exactly which item each stamp
+// would write to (never a position or an index), and LineIdentityStamp's
+// rows are keyed by item GUID. The remaining fields are the parser superset
+// (EL Phase 1) added for that PRD and its siblings; they are not yet part of
+// the wire contract (json:"-") because no UI or binding surface consumes
+// them in this phase - a later phase (5, 6 or 7) decides how much of this an
+// analyzer or the UI sees.
 type Item struct {
 	Position        float64 `json:"position"`
 	Length          float64 `json:"length"`
@@ -37,7 +41,7 @@ type Item struct {
 	// hand-written legacy fixture predates IGUID and falls back to its
 	// single item-position GUID line). It identifies the item across edits
 	// that don't change its take content (a move, for example).
-	GUID string `json:"-"`
+	GUID string `json:"guid"`
 	// Muted is the item's own mute flag (MUTE, distinct from a take's own
 	// state - REAPER has no per-take mute).
 	Muted bool `json:"-"`
@@ -121,6 +125,29 @@ type Track struct {
 type Project struct {
 	Path   string  `json:"path"`
 	Tracks []Track `json:"tracks"`
+}
+
+// ItemByGUID finds the item whose own GUID (Item.GUID, from <ITEM IGUID
+// ...>, not a take's own GUID) equals guid, and the track that holds it. It
+// is the take-review PRD's answer to Q6: a finding targets an item by its
+// GUID rather than a manuscript line-identity stamp, so re-resolving that
+// target against a freshly parsed project (immediately before a mutation,
+// to refuse a stale identity) needs no stamped ids at all - only this
+// lookup over the static model. It matches only Item.GUID: a take's own
+// GUID never matches, since a take is not a valid mutation target on its
+// own (Q4/Q5 - a candidate is added as a take *of* a target item).
+func (project Project) ItemByGUID(guid string) (track Track, item Item, ok bool) {
+	if guid == "" {
+		return Track{}, Item{}, false
+	}
+	for _, candidateTrack := range project.Tracks {
+		for _, candidateItem := range candidateTrack.Items {
+			if candidateItem.GUID == guid {
+				return candidateTrack, candidateItem, true
+			}
+		}
+	}
+	return Track{}, Item{}, false
 }
 
 // Discover returns every top-level *.rpp project file directly inside

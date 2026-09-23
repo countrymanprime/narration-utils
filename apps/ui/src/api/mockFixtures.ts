@@ -2,13 +2,20 @@
 // public-domain Alice's Adventures in Wonderland. Multiple real-text
 // paragraphs per chapter make this a useful reader and proofing demo.
 import type {
+  ChapterTagsEmbedResult,
+  ChapterTagsPreview,
   Discrepancy,
   GuideEntity,
+  LineIdentityLine,
+  LineIdentityState,
   ManuscriptChapter,
   ManuscriptNote,
   ManuscriptParagraph,
+  PickupsState,
   ReaderState,
+  RenderConfigState,
   ScopedSettingField,
+  TakeReviewFinding,
   TeleprompterDevice,
   TextSpan,
   TracksProject,
@@ -496,6 +503,16 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
   General: [
     choice('log_verbosity', 'Log verbosity', ['quiet', 'normal', 'verbose'], 'normal'),
     bool('notifications', "Notify me when a long task finishes while I'm away", 'true'),
+    {
+      key: 'narrator_name',
+      label: 'Narrator name (default for credits)',
+      kind: 'text',
+      choices: [],
+      value: '',
+      isSet: false,
+      effectiveValue: '',
+      effectiveSource: 'hardcoded',
+    },
   ],
   Manuscript: [
     {
@@ -589,7 +606,30 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     },
     choice('channel', 'Update channel', ['candidates', 'stable'], 'candidates'),
   ],
-  Daw: [],
+  // DAW.reaper_path/auto_start_launcher (Phase 8): keyed "DAW" to match apps/desktop/app.go's fieldSchemas, not
+  // the "Daw" Settings category key (which is a UI label, not the settings tool name).
+  DAW: [
+    {
+      key: 'reaper_path',
+      label: 'REAPER executable (override)',
+      kind: 'text',
+      choices: [],
+      value: '',
+      isSet: false,
+      effectiveValue: '',
+      effectiveSource: 'hardcoded',
+    },
+    {
+      key: 'auto_start_launcher',
+      label: 'Start the launcher script automatically',
+      kind: 'bool',
+      choices: [],
+      value: '',
+      isSet: false,
+      effectiveValue: 'false',
+      effectiveSource: 'repo default',
+    },
+  ],
 });
 export const WIRE_TRACKS_PROJECT: TracksProject = {
   path: 'C:/Projects/Alice-in-Wonderland/Alice.rpp',
@@ -603,6 +643,7 @@ export const WIRE_TRACKS_PROJECT: TracksProject = {
       soloed: false,
       items: [
         {
+          guid: '{7A6B5C4D-3E2F-4190-8A1B-2C3D4E5F6071}',
           position: 0,
           length: 612.4,
           name: 'ch1_take3.wav',
@@ -622,6 +663,7 @@ export const WIRE_TRACKS_PROJECT: TracksProject = {
       soloed: false,
       items: [
         {
+          guid: '{8B7C6D5E-4F30-42A1-9B2C-3D4E5F607182}',
           position: 0,
           length: 548.9,
           name: 'ch2_take1.wav',
@@ -639,9 +681,340 @@ export const WIRE_TRACKS_PROJECT: TracksProject = {
       color: '',
       muted: true,
       soloed: false,
-      items: [{ position: 0, length: 4, name: 'click', sourceKind: 'MIDI', sourceFile: '', sourceAvailable: false, supported: false }],
+      items: [
+        {
+          guid: '{9C8D7E6F-5041-43B2-AC3D-4E5F60718293}',
+          position: 0,
+          length: 4,
+          name: 'click',
+          sourceKind: 'MIDI',
+          sourceFile: '',
+          sourceAvailable: false,
+          supported: false,
+        },
+      ],
     },
   ],
 };
+
+const idleLineIdentityStamp: LineIdentityState['stamp'] = { applied: 0, unchanged: 0, missingCount: 0, conflictsCount: 0, missing: [], conflicts: [] };
+
+/** The Go host's LineIdentityState answer before any Stamp or Read has run (mirrors tests/fixtures/contracts/line-identity-idle.json). */
+export const WIRE_LINE_IDENTITY_IDLE: LineIdentityState = {
+  phase: 'idle',
+  message: '',
+  stamp: { ...idleLineIdentityStamp },
+  lines: [],
+  linesRead: 0,
+};
+
+/** One row of every status the classifier produces, keyed to WIRE_TRACKS_PROJECT's own chapter track item GUIDs where it helps a screenshot read naturally (mirrors tests/fixtures/contracts/line-identity-read-success.json). */
+export const WIRE_LINE_IDENTITY_LINES: LineIdentityLine[] = [
+  {
+    itemGuid: '{7A6B5C4D-3E2F-4190-8A1B-2C3D4E5F6071}',
+    lineId: 'c-0001@a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f708192a3b4c5d6e7f809',
+    entityId: 'c-0001',
+    position: 0,
+    length: 612.4,
+    text: 'Down the Rabbit-Hole',
+    status: 'ok',
+  },
+  {
+    itemGuid: '{8B7C6D5E-4F30-42A1-9B2C-3D4E5F607182}',
+    lineId: 'c-0002@a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f708192a3b4c5d6e7f809',
+    entityId: 'c-0002',
+    position: 0,
+    length: 548.9,
+    text: 'The Pool of Tears (revised)',
+    status: 'drift',
+    currentText: 'The Pool of Tears',
+  },
+  {
+    itemGuid: '{9C8D7E6F-5041-43B2-AC3D-4E5F60718293}',
+    lineId: 'c-0004@old0000000000000000000000000000000000000000000000000000000',
+    entityId: 'c-0004',
+    position: 0,
+    length: 4,
+    text: 'The Rabbit Sends in a Little Bill',
+    status: 'stale-source',
+  },
+  {
+    itemGuid: '{AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE}',
+    lineId: 'c-0099@a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f708192a3b4c5d6e7f809',
+    entityId: 'c-0099',
+    position: 0,
+    length: 12,
+    text: 'A chapter that no longer exists in the manuscript',
+    status: 'removed',
+  },
+  {
+    itemGuid: '{BBBBBBBB-CCCC-DDDD-EEEE-FFFFFFFFFFFF}',
+    lineId: 'line-000004',
+    entityId: '',
+    position: 0,
+    length: 9,
+    text: 'An identity from an older stamp scheme',
+    status: 'unrecognized',
+  },
+];
+
+/** A completed Read, with every status a narrator can hit shown at once, so the states are reviewable without stepping through a run. */
+export const WIRE_LINE_IDENTITY_READ_SUCCESS: LineIdentityState = {
+  runId: '1790000000000000',
+  phase: 'success',
+  message: `Read ${WIRE_LINE_IDENTITY_LINES.length} stamped lines.`,
+  stamp: { ...idleLineIdentityStamp },
+  lines: WIRE_LINE_IDENTITY_LINES,
+  linesRead: WIRE_LINE_IDENTITY_LINES.length,
+};
+
+/** A completed Stamp with a conflict and a stale item, so "Link chapters" can show them without a real REAPER. */
+export const WIRE_LINE_IDENTITY_STAMP_CONFLICT: LineIdentityState = {
+  runId: '1790000000000001',
+  phase: 'success',
+  message: 'Stamped 1 line, 1 stale item, 1 conflict.',
+  stamp: {
+    applied: 1,
+    unchanged: 0,
+    missingCount: 1,
+    conflictsCount: 1,
+    missing: ['{9C8D7E6F-5041-43B2-AC3D-4E5F60718293}'],
+    conflicts: ['{8B7C6D5E-4F30-42A1-9B2C-3D4E5F607182}'],
+  },
+  lines: [],
+  linesRead: 0,
+};
+
+/** REAPER reported a problem stamping or reading (a session-level ERROR event, e.g. the script not imported yet). */
+export const WIRE_LINE_IDENTITY_ERROR: LineIdentityState = {
+  runId: '1790000000000002',
+  phase: 'error',
+  message:
+    'The Narration Utils script in REAPER sent a message this app could not read. Import the script from this app’s REAPER folder again, then try again.',
+  stamp: { ...idleLineIdentityStamp },
+  lines: [],
+  linesRead: 0,
+};
+
+/** The Go host's PickupsState answer before any run (mirrors tests/fixtures/contracts/pickups-idle.json). */
+export const WIRE_PICKUPS_IDLE: PickupsState = {
+  phase: 'idle',
+  message: '',
+  remaining: 0,
+  total: 0,
+  csv: '',
+};
+
+/** A completed Import (mirrors tests/fixtures/contracts/pickups-import-success.json). */
+export const WIRE_PICKUPS_IMPORT_SUCCESS: PickupsState = {
+  runId: '1790000000000000',
+  phase: 'success',
+  message: 'Imported 2 pickups.',
+  remaining: 2,
+  total: 2,
+  importReport: { added: 2, existing: 0, invalid: 0 },
+  csv: '',
+};
+
+/** A completed Next, so the "jump to the next pickup" state can be seen without a real REAPER. */
+export const WIRE_PICKUPS_NEXT_SUCCESS: PickupsState = {
+  runId: '1790000000000001',
+  phase: 'success',
+  message: 'Jumped to the next pickup.',
+  remaining: 2,
+  total: 2,
+  next: { position: 9.25, tag: 'narrator', note: 'Mispronounced "labyrinthine"' },
+  csv: '',
+};
+
+/** A completed Export, with CSV text ready to offer as a download. */
+export const WIRE_PICKUPS_EXPORT_SUCCESS: PickupsState = {
+  runId: '1790000000000002',
+  phase: 'success',
+  message: 'Exported 2 pickups.',
+  remaining: 2,
+  total: 2,
+  csv: 'start,note,tag\n9.250000,Mispronounced "labyrinthine",narrator\n42.000000,Dog barked in the background,\n',
+};
+
+/** REAPER reported a problem importing, exporting, jumping, resolving or counting pickups. */
+export const WIRE_PICKUPS_ERROR: PickupsState = {
+  runId: '1790000000000003',
+  phase: 'error',
+  message:
+    'The Narration Utils script in REAPER sent a message this app could not read. Import the script from this app’s REAPER folder again, then try again.',
+  remaining: 0,
+  total: 0,
+  csv: '',
+};
+
+/** The Go host's RenderConfigState answer before any run (mirrors tests/fixtures/contracts/render-config-idle.json). */
+export const WIRE_RENDER_CONFIG_IDLE: RenderConfigState = {
+  phase: 'idle',
+  message: '',
+  folder: '',
+  targets: [],
+  count: 0,
+};
+
+/** A completed configure with two chapter regions (mirrors tests/fixtures/contracts/render-config-success.json). */
+export const WIRE_RENDER_CONFIG_SUCCESS: RenderConfigState = {
+  runId: '1790000000000000',
+  phase: 'success',
+  message: 'Render configured for 2 chapter files. Press Render in REAPER to create them.',
+  folder: 'C:\\Books\\Alice\\renders',
+  targets: ['C:\\Books\\Alice\\renders\\Chapter 1.wav', 'C:\\Books\\Alice\\renders\\Chapter 2.wav'],
+  count: 2,
+};
+
+/** A completed configure with no chapter regions yet, so the "create them first" message can be reviewed. */
+export const WIRE_RENDER_CONFIG_NO_REGIONS: RenderConfigState = {
+  runId: '1790000000000001',
+  phase: 'success',
+  message: 'Render configured. No chapter regions were found yet: create them before rendering.',
+  folder: 'C:\\Books\\Alice\\renders',
+  targets: [],
+  count: 0,
+};
+
+/** REAPER reported a problem configuring the render. */
+export const WIRE_RENDER_CONFIG_ERROR: RenderConfigState = {
+  runId: '1790000000000002',
+  phase: 'error',
+  message: 'This REAPER version cannot configure render settings.',
+  folder: '',
+  targets: [],
+  count: 0,
+};
+
+/** No chapter render has been configured yet (mirrors tests/fixtures/contracts/chapter-tags-preview-idle.json). */
+export const WIRE_CHAPTER_TAGS_PREVIEW_IDLE: ChapterTagsPreview = { chapters: [], ready: false };
+
+/** Two chapters, both rendered - ready to embed (mirrors tests/fixtures/contracts/chapter-tags-preview-ready.json). */
+export const WIRE_CHAPTER_TAGS_PREVIEW_READY: ChapterTagsPreview = {
+  chapters: [
+    { title: 'Chapter 1', path: 'C:\\Books\\Alice\\renders\\Chapter 1.mp3', rendered: true },
+    { title: 'Chapter 2', path: 'C:\\Books\\Alice\\renders\\Chapter 2.mp3', rendered: true },
+  ],
+  ready: true,
+};
+
+/** Chapters are configured but the narrator has not pressed Render yet, so the second file does not exist. */
+export const WIRE_CHAPTER_TAGS_PREVIEW_NOT_RENDERED: ChapterTagsPreview = {
+  chapters: [
+    { title: 'Chapter 1', path: 'C:\\Books\\Alice\\renders\\Chapter 1.mp3', rendered: true },
+    { title: 'Chapter 2', path: 'C:\\Books\\Alice\\renders\\Chapter 2.mp3', rendered: false },
+  ],
+  ready: false,
+};
+
+/** A successful embed (mirrors tests/fixtures/contracts/chapter-tags-embed-success.json). */
+export const WIRE_CHAPTER_TAGS_EMBED_SUCCESS: ChapterTagsEmbedResult = {
+  outputPath: 'C:\\Books\\Alice\\renders\\Alice in Wonderland.chapters.mp3',
+};
+
+// take-review's scan-and-review surface (phase 5): one restart-kind pickup (a partial re-read,
+// below the near-duplicate quality bar) and one near-identical duplicate_read, both against
+// "Chapter 1" of WIRE_TRACKS_PROJECT above - the same shape apps/desktop/contract_test.go's
+// TestContractTakeReviewFindings pins as tests/fixtures/contracts/takereview-findings.json. No
+// composite score anywhere in this fixture (Q9): only per-category evidence.
+export const WIRE_TAKE_REVIEW_FINDINGS: TakeReviewFinding[] = [
+  {
+    schema_version: 1,
+    id: 'f24ca7396d9cf9e023f63fd8',
+    analyzer: 'take-review',
+    project: { path: 'C:/Projects/Alice-in-Wonderland/Alice.rpp' },
+    source: {
+      file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take1.wav',
+      item_guid: '{11111111-0000-0000-0000-000000000001}',
+      take_guid: '{22222222-0000-0000-0000-000000000001}',
+    },
+    manuscript: { chapter_id: 'chapter-1', chapter_title: 'Chapter 1' },
+    category: 'pickup',
+    severity: 'info',
+    confidence: 0.6,
+    evidence_version: 'eacc64471bdeb17eef5941fd',
+    confidence_reason: "average of 2 member(s)' alignment match quality (fraction of aligned tokens that matched the manuscript exactly)",
+    evidence: {
+      kind: 'pickup',
+      matched_span_first: 3,
+      matched_span_last: 7,
+      members: [
+        {
+          item_index: 0,
+          item_guid: '{11111111-0000-0000-0000-000000000001}',
+          take_guid: '{22222222-0000-0000-0000-000000000001}',
+          source_file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take1.wav',
+          source_start: 0,
+          source_length: 4.5,
+          coverage: 1,
+          quality: 0.62,
+          exact_copy_group: '',
+        },
+        {
+          item_index: 1,
+          item_guid: '{11111111-0000-0000-0000-000000000002}',
+          take_guid: '{22222222-0000-0000-0000-000000000002}',
+          source_file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take2.wav',
+          source_start: 10,
+          source_length: 3.1,
+          coverage: 0.7,
+          quality: 0.58,
+          exact_copy_group: '',
+        },
+      ],
+    },
+    suggested_action: { kind: 'create_take', requires_confirmation: true },
+    review: { status: 'unreviewed' },
+  },
+  {
+    schema_version: 1,
+    id: 'b6a3478016f49b07a31f3f74',
+    analyzer: 'take-review',
+    project: { path: 'C:/Projects/Alice-in-Wonderland/Alice.rpp' },
+    source: {
+      file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take3.wav',
+      item_guid: '{11111111-0000-0000-0000-000000000003}',
+      take_guid: '{22222222-0000-0000-0000-000000000003}',
+    },
+    manuscript: { chapter_id: 'chapter-1', chapter_title: 'Chapter 1' },
+    category: 'duplicate_read',
+    severity: 'info',
+    confidence: 0.985,
+    evidence_version: '35c8e618317e757af0ac0678',
+    confidence_reason: "average of 2 member(s)' alignment match quality (fraction of aligned tokens that matched the manuscript exactly)",
+    evidence: {
+      kind: 'near_duplicate',
+      matched_span_first: 12,
+      matched_span_last: 15,
+      members: [
+        {
+          item_index: 2,
+          item_guid: '{11111111-0000-0000-0000-000000000003}',
+          take_guid: '{22222222-0000-0000-0000-000000000003}',
+          source_file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take3.wav',
+          source_start: 0,
+          source_length: 2.2,
+          coverage: 1,
+          quality: 0.99,
+          exact_copy_group: '',
+        },
+        {
+          item_index: 3,
+          item_guid: '{11111111-0000-0000-0000-000000000004}',
+          take_guid: '{22222222-0000-0000-0000-000000000004}',
+          source_file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take4.wav',
+          source_start: 0,
+          source_length: 2.2,
+          coverage: 1,
+          quality: 0.98,
+          exact_copy_group: '',
+        },
+      ],
+    },
+    suggested_action: { kind: 'create_take', requires_confirmation: true },
+    review: { status: 'unreviewed' },
+  },
+];
 
 export const wireClone = <T>(value: T): T => structuredClone(value);

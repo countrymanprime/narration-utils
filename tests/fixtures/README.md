@@ -1,8 +1,36 @@
 # Test fixtures
 
-Real manuscript content for exercising manuscript import (docx/markdown/pdf)
+Real manuscript content for exercising manuscript import (docx/markdown/pdf/txt/epub)
 end-to-end, instead of synthetic one-off files. Not runtime dependencies -
 used from tests and for manual/ad-hoc verification.
+
+## alice.epub
+
+An EPUB 3 book (with an EPUB 2 `toc.ncx` alongside its `nav.xhtml`, as many real
+exporters ship both) built by `write_epub` in `generate_alice.py` from the same
+three-chapter Gutenberg text as `alice.txt`/`alice.md`/`alice.docx`, so
+`TestEPUBFixtureParityWithAliceMarkdown` (`apps/desktop/internal/importer/epub_test.go`)
+can compare their narration text directly. A front-matter document with no
+heading precedes the chapters, classified Front Matter/Cover the same way
+`alice.txt`'s own front matter is - unlike `alice.md`/`alice.docx`, which give
+the book title its own `Title`-styled heading and section, `alice.epub` has
+none, so it has 3 chapters where `alice.md`/`alice.docx` have 4.
+
+Regenerate along with the others (below), or on its own without the
+`python-docx`/`fpdf2` dependencies:
+
+```powershell
+cd tests/fixtures
+python -c "import importlib.util; from pathlib import Path; spec = importlib.util.spec_from_file_location('gen', 'generate_alice.py'); mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); mod.write_epub(mod.parse_chapters(Path('alice_raw.txt')), Path('alice.epub'))"
+```
+
+## alice.txt
+
+A Gutenberg-shaped, hard-wrapped plain-text export of the same three chapters (`write_txt` in
+`generate_alice.py`): a `*** START OF ... ***`/`*** END OF ... ***` boilerplate pair, lines
+wrapped at about 70 columns, and `_word_` underscore italics, matching `alice_raw.txt`'s own
+shape (PRD Evidence). Used by the TXT importer's parity and hazard tests
+(`apps/desktop/internal/importer/txt_test.go`).
 
 ## alice.docx / alice.md / alice.pdf
 

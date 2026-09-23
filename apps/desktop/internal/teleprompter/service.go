@@ -39,12 +39,13 @@ type Service struct {
 	grace    time.Duration
 	dropped  int
 
-	state    map[string]any
-	script   json.RawMessage
-	position json.RawMessage
-	child    *process.StreamChild
-	stopFile string
-	stopping bool
+	state       map[string]any
+	script      json.RawMessage
+	position    json.RawMessage
+	child       *process.StreamChild
+	stopFile    string
+	controlFile string
+	stopping    bool
 	// finished is closed by the watcher once it has recorded the session's
 	// final state, which is later than the child process exiting.
 	finished chan struct{}
@@ -115,8 +116,8 @@ func option(options map[string]string, key, fallback string) string {
 }
 
 type launch struct {
-	args                      []string
-	engine, chapter, stopFile string
+	args                                   []string
+	engine, chapter, stopFile, controlFile string
 }
 
 // plan validates a request and builds the sidecar arguments. It has no side
@@ -145,13 +146,21 @@ func (s *Service) plan(options map[string]string) (launch, error) {
 		return launch{}, errors.New("configure the teleprompter executable before continuing")
 	}
 
-	stopFile := filepath.Join(s.config.SessionDir, fmt.Sprintf("teleprompter_%d.stop", time.Now().UnixNano()))
-	args := []string{"--engine", engine, "--model", option(options, "model", "small"), "--manuscript", manuscript, "--chapter", chapter, "--stop-file", stopFile}
+	stamp := time.Now().UnixNano()
+	stopFile := filepath.Join(s.config.SessionDir, fmt.Sprintf("teleprompter_%d.stop", stamp))
+	controlFile := filepath.Join(s.config.SessionDir, fmt.Sprintf("teleprompter_%d.control", stamp))
+	args := []string{
+		"--engine", engine, "--model", option(options, "model", "small"), "--manuscript", manuscript, "--chapter", chapter,
+		"--stop-file", stopFile, "--control-file", controlFile,
+	}
 	if modelDir := option(options, "modelDir", ""); modelDir != "" {
 		args = append(args, "--model-dir", modelDir)
 	}
 	if language := option(options, "language", ""); language != "" {
 		args = append(args, "--language", language)
+	}
+	if startWord := option(options, "startWord", ""); startWord != "" {
+		args = append(args, "--start-word", startWord)
 	}
 	if wav != "" {
 		args = append(args, "--wav", wav)
@@ -161,7 +170,7 @@ func (s *Service) plan(options map[string]string) (launch, error) {
 	if s.config.Backend != "" {
 		args = append([]string{s.config.Backend}, args...)
 	}
-	return launch{args: args, engine: engine, chapter: chapter, stopFile: stopFile}, nil
+	return launch{args: args, engine: engine, chapter: chapter, stopFile: stopFile, controlFile: controlFile}, nil
 }
 
 // Device is one input device the sidecar's `--list-devices` reported, by the
@@ -223,12 +232,13 @@ func (s *Service) Start(options map[string]string) error {
 		return errors.New("a teleprompter session is already running")
 	}
 	s.state = map[string]any{"phase": "starting", "message": "Starting the teleprompter…", "engine": plan.engine, "chapter": plan.chapter}
-	s.script, s.position, s.stopping, s.stopFile = nil, nil, false, plan.stopFile
+	s.script, s.position, s.stopping, s.stopFile, s.controlFile = nil, nil, false, plan.stopFile, plan.controlFile
 	s.mu.Unlock()
 	s.notify()
 
 	_ = os.MkdirAll(s.config.SessionDir, 0o755)
 	_ = os.Remove(plan.stopFile)
+	_ = os.Remove(plan.controlFile)
 	ctx, cancel := context.WithCancel(context.Background())
 	child, err := s.sidecars.StartStream(ctx, s.onLine, s.config.Python, plan.args...)
 	if err != nil {
@@ -345,7 +355,7 @@ func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc, f
 	cancel()
 	code, _ := child.ExitCode()
 	s.mu.Lock()
-	stopFile := s.stopFile
+	stopFile, controlFile := s.stopFile, s.controlFile
 	if s.stopping || code == 0 {
 		s.state["phase"], s.state["message"] = "stopped", "Stopped."
 	} else {
@@ -355,6 +365,7 @@ func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc, f
 	s.mu.Unlock()
 	close(finished)
 	_ = os.Remove(stopFile)
+	_ = os.Remove(controlFile)
 	s.notify()
 }
 
@@ -382,6 +393,34 @@ func (s *Service) Stop() {
 			_ = child.Kill()
 		}
 	}()
+}
+
+// Seek asks a running session's tracker to jump straight to script word
+// `word` (the same index space as a position event's `read`/`committed`):
+// one line appended to the session's control file, the sidecar's own
+// ControlChannel tails it (control_channel.py), same sentinel-file pattern
+// as Stop's stop file - no server, no port. It errors if no session is
+// running; the caller (TeleprompterSeek) reports that back to the UI.
+func (s *Service) Seek(word int) error {
+	s.mu.RLock()
+	child, controlFile := s.child, s.controlFile
+	s.mu.RUnlock()
+	if child == nil {
+		return errors.New("no teleprompter session is running")
+	}
+	line, err := json.Marshal(map[string]any{"cmd": "seek", "word": word})
+	if err != nil {
+		return err
+	}
+	file, err := os.OpenFile(controlFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err = file.Write(append(line, '\n')); err != nil {
+		_ = file.Close() // the write already failed; report that error
+		return err
+	}
+	return file.Close()
 }
 
 // Close stops any session and waits for the sidecar to be gone, for host

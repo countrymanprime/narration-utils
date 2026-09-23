@@ -4,6 +4,7 @@ import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
+import { WIRE_CHAPTERS } from './api/mockFixtures';
 import { ThemeProvider } from './theme/ThemeContext';
 import './styles.css';
 
@@ -33,6 +34,9 @@ const mockNoRpp = mockParams.has('mockNoRpp');
 // Tracks/Settings show their unlinked DAW-link controls. The mock otherwise defaults `dawFileLinked` to true so every
 // other capture (and App.test.tsx's default click into Proofing) keeps working without this param.
 const mockNoDaw = mockParams.has('mockNoDaw');
+// `?mockDawNotDetected=1` makes the DAW catalog panel (Settings > DAW Integration, docs/architecture/
+// daw-integration.md) report REAPER as not detected, so its "Get REAPER" button can be seen without a host.
+const mockDawNotDetected = mockParams.has('mockDawNotDetected');
 // `?mockNoManuscript=1` boots a project with no manuscript imported yet, so
 // Home shows its manuscript-not-found banner and Proofing/Story Bible are locked.
 const mockNoManuscript = mockParams.has('mockNoManuscript');
@@ -72,6 +76,26 @@ const mockAssets = (['missing', 'downloading', 'verifying', 'download-fails', 'i
 // `?mockImportPreview=markdown|repaired` makes the next manuscript import a Markdown file (so the chapter heading level choice can be seen in the review dialog) or a
 // Word file whose headings the importer had to repair (so the repairs note can).
 const mockImportPreview = (['markdown', 'repaired'] as const).find((kind) => kind === mockParams.get('mockImportPreview'));
+// `?mockChapterLink=missing` seeds the first chapter with a confirmed link to a track GUID that is not in the mock
+// REAPER project, so the Tracks page's "Track missing" state can be seen without confirming and then deleting a
+// track first (analysis evidence ledger PRD, Phase 7).
+const mockChapterLinkMissing = mockParams.get('mockChapterLink') === 'missing';
+// `?mockLineIdentity=success|conflict|error` boots the Tracks page's "Link chapters" dialog with LineIdentityState already at that
+// result, so its stale/conflict/drift and error states can be seen without a real REAPER round trip.
+const mockLineIdentity = (['success', 'conflict', 'error'] as const).find((seed) => seed === mockParams.get('mockLineIdentity'));
+// `?mockPickups=import-success|next-success|export-success|error` boots the Tracks page's "Pickups" dialog with
+// PickupsState already at that result, so the remaining-count, next and export states can be seen without a real
+// REAPER round trip.
+const mockPickups = (['import-success', 'next-success', 'export-success', 'error'] as const).find((seed) => seed === mockParams.get('mockPickups'));
+// `?mockRenderConfig=success|no-regions|error` boots the Tracks page's "Prepare chapter render" dialog with
+// RenderConfigState already at that result, so the confirmed-file-names, no-regions-yet and error states can be
+// seen without a real REAPER round trip.
+const mockRenderConfig = (['success', 'no-regions', 'error'] as const).find((seed) => seed === mockParams.get('mockRenderConfig'));
+// `?mockChapterTags=ready|not-rendered` boots the Tracks page's "Embed chapter tags" dialog with ChapterTagsPreview
+// already at that result, so the ready and not-yet-rendered states can be seen without a real chapter render.
+// `?mockChapterTagsEmbedError=1` makes the embed action always fail, so the error state can be seen too.
+const mockChapterTags = (['ready', 'not-rendered'] as const).find((seed) => seed === mockParams.get('mockChapterTags'));
+const mockChapterTagsEmbedError = mockParams.has('mockChapterTagsEmbedError');
 const mockInitial = {
   ...(mockImportPreview ? { importPreview: mockImportPreview } : {}),
   ...(mockAssets ? { assets: mockAssets } : {}),
@@ -82,6 +106,7 @@ const mockInitial = {
   ...(mockInvalidPayload ? { invalidPayload: mockInvalidPayload } : {}),
   ...(mockNoManuscript ? { noManuscript: true } : {}),
   ...(mockNoDaw ? { dawFileLinked: false } : {}),
+  ...(mockDawNotDetected ? { dawCatalogInstalled: false } : {}),
   ...(mockPreviewError ? { previewError: mockPreviewError } : {}),
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
@@ -89,6 +114,18 @@ const mockInitial = {
   ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),
   ...(mockNoRpp ? { tracksCandidates: [] } : {}),
   ...(mockManuscriptCandidate ? { manuscriptCandidate: { path: 'C:/Projects/Alice-in-Wonderland/manuscript.docx', name: 'manuscript.docx' } } : {}),
+  ...(mockChapterLinkMissing
+    ? {
+        chapterTrackMappings: [
+          { trackGuid: '{NOT-A-REAL-TRACK-GUID}', chapterId: WIRE_CHAPTERS[0].id, chapterTitle: WIRE_CHAPTERS[0].title, confirmedAt: '2026-09-01T12:00:00Z' },
+        ],
+      }
+    : {}),
+  ...(mockLineIdentity ? { lineIdentity: mockLineIdentity } : {}),
+  ...(mockPickups ? { pickups: mockPickups } : {}),
+  ...(mockRenderConfig ? { renderConfig: mockRenderConfig } : {}),
+  ...(mockChapterTags ? { chapterTags: mockChapterTags } : {}),
+  ...(mockChapterTagsEmbedError ? { chapterTagsEmbedAlwaysErrors: true } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

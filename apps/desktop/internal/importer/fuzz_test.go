@@ -281,6 +281,77 @@ func FuzzMarkdownFile(f *testing.F) {
 	})
 }
 
+func FuzzTxtFile(f *testing.F) {
+	for _, seed := range []string{
+		"Chapter One\n\nHello world.\n",
+		"\xef\xbb\xbfChapter One\r\n\r\nBOM and CRLF.\r\n",
+		"*** START OF THE PROJECT GUTENBERG EBOOK 1 ***\n\nI\n\n_Hello_ world.\n\n*** END OF THE PROJECT GUTENBERG EBOOK 1 ***",
+		"just one paragraph, no chapter markup at all",
+		"",
+		"\xff\xfe\x00\x00broken utf-16",
+		"Contents\n\nOne\nTwo\nThree\n\nI\n\nBody text.\n",
+	} {
+		f.Add(seed)
+	}
+	f.Fuzz(func(t *testing.T, content string) {
+		path := filepath.Join(t.TempDir(), "fuzz.txt")
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		draft, err := txtWithProgress(path, nil)
+		if err == nil {
+			checkDraft(t, draft)
+		}
+	})
+}
+
+// epubBytes builds a minimal, well-formed EPUB (a mimetype, container.xml, an
+// OPF with one spine document) in memory, so seeds do not depend on a binary
+// fixture; a slice, not a map, keeps entry order (and so the seed bytes)
+// stable across runs.
+func epubBytes(bodyHTML string) []byte {
+	var buffer bytes.Buffer
+	archive := zip.NewWriter(&buffer)
+	for _, entry := range []struct{ name, content string }{
+		{"mimetype", "application/epub+zip"},
+		{"META-INF/container.xml", `<?xml version="1.0" encoding="UTF-8"?>` +
+			`<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">` +
+			`<rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`},
+		{"OEBPS/content.opf", `<?xml version="1.0" encoding="UTF-8"?>` +
+			`<package xmlns="http://www.idpf.org/2007/opf" version="3.0"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/">` +
+			`<dc:title>Book</dc:title></metadata><manifest>` +
+			`<item id="c1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>` +
+			`</manifest><spine><itemref idref="c1"/></spine></package>`},
+		{"OEBPS/chapter1.xhtml", `<?xml version="1.0" encoding="UTF-8"?>` +
+			`<html xmlns="http://www.w3.org/1999/xhtml"><body>` + bodyHTML + `</body></html>`},
+	} {
+		writer, _ := archive.Create(entry.name)
+		_, _ = writer.Write([]byte(entry.content))
+	}
+	_ = archive.Close()
+	return buffer.Bytes()
+}
+
+func FuzzEpubFile(f *testing.F) {
+	valid := epubBytes(`<h1>Chapter One</h1><p>Hello <i>world</i>.</p>`)
+	f.Add(valid)
+	f.Add(valid[:len(valid)/2])
+	f.Add(valid[:20])
+	f.Add([]byte("PK\x03\x04 not really a zip"))
+	f.Add([]byte{})
+	f.Add(epubBytes(`<p>unterminated`))
+	f.Fuzz(func(t *testing.T, data []byte) {
+		path := filepath.Join(t.TempDir(), "fuzz.epub")
+		if err := os.WriteFile(path, data, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		draft, err := epubWithProgress(path, nil)
+		if err == nil {
+			checkDraft(t, draft)
+		}
+	})
+}
+
 // TestUnderlineTagKeepsCharactersWhoseLowerCaseHasAnotherByteLength pins the bug the fuzz seeds found: the
 // closing tag was searched in a lower-cased copy, so its offset was wrong for the original text. U+0130 gets
 // shorter (the underlined text was cut mid-character and a stray ">" was left behind) and U+023A gets longer

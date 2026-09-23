@@ -1,9 +1,15 @@
 package main
 
 import (
+	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/daw"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
+	"github.com/countrymanprime/narration-utils/shell/internal/lineidentity"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
+	"github.com/countrymanprime/narration-utils/shell/internal/pickups"
+	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
+	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
@@ -19,10 +25,18 @@ type hostServices struct {
 	config       config
 	findings     *findings.Store
 	guide        *guide.Service
+	lineIdentity *lineidentity.Service
 	manuscript   *manuscript.Service
+	pickups      *pickups.Service
+	projectState *projectstate.Service
+	renderConfig *renderconfig.Service
 	settings     *settings.Store
 	teleprompter *teleprompter.Service
 	transcript   *transcript.Service
+	// reachability tracks the current bridge client's PROJECT_STATUS heartbeat (ADR 0092, Phase 7, W10). Nil when
+	// configureLocked built no bridge client (no session directory).
+	reachability *daw.Reachability
+	bridge       *bridge.Client
 }
 
 // services returns a snapshot of the swappable services. It is the only way a
@@ -55,9 +69,15 @@ func (h *Host) services() hostServices {
 		config:       h.config,
 		findings:     h.findings,
 		guide:        h.guide,
+		lineIdentity: h.lineIdentity,
 		manuscript:   h.manuscript,
+		pickups:      h.pickups,
+		projectState: h.projectState,
+		renderConfig: h.renderConfig,
 		settings:     h.settings,
 		teleprompter: h.teleprompter,
 		transcript:   h.transcript,
+		reachability: h.reachability,
+		bridge:       h.bridge,
 	}
 }

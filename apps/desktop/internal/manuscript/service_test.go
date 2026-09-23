@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 )
@@ -249,5 +250,151 @@ func TestResetDerivedClearsTheFindingsDirectory(t *testing.T) {
 	}
 	if _, err := os.Stat(settingsFile); err != nil {
 		t.Fatalf("resetDerived must not touch narration-utils/settings.json: %v", err)
+	}
+}
+
+// resetDerived clears everything a re-import or an explicit Clear invalidates. The analysis evidence ledger PRD's Q3
+// ("Add the directory to resetDerived") adds evidence.LedgerDir alongside the existing entries: a ledger record names
+// fingerprints computed against the manuscript that produced its chapter IDs, so it must not survive a re-import that
+// assigns new ones (Q9), the same reasoning ManuscriptGuide and TranscriptCompare already follow here.
+func TestResetDerivedClearsTheAnalysisLedgerDirectory(t *testing.T) {
+	project := t.TempDir()
+	ledgerDir := evidence.LedgerDir(project)
+	if err := os.MkdirAll(ledgerDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ledgerDir, "record.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resetDerived(project); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(ledgerDir); !os.IsNotExist(err) {
+		t.Fatalf("resetDerived left the analysis ledger directory behind: %v", err)
+	}
+}
+
+func TestClearRemovesTheAnalysisLedgerDirectoryAlongsideManuscriptData(t *testing.T) {
+	project := t.TempDir()
+	service := New(project)
+	job := service.Begin(layout.RepoFile(layout.FixturesDir + "/alice.md"))
+	if _, err := service.Preview(job.ID, 1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Commit(job.ID, false, nil); err != nil {
+		t.Fatal(err)
+	}
+	ledgerDir := evidence.LedgerDir(project)
+	if err := os.MkdirAll(ledgerDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ledgerDir, "record.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := service.Clear(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(ledgerDir); !os.IsNotExist(err) {
+		t.Fatalf("Clear left the analysis ledger directory behind: %v", err)
+	}
+}
+
+// The evidence ledger PRD's Phase 4 (Q5) adds the per-item result cache
+// directory alongside LedgerDir for the same reason: a cache entry's key
+// includes the source identity but not the chapter ID, yet its value was
+// produced for items under a chapter ID a re-import invalidates (Q9), so it
+// must not survive either.
+func TestResetDerivedClearsTheAnalysisCacheDirectory(t *testing.T) {
+	project := t.TempDir()
+	cacheDir := evidence.CacheDir(project)
+	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cacheDir, "entry.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resetDerived(project); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(cacheDir); !os.IsNotExist(err) {
+		t.Fatalf("resetDerived left the analysis cache directory behind: %v", err)
+	}
+}
+
+func TestClearRemovesTheAnalysisCacheDirectoryAlongsideManuscriptData(t *testing.T) {
+	project := t.TempDir()
+	service := New(project)
+	job := service.Begin(layout.RepoFile(layout.FixturesDir + "/alice.md"))
+	if _, err := service.Preview(job.ID, 1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Commit(job.ID, false, nil); err != nil {
+		t.Fatal(err)
+	}
+	cacheDir := evidence.CacheDir(project)
+	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cacheDir, "entry.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := service.Clear(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(cacheDir); !os.IsNotExist(err) {
+		t.Fatalf("Clear left the analysis cache directory behind: %v", err)
+	}
+}
+
+// The evidence ledger PRD's Phase 5 (Q6, Q9 option A) adds the confirmed
+// chapter-track mapping file alongside LedgerDir and CacheDir: a mapping
+// names a chapter ID a re-import invalidates, so it must not survive one
+// either. Unlike the ledger and cache, this is a single file, not a
+// directory of records.
+func TestResetDerivedClearsTheChapterTrackMappingFile(t *testing.T) {
+	project := t.TempDir()
+	mappingFile := evidence.MappingFile(project)
+	if err := os.MkdirAll(filepath.Dir(mappingFile), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(mappingFile, []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resetDerived(project); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(mappingFile); !os.IsNotExist(err) {
+		t.Fatalf("resetDerived left the chapter-track mapping file behind: %v", err)
+	}
+}
+
+func TestClearRemovesTheChapterTrackMappingFileAlongsideManuscriptData(t *testing.T) {
+	project := t.TempDir()
+	service := New(project)
+	job := service.Begin(layout.RepoFile(layout.FixturesDir + "/alice.md"))
+	if _, err := service.Preview(job.ID, 1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Commit(job.ID, false, nil); err != nil {
+		t.Fatal(err)
+	}
+	mappingFile := evidence.MappingFile(project)
+	if err := os.MkdirAll(filepath.Dir(mappingFile), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(mappingFile, []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := service.Clear(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(mappingFile); !os.IsNotExist(err) {
+		t.Fatalf("Clear left the chapter-track mapping file behind: %v", err)
 	}
 }

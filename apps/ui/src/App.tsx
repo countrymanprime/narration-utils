@@ -26,8 +26,13 @@ import { describeApiError } from './api/errorMessage';
 const LIVE_UPDATES_DEGRADED = 'Some live updates from the desktop host could not be read, so what you see may be out of date. Reopen the page to refresh it.';
 
 export function App() {
+  // Every build except the demo serves from the site root (base: '/', vite.config.ts), so this is a
+  // no-op basename there. The demo serves under /narration-utils/demo/: without a matching basename
+  // react-router compares its routes ('/', '/proofing', ...) against the full pathname and matches
+  // nothing, so every page renders blank apart from the app shell (found by loading the built demo
+  // and reading the console: "No routes matched location ...", docs/prds/public-app-demo.prd.md D3).
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <AppRoutes />
     </BrowserRouter>
   );
@@ -270,6 +275,8 @@ function AppRoutes() {
           projectName={data.projectName}
           hasManuscript={Boolean(data.manuscript)}
           dawFileLinked={data.dawFileLinked}
+          dawReachable={data.dawReachable}
+          dawProjectMatches={data.dawProjectMatches}
           onLinkDawFile={() => void linkDawFile()}
           linkingDawFile={dawLink.isBusy}
         >

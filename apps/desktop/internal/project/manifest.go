@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/credits"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 )
 
@@ -30,6 +31,12 @@ type Manifest struct {
 	Name           string    `json:"name"`
 	CreatedAt      time.Time `json:"createdAt"`
 	DawProjectFile *DawLink  `json:"dawProjectFile,omitempty"`
+	// Credits is this project's own audiobook credit token values (title,
+	// author, copyright, ...), added additively (PRD
+	// audiobook-credits-templates.prd.md, Open Question C12: use the project
+	// manifest directly now that it exists, rather than a separate file). Nil
+	// on a project that has never had its credit values saved.
+	Credits *credits.Values `json:"credits,omitempty"`
 }
 
 // New returns a fresh manifest for a project named name, created at now.

@@ -19,6 +19,16 @@ var realEvents = map[string][]string{
 	"LINES_STALE":           {"LINES_STALE", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}"},
 	"LINES_CONFLICT":        {"LINES_CONFLICT", "t1", "{AAAAAAAA-0000-4000-8000-000000000002}"},
 	"REGIONS_CREATED":       {"REGIONS_CREATED", "t1", "4", "0", "0"},
+	"PROJECT_STATUS":        {"PROJECT_STATUS", "", "C:/p/Book.rpp", "0"},
+	"PICKUPS_IMPORTED":      {"PICKUPS_IMPORTED", "t1", "2", "0", "0"},
+	"PICKUPS_EXPORTED":      {"PICKUPS_EXPORTED", "t1", "C:/s/pickups.txt", "2"},
+	"PICKUPS_COUNTED":       {"PICKUPS_COUNTED", "t1", "1", "2"},
+	"PICKUP_NEXT":           {"PICKUP_NEXT", "t1", "9.25", "narrator", "Mispronounced"},
+	"PICKUP_RESOLVED":       {"PICKUP_RESOLVED", "t1", "9.25", "narrator", "Mispronounced"},
+	"RENDER_CONFIGURED":     {"RENDER_CONFIGURED", "t1", "C:/p/renders", "2", "C:/p/renders/Chapter 1.wav;C:/p/renders/Chapter 2.wav"},
+	"PROJECT_STATE":         {"PROJECT_STATE", "t1", "7", "C:/p/Book.rpp"},
+	"TAKE_CREATED":          {"TAKE_CREATED", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}", "{BBBBBBBB-0000-4000-8000-000000000002}"},
+	"TAKE_STALE":            {"TAKE_STALE", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}"},
 }
 
 func TestEveryRealEventPassesItsTable(t *testing.T) {
@@ -136,5 +146,20 @@ func TestTheFieldNamesOfARealEventAreListedForDiagnosticsWithoutValues(t *testin
 	}
 	if FieldNames("SOMETHING_NEW") != nil {
 		t.Fatal("an unknown tag has no field names")
+	}
+}
+
+// TestAProjectStatusHeartbeatWithAnUnsavedProjectIsStillValid is ADR 0092/W10: an unsaved REAPER project reports an
+// empty rpp (never omitted, spike S6), so the field must be allowed to be empty although it is required.
+func TestAProjectStatusHeartbeatWithAnUnsavedProjectIsStillValid(t *testing.T) {
+	if err := CheckEvent([]string{"PROJECT_STATUS", "", "", "1"}); err != nil {
+		t.Fatalf("an unsaved project's heartbeat must be valid: %v", err)
+	}
+}
+
+func TestAProjectStatusHeartbeatNeedsItsUnsavedFlagToBeANumber(t *testing.T) {
+	err := CheckEvent([]string{"PROJECT_STATUS", "", "C:/p/Book.rpp", ""})
+	if err == nil || !strings.Contains(err.Error(), "unsaved") {
+		t.Fatalf("an empty required unsaved flag must be an error naming the field: %v", err)
 	}
 }

@@ -157,7 +157,7 @@ the app reads, hash-verified, from the same pinned catalogs. Bootstrap never run
 
 While iterating on the shell without a full release build, `pnpm --dir apps/desktop run
 dev` runs the native Wails window directly. The shipped Go importer accepts
-Markdown and DOCX; PDF remains intentionally disabled pending corpus parity.
+Markdown, DOCX, plain text and EPUB; PDF remains intentionally disabled pending corpus parity.
 
 The launcher is intentionally the only REAPER action. It starts the companion
 window; REAPER continues to service only selection, take-marker, and cursor
@@ -168,10 +168,10 @@ requests while the window is open.
 The tools keep their own DAW-agnostic Python backends. What they share:
 
 - **`<project folder>\narration-utils\manuscript\manuscript.json`** — the one intentional,
-  project-owned data contract between the tools. DOCX and Markdown files are imported once;
-  their preserved source copies are provenance only and are never reparsed. Existing v1
-  PDF-derived canonical data remains readable, but new PDF import is fail-closed pending corpus
-  parity.
+  project-owned data contract between the tools. DOCX, Markdown, plain-text and EPUB files are
+  imported once; their preserved source copies are provenance only and are never reparsed.
+  Existing v1 PDF-derived canonical data remains readable, but new PDF import is fail-closed
+  pending corpus parity.
 - **`integrations/reaper/`** — `reaper_common_core.lua` (ExtState access, file/path helpers) and
   `reaper_common_process.lua` (hidden-subprocess launching, the pipe-delimited protocol used by
   each tool's Python backend). The launcher loads these via `dofile`, resolved relative to

@@ -8,9 +8,14 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
+	"github.com/countrymanprime/narration-utils/shell/internal/project"
+	"github.com/countrymanprime/narration-utils/shell/internal/repeats"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
+	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 )
@@ -238,6 +243,86 @@ func TestContractTracksDiscovery(t *testing.T) {
 	pin("tracks-discovery-selected", one)
 }
 
+// The confirmed chapter-track mapping's ChapterTrackMapList/Confirm/Clear payloads (analysis evidence ledger PRD,
+// Phase 5, Q6). ConfirmedAt is a real timestamp (RFC3339Nano), so it is normalized to a fixed value before pinning -
+// the same "machine-specific values are fixed" rule contractHost already applies to the diagnostic id.
+func TestContractChapterTrackMap(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	project := t.TempDir()
+	host := NewHost()
+	host.config.projectFolder = project
+	host.manuscript = manuscript.New(project)
+	job := host.manuscript.Begin(layout.RepoFile(layout.FixturesDir + "/alice.md"))
+	if _, err := host.manuscript.Preview(job.ID, 1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := host.manuscript.Commit(job.ID, false, nil); err != nil {
+		t.Fatal(err)
+	}
+	chapters, err := host.manuscript.Chapters()
+	if err != nil || len(chapters) == 0 {
+		t.Fatalf("chapters = %#v, %v", chapters, err)
+	}
+	firstChapterID, _ := chapters[0]["id"].(string)
+
+	pin := func(name string, value any) {
+		normalized, err := normalizeMappingPayload(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		contractfile.Check(t, name, normalized)
+	}
+
+	emptyRaw, err := host.ChapterTrackMapList()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pin("chapter-track-map-empty", json.RawMessage(emptyRaw))
+
+	confirmedRaw, err := host.ChapterTrackMapConfirm("{0E4D1D7F-D039-674D-87E6-719376DE95EC}", firstChapterID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pin("chapter-track-map-confirmed", json.RawMessage(confirmedRaw))
+
+	listRaw, err := host.ChapterTrackMapList()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pin("chapter-track-map-list", json.RawMessage(listRaw))
+}
+
+// normalizeMappingPayload decodes a JSON-encoded ChapterTrackMap binding payload and replaces every "confirmedAt"
+// field (a real time.Now() value) and "documentId" field (newID()'s random hex, manuscript/service.go) with fixed
+// values, so neither ever makes a committed contract fixture flap from one test run to the next - the same
+// "machine-specific values are fixed" rule contractHost already applies to the diagnostic id.
+func normalizeMappingPayload(value any) (any, error) {
+	const fixedTime = "2026-01-01T00:00:00Z"
+	const fixedDocumentID = "doc-fixed-for-contract-test"
+	bytes, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(bytes, &decoded); err != nil {
+		return nil, err
+	}
+	if _, ok := decoded["confirmedAt"]; ok {
+		decoded["confirmedAt"] = fixedTime
+	}
+	if _, ok := decoded["documentId"]; ok {
+		decoded["documentId"] = fixedDocumentID
+	}
+	if mappings, ok := decoded["mappings"].([]any); ok {
+		for _, entry := range mappings {
+			if mapping, ok := entry.(map[string]any); ok {
+				mapping["confirmedAt"] = fixedTime
+			}
+		}
+	}
+	return decoded, nil
+}
+
 // The system:notice event: something the app did for the narrator that they should read (ADR 0069).
 func TestContractNarratorNotice(t *testing.T) {
 	contractfile.Check(t, "system-notice", noticePayload("Your notes file could not be read. It was kept as manuscript-notes.json.corrupt-20260921-101530 next to the original, and a fresh one was started."))
@@ -281,4 +366,116 @@ func TestContractProjectLinkDawFile(t *testing.T) {
 	contractfile.Check(t, "daw-link-folder-mismatch", stableMismatch)
 
 	contractfile.Check(t, "daw-link-cancelled", map[string]any{"selected": false, "linked": false})
+}
+
+// DawLaunch's result (Phase 8, docs/prds/project-workspace-and-daw-link.prd.md).
+func TestContractDawLaunch(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir()) // never read the real machine's global-settings.json
+	folder := t.TempDir()
+	rpp := filepath.Join(folder, "Alice.rpp")
+	if err := os.WriteFile(rpp, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link, err := project.BuildDawLink(folder, rpp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := project.New("Alice", time.Now())
+	manifest.DawProjectFile = &link
+	if err := manifest.Save(folder); err != nil {
+		t.Fatal(err)
+	}
+	svc := hostServices{config: config{projectFolder: folder}, settings: settings.New("", folder)}
+	locate := func() (string, string, error) {
+		return `C:\Program Files\REAPER (x64)\reaper.exe`, "uninstall_registry", nil
+	}
+	launched, err := launchReaper(svc, nil, locate, func(string, []string) error { return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	stable, err := contractfile.PortablePaths(launched, folder, "C:/Projects/Alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "daw-launch", stable)
+}
+
+// CreditsTemplates' shipped defaults (audiobook-credits-templates.prd.md, Phase 1).
+func TestContractCreditsTemplates(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	host := NewHost()
+	templates, err := host.creditTemplates.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "credits-templates", templates)
+}
+
+// CreditsProjectValues' payload for a project with no credits saved yet, and CreditsPreview's Result for a template with
+// one unresolved token (Success Metrics: "unresolved tokens are reported by name").
+func TestContractCreditsProjectValuesAndPreview(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	folder := t.TempDir()
+	host := NewHost()
+	host.config.projectFolder = folder
+	host.config.projectName = "Alice"
+	host.settings = settings.New(layout.FindRoot("."), folder)
+	values, err := host.CreditsProjectValues()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(values), &decoded); err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "credits-project-values-empty", decoded)
+
+	preview, err := host.CreditsPreview("[Title], written by [Author], narrated by [Narrator].")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decodedPreview map[string]any
+	if err := json.Unmarshal([]byte(preview), &decodedPreview); err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "credits-preview-unresolved", decodedPreview)
+}
+
+// The findings TakeReviewScan and TakeReviewFindings send (take-review phase 5, ADR 0069): one
+// restart-kind pickup (a partial re-read, below the near-duplicate quality bar) and one
+// near-identical duplicate_read (full coverage, both members above it), so the review surface's
+// two states are both pinned. Built straight from internal/repeats.ToFindings, the same adapter
+// the scan binding calls, rather than running a scan end to end: no sidecar, no temp project.
+func TestContractTakeReviewFindings(t *testing.T) {
+	groups := []repeats.Group{
+		{
+			ID: 0, FirstUnit: 3, LastUnit: 7,
+			Members: []repeats.Member{
+				{ItemIndex: 0, ItemGUID: "{11111111-0000-0000-0000-000000000001}", TakeGUID: "{22222222-0000-0000-0000-000000000001}", SourceFile: "C:/Projects/Alice/media/chapter1-take1.wav", StartOffset: 0, Length: 4.5, FirstUnit: 3, LastUnit: 7, Coverage: 1, Quality: 0.62},
+				{ItemIndex: 1, ItemGUID: "{11111111-0000-0000-0000-000000000002}", TakeGUID: "{22222222-0000-0000-0000-000000000002}", SourceFile: "C:/Projects/Alice/media/chapter1-take2.wav", StartOffset: 10, Length: 3.1, FirstUnit: 3, LastUnit: 7, Coverage: 0.7, Quality: 0.58},
+			},
+		},
+		{
+			ID: 1, FirstUnit: 12, LastUnit: 15,
+			Members: []repeats.Member{
+				{ItemIndex: 2, ItemGUID: "{11111111-0000-0000-0000-000000000003}", TakeGUID: "{22222222-0000-0000-0000-000000000003}", SourceFile: "C:/Projects/Alice/media/chapter1-take3.wav", StartOffset: 0, Length: 2.2, FirstUnit: 12, LastUnit: 15, Coverage: 1, Quality: 0.99},
+				{ItemIndex: 3, ItemGUID: "{11111111-0000-0000-0000-000000000004}", TakeGUID: "{22222222-0000-0000-0000-000000000004}", SourceFile: "C:/Projects/Alice/media/chapter1-take4.wav", StartOffset: 0, Length: 2.2, FirstUnit: 12, LastUnit: 15, Coverage: 1, Quality: 0.98},
+			},
+		},
+	}
+	project := findings.Project{Path: "C:/Projects/Alice"}
+	manuscript := findings.Manuscript{ChapterID: "chapter-1", ChapterTitle: "Chapter 1"}
+	result := repeats.ToFindings(groups, project, manuscript, repeats.DefaultThresholds())
+	contractfile.Check(t, "takereview-findings", result)
+}
+
+// The result TakeReviewCreateTake sends once REAPER confirms a take was added (take-review
+// phase 6, ADR 0098): the target item's own GUID (unchanged) and the new take's GUID, both
+// re-resolved by narration_take_review.lua after its Undo_EndBlock2.
+func TestContractTakeReviewCreateTakeResult(t *testing.T) {
+	result := takereview.CreateTakeResult{
+		TargetItemGUID: "{11111111-0000-0000-0000-000000000001}",
+		NewTakeGUID:    "{22222222-0000-0000-0000-000000000099}",
+	}
+	contractfile.Check(t, "takereview-create-take", result)
 }

@@ -51,12 +51,17 @@ test('findStaleReferences also reports bare names, quoted segments and backslash
     ['ci.yml', ['run: go -C shell test ./...', 'working-directory: shell', '- run: pnpm --dir shell run build'].join('\n')],
     ['a.mjs', ["join(root, 'shared', 'ui')", "join(dir, 'shell')"].join('\n')],
     ['b.md', String.raw`open shared\python\x.py and shared/* too`],
+    ['c.md', String.raw`the old build put it at shell\build\bin\narration-utils-shell.exe`],
     ['ok.md', 'the shell is a program; narration-utils-shell; shellcheck; go -C apps/desktop test'],
+    [
+      'not-a-path.md',
+      String.raw`REAPER's .rpp file association is HKEY_CLASSES_ROOT\Reaper.Project\shell\open64\command, or \shell\open\command on older builds`,
+    ],
   ]);
 
   const flagged = findStaleReferences(files, [], [], patterns).map((hit) => `${hit.file}:${hit.line}`);
 
-  assert.deepEqual(flagged, ['ci.yml:1', 'ci.yml:2', 'ci.yml:3', 'a.mjs:1', 'a.mjs:2', 'b.md:1']);
+  assert.deepEqual(flagged, ['ci.yml:1', 'ci.yml:2', 'ci.yml:3', 'a.mjs:1', 'a.mjs:2', 'b.md:1', 'c.md:1']);
 });
 
 test('unexpectedRoots lists tracked top-level entries outside the allowlist', () => {

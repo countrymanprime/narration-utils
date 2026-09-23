@@ -85,7 +85,8 @@ export type ManuscriptImportSelection = {
 export type ManuscriptImportPreview = {
   // `pdf` remains readable for a pre-migration canonical manuscript, but the
   // native picker and shipped importer currently reject new PDF imports.
-  format: 'docx' | 'markdown' | 'pdf';
+  // `txt` is Phase 1 and `epub` is Phase 2 of the txt-and-epub-import PRD.
+  format: 'docx' | 'markdown' | 'txt' | 'epub' | 'pdf';
   sourceName: string;
   paragraphCount: number;
   chapterTitles: string[];

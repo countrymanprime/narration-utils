@@ -69,6 +69,7 @@ var stressReaders = []stressReader{
 	{"UpdateInstall (unknown job)", func(h *Host) { _, _ = h.UpdateInstall("missing") }},
 	{"UpdateShowDownload (nothing downloaded)", func(h *Host) { _, _ = h.UpdateShowDownload() }},
 	{"TeleprompterStop", func(h *Host) { _, _ = h.TeleprompterStop() }},
+	{"TeleprompterSeek", func(h *Host) { _, _ = h.TeleprompterSeek(1) }},
 	{"TracksDiscover", func(h *Host) { _, _ = h.TracksDiscover() }},
 	{"TracksList", func(h *Host) { _, _ = h.TracksList() }},
 	{"TracksSelect", func(h *Host) { _, _ = h.TracksSelect("not-a-project-file.rpp") }},
@@ -93,6 +94,9 @@ var stressReaders = []stressReader{
 	{"WhisperInstallState", func(h *Host) { _, _ = h.WhisperInstallState("missing") }},
 	{"WhisperRemove (unknown model)", func(h *Host) { _, _ = h.WhisperRemove("missing") }},
 	{"pollTranscript (one transcriptLoop tick)", func(h *Host) { h.pollTranscript() }},
+	{"LineIdentityState", func(h *Host) { _, _ = h.LineIdentityState() }},
+	{"LineIdentityStamp (empty rows)", func(h *Host) { _, _ = h.LineIdentityStamp(nil, false) }},
+	{"LineIdentityRead (no bridge)", func(h *Host) { _, _ = h.LineIdentityRead() }},
 	{"canAttach (ProjectCreateIn's pre-check)", func(h *Host) { _ = h.canAttach() }},
 	{"emit callbacks", func(h *Host) {
 		h.emitTranscript(emptyTranscript())

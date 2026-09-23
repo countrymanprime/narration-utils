@@ -41,7 +41,7 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0016](0016-highlight-primitive.md) | One `Highlight` primitive for entity, note and review highlights | Accepted (amends ADR-0009) |
 | [0017](0017-no-legacy-css-shadowing-tailwind.md) | No unlayered legacy CSS or contradictory utilities shadow Tailwind | Accepted (amends ADR-0009) |
 | [0018](0018-story-bible-entries-read-only-until-edit.md) | Story Bible entries are read-only until Edit is pressed | Accepted |
-| [0019](0019-detected-manuscript-is-offered-not-imported.md) | A manuscript found in the project folder is offered, never imported automatically | Accepted |
+| [0019](0019-detected-manuscript-is-offered-not-imported.md) | A manuscript found in the project folder is offered, never imported automatically | Accepted (extension list amended by ADR-0103) |
 | [0020](0020-entity-extraction-precision-over-recall.md) | Story Bible entity extraction favors precision over recall | Accepted |
 | [0021](0021-live-speech-engines-behind-one-event-contract.md) | Live speech engines are interchangeable behind one event contract | Accepted |
 | [0022](0022-live-sidecar-events-over-wails-and-stop-file.md) | The host relays live sidecar events over Wails events and stops the sidecar with a stop file | Accepted |
@@ -114,4 +114,12 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0089](0089-a-docx-table-of-contents-becomes-the-authoritative-chapter-list-above-a-match-threshold.md) | A docx's own table of contents becomes the authoritative chapter list above a match threshold | Accepted |
 | [0090](0090-the-page-flip-reader-hides-reference-chapters-superseding-the-reader-half-of-adr-0005.md) | The page-flip reader hides reference chapters, superseding the reader half of ADR 0005 | Accepted |
 | [0092](0092-reaper-executable-discovery-heartbeat-mechanism-and-script-plus-project-launch-are-resolved.md) | REAPER executable discovery, heartbeat mechanism and script-plus-project launch are resolved | Accepted |
+| [0093](0093-the-home-estimate-times-the-first-opening-and-closing-template-until-a-project-can-choose-one.md) | The Home estimate times the first opening and closing template until a project can choose one | Proposed |
 | [0094](0094-dialog-gains-a-full-size-variant-that-fills-the-viewport-with-a-margin.md) | Dialog gains a full-size variant that fills the viewport with a margin | Accepted |
+| [0095](0095-txt-import-decodes-by-bom-utf-8-windows-1252-and-a-chapterless-file-becomes-one-narration-chapter.md) | TXT import decodes by BOM/UTF-8/Windows-1252, and a chapterless file becomes one narration chapter | Accepted |
+| [0096](0096-the-public-demo-builds-under-its-own-vite-mode-and-the-router-carries-a-basename.md) | The public demo builds under its own Vite mode, and the router carries a basename | Accepted |
+| [0098](0098-take-provenance-in-take-extension-data-extends-adr-0026.md) | Take provenance is stored in take-level extension data, extending ADR 0026 to takes | Accepted |
+| [0100](0100-analysis-evidence-is-two-hash-keys-one-ledger-record-per-run-and-a-narrator-confirmed-track-map.md) | Analysis evidence is two hash keys, one ledger record per run, and a narrator-confirmed track map | Accepted |
+| [0101](0101-epub-import-reads-nav-then-ncx-for-chapters-caps-entries-and-refuses-drm.md) | EPUB import reads nav then NCX for chapters, caps entries, and refuses DRM | Accepted |
+| [0102](0102-epub-content-kind-overrides-by-title-rather-than-canonical-title-renaming.md) | EPUB `epub:type` forces a section's content kind by an explicit override, not by renaming its title to one the classifier already knows | Proposed |
+| [0103](0103-txt-and-epub-are-accepted-import-formats-hand-rolled-drm-refused-and-offered-for-detection.md) | TXT and EPUB are accepted import formats, hand-rolled without a library, DRM is refused, and both are offered for detection | Accepted (amends ADR-0019) |

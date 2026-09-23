@@ -21,7 +21,9 @@ rather than only a synthetic unit-test one.
 
 import re
 import sys
+import zipfile
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 from docx import Document
 from fpdf import FPDF
@@ -35,14 +37,20 @@ def parse_chapters(raw_path: Path) -> list[tuple[str, list[str]]]:
     body = text[text.index("\n", start) + 1 :]
 
     chapter_re = re.compile(r"^CHAPTER ([IVXLC]+)\.\s*$", re.MULTILINE)
-    matches = list(chapter_re.finditer(body))[:CHAPTER_LIMIT]
+    all_matches = list(chapter_re.finditer(body))
+    matches = all_matches[:CHAPTER_LIMIT]
 
     chapters = []
     for i, match in enumerate(matches):
         title_line_end = body.index("\n", match.end() + 1)
         chapter_title = body[match.end() : title_line_end].strip()
         content_start = title_line_end + 1
-        content_end = matches[i + 1].start() if i + 1 < len(matches) else body.index("THE END")
+        # Bound the LAST kept chapter's content at the next real chapter heading in the full
+        # match list (not the truncated one) - using body.index("THE END") here would bleed
+        # every chapter beyond CHAPTER_LIMIT into this one as plain, unmarked paragraph text
+        # (txt-and-epub-import PRD, Phase 1: the TXT importer's own heading heuristic exposed
+        # this by correctly reading those bled-in "CHAPTER IV."-shaped lines as real headings).
+        content_end = all_matches[i + 1].start() if i + 1 < len(all_matches) else body.index("THE END")
         raw_paragraphs = body[content_start:content_end].strip("\n").split("\n\n")
         paragraphs = []
         for para in raw_paragraphs:
@@ -51,6 +59,59 @@ def parse_chapters(raw_path: Path) -> list[tuple[str, list[str]]]:
                 paragraphs.append(collapsed)
         chapters.append((f"Chapter {match.group(1)}: {chapter_title}", paragraphs))
     return chapters
+
+
+def wrap_txt_line(text: str, width: int = 70) -> list[str]:
+    words = text.split()
+    lines: list[str] = []
+    current: list[str] = []
+    length = 0
+    for word in words:
+        extra = len(word) + (1 if current else 0)
+        if length + extra > width and current:
+            lines.append(" ".join(current))
+            current, length = [word], len(word)
+        else:
+            current.append(word)
+            length += extra
+    if current:
+        lines.append(" ".join(current))
+    return lines
+
+
+def write_txt(chapters: list[tuple[str, list[str]]], out_path: Path) -> None:
+    """Writes a Gutenberg-shaped, hard-wrapped alice.txt: a START/END marker pair around the
+    text (T5), a Contents block naming the chapters (never itself read as a chapter list, T3),
+    and each chapter as a two-line "CHAPTER N." / subtitle heading block, wrapped at ~70
+    columns like the real alice_raw.txt this is derived from - so the importer's hard-wrap
+    detection (T2) and underscore-italic handling (T5) both have real work to do."""
+    lines = [
+        "*** START OF THE PROJECT GUTENBERG EBOOK 11 ***",
+        "",
+        "Alice's Adventures in Wonderland",
+        "",
+        "by Lewis Carroll",
+        "",
+        "Contents",
+        "",
+    ]
+    for title, _ in chapters:
+        lines.append(f" {title}")
+    lines.append("")
+    lines.append("")
+    for title, paragraphs in chapters:
+        marker, subtitle = title.split(": ", 1)
+        lines.append(marker.upper() + ".")
+        lines.append(subtitle)
+        lines.append("")
+        for para in paragraphs:
+            lines.extend(wrap_txt_line(para))
+            lines.append("")
+    lines.append("*** END OF THE PROJECT GUTENBERG EBOOK 11 ***")
+    # newline="\n" pins LF regardless of platform - Path.write_text's universal-newline
+    # translation would otherwise write CRLF here on Windows, unlike alice_raw.txt and this
+    # script's other outputs.
+    out_path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
 
 
 def write_docx(chapters: list[tuple[str, list[str]]], out_path: Path) -> None:
@@ -120,6 +181,97 @@ def write_pdf(chapters: list[tuple[str, list[str]]], out_path: Path) -> None:
     pdf.output(str(out_path))
 
 
+epub_italic_re = re.compile(r"_(.+?)_")
+
+
+def epub_em(text: str) -> str:
+    """Turns the raw fixture text's word-bounded `_italic_` runs (the same
+    Gutenberg convention alice.txt's T5 reads) into a semantic <em>, so the
+    EPUB fixture's chapter text matches alice.md's after the Markdown
+    importer strips its own underscore-emphasis markers - otherwise the
+    literal underscores would stay in the EPUB's plain text and break the
+    Go parity test (txt-and-epub-import PRD, Phase 2)."""
+    return epub_italic_re.sub(r"<em>\1</em>", text)
+
+
+def write_epub(chapters: list[tuple[str, list[str]]], out_path: Path) -> None:
+    """Writes alice.epub (txt-and-epub-import PRD, Phase 2): an EPUB 3 book with
+    both a nav.xhtml table of contents (EPUB 3) and a toc.ncx (EPUB 2), as many
+    real EPUB 3 exporters ship both for backwards compatibility, so one fixture
+    exercises the nav-preferred path while a from-scratch NCX-only variant
+    (built directly in Go, epub_test.go) exercises the EPUB 2 fallback. A
+    front-matter document with no heading (classified Front Matter/Cover, like
+    alice.txt) precedes the same three chapters as alice.md/alice.txt, so the
+    Go parity test can compare their narration text directly."""
+    if out_path.exists():
+        out_path.unlink()
+    with zipfile.ZipFile(out_path, "w") as zf:
+        # mimetype must be the first entry, stored (uncompressed), per the EPUB spec.
+        zf.writestr(zipfile.ZipInfo("mimetype"), "application/epub+zip", zipfile.ZIP_STORED)
+        zf.writestr(
+            "META-INF/container.xml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">'
+            '<rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>'
+            "</container>",
+        )
+        manifest_items = [
+            '<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>',
+            '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>',
+            '<item id="front" href="frontmatter.xhtml" media-type="application/xhtml+xml"/>',
+        ]
+        spine_items = ['<itemref idref="front"/>']
+        nav_entries = []
+        ncx_points = []
+        for i, (title, paragraphs) in enumerate(chapters, start=1):
+            item_id = f"ch{i}"
+            manifest_items.append(f'<item id="{item_id}" href="{item_id}.xhtml" media-type="application/xhtml+xml"/>')
+            spine_items.append(f'<itemref idref="{item_id}"/>')
+            body = "".join(f"<p>{epub_em(escape(p))}</p>" for p in paragraphs)
+            zf.writestr(
+                f"OEBPS/{item_id}.xhtml",
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>' + escape(title) + "</title></head>"
+                f'<body><h1 id="{item_id}">{escape(title)}</h1>{body}</body></html>',
+            )
+            nav_entries.append(f'<li><a href="{item_id}.xhtml#{item_id}">{escape(title)}</a></li>')
+            ncx_points.append(
+                f'<navPoint id="np{i}" playOrder="{i}"><navLabel><text>{escape(title)}</text></navLabel><content src="{item_id}.xhtml#{item_id}"/></navPoint>'
+            )
+        zf.writestr(
+            "OEBPS/frontmatter.xhtml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Front Matter</title></head>'
+            "<body><p>Alice's Adventures in Wonderland</p><p>by Lewis Carroll</p></body></html>",
+        )
+        zf.writestr(
+            "OEBPS/nav.xhtml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">'
+            "<head><title>Table of Contents</title></head>"
+            '<body><nav epub:type="toc"><ol>' + "".join(nav_entries) + "</ol></nav></body></html>",
+        )
+        zf.writestr(
+            "OEBPS/toc.ncx",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">'
+            "<head/><docTitle><text>Alice's Adventures in Wonderland</text></docTitle>"
+            "<navMap>" + "".join(ncx_points) + "</navMap></ncx>",
+        )
+        zf.writestr(
+            "OEBPS/content.opf",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">'
+            '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">'
+            "<dc:title>Alice's Adventures in Wonderland</dc:title>"
+            '<dc:identifier id="bookid">alice-fixture</dc:identifier>'
+            "<dc:language>en</dc:language></metadata>"
+            f"<manifest>{''.join(manifest_items)}</manifest>"
+            f'<spine toc="ncx">{"".join(spine_items)}</spine>'
+            "</package>",
+        )
+
+
 def main() -> None:
     raw_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).parent / "alice_raw.txt"
     chapters = parse_chapters(raw_path)
@@ -127,7 +279,9 @@ def main() -> None:
     write_docx(chapters, out_dir / "alice.docx")
     write_markdown(chapters, out_dir / "alice.md")
     write_pdf(chapters, out_dir / "alice.pdf")
-    print(f"Wrote alice.docx/.md/.pdf from {len(chapters)} chapters.")
+    write_txt(chapters, out_dir / "alice.txt")
+    write_epub(chapters, out_dir / "alice.epub")
+    print(f"Wrote alice.docx/.md/.pdf/.txt/.epub from {len(chapters)} chapters.")
 
 
 if __name__ == "__main__":

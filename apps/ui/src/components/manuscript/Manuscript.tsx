@@ -3,9 +3,18 @@ import { describeApiError } from '../../api/errorMessage';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faFont, faList } from '@fortawesome/free-solid-svg-icons';
+import { faAnglesDown, faAnglesUp, faBookmark as faBookmarkSolid, faFont, faList, faMicrophone } from '@fortawesome/free-solid-svg-icons';
 import { faBookmark as faBookmarkRegular } from '@fortawesome/free-regular-svg-icons';
-import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, ReaderState, SearchHit } from '../../types';
+import type {
+  CreditsRenderResult,
+  CreditTemplate,
+  GuideEntity,
+  ManuscriptChapter,
+  ManuscriptNote,
+  ManuscriptParagraph,
+  ReaderState,
+  SearchHit,
+} from '../../types';
 import { categoryCssName, chapterLineNumbers, chapterTextMatches, isListableChapter, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
@@ -17,6 +26,7 @@ import { ToggleGroup } from '../primitives/ToggleGroup';
 import { SlideOver } from '../primitives/SlideOver';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { ChapterNav } from './ChapterNav';
+import { CreditsEntry } from './CreditsEntry';
 import { SearchBar } from './SearchBar';
 import { ParagraphView } from './ParagraphView';
 import { SelectionMenu } from './SelectionMenu';
@@ -24,6 +34,11 @@ import { AddNoteDialog } from './AddNoteDialog';
 import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from './EntitySummary';
 import { IconButton } from '../primitives/IconButton';
 import type { Notify } from '../primitives/Toast';
+import { ReadAloudDialog } from '../teleprompter/ReadAloudDialog';
+
+// Read aloud (teleprompter-manuscript-integration.prd.md) reads narration chapters only, matching the standalone
+// Teleprompter page's own chapter filter.
+const isNarrationChapter = (chapter: Pick<ManuscriptChapter, 'contentKind'>) => (chapter.contentKind ?? 'narration') === 'narration';
 
 const TEXT_SIZES = ['small', 'medium', 'large'] as const;
 const TEXT_SIZE_OPTIONS = TEXT_SIZES.map((value) => ({ value, label: value }));
@@ -64,6 +79,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   const [detail, setDetail] = useState<{ entity?: GuideEntity; note?: ManuscriptNote }>();
   const [pendingNote, setPendingNote] = useState<{ paragraphIndex: number; anchorStart: number; anchorEnd: number; anchorText: string }>();
   const [jumpTarget, setJumpTarget] = useState<number>();
+  const [readAloudChapter, setReadAloudChapter] = useState<ManuscriptChapter>();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
   // The query text a result was actually fetched for - not the debounce hook's own state, so an
@@ -76,6 +92,14 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   // debouncedQuery. A ref lets the effect stay keyed on debouncedQuery alone.
   const lastFetchedQueryRef = useRef('');
   const debouncedQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_MS);
+  // Credits pseudo-entries (PRD audiobook-credits-templates.prd.md, Phase 3): read-only, never chapters, so they
+  // live entirely in local state - no readerState field, no manuscript.json entry, nothing ChapterNav or search
+  // iterates over. Per ADR 0093's convention (the Home estimate's own reading default until a project can choose
+  // its own opening/closing template), this uses the first opening-kind and first closing-kind template the
+  // library returns, rendered with the current project's values.
+  const [creditsTemplates, setCreditsTemplates] = useState<CreditTemplate[]>([]);
+  const [creditsPreviews, setCreditsPreviews] = useState<{ opening?: CreditsRenderResult; closing?: CreditsRenderResult }>({});
+  const [creditsExpanded, setCreditsExpanded] = useState<{ opening: boolean; closing: boolean }>({ opening: false, closing: false });
   const { selection, clear: clearSelection } = useTextSelection(readerRef);
   // Reference material (Contents, Characters, ...) stays in manuscript.json and the chapter list,
   // but is never a page the narrator flips through - see isListableChapter and the reader search and
@@ -87,6 +111,8 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   // True once there is a query the panel has not shown results for yet - the debounce wait, or
   // (briefly) the request itself - so "No matches" never flashes before a settled answer exists (R1).
   const searchPending = Boolean(searchQuery.trim()) && searchQuery !== lastFetchedQuery;
+  const openingTemplate = creditsTemplates.find((template) => template.kind === 'opening');
+  const closingTemplate = creditsTemplates.find((template) => template.kind === 'closing');
 
   useEffect(() => {
     const element = bandRef.current;
@@ -161,6 +187,35 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
       }
     })();
   }, [api, loadAttempt]);
+  // Credits templates (Phase 3): a secondary read, like AudiobookEstimatePanel's own credits stat - a failure here
+  // should not block the manuscript itself, so it is swallowed and simply leaves no credits entries rendered.
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const templates = await api.creditsTemplates();
+        if (active) setCreditsTemplates(templates);
+      } catch {
+        if (active) setCreditsTemplates([]);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [api, loadAttempt]);
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const [opening, closing] = await Promise.all([
+        openingTemplate ? api.creditsPreview(openingTemplate.body).catch(() => undefined) : Promise.resolve(undefined),
+        closingTemplate ? api.creditsPreview(closingTemplate.body).catch(() => undefined) : Promise.resolve(undefined),
+      ]);
+      if (active) setCreditsPreviews({ opening, closing });
+    })();
+    return () => {
+      active = false;
+    };
+  }, [api, openingTemplate, closingTemplate]);
   useEffect(() => {
     for (const chapterId of readerState.expandedChapters || []) {
       if (requestedChapters.current.has(chapterId)) continue;
@@ -412,6 +467,14 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
         </div>
       </div>
       <div ref={readerRef} className="reader-chapters pt-3">
+        {openingTemplate && (
+          <CreditsEntry
+            kind="opening"
+            preview={creditsPreviews.opening}
+            expanded={creditsExpanded.opening}
+            onToggle={() => setCreditsExpanded((current) => ({ ...current, opening: !current.opening }))}
+          />
+        )}
         {recordedChapters.map((chapter) => {
           const expanded = (readerState.expandedChapters || []).includes(chapter.id);
           const chapterBookmark = readerState.bookmarks.find((item) => item.kind === 'chapter' && item.chapterId === chapter.id);
@@ -449,10 +512,19 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
                     )}
                   </h2>
                 </button>
-                <div className="justify-self-end text-right max-md:col-start-2 max-md:flex max-md:gap-2 max-md:justify-self-start">
-                  <div className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs">{chapter.wordCount.toLocaleString()} words</div>
-                  <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                    ~{Math.max(1, Math.round(chapter.wordCount / 200))} min read
+                <div className="flex items-center gap-3 justify-self-end text-right max-md:col-start-2 max-md:justify-self-start">
+                  {isNarrationChapter(chapter) && (
+                    <TooltipTarget text="Read this chapter aloud and follow along">
+                      <Button variant="ghost" className="text-xs" aria-label={`Read ${chapter.title} aloud`} onClick={() => setReadAloudChapter(chapter)}>
+                        <FontAwesomeIcon icon={faMicrophone} /> Read aloud
+                      </Button>
+                    </TooltipTarget>
+                  )}
+                  <div>
+                    <div className="font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs">{chapter.wordCount.toLocaleString()} words</div>
+                    <div className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                      ~{Math.max(1, Math.round(chapter.wordCount / 200))} min read
+                    </div>
                   </div>
                 </div>
               </header>
@@ -487,6 +559,14 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
             </article>
           );
         })}
+        {closingTemplate && (
+          <CreditsEntry
+            kind="closing"
+            preview={creditsPreviews.closing}
+            expanded={creditsExpanded.closing}
+            onToggle={() => setCreditsExpanded((current) => ({ ...current, closing: !current.closing }))}
+          />
+        )}
       </div>
       {selection && !pendingNote && (
         <SelectionMenu
@@ -590,6 +670,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
           </>
         )}
       </SlideOver>
+      {readAloudChapter && <ReadAloudDialog chapter={readAloudChapter} onClose={() => setReadAloudChapter(undefined)} />}
     </div>
   );
 }

@@ -5,6 +5,9 @@ import type { ManuscriptChapter, ManuscriptParagraph } from '../types';
 // so scrolling, search, bookmarks, and source-line navigation run against a
 // normal novel rather than a small excerpt fixture.
 const ALICE_TEXT_URL = 'https://raw.githubusercontent.com/GITenberg/Alice-s-Adventures-in-Wonderland_11/master/11-0.txt';
+// A stalled download must not hold the mock client's manuscript calls forever:
+// past this limit the compact local seed fixture is used instead, as when offline.
+const ALICE_FETCH_TIMEOUT_MS = 5_000;
 
 type ChapterSeed = { title: string; subtitle: string };
 
@@ -87,7 +90,7 @@ export async function loadAliceManuscript(
 ): Promise<{ chapters: ManuscriptChapter[]; paragraphs: ManuscriptParagraph[] } | undefined> {
   if (typeof fetch !== 'function') return undefined;
   try {
-    const response = await fetch(ALICE_TEXT_URL);
+    const response = await fetch(ALICE_TEXT_URL, { signal: AbortSignal.timeout(ALICE_FETCH_TIMEOUT_MS) });
     return response.ok ? parseAliceManuscript(await response.text(), seeds) : undefined;
   } catch {
     // Offline/test clients remain usable with the compact local seed fixture.

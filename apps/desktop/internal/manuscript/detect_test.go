@@ -31,9 +31,38 @@ func TestDetectSourcePrefersDocxOverMarkdown(t *testing.T) {
 	}
 }
 
+// TestDetectSourceFindsEpubAndTxt pins F2 (txt-and-epub-import PRD, Phase 4):
+// a manuscript.epub or manuscript.txt sitting in the project folder is now
+// offered, the same as manuscript.docx/.md always were.
+func TestDetectSourceFindsEpubAndTxt(t *testing.T) {
+	for _, extension := range []string{".epub", ".txt"} {
+		project := t.TempDir()
+		touch(t, filepath.Join(project, "manuscript"+extension))
+		if got := DetectSource(project); filepath.Base(got) != "manuscript"+extension {
+			t.Fatalf("extension %s: detected %q", extension, got)
+		}
+	}
+}
+
+// TestDetectSourcePreferenceOrder pins the full preference order from the PRD's
+// own recommendation (F2): .docx, .epub, .md, .markdown, .txt.
+func TestDetectSourcePreferenceOrder(t *testing.T) {
+	order := []string{".docx", ".epub", ".md", ".markdown", ".txt"}
+	for start := 0; start < len(order); start++ {
+		project := t.TempDir()
+		for _, extension := range order[start:] {
+			touch(t, filepath.Join(project, "manuscript"+extension))
+		}
+		want := "manuscript" + order[start]
+		if got := DetectSource(project); filepath.Base(got) != want {
+			t.Fatalf("with %v present, detected %q, want %q", order[start:], got, want)
+		}
+	}
+}
+
 func TestDetectSourceIgnoresUnsupportedFormatsWordLockFilesAndDirectories(t *testing.T) {
 	project := t.TempDir()
-	touch(t, filepath.Join(project, "manuscript.txt"))
+	touch(t, filepath.Join(project, "manuscript.pdf"))
 	touch(t, filepath.Join(project, "~$manuscript.docx"))
 	if err := os.Mkdir(filepath.Join(project, "manuscript.md"), 0o755); err != nil {
 		t.Fatal(err)

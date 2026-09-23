@@ -196,6 +196,13 @@
     "caption": "Tracks - no REAPER project file found in the project folder"
   },
   {
+    "page": "tracks",
+    "state": "chapter-link-confirmed",
+    "viewport": "desktop",
+    "docName": "tracks-chapter-links",
+    "caption": "Tracks - the chapter links list, one chapter confirmed to a track"
+  },
+  {
     "page": "settings",
     "state": "global-general",
     "viewport": "desktop",
