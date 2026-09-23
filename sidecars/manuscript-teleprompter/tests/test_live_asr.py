@@ -1,4 +1,6 @@
 import importlib.util
+import json
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -523,3 +525,33 @@ def test_an_ordinary_value_is_taken_as_the_option_value():
     parsed = live_asr.build_parser().parse_args(["--mic", "Microphone (USB)", "--chapter", "Chapter 1"])
 
     assert (parsed.mic, parsed.chapter) == ("Microphone (USB)", "Chapter 1")
+
+
+# --list-devices is a one-shot mode: it must short-circuit before the "one of --wav or --mic is required" check (it needs
+# neither) and print exactly one JSON line, the shape the Go host binding (apps/desktop/internal/teleprompter) parses.
+# devices.py itself is unit-tested in test_devices.py; here only the CLI wiring is under test, so `devices` is faked via
+# sys.modules (main() does `from devices import list_input_devices` as a local import, same pattern as script_tracker).
+def _fake_devices_module(result):
+    return SimpleNamespace(list_input_devices=lambda: result)
+
+
+def test_list_devices_emits_one_json_line_and_never_requires_wav_or_mic(monkeypatch, capsys):
+    devices = [SimpleNamespace(to_json=lambda: {"name": "Microphone Array (Realtek(R) Audio)"})]
+    monkeypatch.setitem(sys.modules, "devices", _fake_devices_module((devices, None)))
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--list-devices"])
+
+    live_asr.main()
+
+    lines = capsys.readouterr().out.strip().splitlines()
+    assert len(lines) == 1
+    assert json.loads(lines[0]) == {"type": "devices", "devices": [{"name": "Microphone Array (Realtek(R) Audio)"}], "error": None}
+
+
+def test_list_devices_reports_a_listing_failure_instead_of_pretending_there_are_no_microphones(monkeypatch, capsys):
+    monkeypatch.setitem(sys.modules, "devices", _fake_devices_module(([], "Could not list input devices: no dshow backend")))
+    monkeypatch.setattr(sys, "argv", ["live_asr.py", "--list-devices"])
+
+    live_asr.main()
+
+    emitted = json.loads(capsys.readouterr().out.strip())
+    assert emitted == {"type": "devices", "devices": [], "error": "Could not list input devices: no dshow backend"}

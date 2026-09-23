@@ -50,6 +50,12 @@ turns them into these three event types:
         once, first, only with --manuscript: how the chapter was tokenized
         (title, then each paragraph split on whitespace) so a frontend can
         map `read` indices onto paragraphs and words (see chapter_script.py)
+    {"type": "devices", "devices": [{"name": "Microphone Array (Realtek(R) Audio)"}], "error": null}
+        only with --list-devices: the input devices the --mic capture path
+        (iter_microphone_chunks, below) can open, by the same name dshow
+        opens them under (see devices.py); prints once and exits, no
+        --wav/--mic session follows. `error` is set (devices always []) if
+        listing failed - a caller must never treat that as "no microphones".
 Word timings come from the engine and are advisory: they can be noisy or run
 backwards (Moonshine's do, mostly in partials), so the only guarantee is that
 `end` is never before `start`. Consumers should rely on word ORDER, not times.
@@ -628,6 +634,11 @@ def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> No
 
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="Stream live word-timestamp ASR as NDJSON for the Manuscript Teleprompter prototype")
+    ap.add_argument(
+        "--list-devices",
+        action="store_true",
+        help="Print the input devices the --mic capture path can open (one JSON object: {type: devices, devices: [...], error}), then exit",
+    )
     ap.add_argument("--wav", default=None, help="Replay this audio file as if it were live mic input (fixture testing)")
     ap.add_argument("--mic", default=None, help="Capture from this input device name instead of --wav (Windows dshow device name)")
     ap.add_argument("--engine", default="whisper", choices=["whisper", "moonshine"], help="Live ASR engine (default: whisper); both emit the same events")
@@ -671,6 +682,12 @@ def main() -> None:
 
     if args.log:
         set_log_file(open(args.log, "a", encoding="utf-8"))  # noqa: SIM115
+    if args.list_devices:
+        from devices import list_input_devices
+
+        devices, error = list_input_devices()
+        _emit({"type": "devices", "devices": [device.to_json() for device in devices], "error": error})
+        return
     if not args.wav and not args.mic:
         ap.error("one of --wav or --mic is required")
     _check_engine_args(ap, args)

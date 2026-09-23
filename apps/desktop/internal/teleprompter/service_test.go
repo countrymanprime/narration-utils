@@ -37,6 +37,9 @@ func flagValue(args []string, name string) string {
 }
 
 func runFakeSidecar(mode string) {
+	if runFakeDeviceLister(mode) {
+		return
+	}
 	args, _ := json.Marshal(os.Args[1:])
 	fmt.Printf("{\"type\":\"args\",\"args\":%s}\n", args)
 	switch mode {

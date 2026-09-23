@@ -10,7 +10,7 @@ import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { Select } from '../primitives/Select';
-import { TextField } from '../primitives/TextField';
+import { MicrophoneField } from './MicrophoneField';
 import { ReaderText } from './ReaderText';
 import { buildRows, hydrateSession, initialSession, previewRows, reduceEvent, type Session } from './readerModel';
 import { usePacedCursor } from './usePacedCursor';
@@ -218,22 +218,7 @@ export function TeleprompterPage() {
                     options={chapters.map((item) => ({ value: item.id, label: item.subtitle ? `${item.title}: ${item.subtitle}` : item.title }))}
                   />
                 </div>
-                <div>
-                  <label className={LABEL_CLASS} htmlFor="teleprompter-device">
-                    Microphone
-                  </label>
-                  <TextField
-                    id="teleprompter-device"
-                    aria-describedby="teleprompter-device-hint"
-                    className="mt-1"
-                    value={device}
-                    placeholder="Microphone (USB Audio Device)"
-                    onChange={changeDevice}
-                  />
-                  <span id="teleprompter-device-hint" className="mt-1 block text-xs" style={{ color: 'var(--text-muted)' }}>
-                    The device name exactly as Windows lists it under Sound settings.
-                  </span>
-                </div>
+                <MicrophoneField value={device} onChange={changeDevice} />
                 <div className="md:col-span-2">
                   <span className={LABEL_CLASS}>Whisper model</span>
                   <ToggleGroup
