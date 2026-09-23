@@ -9,7 +9,7 @@
 | `NarrationUtils_Launcher.lua` | The one REAPER action. Finds the app executable, starts it with the session directory, project and DAW arguments, then runs the bridge loop. Its name and path are stable: the narrator imports it into REAPER's action list. |
 | `narration_ui_bridge.lua` | The command loop and the registry it dispatches through: polls `commands/` from a `reaper.defer` loop, looks each command up, appends results to `events.log`. Lists the feature files in `FEATURE_FILES` and loads them next to itself. |
 | `narration_bridge_core.lua` | Shared by the bridge and every feature file: the percent-encoding and field-splitting helpers, `event`, file and path helpers, and `new_registry()`. |
-| `narration_compare.lua`, `narration_line_identity.lua`, `narration_pickups.lua`, `narration_render.lua` | The commands, one file per feature (Transcript Compare; manuscript line identity and chapter regions; the pickup list; per-chapter render configuration). |
+| `narration_compare.lua`, `narration_line_identity.lua`, `narration_pickups.lua`, `narration_render.lua`, `narration_project_state.lua` | The commands, one file per feature (Transcript Compare; manuscript line identity and chapter regions; the pickup list; per-chapter render configuration; the live project-change indicator). |
 | `reaper_common_core.lua`, `reaper_common_process.lua` | Small helpers the launcher loads: files and paths, hidden process launch, pipe splitting. |
 | `tests/` | The harness (below). Not shipped: `scripts/release/prepare-resources.py` leaves `tests/`, `spikes/` and `project.json` out of the app's embedded REAPER package. |
 | `spikes/` | Scripts that run inside a real REAPER, isolated in a temp resource directory, to find out what a fake cannot ([README](../../integrations/reaper/spikes/README.md); the S0 result is [reaper-spike-s0-item-extension-data.md](../research/reaper-spike-s0-item-extension-data.md)). Research tools, not product code. |
@@ -116,6 +116,7 @@ The feature files are `loadfile`d when the bridge module loads, so a missing or 
 | `resolve_pickup` | `run_id`, `position` | `PICKUP_RESOLVED\|run\|pos\|tag\|note`, or `ERROR` |
 | `count_pickups` | `run_id` | `PICKUPS_COUNTED\|run\|remaining\|total` |
 | `configure_chapter_render` | `run_id`, `output_folder` | `RENDER_CONFIGURED\|run\|folder\|count\|targets`, or `ERROR` |
+| `project_state` | `run_id` | `PROJECT_STATE\|run\|change_count\|project_path`, or `ERROR` |
 | `close` | none | none; the loop stops |
 
 ### Pickups (`narration_pickups.lua`)
@@ -127,6 +128,10 @@ A pickup is a project marker named `PICKUP: <body>` while open, renamed to `PICK
 `configure_chapter_render` (Phase 11, [reaper-automation-follow-through PRD](../prds/reaper-automation-follow-through.prd.md) Open Question 7, answered (a): configure only) sets `RENDER_BOUNDSFLAG` to 3 ("all regions"), `RENDER_PATTERN` to `$region` and `RENDER_FILE` to the narrator's chosen folder, then reads `RENDER_TARGETS` back and reports the predicted file names on `RENDER_CONFIGURED` - confirmed against a real REAPER 7.80 to match the actual render exactly ([S5 spike](../research/reaper-spike-s5-render-details.md)). `RENDER_FORMAT` is never touched (the narrator's last-used sink format stands). **This file must never call `Main_OnCommand`, and must never read `RENDER_STATS`/`RENDER_STATS_SUMMARY`**: the S5 spike found that passing a real, file-writing render action's ID to that getter re-invokes the render, producing a real "Files already exist" dialog. The narrator presses Render themselves (Ctrl+Alt+R or File > Render); nothing in the bridge, the Go service or the UI does it for them. The harness's `render_test.lua` includes a test that inspects every fake-REAPER call this command makes and fails if any of them is `Main_OnCommand` or a `RENDER_STATS`/`RENDER_STATS_SUMMARY` read.
 
 `COMPARE_MARKER` carries 16 fields (see `inspect_results` in the bridge and the transcript service that reads it); the harness pins them.
+
+### Live project-change indicator (`narration_project_state.lua`)
+
+`project_state` (Phase 13, [reaper-automation-follow-through PRD](../prds/reaper-automation-follow-through.prd.md), "Change-driven re-compare indicator"; [analysis-evidence-ledger PRD](../prds/analysis-evidence-ledger.prd.md) Open Question 12, answered (B)) is a Could-tier, on-demand check: it reads `GetProjectStateChangeCount(0)`, REAPER's own coarse edit counter, and the current project's saved-file path (the same `EnumProjects(-1, '')` call `prepare_compare` already makes). It never mutates the project (no undo block, nothing selected or moved) and reads nothing but those two values. The host (`apps/desktop/internal/projectstate`) stats the reported path itself for the saved `.rpp`'s modification time - Lua has no portable file-stat call - and exposes a pure `ChangedSince(current, baseline)` comparison so any feature that already has a saved-file-mtime-based staleness basis can add this as one more, optional live hint on top of it, never a replacement: nothing here decides what "stale" means for another feature, and nothing re-runs an analysis automatically.
 
 ## The harness
 

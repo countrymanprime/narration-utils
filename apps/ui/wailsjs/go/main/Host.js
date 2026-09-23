@@ -274,6 +274,18 @@ export function ProjectSelectFolder() {
   return window['go']['main']['Host']['ProjectSelectFolder']();
 }
 
+export function ProjectStateChangedSince(arg1, arg2) {
+  return window['go']['main']['Host']['ProjectStateChangedSince'](arg1, arg2);
+}
+
+export function ProjectStateCheck() {
+  return window['go']['main']['Host']['ProjectStateCheck']();
+}
+
+export function ProjectStateState() {
+  return window['go']['main']['Host']['ProjectStateState']();
+}
+
 export function ProjectSwitch(arg1, arg2) {
   return window['go']['main']['Host']['ProjectSwitch'](arg1, arg2);
 }

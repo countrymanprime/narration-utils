@@ -60,6 +60,9 @@ var eventSpecs = map[string]eventSpec{
 	// Phase 11 (reaper-automation-follow-through PRD): configure-only render setup. targets is RENDER_TARGETS,
 	// semicolon-joined, empty when count is 0 (no chapter regions yet).
 	"RENDER_CONFIGURED": {required: []fieldSpec{text("run"), text("folder"), count("count"), text("targets")}},
+	// Phase 13 (reaper-automation-follow-through PRD): the live "project changed since this check" indicator.
+	// changeCount is GetProjectStateChangeCount(0); projectPath is empty when the project has never been saved.
+	"PROJECT_STATE": {required: []fieldSpec{text("run"), count("changeCount"), text("projectPath")}},
 	// PROJECT_STATUS is the reachability heartbeat ADR 0092 (W10) recommends: narration_ui_bridge.lua's tick loop
 	// appends it periodically with an empty run (Fields[1] == ""), so events.go's existing fan-out (a run-less event
 	// reaches every subscriber, Subscription.wants) delivers it as a broadcast with no dedicated route needed. rpp is

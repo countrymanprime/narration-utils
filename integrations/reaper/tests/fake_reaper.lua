@@ -41,6 +41,10 @@ function Fake.new(host)
   self.calls = {}
   self.render_info = {}
   self.render_info_string = {}
+  -- GetProjectStateChangeCount(0) - REAPER's own coarse edit counter (narration_project_state.lua). Starts at 0,
+  -- like a freshly opened project; a test bumps it directly (`s.fake.change_count = s.fake.change_count + 1`) to
+  -- model an edit, the way REAPER increments it on any change.
+  self.change_count = 0
   self.reaper = self:build_api()
   return self
 end
@@ -220,6 +224,9 @@ function Fake:add_project_api(api)
   end
   function api.GetResourcePath()
     return fake.resource_path or ''
+  end
+  function api.GetProjectStateChangeCount(_)
+    return fake.change_count
   end
   function api.get_action_context()
     return true, fake.action_path or '', 0, 0, 0, 0
