@@ -91,6 +91,15 @@ if you installed it in REAPER yourself (ReaPack, or Actions > Load ReaScript). N
 installs it. Opening a tool changes nothing: you apply or cancel the repair in its own window, and REAPER's
 Undo takes it back. If nothing is selected, the tool is missing, or your REAPER is too old, the dialog says so.
 
+**Retakes on lanes…** is for retakes recorded into REAPER's fixed item lanes. It lists every line of
+the manuscript (linked with **Link chapters…**) that has retakes on more than one lane of a track, with
+each retake's lane, its item name and whether that lane plays in the saved project. Press **Play this
+lane** beside the retake you want: that lane becomes the only one playing on its track. A lane plays
+across the whole track, so every other lane of that track goes silent, not only for this line.
+Nothing else changes, and one Undo in REAPER puts the previous lanes back. Narration Utils never turns
+lanes on, converts takes to lanes or builds a comp: if a track is not in fixed-lane mode, or the retake
+has changed since you last saved, the dialog says so and changes nothing.
+
 ## Linking chapters to tracks
 
 Below the track list, Chapter links shows every narration chapter with the track it's confirmed

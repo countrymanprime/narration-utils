@@ -1,0 +1,191 @@
+{
+  "lines": [
+    {
+      "lineId": "line-000004",
+      "trackGuid": "{4EFF09FB-6766-43E4-BA84-C005ECCF994B}",
+      "trackName": "B - retakes on lanes",
+      "retakes": [
+        {
+          "itemGuid": "{28424EE6-CD83-45A7-BCB7-A46112C7336E}",
+          "name": "retake 1",
+          "lane": 0,
+          "plays": false,
+          "position": 0,
+          "length": 3
+        },
+        {
+          "itemGuid": "{1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C}",
+          "name": "retake 2",
+          "lane": 1,
+          "plays": false,
+          "position": 0,
+          "length": 3
+        },
+        {
+          "itemGuid": "{6AE40BB3-97F2-4822-9548-C6C269993C80}",
+          "name": "retake 3",
+          "lane": 2,
+          "plays": true,
+          "position": 0,
+          "length": 3
+        }
+      ]
+    },
+    {
+      "lineId": "line-000006",
+      "trackGuid": "{67D9F027-5BFC-49B2-8E09-78DFFB79A67A}",
+      "trackName": "E3 - takes, then explode to lanes",
+      "retakes": [
+        {
+          "itemGuid": "{58B979C8-6204-424F-8F35-7A833F5CE014}",
+          "name": "target (active)",
+          "lane": 0,
+          "plays": true,
+          "position": 0,
+          "length": 3
+        },
+        {
+          "itemGuid": "{022CBE90-D08B-4870-AB3C-5AF9AD0E0583}",
+          "name": "candidate",
+          "lane": 1,
+          "plays": false,
+          "position": 0,
+          "length": 3
+        }
+      ]
+    },
+    {
+      "lineId": "line-000006",
+      "trackGuid": "{E5D2612A-2D1F-4B49-AD50-D35ABBB2D6A1}",
+      "trackName": "E4 - candidate active, then convert",
+      "retakes": [
+        {
+          "itemGuid": "{D021C51F-D03B-4EC9-86D6-794D6FA8F8F4}",
+          "name": "target (active)",
+          "lane": 0,
+          "plays": true,
+          "position": 0,
+          "length": 3
+        },
+        {
+          "itemGuid": "{A2D2A25D-B1D7-4751-8751-08FE3B3B465C}",
+          "name": "candidate",
+          "lane": 1,
+          "plays": false,
+          "position": 0,
+          "length": 3
+        }
+      ]
+    },
+    {
+      "lineId": "line-000007",
+      "trackGuid": "{CD9E97F5-A831-4F69-B7A9-4EBE01FF40C9}",
+      "trackName": "F - comp",
+      "retakes": [
+        {
+          "itemGuid": "{569C2D4F-E5E5-4075-8A97-06B7912F3FD9}",
+          "name": "retake 2",
+          "lane": 0,
+          "plays": true,
+          "position": 0,
+          "length": 3
+        },
+        {
+          "itemGuid": "{0DFFBA5C-C8FA-4C12-8D31-DFF1026ABA0A}",
+          "name": "retake 1",
+          "lane": 1,
+          "plays": false,
+          "position": 0,
+          "length": 3
+        },
+        {
+          "itemGuid": "{88A07AB3-A556-45D6-B9A8-87B052B8365D}",
+          "name": "retake 2",
+          "lane": 2,
+          "plays": false,
+          "position": 0,
+          "length": 3
+        },
+        {
+          "itemGuid": "{FE01F8CE-ADAB-44D6-9721-2CA5DC745915}",
+          "name": "retake 3",
+          "lane": 3,
+          "plays": false,
+          "position": 0,
+          "length": 3
+        }
+      ]
+    },
+    {
+      "lineId": "line-000010",
+      "trackGuid": "{5972FBED-34C8-4FCD-87BF-6BB554F11787}",
+      "trackName": "F2 - comp kept",
+      "retakes": [
+        {
+          "itemGuid": "{28DCE23F-5742-4ECE-A4C1-26C5E3E94569}",
+          "name": "retake 3",
+          "lane": 0,
+          "plays": true,
+          "position": 0,
+          "length": 3
+        },
+        {
+          "itemGuid": "{67CF871C-09DB-42CD-992D-825BC36D0C5E}",
+          "name": "retake 1",
+          "lane": 1,
+          "plays": false,
+          "position": 0,
+          "length": 3
+        },
+        {
+          "itemGuid": "{3C5140F7-CD35-49A0-9E69-3197AED06887}",
+          "name": "retake 2",
+          "lane": 2,
+          "plays": false,
+          "position": 0,
+          "length": 3
+        },
+        {
+          "itemGuid": "{405E0477-A4D2-4EF4-8A25-D7F76E5BBDEE}",
+          "name": "retake 3",
+          "lane": 3,
+          "plays": false,
+          "position": 0,
+          "length": 3
+        }
+      ]
+    },
+    {
+      "lineId": "line-000008",
+      "trackGuid": "{1A4A1EAF-6A4A-4BFE-B042-D20D9F9EE885}",
+      "trackName": "G - lanes off by API",
+      "retakes": [
+        {
+          "itemGuid": "{EA1514F1-43D8-4D3C-B481-1C1047B10A12}",
+          "name": "retake 1",
+          "lane": 0,
+          "plays": false,
+          "position": 0,
+          "length": 3
+        },
+        {
+          "itemGuid": "{585585F2-5EE6-4CEA-8786-CD1EE04FDE73}",
+          "name": "retake 2",
+          "lane": 1,
+          "plays": true,
+          "position": 0,
+          "length": 3
+        },
+        {
+          "itemGuid": "{295D82DC-9737-4343-A50A-2910648ED231}",
+          "name": "retake 3",
+          "lane": 2,
+          "plays": false,
+          "position": 0,
+          "length": 3
+        }
+      ]
+    }
+  ],
+  "laneTracks": 12
+}

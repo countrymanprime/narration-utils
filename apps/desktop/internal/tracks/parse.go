@@ -97,21 +97,29 @@ func parseTrack(n *node, index int, projectFolder string) Track {
 		muted = ms[0] != "0"
 		soloed = ms[1] != "0"
 	}
+	lanes := parseLanes(n)
 	var itemList []Item
 	for _, itemNode := range n.childrenTagged("ITEM") {
-		itemList = append(itemList, parseItem(itemNode, projectFolder))
+		item := parseItem(itemNode, projectFolder)
+		if lanes.fixed {
+			item.Lane = itemLane(itemNode, lanes.count)
+		}
+		itemList = append(itemList, item)
 	}
 	return Track{
-		GUID:       guid,
-		Index:      index,
-		Name:       n.attr0("NAME"),
-		Color:      decodeColor(n.attr0("PEAKCOL")),
-		Muted:      muted,
-		Soloed:     soloed,
-		Items:      itemList,
-		HasFXChain: n.firstChild("FXCHAIN") != nil,
-		Selected:   flagSet(n.attr0("SEL")),
-		Armed:      flagSet(n.attr0("REC")),
+		GUID:         guid,
+		Index:        index,
+		Name:         n.attr0("NAME"),
+		Color:        decodeColor(n.attr0("PEAKCOL")),
+		Muted:        muted,
+		Soloed:       soloed,
+		Items:        itemList,
+		HasFXChain:   n.firstChild("FXCHAIN") != nil,
+		Selected:     flagSet(n.attr0("SEL")),
+		Armed:        flagSet(n.attr0("REC")),
+		FixedLanes:   lanes.fixed,
+		LaneCount:    lanes.count,
+		PlayingLanes: lanes.playing,
 	}
 }
 

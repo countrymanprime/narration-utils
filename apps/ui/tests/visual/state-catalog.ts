@@ -650,6 +650,30 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Tracks, "Cleanup tools" dialog when REAPER refuses a launch - "Magnolius DeClick is not installed" inline alert, nothing opened (reached via the ?mockCleanupTools=error mock seam)',
   },
+  {
+    page: 'tracks',
+    state: 'retake-lanes-list',
+    description:
+      'Tracks, "Retakes on lanes" dialog - two lines of Chapter 1 with their retakes by lane, which lane plays in the saved project, and a "Play this lane" button per retake',
+  },
+  {
+    page: 'tracks',
+    state: 'retake-lanes-picked',
+    description:
+      'Tracks, "Retakes on lanes" dialog after REAPER confirmed a pick - lane 2 now plays for both lines of the track, "Undo in REAPER" status line (reached via the ?mockRetakeLanes=picked mock seam)',
+  },
+  {
+    page: 'tracks',
+    state: 'retake-lanes-none',
+    description:
+      'Tracks, "Retakes on lanes" dialog for a project with no fixed-lane track - says why nothing is listed (reached via the ?mockRetakeLanes=none mock seam)',
+  },
+  {
+    page: 'tracks',
+    state: 'retake-lanes-error',
+    description:
+      'Tracks, "Retakes on lanes" dialog when REAPER refuses a pick - "not in fixed item lane mode" inline alert, nothing changed (reached via the ?mockRetakeLanes=error mock seam)',
+  },
 
   // Teleprompter
   {

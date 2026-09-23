@@ -61,6 +61,7 @@ import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schema
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
 import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
+import { retakeLanesListSchema, retakeLanesStartResultSchema, retakeLanesStateSchema } from './schemas/retakelanes';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
 import { dictionaryLookupResultSchema } from './schemas/dictionary';
 import { unknownKeys } from './schemas/strictness';
@@ -195,6 +196,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'render-config-success.json': renderConfigStateSchema,
   'cleanup-tools-idle.json': cleanupToolsStateSchema,
   'cleanup-tools-launched.json': cleanupToolsStateSchema,
+  'retake-lanes-list.json': retakeLanesListSchema,
+  'retake-lanes-idle.json': retakeLanesStateSchema,
+  'retake-lanes-picked.json': retakeLanesStateSchema,
   'chapter-tags-preview-idle.json': chapterTagsPreviewSchema,
   'chapter-tags-preview-ready.json': chapterTagsPreviewSchema,
   'chapter-tags-embed-success.json': chapterTagsEmbedResultSchema,
@@ -940,6 +944,32 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     }
   });
 
+  it('the retake-lane list and state through a pick, and their seeded states', async () => {
+    vi.useFakeTimers();
+    const api = createMockApi();
+    const seen: unknown[] = [];
+    api.subscribeRetakeLanes((state) => seen.push(structuredClone(state)));
+    const list = await api.retakeLanesList();
+    expectMatches(retakeLanesListSchema, list, 'mock retake-lanes list');
+    const [line] = list.lines;
+    expectMatches(retakeLanesStartResultSchema, await api.retakeLanesPick(line.lineId, line.retakes[1].itemGuid), 'mock retake-lane pick start');
+    await vi.advanceTimersByTimeAsync(300);
+    expect(seen.length).toBeGreaterThan(2);
+    for (const state of seen) expectMatches(retakeLanesStateSchema, state, 'mock retakelanes:state');
+    expectMatches(retakeLanesStateSchema, await api.retakeLanesState(), 'mock retake-lanes state');
+    for (const seed of ['picked', 'error', 'none'] as const) {
+      const seeded = createMockApi({}, { retakeLanes: seed });
+      expectMatches(retakeLanesStateSchema, await seeded.retakeLanesState(), `mock retake-lanes seed ${seed}`);
+      expectMatches(retakeLanesListSchema, await seeded.retakeLanesList(), `mock retake-lanes list seed ${seed}`);
+    }
+  });
+
+  it('retakeLanesPick refuses a retake the list does not hold, the way the Go service does', async () => {
+    const api = createMockApi();
+    const [line] = (await api.retakeLanesList()).lines;
+    await expect(api.retakeLanesPick('line-000099', line.retakes[0].itemGuid)).rejects.toThrow(/not on a fixed-lane track/);
+  });
+
   it('cleanupToolsLaunch refuses a tool off the allow-list, the way the Go service does', async () => {
     await expect(createMockApi().cleanupToolsLaunch('40209' as never)).rejects.toThrow(/unknown cleanup tool/);
   });
@@ -1225,6 +1255,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'renderConfigState',
       'cleanupToolsLaunch',
       'cleanupToolsState',
+      'retakeLanesList',
+      'retakeLanesPick',
+      'retakeLanesState',
       'chapterTagsPreview',
       'chapterTagsEmbed',
       'takeReviewScanStart',
@@ -1315,6 +1348,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribePickups',
       'subscribeRenderConfig',
       'subscribeCleanupTools',
+      'subscribeRetakeLanes',
     ];
     expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());
   });

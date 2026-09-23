@@ -20,6 +20,7 @@
     {"tool":"go","project":"apps/desktop","path":"internal/measure","floor":97,"reason":"Take metrics engine (take-review p8) added range analysis, clipping and per-take evidence; 97.9% measured"},
     {"tool":"go","project":"apps/desktop","path":"internal/takecompare","floor":87,"reason":"Take comparison (take-review p10); 87.2% measured. The uncovered statements are ProcessRunner.TakeDivergence starting the real sidecar (process glue, like takereview's ProcessRunner) and a neighbour WAV that cannot be read"},
     {"tool":"go","project":"apps/desktop","path":"internal/recents","floor":85},
+    {"tool":"go","project":"apps/desktop","path":"internal/retakelanes","floor":91},
     {"tool":"go","project":"apps/desktop","path":"internal/stages","floor":100},
     {"tool":"go","project":"apps/desktop","path":"internal/teleprompter","floor":91},
     {"tool":"go","project":"apps/desktop","path":"internal/tracks","floor":96},

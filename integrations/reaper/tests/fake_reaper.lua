@@ -81,7 +81,20 @@ function Fake:add_track(name, selected)
   return track
 end
 
--- opts: position, length, selected, guid, source (file name; nil = no take), startoffs, playrate, midi, notes, take_name
+-- Puts a track in fixed item lane mode (I_FREEMODE 2) with `count` lanes. `plays` is the lane play state per lane
+-- (0-based, REAPER's C_LANEPLAYS: 0 silent, 1 plays exclusively, 2 plays with others); every lane plays (2) when it
+-- is omitted, which is what REAPER 7.80 read back after placing retakes on lanes in spike S7.
+function Fake:set_fixed_lanes(track, count, plays)
+  track.free_mode = 2
+  track.lane_count = count
+  track.lane_plays = {}
+  for lane = 0, count - 1 do
+    track.lane_plays[lane] = plays and plays[lane + 1] or 2
+  end
+end
+
+-- opts: position, length, selected, guid, source (file name; nil = no take), startoffs, playrate, midi, notes,
+-- take_name, lane (the item's fixed lane, I_FIXEDLANE; 0 when omitted)
 function Fake:add_item(track, opts)
   opts = opts or {}
   local item = {
@@ -93,6 +106,7 @@ function Fake:add_item(track, opts)
     ext = {},
     notes = opts.notes or '',
     takes = {},
+    lane = opts.lane or 0,
   }
   if opts.source or opts.midi then
     item.takes[1] = {
@@ -479,6 +493,10 @@ function Fake:add_item_api(api)
       return item.position
     elseif key == 'D_LENGTH' then
       return item.length
+    elseif key == 'I_FIXEDLANE' then
+      return item.lane
+    elseif key == 'C_LANEPLAYS' then
+      return fake:lane_plays(item.track, item.lane)
     end
     error('fake reaper: unmodelled item value ' .. tostring(key))
   end
@@ -666,6 +684,80 @@ function Fake:add_marker_api(api)
   end
 end
 
+-- The lane play state REAPER reads back for one lane of a track (track C_LANEPLAYS:<lane>). A track not in fixed-lane
+-- mode has one lane, and it plays (1), as spike S7 read before lanes were turned on.
+function Fake:lane_plays(track, lane)
+  if not track.lane_plays then
+    return lane == 0 and 1 or 0
+  end
+  return track.lane_plays[lane] or 0
+end
+
+-- Applies a lane play state the way REAPER 7.80 did in spike S7 (docs/research/reaper-spike-s7-fixed-lanes.md):
+-- 1 makes the lane the only one playing (every other lane reads 0), 2 adds it alongside the others (a lane that
+-- played exclusively reads 2 from then on), 0 silences it, even when it was the only lane playing.
+function Fake:set_lane_plays(track, lane, value)
+  if value == 1 then
+    for other in pairs(track.lane_plays) do
+      track.lane_plays[other] = 0
+    end
+  elseif value == 2 then
+    for other, state in pairs(track.lane_plays) do
+      if state == 1 then
+        track.lane_plays[other] = 2
+      end
+    end
+  end
+  track.lane_plays[lane] = value
+end
+
+-- Fixed item lanes (narration_retake_lanes.lua). Every setter call is recorded in fake.calls, like Main_OnCommand,
+-- so a test can assert the one value a command changed. The item-level C_LANEPLAYS setter is modelled with the
+-- effect S7 saw (it is documented as read-only), so a command that used it would be caught by the recorded call.
+function Fake:add_lane_api(api)
+  local fake = self
+  function api.GetMediaTrackInfo_Value(track, key)
+    if key == 'I_FREEMODE' then
+      return track.free_mode or 0
+    elseif key == 'I_NUMFIXEDLANES' then
+      return track.lane_count or 1
+    end
+    local lane = key:match('^C_LANEPLAYS:(%d+)$')
+    if lane then
+      return fake:lane_plays(track, tonumber(lane))
+    end
+    error('fake reaper: unmodelled track value ' .. tostring(key))
+  end
+  function api.SetMediaTrackInfo_Value(track, key, value)
+    fake.calls[#fake.calls + 1] = { name = 'SetMediaTrackInfo_Value', key = key, value = value }
+    local lane = key:match('^C_LANEPLAYS:(%d+)$')
+    if lane and track.lane_plays then
+      fake:set_lane_plays(track, tonumber(lane), value)
+    elseif key == 'I_FREEMODE' then
+      track.free_mode = value
+    elseif key == 'I_NUMFIXEDLANES' then
+      track.lane_count = value
+    elseif not lane then
+      error('fake reaper: unmodelled track value setter ' .. tostring(key))
+    end
+    return true
+  end
+  function api.SetMediaItemInfo_Value(item, key, value)
+    fake.calls[#fake.calls + 1] = { name = 'SetMediaItemInfo_Value', key = key, value = value }
+    if key == 'I_FIXEDLANE' then
+      item.lane = value
+    elseif key == 'C_LANEPLAYS' and item.track.lane_plays then
+      fake:set_lane_plays(item.track, item.lane, value)
+    else
+      error('fake reaper: unmodelled item value setter ' .. tostring(key))
+    end
+    return true
+  end
+  function api.UpdateTimeline()
+    fake.timeline_updates = (fake.timeline_updates or 0) + 1
+  end
+end
+
 function Fake:build_api()
   local api = {}
   self:add_project_api(api)
@@ -673,6 +765,7 @@ function Fake:build_api()
   self:add_take_api(api)
   self:add_marker_api(api)
   self:add_transport_api(api)
+  self:add_lane_api(api)
   return api
 end
 

@@ -74,8 +74,12 @@ var eventSpecs = map[string]eventSpec{
 	// Phase 23 (reaper-automation-follow-through PRD, ADR 0146): a cleanup launcher opened its dialog. tool is the
 	// allow-listed key the host sent; action is the action-list name REAPER matched (so the narrator sees what opened).
 	"CLEANUP_LAUNCHED": {required: []fieldSpec{text("run"), text("tool"), text("action")}},
-	"TAKE_CREATED":     {required: []fieldSpec{text("run"), text("targetItemGuid"), text("newTakeGuid")}},
-	"TAKE_STALE":       {required: []fieldSpec{text("run"), text("guid")}},
+	// Phase 25 (reaper-automation-follow-through PRD, ADR 0147): the narrator's retake now plays alone. lineId and
+	// itemGuid name the retake (a line id alone names several items on a lane track); lane is the 0-based lane REAPER
+	// read from the item when the pick ran.
+	"RETAKE_LANE_PICKED": {required: []fieldSpec{text("run"), text("lineId"), text("itemGuid"), count("lane")}},
+	"TAKE_CREATED":       {required: []fieldSpec{text("run"), text("targetItemGuid"), text("newTakeGuid")}},
+	"TAKE_STALE":         {required: []fieldSpec{text("run"), text("guid")}},
 	// Going to and looping a finding (narration_navigation.lua, review-dashboard PRD Phase 6, bridge.Navigator). Times are
 	// project seconds; restored/kept count the time selection, loop points and repeat; looping and playing are 0 or 1;
 	// reason is item, take or range.

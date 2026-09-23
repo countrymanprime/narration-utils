@@ -32,6 +32,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/projectstate"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
+	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/takecompare"
 	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
@@ -47,7 +48,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 42
+const hostAPIVersion = 43
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -98,6 +99,7 @@ type Host struct {
 	projectState *projectstate.Service
 	renderConfig *renderconfig.Service
 	cleanupTools *cleanuptools.Service
+	retakeLanes  *retakelanes.Service
 	teleprompter *teleprompter.Service
 	// bridge is the REAPER session's file-based IPC client (nil when launched
 	// without a REAPER session directory); take-review's create-take action
@@ -377,6 +379,9 @@ func (h *Host) configureLocked(next config) {
 	// the same bridge client: pollTranscript's Drain call pumps its events too. It only ever sends an allow-listed
 	// tool key, and the dialog it opens in REAPER is the narrator's to drive.
 	h.cleanupTools = cleanuptools.New(cleanuptools.Config{SessionDir: h.config.sessionDir}, client, h.emitCleanupTools)
+	// The retake-lane service (reaper-automation-follow-through PRD Phase 25, ADR 0147) is one more consumer of the
+	// same bridge client. It only ever asks REAPER to make one listed retake's lane the only one playing.
+	h.retakeLanes = retakelanes.New(retakelanes.Config{SessionDir: h.config.sessionDir}, client, h.emitRetakeLanes)
 	// The project-state service (reaper-automation-follow-through PRD Phase 13, "Change-driven re-compare
 	// indicator"; analysis-evidence-ledger PRD Open Question 12, answered (B)) is the bridge's fifth real
 	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does above. It is a
@@ -609,6 +614,17 @@ func (h *Host) emitRenderConfig(state map[string]any) {
 	h.mu.RUnlock()
 	if ctx != nil {
 		runtime.EventsEmit(ctx, "renderconfig:state", state)
+	}
+}
+
+// emitRetakeLanes relays a retakelanes.Service snapshot to the frontend (Phase 25's retake-lane pick), the same
+// simple relay emitCleanupTools uses.
+func (h *Host) emitRetakeLanes(state map[string]any) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "retakelanes:state", state)
 	}
 }
 

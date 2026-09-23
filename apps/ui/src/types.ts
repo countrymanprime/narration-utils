@@ -18,6 +18,7 @@ export * from './api/contracts/lineidentity';
 export * from './api/contracts/pickups';
 export * from './api/contracts/renderconfig';
 export * from './api/contracts/cleanuptools';
+export * from './api/contracts/retakelanes';
 export * from './api/contracts/chaptertags';
 export * from './api/contracts/takeReview';
 export * from './api/contracts/coverage';
@@ -44,6 +45,7 @@ import type { LineIdentityApi } from './api/contracts/lineidentity';
 import type { PickupsApi } from './api/contracts/pickups';
 import type { RenderConfigApi } from './api/contracts/renderconfig';
 import type { CleanupToolsApi } from './api/contracts/cleanuptools';
+import type { RetakeLanesApi } from './api/contracts/retakelanes';
 import type { ChapterTagsApi } from './api/contracts/chaptertags';
 import type { CoverageApi } from './api/contracts/coverage';
 import type { DictionaryApi } from './api/contracts/dictionary';
@@ -69,6 +71,7 @@ export interface NarrationApi
     PickupsApi,
     RenderConfigApi,
     CleanupToolsApi,
+    RetakeLanesApi,
     ChapterTagsApi,
     TakeReviewApi,
     CoverageApi,
