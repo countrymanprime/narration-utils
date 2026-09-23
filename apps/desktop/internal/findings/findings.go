@@ -82,10 +82,16 @@ type Source struct {
 	TakeGUID  string `json:"take_guid,omitempty"`
 }
 
-// TimeRange is in project seconds.
+// TimeRange is in project seconds. SourceStart and SourceEnd are the same
+// window expressed as source-file-relative offsets (docs/architecture/
+// findings-contract.md), which stay meaningful when the project timeline
+// shifts; both are nil when the analyzer has no source-relative offsets to
+// give.
 type TimeRange struct {
-	Start float64 `json:"start"`
-	End   float64 `json:"end"`
+	Start       float64  `json:"start"`
+	End         float64  `json:"end"`
+	SourceStart *float64 `json:"source_start,omitempty"`
+	SourceEnd   *float64 `json:"source_end,omitempty"`
 }
 
 type Manuscript struct {
@@ -93,6 +99,22 @@ type Manuscript struct {
 	ChapterTitle string `json:"chapter_title,omitempty"`
 	Expected     string `json:"expected,omitempty"`
 	Recorded     string `json:"recorded,omitempty"`
+	// Span locates Expected within the manuscript paragraph, closing the
+	// contract's "text span" gap. Combined with ChapterID it gives a
+	// manuscript-anchored id scheme everything it needs: chapter,
+	// paragraph, and an ordinal for repeated matches within one paragraph.
+	Span *Span `json:"span,omitempty"`
+}
+
+// Span is a manuscript-relative text locator.
+type Span struct {
+	ParagraphID string `json:"paragraph_id,omitempty"`
+	Start       int    `json:"start,omitempty"`
+	End         int    `json:"end,omitempty"`
+	// Ordinal distinguishes repeats of the same expected text within one
+	// paragraph (the first occurrence is 0), so the id does not collide
+	// when a line repeats a word or phrase.
+	Ordinal int `json:"ordinal,omitempty"`
 }
 
 // SuggestedAction is a proposal only; the REAPER adapter owns execution and
@@ -110,20 +132,36 @@ type ReviewState struct {
 }
 
 type Finding struct {
-	SchemaVersion    int              `json:"schema_version"`
-	ID               string           `json:"id"`
-	Analyzer         string           `json:"analyzer"`
-	Project          Project          `json:"project"`
-	Source           Source           `json:"source"`
-	TimeRange        *TimeRange       `json:"time_range,omitempty"`
-	Manuscript       *Manuscript      `json:"manuscript,omitempty"`
-	Category         Category         `json:"category"`
-	Severity         Severity         `json:"severity"`
-	Confidence       float64          `json:"confidence"`
+	SchemaVersion int         `json:"schema_version"`
+	ID            string      `json:"id"`
+	Analyzer      string      `json:"analyzer"`
+	Project       Project     `json:"project"`
+	Source        Source      `json:"source"`
+	TimeRange     *TimeRange  `json:"time_range,omitempty"`
+	Manuscript    *Manuscript `json:"manuscript,omitempty"`
+	Category      Category    `json:"category"`
+	Severity      Severity    `json:"severity"`
+	// Confidence is nullable: an analyzer that cannot produce a numeric
+	// score reports that honestly (nil) rather than fabricating one
+	// (findings-contract.md: "must identify uncertain or unavailable
+	// evidence rather than fabricate a score"). ConfidenceReason is
+	// required either way, so a nil score still explains why.
+	Confidence *float64 `json:"confidence"`
+	// EvidenceVersion hashes the evidence a decision was made against
+	// (recorded text, source file identity, timing beyond a tolerance).
+	// A store keeps a decision when the id and EvidenceVersion both match
+	// a later run, and returns the finding to unreviewed (keeping the
+	// earlier note) when only EvidenceVersion has changed.
+	EvidenceVersion  string           `json:"evidence_version,omitempty"`
 	ConfidenceReason string           `json:"confidence_reason"`
 	Evidence         map[string]any   `json:"evidence,omitempty"`
 	SuggestedAction  *SuggestedAction `json:"suggested_action,omitempty"`
 	Review           ReviewState      `json:"review"`
+	// NotInLatestRun is a store-computed merge flag, never set by an
+	// analyzer: a finding the latest run did not reproduce, kept for audit
+	// (findings-contract.md: dismissed findings stay auditable) rather
+	// than deleted.
+	NotInLatestRun bool `json:"not_in_latest_run,omitempty"`
 }
 
 // Validate reports the first way the record breaks the contract.
@@ -139,8 +177,8 @@ func (f Finding) Validate() error {
 		return fmt.Errorf("category %q is not a documented category", f.Category)
 	case f.Severity != SeverityInfo && f.Severity != SeverityWarning && f.Severity != SeverityError:
 		return fmt.Errorf("severity %q is not info, warning, or error", f.Severity)
-	case !(f.Confidence >= 0 && f.Confidence <= 1): // also rejects NaN
-		return fmt.Errorf("confidence %v is outside 0 to 1", f.Confidence)
+	case f.Confidence != nil && !(*f.Confidence >= 0 && *f.Confidence <= 1): // also rejects NaN
+		return fmt.Errorf("confidence %v is outside 0 to 1", *f.Confidence)
 	case f.ConfidenceReason == "":
 		return fmt.Errorf("confidence_reason is required so the score is explainable")
 	case !validStatus(f.Review.Status):
@@ -152,10 +190,23 @@ func (f Finding) Validate() error {
 }
 
 // validRange accepts only finite, forward, non-negative ranges; NaN fails
-// every comparison, so it must be excluded explicitly.
+// every comparison, so it must be excluded explicitly. Source-relative
+// offsets, when given, are checked the same way.
 func validRange(r TimeRange) bool {
-	finite := !math.IsNaN(r.Start) && !math.IsNaN(r.End) && !math.IsInf(r.Start, 0) && !math.IsInf(r.End, 0)
-	return finite && r.Start >= 0 && r.End >= r.Start
+	if !finiteRange(r.Start, r.End) || r.Start < 0 || r.End < r.Start {
+		return false
+	}
+	if r.SourceStart == nil && r.SourceEnd == nil {
+		return true
+	}
+	if r.SourceStart == nil || r.SourceEnd == nil {
+		return false
+	}
+	return finiteRange(*r.SourceStart, *r.SourceEnd) && *r.SourceStart >= 0 && *r.SourceEnd >= *r.SourceStart
+}
+
+func finiteRange(start, end float64) bool {
+	return !math.IsNaN(start) && !math.IsNaN(end) && !math.IsInf(start, 0) && !math.IsInf(end, 0)
 }
 
 func validStatus(status Status) bool {
