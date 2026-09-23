@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "id": "c2-pickup-at-end",
+  "chapter": "c-0002",
+  "conditions": [
+    "pickup_at_end"
+  ],
+  "split": "tune",
+  "description": "Paragraph two is skipped in place and recorded as a pickup after the last paragraph. In order it is missing where it belongs (the PRD's Definitions, In order).",
+  "recording": {
+    "items": [
+      {
+        "id": "item-1",
+        "segments": [
+          {
+            "read": "p-000006"
+          },
+          {
+            "read": "p-000008"
+          },
+          {
+            "read": "p-000009"
+          },
+          {
+            "pause": 3.0
+          },
+          {
+            "say": "Pickup for paragraph two."
+          },
+          {
+            "pause": 1.0
+          },
+          {
+            "read": "p-000007"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "textComplete": false,
+    "paragraphs": {
+      "p-000006": "present",
+      "p-000007": "missing",
+      "p-000008": "present",
+      "p-000009": "present"
+    },
+    "regions": [
+      {
+        "kind": "skip",
+        "paragraphs": [
+          "p-000007"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "c1-truncated-tail",
+  "chapter": "c-0001",
+  "conditions": [
+    "truncated_tail"
+  ],
+  "split": "tune",
+  "description": "The session stops after paragraph three; the last two paragraphs were never read.",
+  "recording": {
+    "items": [
+      {
+        "id": "item-1",
+        "segments": [
+          {
+            "read": "p-000001"
+          },
+          {
+            "read": "p-000002"
+          },
+          {
+            "read": "p-000003"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "textComplete": false,
+    "paragraphs": {
+      "p-000001": "present",
+      "p-000002": "present",
+      "p-000003": "present",
+      "p-000004": "missing",
+      "p-000005": "missing"
+    },
+    "regions": [
+      {
+        "kind": "tail",
+        "paragraphs": [
+          "p-000004",
+          "p-000005"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "id": "c1-multiple-items-trimmed",
+  "chapter": "c-0001",
+  "conditions": [
+    "multiple_items_trimmed",
+    "complete"
+  ],
+  "split": "held_out",
+  "description": "Three items, each with dead air at both ends of its source trimmed away by its played range; every paragraph is heard.",
+  "recording": {
+    "items": [
+      {
+        "id": "item-1",
+        "segments": [
+          {
+            "pause": 2.0
+          },
+          {
+            "read": "p-000001"
+          },
+          {
+            "read": "p-000002"
+          },
+          {
+            "pause": 3.0
+          }
+        ],
+        "playedRange": [
+          1.5,
+          47.3
+        ]
+      },
+      {
+        "id": "item-2",
+        "segments": [
+          {
+            "pause": 1.2
+          },
+          {
+            "read": "p-000003"
+          },
+          {
+            "pause": 2.5
+          }
+        ],
+        "playedRange": [
+          0.7,
+          15.7
+        ]
+      },
+      {
+        "id": "item-3",
+        "segments": [
+          {
+            "pause": 0.8
+          },
+          {
+            "read": "p-000004"
+          },
+          {
+            "read": "p-000005"
+          },
+          {
+            "pause": 4.0
+          }
+        ],
+        "playedRange": [
+          0.3,
+          25.3
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "textComplete": true,
+    "paragraphs": {
+      "p-000001": "present",
+      "p-000002": "present",
+      "p-000003": "present",
+      "p-000004": "present",
+      "p-000005": "present"
+    },
+    "regions": []
+  }
+}

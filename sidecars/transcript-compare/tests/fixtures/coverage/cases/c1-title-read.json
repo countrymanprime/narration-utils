@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "c1-title-read",
+  "chapter": "c-0001",
+  "conditions": [
+    "complete",
+    "title_read"
+  ],
+  "split": "held_out",
+  "description": "The title is spoken first, then every paragraph in order.",
+  "recording": {
+    "items": [
+      {
+        "id": "item-1",
+        "segments": [
+          {
+            "say": "Chapter one."
+          },
+          {
+            "pause": 1.0
+          },
+          {
+            "read": "p-000001"
+          },
+          {
+            "read": "p-000002"
+          },
+          {
+            "read": "p-000003"
+          },
+          {
+            "read": "p-000004"
+          },
+          {
+            "read": "p-000005"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "textComplete": true,
+    "paragraphs": {
+      "p-000001": "present",
+      "p-000002": "present",
+      "p-000003": "present",
+      "p-000004": "present",
+      "p-000005": "present"
+    },
+    "regions": []
+  }
+}

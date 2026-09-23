@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "c1-complete-title-omitted",
+  "chapter": "c-0001",
+  "conditions": [
+    "complete",
+    "title_omitted"
+  ],
+  "split": "tune",
+  "description": "Every paragraph read once, in order; the title is not spoken.",
+  "recording": {
+    "items": [
+      {
+        "id": "item-1",
+        "segments": [
+          {
+            "read": "p-000001"
+          },
+          {
+            "read": "p-000002"
+          },
+          {
+            "read": "p-000003"
+          },
+          {
+            "read": "p-000004"
+          },
+          {
+            "read": "p-000005"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "textComplete": true,
+    "paragraphs": {
+      "p-000001": "present",
+      "p-000002": "present",
+      "p-000003": "present",
+      "p-000004": "present",
+      "p-000005": "present"
+    },
+    "regions": []
+  }
+}

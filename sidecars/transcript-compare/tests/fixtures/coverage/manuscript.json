@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "documentId": "coverage-fixtures",
+  "chapters": [
+    {"id": "c-0001", "title": "Chapter I", "subtitle": "Down the Rabbit-Hole", "contentKind": "narration"},
+    {"id": "c-0002", "title": "Chapter II", "subtitle": "The Pool of Tears", "contentKind": "narration"},
+    {"id": "c-0003", "title": "Chapter X", "subtitle": "The Lobster Quadrille", "contentKind": "narration"},
+    {"id": "c-0004", "title": "Chapter 4", "subtitle": "The Quillenbrook Ledger", "contentKind": "narration"}
+  ],
+  "paragraphs": [
+    {"id": "p-000001", "chapterId": "c-0001", "index": 0, "text": "Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, \"and what is the use of a book,\" thought Alice \"without pictures or conversations?\""},
+    {"id": "p-000002", "chapterId": "c-0001", "index": 1, "text": "So she was considering in her own mind (as well as she could, for the hot day made her feel very sleepy and stupid), whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a White Rabbit with pink eyes ran close by her."},
+    {"id": "p-000003", "chapterId": "c-0001", "index": 2, "text": "There was nothing so very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit say to itself, \"Oh dear! Oh dear! I shall be late!\""},
+    {"id": "p-000004", "chapterId": "c-0001", "index": 3, "text": "In another moment down went Alice after it, never once considering how in the world she was to get out again."},
+    {"id": "p-000005", "chapterId": "c-0001", "index": 4, "text": "The rabbit-hole went straight on like a tunnel for some way, and then dipped suddenly down, so suddenly that Alice had not a moment to think about stopping herself before she found herself falling down a very deep well."},
+    {"id": "p-000006", "chapterId": "c-0002", "index": 5, "text": "\"Curiouser and curiouser!\" cried Alice (she was so much surprised, that for the moment she quite forgot how to speak good English); \"now I'm opening out like the largest telescope that ever was! Good-bye, feet!\""},
+    {"id": "p-000007", "chapterId": "c-0002", "index": 6, "text": "Just then her head struck against the roof of the hall: in fact she was now more than nine feet high. She at once took up the little golden key and hurried off to the garden door."},
+    {"id": "p-000008", "chapterId": "c-0002", "index": 7, "text": "Poor Alice! It was as much as she could do, lying down on one side, to look through into the garden with one eye; but to get through was more hopeless than ever: she sat down and began to cry again."},
+    {"id": "p-000009", "chapterId": "c-0002", "index": 8, "text": "\"You ought to be ashamed of yourself,\" said Alice, \"a great girl like you,\" (she might well say this), \"to go on crying in this way! Stop this moment, I tell you!\""},
+    {"id": "p-000010", "chapterId": "c-0003", "index": 9, "text": "\"Will you walk a little faster?\" said a whiting to a snail. \"There's a porpoise close behind us, and he's treading on my tail.\""},
+    {"id": "p-000011", "chapterId": "c-0003", "index": 10, "text": "Will you, won't you, will you, won't you, will you join the dance? Will you, won't you, will you, won't you, won't you join the dance?"},
+    {"id": "p-000012", "chapterId": "c-0003", "index": 11, "text": "\"You can really have no notion how delightful it will be when they take us up and throw us, with the lobsters, out to sea!\""},
+    {"id": "p-000013", "chapterId": "c-0003", "index": 12, "text": "Will you, won't you, will you, won't you, will you join the dance? Will you, won't you, will you, won't you, won't you join the dance?"},
+    {"id": "p-000014", "chapterId": "c-0003", "index": 13, "text": "\"Thank you, it's a very interesting dance to watch,\" said Alice, feeling very glad that it was over at last."},
+    {"id": "p-000015", "chapterId": "c-0004", "index": 14, "text": "Maelis Quillenbrook opened the ledger at page 214 and ran her finger down the column for 1847."},
+    {"id": "p-000016", "chapterId": "c-0004", "index": 15, "text": "Her cousin Tobiah Varrow had written 3 entries in a cramped hand: 12 barrels of salt, 40 yards of sailcloth, and one brass astrolabe."},
+    {"id": "p-000017", "chapterId": "c-0004", "index": 16, "text": "\"Varrow never bought anything he could not sell twice,\" she said, and closed the book on the 2nd of March."}
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "c2-subtitle-read",
+  "chapter": "c-0002",
+  "conditions": [
+    "complete",
+    "title_read",
+    "subtitle_read"
+  ],
+  "split": "tune",
+  "description": "Title and subtitle are spoken, then every paragraph; the subtitle is not in the body text and must not count as extra against the narrator.",
+  "recording": {
+    "items": [
+      {
+        "id": "item-1",
+        "segments": [
+          {
+            "say": "Chapter two. The Pool of Tears."
+          },
+          {
+            "pause": 1.5
+          },
+          {
+            "read": "p-000006"
+          },
+          {
+            "read": "p-000007"
+          },
+          {
+            "read": "p-000008"
+          },
+          {
+            "read": "p-000009"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "textComplete": true,
+    "paragraphs": {
+      "p-000006": "present",
+      "p-000007": "present",
+      "p-000008": "present",
+      "p-000009": "present"
+    },
+    "regions": []
+  }
+}

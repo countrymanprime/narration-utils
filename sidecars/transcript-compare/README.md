@@ -10,7 +10,9 @@ actually said.
 - `core/` — the DAW-agnostic Python backend (`compare.py`), plus `homophones.csv` and
   `common_words.txt`. No DAW APIs are used here; it's a plain CLI invoked by whichever DAW
   driver below is running it. Its dependencies are declared in the repo-root `pyproject.toml` and pinned in `uv.lock`.
-- `tests/` — the pytest suite for the backend.
+- `tests/` — the pytest suite for the backend, plus the recording-coverage ground-truth harness
+  (`coverage_harness.py`) and its synthetic labeled fixtures (`fixtures/coverage/`); see
+  `docs/research/recording-coverage-fixtures.md`.
 - REAPER integration is centralized in `integrations/reaper/narration_ui_bridge.lua`; a future Audacity
   driver has placeholder notes under `integrations/audacity/transcript-compare/`.
 

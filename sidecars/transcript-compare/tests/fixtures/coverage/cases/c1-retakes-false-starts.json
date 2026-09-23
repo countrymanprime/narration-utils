@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "c1-retakes-false-starts",
+  "chapter": "c-0001",
+  "conditions": [
+    "retakes_and_false_starts",
+    "complete"
+  ],
+  "split": "tune",
+  "description": "A false start on paragraph two and a full retake of paragraph four are left in; every paragraph is read in full, in order.",
+  "recording": {
+    "items": [
+      {
+        "id": "item-1",
+        "segments": [
+          {
+            "read": "p-000001"
+          },
+          {
+            "read": "p-000002",
+            "words": [
+              0,
+              7
+            ]
+          },
+          {
+            "pause": 1.0
+          },
+          {
+            "say": "Sorry, let me go again."
+          },
+          {
+            "pause": 1.0
+          },
+          {
+            "read": "p-000002"
+          },
+          {
+            "read": "p-000003"
+          },
+          {
+            "read": "p-000004"
+          },
+          {
+            "pause": 2.0
+          },
+          {
+            "say": "Once more."
+          },
+          {
+            "read": "p-000004"
+          },
+          {
+            "read": "p-000005"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "textComplete": true,
+    "paragraphs": {
+      "p-000001": "present",
+      "p-000002": "present",
+      "p-000003": "present",
+      "p-000004": "present",
+      "p-000005": "present"
+    },
+    "regions": []
+  }
+}

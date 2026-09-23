@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "c4-unrelated-speech",
+  "chapter": "c-0004",
+  "conditions": [
+    "unrelated_speech"
+  ],
+  "split": "held_out",
+  "description": "In place of paragraph two the narrator says something unrelated of about the same length; the paragraph is missing, not misread.",
+  "recording": {
+    "items": [
+      {
+        "id": "item-1",
+        "segments": [
+          {
+            "read": "p-000015"
+          },
+          {
+            "say": "Hold on, the neighbour's dog is barking again, I will wait until it stops and then carry on from the top of this page."
+          },
+          {
+            "read": "p-000017"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "textComplete": false,
+    "paragraphs": {
+      "p-000015": "present",
+      "p-000016": "missing",
+      "p-000017": "present"
+    },
+    "regions": [
+      {
+        "kind": "different_text",
+        "paragraphs": [
+          "p-000016"
+        ]
+      }
+    ]
+  }
+}

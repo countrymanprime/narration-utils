@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "id": "c1-trim-hides-text",
+  "chapter": "c-0001",
+  "conditions": [
+    "multiple_items_trimmed",
+    "trimmed_out_text"
+  ],
+  "split": "tune",
+  "description": "Paragraph three is in the second item's source file but after the end of its played range, so it is not heard.",
+  "recording": {
+    "items": [
+      {
+        "id": "item-1",
+        "segments": [
+          {
+            "read": "p-000001"
+          },
+          {
+            "read": "p-000002"
+          }
+        ]
+      },
+      {
+        "id": "item-2",
+        "segments": [
+          {
+            "pause": 1.0
+          },
+          {
+            "read": "p-000002",
+            "words": [
+              40,
+              null
+            ]
+          },
+          {
+            "pause": 1.0
+          },
+          {
+            "read": "p-000003"
+          }
+        ],
+        "playedRange": [
+          0.5,
+          8.0
+        ]
+      },
+      {
+        "id": "item-3",
+        "segments": [
+          {
+            "read": "p-000004"
+          },
+          {
+            "read": "p-000005"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "textComplete": false,
+    "paragraphs": {
+      "p-000001": "present",
+      "p-000002": "present",
+      "p-000003": "missing",
+      "p-000004": "present",
+      "p-000005": "present"
+    },
+    "regions": [
+      {
+        "kind": "skip",
+        "paragraphs": [
+          "p-000003"
+        ]
+      }
+    ]
+  }
+}
