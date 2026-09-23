@@ -23,6 +23,7 @@ var swappableHostFields = map[string]bool{
 	"pickups":      true,
 	"projectState": true,
 	"renderConfig": true,
+	"cleanupTools": true,
 	"settings":     true,
 	"teleprompter": true,
 	"transcript":   true,

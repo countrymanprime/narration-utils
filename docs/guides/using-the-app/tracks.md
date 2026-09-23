@@ -51,7 +51,7 @@ and each group it finds is reviewed with the rest of your findings.
 
 ## REAPER tools
 
-When the project has tracks, four buttons sit beside the page title. **Link chapters…**, **Pickups…**
+When the project has tracks, five buttons sit beside the page title. **Link chapters…**, **Pickups…**
 and **Prepare chapter render…** change the project open in REAPER, through the Narration Utils script
 the launcher runs there; nothing is written until you press the dialog's action button.
 
@@ -83,6 +83,13 @@ rendered, timed from the chapter files of your last chapter render. It lists tho
 any that are "not rendered yet"; every one must exist first. Enter the path of the combined book MP3 and
 tick the confirmation: the file you name is never changed, and a new, tagged copy is written beside it.
 This one does not talk to REAPER.
+
+**Cleanup tools…** opens a repair tool in REAPER on the items you have selected there. Select the items
+in REAPER first, then press **Open** beside the tool. **Repair Pops/Clicks** is REAPER's own dialog
+(REAPER 7.80 or later); **Magnolius DeClick** is a free third-party script for mouth clicks, and works only
+if you installed it in REAPER yourself (ReaPack, or Actions > Load ReaScript). Narration Utils never
+installs it. Opening a tool changes nothing: you apply or cancel the repair in its own window, and REAPER's
+Undo takes it back. If nothing is selected, the tool is missing, or your REAPER is too old, the dialog says so.
 
 ## Linking chapters to tracks
 

@@ -398,6 +398,19 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
     'ok',
     'Configuration only (Phase 11, Open Question 7): sets the render bounds, pattern and output folder, never triggers a render. A completed run shows the resulting file names and the manual-render instruction; a failure shows inline as an alert.',
   ),
+  'src/components/tracks/CleanupToolsDialog.tsx::cleanupToolsState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Hydrates whatever launch was already in flight when the dialog reopened; the live event follows anyway.'),
+  'src/components/tracks/CleanupToolsDialog.tsx::subscribeCleanupTools#1': subscription('The cleanup-tools state event, for the launch this dialog starts.'),
+  'src/components/tracks/CleanupToolsDialog.tsx::cleanupToolsLaunch#1': row(
+    'click',
+    'job',
+    'pending',
+    'pending',
+    'ui',
+    'inline',
+    'no',
+    'ok',
+    'Opens an allow-listed repair dialog in REAPER (Phase 23, ADR 0146) and changes nothing itself. The pressed tool shows pending and the other is disabled until REAPER answers; the opened state or REAPER\'s refusal (no selection, not installed) shows inline.',
+  ),
   'src/components/tracks/ChapterTagsDialog.tsx::chapterTagsPreview#1': row('mount', 'instant', 'na', 'na', 'ui', 'inline', 'na', 'exempt', 'Loads the known chapters from the last chapter render; a failure shows inline instead of the chapter list.'),
   'src/components/tracks/ChapterTagsDialog.tsx::chapterTagsEmbed#1': row(
     'click',
@@ -501,6 +514,8 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Hydrates whatever run was already in flight, then refreshes the count; a failure here leaves the count at its last known value, and every narrator-triggered action still shows its own failure inline.',
   'src/components/review/FindingDetail.tsx#1':
     'Re-reads a finding after the host refused a decision, only to tell changed evidence apart; when the re-read fails too, the inline alert still shows the host reason for the refusal, so nothing is hidden.',
+  'src/components/tracks/CleanupToolsDialog.tsx#1':
+    'Hydrates whatever launch was already in flight when the dialog reopened; the narrator can press Open either way, and a launch shows its own failure inline.',
   'src/components/tracks/RenderConfigDialog.tsx#1':
     'Hydrates whatever configure run was already in flight, then offers a suggested output folder when none was configured yet; the narrator can still type a folder and press Configure render either way.',
 };

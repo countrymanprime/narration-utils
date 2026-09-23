@@ -4,6 +4,7 @@
 export const REAPER_FILES = [
   'NarrationUtils_Launcher.lua',
   'narration_bridge_core.lua',
+  'narration_cleanup.lua',
   'narration_compare.lua',
   'narration_line_identity.lua',
   'narration_navigation.lua',

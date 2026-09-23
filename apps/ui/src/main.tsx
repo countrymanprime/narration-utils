@@ -112,6 +112,9 @@ const mockPickups = (['import-success', 'next-success', 'export-success', 'error
 // RenderConfigState already at that result, so the confirmed-file-names, no-regions-yet and error states can be
 // seen without a real REAPER round trip.
 const mockRenderConfig = (['success', 'no-regions', 'error'] as const).find((seed) => seed === mockParams.get('mockRenderConfig'));
+// `?mockCleanupTools=launched|error` boots the Tracks page's "Cleanup tools" dialog with CleanupToolsState already at
+// that result (error: Magnolius DeClick not installed), so both can be seen without a real REAPER round trip.
+const mockCleanupTools = (['launched', 'error'] as const).find((seed) => seed === mockParams.get('mockCleanupTools'));
 // `?mockChapterTags=ready|not-rendered` boots the Tracks page's "Embed chapter tags" dialog with ChapterTagsPreview
 // already at that result, so the ready and not-yet-rendered states can be seen without a real chapter render.
 // `?mockChapterTagsEmbedError=1` makes the embed action always fail, so the error state can be seen too.
@@ -179,6 +182,7 @@ const mockInitial = {
   ...(mockLineIdentity ? { lineIdentity: mockLineIdentity } : {}),
   ...(mockPickups ? { pickups: mockPickups } : {}),
   ...(mockRenderConfig ? { renderConfig: mockRenderConfig } : {}),
+  ...(mockCleanupTools ? { cleanupTools: mockCleanupTools } : {}),
   ...(mockChapterTags ? { chapterTags: mockChapterTags } : {}),
   ...(mockChapterTagsEmbedError ? { chapterTagsEmbedAlwaysErrors: true } : {}),
   ...(mockCoverage || mockCoverageRefusal

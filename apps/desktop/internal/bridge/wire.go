@@ -71,8 +71,11 @@ var eventSpecs = map[string]eventSpec{
 	// EnumProjects(-1, '')'s second return value verbatim (the empty string for an unsaved project, never omitted -
 	// spike S6 confirmed REAPER never returns nil there), and unsaved is "1" exactly when rpp is empty.
 	"PROJECT_STATUS": {required: []fieldSpec{text("run"), text("rpp"), count("unsaved")}},
-	"TAKE_CREATED":   {required: []fieldSpec{text("run"), text("targetItemGuid"), text("newTakeGuid")}},
-	"TAKE_STALE":     {required: []fieldSpec{text("run"), text("guid")}},
+	// Phase 23 (reaper-automation-follow-through PRD, ADR 0146): a cleanup launcher opened its dialog. tool is the
+	// allow-listed key the host sent; action is the action-list name REAPER matched (so the narrator sees what opened).
+	"CLEANUP_LAUNCHED": {required: []fieldSpec{text("run"), text("tool"), text("action")}},
+	"TAKE_CREATED":     {required: []fieldSpec{text("run"), text("targetItemGuid"), text("newTakeGuid")}},
+	"TAKE_STALE":       {required: []fieldSpec{text("run"), text("guid")}},
 	// Going to and looping a finding (narration_navigation.lua, review-dashboard PRD Phase 6, bridge.Navigator). Times are
 	// project seconds; restored/kept count the time selection, loop points and repeat; looping and playing are 0 or 1;
 	// reason is item, take or range.

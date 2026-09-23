@@ -310,5 +310,35 @@
     "file": "narration_navigation.lua",
     "find": "  local target = project_time(item, take, source_time)\n  if target < first - EDGE_TOLERANCE",
     "replace": "  local target = first\n  if target < first - EDGE_TOLERANCE"
+  },
+  {
+    "name": "launch_cleanup_tool launches a tool that is not on the allow-list",
+    "file": "narration_cleanup.lua",
+    "find": "local tool = TOOLS[key]\n  if not tool then",
+    "replace": "local tool = TOOLS[key] or { label = key, matches = function() return true end, missing = '' }\n  if false then"
+  },
+  {
+    "name": "launch_cleanup_tool runs without the action-list API",
+    "file": "narration_cleanup.lua",
+    "find": "if not reaper.APIExists('kbd_enumerateActions') or not reaper.APIExists('SectionFromUniqueID') then",
+    "replace": "if false then"
+  },
+  {
+    "name": "launch_cleanup_tool launches with no item selected",
+    "file": "narration_cleanup.lua",
+    "find": "if reaper.CountSelectedMediaItems(0) == 0 then",
+    "replace": "if false then"
+  },
+  {
+    "name": "launch_cleanup_tool guesses the first of several matching actions",
+    "file": "narration_cleanup.lua",
+    "find": "if #found > 1 then",
+    "replace": "if false then"
+  },
+  {
+    "name": "a script or custom action named like a native tool counts as the native tool",
+    "file": "narration_cleanup.lua",
+    "find": "if category == 'script' or category == 'custom' then",
+    "replace": "if false then"
   }
 ]

@@ -1329,6 +1329,29 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await message.waitFor();
       await message.scrollIntoViewIfNeeded();
     },
+    'cleanup-tools-idle': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Cleanup tools…');
+      await page.getByRole('button', { name: 'Open Magnolius DeClick' }).waitFor();
+    },
+    'cleanup-tools-launched': async (page) => {
+      await page.goto('/?mockCleanupTools=launched');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Cleanup tools…');
+      const message = page.getByText(/is open in REAPER/);
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
+    'cleanup-tools-error': async (page) => {
+      await page.goto('/?mockCleanupTools=error');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Cleanup tools…');
+      const message = page.getByText(/Magnolius DeClick is not installed/).first();
+      await message.waitFor();
+      await message.scrollIntoViewIfNeeded();
+    },
   },
   review: {
     default: async (page) => {

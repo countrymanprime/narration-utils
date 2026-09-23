@@ -31,6 +31,10 @@ export function ChapterTrackMapList():Promise<string>;
 
 export function ChapterTrackMatch(arg1:string):Promise<string>;
 
+export function CleanupToolsLaunch(arg1:string):Promise<string>;
+
+export function CleanupToolsState():Promise<string>;
+
 export function CoverageCancel():Promise<string>;
 
 export function CoverageResult(arg1:string):Promise<string>;

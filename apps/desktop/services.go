@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/cleanuptools"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
@@ -31,6 +32,7 @@ type hostServices struct {
 	pickups      *pickups.Service
 	projectState *projectstate.Service
 	renderConfig *renderconfig.Service
+	cleanupTools *cleanuptools.Service
 	settings     *settings.Store
 	teleprompter *teleprompter.Service
 	transcript   *transcript.Service
@@ -78,6 +80,7 @@ func (h *Host) services() hostServices {
 		pickups:      h.pickups,
 		projectState: h.projectState,
 		renderConfig: h.renderConfig,
+		cleanupTools: h.cleanupTools,
 		settings:     h.settings,
 		teleprompter: h.teleprompter,
 		transcript:   h.transcript,

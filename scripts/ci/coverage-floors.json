@@ -3,6 +3,7 @@
   "entries": [
     {"tool":"go","project":"apps/desktop","path":"internal/bridge","floor":96},
     {"tool":"go","project":"apps/desktop","path":"internal/chaptertags","floor":84},
+    {"tool":"go","project":"apps/desktop","path":"internal/cleanuptools","floor":87},
     {"tool":"go","project":"apps/desktop","path":"internal/contractfile","floor":93},
     {"tool":"go","project":"apps/desktop","path":"internal/coverage","floor":93},
     {"tool":"go","project":"apps/desktop","path":"internal/dawcatalog","floor":100},

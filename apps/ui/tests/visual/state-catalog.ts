@@ -633,6 +633,23 @@ export const STATE_CATALOG: StateEntry[] = [
       'Tracks, "Embed chapter tags" dialog when the embed fails - inline error message (reached via the ?mockChapterTags=ready&mockChapterTagsEmbedError=1 mock seam)',
     ...KEEPS_DESKTOP_SCROLL,
   },
+  {
+    page: 'tracks',
+    state: 'cleanup-tools-idle',
+    description: 'Tracks, "Cleanup tools" dialog open before any launch - Repair Pops/Clicks and Magnolius DeClick, each with its own Open button',
+  },
+  {
+    page: 'tracks',
+    state: 'cleanup-tools-launched',
+    description:
+      'Tracks, "Cleanup tools" dialog after REAPER opened Repair Pops/Clicks - "is open in REAPER. Nothing has changed yet" (reached via the ?mockCleanupTools=launched mock seam)',
+  },
+  {
+    page: 'tracks',
+    state: 'cleanup-tools-error',
+    description:
+      'Tracks, "Cleanup tools" dialog when REAPER refuses a launch - "Magnolius DeClick is not installed" inline alert, nothing opened (reached via the ?mockCleanupTools=error mock seam)',
+  },
 
   // Teleprompter
   {

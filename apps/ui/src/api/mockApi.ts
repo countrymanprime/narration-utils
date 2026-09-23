@@ -27,6 +27,7 @@ import type {
   ReaderState,
   RecentProject,
   RenderConfigState,
+  CleanupToolsState,
   RetailSampleAnswer,
   Scope,
   ScopedSettingField,
@@ -64,6 +65,9 @@ import {
   WIRE_CHAPTER_TAGS_PREVIEW_NOT_RENDERED,
   WIRE_CHAPTER_TAGS_PREVIEW_READY,
   WIRE_RENDER_CONFIG_ERROR,
+  WIRE_CLEANUP_TOOLS_ERROR,
+  WIRE_CLEANUP_TOOLS_IDLE,
+  WIRE_CLEANUP_TOOLS_LAUNCHED,
   WIRE_RENDER_CONFIG_IDLE,
   WIRE_RENDER_CONFIG_NO_REGIONS,
   WIRE_RENDER_CONFIG_SUCCESS,
@@ -410,6 +414,8 @@ export function createMockApi(
     pickups?: 'import-success' | 'next-success' | 'export-success' | 'error';
     /** Boots RenderConfigState already at this result, so "Prepare chapter render" states can be seen without stepping through a run. */
     renderConfig?: 'success' | 'no-regions' | 'error';
+    /** Boots CleanupToolsState already at this result, so the cleanup launcher's states can be seen without a launch. 'error' also makes every launch fail. */
+    cleanupTools?: 'launched' | 'error';
     /** Boots ChapterTagsPreview already at this result, so "Embed chapter tags" states can be seen without a real render. */
     chapterTags?: 'idle' | 'ready' | 'not-rendered';
     /** Makes chapterTagsEmbed always reject, to review the error state. */
@@ -702,6 +708,12 @@ export function createMockApi(
   const renderConfigAlwaysErrors = initial.renderConfig === 'error';
   const renderConfigSubscribers = new Set<(state: RenderConfigState) => void>();
   const publishRenderConfig = () => renderConfigSubscribers.forEach((fn) => fn(wireClone(renderConfig)));
+  let cleanupTools: CleanupToolsState = wireClone(
+    initial.cleanupTools === 'launched' ? WIRE_CLEANUP_TOOLS_LAUNCHED : initial.cleanupTools === 'error' ? WIRE_CLEANUP_TOOLS_ERROR : WIRE_CLEANUP_TOOLS_IDLE,
+  );
+  const cleanupToolsAlwaysErrors = initial.cleanupTools === 'error';
+  const cleanupToolsSubscribers = new Set<(state: CleanupToolsState) => void>();
+  const publishCleanupTools = () => cleanupToolsSubscribers.forEach((fn) => fn(wireClone(cleanupTools)));
   // Chapter tag embedding (Phase 12) never talks to REAPER: its preview is a fixed seed, not derived from
   // renderConfig's live state, since the two are independent bindings on the real host too (ChapterTagsPreview
   // reads renderConfig.Snapshot() itself, server-side).
@@ -1708,6 +1720,32 @@ export function createMockApi(
       renderConfigSubscribers.add(onUpdate);
       onUpdate(wireClone(renderConfig));
       return () => renderConfigSubscribers.delete(onUpdate);
+    },
+    cleanupToolsLaunch: async (tool) => {
+      const labels: Record<string, string> = { repair_pops_clicks: 'Repair Pops/Clicks', magnolius_declick: 'Magnolius DeClick' };
+      const label = labels[tool];
+      if (!label) throw new Error(`unknown cleanup tool "${tool}"`);
+      cleanupTools = { ...wireClone(WIRE_CLEANUP_TOOLS_IDLE), runId: String(Date.now()), phase: 'launching', tool, message: `Opening ${label} in REAPER…` };
+      publishCleanupTools();
+      setTimeout(() => {
+        if (cleanupTools.phase !== 'launching') return;
+        cleanupTools = cleanupToolsAlwaysErrors
+          ? { ...cleanupTools, phase: 'error', message: WIRE_CLEANUP_TOOLS_ERROR.message }
+          : {
+              ...cleanupTools,
+              phase: 'launched',
+              action: tool === 'repair_pops_clicks' ? WIRE_CLEANUP_TOOLS_LAUNCHED.action : 'Script: Magnolius_DeClick.lua',
+              message: `${label} is open in REAPER. Nothing has changed yet: the repair happens only when you apply it there.`,
+            };
+        publishCleanupTools();
+      }, 300);
+      return { status: 'started' };
+    },
+    cleanupToolsState: async () => wireClone(cleanupTools),
+    subscribeCleanupTools: (onUpdate) => {
+      cleanupToolsSubscribers.add(onUpdate);
+      onUpdate(wireClone(cleanupTools));
+      return () => cleanupToolsSubscribers.delete(onUpdate);
     },
     chapterTagsPreview: async () => wireClone(chapterTagsPreview),
     chapterTagsEmbed: async (destPath) => {
