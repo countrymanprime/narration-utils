@@ -42,6 +42,23 @@ REAPER never parses this JSON. The Wails host owns setting resolution and passes
 - Use its optional `mod-script-pipe` only from a local desktop process and only after the user has enabled it.
 - First adapter scope: import findings as labels, navigate/export reviewed labels, and preserve the DAW-neutral finding data. Take management has no direct Audacity equivalent.
 
+## The DAWAdapter seam
+
+The review workflow (`apps/desktop/internal/transcript`, Transcript Compare) reaches a DAW only through `apps/desktop/internal/dawadapter.Review` ([ADR 0143](../adr/0143-the-review-workflow-calls-a-daw-through-dawadapter-and-the-event-vocabulary-is-part-of-the-contract.md), [Audacity integration PRD](../prds/audacity-integration.prd.md) Phase 3). The REAPER bridge is its first implementation; the planned Audacity pipe client (`internal/audacitybridge`, PRD Phase 4) is meant to be the second.
+
+| `Review` method | What the review workflow asks | REAPER bridge command | Result events |
+| --- | --- | --- | --- |
+| `PrepareReview(run)` | The selected audio to compare against the manuscript | `prepare_compare` | `COMPARE_PREPARED` |
+| `InspectFindings(run, path)` | Which findings the DAW already carries as a marker or label (the reviewed-state signal) | `inspect_compare_results` | `COMPARE_MARKER` per finding, `COMPARE_INSPECTED` |
+| `NavigateToFinding(run, id)` | Move the cursor or selection to one finding | `jump_to_compare_marker` | none |
+| `ExportFindings(run, path, colors)` | Write the pending findings into the DAW, skipping ones already there | `export_compare_markers` | `COMPARE_EXPORT_MARKER` per finding, `COMPARE_EXPORTED` |
+| `Subscribe`, `Dispatch` | Receive what the DAW reported, in order, once | `events.log` fan-out ([the REAPER bridge](reaper-bridge.md)) | `ERROR` for a failed run |
+
+- **Requests in, events out.** Every method only hands a request to the DAW and returns an error when it could not; the answer arrives later as an event tagged with the run ID. `dawadapter.Event` and `Subscription` alias the bridge's types, so the event tags and fields in `internal/bridge/wire.go` are part of the contract: a second adapter reports as the same events rather than the service growing a second parser.
+- **Only the review workflow.** Pickups, line identity, project state, render config, take creation and reachability keep `*bridge.Client`. They are REAPER-only, with no Audacity equivalent, and share the same client (so the same event cursor) as the adapter.
+- **Construction.** `transcript.New` still takes the `*bridge.Client` and wraps it with `dawadapter.ReviewFor`, which returns a nil `Review` for a nil client (a standalone launch). `transcript.NewWithReview` takes any adapter; `internal/transcript/adapter_test.go` runs the whole review loop against a fake one.
+- **Not yet in the interface.** Marking a finding reviewed and exporting the reviewed set (PRD Phases 7 and 8) have no REAPER command today; they are added to `Review`, with a REAPER implementation, when those phases land.
+
 ## Acceptance criteria
 
 - A REAPER adapter can navigate, loop, and add an approved marker from a valid finding.
