@@ -3,12 +3,67 @@ package findings
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 )
+
+// denyListing removes the current user's permission to list dir's own
+// contents (icacls "(RD)") without touching whether dir itself is visible as
+// an entry of its parent, so it reproduces a real, portable
+// permission-denied os.ReadDir failure on Windows (this repo only runs
+// locally on Windows; CI is the same). It restores the permission via
+// t.Cleanup so the temp directory can still be removed afterwards.
+func denyListing(t *testing.T, dir string) {
+	t.Helper()
+	if runtime.GOOS != "windows" {
+		t.Skip("permission-denied simulation uses icacls, which is Windows-only")
+	}
+	user := os.Getenv("USERNAME")
+	if user == "" {
+		t.Skip("USERNAME is not set; cannot target an icacls deny rule")
+	}
+	if out, err := exec.Command("icacls", dir, "/deny", user+":(RD)").CombinedOutput(); err != nil {
+		t.Skipf("icacls deny unavailable in this environment: %v: %s", err, out)
+	}
+	t.Cleanup(func() {
+		_, _ = exec.Command("icacls", dir, "/remove:d", user).CombinedOutput()
+	})
+	// An elevated process (as on CI runners) holds backup privilege, and Go
+	// opens directories with backup semantics, so the deny is not enforced.
+	if _, err := os.ReadDir(dir); err == nil {
+		t.Skip("icacls deny is not enforced for this (elevated) process")
+	}
+}
+
+// denyRead removes the current user's permission to read path's own data
+// ("(RD)" on a file means read data, not list-directory), so a later
+// os.ReadFile on it fails with a real, portable permission error rather than
+// fs.ErrNotExist. It restores the permission via t.Cleanup.
+func denyRead(t *testing.T, path string) {
+	t.Helper()
+	if runtime.GOOS != "windows" {
+		t.Skip("permission-denied simulation uses icacls, which is Windows-only")
+	}
+	user := os.Getenv("USERNAME")
+	if user == "" {
+		t.Skip("USERNAME is not set; cannot target an icacls deny rule")
+	}
+	if out, err := exec.Command("icacls", path, "/deny", user+":(RD)").CombinedOutput(); err != nil {
+		t.Skipf("icacls deny unavailable in this environment: %v: %s", err, out)
+	}
+	t.Cleanup(func() {
+		_, _ = exec.Command("icacls", path, "/remove:d", user).CombinedOutput()
+	})
+	// See denyListing: an elevated process reads past the deny.
+	if _, err := os.ReadFile(path); err == nil {
+		t.Skip("icacls deny is not enforced for this (elevated) process")
+	}
+}
 
 func testFinding(id, chapter string, evidenceVersion string) Finding {
 	return Finding{
@@ -395,5 +450,260 @@ func TestReviewHistoryIsAppendOnlyAcrossMultipleDecisions(t *testing.T) {
 	}
 	if f.Review.Status != StatusAccepted || f.Review.Note != "sounds fine" {
 		t.Fatalf("expected the latest decision to win: %+v", f.Review)
+	}
+}
+
+func TestListOnAFreshProjectReturnsEmptyWithoutError(t *testing.T) {
+	// Nothing has ever been saved, so the findings directory does not exist
+	// yet. scopeFiles must treat that as an empty store, not an error.
+	store := NewStore(t.TempDir())
+	findings, err := store.List(Query{})
+	if err != nil {
+		t.Fatalf("List on a project with no findings directory must not error: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected no findings, got %+v", findings)
+	}
+}
+
+func TestListAndRecordDecisionFailWhenTheFindingsDirCannotBeListed(t *testing.T) {
+	project := t.TempDir()
+	parent := filepath.Join(project, "narration-utils")
+	if err := os.MkdirAll(parent, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A plain file where the findings directory belongs: os.ReadDir fails
+	// with a real error that is not fs.ErrNotExist, on every platform and
+	// without needing permissions an elevated CI runner would bypass.
+	if err := os.WriteFile(filepath.Join(parent, "findings"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	store := NewStore(project)
+	if _, err := store.List(Query{}); err == nil {
+		t.Fatal("List must surface a real (non-missing) error reading the findings directory, not swallow it")
+	}
+	if _, _, err := store.RecordDecision("f1", "v1", StatusAccepted, "", "2026-09-19T10:00:00Z"); err == nil {
+		t.Fatal("RecordDecision must fail when the findings directory is not a directory")
+	}
+}
+
+func TestScopeFilesFailsWhenAnAnalyzerSubdirectoryCannotBeListed(t *testing.T) {
+	project := t.TempDir()
+	store := NewStore(project)
+	if _, err := store.SaveAnalyzerFindings("transcript_compare", "c-0001", []Finding{testFinding("f1", "c-0001", "v1")}); err != nil {
+		t.Fatal(err)
+	}
+
+	analyzerDir := filepath.Join(project, "narration-utils", "findings", "transcript_compare")
+	denyListing(t, analyzerDir)
+
+	if _, err := store.List(Query{}); err == nil {
+		t.Fatal("List must fail when an analyzer subdirectory exists but cannot be listed")
+	}
+}
+
+func TestSaveAnalyzerFindingsFailsWhenThePreviousScopeFileCannotBeRead(t *testing.T) {
+	project := t.TempDir()
+	scopeDir := filepath.Join(project, "narration-utils", "findings", "transcript_compare")
+	if err := os.MkdirAll(filepath.Join(scopeDir, "c-0001.json"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	store := NewStore(project)
+	if _, err := store.SaveAnalyzerFindings("transcript_compare", "c-0001", []Finding{testFinding("f1", "c-0001", "v1")}); err == nil {
+		t.Fatal("expected an error: the scope file path is a directory, so it cannot be read")
+	}
+}
+
+func TestSaveAnalyzerFindingsFailsWhenTheReviewHistoryCannotBeRead(t *testing.T) {
+	project := t.TempDir()
+	reviewPath := filepath.Join(project, "narration-utils", "findings", "review.json")
+	if err := os.MkdirAll(reviewPath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	store := NewStore(project)
+	if _, err := store.SaveAnalyzerFindings("transcript_compare", "c-0001", []Finding{testFinding("f1", "c-0001", "v1")}); err == nil {
+		t.Fatal("expected an error: review.json is a directory, so the review history cannot be read")
+	}
+}
+
+func TestSaveAnalyzerFindingsFailsWhenTheAnalyzerNameCollidesWithAFile(t *testing.T) {
+	project := t.TempDir()
+	dir := filepath.Join(project, "narration-utils", "findings")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A plain file sits where the analyzer's own folder needs to go, so
+	// writeJSONFile's os.MkdirAll cannot create it.
+	if err := os.WriteFile(filepath.Join(dir, "transcript_compare"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	store := NewStore(project)
+	if _, err := store.SaveAnalyzerFindings("transcript_compare", "c-0001", []Finding{testFinding("f1", "c-0001", "v1")}); err == nil {
+		t.Fatal("expected an error: the analyzer folder cannot be created because a file already has that name")
+	}
+}
+
+func TestRecordDecisionFailsWhenTheReviewHistoryFileCannotBeOverwritten(t *testing.T) {
+	project := t.TempDir()
+	reviewPath := filepath.Join(project, "narration-utils", "findings", "review.json")
+	if err := os.MkdirAll(reviewPath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	store := NewStore(project)
+	if _, _, err := store.RecordDecision("f1", "v1", StatusAccepted, "", "2026-09-19T10:00:00Z"); err == nil {
+		t.Fatal("expected an error: review.json is a directory, so CanOverwrite must refuse to replace it")
+	}
+}
+
+func TestRecordDecisionFailsWhenWritingTheUpdatedScopeFileFails(t *testing.T) {
+	project := t.TempDir()
+	store := NewStore(project)
+	if _, err := store.SaveAnalyzerFindings("transcript_compare", "c-0001", []Finding{testFinding("f1", "c-0001", "v1")}); err != nil {
+		t.Fatal(err)
+	}
+
+	scopePath := filepath.Join(project, "narration-utils", "findings", "transcript_compare", "c-0001.json")
+	// writeJSONFile writes to path+".tmp" before renaming it into place; make
+	// that temporary path a directory so the write itself fails.
+	if err := os.MkdirAll(scopePath+".tmp", 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, _, err := store.RecordDecision("f1", "v1", StatusAccepted, "", "2026-09-19T10:00:00Z"); err == nil {
+		t.Fatal("expected an error: the .tmp write target is a directory")
+	}
+}
+
+func TestWriteJSONFileFailsWhenTheValueCannotBeMarshalled(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "bad.json")
+	// A channel has no JSON representation; encoding/json refuses it.
+	if err := writeJSONFile(path, make(chan int)); err == nil {
+		t.Fatal("expected an error for a value json.Marshal cannot encode")
+	}
+	if _, err := os.Stat(path); err == nil {
+		t.Fatal("a failed marshal must not leave a file behind")
+	}
+}
+
+func TestWriteJSONFileFailsWhenTheFinalPathIsAnExistingDirectory(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "target")
+	if err := os.Mkdir(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeJSONFile(path, []Finding{testFinding("f1", "c-0001", "v1")}); err == nil {
+		t.Fatal("expected an error: renaming the temp file over an existing directory must fail")
+	}
+	// The directory at path must survive untouched: a failed activation must
+	// not have destroyed what was there before.
+	info, err := os.Stat(path)
+	if err != nil || !info.IsDir() {
+		t.Fatalf("expected the pre-existing directory at %s to survive a failed rename, got %v, %v", path, info, err)
+	}
+}
+
+func TestMatchesFiltersByAnalyzerCategoryAndSeverity(t *testing.T) {
+	project := t.TempDir()
+	store := NewStore(project)
+
+	needle := testFinding("f2", "c-0001", "v1")
+	needle.Analyzer = "guide"
+	needle.Category = CategoryPronunciation
+	needle.Severity = SeverityError
+
+	if _, err := store.SaveAnalyzerFindings("transcript_compare", "c-0001", []Finding{
+		testFinding("f1", "c-0001", "v1"), // Analyzer transcript_compare, CategoryTranscriptDiscrepancy, SeverityWarning
+		needle,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	byAnalyzer, err := store.List(Query{Analyzer: "guide"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(byAnalyzer) != 1 || byAnalyzer[0].ID != "f2" {
+		t.Fatalf("Analyzer filter = %+v", byAnalyzer)
+	}
+
+	byCategory, err := store.List(Query{Category: CategoryPronunciation})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(byCategory) != 1 || byCategory[0].ID != "f2" {
+		t.Fatalf("Category filter = %+v", byCategory)
+	}
+
+	bySeverity, err := store.List(Query{Severity: SeverityError})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(bySeverity) != 1 || bySeverity[0].ID != "f2" {
+		t.Fatalf("Severity filter = %+v", bySeverity)
+	}
+}
+
+func TestListFailsWhenAScopeFileCannotBeRead(t *testing.T) {
+	project := t.TempDir()
+	store := NewStore(project)
+	if _, err := store.SaveAnalyzerFindings("transcript_compare", "c-0001", []Finding{testFinding("f1", "c-0001", "v1")}); err != nil {
+		t.Fatal(err)
+	}
+
+	scopePath := filepath.Join(project, "narration-utils", "findings", "transcript_compare", "c-0001.json")
+	denyRead(t, scopePath)
+
+	if _, err := store.List(Query{}); err == nil {
+		t.Fatal("List must surface a real read failure on a scope file scopeFiles already found, not swallow it")
+	}
+}
+
+func TestGetFailsWhenAScopeFileCannotBeRead(t *testing.T) {
+	project := t.TempDir()
+	store := NewStore(project)
+	if _, err := store.SaveAnalyzerFindings("transcript_compare", "c-0001", []Finding{testFinding("f1", "c-0001", "v1")}); err != nil {
+		t.Fatal(err)
+	}
+
+	scopePath := filepath.Join(project, "narration-utils", "findings", "transcript_compare", "c-0001.json")
+	denyRead(t, scopePath)
+
+	if _, _, err := store.Get("f1"); err == nil {
+		t.Fatal("Get must surface locate's read failure on a scope file, not swallow it")
+	}
+}
+
+func TestListSortsByChapterThenIDAndTreatsAMissingManuscriptAsAnEmptyChapter(t *testing.T) {
+	project := t.TempDir()
+	store := NewStore(project)
+
+	noManuscript := testFinding("f-none", "unused", "v1")
+	noManuscript.Manuscript = nil
+
+	if _, err := store.SaveAnalyzerFindings("transcript_compare", "c-0001", []Finding{
+		testFinding("f-b", "c-0002", "v1"),
+		testFinding("f-a", "c-0001", "v1"),
+		noManuscript,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	all, err := store.List(Query{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 3 {
+		t.Fatalf("expected 3 findings, got %+v", all)
+	}
+	got := []string{all[0].ID, all[1].ID, all[2].ID}
+	want := []string{"f-none", "f-a", "f-b"} // "" (no manuscript) < c-0001 < c-0002
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("List() order = %v, want %v (chapter id, then finding id)", got, want)
+		}
 	}
 }
