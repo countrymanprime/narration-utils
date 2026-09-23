@@ -1,13 +1,30 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TakeReviewPanel } from './TakeReviewPanel';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import type { NarrationApi } from '../../types';
 
-afterEach(cleanup);
+// AuditionDialog (phase 7) owns real <audio> elements; stub them the same way useRangePlayer.test.tsx does so opening
+// the dialog here never depends on jsdom's unimplemented HTMLMediaElement.play().
+class FakeAudio extends EventTarget {
+  src = '';
+  currentTime = 0;
+  duration = Number.NaN;
+  play = vi.fn().mockResolvedValue(undefined);
+  pause = vi.fn();
+}
+
+beforeEach(() => {
+  vi.stubGlobal('Audio', FakeAudio);
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 function renderPanel(chapterTrackName: string, overrides: Partial<NarrationApi> = {}) {
   const api = createMockApi(overrides);
@@ -136,5 +153,22 @@ describe('TakeReviewPanel', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toContain('the project has changed in REAPER since this finding was found');
+  });
+
+  it('opens the audition dialog for a finding, labelled raw source, with no REAPER call made', async () => {
+    const user = userEvent.setup();
+    const createTake = vi.fn();
+    renderPanel('Chapter 1', { takeReviewCreateTake: createTake });
+
+    await user.click(screen.getByRole('button', { name: 'Scan for pickups & duplicates' }));
+    await screen.findByRole('table', { name: 'Pickup and duplicate findings' });
+    await user.click(screen.getAllByRole('button', { name: 'Audition' })[0]);
+
+    const dialog = await screen.findByRole('dialog', { name: 'Audition candidate reads' });
+    expect(dialog.textContent).toContain('Raw source, no FX or edits applied');
+    expect(createTake).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog', { name: 'Audition candidate reads' })).toBeNull();
   });
 });

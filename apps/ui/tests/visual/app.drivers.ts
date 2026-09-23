@@ -908,6 +908,13 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'button', 'Scan for pickups & duplicates');
       await page.getByText('No repeated reads found on this track.').waitFor();
     },
+    'take-review-audition': async (page) => {
+      await goToPage(page, 'Tracks');
+      await clickVisible(page, 'button', 'Scan for pickups & duplicates');
+      await page.getByRole('table', { name: 'Pickup and duplicate findings' }).waitFor();
+      await clickVisible(page, 'button', 'Audition');
+      await page.getByRole('dialog', { name: 'Audition candidate reads' }).waitFor();
+    },
   },
   teleprompter: {
     'setup-default': async (page) => {

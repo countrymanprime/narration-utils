@@ -5,7 +5,9 @@ import { Button } from '../primitives/Button';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Select } from '../primitives/Select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
-import type { TakeReviewFinding, TakeReviewMember } from '../../types';
+import { AuditionDialog } from './AuditionDialog';
+import { memberLabel } from './takeReviewFormat';
+import type { TakeReviewFinding } from '../../types';
 
 // Category labels are display-only; the wire value stays the source of truth (findings.Category, apps/desktop/internal/findings/findings.go).
 const CATEGORY_LABELS: Record<string, string> = {
@@ -35,20 +37,17 @@ function formatCoverage(finding: TakeReviewFinding): string {
   return full === members.length ? 'Full coverage' : `${full}/${members.length} full, rest partial`;
 }
 
-function sourceFileName(path: string): string {
-  return path.split(/[\\/]/).pop() || path;
-}
-
-function memberLabel(member: TakeReviewMember, index: number): string {
-  const coverage = Math.round(member.coverage * 100);
-  return `Read ${index + 1} — ${sourceFileName(member.source_file)} (${coverage}% coverage)`;
-}
-
 // Whether a finding can offer "Add as take" at all: the analyzer's own suggested_action (Q4/Q8 - a
 // candidate action is only ever a proposal, the narrator confirms it explicitly) and at least two
 // reads to choose a target and a candidate from.
 function canCreateTake(finding: TakeReviewFinding): boolean {
   return finding.suggested_action?.kind === 'create_take' && (finding.evidence?.members.length ?? 0) >= 2;
+}
+
+// Whether a finding can offer "Audition" (phase 7, Q7): playback needs no suggested_action - it
+// never mutates REAPER - just two reads to compare.
+function canAudition(finding: TakeReviewFinding): boolean {
+  return (finding.evidence?.members.length ?? 0) >= 2;
 }
 
 /**
@@ -59,8 +58,10 @@ function canCreateTake(finding: TakeReviewFinding): boolean {
  * composite score, so there is deliberately no "best take" or ranking column here) - and, per row, an
  * "Add as take" action that lets the narrator pick which read is the target item and which is the
  * candidate to attach, then confirms before REAPER does anything (Q4/Q8: never preselected, never
- * automatic). This is not the generic findings-browsing Review page (review-dashboard-and-findings-
- * adoption's own later phase); it is scoped to this PRD's own scan, findings and take-creation action.
+ * automatic). Phase 7 adds a per-row "Audition" action (AuditionDialog) that plays two of a
+ * finding's reads side by side from their own raw source, with no REAPER mutation. This is not the
+ * generic findings-browsing Review page (review-dashboard-and-findings-adoption's own later phase);
+ * it is scoped to this PRD's own scan, findings and take-creation/audition actions.
  */
 export function TakeReviewPanel({ chapterTrackName }: { chapterTrackName: string }) {
   const api = useApi();
@@ -74,6 +75,8 @@ export function TakeReviewPanel({ chapterTrackName }: { chapterTrackName: string
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
   const [createdTakes, setCreatedTakes] = useState<Record<string, string>>({});
+
+  const [auditionFindingId, setAuditionFindingId] = useState<string | null>(null);
 
   const runScan = () => {
     setScanning(true);
@@ -98,6 +101,7 @@ export function TakeReviewPanel({ chapterTrackName }: { chapterTrackName: string
 
   const activeFinding = findings?.find((finding) => finding.id === activeFindingId);
   const activeMembers = activeFinding?.evidence?.members ?? [];
+  const auditionFinding = findings?.find((finding) => finding.id === auditionFindingId);
 
   const confirmCreateTake = () => {
     const target = activeMembers.find((member) => member.item_guid === targetGuid);
@@ -167,15 +171,20 @@ export function TakeReviewPanel({ chapterTrackName }: { chapterTrackName: string
                   <TableCell>{formatCoverage(finding)}</TableCell>
                   <TableCell align="right">{finding.evidence?.members.length ?? 0}</TableCell>
                   <TableCell align="right">
-                    {createdTakes[finding.id] ? (
-                      <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                        Take added
-                      </span>
-                    ) : (
-                      <Button variant="ghost" onClick={() => openCreateTake(finding)} disabled={!canCreateTake(finding)}>
-                        Add as take
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" onClick={() => setAuditionFindingId(finding.id)} disabled={!canAudition(finding)}>
+                        Audition
                       </Button>
-                    )}
+                      {createdTakes[finding.id] ? (
+                        <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                          Take added
+                        </span>
+                      ) : (
+                        <Button variant="ghost" onClick={() => openCreateTake(finding)} disabled={!canCreateTake(finding)}>
+                          Add as take
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -229,6 +238,7 @@ export function TakeReviewPanel({ chapterTrackName }: { chapterTrackName: string
           </div>
         </ConfirmDialog>
       )}
+      {auditionFinding && <AuditionDialog finding={auditionFinding} onClose={() => setAuditionFindingId(null)} />}
     </Panel>
   );
 }
