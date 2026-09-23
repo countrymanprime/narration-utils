@@ -2,6 +2,13 @@
 
 **Source:** user request of 2026-09-20 (item 2): audiobooks carry opening and closing credits that vary by narrator and contract; the app should ship standard templates, let the user add their own, and support tokens such as `[Title]. Written by [Author]. Read by [Narrator]. Copyright by [Copyright].` that are filled from project and user data, shown as the narrator will read them, and counted in the total time. Citations are `file:line` on branch `claude/narration-utils-planning-00e3c8` at dc9d01a. Nothing here is built yet. Related: [project-workspace-and-daw-link.prd.md](project-workspace-and-daw-link.prd.md) (the project manifest, W1), [teleprompter-manuscript-integration.prd.md](teleprompter-manuscript-integration.prd.md).
 
+**Status (2026-09-23):** issue [#301](https://github.com/countrymanprime/narration-utils/issues/301).
+
+- **Delivered:** phases 1 (#302), 2 (#303), 3 (#306) and 5 (#421, chapter announcements, room tone and the retail sample).
+- **Partial:** phase 4 (#415, the credits read on the teleprompter). It is built and tested; the live check with a microphone is owed.
+- **Needs the owner:** CR-4, read the opening credits with a real microphone and see the highlight follow, then start the closing credits with an unresolved token and see the warning; review ADRs 0150 to 0152 (Proposed).
+- **Agents without the owner:** nothing left to build; once CR-4 is signed off, a last PR writes the steady-state docs and deletes this PRD.
+
 ## Problem Statement
 
 The app models only the chapters a manuscript contains. Opening and closing credits, which every published audiobook has and which the narrator reads aloud, exist nowhere: no place to write them, no fill-in from project data, no way to read them on the teleprompter, and no time in the audiobook estimate.
@@ -191,4 +198,4 @@ Cross-cutting: `hostAPIVersion` re-checked at merge; ADR numbering re-checked; `
 ---
 
 *Generated: 2026-09-20*
-*Status: DRAFT - needs validation*
+*Status: IN DELIVERY - see the status block under the title (2026-09-23)*

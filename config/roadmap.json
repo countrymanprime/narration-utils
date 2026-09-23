@@ -21,15 +21,19 @@
       "summary": "Find pickups and duplicate reads, review and audition each group, add a chosen read as a take, and compare a group's takes per category, never ranked."
     },
     {
+      "title": "Recording check",
+      "summary": "Check a chapter's saved REAPER recording against its text and list what is missing; the thresholds are not yet calibrated on real narration."
+    },
+    {
       "title": "Manuscript Teleprompter (first cut)",
-      "summary": "Listen with a local Whisper model and highlight the word being read in a chosen chapter."
+      "summary": "Listen on a chosen microphone with a local Whisper model, or Moonshine on Windows, and highlight the word being read in a chosen chapter; the read-aloud dialog flags suspected misreads, skips, extra words and restarts for review."
     }
   ],
   "milestones": [
     {
       "number": 1,
       "title": "Dashboard foundation",
-      "summary": "Structured findings and a review page in the app with filters and review decisions; REAPER carries out navigation, looping and markers."
+      "summary": "Structured findings and a review page in the app with filters and review decisions; REAPER carries out navigation, looping and markers. Built; checks in REAPER pending with the owner."
     },
     {
       "number": 2,
@@ -51,6 +55,6 @@
     "macOS and Linux installers/adapters",
     "Languages beyond US English",
     "Team collaboration or cloud services",
-    "Manuscript Teleprompter beyond its first cut: reviewable suspected substitutions, skips, or misreads, other engines and a microphone picker; never edits text or audio automatically"
+    "Manuscript Teleprompter beyond what has shipped: a default engine chosen by evaluating both, following live REAPER state, and punch-in from a word; never edits text or audio automatically"
   ]
 }
