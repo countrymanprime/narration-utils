@@ -7,9 +7,11 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
+	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
@@ -37,8 +39,8 @@ func TestResourceKeyChangesWithEmbeddedContent(t *testing.T) {
 }
 
 func TestHostAPIVersionMatchesTheCurrentDesktopContract(t *testing.T) {
-	if hostAPIVersion != 13 {
-		t.Fatalf("host API version = %d, want 13; update it with apps/ui/src/hostApi.ts", hostAPIVersion)
+	if hostAPIVersion != 15 {
+		t.Fatalf("host API version = %d, want 15; update it with apps/ui/src/hostApi.ts", hostAPIVersion)
 	}
 }
 
@@ -175,6 +177,121 @@ func TestParseConfigArgsUsesForwardedSecondInstanceArguments(t *testing.T) {
 	}
 }
 
+// TestParseConfigArgsReadsProjectFile is PRD project-workspace-and-daw-link.prd.md
+// Phase 5: the REAPER launcher passes --project-file so a second launch (and
+// first launch) can map the rpp back to its own project (W5).
+func TestParseConfigArgsReadsProjectFile(t *testing.T) {
+	config := parseConfigArgs(`C:\repo`, []string{"--project-file", `C:\books\novel\Book.rpp`, "--daw", "REAPER"})
+	if config.projectFile != `C:\books\novel\Book.rpp` {
+		t.Fatalf("projectFile = %q, want %q", config.projectFile, `C:\books\novel\Book.rpp`)
+	}
+}
+
+// TestParseConfigArgsWithNoProjectFileLeavesItEmpty covers the unsaved-REAPER-project
+// case (W5): the launcher passes an empty --project-file, and an absent flag
+// entirely (a standalone launch) must behave the same way.
+func TestParseConfigArgsWithNoProjectFileLeavesItEmpty(t *testing.T) {
+	config := parseConfigArgs(`C:\repo`, []string{"--daw", "REAPER"})
+	if config.projectFile != "" {
+		t.Fatalf("projectFile = %q, want empty", config.projectFile)
+	}
+}
+
+// TestResolveProjectFileMapsAnRppToItsLinkedProjectEvenOutsideTheRppsOwnFolder
+// is W4/W5: the rpp may live outside its project's folder, so the match comes
+// from the manifest's link, not from next.projectFolder (which the launcher
+// only ever sets to the rpp's own containing folder).
+func TestResolveProjectFileMapsAnRppToItsLinkedProjectEvenOutsideTheRppsOwnFolder(t *testing.T) {
+	projectsDir := t.TempDir()
+	rppFolder := t.TempDir()
+	rpp := filepath.Join(rppFolder, "Book.rpp")
+	if err := os.WriteFile(rpp, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	projectFolder := filepath.Join(projectsDir, "Alice")
+	if err := os.MkdirAll(projectFolder, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	link, err := project.BuildDawLink(projectFolder, rpp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := project.New("Alice", time.Now())
+	manifest.DawProjectFile = &link
+	if err := manifest.Save(projectFolder); err != nil {
+		t.Fatal(err)
+	}
+
+	next := resolveProjectFile(nil, projectsDir, config{projectFile: rpp, projectFolder: rppFolder, projectName: "Book"})
+	if next.projectFolder != projectFolder {
+		t.Fatalf("projectFolder = %q, want the linked project %q, not the rpp's own folder", next.projectFolder, projectFolder)
+	}
+	if next.projectName != "Alice" {
+		t.Fatalf("projectName = %q, want %q", next.projectName, "Alice")
+	}
+}
+
+// TestResolveProjectFileWithNoMatchKeepsTheLaunchersGuess is W6: an existing
+// REAPER session with no link yet still attaches the rpp's own folder as
+// before, unchanged.
+func TestResolveProjectFileWithNoMatchKeepsTheLaunchersGuess(t *testing.T) {
+	projectsDir := t.TempDir()
+	next := resolveProjectFile(nil, projectsDir, config{projectFile: filepath.Join(t.TempDir(), "Book.rpp"), projectFolder: "guessed-folder", projectName: "Book"})
+	if next.projectFolder != "guessed-folder" || next.projectName != "Book" {
+		t.Fatalf("next = %#v, want the launcher's guess unchanged", next)
+	}
+}
+
+// TestResolveProjectFileWithNoProjectFileIsANoOp covers the unsaved-REAPER-project
+// case (W5): nothing to match, so config passes through unchanged and the
+// caller's existing empty-projectFolder handling opens the picker.
+func TestResolveProjectFileWithNoProjectFileIsANoOp(t *testing.T) {
+	next := resolveProjectFile(nil, t.TempDir(), config{projectFolder: "", projectName: "Unsaved REAPER project"})
+	if next.projectFolder != "" || next.projectName != "Unsaved REAPER project" {
+		t.Fatalf("next = %#v, want unchanged", next)
+	}
+}
+
+// TestOnSecondInstanceMapsTheRppToItsLinkedProjectInsteadOfTheRppsOwnFolder is
+// W4/W5 end to end through the real second-instance path: a relaunch from
+// REAPER must not silently replace the narrator's chosen project with the
+// rpp's own (now decoupled) folder when a link exists elsewhere.
+func TestOnSecondInstanceMapsTheRppToItsLinkedProjectInsteadOfTheRppsOwnFolder(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("HOME", home)
+	projectsDir := filepath.Join(home, project.DefaultDirName)
+	rppFolder := t.TempDir()
+	rpp := filepath.Join(rppFolder, "Book.rpp")
+	if err := os.WriteFile(rpp, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	projectFolder := filepath.Join(projectsDir, "Alice")
+	if err := os.MkdirAll(projectFolder, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	link, err := project.BuildDawLink(projectFolder, rpp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := project.New("Alice", time.Now())
+	manifest.DawProjectFile = &link
+	if err := manifest.Save(projectFolder); err != nil {
+		t.Fatal(err)
+	}
+
+	host := NewHost()
+	host.onSecondInstance(options.SecondInstanceData{Args: []string{
+		"--project-folder", rppFolder,
+		"--project-name", "Book",
+		"--project-file", rpp,
+		"--daw", "REAPER",
+	}})
+	if host.config.projectFolder != projectFolder {
+		t.Fatalf("projectFolder = %q, want the linked project %q", host.config.projectFolder, projectFolder)
+	}
+}
+
 func TestCanAttachRejectsPreparedImportAndActiveTranscript(t *testing.T) {
 	host := NewHost()
 	host.manuscript.Begin("draft.md")
@@ -272,10 +389,10 @@ func TestConfigureLockedToleratesAbsentSessionDirAndProjectFolder(t *testing.T) 
 	}
 }
 
-func TestProjectCreateMakesDirectoryAndAttaches(t *testing.T) {
+func TestProjectCreateInMakesDirectoryAndManifestAndAttaches(t *testing.T) {
 	host := NewHost()
-	project := filepath.Join(t.TempDir(), "New Book")
-	raw, err := host.ProjectCreate(project, "")
+	parent := t.TempDir()
+	raw, err := host.ProjectCreateIn(parent, "New Book")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -286,23 +403,85 @@ func TestProjectCreateMakesDirectoryAndAttaches(t *testing.T) {
 	if result["switched"] != true {
 		t.Fatalf("result = %#v, want switched:true", result)
 	}
-	if _, err := os.Stat(project); err != nil {
+	want := filepath.Join(parent, "New Book")
+	if _, err := os.Stat(want); err != nil {
 		t.Fatalf("project folder was not created: %v", err)
 	}
-	if host.config.projectFolder != project {
-		t.Fatalf("projectFolder = %q, want %q", host.config.projectFolder, project)
+	if _, err := os.Stat(project.Path(want)); err != nil {
+		t.Fatalf("project manifest was not created: %v", err)
+	}
+	if host.config.projectFolder != want {
+		t.Fatalf("projectFolder = %q, want %q", host.config.projectFolder, want)
 	}
 	if host.config.projectName != "New Book" {
-		t.Fatalf("projectName = %q, want folder basename", host.config.projectName)
+		t.Fatalf("projectName = %q, want %q", host.config.projectName, "New Book")
 	}
 }
 
-func TestProjectCreateRefusesWithoutCreatingTheFolderWhenBusy(t *testing.T) {
+func TestProjectCreateInDefaultsAnEmptyParentToTheProjectsDirectory(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("HOME", home)
+	host := NewHost()
+	raw, err := host.ProjectCreateIn("", "Default Location Book")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result map[string]any
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result["switched"] != true {
+		t.Fatalf("result = %#v, want switched:true", result)
+	}
+	want := filepath.Join(home, project.DefaultDirName, "Default Location Book")
+	if host.config.projectFolder != want {
+		t.Fatalf("projectFolder = %q, want %q", host.config.projectFolder, want)
+	}
+}
+
+func TestProjectCreateInRequiresANonEmptyName(t *testing.T) {
+	host := NewHost()
+	if _, err := host.ProjectCreateIn(t.TempDir(), ""); err == nil {
+		t.Fatal("ProjectCreateIn() error = nil, want an error for an empty name")
+	}
+}
+
+func TestProjectCreateInRejectsAnInvalidName(t *testing.T) {
+	host := NewHost()
+	if _, err := host.ProjectCreateIn(t.TempDir(), "CON"); err == nil {
+		t.Fatal("ProjectCreateIn() error = nil, want an error for a reserved name")
+	}
+}
+
+func TestProjectCreateInRefusesACollisionWithoutTouchingTheExistingFolder(t *testing.T) {
+	host := NewHost()
+	parent := t.TempDir()
+	existing := filepath.Join(parent, "Taken")
+	if err := os.MkdirAll(existing, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	marker := filepath.Join(existing, "keep.txt")
+	if err := os.WriteFile(marker, []byte("keep"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := host.ProjectCreateIn(parent, "Taken"); err == nil {
+		t.Fatal("ProjectCreateIn() error = nil, want an error for a name collision")
+	}
+	if _, err := os.Stat(marker); err != nil {
+		t.Fatalf("a refused create must not touch the existing folder: %v", err)
+	}
+	if _, err := os.Stat(project.Path(existing)); !os.IsNotExist(err) {
+		t.Fatal("a refused create must not write a manifest into the existing folder")
+	}
+}
+
+func TestProjectCreateInRefusesWithoutCreatingTheFolderWhenBusy(t *testing.T) {
 	host := NewHost()
 	host.manuscript.Begin("draft.md")
 	before := host.config
-	project := filepath.Join(t.TempDir(), "Busy Book")
-	raw, err := host.ProjectCreate(project, "")
+	parent := t.TempDir()
+	raw, err := host.ProjectCreateIn(parent, "Busy Book")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -316,7 +495,7 @@ func TestProjectCreateRefusesWithoutCreatingTheFolderWhenBusy(t *testing.T) {
 	if reason, _ := result["reason"].(string); reason != attachBusyReason {
 		t.Fatalf("reason = %q, want the busy reason", reason)
 	}
-	if _, err := os.Stat(project); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(parent, "Busy Book")); !os.IsNotExist(err) {
 		t.Fatalf("a refused create must not leave the folder behind (stat error: %v)", err)
 	}
 	if host.config != before {
@@ -324,16 +503,16 @@ func TestProjectCreateRefusesWithoutCreatingTheFolderWhenBusy(t *testing.T) {
 	}
 }
 
-func TestProjectCreateRequiresAnAbsolutePath(t *testing.T) {
+func TestProjectCreateInRequiresAnAbsoluteParent(t *testing.T) {
 	host := NewHost()
-	relative := filepath.Join("relative-project-folder-that-must-not-exist", "Book")
-	t.Cleanup(func() { _ = os.RemoveAll("relative-project-folder-that-must-not-exist") })
-	_, err := host.ProjectCreate(relative, "")
+	relative := "relative-parent-that-must-not-exist"
+	t.Cleanup(func() { _ = os.RemoveAll(relative) })
+	_, err := host.ProjectCreateIn(relative, "Book")
 	if err == nil || !strings.Contains(err.Error(), "absolute") {
-		t.Fatalf("err = %v, want an error saying the path must be absolute", err)
+		t.Fatalf("err = %v, want an error saying the location must be absolute", err)
 	}
 	if _, statErr := os.Stat(relative); !os.IsNotExist(statErr) {
-		t.Fatalf("a relative path must not create a folder under the working directory (stat error: %v)", statErr)
+		t.Fatalf("a relative parent must not create a folder under the working directory (stat error: %v)", statErr)
 	}
 }
 

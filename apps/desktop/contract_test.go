@@ -88,7 +88,7 @@ func TestContractStoryBibleBuildJob(t *testing.T) {
 	pinBinding("guide-build-failed", snapshotWork(&workJob{id: "guide-1", kind: "story_bible", phase: "error", message: "The Story Bible build failed.", errorText: "python exited with code 1", percent: 40, logs: []string{"Reading canonical manuscript", "Loaded 120 paragraphs"}, started: time.Now()}))
 }
 
-// How a project attach ends, as ProjectSwitch and ProjectCreate answer it, and the Story Bible answer that needs a voice.
+// How a project attach ends, as ProjectSwitch and ProjectCreateIn answer it, and the Story Bible answer that needs a voice.
 func TestContractProjectAttachResults(t *testing.T) {
 	for name, attached := range map[string]struct {
 		ok     bool
@@ -241,4 +241,44 @@ func TestContractTracksDiscovery(t *testing.T) {
 // The system:notice event: something the app did for the narrator that they should read (ADR 0069).
 func TestContractNarratorNotice(t *testing.T) {
 	contractfile.Check(t, "system-notice", noticePayload("Your notes file could not be read. It was kept as manuscript-notes.json.corrupt-20260921-101530 next to the original, and a fresh one was started."))
+}
+
+// ProjectLinkDawFile's result (PRD project-workspace-and-daw-link.prd.md, Open Question W19): a file linked inside the
+// project folder, one outside it (refused, W15), and the dialog cancelled.
+func TestContractProjectLinkDawFile(t *testing.T) {
+	folder := t.TempDir()
+	rpp := filepath.Join(folder, "Alice.rpp")
+	if err := os.WriteFile(rpp, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	linked, err := linkDawFile(nil, folder, rpp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stableLinked, err := contractfile.PortablePaths(linked, folder, "C:/Projects/Alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "daw-link-selected", stableLinked)
+
+	other := t.TempDir()
+	elsewhere := filepath.Join(other, "Elsewhere.rpp")
+	if err := os.WriteFile(elsewhere, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	mismatch, err := linkDawFile(nil, folder, elsewhere)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stableMismatch, err := contractfile.PortablePaths(mismatch, folder, "C:/Projects/Alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stableMismatch, err = contractfile.PortablePaths(stableMismatch, other, "C:/Projects/Elsewhere")
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "daw-link-folder-mismatch", stableMismatch)
+
+	contractfile.Check(t, "daw-link-cancelled", map[string]any{"selected": false, "linked": false})
 }

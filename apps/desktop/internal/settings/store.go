@@ -54,8 +54,10 @@ func (s *Store) Effective(tool, key, fallback string) (string, string) {
 // effective default read back empty - most visibly the Settings color pickers,
 // which rendered #000000 for every color. store_test.go keeps the two in sync.
 var builtinDefaults = map[string]Values{
-	"General":           {"log_verbosity": "normal"},
-	"ManuscriptGuide":   {"spacy_model": "en_core_web_sm"},
+	// notifications defaults on (D8: OS notifications on by default, opt-out in Settings, N2).
+	"General": {"log_verbosity": "normal", "notifications": "true"},
+	// build_after_import defaults on (D8: build the Story Bible after import by default, B1-B3).
+	"ManuscriptGuide":   {"spacy_model": "en_core_web_sm", "build_after_import": "true"},
 	"Piper":             {"tts_provider": "piper", "tts_voice_id": "en_US-ljspeech-high"},
 	"Updates":           {"check_on_startup": "true", "channel": "candidates"},
 	"Manuscript":        {"color_note": "B85C1E"},

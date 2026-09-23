@@ -474,8 +474,21 @@ const choice = (key: string, label: string, choices: string[], value: string): S
   effectiveValue: value,
   effectiveSource: 'repo default',
 });
+const bool = (key: string, label: string, value: 'true' | 'false'): ScopedSettingField => ({
+  key,
+  label,
+  kind: 'bool',
+  choices: [],
+  value,
+  isSet: true,
+  effectiveValue: value,
+  effectiveSource: 'repo default',
+});
 export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
-  General: [choice('log_verbosity', 'Log verbosity', ['quiet', 'normal', 'verbose'], 'normal')],
+  General: [
+    choice('log_verbosity', 'Log verbosity', ['quiet', 'normal', 'verbose'], 'normal'),
+    bool('notifications', "Notify me when a long task finishes while I'm away", 'true'),
+  ],
   Manuscript: [
     {
       key: 'color_note',
@@ -488,7 +501,10 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
       effectiveSource: 'repo default',
     },
   ],
-  ManuscriptGuide: [choice('spacy_model', 'spaCy model', ['en_core_web_sm', 'en_core_web_lg'], 'en_core_web_sm')],
+  ManuscriptGuide: [
+    choice('spacy_model', 'spaCy model', ['en_core_web_sm', 'en_core_web_lg'], 'en_core_web_sm'),
+    bool('build_after_import', 'Build the Story Bible after import', 'true'),
+  ],
   TranscriptCompare: [
     choice('model_size', 'Default Whisper model', ['tiny', 'small', 'medium', 'large-v3-turbo', 'large-v3'], 'small'),
     choice('chunk_seconds', 'Default chunk length', ['30', '60', '300', '600'], '60'),

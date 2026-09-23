@@ -12,3 +12,31 @@ export function toastForJobEnd(event: JobEnded): { text: string; tone: ToastTone
   if (event.outcome === 'error') return { text: event.message || 'A background task failed.', tone: 'error' };
   return { text: event.message || 'A background task finished.', tone: 'info' };
 }
+
+// N3: only these kinds are worth an OS notification (Story Bible build, model/voice downloads, Transcript Compare, import). A
+// manuscript import that also chains a Story Bible build (D8) still only notifies through its own story_bible job:ended event;
+// a fast import stays quiet on its own account like everything else here.
+const NOTIFIABLE_JOB_KINDS = new Set(['story_bible', 'tts_install', 'whisper_install', 'spacy_install', 'transcript_compare', 'manuscript_import']);
+
+/** N3: fast jobs stay quiet so a notification means something. */
+const NOTIFY_THRESHOLD_MS = 10_000;
+
+/**
+ * Whether a host job ending is worth an OS notification (N1-N4). `focused` is `document.hasFocus()`: the host has no
+ * way to know this (N1, no focus query in the Wails v2.16 host API), so the decision is made here, in the webview,
+ * every time a job ends. A narrator watching the job does not need an OS notification about it (N1); a job the
+ * narrator cancelled was not "finished" in a way worth telling them about elsewhere; and a job that took under 10s
+ * would just be noise (N3).
+ */
+export function shouldNotifyForJobEnd(event: JobEnded, focused: boolean): boolean {
+  if (focused) return false;
+  if (event.outcome === 'cancelled') return false;
+  if (!NOTIFIABLE_JOB_KINDS.has(event.kind)) return false;
+  return event.durationMs >= NOTIFY_THRESHOLD_MS;
+}
+
+/** The title and body for the OS notification `shouldNotifyForJobEnd` approved. */
+export function notificationForJobEnd(event: JobEnded): { title: string; body: string } {
+  if (event.outcome === 'error') return { title: 'Task failed', body: event.message || 'A background task failed.' };
+  return { title: 'Task finished', body: event.message || 'A background task finished.' };
+}

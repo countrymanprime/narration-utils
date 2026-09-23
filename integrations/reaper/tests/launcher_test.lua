@@ -61,6 +61,7 @@ H.test('the launcher starts the app with the session, project and DAW arguments,
   H.contains(command, session_root .. package.config:sub(1, 1) .. 'hub_1001')
   H.contains(command, "--project-folder '" .. H.join(root, 'Projects') .. "'")
   H.contains(command, "--project-name 'Book'")
+  H.contains(command, "--project-file '" .. H.join(H.join(root, 'Projects'), 'Book.rpp') .. "'")
   H.contains(command, "--daw 'REAPER'")
   H.eq(command:find('--repo-root', 1, true), nil, 'a release bundle passes no development paths')
   H.eq(#fake.deferred, 1, 'the bridge loop is running')
@@ -84,6 +85,25 @@ H.test('an unsaved project launches with an empty project folder and a placehold
   local command = calls_named(fake, 'ExecProcess')[1].command
   H.contains(command, "--project-folder ''")
   H.contains(command, "--project-name 'Unsaved REAPER project'")
+  -- W5: an unsaved REAPER project has no file to link, so the app gets an
+  -- empty --project-file and falls back to the picker instead of guessing.
+  H.contains(command, "--project-file ''")
+end)
+
+-- PRD project-workspace-and-daw-link.prd.md Phase 5: the launcher passes the
+-- exact rpp path as --project-file so the app can map it back to whichever
+-- project's manifest links it (W5), even when that project's folder is not
+-- the rpp's own containing folder (W4).
+H.test('the launcher passes the exact rpp path as --project-file', function()
+  local fake, _, scripts = bundle()
+  fake.project_path = H.join(H.join(H.join(fake.resource_path, '..'), 'Elsewhere'), 'Novel.rpp')
+  dofile(H.join(scripts, 'NarrationUtils_Launcher.lua'))
+  local command = calls_named(fake, 'ExecProcess')[1].command
+  H.contains(command, "--project-file '" .. fake.project_path .. "'")
+  -- --project-folder still carries the rpp's own containing folder, unchanged:
+  -- the Go side is what maps --project-file back to the linked project (W4/W5),
+  -- not the launcher.
+  H.contains(command, "--project-folder '" .. H.join(H.join(fake.resource_path, '..'), 'Elsewhere') .. "'")
 end)
 
 H.test('without a built app the launcher explains setup and starts nothing', function()

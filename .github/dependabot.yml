@@ -14,10 +14,12 @@ updates:
       tooling:
         update-types: [minor, patch]
     ignore:
-      # TypeScript 7 ships no JS API and typescript-eslint cannot run on it (peer range <6.1), so the bump breaks
-      # lint and two tests. Lift this when docs/prds/typescript-7-and-typed-linting.prd.md phase 1 lands.
+      # Phase 1 of docs/prds/typescript-7-and-typed-linting.prd.md moved `typescript` to the 6.0.x line, which
+      # typescript-eslint's peer range (<6.1.0) accepts, so Dependabot may propose 6.x updates again. TypeScript 7
+      # still ships no JS API and breaks typescript-eslint and two guard tests, so 7.x stays ignored until phase 2
+      # adds the `@typescript/native` + `@typescript/typescript6` split.
       - dependency-name: typescript
-        update-types: ["version-update:semver-major"]
+        versions: [">=7.0.0"]
   - package-ecosystem: uv
     directory: /
     schedule:

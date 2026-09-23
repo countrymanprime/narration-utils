@@ -79,7 +79,9 @@ export function ManuscriptSelectFile():Promise<string>;
 
 export function ManuscriptSetChapterStatus(arg1:string,arg2:string):Promise<string>;
 
-export function ProjectCreate(arg1:string,arg2:string):Promise<string>;
+export function ProjectCreateIn(arg1:string,arg2:string):Promise<string>;
+
+export function ProjectLinkDawFile():Promise<string>;
 
 export function ProjectRecents():Promise<string>;
 
@@ -90,6 +92,8 @@ export function ProjectSelectFolder():Promise<string>;
 export function ProjectSwitch(arg1:string,arg2:string):Promise<string>;
 
 export function Ready():Promise<Record<string, any>>;
+
+export function SystemNotify(arg1:string,arg2:string,arg3:string):Promise<string>;
 
 export function SystemReportDiagnostic(arg1:string,arg2:string):Promise<string>;
 

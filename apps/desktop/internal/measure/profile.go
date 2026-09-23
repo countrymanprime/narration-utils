@@ -99,6 +99,7 @@ func baseEvidence(profile Profile, check metricCheck) map[string]any {
 }
 
 func newFinding(report Report, profile Profile, check metricCheck, kind string, severity findings.Severity, reason string, evidence map[string]any) findings.Finding {
+	confidence := 1.0
 	return findings.Finding{
 		SchemaVersion:    findings.SchemaVersion,
 		ID:               findings.StableID(analyzerName, report.File, profile.Name, check.name, kind),
@@ -106,7 +107,7 @@ func newFinding(report Report, profile Profile, check metricCheck, kind string, 
 		Source:           findings.Source{File: report.File},
 		Category:         findings.CategoryDeliveryQC,
 		Severity:         severity,
-		Confidence:       1,
+		Confidence:       &confidence,
 		ConfidenceReason: reason,
 		Evidence:         evidence,
 		Review:           findings.ReviewState{Status: findings.StatusUnreviewed},

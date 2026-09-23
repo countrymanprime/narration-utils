@@ -158,8 +158,12 @@ export function ManuscriptSetChapterStatus(arg1, arg2) {
   return window['go']['main']['Host']['ManuscriptSetChapterStatus'](arg1, arg2);
 }
 
-export function ProjectCreate(arg1, arg2) {
-  return window['go']['main']['Host']['ProjectCreate'](arg1, arg2);
+export function ProjectCreateIn(arg1, arg2) {
+  return window['go']['main']['Host']['ProjectCreateIn'](arg1, arg2);
+}
+
+export function ProjectLinkDawFile() {
+  return window['go']['main']['Host']['ProjectLinkDawFile']();
 }
 
 export function ProjectRecents() {
@@ -180,6 +184,10 @@ export function ProjectSwitch(arg1, arg2) {
 
 export function Ready() {
   return window['go']['main']['Host']['Ready']();
+}
+
+export function SystemNotify(arg1, arg2, arg3) {
+  return window['go']['main']['Host']['SystemNotify'](arg1, arg2, arg3);
 }
 
 export function SystemReportDiagnostic(arg1, arg2) {

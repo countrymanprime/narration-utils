@@ -24,6 +24,11 @@ export const bootstrapSchema = z.object({
   projectFolder: z.string(),
   projectName: z.string(),
   daw: z.string(),
+  // Defaulted to false so a Bootstrap from a host that predates these fields (W13) still parses instead of failing the whole payload;
+  // false reads as "not linked" / "unknown", which is the safe fallback for each.
+  dawFileLinked: z.boolean().default(false),
+  dawReachable: z.boolean().default(false),
+  dawProjectMatches: z.boolean().default(false),
   manuscript: importedManuscriptSchema.nullable(),
   manuscriptCandidate: z.object({ path: z.string(), name: z.string() }).nullish(),
   runtime: z.record(z.string(), z.record(z.string(), z.string())),
