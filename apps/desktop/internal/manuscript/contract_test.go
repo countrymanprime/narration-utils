@@ -42,7 +42,7 @@ func TestContractImportJobsAndReaderPayloads(t *testing.T) {
 	}
 	pin(t, "manuscript-import-preview", volatileJob(preview))
 
-	committed, err := service.Commit(job.ID, false, nil)
+	committed, err := service.Commit(job.ID, false, Choices{})
 	if err != nil || committed.Phase != "success" {
 		t.Fatalf("commit = %#v, %v", committed, err)
 	}
@@ -121,7 +121,7 @@ func TestContractReaderStateOfAManuscriptNobodyHasReadYet(t *testing.T) {
 	if _, err := service.Preview(job.ID, 1); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Commit(job.ID, false, nil); err != nil {
+	if _, err := service.Commit(job.ID, false, Choices{}); err != nil {
 		t.Fatal(err)
 	}
 	pin(t, "manuscript-reader-state-empty", service.ReaderState())
@@ -165,4 +165,21 @@ func TestContractImportPreviewCarriesRepairs(t *testing.T) {
 		t.Fatal(err)
 	}
 	pin(t, "manuscript-import-preview-repaired", volatileJob(preview))
+}
+
+// A plain-text heading's second line is a line of text, so its preview says the subtitle returns to the body when the narrator
+// turns it off (subtitleOff "body"; story-bible-and-import-ux-briefs PRD, Phase 5). The Markdown preview above pins "title".
+func TestContractImportPreviewWithAPlainTextSubtitleLine(t *testing.T) {
+	project := t.TempDir()
+	source := filepath.Join(project, "book.txt")
+	if err := os.WriteFile(source, []byte("Chapter One\n“Water finds its level.”\n\nThe rain had not stopped.\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	service := New(project)
+	job := service.Begin(source)
+	preview, err := service.Preview(job.ID, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pin(t, "manuscript-import-preview-text-subtitle", volatileJob(preview))
 }

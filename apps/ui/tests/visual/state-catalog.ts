@@ -84,6 +84,17 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'import-review-repaired',
     description: 'Home, import review of a Word file whose headings the importer repaired: the repairs are listed as a group',
   },
+  {
+    page: 'home',
+    state: 'import-review-subtitles-off',
+    description:
+      'Home, import review with "Read a heading\'s second line as its subtitle" turned off and one row turned back on: the other subtitles are joined to their titles',
+  },
+  {
+    page: 'home',
+    state: 'import-review-text-subtitle',
+    description: "Home, import review of a plain-text file with the first chapter's subtitle turned off: the epigraph under the heading is read as text",
+  },
 
   {
     page: 'home',

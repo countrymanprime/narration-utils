@@ -379,7 +379,11 @@ func (h *Host) ManuscriptImportPreview(jobID string, markdownHeadingLevel int) (
 	// staged progress and log (ADR-0015).
 	return encodeBinding(h.services().manuscript.StartPreview(jobID, markdownHeadingLevel))
 }
-func (h *Host) ManuscriptImportCommit(jobID string, confirmedReset bool, sectionKinds map[string]string, characterCandidateIDs []string) (string, error) {
+
+// ManuscriptImportCommit writes the previewed manuscript with the narrator's review choices: each section's kind, the character
+// suggestions to seed, and, for a section with a subtitle, whether it is one (subtitleOverrides, keyed by section id; false joins
+// the line to the title or returns it to the body, story-bible-and-import-ux-briefs PRD, Phase 5).
+func (h *Host) ManuscriptImportCommit(jobID string, confirmedReset bool, sectionKinds map[string]string, characterCandidateIDs []string, subtitleOverrides map[string]bool) (string, error) {
 	svc := h.services()
 	var post manuscript.PostCommit
 	if state, err := svc.manuscript.State(jobID); err == nil && state.Draft != nil && svc.guide != nil {
@@ -391,7 +395,8 @@ func (h *Host) ManuscriptImportCommit(jobID string, confirmedReset bool, section
 			return nil
 		}
 	}
-	return encodeBinding(svc.manuscript.StartCommit(jobID, confirmedReset, sectionKinds, post))
+	choices := manuscript.Choices{SectionKinds: sectionKinds, SubtitleOverrides: subtitleOverrides}
+	return encodeBinding(svc.manuscript.StartCommit(jobID, confirmedReset, choices, post))
 }
 
 // seedCharacterCandidates writes the user's checked character suggestions

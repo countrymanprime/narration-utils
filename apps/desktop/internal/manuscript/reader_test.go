@@ -21,7 +21,7 @@ func importReaderFixture(t *testing.T) (*Service, string, string) {
 	if err != nil || preview.Phase != "ready" {
 		t.Fatalf("preview = %#v, %v", preview, err)
 	}
-	completed, err := service.Commit(job.ID, false, nil)
+	completed, err := service.Commit(job.ID, false, Choices{})
 	if err != nil || completed.Phase != "success" {
 		t.Fatalf("commit = %#v, %v", completed, err)
 	}

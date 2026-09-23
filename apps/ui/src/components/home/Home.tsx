@@ -9,7 +9,7 @@ import type { Bootstrap } from '../../types';
 import { Heading } from '../primitives/Heading';
 import { AudiobookEstimatePanel } from './AudiobookEstimatePanel';
 import { ImportReview, ImportSummary } from './ImportReview';
-import type { ReviewGroupKey, ReviewGroupOpen } from './importReviewModel';
+import { subtitleOverridesToCommit, type ReviewGroupKey, type ReviewGroupOpen } from './importReviewModel';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { WorkDialog } from '../primitives/WorkDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
@@ -191,7 +191,12 @@ export function Home({
       setImportJob(
         await api.manuscriptImportCommit(importJob.id, {
           confirmedReset: Boolean(importJob.requiresReset),
-          selection: { sectionKinds: importSelection.sectionKinds, characterCandidateIds: selectedCharacterCandidateIds },
+          selection: {
+            sectionKinds: importSelection.sectionKinds,
+            characterCandidateIds: selectedCharacterCandidateIds,
+            // The review's default and the rows set by hand, resolved: every section whose subtitle is turned off.
+            subtitleOverrides: importJob.preview ? subtitleOverridesToCommit(importJob.preview, importSelection) : undefined,
+          },
         }),
       );
     } catch (error) {

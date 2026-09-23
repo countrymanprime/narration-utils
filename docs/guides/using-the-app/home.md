@@ -66,7 +66,12 @@ Importing (or replacing) the manuscript opens a confirm dialog previewing the de
 paragraph count, and proposed chapters before anything changes. Each section is listed with its
 subtitle after the title ("Chapter One — Down the Rabbit-Hole") when the heading had one, so you can
 check that the importer split the title from the subtitle where you meant it to; a long one is cut
-short in the row, and hovering it shows the whole line.
+short in the row, and hovering it shows the whole line. If a heading's second line is not really a
+subtitle, clear that row's **Subtitle** box: a title that was wrapped onto two lines is joined back
+together ("The Girl Who Fell Through the Ice"), and in a plain-text file a line such as an epigraph
+goes back into the chapter's text so it is narrated (the row says it "is read as text"). The
+**Read a heading's second line as its subtitle** option in Import options does the same for every
+row at once; a row you changed by hand keeps your choice.
 
 ![Home - import manuscript confirm dialog with format/paragraph/chapter preview](../../images/ui/home-import-confirm.webp)
 
@@ -80,7 +85,8 @@ list too) and that it stays readable in the manuscript. Groups that need a decis
 long lists of chapters the importer got right start closed; open or close any group with its
 heading. The character suggestions have Select all and Select none. If the importer had to
 repair a heading (a title and a subtitle that were run together), the repairs are listed at the
-end. For a Markdown file an **Import options** group holds the chapter heading level.
+end. The **Import options** group holds the subtitle option, the choice to build the Story Bible
+after import, and, for a Markdown file, the chapter heading level.
 
 Every dialog in the app can be used from the keyboard. Focus starts inside the dialog (on its
 message, outlined when you opened it with the keyboard), Tab and Shift+Tab stay inside it, and the

@@ -199,7 +199,19 @@ describe('wailsClient', () => {
       selection: { sectionKinds: { 's-1': 'narration' }, characterCandidateIds: ['candidate-1', 'candidate-2'] },
     });
 
-    expect(commit).toHaveBeenCalledWith('import-1', false, { 's-1': 'narration' }, ['candidate-1', 'candidate-2']);
+    expect(commit).toHaveBeenCalledWith('import-1', false, { 's-1': 'narration' }, ['candidate-1', 'candidate-2'], {});
+  });
+
+  it('forwards the subtitles the narrator turned off when committing a manuscript import', async () => {
+    const commit = vi
+      .fn()
+      .mockResolvedValue(JSON.stringify({ id: 'import-1', kind: 'manuscript_import', phase: 'success', message: '', percent: 100, logs: [], elapsed: 0 }));
+    window.go = { main: { Host: { ManuscriptImportCommit: commit } } };
+
+    await wailsClient.manuscriptImportCommit('import-1', { confirmedReset: true, selection: { subtitleDefault: false, subtitleOverrides: { 's-1': false } } });
+
+    // The review's default is resolved into the overrides before the commit: the host never receives it.
+    expect(commit).toHaveBeenCalledWith('import-1', true, {}, [], { 's-1': false });
   });
 
   it('uses the native project-attach event for safe single-instance handoff', () => {

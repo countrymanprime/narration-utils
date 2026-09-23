@@ -22,7 +22,7 @@ func newTestHostForMapping(t *testing.T) (*Host, string) {
 	if _, err := service.Preview(job.ID, 1); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Commit(job.ID, false, nil); err != nil {
+	if _, err := service.Commit(job.ID, false, manuscript.Choices{}); err != nil {
 		t.Fatal(err)
 	}
 	chapters, err := service.Chapters()

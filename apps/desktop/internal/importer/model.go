@@ -15,6 +15,12 @@ type Paragraph struct {
 	Text            string  `json:"text"`
 	Spans           []Span  `json:"spans,omitempty"`
 	SourceIndex     int     `json:"sourceIndex"`
+	// SubtitleReturnsToBody says the subtitle was a line of plain text under the heading (a two-line plain-text heading block), not
+	// part of the heading itself, so a narrator who says it is not a subtitle wants it back as the chapter's first paragraph rather
+	// than joined to the title (story-bible-and-import-ux-briefs PRD, Phase 5; case F3 of docs/research/import-heading-misreads.md).
+	// Set only on the first paragraph under that heading, which is where the line goes back, so a repeated heading loses no line.
+	// Never written to the canonical manuscript.
+	SubtitleReturnsToBody bool `json:"-"`
 }
 
 type DraftSection struct {
@@ -22,7 +28,10 @@ type DraftSection struct {
 	Title string `json:"title"`
 	// Subtitle is the first paragraph's chapter subtitle, the one the chapter takes when the manuscript is written
 	// (manuscript.canonicalize), so the review shows what the chapter will be called. Empty when the heading had none.
-	Subtitle       string `json:"subtitle,omitempty"`
+	Subtitle string `json:"subtitle,omitempty"`
+	// SubtitleOff is where the subtitle's line goes if the narrator says it is not a subtitle (ApplySubtitleOverrides):
+	// SubtitleOffJoinsTitle or SubtitleOffReturnsToBody. Empty when there is no subtitle.
+	SubtitleOff    string `json:"subtitleOff,omitempty"`
 	ContentKind    string `json:"contentKind"`
 	ParagraphCount int    `json:"paragraphCount"`
 }
@@ -343,7 +352,8 @@ func newDraft(format, sourceName string, paragraphs []Paragraph, titles []string
 				}
 			}
 		}
-		sections = append(sections, DraftSection{ID: id, Title: group.title, Subtitle: firstSubtitle(paragraphs, group.indexes), ContentKind: contentKind, ParagraphCount: len(group.indexes)})
+		subtitle := firstSubtitle(paragraphs, group.indexes)
+		sections = append(sections, DraftSection{ID: id, Title: group.title, Subtitle: subtitle, SubtitleOff: subtitleOff(paragraphs, group.indexes, subtitle), ContentKind: contentKind, ParagraphCount: len(group.indexes)})
 	}
 	scanner.commit()
 	return Draft{Format: format, SourceName: sourceName, Paragraphs: paragraphs, Sections: sections, CharacterCandidates: scanner.candidates, ChapterTitles: titles}, nil

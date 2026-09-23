@@ -87,9 +87,10 @@ const mockUpdate = (
 const mockAssets = (['missing', 'downloading', 'verifying', 'download-fails', 'installing', 'checking', 'damaged'] as const).find(
   (seed) => seed === mockParams.get('mockAssets'),
 );
-// `?mockImportPreview=markdown|repaired` makes the next manuscript import a Markdown file (so the chapter heading level choice can be seen in the review dialog) or a
-// Word file whose headings the importer had to repair (so the repairs note can).
-const mockImportPreview = (['markdown', 'repaired'] as const).find((kind) => kind === mockParams.get('mockImportPreview'));
+// `?mockImportPreview=markdown|repaired|text` makes the next manuscript import a Markdown file (so the chapter heading level choice can be seen in the review dialog), a
+// Word file whose headings the importer had to repair (so the repairs note can), or a plain-text file with an epigraph read as a subtitle (so a subtitle
+// that returns to the text when it is turned off can).
+const mockImportPreview = (['markdown', 'repaired', 'text'] as const).find((kind) => kind === mockParams.get('mockImportPreview'));
 // `?mockChapterLink=missing` seeds the first chapter with a confirmed link to a track GUID that is not in the mock
 // REAPER project, so the Tracks page's "Track missing" state can be seen without confirming and then deleting a
 // track first (analysis evidence ledger PRD, Phase 7).

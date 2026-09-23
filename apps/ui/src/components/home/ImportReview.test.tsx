@@ -131,7 +131,8 @@ describe('ImportReview', () => {
     expect(screen.getByText(/2 of 3 character suggestions checked/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Select none' }));
     expect(groupButton(/^Story Bible character suggestions 0 of 3 checked$/)).toBeTruthy();
-    expect(screen.getAllByRole('checkbox').every((box) => box.getAttribute('aria-checked') === 'false')).toBe(true);
+    for (const name of ['Alice', 'The White Rabbit', 'The Duchess'])
+      expect(screen.getByRole('checkbox', { name: new RegExp(`^${name}`) }).getAttribute('aria-checked')).toBe('false');
     await user.click(screen.getByRole('button', { name: 'Select all' }));
     expect(groupButton(/^Story Bible character suggestions 3 of 3 checked$/)).toBeTruthy();
   });
@@ -154,9 +155,11 @@ describe('ImportReview', () => {
     expect(onHeadingLevelChange).toHaveBeenCalledWith(3);
   });
 
-  it('a Word file has no options to show, and no checkbox for building the Story Bible until it is handed one', () => {
-    renderReview('docx');
+  it('a Word file with no subtitles has no options to show, and no checkbox for building the Story Bible until it is handed one', () => {
+    const preview = mockImportPreview('docx');
+    render(<Harness preview={{ ...preview, sections: preview.sections?.map(({ subtitle: _subtitle, subtitleOff: _off, ...section }) => section) }} />);
     expect(screen.queryByText('Import options')).toBeNull();
+    expect(screen.queryByRole('checkbox', { name: /subtitle/i })).toBeNull();
     expect(screen.queryByRole('checkbox', { name: /Build the Story Bible after import/ })).toBeNull();
   });
 
@@ -175,6 +178,47 @@ describe('ImportReview', () => {
     const row = screen.getByText('Chapter Four');
     expect(row.className).toContain('truncate');
     expect(row.getAttribute('title')).toMatch(/^Chapter Four — In Which Alice Considers/);
+  });
+});
+
+describe('ImportReview subtitles (story-bible-and-import-ux-briefs PRD, Phase 5)', () => {
+  const subtitleBox = (subtitle: string) => screen.getByRole('checkbox', { name: `Subtitle — ${subtitle}` });
+  const rowOf = (select: string) => screen.getByRole('combobox', { name: new RegExp(`^${select}.* content type$`) });
+
+  it('gives every row with a subtitle a checked Subtitle box, named by its line, and none to a row without one', () => {
+    renderReview();
+    for (const subtitle of ['Down the Rabbit-Hole', 'The Pool of Tears']) expect(subtitleBox(subtitle).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getAllByRole('checkbox', { name: /^Subtitle — / })).toHaveLength(3);
+    expect(screen.getByRole('checkbox', { name: "Read a heading's second line as its subtitle" }).getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('joins a line turned off to the title in a Word file, in the row and in its select, and keeps the others', async () => {
+    const user = userEvent.setup();
+    renderReview();
+    await user.click(subtitleBox('Down the Rabbit-Hole'));
+    expect(subtitleBox('Down the Rabbit-Hole').getAttribute('aria-checked')).toBe('false');
+    expect(screen.getByText('Chapter One Down the Rabbit-Hole').getAttribute('title')).toBe('Chapter One Down the Rabbit-Hole');
+    expect(screen.getByRole('combobox', { name: 'Chapter One Down the Rabbit-Hole content type' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Chapter Two — The Pool of Tears content type' })).toBeTruthy();
+  });
+
+  it('says a line turned off in a plain-text file is read as text', async () => {
+    const user = userEvent.setup();
+    renderReview('text');
+    await user.click(subtitleBox('“Curiouser and curiouser!” cried Alice'));
+    expect(rowOf('Chapter One').getAttribute('aria-label')).toBe('Chapter One · “Curiouser and curiouser!” cried Alice is read as text content type');
+    expect(screen.getByText(/is read as text$/)).toBeTruthy();
+  });
+
+  it('turns every row off from the default, and a row set by hand keeps its own answer', async () => {
+    const user = userEvent.setup();
+    renderReview();
+    await user.click(subtitleBox('The Pool of Tears'));
+    await user.click(subtitleBox('The Pool of Tears'));
+    await user.click(screen.getByRole('checkbox', { name: "Read a heading's second line as its subtitle" }));
+    expect(subtitleBox('Down the Rabbit-Hole').getAttribute('aria-checked')).toBe('false');
+    expect(subtitleBox('The Pool of Tears').getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('combobox', { name: /^Chapter Four In Which Alice Considers/ })).toBeTruthy();
   });
 });
 

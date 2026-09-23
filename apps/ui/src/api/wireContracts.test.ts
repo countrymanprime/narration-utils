@@ -94,6 +94,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'manuscript-import-selected.json': workJobSchema,
   'manuscript-import-preview.json': workJobSchema,
   'manuscript-import-preview-repaired.json': workJobSchema,
+  'manuscript-import-preview-text-subtitle.json': workJobSchema,
   'manuscript-import-success.json': workJobSchema,
   'manuscript-chapters.json': chaptersSchema,
   'manuscript-chapter-status.json': chapterSchema,
@@ -492,18 +493,26 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(workJobSchema, await api.manuscriptImportCommit(jobId, { confirmedReset: true }), 'mock import commit');
   });
 
-  it.each(['docx', 'markdown', 'repaired'] as const)(
+  it.each(['docx', 'markdown', 'repaired', 'text'] as const)(
     'the %s import preview the review dialog is built on, sections of every kind and character suggestions',
     async (kind) => {
       const api = createMockApi({}, { importPreview: kind });
       const jobId = (await api.selectManuscript()).jobId ?? '';
       const job = await api.manuscriptImportPreview(jobId, { markdownHeadingLevel: 1 });
       expectMatches(workJobSchema, job, `mock ${kind} import preview`);
-      expect(job.preview?.format).toBe(kind === 'markdown' ? 'markdown' : 'docx');
+      expect(job.preview?.format).toBe({ docx: 'docx', markdown: 'markdown', repaired: 'docx', text: 'txt' }[kind]);
+      // Every subtitle says where its line goes when it is turned off, as the host's does (a plain-text line returns to the text).
+      const subtitled = job.preview?.sections?.filter((section) => section.subtitle) ?? [];
+      expect(subtitled.length).toBeGreaterThan(0);
+      for (const section of subtitled) expect(section.subtitleOff).toBe(kind === 'text' ? 'body' : 'title');
       expect(job.preview?.notices !== undefined).toBe(kind === 'repaired');
       expect(new Set(job.preview?.sections?.map((section) => section.contentKind))).toEqual(new Set(['narration', 'opening', 'reference']));
       expect(job.preview?.characterCandidates).toHaveLength(3);
-      expectMatches(workJobSchema, await api.manuscriptImportCommit(jobId, { confirmedReset: false }), `mock ${kind} import commit`);
+      expectMatches(
+        workJobSchema,
+        await api.manuscriptImportCommit(jobId, { confirmedReset: false, selection: { subtitleOverrides: { [subtitled[0]?.id ?? '']: false } } }),
+        `mock ${kind} import commit`,
+      );
     },
   );
 

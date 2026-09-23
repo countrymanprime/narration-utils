@@ -21,7 +21,7 @@ func TestCommitCreatesProjectOwnedCanonicalManuscript(t *testing.T) {
 	if err != nil || preview.Phase != "ready" {
 		t.Fatalf("preview = %#v, %v", preview, err)
 	}
-	committed, err := service.Commit(job.ID, false, nil)
+	committed, err := service.Commit(job.ID, false, Choices{})
 	if err != nil || committed.Phase != "success" {
 		t.Fatalf("commit = %#v, %v", committed, err)
 	}
@@ -45,7 +45,7 @@ func TestCommittedManuscriptKeepsLineBreaksAndFormattingSpans(t *testing.T) {
 	if _, err := service.Preview(job.ID, 1); err != nil {
 		t.Fatal(err)
 	}
-	if committed, err := service.Commit(job.ID, false, nil); err != nil || committed.Phase != "success" {
+	if committed, err := service.Commit(job.ID, false, Choices{}); err != nil || committed.Phase != "success" {
 		t.Fatalf("commit = %#v, %v", committed, err)
 	}
 	reader, err := service.Reader()
@@ -85,7 +85,7 @@ func TestImportJobReportsRealProgressAndLogs(t *testing.T) {
 		report(100, "Adding character 2 of 2")
 		return nil
 	}
-	if _, err := service.StartCommit(job.ID, false, nil, post); err != nil {
+	if _, err := service.StartCommit(job.ID, false, Choices{}, post); err != nil {
 		t.Fatal(err)
 	}
 	done := waitForJob(t, service, job.ID, "success")
@@ -161,14 +161,14 @@ func TestReplacementRequiresExplicitConfirmation(t *testing.T) {
 	if _, err := service.Preview(first.ID, 1); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Commit(first.ID, false, nil); err != nil {
+	if _, err := service.Commit(first.ID, false, Choices{}); err != nil {
 		t.Fatal(err)
 	}
 	second := service.Begin(layout.RepoFile(layout.FixturesDir + "/alice.md"))
 	if _, err := service.Preview(second.ID, 1); err != nil {
 		t.Fatal(err)
 	}
-	job, err := service.Commit(second.ID, false, nil)
+	job, err := service.Commit(second.ID, false, Choices{})
 	if err != nil || !job.RequiresReset {
 		t.Fatalf("expected reset confirmation, got %#v, %v", job, err)
 	}
@@ -193,7 +193,7 @@ func TestPreviewSectionSubtitlesAreTheSubtitlesTheWrittenChaptersGet(t *testing.
 	if !ok || len(sections) != 2 {
 		t.Fatalf("preview sections = %#v", preview.Preview["sections"])
 	}
-	if _, err := service.Commit(job.ID, false, nil); err != nil {
+	if _, err := service.Commit(job.ID, false, Choices{}); err != nil {
 		t.Fatal(err)
 	}
 	chapters, err := service.Chapters()
@@ -304,7 +304,7 @@ func TestClearRemovesTheAnalysisLedgerDirectoryAlongsideManuscriptData(t *testin
 	if _, err := service.Preview(job.ID, 1); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Commit(job.ID, false, nil); err != nil {
+	if _, err := service.Commit(job.ID, false, Choices{}); err != nil {
 		t.Fatal(err)
 	}
 	ledgerDir := evidence.LedgerDir(project)
@@ -353,7 +353,7 @@ func TestClearRemovesTheAnalysisCacheDirectoryAlongsideManuscriptData(t *testing
 	if _, err := service.Preview(job.ID, 1); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Commit(job.ID, false, nil); err != nil {
+	if _, err := service.Commit(job.ID, false, Choices{}); err != nil {
 		t.Fatal(err)
 	}
 	cacheDir := evidence.CacheDir(project)
@@ -402,7 +402,7 @@ func TestClearRemovesTheChapterTrackMappingFileAlongsideManuscriptData(t *testin
 	if _, err := service.Preview(job.ID, 1); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Commit(job.ID, false, nil); err != nil {
+	if _, err := service.Commit(job.ID, false, Choices{}); err != nil {
 		t.Fatal(err)
 	}
 	mappingFile := evidence.MappingFile(project)

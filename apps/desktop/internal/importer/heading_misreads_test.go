@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"testing"
 )
@@ -25,6 +26,11 @@ type headingMisreadCase struct {
 		Subtitle       string   `json:"subtitle"`
 		FirstParagraph string   `json:"firstParagraph"`
 	} `json:"observed"`
+	// Override is the per-heading subtitle choice that reads the case as intended (Phase 5), on the cases it can fix.
+	Override *struct {
+		SecondLineIsSubtitle bool   `json:"secondLineIsSubtitle"`
+		FirstParagraph       string `json:"firstParagraph"`
+	} `json:"override"`
 }
 
 const headingMisreadsDir = "heading-misreads"
@@ -75,6 +81,51 @@ func TestHeadingMisreadFixtures(t *testing.T) {
 				t.Fatalf("mode %q but the heading was read as %q / %q against the intended %q / %q", testCase.Mode, title, subtitle, testCase.Intended.Title, testCase.Intended.Subtitle)
 			}
 		})
+	}
+}
+
+// TestHeadingMisreadOverrides applies each case's subtitle override the way the commit does and expects what the author meant: the
+// wrapped titles (F1) join back together and the plain-text epigraph (F3) is narrated again. Every other case, the controls included,
+// is left exactly as the importer read it when no override is chosen (Phase 5's "importer fixtures unchanged for correct headings").
+func TestHeadingMisreadOverrides(t *testing.T) {
+	fixed := 0
+	for _, testCase := range loadHeadingMisreadCases(t) {
+		t.Run(testCase.ID, func(t *testing.T) {
+			draft, err := BuildDraft(fixture(headingMisreadsDir+"/"+testCase.File), 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			unchanged, err := ApplySubtitleOverrides(draft, nil)
+			if err != nil || !reflect.DeepEqual(unchanged, draft) {
+				t.Fatalf("no override changed the draft (err %v)", err)
+			}
+			if testCase.Override == nil {
+				return
+			}
+			fixed++
+			chapter := testCase.Observed.ChapterTitles[0]
+			id := ""
+			for _, section := range draft.Sections {
+				if section.Title == chapter {
+					id = section.ID
+				}
+			}
+			corrected, err := ApplySubtitleOverrides(draft, map[string]bool{id: testCase.Override.SecondLineIsSubtitle})
+			if err != nil {
+				t.Fatal(err)
+			}
+			intended := testCase.Intended
+			title, subtitle := firstChapterHeading(corrected, intended.Title)
+			if title != intended.Title || subtitle != intended.Subtitle {
+				t.Fatalf("heading after the override = %q / %q, want %q / %q (sections %+v)", title, subtitle, intended.Title, intended.Subtitle, corrected.Sections)
+			}
+			if first := firstParagraphOf(corrected, intended.Title); first != testCase.Override.FirstParagraph {
+				t.Fatalf("first paragraph after the override = %q, want %q", first, testCase.Override.FirstParagraph)
+			}
+		})
+	}
+	if fixed != 4 {
+		t.Fatalf("%d cases carry an override, want the 3 wrapped titles (F1) and the plain-text epigraph (F3)", fixed)
 	}
 }
 
