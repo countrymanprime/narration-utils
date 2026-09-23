@@ -446,9 +446,8 @@ demand: the docs at the root ([below](#the-public-docs-site)) and the Storybook 
   from `/narration-utils/` on a server that answers 404 for anything outside that folder and loading `index.html` and `iframe.html`
   in Chromium in light and dark (`globals=theme:dark`): no request failed, no page or console error, the stories rendered
   (2026-09-21, [PRD phase 9](../prds/release-readiness-provisioning-and-docs-site.prd.md)). Phase 11 put it one folder deeper
-  (`/narration-utils/storybook/`) and loaded it from there the same way; the docs pages use relative links only. The one thing outside the folder is
-  Google Fonts, which `apps/ui/.storybook/preview-head.html` loads for the story frame, the same three families `index.html` asks for; it is the
-  one third-party request the published atlas makes.
+  (`/narration-utils/storybook/`) and loaded it from there the same way; the docs pages use relative links only. The fonts are bundled
+  (`apps/ui/src/fonts.ts`, #238), so the published atlas makes no third-party request.
 - **Not enabled yet.** Pages is off for the repository and turning it on is an owner-only setting
   ([the table](github-workflow.md#repository-settings-that-only-the-owner-can-change)). Until then the `deploy` job fails with GitHub's
   "Pages is not enabled" message on each push to `main` and `build` passes. After the owner sets the source to GitHub Actions, re-run

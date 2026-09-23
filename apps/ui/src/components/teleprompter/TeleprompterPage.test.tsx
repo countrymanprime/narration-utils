@@ -8,17 +8,20 @@ import { createMockApi } from '../../api/mockApi';
 import { WIRE_TELEPROMPTER_DEVICES } from '../../api/mockFixtures';
 import type { NarrationApi, TeleprompterEvent, TeleprompterPosition, TeleprompterScript, TeleprompterState } from '../../types';
 
+// These tests use the mock's compact seed manuscript, not the full Alice text it loads for the demo.
+vi.mock('../../api/aliceManuscript', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../api/aliceManuscript')>()),
+  loadAliceManuscript: () => Promise.resolve(undefined),
+}));
+
 const DEVICE_NAME = WIRE_TELEPROMPTER_DEVICES[0].name;
 const OTHER_DEVICE_NAME = WIRE_TELEPROMPTER_DEVICES[1].name;
 
 beforeEach(() => {
-  // The mock would otherwise try to download the full Alice text; offline it uses the small fixture.
-  vi.stubGlobal('fetch', () => Promise.reject(new Error('offline')));
   window.localStorage.clear();
 });
 afterEach(() => {
   cleanup();
-  vi.unstubAllGlobals();
 });
 
 async function chapterScript(): Promise<TeleprompterScript> {

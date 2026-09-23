@@ -1,4 +1,5 @@
 import type { Decorator, Preview } from '@storybook/react-vite';
+import '../src/fonts';
 import '../src/styles.css';
 import { TooltipProvider } from '../src/components/primitives/Tooltip';
 import { applyResolvedTheme, type ResolvedTheme } from '../src/theme/theme';

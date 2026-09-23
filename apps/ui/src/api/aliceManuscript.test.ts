@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { loadAliceManuscript, parseAliceManuscript } from './aliceManuscript';
 import { aliceChapterSeeds } from './mockFixtures';
 
@@ -38,34 +38,21 @@ describe('parseAliceManuscript', () => {
 });
 
 describe('loadAliceManuscript', () => {
-  const originalFetch = globalThis.fetch;
-
-  afterEach(() => {
-    globalThis.fetch = originalFetch;
-  });
-
-  it('returns undefined when there is no fetch in this environment', async () => {
-    // @ts-expect-error deliberately removing fetch to exercise the environment guard
-    delete globalThis.fetch;
-    await expect(loadAliceManuscript(aliceChapterSeeds)).resolves.toBeUndefined();
-  });
-
-  it('returns undefined, without throwing, when the request fails (offline)', async () => {
-    globalThis.fetch = vi.fn().mockRejectedValue(new Error('network down'));
-    await expect(loadAliceManuscript(aliceChapterSeeds)).resolves.toBeUndefined();
-  });
-
-  it('returns undefined when the response is not ok', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, text: () => Promise.resolve('') });
-    await expect(loadAliceManuscript(aliceChapterSeeds)).resolves.toBeUndefined();
-  });
-
-  it('parses the response body when the request succeeds', async () => {
-    const source = sourceWith(12, 20);
-    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(source) });
-
+  it('parses the bundled Project Gutenberg text into the twelve chapters of the book', async () => {
     const manuscript = await loadAliceManuscript(aliceChapterSeeds);
 
     expect(manuscript?.chapters).toHaveLength(12);
+    expect(manuscript?.chapters[0]).toMatchObject({ subtitle: 'Down the Rabbit-Hole' });
+    expect(manuscript?.paragraphs.length).toBeGreaterThan(200);
+  });
+
+  it('returns undefined, without throwing, when the text cannot be loaded', async () => {
+    await expect(loadAliceManuscript(aliceChapterSeeds, () => Promise.reject(new Error('chunk failed')))).resolves.toBeUndefined();
+  });
+
+  it('parses the text it is given', async () => {
+    const manuscript = await loadAliceManuscript(aliceChapterSeeds, () => Promise.resolve(sourceWith(12, 20)));
+
+    expect(manuscript?.paragraphs).toHaveLength(240);
   });
 });
