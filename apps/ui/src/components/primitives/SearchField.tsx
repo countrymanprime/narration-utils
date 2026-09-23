@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
-import { useRef } from 'react';
+import { useRef, type KeyboardEvent } from 'react';
 import { IconButton } from './IconButton';
 import { TextField } from './TextField';
 import { TooltipTarget } from './Tooltip';
@@ -13,12 +13,17 @@ export function SearchField({
   onChange,
   placeholder,
   clearLabel = 'Clear search',
+  autoFocus = false,
+  onKeyDown,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   clearLabel?: string;
+  autoFocus?: boolean;
+  // Enter, in the manuscript search, fires the debounced query immediately (R1) instead of waiting.
+  onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;
 }) {
   const fieldRef = useRef<HTMLInputElement>(null);
   return (
@@ -29,6 +34,8 @@ export function SearchField({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        autoFocus={autoFocus}
+        onKeyDown={onKeyDown}
         style={value ? { paddingRight: '2.25rem' } : undefined}
       />
       {value && (

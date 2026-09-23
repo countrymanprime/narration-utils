@@ -1,7 +1,12 @@
 package manuscript
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 )
@@ -86,6 +91,145 @@ func TestReaderNotesStatusAndSearch(t *testing.T) {
 	}
 	if err := service.DeleteNote(text(note, "id")); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// Phase 2 of the reader search and controls PRD: the search cache (keyed by the file's own mtime
+// and size), the result cap, and the match offset the PRD's windowing helper (Phase 3) needs.
+
+func TestSearchReturnsTheMatchOffset(t *testing.T) {
+	service, _, _ := importReaderFixture(t)
+	hits, err := service.Search("alice")
+	if err != nil || len(hits) == 0 {
+		t.Fatalf("hits = %#v, %v", hits, err)
+	}
+	for _, hit := range hits {
+		excerpt, _ := hit["excerpt"].(string)
+		// A rune count (matchStart is a JS/UTF-16 index - see the multi-byte test below), so the
+		// fixture's real curly quotes and em dashes must be sliced by rune, not by Go byte string.
+		runes := []rune(excerpt)
+		offset, ok := hit["matchStart"].(int)
+		if !ok {
+			t.Fatalf("hit has no int matchStart: %#v", hit)
+		}
+		if offset < 0 || offset+len("alice") > len(runes) {
+			t.Fatalf("matchStart %d out of range for %q (%d runes)", offset, excerpt, len(runes))
+		}
+		if !strings.EqualFold(string(runes[offset:offset+len("alice")]), "alice") {
+			t.Fatalf("matchStart %d does not point at the match in %q", offset, excerpt)
+		}
+	}
+}
+
+// matchStart travels to the UI as a JS string index (UTF-16 code units). strings.Index returns a
+// UTF-8 byte offset, which agrees with the rune count only while every character before the match
+// is ASCII - a curly quote, an em dash or an accented letter (all ordinary in a manuscript) is
+// multiple bytes but one UTF-16 unit, so a byte offset would land the frontend's highlight short of
+// the real match. This proves the offset is a rune count, simulated here as a JS caller would slice
+// it (Go's []rune conversion, one element per code point - identical to a JS UTF-16 index for every
+// character in the Basic Multilingual Plane, which covers ordinary manuscript prose).
+func TestSearchMatchOffsetSurvivesMultiByteCharactersBeforeTheMatch(t *testing.T) {
+	project := t.TempDir()
+	text := "‘Well,’ she thought — a café with rabbits in it." // curly quotes, an em dash, an accented e
+	writeManuscript(t, project, []map[string]any{
+		{"id": "p0", "chapterId": "c1", "chapter": "Chapter One", "chapterTitle": "Chapter One", "index": 0, "text": text},
+	})
+	hits, err := New(project).Search("rabbits")
+	if err != nil || len(hits) != 1 {
+		t.Fatalf("hits = %#v, %v", hits, err)
+	}
+	offset, ok := hits[0]["matchStart"].(int)
+	if !ok {
+		t.Fatalf("hit has no int matchStart: %#v", hits[0])
+	}
+	runes := []rune(text)
+	if offset < 0 || offset+len("rabbits") > len(runes) {
+		t.Fatalf("matchStart %d out of range for %d runes", offset, len(runes))
+	}
+	if got := string(runes[offset : offset+len("rabbits")]); got != "rabbits" {
+		t.Fatalf("matchStart %d (as a rune/UTF-16 index) points at %q, not the match", offset, got)
+	}
+}
+
+func writeManuscript(t *testing.T, project string, paragraphs []map[string]any) string {
+	t.Helper()
+	dir := filepath.Join(project, "narration-utils", "manuscript")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "manuscript.json")
+	bytes, err := json.Marshal(map[string]any{"schemaVersion": 1, "chapters": []any{}, "paragraphs": paragraphs})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, bytes, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestSearchCapsResultsAtTheLimit(t *testing.T) {
+	project := t.TempDir()
+	paragraphs := make([]map[string]any, 0, maxSearchResults+50)
+	for i := range maxSearchResults + 50 {
+		paragraphs = append(paragraphs, map[string]any{
+			"id": "p", "chapterId": "c1", "chapter": "Chapter One", "chapterTitle": "Chapter One", "index": i, "text": "the quick fox",
+		})
+	}
+	writeManuscript(t, project, paragraphs)
+	hits, err := New(project).Search("fox")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) != maxSearchResults {
+		t.Fatalf("hits = %d, want the cap of %d", len(hits), maxSearchResults)
+	}
+}
+
+func TestLoadCachesTheManuscriptUntilTheFileActuallyChanges(t *testing.T) {
+	project := t.TempDir()
+	paragraph := func(text string) []map[string]any {
+		return []map[string]any{{"id": "p0", "chapterId": "c1", "chapter": "Chapter One", "chapterTitle": "Chapter One", "index": 0, "text": text}}
+	}
+	// Same byte length both times, so a same-size rewrite below can be pinned to the exact same
+	// mtime and size as the first write - proving the second Load() came from the cache, not a
+	// coincidence of timing (mtime resolution can be too coarse to tell two quick writes apart).
+	path := writeManuscript(t, project, paragraph("AAAAAAAAAAAAAA"))
+	stamp := time.Now().Truncate(time.Second)
+	if err := os.Chtimes(path, stamp, stamp); err != nil {
+		t.Fatal(err)
+	}
+	service := New(project)
+	first, err := service.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := text(objects(first["paragraphs"])[0], "text"); got != "AAAAAAAAAAAAAA" {
+		t.Fatalf("first paragraph text = %q", got)
+	}
+
+	writeManuscript(t, project, paragraph("BBBBBBBBBBBBBB"))
+	if err := os.Chtimes(path, stamp, stamp); err != nil { // same mtime as before, same size (14 chars either way)
+		t.Fatal(err)
+	}
+	second, err := service.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := text(objects(second["paragraphs"])[0], "text"); got != "AAAAAAAAAAAAAA" {
+		t.Fatalf("Load() re-read an unchanged (by mtime and size) file instead of serving the cache: got %q", got)
+	}
+
+	future := stamp.Add(time.Minute)
+	if err := os.Chtimes(path, future, future); err != nil {
+		t.Fatal(err)
+	}
+	third, err := service.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := text(objects(third["paragraphs"])[0], "text"); got != "BBBBBBBBBBBBBB" {
+		t.Fatalf("Load() kept serving the cache after the file's mtime changed: got %q", got)
 	}
 }
 

@@ -37,6 +37,13 @@ describe('the info icon (Tooltip)', () => {
     expect(screen.queryByRole('button', { name: 'More information' })).toBeNull();
   });
 
+  it('swaps the "i" glyph for a custom icon while keeping the same button contract (R11)', () => {
+    render(<Tooltip text={TEXT} label="Text size" icon={<span data-testid="custom-icon">F</span>} />);
+    const button = screen.getByRole('button', { name: 'Text size' });
+    expect(button.querySelector('[data-testid="custom-icon"]')).toBeTruthy();
+    expect(button.textContent).not.toContain('i');
+  });
+
   it('shows its text as a tooltip when the keyboard reaches it, and Escape hides it', async () => {
     const user = userEvent.setup();
     render(<Tooltip text={TEXT} />);
