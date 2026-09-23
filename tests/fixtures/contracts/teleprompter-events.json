@@ -101,6 +101,11 @@
       {
         "end": 1.35,
         "start": 1.2,
+        "word": "slowly"
+      },
+      {
+        "end": 1.55,
+        "start": 1.4,
         "word": "climbed"
       }
     ]
@@ -208,6 +213,13 @@
     "segment": 0,
     "start": 1.2,
     "type": "word",
+    "word": "slowly"
+  },
+  {
+    "end": 1.55,
+    "segment": 0,
+    "start": 1.4,
+    "type": "word",
     "word": "climbed"
   },
   {
@@ -219,9 +231,9 @@
     "type": "position"
   },
   {
-    "end": 1.55,
+    "end": 1.75,
     "segment": 0,
-    "start": 1.4,
+    "start": 1.6,
     "type": "word",
     "word": "the"
   },
@@ -234,24 +246,16 @@
     "type": "position"
   },
   {
-    "end": 1.75,
-    "segment": 0,
-    "start": 1.6,
-    "type": "word",
-    "word": "spiral"
-  },
-  {
-    "committed": 9,
-    "jump": null,
-    "read": 9,
-    "skipped": null,
-    "status": "listening",
-    "type": "position"
-  },
-  {
     "end": 1.95,
     "segment": 0,
     "start": 1.8,
+    "type": "word",
+    "word": "curly"
+  },
+  {
+    "end": 2.15,
+    "segment": 0,
+    "start": 2.0,
     "type": "word",
     "word": "stairs"
   },
@@ -266,6 +270,22 @@
   {
     "segment": 0,
     "type": "segment_end"
+  },
+  {
+    "end": 6,
+    "heard": "slowly",
+    "id": 1,
+    "kind": "extra",
+    "start": 6,
+    "type": "flag"
+  },
+  {
+    "end": 9,
+    "heard": "curly",
+    "id": 2,
+    "kind": "misread",
+    "start": 8,
+    "type": "flag"
   },
   {
     "segment": 1,
@@ -396,5 +416,186 @@
   {
     "segment": 1,
     "type": "segment_end"
+  },
+  {
+    "end": 22,
+    "heard": "",
+    "id": 3,
+    "kind": "skipped",
+    "start": 10,
+    "type": "flag"
+  },
+  {
+    "segment": 2,
+    "type": "partial",
+    "words": [
+      {
+        "end": 0.15,
+        "start": 0.0,
+        "word": "at"
+      },
+      {
+        "end": 0.35,
+        "start": 0.2,
+        "word": "sea"
+      },
+      {
+        "end": 0.55,
+        "start": 0.4,
+        "word": "a"
+      },
+      {
+        "end": 0.75,
+        "start": 0.6,
+        "word": "small"
+      }
+    ]
+  },
+  {
+    "committed": 29,
+    "jump": "restart",
+    "read": 28,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 0.15,
+    "segment": 2,
+    "start": 0.0,
+    "type": "word",
+    "word": "at"
+  },
+  {
+    "committed": 29,
+    "jump": null,
+    "read": 29,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 0.35,
+    "segment": 2,
+    "start": 0.2,
+    "type": "word",
+    "word": "sea"
+  },
+  {
+    "end": 0.55,
+    "segment": 2,
+    "start": 0.4,
+    "type": "word",
+    "word": "a"
+  },
+  {
+    "committed": 27,
+    "jump": null,
+    "read": 29,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 0.75,
+    "segment": 2,
+    "start": 0.6,
+    "type": "word",
+    "word": "small"
+  },
+  {
+    "committed": 28,
+    "jump": null,
+    "read": 29,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 0.95,
+    "segment": 2,
+    "start": 0.8,
+    "type": "word",
+    "word": "boat"
+  },
+  {
+    "committed": 29,
+    "jump": null,
+    "read": 29,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 1.15,
+    "segment": 2,
+    "start": 1.0,
+    "type": "word",
+    "word": "rocked"
+  },
+  {
+    "committed": 30,
+    "jump": null,
+    "read": 30,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 1.35,
+    "segment": 2,
+    "start": 1.2,
+    "type": "word",
+    "word": "in"
+  },
+  {
+    "committed": 31,
+    "jump": null,
+    "read": 31,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 1.55,
+    "segment": 2,
+    "start": 1.4,
+    "type": "word",
+    "word": "the"
+  },
+  {
+    "committed": 32,
+    "jump": null,
+    "read": 32,
+    "skipped": null,
+    "status": "listening",
+    "type": "position"
+  },
+  {
+    "end": 1.75,
+    "segment": 2,
+    "start": 1.6,
+    "type": "word",
+    "word": "swell"
+  },
+  {
+    "committed": 33,
+    "jump": null,
+    "read": 33,
+    "skipped": null,
+    "status": "done",
+    "type": "position"
+  },
+  {
+    "segment": 2,
+    "type": "segment_end"
+  },
+  {
+    "end": 29,
+    "heard": "at sea a small boat",
+    "id": 4,
+    "kind": "restart",
+    "start": 24,
+    "type": "flag"
   }
 ]

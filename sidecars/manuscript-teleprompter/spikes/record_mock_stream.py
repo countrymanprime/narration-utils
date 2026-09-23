@@ -1,14 +1,15 @@
 """
-Regenerates apps/ui/src/api/teleprompterRecording.json, the position stream
-the browser mock replays for the Teleprompter page.
+Regenerates apps/ui/src/api/teleprompterRecording.json, the position and flag
+stream the browser mock replays for the Teleprompter page.
 
 A scripted narrator (a few mishearings, a two-word skip, a long pause, a
 re-read of an earlier sentence) is turned into Whisper-style rolling
 hypotheses, then run through the REAL shared event layer (`confirmed_events`)
-and `ScriptTracker`. The mock only replays the resulting `position` events,
-rescaled onto whatever chapter it is showing, so the pacing (how far the cursor
-leads the confirmed words, when it pauses, the jump events) is the tracker's
-own rather than invented.
+and `ScriptTracker` with its flags (`flags.FlaggingTracker`). The mock only
+replays the resulting `position` and `flag` events, rescaled onto whatever
+chapter it is showing, so the pacing (how far the cursor leads the confirmed
+words, when it pauses, the jump events) and the suspected flags are the
+tracker's own rather than invented.
 
     python record_mock_stream.py [--out PATH]
 """
@@ -25,7 +26,7 @@ if str(_CORE_DIR) not in sys.path:
     sys.path.insert(0, str(_CORE_DIR))
 
 import live_asr
-from script_tracker import ScriptTracker
+from flags import FlaggingTracker
 
 SCRIPT = (
     "Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: "
@@ -103,12 +104,12 @@ def schedule(words: list[tuple[str, float, float, int]]) -> Iterator[tuple[float
 
 
 def record() -> list[dict]:
-    tracker = ScriptTracker(TOKENS)
+    tracker = FlaggingTracker(TOKENS)
     recording: list[dict] = []
     now = {"t": 0.0}
 
-    def take(positions: list[dict]) -> None:
-        recording.extend({"t": round(now["t"], 2), "event": position} for position in positions)
+    def take(tracked: list[dict]) -> None:
+        recording.extend({"t": round(now["t"], 2), "event": event} for event in tracked)
 
     def hypotheses() -> Iterator[live_asr.Hypothesis]:
         for t, hypothesis in schedule(timed_words()):
@@ -129,7 +130,7 @@ def main() -> None:
     args = ap.parse_args()
 
     events = record()
-    positions = [item["event"] for item in events]
+    positions = [item["event"] for item in events if item["event"]["type"] == "position"]
     backward = sum(1 for before, after in pairwise(positions) if after["read"] < before["read"])
     Path(args.out).write_text(json.dumps({"tokens": len(TOKENS), "events": events}, separators=(",", ":")) + "\n", encoding="utf-8")
     print(
@@ -140,7 +141,12 @@ def main() -> None:
                 "final_read": positions[-1]["read"],
                 "final_status": positions[-1]["status"],
                 "backward_moves": backward,
-                "jumps": [(item["t"], item["event"]["jump"]) for item in events if item["event"]["jump"]],
+                "jumps": [(item["t"], item["event"]["jump"]) for item in events if item["event"].get("jump")],
+                "flags": [
+                    (item["t"], item["event"]["kind"], item["event"]["start"], item["event"]["end"], item["event"]["heard"])
+                    for item in events
+                    if item["event"]["type"] == "flag"
+                ],
                 "waiting_events": sum(1 for p in positions if p["status"] == "waiting"),
             }
         )

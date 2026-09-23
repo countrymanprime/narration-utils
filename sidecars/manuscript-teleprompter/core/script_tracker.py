@@ -87,12 +87,53 @@ def advance(heard: list[str], script: list[str], start: int) -> Alignment:
     return Alignment(position, matched, first)
 
 
+def align(heard: list[str], script: list[str], start: int) -> tuple[int | None, ...]:
+    """The same walk as `advance`, reporting which script word each heard word
+    matched (None for a heard word it ignored), so a caller can see what was
+    stepped over and what was heard in its place (flags.py). Kept separate
+    from `advance`, which runs dozens of times per heard word in `locate` and
+    needs no list; a property test holds the two to the same result."""
+    position, matches = start, []
+    for word in heard:
+        match = None
+        for skip in range(MAX_SKIP + 1):
+            index = position + skip
+            if index >= len(script):
+                break
+            if words_match(word, script[index]):
+                match, position = index, index + 1
+                break
+        matches.append(match)
+    return tuple(matches)
+
+
 @dataclass(frozen=True)
 class Location:
     read: int
     matched: int
     jump: str | None
     skipped: tuple[int, int] | None
+    # The script position the chosen alignment walked from (the anchor unless
+    # it jumped) and the first script word it matched.
+    start: int = 0
+    first: int | None = None
+
+
+@dataclass(frozen=True)
+class SegmentReading:
+    """One closed segment as the tracker judged it: the confirmed words
+    (normalized, and as the engine wrote them), the anchor the segment was
+    read from, and where those words were finally located. Positions are into
+    the tracker's filtered script (see `ScriptTracker.original_index`)."""
+
+    heard: tuple[str, ...]
+    heard_raw: tuple[str, ...]
+    anchor: int
+    location: Location
+    # Each confirmed word's engine (start, end), or None where the event had
+    # none. Advisory (ADR 0021): good only for telling one stretch of audio
+    # from a later one, never for ordering words.
+    heard_times: tuple[tuple[float, float] | None, ...] = ()
 
 
 def locate(heard: list[str], script: list[str], anchor: int) -> Location:
@@ -101,7 +142,7 @@ def locate(heard: list[str], script: list[str], anchor: int) -> Location:
     skip ahead), which is reported as a jump."""
     near = advance(heard, script, anchor)
     if len(heard) < MIN_JUMP_MATCHES:
-        return Location(near.read, near.matched, None, None)
+        return Location(near.read, near.matched, None, None, anchor, near.first)
 
     best_key, best_start, best = None, anchor, None
     for start in range(max(0, anchor - BACK_WORDS), min(len(script), anchor + AHEAD_WORDS)):
@@ -115,11 +156,11 @@ def locate(heard: list[str], script: list[str], anchor: int) -> Location:
             best_key, best_start, best = key, start, candidate
 
     if best is None:
-        return Location(near.read, near.matched, None, None)
+        return Location(near.read, near.matched, None, None, anchor, near.first)
     if best_start < anchor:
-        return Location(best.read, best.matched, "restart", None)
+        return Location(best.read, best.matched, "restart", None, best_start, best.first)
     skipped = (anchor, best.first) if best.first is not None and best.first > anchor else None
-    return Location(best.read, best.matched, "skip", skipped)
+    return Location(best.read, best.matched, "skip", skipped, best_start, best.first)
 
 
 def _heard_words(words: list[dict]) -> list[str]:
@@ -141,6 +182,10 @@ class ScriptTracker:
         self._display = 0
         self._segment: int | None = None
         self._confirmed: list[str] = []
+        self._confirmed_raw: list[str] = []
+        self._confirmed_times: list[tuple[float, float] | None] = []
+        self._confirmed_at: Location | None = None
+        self._closed: SegmentReading | None = None
         self._jump_reported = False
         self._pending_jump: tuple[str, tuple[int, int] | None] | None = None
         self._progress_at: float | None = None
@@ -163,10 +208,32 @@ class ScriptTracker:
         """Report a status change that time alone caused (the pause timeout)."""
         return self._emit(now)
 
+    @property
+    def words(self) -> tuple[str, ...]:
+        """The normalized script the tracker aligns against, by tracker position."""
+        return tuple(self._script)
+
+    def take_closed_segment(self) -> SegmentReading | None:
+        """The segment the last `segment_end` closed, once (None if it held no
+        confirmed words, or it was already taken or discarded by a seek)."""
+        closed, self._closed = self._closed, None
+        return closed
+
+    def original_index(self, position: int) -> int:
+        """A position in the filtered script as a `script_words()` index (the
+        space `read`, `committed` and a flag's span are reported in)."""
+        return self._original_index(position)
+
+    def _clear_confirmed(self) -> None:
+        self._confirmed = []
+        self._confirmed_raw = []
+        self._confirmed_times = []
+        self._confirmed_at = None
+
     def _enter_segment(self, segment: int) -> None:
         if segment != self._segment:
             self._segment = segment
-            self._confirmed = []
+            self._clear_confirmed()
             self._jump_reported = False
 
     def _on_confirmed_word(self, event: dict, now: float) -> None:
@@ -175,17 +242,24 @@ class ScriptTracker:
         if not word:
             return
         self._confirmed.append(word)
+        self._confirmed_raw.append(event["word"])
+        start, end = event.get("start"), event.get("end")
+        self._confirmed_times.append((start, end) if isinstance(start, int | float) and isinstance(end, int | float) else None)
         location = locate(self._confirmed, self._script, self._anchor)
+        self._confirmed_at = location
         self._committed = location.read
         self._move_display(location, now)
 
     def _on_segment_end(self) -> None:
         if self._segment is None:
             return
+        if self._confirmed_at is not None:
+            heard = (tuple(self._confirmed), tuple(self._confirmed_raw))
+            self._closed = SegmentReading(*heard, self._anchor, self._confirmed_at, tuple(self._confirmed_times))
         self._anchor = self._committed
         self._display = self._committed
         self._segment = None
-        self._confirmed = []
+        self._clear_confirmed()
 
     def _script_index(self, original: int) -> int:
         """Map an index into the unfiltered token list (what a `read`/`committed`
@@ -210,7 +284,8 @@ class ScriptTracker:
         position = self._script_index(clamped)
         self._anchor = self._committed = self._display = position
         self._segment = None
-        self._confirmed = []
+        self._clear_confirmed()
+        self._closed = None
         self._jump_reported = True
         self._pending_jump = ("restart", None)
         self._progress_at = now

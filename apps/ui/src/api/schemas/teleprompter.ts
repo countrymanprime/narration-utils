@@ -5,8 +5,9 @@ import type {
   TeleprompterDevicesResult,
   TeleprompterEngine,
   TeleprompterEvent,
-  TeleprompterLocated,
+  TeleprompterFlag,
   TeleprompterLocateResult,
+  TeleprompterLocated,
   TeleprompterPosition,
   TeleprompterScript,
   TeleprompterStartResult,
@@ -42,19 +43,32 @@ const teleprompterPositionSchema = z.object({
   skipped: z.tuple([z.number(), z.number()]).nullable(),
 }) satisfies z.ZodType<TeleprompterPosition>;
 
+// A suspected flag (flags.py, ADR 0105): `start`/`end` are script word indices, equal for an extra.
+const teleprompterFlagSchema = z
+  .object({
+    type: z.literal('flag'),
+    id: z.number(),
+    kind: z.enum(['misread', 'extra', 'skipped', 'restart']),
+    start: z.number(),
+    end: z.number(),
+    heard: z.string(),
+  })
+  .refine((flag) => flag.start <= flag.end, { message: 'a flag cannot end before it starts', path: ['end'] }) satisfies z.ZodType<TeleprompterFlag>;
+
 const heardWordShape = { word: z.string(), start: z.number(), end: z.number() };
 const heardWordSchema = z.object(heardWordShape) satisfies z.ZodType<HeardWord>;
 
 export const teleprompterEventSchema = z.discriminatedUnion('type', [
   teleprompterScriptSchema,
   teleprompterPositionSchema,
+  teleprompterFlagSchema,
   z.object({ type: z.literal('partial'), segment: z.number(), words: z.array(heardWordSchema) }),
   z.object({ type: z.literal('word'), segment: z.number(), ...heardWordShape }),
   z.object({ type: z.literal('segment_end'), segment: z.number() }),
 ]) satisfies z.ZodType<TeleprompterEvent>;
 
 /** The event types the UI understands. An event of another type is a newer sidecar talking, not a malformed payload. */
-export const TELEPROMPTER_EVENT_TYPES: ReadonlySet<string> = new Set(['script', 'position', 'partial', 'word', 'segment_end']);
+export const TELEPROMPTER_EVENT_TYPES: ReadonlySet<string> = new Set(['script', 'position', 'flag', 'partial', 'word', 'segment_end']);
 
 /**
  * The snapshot the host builds (teleprompter/service.go): always all six keys, the script and position being the last events
@@ -89,10 +103,10 @@ export const teleprompterDevicesResultSchema = z.object({
   error: z.string().nullable(),
 }) satisfies z.ZodType<TeleprompterDevicesResult>;
 
-/** The stream recorded from the real ScriptTracker (`teleprompterRecording.json`) that the browser mock replays; checked when the mock loads. */
+/** The stream recorded from the real ScriptTracker and its flags (`teleprompterRecording.json`) that the browser mock replays; checked when the mock loads. */
 export const recordedStreamSchema = z.object({
   tokens: z.number(),
-  events: z.array(z.object({ t: z.number(), event: teleprompterPositionSchema })),
+  events: z.array(z.object({ t: z.number(), event: z.discriminatedUnion('type', [teleprompterPositionSchema, teleprompterFlagSchema]) })),
 });
 
 /** The sidecar's `locate` line (locate.py), as `TeleprompterLocate` carries it: a word and its sentence, or neither. */

@@ -59,10 +59,14 @@ from narration_common import manuscript as canonical_manuscript
 from narration_common.config import get_default
 from narration_common.logging_utils import log, set_log_file
 from narration_common.progress import write_progress
+from narration_common.spoken_forms import (
+    FILLER_WORDS,
+    NUMBER_WORDS,  # noqa: F401 - re-exported: the property tests read compare.NUMBER_WORDS
+    canonical_tokens,
+    merge_number_words,
+)
+from narration_common.spoken_forms import build_canon as _build_canon
 
-FILLER_WORDS = {"uh", "um", "umm", "uhh", "erm", "hmm", "mhm", "huh"}
-
-TOKEN_RE = re.compile(r"[A-Za-z0-9']+")
 SENTENCE_BOUNDARY_RE = re.compile(r"(?<=[.!?])\s+")
 ABBREVIATIONS = {"mr", "mrs", "ms", "dr", "st", "jr", "sr", "vs", "mt"}
 
@@ -70,40 +74,8 @@ SAMPLE_RATE = 16000
 PAUSE_GAP_SECONDS = 0.6
 EXCERPT_TAIL_BUFFER_SENTENCES = 2
 
-NUMBER_WORDS = {
-    "zero": 0,
-    "one": 1,
-    "two": 2,
-    "three": 3,
-    "four": 4,
-    "five": 5,
-    "six": 6,
-    "seven": 7,
-    "eight": 8,
-    "nine": 9,
-    "ten": 10,
-    "eleven": 11,
-    "twelve": 12,
-    "thirteen": 13,
-    "fourteen": 14,
-    "fifteen": 15,
-    "sixteen": 16,
-    "seventeen": 17,
-    "eighteen": 18,
-    "nineteen": 19,
-    "twenty": 20,
-    "thirty": 30,
-    "forty": 40,
-    "fifty": 50,
-    "sixty": 60,
-    "seventy": 70,
-    "eighty": 80,
-    "ninety": 90,
-    "hundred": 100,
-    "thousand": 1000,
-    "million": 1000000,
-    "billion": 1000000000,
-}
+# NUMBER_WORDS, FILLER_WORDS, the homophone canon and merge_number_words live in
+# narration_common.spoken_forms, shared with the teleprompter's live flags (ADR 0105).
 
 
 def format_time(seconds):
@@ -132,30 +104,15 @@ def check_cancelled(progress_path):
         raise Cancelled()
 
 
-_QUOTE_NORMALIZE_TABLE = str.maketrans(
-    {
-        "‘": "'",
-        "’": "'",
-        "‛": "'",
-        "ʼ": "'",
-        "`": "'",
-        "´": "'",
-        "“": '"',
-        "”": '"',
-        "„": '"',
-        "‟": '"',
-    }
-)
-
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def load_equivalence_groups(path):
     """Groups of words to treat as equivalent when matching - one group
     per line, comma-separated, '#' starts a comment (whole-line or
-    trailing). Shared shape/loader for the bundled homophones list
-    (homophones.csv, next to this script) and a per-project custom list
-    (see project_data_path). Missing file or bad lines are silently
+    trailing). The per-project custom list's loader (see
+    project_data_path); the built-in homophones are Python data in
+    narration_common.spoken_forms. Missing file or bad lines are silently
     skipped (best-effort)."""
     groups = []
     if not path or not os.path.exists(path):
@@ -173,21 +130,6 @@ def load_equivalence_groups(path):
         pass
     return groups
 
-
-def _build_canon(groups):
-    return {w: g[0] for g in groups for w in g}
-
-
-# Whisper sometimes transcribes a correctly-spoken homophone with the wrong
-# spelling (heard "your", wrote "you're") - these aren't narration errors,
-# so each group in homophones.csv is canonicalized to its first member
-# before matching. Deliberately EXCLUDES one/won, to/too/two, for/four,
-# ate/eight: each has a member that's also a NUMBER_WORDS entry, and
-# merge_number_words() accumulates *consecutive* number words into one
-# combined value (e.g. "twenty two" -> 22) - aliasing "won" to "one" could
-# turn an unrelated adjacent number into a bogus merge (e.g. "she won two
-# races" -> "she one two races" -> merged into a single garbage token).
-_HOMOPHONE_CANON = _build_canon(load_equivalence_groups(os.path.join(_SCRIPT_DIR, "homophones.csv")))
 
 # Populated per-run in run() from a per-manuscript custom list (invented
 # names/words Whisper spells inconsistently, since it has no dictionary
@@ -247,11 +189,11 @@ _COMMON_WORDS = _load_word_set(os.path.join(_SCRIPT_DIR, "common_words.txt"))
 def tokenize(text):
     """Typographic ("smart") quotes are normalized to ASCII before token
     extraction - a curly apostrophe (e.g. Word's "yesterday's") isn't in
-    TOKEN_RE's character class, so left unnormalized it splits one word
+    the token character class, so left unnormalized it splits one word
     into two ("yesterday" + "s"), a false mismatch against Whisper's
     straight-apostrophe transcript that showed up as a bogus MISREAD
     (confirmed live). Double curly quotes are normalized too for
-    consistency, though TOKEN_RE already drops all quote characters
+    consistency, though tokenizing already drops all quote characters
     (straight or curly) either way, so that half is a no-op today.
     Homophones (built-in + per-manuscript custom) are canonicalized too -
     like number normalization, this only affects matching, so a genuine
@@ -260,13 +202,10 @@ def tokenize(text):
     three" already displaying as "23". A trailing possessive-'s is folded
     into a plain -s too - "sentinel's" and "sentinels" are pronounced
     identically for any word, so this is a general rule rather than a
-    homophone-list entry."""
-    text = text.translate(_QUOTE_NORMALIZE_TABLE)
-    tokens = [t.lower() for t in TOKEN_RE.findall(text)]
-    tokens = [_HOMOPHONE_CANON.get(t, t) for t in tokens]
-    tokens = [t[:-2] + "s" if t.endswith("'s") and len(t) > 2 else t for t in tokens]
-    tokens = [_CUSTOM_CANON.get(t, t) for t in tokens]
-    return tokens
+    homophone-list entry. All of that but the custom list is
+    narration_common.spoken_forms.canonical_tokens, which the teleprompter's
+    live flags share (ADR 0105)."""
+    return [_CUSTOM_CANON.get(t, t) for t in canonical_tokens(text)]
 
 
 def project_data_dir(manuscript_path):
@@ -297,49 +236,6 @@ def tokenize_with_raw(text):
             tokens.append(t)
             raw_words.append(raw)
     return tokens, raw_words
-
-
-def merge_number_words(tokens, index_map):
-    """Collapse runs of spelled-out cardinal numbers into a single digit
-    token so e.g. "twenty three" lines up with a transcript's "23", and
-    "one" lines up with "1". Digit tokens already present pass through
-    unchanged. index_map (parallel to tokens) is carried through, pointing
-    each output token at the index of its first constituent input token."""
-    out_tokens = []
-    out_index_map = []
-    n = len(tokens)
-    i = 0
-    while i < n:
-        if tokens[i] in NUMBER_WORDS:
-            start = i
-            total = 0
-            chunk = 0
-            j = i
-            while j < n:
-                tok = tokens[j]
-                if tok in NUMBER_WORDS:
-                    val = NUMBER_WORDS[tok]
-                    if val == 100:
-                        chunk = (chunk or 1) * 100
-                    elif val >= 1000:
-                        total += (chunk or 1) * val
-                        chunk = 0
-                    else:
-                        chunk += val
-                    j += 1
-                elif tok == "and" and j + 1 < n and tokens[j + 1] in NUMBER_WORDS:
-                    j += 1
-                else:
-                    break
-            total += chunk
-            out_tokens.append(str(total))
-            out_index_map.append(index_map[start])
-            i = j
-        else:
-            out_tokens.append(tokens[i])
-            out_index_map.append(index_map[i])
-            i += 1
-    return out_tokens, out_index_map
 
 
 def split_sentences(text):

@@ -230,13 +230,42 @@ fuzzy matching against the script is the ordinary open-source pattern.
    [teleprompter-engines-and-input-devices.prd.md](../prds/teleprompter-engines-and-input-devices.prd.md).
    `faster-whisper` stays for offline Transcript Compare either way.
 
-## Flags, confirmation and review (planned, not built)
+## Flags (events built; review and persistence planned)
 
-Suspected misreads, how a live flag is confirmed later (recheck on click, a
-trailing confirmation pass) and how live flags become findings under the
-[shared finding contract](findings-contract.md) are specified in
-[teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md).
-No flags are emitted today.
+With a script, the sidecar also reports suspected reading errors as `flag`
+events ([ADR 0115](../adr/0115-live-flags-are-suspected-judged-per-closed-segment-and-forgive-what-transcript-compare-forgives.md)):
+
+```json
+{"type": "flag", "id": 1, "kind": "misread", "start": 7, "end": 8, "heard": "chairs"}
+```
+
+`kind` is `misread` (script words `[start, end)` read as `heard`), `skipped`
+(passed over), `extra` (`heard` said between two script words; zero-width,
+`start == end` is the word after them) or `restart` (words read again, the
+narrator's recovery after a flub). Indices are `script_words()` positions, the
+space of `read`. `flags.py` wraps the tracker (`FlaggingTracker`) and reads its
+alignment of a segment's confirmed words once the segment closes, so a flag
+arrives after that segment's `position` events. Every flag is only suspected:
+a wrong engine word looks exactly like a misread, and Transcript Compare over
+the recorded take stays authoritative. The rules therefore favour precision:
+confirmed words only; a discrepancy only between two matched script words,
+never among a segment's first two words or at its ragged end; nothing a
+spelling difference explains (numbers, hyphenation, homophones and
+possessives from `narration_common.spoken_forms`, the same forms Transcript
+Compare forgives, plus the tracker's own 0.8 spelling tolerance on the run, and
+a word the engine split across a matched neighbour); no hesitation as an
+extra, no single dropped article as a skip, no re-read under three words as a
+restart, and no gap whose words start inside the audio of the word before
+them (the engine confirmed the same audio twice). A seek is never flagged.
+
+The Go host relays flags like any other event and keeps none in its snapshot:
+Phase 7 persists each flag as a suspected finding (`transcript_discrepancy`,
+or `pickup` for a restart), and that store, not the snapshot, is what a view
+opened mid-session reads. `replay.py` replays a Moonshine probe recording or a
+printed `live_asr.py` session (`--stream`) and reports flags per 100 heard
+words by kind, which on a clean read is the false-flag rate. How a flag is
+confirmed later (recheck on click, a trailing confirmation pass) is deferred
+in [teleprompter-manuscript-integration.prd.md](../prds/teleprompter-manuscript-integration.prd.md).
 
 ## Streaming subprocess support (resolves decision #5)
 
@@ -302,7 +331,7 @@ sequenceDiagram
   S->>P: StartStream(onLine, program, args)
   P->>T: exec, no shell, assigned to the Job Object
   S-->>UI: teleprompter:state starting, then running
-  T-->>P: stdout NDJSON: script, then partial, word, position, segment_end
+  T-->>P: stdout NDJSON: script, then partial, word, position, segment_end, flag
   P->>S: onLine(line) on its own goroutine
   S->>S: valid JSON object with a string type, else dropped and counted
   S-->>UI: teleprompter:event, the line verbatim (emitTeleprompterEvent)
@@ -449,5 +478,6 @@ and
 - Tracker limits to revisit with real use: word matching is normalization plus
   a close-spelling check, without Transcript Compare's homophone, number-word
   and hyphenation handling; invented names and spoken numbers are the likely
-  misses. No flags are emitted yet (skipped or misread words feed the findings
-  contract in a later step).
+  misses. Flags forgive those forms (`narration_common.spoken_forms`, see
+  "Flags" above), but position matching still does not; flags reach the
+  findings contract in the integration PRD's Phase 7.

@@ -5,7 +5,6 @@ import (
 	"math"
 	"os"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
@@ -72,17 +71,6 @@ func TestFindChapterByTrackNameMatchesThePythonMatcher(t *testing.T) {
 				t.Fatalf("score = %.17g, want %.17g", score, c.Score)
 			}
 		})
-	}
-}
-
-func TestTheEmbeddedHomophoneListIsTheSidecarsOwn(t *testing.T) {
-	sidecar, err := os.ReadFile(layout.RepoFile("sidecars/transcript-compare/core/homophones.csv"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	normalize := func(text string) string { return strings.ReplaceAll(text, "\r\n", "\n") }
-	if normalize(string(sidecar)) != normalize(homophonesCSV) {
-		t.Fatal("apps/desktop/internal/chaptermatch/homophones.csv drifted from sidecars/transcript-compare/core/homophones.csv; copy it again")
 	}
 }
 

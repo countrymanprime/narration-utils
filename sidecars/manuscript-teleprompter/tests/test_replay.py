@@ -86,6 +86,72 @@ def test_a_long_gap_between_records_shows_up_as_a_waiting_status():
     assert summary["final_read"] == 4
 
 
+def test_a_clean_reading_has_no_flags_and_a_zero_false_flag_rate():
+    records = [
+        _record("LineTextChanged", 1.0, 5, "the old lighthouse keeper"),
+        _record("LineCompleted", 2.0, 5, "the old lighthouse keeper climbed the spiral stairs each evening"),
+    ]
+    timeline, heard_words = replay.track_events(replay.replay_events(records), TOKENS)
+
+    flags = replay.summarize_timeline(timeline, len(TOKENS), heard_words, TOKENS)["flags"]
+
+    assert flags["heard_words"] == 10
+    assert flags["total"] == 0
+    assert flags["per_100_heard_words"]["misread"] == 0.0
+
+
+def test_the_summary_lists_each_flag_against_the_script_and_rates_it_per_100_heard_words():
+    records = [_record("LineCompleted", 2.0, 5, "the old lighthouse keeper slowly climbed the spiral chairs each evening")]
+    timeline, heard_words = replay.track_events(replay.replay_events(records), TOKENS)
+
+    flags = replay.summarize_timeline(timeline, len(TOKENS), heard_words, TOKENS)["flags"]
+
+    assert flags["by_kind"] == {"misread": 1, "extra": 1, "skipped": 0, "restart": 0}
+    assert flags["per_100_heard_words"]["misread"] == pytest.approx(100 / 11, abs=0.01)
+    assert flags["list"] == [
+        {"kind": "extra", "start": 4, "end": 4, "script": "(before climbed)", "heard": "slowly"},
+        {"kind": "misread", "start": 7, "end": 8, "script": "stairs", "heard": "chairs"},
+    ]
+
+
+def test_a_printed_live_session_replays_its_engine_events_and_ignores_what_the_tracker_printed():
+    words = ["the", "old", "lighthouse", "keeper", "climbed", "the", "spiral", "chairs"]
+    session = [{"type": "script", "tokens": 3}, {"type": "position", "read": 9, "committed": 9, "status": "listening", "jump": None, "skipped": None}]
+    session += [{"type": "partial", "segment": 0, "words": [{"word": w, "start": i * 0.3, "end": i * 0.3 + 0.2} for i, w in enumerate(words[:3])]}]
+    session += [{"type": "word", "segment": 0, "word": w, "start": i * 0.3, "end": i * 0.3 + 0.2} for i, w in enumerate(words)]
+    session += [{"type": "word", "segment": 0, "word": "each", "start": 3.0, "end": 3.2}, {"type": "segment_end", "segment": 0}]
+    session += [{"type": "flag", "id": 9, "kind": "extra", "start": 0, "end": 0, "heard": "stale"}]
+
+    timed = list(replay.stream_events(session))
+    timeline, heard_words = replay.track_events(iter(timed), TOKENS)
+
+    assert [event["type"] for _, event in timed][:2] == ["partial", "word"]
+    assert [wall for wall, _ in timed] == sorted(wall for wall, _ in timed)
+    assert heard_words == 9
+    assert [(e["kind"], e["heard"]) for _, e in timeline if e["type"] == "flag"] == [("misread", "chairs")]
+
+
+@pytest.mark.parametrize("source", ["--events", "--stream"])
+def test_the_cli_prints_the_timeline_with_flags_and_then_the_summary(tmp_path, capsys, monkeypatch, source):
+    script = tmp_path / "script.txt"
+    script.write_text(SCRIPT, encoding="utf-8")
+    records = [_record("LineCompleted", 2.0, 5, "the old lighthouse keeper climbed the spiral chairs each evening")]
+    if source == "--stream":
+        records = [event for _, event in replay.replay_events(records)]
+    recording = tmp_path / "recording.jsonl"
+    recording.write_text("\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8")
+    monkeypatch.setattr("sys.argv", ["replay.py", source, str(recording), "--script", str(script), "--timeline"])
+
+    replay.main()
+
+    printed = capsys.readouterr().out
+    assert "FLAG misread  7-8 script='stairs' heard='chairs'" in printed
+    assert "read=" in printed
+    summary = json.loads(printed[printed.index("{") :])
+    assert summary["flags"]["by_kind"]["misread"] == 1
+    assert summary["final_read"] == 10
+
+
 def test_load_records_reads_json_lines(tmp_path):
     path = tmp_path / "events.jsonl"
     path.write_text("\n".join(json.dumps(r) for r in _reading()) + "\n", encoding="utf-8")

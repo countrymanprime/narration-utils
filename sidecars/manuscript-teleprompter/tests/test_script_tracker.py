@@ -276,3 +276,56 @@ def test_reading_continues_normally_after_a_reset_to_seek():
 
     assert events[-1]["read"] == 15
     assert events[-1]["jump"] is None
+
+
+def test_align_reports_the_script_word_each_heard_word_matched_or_none():
+    matches = tracker_module.align(_norm("the old um lighthouse climbed"), _norm(SCRIPT), 0)
+
+    assert matches == (0, 1, None, 2, 4)
+
+
+def test_locate_reports_the_start_and_first_match_of_the_alignment_it_chose():
+    near = tracker_module.locate(_norm("the old lighthouse"), _norm(SCRIPT), 0)
+    ahead = tracker_module.locate(_norm("he lit the great lamp"), _norm(SCRIPT), 0)
+
+    assert (near.start, near.first) == (0, 0)
+    assert ahead.jump == "skip"
+    assert ahead.first == 10
+    assert ahead.start <= ahead.first
+
+
+def test_a_closed_segment_is_handed_over_once_with_its_confirmed_words_and_anchor():
+    tracker = _tracker()
+    _read_segment(tracker, 0, "The old lighthouse")
+
+    reading = tracker.take_closed_segment()
+
+    assert reading.heard == ("the", "old", "lighthouse")
+    assert reading.heard_raw == ("The", "old", "lighthouse")
+    assert reading.heard_times == ((0.0, 0.1), (0.0, 0.1), (0.0, 0.1))
+    assert reading.anchor == 0
+    assert reading.location.read == 3
+    assert tracker.take_closed_segment() is None
+
+
+def test_a_segment_with_no_confirmed_words_hands_nothing_over():
+    tracker = _tracker()
+    tracker.feed(_partial(0, "the old"), 1.0)
+    tracker.feed(_end(0), 1.2)
+
+    assert tracker.take_closed_segment() is None
+
+
+def test_a_seek_discards_a_closed_segment_nobody_took():
+    tracker = _tracker()
+    _read_segment(tracker, 0, "the old lighthouse")
+
+    tracker.reset_to(10, 2.0)
+
+    assert tracker.take_closed_segment() is None
+
+
+def test_original_index_maps_a_filtered_position_back_to_a_script_words_index():
+    tracker = tracker_module.ScriptTracker(["a", "—", "b"])
+
+    assert [tracker.original_index(position) for position in (0, 1, 2)] == [0, 2, 3]

@@ -1,14 +1,14 @@
 {
   "chapter": "c1",
   "engine": "whisper",
-  "message": "Listening…",
+  "message": "Reached the end of the chapter. Stopping in 5 seconds unless you keep reading.",
   "phase": "running",
   "position": {
-    "committed": 29,
+    "committed": 33,
     "jump": null,
-    "read": 29,
+    "read": 33,
     "skipped": null,
-    "status": "listening",
+    "status": "done",
     "type": "position"
   },
   "script": {

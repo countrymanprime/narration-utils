@@ -494,6 +494,28 @@ def test_start_word_and_control_file_are_accepted_together_with_a_script():
     live_asr._check_engine_args(ap, args)  # must not raise
 
 
+def test_a_session_with_a_script_prints_flags_after_the_segment_that_raised_them(tmp_path, capsys, monkeypatch):
+    # A frozen or `python live_asr.py` run has the core directory on sys.path already; a spec-loaded module does not.
+    monkeypatch.syspath_prepend(str(LIVE_ASR_PATH.parent))
+    script = tmp_path / "script.txt"
+    script.write_text("The old lighthouse keeper climbed the spiral stairs each evening.", encoding="utf-8")
+    ap = live_asr.build_parser()
+    args = ap.parse_args(["--wav", "r.wav", "--script", str(script)])
+    tracker, _script_event, _text = live_asr._load_script(ap, args)
+    heard = ["the", "old", "lighthouse", "keeper", "climbed", "the", "spiral", "chairs", "each", "evening"]
+
+    def stream(chunks):
+        list(chunks)
+        yield from ({"type": "word", "segment": 0, "word": word, "start": 0.0, "end": 0.1} for word in heard)
+        yield {"type": "segment_end", "segment": 0}
+
+    live_asr._run(args, stream, iter(_chunks(1)), tracker)
+
+    printed = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert printed[-1] == {"type": "flag", "id": 1, "kind": "misread", "start": 7, "end": 8, "heard": "chairs"}
+    assert printed[-2] == {"type": "segment_end", "segment": 0}
+
+
 def test_stoppable_passes_every_chunk_through_when_no_stop_file_is_given():
     assert len(list(live_asr.stoppable(_chunks(3), None))) == 3
 

@@ -1,4 +1,4 @@
-# Transcript Compare - built-in homophone list
+# Built-in homophone list: narration_common.spoken_forms.HOMOPHONE_GROUPS (libs/python), as CSV
 #
 # Whisper sometimes transcribes a correctly-spoken homophone with the wrong
 # spelling (heard "your", wrote "you're") - these aren't narration errors,

@@ -84,6 +84,28 @@ def test_locate_reports_only_known_jumps_and_skips_that_start_at_the_anchor(scen
         assert start == anchor < end
 
 
+@given(heard_from_the_script())
+def test_align_agrees_with_advance_on_every_heard_word(scenario):
+    script, start, heard = scenario
+    matches = tracker.align(heard, script, start)
+    result = tracker.advance(heard, script, start)
+    matched = [index for index in matches if index is not None]
+    assert len(matches) == len(heard)
+    assert len(matched) == result.matched
+    assert matched == sorted(set(matched)), "matches only move forward"
+    assert (matched[0] if matched else None) == result.first
+    assert (matched[-1] + 1 if matched else start) == result.read
+
+
+@given(heard_from_the_script())
+def test_locate_names_the_alignment_it_chose(scenario):
+    script, anchor, heard = scenario
+    location = tracker.locate(heard, script, anchor)
+    chosen = tracker.advance(heard, script, location.start)
+    assert (chosen.read, chosen.matched, chosen.first) == (location.read, location.matched, location.first)
+    assert (location.start == anchor) == (location.jump is None)
+
+
 def test_the_explicit_examples_really_do_jump():
     skip = tracker.locate(_SCRIPT_TEXT[6:11], _SCRIPT_TEXT, 0)
     restart = tracker.locate(_SCRIPT_TEXT[0:5], _SCRIPT_TEXT, 10)

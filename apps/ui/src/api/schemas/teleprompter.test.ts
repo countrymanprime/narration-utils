@@ -25,6 +25,10 @@ describe('teleprompterEventSchema', () => {
     ['partial', { type: 'partial', segment: 0, words: [{ word: 'hello', start: 1.24, end: 1.51 }] }],
     ['word', { type: 'word', segment: 0, word: 'hello', start: 1.24, end: 1.51 }],
     ['segment_end', { type: 'segment_end', segment: 0 }],
+    ['misread flag', { type: 'flag', id: 1, kind: 'misread', start: 7, end: 8, heard: 'chairs' }],
+    ['zero-width extra flag', { type: 'flag', id: 2, kind: 'extra', start: 4, end: 4, heard: 'slowly' }],
+    ['skipped flag', { type: 'flag', id: 3, kind: 'skipped', start: 10, end: 22, heard: '' }],
+    ['restart flag', { type: 'flag', id: 4, kind: 'restart', start: 24, end: 29, heard: 'at sea a small boat' }],
   ])('accepts a %s event', (_name, event) => {
     expect(parseWire(teleprompterEventSchema, event, ctx)).toEqual(event);
   });
@@ -50,6 +54,9 @@ describe('teleprompterEventSchema', () => {
     ['a word with no timing', { type: 'word', segment: 0, word: 'hello' }, 'start'],
     ['a partial whose words are not a list', { type: 'partial', segment: 0, words: 'hello' }, 'words'],
     ['a script span with a bad kind', { ...script, spans: [{ kind: 'heading', id: 'x', index: 0, start: 0, count: 1 }] }, 'spans[0].kind'],
+    ['a flag of a kind the UI does not know', { type: 'flag', id: 1, kind: 'mumbled', start: 1, end: 2, heard: 'x' }, 'kind'],
+    ['a flag that ends before it starts', { type: 'flag', id: 1, kind: 'misread', start: 5, end: 4, heard: 'x' }, 'end'],
+    ['a flag with no heard text', { type: 'flag', id: 1, kind: 'skipped', start: 1, end: 2 }, 'heard'],
   ])('rejects %s and names the path', (_name, event, path) => {
     try {
       parseWire(teleprompterEventSchema, event, ctx);
@@ -61,7 +68,7 @@ describe('teleprompterEventSchema', () => {
   });
 
   it('lists the event types the UI understands, so an unknown one can be told from a malformed one', () => {
-    expect([...TELEPROMPTER_EVENT_TYPES].sort()).toEqual(['partial', 'position', 'script', 'segment_end', 'word']);
+    expect([...TELEPROMPTER_EVENT_TYPES].sort()).toEqual(['flag', 'partial', 'position', 'script', 'segment_end', 'word']);
   });
 });
 
