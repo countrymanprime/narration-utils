@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/cleanuptools"
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/credits"
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
@@ -46,7 +47,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 41
+const hostAPIVersion = 42
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -96,6 +97,7 @@ type Host struct {
 	pickups      *pickups.Service
 	projectState *projectstate.Service
 	renderConfig *renderconfig.Service
+	cleanupTools *cleanuptools.Service
 	teleprompter *teleprompter.Service
 	// bridge is the REAPER session's file-based IPC client (nil when launched
 	// without a REAPER session directory); take-review's create-take action
@@ -371,6 +373,10 @@ func (h *Host) configureLocked(next config) {
 	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does for line identity
 	// and pickups above.
 	h.renderConfig = renderconfig.New(renderconfig.Config{SessionDir: h.config.sessionDir}, client, h.emitRenderConfig)
+	// The cleanup-launcher service (reaper-automation-follow-through PRD Phase 23, ADR 0146) is one more consumer of
+	// the same bridge client: pollTranscript's Drain call pumps its events too. It only ever sends an allow-listed
+	// tool key, and the dialog it opens in REAPER is the narrator's to drive.
+	h.cleanupTools = cleanuptools.New(cleanuptools.Config{SessionDir: h.config.sessionDir}, client, h.emitCleanupTools)
 	// The project-state service (reaper-automation-follow-through PRD Phase 13, "Change-driven re-compare
 	// indicator"; analysis-evidence-ledger PRD Open Question 12, answered (B)) is the bridge's fifth real
 	// consumer: pollTranscript's Drain call already pumps its events too, the same way it does above. It is a
@@ -603,6 +609,17 @@ func (h *Host) emitRenderConfig(state map[string]any) {
 	h.mu.RUnlock()
 	if ctx != nil {
 		runtime.EventsEmit(ctx, "renderconfig:state", state)
+	}
+}
+
+// emitCleanupTools relays a cleanuptools.Service snapshot to the frontend (Phase 23's cleanup launchers), the same
+// simple relay emitRenderConfig uses.
+func (h *Host) emitCleanupTools(state map[string]any) {
+	h.mu.RLock()
+	ctx := h.ctx
+	h.mu.RUnlock()
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "cleanuptools:state", state)
 	}
 }
 

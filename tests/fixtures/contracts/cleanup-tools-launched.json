@@ -1,0 +1,7 @@
+{
+  "action": "Item: Repair pops/clicks...",
+  "message": "Repair Pops/Clicks is open in REAPER. Nothing has changed yet: the repair happens only when you apply it there.",
+  "phase": "launched",
+  "runId": "1790000000000000",
+  "tool": "repair_pops_clicks"
+}

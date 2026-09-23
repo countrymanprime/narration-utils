@@ -60,6 +60,7 @@ import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSch
 import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
+import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
 import { dictionaryLookupResultSchema } from './schemas/dictionary';
 import { unknownKeys } from './schemas/strictness';
@@ -192,6 +193,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'pickups-import-success.json': pickupsStateSchema,
   'render-config-idle.json': renderConfigStateSchema,
   'render-config-success.json': renderConfigStateSchema,
+  'cleanup-tools-idle.json': cleanupToolsStateSchema,
+  'cleanup-tools-launched.json': cleanupToolsStateSchema,
   'chapter-tags-preview-idle.json': chapterTagsPreviewSchema,
   'chapter-tags-preview-ready.json': chapterTagsPreviewSchema,
   'chapter-tags-embed-success.json': chapterTagsEmbedResultSchema,
@@ -922,6 +925,25 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(createMockApi().renderConfigConfigure('   ')).rejects.toThrow(/output folder is required/);
   });
 
+  it('the cleanup-tools state through a launch, and its seeded states', async () => {
+    vi.useFakeTimers();
+    const api = createMockApi();
+    const seen: unknown[] = [];
+    api.subscribeCleanupTools((state) => seen.push(structuredClone(state)));
+    expectMatches(cleanupToolsStartResultSchema, await api.cleanupToolsLaunch('repair_pops_clicks'), 'mock cleanup launch start');
+    await vi.advanceTimersByTimeAsync(300);
+    expect(seen.length).toBeGreaterThan(2);
+    for (const state of seen) expectMatches(cleanupToolsStateSchema, state, 'mock cleanuptools:state');
+    expectMatches(cleanupToolsStateSchema, await api.cleanupToolsState(), 'mock cleanup-tools state');
+    for (const seed of ['launched', 'error'] as const) {
+      expectMatches(cleanupToolsStateSchema, await createMockApi({}, { cleanupTools: seed }).cleanupToolsState(), `mock cleanup-tools seed ${seed}`);
+    }
+  });
+
+  it('cleanupToolsLaunch refuses a tool off the allow-list, the way the Go service does', async () => {
+    await expect(createMockApi().cleanupToolsLaunch('40209' as never)).rejects.toThrow(/unknown cleanup tool/);
+  });
+
   it('chapterTagsPreview and its seeded states', async () => {
     expectMatches(chapterTagsPreviewSchema, await createMockApi().chapterTagsPreview(), 'mock chapter-tags preview idle');
     for (const seed of ['ready', 'not-rendered'] as const) {
@@ -1201,6 +1223,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'renderConfigConfigure',
       'renderConfigSuggestFolder',
       'renderConfigState',
+      'cleanupToolsLaunch',
+      'cleanupToolsState',
       'chapterTagsPreview',
       'chapterTagsEmbed',
       'takeReviewScanStart',
@@ -1290,6 +1314,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'subscribeLineIdentity',
       'subscribePickups',
       'subscribeRenderConfig',
+      'subscribeCleanupTools',
     ];
     expect([...CHECKED, ...VOID, ...NOT_A_REQUEST].sort()).toEqual(Object.keys(createMockApi()).sort());
   });

@@ -58,6 +58,14 @@ export function ChapterTrackMatch(arg1) {
   return window['go']['main']['Host']['ChapterTrackMatch'](arg1);
 }
 
+export function CleanupToolsLaunch(arg1) {
+  return window['go']['main']['Host']['CleanupToolsLaunch'](arg1);
+}
+
+export function CleanupToolsState() {
+  return window['go']['main']['Host']['CleanupToolsState']();
+}
+
 export function CoverageCancel() {
   return window['go']['main']['Host']['CoverageCancel']();
 }

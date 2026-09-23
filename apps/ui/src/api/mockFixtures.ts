@@ -15,6 +15,7 @@ import type {
   PickupsState,
   ReaderState,
   RenderConfigState,
+  CleanupToolsState,
   ScopedSettingField,
   TeleprompterDevice,
   TextSpan,
@@ -931,6 +932,27 @@ export const WIRE_RENDER_CONFIG_ERROR: RenderConfigState = {
   folder: '',
   targets: [],
   count: 0,
+};
+
+/** The Go host's CleanupToolsState answer before any launch (mirrors tests/fixtures/contracts/cleanup-tools-idle.json). */
+export const WIRE_CLEANUP_TOOLS_IDLE: CleanupToolsState = { phase: 'idle', message: '', tool: '', action: '' };
+
+/** A launch REAPER confirmed (mirrors tests/fixtures/contracts/cleanup-tools-launched.json). */
+export const WIRE_CLEANUP_TOOLS_LAUNCHED: CleanupToolsState = {
+  runId: '1790000000000000',
+  phase: 'launched',
+  message: 'Repair Pops/Clicks is open in REAPER. Nothing has changed yet: the repair happens only when you apply it there.',
+  tool: 'repair_pops_clicks',
+  action: 'Item: Repair pops/clicks...',
+};
+
+/** REAPER refused the launch: the narrator has not installed Magnolius DeClick (narration_cleanup.lua's message). */
+export const WIRE_CLEANUP_TOOLS_ERROR: CleanupToolsState = {
+  runId: '1790000000000001',
+  phase: 'error',
+  message: 'Magnolius DeClick is not installed in REAPER. Install it yourself (ReaPack, or Actions > Load ReaScript); Narration Utils never installs it.',
+  tool: 'magnolius_declick',
+  action: '',
 };
 
 /** No chapter render has been configured yet (mirrors tests/fixtures/contracts/chapter-tags-preview-idle.json). */

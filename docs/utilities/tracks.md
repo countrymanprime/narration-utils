@@ -13,7 +13,8 @@ Open a project folder. The Tracks page finds the project's `.rpp` file, lists it
 - stamp each chapter's identity onto the REAPER items that hold it, and read back what is stamped (**Link chapters…**);
 - import a proofer's pickup CSV as pickup markers, step through the open ones, mark them done and export what is left (**Pickups…**);
 - configure REAPER's render for one file per chapter region, without rendering (**Prepare chapter render…**);
-- write ID3 chapter tags into a new copy of an already-rendered combined-book MP3 (**Embed chapter tags…**).
+- write ID3 chapter tags into a new copy of an already-rendered combined-book MP3 (**Embed chapter tags…**);
+- open REAPER's own Repair Pops/Clicks dialog, or the narrator's installed Magnolius DeClick script, on the selected items (**Cleanup tools…**).
 
 See [Using the app: Tracks](../guides/using-the-app/tracks.md) for screenshots and the exact steps.
 
@@ -36,6 +37,7 @@ The track list, playback and the chapter links list are read-only: they never ed
 - **Link chapters…** writes namespaced item extension data (`P_EXT:narration_utils_line_id` and `P_EXT:narration_utils_line_text`) on the chosen items, in one undo block. It never touches item notes or take names, and it leaves an item stamped with a different chapter alone unless the narrator ticks Overwrite. See [manuscript line identity](../architecture/manuscript-line-identity.md).
 - **Pickups…** adds `PICKUP: <note>` project markers on import (one undo block; a tag goes in brackets before the note) and renames a marker to `PICKUP_DONE: <note>` when it is marked done; Next pickup moves the edit cursor. Export only reads the markers.
 - **Prepare chapter render…** sets three render settings (the output folder, the `$region` file-name pattern, and bounds of all regions) and reads back the predicted file names. It never triggers a render or changes the render format.
+- **Cleanup tools…** opens an allow-listed repair dialog in REAPER on the items selected there ([ADR 0146](../adr/0146-cleanup-launchers-open-an-allow-listed-reaper-action-found-by-its-name-and-change-nothing-themselves.md)). It changes nothing itself: the narrator applies or cancels the repair in that dialog, as their own undoable edit. Magnolius DeClick is launched only if the narrator installed it; the app never installs, bundles or downloads it.
 
 **Embed chapter tags…** does not talk to REAPER: it reads the last chapter render's files and writes a new, tagged copy of the MP3 the narrator names, never changing that file. Track-to-chapter *matching* lives in `internal/chaptermatch` (see [How it works](#how-it-works)); this page and the mapping store only record and show the narrator's own confirmation of a link, never a computed guess. Measured recorded duration is planned in [diagnostics-delivery-and-cleanup-tools.prd.md](../prds/diagnostics-delivery-and-cleanup-tools.prd.md) (Phase 8); transcript and waveform views are recorded there as later work. Both can build on this parser instead of a new bridge action.
 
@@ -51,13 +53,14 @@ The track list, playback and the chapter links list are read-only: they never ed
 - One `.rpp` is used without prompting; several prompt for a choice, and the choice persists per project.
 - A missing or non-audio item flags its track without failing the page.
 - The media route refuses any path that is not a source of the selected project's tracks (of any take of any item, not only the active take).
-- Nothing is written to REAPER until the narrator presses the action's own button, and Prepare chapter render never starts a render.
-- Covered by `apps/desktop/internal/tracks`, `chaptermatch` (with `sidecars/transcript-compare/tests/test_chapter_track_parity.py` on the Python side), `lineidentity`, `pickups`, `renderconfig` and `chaptertags`, and `apps/desktop/media_test.go` (Go); the bridge harness in `integrations/reaper/tests` for the Lua commands (`line_identity_test.lua`, `pickups_test.lua`, `render_test.lua`); the tests beside each component in `apps/ui/src/components/tracks/` and `App.test.tsx` (UI); and the `tracks` states in the Playwright visual suite:
+- Nothing is written to REAPER until the narrator presses the action's own button, and Prepare chapter render never starts a render. Cleanup tools only opens a dialog.
+- Covered by `apps/desktop/internal/tracks`, `chaptermatch` (with `sidecars/transcript-compare/tests/test_chapter_track_parity.py` on the Python side), `lineidentity`, `pickups`, `renderconfig`, `cleanuptools` and `chaptertags`, and `apps/desktop/media_test.go` (Go); the bridge harness in `integrations/reaper/tests` for the Lua commands (`line_identity_test.lua`, `pickups_test.lua`, `render_test.lua`, `cleanup_test.lua`); the tests beside each component in `apps/ui/src/components/tracks/` and `App.test.tsx` (UI); and the `tracks` states in the Playwright visual suite:
   - page and playback: default, unplayable-track-selected, rpp-picker, no-rpp, no-daw-link, playing, skipped-forward, last-track-selected;
   - chapter links: chapter-link-confirmed, chapter-link-missing;
   - Link chapters: link-chapters-preview, link-chapters-success, link-chapters-conflict, link-chapters-error;
   - Pickups: pickups-empty, pickups-imported, pickups-import-errors, pickups-next, pickups-error;
   - Prepare chapter render: render-config-prefilled, render-config-success, render-config-no-regions, render-config-error;
-  - Embed chapter tags: chapter-tags-idle, chapter-tags-ready, chapter-tags-not-rendered, chapter-tags-success, chapter-tags-error.
+  - Embed chapter tags: chapter-tags-idle, chapter-tags-ready, chapter-tags-not-rendered, chapter-tags-success, chapter-tags-error;
+  - Cleanup tools: cleanup-tools-idle, cleanup-tools-launched, cleanup-tools-error.
 
   The audio-failure message is covered by unit tests only, since the mock always serves playable audio.

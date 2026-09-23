@@ -55,6 +55,14 @@ function Fake.new(host)
   self.repeat_on = 0
   self.play_state = 0
   self.exit_handlers = {}
+  -- The Main section of REAPER's action list, in enumeration order: { id = command ID, name = action-list text }.
+  -- Starts with a few real native actions (IDs confirmed in REAPER 7.80 by the S5 spike) so a lookup has to skip
+  -- past non-matching entries; a test adds more with Fake:add_action.
+  self.actions = {
+    { id = 40012, name = 'Item: Split items at edit or play cursor (select right)' },
+    { id = 40209, name = 'Item: Apply track/take FX to items' },
+    { id = 42230, name = 'File: Render project, using the most recent render settings, auto-close render dialog' },
+  }
   self.reaper = self:build_api()
   return self
 end
@@ -145,6 +153,12 @@ end
 function Fake:add_stale_listing(directory, name)
   self.stale_names[directory] = self.stale_names[directory] or {}
   table.insert(self.stale_names[directory], name)
+end
+
+-- Adds an action to the Main section of the action list (a native action, or a script such as
+-- "Script: Magnolius_DeClick.lua" once the narrator has loaded it).
+function Fake:add_action(id, name)
+  self.actions[#self.actions + 1] = { id = id, name = name }
 end
 
 -- Makes `APIExists(name)` answer false, the way an older REAPER lacks a newer function.
@@ -333,6 +347,27 @@ function Fake:add_project_api(api)
   function api.Main_OnCommand(command_id, flag)
     fake.calls[#fake.calls + 1] = { name = 'Main_OnCommand', command_id = command_id, flag = flag }
     return true
+  end
+  -- The action list (narration_cleanup.lua). Per the ReaScript docs (not yet checked in a real REAPER: see
+  -- docs/research/reaper-cleanup-launchers.md): SectionFromUniqueID(0) is the Main section, and
+  -- kbd_enumerateActions(section, index) answers the command ID and the action-list text, or 0 past the end.
+  local main_section = { unique_id = 0 }
+  function api.SectionFromUniqueID(unique_id)
+    if unique_id == 0 then
+      return main_section
+    end
+    return nil
+  end
+  function api.kbd_enumerateActions(section, index)
+    fake.calls[#fake.calls + 1] = { name = 'kbd_enumerateActions', index = index }
+    if section ~= main_section then
+      return 0, ''
+    end
+    local action = fake.actions[index + 1]
+    if not action then
+      return 0, ''
+    end
+    return action.id, action.name
   end
   -- The numeric project-info keys (RENDER_BOUNDSFLAG, RENDER_ADDTOPROJ, ...). Every call is recorded in fake.calls
   -- the same way Main_OnCommand is, so a test can assert which keys were touched.

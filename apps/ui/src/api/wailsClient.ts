@@ -53,6 +53,7 @@ import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schema
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
+import { cleanupToolsStartResultSchema, cleanupToolsStateSchema } from './schemas/cleanuptools';
 import { dictionaryLookupResultSchema } from './schemas/dictionary';
 import type { NarrationApi } from '../types';
 import * as host from '../../wailsjs/go/main/Host';
@@ -279,6 +280,9 @@ export const wailsClient: NarrationApi = {
   renderConfigSuggestFolder: () => decode(renderConfigSuggestedFolderSchema, 'RenderConfigSuggestFolder', host.RenderConfigSuggestFolder()),
   renderConfigState: () => decode(renderConfigStateSchema, 'RenderConfigState', host.RenderConfigState()),
   subscribeRenderConfig: (onUpdate) => subscribeChecked('renderconfig:state', renderConfigStateSchema, onUpdate),
+  cleanupToolsLaunch: (tool) => decode(cleanupToolsStartResultSchema, 'CleanupToolsLaunch', host.CleanupToolsLaunch(tool)),
+  cleanupToolsState: () => decode(cleanupToolsStateSchema, 'CleanupToolsState', host.CleanupToolsState()),
+  subscribeCleanupTools: (onUpdate) => subscribeChecked('cleanuptools:state', cleanupToolsStateSchema, onUpdate),
   chapterTagsPreview: () => decode(chapterTagsPreviewSchema, 'ChapterTagsPreview', host.ChapterTagsPreview()),
   chapterTagsEmbed: (destPath) => decode(chapterTagsEmbedResultSchema, 'ChapterTagsEmbed', host.ChapterTagsEmbed(destPath)),
   projectRecents: () => decode(recentProjectsSchema, 'ProjectRecents', host.ProjectRecents()),

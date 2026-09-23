@@ -10,6 +10,7 @@ import { useTrackPlayback } from './useTrackPlayback';
 import { LinkChaptersDialog } from './LinkChaptersDialog';
 import { PickupsDialog } from './PickupsDialog';
 import { RenderConfigDialog } from './RenderConfigDialog';
+import { CleanupToolsDialog } from './CleanupToolsDialog';
 import { ChapterTagsDialog } from './ChapterTagsDialog';
 import type { ManuscriptChapter, Track, TracksDiscovery, TracksProject } from '../../types';
 
@@ -139,6 +140,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
   const [linkChaptersOpen, setLinkChaptersOpen] = useState(false);
   const [pickupsOpen, setPickupsOpen] = useState(false);
   const [renderConfigOpen, setRenderConfigOpen] = useState(false);
+  const [cleanupToolsOpen, setCleanupToolsOpen] = useState(false);
   const [chapterTagsOpen, setChapterTagsOpen] = useState(false);
 
   useEffect(() => {
@@ -207,7 +209,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
           <Heading title="Tracks">{discovery?.selected ? basename(discovery.selected) : 'Detected from the project’s REAPER file.'}</Heading>
         </div>
         {project && project.tracks.length > 0 && (
-          <div className="flex flex-none flex-wrap gap-2">
+          <div className="flex min-w-0 flex-wrap gap-2">
             {chapters.length > 0 && (
               <Button variant="ghost" onClick={() => setLinkChaptersOpen(true)}>
                 Link chapters…
@@ -222,6 +224,9 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
             <Button variant="ghost" onClick={() => setChapterTagsOpen(true)}>
               Embed chapter tags…
             </Button>
+            <Button variant="ghost" onClick={() => setCleanupToolsOpen(true)}>
+              Cleanup tools…
+            </Button>
           </div>
         )}
       </div>
@@ -230,6 +235,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
       {pickupsOpen && <PickupsDialog onClose={() => setPickupsOpen(false)} />}
       {renderConfigOpen && <RenderConfigDialog onClose={() => setRenderConfigOpen(false)} />}
       {chapterTagsOpen && <ChapterTagsDialog onClose={() => setChapterTagsOpen(false)} />}
+      {cleanupToolsOpen && <CleanupToolsDialog onClose={() => setCleanupToolsOpen(false)} />}
       {error && (
         <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
           {error}
