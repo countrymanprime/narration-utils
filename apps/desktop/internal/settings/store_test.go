@@ -3,6 +3,7 @@ package settings
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
@@ -27,6 +28,19 @@ func TestBuiltinDefaultsMatchRepoDefaultsFile(t *testing.T) {
 				t.Errorf("builtinDefaults[%q][%q] is not in defaults.json", tool, key)
 			}
 		}
+	}
+}
+
+// The store serves every DAW (audacity-integration PRD Phase 5), so refusing a project override with no project open must not
+// tell an Audacity narrator, or a standalone one, to save a REAPER project.
+func TestAProjectSaveWithNoProjectNamesNoDAW(t *testing.T) {
+	value := "x"
+	err := New(t.TempDir(), "").Save("General", "project", map[string]*string{"log_verbosity": &value})
+	if err == nil {
+		t.Fatal("a project save with no project must fail")
+	}
+	if strings.Contains(strings.ToLower(err.Error()), "reaper") {
+		t.Fatalf("error = %q, want a DAW-neutral sentence", err)
 	}
 }
 

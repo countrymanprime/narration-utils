@@ -150,6 +150,7 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0140](0140-take-metrics-are-per-category-evidence-over-a-takes-source-range.md) | Take metrics are per-category evidence measured over a take's source range | Proposed |
 | [0141](0141-per-take-divergence-is-localized-by-the-markers-diff-and-asr-word-timestamps.md) | Per-take divergence is localized by the markers' diff and ASR word timestamps, checked on synthetic fixtures | Proposed |
 | [0143](0143-the-review-workflow-calls-a-daw-through-dawadapter-and-the-event-vocabulary-is-part-of-the-contract.md) | The review workflow calls a DAW through `dawadapter.Review`, and the event vocabulary is part of the contract | Proposed |
+| [0144](0144-a-launch-names-its-daw-with-daw-and-an-audacity-launch-opens-no-reaper-bridge.md) | A launch names its DAW with `--daw`, and an Audacity launch opens no REAPER bridge | Proposed |
 | [0150](0150-the-teleprompter-reads-credits-as-a-host-rendered-script-file-not-a-chapter.md) | The teleprompter reads the credits as a host-rendered script file, not as a chapter | Proposed |
 | [0151](0151-chapter-announcements-render-per-narration-chapter-and-are-timed-with-the-credits.md) | Chapter announcements render per narration chapter and are timed with the credits; room tone is the narrator's setting | Proposed |
 | [0152](0152-the-retail-sample-is-a-paragraph-range-on-the-project-manifest-held-to-five-minutes-by-the-host.md) | The retail sample is a paragraph range on the project manifest, held to five minutes by the host | Proposed |

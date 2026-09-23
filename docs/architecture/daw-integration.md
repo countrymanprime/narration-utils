@@ -41,6 +41,7 @@ REAPER never parses this JSON. The Wails host owns setting resolution and passes
 - Audacity is a future adapter, not a Lua port. Its closest finding representation is a UTF-8 label track. The layered Python config module and React workspace are DAW-agnostic, so an Audacity adapter reuses them directly.
 - Use its optional `mod-script-pipe` only from a local desktop process and only after the user has enabled it.
 - First adapter scope: import findings as labels, navigate/export reviewed labels, and preserve the DAW-neutral finding data. Take management has no direct Audacity equivalent.
+- **`--daw Audacity`** ([ADR 0144](../adr/0144-a-launch-names-its-daw-with-daw-and-an-audacity-launch-opens-no-reaper-bridge.md), PRD Phase 5). The app accepts it the way the REAPER launcher passes `--daw REAPER`; `dawadapter.Classify` is the only reader of the label (case-insensitive; anything but REAPER or Audacity selects nothing). An Audacity launch opens no REAPER file bridge even if a `--session-dir` is passed, its review workflow refuses every request with "Audacity support is not available yet. …" until the pipe client (Phase 4) lands, and it resolves the three settings tiers below with no Audacity-specific code (proved by `apps/desktop/audacity_test.go` and `libs/python/tests/test_config_audacity.py` on an `.aup3` project with no `.rpp`).
 
 ## The DAWAdapter seam
 
@@ -56,7 +57,7 @@ The review workflow (`apps/desktop/internal/transcript`, Transcript Compare) rea
 
 - **Requests in, events out.** Every method only hands a request to the DAW and returns an error when it could not; the answer arrives later as an event tagged with the run ID. `dawadapter.Event` and `Subscription` alias the bridge's types, so the event tags and fields in `internal/bridge/wire.go` are part of the contract: a second adapter reports as the same events rather than the service growing a second parser.
 - **Only the review workflow.** Pickups, line identity, project state, render config, take creation and reachability keep `*bridge.Client`. They are REAPER-only, with no Audacity equivalent, and share the same client (so the same event cursor) as the adapter.
-- **Construction.** `transcript.New` still takes the `*bridge.Client` and wraps it with `dawadapter.ReviewFor`, which returns a nil `Review` for a nil client (a standalone launch). `transcript.NewWithReview` takes any adapter; `internal/transcript/adapter_test.go` runs the whole review loop against a fake one.
+- **Construction.** The host builds the service with `transcript.NewWithReview` and `dawadapter.ReviewForDAW(daw, client)`: on an Audacity launch an adapter that answers `ErrAudacityNotAvailable` to every request, otherwise `dawadapter.ReviewFor(client)`, which returns a nil `Review` for a nil client (a standalone launch). `transcript.New` still takes a `*bridge.Client` and wraps it with `ReviewFor`; `internal/transcript/adapter_test.go` runs the whole review loop against a fake adapter.
 - **Not yet in the interface.** Marking a finding reviewed and exporting the reviewed set (PRD Phases 7 and 8) have no REAPER command today; they are added to `Review`, with a REAPER implementation, when those phases land.
 
 ## Acceptance criteria
