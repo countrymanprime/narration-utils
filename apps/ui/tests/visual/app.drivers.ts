@@ -234,6 +234,24 @@ async function openFlaggedReadAloud(page: Page) {
   return dialog;
 }
 
+// A real mouse wheel over the reader text (teleprompter-engines-and-input-devices.prd.md Phase 10), far enough that the
+// highlighted word leaves the view, then waits for "Following paused" and for the smooth scroll to finish, so the shot
+// shows where the narrator left the text rather than a frame mid-scroll.
+async function scrollReaderByHand(page: Page): Promise<void> {
+  const text = page.getByRole('region', { name: 'Chapter text' });
+  const box = await text.boundingBox();
+  const viewport = page.viewportSize();
+  if (!box || !viewport) throw new Error('The reader text has no box to scroll over.');
+  await page.mouse.move(box.x + box.width / 2, Math.min(box.y + 120, viewport.height - 40));
+  await page.mouse.wheel(0, 1500);
+  await page.getByText('Following paused.', { exact: false }).waitFor();
+  await page.waitForFunction(() => {
+    const rect = document.querySelector('[data-current-word]')?.getBoundingClientRect();
+    return rect !== undefined && rect.bottom < 0;
+  });
+  await settlePage(page);
+}
+
 // Playwright's synthetic page.mouse.down/move/up drag doesn't reliably
 // produce a non-empty window.getSelection() range for useTextSelection.ts's
 // mouseup listener to pick up (unlike a real Chromium user drag, or RTL's
@@ -483,6 +501,15 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'Read Chapter 1 aloud');
       await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+    },
+    // Manual scroll (teleprompter-engines-and-input-devices.prd.md Phase 10), in the dialog: see the Teleprompter page's `following-paused`.
+    'read-aloud-following-paused': async (page) => {
+      await page.goto('/?mockTeleprompter=listening');
+      await settlePage(page);
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+      await scrollReaderByHand(page);
     },
     // Word-click seek (teleprompter-manuscript-integration.prd.md Phase 4): from the same listening state as above, click
     // the earliest "Go back to here" word (word 0) and wait for the highlight to land there without restarting.
@@ -1177,6 +1204,15 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await settlePage(page);
       await goToPage(page, 'Teleprompter');
       await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+    },
+    // Manual scroll (teleprompter-engines-and-input-devices.prd.md Phase 10): from the listening state, a mouse wheel over
+    // the text pauses following; the text stays where the narrator scrolled it, well past the highlighted word.
+    'following-paused': async (page) => {
+      await page.goto('/?mockTeleprompter=listening');
+      await settlePage(page);
+      await goToPage(page, 'Teleprompter');
+      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+      await scrollReaderByHand(page);
     },
     waiting: async (page) => {
       await page.goto('/?mockTeleprompter=waiting');

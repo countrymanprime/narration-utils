@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ReadAloudDialog } from './ReadAloudDialog';
@@ -255,6 +255,41 @@ describe('ReadAloudDialog story bible and note marks (teleprompter-manuscript-in
     expect(scrollIntoView).not.toHaveBeenCalled();
     expect(body.scrollTop).toBe(120);
     expect(document.querySelector('[data-word="8"] [data-highlight="Cursor"]')).toBeTruthy();
+  });
+
+  // teleprompter-engines-and-input-devices.prd.md Phase 10: 0 pull-backs after a user scroll until following resumes.
+  it('never pulls the text back after the narrator scrolls, until Follow is pressed', async () => {
+    const user = userEvent.setup();
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    const { setState, emit } = renderMarked();
+    await findMark('Character');
+    setState({ phase: 'running', chapter: 'chapter-1' });
+    emit(SCRIPT);
+    emit({ type: 'position', read: 7, committed: 7, status: 'listening', jump: null, skipped: null });
+    await waitFor(() => expect(document.querySelector('[data-word="7"] [data-highlight="Cursor"]')).toBeTruthy());
+    const follow = screen.getByRole('button', { name: 'Follow' });
+    expect(follow).toHaveProperty('disabled', true);
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+
+    const text = screen.getByRole('region', { name: 'Chapter text' });
+    const inputs: [() => void, number][] = [
+      [() => fireEvent.wheel(text, { deltaY: 300 }), 8],
+      [() => fireEvent.touchMove(text), 9],
+      [() => fireEvent.keyDown(text, { key: 'PageDown' }), 10],
+    ];
+    for (const [scroll, read] of inputs) {
+      scroll();
+      expect(await screen.findByText(/Following paused/)).toBeTruthy();
+      scrollIntoView.mockClear();
+      emit({ type: 'position', read, committed: read, status: 'listening', jump: null, skipped: null });
+      await waitFor(() => expect(document.querySelector(`[data-word="${read}"] [data-highlight="Cursor"]`)).toBeTruthy());
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: 'Follow' }));
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText(/Following paused/)).toBeNull();
+    }
   });
 
   it('remembers the rail being hidden and its tab for the next dialog, in browser storage', async () => {

@@ -30,13 +30,19 @@ nothing is chosen for you: the likely chapters are offered as buttons under the 
 REAPER project after arming a track for the app to see it.
 
 Press Start reading and begin at the top of the chapter, title first. The setup fields fold away
-into a bar that stays at the top with the status and a Stop button. Words you have read dim, the
+into a bar that stays at the top with the status, a Follow button and a Stop button. Words you have read dim, the
 word you are on is filled in, and the page scrolls to keep it near the middle of the screen.
 The highlight follows what it hears, not a timer, so it waits when you do. The key above the text
 shows the three looks: current word, word read, and skipped (a dotted underline).
 
 While it is listening you can click any word: a word ahead starts reading from there, and a word you
 have already read takes you back to it.
+
+You can scroll the text yourself while it listens, with the mouse wheel, a touch drag, the scroll
+bar or the Page Up, Page Down and arrow keys. The page then stops following, says "Following paused"
+under the status and leaves the text where you put it. It follows again on its own once the word you
+are on is back near the middle of the screen, whether you scroll back to it or read on until it
+arrives there. To jump straight back, press Follow beside Stop.
 
 ![Teleprompter listening, with read words dimmed and the current word highlighted](../../images/ui/teleprompter-listening.webp)
 

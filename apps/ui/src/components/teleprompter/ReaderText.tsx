@@ -1,7 +1,8 @@
-import { Fragment, memo, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { Fragment, memo, useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 import { Highlight, highlightKind, type HighlightKind } from '../primitives/Highlight';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { flagHint } from './readerFlags';
+import { scrollCursorIntoView } from './useFollowCursor';
 import { segmentWords, splitWords, type ReaderMark, type ReaderMarkTarget, type ReaderRow, type WordSegment } from './readerModel';
 import type { TeleprompterFlagKind } from '../../types';
 
@@ -11,7 +12,6 @@ const NO_MARKS: ReaderMark[] = [];
 const NO_SKIPPED: SkippedRange[] = [];
 // The row is `whitespace-pre-line`, so a line break in the source text is kept as one and any other gap is a single space.
 const separator = (gap: string): string => (gap.includes('\n') ? '\n' : ' ');
-const prefersReducedMotion = (): boolean => typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Every mark goes through `Highlight` (ADR 0016/0017): an entity in its Story Bible category colour, a note in the note
 // colour, exactly as the Manuscript reader draws them, and a suspected flag (Phase 7) in the flag kind of the same name.
@@ -157,14 +157,6 @@ const RowWords = memo(function RowWords(row: RowWordsProps) {
     </>
   );
 });
-function scrollCursorIntoView(container: HTMLElement | null) {
-  const word = container?.querySelector<HTMLElement>('[data-current-word]');
-  if (!word || typeof word.scrollIntoView !== 'function') return;
-  const { top, bottom } = word.getBoundingClientRect();
-  const height = window.innerHeight;
-  if (top > height * 0.25 && bottom < height * 0.7) return;
-  word.scrollIntoView({ block: 'center', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
-}
 
 function RowContent({
   row,
@@ -213,6 +205,7 @@ export function ReaderText({
   onSeek,
   marks,
   onOpenMark,
+  readerRef,
 }: {
   rows: ReaderRow[];
   cursor: number;
@@ -224,12 +217,16 @@ export function ReaderText({
   marks?: Map<string, ReaderMark[]>;
   /** Opens a mark's entry (Phase 5); a stable reference, like `onSeek`. It must not move the cursor or scroll the reader. */
   onOpenMark?: (mark: ReaderMark) => void;
+  /** The reader element, for `useFollowCursor` (engines PRD Phase 10), which pauses `follow` while the narrator scrolls by hand. */
+  readerRef?: RefObject<HTMLDivElement | null>;
 }) {
-  const container = useRef<HTMLDivElement>(null);
-  // Follows the cursor only: opening a mark changes neither `cursor` nor `follow`, so it never scrolls the text.
+  const ownRef = useRef<HTMLDivElement>(null);
+  const container = readerRef ?? ownRef;
+  // Follows the cursor only: opening a mark changes neither `cursor` nor `follow`, so it never scrolls the text. `follow`
+  // turning back on (the Follow control) brings the word straight back into view.
   useEffect(() => {
     if (follow) scrollCursorIntoView(container.current);
-  }, [cursor, follow]);
+  }, [container, cursor, follow]);
 
   return (
     <div ref={container} className="space-y-5 text-[1.35rem] leading-[2.1rem]" aria-label="Chapter text" role="region">
