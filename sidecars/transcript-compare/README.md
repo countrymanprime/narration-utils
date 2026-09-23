@@ -10,12 +10,17 @@ actually said.
 - `core/` — the DAW-agnostic Python backend (`compare.py`), plus `homophones.csv` and
   `common_words.txt`. No DAW APIs are used here; it's a plain CLI invoked by whichever DAW
   driver below is running it. Its dependencies are declared in the repo-root `pyproject.toml` and pinned in `uv.lock`.
-- `core/coverage.py` — the recording-coverage model: how much of a chapter's body text the
-  recording contains, in order, computed from the same alignment as the take markers. Not wired
-  into a run yet; see `docs/research/recording-coverage-alignment-spike.md`.
+- `core/recording_coverage.py` — the recording-coverage model: how much of a chapter's body text the
+  recording contains, in order, computed from the same alignment as the take markers; see
+  `docs/research/recording-coverage-alignment-spike.md`.
+- `core/coverage_mode.py` — `compare.py --coverage`: reads a JSON manifest of a chapter's items,
+  reuses or writes one words file per item, and writes `COVERAGE` lines with JSON payloads
+  (measurements only; the host applies the thresholds). Its module docstring and ADR 0127 give
+  the manifest, words-file and output formats and the exit codes. The Go service that starts it
+  is Phase 4 of `docs/prds/recording-coverage-analysis.prd.md`.
 - `tests/` — the pytest suite for the backend, plus the recording-coverage ground-truth harness
   (`coverage_harness.py`) and its synthetic labeled fixtures (`fixtures/coverage/`), and the
-  alignment spike that scores `core/coverage.py` on them (`coverage_spike.py`); see
+  alignment spike that scores `core/recording_coverage.py` on them (`coverage_spike.py`); see
   `docs/research/recording-coverage-fixtures.md`.
 - REAPER integration is centralized in `integrations/reaper/narration_ui_bridge.lua`; a future Audacity
   driver has placeholder notes under `integrations/audacity/transcript-compare/`.

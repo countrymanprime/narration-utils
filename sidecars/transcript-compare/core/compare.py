@@ -30,6 +30,12 @@ genuine misread/skip/insertion rather than a token-split artifact of the
 diff itself), not proof either way. NEED_CHAPTER means the track name
 didn't confidently match any heading - the caller should re-invoke with
 --chapter-title set to one of the listed titles.
+
+Two additive modes write their own tagged lines instead: --find-repeats
+(SPAN_GROUP/SPAN_MEMBER) and --coverage (recording coverage: a JSON manifest
+in, COVERAGE/COVERAGE_ITEM/COVERAGE_PARAGRAPH/COVERAGE_REGION lines with JSON
+payloads out; see core/coverage_mode.py for its manifest, words files, output
+and exit codes).
 """
 
 import argparse
@@ -187,6 +193,31 @@ _HOMOPHONE_CANON = _build_canon(load_equivalence_groups(os.path.join(_SCRIPT_DIR
 # names/words Whisper spells inconsistently, since it has no dictionary
 # entry to guess from) - see project_data_path/load_equivalence_groups.
 _CUSTOM_CANON = {}
+
+
+def register_project_equivalences(manuscript_path):
+    """Load the manuscript's per-project equivalences.csv into _CUSTOM_CANON
+    (before anything tokenizes) and return its path, or None when it holds
+    no group."""
+    equivalences_path = project_data_path(manuscript_path, "equivalences.csv")
+    custom_groups = load_equivalence_groups(equivalences_path)
+    if not custom_groups:
+        return None
+    _CUSTOM_CANON.update(_build_canon(custom_groups))
+    log(f"Loaded {len(custom_groups)} custom word equivalence group(s) from {equivalences_path}")
+    return equivalences_path
+
+
+def load_vocabulary_hints(manuscript_path):
+    """The project's vocabulary_hints.txt as Whisper hotwords, or None."""
+    vocab_hints_path = project_data_path(manuscript_path, "vocabulary_hints.txt")
+    if not os.path.exists(vocab_hints_path):
+        return None
+    try:
+        with open(vocab_hints_path, "r", encoding="utf-8") as f:
+            return f.read().strip() or None
+    except OSError:
+        return None
 
 
 def _load_word_set(path):
@@ -779,7 +810,15 @@ def load_manuscript_chapters(manuscript_path):
     """Return comparison chapters from canonical manuscript data only."""
     data = canonical_manuscript.load_file(manuscript_path)
     by_chapter = {
-        chapter["id"]: {"id": chapter["id"], "title": chapter["title"], "paragraphs": [], "global_indices": [], "paragraph_ids": []}
+        chapter["id"]: {
+            "id": chapter["id"],
+            "title": chapter["title"],
+            # Read aloud optionally, like the title (recording coverage, Q11); the markers ignore it.
+            "subtitle": chapter.get("subtitle") if isinstance(chapter.get("subtitle"), str) else "",
+            "paragraphs": [],
+            "global_indices": [],
+            "paragraph_ids": [],
+        }
         for chapter in data["chapters"]
         if chapter.get("contentKind", "narration") == "narration"
     }
@@ -1159,7 +1198,7 @@ def diff_and_build_markers(chapter_tokens, chapter_unit_idx, chapter_raw_words, 
     # exact alignment instead of guessing sentence boundaries independently.
     chapter_norm_unit_idx = [chapter_unit_idx[orig_i] for orig_i in chapter_index_map]
     # doc_tokens and audio_tokens are the two sequences the opcodes index;
-    # recording coverage (core/coverage.py) reads them from this same
+    # recording coverage (core/recording_coverage.py) reads them from this same
     # alignment so coverage and markers can never disagree.
     alignment = {
         "opcodes": opcodes,
@@ -1597,11 +1636,7 @@ def find_repeated_spans(args):
 
     write_progress(progress_path, "START", 0, "Starting...")
 
-    equivalences_path = project_data_path(args.manuscript, "equivalences.csv")
-    custom_groups = load_equivalence_groups(equivalences_path)
-    if custom_groups:
-        _CUSTOM_CANON.update(_build_canon(custom_groups))
-        log(f"Loaded {len(custom_groups)} custom word equivalence group(s) from {equivalences_path}")
+    register_project_equivalences(args.manuscript)
 
     segments = read_repeat_segments(args.manifest)
     if not segments:
@@ -1675,11 +1710,7 @@ def run(args):
     # to the manuscript rather than a separate argument, so there's
     # nothing extra for the caller to plumb through. Registered before
     # anything below calls tokenize() (chapter matching included).
-    equivalences_path = project_data_path(args.manuscript, "equivalences.csv")
-    custom_groups = load_equivalence_groups(equivalences_path)
-    if custom_groups:
-        _CUSTOM_CANON.update(_build_canon(custom_groups))
-        log(f"Loaded {len(custom_groups)} custom word equivalence group(s) from {equivalences_path}")
+    register_project_equivalences(args.manuscript)
 
     segments = read_segments(args.manifest)
     if not segments:
@@ -1710,14 +1741,7 @@ def run(args):
     check_cancelled(progress_path)
     full_audio, segments = build_concatenated_audio(segments, progress_path)
 
-    vocab_hints_path = project_data_path(args.manuscript, "vocabulary_hints.txt")
-    hotwords = None
-    if os.path.exists(vocab_hints_path):
-        try:
-            with open(vocab_hints_path, "r", encoding="utf-8") as f:
-                hotwords = f.read().strip() or None
-        except OSError:
-            hotwords = None
+    hotwords = load_vocabulary_hints(args.manuscript)
 
     if args.chunk_seconds and args.chunk_seconds > 0:
         chunk_work_dir = os.path.splitext(args.out)[0] + "_chunks"
@@ -1833,6 +1857,16 @@ def main():
         default=0.5,
         help="With --find-repeats: minimum fraction of the shorter span two reads' manuscript spans must overlap by to be grouped as the same repeated read (default 0.5)",
     )
+    ap.add_argument(
+        "--coverage",
+        action="store_true",
+        help="Additive mode (recording coverage): measure how much of --chapter-id the items in --manifest (a JSON manifest) "
+        "read, in order, reusing or writing one words file per item in --words-dir, and write COVERAGE lines to --out",
+    )
+    ap.add_argument("--chapter-id", default=None, help="With --coverage: the canonical manuscript chapter id to measure (no name matching)")
+    ap.add_argument("--words-dir", default=None, help="With --coverage: the directory holding the per-item words files the manifest names")
+    ap.add_argument("--max-misread-run", type=int, default=None, help="With --coverage: the largest gap of body words that counts as a misread (default 8)")
+    ap.add_argument("--min-anchor-run", type=int, default=None, help="With --coverage: the shortest run of matching words that counts as read (default 3)")
     args = ap.parse_args()
 
     if args.log:
@@ -1855,6 +1889,10 @@ def main():
             os._exit(1)
         os._exit(0)
 
+    if args.coverage:
+        _main_coverage(ap, args)
+        return
+
     required = [("--manifest", args.manifest), ("--track-name", args.track_name), ("--out", args.out)]
     if not args.find_repeats:
         required.append(("--diff-out", args.diff_out))
@@ -1862,8 +1900,31 @@ def main():
     if missing:
         ap.error(", ".join(missing) + " required unless --extract-hints is given")
 
+    _run_and_exit(args, find_repeated_spans if args.find_repeats else run)
+
+
+def _main_coverage(ap, args):
+    """--coverage: check its own arguments, then run core/coverage_mode.py."""
+    required = [("--manifest", args.manifest), ("--chapter-id", args.chapter_id), ("--words-dir", args.words_dir), ("--out", args.out)]
+    missing = [name for name, val in required if not val]
+    if missing:
+        ap.error(", ".join(missing) + " required with --coverage")
+    for flag, given in [("--find-repeats", args.find_repeats), ("--chunk-seconds", args.chunk_seconds)]:
+        if given:
+            ap.error(f"{flag} cannot be used with --coverage")
+
+    def coverage(run_args):
+        import coverage_mode  # a sibling module: compare.py's own directory is on sys.path, frozen or not
+
+        coverage_mode.run(run_args, sys.modules[__name__])
+
+    _run_and_exit(args, coverage)
+
+
+def _run_and_exit(args, mode):
+    """Run one mode and exit with the sidecar's contract: 0 done, 1 failed, 2 cancelled."""
     try:
-        find_repeated_spans(args) if args.find_repeats else run(args)
+        mode(args)
     except Cancelled:
         log("Cancelled by user.")
         write_progress(args.progress, "CANCELLED", 0, "Cancelled by user")
