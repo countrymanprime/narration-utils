@@ -148,6 +148,68 @@ describe('the import review dialog, as the narrator meets it', () => {
   });
 });
 
+describe('build after import (B1-B3)', () => {
+  it('offers the checkbox pre-checked from Settings (ManuscriptGuide.build_after_import defaults on, D8)', async () => {
+    const { dialog } = await openReview();
+    const box = await waitFor(() => dialog.getByRole('checkbox', { name: 'Build the Story Bible after import' }));
+    expect(box.getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('chains a build after a successful import, saying so, and never blames the import for a build failure', async () => {
+    let guideBuild = vi.fn();
+    const notices: string[] = [];
+    const api = createMockApi({}, { noManuscript: true });
+    guideBuild = vi.spyOn(api, 'guideBuild').mockRejectedValue(new Error('the language model could not be read'));
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <Home data={await api.bootstrap()} go={() => {}} notify={(text) => notices.push(text)} goToManuscript={() => {}} refreshBootstrap={async () => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Import manuscript' }));
+    const dialog = within(await screen.findByRole('alertdialog', { name: /^Import Alice\./ }));
+    await waitFor(() => dialog.getByRole('checkbox', { name: 'Build the Story Bible after import' }));
+    fireEvent.click(dialog.getByRole('button', { name: 'Import' }));
+
+    await waitFor(() => expect(guideBuild).toHaveBeenCalledWith({}));
+    await waitFor(() => expect(notices).toContain('Manuscript imported.'));
+    await waitFor(() => expect(notices.some((text) => text.includes('Story Bible build failed: the language model could not be read'))).toBe(true));
+    // The import itself is never in question: no dialog is left open demanding another look.
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('does not chain a build when the narrator unchecks it', async () => {
+    let guideBuild = vi.fn();
+    const { dialog } = await openReview((api) => void (guideBuild = vi.spyOn(api, 'guideBuild')));
+    const box = await waitFor(() => dialog.getByRole('checkbox', { name: 'Build the Story Bible after import' }));
+    fireEvent.click(box);
+    fireEvent.click(dialog.getByRole('button', { name: 'Import' }));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect(guideBuild).not.toHaveBeenCalled();
+  });
+
+  it('shows the chained build as its own progress dialog when it does not finish at once', async () => {
+    const { dialog, api } = await openReview((hostApi) =>
+      vi.spyOn(hostApi, 'guideBuild').mockResolvedValue({
+        status: 'started',
+        job: { id: 'chained-build', kind: 'story_bible', phase: 'running', message: 'Extracting names', percent: 30, logs: [], elapsed: 3 },
+      }),
+    );
+    vi.spyOn(api, 'guideBuildState').mockResolvedValue({
+      id: 'chained-build',
+      kind: 'story_bible',
+      phase: 'running',
+      message: 'Extracting names',
+      percent: 30,
+      logs: [],
+      elapsed: 3,
+    });
+    fireEvent.click(dialog.getByRole('button', { name: 'Import' }));
+    expect(await screen.findByRole('dialog', { name: 'Build the Story Bible' })).toBeTruthy();
+  });
+});
+
 describe('the summary and the groups of the review', () => {
   it('says in the dialog message what was found, and follows a reclassification', async () => {
     const { dialog } = await openReview();

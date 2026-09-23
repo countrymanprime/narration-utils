@@ -14,7 +14,9 @@ func TestTheLanguageModelChoiceIsTheApprovedCatalogWhetherOrNotAModelIsInstalled
 		t.Fatal(err)
 	}
 	fields, _ := schemas["ManuscriptGuide"].([]map[string]any)
-	if len(fields) != 1 {
+	// spacy_model plus build_after_import (N19d): the catalog override must replace only spacy_model's choices, not
+	// the whole ManuscriptGuide list (a bug this test would have caught had it existed sooner).
+	if len(fields) != 2 || fields[0]["key"] != "spacy_model" {
 		t.Fatalf("ManuscriptGuide fields = %v", schemas["ManuscriptGuide"])
 	}
 	choices, _ := fields[0]["choices"].([]string)
