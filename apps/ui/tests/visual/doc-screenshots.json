@@ -60,7 +60,28 @@
     "state": "selection-popup",
     "viewport": "desktop",
     "docName": "manuscript-selection-popup",
-    "caption": "Manuscript - text-selection action popup (+ Note, + Story Bible)"
+    "caption": "Manuscript - text-selection action popup on one word (+ Note, + Story Bible, Look up)"
+  },
+  {
+    "page": "manuscript",
+    "state": "word-lookup-definition",
+    "viewport": "desktop",
+    "docName": "manuscript-word-lookup",
+    "caption": "Manuscript - the Look up panel: definitions, examples and synonyms by part of speech, with the dictionary's credit"
+  },
+  {
+    "page": "manuscript",
+    "state": "word-lookup-not-found",
+    "viewport": "desktop",
+    "docName": "manuscript-word-lookup-not-found",
+    "caption": "Manuscript - Look up for a word the dictionary does not have"
+  },
+  {
+    "page": "manuscript",
+    "state": "word-lookup-not-installed",
+    "viewport": "desktop",
+    "docName": "manuscript-word-lookup-download",
+    "caption": "Manuscript - the first Look up asks before downloading the dictionary"
   },
   {
     "page": "manuscript",

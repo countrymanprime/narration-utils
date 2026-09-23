@@ -87,6 +87,9 @@ const mockUpdate = (
 const mockAssets = (['missing', 'downloading', 'verifying', 'download-fails', 'installing', 'checking', 'damaged'] as const).find(
   (seed) => seed === mockParams.get('mockAssets'),
 );
+// `?mockDictionary=missing|damaged` boots without the offline dictionary, or with one whose index fails its check, so the reader's Look up asks to
+// download it (or to download it again) first (story-bible-and-import-ux-briefs.prd.md Phase 8).
+const mockDictionary = (['missing', 'damaged'] as const).find((seed) => seed === mockParams.get('mockDictionary'));
 // `?mockImportPreview=markdown|repaired|text` makes the next manuscript import a Markdown file (so the chapter heading level choice can be seen in the review dialog), a
 // Word file whose headings the importer had to repair (so the repairs note can), or a plain-text file with an epigraph read as a subtitle (so a subtitle
 // that returns to the text when it is turned off can).
@@ -127,6 +130,7 @@ const mockChapterSuggestion = (['matched', 'ambiguous'] as const).find((seed) =>
 const mockInitial = {
   ...(mockImportPreview ? { importPreview: mockImportPreview } : {}),
   ...(mockAssets ? { assets: mockAssets } : {}),
+  ...(mockDictionary ? { dictionary: mockDictionary } : {}),
   ...(mockUpdate ? { update: mockUpdate } : {}),
   ...(mockLiveDegraded ? { liveUpdatesDegraded: true } : {}),
   ...(mockRebuildRunning ? { rebuildRunning: true } : {}),

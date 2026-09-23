@@ -119,7 +119,8 @@ replacing the manuscript keeps it; if its lines are gone, the panel says so and 
 ## Local assets
 
 The **Local assets** category of the Global scope lists every optional download Narration Utils can keep on this computer: preview
-voices, Whisper models for proofing comparisons and the language model the Story Bible uses. Nothing here downloads by itself, and
+voices, Whisper models for proofing comparisons, the language model the Story Bible uses and the dictionary the Manuscript reader's
+Look up reads. Nothing here downloads by itself, and
 removing one never touches your settings or projects. The page also shows how much disk the installed ones use and the folder they
 are kept in.
 

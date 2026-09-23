@@ -34,6 +34,16 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['home', 'recording-check-incomplete'],
     snapshot: 'dialog-recording-check.aria.yml',
   },
+  {
+    name: 'the look-up panel is a modal slide-over named for the word, its definitions a list under a heading per part of speech',
+    state: ['manuscript', 'word-lookup-definition'],
+    snapshot: 'slide-over-word-lookup.aria.yml',
+  },
+  {
+    name: 'the dictionary download question is an alert dialog',
+    state: ['manuscript', 'word-lookup-not-installed'],
+    snapshot: 'confirm-download-dictionary.aria.yml',
+  },
 ];
 
 for (const modal of MODALS) {
@@ -43,7 +53,7 @@ for (const modal of MODALS) {
   });
 }
 
-// A canary for the mechanism the modal snapshots above rely on: the root `children: equal` only proves the page behind a modal
+// A canary for the mechanism the snapshots above rely on: the root `children: equal` only proves the page behind a modal
 // is hidden if it fails when the page is not. Take the hiding away and the same snapshot must stop matching.
 test('the isolation check fails when the page behind a modal is exposed', async ({ page }) => {
   await openApp(page, DESKTOP, ['storybible', 'delete-confirm']);

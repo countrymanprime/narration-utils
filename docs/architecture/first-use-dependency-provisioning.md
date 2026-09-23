@@ -6,8 +6,8 @@ models' catalog and provisioning (installable through Settings > Local assets li
 chooses it, asking before downloading like any first use; since phase 6 the Windows sidecar runs Moonshine from such an install and never downloads a
 model itself, [ADR 0107](../adr/0107-moonshine-ships-inside-the-windows-teleprompter-sidecar-and-runs-only-from-a-verified-catalog-install.md)), and, as of
 `story-bible-and-import-ux-briefs.prd.md` Phase 7, the manuscript reader's offline dictionary (the Open English WordNet, [ADR
-0097](../adr/0097-the-manuscript-reader-word-lookup-uses-the-open-english-wordnet-as-a-downloadable-asset.md); the lookup panel that
-asks for it is Phase 8). This document holds the rules
+0097](../adr/0097-the-manuscript-reader-word-lookup-uses-the-open-english-wordnet-as-a-downloadable-asset.md); the manuscript reader's
+Look up asks for it with the same first-use question, Phase 8). This document holds the rules
 that code, other docs and `SECURITY.md` are checked against; the sections from "The asset manager" on describe what implements them.
 
 What is delivered, and what is deliberately not:

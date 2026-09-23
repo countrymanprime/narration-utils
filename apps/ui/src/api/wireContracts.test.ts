@@ -539,7 +539,7 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(dictionaryLookupResultSchema, await api.systemLookup('zorblax'), 'mock lookup of a word it does not have');
     expectMatches(
       dictionaryLookupResultSchema,
-      await createMockApi({}, { dictionaryMissing: true }).systemLookup('curious'),
+      await createMockApi({}, { dictionary: 'missing' }).systemLookup('curious'),
       'mock lookup, asking for the dictionary',
     );
     await expect(api.systemLookup('two words')).rejects.toThrow(/single word/);
@@ -657,7 +657,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const api = createMockApi();
     const catalog = await api.assetsList();
     expectMatches(assetCatalogSchema, catalog, 'mock asset list');
-    expect(catalog.assets.map((asset) => asset.kind)).toEqual(['tts', 'whisper', 'spacy']);
+    expect(catalog.assets.map((asset) => asset.kind)).toEqual(['tts', 'whisper', 'spacy', 'dictionary']);
     const voice = catalog.assets[0];
     const started = await api.assetsInstall(voice.kind, voice.id);
     for (const job of [started, await api.assetsInstallState(started.id), await api.assetsInstallState(started.id), await api.assetsInstallState(started.id)]) {

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBookOpen, faNoteSticky } from '@fortawesome/free-solid-svg-icons';
+import { faBook, faBookOpen, faNoteSticky } from '@fortawesome/free-solid-svg-icons';
 import type { ManuscriptSelection } from '../../hooks/useTextSelection';
 import { Button } from '../primitives/Button';
 
@@ -12,6 +12,8 @@ export function SelectionMenu({
   addNote,
   addToStoryBible,
   addingToStoryBible = false,
+  lookUp,
+  lookingUp = false,
   dismiss,
 }: {
   selection: ManuscriptSelection;
@@ -19,8 +21,13 @@ export function SelectionMenu({
   addToStoryBible: () => void;
   // The entry is being created (a Python process, about half a second): the button says so and ignores a second press (ADR 0075).
   addingToStoryBible?: boolean;
+  // Looks the selected word up in the offline dictionary; left out when the selection is not one word, so the action is not offered.
+  lookUp?: () => void;
+  // The lookup is running: the same busy button and one action at a time as the Story Bible entry (ADR 0075).
+  lookingUp?: boolean;
   dismiss: () => void;
 }) {
+  const busy = addingToStoryBible || lookingUp;
   const ref = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ left: 8, top: 8 });
   const place = () => {
@@ -51,7 +58,7 @@ export function SelectionMenu({
       style={position}
       onMouseDown={(event) => event.preventDefault()}
     >
-      <Button variant="primary" className="rounded-none border-0 text-xs" aria-label="+ Note" disabled={addingToStoryBible} onClick={addNote}>
+      <Button variant="primary" className="rounded-none border-0 text-xs" aria-label="+ Note" disabled={busy} onClick={addNote}>
         <FontAwesomeIcon icon={faNoteSticky} /> Note
       </Button>
       <Button
@@ -59,10 +66,22 @@ export function SelectionMenu({
         className="rounded-none border-0 border-l border-l-[var(--border)] text-xs"
         aria-label="+ Story Bible"
         pending={addingToStoryBible}
+        disabled={lookingUp}
         onClick={addToStoryBible}
       >
         <FontAwesomeIcon icon={faBookOpen} /> Story Bible
       </Button>
+      {lookUp && (
+        <Button
+          variant="ghost"
+          className="rounded-none border-0 border-l border-l-[var(--border)] text-xs"
+          pending={lookingUp}
+          disabled={addingToStoryBible}
+          onClick={lookUp}
+        >
+          <FontAwesomeIcon icon={faBook} /> Look up
+        </Button>
+      )}
     </div>,
     document.body,
   );
