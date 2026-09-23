@@ -11,6 +11,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
+	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/repeats"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
@@ -199,12 +200,34 @@ func TestContractAFirstUseGateForAModel(t *testing.T) {
 	contractfile.Check(t, "transcript-start-started", map[string]any{"status": "started"})
 }
 
+// The Teleprompter's first-use gate for each live engine: the same shape as Transcript Compare's plus the engine the model belongs to.
+func TestContractTheTeleprompterFirstUseGateForEachEngine(t *testing.T) {
+	svc := contractServices(t)
+	whisperModel, ok := svc.registry.whisper.Model("tiny")
+	if !ok {
+		t.Fatal("the approved Whisper catalog has no tiny model")
+	}
+	liveModels, err := moonshine.New(layout.RepoFile(layout.MoonshineCatalogFile), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	moonshineModel, ok := liveModels.Model("tiny")
+	if !ok {
+		t.Fatal("the approved Moonshine catalog has no tiny model")
+	}
+	contractfile.Check(t, "teleprompter-start-asset-required-whisper", liveAssetRequired("whisper", previewModel(whisperModel), modelDownloadSize(whisperModel), svc.registry.whisper.State(whisperModel), "C:/Users/narrator/AppData/Local/narration-utils/assets/whisper/faster-whisper/tiny/"+whisperModel.Version))
+	contractfile.Check(t, "teleprompter-start-asset-required-moonshine", liveAssetRequired("moonshine", previewMoonshineModel(moonshineModel), moonshineDownloadSize(moonshineModel), liveModels.State(moonshineModel), "C:/Users/narrator/AppData/Local/narration-utils/assets/moonshine/moonshine/tiny/"+moonshineModel.Version))
+}
+
 // The Settings page's fields for both scopes, from the real field schemas and the repository's defaults.
 func TestContractSettingsForEachScope(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
 	project := t.TempDir()
 	host := NewHost()
 	host.settings = settings.New(layout.FindRoot("."), project)
+	// The live engine choices follow the platform (Moonshine ships only on Windows, ADR 0107); pin it so the golden is
+	// the same on every runner.
+	host.platform = "windows"
 	for _, scope := range []string{"global", "project"} {
 		fields, err := host.settingsForScope(scope)
 		if err != nil {

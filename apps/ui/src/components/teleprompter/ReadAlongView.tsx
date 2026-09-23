@@ -9,7 +9,7 @@ import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { MicrophoneField } from './MicrophoneField';
 import { ReaderText } from './ReaderText';
-import { MODELS, type TeleprompterSession } from './useTeleprompterSession';
+import { ENGINE_LABELS, MODELS, type TeleprompterSession } from './useTeleprompterSession';
 
 const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
 
@@ -70,13 +70,20 @@ export function ReadAlongView({ session: t, extraSetupFields }: Props) {
                 onRefresh={t.loadDevices}
                 refreshing={t.devicesLoading}
               />
-              <div className="md:col-span-2">
-                <span className={LABEL_CLASS}>Whisper model</span>
+              {/* The engine choice shows only where the host can launch more than one (Moonshine ships on Windows only, ADR 0107). */}
+              {t.engines.length > 1 && (
+                <div>
+                  <span className={LABEL_CLASS}>Engine</span>
+                  <ToggleGroup label="Engine" className="mt-1.5 flex-wrap gap-1.5" value={t.engine} onChange={t.changeEngine} options={t.engines} />
+                </div>
+              )}
+              <div className={t.engines.length > 1 ? '' : 'md:col-span-2'}>
+                <span className={LABEL_CLASS}>{t.engines.length > 1 ? 'Model' : `${ENGINE_LABELS[t.engine]} model`}</span>
                 <ToggleGroup
-                  label="Whisper model"
+                  label="Model"
                   className="mt-1.5 flex-wrap gap-1.5"
                   value={t.model}
-                  onChange={t.setModel}
+                  onChange={t.changeModel}
                   options={MODELS.map((option) => ({ value: option.value, label: option.label, title: option.caption }))}
                 />
               </div>
@@ -132,11 +139,11 @@ export function ReadAlongView({ session: t, extraSetupFields }: Props) {
       {t.prompt && (
         <AssetInstallPrompt
           ask={{
-            title: 'Download local Whisper model?',
-            body: `The ${t.prompt.model.displayName} Whisper model listens for your voice. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`,
+            title: `Download local ${ENGINE_LABELS[t.prompt.engine]} model?`,
+            body: `The ${t.prompt.model.displayName} ${ENGINE_LABELS[t.prompt.engine]} model listens for your voice. It is not bundled with Narration Utils and will be stored in your per-user asset cache.`,
             confirmLabel: 'Download model',
           }}
-          workTitle="Downloading Whisper model"
+          workTitle={`Downloading ${ENGINE_LABELS[t.prompt.engine]} model`}
           install={t.modelInstall}
           dismiss={t.closeModelPrompt}
         >

@@ -126,6 +126,12 @@ type fixture struct {
 
 func newFixture(t *testing.T, mode string) *fixture {
 	t.Helper()
+	return newFixtureOn(t, mode, "windows")
+}
+
+// newFixtureOn is newFixture for a host running on `platform` (a GOOS value), which decides the engines it can launch.
+func newFixtureOn(t *testing.T, mode, platform string) *fixture {
+	t.Helper()
 	t.Setenv(fakeSidecarEnv, mode)
 	project := t.TempDir()
 	manuscriptDir := filepath.Join(project, "narration-utils", "manuscript")
@@ -139,7 +145,7 @@ func newFixture(t *testing.T, mode string) *fixture {
 	supervisor := process.NewSupervisor()
 	t.Cleanup(func() { _ = supervisor.Close() })
 	recorder := &recorder{}
-	service := New(Config{Project: project, SessionDir: session, Python: os.Args[0]}, supervisor, recorder.emit, recorder.changed)
+	service := New(Config{Project: project, SessionDir: session, Python: os.Args[0], Platform: platform}, supervisor, recorder.emit, recorder.changed)
 	service.grace = 300 * time.Millisecond
 	t.Cleanup(func() { _ = service.Close(context.Background()) })
 	return &fixture{service: service, recorder: recorder, project: project, session: session}
@@ -462,9 +468,10 @@ func TestOnlyOneSessionRunsAtATime(t *testing.T) {
 
 func TestStartRejectsIncompleteOrUnsupportedRequestsWithoutLaunchingAnything(t *testing.T) {
 	cases := map[string]func(map[string]string){
-		"no chapter":         func(o map[string]string) { delete(o, "chapter") },
-		"no input":           func(o map[string]string) { delete(o, "device") },
-		"unsupported engine": func(o map[string]string) { o["engine"] = "moonshine" },
+		"no chapter":        func(o map[string]string) { delete(o, "chapter") },
+		"no input":          func(o map[string]string) { delete(o, "device") },
+		"unknown engine":    func(o map[string]string) { o["engine"] = "vosk" },
+		"moonshine, no dir": func(o map[string]string) { o["engine"], o["modelDir"] = "moonshine", "" },
 	}
 	for name, mutate := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -479,6 +486,64 @@ func TestStartRejectsIncompleteOrUnsupportedRequestsWithoutLaunchingAnything(t *
 				t.Fatalf("nothing should have started: phase=%s events=%v", phase(f.service), f.recorder.eventTypes())
 			}
 		})
+	}
+}
+
+// Moonshine ships only in the Windows sidecar (ADR 0107): elsewhere the host refuses it before launching anything.
+func TestStartRefusesMoonshineWhereTheSidecarDoesNotShipIt(t *testing.T) {
+	f := newFixtureOn(t, "stream", "linux")
+	options := validOptions()
+	options["engine"] = "moonshine"
+
+	err := f.service.Start(options)
+
+	if err == nil || !strings.Contains(err.Error(), "not available on this computer") {
+		t.Fatalf("err = %v", err)
+	}
+	if phase(f.service) != "idle" || len(f.recorder.eventTypes()) != 0 {
+		t.Fatalf("nothing should have started: phase=%s events=%v", phase(f.service), f.recorder.eventTypes())
+	}
+}
+
+func TestStartLaunchesMoonshineFromItsCatalogDirectory(t *testing.T) {
+	f := newFixture(t, "stream")
+	options := validOptions()
+	options["engine"], options["model"], options["modelDir"] = "moonshine", "small", "C:/models/moonshine/small"
+	if err := f.service.Start(options); err != nil {
+		t.Fatal(err)
+	}
+
+	args := echoedArgs(t, f)
+
+	for name, value := range map[string]string{"--engine": "moonshine", "--model": "small", "--model-dir": "C:/models/moonshine/small"} {
+		if got := flagValue(args, name); got != value {
+			t.Errorf("%s = %q, want %q (args %v)", name, got, value, args)
+		}
+	}
+	if engine, _ := f.service.Snapshot()["engine"].(string); engine != "moonshine" {
+		t.Errorf("the snapshot's engine = %q, want moonshine", engine)
+	}
+}
+
+func TestEnginesFollowThePlatform(t *testing.T) {
+	cases := map[string][]string{"windows": {"whisper", "moonshine"}, "linux": {"whisper"}, "darwin": {"whisper"}}
+	for platform, want := range cases {
+		if got := Engines(platform); strings.Join(got, ",") != strings.Join(want, ",") {
+			t.Errorf("Engines(%q) = %v, want %v", platform, got, want)
+		}
+	}
+}
+
+func TestStartDefaultsToTheTinyModel(t *testing.T) {
+	f := newFixture(t, "stream")
+	options := validOptions()
+	delete(options, "model")
+	if err := f.service.Start(options); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := flagValue(echoedArgs(t, f), "--model"); got != "tiny" {
+		t.Fatalf("--model = %q, want tiny (the host's live default)", got)
 	}
 }
 

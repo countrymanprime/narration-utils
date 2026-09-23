@@ -3,18 +3,23 @@
 # Teleprompter
 
 The Teleprompter follows you as you read a chapter aloud: it listens through your microphone
-with a local Whisper model and highlights the word you are on. It needs an [imported manuscript](home.md),
+with a local speech engine and highlights the word you are on. It needs an [imported manuscript](home.md),
 and nothing you say is edited, saved, or sent anywhere.
 
 Choose the chapter, pick your microphone from the list (Refresh if you just plugged one in), and
-pick a model. Tiny is the fastest and keeps up on most computers; Small is more accurate but needs
-a faster one. The first time you start, the app asks before downloading the model. Your microphone
-is remembered for next time; if it is no longer connected it shows as "(not found)" until you pick it
-again or choose another. A microphone can only be picked from the list, never typed: with none listed,
+pick an engine and a model. On Windows there are two engines, Whisper (the default) and Moonshine;
+both highlight the same way, so try each and keep the one that follows your voice more smoothly.
+Elsewhere only Whisper is offered, and the engine choice is not shown. Tiny is the fastest model and
+keeps up on most computers; Small is more accurate but needs a faster one. Choosing an engine or a
+model never downloads anything: the first time you start with one whose model is not on this computer,
+the app asks first, naming the engine, the download size, the publisher and the licence, and downloads
+only if you say so. Your microphone, engine and model are remembered for next time (they are the same
+choices as in [Settings](settings.md) › Teleprompter); a microphone that is no longer connected shows as
+"(not found)" until you pick it again or choose another. A microphone can only be picked from the list, never typed: with none listed,
 the page says "No microphone found" and Start reading stays disabled until you connect one and press
 Refresh.
 
-![Teleprompter before a session, with the chapter, microphone and model choices above the chapter text](../../images/ui/teleprompter-setup.webp)
+![Teleprompter before a session, with the chapter, microphone, engine and model choices above the chapter text](../../images/ui/teleprompter-setup.webp)
 
 Press Start reading and begin at the top of the chapter, title first. The setup fields fold away
 into a bar that stays at the top with the status and a Stop button. Words you have read dim, the

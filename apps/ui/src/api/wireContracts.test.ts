@@ -31,7 +31,7 @@ import { creditsProjectValuesResultSchema, creditsRenderResultSchema, creditTemp
 import { dawCatalogListSchema } from './schemas/dawCatalog';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
-import { teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
+import { teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStartResultSchema, teleprompterStateSchema } from './schemas/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
 import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
@@ -64,6 +64,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'teleprompter-state-running.json': teleprompterStateSchema,
   'teleprompter-events.json': teleprompterEventSchema.array(),
   'teleprompter-devices.json': teleprompterDevicesResultSchema,
+  'teleprompter-start-asset-required-whisper.json': teleprompterStartResultSchema,
+  'teleprompter-start-asset-required-moonshine.json': teleprompterStartResultSchema,
   'manuscript-import-selected.json': workJobSchema,
   'manuscript-import-preview.json': workJobSchema,
   'manuscript-import-preview-repaired.json': workJobSchema,
@@ -464,7 +466,15 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(gate.status).toBe('asset_required');
     expectMatches(startResultSchema, gate, 'mock transcript first-use gate');
     const chapter = (await api.manuscriptChapters())[0]?.id ?? '';
-    expectMatches(startResultSchema, await api.teleprompterStart({ chapter, device: 'Microphone' }), 'mock teleprompter first-use gate');
+    expectMatches(teleprompterStartResultSchema, await api.teleprompterStart({ chapter, device: 'Microphone' }), 'mock teleprompter start');
+  });
+
+  it.each(['whisper', 'moonshine'] as const)('the teleprompter first-use gate names the engine whose model is missing (%s)', async (engine) => {
+    const api = createMockApi({}, { assets: 'missing' });
+    const chapter = (await api.manuscriptChapters())[0]?.id ?? '';
+    const gate = await api.teleprompterStart({ chapter, device: 'Microphone', engine });
+    expectMatches(teleprompterStartResultSchema, gate, `mock teleprompter first-use gate (${engine})`);
+    expect(gate.status === 'asset_required' && gate.engine).toBe(engine);
   });
 
   it('the last completed run, the hints and the equivalence answer', async () => {

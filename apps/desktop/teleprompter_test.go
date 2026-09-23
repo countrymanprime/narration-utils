@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,6 +16,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 )
@@ -212,6 +215,101 @@ func TestTeleprompterStartProceedsOnceTheModelIsInstalled(t *testing.T) {
 
 	if err == nil || !strings.Contains(err.Error(), "REAPER project") {
 		t.Fatalf("expected the post-gate service error, got %v", err)
+	}
+}
+
+// hostForMoonshineStart is hostForTeleprompterStart with a one-model Moonshine catalog beside the Whisper one, on a host
+// that says it runs on platform.
+func hostForMoonshineStart(t *testing.T, platform string) (*Host, func()) {
+	t.Helper()
+	host, closeServer := hostForTeleprompterStart(t)
+	body := []byte("moonshine-bytes")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write(body) }))
+	sum := sha256.Sum256(body)
+	catalog, err := json.Marshal(map[string]any{"catalogVersion": 1, "models": []map[string]any{{
+		"id": "tiny", "provider": "moonshine", "displayName": "Moonshine Tiny (English, streaming)", "version": "1", "publisher": "Moonshine AI", "license": "MIT",
+		"files": []map[string]any{{"name": "encoder.ort", "url": server.URL, "sha256": hex.EncodeToString(sum[:]), "size": len(body)}},
+	}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "moonshine-assets.json")
+	if err := os.WriteFile(path, catalog, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	manager, err := moonshine.New(path, host.registry().base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	host.assets = newAssetRegistry(host.registry().base, nil, host.registry().whisper, nil, manager)
+	host.platform = platform
+	return host, func() { server.Close(); closeServer() }
+}
+
+func TestTeleprompterStartAsksForTheMoonshineModelWhenNotInstalled(t *testing.T) {
+	host, closeServer := hostForMoonshineStart(t, "windows")
+	defer closeServer()
+
+	result := startResult(t, host, map[string]string{"engine": "moonshine", "model": "tiny"})
+
+	model, _ := result["model"].(map[string]any)
+	if result["status"] != "asset_required" || result["engine"] != "moonshine" || model["id"] != "tiny" || model["provider"] != "moonshine" {
+		t.Fatalf("result = %v, want the Moonshine tiny model asked for, tagged with its engine", result)
+	}
+}
+
+func TestTeleprompterStartTagsAWhisperModelRequestWithItsEngine(t *testing.T) {
+	host, closeServer := hostForTeleprompterStart(t)
+	defer closeServer()
+
+	result := startResult(t, host, map[string]string{"model": "tiny"})
+
+	if result["engine"] != "whisper" {
+		t.Fatalf("result = %v, want engine whisper (the default)", result)
+	}
+}
+
+func TestTeleprompterStartProceedsOnceTheMoonshineModelIsInstalled(t *testing.T) {
+	host, closeServer := hostForMoonshineStart(t, "windows")
+	defer closeServer()
+	if err := host.registry().moonshine.Install(context.Background(), "tiny"); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := host.TeleprompterStart(map[string]string{"engine": "moonshine", "model": "tiny"})
+
+	if err == nil || !strings.Contains(err.Error(), "REAPER project") {
+		t.Fatalf("expected the post-gate service error, got %v", err)
+	}
+}
+
+func TestTeleprompterStartRefusesMoonshineWhereTheSidecarDoesNotShipIt(t *testing.T) {
+	host, closeServer := hostForMoonshineStart(t, "linux")
+	defer closeServer()
+
+	_, err := host.TeleprompterStart(map[string]string{"engine": "moonshine", "model": "tiny"})
+
+	if err == nil || !strings.Contains(err.Error(), "not available on this computer") {
+		t.Fatalf("err = %v, want Moonshine refused off Windows before the first-use gate", err)
+	}
+}
+
+func TestTeleprompterStartRejectsAMoonshineModelOutsideTheApprovedCatalog(t *testing.T) {
+	host, closeServer := hostForMoonshineStart(t, "windows")
+	defer closeServer()
+
+	if _, err := host.TeleprompterStart(map[string]string{"engine": "moonshine", "model": "medium"}); err == nil || !strings.Contains(err.Error(), "Moonshine") {
+		t.Fatalf("err = %v, want a model outside the Moonshine catalog refused", err)
+	}
+}
+
+func TestTeleprompterStartReportsAMissingMoonshineCatalog(t *testing.T) {
+	host, closeServer := hostForTeleprompterStart(t)
+	defer closeServer()
+	host.platform = "windows"
+
+	if _, err := host.TeleprompterStart(map[string]string{"engine": "moonshine"}); err == nil || !strings.Contains(err.Error(), "Moonshine catalog is unavailable") {
+		t.Fatalf("err = %v", err)
 	}
 }
 

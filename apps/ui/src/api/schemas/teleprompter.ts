@@ -3,11 +3,14 @@ import type {
   HeardWord,
   TeleprompterDevice,
   TeleprompterDevicesResult,
+  TeleprompterEngine,
   TeleprompterEvent,
   TeleprompterPosition,
   TeleprompterScript,
+  TeleprompterStartResult,
   TeleprompterState,
 } from '../contracts/teleprompter';
+import { modelAssetRequiredSchema } from './whisper';
 
 // The live event stream (ADR 0021, ADR 0022): the sidecar prints one JSON object per line and the host relays each unchanged, so
 // these schemas are the only place the shape is checked between the Python `live_asr.py` and the reader.
@@ -63,6 +66,17 @@ export const teleprompterStateSchema = z.object({
   script: teleprompterScriptSchema.nullable().default(null),
   position: teleprompterPositionSchema.nullable().default(null),
 }) satisfies z.ZodType<TeleprompterState>;
+
+const teleprompterEngineSchema = z.enum(['whisper', 'moonshine']) satisfies z.ZodType<TeleprompterEngine>;
+
+/**
+ * `TeleprompterStart`: it started, or the chosen engine's model is not installed yet (the first-use gate). The engine is also the asset kind
+ * the model installs as. A host from before engine choice sent no engine and could launch only Whisper, hence the default.
+ */
+export const teleprompterStartResultSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('started') }),
+  modelAssetRequiredSchema.extend({ engine: teleprompterEngineSchema.default('whisper') }),
+]) satisfies z.ZodType<TeleprompterStartResult>;
 
 const teleprompterDeviceSchema = z.object({ name: z.string() }) satisfies z.ZodType<TeleprompterDevice>;
 

@@ -247,7 +247,8 @@
     },
     {
       "choices": [
-        "whisper"
+        "whisper",
+        "moonshine"
       ],
       "effectiveSource": "repo_default",
       "effectiveValue": "whisper",

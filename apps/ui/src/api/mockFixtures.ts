@@ -579,16 +579,16 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
   Piper: [choice('tts_provider', 'TTS provider', ['piper'], 'piper'), choice('tts_voice_id', 'Preview voice', ['en_US-ljspeech-high'], 'en_US-ljspeech-high')],
   // Global-scope machine facts (docs/prds/teleprompter-engines-and-input-devices.prd.md, "Where the device, engine and
   // model choices are stored"): the device is unset until the narrator picks one, so the mock starts it empty like the
-  // host does. Engine and model carry the repo defaults (whisper, tiny): the engine choice stays limited to "whisper"
-  // until Phase 7 wires Moonshine end to end, and the model choice is Whisper tiny and small only (only tiny has
-  // measured live-lag data).
+  // host does. Engine and model carry the repo defaults (whisper, tiny). The engine choices are what a Windows host
+  // offers (the host fills in the engines its platform can launch; Moonshine ships only on Windows, ADR 0107), and the
+  // model choice is tiny and small for either engine (only those have measured live-lag data).
   Teleprompter: [
     { key: 'input_device', label: 'Microphone', kind: 'text', choices: [], value: '', isSet: false, effectiveValue: '', effectiveSource: 'hardcoded' },
     {
       key: 'engine',
       label: 'Live engine',
       kind: 'choice',
-      choices: ['whisper'],
+      choices: ['whisper', 'moonshine'],
       value: '',
       isSet: false,
       effectiveValue: 'whisper',

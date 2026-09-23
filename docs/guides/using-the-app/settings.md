@@ -34,8 +34,10 @@ controls the color used to mark reader notes in the text. **General** (Global on
 Choosing a model or a voice here never downloads it; the app asks when a feature first needs it.
 
 The **Teleprompter** category (Global scope only — the microphone, engine and model are machine facts, not a
-per-project preference) remembers the microphone you last chose on the [Teleprompter](teleprompter.md) page and the
-default live model it starts with. The live engine is Whisper for now; Moonshine appears here once it is provisioned.
+per-project preference) remembers the microphone, live engine and model you last chose on the
+[Teleprompter](teleprompter.md) page, and changing them here changes what the page starts with. The engine is Whisper
+(the default) or, on Windows only, Moonshine; the model is Tiny or Small for either. Choosing Moonshine does not download
+its model: the Teleprompter asks the first time you start reading with it.
 
 ![Settings - Global scope, Manuscript category (note color picker)](../../images/ui/settings-manuscript.webp)
 

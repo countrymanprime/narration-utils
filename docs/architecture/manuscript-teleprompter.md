@@ -259,9 +259,9 @@ snapshot so a view that opens mid-session catches up. The `Host` exposes
 `TeleprompterStart`, `TeleprompterStop` and `TeleprompterState` (added in
 host API version 5). `TeleprompterStart` uses the same first-use model gate as
 Transcript Compare and defaults to the `tiny` model, because live
-transcription has to keep up with speech. Only the Whisper engine is
-launchable from the host until Moonshine's models are provisioned through the
-asset catalog.
+transcription has to keep up with speech. It launches the engine the request
+names (Whisper by default; Moonshine on Windows only, from its verified catalog
+install, teleprompter-engines-and-input-devices PRD phase 7), and its gate answer names the engine.
 
 **Stopping.** Go cannot send Ctrl+C to the sidecar, and the other sidecars use
 `.cancel` sentinel files, so the sidecar accepts `--stop-file`: once that file

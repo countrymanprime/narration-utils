@@ -1,0 +1,20 @@
+{
+  "diskSize": 77748675,
+  "downloadSize": 77748675,
+  "engine": "moonshine",
+  "installPath": "C:/Users/narrator/AppData/Local/narration-utils/assets/moonshine/moonshine/tiny/quantized_26_08_21",
+  "installState": "not_installed",
+  "model": {
+    "attribution": "Moonshine tiny-streaming-en, published by Moonshine AI (Useful Sensors), MIT licensed (English streaming models are MIT under the repository's LICENSE; the non-English legacy non-streaming models it excludes are the only ones under the separate Community License).",
+    "displayName": "Tiny",
+    "id": "tiny",
+    "license": "MIT",
+    "licenseUrl": "https://github.com/moonshine-ai/moonshine/blob/main/LICENSE",
+    "modelCardUrl": "https://github.com/moonshine-ai/moonshine",
+    "provenanceUrl": "https://download.moonshine.ai/model/tiny-streaming-en/quantized_26_08_21",
+    "provider": "moonshine",
+    "publisher": "Moonshine AI",
+    "version": "quantized_26_08_21"
+  },
+  "status": "asset_required"
+}

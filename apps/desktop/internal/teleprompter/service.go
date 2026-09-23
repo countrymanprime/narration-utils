@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -24,10 +25,46 @@ import (
 // own before it is killed.
 const defaultGrace = 8 * time.Second
 
-// supportedEngines are the live engines the desktop host can launch today.
-var supportedEngines = map[string]bool{"whisper": true}
+// Engine names, as the sidecar's --engine flag and the Teleprompter.engine setting spell them.
+const (
+	EngineWhisper   = "whisper"
+	EngineMoonshine = "moonshine"
+)
 
-type Config struct{ Project, SessionDir, Python, Backend string }
+// DefaultModel is the live model a request that names none gets: tiny is the one model with measured live lag
+// (docs/prds/teleprompter-engines-and-input-devices.prd.md), and both engines' catalogs have it.
+const DefaultModel = "tiny"
+
+// Engines are the live engines the desktop host can launch on platform (a GOOS value), default first. Whisper runs
+// everywhere the sidecar does; Moonshine ships only in the Windows sidecar (ADR 0107), so it is offered only there.
+func Engines(platform string) []string {
+	if platform == "windows" {
+		return []string{EngineWhisper, EngineMoonshine}
+	}
+	return []string{EngineWhisper}
+}
+
+// SupportsEngine reports whether engine is one of Engines(platform).
+func SupportsEngine(platform, engine string) bool {
+	for _, candidate := range Engines(platform) {
+		if candidate == engine {
+			return true
+		}
+	}
+	return false
+}
+
+// Config is what a Service is built with. Platform is the GOOS the host runs on (empty means this process's own); it
+// decides which engines can launch.
+type Config struct{ Project, SessionDir, Python, Backend, Platform string }
+
+// PlatformOrCurrent is platform, or this process's GOOS when it is empty.
+func PlatformOrCurrent(platform string) string {
+	if platform == "" {
+		return runtime.GOOS
+	}
+	return platform
+}
 
 type Service struct {
 	mu       sync.RWMutex
@@ -140,9 +177,14 @@ func (s *Service) plan(options map[string]string) (launch, error) {
 	if chapter == "" {
 		return launch{}, errors.New("choose a chapter to read")
 	}
-	engine := option(options, "engine", "whisper")
-	if !supportedEngines[engine] {
-		return launch{}, fmt.Errorf("the %s engine is not available yet", engine)
+	engine := option(options, "engine", EngineWhisper)
+	if !SupportsEngine(PlatformOrCurrent(s.config.Platform), engine) {
+		return launch{}, fmt.Errorf("the %s engine is not available on this computer", engine)
+	}
+	// Moonshine runs only from a verified catalog install (ADR 0107): without a directory the frozen sidecar would
+	// refuse anyway, so refuse here before launching anything.
+	if engine == EngineMoonshine && option(options, "modelDir", "") == "" {
+		return launch{}, errors.New("the Moonshine model is not installed")
 	}
 	device, wav := option(options, "device", ""), option(options, "wav", "")
 	if device == "" && wav == "" {
@@ -156,7 +198,7 @@ func (s *Service) plan(options map[string]string) (launch, error) {
 	stopFile := filepath.Join(s.config.SessionDir, fmt.Sprintf("teleprompter_%d.stop", stamp))
 	controlFile := filepath.Join(s.config.SessionDir, fmt.Sprintf("teleprompter_%d.control", stamp))
 	args := []string{
-		"--engine", engine, "--model", option(options, "model", "small"), "--manuscript", manuscript, "--chapter", chapter,
+		"--engine", engine, "--model", option(options, "model", DefaultModel), "--manuscript", manuscript, "--chapter", chapter,
 		"--stop-file", stopFile, "--control-file", controlFile,
 	}
 	if modelDir := option(options, "modelDir", ""); modelDir != "" {

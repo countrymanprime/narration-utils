@@ -102,6 +102,9 @@ type Host struct {
 	// stager downloads and unpacks an update into the per-user cache; updateJob is the download in progress or the last one (h.mu).
 	stager    *update.Stager
 	updateJob *updateJob
+	// platform is a seam for tests: the GOOS the host acts as for the live engines it offers and launches (empty means this
+	// process's own, teleprompter.PlatformOrCurrent). Set only when the Host is built, never changed after.
+	platform string
 	// updateDelay is a seam for tests: how long Startup waits before the automatic update check; zero means startupUpdateDelay.
 	updateDelay time.Duration
 	// updateEvents and openURL are seams for tests: nil means the Wails runtime.
@@ -345,7 +348,7 @@ func (h *Host) configureLocked(next config) {
 	if teleprompterDir == "" {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")
 	}
-	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
+	h.teleprompter = teleprompter.New(teleprompter.Config{Project: h.config.projectFolder, SessionDir: teleprompterDir, Python: h.config.teleprompterPython, Backend: h.config.teleprompterBackend, Platform: h.platform}, h.sidecars, h.emitTeleprompterEvent, h.emitTeleprompterState)
 	h.teleprompter.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
 }
 
@@ -938,15 +941,24 @@ func resolveWhisperModelID(store *settings.Store, options map[string]string) str
 	return value
 }
 
-// resolveTeleprompterModelID picks the Whisper model for live transcription.
-// It defaults to tiny, not the offline Transcript Compare default: live
-// transcription must keep up with speech (tiny decodes at about 0.03x real
-// time on CPU, larger models are unmeasured).
+// resolveTeleprompterModelID picks the model for live transcription, for either engine (both catalogs have tiny and
+// small). It defaults to tiny, not the offline Transcript Compare default: live transcription must keep up with speech
+// (Whisper tiny decodes at about 0.03x real time on CPU, larger models are unmeasured).
 func resolveTeleprompterModelID(options map[string]string) string {
-	if value := options["model"]; value != "" {
+	if value := strings.TrimSpace(options["model"]); value != "" {
 		return value
 	}
-	return "tiny"
+	return teleprompter.DefaultModel
+}
+
+// resolveTeleprompterEngine picks the live engine the same way: the request's, else Whisper, the default until the
+// engine evaluation records another (docs/prds/teleprompter-engines-and-input-devices.prd.md phase 8). The UI sends
+// the Teleprompter.engine setting it read, so the host never guesses the narrator's choice.
+func resolveTeleprompterEngine(options map[string]string) string {
+	if value := strings.TrimSpace(options["engine"]); value != "" {
+		return value
+	}
+	return teleprompter.EngineWhisper
 }
 
 type fieldSchema struct {
@@ -968,12 +980,13 @@ var fieldSchemas = map[string][]fieldSchema{
 	// choices are stored"): the device, engine and model are machine facts (hardware and CPU wired to this computer),
 	// not a per-project preference. The chosen capture device is validated only as free text - the sidecar's own open
 	// call is what proves a device name is real; the "text" kind already accepts any string, including empty (unset).
-	// The engine choice stays limited to "whisper" until Phase 7 wires Moonshine end to end (this PRD's phase table);
-	// the model choice is Whisper tiny and small only (the PRD's "Model choices exposed per engine" recommendation),
-	// since only tiny has measured live-lag data and Moonshine is not provisioned yet.
+	// The engine choices here are only a placeholder: settingsSchemas fills in the engines this platform can launch
+	// (teleprompter.Engines: Whisper everywhere, Moonshine on Windows only, ADR 0107). The model choice is tiny and small
+	// for either engine (the PRD's "Model choices exposed per engine" recommendation), since only those have measured
+	// live-lag data and both catalogs have them.
 	"Teleprompter": {
 		{"input_device", "Microphone", "text", nil},
-		{"engine", "Live engine", "choice", []string{"whisper"}},
+		{"engine", "Live engine", "choice", []string{teleprompter.EngineWhisper}},
 		{"model", "Model", "choice", []string{"tiny", "small"}},
 	},
 	// DAW.reaper_path is a global override for daw.Resolve (empty means auto-detect, apps/desktop/internal/daw).
@@ -997,7 +1010,8 @@ var fieldSchemas = map[string][]fieldSchema{
 }
 
 // settingsSchemas is the settings the app offers with each choice that comes from an approved catalog filled in from it: the spaCy model
-// choice is the catalog's models, whether or not they are installed, so a narrator can select a model before downloading it.
+// choice is the catalog's models, whether or not they are installed, so a narrator can select a model before downloading it; the live
+// engine choice is the engines this platform can launch.
 func (h *Host) settingsSchemas() map[string][]fieldSchema {
 	schemas := make(map[string][]fieldSchema, len(fieldSchemas))
 	for tool, fields := range fieldSchemas {
@@ -1007,16 +1021,22 @@ func (h *Host) settingsSchemas() map[string][]fieldSchema {
 		// Replace only the spacy_model choices with the catalog's models; a bug fixed on the way in (found while adding
 		// build_after_import, N19d): this used to replace the whole ManuscriptGuide list, silently dropping every other
 		// field in it whenever the spaCy registry was built.
-		updated := make([]fieldSchema, len(schemas["ManuscriptGuide"]))
-		for i, field := range schemas["ManuscriptGuide"] {
-			if field.key == "spacy_model" {
-				field.choices = models.IDs()
-			}
-			updated[i] = field
-		}
-		schemas["ManuscriptGuide"] = updated
+		schemas["ManuscriptGuide"] = withChoices(schemas["ManuscriptGuide"], "spacy_model", models.IDs())
 	}
+	schemas["Teleprompter"] = withChoices(schemas["Teleprompter"], "engine", teleprompter.Engines(teleprompter.PlatformOrCurrent(h.platform)))
 	return schemas
+}
+
+// withChoices is fields with the choices of the one field named key replaced, the others untouched.
+func withChoices(fields []fieldSchema, key string, choices []string) []fieldSchema {
+	updated := make([]fieldSchema, len(fields))
+	for i, field := range fields {
+		if field.key == key {
+			field.choices = choices
+		}
+		updated[i] = field
+	}
+	return updated
 }
 
 func (h *Host) settingsForScope(scope string) (map[string]any, error) {

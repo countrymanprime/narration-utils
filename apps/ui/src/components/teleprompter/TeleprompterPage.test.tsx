@@ -159,7 +159,64 @@ describe('TeleprompterPage', () => {
 
     await startReading(user);
 
-    expect(teleprompterStart).toHaveBeenCalledWith({ chapter: 'chapter-1', device: DEVICE_NAME, model: 'tiny' });
+    expect(teleprompterStart).toHaveBeenCalledWith({ chapter: 'chapter-1', device: DEVICE_NAME, engine: 'whisper', model: 'tiny' });
+  });
+
+  // Phase 7 ("Engine choice end to end"): the engines are the ones the host can launch here (its Teleprompter.engine
+  // setting's choices), and the choice is a machine setting, remembered like the microphone.
+  it('starts with the engine the narrator chose and remembers it in the global settings', async () => {
+    const user = userEvent.setup();
+    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
+    const { api } = renderPage({ teleprompterStart });
+
+    const engines = await screen.findByRole('group', { name: 'Engine' });
+    await user.click(within(engines).getByRole('button', { name: 'Moonshine' }));
+    await startReading(user);
+
+    expect(teleprompterStart).toHaveBeenCalledWith({ chapter: 'chapter-1', device: DEVICE_NAME, engine: 'moonshine', model: 'tiny' });
+    const settings = await api.settingsForScope('global');
+    expect(settings.Teleprompter?.find((field) => field.key === 'engine')?.value).toBe('moonshine');
+  });
+
+  it('reads the engine from the Teleprompter settings section', async () => {
+    const user = userEvent.setup();
+    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
+    const api = createMockApi({ teleprompterStart });
+    await api.saveSettings('Teleprompter', 'global', { engine: 'moonshine' });
+
+    renderPage({}, {}, api);
+
+    const moonshine = await screen.findByRole('button', { name: 'Moonshine' });
+    await waitFor(() => expect(moonshine.getAttribute('aria-pressed')).toBe('true'));
+    await startReading(user);
+    expect(teleprompterStart).toHaveBeenCalledWith(expect.objectContaining({ engine: 'moonshine' }));
+  });
+
+  it('offers no engine choice where the host can launch only Whisper', async () => {
+    const base = createMockApi();
+    const settingsForScope: NarrationApi['settingsForScope'] = async (scope) => {
+      const settings = await base.settingsForScope(scope);
+      return {
+        ...settings,
+        Teleprompter: (settings.Teleprompter ?? []).map((field) => (field.key === 'engine' ? { ...field, choices: ['whisper'] } : field)),
+      };
+    };
+    renderPage({ settingsForScope });
+
+    await screen.findByRole('group', { name: 'Model' });
+    expect(screen.queryByRole('group', { name: 'Engine' })).toBeNull();
+  });
+
+  it('remembers the model choice in the global settings', async () => {
+    const user = userEvent.setup();
+    const { api } = renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Small' }));
+
+    await waitFor(async () => {
+      const settings = await api.settingsForScope('global');
+      expect(settings.Teleprompter?.find((field) => field.key === 'model')?.value).toBe('small');
+    });
   });
 
   // Phase 3 ("Teleprompter settings section"): the page reads the Settings section's default model on load, so a
@@ -176,7 +233,7 @@ describe('TeleprompterPage', () => {
     await waitFor(() => expect(small.getAttribute('aria-pressed')).toBe('true'));
 
     await startReading(user);
-    expect(teleprompterStart).toHaveBeenCalledWith({ chapter: 'chapter-1', device: DEVICE_NAME, model: 'small' });
+    expect(teleprompterStart).toHaveBeenCalledWith({ chapter: 'chapter-1', device: DEVICE_NAME, engine: 'whisper', model: 'small' });
   });
 
   it('follows the reading word by word', async () => {
@@ -317,22 +374,52 @@ describe('TeleprompterPage', () => {
       .fn()
       .mockResolvedValueOnce({
         status: 'asset_required',
+        engine: 'whisper',
         model: { id: 'tiny', displayName: 'Tiny', publisher: 'Systran', license: 'MIT', licenseUrl: 'https://example.test/license' },
         installState: 'not_installed',
         downloadSize: 75_000_000,
       })
       .mockResolvedValue({ status: 'started' });
-    const whisperInstall = vi
-      .fn()
-      .mockResolvedValue({ id: 'w-1', modelId: 'tiny', phase: 'success', message: 'Installed.', percent: 100, bytesDone: 10, bytesTotal: 10, error: '' });
-    renderPage({ teleprompterStart, whisperInstall });
+    const assetsInstall = vi.fn().mockResolvedValue({
+      id: 'w-1',
+      kind: 'whisper',
+      assetId: 'tiny',
+      phase: 'success',
+      message: 'Installed.',
+      percent: 100,
+      bytesDone: 10,
+      bytesTotal: 10,
+      error: '',
+    });
+    renderPage({ teleprompterStart, assetsInstall });
     await startReading(user);
 
     const dialog = await screen.findByRole('alertdialog', { name: 'Download local Whisper model?' });
     await user.click(within(dialog).getByRole('button', { name: 'Download model' }));
 
     await waitFor(() => expect(teleprompterStart).toHaveBeenCalledTimes(2));
-    expect(whisperInstall).toHaveBeenCalledWith('tiny');
+    expect(assetsInstall).toHaveBeenCalledWith('whisper', 'tiny');
+  });
+
+  // Choosing Moonshine never downloads anything: Start asks first, naming the engine, and only a confirm installs it
+  // (the first-use gate, as for Whisper), after which the session starts.
+  it('asks before downloading the Moonshine model, installs it as a Moonshine asset, then starts', async () => {
+    const user = userEvent.setup();
+    const { api } = renderPage({}, { assets: 'missing' });
+    const assetsInstall = vi.spyOn(api, 'assetsInstall');
+    const teleprompterStart = vi.spyOn(api, 'teleprompterStart');
+
+    await user.click(await screen.findByRole('button', { name: 'Moonshine' }));
+    expect(assetsInstall).not.toHaveBeenCalled();
+    await startReading(user);
+
+    const dialog = await screen.findByRole('alertdialog', { name: 'Download local Moonshine model?' });
+    expect(dialog.textContent).toMatch(/Moonshine AI/);
+    await user.click(within(dialog).getByRole('button', { name: 'Download model' }));
+
+    await waitFor(() => expect(teleprompterStart).toHaveBeenCalledTimes(2), { timeout: 5000 });
+    expect(assetsInstall).toHaveBeenCalledWith('moonshine', 'tiny');
+    expect(teleprompterStart).toHaveBeenLastCalledWith(expect.objectContaining({ engine: 'moonshine' }));
   });
 
   it('says so when the manuscript has no chapter to read', async () => {
