@@ -82,6 +82,7 @@ export function Settings({
   registerActions,
   onProjectDataCleared,
   onLinkDawFile,
+  initialCategory,
 }: {
   data: Bootstrap;
   notify: Notify;
@@ -90,13 +91,19 @@ export function Settings({
   onProjectDataCleared: () => Promise<void>;
   /** The shared "link a REAPER project file" action (PRD project-workspace-and-daw-link.prd.md, W19). */
   onLinkDawFile: () => void;
+  /**
+   * The category to open on (a deep link such as the teleprompter's "Fill them in Settings" for the credits,
+   * audiobook-credits-templates.prd.md Phase 4), in the first scope that has it. Absent: General, in the Global scope.
+   */
+  initialCategory?: string;
 }) {
   const api = useApi();
   const { preference: themePreference, setPreference: setThemePreference } = useTheme();
-  const [scope, setScope] = useState<Scope>('global');
+  const opening = SETTINGS_CATEGORIES.find((entry) => entry.key === initialCategory);
+  const [scope, setScope] = useState<Scope>(opening?.scopes[0] ?? 'global');
   // Tailwind's `md` (48rem): from there the category list stands beside the panel, below it the list is a row.
   const sideBySide = useMediaQuery('(min-width: 48rem)', true);
-  const [category, setCategory] = useState('General');
+  const [category, setCategory] = useState(opening?.key ?? 'General');
   const [settings, setSettings] = useState<Record<string, ScopedSettingField[]>>({});
   const [values, setValues] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState(false);

@@ -49,6 +49,7 @@ import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schema
 import { unknownKeys } from './schemas/strictness';
 import { parseWire, type WireContext } from './wire/parseWire';
 import { WireError } from './wire/WireError';
+import { creditsRows } from '../components/teleprompter/readerModel';
 
 // ADR 0069, rule 4: the fixtures are the contract. Every payload the Go host and the Python sidecars write to
 // tests/fixtures/contracts/ is validated here by the same schemas the app runs, and so is every answer the mock client gives;
@@ -72,6 +73,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'teleprompter-state-idle.json': teleprompterStateSchema,
   'teleprompter-state-running.json': teleprompterStateSchema,
   'teleprompter-events.json': teleprompterEventSchema.array(),
+  'teleprompter-credits-script.json': teleprompterEventSchema,
   'teleprompter-devices.json': teleprompterDevicesResultSchema,
   'teleprompter-start-asset-required-whisper.json': teleprompterStartResultSchema,
   'teleprompter-start-asset-required-moonshine.json': teleprompterStartResultSchema,
@@ -1100,5 +1102,19 @@ describe('one deliberately broken sample per boundary fails with a specific mess
   it('a state snapshot (a transcript phase the UI does not know)', () => {
     const broken = { ...(readGolden('transcript-idle.json') as object), phase: 'paused' };
     expect(failure(transcriptStateSchema, broken, 'transcript:state').issues[0]?.path).toBe('phase');
+  });
+});
+
+// The sidecar's credits script (chapter_script.text_script, ADR 0150) and the reader's `creditsRows` split the same text the
+// same way: every span of the golden lands on a line of the text the Python test built it from, with every word tracked.
+describe('the credits script the sidecar sends', () => {
+  it('lays over the reader rows of the same text with no drift', () => {
+    const text = 'You have been listening to Alice, written by Lewis Carroll,\nnarrated by Ada Finch.\n\nThe End.';
+    const script = parseWire(teleprompterEventSchema, readGolden('teleprompter-credits-script.json'), ctx('teleprompter:event'));
+    if (script.type !== 'script') throw new Error('the golden is not a script event');
+
+    const rows = creditsRows('closing', text, script);
+
+    expect(rows.map((row) => [row.key, row.start, row.words?.length])).toEqual(script.spans.map((span) => [span.id, span.start, span.count]));
   });
 });

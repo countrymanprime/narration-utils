@@ -82,6 +82,7 @@ type Service struct {
 	child       *process.StreamChild
 	stopFile    string
 	controlFile string
+	scriptFile  string
 	stopping    bool
 	// afterFunc schedules the auto-stop (time.AfterFunc outside tests); autoStop is the pending one, autoStopRound
 	// tells a stale callback from the current one, and autoStopped records that the session ended itself at Done.
@@ -158,13 +159,27 @@ func option(options map[string]string, key, fallback string) string {
 	return fallback
 }
 
+// Script is text to read that is not a manuscript chapter: the opening or closing credits the host renders
+// (audiobook-credits-templates.prd.md Phase 4, ADR 0150). ID names it in the `script` event and the state's `chapter`,
+// Title is its display name (never read aloud), and Text is exactly what the narrator reads. The service writes Text to a
+// file in the session directory for the sidecar's --script and removes it when the session ends.
+type Script struct{ ID, Title, Text string }
+
 type launch struct {
 	args                                   []string
 	engine, chapter, stopFile, controlFile string
+	// scriptFile and scriptText are set only for a Script session: the file Start writes scriptText to.
+	scriptFile, scriptText string
 }
 
-// plan validates a request and builds the sidecar arguments. It has no side
-// effects, so a rejected request leaves the service exactly as it was.
+// source is what a session reads: a manuscript chapter, or a Script.
+type source struct {
+	manuscript, chapter string
+	script              *Script
+}
+
+// plan validates a chapter request and builds the sidecar arguments. It has no
+// side effects, so a rejected request leaves the service exactly as it was.
 func (s *Service) plan(options map[string]string) (launch, error) {
 	if s.config.Project == "" {
 		return launch{}, errors.New("save the REAPER project and import a manuscript first")
@@ -177,6 +192,22 @@ func (s *Service) plan(options map[string]string) (launch, error) {
 	if chapter == "" {
 		return launch{}, errors.New("choose a chapter to read")
 	}
+	return s.planSession(options, source{manuscript: manuscript, chapter: chapter})
+}
+
+// planScript validates a Script request; like plan it has no side effects. A script needs no imported manuscript.
+func (s *Service) planScript(script Script, options map[string]string) (launch, error) {
+	if strings.TrimSpace(script.ID) == "" || strings.TrimSpace(script.Title) == "" {
+		return launch{}, errors.New("the text to read has no name")
+	}
+	if len(strings.Fields(script.Text)) == 0 {
+		return launch{}, fmt.Errorf("the %s text has no words to read", strings.ToLower(script.Title))
+	}
+	return s.planSession(options, source{chapter: script.ID, script: &script})
+}
+
+// planSession checks what every session needs (engine, microphone, sidecar) and builds the arguments around src.
+func (s *Service) planSession(options map[string]string, src source) (launch, error) {
 	engine := option(options, "engine", EngineWhisper)
 	if !SupportsEngine(PlatformOrCurrent(s.config.Platform), engine) {
 		return launch{}, fmt.Errorf("the %s engine is not available on this computer", engine)
@@ -197,10 +228,16 @@ func (s *Service) plan(options map[string]string) (launch, error) {
 	stamp := time.Now().UnixNano()
 	stopFile := filepath.Join(s.config.SessionDir, fmt.Sprintf("teleprompter_%d.stop", stamp))
 	controlFile := filepath.Join(s.config.SessionDir, fmt.Sprintf("teleprompter_%d.control", stamp))
-	args := []string{
-		"--engine", engine, "--model", option(options, "model", DefaultModel), "--manuscript", manuscript, "--chapter", chapter,
-		"--stop-file", stopFile, "--control-file", controlFile,
+	planned := launch{engine: engine, chapter: src.chapter, stopFile: stopFile, controlFile: controlFile}
+	args := []string{"--engine", engine, "--model", option(options, "model", DefaultModel)}
+	if src.script != nil {
+		planned.scriptFile = filepath.Join(s.config.SessionDir, fmt.Sprintf("teleprompter_%d.script.txt", stamp))
+		planned.scriptText = src.script.Text
+		args = append(args, "--script", planned.scriptFile, "--script-id", src.script.ID, "--script-title", src.script.Title)
+	} else {
+		args = append(args, "--manuscript", src.manuscript, "--chapter", src.chapter)
 	}
+	args = append(args, "--stop-file", stopFile, "--control-file", controlFile)
 	if modelDir := option(options, "modelDir", ""); modelDir != "" {
 		args = append(args, "--model-dir", modelDir)
 	}
@@ -218,7 +255,8 @@ func (s *Service) plan(options map[string]string) (launch, error) {
 	if s.config.Backend != "" {
 		args = append([]string{s.config.Backend}, args...)
 	}
-	return launch{args: args, engine: engine, chapter: chapter, stopFile: stopFile, controlFile: controlFile}, nil
+	planned.args = args
+	return planned, nil
 }
 
 // Device is one input device the sidecar's `--list-devices` reported, by the
@@ -274,13 +312,26 @@ func (s *Service) Start(options map[string]string) error {
 	if err != nil {
 		return err
 	}
+	return s.begin(plan)
+}
+
+// StartScript launches a session over text that is not a manuscript chapter (the credits, ADR 0150).
+func (s *Service) StartScript(script Script, options map[string]string) error {
+	plan, err := s.planScript(script, options)
+	if err != nil {
+		return err
+	}
+	return s.begin(plan)
+}
+
+func (s *Service) begin(plan launch) error {
 	s.mu.Lock()
 	if phase, _ := s.state["phase"].(string); active(phase) {
 		s.mu.Unlock()
 		return errors.New("a teleprompter session is already running")
 	}
 	s.state = map[string]any{"phase": "starting", "message": "Starting the teleprompter…", "engine": plan.engine, "chapter": plan.chapter}
-	s.script, s.position, s.stopping, s.stopFile, s.controlFile = nil, nil, false, plan.stopFile, plan.controlFile
+	s.script, s.position, s.stopping, s.stopFile, s.controlFile, s.scriptFile = nil, nil, false, plan.stopFile, plan.controlFile, plan.scriptFile
 	s.cancelAutoStopLocked()
 	s.autoStopped = false
 	s.mu.Unlock()
@@ -289,10 +340,20 @@ func (s *Service) Start(options map[string]string) error {
 	_ = os.MkdirAll(s.config.SessionDir, 0o755)
 	_ = os.Remove(plan.stopFile)
 	_ = os.Remove(plan.controlFile)
+	if plan.scriptFile != "" {
+		// The narrator's own credits text: readable by this user only, removed by watch when the session ends.
+		if err := os.WriteFile(plan.scriptFile, []byte(plan.scriptText), 0o600); err != nil {
+			s.fail(fmt.Sprintf("could not prepare the text to read: %v", err))
+			return err
+		}
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	child, err := s.sidecars.StartStream(ctx, s.onLine, s.config.Python, plan.args...)
 	if err != nil {
 		cancel()
+		if plan.scriptFile != "" {
+			_ = os.Remove(plan.scriptFile)
+		}
 		s.fail(err.Error())
 		return err
 	}
@@ -412,7 +473,7 @@ func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc, f
 	cancel()
 	code, _ := child.ExitCode()
 	s.mu.Lock()
-	stopFile, controlFile := s.stopFile, s.controlFile
+	stopFile, controlFile, scriptFile := s.stopFile, s.controlFile, s.scriptFile
 	s.cancelAutoStopLocked()
 	if s.stopping || code == 0 {
 		s.state["phase"], s.state["message"] = "stopped", stoppedMessage
@@ -427,6 +488,9 @@ func (s *Service) watch(child *process.StreamChild, cancel context.CancelFunc, f
 	close(finished)
 	_ = os.Remove(stopFile)
 	_ = os.Remove(controlFile)
+	if scriptFile != "" {
+		_ = os.Remove(scriptFile)
+	}
 	s.notify()
 }
 

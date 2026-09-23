@@ -46,6 +46,7 @@ function build(overrides: Partial<Parameters<typeof createTeleprompterMock>[0]> 
     ready: Promise.resolve(),
     chapters: () => chapters,
     paragraphs: () => paragraphs,
+    creditsText: (kind) => (kind === 'opening' ? 'Alice, written by Lewis Carroll,\nnarrated by [Narrator].' : undefined),
     assetRequired: () => undefined,
     trackMatch: (chapterId) => mockChapterTrackMatch(chapterId, chapters, project, []),
     tracksProject: project,
@@ -58,6 +59,30 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 describe('teleprompter mock', () => {
+  it('reads the credits as a script of their own, one paragraph per line and no title (ADR 0150)', async () => {
+    const mock = build();
+    const events: TeleprompterEvent[] = [];
+    mock.subscribeTeleprompterEvent((event) => events.push(event));
+
+    await mock.teleprompterStart({ credits: 'opening', device: 'Microphone (USB)' });
+
+    expect(events[0]).toEqual({
+      type: 'script',
+      chapter: { id: 'credits-opening', title: 'Opening credits' },
+      tokens: 8,
+      spans: [
+        { kind: 'paragraph', id: 'credits-opening-1', index: null, start: 0, count: 5 },
+        { kind: 'paragraph', id: 'credits-opening-2', index: null, start: 5, count: 3 },
+      ],
+    });
+    expect((await mock.teleprompterState()).chapter).toBe('credits-opening');
+    await mock.teleprompterStop();
+  });
+
+  it('refuses credits of a kind with no template, as the host does', async () => {
+    await expect(build().teleprompterStart({ credits: 'closing', device: 'Microphone (USB)' })).rejects.toThrow(/Settings > Credits/);
+  });
+
   it('describes the chapter first, then replays the recorded read-through to the end', async () => {
     const mock = build();
     const events: TeleprompterEvent[] = [];

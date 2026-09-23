@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import type { ComponentProps } from 'react';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -34,7 +35,12 @@ const position = (read: number, extra: Partial<TeleprompterPosition> = {}): Tele
   ...extra,
 });
 
-function renderPage(overrides: Partial<NarrationApi> = {}, initial: Parameters<typeof createMockApi>[1] = {}, existingApi?: NarrationApi) {
+function renderPage(
+  overrides: Partial<NarrationApi> = {},
+  initial: Parameters<typeof createMockApi>[1] = {},
+  existingApi?: NarrationApi,
+  props: ComponentProps<typeof TeleprompterPage> = {},
+) {
   const eventListeners = new Set<(event: TeleprompterEvent) => void>();
   const stateListeners = new Set<(state: TeleprompterState) => void>();
   const api =
@@ -55,7 +61,7 @@ function renderPage(overrides: Partial<NarrationApi> = {}, initial: Parameters<t
     );
   render(
     <ApiProvider api={api}>
-      <TeleprompterPage />
+      <TeleprompterPage {...props} />
     </ApiProvider>,
   );
   return {
@@ -524,5 +530,78 @@ describe('TeleprompterPage chapter suggestion from REAPER', () => {
 
     await waitFor(() => expect(currentWord()).toBeTruthy());
     expect(manuscriptParagraphs.mock.calls.map(([id]) => id)).not.toContain(WIRE_CHAPTERS[1].id);
+  });
+});
+
+// The credits on the teleprompter (audiobook-credits-templates.prd.md Phase 4, ADR 0150; C6: warn, never block).
+describe('TeleprompterPage credits', () => {
+  const FILLED = { title: 'Alice’s Adventures in Wonderland', author: 'Lewis Carroll', narrator: 'Ada Finch' };
+  const optionLabels = async () => Array.from(((await screen.findByLabelText('Chapter')) as HTMLSelectElement).options, (option) => option.textContent);
+
+  it('offers the opening credits before the first chapter and the closing credits after the last', async () => {
+    renderPage();
+
+    await waitFor(async () => expect((await optionLabels()).length).toBeGreaterThan(2));
+    const labels = await optionLabels();
+    expect(labels[0]).toBe('Opening credits');
+    expect(labels.at(-1)).toBe('Closing credits');
+  });
+
+  it('leaves out credits of a kind the library has no template for', async () => {
+    renderPage({ creditsTemplates: async () => [] });
+
+    await screen.findByText('Alice was beginning', { exact: false });
+    expect(await optionLabels()).not.toContain('Opening credits');
+    expect(await optionLabels()).not.toContain('Closing credits');
+  });
+
+  it('shows the credits as the host rendered them and starts the credits, not a chapter', async () => {
+    const user = userEvent.setup();
+    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
+    renderPage({ teleprompterStart }, { creditValues: FILLED });
+
+    await waitFor(async () => expect(await optionLabels()).toContain('Opening credits'));
+    await user.selectOptions(screen.getByLabelText('Chapter'), 'Opening credits');
+
+    expect(await screen.findByText('Alice’s Adventures in Wonderland, written by Lewis Carroll, narrated by Ada Finch.')).toBeTruthy();
+    expect(screen.queryByText(/have no value/)).toBeNull();
+    await startReading(user);
+    expect(teleprompterStart).toHaveBeenCalledWith({ credits: 'opening', device: DEVICE_NAME, engine: 'whisper', model: 'tiny' });
+  });
+
+  it('warns which tokens have no value, links to Settings, and still allows Start', async () => {
+    const user = userEvent.setup();
+    const onFixCredits = vi.fn();
+    const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
+    renderPage({ teleprompterStart }, {}, undefined, { onFixCredits });
+
+    await waitFor(async () => expect(await optionLabels()).toContain('Closing credits'));
+    await user.selectOptions(screen.getByLabelText('Chapter'), 'Closing credits');
+
+    const warning = await screen.findByRole('status', { name: /have no value/ });
+    expect(warning.textContent).toContain('Title, Author, Narrator');
+    await user.click(within(warning).getByRole('button', { name: 'Fill them in Settings' }));
+    expect(onFixCredits).toHaveBeenCalled();
+    await startReading(user);
+    expect(teleprompterStart).toHaveBeenCalledWith({ credits: 'closing', device: DEVICE_NAME, engine: 'whisper', model: 'tiny' });
+  });
+
+  it("follows the reading through the credits with the sidecar's spans", async () => {
+    const user = userEvent.setup();
+    const { emit, setState } = renderPage({ teleprompterStart: async () => ({ status: 'started' }) }, { creditValues: FILLED });
+    await waitFor(async () => expect(await optionLabels()).toContain('Opening credits'));
+    await user.selectOptions(screen.getByLabelText('Chapter'), 'Opening credits');
+    await startReading(user);
+    setState({ phase: 'running', chapter: 'credits-opening' });
+
+    emit({
+      type: 'script',
+      chapter: { id: 'credits-opening', title: 'Opening credits' },
+      tokens: 12,
+      spans: [{ kind: 'paragraph', id: 'credits-opening-1', index: null, start: 0, count: 12 }],
+    });
+    emit(position(6));
+
+    await waitFor(() => expect(currentWord()).toBe('Lewis'));
   });
 });

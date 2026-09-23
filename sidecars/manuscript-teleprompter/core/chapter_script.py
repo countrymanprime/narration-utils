@@ -10,8 +10,12 @@ aloud, as Transcript Compare also assumes) followed by each paragraph's text in
 manuscript order. The frontend must tokenize each paragraph the same way
 (`text.split()`) to place the tracker's `read` index; the `script` event
 carries the spans so it can check its own tokenization against ours.
+
+`text_script` builds the same kind of script for text that is not a chapter
+(the opening or closing credits the host renders, ADR 0150).
 """
 
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -93,6 +97,38 @@ def load_chapter_script(manuscript_path: str | Path, chapter: str) -> ChapterScr
         tokens.extend(words)
         texts.append(paragraph["text"])
     return ChapterScript(selected["id"], selected["title"], tokens, spans, "\n".join(texts))
+
+
+_LINE_BREAK = re.compile(r"\r\n|\r|\n")
+
+
+def text_script(text: str, script_id: str, title: str) -> ChapterScript:
+    """The script for text that is not a manuscript chapter: the opening or
+    closing credits the host renders (audiobook-credits-templates.prd.md Phase
+    4, ADR 0150). Every line with words is one paragraph span, `<script_id>-<n>`
+    counted from 1 over those lines only, with no manuscript index; there is no
+    title span, because the script's name ("Opening credits") is not read aloud.
+    The reader splits the same text the same way (`readerModel.ts`)."""
+    tokens: list[str] = []
+    spans: list[Span] = []
+    for line in _LINE_BREAK.split(text):
+        words = line.split()
+        if not words:
+            continue
+        spans.append(Span("paragraph", f"{script_id}-{len(spans) + 1}", None, len(tokens), len(words)))
+        tokens.extend(words)
+    if not tokens:
+        raise ChapterError(f"The {title} text has no words to read.")
+    return ChapterScript(script_id, title, tokens, spans, text)
+
+
+def load_text_script(path: str | Path, script_id: str, title: str) -> ChapterScript:
+    """`text_script` over a UTF-8 file the host wrote."""
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError as error:
+        raise ChapterError(f"Could not read the {title} text: {error}") from error
+    return text_script(text, script_id, title)
 
 
 def script_event(script: ChapterScript) -> dict:

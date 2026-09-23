@@ -617,6 +617,18 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'teleprompter',
+    state: 'credits-opening',
+    description:
+      'Teleprompter, "Opening credits" chosen (audiobook-credits-templates.prd.md Phase 4) - first in the picker, before the chapters; the credits the host rendered from the first opening template are the text below, every token filled (?mockCredits=filled), no warning',
+  },
+  {
+    page: 'teleprompter',
+    state: 'credits-unresolved-warning',
+    description:
+      'Teleprompter, "Closing credits" chosen with no project credits values - a warning names the tokens with no value (Title, Author, Narrator) with "Fill them in Settings", the placeholders show in brackets in the text, and Start reading is still enabled (C6: warn, never block)',
+  },
+  {
+    page: 'teleprompter',
     state: 'model-download-progress',
     description: 'Teleprompter, the Whisper model download after Start reading, with real bytes and Cancel (?mockAssets=downloading)',
   },

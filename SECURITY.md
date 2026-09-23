@@ -29,6 +29,9 @@ especially welcome:
   which the host builds from the saved REAPER project; the app's only input to a check is a chapter id).
 - Weaknesses in the release pipeline (for example an installer or checksum that does not match the reviewed build, or a release asset without valid build provenance). What the pipeline promises, and what it does not: every release asset has a SHA-256 file (it detects a damaged download, not a tampered one) and a build-provenance attestation you can check with `gh attestation verify` ([Build provenance](docs/operations/ci-and-releases.md#build-provenance)); the releases are **unsigned** by decision, so Windows SmartScreen warns and that warning alone is not a vulnerability; and the owner-only settings that back the pipeline (rulesets, the `production` environment, immutable releases, action pinning) are listed in [Tracking work on GitHub](docs/operations/github-workflow.md#repository-settings-that-only-the-owner-can-change).
 
+- The arguments and session files the app hands its local sidecars, for example a value from the interface becoming a
+  sidecar option, or the teleprompter's stop, control and credits-text files in the session folder
+  ([ADR 0150](docs/adr/0150-the-teleprompter-reads-credits-as-a-host-rendered-script-file-not-a-chapter.md)).
 - The file protocol between the app and REAPER (the session folder under REAPER's resource path, the command files the Lua bridge reads, and the paths it opens from a command) and the local `/media` route that plays a project's audio.
 
 Problems in a third-party dependency belong upstream, but tell us if we ship a version that is affected.

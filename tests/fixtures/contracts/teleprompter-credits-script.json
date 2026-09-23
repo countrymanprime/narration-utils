@@ -1,0 +1,31 @@
+{
+  "chapter": {
+    "id": "credits-closing",
+    "title": "Closing credits"
+  },
+  "spans": [
+    {
+      "count": 10,
+      "id": "credits-closing-1",
+      "index": null,
+      "kind": "paragraph",
+      "start": 0
+    },
+    {
+      "count": 4,
+      "id": "credits-closing-2",
+      "index": null,
+      "kind": "paragraph",
+      "start": 10
+    },
+    {
+      "count": 2,
+      "id": "credits-closing-3",
+      "index": null,
+      "kind": "paragraph",
+      "start": 14
+    }
+  ],
+  "tokens": 16,
+  "type": "script"
+}

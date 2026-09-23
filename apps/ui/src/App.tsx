@@ -310,7 +310,10 @@ function AppRoutes() {
                   )
                 }
               />
-              <Route path="/teleprompter" element={data.manuscript ? <TeleprompterPage /> : <Navigate to="/" replace />} />
+              <Route
+                path="/teleprompter"
+                element={data.manuscript ? <TeleprompterPage onFixCredits={() => guardedNavigate('/settings#credits')} /> : <Navigate to="/" replace />}
+              />
               <Route path="/tracks" element={<TracksPage dawFileLinked={data.dawFileLinked} onLinkDawFile={() => void linkDawFile()} />} />
               <Route
                 path="/settings"
@@ -327,6 +330,7 @@ function AppRoutes() {
                       guardedNavigate('/');
                     }}
                     onLinkDawFile={() => void linkDawFile()}
+                    initialCategory={location.hash === '#credits' ? 'Credits' : undefined}
                   />
                 }
               />

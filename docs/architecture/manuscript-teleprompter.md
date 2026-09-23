@@ -468,7 +468,13 @@ and
   chapter title, then each paragraph, split on whitespace. A one-off `script`
   event first carries the token count and each paragraph's span, and with
   Moonshine the chapter text is also used as biasing context. `--script FILE`
-  remains for plain text. The frontend maps `read` onto words by tokenizing each
+  remains for plain text; named with `--script-id ID --script-title TITLE` it
+  also emits a `script` event, one paragraph span per line with words and no
+  title span. That is how the opening and closing credits are read: the host
+  renders them with the one credits renderer, writes them to a session file and
+  starts the sidecar on it, and the UI sends only which credits
+  ([ADR 0150](../adr/0150-the-teleprompter-reads-credits-as-a-host-rendered-script-file-not-a-chapter.md)).
+  The frontend maps `read` onto words by tokenizing each
   paragraph exactly as `chapter_script.py` does and checking itself against the
   `script` event's spans (a paragraph that disagrees is shown untracked), and
   the chapter is chosen from a picker that starts on the reader's active chapter

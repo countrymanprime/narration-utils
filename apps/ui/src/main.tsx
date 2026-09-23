@@ -57,6 +57,9 @@ const mockResume = MOCK_RESUME_SEEDS.find((seed) => seed === mockParams.get('moc
 // `?mockNoDevices=1` boots the teleprompter with an empty device listing, so the
 // blocked "No microphone found" state (no typed fallback) can be seen without a host.
 const mockNoDevices = mockParams.has('mockNoDevices');
+// `?mockCredits=filled` boots the project with its credits values set (title, author, narrator), so the credits read on the
+// teleprompter with every token resolved can be seen without saving them in Settings first (credits PRD Phase 4).
+const mockCreditsFilled = mockParams.get('mockCredits') === 'filled';
 // `?mockPreviewError=<text>` makes the Story Bible preview fail with that text once the
 // preview voice is installed, so the failure toast can be seen without a real host.
 const mockPreviewError = mockParams.get('mockPreviewError');
@@ -132,6 +135,7 @@ const mockInitial = {
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
   ...(mockResume ? { resume: mockResume } : {}),
+  ...(mockCreditsFilled ? { creditValues: { title: 'Alice’s Adventures in Wonderland', author: 'Lewis Carroll', narrator: 'Ada Finch' } } : {}),
   ...(mockNoProject ? { projectFolder: '' } : {}),
   ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),
   ...(mockNoRpp ? { tracksCandidates: [] } : {}),

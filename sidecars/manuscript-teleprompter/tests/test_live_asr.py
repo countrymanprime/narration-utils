@@ -634,3 +634,40 @@ def test_list_devices_reports_a_listing_failure_instead_of_pretending_there_are_
 
     emitted = json.loads(capsys.readouterr().out.strip())
     assert emitted == {"type": "devices", "devices": [], "error": "Could not list input devices: no dshow backend"}
+
+
+def test_script_id_and_title_go_together_and_need_a_script(capsys):
+    ap = live_asr.build_parser()
+    for argv, message in [
+        (["--mic", "Mic", "--script", "s.txt", "--script-id", "credits-opening"], "--script-id and --script-title go together"),
+        (["--mic", "Mic", "--script-id", "credits-opening", "--script-title", "Opening credits"], "--script-id needs --script"),
+    ]:
+        with pytest.raises(SystemExit):
+            live_asr._check_engine_args(ap, ap.parse_args(argv))
+        assert message in capsys.readouterr().err
+
+
+def test_a_named_script_emits_a_script_event_with_spans_and_is_the_moonshine_context(tmp_path, monkeypatch):
+    monkeypatch.syspath_prepend(str(LIVE_ASR_PATH.parent))
+    script = tmp_path / "credits.txt"
+    script.write_text("Alice, written by Lewis Carroll.\nThe End.", encoding="utf-8")
+    ap = live_asr.build_parser()
+    args = ap.parse_args(["--wav", "r.wav", "--script", str(script), "--script-id", "credits-closing", "--script-title", "Closing credits"])
+
+    tracker, script_event, text = live_asr._load_script(ap, args)
+
+    assert script_event["chapter"] == {"id": "credits-closing", "title": "Closing credits"}
+    assert [(span["id"], span["start"], span["count"]) for span in script_event["spans"]] == [("credits-closing-1", 0, 5), ("credits-closing-2", 5, 2)]
+    assert text == "Alice, written by Lewis Carroll.\nThe End."
+    assert tracker is not None
+
+
+def test_a_plain_script_still_emits_no_script_event(tmp_path, monkeypatch):
+    monkeypatch.syspath_prepend(str(LIVE_ASR_PATH.parent))
+    script = tmp_path / "script.txt"
+    script.write_text("Some words.", encoding="utf-8")
+    ap = live_asr.build_parser()
+
+    _tracker, script_event, text = live_asr._load_script(ap, ap.parse_args(["--wav", "r.wav", "--script", str(script)]))
+
+    assert (script_event, text) == (None, None)

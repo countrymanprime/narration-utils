@@ -297,6 +297,28 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/teleprompter/useResumeLocate.ts::whisperInstall#1': row('click', 'download', 'dialog', 'host', 'dialog', 'dialog', 'no', 'ok', 'Only after Download model... and the first-use confirm; the host joins a download already running for the same asset. Bytes, the check, Cancel and a failure sentence in the dialog, through useAssetInstall; a finished download runs the lookup again.'),
   'src/components/teleprompter/useResumeLocate.ts::whisperInstallState#1': row('timer', 'download', 'dialog', 'na', 'poll', 'dialog', 'no', 'ok', 'The one install-poll loop (useAssetInstall), every 400 ms, as for the Start reading download.'),
   'src/components/teleprompter/useResumeLocate.ts::whisperInstallCancel#1': row('click', 'download', 'dialog', 'dialog', 'dialog', 'dialog', 'no', 'ok', 'Cancel stops the download and the dialog says it was cancelled; drawn only while bytes arrive.'),
+  'src/components/teleprompter/TeleprompterPage.tsx::creditsTemplates#1': row(
+    'mount',
+    'file-io',
+    'na',
+    'na',
+    'ui',
+    'silent',
+    'na',
+    'exempt',
+    'Loads the credits template library so the picker can offer Opening and Closing credits (audiobook-credits-templates.prd.md Phase 4); a failed load leaves the credits out of the picker, like the Manuscript entries, and the chapters stay readable.',
+  ),
+  'src/components/teleprompter/TeleprompterPage.tsx::creditsPreview#1': row(
+    'mount',
+    'instant',
+    'na',
+    'na',
+    'ui',
+    'silent',
+    'na',
+    'exempt',
+    'Renders the first opening- and closing-kind template (ADR 0093) with the project values for the credits in the picker, their text and the unresolved-token warning; a failed render leaves that credits out of the picker rather than a toast over the page.',
+  ),
   'src/components/teleprompter/useTeleprompterSession.ts::subscribeTeleprompterEvent#1': subscription('The live session events.'),
   'src/components/teleprompter/useTeleprompterSession.ts::subscribeTeleprompterState#1': subscription('The live session state.'),
   'src/components/teleprompter/useTeleprompterSession.ts::teleprompterState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Hydrates a session that was already running; the state event follows anyway.'),
@@ -434,10 +456,12 @@ export const SILENT_CATCHES: Record<string, string> = {
   'src/components/proofing/Transcript.tsx#2': 'Only offers to review the last run; without it the offer is absent.',
   // Phase 2 (teleprompter-manuscript-integration.prd.md) moved the device/settings catches into `useTeleprompterSession.ts`;
   // `TeleprompterPage.tsx` keeps only the chapter-selection catch it never shared with the modal.
-  'src/components/teleprompter/TeleprompterPage.tsx#1': 'Only picks the chapter the narrator last read; the first chapter is used without it.',
-  'src/components/teleprompter/TeleprompterPage.tsx#2':
-    'The REAPER chapter suggestion (ADR 0113) is a hint: no .rpp, or none chosen, is normal for a narrator not using REAPER, so it means no hint.',
+  'src/components/teleprompter/TeleprompterPage.tsx#1':
+    'Only renders the opening or closing credits for the picker (credits PRD Phase 4); a failed render leaves those credits out of the picker, as the Manuscript page leaves its entry empty, and the chapters are unaffected.',
+  'src/components/teleprompter/TeleprompterPage.tsx#2': 'Only picks the chapter the narrator last read; the first chapter is used without it.',
   'src/components/teleprompter/TeleprompterPage.tsx#3':
+    'The REAPER chapter suggestion (ADR 0113) is a hint: no .rpp, or none chosen, is normal for a narrator not using REAPER, so it means no hint.',
+  'src/components/teleprompter/TeleprompterPage.tsx#4':
     'Only guards the REAPER preselection against a running session; useTeleprompterSession reads the state again and reports its failure.',
   'src/components/teleprompter/useTeleprompterSession.ts#1':
     'Clearing the migrated browser-storage device once it is written to settings; if storage cannot be reached the stale value is simply left behind and never read again (the settings value now wins).',
