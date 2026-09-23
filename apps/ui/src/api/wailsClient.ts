@@ -30,6 +30,7 @@ import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { TELEPROMPTER_EVENT_TYPES, teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
+import type { TeleprompterStartOptions } from './contracts/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
 import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
@@ -124,6 +125,11 @@ function subscribeTeleprompterEvents(onEvent: (event: InferOutput<typeof telepro
 async function decode<S extends StandardSchemaV1>(schema: S, payload: string, request: Promise<string>): Promise<InferOutput<S>> {
   const text = await request;
   return checked(() => parseWireJson(schema, text, bindingContext(payload)));
+}
+
+/** `TeleprompterStart` goes to the host as `Record<string, string>` (options.go-style flat map); `startWord` is the one non-string field. */
+function toStartOptions({ startWord, ...rest }: TeleprompterStartOptions): Record<string, string> {
+  return startWord === undefined ? rest : { ...rest, startWord: String(startWord) };
 }
 
 /** Ready and Bootstrap are the two bindings that return an object, not JSON text. */
@@ -296,8 +302,9 @@ export const wailsClient: NarrationApi = {
         request.sourceRangeEnd,
       ),
     ),
-  teleprompterStart: (options) => decode(startResultSchema, 'TeleprompterStart', host.TeleprompterStart(options)),
+  teleprompterStart: (options) => decode(startResultSchema, 'TeleprompterStart', host.TeleprompterStart(toStartOptions(options))),
   teleprompterStop: () => decode(voidResult, 'TeleprompterStop', host.TeleprompterStop()),
+  teleprompterSeek: (word) => decode(voidResult, 'TeleprompterSeek', host.TeleprompterSeek(word)),
   teleprompterState: () => decode(teleprompterStateSchema, 'TeleprompterState', host.TeleprompterState()),
   teleprompterDevices: () => decode(teleprompterDevicesResultSchema, 'TeleprompterDevices', host.TeleprompterDevices()),
   subscribeTeleprompterEvent: subscribeTeleprompterEvents,

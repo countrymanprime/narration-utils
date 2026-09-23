@@ -43,6 +43,8 @@ export type TeleprompterStartOptions = {
   /** Whisper model id; the host defaults to the smallest. */
   model?: string;
   language?: string;
+  /** Start the tracker already at this script word index (the same space as `TeleprompterPosition.read`). */
+  startWord?: number;
 };
 
 export type TeleprompterStartResult =
@@ -69,6 +71,8 @@ export type TeleprompterDevicesResult = { devices: TeleprompterDevice[]; error: 
 export interface TeleprompterApi {
   teleprompterStart(options: TeleprompterStartOptions): Promise<TeleprompterStartResult>;
   teleprompterStop(): Promise<void>;
+  /** Move a running session's tracker straight to script word `word` ("Start here" / "Go back to here"). */
+  teleprompterSeek(word: number): Promise<void>;
   teleprompterState(): Promise<TeleprompterState>;
   teleprompterDevices(): Promise<TeleprompterDevicesResult>;
   subscribeTeleprompterEvent(onEvent: (event: TeleprompterEvent) => void): () => void;

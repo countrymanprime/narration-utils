@@ -177,7 +177,7 @@ Phases 1 to 7 (modal, marks, seek, flags) need no REAPER and are the first shipp
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Dialog full-size variant | `Dialog` gains `size="full"` only; stories and atlas coverage. Modality (Escape, focus trap, initial focus, hidden siblings) is delivered ([ADR 0048](../adr/0048-every-dialog-is-one-modal-shell-and-confirms-are-alert-dialogs.md)) | complete | 3, 6, 8 | - | - |
 | 2 | Session core and read-aloud modal | Extract `useTeleprompterSession` and `ReadAlongView`; add `ReadAloudDialog`, chapter-header button, `MicrophoneField` seam; page unchanged in behavior | complete (start/stop only; seek, marks, flags, resume, punch are Phases 3-12) | 3, 6, 8 | 1 | - |
-| 3 | Seek channel | Sidecar `--control-file`, `--start-word`, `reset_to`; Go `TeleprompterSeek`; contract and mock; host API bump; ADR | pending | 1, 2, 8 (6 with rebases) | - | - |
+| 3 | Seek channel | Sidecar `--control-file`, `--start-word`, `reset_to`; Go `TeleprompterSeek`; contract and mock; host API bump; ADR | complete | 1, 2, 8 (6 with rebases) | - | - |
 | 4 | Seek UI | "Start here" / "Go back to here" on a word; back-seek follows via `jump`; visual states | pending | 6, 8 | 2, 3 | - |
 | 5 | Story bible and notes marks | Offset-to-word mapping, rail tabs, `EntitySummary` reuse and a notes list, no cursor or scroll change on click | pending | 3, 6, 8 | 2 | - |
 | 6 | Live flag events | `flag` events in the sidecar with precision gates, replay false-flag report, contract types, mock recording regenerated | pending | 1, 2, 5, 8 (3 with rebases) | - | - |

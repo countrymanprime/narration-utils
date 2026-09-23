@@ -214,6 +214,9 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
     }
   };
   const stop = () => void api.teleprompterStop().catch((reason) => setError(errorText(reason)));
+  // Moves a running tracker straight to a chosen script word ("Start here" / "Go back to here", Phase 4 of
+  // teleprompter-manuscript-integration.prd.md wires this to a click; this phase only adds the channel itself).
+  const seek = (word: number) => void api.teleprompterSeek(word).catch((reason) => setError(errorText(reason)));
 
   const closeModelPrompt = () => {
     setPrompt(undefined);
@@ -259,6 +262,7 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
     modelInstall,
     start,
     stop,
+    seek,
     changeDevice,
     closeModelPrompt,
     reset,

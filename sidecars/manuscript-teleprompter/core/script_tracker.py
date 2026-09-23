@@ -187,6 +187,35 @@ class ScriptTracker:
         self._segment = None
         self._confirmed = []
 
+    def _script_index(self, original: int) -> int:
+        """Map an index into the unfiltered token list (what a `read`/`committed`
+        field means, per `script_words()`) to the nearest position at or after it
+        in the filtered internal `_script`/`_original` arrays - a punctuation-only
+        token carries no script index of its own, so a seek that lands on one
+        moves to the next real word."""
+        for position, source in enumerate(self._original):
+            if source >= original:
+                return position
+        return len(self._script)
+
+    def reset_to(self, word: int, now: float) -> list[dict]:
+        """Jump straight to script word `word` (an index into `script_words()`,
+        the same space as a position event's `read`/`committed`; clamped into
+        range) - what a narrator's seek command does (control_channel.py). It is
+        reported exactly like a `locate()` "restart" jump so the emitted position
+        event carries `jump: "restart"` and the reader's one-word-back convention
+        (`readerModel.ts`'s `nextCursor`) follows a seek backward too, even though
+        this seek can also move forward."""
+        clamped = max(0, min(word, self._token_count))
+        position = self._script_index(clamped)
+        self._anchor = self._committed = self._display = position
+        self._segment = None
+        self._confirmed = []
+        self._jump_reported = True
+        self._pending_jump = ("restart", None)
+        self._progress_at = now
+        return self._emit(now)
+
     def _move_display(self, location: Location, now: float) -> None:
         first_sight_of_jump = location.jump is not None and not self._jump_reported
         target = location.read if first_sight_of_jump else max(self._display, location.read)
