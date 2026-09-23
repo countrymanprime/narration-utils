@@ -11,7 +11,9 @@
 | Can anything else Audacity loads launch a program? | Only a native C++ module (the mechanism `mod-script-pipe` uses). Audacity refuses a module built for a different major.minor version, so it would have to be rebuilt for every Audacity minor release. That is disproportionate for a launcher. |
 | Does a macro artifact reach Audacity 4? | **No.** Audacity 4.0.0 (released 2026-09-03) ships without the Macro Manager or the scripting pipe. |
 
-So Phase 10 as written, "a saved Audacity macro that launches the app's executable with `--daw Audacity` and the project folder", cannot be built. The phase is marked `blocked`, and Questions 3 and 7 need the owner again. The owner's recorded answers in the PRD are left as they are.
+So Phase 10 as first written, "a saved Audacity macro that launches the app's executable with `--daw Audacity` and the project folder", cannot be built.
+
+**Outcome (owner, 2026-09-23):** alternative 1 below. The launcher is the installer's "Narration Utils for Audacity" Start Menu entry, no Audacity-side artifact ships, and the integration targets Audacity 3.x only for now ([ADR 0145](../adr/0145-the-audacity-launcher-is-an-installer-start-menu-entry-and-a-picker-switch-keeps-an-audacity-launch.md), the PRD's revised Questions 3 and 7).
 
 ## Evidence
 
@@ -64,7 +66,7 @@ Each of these gets the narrator into the app's workspace with `--daw Audacity` w
 4. **The exporter side channel (not recommended).** Only if the owner accepts every drawback above, and only after an owner-present spike on a copy of the Audacity settings shows it works.
 5. **A native module (not recommended).** It has to be rebuilt for every Audacity minor release, it runs native code in Audacity's process, and it is not known to work in Audacity 4.
 
-## What needs the owner
+## What needed the owner (answered 2026-09-23, see Outcome above)
 
 - **Question 3.** Choose one of the alternatives above in place of "a saved macro that launches the app". Option 1 keeps the goal, one click to the workspace in Audacity mode, without an Audacity-side artifact.
 - **Question 7.** It follows from Question 3. With option 1 there is no Audacity-side file to ship or to list beside `scripts/release/reaper-files.mjs`, and the release check becomes an installer assertion.

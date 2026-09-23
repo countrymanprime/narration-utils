@@ -112,3 +112,44 @@ func TestOnlyAReaperLaunchExplainsAMissingProjectFolder(t *testing.T) {
 		t.Fatal("a resolved REAPER launch has nothing to explain")
 	}
 }
+
+// The installer's "Narration Utils for Audacity" shortcut starts the app with `--daw Audacity` and no project folder (audacity-integration
+// PRD Phase 10), so the narrator picks the project in the app. The picker's switch keeps the launch an Audacity one; any other launch,
+// a REAPER one included, becomes "Standalone" as before, because the project the narrator picked is not the one REAPER has open.
+func TestAPickerSwitchKeepsAnAudacityLaunchAnAudacityOne(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	for _, tc := range []struct{ launch, want string }{
+		{"Audacity", "Audacity"},
+		{"audacity", "audacity"},
+		{"REAPER", "Standalone"},
+		{"", "Standalone"},
+		{"Standalone", "Standalone"},
+	} {
+		host := NewHost()
+		host.configureLocked(parseConfigArgs(host.config.repoRoot, []string{"--daw", tc.launch}))
+		project := audacityProject(t)
+		raw, err := host.ProjectSwitch(project, "Book")
+		if err != nil || !strings.Contains(raw, `"switched":true`) {
+			t.Fatalf("launch %q: ProjectSwitch = %s, %v", tc.launch, raw, err)
+		}
+		if boot := host.Bootstrap(); boot["daw"] != tc.want || boot["projectFolder"] != project {
+			t.Errorf("launch %q: Bootstrap daw/projectFolder = %v/%v, want %q/%q", tc.launch, boot["daw"], boot["projectFolder"], tc.want, project)
+		}
+	}
+}
+
+// After the switch the review workflow still answers as the Audacity adapter, never through REAPER's bridge.
+func TestAnAudacityLaunchPickedInTheAppStillRefusesReviewClearly(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	host := NewHost()
+	host.configureLocked(parseConfigArgs(host.config.repoRoot, []string{"--daw", "Audacity"}))
+	if _, err := host.ProjectSwitch(audacityProject(t), "Book"); err != nil {
+		t.Fatal(err)
+	}
+	if host.bridge != nil {
+		t.Fatal("an Audacity launch must not open the REAPER bridge after a picker switch")
+	}
+	if err := host.transcript.Start(map[string]string{}); !errors.Is(err, dawadapter.ErrAudacityNotAvailable) {
+		t.Fatalf("Start() = %v, want ErrAudacityNotAvailable", err)
+	}
+}
