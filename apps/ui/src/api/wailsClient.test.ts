@@ -23,6 +23,38 @@ describe('wailsClient', () => {
     expect(select).toHaveBeenCalledWith();
   });
 
+  it('picks, measures, polls and cancels a measurement through the native bindings and the job schema', async () => {
+    const job = { id: 'measure-1', kind: 'measurement', phase: 'running', message: 'Measuring 1 file.', percent: 0, logs: null, elapsed: 0, files: null };
+    const pick = vi.fn().mockResolvedValue(JSON.stringify({ paths: ['C:/R/Chapter 01.wav'] }));
+    const analyze = vi.fn().mockResolvedValue(JSON.stringify(job));
+    const state = vi.fn().mockResolvedValue(JSON.stringify({ ...job, phase: 'success', percent: 100 }));
+    const cancel = vi.fn().mockResolvedValue(JSON.stringify({ ...job, phase: 'cancelled' }));
+    window.go = { main: { Host: { MeasurePickFiles: pick, MeasureAnalyze: analyze, MeasureState: state, MeasureCancel: cancel } } };
+
+    const picked = await wailsClient.measurePickFiles();
+    expect(picked).toEqual({ paths: ['C:/R/Chapter 01.wav'] });
+    await expect(wailsClient.measureAnalyze(picked.paths)).resolves.toMatchObject({ phase: 'running', logs: [], files: [] });
+    expect(analyze).toHaveBeenCalledWith(['C:/R/Chapter 01.wav']);
+    await expect(wailsClient.measureState()).resolves.toMatchObject({ phase: 'success', percent: 100 });
+    await expect(wailsClient.measureCancel()).resolves.toMatchObject({ phase: 'cancelled' });
+  });
+
+  it('rejects a measurement whose level is a number the host never sends', async () => {
+    const report = { sample_rate: 48000, channels: 2, duration_seconds: 1, integrated_lufs: '-19', rms_dbfs: null, sample_peak_dbfs: null };
+    const job = {
+      id: 'measure-1',
+      kind: 'measurement',
+      phase: 'success',
+      message: '',
+      percent: 100,
+      logs: [],
+      elapsed: 0,
+      files: [{ path: 'a', name: 'a', status: 'measured', report, fingerprint: null }],
+    };
+    window.go = { main: { Host: { MeasureState: () => Promise.resolve(JSON.stringify(job)), SystemReportDiagnostic: vi.fn().mockResolvedValue('null') } } };
+    await expect(wailsClient.measureState()).rejects.toBeInstanceOf(WireError);
+  });
+
   it('accepts the idle Bootstrap the host sends, with nulls for unset transcript fields and no marker export', async () => {
     const idle = {
       runId: null,

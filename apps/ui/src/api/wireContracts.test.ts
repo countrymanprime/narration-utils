@@ -6,6 +6,8 @@ import { DESKTOP_HOST_API_VERSION } from '../hostApi';
 import { createMockApi } from './mockApi';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from './mockFixtures';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
+import { MOCK_MEASURE_PATHS } from './measureMock';
+import { measureJobSchema, measurePickResultSchema } from './schemas/measure';
 import {
   bookmarkSchema,
   chapterSchema,
@@ -226,6 +228,13 @@ const GOLDEN: Record<string, z.ZodType> = {
   'takecomparison-success.json': takeComparisonJobSchema,
   'takecomparison-cancelled.json': takeComparisonJobSchema,
   'takecomparison-error.json': takeComparisonJobSchema,
+  'measure-pick.json': measurePickResultSchema,
+  'measure-pick-cancelled.json': measurePickResultSchema,
+  'measure-idle.json': measureJobSchema,
+  'measure-running.json': measureJobSchema,
+  'measure-success.json': measureJobSchema,
+  'measure-cancelled.json': measureJobSchema,
+  'measure-error.json': measureJobSchema,
   // compare.py --take-divergence's results file, pinned by its pytest suite and read by the Go host's parser
   // (internal/takecompare), never by the UI: the host turns it into take_comparison evidence, checked above.
   'take-divergence-results.json': z.object({ lines: z.array(z.string()) }),
@@ -1035,6 +1044,35 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.takeComparisonStart('missing')).rejects.toThrow(/not in the review list/);
   });
 
+  it('the measurement job answers, with every file measured, unavailable or refused', async () => {
+    const api = createMockApi();
+    expectMatches(measureJobSchema, await api.measureState(), 'mock measurement, idle');
+    await expect(api.measureAnalyze(MOCK_MEASURE_PATHS)).rejects.toThrow(/not chosen in the file picker/);
+    const picked = await api.measurePickFiles();
+    expectMatches(measurePickResultSchema, picked, 'mock measurement picker');
+    await expect(api.measureAnalyze([])).rejects.toThrow(/at least one file/);
+    let job = await api.measureAnalyze(picked.paths);
+    expectMatches(measureJobSchema, job, 'mock measurement, started');
+    await expect(api.measureAnalyze(picked.paths)).rejects.toThrow(/already running/);
+    let percent = job.percent;
+    while (job.phase === 'running') {
+      job = await api.measureState();
+      expectMatches(measureJobSchema, job, `mock measurement, ${job.phase} at ${job.percent}%`);
+      expect(job.percent).toBeGreaterThanOrEqual(percent);
+      percent = job.percent;
+    }
+    expect(job.phase).toBe('success');
+    expect(job.files.map((file) => file.status)).toEqual(['measured', 'measured', 'failed']);
+    expect(job.files[1].report?.integrated_lufs).toBeNull();
+    const pinned = measureJobSchema.parse(readGolden('measure-success.json'));
+    expect(job.message).toBe(pinned.message);
+    await api.measureAnalyze(picked.paths);
+    await api.measureState();
+    const cancelled = await api.measureCancel();
+    expectMatches(measureJobSchema, cancelled, 'mock measurement, cancelled');
+    expect(cancelled.files.map((file) => file.status)).toEqual(['cancelled', 'cancelled', 'cancelled']);
+  });
+
   it('the evidence of every take-review finding the host pins, and of the mock fixture', () => {
     const pinned = findingsPageSchema.parse(readGolden('findings-list-take-review.json'));
     for (const finding of [...pinned.findings, ...WIRE_TAKE_REVIEW_FINDINGS]) {
@@ -1270,6 +1308,10 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'takeComparisonStart',
       'takeComparisonState',
       'takeComparisonCancel',
+      'measurePickFiles',
+      'measureAnalyze',
+      'measureState',
+      'measureCancel',
       'findingsList',
       'findingsGet',
       'findingsReview',

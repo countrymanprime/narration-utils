@@ -161,6 +161,14 @@ export function ManuscriptSelectFile():Promise<string>;
 
 export function ManuscriptSetChapterStatus(arg1:string,arg2:string):Promise<string>;
 
+export function MeasureAnalyze(arg1:Array<string>):Promise<string>;
+
+export function MeasureCancel():Promise<string>;
+
+export function MeasurePickFiles():Promise<string>;
+
+export function MeasureState():Promise<string>;
+
 export function PickupsCount():Promise<string>;
 
 export function PickupsExport():Promise<string>;
