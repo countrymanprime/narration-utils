@@ -22,6 +22,7 @@ export * from './api/contracts/retakelanes';
 export * from './api/contracts/chaptertags';
 export * from './api/contracts/takeReview';
 export * from './api/contracts/coverage';
+export * from './api/contracts/stages';
 export * from './api/contracts/dictionary';
 export * from './api/contracts/findings';
 export * from './api/contracts/measure';
@@ -49,6 +50,7 @@ import type { CleanupToolsApi } from './api/contracts/cleanuptools';
 import type { RetakeLanesApi } from './api/contracts/retakelanes';
 import type { ChapterTagsApi } from './api/contracts/chaptertags';
 import type { CoverageApi } from './api/contracts/coverage';
+import type { StagesApi } from './api/contracts/stages';
 import type { DictionaryApi } from './api/contracts/dictionary';
 import type { MeasureApi } from './api/contracts/measure';
 
@@ -77,6 +79,7 @@ export interface NarrationApi
     ChapterTagsApi,
     TakeReviewApi,
     CoverageApi,
+    StagesApi,
     DictionaryApi,
     FindingsApi,
     MeasureApi {}

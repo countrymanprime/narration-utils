@@ -31,6 +31,7 @@ import {
   takeReviewScanJobSchema,
 } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
+import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { chapterSuggestionSchema, chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
@@ -222,6 +223,15 @@ const GOLDEN: Record<string, z.ZodType> = {
   'coverage-state-complete.json': coverageStateSchema,
   // Not a payload: the reason words the host can send, which the schema's lists must equal (the test below).
   'coverage-reasons.json': z.object({ refusal: z.array(z.string()), evaluator: z.array(z.string()) }),
+  'stages-recommendations-unknown.json': stageRecommendationsSchema,
+  'stages-recommendations-recommended.json': stageRecommendationsSchema,
+  'stages-recommendations-dismissed.json': stageRecommendationsSchema,
+  'stages-recommendations-contradiction.json': stageRecommendationsSchema,
+  'stages-decision-confirmed.json': stageDecisionResultSchema,
+  'stages-decision-refused.json': stageDecisionResultSchema,
+  // Not payloads: the cause and refusal words the host can send, which the schema's lists must equal (the test below).
+  'stages-causes.json': z.array(z.string()),
+  'stages-refusal-reasons.json': z.array(z.string()),
   'findings-list-take-comparison.json': findingsPageSchema,
   'takecomparison-idle.json': takeComparisonJobSchema,
   'takecomparison-running.json': takeComparisonJobSchema,
@@ -281,6 +291,11 @@ describe('golden payloads written by the Go host and the Python sidecars', () =>
     const declared = z.object({ refusal: z.array(z.string()), evaluator: z.array(z.string()) }).parse(readGolden('coverage-reasons.json'));
     expect([...COVERAGE_REFUSAL_REASONS]).toEqual(declared.refusal);
     expect([...COVERAGE_EVALUATOR_REASONS]).toEqual(declared.evaluator);
+  });
+
+  it('the stage cause and refusal lists are the ones the host declares', () => {
+    expect([...STAGE_UNKNOWN_CAUSES]).toEqual(z.array(z.string()).parse(readGolden('stages-causes.json')));
+    expect([...STAGE_REFUSAL_REASONS]).toEqual(z.array(z.string()).parse(readGolden('stages-refusal-reasons.json')));
   });
 
   it('recordedFraction is only on the chapter the coverage measured', () => {
@@ -1217,6 +1232,60 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(gated.status).toBe('asset_required');
   });
 
+  it('the stage recommendations: every verdict, every unknown cause, a confirmation, the notice, and every refusal', async () => {
+    const api = createMockApi(
+      {},
+      {
+        stages: {
+          recording: { 'chapter-4': 'met', 'chapter-5': 'met', 'chapter-7': 'not_met' },
+          dismissed: ['chapter-5'],
+          confirmed: ['chapter-7', 'chapter-8'],
+        },
+      },
+    );
+    await api.manuscriptSetChapterStatus('chapter-11', 'recording');
+    const chapters = await api.manuscriptChapters();
+    const answer = await api.stageRecommendations();
+    expectMatches(stageRecommendationsSchema, answer, 'mock stage recommendations');
+    expect(answer.chapters.map((chapter) => chapter.chapterId)).toEqual(chapters.map((chapter) => chapter.id));
+    const byId = new Map(answer.chapters.map((chapter) => [chapter.chapterId, chapter]));
+    expect(new Set(answer.chapters.map((chapter) => chapter.verdict))).toEqual(new Set(['recommended', 'not_ready', 'unknown', 'dismissed', 'none']));
+    expect(byId.get('chapter-1')).toMatchObject({ verdict: 'none', noneReason: 'stage_not_evaluated' });
+    expect(byId.get('chapter-9')).toMatchObject({ verdict: 'none', noneReason: 'no_required_signals' });
+    expect(byId.get('chapter-6')).toMatchObject({ verdict: 'not_ready' });
+    expect(byId.get('chapter-11')).toMatchObject({ verdict: 'unknown', causes: ['never_analyzed'] });
+    for (const cause of STAGE_UNKNOWN_CAUSES) {
+      const unknown = await createMockApi({}, { stages: { recording: { 'chapter-4': { unknown: cause } } } }).stageRecommendations();
+      expectMatches(stageRecommendationsSchema, unknown, `mock stage recommendations, ${cause}`);
+      expect(unknown.chapters.find((chapter) => chapter.chapterId === 'chapter-4')).toMatchObject({ verdict: 'unknown', causes: [cause] });
+    }
+    expect(byId.get('chapter-7')).toMatchObject({ confirmation: { from: 'recording', evidenceChanged: true }, contradiction: { revertTo: 'recording' } });
+    expect(byId.get('chapter-8')?.confirmation?.evidenceChanged).toBe(true);
+    expect(byId.get('chapter-8')?.contradiction).toBeUndefined();
+
+    const recommended = byId.get('chapter-4');
+    if (!recommended?.target || !recommended.basisKey) throw new Error('chapter-4 is recommended');
+    const changed = await api.stageConfirm('chapter-4', recommended.target, 'not-the-key');
+    expectMatches(stageDecisionResultSchema, changed, 'mock stage confirm, basis changed');
+    expect(changed).toMatchObject({ status: 'refused', reason: 'basis_changed' });
+    const notRecommended = await api.stageConfirm('chapter-6', 'editing', byId.get('chapter-6')?.basisKey ?? '');
+    expect(notRecommended).toMatchObject({ status: 'refused', reason: 'not_recommended' });
+    const confirmed = await api.stageConfirm('chapter-4', recommended.target, recommended.basisKey);
+    expectMatches(stageDecisionResultSchema, confirmed, 'mock stage confirm');
+    expect(confirmed).toMatchObject({ status: 'ok', chapter: { from: 'editing', confirmation: { from: 'recording', evidenceChanged: false } } });
+    expect((await api.manuscriptChapters()).find((chapter) => chapter.id === 'chapter-4')?.status).toBe('editing');
+    const reverted = await api.stageRevert('chapter-4');
+    expectMatches(stageDecisionResultSchema, reverted, 'mock stage revert');
+    expect(reverted).toMatchObject({ status: 'ok', chapter: { from: 'recording', verdict: 'recommended' } });
+    const nothing = await api.stageRevert('chapter-4');
+    expectMatches(stageDecisionResultSchema, nothing, 'mock stage revert, nothing to revert');
+    expect(nothing).toMatchObject({ status: 'refused', reason: 'nothing_to_revert' });
+    const dismissed = await api.stageDismiss('chapter-4', recommended.target, recommended.basisKey);
+    expectMatches(stageDecisionResultSchema, dismissed, 'mock stage dismiss');
+    expect(dismissed).toMatchObject({ status: 'ok', chapter: { verdict: 'dismissed' } });
+    await expect(api.stageRevert('no-such-chapter')).rejects.toThrow('not a narration chapter');
+  });
+
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
@@ -1305,6 +1374,10 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'coverageStart',
       'coverageState',
       'coverageResult',
+      'stageRecommendations',
+      'stageConfirm',
+      'stageDismiss',
+      'stageRevert',
       'takeComparisonStart',
       'takeComparisonState',
       'takeComparisonCancel',

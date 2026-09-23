@@ -1,0 +1,65 @@
+{
+  "chapters": [
+    {
+      "causes": [],
+      "chapterId": "c-0001",
+      "confirmation": {
+        "at": "2026-09-21T10:00:00Z",
+        "basisKey": "0000000000000000000000000000000000000000000000000000000000000000",
+        "evidenceChanged": true,
+        "from": "recording",
+        "target": "editing"
+      },
+      "contradiction": {
+        "revertTo": "recording",
+        "signals": [
+          {
+            "basis": {
+              "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+              "ledgerRecordIds": [
+                "id-1"
+              ],
+              "projectFileModTime": "2026-09-21T10:00:00Z"
+            },
+            "computedAt": "2026-09-21T10:00:00Z",
+            "evidence": [
+              {
+                "kind": "coverage",
+                "label": "Text present",
+                "value": "5 of 10 words present, 5 missing (longest run 5), 0 extra; 0 of 1 paragraph passing"
+              },
+              {
+                "kind": "paragraph",
+                "label": "Paragraph short",
+                "paragraphIds": [
+                  "p-000001"
+                ],
+                "value": "paragraph 1: 5 of 10 words read (50%), longest missing run 5 words"
+              },
+              {
+                "kind": "items",
+                "label": "Audio checked",
+                "value": "1 item analyzed, 0 muted and skipped, 0:04 played"
+              },
+              {
+                "kind": "analysis",
+                "label": "How it was checked",
+                "value": "Whisper model small, language detected; misread run up to 8, anchor run at least 3; each paragraph at least 80% read, missing run up to 3 words (Proposed, uncalibrated)"
+              }
+            ],
+            "id": "recording.text_present",
+            "reason": "paragraph 1: 5 words in a row not read.",
+            "stage": "recording",
+            "state": "not_met"
+          }
+        ]
+      },
+      "from": "editing",
+      "noneReason": "no_required_signals",
+      "signals": [],
+      "target": "proofing",
+      "title": "Chapter One",
+      "verdict": "none"
+    }
+  ]
+}

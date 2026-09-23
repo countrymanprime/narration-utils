@@ -213,6 +213,14 @@ export function RetakeLanesPick(arg1:string,arg2:string):Promise<string>;
 
 export function RetakeLanesState():Promise<string>;
 
+export function StageConfirm(arg1:string,arg2:string,arg3:string):Promise<string>;
+
+export function StageDismiss(arg1:string,arg2:string,arg3:string):Promise<string>;
+
+export function StageRecommendations():Promise<string>;
+
+export function StageRevert(arg1:string):Promise<string>;
+
 export function SystemLookup(arg1:string):Promise<string>;
 
 export function SystemNotify(arg1:string,arg2:string,arg3:string):Promise<string>;

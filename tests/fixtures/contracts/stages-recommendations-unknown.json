@@ -1,0 +1,31 @@
+{
+  "chapters": [
+    {
+      "basisKey": "0000000000000000000000000000000000000000000000000000000000000000",
+      "causes": [
+        "never_analyzed"
+      ],
+      "chapterId": "c-0001",
+      "from": "recording",
+      "signals": [
+        {
+          "basis": {
+            "fingerprint": "",
+            "ledgerRecordIds": [],
+            "projectFileModTime": "2026-09-21T10:00:00Z"
+          },
+          "cause": "never_analyzed",
+          "computedAt": "2026-09-21T10:00:00Z",
+          "evidence": [],
+          "id": "recording.text_present",
+          "reason": "This chapter's recording has not been checked yet.",
+          "stage": "recording",
+          "state": "unknown"
+        }
+      ],
+      "target": "editing",
+      "title": "Chapter One",
+      "verdict": "unknown"
+    }
+  ]
+}

@@ -58,13 +58,23 @@ func (s *Service) ParagraphID(chapterID string, globalIndex int) (id string, ok 
 // Chapters returns the stable reader contract derived from the immutable
 // canonical manuscript plus its separately editable review sidecar.
 func (s *Service) Chapters() ([]map[string]any, error) {
+	return s.chapters(s.recordedFractions)
+}
+
+// ChaptersUnmeasured is Chapters without recordedFraction, which reads the saved project and every stored coverage result:
+// the stage recommendations read the statuses only and build their own evidence view, so they skip that second parse.
+func (s *Service) ChaptersUnmeasured() ([]map[string]any, error) {
+	return s.chapters(func() map[string]float64 { return nil })
+}
+
+func (s *Service) chapters(measured func() map[string]float64) ([]map[string]any, error) {
 	data, err := s.Load()
 	if err != nil {
 		return nil, err
 	}
 	notes := s.loadNotes()
 	paragraphs := objects(data["paragraphs"])
-	recorded := s.recordedFractions()
+	recorded := measured()
 	result := make([]map[string]any, 0, len(objects(data["chapters"])))
 	for _, chapter := range objects(data["chapters"]) {
 		result = append(result, chapterPayload(chapter, notes, recorded, paragraphs, true))

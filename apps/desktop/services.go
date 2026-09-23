@@ -14,6 +14,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
+	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
 )
@@ -39,6 +40,7 @@ type hostServices struct {
 	teleprompter *teleprompter.Service
 	transcript   *transcript.Service
 	coverage     *coverage.Service
+	stages       *stages.Service
 	// reachability tracks the current bridge client's PROJECT_STATUS heartbeat (ADR 0092, Phase 7, W10). Nil when
 	// configureLocked built no bridge client (no session directory).
 	reachability *daw.Reachability
@@ -88,6 +90,7 @@ func (h *Host) services() hostServices {
 		teleprompter: h.teleprompter,
 		transcript:   h.transcript,
 		coverage:     h.coverage,
+		stages:       h.stages,
 		reachability: h.reachability,
 		bridge:       h.bridge,
 		navigation:   h.navigation,
