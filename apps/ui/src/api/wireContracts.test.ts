@@ -270,7 +270,7 @@ describe('answers of the mock client (it must pass the schemas the real host ans
     await api.teleprompterStart({ chapter: chapter?.id ?? '', device: 'Microphone' });
     await vi.advanceTimersByTimeAsync(120_000);
     await api.teleprompterStop();
-    expect(new Set(events.map((event) => (event as { type: string }).type))).toEqual(new Set(['script', 'partial', 'position']));
+    expect(new Set(events.map((event) => (event as { type: string }).type))).toEqual(new Set(['script', 'partial', 'position', 'flag']));
     for (const event of events) expectMatches(teleprompterEventSchema, event, 'mock teleprompter event');
     for (const state of states) expectMatches(teleprompterStateSchema, state, 'mock teleprompter state');
   });
@@ -1050,6 +1050,12 @@ describe('one deliberately broken sample per boundary fails with a specific mess
   it('a live event (a position with a text read index)', () => {
     const position = (readGolden('teleprompter-events.json') as Array<{ type: string }>).find((event) => event.type === 'position');
     expect(failure(teleprompterEventSchema, { ...position, read: 'four' }, 'teleprompter:event').issues.map((issue) => issue.path)).toEqual(['read']);
+  });
+
+  it('a live event (a flag of a kind the UI does not know)', () => {
+    const flags = (readGolden('teleprompter-events.json') as Array<{ type: string; kind?: string }>).filter((event) => event.type === 'flag');
+    expect(new Set(flags.map((flag) => flag.kind))).toEqual(new Set(['misread', 'extra', 'skipped', 'restart']));
+    expect(failure(teleprompterEventSchema, { ...flags[0], kind: 'mumbled' }, 'teleprompter:event').issues.map((issue) => issue.path)).toEqual(['kind']);
   });
 
   it('a state snapshot (a transcript phase the UI does not know)', () => {

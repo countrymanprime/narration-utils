@@ -44,9 +44,10 @@ var numberWords = map[string]int64{
 	"million": 1000000, "billion": 1000000000,
 }
 
-// homophonesCSV is a copy of sidecars/transcript-compare/core/homophones.csv
-// (a Go embed cannot reach outside this module); a test fails when the two
-// drift apart.
+// homophonesCSV is narration_common.spoken_forms.HOMOPHONE_GROUPS written out
+// as CSV (a Go embed cannot reach Python data);
+// sidecars/transcript-compare/tests/test_chapter_track_parity.py fails when the
+// two drift apart.
 //
 //go:embed homophones.csv
 var homophonesCSV string

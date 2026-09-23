@@ -34,6 +34,7 @@
     { "t": 7.5, "event": { "type": "position", "read": 20, "committed": 18, "status": "listening", "jump": null, "skipped": null } },
     { "t": 8.0, "event": { "type": "position", "read": 20, "committed": 19, "status": "listening", "jump": null, "skipped": null } },
     { "t": 8.0, "event": { "type": "position", "read": 20, "committed": 20, "status": "listening", "jump": null, "skipped": null } },
+    { "t": 8.0, "event": { "type": "flag", "id": 1, "kind": "misread", "start": 8, "end": 9, "heard": "cited" } },
     { "t": 9.5, "event": { "type": "position", "read": 20, "committed": 20, "status": "waiting", "jump": null, "skipped": null } },
     { "t": 10.5, "event": { "type": "position", "read": 22, "committed": 20, "status": "listening", "jump": null, "skipped": null } },
     { "t": 11.0, "event": { "type": "position", "read": 23, "committed": 20, "status": "listening", "jump": null, "skipped": null } },
@@ -75,6 +76,8 @@
     { "t": 18.5, "event": { "type": "position", "read": 47, "committed": 45, "status": "listening", "jump": null, "skipped": null } },
     { "t": 18.5, "event": { "type": "position", "read": 47, "committed": 46, "status": "listening", "jump": null, "skipped": null } },
     { "t": 19.0, "event": { "type": "position", "read": 47, "committed": 47, "status": "listening", "jump": null, "skipped": null } },
+    { "t": 19.0, "event": { "type": "flag", "id": 2, "kind": "skipped", "start": 36, "end": 38, "heard": "" } },
+    { "t": 19.0, "event": { "type": "flag", "id": 3, "kind": "misread", "start": 43, "end": 44, "heard": "conserving" } },
     { "t": 20.5, "event": { "type": "position", "read": 47, "committed": 47, "status": "waiting", "jump": null, "skipped": null } },
     { "t": 20.5, "event": { "type": "position", "read": 27, "committed": 47, "status": "listening", "jump": "restart", "skipped": null } },
     { "t": 20.5, "event": { "type": "position", "read": 47, "committed": 47, "status": "listening", "jump": null, "skipped": null } },
@@ -186,6 +189,19 @@
     { "t": 45.0, "event": { "type": "position", "read": 99, "committed": 97, "status": "listening", "jump": null, "skipped": null } },
     { "t": 45.0, "event": { "type": "position", "read": 99, "committed": 98, "status": "listening", "jump": null, "skipped": null } },
     { "t": 45.5, "event": { "type": "position", "read": 99, "committed": 99, "status": "listening", "jump": null, "skipped": null } },
-    { "t": 45.5, "event": { "type": "position", "read": 100, "committed": 100, "status": "done", "jump": null, "skipped": null } }
+    { "t": 45.5, "event": { "type": "position", "read": 100, "committed": 100, "status": "done", "jump": null, "skipped": null } },
+    {
+      "t": 45.5,
+      "event": {
+        "type": "flag",
+        "id": 4,
+        "kind": "restart",
+        "start": 24,
+        "end": 47,
+        "heard": "she had peeped into the book her sister was reading, but it had no pictures or conversations in it, what is the"
+      }
+    },
+    { "t": 45.5, "event": { "type": "flag", "id": 5, "kind": "misread", "start": 43, "end": 44, "heard": "conserving" } },
+    { "t": 45.5, "event": { "type": "flag", "id": 6, "kind": "misread", "start": 62, "end": 63, "heard": "daisy chain" } }
   ]
 }

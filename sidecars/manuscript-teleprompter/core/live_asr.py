@@ -51,6 +51,9 @@ turns them into these three event types:
         which is tailed for lines shaped {"cmd": "seek", "word": N}
         (control_channel.py) - both emit a "position" event with
         jump: "restart", the same sentinel-file pattern as --stop-file
+    {"type": "flag", "id": 1, "kind": "misread", "start": 7, "end": 8, "heard": "chairs"}
+        with a tracker, after a segment closes: a suspected misread, extra,
+        skipped or restart, judged from confirmed words only (see flags.py)
     {"type": "script", "chapter": {"id": "c1", "title": "..."}, "tokens": 512, "spans": [{"kind": "paragraph", "id": "p1", "index": 0, "start": 6, "count": 4}]}
         once, first, only with --manuscript: how the chapter was tokenized
         (title, then each paragraph split on whitespace) so a frontend can
@@ -599,7 +602,8 @@ def _check_engine_args(ap: argparse.ArgumentParser, args) -> None:
 def _load_script(ap: argparse.ArgumentParser, args):
     """(tracker, `script` event, chapter text) for --manuscript/--chapter or
     --script, or all None. Sibling modules are imported only when needed."""
-    from script_tracker import ScriptTracker, script_words
+    from flags import FlaggingTracker
+    from script_tracker import script_words
 
     if args.manuscript:
         from chapter_script import ChapterError, load_chapter_script, script_event
@@ -609,9 +613,9 @@ def _load_script(ap: argparse.ArgumentParser, args):
         except ChapterError as error:
             choices = f" Choose one of: {'; '.join(error.candidates)}" if error.candidates else ""
             ap.error(f"{error}{choices}")
-        return ScriptTracker(chapter.tokens), script_event(chapter), chapter.text
+        return FlaggingTracker(chapter.tokens), script_event(chapter), chapter.text
     if args.script:
-        return ScriptTracker(script_words(Path(args.script).read_text(encoding="utf-8"))), None, None
+        return FlaggingTracker(script_words(Path(args.script).read_text(encoding="utf-8"))), None, None
     return None, None, None
 
 
@@ -649,8 +653,8 @@ def _run(args, stream: EventStream, chunks: Iterator[np.ndarray], tracker) -> No
         for event in stream(chunks):
             _emit(event)
             if tracker:
-                for position in tracker.feed(event, clock.now()):
-                    _emit(position)
+                for tracked in tracker.feed(event, clock.now()):
+                    _emit(tracked)
             if args.timing and capture_started is not None:
                 lag = event_lag_seconds(event, clock.now())
                 if lag is not None:

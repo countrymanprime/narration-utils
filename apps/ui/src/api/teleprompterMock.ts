@@ -17,8 +17,9 @@ import type {
   TeleprompterDevice,
   TeleprompterEngine,
   TeleprompterEvent,
-  TeleprompterLocated,
+  TeleprompterFlag,
   TeleprompterLocateResult,
+  TeleprompterLocated,
   TeleprompterModelRequired,
   TeleprompterPosition,
   TeleprompterScript,
@@ -146,6 +147,13 @@ const position = (read: number, status: TeleprompterPosition['status']): Telepro
   skipped: null,
 });
 
+/** A recorded flag moved onto a chapter of another length; a flag over words keeps at least one word, an extra stays zero-width. */
+function scaleFlag(flag: TeleprompterFlag, scale: (value: number) => number): TeleprompterFlag {
+  const start = scale(flag.start);
+  const end = flag.kind === 'extra' ? start : Math.max(start + 1, scale(flag.end));
+  return { ...flag, start, end };
+}
+
 export function createTeleprompterMock(deps: Deps): TeleprompterApi {
   const stateSubscribers = new Set<(state: TeleprompterState) => void>();
   const eventSubscribers = new Set<(event: TeleprompterEvent) => void>();
@@ -199,6 +207,10 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     const scale = (value: number) => from + Math.round((value / recording.tokens) * (total - from));
     for (const { t, event } of recording.events) {
       const at = (t / recordingSeconds) * seconds;
+      if (event.type === 'flag') {
+        timers.push(setTimeout(() => emit(scaleFlag(event, scale)), at * 1000));
+        continue;
+      }
       const read = scale(event.read);
       const skipped: [number, number] | null = event.skipped ? [scale(event.skipped[0]), scale(event.skipped[1])] : null;
       const scaled: TeleprompterPosition = { ...event, read, committed: scale(event.committed), skipped: skipped && skipped[0] < skipped[1] ? skipped : null };

@@ -25,7 +25,7 @@ def _load(name):
 
 chapter_script = _load("chapter_script")
 replay = _load("replay")
-script_tracker = _load("script_tracker")
+flags = _load("flags")
 
 PARAGRAPH = "The old lighthouse keeper climbed the spiral stairs each evening. He lit the great lamp and watched the ships pass."
 LATER = "Far out at sea a small boat rocked in the swell."
@@ -52,19 +52,22 @@ def _record(kind, wall, line_id, text):
 
 
 def _reading():
-    """A narrator who reads the first sentence, then skips ahead to the second paragraph."""
+    """A narrator who reads the first sentence with an added word and a misread, skips ahead to the second paragraph, then goes
+    back over its first words: one flag of every kind."""
     return [
         _record("LineTextChanged", 1.0, 5, "chapter one the old"),
-        _record("LineTextChanged", 1.6, 5, "chapter one the old lighthouse keeper climbed"),
-        _record("LineCompleted", 2.4, 5, "chapter one the old lighthouse keeper climbed the spiral stairs"),
+        _record("LineTextChanged", 1.6, 5, "chapter one the old lighthouse keeper slowly climbed"),
+        _record("LineCompleted", 2.4, 5, "chapter one the old lighthouse keeper slowly climbed the curly stairs"),
         _record("LineTextChanged", 3.0, 6, "far out at sea"),
         _record("LineCompleted", 3.8, 6, "far out at sea a small boat"),
+        _record("LineTextChanged", 4.6, 7, "at sea a small"),
+        _record("LineCompleted", 5.4, 7, "at sea a small boat rocked in the swell"),
     ]
 
 
 def _stream(tmp_path):
     script = chapter_script.load_chapter_script(_manuscript(tmp_path), "c1")
-    tracker = script_tracker.ScriptTracker(script.tokens)
+    tracker = flags.FlaggingTracker(script.tokens)
     events = [chapter_script.script_event(script)]
     for wall, event in replay.replay_events(_reading()):
         events.extend(tracker.tick(wall))
@@ -80,4 +83,10 @@ def test_the_event_stream_matches_the_committed_contract_file(tmp_path):
 def test_the_stream_holds_every_event_type_the_ui_reads(tmp_path):
     kinds = {event["type"] for event in _stream(tmp_path)}
 
-    assert kinds == {"script", "position", "partial", "word", "segment_end"}
+    assert kinds == {"script", "position", "partial", "word", "segment_end", "flag"}
+
+
+def test_the_stream_holds_a_flag_of_every_kind(tmp_path):
+    kinds = {event["kind"] for event in _stream(tmp_path) if event["type"] == "flag"}
+
+    assert kinds == set(flags.FLAG_KINDS)

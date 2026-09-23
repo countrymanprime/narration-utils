@@ -104,6 +104,26 @@ describe('teleprompter mock', () => {
     expect(states.at(-1)).toMatchObject({ phase: 'running', message: 'Listening…' });
   });
 
+  it('replays the recorded suspected flags, rescaled onto the chapter being read', async () => {
+    const mock = build();
+    const events: TeleprompterEvent[] = [];
+    mock.subscribeTeleprompterEvent((event) => events.push(event));
+
+    await mock.teleprompterStart(options);
+    await vi.runAllTimersAsync();
+
+    const script = events[0];
+    if (script.type !== 'script') throw new Error('the script event must come first');
+    const flags = events.flatMap((event) => (event.type === 'flag' ? [event] : []));
+    expect(new Set(flags.map((flag) => flag.kind))).toEqual(new Set(['misread', 'skipped', 'restart']));
+    expect(flags.map((flag) => flag.id)).toEqual(flags.map((_flag, index) => index + 1));
+    for (const flag of flags) {
+      expect(flag.start).toBeGreaterThanOrEqual(0);
+      expect(flag.end).toBeLessThanOrEqual(script.tokens);
+      expect(flag.kind === 'extra' ? flag.end === flag.start : flag.end > flag.start).toBe(true);
+    }
+  });
+
   it('shows what was just heard while it reads', async () => {
     const mock = build();
     const events: TeleprompterEvent[] = [];

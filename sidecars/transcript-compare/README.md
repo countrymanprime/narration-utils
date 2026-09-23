@@ -7,7 +7,7 @@ actually said.
 
 ## Layout
 
-- `core/` — the DAW-agnostic Python backend (`compare.py`), plus `homophones.csv` and
+- `core/` — the DAW-agnostic Python backend (`compare.py`), plus
   `common_words.txt`. No DAW APIs are used here; it's a plain CLI invoked by whichever DAW
   driver below is running it. Its dependencies are declared in the repo-root `pyproject.toml` and pinned in `uv.lock`.
 - `core/recording_coverage.py` — the recording-coverage model: how much of a chapter's body text the
@@ -30,10 +30,12 @@ actually said.
 - `core/compare.py` — the backend. Runs locally via faster-whisper (no cloud, no API key) +
   a word-level diff against the project's canonical manuscript. Runs under the repo-root shared venv (`.venv/`) so it doesn't
   depend on REAPER's or the system's Python.
-- `core/homophones.csv` — the built-in homophone list (your/you're, its/it's, etc.)
-  `compare.py` loads at startup. Plain text, one group per line, comma-separated - edit it
-  directly if you want to add a globally-useful pair (for something manuscript-specific, use
-  the per-project equivalence list instead - see "Handling invented names/words" below).
+- `libs/python/narration_common/spoken_forms.py` — the built-in homophone list (your/you're,
+  its/it's, etc.), the number words and the filler words, shared with the teleprompter's live
+  flags so both forgive the same spellings (ADR 0105). It is Python data rather than a file next
+  to the script so a frozen build always carries it. Add a globally-useful pair to
+  `HOMOPHONE_GROUPS` there (for something manuscript-specific, use the per-project equivalence
+  list instead - see "Handling invented names/words" below).
 - `core/common_words.txt` — a stoplist of ordinary English words, used only by the config
   screen's **Suggest...** button (see "Handling invented names/words" below) to avoid
   suggesting common words that just happen to be capitalized mid-sentence.
@@ -183,8 +185,8 @@ genuinely never seen). Two tools for this, both stored in `<project folder>\Tran
   review/edit/remove before saving - it never saves anything on its own.
 - **Custom equivalence list** (`equivalences.csv`) — click **Add Equiv** on a selected
   single-word MISREAD row to append that exact spelling pair (e.g. "arelian, arelion") so it's
-  never flagged again, starting with the next run. Same file format as `homophones.csv`, just
-  per-manuscript instead of global. Only single words work, since matching happens one word at
+  never flagged again, starting with the next run. One group per line, comma-separated, like
+  the built-in homophone groups, just per-manuscript instead of global. Only single words work, since matching happens one word at
   a time - a multi-word MISREAD row shows a reminder in the log instead of adding anything.
 
 ## Notes / limitations
@@ -221,7 +223,7 @@ genuinely never seen). Two tools for this, both stored in `<project folder>\Tran
   MISREAD.
 - A trailing possessive-'s is treated the same as a plain plural -s for any word ("sentinel's"
   and "sentinels" sound identical, so there's no way to actually misread one as the other).
-- Common homophones (`homophones.csv` - your/you're, their/there/they're, its/it's,
+- Common homophones (`HOMOPHONE_GROUPS` in `narration_common/spoken_forms.py` - your/you're, their/there/they're, its/it's,
   miner/minor, vane/vein, and several dozen more) are treated as equivalent, so Whisper
   transcribing a correctly-spoken word with the "wrong" spelling doesn't get flagged. Excludes
   any homophone that's also a number word (one/won, to/too/two, for/four, ate/eight), since
