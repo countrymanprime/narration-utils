@@ -286,6 +286,43 @@ async function selectFirstParagraphText(page: Page): Promise<void> {
   if (!selected) throw new Error('no paragraph with enough text to select - did the reader markup change?');
 }
 
+/** Selects the first whole occurrence of `word` in the reader text, the way selectFirstParagraphText selects (a Range and a mouseup). */
+async function selectReaderWord(page: Page, word: string): Promise<void> {
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-paragraph-text]')].some((node) => (node.textContent?.length ?? 0) >= 20));
+  const selected = await page.evaluate((target) => {
+    const whole = new RegExp(`\\b${target}\\b`);
+    for (const paragraph of document.querySelectorAll('[data-paragraph-text]')) {
+      const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) {
+        const candidate = walker.currentNode as Text;
+        const match = whole.exec(candidate.textContent ?? '');
+        if (!match) continue;
+        const range = document.createRange();
+        range.setStart(candidate, match.index);
+        range.setEnd(candidate, match.index + target.length);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        paragraph.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        return true;
+      }
+    }
+    return false;
+  }, word);
+  if (!selected) throw new Error(`no "${word}" in the reader text - did the demo manuscript change?`);
+}
+
+/** Opens the Manuscript (with a mock seam, when given), selects `word` and presses Look up. */
+async function lookUpInReader(page: Page, word: string, url?: string): Promise<void> {
+  if (url) {
+    await page.goto(url);
+    await settlePage(page);
+  }
+  await goToPage(page, 'Manuscript');
+  await selectReaderWord(page, word);
+  await clickVisible(page, 'button', 'Look up');
+}
+
 // Some states have no known/safe driver yet (e.g. alias-typeahead, forcing
 // the manuscript-not-found banner without a mock-data override seam). Those
 // are left out here on purpose - the catalog entry is simply skipped.
@@ -627,7 +664,9 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'selection-popup': async (page) => {
       await goToPage(page, 'Manuscript');
-      await selectFirstParagraphText(page);
+      // One word, so the popup shows every action it has (Look up is offered for one word only).
+      await selectReaderWord(page, 'bank');
+      await page.getByRole('button', { name: 'Look up' }).waitFor();
     },
     'overlapping-highlights': async (page) => {
       await goToPage(page, 'Manuscript');
@@ -646,6 +685,22 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'chapter-collapsed': async (page) => {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'Collapse all chapters');
+    },
+    'word-lookup-definition': async (page) => {
+      await lookUpInReader(page, 'bank');
+      await page.getByRole('dialog', { name: 'Look up: bank' }).getByText('sloping land', { exact: false }).waitFor();
+    },
+    'word-lookup-not-found': async (page) => {
+      await lookUpInReader(page, 'Alice');
+      await page.getByText('“alice” is not in the dictionary.').waitFor();
+    },
+    'word-lookup-not-installed': async (page) => {
+      await lookUpInReader(page, 'bank', '/?mockDictionary=missing');
+      await page.getByRole('alertdialog', { name: 'Download the dictionary?' }).waitFor();
+    },
+    'word-lookup-damaged': async (page) => {
+      await lookUpInReader(page, 'bank', '/?mockDictionary=damaged');
+      await page.getByRole('alertdialog', { name: 'Repair the dictionary?' }).waitFor();
     },
     'add-note-dialog': async (page) => {
       await goToPage(page, 'Manuscript');

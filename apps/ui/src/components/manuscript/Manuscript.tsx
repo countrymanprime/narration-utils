@@ -33,6 +33,8 @@ import { SearchBar } from './SearchBar';
 import { ParagraphView } from './ParagraphView';
 import { SelectionMenu } from './SelectionMenu';
 import { AddNoteDialog } from './AddNoteDialog';
+import { DictionaryInstallPrompt, isSingleWord, WordLookupAnswer } from './WordLookup';
+import { LOOKUP_ACTION, useWordLookup } from './useWordLookup';
 import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from './EntitySummary';
 import { IconButton } from '../primitives/IconButton';
 import type { Notify } from '../primitives/Toast';
@@ -68,7 +70,9 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   const searchRequest = useRef(0);
   const requestedChapters = useRef(new Set<string>());
   const highlightTimer = useRef<number | undefined>(undefined);
-  const addingToStoryBible = usePendingAction();
+  // The selection's actions that call the host (a Story Bible entry, a lookup) run one at a time (ADR 0075).
+  const selectionActions = usePendingAction();
+  const wordLookup = useWordLookup({ notify, actions: selectionActions });
   const [bandHeight, setBandHeight] = useState(0);
   const [chapters, setChapters] = useState<Awaited<ReturnType<typeof api.manuscriptChapters>>>([]);
   const [paragraphs, setParagraphs] = useState<ManuscriptParagraph[]>([]);
@@ -600,9 +604,9 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
         <SelectionMenu
           selection={selection}
           addNote={addNote}
-          addingToStoryBible={addingToStoryBible.isPending('add')}
+          addingToStoryBible={selectionActions.isPending('add')}
           addToStoryBible={() =>
-            void addingToStoryBible.run('add', async () => {
+            void selectionActions.run('add', async () => {
               try {
                 const id = await api.guideCreate(selection.text, '', []);
                 clearSelection();
@@ -612,9 +616,22 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
               }
             })
           }
+          lookUp={
+            isSingleWord(selection.text)
+              ? () =>
+                  void wordLookup.lookUp(selection.text).then((moved) => {
+                    if (moved) clearSelection();
+                  })
+              : undefined
+          }
+          lookingUp={selectionActions.isPending(LOOKUP_ACTION)}
           dismiss={clearSelection}
         />
       )}
+      <SlideOver open={wordLookup.answerOpen} title={`Look up: ${wordLookup.answer?.query ?? ''}`} onClose={wordLookup.closeAnswer}>
+        {wordLookup.answer && <WordLookupAnswer answer={wordLookup.answer} />}
+      </SlideOver>
+      {wordLookup.gate && <DictionaryInstallPrompt gate={wordLookup.gate} install={wordLookup.install} dismiss={wordLookup.closeGate} />}
       {pendingNote && <AddNoteDialog anchorText={pendingNote.anchorText} confirm={(text) => void confirmNote(text)} cancel={() => setPendingNote(undefined)} />}
       <SlideOver
         open={Boolean(sheet)}

@@ -83,7 +83,7 @@ import { createCoverageMock, type CoverageSeed } from './coverageMock';
 import type { MockResumeSeed } from './resumeMockSeed';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
-import { mockDictionaryLookup } from './dictionaryMock';
+import { MOCK_DICTIONARY, MOCK_DICTIONARY_DISK_SIZE, MOCK_DICTIONARY_DOWNLOAD_SIZE, mockDictionaryLookup } from './dictionaryMock';
 
 const DEFAULT_PROJECT_FOLDER = 'C:/Projects/Alice-in-Wonderland';
 const DEFAULT_PROJECT_NAME = 'Alice’s Adventures in Wonderland';
@@ -407,8 +407,11 @@ export function createMockApi(
     chapterTagsEmbedAlwaysErrors?: boolean;
     /** Seeds the recording coverage mock (a refusal for every start, or stale chapters), see `CoverageSeed`. */
     coverage?: CoverageSeed;
-    /** Boots without the offline dictionary, so a lookup answers with its first-use gate (story-bible-and-import-ux-briefs.prd.md Phase 7). */
-    dictionaryMissing?: boolean;
+    /**
+     * Boots without the offline dictionary (`missing`) or with one that fails its check (`damaged`), so a lookup answers with its first-use
+     * gate (story-bible-and-import-ux-briefs.prd.md Phases 7-8). A download seed of `assets` boots without it too.
+     */
+    dictionary?: 'missing' | 'damaged';
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -834,6 +837,22 @@ export function createMockApi(
       moonshineInstalled = true;
     },
   });
+  // The dictionary is installed by default like the language model, and a download seed boots without it; `damaged` is an index that fails its check.
+  let dictionaryState: AssetInstallState =
+    initial.dictionary === 'damaged'
+      ? 'verification_failed'
+      : initial.dictionary === 'missing' || (initial.assets !== undefined && !localAssetsSeed)
+        ? 'not_installed'
+        : 'installed';
+  const dictionaryInstall = createInstallMock({
+    total: MOCK_DICTIONARY_DOWNLOAD_SIZE,
+    noun: 'dictionary',
+    extra: { kind: 'dictionary', assetId: MOCK_DICTIONARY.id },
+    seed: localAssetsSeed ? undefined : initial.assets,
+    onInstalled: () => {
+      dictionaryState = 'installed';
+    },
+  });
   const installMockFor = (jobId: string) =>
     jobId.startsWith('mock-voice')
       ? voiceInstall
@@ -841,7 +860,9 @@ export function createMockApi(
         ? languageModelInstall
         : jobId.startsWith('mock-Moonshine')
           ? moonshineInstall
-          : modelInstall;
+          : jobId.startsWith('mock-dictionary')
+            ? dictionaryInstall
+            : modelInstall;
   const mockWhisperModel = { ...mockWhisperIdentity, downloadSize: 483546902 + 2370 + 2203239 + 459861, installState: 'not_installed' as const };
   // The first-use gate every Whisper start has (teleprompter, recording coverage): undefined once the model is installed.
   const whisperAssetRequired = () =>
@@ -1269,12 +1290,19 @@ export function createMockApi(
         languageModelInstall.activeId(),
       );
       const model = item('whisper', 'Whisper model', mockWhisperModel, whisperState(), modelInstall.activeId());
+      const dictionary = {
+        ...item('dictionary', 'Dictionary', { ...MOCK_DICTIONARY, downloadSize: MOCK_DICTIONARY_DOWNLOAD_SIZE }, dictionaryState, dictionaryInstall.activeId()),
+        diskSize: MOCK_DICTIONARY_DISK_SIZE,
+      };
       return {
         cacheRoot: MOCK_ASSET_ROOT,
         // Only what verifies counts: a damaged asset is not one the app can use.
         totalInstalledBytes:
-          (ttsInstalled ? voice.diskSize : 0) + (whisperInstalled && !whisperDamaged ? model.diskSize : 0) + (spacyInstalled ? language.diskSize : 0),
-        assets: [voice, model, language],
+          (ttsInstalled ? voice.diskSize : 0) +
+          (whisperInstalled && !whisperDamaged ? model.diskSize : 0) +
+          (spacyInstalled ? language.diskSize : 0) +
+          (dictionaryState === 'installed' ? dictionary.diskSize : 0),
+        assets: [voice, model, language, dictionary],
       };
     },
     assetsInstall: async (kind, id) => {
@@ -1282,11 +1310,13 @@ export function createMockApi(
       if (kind === 'whisper' && id === mockWhisperModel.id) return modelInstall.start();
       if (kind === 'spacy' && id === mockLanguageModel.id) return languageModelInstall.start();
       if (kind === 'moonshine' && id === mockMoonshineIdentity.id) return moonshineInstall.start();
+      if (kind === 'dictionary' && id === MOCK_DICTIONARY.id) return dictionaryInstall.start();
       throw new Error(`"${id}" is not in the approved catalog of ${kind}`);
     },
     assetsInstallState: async (jobId) => installMockFor(jobId).state(jobId),
     assetsInstallCancel: async (jobId) => installMockFor(jobId).cancel(jobId),
     assetsVerify: async (kind, id) => {
+      if (kind === 'dictionary') return { kind, id, installState: dictionaryState };
       const installed = kind === 'tts' ? ttsInstalled : kind === 'spacy' ? spacyInstalled : kind === 'moonshine' ? moonshineInstalled : whisperInstalled;
       if (kind === 'whisper' && whisperDamaged) return { kind, id, installState: 'verification_failed' as const };
       return { kind, id, installState: installed ? ('installed' as const) : ('not_installed' as const) };
@@ -1295,6 +1325,7 @@ export function createMockApi(
       if (kind === 'tts') ttsInstalled = false;
       else if (kind === 'spacy') spacyInstalled = false;
       else if (kind === 'moonshine') moonshineInstalled = false;
+      else if (kind === 'dictionary') dictionaryState = 'not_installed';
       else {
         whisperInstalled = false;
         whisperDamaged = false;
@@ -1364,7 +1395,7 @@ export function createMockApi(
     },
     reportClientDiagnostic: async () => {},
     systemNotify: async () => {},
-    systemLookup: async (word) => mockDictionaryLookup(word, initial.dictionaryMissing ?? false),
+    systemLookup: async (word) => mockDictionaryLookup(word, dictionaryState),
     manuscriptChapters: async () => {
       await manuscriptReady;
       return wireClone(chapters.map(withMeasurement));

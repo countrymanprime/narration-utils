@@ -667,7 +667,7 @@ English). See [ADR 0097](../adr/0097-the-manuscript-reader-word-lookup-uses-the-
 
 **What it contributes.** A single offline dataset covering definitions, synonyms (same-synset members) and antonyms (an explicit
 lexical relation in WordNet-style data) for single US English words, looked up from the reader's selection menu (the backend is
-Phase 7, delivered; the UI is Phase 8).
+Phase 7 and the UI Phase 8, both delivered).
 
 **Candidates compared.**
 
@@ -699,7 +699,7 @@ shipped-asset row is [Open English WordNet dictionary](#open-english-wordnet-dic
 - **Licence**: CC BY 4.0 for OEWN, derived from Princeton WordNet 3.0 under the WordNet License; the repository's `LICENSE.md`
   asks for attribution to both. The catalog's `attribution` names both licences and says the data was reorganised into an index
   (CC BY's "indicate changes"); it is printed under the asset in `THIRD-PARTY-NOTICES.txt` (`scripts/licenses/notices.py`) and
-  returned with every lookup for the Phase 8 panel to display.
+  returned with every lookup; the reader's Look up panel shows it under every answer (Phase 8).
   ([Third-party notices](../operations/ci-and-releases.md#third-party-notices))
 - **Runtime dependency**: none beyond the Go standard library. The install unpacks the release and builds one lookup index
   from it (17,174,403 bytes; about 0.7 to 2.3 s and about 300 MB of memory, once), then removes the dataset
@@ -714,7 +714,7 @@ shipped-asset row is [Open English WordNet dictionary](#open-english-wordnet-dic
   p50 0.5 ms and p95 1.0 to 1.5 ms, far inside the PRD's 250 ms (`internal/dictionary/release_test.go`, run with
   `NARRATION_OEWN_DIR` / `NARRATION_OEWN_ZIP`; the gate runs the fixture tests). Installing the pinned archive through the
   approved catalog entry produced an index of exactly the catalog's `installedSize`.
-- **Feature enabled**: an offline "Look up" action on a selected word in the manuscript reader (Phase 8).
+- **Feature enabled**: an offline "Look up" action on a selected word in the manuscript reader (Phase 8, delivered).
 
 ## Clarifications for adjacent tools
 

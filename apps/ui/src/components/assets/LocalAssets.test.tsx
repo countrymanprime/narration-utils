@@ -45,10 +45,13 @@ describe('LocalAssets', () => {
     expect(within(whisper).getByText(/Whisper model/)).toBeTruthy();
     const language = await rowOf('English, small (fast)');
     expect(within(language).getByText(/Story Bible language model/)).toBeTruthy();
-    // The two installed assets add up: 471 MB of Whisper model and 15 MB of unpacked language model.
+    const dictionary = await rowOf('Open English WordNet 2025 (US English dictionary)');
+    expect(within(dictionary).getByText(/Dictionary/)).toBeTruthy();
+    expect(within(dictionary).getByText('Installed')).toBeTruthy();
+    // The three installed assets add up: 464 MB of Whisper model, 15 MB of unpacked language model and the 16 MB dictionary index.
     expect(screen.getByText(/Installed assets use 4\d\d MB of disk/)).toBeTruthy();
     expect(screen.getByText(/narration-utils.*\/assets|assets/i, { selector: 'code' })).toBeTruthy();
-    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(3);
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(4);
   });
 
   it('says so when nothing is installed', async () => {

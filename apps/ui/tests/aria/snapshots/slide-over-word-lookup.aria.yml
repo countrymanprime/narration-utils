@@ -1,0 +1,21 @@
+# The look-up panel is the same modal drawer as the chapters overlay: a dialog named for the word, the only thing in <body> besides the
+# two empty toast live regions. Each part of speech is a heading and a list of its senses named after it; the senses are matched partially.
+- /children: equal
+# The two toast live regions stay in the tree on purpose: Base UI leaves live regions exposed behind a modal, so an error raised
+# from inside a dialog is still announced. They are empty here, and they are the only thing under <main>.
+- main:
+  - alert
+  - status
+- 'dialog "Look up: bank"':
+  - 'heading "Look up: bank" [level=3]'
+  - button "Close"
+  - heading "Noun" [level=4]
+  - list "Noun":
+    - listitem:
+      - paragraph: sloping land (especially the slope beside a body of water)
+  - heading "Verb" [level=4]
+  - list "Verb":
+    - listitem:
+      - paragraph: tip laterally
+  - text: Source
+  - paragraph: /Open English WordNet .* licensed under CC BY 4\.0/

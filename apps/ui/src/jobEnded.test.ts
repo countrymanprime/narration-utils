@@ -31,7 +31,7 @@ describe('toastForJobEnd', () => {
   });
 
   it('leaves the jobs whose modal dialog is on screen to that dialog', () => {
-    for (const kind of ['manuscript_import', 'tts_install', 'whisper_install', 'app_update']) {
+    for (const kind of ['manuscript_import', 'tts_install', 'whisper_install', 'dictionary_install', 'app_update']) {
       expect(toastForJobEnd(ended({ kind })), kind).toBeUndefined();
     }
   });

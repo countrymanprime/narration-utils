@@ -88,9 +88,9 @@ unreviewed findings (a dismissed flag is kept as dismissed), so they can be revi
 chapter again does not add the same flag twice.
 
 Selecting a stretch of text offers actions for it — adding a reader note or sending it to the
-Story Bible as a new entry.
+Story Bible as a new entry. When the selection is one word, it also offers **Look up**.
 
-![Manuscript - text-selection action popup (+ Note, + Story Bible)](../../images/ui/manuscript-selection-popup.webp)
+![Manuscript - text-selection action popup on one word (+ Note, + Story Bible, Look up)](../../images/ui/manuscript-selection-popup.webp)
 
 Choosing "+ Note" opens a dialog to write the note against that selection.
 
@@ -119,6 +119,35 @@ The reader shows only the manuscript's narratable chapters. A table of contents 
 section the importer recognized stays in the project's data (the Story Bible has the readable form
 of Characters) but is never a page you page through in the reader, and a saved or shared link into
 one tells you so instead of landing there.
+
+## Look up a word
+
+Select one word (a double-click does it) and choose **Look up**. A panel opens on the right with
+what an offline English dictionary says about it: each part of speech (noun, verb, adjective,
+adverb) with its numbered meanings, most common first, the dictionary's own examples, and the
+synonyms and antonyms it lists. A word with an ending, such as "curiouser" or "ran", is looked up
+under the word it comes from, and the panel names that word. Punctuation and quotes around the
+word are ignored.
+
+![Manuscript - the Look up panel for "bank": definitions, examples and synonyms by part of speech, with the dictionary's credit](../../images/ui/manuscript-word-lookup.webp)
+
+The dictionary is the [Open English WordNet](https://en-word.net/) 2025 Edition, used under
+CC BY 4.0; its credit is at the foot of every answer. It is kept on your own computer and every
+lookup works without an internet connection: nothing you select is sent anywhere. It has single
+English words (US English), not phrases, and most names and invented words are not in it; the
+panel says so plainly when a word is not there.
+
+![Manuscript - Look up for a word the dictionary does not have](../../images/ui/manuscript-word-lookup-not-found.webp)
+
+The dictionary is not bundled with the app. The first time you look a word up, the app asks
+before downloading it (about 10 MB, 16 MB on disk once installed), and shows its version,
+publisher, licence and where it will be kept. Nothing downloads until you choose **Download
+dictionary**; once it is installed, the word you asked about is looked up. If the copy on your
+computer is ever damaged, Look up asks to download it again ("Repair the dictionary?") instead of
+showing a garbled answer. You can check, repair or remove the dictionary any time in
+[Settings, Local assets](settings.md#local-assets).
+
+![Manuscript - the first Look up asks before downloading the dictionary](../../images/ui/manuscript-word-lookup-download.webp)
 
 ---
 

@@ -13,8 +13,13 @@ afterEach(() => {
   cleanup();
 });
 
-function renderManuscript(overrides: Parameters<typeof createMockApi>[0] = {}, focusStoryBibleEntity = vi.fn(), initialEntries = ['/manuscript']) {
-  const api = createMockApi(overrides);
+function renderManuscript(
+  overrides: Parameters<typeof createMockApi>[0] = {},
+  focusStoryBibleEntity = vi.fn(),
+  initialEntries = ['/manuscript'],
+  initial: Parameters<typeof createMockApi>[1] = {},
+) {
+  const api = createMockApi(overrides, initial);
   const notify = vi.fn();
   render(
     <div className="shell-content">
@@ -114,6 +119,85 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     fireEvent.click(await screen.findByRole('button', { name: '+ Story Bible' }));
 
     await waitFor(() => expect(focusStoryBibleEntity).toHaveBeenCalledWith('new-halcyon'));
+  });
+
+  describe('Look up', () => {
+    const openReader = async (initial: Parameters<typeof createMockApi>[1] = {}, overrides: Parameters<typeof createMockApi>[0] = {}) => {
+      const rendered = renderManuscript(overrides, vi.fn(), ['/manuscript'], initial);
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      await waitFor(() => expect(paragraph(0)).toBeTruthy());
+      return rendered;
+    };
+
+    it('is offered for one selected word only', async () => {
+      await openReader();
+      selectPhrase('very tired');
+      await screen.findByRole('button', { name: '+ Note' });
+      expect(screen.queryByRole('button', { name: 'Look up' })).toBeNull();
+      selectPhrase('bank');
+      expect(await screen.findByRole('button', { name: 'Look up' })).toBeTruthy();
+    });
+
+    it('opens a panel with the definitions from the offline dictionary and its credit, and clears the selection', async () => {
+      await openReader();
+      selectPhrase('bank');
+      fireEvent.click(await screen.findByRole('button', { name: 'Look up' }));
+      const panel = await screen.findByRole('dialog', { name: 'Look up: bank' });
+      expect(within(panel).getByText('sloping land (especially the slope beside a body of water)')).toBeTruthy();
+      expect(within(panel).getByText(/Open English WordNet 2025 Edition/)).toBeTruthy();
+      expect(screen.queryByRole('toolbar', { name: 'Selected manuscript text actions' })).toBeNull();
+    });
+
+    it('says plainly when the dictionary does not have the word', async () => {
+      await openReader();
+      selectPhrase('Alice');
+      fireEvent.click(await screen.findByRole('button', { name: 'Look up' }));
+      const panel = await screen.findByRole('dialog', { name: 'Look up: alice' });
+      expect(within(panel).getByText('“alice” is not in the dictionary.')).toBeTruthy();
+    });
+
+    it('asks before downloading a dictionary that is not installed, and answers the lookup once it is', async () => {
+      const { api } = await openReader({ dictionary: 'missing' });
+      const assetsInstall = vi.spyOn(api, 'assetsInstall');
+      selectPhrase('bank');
+      fireEvent.click(await screen.findByRole('button', { name: 'Look up' }));
+      const question = await screen.findByRole('alertdialog', { name: 'Download the dictionary?' });
+      expect(within(question).getByText(/Open English WordNet 2025/)).toBeTruthy();
+      expect(within(question).getByText('10 MB · The Open English WordNet Team')).toBeTruthy();
+      expect(assetsInstall).not.toHaveBeenCalled();
+      fireEvent.click(within(question).getByRole('button', { name: 'Download dictionary' }));
+      expect(assetsInstall).toHaveBeenCalledWith('dictionary', 'oewn-2025');
+      const panel = await screen.findByRole('dialog', { name: 'Look up: bank' }, { timeout: 5000 });
+      expect(within(panel).getByText('sloping land (especially the slope beside a body of water)')).toBeTruthy();
+    });
+
+    it('downloads nothing when the narrator says no', async () => {
+      const { api } = await openReader({ dictionary: 'missing' });
+      const assetsInstall = vi.spyOn(api, 'assetsInstall');
+      selectPhrase('bank');
+      fireEvent.click(await screen.findByRole('button', { name: 'Look up' }));
+      const question = await screen.findByRole('alertdialog', { name: 'Download the dictionary?' });
+      fireEvent.click(within(question).getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+      expect(assetsInstall).not.toHaveBeenCalled();
+    });
+
+    it('says a damaged dictionary is damaged and offers to download it again', async () => {
+      await openReader({ dictionary: 'damaged' });
+      selectPhrase('bank');
+      fireEvent.click(await screen.findByRole('button', { name: 'Look up' }));
+      const question = await screen.findByRole('alertdialog', { name: 'Repair the dictionary?' });
+      expect(within(question).getByText(/damaged/)).toBeTruthy();
+      expect(within(question).getByRole('button', { name: 'Download again' })).toBeTruthy();
+    });
+
+    it('shows a failed lookup and keeps the selection', async () => {
+      const { notify } = await openReader({}, { systemLookup: () => Promise.reject(new Error('select a single word to look it up')) });
+      selectPhrase('bank');
+      fireEvent.click(await screen.findByRole('button', { name: 'Look up' }));
+      await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('select a single word to look it up'), 'error'));
+      expect(screen.getByRole('toolbar', { name: 'Selected manuscript text actions' })).toBeTruthy();
+    });
   });
 
   it('allows a selection spanning two adjacent lines', async () => {

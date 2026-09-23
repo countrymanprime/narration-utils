@@ -168,7 +168,34 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   { page: 'manuscript', state: 'detail-sidebar-note', description: 'Manuscript, detail sidebar open on a note' },
   { page: 'manuscript', state: 'detail-sidebar-entity', description: 'Manuscript, detail sidebar open on an entity' },
-  { page: 'manuscript', state: 'selection-popup', description: 'Manuscript, text-selection action popup open', ...POPUP_ANCHORED_AT_FIRST_WIDTH },
+  {
+    page: 'manuscript',
+    state: 'selection-popup',
+    description: 'Manuscript, text-selection action popup open on one word: + Note, + Story Bible and Look up (Look up is offered for one word only)',
+    ...POPUP_ANCHORED_AT_FIRST_WIDTH,
+  },
+  {
+    page: 'manuscript',
+    state: 'word-lookup-definition',
+    description:
+      'Manuscript, the Look up panel for "bank" - each part of speech with numbered definitions, examples and synonyms, and the CC BY 4.0 credit of the dictionary (ADR 0097)',
+  },
+  {
+    page: 'manuscript',
+    state: 'word-lookup-not-found',
+    description: 'Manuscript, the Look up panel for a word the dictionary does not have ("Alice"), said plainly, with the credit',
+  },
+  {
+    page: 'manuscript',
+    state: 'word-lookup-not-installed',
+    description:
+      'Manuscript, Look up with the dictionary not installed - the first-use question with its size, where it is kept and its licence; nothing downloads until Download dictionary',
+  },
+  {
+    page: 'manuscript',
+    state: 'word-lookup-damaged',
+    description: 'Manuscript, Look up with a dictionary whose index fails its check - asked as a repair (Download again), in plain language',
+  },
   {
     page: 'manuscript',
     state: 'overlapping-highlights',
