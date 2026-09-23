@@ -174,13 +174,14 @@ function confirmDialog(page: Page, name: string | RegExp) {
 
 // Opens the import review dialog with the mock's own preview (`?mockImportPreview=`, main.tsx): "Replace manuscript" begins the same
 // select, preview and confirm flow as "Import manuscript". Returns the dialog, so a driver can work inside it.
-async function openImportReview(page: Page, preview?: 'markdown' | 'repaired') {
+async function openImportReview(page: Page, preview?: 'markdown' | 'repaired' | 'text') {
   if (preview) {
     await page.goto(`/?mockImportPreview=${preview}`);
     await settlePage(page);
   }
   await clickVisible(page, 'button', 'Replace manuscript');
-  const dialog = confirmDialog(page, preview === 'markdown' ? 'Import Alice.md' : 'Import Alice.docx');
+  const extension = preview === 'markdown' ? 'md' : preview === 'text' ? 'txt' : 'docx';
+  const dialog = confirmDialog(page, `Import Alice.${extension}`);
   await dialog.waitFor();
   return dialog;
 }
@@ -415,6 +416,17 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const dialog = await openRecordingCheck(page, 'Chapter 7', 'mockAssets=missing');
       await dialog.getByRole('button', { name: 'Check recording' }).click();
       await confirmDialog(page, 'Download local Whisper model?').waitFor();
+    },
+    'import-review-subtitles-off': async (page) => {
+      const review = await openImportReview(page);
+      // The default turned off: every Word heading's second line is joined back to its title (a title wrapped onto two lines).
+      await review.getByRole('checkbox', { name: "Read a heading's second line as its subtitle" }).click();
+      await review.getByRole('checkbox', { name: 'Subtitle — The Pool of Tears' }).click();
+    },
+    'import-review-text-subtitle': async (page) => {
+      const review = await openImportReview(page, 'text');
+      // A plain-text heading's second line turned off returns to the text: the row says the epigraph is read as text.
+      await review.getByRole('checkbox', { name: /^Subtitle — “Curiouser and curiouser!”/ }).click();
     },
     'import-confirm-markdown': async (page) => {
       // The mock's Markdown seam (see main.tsx): the same book as a .md file, which is the one with the heading level choice.

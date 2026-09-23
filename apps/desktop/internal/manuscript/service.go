@@ -253,24 +253,34 @@ func (s *Service) runPreview(job *ImportJob, heading int) {
 // reports its own 0-100 progress and log lines through report.
 type PostCommit func(report func(percent int, message string)) error
 
+// Choices are the narrator's corrections from the import review, applied when the manuscript is written. Both maps are keyed by
+// the preview's section ids, and a section that is not in one keeps what the importer proposed.
+type Choices struct {
+	// SectionKinds is the kind each section is written as (narration, opening or reference).
+	SectionKinds map[string]string
+	// SubtitleOverrides says, for a section with a subtitle, whether it is one; false joins it to the title or returns it to the body
+	// (importer.ApplySubtitleOverrides; story-bible-and-import-ux-briefs PRD, Phase 5).
+	SubtitleOverrides map[string]bool
+}
+
 // Commit activates the previewed manuscript and blocks until it finishes.
-func (s *Service) Commit(id string, confirmedReset bool, kinds map[string]string) (ImportJob, error) {
+func (s *Service) Commit(id string, confirmedReset bool, choices Choices) (ImportJob, error) {
 	job, err := s.beginCommit(id, confirmedReset)
 	if err != nil || job == nil {
 		return s.settled(id, err)
 	}
-	s.runCommit(job, confirmedReset, kinds, nil)
+	s.runCommit(job, confirmedReset, choices, nil)
 	return s.State(id)
 }
 
 // StartCommit validates synchronously, then activates the manuscript in the
 // background so the UI can poll real progress instead of guessing.
-func (s *Service) StartCommit(id string, confirmedReset bool, kinds map[string]string, post PostCommit) (ImportJob, error) {
+func (s *Service) StartCommit(id string, confirmedReset bool, choices Choices, post PostCommit) (ImportJob, error) {
 	job, err := s.beginCommit(id, confirmedReset)
 	if err != nil || job == nil {
 		return s.settled(id, err)
 	}
-	go s.runCommit(job, confirmedReset, kinds, post)
+	go s.runCommit(job, confirmedReset, choices, post)
 	return s.State(id)
 }
 
@@ -313,7 +323,7 @@ func (s *Service) beginCommit(id string, confirmedReset bool) (*ImportJob, error
 	return job, nil
 }
 
-func (s *Service) runCommit(job *ImportJob, confirmedReset bool, kinds map[string]string, post PostCommit) {
+func (s *Service) runCommit(job *ImportJob, confirmedReset bool, choices Choices, post PostCommit) {
 	defer func() {
 		s.mu.Lock()
 		job.busy = false
@@ -325,6 +335,12 @@ func (s *Service) runCommit(job *ImportJob, confirmedReset bool, kinds map[strin
 	project := s.project
 	s.mu.Unlock()
 	s.report(job, 3, "Preparing the project's manuscript folder")
+	// The subtitle choices go first: a choice made against another preview is refused before anything is cleared, copied or written.
+	draft, err := importer.ApplySubtitleOverrides(*job.Draft, choices.SubtitleOverrides)
+	if err != nil {
+		s.fail(job, err)
+		return
+	}
 	if confirmedReset {
 		s.report(job, 8, "Clearing derived data: Story Bible, notes, bookmarks, chapter statuses and proofing results")
 		if err := resetDerived(project); err != nil {
@@ -333,7 +349,7 @@ func (s *Service) runCommit(job *ImportJob, confirmedReset bool, kinds map[strin
 		}
 	}
 	report := func(percent int, message string) { s.report(job, percent, message) }
-	canonical, err := commit(project, job.Source, *job.Draft, kinds, report)
+	canonical, err := commit(project, job.Source, draft, choices.SectionKinds, report)
 	if err != nil {
 		s.fail(job, err)
 		return
@@ -395,6 +411,7 @@ func (s *Service) Load() (map[string]any, error) {
 	return data, nil
 }
 
+// commit writes the draft as the narrator corrected it (runCommit has applied the subtitle choices), each section as the kind chosen.
 func commit(project, source string, draft importer.Draft, kinds map[string]string, report func(percent int, message string)) (map[string]any, error) {
 	if report == nil {
 		report = func(int, string) {}

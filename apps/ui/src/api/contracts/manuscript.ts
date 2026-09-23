@@ -67,6 +67,12 @@ export type ManuscriptImportSection = {
   title: string;
   /** What follows the title in the heading ("CHAPTER ONE / Bad Ideas..."): the first paragraph's, which is what the written chapter gets. Omitted when there is none. */
   subtitle?: string;
+  /**
+   * Where the subtitle's line goes if the narrator says it is not a subtitle: `title` joins it to the title (a title wrapped onto two
+   * lines), `body` makes it the chapter's first paragraph (a line of plain text under a plain-text heading, an epigraph say). Sent with
+   * every subtitle, omitted with none (story-bible-and-import-ux-briefs PRD, Phase 5).
+   */
+  subtitleOff?: 'title' | 'body';
   contentKind: ManuscriptContentKind;
   paragraphCount: number;
 };
@@ -81,6 +87,10 @@ export type ManuscriptCharacterCandidate = {
 export type ManuscriptImportSelection = {
   sectionKinds?: Record<string, ManuscriptContentKind>;
   characterCandidateIds?: string[];
+  /** The review's "Read a heading's second line as its subtitle" default (true when unset). Review state only: the commit sends it resolved into `subtitleOverrides`. */
+  subtitleDefault?: boolean;
+  /** Per section id, whether its subtitle is one. In the review, the rows the narrator set by hand; on the wire, every section whose subtitle is turned off, as `false`. */
+  subtitleOverrides?: Record<string, boolean>;
 };
 export type ManuscriptImportPreview = {
   // `pdf` remains readable for a pre-migration canonical manuscript, but the

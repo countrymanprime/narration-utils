@@ -222,8 +222,8 @@ export function ManuscriptImportCancel(arg1) {
   return window['go']['main']['Host']['ManuscriptImportCancel'](arg1);
 }
 
-export function ManuscriptImportCommit(arg1, arg2, arg3, arg4) {
-  return window['go']['main']['Host']['ManuscriptImportCommit'](arg1, arg2, arg3, arg4);
+export function ManuscriptImportCommit(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['main']['Host']['ManuscriptImportCommit'](arg1, arg2, arg3, arg4, arg5);
 }
 
 export function ManuscriptImportPreview(arg1, arg2) {

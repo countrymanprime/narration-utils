@@ -279,7 +279,7 @@ func TestContractChapterTrackMap(t *testing.T) {
 	if _, err := host.manuscript.Preview(job.ID, 1); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := host.manuscript.Commit(job.ID, false, nil); err != nil {
+	if _, err := host.manuscript.Commit(job.ID, false, manuscript.Choices{}); err != nil {
 		t.Fatal(err)
 	}
 	chapters, err := host.manuscript.Chapters()

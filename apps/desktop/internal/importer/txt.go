@@ -43,6 +43,10 @@ func txtWithProgress(path string, progress Progress) (Draft, error) {
 	notices = append(notices, wrapNotices...)
 
 	chapter, subtitle, section := "Front Matter", "", ""
+	// subtitleIsTextLine: the subtitle is the second line of a two-line heading block, plain text rather than part of a heading, so
+	// turning it off in the review returns it to the body (ApplySubtitleOverrides), in front of the first paragraph under that
+	// heading, which is the one marked. A glued one-line heading's subtitle is not a text line.
+	subtitleIsTextLine := false
 	paragraphs := []Paragraph{}
 	titles := []string{}
 	headingLevels := map[string]int{}
@@ -79,7 +83,8 @@ func txtWithProgress(path string, progress Progress) (Draft, error) {
 			copySubtitle := subtitle
 			subtitleValue = &copySubtitle
 		}
-		paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitleValue, Section: sectionValue, Text: body, Spans: spans, SourceIndex: len(paragraphs)})
+		paragraphs = append(paragraphs, Paragraph{Chapter: chapter, ChapterSubtitle: subtitleValue, SubtitleReturnsToBody: subtitleValue != nil && subtitleIsTextLine, Section: sectionValue, Text: body, Spans: spans, SourceIndex: len(paragraphs)})
+		subtitleIsTextLine = false
 		if chapter == "Front Matter" {
 			preIndexes = append(preIndexes, len(paragraphs)-1)
 		}
@@ -97,6 +102,7 @@ func txtWithProgress(path string, progress Progress) (Draft, error) {
 			continue
 		case txtChapterHeading:
 			chapter, subtitle = headingTitle, headingSubtitle
+			subtitleIsTextLine = !glued
 			if glued {
 				notices = append(notices, fmt.Sprintf("Heading %q had no gap between its number and title; split into %q and %q.", collapse(lines[0]), chapter, subtitle))
 			}

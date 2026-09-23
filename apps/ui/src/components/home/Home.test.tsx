@@ -68,6 +68,16 @@ describe('the import review dialog, as the narrator meets it', () => {
     });
   });
 
+  it('commits the subtitles the narrator turned off, by the default and by a row, as false for each section', async () => {
+    let commit = vi.fn();
+    const { dialog } = await openReview((api) => void (commit = vi.spyOn(api, 'manuscriptImportCommit')));
+    fireEvent.click(dialog.getByRole('checkbox', { name: "Read a heading's second line as its subtitle" }));
+    fireEvent.click(dialog.getByRole('checkbox', { name: 'Subtitle — The Pool of Tears' }));
+    fireEvent.click(dialog.getByRole('button', { name: 'Import' }));
+    await waitFor(() => expect(commit).toHaveBeenCalled());
+    expect(commit.mock.calls[0]?.[1].selection?.subtitleOverrides).toEqual({ 'section-0001': false, 'section-0004': false });
+  });
+
   it('commits a section the narrator reclassified, and leaves the others out of the choices', async () => {
     let commit = vi.fn();
     const { dialog } = await openReview((api) => void (commit = vi.spyOn(api, 'manuscriptImportCommit')));

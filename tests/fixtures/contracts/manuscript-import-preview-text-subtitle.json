@@ -1,0 +1,35 @@
+{
+  "elapsed": 1.5,
+  "id": "id-1",
+  "kind": "manuscript_import",
+  "logs": [
+    "Selected book.txt",
+    "Reading text file book.txt",
+    "Parsing 0 KB",
+    "Classifying front matter, chapters and reference sections",
+    "Found 1 chapters in 1 sections",
+    "Preview ready: 1 paragraphs, 1 chapters, 0 character suggestions"
+  ],
+  "message": "Review the import preview before activating it.",
+  "percent": 100,
+  "phase": "ready",
+  "preview": {
+    "chapterTitles": [
+      "Chapter One"
+    ],
+    "characterCandidates": [],
+    "format": "txt",
+    "paragraphCount": 1,
+    "sections": [
+      {
+        "contentKind": "narration",
+        "id": "section-0001",
+        "paragraphCount": 1,
+        "subtitle": "“Water finds its level.”",
+        "subtitleOff": "body",
+        "title": "Chapter One"
+      }
+    ],
+    "sourceName": "book.txt"
+  }
+}

@@ -28,6 +28,41 @@ export function effectiveKind(section: ManuscriptImportSection, selection: Manus
   return selection.sectionKinds?.[section.id] ?? section.contentKind;
 }
 
+/** A section whose heading has a second line the narrator can say is not its subtitle (story-bible-and-import-ux-briefs PRD, Phase 5). */
+export function hasSubtitleChoice(section: ManuscriptImportSection): boolean {
+  return Boolean(section.subtitle && section.subtitleOff);
+}
+
+/** Whether the review reads a section's second line as its subtitle: the row set by hand, else the review's default, else the importer's guess (yes). */
+export function subtitleKept(section: ManuscriptImportSection, selection: ManuscriptImportSelection): boolean {
+  return selection.subtitleOverrides?.[section.id] ?? selection.subtitleDefault ?? true;
+}
+
+/** Any section in the preview that has a subtitle choice: the default is offered only then. */
+export function hasSubtitleChoices(preview: ManuscriptImportPreview): boolean {
+  return (preview.sections ?? []).some(hasSubtitleChoice);
+}
+
+/**
+ * The heading as it will be written: the title and subtitle the importer read, or, with the subtitle turned off, the title with the line
+ * joined to it, or the title alone with the line kept as `textLine` because it becomes the chapter's first paragraph.
+ */
+export function reviewedHeading(
+  section: ManuscriptImportSection,
+  selection: ManuscriptImportSelection,
+): { title: string; subtitle?: string; textLine?: string } {
+  if (!hasSubtitleChoice(section) || subtitleKept(section, selection)) return { title: section.title, subtitle: section.subtitle };
+  if (section.subtitleOff === 'body') return { title: section.title, textLine: section.subtitle };
+  // Whitespace collapsed as the host joins it (importer.joinedTitle), so the row shows exactly what is written.
+  return { title: `${section.title} ${section.subtitle}`.replace(/\s+/g, ' ').trim() };
+}
+
+/** What the commit sends: every section whose subtitle is turned off, by the row or by the default, as `false`. Undefined when there is none. */
+export function subtitleOverridesToCommit(preview: ManuscriptImportPreview, selection: ManuscriptImportSelection): Record<string, boolean> | undefined {
+  const off = (preview.sections ?? []).filter((section) => hasSubtitleChoice(section) && !subtitleKept(section, selection));
+  return off.length > 0 ? Object.fromEntries(off.map((section) => [section.id, false])) : undefined;
+}
+
 /** No explicit list means every suggestion is checked (the wire behaviour: commit always sends the whole list it computes). */
 export function checkedCandidateIds(preview: ManuscriptImportPreview, selection: ManuscriptImportSelection): string[] {
   return selection.characterCandidateIds ?? (preview.characterCandidates ?? []).map((candidate) => candidate.id);

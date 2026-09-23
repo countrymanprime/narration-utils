@@ -113,7 +113,7 @@ export function ManuscriptDeleteNote(arg1:string):Promise<string>;
 
 export function ManuscriptImportCancel(arg1:string):Promise<string>;
 
-export function ManuscriptImportCommit(arg1:string,arg2:boolean,arg3:Record<string, string>,arg4:Array<string>):Promise<string>;
+export function ManuscriptImportCommit(arg1:string,arg2:boolean,arg3:Record<string, string>,arg4:Array<string>,arg5:Record<string, boolean>):Promise<string>;
 
 export function ManuscriptImportPreview(arg1:string,arg2:number):Promise<string>;
 

@@ -50,7 +50,7 @@ func TestACommitReportsItsEndOnceAndAPreviewDoesNot(t *testing.T) {
 		t.Fatalf("a preview that is ready is not an end, got %+v", got)
 	case <-time.After(100 * time.Millisecond):
 	}
-	if _, err := service.StartCommit(job.ID, false, nil, nil); err != nil {
+	if _, err := service.StartCommit(job.ID, false, Choices{}, nil); err != nil {
 		t.Fatal(err)
 	}
 	got := expectEnd(t, ended)
@@ -70,7 +70,7 @@ func TestAFailedCommitReportsItsEndWithTheReason(t *testing.T) {
 	ended := collectEnds(service)
 	job := previewedImport(t, service, project)
 	failing := func(func(int, string)) error { return fmt.Errorf("the Story Bible could not be seeded") }
-	if _, err := service.StartCommit(job.ID, false, nil, failing); err != nil {
+	if _, err := service.StartCommit(job.ID, false, Choices{}, failing); err != nil {
 		t.Fatal(err)
 	}
 	got := expectEnd(t, ended)
@@ -83,7 +83,7 @@ func TestACommitWithNobodyListeningStillFinishes(t *testing.T) {
 	project := t.TempDir()
 	service := New(project)
 	job := previewedImport(t, service, project)
-	if _, err := service.StartCommit(job.ID, false, nil, nil); err != nil {
+	if _, err := service.StartCommit(job.ID, false, Choices{}, nil); err != nil {
 		t.Fatal(err)
 	}
 	waitForJob(t, service, job.ID, "success")

@@ -10,9 +10,13 @@ import {
   describeReview,
   effectiveKind,
   groupSections,
+  hasSubtitleChoice,
+  hasSubtitleChoices,
   isGroupOpen,
   plural,
   reviewCounts,
+  reviewedHeading,
+  subtitleKept,
   type ReviewGroupKey,
   type ReviewGroupOpen,
 } from './importReviewModel';
@@ -31,10 +35,16 @@ const REFERENCE_NOTE = 'Excluded from audiobook totals, Proofing and the chapter
 
 const LEGEND_CLASSES = "px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase";
 
-// The title and, when the heading had one, the subtitle, the way the reader writes them ("Chapter One — Down the Rabbit-Hole").
-function sectionName(section: ManuscriptImportSection): string {
-  return section.subtitle ? `${section.title} — ${section.subtitle}` : section.title;
+// The heading as it will be written: the title and, when it keeps one, the subtitle, the way the reader writes them ("Chapter One — Down
+// the Rabbit-Hole"), and a line turned off that returns to the text, said as such.
+function sectionName(section: ManuscriptImportSection, selection: ManuscriptImportSelection): string {
+  const heading = reviewedHeading(section, selection);
+  if (heading.textLine) return `${heading.title} · ${heading.textLine} ${TEXT_LINE_NOTE}`;
+  return heading.subtitle ? `${heading.title} — ${heading.subtitle}` : heading.title;
 }
+
+// Said of a subtitle line turned off that becomes the chapter's first paragraph again, so it is narrated (an epigraph under a plain-text heading).
+const TEXT_LINE_NOTE = 'is read as text';
 
 /**
  * The lines at the top of the review dialog that say what was found: the format and size with the number of narration chapters, then
@@ -127,28 +137,53 @@ export function ImportReview({
         aside={note && <Tooltip label={note.label} text={note.text} />}
       >
         <div className="space-y-1.5 pt-1 pb-3 pl-5">
-          {groups[kind].map((section) => (
-            <label key={section.id} className="flex items-center justify-between gap-3 text-sm">
-              <span className="min-w-0 truncate" title={sectionName(section)}>
-                {section.title}
-                {section.subtitle && <span className="text-[var(--text-muted)]"> — {section.subtitle}</span>}
-              </span>
-              <Select
-                label={`${sectionName(section)} content type`}
-                className="flex-none"
-                data-section-select={section.id}
-                value={effectiveKind(section, selection)}
-                options={SECTION_KIND_OPTIONS}
-                onChange={(value) => reclassify(section, value as ManuscriptContentKind)}
-              />
-            </label>
-          ))}
+          {groups[kind].map((section) => {
+            const heading = reviewedHeading(section, selection);
+            const name = sectionName(section, selection);
+            return (
+              <div key={section.id} className="flex items-center gap-3 text-sm">
+                <span className="min-w-0 flex-1 truncate" title={name}>
+                  {heading.title}
+                  {heading.subtitle && <span className="text-[var(--text-muted)]"> — {heading.subtitle}</span>}
+                  {heading.textLine && (
+                    <span className="text-[var(--text-muted)]">
+                      {' '}
+                      · {heading.textLine} {TEXT_LINE_NOTE}
+                    </span>
+                  )}
+                </span>
+                {hasSubtitleChoice(section) && (
+                  // The heading's second line, read as its subtitle or not (story-bible-and-import-ux-briefs PRD, Phase 5). The visible word is
+                  // short so the row keeps its room for the title; the name says which line it is about.
+                  <div className="flex-none">
+                    <Checkbox
+                      checked={subtitleKept(section, selection)}
+                      onChange={(keep) =>
+                        onSelectionChange((current) => ({ ...current, subtitleOverrides: { ...current.subtitleOverrides, [section.id]: keep } }))
+                      }
+                    >
+                      Subtitle <span className="sr-only">— {section.subtitle}</span>
+                    </Checkbox>
+                  </div>
+                )}
+                <Select
+                  label={`${name} content type`}
+                  className="flex-none"
+                  data-section-select={section.id}
+                  value={effectiveKind(section, selection)}
+                  options={SECTION_KIND_OPTIONS}
+                  onChange={(value) => reclassify(section, value as ManuscriptContentKind)}
+                />
+              </div>
+            );
+          })}
         </div>
       </Disclosure>
     );
+  const subtitleChoices = hasSubtitleChoices(preview);
   return (
     <div ref={root}>
-      {(preview.format === 'markdown' || buildStoryBible) && (
+      {(preview.format === 'markdown' || buildStoryBible || subtitleChoices) && (
         <fieldset className="mt-4 min-w-0 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
           <legend className={LEGEND_CLASSES}>Import options</legend>
           <div className="space-y-2">
@@ -162,6 +197,16 @@ export function ImportReview({
                   onChange={(value) => onHeadingLevelChange(Number(value))}
                 />
               </label>
+            )}
+            {subtitleChoices && (
+              // The default every row starts from; a row set by hand keeps its own answer (owner decision I2: a book's house style here,
+              // the exceptions on the rows).
+              <Checkbox
+                checked={selection.subtitleDefault ?? true}
+                onChange={(next) => onSelectionChange((current) => ({ ...current, subtitleDefault: next }))}
+              >
+                Read a heading's second line as its subtitle
+              </Checkbox>
             )}
             {buildStoryBible && (
               <Checkbox checked={buildStoryBible.checked} onChange={buildStoryBible.onChange}>

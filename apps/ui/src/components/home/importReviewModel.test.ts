@@ -1,7 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { mockImportPreview } from '../../api/mockImportPreview';
 import type { ManuscriptImportPreview } from '../../types';
-import { describeReview, effectiveKind, groupSections, isGroupOpen, MANY_NARRATION_CHAPTERS, plural, reviewCounts } from './importReviewModel';
+import {
+  describeReview,
+  effectiveKind,
+  groupSections,
+  hasSubtitleChoices,
+  isGroupOpen,
+  MANY_NARRATION_CHAPTERS,
+  plural,
+  reviewCounts,
+  reviewedHeading,
+  subtitleKept,
+  subtitleOverridesToCommit,
+} from './importReviewModel';
 
 const preview = mockImportPreview('docx');
 const section = (id: string) => {
@@ -15,6 +27,39 @@ describe('effectiveKind', () => {
     expect(effectiveKind(section('section-0001'), {})).toBe('narration');
     expect(effectiveKind(section('section-0001'), { sectionKinds: { 'section-0001': 'reference' } })).toBe('reference');
     expect(effectiveKind(section('section-0006'), { sectionKinds: { 'section-0001': 'reference' } })).toBe('reference');
+  });
+});
+
+describe('the subtitle choices (story-bible-and-import-ux-briefs PRD, Phase 5)', () => {
+  it('keeps every subtitle, as the importer guessed, until the narrator says otherwise', () => {
+    expect(subtitleKept(section('section-0001'), {})).toBe(true);
+    expect(reviewedHeading(section('section-0001'), {})).toEqual({ title: 'Chapter One', subtitle: 'Down the Rabbit-Hole' });
+    expect(subtitleOverridesToCommit(preview, {})).toBeUndefined();
+  });
+
+  it('takes a row set by hand over the default', () => {
+    expect(subtitleKept(section('section-0001'), { subtitleDefault: false })).toBe(false);
+    expect(subtitleKept(section('section-0001'), { subtitleDefault: false, subtitleOverrides: { 'section-0001': true } })).toBe(true);
+    expect(subtitleKept(section('section-0002'), { subtitleOverrides: { 'section-0002': false } })).toBe(false);
+  });
+
+  it('joins a Word heading line to the title, and keeps a plain-text line apart as the start of the text', () => {
+    expect(reviewedHeading(section('section-0001'), { subtitleDefault: false })).toEqual({ title: 'Chapter One Down the Rabbit-Hole' });
+    const text = mockImportPreview('text').sections?.[0];
+    if (!text) throw new Error('no text section');
+    expect(reviewedHeading(text, { subtitleDefault: false })).toEqual({ title: 'Chapter One', textLine: '“Curiouser and curiouser!” cried Alice' });
+  });
+
+  it('commits every subtitle turned off, by the default or a row, and nothing for a section without one', () => {
+    expect(subtitleOverridesToCommit(preview, { subtitleDefault: false, subtitleOverrides: { 'section-0002': true, 'section-0003': false } })).toEqual({
+      'section-0001': false,
+      'section-0004': false,
+    });
+  });
+
+  it('offers the choice only when a section has a subtitle that says where it goes', () => {
+    expect(hasSubtitleChoices(preview)).toBe(true);
+    expect(hasSubtitleChoices({ ...preview, sections: preview.sections?.map(({ subtitleOff: _off, ...rest }) => rest) })).toBe(false);
   });
 });
 

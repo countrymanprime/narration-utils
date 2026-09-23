@@ -1,5 +1,5 @@
 {
-  "about": "Constructed heading cases for the import title/subtitle heuristic (story-bible-and-import-ux-briefs PRD, Phase 4). 'intended' is what the author meant; 'observed' is what the importer produced when this file was written and is pinned by TestHeadingMisreadFixtures (apps/desktop/internal/importer/heading_misreads_test.go). 'subtitleWentTo' says where the authored subtitle text ended up. 'lineToggleFixes' says whether a per-heading 'second line is subtitle' toggle over the importer's existing lines (PRD I2) is enough to reach 'intended'. See docs/research/import-heading-misreads.md.",
+  "about": "Constructed heading cases for the import title/subtitle heuristic (story-bible-and-import-ux-briefs PRD, Phase 4). 'intended' is what the author meant; 'observed' is what the importer produced when this file was written and is pinned by TestHeadingMisreadFixtures (apps/desktop/internal/importer/heading_misreads_test.go). 'subtitleWentTo' says where the authored subtitle text ended up. 'lineToggleFixes' says whether a per-heading 'second line is subtitle' toggle over the importer's existing lines (PRD I2) is enough to reach 'intended'. 'override', on a case the Phase 5 subtitle override fixes, is the per-heading choice that does it and the chapter's first paragraph afterwards; TestHeadingMisreadOverrides applies it and expects 'intended'. See docs/research/import-heading-misreads.md.",
   "cases": [
     {
       "id": "docx-soft-break-subtitle",
@@ -83,7 +83,8 @@
         "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
       },
       "subtitleWentTo": "none authored; half the title became the subtitle",
-      "lineToggleFixes": true
+      "lineToggleFixes": true,
+      "override": { "secondLineIsSubtitle": false, "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road." }
     },
     {
       "id": "md-two-line-title-br",
@@ -97,7 +98,8 @@
         "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
       },
       "subtitleWentTo": "none authored; half the title became the subtitle",
-      "lineToggleFixes": true
+      "lineToggleFixes": true,
+      "override": { "secondLineIsSubtitle": false, "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road." }
     },
     {
       "id": "epub-two-line-title-br",
@@ -111,7 +113,8 @@
         "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
       },
       "subtitleWentTo": "none authored; half the title became the subtitle",
-      "lineToggleFixes": true
+      "lineToggleFixes": true,
+      "override": { "secondLineIsSubtitle": false, "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road." }
     },
     {
       "id": "docx-three-line-heading",
@@ -139,7 +142,8 @@
         "firstParagraph": "The rain had not stopped for three days, and the river was already over the lower road."
       },
       "subtitleWentTo": "none authored; the epigraph became the subtitle and is no longer narrated as body text",
-      "lineToggleFixes": false
+      "lineToggleFixes": true,
+      "override": { "secondLineIsSubtitle": false, "firstParagraph": "“Water finds its level.”" }
     },
     {
       "id": "docx-subtitle-style-paragraph",

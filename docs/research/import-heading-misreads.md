@@ -23,7 +23,7 @@ The 23 cases are 5 controls, which read correctly, and 18 misreads in 8 failure 
 | --- | --- | --- | --- | --- | --- |
 | F1 | A title that wraps onto two lines is split into title and subtitle | 3 | DOCX, MD, EPUB | Half the title becomes the subtitle | Yes (off: join the lines) |
 | F2 | A three-line heading (part, chapter, title) is split after its first line | 1 | DOCX | The chapter line and the real subtitle are joined into the subtitle | No |
-| F3 | An epigraph directly under a text heading, with no blank line, becomes the subtitle | 1 | TXT | The subtitle, and it is no longer narrated as body text | Only if "off" returns the line to the body |
+| F3 | An epigraph directly under a text heading, with no blank line, becomes the subtitle | 1 | TXT | The subtitle, and it is no longer narrated as body text | Yes (off: the line returns to the body) |
 | F4 | A subtitle in its own paragraph (Word "Subtitle" style, `*emphasis*` line, own text block, `<p class="subtitle">`) is missed | 4 | DOCX, MD, TXT, EPUB | The first body paragraph, so it gets narrated | No |
 | F5 | A subtitle set as a lower-level heading (Heading 2, `##`, `<h2>`) is missed | 3 | DOCX, MD, EPUB | DOCX: a second, separate chapter, leaving "Chapter One" empty. MD: the section name of every paragraph after it. EPUB: dropped completely | No |
 | F6 | A glued title and subtitle that the repair does not recognise | 3 | DOCX | Glued onto the title ("CHAPTER ONETHE STORM") | No |
@@ -67,7 +67,11 @@ The file names are in `tests/fixtures/heading-misreads/`. "Intended" is title / 
 - **F7.** No importer splits on ":" or a dash. This is by design today: `alice.docx` and `alice.md` rely on "Chapter I: Down the Rabbit-Hole" staying one title (`TestDocxFixtureRetainsTitleAndNarrativeChapters`, `TestMarkdownFixtureRetainsTitleAndNarrativeChapters`). It is listed here so that Phase 5 decides it deliberately, not as a defect to fix silently.
 - **F8.** Plain text finds headings conservatively. A heading must start with its chapter marker and have at most two lines. A title above the number, or a part/chapter/title stack, is read as an ordinary paragraph. When nothing in the file is a heading, the whole file becomes one chapter ([import quirks](../architecture/docx-import-quirks.md) covers the DOCX side).
 
-## What this means for Phase 5
+## What Phase 5 did
+
+Phase 5 built the override ([ADR 0135](../adr/0135-a-subtitle-turned-off-in-the-import-review-joins-the-title-or-returns-to-the-text-by-where-its-line-came-from.md)). A section's subtitle turned off in the review joins the title when the line was inside a heading (F1) and returns to the body when it was the second line of a plain-text heading (F3); the host says which in the preview (`subtitleOff`). The four cases it fixes carry an `override` entry in `cases.json`, and `TestHeadingMisreadOverrides` applies it and expects `intended`; the same test checks that no override changes any case. F2 and F4 to F8 are unchanged and are listed in [#387](https://github.com/countrymanprime/narration-utils/issues/387); the EPUB `<h2>` that is dropped (F5) is its own bug, [#388](https://github.com/countrymanprime/narration-utils/issues/388).
+
+## What this meant for Phase 5 (written before it)
 
 - **The toggle as specified reaches only F1.** PRD I2 lists each multi-line heading with a per-heading "second line is subtitle" toggle, plus a global default. That fixes the 3 F1 cases, the only modes where the importer already has two lines and only the reading is wrong. The other 15 misreads have nothing for a line toggle to act on:
   - F4, F5 and F8: the subtitle never reaches the heading.
