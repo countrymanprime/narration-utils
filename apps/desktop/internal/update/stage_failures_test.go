@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -186,7 +187,8 @@ func TestACacheThatCannotBeWrittenIsReportedAndDoesNotStopTheCheck(t *testing.T)
 	if _, err := checker.Check(context.Background()); err != nil {
 		t.Fatalf("a cache that cannot be written must not fail the check: %v", err)
 	}
-	if len(logged) == 0 || !strings.Contains(logged[0], "update_check_unsaved") {
+	// Reading the unreachable cache may be reported first (not-a-directory on Linux; Windows reports it as missing).
+	if !slices.ContainsFunc(logged, func(line string) bool { return strings.Contains(line, "update_check_unsaved") }) {
 		t.Fatalf("logged %v", logged)
 	}
 }

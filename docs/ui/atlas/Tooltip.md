@@ -26,6 +26,7 @@ Storybook title: `Primitives/Tooltip`. Source: `src/components/primitives/Toolti
 - `src/components/home/AudiobookEstimatePanel.tsx`
 - `src/components/home/Home.tsx`
 - `src/components/home/ImportReview.tsx`
+- `src/components/layout/AppShell.tsx`
 - `src/components/manuscript/EntitySummary.tsx`
 - `src/components/manuscript/Manuscript.tsx`
 - `src/components/primitives/MeterBar.tsx`
@@ -38,3 +39,5 @@ Storybook title: `Primitives/Tooltip`. Source: `src/components/primitives/Toolti
 - `src/components/settings/ScopedSetting.tsx`
 - `src/components/storybible/Guide.tsx`
 - `src/components/storybible/GuideDetail.tsx`
+- `src/components/storybible/PropertiesSection.tsx`
+- `src/components/teleprompter/ReadAlongView.tsx`

@@ -18,3 +18,7 @@ Storybook title: `Primitives/Table`. Source: `src/components/primitives/Table.ts
 - `src/components/proofing/Results.tsx`
 - `src/components/storybible/Guide.tsx`
 - `src/components/storybible/GuideDetail.tsx`
+- `src/components/storybible/PropertiesSection.tsx`
+- `src/components/tracks/ChapterLinksTable.tsx`
+- `src/components/tracks/LinkChaptersDialog.tsx`
+- `src/components/tracks/TakeReviewPanel.tsx`

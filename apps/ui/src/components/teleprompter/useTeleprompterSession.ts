@@ -30,7 +30,7 @@ const LEGACY_DEVICE_KEY = 'narration.teleprompter.device';
 const SETTINGS_TOOL = 'Teleprompter';
 const INPUT_DEVICE_KEY = 'input_device';
 const MODEL_KEY = 'model';
-export const ACTIVE_PHASES: TeleprompterPhase[] = ['starting', 'running', 'stopping'];
+const ACTIVE_PHASES: TeleprompterPhase[] = ['starting', 'running', 'stopping'];
 const IDLE_STATE: TeleprompterState = { phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null };
 
 function sessionReducer(session: Session, action: SessionAction): Session {
@@ -62,7 +62,7 @@ function clearLegacyDevice() {
 
 export const errorText = (reason: unknown): string => (reason instanceof Error ? reason.message : String(reason));
 
-export function statusText(host: TeleprompterState, session: Session): string {
+function statusText(host: TeleprompterState, session: Session): string {
   if (host.phase === 'starting') return 'Starting…';
   if (host.phase === 'stopping') return 'Stopping…';
   if (host.phase === 'stopped') return 'Stopped';

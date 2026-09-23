@@ -3,6 +3,7 @@ package daw
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -27,14 +28,17 @@ func TestPickFromUninstallEntriesReturnsTheFirstReaperEntryWhoseExecutableExists
 		{DisplayName: "Some Other App", InstallLocation: `C:\Program Files\Other`},
 		{DisplayName: "REAPER (x64)", InstallLocation: `C:\Program Files\REAPER (x64)`},
 	}
-	exists := func(path string) bool { return path == `C:\Program Files\REAPER (x64)\reaper.exe` }
+	// filepath.Join is the platform's own: the path this picks is only ever
+	// used on Windows, but the pure selection logic is tested everywhere.
+	want := filepath.Join(`C:\Program Files\REAPER (x64)`, "reaper.exe")
+	exists := func(path string) bool { return path == want }
 
 	got, ok := pickFromUninstallEntries(entries, exists)
 
 	if !ok {
 		t.Fatal("want ok = true")
 	}
-	if want := `C:\Program Files\REAPER (x64)\reaper.exe`; got != want {
+	if got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
 }

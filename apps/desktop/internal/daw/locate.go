@@ -53,14 +53,6 @@ func Resolve(override string, autoDetect func() (string, string, error)) (path, 
 	return autoDetect()
 }
 
-// fileExists reports whether path names a real, non-directory file. It is a
-// var, not a plain func, only so a test in this package could fake it if a
-// future test needs to; the production windows locator calls it directly.
-var fileExists = func(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && !info.IsDir()
-}
-
 // pickFromUninstallEntries returns the InstallLocation of the first entry
 // whose DisplayName looks like a REAPER install ("REAPER", "REAPER (x64)",
 // a future "REAPER (arm64)", but not some unrelated program that merely

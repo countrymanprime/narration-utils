@@ -34,7 +34,24 @@ func TestMain(m *testing.M) {
 		runFakeTeleprompter()
 		os.Exit(0)
 	}
-	os.Exit(m.Run())
+	os.Exit(runIsolated(m))
+}
+
+// runIsolated points %APPDATA% at a throwaway folder for the whole run, so a test that builds a Host without its own
+// t.Setenv never writes the per-user recent-projects or credit-templates file into the runner's real profile (Windows)
+// or, with APPDATA unset, into a relative AppData folder inside the source tree (Linux, macOS).
+func runIsolated(m *testing.M) int {
+	appData, err := os.MkdirTemp("", "narration-utils-test-appdata-")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	defer func() { _ = os.RemoveAll(appData) }()
+	if err := os.Setenv("APPDATA", appData); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	return m.Run()
 }
 
 // runFakeTeleprompterDevices stands in for the sidecar's `--list-devices` mode: one JSON line, then exit. Checked

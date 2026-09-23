@@ -21,9 +21,17 @@ Storybook title: `Primitives/Dialog`. Source: `src/components/primitives/Dialog.
 - Tab Stays Inside The Dialog
 - Returns Focus To The Opener
 - Auto Focus Child Wins
+- Full Size
 
 ## Used by
 
 - `src/components/manuscript/AddNoteDialog.tsx`
 - `src/components/primitives/ConfirmDialog.tsx`
 - `src/components/primitives/WorkDialog.tsx`
+- `src/components/project/NewProjectDialog.tsx`
+- `src/components/teleprompter/ReadAloudDialog.tsx`
+- `src/components/tracks/AuditionDialog.tsx`
+- `src/components/tracks/ChapterTagsDialog.tsx`
+- `src/components/tracks/LinkChaptersDialog.tsx`
+- `src/components/tracks/PickupsDialog.tsx`
+- `src/components/tracks/RenderConfigDialog.tsx`
