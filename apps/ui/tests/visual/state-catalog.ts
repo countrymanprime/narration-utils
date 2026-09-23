@@ -147,7 +147,7 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'manuscript',
     state: 'read-aloud-setup',
     description:
-      'Manuscript, the "Read aloud" full-size dialog (teleprompter-manuscript-integration.prd.md Phase 2) opened from a chapter header - Microphone and Whisper model fields, no chapter picker (the chapter is fixed)',
+      'Manuscript, the "Read aloud" full-size dialog (teleprompter-manuscript-integration.prd.md Phase 2) opened from a chapter header - Microphone, Engine and Model fields, no chapter picker (the chapter is fixed)',
   },
   {
     page: 'manuscript',
@@ -454,12 +454,18 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'teleprompter',
     state: 'setup-default',
     description:
-      'Teleprompter, before a session - chapter, microphone (picker of enumerated devices) and model choices with the chapter text below (no highlight yet)',
+      'Teleprompter, before a session - chapter, microphone (picker of enumerated devices), engine (Whisper or Moonshine, as a Windows host offers) and model choices with the chapter text below (no highlight yet)',
   },
   {
     page: 'teleprompter',
     state: 'model-download-progress',
     description: 'Teleprompter, the Whisper model download after Start reading, with real bytes and Cancel (?mockAssets=downloading)',
+  },
+  {
+    page: 'teleprompter',
+    state: 'moonshine-model-required',
+    description:
+      'Teleprompter, Moonshine chosen as the engine and Start reading pressed with its model not installed - the first-use question names the engine, its size, publisher and licence, and nothing downloads until Download model (?mockAssets=missing)',
   },
   {
     page: 'teleprompter',

@@ -1,0 +1,20 @@
+{
+  "diskSize": 78203619,
+  "downloadSize": 78203619,
+  "engine": "whisper",
+  "installPath": "C:/Users/narrator/AppData/Local/narration-utils/assets/whisper/faster-whisper/tiny/d90ca5fe260221311c53c58e660288d3deb8d356",
+  "installState": "not_installed",
+  "model": {
+    "attribution": "CTranslate2 conversion of OpenAI Whisper tiny, published by Systran.",
+    "displayName": "Tiny",
+    "id": "tiny",
+    "license": "MIT",
+    "licenseUrl": "https://huggingface.co/Systran/faster-whisper-tiny",
+    "modelCardUrl": "https://huggingface.co/Systran/faster-whisper-tiny",
+    "provenanceUrl": "https://huggingface.co/Systran/faster-whisper-tiny/tree/d90ca5fe260221311c53c58e660288d3deb8d356",
+    "provider": "faster-whisper",
+    "publisher": "Systran",
+    "version": "d90ca5fe260221311c53c58e660288d3deb8d356"
+  },
+  "status": "asset_required"
+}

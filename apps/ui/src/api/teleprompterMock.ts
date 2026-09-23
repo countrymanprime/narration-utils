@@ -12,6 +12,7 @@ import type {
   ManuscriptParagraph,
   TeleprompterApi,
   TeleprompterDevice,
+  TeleprompterEngine,
   TeleprompterEvent,
   TeleprompterPosition,
   TeleprompterScript,
@@ -42,7 +43,8 @@ type Deps = {
   ready: Promise<unknown>;
   chapters: () => ManuscriptChapter[];
   paragraphs: () => ManuscriptParagraph[];
-  assetRequired: () => Extract<TeleprompterStartResult, { status: 'asset_required' }> | undefined;
+  /** The first-use gate's answer for the engine's model, or undefined when it is installed. */
+  assetRequired: (engine: TeleprompterEngine) => Extract<TeleprompterStartResult, { status: 'asset_required' }> | undefined;
   /** Boots already part-way through a chapter, as a session the host kept running. */
   seed?: TeleprompterSeed;
   /** What `teleprompterDevices` reports (an empty list exercises the picker's no-devices fallback). */
@@ -161,14 +163,15 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
 
   return {
     teleprompterStart: async (options) => {
-      const needed = deps.assetRequired();
+      const engine = options.engine ?? 'whisper';
+      const needed = deps.assetRequired(engine);
       if (needed) return needed;
       if (!options.device.trim()) throw new Error('Choose a microphone.');
       await deps.ready;
       const chapter = findChapter(options.chapter);
       if (!chapter) throw new Error(`Chapter ${options.chapter} was not found among the narration chapters.`);
       cancelReplay();
-      state = { phase: 'starting', message: 'Starting the teleprompter…', engine: 'whisper', chapter: options.chapter, script: null, position: null };
+      state = { phase: 'starting', message: 'Starting the teleprompter…', engine, chapter: options.chapter, script: null, position: null };
       publish();
       const { script, words } = buildScript(chapter, deps.paragraphs());
       state = { ...state, phase: 'running', message: LISTENING };

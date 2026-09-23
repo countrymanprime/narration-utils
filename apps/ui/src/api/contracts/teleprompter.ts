@@ -1,5 +1,11 @@
 import type { WhisperInstallState, WhisperModel } from './whisper';
 
+/**
+ * The live engines (ADR 0021): both speak the same event contract. Which of them this computer can launch is the choices of the
+ * host's `Teleprompter.engine` setting (Moonshine only on Windows, ADR 0107).
+ */
+export type TeleprompterEngine = 'whisper' | 'moonshine';
+
 export type TeleprompterPhase = 'idle' | 'starting' | 'running' | 'stopping' | 'stopped' | 'error';
 export type TeleprompterStatus = 'listening' | 'waiting' | 'done';
 
@@ -40,7 +46,9 @@ export type TeleprompterStartOptions = {
   chapter: string;
   /** Capture device name. */
   device: string;
-  /** Whisper model id; the host defaults to the smallest. */
+  /** The live engine; the host defaults to Whisper. */
+  engine?: TeleprompterEngine;
+  /** The engine's model id (`tiny` or `small`, for either engine); the host defaults to tiny. */
   model?: string;
   language?: string;
   /** Start the tracker already at this script word index (the same space as `TeleprompterPosition.read`). */
@@ -51,6 +59,9 @@ export type TeleprompterStartResult =
   | { status: 'started' }
   | {
       status: 'asset_required';
+      /** The engine the missing model belongs to, which is also the asset kind it installs as (`assetsInstall(engine, model.id)`). */
+      engine: TeleprompterEngine;
+      /** A Whisper or a Moonshine catalog entry: both describe a model the same way. */
       model: Omit<WhisperModel, 'downloadSize' | 'installState'>;
       installState: WhisperInstallState;
       downloadSize: number;

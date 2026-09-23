@@ -714,24 +714,70 @@ export function createMockApi(
       spacyInstalled = true;
     },
   });
+  // The Teleprompter's second live engine (teleprompter-engines-and-input-devices.prd.md phase 7): the real catalog's tiny model
+  // (config/moonshine-assets.json), installed or not on the same seeds as the Whisper model.
+  let moonshineInstalled = initial.assets === undefined || localAssetsSeed;
+  const MOONSHINE_TINY_BYTES = 77748675;
+  const mockMoonshineIdentity = {
+    id: 'tiny',
+    provider: 'moonshine',
+    displayName: 'Tiny',
+    version: 'quantized_26_08_21',
+    publisher: 'Moonshine AI',
+    license: 'MIT',
+    licenseUrl: 'https://github.com/moonshine-ai/moonshine/blob/main/LICENSE',
+    modelCardUrl: 'https://github.com/moonshine-ai/moonshine',
+    provenanceUrl: 'https://download.moonshine.ai/model/tiny-streaming-en/quantized_26_08_21',
+    attribution: 'Moonshine tiny-streaming-en, published by Moonshine AI (Useful Sensors), MIT licensed.',
+  };
+  const moonshineInstall = createInstallMock({
+    total: MOONSHINE_TINY_BYTES,
+    noun: 'Moonshine model',
+    extra: { kind: 'moonshine', assetId: 'tiny' },
+    seed: localAssetsSeed ? undefined : initial.assets,
+    onInstalled: () => {
+      moonshineInstalled = true;
+    },
+  });
   const installMockFor = (jobId: string) =>
-    jobId.startsWith('mock-voice') ? voiceInstall : jobId.startsWith('mock-language') ? languageModelInstall : modelInstall;
+    jobId.startsWith('mock-voice')
+      ? voiceInstall
+      : jobId.startsWith('mock-language')
+        ? languageModelInstall
+        : jobId.startsWith('mock-Moonshine')
+          ? moonshineInstall
+          : modelInstall;
   const mockWhisperModel = { ...mockWhisperIdentity, downloadSize: 483546902 + 2370 + 2203239 + 459861, installState: 'not_installed' as const };
   const teleprompter = createTeleprompterMock({
     ready: manuscriptReady,
     chapters: () => chapters,
     paragraphs: () => paragraphs,
-    assetRequired: () =>
-      whisperInstalled
+    assetRequired: (engine) => {
+      if (engine === 'moonshine') {
+        return moonshineInstalled
+          ? undefined
+          : {
+              status: 'asset_required',
+              engine,
+              model: mockMoonshineIdentity,
+              installState: 'not_installed',
+              downloadSize: MOONSHINE_TINY_BYTES,
+              diskSize: MOONSHINE_TINY_BYTES,
+              installPath: MOCK_ASSET_ROOT + '/moonshine/moonshine/tiny/quantized_26_08_21',
+            };
+      }
+      return whisperInstalled
         ? undefined
         : {
             status: 'asset_required',
+            engine,
             model: mockWhisperIdentity,
             installState: 'not_installed',
             downloadSize: mockWhisperModel.downloadSize,
             diskSize: mockWhisperModel.downloadSize,
             installPath: MOCK_ASSET_ROOT + '/whisper/faster-whisper/small',
-          },
+          };
+    },
     seed: initial.teleprompter,
     devices: initial.teleprompterDevices ?? WIRE_TELEPROMPTER_DEVICES,
   });
@@ -1118,18 +1164,20 @@ export function createMockApi(
       if (kind === 'tts' && id === mockVoice.id) return voiceInstall.start();
       if (kind === 'whisper' && id === mockWhisperModel.id) return modelInstall.start();
       if (kind === 'spacy' && id === mockLanguageModel.id) return languageModelInstall.start();
+      if (kind === 'moonshine' && id === mockMoonshineIdentity.id) return moonshineInstall.start();
       throw new Error(`"${id}" is not in the approved catalog of ${kind}`);
     },
     assetsInstallState: async (jobId) => installMockFor(jobId).state(jobId),
     assetsInstallCancel: async (jobId) => installMockFor(jobId).cancel(jobId),
     assetsVerify: async (kind, id) => {
-      const installed = kind === 'tts' ? ttsInstalled : kind === 'spacy' ? spacyInstalled : whisperInstalled;
+      const installed = kind === 'tts' ? ttsInstalled : kind === 'spacy' ? spacyInstalled : kind === 'moonshine' ? moonshineInstalled : whisperInstalled;
       if (kind === 'whisper' && whisperDamaged) return { kind, id, installState: 'verification_failed' as const };
       return { kind, id, installState: installed ? ('installed' as const) : ('not_installed' as const) };
     },
     assetsRemove: async (kind) => {
       if (kind === 'tts') ttsInstalled = false;
       else if (kind === 'spacy') spacyInstalled = false;
+      else if (kind === 'moonshine') moonshineInstalled = false;
       else {
         whisperInstalled = false;
         whisperDamaged = false;

@@ -2,8 +2,8 @@
 
 **Status: Implemented** for every kind of optional asset the app ships: Piper preview voices, Whisper transcription models,
 Story Bible spaCy language models and, as of `teleprompter-engines-and-input-devices.prd.md` phase 5, the Moonshine live-engine
-models' catalog and provisioning (installable through Settings > Local assets like every other kind; the live Teleprompter does
-not launch it yet - that is phase 7; since phase 6 the Windows sidecar runs Moonshine from such an install and never downloads a
+models' catalog and provisioning (installable through Settings > Local assets like every other kind; since phase 7 the Teleprompter launches it when the narrator
+chooses it, asking before downloading like any first use; since phase 6 the Windows sidecar runs Moonshine from such an install and never downloads a
 model itself, [ADR 0107](../adr/0107-moonshine-ships-inside-the-windows-teleprompter-sidecar-and-runs-only-from-a-verified-catalog-install.md)). This document holds the rules
 that code, other docs and `SECURITY.md` are checked against; the sections from "The asset manager" on describe what implements them.
 

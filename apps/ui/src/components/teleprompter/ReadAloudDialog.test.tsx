@@ -63,7 +63,7 @@ describe('ReadAloudDialog', () => {
     await user.selectOptions(field, DEVICE_NAME);
     await user.click(screen.getByRole('button', { name: 'Start reading' }));
 
-    expect(teleprompterStart).toHaveBeenCalledWith({ chapter: 'chapter-1', device: DEVICE_NAME, model: 'tiny' });
+    expect(teleprompterStart).toHaveBeenCalledWith({ chapter: 'chapter-1', device: DEVICE_NAME, engine: 'whisper', model: 'tiny' });
   });
 
   it('closes without a confirm when no session is running', async () => {

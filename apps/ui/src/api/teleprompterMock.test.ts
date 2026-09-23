@@ -110,6 +110,7 @@ describe('teleprompter mock', () => {
   it('asks for the model first when it is not installed', async () => {
     const needed = {
       status: 'asset_required' as const,
+      engine: 'whisper' as const,
       model: { id: 'tiny' } as never,
       installState: 'not_installed' as const,
       downloadSize: 1,

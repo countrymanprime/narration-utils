@@ -962,6 +962,17 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.getByRole('dialog', { name: 'Downloading Whisper model' }).waitFor();
       await page.getByText(/185 of 464 MB/).waitFor();
     },
+    // Choosing Moonshine never downloads: its model is missing under ?mockAssets=missing, so Start reading asks first, naming the engine.
+    'moonshine-model-required': async (page) => {
+      await page.goto('/?mockAssets=missing');
+      await settlePage(page);
+      await goToPage(page, 'Teleprompter');
+      await page.getByText('Alice was beginning').first().waitFor();
+      await page.getByRole('combobox', { name: 'Microphone' }).selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
+      await page.getByRole('group', { name: 'Engine' }).getByRole('button', { name: 'Moonshine' }).click();
+      await page.getByRole('button', { name: 'Start reading' }).click();
+      await page.getByRole('alertdialog', { name: 'Download local Moonshine model?' }).waitFor();
+    },
     'no-microphone-blocked': async (page) => {
       await page.goto('/?mockNoDevices=1');
       await settlePage(page);

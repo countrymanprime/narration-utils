@@ -13,6 +13,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
+	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
@@ -510,34 +511,64 @@ func (h *Host) TranscriptStart(options map[string]string) (string, error) {
 }
 
 // TeleprompterStart begins a live teleprompter session for one manuscript
-// chapter. Like TranscriptStart it stops at the first-use gate when the Whisper
-// model is not installed and reports it as asset_required; once running, the
-// sidecar's events arrive as "teleprompter:event" and phase changes as
-// "teleprompter:state".
+// chapter with the engine the request names (Whisper when it names none). Like
+// TranscriptStart it stops at the first-use gate when that engine's model is not
+// installed and reports it as asset_required, tagged with the engine so the UI
+// installs it through the right asset kind; once running, the sidecar's events
+// arrive as "teleprompter:event" and phase changes as "teleprompter:state".
 func (h *Host) TeleprompterStart(options map[string]string) (string, error) {
 	svc := h.services()
 	if svc.teleprompter == nil {
 		return "", fmt.Errorf("the teleprompter service is unavailable")
 	}
-	models := h.registry().whisper
-	if models == nil {
-		return "", h.registry().catalogUnavailable("Whisper")
+	engine := resolveTeleprompterEngine(options)
+	if !teleprompter.SupportsEngine(teleprompter.PlatformOrCurrent(h.platform), engine) {
+		return "", fmt.Errorf("the %s engine is not available on this computer", engine)
 	}
 	modelID := resolveTeleprompterModelID(options)
-	model, knownModel := models.Model(modelID)
-	if !knownModel {
-		return "", fmt.Errorf("the selected Whisper model is not in the approved catalog")
-	}
-	modelDir, err := models.Dir(modelID)
-	if err != nil {
-		return encodeBinding(modelAssetRequired(model, models.State(model), models.InstallDir(model.ID)), nil)
+	modelDir, required, err := h.liveModelDir(engine, modelID)
+	if err != nil || required != nil {
+		return encodeBinding(required, err)
 	}
 	started := map[string]string{}
 	for key, value := range options {
 		started[key] = value
 	}
-	started["model"], started["modelDir"] = modelID, modelDir
+	started["engine"], started["model"], started["modelDir"] = engine, modelID, modelDir
 	return encodeBinding(map[string]any{"status": "started"}, svc.teleprompter.Start(started))
+}
+
+// liveModelDir is the verified install directory of a live engine's model, or the first-use gate's answer when it is
+// not installed (a non-nil asset_required result), or an error for a model outside the engine's approved catalog.
+func (h *Host) liveModelDir(engine, modelID string) (string, map[string]any, error) {
+	if engine == teleprompter.EngineMoonshine {
+		models := h.registry().moonshine
+		if models == nil {
+			return "", nil, h.registry().catalogUnavailable("Moonshine")
+		}
+		model, known := models.Model(modelID)
+		if !known {
+			return "", nil, fmt.Errorf("the selected Moonshine model is not in the approved catalog")
+		}
+		dir, err := models.Dir(modelID)
+		if err != nil {
+			return "", liveAssetRequired(engine, previewMoonshineModel(model), moonshineDownloadSize(model), models.State(model), models.InstallDir(model.ID)), nil
+		}
+		return dir, nil, nil
+	}
+	models := h.registry().whisper
+	if models == nil {
+		return "", nil, h.registry().catalogUnavailable("Whisper")
+	}
+	model, known := models.Model(modelID)
+	if !known {
+		return "", nil, fmt.Errorf("the selected Whisper model is not in the approved catalog")
+	}
+	dir, err := models.Dir(modelID)
+	if err != nil {
+		return "", liveAssetRequired(engine, previewModel(model), modelDownloadSize(model), models.State(model), models.InstallDir(model.ID)), nil
+	}
+	return dir, nil, nil
 }
 func (h *Host) TeleprompterStop() (string, error) {
 	if service := h.services().teleprompter; service != nil {
@@ -741,4 +772,24 @@ func voiceAssetRequired(voice tts.Voice, installState, installPath string) map[s
 func modelAssetRequired(model whisper.Model, installState, installPath string) map[string]any {
 	size := modelDownloadSize(model)
 	return map[string]any{"status": "asset_required", "model": previewModel(model), "installState": installState, "downloadSize": size, "diskSize": size, "installPath": installPath}
+}
+
+// liveAssetRequired is TeleprompterStart's first-use gate answer: the same shape as modelAssetRequired plus the live engine the model
+// belongs to, which is also the asset kind the UI installs it as (installKindWhisper, installKindMoonshine). The UI validates it as
+// `TeleprompterStartResult` (ADR 0069).
+func liveAssetRequired(engine string, model map[string]any, size int64, installState, installPath string) map[string]any {
+	return map[string]any{"status": "asset_required", "engine": engine, "model": model, "installState": installState, "downloadSize": size, "diskSize": size, "installPath": installPath}
+}
+
+// previewMoonshineModel is previewModel for a Moonshine catalog entry.
+func previewMoonshineModel(model moonshine.Model) map[string]any {
+	return map[string]any{"id": model.ID, "provider": model.Provider, "displayName": model.DisplayName, "version": model.Version, "publisher": model.Publisher, "license": model.License, "licenseUrl": model.LicenseURL, "modelCardUrl": model.ModelCardURL, "provenanceUrl": model.ProvenanceURL, "attribution": model.Attribution}
+}
+
+func moonshineDownloadSize(model moonshine.Model) int64 {
+	var total int64
+	for _, file := range model.Files {
+		total += file.Size
+	}
+	return total
 }

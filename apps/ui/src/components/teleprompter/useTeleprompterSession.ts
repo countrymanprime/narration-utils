@@ -6,12 +6,13 @@ import { usePacedCursor } from './usePacedCursor';
 import type {
   ManuscriptChapter,
   ManuscriptParagraph,
+  AssetInstallJob,
   TeleprompterDevice,
+  TeleprompterEngine,
   TeleprompterEvent,
   TeleprompterPhase,
   TeleprompterStartResult,
   TeleprompterState,
-  WhisperInstallJob,
 } from '../../types';
 
 export type ModelPrompt = Extract<TeleprompterStartResult, { status: 'asset_required' }>;
@@ -21,6 +22,17 @@ export const MODELS = [
   { value: 'tiny', label: 'Tiny', caption: 'Fastest - keeps up with your voice on most computers' },
   { value: 'small', label: 'Small', caption: 'More accurate - needs a faster computer to keep up' },
 ];
+/** The live engines by name (ADR 0021). Which of them this computer offers is the host's `Teleprompter.engine` choices. */
+export const ENGINE_LABELS: Record<TeleprompterEngine, string> = { whisper: 'Whisper', moonshine: 'Moonshine' };
+const ENGINE_CAPTIONS: Record<TeleprompterEngine, string> = {
+  whisper: 'OpenAI Whisper, run on this computer - the default',
+  moonshine: 'Moonshine, a streaming engine run on this computer',
+};
+const DEFAULT_ENGINE: TeleprompterEngine = 'whisper';
+const isEngine = (value: string): value is TeleprompterEngine => value === 'whisper' || value === 'moonshine';
+/** The engines the host offers, in its order, as toggle options; an engine this UI does not know is left out. */
+const engineOptions = (choices: string[]) =>
+  choices.filter(isEngine).map((engine) => ({ value: engine, label: ENGINE_LABELS[engine], title: ENGINE_CAPTIONS[engine] }));
 // The pre-Phase-2 (input devices PRD) browser-storage device value: migrated once into the global settings file
 // (docs/prds/teleprompter-engines-and-input-devices.prd.md, "Where the device, engine and model choices are stored")
 // and then removed, so it is never read again once the settings value exists. Only the standalone page migrates it
@@ -30,6 +42,7 @@ const LEGACY_DEVICE_KEY = 'narration.teleprompter.device';
 const SETTINGS_TOOL = 'Teleprompter';
 const INPUT_DEVICE_KEY = 'input_device';
 const MODEL_KEY = 'model';
+const ENGINE_KEY = 'engine';
 const ACTIVE_PHASES: TeleprompterPhase[] = ['starting', 'running', 'stopping'];
 const IDLE_STATE: TeleprompterState = { phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null };
 
@@ -95,20 +108,23 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
   const [devicesError, setDevicesError] = useState<string | null>(null);
   const [devicesLoading, setDevicesLoading] = useState(false);
   const [model, setModel] = useState('tiny');
+  const [engine, setEngine] = useState<TeleprompterEngine>(DEFAULT_ENGINE);
+  const [engines, setEngines] = useState(() => engineOptions([DEFAULT_ENGINE]));
   const [host, setHost] = useState<TeleprompterState>(IDLE_STATE);
   const [session, dispatch] = useReducer(sessionReducer, initialSession);
   const [loaded, setLoaded] = useState<{ chapterId: string; paragraphs: ManuscriptParagraph[] }>();
   const [error, setError] = useState('');
   const [prompt, setPrompt] = useState<ModelPrompt>();
-  // The model download: the shared install-poll hook (D4). A session must not start on a view the narrator has already left: the hook
-  // stops and never calls onSuccess once this hook's owner has unmounted.
-  const modelInstall = useAssetInstall<WhisperInstallJob>({
+  // The model download: the shared install-poll hook (D4), through the generic asset bindings, since the missing model is either
+  // engine's (the gate's answer names the engine, which is also the asset kind). A session must not start on a view the narrator has
+  // already left: the hook stops and never calls onSuccess once this hook's owner has unmounted.
+  const modelInstall = useAssetInstall<AssetInstallJob>({
     start: () => {
       if (!prompt) return Promise.reject(new Error('Start reading first.'));
-      return api.whisperInstall(prompt.model.id);
+      return api.assetsInstall(prompt.engine, prompt.model.id);
     },
-    state: (jobId) => api.whisperInstallState(jobId),
-    cancel: (jobId) => api.whisperInstallCancel(jobId),
+    state: (jobId) => api.assetsInstallState(jobId),
+    cancel: (jobId) => api.assetsInstallCancel(jobId),
     onSuccess: async () => {
       setPrompt(undefined);
       await start();
@@ -177,6 +193,13 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
         }
         const modelField = fields.find((item) => item.key === MODEL_KEY);
         if (modelField?.effectiveValue) setModel(modelField.effectiveValue);
+        // The engines are the ones the host can launch on this computer (its choices for the setting), so an engine it
+        // does not offer is never shown or sent.
+        const engineField = fields.find((item) => item.key === ENGINE_KEY);
+        const offered = engineOptions(engineField?.choices ?? [DEFAULT_ENGINE]);
+        if (offered.length > 0) setEngines(offered);
+        const chosen = engineField?.effectiveValue ?? '';
+        if (isEngine(chosen) && offered.some((option) => option.value === chosen)) setEngine(chosen);
       })
       .catch(() => {});
     return () => {
@@ -205,7 +228,7 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
   const start = async () => {
     setError('');
     try {
-      const result = await api.teleprompterStart({ chapter: chapterId, device: device.trim(), model });
+      const result = await api.teleprompterStart({ chapter: chapterId, device: device.trim(), engine, model });
       if (result.status === 'asset_required') {
         modelInstall.reset();
         setPrompt(result);
@@ -226,9 +249,22 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
     modelInstall.reset();
   };
 
+  // Device, engine and model are machine facts kept in the global settings (the input-devices PRD's settled rule), so a choice made
+  // here is the one Settings shows and the next session starts with. Choosing never downloads: a missing model is asked for at Start.
+  const saveChoice = (key: string, value: string) =>
+    void api.saveSettings(SETTINGS_TOOL, 'global', { [key]: value }).catch((reason) => setError(errorText(reason)));
   const changeDevice = (value: string) => {
     setDevice(value);
-    void api.saveSettings(SETTINGS_TOOL, 'global', { [INPUT_DEVICE_KEY]: value }).catch((reason) => setError(errorText(reason)));
+    saveChoice(INPUT_DEVICE_KEY, value);
+  };
+  const changeEngine = (value: string) => {
+    if (!isEngine(value)) return;
+    setEngine(value);
+    saveChoice(ENGINE_KEY, value);
+  };
+  const changeModel = (value: string) => {
+    setModel(value);
+    saveChoice(MODEL_KEY, value);
   };
 
   const reset = () => dispatch({ kind: 'reset' });
@@ -255,7 +291,10 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
     devicesLoading,
     loadDevices,
     model,
-    setModel,
+    changeModel,
+    engine,
+    engines,
+    changeEngine,
     rows,
     cursor,
     active,

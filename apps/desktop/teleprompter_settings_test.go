@@ -64,34 +64,47 @@ func TestSaveSettingsRejectsAnUnknownTeleprompterField(t *testing.T) {
 	}
 }
 
-// Phase 3 ("Teleprompter settings section"): the engine choice, per the PRD's phase table, stays limited to
-// "whisper" until Phase 7 wires Moonshine end to end.
+// Phase 3 ("Teleprompter settings section") added the engine choice; Phase 7 ("Engine choice end to end") offers
+// Moonshine in it wherever the sidecar ships it (Windows, ADR 0107).
 func TestSaveSettingsAcceptsAndPersistsTheTeleprompterEngineChoice(t *testing.T) {
 	host := newTestHostForTeleprompterSettings(t, "")
+	host.platform = "windows"
 
-	value := "whisper"
-	if err := host.saveSettings("Teleprompter", "global", map[string]*string{"engine": &value}); err != nil {
-		t.Fatalf("saveSettings() = %v, want the whisper engine choice accepted", err)
-	}
-
-	effective, source := host.settings.Effective("Teleprompter", "engine", "")
-	if effective != value || source != "global" {
-		t.Fatalf("Effective() = (%q, %q), want (%q, %q)", effective, source, value, "global")
+	for _, value := range []string{"whisper", "moonshine"} {
+		if err := host.saveSettings("Teleprompter", "global", map[string]*string{"engine": &value}); err != nil {
+			t.Fatalf("saveSettings(%q) = %v, want the engine choice accepted on Windows", value, err)
+		}
+		effective, source := host.settings.Effective("Teleprompter", "engine", "")
+		if effective != value || source != "global" {
+			t.Fatalf("Effective() = (%q, %q), want (%q, %q)", effective, source, value, "global")
+		}
 	}
 }
 
-func TestSaveSettingsRejectsAnEngineNotYetOffered(t *testing.T) {
+func TestSaveSettingsRejectsAnEngineThisPlatformCannotLaunch(t *testing.T) {
 	host := newTestHostForTeleprompterSettings(t, "")
+	host.platform = "darwin"
 
-	// Moonshine is provisioned in a later phase (Phase 6/7); the schema does not offer it yet.
 	value := "moonshine"
 	if err := host.saveSettings("Teleprompter", "global", map[string]*string{"engine": &value}); err == nil || !strings.Contains(err.Error(), "unsupported value") {
-		t.Fatalf("saveSettings() = %v, want the moonshine engine rejected: it is a later phase's scope, not this one's", err)
+		t.Fatalf("saveSettings() = %v, want moonshine rejected where the sidecar does not ship it", err)
 	}
 }
 
-// Model choices exposed per engine (the PRD's Decisions Log recommendation): Whisper tiny and small only, since only
-// tiny has measured live-lag data.
+func TestTheEngineChoicesAreTheEnginesThisPlatformCanLaunch(t *testing.T) {
+	for platform, want := range map[string]string{"windows": "whisper,moonshine", "linux": "whisper"} {
+		host := newTestHostForTeleprompterSettings(t, "")
+		host.platform = platform
+		for _, field := range host.settingsSchemas()["Teleprompter"] {
+			if field.key == "engine" && strings.Join(field.choices, ",") != want {
+				t.Errorf("%s: engine choices = %v, want %s", platform, field.choices, want)
+			}
+		}
+	}
+}
+
+// Model choices exposed per engine (the PRD's Decisions Log recommendation): tiny and small only, for either engine
+// (both catalogs have them), since only those have measured live-lag data.
 func TestSaveSettingsAcceptsAndPersistsTheTeleprompterModelChoice(t *testing.T) {
 	host := newTestHostForTeleprompterSettings(t, "")
 
