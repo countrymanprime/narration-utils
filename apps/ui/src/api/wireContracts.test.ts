@@ -25,6 +25,7 @@ import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
 import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
+import { creditsProjectValuesResultSchema, creditsRenderResultSchema, creditTemplateSchema, creditTemplatesSchema } from './schemas/credits';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
 import { teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
@@ -89,6 +90,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'daw-link-folder-mismatch.json': dawLinkResultSchema,
   'daw-link-cancelled.json': dawLinkResultSchema,
   'daw-launch.json': dawLaunchResultSchema,
+  'credits-templates.json': creditTemplatesSchema,
+  'credits-project-values-empty.json': creditsProjectValuesResultSchema,
+  'credits-preview-unresolved.json': creditsRenderResultSchema,
   'system-notice.json': noticeSchema,
   'job-ended-success.json': jobEndedSchema,
   'job-ended-error.json': jobEndedSchema,
@@ -318,6 +322,31 @@ describe('answers of the mock client for the manuscript, Story Bible and project
   it('the DAW launch binding answers (Phase 8)', async () => {
     expectMatches(dawLaunchResultSchema, await createMockApi().launchDaw(), 'mock launch');
   });
+
+  it('the credits template library, project values and preview answers (audiobook-credits-templates.prd.md, Phase 1)', async () => {
+    const api = createMockApi();
+    const templates = await api.creditsTemplates();
+    expectMatches(creditTemplatesSchema, templates, 'mock credit templates');
+    expect(templates.length).toBeGreaterThan(0);
+    const created = await api.saveCreditsTemplate('', 'opening', 'My opening', '[Title], by [Author].');
+    expectMatches(creditTemplateSchema, created, 'mock saved credit template');
+    const updated = await api.saveCreditsTemplate(created.id, 'opening', 'My opening (edited)', '[Title].');
+    expect(updated.id).toBe(created.id);
+    const duplicated = await api.duplicateCreditsTemplate(templates[0].id);
+    expectMatches(creditTemplateSchema, duplicated, 'mock duplicated credit template');
+    expect(duplicated.id).not.toBe(templates[0].id);
+    await api.deleteCreditsTemplate(created.id);
+    expect((await api.creditsTemplates()).some((template) => template.id === created.id)).toBe(false);
+
+    const values = await api.creditsProjectValues();
+    expectMatches(creditsProjectValuesResultSchema, values, 'mock credits project values');
+    const saved = await api.saveCreditsProjectValues({ title: 'Neon', author: 'A. Writer' });
+    expectMatches(creditsProjectValuesResultSchema.shape.values, saved, 'mock saved credits project values');
+    const preview = await api.creditsPreview('[Title], written by [Author], narrated by [Narrator].');
+    expectMatches(creditsRenderResultSchema, preview, 'mock credits preview');
+    expect(preview.text).toBe('Neon, written by A. Writer, narrated by [Narrator].');
+    expect(preview.unresolved).toEqual(['Narrator']);
+  });
 });
 
 describe('answers of the mock client for the settings, voice, model, transcript and tracks bindings', () => {
@@ -493,6 +522,12 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'updateJobState',
       'updateJobCancel',
       'updateInstall',
+      'creditsTemplates',
+      'saveCreditsTemplate',
+      'duplicateCreditsTemplate',
+      'creditsProjectValues',
+      'saveCreditsProjectValues',
+      'creditsPreview',
     ];
     const VOID = [
       'manuscriptImportCancel',
@@ -520,6 +555,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'systemNotify',
       'updateOpenNotes',
       'updateShowDownload',
+      'deleteCreditsTemplate',
     ];
     const NOT_A_REQUEST = [
       'mediaUrl',

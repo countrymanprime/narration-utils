@@ -15,6 +15,20 @@ export function AssetsVerify(arg1:string,arg2:string):Promise<string>;
 
 export function Bootstrap():Promise<Record<string, any>>;
 
+export function CreditsDeleteTemplate(arg1:string):Promise<string>;
+
+export function CreditsDuplicateTemplate(arg1:string):Promise<string>;
+
+export function CreditsPreview(arg1:string):Promise<string>;
+
+export function CreditsProjectValues():Promise<string>;
+
+export function CreditsSaveProjectValues(arg1:string,arg2:string,arg3:string,arg4:string,arg5:string,arg6:string,arg7:string,arg8:string,arg9:string,arg10:string):Promise<string>;
+
+export function CreditsSaveTemplate(arg1:string,arg2:string,arg3:string,arg4:string):Promise<string>;
+
+export function CreditsTemplates():Promise<string>;
+
 export function DawLaunch():Promise<string>;
 
 export function GuideBuild(arg1:boolean):Promise<string>;

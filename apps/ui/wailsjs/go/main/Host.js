@@ -30,6 +30,34 @@ export function Bootstrap() {
   return window['go']['main']['Host']['Bootstrap']();
 }
 
+export function CreditsDeleteTemplate(arg1) {
+  return window['go']['main']['Host']['CreditsDeleteTemplate'](arg1);
+}
+
+export function CreditsDuplicateTemplate(arg1) {
+  return window['go']['main']['Host']['CreditsDuplicateTemplate'](arg1);
+}
+
+export function CreditsPreview(arg1) {
+  return window['go']['main']['Host']['CreditsPreview'](arg1);
+}
+
+export function CreditsProjectValues() {
+  return window['go']['main']['Host']['CreditsProjectValues']();
+}
+
+export function CreditsSaveProjectValues(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) {
+  return window['go']['main']['Host']['CreditsSaveProjectValues'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+}
+
+export function CreditsSaveTemplate(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['Host']['CreditsSaveTemplate'](arg1, arg2, arg3, arg4);
+}
+
+export function CreditsTemplates() {
+  return window['go']['main']['Host']['CreditsTemplates']();
+}
+
 export function DawLaunch() {
   return window['go']['main']['Host']['DawLaunch']();
 }

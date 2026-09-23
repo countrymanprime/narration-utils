@@ -17,6 +17,7 @@ import {
   workJobSchema,
 } from './schemas/manuscript';
 import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
+import { creditsProjectValuesResultSchema, creditsRenderResultSchema, creditTemplateSchema, creditTemplatesSchema } from './schemas/credits';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
@@ -225,6 +226,29 @@ export const wailsClient: NarrationApi = {
   removeRecentProject: (path) => decode(recentProjectsSchema, 'ProjectRemoveRecent', host.ProjectRemoveRecent(path)),
   linkDawFile: () => decode(dawLinkResultSchema, 'ProjectLinkDawFile', host.ProjectLinkDawFile()),
   launchDaw: () => decode(dawLaunchResultSchema, 'DawLaunch', host.DawLaunch()),
+  creditsTemplates: () => decode(creditTemplatesSchema, 'CreditsTemplates', host.CreditsTemplates()),
+  saveCreditsTemplate: (id, kind, name, body) => decode(creditTemplateSchema, 'CreditsSaveTemplate', host.CreditsSaveTemplate(id, kind, name, body)),
+  duplicateCreditsTemplate: (id) => decode(creditTemplateSchema, 'CreditsDuplicateTemplate', host.CreditsDuplicateTemplate(id)),
+  deleteCreditsTemplate: (id) => decode(voidResult, 'CreditsDeleteTemplate', host.CreditsDeleteTemplate(id)),
+  creditsProjectValues: () => decode(creditsProjectValuesResultSchema, 'CreditsProjectValues', host.CreditsProjectValues()),
+  saveCreditsProjectValues: (values) =>
+    decode(
+      creditsProjectValuesResultSchema.shape.values,
+      'CreditsSaveProjectValues',
+      host.CreditsSaveProjectValues(
+        values.title ?? '',
+        values.subtitle ?? '',
+        values.author ?? '',
+        values.series ?? '',
+        values.bookNumber ?? '',
+        values.copyright ?? '',
+        values.year ?? '',
+        values.copyrightHolder ?? '',
+        values.publisher ?? '',
+        values.narrator ?? '',
+      ),
+    ),
+  creditsPreview: (body) => decode(creditsRenderResultSchema, 'CreditsPreview', host.CreditsPreview(body)),
   tracksDiscover: () => decode(tracksDiscoverySchema, 'TracksDiscover', host.TracksDiscover()),
   tracksSelect: (path) => decode(tracksDiscoverySchema, 'TracksSelect', host.TracksSelect(path)),
   tracksList: () => decode(tracksProjectSchema, 'TracksList', host.TracksList()),

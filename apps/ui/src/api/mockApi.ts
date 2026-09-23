@@ -6,6 +6,9 @@ import { chaptersSchema } from './schemas/manuscript';
 import { guideEntitiesSchema, guidePropertiesSchema } from './schemas/storyBible';
 import { bootstrapSchema } from './schemas/system';
 import type {
+  CreditsRenderResult,
+  CreditTemplate,
+  CreditValues,
   GuideEntity,
   GuideEvidence,
   GuideProperty,
@@ -179,6 +182,63 @@ function mockAudioSource(): string | undefined {
 
 const wireContext = (payload: string) => ({ boundary: 'host.binding', payload });
 
+// A JS mirror of apps/desktop/internal/credits.Render: `[Token]` placeholders resolved from `values`, and `{...}`
+// optional segments dropped whole (their own punctuation with them) when any token inside is unresolved (PRD
+// audiobook-credits-templates.prd.md, Open Questions C5/C6). Kept deliberately close to the Go renderer so the mock's
+// preview behaves like the real one; it does not need to be the same implementation, only the same behavior.
+function renderMockCredits(template: string, values: Record<string, string>): CreditsRenderResult {
+  const unresolved: string[] = [];
+  const noteUnresolved = (name: string) => {
+    if (!unresolved.includes(name)) unresolved.push(name);
+  };
+  const renderTokens = (fragment: string, onUnresolved?: (name: string) => void) =>
+    fragment.replace(/\[([^[\]{}]+)]/g, (match, name: string) => {
+      const value = values[name];
+      if (value) return value;
+      onUnresolved?.(name);
+      return match;
+    });
+  let text = '';
+  let remaining = template;
+  for (;;) {
+    const open = remaining.indexOf('{');
+    if (open === -1) {
+      text += renderTokens(remaining, noteUnresolved);
+      break;
+    }
+    const closeIndex = remaining.indexOf('}', open);
+    if (closeIndex === -1) {
+      text += renderTokens(remaining, noteUnresolved);
+      break;
+    }
+    text += renderTokens(remaining.slice(0, open), noteUnresolved);
+    const segment = remaining.slice(open + 1, closeIndex);
+    let complete = true;
+    const resolvedSegment = renderTokens(segment, () => {
+      complete = false;
+    });
+    if (complete) text += resolvedSegment;
+    remaining = remaining.slice(closeIndex + 1);
+  }
+  const words = text.split(/\s+/).filter(Boolean).length;
+  return { text, words, unresolved };
+}
+
+function resolveMockCreditValues(values: CreditValues, narratorGlobal: string): Record<string, string> {
+  return {
+    Title: values.title ?? '',
+    Subtitle: values.subtitle ?? '',
+    Author: values.author ?? '',
+    Series: values.series ?? '',
+    'Book Number': values.bookNumber ?? '',
+    Copyright: values.copyright ?? '',
+    Year: values.year ?? '',
+    'Copyright Holder': values.copyrightHolder ?? '',
+    Publisher: values.publisher ?? '',
+    Narrator: values.narrator || narratorGlobal,
+  };
+}
+
 /** Answers that go through the real `parseWire` with a payload of the wrong shape, so the failure screens can be seen without a host. */
 function invalidPayloadOverrides(which: 'bootstrap' | 'manuscript' | 'storybible', base: NarrationApi): Partial<NarrationApi> {
   switch (which) {
@@ -287,6 +347,33 @@ export function createMockApi(
     { path: 'C:/Projects/Alice-in-Wonderland', name: 'Alice’s Adventures in Wonderland', lastOpened: '2026-09-15T09:00:00Z' },
     { path: 'C:/Projects/Voltage-and-the-Undercroft', name: 'Voltage and the Undercroft', lastOpened: '2026-09-10T18:30:00Z' },
   ];
+  // Mirrors apps/desktop/internal/credits' shipped defaults (PRD audiobook-credits-templates.prd.md, Phase 1) so a
+  // mock session shows the same starting library as the real host.
+  let creditTemplates: CreditTemplate[] = [
+    {
+      id: 'default-opening-acx-minimum',
+      kind: 'opening',
+      name: 'ACX minimum (opening)',
+      body: '[Title], written by [Author], narrated by [Narrator].',
+      builtIn: true,
+    },
+    {
+      id: 'default-closing-acx-best-practice',
+      kind: 'closing',
+      name: 'ACX best practice (closing)',
+      body: 'You have been listening to [Title], written by [Author], narrated by [Narrator]. The End.',
+      builtIn: true,
+    },
+    {
+      id: 'default-with-copyright',
+      kind: 'closing',
+      name: 'With copyright (contractual)',
+      body: '[Title]. Written by [Author]. Read by [Narrator]. Copyright by [Copyright].',
+      builtIn: true,
+    },
+  ];
+  let nextCreditTemplateId = 1;
+  let creditValues: CreditValues = {};
   const projectAttachSubscribers = new Set<(state: ProjectAttachState) => void>();
   const attachProject = (path: string, name?: string) => {
     projectFolder = path;
@@ -1067,6 +1154,48 @@ export function createMockApi(
     // The mock never grows a real heartbeat (dawReachable stays whatever Bootstrap already reports, ADR 0092
     // Phase 7 is Go/Lua only): this just answers as if REAPER accepted the launch.
     launchDaw: async () => ({ launched: true, path: 'C:/Program Files/REAPER (x64)/reaper.exe', source: 'uninstall_registry' }),
+    creditsTemplates: async () => wireClone(creditTemplates),
+    saveCreditsTemplate: async (id, kind, name, body) => {
+      if (id) {
+        const index = creditTemplates.findIndex((template) => template.id === id);
+        const updated: CreditTemplate = { id, kind, name, body, builtIn: index >= 0 ? creditTemplates[index].builtIn : false };
+        if (index >= 0) creditTemplates[index] = updated;
+        else creditTemplates.push(updated);
+        return wireClone(updated);
+      }
+      const created: CreditTemplate = { id: `mock-credit-template-${nextCreditTemplateId++}`, kind, name, body, builtIn: false };
+      creditTemplates.push(created);
+      return wireClone(created);
+    },
+    duplicateCreditsTemplate: async (id) => {
+      const original = creditTemplates.find((template) => template.id === id);
+      if (!original) throw new Error(`No credit template with id "${id}"`);
+      const duplicate: CreditTemplate = {
+        id: `mock-credit-template-${nextCreditTemplateId++}`,
+        kind: original.kind,
+        name: `${original.name} copy`,
+        body: original.body,
+        builtIn: false,
+      };
+      creditTemplates.push(duplicate);
+      return wireClone(duplicate);
+    },
+    deleteCreditsTemplate: async (id) => {
+      creditTemplates = creditTemplates.filter((template) => template.id !== id);
+    },
+    creditsProjectValues: async () => ({
+      values: wireClone(creditValues),
+      narratorGlobal: settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '',
+      suggestions: { Title: 'Alice’s Adventures in Wonderland', Author: 'Lewis Carroll' },
+    }),
+    saveCreditsProjectValues: async (values) => {
+      creditValues = wireClone(values);
+      return wireClone(creditValues);
+    },
+    creditsPreview: async (body) => {
+      const narratorGlobal = settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '';
+      return renderMockCredits(body, resolveMockCreditValues(creditValues, narratorGlobal));
+    },
     tracksDiscover: async () => wireClone(tracksDiscovery),
     tracksSelect: async (path) => {
       tracksDiscovery = { ...tracksDiscovery, selected: path };

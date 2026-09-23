@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/credits"
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
@@ -36,7 +37,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 17
+const hostAPIVersion = 18
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -71,7 +72,10 @@ type Host struct {
 	reachability *daw.Reachability
 	teleprompter *teleprompter.Service
 	recents      *recents.Store
-	log          *hostlog.Log
+	// creditTemplates is the narrator's own credit-template library (audiobook-credits-templates.prd.md, Phase 1):
+	// user-level like recents, set once in NewHost and never swapped by a project switch.
+	creditTemplates *credits.TemplateStore
+	log             *hostlog.Log
 	// updates asks GitHub for a newer release and remembers the answer (ADR 0072). It is set once in NewHost and never swapped, so it is
 	// read directly, like recents.
 	updates *update.Checker
@@ -151,11 +155,13 @@ func NewHost() *Host {
 	var host *Host
 	reporter := &persist.Reporter{Log: func(kind, message string) { _ = logger.Report(kind, message) }, Notify: func(text string) { host.noticeNarrator(text) }}
 	store, notes, recent := settings.New(repoRoot, ""), manuscript.New(""), recents.New(recentProjectsPath())
+	templates := credits.NewTemplateStore(creditTemplatesPath())
 	store.SetPersist(reporter)
 	notes.SetPersist(reporter)
 	recent.SetPersist(reporter)
+	templates.SetPersist(reporter)
 	notes.SetOnJobEnd(func(job manuscript.ImportJob) { host.importJobEnded(job) })
-	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
 	return host
 }
 
@@ -187,6 +193,21 @@ func recentProjectsPath() string {
 		return filepath.Join(value, "AppData", "Roaming", "narration-utils", "recent-projects.json")
 	}
 	return filepath.Join("AppData", "Roaming", "narration-utils", "recent-projects.json")
+}
+
+// creditTemplatesPath resolves the per-user credit-templates file, alongside
+// recent-projects.json (PRD audiobook-credits-templates.prd.md, Open Question
+// C7). Like recentProjectsPath, this mirrors settings.Store's own %APPDATA%-
+// with-%USERPROFILE%-fallback chain rather than sharing it, since it is only
+// a few lines and user-level storage is not project-scoped.
+func creditTemplatesPath() string {
+	if value := os.Getenv("APPDATA"); value != "" {
+		return filepath.Join(value, "narration-utils", "credit-templates.json")
+	}
+	if value := os.Getenv("USERPROFILE"); value != "" {
+		return filepath.Join(value, "AppData", "Roaming", "narration-utils", "credit-templates.json")
+	}
+	return filepath.Join("AppData", "Roaming", "narration-utils", "credit-templates.json")
 }
 
 func (h *Host) Startup(ctx context.Context) {
@@ -845,7 +866,10 @@ type fieldSchema struct {
 }
 
 var fieldSchemas = map[string][]fieldSchema{
-	"General":           {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}, {"notifications", "Notify me when a long task finishes while I'm away", "bool", nil}},
+	// narrator_name is the global default for the [Narrator] credits token (PRD audiobook-credits-templates.prd.md,
+	// Open Questions C2 and C7: "a flat General.narrator_name text setting"); a project's own credits values may
+	// override it (project.Manifest.Credits.Narrator, credits.Values.Resolve).
+	"General":           {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}, {"notifications", "Notify me when a long task finishes while I'm away", "bool", nil}, {"narrator_name", "Narrator name (default for credits)", "text", nil}},
 	"Manuscript":        {{"color_note", "Note color", "color", nil}},
 	"ManuscriptGuide":   {{"spacy_model", "spaCy model", "choice", []string{"en_core_web_sm", "en_core_web_lg"}}, {"build_after_import", "Build the Story Bible after import", "bool", nil}},
 	"Piper":             {{"tts_provider", "TTS provider", "choice", []string{"piper"}}, {"tts_voice_id", "Preview voice", "choice", []string{"en_US-ljspeech-high"}}},
