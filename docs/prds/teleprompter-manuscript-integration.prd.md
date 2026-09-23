@@ -175,7 +175,7 @@ Phases 1 to 7 (modal, marks, seek, flags) need no REAPER and are the first shipp
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Dialog full-size variant | `Dialog` gains `size="full"` only; stories and atlas coverage. Modality (Escape, focus trap, initial focus, hidden siblings) is delivered ([ADR 0048](../adr/0048-every-dialog-is-one-modal-shell-and-confirms-are-alert-dialogs.md)) | pending | 3, 6, 8 | - | - |
+| 1 | Dialog full-size variant | `Dialog` gains `size="full"` only; stories and atlas coverage. Modality (Escape, focus trap, initial focus, hidden siblings) is delivered ([ADR 0048](../adr/0048-every-dialog-is-one-modal-shell-and-confirms-are-alert-dialogs.md)) | complete | 3, 6, 8 | - | - |
 | 2 | Session core and read-aloud modal | Extract `useTeleprompterSession` and `ReadAlongView`; add `ReadAloudDialog`, chapter-header button, key, `MicrophoneField` seam; page unchanged in behavior | pending | 3, 6, 8 | 1 | - |
 | 3 | Seek channel | Sidecar `--control-file`, `--start-word`, `reset_to`; Go `TeleprompterSeek`; contract and mock; host API bump; ADR | pending | 1, 2, 8 (6 with rebases) | - | - |
 | 4 | Seek UI | "Start here" / "Go back to here" on a word; back-seek follows via `jump`; visual states | pending | 6, 8 | 2, 3 | - |
@@ -303,6 +303,7 @@ Cross-cutting: every phase re-checks `docs/adr/` numbering immediately before wr
 | Workflow | plan, impact scan, TDD, `pnpm check`, spec guard, cleanup (prior decision, CLAUDE.md) | Fast check only | History of silent regressions |
 | Nothing merges without the user (prior decision) | User merges every PR | Auto-merge | Standing rule |
 | Flag persistence, undo block for cursor punch, word-to-time source, matcher location, close behavior | Recommendations under Open Questions | See there | Pending the user's answers |
+| Dialog modality ownership (implementation plan D4) | The Base UI foundation stack owns dialog modality (delivered, [ADR 0048](../adr/0048-every-dialog-is-one-modal-shell-and-confirms-are-alert-dialogs.md)); this PRD's Phase 1 adds only the `size="full"` variant on the existing modal shell, no second modality ADR | A modality ADR scoped to this PRD | Avoids re-litigating a decision the foundation stack already settled; matches the "Full-size dialog and modality scope" open question, resolved |
 
 ## Research Summary
 

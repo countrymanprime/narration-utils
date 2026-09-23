@@ -114,3 +114,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0089](0089-a-docx-table-of-contents-becomes-the-authoritative-chapter-list-above-a-match-threshold.md) | A docx's own table of contents becomes the authoritative chapter list above a match threshold | Accepted |
 | [0090](0090-the-page-flip-reader-hides-reference-chapters-superseding-the-reader-half-of-adr-0005.md) | The page-flip reader hides reference chapters, superseding the reader half of ADR 0005 | Accepted |
 | [0092](0092-reaper-executable-discovery-heartbeat-mechanism-and-script-plus-project-launch-are-resolved.md) | REAPER executable discovery, heartbeat mechanism and script-plus-project launch are resolved | Accepted |
+| [0094](0094-dialog-gains-a-full-size-variant-that-fills-the-viewport-with-a-margin.md) | Dialog gains a full-size variant that fills the viewport with a margin | Accepted |
