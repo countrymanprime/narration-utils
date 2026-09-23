@@ -5,7 +5,7 @@
 -- This file owns the command loop and the registry that dispatches to the
 -- commands; every command lives in a feature file listed in FEATURE_FILES
 -- (narration_compare.lua, narration_line_identity.lua, narration_pickups.lua,
--- narration_render.lua, narration_project_state.lua, narration_take_review.lua).
+-- narration_render.lua, narration_project_state.lua, narration_take_review.lua, narration_navigation.lua).
 -- To add a command, put it in a new narration_<feature>.lua that returns
 -- `function(registry)` and calls `registry.register(name, function(ctx, args) ... end)`,
 -- list the file below and in scripts/release/reaper-files.mjs, and write its
@@ -22,6 +22,7 @@ M.FEATURE_FILES = {
   'narration_render.lua',
   'narration_project_state.lua',
   'narration_take_review.lua',
+  'narration_navigation.lua',
 }
 
 local function own_directory()

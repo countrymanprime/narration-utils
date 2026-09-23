@@ -23,12 +23,15 @@ func (contractManuscriptLookup) ParagraphID(_ string, globalIndex int) (string, 
 	return fmt.Sprintf("chapter-1-p%d", globalIndex), true
 }
 
-// compareMarkerRow builds a row the way transcript.Service builds one from a COMPARE_MARKER event.
+// compareMarkerRow builds a row the way transcript.Service builds one from a COMPARE_MARKER event, with the item, take
+// and track GUIDs the bridge appends (review-dashboard PRD Phase 6), which a finding is navigated by.
 func compareMarkerRow(paragraph, itemIndex int, srcpos, projectTime float64, kind, doc, audio, script, audioContext, state, existing string) map[string]any {
 	return map[string]any{
 		"id": fmt.Sprintf("%d_%.3f", itemIndex, srcpos), "kind": kind, "docText": doc, "audioText": audio,
 		"projectTime": projectTime, "itemIndex": itemIndex, "srcpos": srcpos, "chapter": "Chapter One", "paragraph": paragraph,
 		"scriptContext": script, "audioContext": audioContext, "markerState": state, "existingMarkerName": existing,
+		"itemGuid": fmt.Sprintf("{A1B2C3D4-0000-4000-8000-%012d}", itemIndex+1), "takeGuid": "{A1B2C3D4-0000-4000-8000-0000000000A1}",
+		"trackGuid": "{A1B2C3D4-0000-4000-8000-0000000000F1}",
 	}
 }
 

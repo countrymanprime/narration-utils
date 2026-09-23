@@ -308,3 +308,27 @@ func TestRowIDMatchesTheLuaBridgeFormat(t *testing.T) {
 		t.Errorf("rowID(0, 0.5) = %q, want %q", got, want)
 	}
 }
+
+func TestBuildFindingsCarriesTheREAPERIdentityOfEachRow(t *testing.T) {
+	rows := fixtureRows()
+	rows[0]["itemGuid"], rows[0]["takeGuid"], rows[0]["trackGuid"] = "{I}", "{T}", "{K}"
+	grouped, err := BuildFindings(rows, resultsFixture(), manifestFixture(), findings.Project{Path: "p"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	withIdentity := 0
+	for _, all := range grouped {
+		for _, f := range all {
+			if f.Source.ItemGUID == "" {
+				continue
+			}
+			withIdentity++
+			if f.Source.TakeGUID != "{T}" || f.Source.TrackGUID != "{K}" || f.Source.ItemGUID != "{I}" {
+				t.Errorf("Source = %+v", f.Source)
+			}
+		}
+	}
+	if withIdentity != 1 {
+		t.Fatalf("%d findings carry an item GUID, want exactly the one row that had it", withIdentity)
+	}
+}

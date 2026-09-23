@@ -9,7 +9,7 @@ import (
 // what Lua emits, and these prove what Go accepts, so the two halves of the protocol are tied to the same lines.
 var realEvents = map[string][]string{
 	"COMPARE_PREPARED":      {"COMPARE_PREPARED", "r1", "C:/s/manifest.json", "C:/p/narration-utils/manuscript/manuscript.json", "Narrator", "C:/s/diff.txt", "3"},
-	"COMPARE_MARKER":        {"COMPARE_MARKER", "r1", "0@12.500000", "MISREAD", "MISREAD: alice", "Alice", "Alyss", "102.5", "0", "Chapter 1", "4", "script ctx", "audio ctx", "pending", "", "12.5"},
+	"COMPARE_MARKER":        {"COMPARE_MARKER", "r1", "0@12.500000", "MISREAD", "MISREAD: alice", "Alice", "Alyss", "102.5", "0", "Chapter 1", "4", "script ctx", "audio ctx", "pending", "", "12.5", "{AAAAAAAA-0000-4000-8000-000000000001}", "{AAAAAAAA-0000-4000-8000-0000000000A1}", "{00000001-0000-4000-8000-000000000001}"},
 	"COMPARE_INSPECTED":     {"COMPARE_INSPECTED", "r1", "2 discrepancy(s) found.", "2", "0"},
 	"COMPARE_EXPORT_MARKER": {"COMPARE_EXPORT_MARKER", "r1", "0@12.500000", "exported", ""},
 	"COMPARE_EXPORTED":      {"COMPARE_EXPORTED", "r1", "2", "1"},
@@ -29,6 +29,12 @@ var realEvents = map[string][]string{
 	"PROJECT_STATE":         {"PROJECT_STATE", "t1", "7", "C:/p/Book.rpp"},
 	"TAKE_CREATED":          {"TAKE_CREATED", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}", "{BBBBBBBB-0000-4000-8000-000000000002}"},
 	"TAKE_STALE":            {"TAKE_STALE", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}"},
+	// integrations/reaper/tests/navigation_test.lua (review-dashboard PRD Phase 6).
+	"NAVIGATED":     {"NAVIGATED", "n1", "{AAAAAAAA-0000-4000-8000-000000000001}", "102.500000"},
+	"LOOP_STARTED":  {"LOOP_STARTED", "l1", "{AAAAAAAA-0000-4000-8000-000000000001}", "101.000000", "105.000000"},
+	"LOOP_STOPPED":  {"LOOP_STOPPED", "s1", "3", "0"},
+	"PONG":          {"PONG", "p1", "1", "0", "0"},
+	"FINDING_STALE": {"FINDING_STALE", "n1", "{FFFFFFFF-0000-4000-8000-00000000FFFF}", "item"},
 }
 
 func TestEveryRealEventPassesItsTable(t *testing.T) {
@@ -74,8 +80,8 @@ func TestATruncatedMarkerIsAnErrorThatNamesTheEventAndCountsTheFields(t *testing
 
 func TestAnOlderScriptThatSendsFewerOptionalMarkerFieldsIsAccepted(t *testing.T) {
 	// Version skew is real for the Lua script: the user imports it into REAPER, so it can be older than the host. The fields after the
-	// ninth are optional and default when absent.
-	for cut := 9; cut <= 16; cut++ {
+	// ninth are optional and default when absent, including the three GUIDs a script older than Phase 6 does not send.
+	for cut := 9; cut <= 19; cut++ {
 		if err := CheckEvent(realEvents["COMPARE_MARKER"][:cut]); err != nil {
 			t.Errorf("a marker of %d fields: %v", cut, err)
 		}
@@ -97,6 +103,10 @@ func TestANumberThatIsNotANumberIsAnErrorThatNamesTheFieldAndNeverQuotesIt(t *te
 		{"LINES_STAMPED", 4, "missing"},
 		{"REGIONS_CREATED", 4, "invalid"},
 		{"COMPARE_PREPARED", 6, "items"},
+		{"NAVIGATED", 3, "projectTime"},
+		{"LOOP_STARTED", 4, "end"},
+		{"LOOP_STOPPED", 2, "restored"},
+		{"PONG", 3, "looping"},
 	}
 	for _, c := range cases {
 		fields := append([]string(nil), realEvents[c.tag]...)
@@ -141,7 +151,7 @@ func TestAnEmptyEventIsAnError(t *testing.T) {
 
 func TestTheFieldNamesOfARealEventAreListedForDiagnosticsWithoutValues(t *testing.T) {
 	names := FieldNames("COMPARE_MARKER")
-	if len(names) != 15 || names[6] != "projectTime" || names[14] != "srcpos" {
+	if len(names) != 18 || names[6] != "projectTime" || names[14] != "srcpos" || names[15] != "itemGuid" || names[17] != "trackGuid" {
 		t.Fatalf("names = %v", names)
 	}
 	if FieldNames("SOMETHING_NEW") != nil {

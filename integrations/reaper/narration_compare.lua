@@ -63,7 +63,20 @@ local function prepare_compare(session_dir, runs, run_id)
           rate = 1
         end
         local index = #manifest
-        mapping[index] = { item = entry.item, take = take, pos = entry.pos, startoffs = startoffs, rate = rate }
+        -- The identity is read now, with the audio it describes: a row reported later names these GUIDs even if the
+        -- narrator edits meanwhile, so going to it by GUID either finds this audio or reports it stale.
+        local _, item_guid = reaper.GetSetMediaItemInfo_String(entry.item, 'GUID', '', false)
+        local _, take_guid = reaper.GetSetMediaItemTakeInfo_String(take, 'GUID', '', false)
+        mapping[index] = {
+          item = entry.item,
+          take = take,
+          pos = entry.pos,
+          startoffs = startoffs,
+          rate = rate,
+          item_guid = item_guid or '',
+          take_guid = take_guid or '',
+          track_guid = reaper.GetTrackGUID(track) or '',
+        }
         manifest[#manifest + 1] = string.format('%d|%s|%.6f|%.6f', index, source_file, startoffs, reaper.GetMediaItemInfo_Value(entry.item, 'D_LENGTH') * rate)
       end
     end
@@ -152,7 +165,11 @@ local function inspect_results(session_dir, runs, run_id, path)
           fields[10] or '',
           marker_state,
           existing_name or '',
-          srcpos
+          srcpos,
+          -- Appended, never reordered (review-dashboard PRD Phase 6): the host navigates a finding by these GUIDs.
+          entry.item_guid,
+          entry.take_guid,
+          entry.track_guid
         )
       end
     end

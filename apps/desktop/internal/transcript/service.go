@@ -136,6 +136,15 @@ func (s *Service) snapshotLocked() map[string]any {
 	delete(result, "manifest")
 	delete(result, "output")
 	delete(result, "diffPath")
+	if rows, ok := result["rows"].([]any); ok {
+		for _, row := range rows {
+			if fields, ok := row.(map[string]any); ok {
+				delete(fields, rowItemGUID)
+				delete(fields, rowTakeGUID)
+				delete(fields, rowTrackGUID)
+			}
+		}
+	}
 	return result
 }
 func (s *Service) Snapshot() map[string]any {
@@ -410,6 +419,9 @@ func (s *Service) Handle(fields []string) {
 			rows := s.state["rows"].([]map[string]any)
 			doc, audio := fields[5], fields[6]
 			row := map[string]any{"id": fields[2], "kind": fields[3], "name": fields[4], "docText": doc, "audioText": audio, "projectTime": floatAt(fields, 7), "itemIndex": intAt(fields, 8), "srcpos": floatAt(fields, 15), "chapter": textAt(fields, 9), "paragraph": intAt(fields, 10), "scriptContext": fallback(textAt(fields, 11), doc), "audioContext": fallback(textAt(fields, 12), audio), "markerState": fallback(textAt(fields, 13), "pending"), "existingMarkerName": textAt(fields, 14)}
+			// The REAPER identity a script from review-dashboard PRD Phase 6 on appends (empty from an older one). It feeds the
+			// findings adapter and stays out of the snapshot (snapshotLocked), so the Transcript page's rows are unchanged.
+			row[rowItemGUID], row[rowTakeGUID], row[rowTrackGUID] = textAt(fields, 16), textAt(fields, 17), textAt(fields, 18)
 			s.state["rows"] = append(rows, row)
 			changed = true
 		}

@@ -214,5 +214,77 @@
     "file": "narration_take_review.lua",
     "find": "if not core.file_exists(payload.source_file) then",
     "replace": "if false then"
+  },
+  {
+    "name": "a stale navigation GUID resolves to another item",
+    "file": "narration_navigation.lua",
+    "find": "local item = wanted_item ~= '' and find_item(wanted_item) or nil",
+    "replace": "local item = wanted_item ~= '' and find_item(wanted_item) or reaper.GetMediaItem(0, 0)"
+  },
+  {
+    "name": "a take GUID no longer on the item falls back to the active take",
+    "file": "narration_navigation.lua",
+    "find": "  local take = find_take(item, wanted_take)\n  if not take then\n    return nil, nil, take_text, 'take'",
+    "replace": "  local take = find_take(item, wanted_take) or reaper.GetActiveTake(item)\n  if not take then\n    return nil, nil, take_text, 'take'"
+  },
+  {
+    "name": "navigate_item goes to a spot the item no longer covers",
+    "file": "narration_navigation.lua",
+    "find": "if target < first - EDGE_TOLERANCE or target > last + EDGE_TOLERANCE then",
+    "replace": "if false then"
+  },
+  {
+    "name": "a loop window outside the item is played anyway",
+    "file": "narration_navigation.lua",
+    "find": "if window_end <= window_start then",
+    "replace": "if false then"
+  },
+  {
+    "name": "navigation does not refuse while REAPER is recording",
+    "file": "narration_navigation.lua",
+    "find": "local function recording()\n  return math.floor(reaper.GetPlayState() / 4) % 2 == 1",
+    "replace": "local function recording()\n  return false"
+  },
+  {
+    "name": "a second loop overwrites what the narrator had before the first",
+    "file": "narration_navigation.lua",
+    "find": "  if not state.loop then\n    state.loop = { saved = capture() }",
+    "replace": "  if true then\n    state.loop = { saved = capture() }"
+  },
+  {
+    "name": "stop_loop overwrites a time selection the narrator changed during the loop",
+    "file": "narration_navigation.lua",
+    "find": "if same_range({ first, last }, loop.window[1], loop.window[2]) then",
+    "replace": "if true then"
+  },
+  {
+    "name": "stop_loop does not restore repeat",
+    "file": "narration_navigation.lua",
+    "find": "    reaper.GetSetRepeat(loop.saved.repeat_on)\n",
+    "replace": "\n"
+  },
+  {
+    "name": "stop_loop restores twice",
+    "file": "narration_navigation.lua",
+    "find": "  state.loop = nil\n  if playing() and not recording() then",
+    "replace": "  if playing() and not recording() then"
+  },
+  {
+    "name": "stop_loop stops playback it did not start",
+    "file": "narration_navigation.lua",
+    "find": "    event(session_dir, 'LOOP_STOPPED', run_id, 0, 0)\n    return",
+    "replace": "    reaper.OnStopButton()\n    event(session_dir, 'LOOP_STOPPED', run_id, 0, 0)\n    return"
+  },
+  {
+    "name": "the script ending with a loop running does not restore",
+    "file": "narration_navigation.lua",
+    "find": "        if state.loop then\n          restore(state.loop)",
+    "replace": "        if false then\n          restore(state.loop)"
+  },
+  {
+    "name": "compare markers carry the item's GUID read at inspect time instead of at prepare time",
+    "file": "narration_compare.lua",
+    "find": "          entry.item_guid,\n",
+    "replace": "          select(2, reaper.GetSetMediaItemInfo_String(entry.item, 'GUID', '', false)),\n"
   }
 ]

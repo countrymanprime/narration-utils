@@ -40,7 +40,9 @@ var eventSpecs = map[string]eventSpec{
 	"COMPARE_PREPARED": {required: []fieldSpec{text("run"), text("manifest"), text("manuscript"), text("track"), text("diff"), count("items")}},
 	"COMPARE_MARKER": {
 		required: []fieldSpec{text("run"), text("id"), text("kind"), text("name"), text("docText"), text("audioText"), number("projectTime"), count("itemIndex")},
-		optional: []fieldSpec{text("chapter"), count("paragraph"), text("scriptContext"), text("audioContext"), text("markerState"), text("existingMarkerName"), number("srcpos")},
+		optional: []fieldSpec{text("chapter"), count("paragraph"), text("scriptContext"), text("audioContext"), text("markerState"), text("existingMarkerName"), number("srcpos"),
+			// Appended by review-dashboard PRD Phase 6 (never reordered): the identity a finding is navigated by.
+			text("itemGuid"), text("takeGuid"), text("trackGuid")},
 	},
 	"COMPARE_INSPECTED":     {required: []fieldSpec{text("run"), text("summary"), count("total"), count("alreadyMarked")}},
 	"COMPARE_EXPORT_MARKER": {required: []fieldSpec{text("run"), text("row"), text("state")}, optional: []fieldSpec{text("existingName")}},
@@ -71,6 +73,14 @@ var eventSpecs = map[string]eventSpec{
 	"PROJECT_STATUS": {required: []fieldSpec{text("run"), text("rpp"), count("unsaved")}},
 	"TAKE_CREATED":   {required: []fieldSpec{text("run"), text("targetItemGuid"), text("newTakeGuid")}},
 	"TAKE_STALE":     {required: []fieldSpec{text("run"), text("guid")}},
+	// Going to and looping a finding (narration_navigation.lua, review-dashboard PRD Phase 6, bridge.Navigator). Times are
+	// project seconds; restored/kept count the time selection, loop points and repeat; looping and playing are 0 or 1;
+	// reason is item, take or range.
+	"NAVIGATED":     {required: []fieldSpec{text("run"), text("itemGuid"), number("projectTime")}},
+	"LOOP_STARTED":  {required: []fieldSpec{text("run"), text("itemGuid"), number("start"), number("end")}},
+	"LOOP_STOPPED":  {required: []fieldSpec{text("run"), count("restored"), count("kept")}},
+	"PONG":          {required: []fieldSpec{text("run"), text("version"), count("looping"), count("playing")}},
+	"FINDING_STALE": {required: []fieldSpec{text("run"), text("guid"), text("reason")}},
 }
 
 // CheckEvent validates one decoded event line (the tag first) against the table. The error names the tag, the position and name of
