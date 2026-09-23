@@ -94,3 +94,53 @@ def test_marker_confidence_for_a_span_uses_the_larger_boundary_gap():
 
     assert label == "high"
     assert gap == pytest.approx(clear_pause)
+
+
+# ---------------------------------------------------------------------------
+# what the take markers ignore and tolerate (docs/utilities/transcript-compare.md, Acceptance)
+
+
+def _markers(title, paragraphs, said):
+    _units, tokens, unit_idx, raw_words = compare.build_chapter_units({"title": title, "paragraphs": paragraphs})
+    words = [(word, index * 0.4, index * 0.4 + 0.3) for index, word in enumerate(said.split())]
+    markers, covered_range, _alignment = compare.diff_and_build_markers(tokens, unit_idx, raw_words, words, 1)
+    return [(marker[1], marker[3], marker[4]) for marker in markers], covered_range
+
+
+PARAGRAPHS = ["Ada opened the ledger at the first page.", "She read the column twice.", "Then she closed the book."]
+
+
+def test_a_partial_recording_marks_no_skips_outside_the_recorded_span():
+    markers, covered_range = _markers("Chapter 1", PARAGRAPHS, "she read the column twice")
+
+    assert markers == []
+    assert covered_range == (1, 1)
+
+
+def test_a_skip_inside_the_recorded_span_is_marked():
+    markers, _covered = _markers("Chapter 1", PARAGRAPHS, "ada opened the ledger at the first page then she closed the book")
+
+    assert markers == [("SKIPPED", "she read the column twice", "")]
+
+
+def test_a_spoken_title_is_not_extra_and_an_omitted_one_is_not_skipped():
+    spoken, _ = _markers("Chapter 1", PARAGRAPHS, "chapter one ada opened the ledger at the first page she read the column twice then she closed the book")
+    omitted, _ = _markers("Chapter 1", PARAGRAPHS, "ada opened the ledger at the first page she read the column twice then she closed the book")
+
+    assert spoken == [] and omitted == []
+
+
+def test_homophones_spoken_numbers_and_split_compounds_are_not_misreads():
+    paragraphs = ["They're carrying 214 barrels and a notebook.", "It sailed in 1847, a well-known year."]
+    markers, _ = _markers("Chapter 1", paragraphs, "their carrying two hundred fourteen barrels and a note book it sailed in 1847 a well known year")
+
+    assert markers == []
+
+
+def test_an_invented_name_spelled_another_way_is_a_misread_until_it_has_an_equivalence(monkeypatch):
+    before, _ = _markers("Chapter 1", ["At dawn Maelis opened the ledger."], "at dawn maylis opened the ledger")
+    monkeypatch.setattr(compare, "_CUSTOM_CANON", compare._build_canon([("maelis", "maylis")]))
+    after, _ = _markers("Chapter 1", ["At dawn Maelis opened the ledger."], "at dawn maylis opened the ledger")
+
+    assert before == [("MISREAD", "maelis", "maylis")]
+    assert after == []

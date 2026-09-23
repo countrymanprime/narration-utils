@@ -1,0 +1,998 @@
+{
+ "c1-complete-title-omitted": {
+  "coveredRange": [
+   0,
+   6
+  ],
+  "markers": [],
+  "opcodes": [
+   [
+    "delete",
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    "equal",
+    2,
+    211,
+    0,
+    209
+   ]
+  ]
+ },
+ "c1-multiple-items-trimmed": {
+  "coveredRange": [
+   0,
+   6
+  ],
+  "markers": [],
+  "opcodes": [
+   [
+    "delete",
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    "equal",
+    2,
+    211,
+    0,
+    209
+   ]
+  ]
+ },
+ "c1-retakes-false-starts": {
+  "coveredRange": [
+   0,
+   6
+  ],
+  "markers": [
+   [
+    22.8,
+    "EXTRA",
+    "EXTRA: 'so she was considering in her own sorry ...'",
+    "",
+    "so she was considering in her own sorry ...",
+    1,
+    59,
+    59,
+    57,
+    69,
+    "high",
+    1.0
+   ],
+   [
+    76.0,
+    "EXTRA",
+    "EXTRA: 'once more in another moment down went alice ...'",
+    "",
+    "once more in another moment down went alice ...",
+    6,
+    171,
+    171,
+    181,
+    204,
+    "high",
+    2.0
+   ]
+  ],
+  "opcodes": [
+   [
+    "delete",
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    "equal",
+    2,
+    59,
+    0,
+    57
+   ],
+   [
+    "insert",
+    59,
+    59,
+    57,
+    69
+   ],
+   [
+    "equal",
+    59,
+    171,
+    69,
+    181
+   ],
+   [
+    "insert",
+    171,
+    171,
+    181,
+    204
+   ],
+   [
+    "equal",
+    171,
+    211,
+    204,
+    244
+   ]
+  ]
+ },
+ "c1-skipped-paragraph": {
+  "coveredRange": [
+   0,
+   6
+  ],
+  "markers": [
+   [
+    44.8,
+    "SKIPPED",
+    "SKIPPED: 'their was nothing so very remarkable in that ...'",
+    "their was nothing so very remarkable in that ...",
+    "",
+    2,
+    115,
+    150,
+    113,
+    113,
+    "low",
+    0.0
+   ]
+  ],
+  "opcodes": [
+   [
+    "delete",
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    "equal",
+    2,
+    115,
+    0,
+    113
+   ],
+   [
+    "delete",
+    115,
+    150,
+    113,
+    113
+   ],
+   [
+    "equal",
+    150,
+    211,
+    113,
+    174
+   ]
+  ]
+ },
+ "c1-title-read": {
+  "coveredRange": [
+   0,
+   6
+  ],
+  "markers": [
+   [
+    0.4,
+    "MISREAD",
+    "MISREAD: 'i' as '1'",
+    "i",
+    "1",
+    -1,
+    1,
+    2,
+    1,
+    2,
+    "high",
+    1.0
+   ]
+  ],
+  "opcodes": [
+   [
+    "equal",
+    0,
+    1,
+    0,
+    1
+   ],
+   [
+    "replace",
+    1,
+    2,
+    1,
+    2
+   ],
+   [
+    "equal",
+    2,
+    211,
+    2,
+    211
+   ]
+  ]
+ },
+ "c1-trim-hides-text": {
+  "coveredRange": [
+   0,
+   6
+  ],
+  "markers": [
+   [
+    0.5,
+    "MISREAD",
+    "MISREAD: 'their was nothing so very remarkable in that ...' as 'picking'",
+    "their was nothing so very remarkable in that ...",
+    "picking",
+    2,
+    115,
+    133,
+    113,
+    114,
+    "low",
+    0.0
+   ],
+   [
+    1.3,
+    "MISREAD",
+    "MISREAD: 'way to here the' as 'daisies when suddenly a white'",
+    "way to here the",
+    "daisies when suddenly a white",
+    2,
+    134,
+    138,
+    115,
+    120,
+    "low",
+    0.0
+   ],
+   [
+    3.7,
+    "MISREAD",
+    "MISREAD: 'say to itself oh dear oh dear i ...' as 'with pink eyes ran close buy her'",
+    "say to itself oh dear oh dear i ...",
+    "with pink eyes ran close buy her",
+    2,
+    139,
+    150,
+    121,
+    128,
+    "low",
+    0.0
+   ]
+  ],
+  "opcodes": [
+   [
+    "delete",
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    "equal",
+    2,
+    115,
+    0,
+    113
+   ],
+   [
+    "replace",
+    115,
+    133,
+    113,
+    114
+   ],
+   [
+    "equal",
+    133,
+    134,
+    114,
+    115
+   ],
+   [
+    "replace",
+    134,
+    138,
+    115,
+    120
+   ],
+   [
+    "equal",
+    138,
+    139,
+    120,
+    121
+   ],
+   [
+    "replace",
+    139,
+    150,
+    121,
+    128
+   ],
+   [
+    "equal",
+    150,
+    211,
+    128,
+    189
+   ]
+  ]
+ },
+ "c1-truncated-tail": {
+  "coveredRange": [
+   0,
+   4
+  ],
+  "markers": [],
+  "opcodes": [
+   [
+    "delete",
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    "equal",
+    2,
+    150,
+    0,
+    148
+   ],
+   [
+    "delete",
+    150,
+    211,
+    148,
+    148
+   ]
+  ]
+ },
+ "c2-late-start": {
+  "coveredRange": [
+   0,
+   7
+  ],
+  "markers": [
+   [
+    0.4,
+    "MISREAD",
+    "MISREAD: 'ii curiouser and curiouser cried alice she was ...' as '2'",
+    "ii curiouser and curiouser cried alice she was ...",
+    "2",
+    -1,
+    1,
+    38,
+    1,
+    2,
+    "high",
+    1.0
+   ]
+  ],
+  "opcodes": [
+   [
+    "equal",
+    0,
+    1,
+    0,
+    1
+   ],
+   [
+    "replace",
+    1,
+    38,
+    1,
+    2
+   ],
+   [
+    "equal",
+    38,
+    148,
+    2,
+    112
+   ]
+  ]
+ },
+ "c2-pickup-at-end": {
+  "coveredRange": [
+   0,
+   7
+  ],
+  "markers": [
+   [
+    14.0,
+    "SKIPPED",
+    "SKIPPED: 'just then her head struck against the roof ...'",
+    "just then her head struck against the roof ...",
+    "",
+    2,
+    38,
+    75,
+    36,
+    36,
+    "low",
+    0.0
+   ],
+   [
+    46.2,
+    "EXTRA",
+    "EXTRA: 'pickup for paragraph 2 just then her head ...'",
+    "",
+    "pickup for paragraph 2 just then her head ...",
+    7,
+    148,
+    148,
+    109,
+    150,
+    "high",
+    3.0
+   ]
+  ],
+  "opcodes": [
+   [
+    "delete",
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    "equal",
+    2,
+    38,
+    0,
+    36
+   ],
+   [
+    "delete",
+    38,
+    75,
+    36,
+    36
+   ],
+   [
+    "equal",
+    75,
+    148,
+    36,
+    109
+   ],
+   [
+    "insert",
+    148,
+    148,
+    109,
+    150
+   ]
+  ]
+ },
+ "c2-skipped-sentence": {
+  "coveredRange": [
+   0,
+   7
+  ],
+  "markers": [
+   [
+    22.4,
+    "SKIPPED",
+    "SKIPPED: 'she at once took up the little golden ...'",
+    "she at once took up the little golden ...",
+    "",
+    3,
+    59,
+    75,
+    57,
+    57,
+    "low",
+    0.0
+   ]
+  ],
+  "opcodes": [
+   [
+    "delete",
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    "equal",
+    2,
+    59,
+    0,
+    57
+   ],
+   [
+    "delete",
+    59,
+    75,
+    57,
+    57
+   ],
+   [
+    "equal",
+    75,
+    148,
+    57,
+    130
+   ]
+  ]
+ },
+ "c2-subtitle-read": {
+  "coveredRange": [
+   0,
+   7
+  ],
+  "markers": [
+   [
+    0.4,
+    "MISREAD",
+    "MISREAD: 'ii' as '2 the pool of tears'",
+    "ii",
+    "2 the pool of tears",
+    -1,
+    1,
+    2,
+    1,
+    6,
+    "high",
+    1.5
+   ]
+  ],
+  "opcodes": [
+   [
+    "equal",
+    0,
+    1,
+    0,
+    1
+   ],
+   [
+    "replace",
+    1,
+    2,
+    1,
+    6
+   ],
+   [
+    "equal",
+    2,
+    148,
+    6,
+    152
+   ]
+  ]
+ },
+ "c3-refrain-complete": {
+  "coveredRange": [
+   0,
+   7
+  ],
+  "markers": [],
+  "opcodes": [
+   [
+    "delete",
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    "equal",
+    2,
+    123,
+    0,
+    121
+   ]
+  ]
+ },
+ "c3-refrain-read-once": {
+  "coveredRange": [
+   0,
+   7
+  ],
+  "markers": [
+   [
+    30.0,
+    "SKIPPED",
+    "SKIPPED: 'will you won't you will you won't you ...'",
+    "will you won't you will you won't you ...",
+    "",
+    5,
+    77,
+    103,
+    75,
+    75,
+    "low",
+    0.0
+   ]
+  ],
+  "opcodes": [
+   [
+    "delete",
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    "equal",
+    2,
+    77,
+    0,
+    75
+   ],
+   [
+    "delete",
+    77,
+    103,
+    75,
+    75
+   ],
+   [
+    "equal",
+    103,
+    123,
+    75,
+    95
+   ]
+  ]
+ },
+ "c4-misread": {
+  "coveredRange": [
+   0,
+   2
+  ],
+  "markers": [
+   [
+    10.8,
+    "MISREAD",
+    "MISREAD: 'cramped' as 'crabbed'",
+    "cramped",
+    "crabbed",
+    1,
+    29,
+    30,
+    27,
+    28,
+    "low",
+    0.0
+   ],
+   [
+    14.4,
+    "MISREAD",
+    "MISREAD: 'sailcloth' as 'sale cloth'",
+    "sailcloth",
+    "sale cloth",
+    1,
+    38,
+    39,
+    36,
+    38,
+    "low",
+    0.0
+   ],
+   [
+    15.6,
+    "MISREAD",
+    "MISREAD: '1' as 'a'",
+    "1",
+    "a",
+    1,
+    40,
+    41,
+    39,
+    40,
+    "low",
+    0.0
+   ]
+  ],
+  "opcodes": [
+   [
+    "delete",
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    "equal",
+    2,
+    29,
+    0,
+    27
+   ],
+   [
+    "replace",
+    29,
+    30,
+    27,
+    28
+   ],
+   [
+    "equal",
+    30,
+    38,
+    28,
+    36
+   ],
+   [
+    "replace",
+    38,
+    39,
+    36,
+    38
+   ],
+   [
+    "equal",
+    39,
+    40,
+    38,
+    39
+   ],
+   [
+    "replace",
+    40,
+    41,
+    39,
+    40
+   ],
+   [
+    "equal",
+    41,
+    63,
+    40,
+    62
+   ]
+  ]
+ },
+ "c4-names-and-numbers": {
+  "coveredRange": [
+   0,
+   2
+  ],
+  "markers": [
+   [
+    0.8,
+    "MISREAD",
+    "MISREAD: 'maelis' as 'the quillenbrook ledger maylis'",
+    "maelis",
+    "the quillenbrook ledger maylis",
+    0,
+    2,
+    3,
+    2,
+    6,
+    "low",
+    0.0
+   ],
+   [
+    10.2,
+    "MISREAD",
+    "MISREAD: '1847' as '65'",
+    "1847",
+    "65",
+    0,
+    18,
+    19,
+    21,
+    22,
+    "medium",
+    0.40000000000000036
+   ],
+   [
+    11.8,
+    "MISREAD",
+    "MISREAD: 'tobiah' as 'tobias'",
+    "tobiah",
+    "tobias",
+    1,
+    21,
+    22,
+    24,
+    25,
+    "low",
+    0.0
+   ],
+   [
+    20.6,
+    "MISREAD",
+    "MISREAD: 'varrow' as 'farrow'",
+    "varrow",
+    "farrow",
+    2,
+    43,
+    44,
+    46,
+    47,
+    "low",
+    0.0
+   ],
+   [
+    27.4,
+    "MISREAD",
+    "MISREAD: '2nd' as 'second'",
+    "2nd",
+    "second",
+    2,
+    60,
+    61,
+    63,
+    64,
+    "low",
+    0.0
+   ]
+  ],
+  "opcodes": [
+   [
+    "equal",
+    0,
+    2,
+    0,
+    2
+   ],
+   [
+    "replace",
+    2,
+    3,
+    2,
+    6
+   ],
+   [
+    "equal",
+    3,
+    18,
+    6,
+    21
+   ],
+   [
+    "replace",
+    18,
+    19,
+    21,
+    22
+   ],
+   [
+    "equal",
+    19,
+    21,
+    22,
+    24
+   ],
+   [
+    "replace",
+    21,
+    22,
+    24,
+    25
+   ],
+   [
+    "equal",
+    22,
+    43,
+    25,
+    46
+   ],
+   [
+    "replace",
+    43,
+    44,
+    46,
+    47
+   ],
+   [
+    "equal",
+    44,
+    60,
+    47,
+    63
+   ],
+   [
+    "replace",
+    60,
+    61,
+    63,
+    64
+   ],
+   [
+    "equal",
+    61,
+    63,
+    64,
+    66
+   ]
+  ]
+ },
+ "c4-unrelated-speech": {
+  "coveredRange": [
+   0,
+   2
+  ],
+  "markers": [
+   [
+    6.8,
+    "MISREAD",
+    "MISREAD: 'her cousin tobiah varrow had written 3 entries ...' as 'hold on the neighbours dog is barking again ...'",
+    "her cousin tobiah varrow had written 3 entries ...",
+    "hold on the neighbours dog is barking again ...",
+    1,
+    19,
+    33,
+    17,
+    38,
+    "low",
+    0.0
+   ],
+   [
+    15.6,
+    "MISREAD",
+    "MISREAD: 'salt 40 yards of sailcloth and 1 brass ...' as 'this page'",
+    "salt 40 yards of sailcloth and 1 brass ...",
+    "this page",
+    1,
+    34,
+    43,
+    39,
+    41,
+    "low",
+    0.0
+   ]
+  ],
+  "opcodes": [
+   [
+    "delete",
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    "equal",
+    2,
+    19,
+    0,
+    17
+   ],
+   [
+    "replace",
+    19,
+    33,
+    17,
+    38
+   ],
+   [
+    "equal",
+    33,
+    34,
+    38,
+    39
+   ],
+   [
+    "replace",
+    34,
+    43,
+    39,
+    41
+   ],
+   [
+    "equal",
+    43,
+    63,
+    41,
+    61
+   ]
+  ]
+ }
+}

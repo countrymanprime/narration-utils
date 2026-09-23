@@ -296,15 +296,23 @@ def _load_case(path: Path, directory: Path, chapters: Mapping[str, Chapter]) -> 
     except (OSError, ValueError) as exc:
         raise FixtureError(f"{path.name}: cannot be read as JSON ({exc})") from exc
     _check_header(spec, path, chapters)
-    chapter = chapters[spec["chapter"]]
+    return build_case(spec, chapters[spec["chapter"]], directory, path.name)
+
+
+def build_case(spec: Mapping, chapter: Chapter, directory: Path = FIXTURE_DIR, where: str | None = None) -> Case:
+    """A case from its JSON form, for one chapter: renders the recording and checks the labels.
+
+    `load_corpus` uses it for committed files; generated cases (the Phase 2 spike's stress set)
+    use it directly, so they obey the same labeling rules."""
+    where = where or str(spec.get("id"))
     item_specs = spec.get("recording", {}).get("items") or []
     if not item_specs:
-        raise FixtureError(f"{path.name}: the recording needs at least one item in items")
+        raise FixtureError(f"{where}: the recording needs at least one item in items")
     ids = [item.get("id") for item in item_specs]
     if len(ids) != len(set(ids)):
-        raise FixtureError(f"{path.name}: duplicate item id")
-    items = tuple(_load_item(item, chapter, directory, f"{path.name} item {item.get('id')}") for item in item_specs)
-    expected = _load_expected(spec.get("expected", {}), chapter, path.name)
+        raise FixtureError(f"{where}: duplicate item id")
+    items = tuple(_load_item(item, chapter, directory, f"{where} item {item.get('id')}") for item in item_specs)
+    expected = _load_expected(spec.get("expected", {}), chapter, where)
     return Case(spec["id"], chapter, tuple(spec["conditions"]), spec["split"], spec.get("description", ""), items, expected)
 
 

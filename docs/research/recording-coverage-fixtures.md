@@ -11,7 +11,7 @@
 | `sidecars/transcript-compare/tests/coverage_harness.py` | Loads and validates a corpus, renders scripted recordings into timed transcript words, scores an analyzer and prints the label table. Also holds the order-blind stub analyzer. |
 | `sidecars/transcript-compare/tests/test_coverage_harness.py` | Tests for the format rules, the scoring, the stub and the corpus hook, and checks on the committed set: every condition has a case, both verdicts appear in each split, no audio, under 64 KiB. |
 
-Nothing here is product code. The analyzer being measured arrives in Phase 2 (`core/coverage.py`), and Phase 8 runs it through this harness.
+Nothing here is product code. The analyzer being measured is `core/coverage.py` (Phase 2). `tests/coverage_spike.py` turns it into a harness analyzer, and Phase 8 runs the shipped path through this harness. `build_case` builds a case from its JSON form without a file, so generated cases (the Phase 2 stress set) obey the same labeling rules.
 
 ## A case
 
@@ -87,7 +87,7 @@ The pytest suite (`pnpm check`, via the `transcript-compare` test target) runs t
 | tune | 9 | 1 (`c2-pickup-at-end`) | 1 (`c4-names-and-numbers`) | 34/41 | 3/4 |
 | held_out | 7 | 1 (`c3-refrain-read-once`) | 1 (`c4-misread`) | 27/29 | 3/4 |
 
-The stub is fooled in the cases where order matters (a pickup and a refrain), and it rejects the cases where the right words come out spelled differently (numbers, names, misreads). A real analyzer has to handle both. These numbers are a floor for comparison. They are not a target.
+The stub is fooled in the cases where order matters (a pickup and a refrain), and it rejects the cases where the right words come out spelled differently (numbers, names, misreads). A real analyzer has to handle both. These numbers are a floor for comparison. They are not a target. The Phase 2 coverage model scores 0 false met, 0 false not met, 70/70 labels and 8/8 regions on the same set; see [the alignment spike](recording-coverage-alignment-spike.md).
 
 ## A permissioned corpus: `NARRATION_COVERAGE_CORPUS`
 
