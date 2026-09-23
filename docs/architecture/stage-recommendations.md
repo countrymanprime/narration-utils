@@ -1,13 +1,15 @@
 # Chapter stage recommendations: the signal contract
 
-**Status: contract and engine delivered, one signal.** The Go types, the `Provider` interface and the pure engine
+**Status: contract, engine and decision store delivered, one signal.** The Go types, the `Provider` interface and the pure engine
 are in [`apps/desktop/internal/stages`](../../apps/desktop/internal/stages) (Phase 1 of
 [the chapter stage recommendations PRD](../prds/chapter-stage-recommendations.prd.md)). The recording signal,
 `recording.text_present`, and its provider are in
 [`apps/desktop/internal/coverage`](../../apps/desktop/internal/coverage) (`signal.go`, `provider.go`;
 [ADR 0131](../adr/0131-the-recording-signal-is-read-from-stored-checks-with-thresholds-applied-on-read-and-alignment-from-settings.md)).
-Nothing calls them yet: the decision store, the service that composes the providers, the bindings and the Home surface
-are later phases. The decision is
+The decision store and the service that composes the providers, the engine and the manuscript's status path are in
+`internal/stages` too (`store.go`, `service.go`, `assess.go`; Phase 2,
+[ADR 0161](../adr/0161-stage-decisions-live-in-their-own-sidecar-and-confirm-writes-the-record-before-the-status.md)).
+The host does not build the service yet: the bindings and the Home surface are later phases. The contract's decision is
 [ADR 0160](../adr/0160-stage-recommendations-are-computed-from-tri-state-signals-by-a-pure-engine.md).
 
 This page is for whoever implements a signal: recording coverage (`recording`), editing readiness (`editing`) and
@@ -106,3 +108,49 @@ the hex SHA-256 of the chapter id, the target stage and each signal's id, state,
 sorted. It leaves out `ComputedAt`, the project file's modified time, the reason and the evidence, so a re-save with the
 same fingerprints keeps a dismissal. The UI sends back the key it showed, so Confirm and Dismiss can refuse when the
 evidence changed while the narrator was looking.
+
+## The narrator's decisions
+
+`stages.Service` reads the manuscript through functions the host passes (`manuscript.Service`'s `Load`, `Chapters` and
+`SetChapterStatus`), so the stages package does not import the manuscript package. `Recommendations` assesses every
+narration chapter (a chapter with no content kind is narration, as on Home), with one `EvidenceView` shared by every
+provider. Nothing is cached: each call is a fresh read.
+
+| Action | Checks first | Writes |
+| --- | --- | --- |
+| `Confirm(chapter, target, basisKey)` | Re-evaluates the chapter; refuses with `ErrBasisChanged` when the target or the key is not what the evidence gives now, and with `ErrNotRecommended` unless the verdict is `recommended` or `dismissed` | A `confirmed` record, then the status; the record is removed again if the status write fails |
+| `Dismiss(chapter, target, basisKey)` | The same checks; a suggestion already dismissed on this basis is left as it is | A `dismissed` record only |
+| `Revert(chapter)` | A live confirmation, else `ErrNothingToRevert` | A `reverted` record, then the status back to the confirmation's `from`, with the same rollback |
+
+Decisions are an append-only list in `<project>/narration-utils/stage-decisions.json`:
+
+```json
+{
+  "schemaVersion": 1,
+  "documentId": "…",
+  "decisions": [
+    {
+      "chapterId": "c-0002",
+      "kind": "confirmed",
+      "from": "recording",
+      "target": "editing",
+      "basisKey": "…",
+      "basis": [{ "id": "recording.text_present", "state": "met", "ledgerRecordIds": ["…"], "fingerprint": "…", "summary": "…" }],
+      "at": "2026-09-23T12:00:00Z"
+    }
+  ]
+}
+```
+
+- **Scoped to the manuscript.** Chapter ids are positional and a re-import writes a new `documentId`, so a file kept
+  for another `documentId` reads as empty and the next write replaces it. `resetDerived` deletes the file.
+- **The narrator's own work.** A file that cannot be decoded is kept aside as `stage-decisions.json.corrupt-<time>` and
+  the narrator is told; the read that met it is an error ("Couldn't check"), never an empty list. A file from a newer
+  app is refused and never overwritten; one that cannot be read at all is not overwritten either.
+- **Live confirmation.** A confirmation is live while it is the chapter's latest `confirmed` or `reverted` record and
+  the status equals its target. A manual status change, a revert, or a crash between Confirm's two writes leaves it not
+  live, without a write.
+- **Contradiction.** While a confirmation is live, the signals of the stage it confirmed as finished are evaluated
+  again. A `not_met` among them is the "evidence changed since you confirmed" notice (`contradiction`, with the stage to
+  revert to). A changed basis without a `not_met`, such as a recording check gone stale because the chapter is being
+  edited, sets `confirmation.evidenceChanged` and raises no notice (Q10). Nothing changes a status by itself.
