@@ -104,7 +104,7 @@ func (p *SignalProvider) suggested(chapter stages.ChapterContext, view stages.Ev
 			candidates = append(candidates, evidence.TrackCandidate{TrackGUID: track.GUID, Name: track.Name})
 		}
 	}
-	suggestions := evidence.TitleSuggester.Suggest(candidates, []evidence.ChapterCandidate{{ID: chapter.ChapterID, Title: chapter.Title}})
+	suggestions := evidence.MatchSuggester.Suggest(candidates, []evidence.ChapterCandidate{{ID: chapter.ChapterID, Title: chapter.Title}})
 	return len(suggestions) > 0
 }
 

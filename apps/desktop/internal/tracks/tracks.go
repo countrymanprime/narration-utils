@@ -125,6 +125,24 @@ type Track struct {
 type Project struct {
 	Path   string  `json:"path"`
 	Tracks []Track `json:"tracks"`
+
+	// Regions are the project's regions (not its plain markers), in file
+	// order. The chapter-to-track matcher (internal/chaptermatch) reads their
+	// names beside track names, for example the chapter regions
+	// create_chapter_regions makes. Not on the TracksList wire contract
+	// (json:"-"): no UI shows them yet.
+	Regions []Region `json:"-"`
+}
+
+// Region is one REAPER region: two MARKER lines in the project chunk that
+// share a number, the start (with the name, flags bit 1 set and the GUID) and
+// the end (an empty name). Markers and regions are numbered separately.
+type Region struct {
+	Index int
+	Name  string
+	Start float64
+	End   float64
+	GUID  string
 }
 
 // ItemByGUID finds the item whose own GUID (Item.GUID, from <ITEM IGUID

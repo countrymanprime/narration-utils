@@ -26,8 +26,8 @@ were left open:
   settings and a timestamp. `coverage.SignalProvider` is its `stages.Provider`. It reads the shared, already parsed saved
   project from `EvidenceView` (`Service.ResultIn`) and never starts a check (Q14).
 - **Causes, first match wins:** a result the reader could not evaluate maps to its cause: `unmapped` to `unmapped_track`,
-  or to `unconfirmed_mapping` when an unlinked track has the chapter's title (the same exact-title rule as EL's
-  `TitleSuggester`). `multiple_tracks` stays `multiple_tracks`. A missing linked track maps to `unmapped_track`, no or an
+  or to `unconfirmed_mapping` when an unlinked track confidently matches the chapter (the same rule as EL's
+  `MatchSuggester`, ADR 0110). `multiple_tracks` stays `multiple_tracks`. A missing linked track maps to `unmapped_track`, no or an
   unreadable project file to `project_unreadable`, and not a narration chapter to `measurement_unavailable`. Next, a running check of this
   chapter gives `analysis_running`. Without a current result, a check that cannot be run here gives
   `measurement_unavailable`. A newest record that is `partial` or `failed` gives `incomplete_run`. Otherwise `never` gives

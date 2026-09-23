@@ -50,6 +50,10 @@ export function ChapterTrackMapList() {
   return window['go']['main']['Host']['ChapterTrackMapList']();
 }
 
+export function ChapterTrackMatch(arg1) {
+  return window['go']['main']['Host']['ChapterTrackMatch'](arg1);
+}
+
 export function CoverageCancel() {
   return window['go']['main']['Host']['CoverageCancel']();
 }

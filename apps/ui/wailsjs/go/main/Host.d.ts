@@ -26,6 +26,8 @@ export function ChapterTrackMapConfirm(arg1:string,arg2:string):Promise<string>;
 
 export function ChapterTrackMapList():Promise<string>;
 
+export function ChapterTrackMatch(arg1:string):Promise<string>;
+
 export function CoverageCancel():Promise<string>;
 
 export function CoverageResult(arg1:string):Promise<string>;
