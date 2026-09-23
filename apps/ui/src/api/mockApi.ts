@@ -76,6 +76,7 @@ import { mockChapterTrackMatch } from './chapterTrackMatchMock';
 import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './mockImportPreview';
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
 import { createCoverageMock, type CoverageSeed } from './coverageMock';
+import type { MockResumeSeed } from './resumeMockSeed';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
 
@@ -328,6 +329,8 @@ export function createMockApi(
     assets?: MockAssetSeed;
     /** What `teleprompterDevices` reports; defaults to `WIRE_TELEPROMPTER_DEVICES`. An empty array exercises the picker's no-devices fallback. */
     teleprompterDevices?: TeleprompterDevice[];
+    /** Which resume card state `teleprompterLocate` answers for every chapter (see `MockResumeSeed`). */
+    resume?: MockResumeSeed;
     /** Whether the mock project boots with a linked DAW project file (PRD W13/W14). Defaults to true. */
     dawFileLinked?: boolean;
     /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
@@ -805,6 +808,7 @@ export function createMockApi(
     tracksProject: WIRE_TRACKS_PROJECT,
     seed: initial.teleprompter,
     devices: initial.teleprompterDevices ?? WIRE_TELEPROMPTER_DEVICES,
+    resume: initial.resume,
   });
   const { withMeasurement, ...coverage } = createCoverageMock({
     chapters: () => chapters,

@@ -115,6 +115,10 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
   const [loaded, setLoaded] = useState<{ chapterId: string; paragraphs: ManuscriptParagraph[] }>();
   const [error, setError] = useState('');
   const [prompt, setPrompt] = useState<ModelPrompt>();
+  // Where the next Start begins (the read-aloud dialog's resume card, teleprompter-manuscript-integration.prd.md Phase 10):
+  // null is the top. Passed to the host as `startWord` (the Phase 3 seek channel's start-at-a-word), so a resumed session
+  // never reads from the top first.
+  const [startWord, setStartWord] = useState<number | null>(null);
   // The model download: the shared install-poll hook (D4), through the generic asset bindings, since the missing model is either
   // engine's (the gate's answer names the engine, which is also the asset kind). A session must not start on a view the narrator has
   // already left: the hook stops and never calls onSuccess once this hook's owner has unmounted.
@@ -228,7 +232,7 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
   const start = async () => {
     setError('');
     try {
-      const result = await api.teleprompterStart({ chapter: chapterId, device: device.trim(), engine, model });
+      const result = await api.teleprompterStart({ chapter: chapterId, device: device.trim(), engine, model, ...(startWord === null ? {} : { startWord }) });
       if (result.status === 'asset_required') {
         modelInstall.reset();
         setPrompt(result);
@@ -307,6 +311,8 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
     seek,
     changeDevice,
     closeModelPrompt,
+    startWord,
+    setStartWord,
     reset,
     canStart,
     startReason,

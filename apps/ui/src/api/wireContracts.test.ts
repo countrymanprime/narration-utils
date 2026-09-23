@@ -325,6 +325,47 @@ describe('answers of the mock client (it must pass the schemas the real host ans
     await expect(api.teleprompterLocate('not-a-real-chapter')).rejects.toThrow();
   });
 
+  // `?mockResume=` (main.tsx) reaches every resume card state on the first chapter (teleprompter-manuscript-integration.prd.md
+  // Phase 10); each answer is still one the real host could send.
+  it.each([
+    ['low_confidence', 'low_confidence'],
+    ['not_found', 'not_found'],
+    ['ambiguous', 'no_track'],
+    ['none', 'no_track'],
+    ['no_recording', 'no_recording'],
+    ['source_missing', 'source_missing'],
+    ['source_unsupported', 'source_unsupported'],
+  ] as const)('the ?mockResume=%s seed answers TeleprompterLocate with %s', async (resume, status) => {
+    const api = createMockApi({}, { resume });
+    const chapters = await api.manuscriptChapters();
+
+    const result = await api.teleprompterLocate(chapters[0].id);
+
+    expectMatches(teleprompterLocateResultSchema, result, `mock teleprompter locate, ${resume} seed`);
+    expect(result.status).toBe(status);
+  });
+
+  it('the ambiguous seed offers the tied tracks, and reads the one the narrator picks', async () => {
+    const api = createMockApi({}, { resume: 'ambiguous' });
+    const chapters = await api.manuscriptChapters();
+
+    const offered = await api.teleprompterLocate(chapters[0].id);
+    if (offered.status === 'asset_required') throw new Error('expected a track match');
+    expect(offered.match.status).toBe('ambiguous');
+    expect(offered.match.candidates.length).toBeGreaterThan(1);
+
+    const picked = await api.teleprompterLocate(chapters[0].id, { trackGuid: offered.match.candidates[0].trackGuid });
+    expectMatches(teleprompterLocateResultSchema, picked, 'mock teleprompter locate, ambiguous seed after a pick');
+    expect(picked.status).toBe('found');
+  });
+
+  it('the error seed rejects TeleprompterLocate, as a failed read of the .rpp or the sidecar does', async () => {
+    const api = createMockApi({}, { resume: 'error' });
+    const chapters = await api.manuscriptChapters();
+
+    await expect(api.teleprompterLocate(chapters[0].id)).rejects.toThrow(/could not read/);
+  });
+
   it('TeleprompterLocate asks for the model before transcribing a readable track', async () => {
     const api = createMockApi({}, { assets: 'missing' });
     const chapters = await api.manuscriptChapters();

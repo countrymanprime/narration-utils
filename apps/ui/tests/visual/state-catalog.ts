@@ -188,7 +188,72 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'manuscript',
     state: 'read-aloud-setup',
     description:
-      'Manuscript, the "Read aloud" full-size dialog (teleprompter-manuscript-integration.prd.md Phase 2) opened from a chapter header - Microphone, Engine and Model fields, no chapter picker (the chapter is fixed)',
+      'Manuscript, the "Read aloud" full-size dialog (teleprompter-manuscript-integration.prd.md Phase 2) opened from a chapter header - Microphone, Engine and Model fields, no chapter picker (the chapter is fixed); above them the resume card (Phase 10) offers where the recording ends: the matched track, "as of the project\'s last save", the resume word with its sentence and confidence, and Resume from here / Start from the top / Pick a word',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-chosen',
+    description:
+      'Manuscript, the "Read aloud" dialog after "Resume from here" - the resume card folds to one line naming the word and sentence Start reading will begin at, with Change',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resumed',
+    description:
+      'Manuscript, the "Read aloud" dialog just after Start reading from a chosen resume point - the session starts at the located word (the highlight is there, the words before it read), the resume card gone; timers frozen so the replay cannot move it on',
+    ...FREEZES_THE_CLOCK,
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-low-confidence',
+    description:
+      'Manuscript, the resume card when the end of the recording also fits elsewhere in the chapter (?mockResume=low_confidence) - offered as a guess to check, with its confidence and sentence; Resume from here is not the primary action',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-not-found',
+    description:
+      "Manuscript, the resume card when the recording's tail did not match the chapter (?mockResume=not_found) - no resume word; says reading starts from the top, shows what was heard, offers Pick a word and Another track",
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-pick-track',
+    description:
+      'Manuscript, the resume card when more than one track could hold the chapter (?mockResume=ambiguous) - it never guesses: a Track picker (possible matches first) and Read this track, reading from the top until then',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-no-track',
+    description:
+      'Manuscript, the resume card when no track in the REAPER project matches the chapter (?mockResume=none) - says reading starts from the top, with a picker of every track',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-no-recording',
+    description: "Manuscript, the resume card when the chapter's track has nothing recorded yet (?mockResume=no_recording) - reading starts from the top",
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-source-missing',
+    description:
+      "Manuscript, the resume card when the last item's audio file is missing (?mockResume=source_missing) - names the file, reading starts from the top",
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-source-unsupported',
+    description:
+      "Manuscript, the resume card when the last item's source cannot be read as audio (?mockResume=source_unsupported) - names the file, reading starts from the top",
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-model-required',
+    description:
+      'Manuscript, the resume card when the Whisper model the lookup needs is not downloaded (?mockAssets=missing) - says so with a Download model button that opens the first-use confirm; nothing downloads by itself',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-error',
+    description: 'Manuscript, the resume card when the lookup failed (?mockResume=error) - the reason as an alert, Try again, reading from the top meanwhile',
   },
   {
     page: 'manuscript',

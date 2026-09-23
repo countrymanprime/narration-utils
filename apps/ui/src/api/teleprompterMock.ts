@@ -8,6 +8,7 @@ import { recordedStreamSchema } from './schemas/teleprompter';
 import { parseWire } from './wire/parseWire';
 import { tokenize } from '../components/teleprompter/readerModel';
 import { mockRecordedEnd } from './chapterTrackMatchMock';
+import { seedLocateResult, seedTrackMatch, type MockResumeSeed } from './resumeMockSeed';
 import type {
   ChapterTrackMatch,
   ManuscriptChapter,
@@ -64,6 +65,8 @@ type Deps = {
   seed?: TeleprompterSeed;
   /** What `teleprompterDevices` reports (an empty list exercises the picker's no-devices fallback). */
   devices: TeleprompterDevice[];
+  /** Which resume card state `teleprompterLocate` answers (see `MockResumeSeed`); unset, the mock project's tracks decide. */
+  resume?: MockResumeSeed;
 };
 
 const idle: TeleprompterState = {
@@ -189,10 +192,11 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
   };
   const findChapter = (query: string) => deps.chapters().find((chapter) => chapter.id === query || chapter.title === query);
 
-  const replay = (words: string[]) => {
+  // Replays the recorded read-through over words `from`..end, so a session started at a word (a resume) never goes back before it.
+  const replay = (words: string[], from = 0) => {
     const total = words.length;
-    const seconds = Math.min(MAX_REPLAY_SECONDS, Math.max(MIN_REPLAY_SECONDS, total * REPLAY_SECONDS_PER_WORD));
-    const scale = (value: number) => Math.round((value / recording.tokens) * total);
+    const seconds = Math.min(MAX_REPLAY_SECONDS, Math.max(MIN_REPLAY_SECONDS, (total - from) * REPLAY_SECONDS_PER_WORD));
+    const scale = (value: number) => from + Math.round((value / recording.tokens) * (total - from));
     for (const { t, event } of recording.events) {
       const at = (t / recordingSeconds) * seconds;
       const read = scale(event.read);
@@ -239,7 +243,9 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       state = { ...state, phase: 'running', message: LISTENING };
       publish();
       emit(script);
-      replay(words);
+      const from = Math.min(Math.max(0, options.startWord ?? 0), words.length);
+      if (from > 0) emit(position(from, 'listening'));
+      replay(words, from);
       return { status: 'started' };
     },
     teleprompterStop: async () => {
@@ -261,12 +267,18 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     teleprompterDevices: async () => ({ devices: deps.devices.map((device) => ({ ...device })), error: null }),
     teleprompterLocate: async (chapterId, options) => {
       await deps.ready;
-      const match = deps.trackMatch(chapterId);
+      if (deps.resume === 'error') throw new Error('Narration Utils could not read Alice.rpp: the file is locked by another program.');
+      const match = seedTrackMatch(deps.trackMatch(chapterId), deps.resume);
       const chapter = findChapter(chapterId);
       if (!chapter) throw new Error('that chapter is not part of the current manuscript');
-      return structuredClone(
-        mockLocate(match, deps.tracksProject, buildScript(chapter, deps.paragraphs()), options?.trackGuid, whisperModelRequired(deps.assetRequired('whisper'))),
+      const result = mockLocate(
+        match,
+        deps.tracksProject,
+        buildScript(chapter, deps.paragraphs()),
+        options?.trackGuid,
+        whisperModelRequired(deps.assetRequired('whisper')),
       );
+      return structuredClone(seedLocateResult(result, deps.resume));
     },
     subscribeTeleprompterEvent: (onEvent) => {
       eventSubscribers.add(onEvent);
