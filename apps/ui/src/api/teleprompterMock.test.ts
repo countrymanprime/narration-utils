@@ -53,7 +53,27 @@ describe('teleprompter mock', () => {
     const positions = events.flatMap((event) => (event.type === 'position' ? [event] : []));
     expect(positions.at(-1)).toMatchObject({ read: words, status: 'done' });
     expect(positions.some((position) => position.status === 'waiting')).toBe(true);
-    expect(states.map((state) => state.phase)).toEqual(['starting', 'running']);
+    // Reaching the end arms the host's auto-stop, which ends the session a few seconds later (ADR 0106).
+    expect(states.map((state) => [state.phase, state.message])).toEqual([
+      ['starting', 'Starting the teleprompter…'],
+      ['running', 'Listening…'],
+      ['running', 'Reached the end of the chapter. Stopping in 5 seconds unless you keep reading.'],
+      ['stopped', 'Stopped at the end of the chapter.'],
+    ]);
+  });
+
+  it('keeps listening when the narrator reads on after the end of the chapter', async () => {
+    const mock = build();
+    const states: TeleprompterState[] = [];
+    mock.subscribeTeleprompterState((state) => states.push(state));
+    await mock.teleprompterStart(options);
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(states.at(-1)?.message).toMatch(/Stopping in 5 seconds/);
+
+    await mock.teleprompterSeek(3);
+    await vi.runAllTimersAsync();
+
+    expect(states.at(-1)).toMatchObject({ phase: 'running', message: 'Listening…' });
   });
 
   it('shows what was just heard while it reads', async () => {
@@ -121,6 +141,13 @@ describe('teleprompter mock', () => {
   it('reports the configured device list, and an empty one for the no-devices fallback', async () => {
     await expect(build().teleprompterDevices()).resolves.toEqual({ devices: DEVICES, error: null });
     await expect(build({ devices: [] }).teleprompterDevices()).resolves.toEqual({ devices: [], error: null });
+  });
+
+  it('can boot a session that already stopped itself at the end of the chapter', async () => {
+    const state = await build({ seed: 'ended' }).teleprompterState();
+
+    expect(state).toMatchObject({ phase: 'stopped', message: 'Stopped at the end of the chapter.' });
+    expect(state.position).toMatchObject({ status: 'done', read: state.script?.tokens });
   });
 
   it.each(['listening', 'waiting', 'done'] as const)('can boot mid-session in the %s state', async (seed) => {

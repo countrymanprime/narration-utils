@@ -51,10 +51,18 @@ func runFakeSidecar(mode string) {
 		fmt.Println(`{"type":"script","chapter":{"id":"c1","title":"One"},"tokens":4,"spans":[]}`)
 		time.Sleep(time.Minute)
 		return
+	case "done-crash":
+		fmt.Println(`{"type":"script","chapter":{"id":"c1","title":"One"},"tokens":4,"spans":[]}`)
+		fmt.Println(`{"type":"position","read":4,"committed":4,"status":"done","jump":null,"skipped":null}`)
+		fmt.Fprintln(os.Stderr, "Traceback: the model file is corrupt")
+		os.Exit(5)
 	}
 	fmt.Println(`{"type":"script","chapter":{"id":"c1","title":"One"},"tokens":4,"spans":[]}`)
 	fmt.Println(`{"type":"partial","segment":0,"words":[{"word":"hello","start":0,"end":0.4}]}`)
 	fmt.Println(`{"type":"position","read":1,"committed":0,"status":"listening","jump":null,"skipped":null}`)
+	if mode == "done" {
+		fmt.Println(`{"type":"position","read":4,"committed":4,"status":"done","jump":null,"skipped":null}`)
+	}
 	fmt.Println("not json at all")
 	stopFile := flagValue(os.Args[1:], "--stop-file")
 	for {

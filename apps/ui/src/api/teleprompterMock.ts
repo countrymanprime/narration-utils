@@ -28,7 +28,15 @@ const REPLAY_SECONDS_PER_WORD = 0.45;
 const HEARD_WORDS = 6;
 const SEED_WORDS_INTO_TEXT = 30;
 
-export type TeleprompterSeed = 'listening' | 'waiting' | 'done';
+/** `ended` is a session that stopped itself at the end of the chapter (the host's auto-stop, ADR 0106). */
+export type TeleprompterSeed = 'listening' | 'waiting' | 'done' | 'ended';
+
+// The host's auto-stop (apps/desktop/internal/teleprompter/autostop.go): the same delay and messages, so a replay that
+// reaches the end of the chapter ends itself the way a live session does.
+const AUTO_STOP_MS = 5000;
+const LISTENING = 'Listening…';
+const AUTO_STOP_ARMED = 'Reached the end of the chapter. Stopping in 5 seconds unless you keep reading.';
+const AUTO_STOPPED = 'Stopped at the end of the chapter.';
 
 type Deps = {
   ready: Promise<unknown>;
@@ -76,6 +84,7 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
   const eventSubscribers = new Set<(event: TeleprompterEvent) => void>();
   let state: TeleprompterState = { ...idle };
   let timers: ReturnType<typeof setTimeout>[] = [];
+  let autoStop: ReturnType<typeof setTimeout> | undefined;
   let seeding: Promise<void> | undefined;
 
   const clone = (): TeleprompterState => JSON.parse(JSON.stringify(state));
@@ -84,10 +93,35 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     if (event.type === 'script') state = { ...state, script: event, position: null };
     if (event.type === 'position') state = { ...state, position: event };
     eventSubscribers.forEach((notify) => notify(JSON.parse(JSON.stringify(event))));
+    if (event.type === 'position') trackAutoStop(event.status === 'done');
+  };
+  const cancelAutoStop = () => {
+    clearTimeout(autoStop);
+    autoStop = undefined;
+  };
+  // Armed by the first done position of a running session, cancelled by any later position that is not done.
+  const trackAutoStop = (done: boolean) => {
+    if (!done) {
+      if (autoStop === undefined) return;
+      cancelAutoStop();
+      state = { ...state, message: LISTENING };
+      publish();
+      return;
+    }
+    if (autoStop !== undefined || state.phase !== 'running') return;
+    autoStop = setTimeout(() => {
+      autoStop = undefined;
+      cancelReplay();
+      state = { ...state, phase: 'stopped', message: AUTO_STOPPED };
+      publish();
+    }, AUTO_STOP_MS);
+    state = { ...state, message: AUTO_STOP_ARMED };
+    publish();
   };
   const cancelReplay = () => {
     timers.forEach(clearTimeout);
     timers = [];
+    cancelAutoStop();
   };
   const findChapter = (query: string) => deps.chapters().find((chapter) => chapter.id === query || chapter.title === query);
 
@@ -116,8 +150,13 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     if (!chapter || !deps.seed) return;
     const { script } = buildScript(chapter, deps.paragraphs());
     const firstParagraph = script.spans[1];
-    const read = deps.seed === 'done' ? script.tokens : Math.min((firstParagraph?.start ?? 0) + SEED_WORDS_INTO_TEXT, script.tokens - 1);
-    state = { phase: 'running', message: 'Listening…', engine: 'whisper', chapter: chapter.id, script, position: position(read, deps.seed) };
+    const atEnd = deps.seed === 'done' || deps.seed === 'ended';
+    const read = atEnd ? script.tokens : Math.min((firstParagraph?.start ?? 0) + SEED_WORDS_INTO_TEXT, script.tokens - 1);
+    const status = deps.seed === 'ended' ? 'done' : deps.seed;
+    state =
+      deps.seed === 'ended'
+        ? { phase: 'stopped', message: AUTO_STOPPED, engine: 'whisper', chapter: chapter.id, script, position: position(read, status) }
+        : { phase: 'running', message: LISTENING, engine: 'whisper', chapter: chapter.id, script, position: position(read, status) };
   };
 
   return {
@@ -132,7 +171,7 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       state = { phase: 'starting', message: 'Starting the teleprompter…', engine: 'whisper', chapter: options.chapter, script: null, position: null };
       publish();
       const { script, words } = buildScript(chapter, deps.paragraphs());
-      state = { ...state, phase: 'running', message: 'Listening…' };
+      state = { ...state, phase: 'running', message: LISTENING };
       publish();
       emit(script);
       replay(words);

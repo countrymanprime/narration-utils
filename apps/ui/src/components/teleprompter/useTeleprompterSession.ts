@@ -65,10 +65,11 @@ export const errorText = (reason: unknown): string => (reason instanceof Error ?
 function statusText(host: TeleprompterState, session: Session): string {
   if (host.phase === 'starting') return 'Starting…';
   if (host.phase === 'stopping') return 'Stopping…';
-  if (host.phase === 'stopped') return 'Stopped';
+  // The host says why a session stopped (the narrator pressed Stop, or it stopped itself at the end of the chapter, ADR 0106).
+  if (host.phase === 'stopped') return host.message.trim() || 'Stopped';
   if (host.phase !== 'running') return '';
   if (session.position?.status === 'waiting') return 'Waiting for you to return to the script';
-  if (session.position?.status === 'done') return 'Done - that is the end of the chapter';
+  if (session.position?.status === 'done') return 'Done - stopping in a few seconds unless you read on';
   return 'Listening';
 }
 

@@ -272,6 +272,17 @@ will not switch REAPER projects underneath it, and `Shutdown` stops it before
 closing the supervisor (without holding the host lock, because the service's
 state callback needs it).
 
+**Auto-stop at Done ([ADR 0106](../adr/0106-a-teleprompter-session-stops-itself-five-seconds-after-the-tracker-reports-done.md)).**
+The service reads the `status` of each `position` event it relays. The first
+`done` position of a running session arms a 5 second timer (`autostop.go`,
+longer than the tracker's 1.5 s `WAIT_SECONDS`) and says so in the state
+message; any later position that is not `done` (the narrator re-read the last
+line) cancels it, and repeated `done` positions do not restart it. When it
+fires, the service stops the session through the same stop file and grace kill
+as Stop, and the final message is "Stopped at the end of the chapter." A
+sidecar that exits non-zero is still an error. The session's script and last
+position stay in the snapshot after the stop.
+
 **One session, step by step.**
 
 ```mermaid
@@ -381,11 +392,11 @@ Leaving the page and coming back mid-session picks up where it was. A missing
 model triggers the same first-use download prompt as Transcript Compare. In
 browser mock mode Start replays a position stream recorded from the real tracker
 (`spikes/record_mock_stream.py`), and `?mockTeleprompter=listening|waiting|done`
-boots part-way through a chapter for the visual suite.
+boots part-way through a chapter for the visual suite (`ended` boots a session
+that already stopped itself at the end of the chapter).
 
-**Still open:** a microphone picker, an engine choice, stopping automatically
-at the end of the chapter, and letting the narrator scroll by hand without being
-pulled back are specified in
+**Still open:** a microphone picker, an engine choice and letting the narrator
+scroll by hand without being pulled back are specified in
 [teleprompter-engines-and-input-devices.prd.md](../prds/teleprompter-engines-and-input-devices.prd.md).
 Flagged words and turning this page into a reading mode of the Manuscript (modal,
 story bible and notes, misread marks, seek to a word, DAW resume and

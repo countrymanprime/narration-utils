@@ -34,7 +34,9 @@ as soon as it hears you.
 
 ![Teleprompter waiting after the narrator paused](../../images/ui/teleprompter-waiting.webp)
 
-When you reach the end of the chapter the status says Done. Press Stop to end the session. You
+When you reach the end of the chapter the status says Done, and the session stops by itself a few
+seconds later: the status then says "Stopped at the end of the chapter." If you go back and re-read
+the last line before then, it keeps listening instead. You can still press Stop at any time. You
 can leave the page while it runs; coming back shows where you were.
 
 ---
