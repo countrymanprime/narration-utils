@@ -218,6 +218,65 @@ describe('build after import (B1-B3)', () => {
     fireEvent.click(dialog.getByRole('button', { name: 'Import' }));
     expect(await screen.findByRole('dialog', { name: 'Build the Story Bible' })).toBeTruthy();
   });
+
+  // The chained build's dialog closes by itself on the host's success, as the Story Bible page's rebuild dialog does (ADR 0076).
+  it('closes the chained build dialog by itself once the host reports the build done', async () => {
+    const running = {
+      id: 'chained-build',
+      kind: 'story_bible' as const,
+      phase: 'running' as const,
+      message: 'Extracting names',
+      percent: 30,
+      logs: [],
+      elapsed: 3,
+    };
+    const { dialog, api } = await openReview((hostApi) => vi.spyOn(hostApi, 'guideBuild').mockResolvedValue({ status: 'started', job: running }));
+    let calls = 0;
+    vi.spyOn(api, 'guideBuildState').mockImplementation(async () => ({ ...running, phase: ++calls < 3 ? 'running' : 'success' }));
+    fireEvent.click(dialog.getByRole('button', { name: 'Import' }));
+    await screen.findByRole('dialog', { name: 'Build the Story Bible' });
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Build the Story Bible' })).toBeNull(), { timeout: 3000 });
+  });
+
+  // The same build started from the Story Bible page can go on in the background (ADR 0076); the chained one does not hold the narrator either.
+  it('lets the narrator send the chained build to the background, and stops following it', async () => {
+    const running = {
+      id: 'chained-build',
+      kind: 'story_bible' as const,
+      phase: 'running' as const,
+      message: 'Extracting names',
+      percent: 30,
+      logs: [],
+      elapsed: 3,
+    };
+    const { dialog, api } = await openReview((hostApi) => vi.spyOn(hostApi, 'guideBuild').mockResolvedValue({ status: 'started', job: running }));
+    const state = vi.spyOn(api, 'guideBuildState').mockResolvedValue(running);
+    fireEvent.click(dialog.getByRole('button', { name: 'Import' }));
+    const build = await screen.findByRole('dialog', { name: 'Build the Story Bible' });
+    expect(within(build).getByText(/keeps running/)).toBeTruthy();
+    fireEvent.click(within(build).getByRole('button', { name: 'Continue in background' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Build the Story Bible' })).toBeNull());
+    const polls = state.mock.calls.length;
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(state.mock.calls.length).toBe(polls);
+  });
+
+  it('keeps the chained build dialog open with the reason when asking the host how far it is fails', async () => {
+    const running = {
+      id: 'chained-build',
+      kind: 'story_bible' as const,
+      phase: 'running' as const,
+      message: 'Extracting names',
+      percent: 30,
+      logs: [],
+      elapsed: 3,
+    };
+    const { dialog, api } = await openReview((hostApi) => vi.spyOn(hostApi, 'guideBuild').mockResolvedValue({ status: 'started', job: running }));
+    vi.spyOn(api, 'guideBuildState').mockRejectedValue(new Error('the host stopped answering'));
+    fireEvent.click(dialog.getByRole('button', { name: 'Import' }));
+    const build = await screen.findByRole('dialog', { name: 'Build the Story Bible' });
+    expect(await within(build).findAllByText(/the host stopped answering/)).not.toHaveLength(0);
+  });
 });
 
 describe('the summary and the groups of the review', () => {

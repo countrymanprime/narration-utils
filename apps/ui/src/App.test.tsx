@@ -285,6 +285,21 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Rebuild Story Bible' })).toBeNull(), { timeout: 3000 });
   });
 
+  it('keeps the rebuild dialog open with the reason when asking the host how far the build is fails', async () => {
+    const running = { id: 'guide-9', kind: 'story_bible' as const, phase: 'running' as const, message: 'Extracting names', percent: 40, logs: [], elapsed: 12 };
+    let calls = 0;
+    renderApp({
+      guideBuildState: async () => {
+        if (++calls === 1) return running;
+        throw new Error('the host stopped answering');
+      },
+    });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Story Bible' })[0]);
+    const dialog = await screen.findByRole('dialog', { name: 'Rebuild Story Bible' });
+    expect(await within(dialog).findAllByText(/the host stopped answering/)).not.toHaveLength(0);
+  });
+
   it('says so when refreshing the project after an attach fails, instead of an unhandled rejection', async () => {
     let attach: (state: { attached: boolean }) => void = () => {};
     const source = createMockApi();
