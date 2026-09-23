@@ -71,6 +71,7 @@ Phase counts are the rows of each PRD's phase table.
 | [Audacity Integration](audacity-integration.prd.md) | Feature | 11 (0-10) | None; corrects the "Audacity adapters" deferral of `docs/roadmap.md` and `config/roadmap.json` (D23) |
 | [Native Recording Suite](native-recording-suite.prd.md) | Feature | 6 | None; long-term/deferred like the Audacity adapters in `docs/roadmap.md`, coexists with the REAPER bridge |
 | DAW Selection and Acquisition (PRD deleted, delivered) | Feature | 4 | None; steady state in [the DAW catalog and "Get it" flow](../architecture/daw-integration.md#the-daw-catalog-and-get-it-flow); `git log --diff-filter=D -- docs/prds/daw-selection-and-acquisition.prd.md` finds it |
+| [CI Pipeline Speed](ci-pipeline-speed.prd.md) | Feature (tooling) | 8 (0-7) | None |
 
 ## Replaced briefs
 
