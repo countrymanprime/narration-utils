@@ -33,6 +33,7 @@ export function Results({
   goToManuscript,
   reset,
   canExportMarkers,
+  canJump,
 }: {
   state: TranscriptState;
   selected?: Discrepancy;
@@ -41,6 +42,9 @@ export function Results({
   goToManuscript: (row: Discrepancy) => void;
   reset: () => void;
   canExportMarkers: boolean;
+  /** Whether "Play recorded audio" may call the live REAPER bridge (PRD project-workspace-and-daw-link.prd.md, W16):
+   * it needs a linked DAW project file, same as marker export, and is otherwise disabled rather than erroring. */
+  canJump: boolean;
 }) {
   const api = useApi();
   const pendingMarkers = state.rows.filter((row) => (row.markerState ?? 'pending') === 'pending').length;
@@ -156,10 +160,13 @@ export function Results({
                               <FontAwesomeIcon icon={faFileLines} />
                             </IconButton>
                           </TooltipTarget>
-                          <TooltipTarget className="flex-none" text={`Play heard audio at ${seconds(row.projectTime)}`}>
+                          <TooltipTarget
+                            className="flex-none"
+                            text={!canJump ? 'Link a REAPER project (.rpp) file to play recorded audio' : `Play heard audio at ${seconds(row.projectTime)}`}
+                          >
                             <IconButton
                               label="Play recorded audio"
-                              disabled={!row.projectTime}
+                              disabled={!row.projectTime || !canJump}
                               onClick={() => void api.transcriptJump(row.id).catch((error) => notify(describeApiError(error), 'error'))}
                             >
                               <FontAwesomeIcon icon={faHeadphones} />

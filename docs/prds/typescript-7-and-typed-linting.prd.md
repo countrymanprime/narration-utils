@@ -44,11 +44,11 @@ We believe running type checks on TypeScript 7 while ESLint and the AST tests st
 
 ## Open Questions
 
-- [ ] **Q1. Alias or plain 6.0?** Options: (a) `"typescript": "^6.0.2"` (plain, typescript-eslint's peer range accepts it); (b) `"typescript": "npm:@typescript/typescript6@^6.0.2"`, which is what the announcement documents and what phase 2 needs so that `typescript` and `@typescript/native` can coexist. Recommendation: (a) for phase 1, switch to (b) in phase 2.
-- [ ] **Q2. Does the repo use typed rules at all?** Even with only non-type-aware presets, typescript-eslint's parser needs the API. Check `parserOptions.projectService` and the preset in use in `apps/ui`'s ESLint config, and record the answer here. Recommendation: read the config at the start of phase 1.
-- [ ] **Q3. The two AST guard tests.** Options: (a) leave them on the 6.0 API through the alias (recommended until 7.1); (b) move them to a parser with no TypeScript dependency (for example `oxc-parser`; verify it is available and handles TSX) so they never block a TypeScript bump. Recommendation: (a), and revisit when 7.1's API is stable.
-- [ ] **Q4. Binary names with both installed.** `@typescript/typescript6` installs `tsc6`; TypeScript 7 installs `tsc`. Confirm under pnpm 11 that `@typescript/native` puts `tsc` on the `apps/ui` script path and that the alias does not shadow it, before phase 2 commits to this layout. Recommendation: prove it on a branch first.
-- [ ] **Q5. Does TypeScript 6 or 7 change `tsconfig` behavior?** Check `apps/ui/tsconfig*.json` for options removed or deprecated in TypeScript 6 and 7 (`moduleResolution`, `baseUrl`, `paths`), and run `tsc --noEmit` on both in phases 1 and 2. Not yet verified.
+- [x] **Q1. Alias or plain 6.0?** Options: (a) `"typescript": "^6.0.2"` (plain, typescript-eslint's peer range accepts it); (b) `"typescript": "npm:@typescript/typescript6@^6.0.2"`, which is what the announcement documents and what phase 2 needs so that `typescript` and `@typescript/native` can coexist. Recommendation: (a) for phase 1, switch to (b) in phase 2. **Answered (phase 1, 2026-09-22):** (a). `apps/ui/package.json` now pins `"typescript": "^6.0.2"`, which resolved to `6.0.3` and satisfies typescript-eslint 8.70.0's `>=4.8.4 <6.1.0` peer range with no `pnpm install` warning.
+- [x] **Q2. Does the repo use typed rules at all?** Even with only non-type-aware presets, typescript-eslint's parser needs the API. Check `parserOptions.projectService` and the preset in use in `apps/ui`'s ESLint config, and record the answer here. Recommendation: read the config at the start of phase 1. **Answered (2026-09-22):** No. `apps/ui/eslint.config.js` uses `tseslint.configs.recommended` (the non-type-aware preset); there is no `parserOptions.projectService` or `project` anywhere in the config. The `@typescript-eslint/parser` still needs the TypeScript API just to parse `.ts`/`.tsx` syntax into an AST, which is why `eslint .` crashed on TS 7.0.2 even though no typed (type-information) rule is enabled.
+- [x] **Q3. The two AST guard tests.** Options: (a) leave them on the 6.0 API through the alias (recommended until 7.1); (b) move them to a parser with no TypeScript dependency (for example `oxc-parser`; verify it is available and handles TSX) so they never block a TypeScript bump. Recommendation: (a), and revisit when 7.1's API is stable. **Answered (phase 1, 2026-09-22):** (a). `baseUiBoundary.test.ts` and `rawNatives.test.ts` are unchanged and both pass against `typescript@6.0.3`.
+- [ ] **Q4. Binary names with both installed.** `@typescript/typescript6` installs `tsc6`; TypeScript 7 installs `tsc`. Confirm under pnpm 11 that `@typescript/native` puts `tsc` on the `apps/ui` script path and that the alias does not shadow it, before phase 2 commits to this layout. Recommendation: prove it on a branch first. Not yet verified — phase 1 does not install `@typescript/native`; this is phase 2's job.
+- [x] **Q5. Does TypeScript 6 or 7 change `tsconfig` behavior?** Check `apps/ui/tsconfig*.json` for options removed or deprecated in TypeScript 6 and 7 (`moduleResolution`, `baseUrl`, `paths`), and run `tsc --noEmit` on both in phases 1 and 2. **Answered for phase 1 (2026-09-22):** No fallout. `apps/ui/tsconfig.json` is the only tsconfig; it uses `moduleResolution: "Bundler"` and no `baseUrl`/`paths`/other deprecated options. `tsc --noEmit` against TypeScript 6.0.3 reports zero errors. Re-check on TypeScript 7 in phase 2.
 
 ## Users & Context
 
@@ -91,7 +91,7 @@ We believe running type checks on TypeScript 7 while ESLint and the AST tests st
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | TypeScript 6.0 API | Bump `typescript` to 6.0.x, fix `tsconfig` fallout, lift the Dependabot ignore | pending | - | - | - |
+| 1 | TypeScript 6.0 API | Bump `typescript` to 6.0.x, fix `tsconfig` fallout, lift the Dependabot ignore | complete | - | - | - |
 | 2 | Native type check | Add `@typescript/native`, alias `typescript` to `@typescript/typescript6`, run `tsc` on 7 in `build`, record Q4 and Q5 | pending | - | 1 | - |
 | 3 | Retire the bridge | Drop the alias once TS 7.1's API and typescript-eslint support land | pending (blocked upstream) | - | 2 | - |
 
@@ -118,6 +118,7 @@ We believe running type checks on TypeScript 7 while ESLint and the AST tests st
 | Hold TypeScript for now (2026-09-20) | Dependabot ignores TypeScript majors; #94 and #98 closed | Migrate immediately with the side-by-side packages | Lint and tests break on 7.0; the migration is a tooling change worth its own PRD |
 | One Dependabot npm entry (2026-09-20) | Root entry only | Keep `/apps/ui` | The `/apps/ui` entry cannot update the workspace lockfile and duplicated the root PRs |
 | Approach | TS 6.0 API for ESLint and tests, TS 7 `tsc` for type checks (proposed) | Wait for 7.1 with no compiler upgrade; replace the guard tests' parser | Only option that works today and keeps typed linting |
+| Phase 1 scope (2026-09-22) | Plain `"typescript": "^6.0.2"` (Q1a); Dependabot's `typescript` ignore re-scoped from any semver-major to `versions: [">=7.0.0"]` rather than removed outright, since Dependabot could otherwise still propose 7.0.2 before phase 2 lands `@typescript/native` | Remove the ignore entirely | typescript-eslint still can't load on TS 7.0.2; an unscoped ignore removal would reopen the exact CI failure phase 1 exists to fix |
 
 ## Research Summary
 

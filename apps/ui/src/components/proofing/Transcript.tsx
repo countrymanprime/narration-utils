@@ -14,7 +14,7 @@ import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TagInput } from '../primitives/TagInput';
-import { Tooltip } from '../primitives/Tooltip';
+import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { Results } from './Results';
 import { hasHint, splitHintTerms, suggestionMessage } from './hints';
 import { PROOFING_CHUNK_OPTIONS } from './options';
@@ -61,11 +61,15 @@ export function Transcript({
   notify,
   goToManuscript,
   goHome,
+  dawFileLinked,
 }: {
   state: TranscriptState;
   notify: Notify;
   goToManuscript: (chapter: string, paragraph: number) => void;
   goHome: () => void;
+  /** PRD project-workspace-and-daw-link.prd.md, W16: starting a comparison, jumping to recorded audio and exporting
+   * markers all need a linked DAW project file; reviewing an already-completed comparison does not. */
+  dawFileLinked: boolean;
 }) {
   const api = useApi();
   const [model, setModel] = useState('small');
@@ -343,10 +347,12 @@ export function Transcript({
                 <FontAwesomeIcon icon={faArrowLeft} />
                 Back to Home
               </Button>
-              <Button variant="primary" onClick={() => void start()}>
-                <FontAwesomeIcon icon={faPlay} />
-                Start comparison
-              </Button>
+              <TooltipTarget text={dawFileLinked ? 'Start comparison' : 'Link a REAPER project (.rpp) file to start a comparison.'}>
+                <Button variant="primary" onClick={() => void start()} disabled={!dawFileLinked}>
+                  <FontAwesomeIcon icon={faPlay} />
+                  Start comparison
+                </Button>
+              </TooltipTarget>
             </div>
           </div>
         </section>
@@ -442,7 +448,8 @@ export function Transcript({
             setReviewingLast(false);
             if (!reviewingLast) void api.transcriptReset().catch((error) => notify(describeApiError(error), 'error'));
           }}
-          canExportMarkers={!reviewingLast}
+          canExportMarkers={!reviewingLast && dawFileLinked}
+          canJump={dawFileLinked}
           goToManuscript={(row) => goToManuscript(row.chapter || '', row.paragraph || 0)}
         />
       )}

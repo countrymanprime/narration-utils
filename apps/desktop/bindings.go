@@ -9,9 +9,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"time"
+
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
+	"github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
@@ -263,31 +266,53 @@ func reportAttach(ctx context.Context, attached bool, reason string) (string, er
 	return attachResult(attached, reason)
 }
 
-// attachResult is what ProjectSwitch and ProjectCreate answer: whether the project was attached and, when it was not, why.
+// attachResult is what ProjectSwitch and ProjectCreateIn answer: whether the project was attached and, when it was not, why.
 func attachResult(attached bool, reason string) (string, error) {
 	return encodeBinding(map[string]any{"switched": attached, "reason": reason}, nil)
 }
 
-// ProjectCreate makes the folder and attaches it. The busy check comes first,
-// so a refused create leaves no empty folder behind, and the path must be
-// absolute: a relative one would be created under the working directory of
-// whatever launched the app. The check is a pre-check only; ProjectSwitch asks
-// again under the write lock, so a lost race at worst leaves an empty folder.
-func (h *Host) ProjectCreate(path, name string) (string, error) {
-	if path == "" {
-		return "", fmt.Errorf("a folder path is required")
+// ProjectCreateIn makes a new project.json-manifested folder named name under
+// parent (the PRD's "Visual Studio model": a name plus a location) and
+// attaches it, replacing the old full-path ProjectCreate (PRD W9). An empty
+// parent defaults to the Phase 1 projects directory (project.ResolveDir), so
+// the picker's default "Create new" needs only a name. name is validated
+// (project.ValidateName: non-empty, no illegal or control characters, not a
+// Windows reserved device name) before parent is even resolved, and the busy
+// check comes before any MkdirAll, so a refused or invalid create leaves no
+// folder behind; the check is a pre-check only, ProjectSwitch asks again
+// under the write lock, so a lost race at worst leaves an empty folder.
+func (h *Host) ProjectCreateIn(parent, name string) (string, error) {
+	if err := project.ValidateName(name); err != nil {
+		return "", err
 	}
-	if !filepath.IsAbs(path) {
-		return "", fmt.Errorf("the project folder must be an absolute path")
+	name = strings.TrimSpace(name)
+	if parent == "" {
+		resolved, err := project.ResolveDir("")
+		if err != nil {
+			return "", fmt.Errorf("could not resolve the projects directory: %w", err)
+		}
+		parent = resolved
 	}
+	if !filepath.IsAbs(parent) {
+		return "", fmt.Errorf("the project location must be an absolute path")
+	}
+	path := filepath.Join(parent, name)
 	if !h.canAttach() {
 		h.mu.RLock()
 		ctx := h.ctx
 		h.mu.RUnlock()
 		return reportAttach(ctx, false, attachBusyReason)
 	}
+	if _, err := os.Stat(path); err == nil {
+		return "", fmt.Errorf("a project named %q already exists in that location", name)
+	} else if !os.IsNotExist(err) {
+		return "", fmt.Errorf("could not check the project location: %w", err)
+	}
 	if err := os.MkdirAll(path, 0o755); err != nil {
 		return "", fmt.Errorf("could not create the project folder: %w", err)
+	}
+	if err := project.New(name, time.Now()).Save(path); err != nil {
+		return "", fmt.Errorf("could not write the project manifest: %w", err)
 	}
 	return h.ProjectSwitch(path, name)
 }

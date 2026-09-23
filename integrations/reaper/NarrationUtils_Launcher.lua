@@ -39,14 +39,19 @@ local BUNDLE_ROOT = join(join(SHARED, '..'), '..')
 -- The path is whatever os.Executable() reported, so the launcher never depends on the program's name: only the two fallbacks below do.
 local configured_app = common.read_file(SHARED .. SEP .. 'narration-utils-app-path.txt'):gsub('[\r\n]+$', '')
 
+-- Returns the rpp's own containing folder, a display name, and the rpp's own
+-- exact path (PRD project-workspace-and-daw-link.prd.md Phase 5,
+-- --project-file). An unsaved project has no file at all, so the third value
+-- is also empty: the app then has nothing to match and falls back to its
+-- picker (W5) instead of guessing.
 local function project_context()
   local _, rpp = reaper.EnumProjects(-1, '')
   if not rpp or rpp == '' then
-    return '', 'Unsaved REAPER project'
+    return '', 'Unsaved REAPER project', ''
   end
   local name = rpp:match('[^\\/]+$') or 'REAPER project'
   name = name:match('^(.*)%.[^.]+$') or name
-  return rpp:match('^(.*)[\\/][^\\/]-$') or '', name
+  return rpp:match('^(.*)[\\/][^\\/]-$') or '', name, rpp
 end
 
 -- The only REAPER configuration is this launcher action. A release bundle
@@ -67,7 +72,7 @@ local checkout_app = join(join(join(join(REPO_ROOT, 'apps'), 'desktop'), 'build/
 local release_mode = common.file_exists(bundled_app)
 local app_exe = release_mode and bundled_app or checkout_app
 
-local project_folder, project_name = project_context()
+local project_folder, project_name, project_file = project_context()
 local session_dir = join(join(join(reaper.GetResourcePath(), 'NarrationUtils'), 'sessions'), 'hub_' .. tostring(reaper.time_precise()):gsub('[%.]', ''))
 reaper.RecursiveCreateDirectory(join(session_dir, 'commands'), 0)
 
@@ -109,6 +114,8 @@ local command = quote(app_exe)
   .. quote(project_folder)
   .. ' --project-name '
   .. quote(project_name)
+  .. ' --project-file '
+  .. quote(project_file)
   .. ' --daw '
   .. quote('REAPER')
 

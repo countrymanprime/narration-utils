@@ -15,6 +15,7 @@ import { WorkDialog } from '../primitives/WorkDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { IconButton } from '../primitives/IconButton';
 import type { Notify } from '../primitives/Toast';
+import { combinedRequiredReason } from '../../dawAvailability';
 
 // Import runs as a host-side job; the UI only ever displays the percent and log
 // lines the host reports while polling (ADR-0015) - it never invents progress.
@@ -327,67 +328,79 @@ export function Home({
         goToManuscript={goToManuscript}
         refreshKey={data.manuscript ? `${data.manuscript.id}:${data.manuscript.importedAt}` : 'no-manuscript'}
       />
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <TooltipTarget text={found ? 'Open Proofing' : 'Import a manuscript to unlock Proofing.'} className="w-full">
-          <button
-            aria-label="Open Proofing"
-            disabled={!found}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
-            onClick={() => go('/proofing')}
-          >
-            <div className="mb-1 flex items-center justify-between">
-              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
-                Proofing
-              </span>
-              <span
-                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
-                style={
-                  lastCompleted
-                    ? { background: 'var(--review-soft)', color: 'var(--danger-text)' }
-                    : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
-                }
+      {(() => {
+        // Reviewing an existing comparison never needs a linked DAW file, only starting a new one does (PRD W16):
+        // the card is blocked when there is no manuscript, or when there is nothing to review yet and no DAW file
+        // is linked to start one with.
+        const startBlocked = !lastCompleted && !data.dawFileLinked;
+        const proofingBlocked = !found || startBlocked;
+        const proofingReason = !found
+          ? 'Import a manuscript to unlock Proofing.'
+          : (combinedRequiredReason({ manuscript: false, dawFile: startBlocked }) ?? 'Open Proofing');
+        return (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <TooltipTarget text={proofingBlocked ? proofingReason : 'Open Proofing'} className="w-full">
+              <button
+                aria-label="Open Proofing"
+                disabled={proofingBlocked}
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
+                onClick={() => go('/proofing')}
               >
-                {lastCompleted ? `${lastCompleted.rows.length} ${lastCompleted.rows.length === 1 ? 'discrepancy' : 'discrepancies'}` : 'Ready'}
-              </span>
-            </div>
-            <div className="font-semibold">{lastCompleted ? 'Review latest comparison' : 'Ready to compare selected REAPER audio'}</div>
-            <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-              {lastCompleted
-                ? `${lastCompleted.trackName || 'Selected REAPER audio'}${lastCompleted.audioItemCount ? ` · ${lastCompleted.audioItemCount} audio item${lastCompleted.audioItemCount === 1 ? '' : 's'}` : ''} · ${completedLabel(lastCompleted.completedAt)}`
-                : 'Select audio items or a track in REAPER, then start Proofing.'}
-            </div>
-          </button>
-        </TooltipTarget>
-        <TooltipTarget text={found ? 'Open Story Bible' : 'Import a manuscript to unlock Story Bible.'} className="w-full">
-          <button
-            aria-label="Open Story Bible"
-            disabled={!found}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
-            onClick={() => go('/story-bible')}
-          >
-            <div className="mb-1 flex items-center justify-between">
-              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
-                Story Bible
-              </span>
-              <span
-                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
-                style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
+                    Proofing
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
+                    style={
+                      lastCompleted
+                        ? { background: 'var(--review-soft)', color: 'var(--danger-text)' }
+                        : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
+                    }
+                  >
+                    {lastCompleted ? `${lastCompleted.rows.length} ${lastCompleted.rows.length === 1 ? 'discrepancy' : 'discrepancies'}` : 'Ready'}
+                  </span>
+                </div>
+                <div className="font-semibold">{lastCompleted ? 'Review latest comparison' : 'Ready to compare selected REAPER audio'}</div>
+                <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+                  {lastCompleted
+                    ? `${lastCompleted.trackName || 'Selected REAPER audio'}${lastCompleted.audioItemCount ? ` · ${lastCompleted.audioItemCount} audio item${lastCompleted.audioItemCount === 1 ? '' : 's'}` : ''} · ${completedLabel(lastCompleted.completedAt)}`
+                    : 'Select audio items or a track in REAPER, then start Proofing.'}
+                </div>
+              </button>
+            </TooltipTarget>
+            <TooltipTarget text={found ? 'Open Story Bible' : 'Import a manuscript to unlock Story Bible.'} className="w-full">
+              <button
+                aria-label="Open Story Bible"
+                disabled={!found}
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
+                onClick={() => go('/story-bible')}
               >
-                {entities.length} entities · {review ? 1 : 0} review
-              </span>
-            </div>
-            <div className="font-semibold">
-              {review ? `Review “${review.canonical_name}”` : entities.length ? 'Browse Story Bible entries' : 'No Story Bible entries yet'}
-            </div>
-            <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-              {review?.description.text ||
-                (entities.length
-                  ? `${entities.length} saved ${entities.length === 1 ? 'entity' : 'entities'}`
-                  : 'Build the Story Bible to discover names and terms.')}
-            </div>
-          </button>
-        </TooltipTarget>
-      </div>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
+                    Story Bible
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
+                    style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}
+                  >
+                    {entities.length} entities · {review ? 1 : 0} review
+                  </span>
+                </div>
+                <div className="font-semibold">
+                  {review ? `Review “${review.canonical_name}”` : entities.length ? 'Browse Story Bible entries' : 'No Story Bible entries yet'}
+                </div>
+                <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+                  {review?.description.text ||
+                    (entities.length
+                      ? `${entities.length} saved ${entities.length === 1 ? 'entity' : 'entities'}`
+                      : 'Build the Story Bible to discover names and terms.')}
+                </div>
+              </button>
+            </TooltipTarget>
+          </div>
+        );
+      })()}
     </div>
   );
 }

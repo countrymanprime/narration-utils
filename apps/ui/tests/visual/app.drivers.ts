@@ -136,6 +136,16 @@ async function goToPage(page: Page, name: AppPage): Promise<void> {
   await PAGE_CONTENT[name]?.(page).first().waitFor();
 }
 
+// With no linked DAW file the Proofing nav item is disabled outright (AppShell's requiresDaw gate), so it cannot be
+// clicked to get there - but offline review of the last completed comparison must still be reachable (PRD W16), and
+// is, through Home's own "Open Proofing" card, which navigates directly and is not gated on the DAW link. Used by the
+// `?mockNoDaw=1` proofing states instead of `goToPage`.
+async function goToProofingViaHomeCard(page: Page): Promise<void> {
+  await homeLoaded(page);
+  await clickVisible(page, 'button', 'Open Proofing');
+  await page.getByRole('heading', { level: 1, name: 'Proofing', exact: true }).waitFor();
+}
+
 // Home's chapter breakdown control exists only once the chapter list has loaded, so it is the proof that the whole page
 // (not just its heading) is there before a state that adds nothing of its own is photographed.
 async function homeLoaded(page: Page): Promise<void> {
@@ -250,6 +260,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.goto('/?mockNoManuscript=1');
       await settlePage(page);
     },
+    'daw-not-linked': async (page) => {
+      // Reload with the mock's no-linked-DAW seam (see main.tsx): the header pill and the Proofing nav item pick it up at once.
+      await page.goto('/?mockNoDaw=1');
+      await settlePage(page);
+      await homeLoaded(page);
+    },
     'chapter-table-collapsed': async (page) => {
       await homeLoaded(page);
     },
@@ -279,6 +295,10 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'import-activity-log': async (page) => {
       await clickVisible(page, 'button', 'Replace manuscript');
+      // This state is about the import dialog's own activity log, not the chained Story Bible build (B1-B3, on by
+      // default): uncheck it so the import dialog stays open with "Manuscript imported" instead of closing itself
+      // into a second dialog.
+      await clickVisible(page, 'checkbox', 'Build the Story Bible after import');
       await clickVisible(page, 'button', 'Import');
       await page.getByText('Manuscript imported', { exact: true }).first().waitFor();
     },
@@ -339,6 +359,20 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'chapters-overlay-open': async (page) => {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'Chapters & Search');
+    },
+    'chapters-overlay-searching': async (page) => {
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Chapters & Search');
+      // Captured right after typing, before the debounce settles (R1) - the chapter-title subset
+      // (R2) and the "Searching…" hint are what this state exists to show.
+      await page.getByPlaceholder('Search manuscript…').fill('Pool');
+    },
+    'chapters-overlay-search': async (page) => {
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Chapters & Search');
+      await page.getByPlaceholder('Search manuscript…').fill('Alice');
+      // Waits out the real 2s debounce for the settled, highlighted result row (R3, R4).
+      await page.locator('[data-highlight="Search"]').first().waitFor();
     },
     'detail-sidebar-note': async (page) => {
       await goToPage(page, 'Manuscript');
@@ -460,6 +494,28 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await freezeClock(page);
       await clickVisible(page, 'button', 'Suggest from manuscript');
       await page.locator('[data-tone]').first().waitFor();
+    },
+    'no-daw': async (page) => {
+      // Reload with the mock's no-linked-DAW seam (see main.tsx). The Proofing nav item is disabled outright with no
+      // linked DAW file, so reach the page through Home's own "Open Proofing" card instead of the nav (it stays
+      // enabled: the mock always has a last completed comparison to review, PRD W16). Start comparison is disabled
+      // once there. Its reason is not opened here (unlike proofing/disabled-button): that portalled tooltip already
+      // has its own declared axe debt (#157) and the escape hatch has a shrink-only cap (MAX_AXE_DEBT_RULES,
+      // visualSuite.test.ts) - the disabled button's own look is enough to show the gating without another entry.
+      await page.goto('/?mockNoDaw=1');
+      await settlePage(page);
+      await goToProofingViaHomeCard(page);
+      await page.getByRole('button', { name: 'Start comparison' }).waitFor();
+    },
+    'no-daw-review': async (page) => {
+      // Offline review of the last completed comparison stays reachable with no linked DAW file (PRD W16): reach
+      // Proofing through Home's card (the nav item itself is disabled), then follow the "Last narrated take" link from
+      // Setup into the results view, where Play recorded audio and Export are disabled.
+      await page.goto('/?mockNoDaw=1');
+      await settlePage(page);
+      await goToProofingViaHomeCard(page);
+      await clickVisible(page, 'button', /Last narrated take/);
+      await page.locator('tr[data-row]').first().waitFor();
     },
   },
   storybible: {
@@ -628,6 +684,14 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await settlePage(page);
       await goToPage(page, 'Tracks');
       await page.getByText('No REAPER project file found').waitFor();
+    },
+    'no-daw-link': async (page) => {
+      // Reload with the mock's no-linked-DAW seam (see main.tsx): Tracks still reads its own .rpp discovery, but its
+      // own DAW-link control switches from "Link a different REAPER project file" to "Link a REAPER project file".
+      await page.goto('/?mockNoDaw=1');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      await page.getByRole('button', { name: 'Play', exact: true }).first().waitFor();
     },
     playing: async (page) => {
       await goToPage(page, 'Tracks');
@@ -873,6 +937,25 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Story Bible');
+    },
+    'project-daw': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'This Project');
+      await clickSettingsCategory(page, 'DAW Integration');
+      // The header pill's own text is also "REAPER project linked" (it is a plain text node, not just its aria-label),
+      // so wait on copy unique to the settings panel instead of the ambiguous status line.
+      await page.getByText('Tracks and Proofing read from the linked .rpp file.').waitFor();
+    },
+    'project-daw-not-linked': async (page) => {
+      // Reload with the mock's no-linked-DAW seam (see main.tsx): the project-scope DAW category (new in this phase,
+      // PRD W19 - previously global-only) shows its unlinked copy and "Link a REAPER project file".
+      await page.goto('/?mockNoDaw=1');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'This Project');
+      await clickSettingsCategory(page, 'DAW Integration');
+      // Same ambiguity as the linked state: wait on the panel's own copy, not the header pill's identical text.
+      await page.getByText('Link a REAPER project (.rpp) file to unlock Tracks and Proofing.').waitFor();
     },
     'project-data': async (page) => {
       await goToPage(page, 'Settings');

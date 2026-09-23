@@ -49,8 +49,9 @@ export function TooltipTarget({ text, children, className = '', style }: { text:
 // The "i" next to a label. It is a real button, so the keyboard reaches it and a screen reader announces it, and its text
 // is its accessible description (a hint that only appears on hover is invisible to a screen reader). Hover (after a
 // second), keyboard focus and a press open the popup; Escape closes it. `label` names the icon when a page has more than one, so a screen
-// reader can tell them apart ("About reference material").
-export function Tooltip({ text, label = 'More information' }: { text: string; label?: string }) {
+// reader can tell them apart ("About reference material"). `icon` swaps the "i" glyph for a different one (the manuscript
+// controls bar's `faFont` "Text size" info button, R11) while keeping every other part of the contract identical.
+export function Tooltip({ text, label = 'More information', icon = 'i' }: { text: string; label?: string; icon?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const openedByFocus = useRef(false);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -99,7 +100,7 @@ export function Tooltip({ text, label = 'More information' }: { text: string; la
         }}
         className="ml-1 inline-flex size-[15px] cursor-help items-center justify-center rounded-full border border-[var(--non-text)] font-['IBM_Plex_Mono',monospace] text-[0.68rem] text-[var(--text-muted)] [text-transform:inherit] hover:border-[var(--accent)] hover:text-[var(--accent)]"
       >
-        i
+        {icon}
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="top" sideOffset={hintOffset} collisionPadding={8} className="z-[1000]">

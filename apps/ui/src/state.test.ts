@@ -4,6 +4,8 @@ import {
   canAddEquivalence,
   categoryLabel,
   categoryValue,
+  chapterLineNumber,
+  chapterTextMatches,
   estimateFinishedHours,
   findAliasMatches,
   highlightEntitiesInText,
@@ -11,6 +13,7 @@ import {
   isTranscriptActive,
   selectDiscrepancy,
   sortEntities,
+  windowExcerpt,
 } from './state';
 import type { GuideAlias, GuideEntity } from './types';
 
@@ -146,6 +149,113 @@ describe('Home audiobook estimate', () => {
   it('converts a word count into finished narration hours using the fixed rule of thumb', () => {
     expect(estimateFinishedHours(9300)).toBe(1);
     expect(estimateFinishedHours(0)).toBe(0);
+  });
+});
+
+describe('Manuscript search/bookmark line numbers (R5)', () => {
+  const chapter = {
+    paragraphIds: [
+      { id: 'p10', index: 10 },
+      { id: 'p11', index: 11 },
+      { id: 'p12', index: 12 },
+    ],
+  };
+
+  it('reads the in-chapter position from paragraphIds, for a chapter that was never loaded', () => {
+    expect(chapterLineNumber(chapter, 10, new Map())).toBe(1);
+    expect(chapterLineNumber(chapter, 12, new Map())).toBe(3);
+  });
+
+  it('falls back to loaded line numbers when the chapter has no paragraphIds (pre-migration manuscripts)', () => {
+    expect(chapterLineNumber(undefined, 10, new Map([[10, 7]]))).toBe(7);
+  });
+
+  it('falls back to the raw global paragraph index as a last resort', () => {
+    expect(chapterLineNumber(undefined, 10, new Map())).toBe(10);
+    expect(chapterLineNumber({ paragraphIds: undefined }, 10, new Map())).toBe(10);
+  });
+
+  it('prefers paragraphIds over a stale loaded map', () => {
+    expect(chapterLineNumber(chapter, 11, new Map([[11, 99]]))).toBe(2);
+  });
+});
+
+describe('Manuscript chapter title/subtitle subset (R2)', () => {
+  const chapters = [
+    { id: 'c1', title: 'Down the Rabbit-Hole', subtitle: undefined },
+    { id: 'c2', title: 'The Pool of Tears', subtitle: 'A soggy start' },
+    { id: 'c3', title: 'Advice from a Caterpillar', subtitle: undefined },
+  ];
+
+  it('matches a chapter whose title contains the query, case-insensitively', () => {
+    expect(chapterTextMatches(chapters, 'rabbit')).toEqual(new Set(['c1']));
+    expect(chapterTextMatches(chapters, 'POOL')).toEqual(new Set(['c2']));
+  });
+
+  it('matches a chapter whose subtitle contains the query', () => {
+    expect(chapterTextMatches(chapters, 'soggy')).toEqual(new Set(['c2']));
+  });
+
+  it('returns nothing for a blank query', () => {
+    expect(chapterTextMatches(chapters, '')).toEqual(new Set());
+    expect(chapterTextMatches(chapters, '   ')).toEqual(new Set());
+  });
+
+  it('returns nothing when no title or subtitle matches', () => {
+    expect(chapterTextMatches(chapters, 'nonexistent')).toEqual(new Set());
+  });
+});
+
+describe('windowExcerpt (R3)', () => {
+  const long = 'A'.repeat(30) + 'RABBIT' + 'B'.repeat(60); // len 96, match at [30,36)
+
+  it('returns the text unchanged when it already fits the budget', () => {
+    expect(windowExcerpt('short line', 0, 5, 38)).toEqual({ text: 'short line', matchStart: 0, matchLength: 5 });
+  });
+
+  it('cuts only the tail (ellipsis on the right) when the match falls within the first budget characters', () => {
+    const result = windowExcerpt(long, 30, 6, 38);
+    expect(result.text.startsWith('…')).toBe(false);
+    expect(result.text.endsWith('…')).toBe(true);
+    expect(result.text.slice(result.matchStart, result.matchStart + result.matchLength)).toBe('RABBIT');
+    expect(result.text.length).toBe(39); // 38 chars + the trailing ellipsis
+  });
+
+  it('adds a left ellipsis (and a right one if text remains) when the match starts beyond the budget', () => {
+    const farText = 'B'.repeat(60) + 'RABBIT' + 'A'.repeat(30); // match at [60, 66)
+    const result = windowExcerpt(farText, 60, 6, 38);
+    expect(result.text.startsWith('…')).toBe(true);
+    expect(result.text.slice(result.matchStart, result.matchStart + result.matchLength)).toBe('RABBIT');
+  });
+
+  it('adds only a left ellipsis when the match sits at the very end, with nothing left to show after it', () => {
+    const endText = 'B'.repeat(90) + 'RABBIT'; // match at [90, 96)
+    const result = windowExcerpt(endText, 90, 6, 38);
+    expect(result.text.startsWith('…')).toBe(true);
+    expect(result.text.endsWith('…')).toBe(false);
+    expect(result.text.slice(result.matchStart, result.matchStart + result.matchLength)).toBe('RABBIT');
+  });
+
+  it('never cuts the match itself, across a spread of match positions', () => {
+    const filler = (n: number) => 'x'.repeat(n);
+    for (const start of [0, 10, 40, 79, 80, 120, 155]) {
+      const text = `${filler(start)}RABBIT${filler(160 - start)}`;
+      const result = windowExcerpt(text, start, 6, 38);
+      expect(result.text.slice(result.matchStart, result.matchStart + result.matchLength)).toBe('RABBIT');
+    }
+  });
+
+  it('truncates the match itself when the match term alone is wider than the budget', () => {
+    const term = 'X'.repeat(50);
+    const result = windowExcerpt(term, 0, 50, 38);
+    expect(result.matchStart).toBe(0);
+    expect(result.text.endsWith('…')).toBe(true);
+    expect(result.text.length).toBe(38); // 37 chars of the term + the ellipsis
+  });
+
+  it('clamps an out-of-range match instead of slicing negatively or past the end', () => {
+    expect(() => windowExcerpt('short', -5, 3, 38)).not.toThrow();
+    expect(() => windowExcerpt('short', 3, 100, 38)).not.toThrow();
   });
 });
 
