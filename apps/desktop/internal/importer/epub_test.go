@@ -284,6 +284,234 @@ func TestEPUBOversizedEntryIsRejected(t *testing.T) {
 	}
 }
 
+// TestEPUBBodyEpubTypeClassifiesDedicationAsOpening pins the Architecture
+// notes' "Classification" table (Phase 3, ADR 0102): epub:type takes
+// precedence over the title-text classifier, so a dedication page titled
+// something that does not itself read as front matter still lands "opening".
+func TestEPUBBodyEpubTypeClassifiesDedicationAsOpening(t *testing.T) {
+	files := baseEPUBFiles(
+		`<item id="ded" href="ded.xhtml" media-type="application/xhtml+xml"/>`+
+			`<item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>`,
+		`<itemref idref="ded"/><itemref idref="ch1"/>`,
+	)
+	files["OEBPS/ded.xhtml"] = `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">` +
+		`<body epub:type="dedication"><h1>For My Mother</h1><p>Who always believed.</p></body></html>`
+	files["OEBPS/ch1.xhtml"] = `<html xmlns="http://www.w3.org/1999/xhtml"><body><h1>Chapter One</h1><p>Body.</p></body></html>`
+
+	draft, err := epubWithProgress(epubFixture(t, files), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dedication := sectionNamed(t, draft, "For My Mother")
+	if dedication.ContentKind != "opening" {
+		t.Fatalf("dedication content kind = %q, want opening", dedication.ContentKind)
+	}
+}
+
+// TestEPUBBodyEpubTypeClassifiesEndnotesAsReference mirrors the reference
+// half of the same table: a whole endnotes document reached only through the
+// TOC (no heading text of its own that the title classifier would recognize)
+// still lands "reference".
+func TestEPUBBodyEpubTypeClassifiesEndnotesAsReference(t *testing.T) {
+	files := baseEPUBFiles(
+		`<item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>`+
+			`<item id="notes" href="notes.xhtml" media-type="application/xhtml+xml"/>`,
+		`<itemref idref="ch1"/><itemref idref="notes"/>`,
+	)
+	files["OEBPS/ch1.xhtml"] = `<html xmlns="http://www.w3.org/1999/xhtml"><body><h1>Chapter One</h1><p>Body.</p></body></html>`
+	files["OEBPS/notes.xhtml"] = `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">` +
+		`<body epub:type="endnotes"><h1>Notes</h1><p>1. A citation.</p></body></html>`
+
+	draft, err := epubWithProgress(epubFixture(t, files), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	notes := sectionNamed(t, draft, "Notes")
+	if notes.ContentKind != "reference" {
+		t.Fatalf("notes content kind = %q, want reference", notes.ContentKind)
+	}
+}
+
+// TestEPUBGluedHeadingIsSplitAndReported pins the "glued heading repair"
+// Phase 3 scope: parity with DOCX and Markdown, which both report the split
+// in Notices (ADR 0013).
+func TestEPUBGluedHeadingIsSplitAndReported(t *testing.T) {
+	files := baseEPUBFiles(
+		`<item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>`,
+		`<itemref idref="ch1"/>`,
+	)
+	files["OEBPS/ch1.xhtml"] = `<html xmlns="http://www.w3.org/1999/xhtml"><body><h1>Chapter OneBad Ideas</h1><p>Body.</p></body></html>`
+
+	draft, err := epubWithProgress(epubFixture(t, files), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(draft.ChapterTitles) != 1 || draft.ChapterTitles[0] != "Chapter One" {
+		t.Fatalf("chapter titles = %#v", draft.ChapterTitles)
+	}
+	found := false
+	for _, notice := range draft.Notices {
+		if strings.Contains(notice, "no gap between its number and title") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected a glued-heading notice, got %#v", draft.Notices)
+	}
+}
+
+// TestEPUBNonLinearItemIsSkippedAndReported pins E4: a spine itemref marked
+// linear="no" is not read into the reading order, and the skip is reported.
+func TestEPUBNonLinearItemIsSkippedAndReported(t *testing.T) {
+	files := baseEPUBFiles(
+		`<item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>`+
+			`<item id="bonus" href="bonus.xhtml" media-type="application/xhtml+xml"/>`,
+		`<itemref idref="ch1"/><itemref idref="bonus" linear="no"/>`,
+	)
+	files["OEBPS/ch1.xhtml"] = `<html xmlns="http://www.w3.org/1999/xhtml"><body><h1>Chapter One</h1><p>Body.</p></body></html>`
+	files["OEBPS/bonus.xhtml"] = `<html xmlns="http://www.w3.org/1999/xhtml"><body><h1>Bonus Scene</h1><p>Ancillary.</p></body></html>`
+
+	draft, err := epubWithProgress(epubFixture(t, files), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, title := range draft.ChapterTitles {
+		if title == "Bonus Scene" {
+			t.Fatal("a linear=\"no\" spine item must not enter the reading order")
+		}
+	}
+	found := false
+	for _, notice := range draft.Notices {
+		if strings.Contains(notice, "non-linear") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected a non-linear-item notice, got %#v", draft.Notices)
+	}
+}
+
+// TestEPUBNoteReferenceMarkerIsDropped pins E4's other half: an inline
+// epub:type="noteref" marker's own text (the footnote number) never reaches
+// the narrator, so "the end.1" reads as "the end."
+func TestEPUBNoteReferenceMarkerIsDropped(t *testing.T) {
+	files := baseEPUBFiles(
+		`<item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>`,
+		`<itemref idref="ch1"/>`,
+	)
+	files["OEBPS/ch1.xhtml"] = `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">` +
+		`<body><h1>Chapter One</h1><p>The end.<a epub:type="noteref" href="notes.xhtml#n1">1</a></p></body></html>`
+
+	draft, err := epubWithProgress(epubFixture(t, files), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := chapterText(t, draft, "Chapter One")
+	if strings.Contains(text, "1") {
+		t.Fatalf("expected the noteref marker to be dropped, got %q", text)
+	}
+	if !strings.Contains(text, "The end.") {
+		t.Fatalf("expected the surrounding text to survive, got %q", text)
+	}
+}
+
+// TestEPUBCSSClassEmphasisFromInlineStyle pins E3's Phase 3 scope: a
+// single-class, single-declaration font-style/font-weight rule from the
+// document's own <style> maps a <span class="..."> to a span, the same as a
+// semantic <em>/<strong> would.
+func TestEPUBCSSClassEmphasisFromInlineStyle(t *testing.T) {
+	files := baseEPUBFiles(
+		`<item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>`,
+		`<itemref idref="ch1"/>`,
+	)
+	files["OEBPS/ch1.xhtml"] = `<html xmlns="http://www.w3.org/1999/xhtml"><head>` +
+		`<style>.calibre1{font-style:italic}</style></head>` +
+		`<body><h1>Chapter One</h1><p>Plain <span class="calibre1">stylesheet italic</span> text.</p></body></html>`
+
+	draft, err := epubWithProgress(epubFixture(t, files), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var body Paragraph
+	for _, p := range draft.Paragraphs {
+		if p.Chapter == "Chapter One" {
+			body = p
+			break
+		}
+	}
+	italic := false
+	for _, span := range body.Spans {
+		if span.Style == "italic" {
+			italic = true
+		}
+	}
+	if !italic {
+		t.Fatalf("expected an italic span from the stylesheet class, got %#v", body.Spans)
+	}
+}
+
+// TestEPUBCSSClassEmphasisFromLinkedStylesheet covers the more common real
+// shape: the formatting class comes from a linked stylesheet.css, not an
+// inline <style>, resolved relative to the content document's own directory.
+func TestEPUBCSSClassEmphasisFromLinkedStylesheet(t *testing.T) {
+	files := baseEPUBFiles(
+		`<item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>`+
+			`<item id="css" href="stylesheet.css" media-type="text/css"/>`,
+		`<itemref idref="ch1"/>`,
+	)
+	files["OEBPS/stylesheet.css"] = `.calibre1{font-weight:bold}`
+	files["OEBPS/ch1.xhtml"] = `<html xmlns="http://www.w3.org/1999/xhtml"><head>` +
+		`<link rel="stylesheet" type="text/css" href="stylesheet.css"/></head>` +
+		`<body><h1>Chapter One</h1><p>Plain <span class="calibre1">bold</span> text.</p></body></html>`
+
+	draft, err := epubWithProgress(epubFixture(t, files), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var body Paragraph
+	for _, p := range draft.Paragraphs {
+		if p.Chapter == "Chapter One" {
+			body = p
+			break
+		}
+	}
+	bold := false
+	for _, span := range body.Spans {
+		if span.Style == "bold" {
+			bold = true
+		}
+	}
+	if !bold {
+		t.Fatalf("expected a bold span from the linked stylesheet class, got %#v", body.Spans)
+	}
+}
+
+// TestEPUBUnresolvedCSSClassIsCountedInNotices pins the "anything else is
+// text without a span and a count in Notices" half of E3.
+func TestEPUBUnresolvedCSSClassIsCountedInNotices(t *testing.T) {
+	files := baseEPUBFiles(
+		`<item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>`,
+		`<itemref idref="ch1"/>`,
+	)
+	files["OEBPS/ch1.xhtml"] = `<html xmlns="http://www.w3.org/1999/xhtml"><head>` +
+		`<style>.fancy{font-size:200%}</style></head>` +
+		`<body><h1>Chapter One</h1><p>Plain <span class="fancy">fancy</span> text.</p></body></html>`
+
+	draft, err := epubWithProgress(epubFixture(t, files), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, notice := range draft.Notices {
+		if strings.Contains(notice, "formatting class") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected an unresolved-formatting-class notice, got %#v", draft.Notices)
+	}
+}
+
 func TestEPUBFixtureParityWithAliceMarkdown(t *testing.T) {
 	mdDraft, err := BuildDraft(fixture("alice.md"), 1)
 	if err != nil {

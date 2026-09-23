@@ -14,7 +14,7 @@ func TestNewDraftGivesContentsItsOwnGroupInsteadOfLeakingIntoPriorSection(t *tes
 		{Chapter: "Contents", Text: "Chapter One .... 1", SourceIndex: 1},
 		{Chapter: "Chapter Two", Text: "Chapter two text.", SourceIndex: 2},
 	}
-	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One", "Chapter Two"}, nil)
+	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One", "Chapter Two"}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestNewDraftClassifiesACharactersHeadingAsReference(t *testing.T) {
 		{Chapter: "Chapter One", Text: "Chapter one text.", SourceIndex: 0},
 		{Chapter: "Characters", Text: "Wren — a spy.", SourceIndex: 1},
 	}
-	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One"}, nil)
+	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One"}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func TestNewDraftClassifiesFrontMatterAsOpening(t *testing.T) {
 		{Chapter: "Front Matter", Text: "By Jane Author", SourceIndex: 0},
 		{Chapter: "Chapter One", Text: "Chapter one text.", SourceIndex: 1},
 	}
-	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One"}, nil)
+	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One"}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func TestNewDraftSectionSubtitleIsTheFirstParagraphsSubtitleAsTheCommitReadsIt(t
 		{Chapter: "Chapter Three", Text: "Plain.", SourceIndex: 3},
 		subtitled("Chapter Three", "The Pool of Tears", "Later.", 4),
 	}
-	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One", "Chapter Two", "Chapter Three", "Chapter Four"}, nil)
+	draft, err := newDraft("docx", "test.docx", paragraphs, []string{"Chapter One", "Chapter Two", "Chapter Three", "Chapter Four"}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +165,7 @@ func TestCharacterBlockLabelledFactsBecomeOneCandidateWithThreeProperties(t *tes
 		{Chapter: "Characters", Text: "Abilities: Flight, invisibility", SourceIndex: 2},
 		{Chapter: "Characters", Text: "Dossier: Missing since the spring thaw", SourceIndex: 3},
 	}
-	draft, err := newDraft("docx", "test.docx", paragraphs, nil, nil)
+	draft, err := newDraft("docx", "test.docx", paragraphs, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +193,7 @@ func TestASecondBareNameClosesThePriorCandidateAndOpensANew(t *testing.T) {
 		{Chapter: "Characters", Text: "Juno", SourceIndex: 2},
 		{Chapter: "Characters", Text: "Codename: The Crow", SourceIndex: 3},
 	}
-	draft, err := newDraft("docx", "test.docx", paragraphs, nil, nil)
+	draft, err := newDraft("docx", "test.docx", paragraphs, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +217,7 @@ func TestADuplicateLabelUnderOneCandidateKeepsTheFirstValue(t *testing.T) {
 		{Chapter: "Characters", Text: "Notes: first note", SourceIndex: 1},
 		{Chapter: "Characters", Text: "Notes: second note", SourceIndex: 2},
 	}
-	draft, err := newDraft("docx", "test.docx", paragraphs, nil, nil)
+	draft, err := newDraft("docx", "test.docx", paragraphs, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +233,7 @@ func TestWithNoCandidateOpenALabelledLineKeepsTheLegacyNameDescriptionBehavior(t
 	paragraphs := []Paragraph{
 		{Chapter: "Characters", Text: "Wren - a spy for the crown.", SourceIndex: 0},
 	}
-	draft, err := newDraft("docx", "test.docx", paragraphs, nil, nil)
+	draft, err := newDraft("docx", "test.docx", paragraphs, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -257,7 +257,7 @@ func TestARepeatedBareNameDoesNotFabricateACandidateFromTheNextLabel(t *testing.
 		{Chapter: "Characters", Text: "Wren", SourceIndex: 2},
 		{Chapter: "Characters", Text: "Notes: something", SourceIndex: 3},
 	}
-	draft, err := newDraft("docx", "test.docx", paragraphs, nil, nil)
+	draft, err := newDraft("docx", "test.docx", paragraphs, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -271,7 +271,7 @@ func TestARepeatedBareNameDoesNotFabricateACandidateFromTheNextLabel(t *testing.
 }
 
 func TestNewDraftSectionWithoutSubtitleSendsNoSubtitleField(t *testing.T) {
-	draft, err := newDraft("docx", "test.docx", []Paragraph{{Chapter: "Chapter One", Text: "Text.", SourceIndex: 0}}, []string{"Chapter One"}, nil)
+	draft, err := newDraft("docx", "test.docx", []Paragraph{{Chapter: "Chapter One", Text: "Text.", SourceIndex: 0}}, []string{"Chapter One"}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

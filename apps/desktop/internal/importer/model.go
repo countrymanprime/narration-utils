@@ -245,7 +245,10 @@ func firstSubtitle(paragraphs []Paragraph, indexes []int) string {
 // front (so an expected chapter with no paragraphs still gets an empty section). headingLevels gives the outline depth of every
 // heading-derived title the caller saw - chapter headings and non-chapter ones like "Contents" alike - keyed by its exact text; a
 // title absent from the map (a synthetic group such as "Front Matter" that never had its own heading paragraph) has no known level.
-func newDraft(format, sourceName string, paragraphs []Paragraph, titles []string, headingLevels map[string]int) (Draft, error) {
+// kindOverrides forces a group's contentKind by its exact title, taking precedence over every text-based rule below (EPUB's
+// epub:type is authoritative and does not always share a recognizable title, e.g. a dedication page titled "For My Mother" -
+// txt-and-epub-import PRD, Phase 3, "Classification"; ADR 0102). Callers with no such signal (DOCX, Markdown, TXT) pass nil.
+func newDraft(format, sourceName string, paragraphs []Paragraph, titles []string, headingLevels map[string]int, kindOverrides map[string]string) (Draft, error) {
 	if len(paragraphs) == 0 {
 		return Draft{}, &Error{"The manuscript has no readable text paragraphs."}
 	}
@@ -293,6 +296,9 @@ func newDraft(format, sourceName string, paragraphs []Paragraph, titles []string
 			contentKind = "opening"
 		} else if isReferenceHeading(group.title) || (characterListActive && !endsCharacterScope) {
 			contentKind = "reference"
+		}
+		if override, ok := kindOverrides[group.title]; ok {
+			contentKind = override
 		}
 		if endsCharacterScope {
 			characterListActive = false

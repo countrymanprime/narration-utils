@@ -470,7 +470,7 @@ func docxWithProgress(path string, progress Progress) (Draft, error) {
 		progress.report(70, "%s", notice)
 	}
 	progress.report(80, "Classifying front matter, chapters and reference sections")
-	draft, err := newDraft("docx", filepath.Base(path), paragraphs, titles, headingLevels)
+	draft, err := newDraft("docx", filepath.Base(path), paragraphs, titles, headingLevels, nil)
 	if err != nil {
 		draft.Notices = notices
 		return draft, err

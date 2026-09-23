@@ -73,6 +73,10 @@ type epubPackage struct {
 	spine    []string // manifest ids, in reading order
 	navID    string   // manifest id of the EPUB 3 nav document, "" if none
 	ncxID    string   // manifest id of the NCX document, "" if none
+	// nonLinear counts spine itemrefs with linear="no" (E4): a spine item marked non-linear is auxiliary
+	// content (e.g. a sidebar or ancillary scene) the reading order does not visit in turn, so it is skipped
+	// from the chapter build rather than read in the middle of the narrative; reported in a notice.
+	nonLinear int
 }
 
 // parseOPF reads the package document's manifest and spine, resolving every
@@ -103,9 +107,14 @@ func parseOPF(content []byte, opfDir string) epubPackage {
 		}
 	}
 	for _, itemref := range parsed.Spine.Itemref {
-		if _, ok := pkg.manifest[itemref.IDref]; ok {
-			pkg.spine = append(pkg.spine, itemref.IDref)
+		if _, ok := pkg.manifest[itemref.IDref]; !ok {
+			continue
 		}
+		if itemref.Linear == "no" {
+			pkg.nonLinear++
+			continue
+		}
+		pkg.spine = append(pkg.spine, itemref.IDref)
 	}
 	return pkg
 }
@@ -199,11 +208,39 @@ func epubDRMCheck(files []*zip.File) (drm bool, message string) {
 }
 
 // chapterStart is one resolved chapter boundary: the absolute index into the
-// book-wide block list, and the title/subtitle it takes.
+// book-wide block list, the title/subtitle it takes, and the contentKind its
+// spine document's own epub:type implies ("" when the document carried none
+// or its epub:type gave no classification signal).
 type chapterStart struct {
 	index    int
 	title    string
 	subtitle string
+	kind     string
+}
+
+// epubTypeKindTable maps an EPUB epub:type token to the contentKind it
+// implies (Architecture notes, "Classification"; ADR 0102): it takes
+// precedence over model.go's title-text classifiers, which stay the fallback
+// for a document that carries no epub:type or an unrecognized one.
+var epubTypeKindTable = map[string]string{
+	"cover": "opening", "titlepage": "opening", "frontmatter": "opening",
+	"dedication": "opening", "epigraph": "opening", "copyright-page": "opening",
+	"toc": "reference", "acknowledgments": "reference", "glossary": "reference",
+	"index": "reference", "bibliography": "reference", "endnotes": "reference",
+	"footnotes": "reference", "backmatter": "reference",
+	"bodymatter": "narration", "chapter": "narration", "prologue": "narration", "epilogue": "narration",
+}
+
+// epubTypeKind classifies an epub:type attribute value (a space-separated
+// token list) by its first recognized token, "" when none of its tokens are
+// in the table.
+func epubTypeKind(value string) string {
+	for _, token := range strings.Fields(value) {
+		if kind, ok := epubTypeKindTable[token]; ok {
+			return kind
+		}
+	}
+	return ""
 }
 
 // epubChapterStarts implements E1 (TOC first, spine-heading fallback) and E2
@@ -211,7 +248,13 @@ type chapterStart struct {
 // index via fileBlockRange and idIndex, falls back to spine documents that
 // begin with h1/h2 when the TOC is missing or none of it resolved, and
 // reports either case in notices.
-func epubChapterStarts(entries []epubTOCEntry, blocks []epubBlock, fileBlockRange map[string][2]int, idIndex map[string]map[string]int, spine []string, manifest map[string]epubManifestItem) (starts []chapterStart, notices []string) {
+func epubChapterStarts(entries []epubTOCEntry, blocks []epubBlock, fileBlockRange map[string][2]int, idIndex map[string]map[string]int, spine []string, manifest map[string]epubManifestItem, fileEpubType map[string]string) (starts []chapterStart, notices []string) {
+	glued := func(target int, title, subtitle string, wasGlued bool) (string, string) {
+		if wasGlued {
+			notices = append(notices, fmt.Sprintf("Heading %q had no gap between its number and title; split into %q and %q.", collapse(blocks[target].text), title, subtitle))
+		}
+		return title, subtitle
+	}
 	seen := map[int]bool{}
 	for _, entry := range entries {
 		rng, ok := fileBlockRange[entry.file]
@@ -230,12 +273,14 @@ func epubChapterStarts(entries []epubTOCEntry, blocks []epubBlock, fileBlockRang
 		}
 		seen[target] = true
 		var title, subtitle string
+		var wasGlued bool
 		if target < len(blocks) && blocks[target].heading > 0 {
-			title, subtitle, _ = headingParts(blocks[target].text)
+			title, subtitle, wasGlued = headingParts(blocks[target].text)
+			title, subtitle = glued(target, title, subtitle, wasGlued)
 		} else {
 			title, subtitle, _ = headingParts(entry.label)
 		}
-		starts = append(starts, chapterStart{index: target, title: title, subtitle: subtitle})
+		starts = append(starts, chapterStart{index: target, title: title, subtitle: subtitle, kind: epubTypeKind(fileEpubType[entry.file])})
 	}
 	if len(starts) > 0 {
 		sort.Slice(starts, func(i, j int) bool { return starts[i].index < starts[j].index })
@@ -255,8 +300,9 @@ func epubChapterStarts(entries []epubTOCEntry, blocks []epubBlock, fileBlockRang
 		}
 		first := blocks[rng[0]]
 		if first.heading == 1 || first.heading == 2 {
-			title, subtitle, _ := headingParts(first.text)
-			starts = append(starts, chapterStart{index: rng[0], title: title, subtitle: subtitle})
+			title, subtitle, wasGlued := headingParts(first.text)
+			title, subtitle = glued(rng[0], title, subtitle, wasGlued)
+			starts = append(starts, chapterStart{index: rng[0], title: title, subtitle: subtitle, kind: epubTypeKind(fileEpubType[item.Href])})
 		}
 	}
 	if len(starts) > 0 {
@@ -314,6 +360,9 @@ func epubWithProgress(filePath string, progress Progress) (Draft, error) {
 	}
 
 	notices := []string{}
+	if pkg.nonLinear > 0 {
+		notices = append(notices, fmt.Sprintf("%d non-linear item(s) (marked linear=\"no\") were outside the book's reading order and were skipped.", pkg.nonLinear))
+	}
 
 	// E1: nav.xhtml (EPUB 3) first, NCX (EPUB 2) fallback.
 	var tocEntries []epubTOCEntry
@@ -337,6 +386,9 @@ func epubWithProgress(filePath string, progress Progress) (Draft, error) {
 	var blocks []epubBlock
 	fileBlockRange := map[string][2]int{}
 	idIndex := map[string]map[string]int{}
+	fileEpubType := map[string]string{}
+	cssCache := map[string]map[string]Style{}
+	unresolvedClasses := map[string]bool{}
 	for _, id := range pkg.spine {
 		item := pkg.manifest[id]
 		if item.Href == "" {
@@ -348,7 +400,10 @@ func epubWithProgress(filePath string, progress Progress) (Draft, error) {
 			continue
 		}
 		start := len(blocks)
-		fileBlocks, ids := parseEPUBXHTML(content)
+		fileBlocks, ids, bodyType := parseEPUBXHTML(content, archive.File, &budget, path.Dir(item.Href), cssCache, unresolvedClasses)
+		if bodyType != "" {
+			fileEpubType[item.Href] = bodyType
+		}
 		if len(ids) > 0 {
 			idIndex[item.Href] = make(map[string]int, len(ids))
 			for id, localIndex := range ids {
@@ -361,12 +416,19 @@ func epubWithProgress(filePath string, progress Progress) (Draft, error) {
 	if len(blocks) == 0 {
 		return Draft{}, &Error{"This EPUB has no readable text."}
 	}
+	if len(unresolvedClasses) > 0 {
+		notices = append(notices, fmt.Sprintf("%d formatting class(es) in the book's stylesheet weren't recognized (not a single font-style or font-weight rule); their text imported without emphasis.", len(unresolvedClasses)))
+	}
 
-	starts, tocNotices := epubChapterStarts(tocEntries, blocks, fileBlockRange, idIndex, pkg.spine, pkg.manifest)
+	starts, tocNotices := epubChapterStarts(tocEntries, blocks, fileBlockRange, idIndex, pkg.spine, pkg.manifest, fileEpubType)
 	notices = append(notices, tocNotices...)
 	startAt := make(map[int]int, len(starts))
+	kindOverrides := map[string]string{}
 	for index, start := range starts {
 		startAt[start.index] = index
+		if start.kind != "" {
+			kindOverrides[start.title] = start.kind
+		}
 	}
 
 	progress.report(60, "Building %d chapters from %d blocks", len(starts), len(blocks))
@@ -424,7 +486,7 @@ func epubWithProgress(filePath string, progress Progress) (Draft, error) {
 	}
 
 	progress.report(80, "Classifying front matter, chapters and reference sections")
-	draft, err := newDraft("epub", filepath.Base(filePath), paragraphs, titles, headingLevels)
+	draft, err := newDraft("epub", filepath.Base(filePath), paragraphs, titles, headingLevels, kindOverrides)
 	draft.Notices = notices
 	if err == nil {
 		progress.report(95, "Found %d chapters in %d sections", len(titles), len(draft.Sections))

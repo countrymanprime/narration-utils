@@ -135,7 +135,7 @@ func markdownWithProgress(path string, headingLevel int, progress Progress) (Dra
 		progress.report(70, "%s", notice)
 	}
 	progress.report(80, "Classifying front matter, chapters and reference sections")
-	draft, err := newDraft("markdown", filepath.Base(path), paragraphs, titles, headingLevels)
+	draft, err := newDraft("markdown", filepath.Base(path), paragraphs, titles, headingLevels, nil)
 	draft.Notices = notices
 	if err == nil {
 		progress.report(95, "Found %d chapters in %d sections", len(titles), len(draft.Sections))
