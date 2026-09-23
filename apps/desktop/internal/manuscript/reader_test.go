@@ -248,3 +248,63 @@ func stringListValue(value any) []string {
 	}
 	return result
 }
+
+func TestChapterIDByTitleAndParagraphIDResolveAgainstTheImportedManuscript(t *testing.T) {
+	service, chapterID, paragraphID := importReaderFixture(t)
+	data, err := service.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	chapters := objects(data["chapters"])
+	paragraphs := objects(data["paragraphs"])
+
+	if id, ambiguous, ok := service.ChapterIDByTitle(text(chapters[0], "title")); !ok || ambiguous || id != chapterID {
+		t.Fatalf("ChapterIDByTitle = %q, %v, %v; want %q, false, true", id, ambiguous, ok, chapterID)
+	}
+	if _, _, ok := service.ChapterIDByTitle("No Such Chapter"); ok {
+		t.Fatal("an unknown title must not resolve")
+	}
+
+	index, _ := paragraphs[0]["index"].(float64)
+	if id, ok := service.ParagraphID(chapterID, int(index)); !ok || id != paragraphID {
+		t.Fatalf("ParagraphID = %q, %v; want %q, true", id, ok, paragraphID)
+	}
+	if _, ok := service.ParagraphID(chapterID, -1); ok {
+		t.Fatal("an index no paragraph has must not resolve")
+	}
+	if _, ok := service.ParagraphID("not-a-chapter", int(index)); ok {
+		t.Fatal("a paragraph of another chapter must not resolve")
+	}
+}
+
+func TestChapterIDByTitleFlagsATitleSharedByTwoChapters(t *testing.T) {
+	project := t.TempDir()
+	dir := filepath.Join(project, "narration-utils", "manuscript")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(map[string]any{
+		"schemaVersion": 1,
+		"chapters":      []any{map[string]any{"id": "c-1", "title": "Interlude"}, map[string]any{"id": "c-2", "title": "Interlude"}},
+		"paragraphs":    []any{},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "manuscript.json"), raw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if id, ambiguous, ok := New(project).ChapterIDByTitle("Interlude"); !ok || !ambiguous || id != "c-1" {
+		t.Fatalf("ChapterIDByTitle = %q, %v, %v; want the first match, flagged ambiguous", id, ambiguous, ok)
+	}
+}
+
+func TestChapterIDByTitleAndParagraphIDFailWithoutAManuscript(t *testing.T) {
+	service := New(t.TempDir())
+	if _, _, ok := service.ChapterIDByTitle("Anything"); ok {
+		t.Fatal("no manuscript: nothing resolves")
+	}
+	if _, ok := service.ParagraphID("c-1", 0); ok {
+		t.Fatal("no manuscript: nothing resolves")
+	}
+}

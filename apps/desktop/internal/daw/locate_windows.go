@@ -3,6 +3,8 @@
 package daw
 
 import (
+	"os"
+
 	"golang.org/x/sys/windows/registry"
 )
 
@@ -79,4 +81,12 @@ func readAssociationCommand() (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// fileExists reports whether path names a real, non-directory file. It is a
+// var, not a plain func, only so a test in this package could fake it if a
+// future test needs to; only the Windows locator calls it, so it lives with it.
+var fileExists = func(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
 }
