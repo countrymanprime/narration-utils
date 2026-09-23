@@ -299,6 +299,7 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
     engine,
     engines,
     changeEngine,
+    paragraphs,
     rows,
     cursor,
     active,

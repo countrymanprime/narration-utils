@@ -1,4 +1,14 @@
-import type { ManuscriptChapter, ManuscriptParagraph, TeleprompterEvent, TeleprompterPosition, TeleprompterScript, TeleprompterState } from '../../types';
+import { entityAnnotations, noteAnnotations } from '../manuscript/annotations';
+import type {
+  GuideEntity,
+  ManuscriptChapter,
+  ManuscriptNote,
+  ManuscriptParagraph,
+  TeleprompterEvent,
+  TeleprompterPosition,
+  TeleprompterScript,
+  TeleprompterState,
+} from '../../types';
 
 /** The sidecar tokenizes with Python's `str.split()`; any run of whitespace separates words. */
 export const tokenize = (text: string): string[] => text.split(/\s+/).filter(Boolean);
@@ -66,6 +76,80 @@ export function previewRows(chapter: Pick<ManuscriptChapter, 'title' | 'subtitle
     { key: 'title', kind: 'title', start: 0, words: null, gaps: null, text: title },
     ...paragraphs.map((paragraph): ReaderRow => ({ key: paragraph.id, kind: 'paragraph', start: 0, words: null, gaps: null, text: paragraph.text })),
   ];
+}
+
+/** The character range [start, end) of each word of `text`: the words `splitWords` finds, in the same order. */
+export function wordOffsets(text: string): Array<[number, number]> {
+  return Array.from(text.matchAll(/\S+/g), (match): [number, number] => [match.index, match.index + match[0].length]);
+}
+
+/**
+ * Marks on the reader's words (teleprompter-manuscript-integration.prd.md Phase 5). The Manuscript reader annotates by
+ * character offsets (`manuscript/annotations.ts`); the read-aloud reader shows words, so a mark is mapped onto every word
+ * it touches: a name across a word boundary ("Mr. Hale") marks both words, a mention inside a word ("Hale" in "Hale's")
+ * marks the whole word, and a range of only whitespace marks nothing. `value` is what the mark points at, kept generic so
+ * Phase 7's flag marks travel the same path as the story bible and note marks.
+ */
+export type TextMark<T> = { id: string; start: number; end: number; value: T };
+/** A mark on a row's words: [from, to) indices into that row's own word list. */
+export type WordMark<T> = { id: string; from: number; to: number; value: T };
+/** A run of words that carry the same marks, outermost (longest) first, so the shortest mark is the innermost layer. */
+export type WordSegment<T> = { from: number; to: number; marks: WordMark<T>[] };
+
+export function marksOnWords<T>(text: string, marks: TextMark<T>[]): WordMark<T>[] {
+  const offsets = wordOffsets(text);
+  return marks.flatMap((mark) => {
+    const start = Math.max(mark.start, 0);
+    const end = Math.min(mark.end, text.length);
+    if (!(start < end)) return [];
+    const touched = offsets.flatMap(([from, to], index) => (from < end && to > start ? [index] : []));
+    return touched.length ? [{ id: mark.id, from: touched[0], to: touched[touched.length - 1] + 1, value: mark.value }] : [];
+  });
+}
+
+const markOrder = <T>(a: WordMark<T>, b: WordMark<T>): number => b.to - b.from - (a.to - a.from) || a.id.localeCompare(b.id);
+
+/** Splits a row of `count` words at every mark boundary, so each segment renders its marks as nested layers around its words. */
+export function segmentWords<T>(count: number, marks: WordMark<T>[]): WordSegment<T>[] {
+  const inside = marks.filter((mark) => mark.from < count && mark.to > mark.from);
+  const points = Array.from(new Set([0, count, ...inside.flatMap((mark) => [mark.from, Math.min(mark.to, count)])])).sort((a, b) => a - b);
+  return points.slice(0, -1).map((from, index) => {
+    const to = points[index + 1];
+    return { from, to, marks: inside.filter((mark) => mark.from <= from && mark.to >= to).sort(markOrder) };
+  });
+}
+
+/** What a reader mark opens in the side rail. Phase 7 adds its flag marks to this union. */
+export type ReaderMarkTarget = { kind: 'entity'; entity: GuideEntity } | { kind: 'note'; note: ManuscriptNote };
+export type ReaderMark = WordMark<ReaderMarkTarget>;
+
+/**
+ * The story bible and note marks of a chapter's paragraphs, by paragraph id (a paragraph row's `key`, in both `buildRows`
+ * and `previewRows`). Mentions and anchors come from the helpers the Manuscript reader uses, so both readers mark the
+ * same words. A row's marks are in reading order; a paragraph with no marks has no entry. Formatting spans are out of
+ * scope for the reader (ADR 0014).
+ */
+export function readerMarks(paragraphs: ManuscriptParagraph[], entities: GuideEntity[], notes: ManuscriptNote[]): Map<string, ReaderMark[]> {
+  const entitiesById = new Map(entities.map((entity) => [entity.id, entity]));
+  const byRow = new Map<string, ReaderMark[]>();
+  for (const paragraph of paragraphs) {
+    const annotations = [...entityAnnotations(paragraph, entitiesById), ...noteAnnotations(paragraph, notes)];
+    const marks = marksOnWords<ReaderMarkTarget>(
+      paragraph.text,
+      annotations.map((item) => ({
+        id: item.id,
+        start: item.start,
+        end: item.end,
+        value: item.kind === 'note' ? { kind: 'note', note: item.note! } : { kind: 'entity', entity: item.entity! },
+      })),
+    );
+    if (marks.length)
+      byRow.set(
+        paragraph.id,
+        [...marks].sort((a, b) => a.from - b.from || a.id.localeCompare(b.id)),
+      );
+  }
+  return byRow;
 }
 
 /**

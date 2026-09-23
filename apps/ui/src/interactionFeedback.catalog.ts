@@ -435,6 +435,8 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Loads the persisted device and runs the one-time migration; if it fails the field just starts empty, exactly as it did before Phase 2.',
   'src/components/teleprompter/useTeleprompterSession.ts#4':
     'The one-time browser-storage-to-settings migration write; a failure leaves the device in local state for this visit and the migration is retried next load since the settings value never got marked set.',
+  'src/components/teleprompter/readerPreferences.ts#1':
+    'Remembering the read-aloud rail (open, tab) in localStorage; the choice lasts for this dialog only when storage is disabled.',
   'src/theme/ThemeContext.tsx#1': 'Remembering the theme in localStorage; the preference just does not persist when storage is disabled.',
   'src/components/tracks/TracksPage.tsx#1':
     'Only decides whether the "Link chapters…" button shows; without it the button is absent, same as a project with no chapters.',

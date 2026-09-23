@@ -62,6 +62,13 @@ than one track could hold the chapter, or none does, the card asks you to choose
 guessing, and when the recording cannot be read or does not match the chapter it says why and reading
 starts from the top.
 
+The dialog marks Story Bible names and your notes in the text, in the same colours as the reader here. A
+reading panel beside the text has three tabs: **Key** (what each mark means), **Notes** (the chapter's
+notes) and **Story bible** (the entries the chapter mentions). Clicking a marked name or note opens it in
+the panel, read-only; it never moves the highlight, the listening position or the scroll. The panel's
+arrow button hides it to widen the text, and the dialog remembers on this computer whether the panel is
+shown and which tab was last open.
+
 Selecting a stretch of text offers actions for it — adding a reader note or sending it to the
 Story Bible as a new entry.
 

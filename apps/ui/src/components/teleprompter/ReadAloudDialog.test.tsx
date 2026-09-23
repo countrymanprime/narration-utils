@@ -6,16 +6,19 @@ import { ReadAloudDialog } from './ReadAloudDialog';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { WIRE_TELEPROMPTER_DEVICES } from '../../api/mockFixtures';
-import type { NarrationApi, TeleprompterEvent, TeleprompterState } from '../../types';
+import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, NarrationApi, TeleprompterEvent, TeleprompterState } from '../../types';
+import { RAIL_STORAGE_KEY } from './readerPreferences';
 
 const DEVICE_NAME = WIRE_TELEPROMPTER_DEVICES[0].name;
 const CHAPTER = { id: 'chapter-1', title: 'Chapter 1', subtitle: 'Down the Rabbit-Hole' };
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
+  window.localStorage.clear();
 });
 
-function renderDialog(overrides: Partial<NarrationApi> = {}, onClose = vi.fn()) {
+function renderDialog(overrides: Partial<NarrationApi> = {}, onClose = vi.fn(), content: { entities?: GuideEntity[]; notes?: ManuscriptNote[] } = {}) {
   const eventListeners = new Set<(event: TeleprompterEvent) => void>();
   const stateListeners = new Set<(state: TeleprompterState) => void>();
   const api = createMockApi({
@@ -31,12 +34,13 @@ function renderDialog(overrides: Partial<NarrationApi> = {}, onClose = vi.fn()) 
   });
   render(
     <ApiProvider api={api}>
-      <ReadAloudDialog chapter={CHAPTER} onClose={onClose} />
+      <ReadAloudDialog chapter={CHAPTER} entities={content.entities} notes={content.notes} onClose={onClose} />
     </ApiProvider>,
   );
   return {
     api,
     onClose,
+    emit: (event: TeleprompterEvent) => act(() => eventListeners.forEach((listener) => listener(event))),
     setState: (state: Partial<TeleprompterState>) =>
       act(() =>
         stateListeners.forEach((listener) => listener({ phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null, ...state })),
@@ -142,5 +146,143 @@ describe('ReadAloudDialog', () => {
     expect(teleprompterStop).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy();
+  });
+});
+
+const HALE: GuideEntity = {
+  id: 'e1',
+  canonical_name: 'Mr. Hale',
+  aliases: [],
+  category: 'Character',
+  occurrences: [{ chapter: 'Chapter 1', paragraph: 0, excerpt: 'Then Mr. Hale left the room.' }],
+  occurrence_count: 1,
+  pronunciation: { ipa: 'heɪl', source: 'manual', confidence: 'high' },
+  description: { text: 'The rector.', evidence: {} },
+  personality_notes: [],
+  relationships: [],
+  properties: [],
+  locked: false,
+  review_state: 'approved',
+};
+const PARAGRAPHS: ManuscriptParagraph[] = [
+  { id: 'p1', chapterId: 'chapter-1', chapter: 'Chapter 1', index: 0, text: 'Then Mr. Hale left the room.', entityIds: ['e1'] },
+  { id: 'p2', chapterId: 'chapter-1', chapter: 'Chapter 1', index: 1, text: 'The door stayed open.', entityIds: [] },
+];
+const NOTE: ManuscriptNote = {
+  id: 'n1',
+  chapter: 'Chapter 1',
+  chapterId: 'chapter-1',
+  paragraph: 1,
+  text: 'Let this land softly.',
+  createdAt: '2026-01-01T00:00:00.000Z',
+  anchorStart: 9,
+  anchorEnd: 15,
+  anchorText: 'stayed',
+};
+const SCRIPT: TeleprompterEvent = {
+  type: 'script',
+  chapter: { id: 'chapter-1', title: 'Chapter 1' },
+  tokens: 11,
+  spans: [
+    { kind: 'title', id: 'chapter-1', index: null, start: 0, count: 2 },
+    { kind: 'paragraph', id: 'p1', index: 0, start: 2, count: 5 },
+    { kind: 'paragraph', id: 'p2', index: 1, start: 7, count: 4 },
+  ],
+};
+
+function renderMarked(overrides: Partial<NarrationApi> = {}) {
+  return renderDialog({ manuscriptParagraphs: async () => PARAGRAPHS, ...overrides }, vi.fn(), { entities: [HALE], notes: [NOTE] });
+}
+const findMark = async (kind: string) => {
+  await waitFor(() => expect(document.querySelector(`[data-highlight="${kind}"][role="button"]`)).toBeTruthy());
+  return document.querySelector<HTMLElement>(`[data-highlight="${kind}"][role="button"]`)!;
+};
+
+describe('ReadAloudDialog story bible and note marks (teleprompter-manuscript-integration.prd.md Phase 5)', () => {
+  it('marks story bible mentions and note anchors in the text before a session starts, with the key open in the rail', async () => {
+    renderMarked();
+
+    expect((await findMark('Character')).textContent?.replace(/\s+/g, ' ')).toBe('Mr. Hale');
+    expect((await findMark('Note')).textContent).toBe('stayed');
+    const rail = screen.getByRole('complementary', { name: 'Reading panel' });
+    expect(within(rail).getByRole('tab', { name: 'Key', selected: true })).toBeTruthy();
+    expect(within(rail).getByText('story bible entry')).toBeTruthy();
+  });
+
+  it('opens an entity mark in the Story bible tab, read-only and without leaving for another line', async () => {
+    const user = userEvent.setup();
+    renderMarked();
+
+    await user.click(await findMark('Character'));
+
+    const rail = screen.getByRole('complementary', { name: 'Reading panel' });
+    expect(within(rail).getByRole('tab', { name: 'Story bible', selected: true })).toBeTruthy();
+    expect(within(rail).getByRole('heading', { name: 'Mr. Hale' })).toBeTruthy();
+    expect(within(rail).getByText('The rector.')).toBeTruthy();
+    expect(within(rail).queryByRole('button', { name: 'Go to line in Manuscript' })).toBeNull();
+  });
+
+  it('opens a note mark in the Notes tab with that note current', async () => {
+    const user = userEvent.setup();
+    renderMarked();
+
+    await user.click(await findMark('Note'));
+
+    const rail = screen.getByRole('complementary', { name: 'Reading panel' });
+    expect(within(rail).getByRole('tab', { name: 'Notes', selected: true })).toBeTruthy();
+    expect(within(rail).getByText('Let this land softly.').closest('li')?.getAttribute('aria-current')).toBe('true');
+  });
+
+  it('leaves the cursor, the tracker and the scroll position alone when a mark is opened mid-session', async () => {
+    const user = userEvent.setup();
+    const teleprompterSeek = vi.fn().mockResolvedValue(undefined);
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    const { setState, emit } = renderMarked({ teleprompterSeek });
+    await findMark('Character');
+    setState({ phase: 'running', chapter: 'chapter-1' });
+    emit(SCRIPT);
+    emit({ type: 'position', read: 8, committed: 8, status: 'listening', jump: null, skipped: null });
+    await waitFor(() => expect(document.querySelector('[data-word="8"] [data-highlight="Cursor"]')).toBeTruthy());
+    const body = screen.getByRole('dialog').querySelector<HTMLElement>('[tabindex="0"]')!;
+    body.scrollTop = 120;
+    scrollIntoView.mockClear();
+
+    await user.click(await findMark('Character'));
+    await user.click(await findMark('Note'));
+
+    expect(teleprompterSeek).not.toHaveBeenCalled();
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(body.scrollTop).toBe(120);
+    expect(document.querySelector('[data-word="8"] [data-highlight="Cursor"]')).toBeTruthy();
+  });
+
+  it('remembers the rail being hidden and its tab for the next dialog, in browser storage', async () => {
+    const user = userEvent.setup();
+    renderMarked();
+    const rail = await screen.findByRole('complementary', { name: 'Reading panel' });
+    await user.click(within(rail).getByRole('tab', { name: 'Notes' }));
+    await user.click(within(rail).getByRole('button', { name: 'Hide reading panel' }));
+
+    expect(screen.queryByRole('complementary', { name: 'Reading panel' })).toBeNull();
+    expect(JSON.parse(window.localStorage.getItem(RAIL_STORAGE_KEY) ?? '{}')).toEqual({ open: false, tab: 'notes' });
+
+    cleanup();
+    renderMarked();
+    await user.click(await screen.findByRole('button', { name: 'Show reading panel' }));
+    expect(screen.getByRole('tab', { name: 'Notes', selected: true })).toBeTruthy();
+  });
+
+  it('opens with the default rail when browser storage is unavailable', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    renderMarked();
+
+    const rail = await screen.findByRole('complementary', { name: 'Reading panel' });
+    expect(within(rail).getByRole('tab', { name: 'Key', selected: true })).toBeTruthy();
   });
 });

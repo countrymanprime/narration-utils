@@ -8,43 +8,25 @@ import { Panel } from '../primitives/Panel';
 import { ToggleGroup } from '../primitives/ToggleGroup';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { MicrophoneField } from './MicrophoneField';
+import { ReaderKey } from './ReaderKey';
 import { ReaderText } from './ReaderText';
+import type { ReaderMark } from './readerModel';
 import { ENGINE_LABELS, MODELS, type TeleprompterSession } from './useTeleprompterSession';
 
 const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
-
-// The legend for every mark the reader can show (Solution Detail, "Key and flag marks"). Phase 2 covers only the
-// three marks that already exist on the page today (`ReaderText.tsx`); the flag marks (misread, extra, skipped-as-a-
-// review-item) are Phase 7's. The swatches copy `ReaderText`'s own styling by hand rather than rendering a real
-// `Highlight`/`data-word`, so this legend is never mistaken for the actual current word by a `[data-highlight="Cursor"]`
-// or `[data-word]` query (the reader's own tests and the mock-driven visual states rely on those being unique).
-function ReaderKey({ seekable }: { seekable: boolean }) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" style={{ color: 'var(--text-muted)' }} aria-label="Key">
-      <span className="font-medium">Key:</span>
-      <span className="flex items-center gap-1.5">
-        <span className="rounded-[0.15rem] px-[0.05em]" style={{ background: 'var(--accent)', color: 'var(--accent-contrast)' }}>
-          word
-        </span>{' '}
-        current word
-      </span>
-      <span className="flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
-        word read
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span style={{ textDecoration: 'underline dotted var(--warn)', textUnderlineOffset: '0.25em' }}>word</span> skipped
-      </span>
-      {/* Click-to-seek (teleprompter-manuscript-integration.prd.md Phase 4): only reachable once a session is
-          running, so the hint only shows then - it would be misleading while idle, when no word is clickable. */}
-      {seekable && <span className="ml-auto">Click a word to start or go back to it.</span>}
-    </div>
-  );
-}
 
 type Props = {
   session: TeleprompterSession;
   /** Extra setup fields shown above the microphone/model row while idle (the standalone page's chapter picker). */
   extraSetupFields?: ReactNode;
+  /** Story bible and note marks by row key, and what opening one does (teleprompter-manuscript-integration.prd.md Phase 5; see `ReaderText`). */
+  marks?: Map<string, ReaderMark[]>;
+  onOpenMark?: (mark: ReaderMark) => void;
+  /**
+   * A side rail beside the text (the read-aloud dialog's Key, Notes and Story bible tabs, Phase 5). It sizes itself; the
+   * key then lives in the rail instead of above the text. Absent (the standalone page): the layout is as before.
+   */
+  aside?: ReactNode;
 };
 
 /**
@@ -54,13 +36,14 @@ type Props = {
  * (Phase 13). Chapter choice itself is not this component's job: the caller supplies `extraSetupFields` for it (or
  * nothing, when the chapter is fixed, as in the modal).
  */
-export function ReadAlongView({ session: t, extraSetupFields }: Props) {
-  return (
-    <div className="mx-auto max-w-3xl space-y-4">
+export function ReadAlongView({ session: t, extraSetupFields, marks, onOpenMark, aside }: Props) {
+  const main = (
+    <div className="mx-auto w-full max-w-3xl min-w-0 space-y-4">
       <div className={t.active ? 'sticky top-0 z-10' : ''}>
         <Panel>
           {!t.active && (
-            <div className="grid gap-4 md:grid-cols-2">
+            // Beside a rail the column is narrower than the viewport says, so the fields pair up a breakpoint later.
+            <div className={`grid gap-4 ${aside ? 'lg:grid-cols-2' : 'md:grid-cols-2'}`}>
               {extraSetupFields}
               <MicrophoneField
                 value={t.device}
@@ -77,7 +60,7 @@ export function ReadAlongView({ session: t, extraSetupFields }: Props) {
                   <ToggleGroup label="Engine" className="mt-1.5 flex-wrap gap-1.5" value={t.engine} onChange={t.changeEngine} options={t.engines} />
                 </div>
               )}
-              <div className={t.engines.length > 1 ? '' : 'md:col-span-2'}>
+              <div className={t.engines.length > 1 ? '' : aside ? 'lg:col-span-2' : 'md:col-span-2'}>
                 <span className={LABEL_CLASS}>{t.engines.length > 1 ? 'Model' : `${ENGINE_LABELS[t.engine]} model`}</span>
                 <ToggleGroup
                   label="Model"
@@ -130,9 +113,17 @@ export function ReadAlongView({ session: t, extraSetupFields }: Props) {
       )}
       {t.rows.length > 0 && (
         <Panel>
-          <ReaderKey seekable={t.active} />
-          <div className="mt-3">
-            <ReaderText rows={t.rows} cursor={t.cursor} skipped={t.session.skipped} follow={t.active} onSeek={t.active ? t.seek : undefined} />
+          {!aside && <ReaderKey seekable={t.active} />}
+          <div className={aside ? '' : 'mt-3'}>
+            <ReaderText
+              rows={t.rows}
+              cursor={t.cursor}
+              skipped={t.session.skipped}
+              follow={t.active}
+              onSeek={t.active ? t.seek : undefined}
+              marks={marks}
+              onOpenMark={onOpenMark}
+            />
           </div>
         </Panel>
       )}
@@ -162,6 +153,14 @@ export function ReadAlongView({ session: t, extraSetupFields }: Props) {
           />
         </AssetInstallPrompt>
       )}
+    </div>
+  );
+  if (!aside) return main;
+  // The rail is its own column, so opening an entry in an open rail never reflows or scrolls the text column.
+  return (
+    <div className="grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+      {main}
+      {aside}
     </div>
   );
 }

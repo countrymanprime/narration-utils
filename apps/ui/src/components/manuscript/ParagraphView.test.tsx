@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WIRE_NOTES, WIRE_PARAGRAPHS } from '../../api/mockFixtures';
-import type { ManuscriptParagraph, TextSpan } from '../../types';
+import type { GuideEntity, ManuscriptParagraph, TextSpan } from '../../types';
 import { ParagraphView } from './ParagraphView';
 
 afterEach(cleanup);
@@ -45,5 +45,27 @@ describe('ParagraphView', () => {
     await userEvent.click(highlight);
 
     expect(openNote).toHaveBeenCalledWith(note);
+  });
+
+  it('highlights a Story Bible mention in its category colour and opens the entry when it is activated', async () => {
+    const entity = { id: 'e1', canonical_name: words[2], aliases: [], category: 'Place' } as unknown as GuideEntity;
+    const openEntity = vi.fn();
+    render(
+      <ParagraphView
+        paragraphs={[{ ...plain, entityIds: ['e1'] }]}
+        entities={[entity]}
+        notes={[]}
+        textClass=""
+        lineNumberPadding=""
+        openEntity={openEntity}
+        openNote={vi.fn()}
+      />,
+    );
+
+    const highlight = screen.getAllByRole('button').find((element) => element.getAttribute('data-highlight') === 'Place')!;
+    expect(highlight.textContent?.toLowerCase()).toBe(words[2].toLowerCase());
+    await userEvent.click(highlight);
+
+    expect(openEntity).toHaveBeenCalledWith(entity);
   });
 });

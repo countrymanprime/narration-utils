@@ -40,6 +40,10 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // padded, uppercase button chrome, which would break the text flow and read as a real action button rather than a
     // word. One JSX `<button>` in the source (it is written once, inside the words `.map()`, not once per word).
     'src/components/teleprompter/ReaderText.tsx': 1,
+    // The read-aloud rail's Story bible entries (teleprompter-manuscript-integration.prd.md Phase 5): a list row with a
+    // category dot and a current state, the same shape as ChapterNav's rows, which Button's padded, uppercase chrome does
+    // not fit. One JSX `<button>`, written once inside the entries `.map()`.
+    'src/components/teleprompter/ReaderRail.tsx': 1,
     'src/components/storybible/GuideDetail.tsx': 1,
     'src/components/tracks/TracksPage.tsx': 2,
   },

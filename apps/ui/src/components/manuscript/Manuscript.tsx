@@ -113,6 +113,12 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   const searchPending = Boolean(searchQuery.trim()) && searchQuery !== lastFetchedQuery;
   const openingTemplate = creditsTemplates.find((template) => template.kind === 'opening');
   const closingTemplate = creditsTemplates.find((template) => template.kind === 'closing');
+  // The read-aloud dialog's notes, memoized so its marks (and every memoized row of its reader) keep their identity.
+  const readAloudNotes = useMemo(
+    () =>
+      readAloudChapter ? notes.filter((item) => item.chapterId === readAloudChapter.id || (!item.chapterId && item.chapter === readAloudChapter.title)) : [],
+    [notes, readAloudChapter],
+  );
 
   useEffect(() => {
     const element = bandRef.current;
@@ -670,7 +676,9 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
           </>
         )}
       </SlideOver>
-      {readAloudChapter && <ReadAloudDialog chapter={readAloudChapter} onClose={() => setReadAloudChapter(undefined)} />}
+      {readAloudChapter && (
+        <ReadAloudDialog chapter={readAloudChapter} entities={entities} notes={readAloudNotes} onClose={() => setReadAloudChapter(undefined)} />
+      )}
     </div>
   );
 }

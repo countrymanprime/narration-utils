@@ -486,6 +486,32 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
         .click();
       await page.locator('[data-word="0"] [data-highlight="Cursor"]').waitFor();
     },
+    // Story bible and note marks (teleprompter-manuscript-integration.prd.md Phase 5): a mark opens its entry in the
+    // dialog's rail; the reader behind the dialog has marks of its own, so every lookup is scoped to the dialog.
+    'read-aloud-story-bible-entry': async (page) => {
+      await page.goto('/?mockTeleprompter=listening');
+      await settlePage(page);
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+      const dialog = page.getByRole('dialog', { name: /Read aloud/ });
+      await dialog.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+      await dialog.locator('[data-highlight="Character"][role="button"]').first().click();
+      await dialog.getByRole('tab', { name: 'Story bible', selected: true }).waitFor();
+    },
+    'read-aloud-note-open': async (page) => {
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+      const dialog = page.getByRole('dialog', { name: /Read aloud/ });
+      await dialog.locator('[data-highlight="Note"][role="button"]').first().click();
+      await dialog.getByRole('tab', { name: 'Notes', selected: true }).waitFor();
+    },
+    'read-aloud-rail-hidden': async (page) => {
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+      const dialog = page.getByRole('dialog', { name: /Read aloud/ });
+      await dialog.getByRole('button', { name: 'Hide reading panel' }).click();
+      await dialog.getByRole('button', { name: 'Show reading panel' }).waitFor();
+    },
     'reader-text-small': async (page) => {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'small');
