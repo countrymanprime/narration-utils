@@ -42,6 +42,9 @@ const mockManuscriptCandidate = mockParams.has('mockManuscriptCandidate');
 // `?mockTeleprompter=listening|waiting|done` boots the teleprompter already part-way
 // through the first chapter, as a session the host kept running.
 const mockTeleprompter = (['listening', 'waiting', 'done'] as const).find((seed) => seed === mockParams.get('mockTeleprompter'));
+// `?mockNoDevices=1` boots the teleprompter with an empty device listing, so the
+// blocked "No microphone found" state (no typed fallback) can be seen without a host.
+const mockNoDevices = mockParams.has('mockNoDevices');
 // `?mockPreviewError=<text>` makes the Story Bible preview fail with that text once the
 // preview voice is installed, so the failure toast can be seen without a real host.
 const mockPreviewError = mockParams.get('mockPreviewError');
@@ -81,6 +84,7 @@ const mockInitial = {
   ...(mockNoDaw ? { dawFileLinked: false } : {}),
   ...(mockPreviewError ? { previewError: mockPreviewError } : {}),
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
+  ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
   ...(mockNoProject ? { projectFolder: '' } : {}),
   ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),
   ...(mockNoRpp ? { tracksCandidates: [] } : {}),

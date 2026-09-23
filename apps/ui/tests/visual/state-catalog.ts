@@ -278,12 +278,19 @@ export const STATE_CATALOG: StateEntry[] = [
   {
     page: 'teleprompter',
     state: 'setup-default',
-    description: 'Teleprompter, before a session - chapter, microphone and model choices with the chapter text below (no highlight yet)',
+    description:
+      'Teleprompter, before a session - chapter, microphone (picker of enumerated devices) and model choices with the chapter text below (no highlight yet)',
   },
   {
     page: 'teleprompter',
     state: 'model-download-progress',
     description: 'Teleprompter, the Whisper model download after Start reading, with real bytes and Cancel (?mockAssets=downloading)',
+  },
+  {
+    page: 'teleprompter',
+    state: 'no-microphone-blocked',
+    description:
+      'Teleprompter, device enumeration found nothing - "No microphone found" blocking message, no dropdown and no typed fallback, Start reading disabled (?mockNoDevices=1)',
   },
   {
     page: 'teleprompter',

@@ -9,6 +9,7 @@ import type {
   ManuscriptParagraph,
   ReaderState,
   ScopedSettingField,
+  TeleprompterDevice,
   TextSpan,
   TracksProject,
   TranscriptState,
@@ -464,6 +465,13 @@ export const WIRE_TRANSCRIPT: TranscriptState = {
   markerExport: { phase: 'idle', message: '', added: 0, skipped: 0 },
 };
 
+// Two devices, one with the kind of parenthesised driver suffix real `dshow` names carry, so the picker's option
+// labels are exercised against realistic text (docs/prds/teleprompter-engines-and-input-devices.prd.md Phase 1 finding).
+export const WIRE_TELEPROMPTER_DEVICES: TeleprompterDevice[] = [
+  { name: 'Microphone Array (Realtek(R) Audio)' },
+  { name: 'Headset Microphone (USB Audio Device)' },
+];
+
 const choice = (key: string, label: string, choices: string[], value: string): ScopedSettingField => ({
   key,
   label,
@@ -540,6 +548,11 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     },
   ],
   Piper: [choice('tts_provider', 'TTS provider', ['piper'], 'piper'), choice('tts_voice_id', 'Preview voice', ['en_US-ljspeech-high'], 'en_US-ljspeech-high')],
+  // Global-scope machine fact (docs/prds/teleprompter-engines-and-input-devices.prd.md, "Where the device, engine and
+  // model choices are stored"): unset until the narrator picks a device, so the mock starts it empty like the host does.
+  Teleprompter: [
+    { key: 'input_device', label: 'Microphone', kind: 'text', choices: [], value: '', isSet: false, effectiveValue: '', effectiveSource: 'hardcoded' },
+  ],
   Updates: [
     {
       key: 'check_on_startup',

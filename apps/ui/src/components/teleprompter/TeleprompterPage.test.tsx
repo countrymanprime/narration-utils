@@ -5,7 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeleprompterPage } from './TeleprompterPage';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
+import { WIRE_TELEPROMPTER_DEVICES } from '../../api/mockFixtures';
 import type { NarrationApi, TeleprompterEvent, TeleprompterPosition, TeleprompterScript, TeleprompterState } from '../../types';
+
+const DEVICE_NAME = WIRE_TELEPROMPTER_DEVICES[0].name;
+const OTHER_DEVICE_NAME = WIRE_TELEPROMPTER_DEVICES[1].name;
 
 beforeEach(() => {
   // The mock would otherwise try to download the full Alice text; offline it uses the small fixture.
@@ -33,23 +37,25 @@ const position = (read: number, extra: Partial<TeleprompterPosition> = {}): Tele
   ...extra,
 });
 
-function renderPage(overrides: Partial<NarrationApi> = {}, initial: Parameters<typeof createMockApi>[1] = {}) {
+function renderPage(overrides: Partial<NarrationApi> = {}, initial: Parameters<typeof createMockApi>[1] = {}, existingApi?: NarrationApi) {
   const eventListeners = new Set<(event: TeleprompterEvent) => void>();
   const stateListeners = new Set<(state: TeleprompterState) => void>();
-  const api = createMockApi(
-    {
-      subscribeTeleprompterEvent: (listener) => {
-        eventListeners.add(listener);
-        return () => eventListeners.delete(listener);
+  const api =
+    existingApi ??
+    createMockApi(
+      {
+        subscribeTeleprompterEvent: (listener) => {
+          eventListeners.add(listener);
+          return () => eventListeners.delete(listener);
+        },
+        subscribeTeleprompterState: (listener) => {
+          stateListeners.add(listener);
+          return () => stateListeners.delete(listener);
+        },
+        ...overrides,
       },
-      subscribeTeleprompterState: (listener) => {
-        stateListeners.add(listener);
-        return () => stateListeners.delete(listener);
-      },
-      ...overrides,
-    },
-    initial,
-  );
+      initial,
+    );
   render(
     <ApiProvider api={api}>
       <TeleprompterPage />
@@ -66,7 +72,7 @@ function renderPage(overrides: Partial<NarrationApi> = {}, initial: Parameters<t
 }
 
 async function startReading(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(await screen.findByLabelText('Microphone'), 'Microphone (USB)');
+  await user.selectOptions(await screen.findByLabelText('Microphone'), DEVICE_NAME);
   await user.click(screen.getByRole('button', { name: 'Start reading' }));
 }
 
@@ -81,19 +87,72 @@ describe('TeleprompterPage', () => {
     expect(start.disabled).toBe(true);
     expect((screen.getByLabelText('Chapter') as HTMLSelectElement).value).toBe('chapter-1');
 
-    await user.type(screen.getByLabelText('Microphone'), 'Microphone (USB)');
+    await user.selectOptions(screen.getByLabelText('Microphone'), DEVICE_NAME);
     expect(start.disabled).toBe(false);
   });
 
-  it('remembers the microphone between visits', async () => {
-    const user = userEvent.setup();
+  it('lists the enumerated devices in the picker, not a typed field', async () => {
     renderPage();
-    await user.type(await screen.findByLabelText('Microphone'), 'Headset');
+
+    const field = (await screen.findByLabelText('Microphone')) as HTMLSelectElement;
+    expect(field.tagName).toBe('SELECT');
+    expect(Array.from(field.options).map((option) => option.textContent)).toContain(DEVICE_NAME);
+  });
+
+  it('blocks Start with a clear message when device enumeration returns nothing, and offers no typed fallback', async () => {
+    renderPage({}, { teleprompterDevices: [] });
+
+    expect(await screen.findByText(/No microphone found/)).toBeTruthy();
+    expect(screen.queryByRole('combobox', { name: 'Microphone' })).toBeNull();
+    const start = screen.getByRole('button', { name: 'Start reading' }) as HTMLButtonElement;
+    expect(start.disabled).toBe(true);
+  });
+
+  it('blocks Start with a distinct message when device enumeration fails outright', async () => {
+    renderPage({ teleprompterDevices: async () => ({ devices: [], error: 'Could not list input devices' }) });
+
+    expect(await screen.findByText(/Couldn't list microphones/)).toBeTruthy();
+    const start = screen.getByRole('button', { name: 'Start reading' }) as HTMLButtonElement;
+    expect(start.disabled).toBe(true);
+  });
+
+  it('remembers the microphone between visits, persisted through the global settings, not browser storage', async () => {
+    const user = userEvent.setup();
+    const { api } = renderPage();
+    await user.selectOptions(await screen.findByLabelText('Microphone'), OTHER_DEVICE_NAME);
+    await waitFor(async () => {
+      const settings = await api.settingsForScope('global');
+      expect(settings.Teleprompter?.find((field) => field.key === 'input_device')?.value).toBe(OTHER_DEVICE_NAME);
+    });
     cleanup();
 
-    renderPage();
+    renderPage({}, {}, api);
 
-    expect(((await screen.findByLabelText('Microphone')) as HTMLInputElement).value).toBe('Headset');
+    expect(((await screen.findByLabelText('Microphone')) as HTMLSelectElement).value).toBe(OTHER_DEVICE_NAME);
+  });
+
+  it('migrates a browser-storage device from before Phase 2, once, into the global settings', async () => {
+    window.localStorage.setItem('narration.teleprompter.device', 'Legacy USB Mic');
+
+    const { api } = renderPage();
+
+    await waitFor(async () => {
+      const settings = await api.settingsForScope('global');
+      expect(settings.Teleprompter?.find((field) => field.key === 'input_device')).toMatchObject({ value: 'Legacy USB Mic', isSet: true });
+    });
+    expect(window.localStorage.getItem('narration.teleprompter.device')).toBeNull();
+  });
+
+  it('does not migrate the legacy browser value once a device has already been chosen through settings', async () => {
+    window.localStorage.setItem('narration.teleprompter.device', 'Legacy USB Mic');
+    const api = createMockApi();
+    await api.saveSettings('Teleprompter', 'global', { input_device: OTHER_DEVICE_NAME });
+
+    renderPage({}, {}, api);
+
+    await waitFor(async () => expect((await screen.findByLabelText('Microphone')) as HTMLSelectElement).toHaveProperty('value', OTHER_DEVICE_NAME));
+    const settings = await api.settingsForScope('global');
+    expect(settings.Teleprompter?.find((field) => field.key === 'input_device')?.value).toBe(OTHER_DEVICE_NAME);
   });
 
   it('starts a session for the chosen chapter and microphone', async () => {
@@ -103,7 +162,7 @@ describe('TeleprompterPage', () => {
 
     await startReading(user);
 
-    expect(teleprompterStart).toHaveBeenCalledWith({ chapter: 'chapter-1', device: 'Microphone (USB)', model: 'tiny' });
+    expect(teleprompterStart).toHaveBeenCalledWith({ chapter: 'chapter-1', device: DEVICE_NAME, model: 'tiny' });
   });
 
   it('follows the reading word by word', async () => {

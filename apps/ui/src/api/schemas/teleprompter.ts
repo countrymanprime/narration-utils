@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import type { HeardWord, TeleprompterEvent, TeleprompterPosition, TeleprompterScript, TeleprompterState } from '../contracts/teleprompter';
+import type {
+  HeardWord,
+  TeleprompterDevice,
+  TeleprompterDevicesResult,
+  TeleprompterEvent,
+  TeleprompterPosition,
+  TeleprompterScript,
+  TeleprompterState,
+} from '../contracts/teleprompter';
 
 // The live event stream (ADR 0021, ADR 0022): the sidecar prints one JSON object per line and the host relays each unchanged, so
 // these schemas are the only place the shape is checked between the Python `live_asr.py` and the reader.
@@ -55,6 +63,14 @@ export const teleprompterStateSchema = z.object({
   script: teleprompterScriptSchema.nullable().default(null),
   position: teleprompterPositionSchema.nullable().default(null),
 }) satisfies z.ZodType<TeleprompterState>;
+
+const teleprompterDeviceSchema = z.object({ name: z.string() }) satisfies z.ZodType<TeleprompterDevice>;
+
+/** `TeleprompterDevices` (`apps/desktop/bindings.go`): a listing failure is `{devices: [], error: "..."}`, never a thrown error. */
+export const teleprompterDevicesResultSchema = z.object({
+  devices: z.array(teleprompterDeviceSchema),
+  error: z.string().nullable(),
+}) satisfies z.ZodType<TeleprompterDevicesResult>;
 
 /** The stream recorded from the real ScriptTracker (`teleprompterRecording.json`) that the browser mock replays; checked when the mock loads. */
 export const recordedStreamSchema = z.object({

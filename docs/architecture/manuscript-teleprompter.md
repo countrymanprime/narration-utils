@@ -355,13 +355,15 @@ The Go binding (`apps/desktop/internal/teleprompter/service.go`'s `Devices`,
 exposed as the `TeleprompterDevices` host binding, `hostAPIVersion` 14) runs
 the sidecar in `--list-devices` mode with a caller-supplied timeout and caches
 nothing; a failure at any layer (bad exit code, unparseable output, a timeout)
-comes back as an empty list plus a message, never a rejected call - listing
-must never block Start. Phase 1 stops at the binding: no UI calls it yet, and
-the existing typed microphone field is unchanged behavior, only relocated to
-`apps/ui/src/components/teleprompter/MicrophoneField.tsx` as the shared seam
-this PRD and `teleprompter-manuscript-integration.prd.md` agreed on. The
-device picker itself (consuming `TeleprompterDevices`, replacing the typed
-field, the "not found" state) is Phase 2.
+comes back as an empty list plus a message, never a rejected call, so the UI
+always gets a result to react to. Phase 1 stops at the binding: no UI calls it
+yet, and the existing typed microphone field is unchanged behavior, only
+relocated to `apps/ui/src/components/teleprompter/MicrophoneField.tsx` as the
+shared seam this PRD and `teleprompter-manuscript-integration.prd.md` agreed
+on. The device picker itself (consuming `TeleprompterDevices`, replacing the
+typed field entirely with a dropdown-only picker, the "not found" state, and a
+blocking message on an empty or failed listing - the PRD's "Microphone is
+never typed" decision) is Phase 2.
 
 ## UI: what shipped and what is still open
 

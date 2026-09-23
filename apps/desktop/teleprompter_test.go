@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
@@ -226,6 +227,23 @@ func TestTeleprompterDevicesReturnsTheSidecarsListThroughTheHostBinding(t *testi
 	if len(result.Devices) != 1 || result.Devices[0]["name"] != "Microphone Array (Realtek(R) Audio)" {
 		t.Fatalf("devices = %v", result.Devices)
 	}
+}
+
+// The `TeleprompterDevices` payload the UI receives (ADR 0069), pinned for the TS contract test
+// (docs/prds/teleprompter-engines-and-input-devices.prd.md Phase 2).
+func TestContractTeleprompterDevices(t *testing.T) {
+	t.Setenv(fakeTeleprompterEnv, "1")
+	host := &Host{teleprompter: teleprompter.New(teleprompter.Config{Project: t.TempDir(), SessionDir: t.TempDir(), Python: os.Args[0]}, process.NewSupervisor(), nil, nil)}
+
+	raw, err := host.TeleprompterDevices()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded any
+	if err := json.Unmarshal([]byte(raw), &decoded); err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "teleprompter-devices", decoded)
 }
 
 func TestTeleprompterDevicesReportsAnUnavailableServiceLikeTeleprompterStart(t *testing.T) {

@@ -839,6 +839,11 @@ var fieldSchemas = map[string][]fieldSchema{
 	"Piper":             {{"tts_provider", "TTS provider", "choice", []string{"piper"}}, {"tts_voice_id", "Preview voice", "choice", []string{"en_US-ljspeech-high"}}},
 	"Updates":           {{"check_on_startup", "Check for updates on startup", "bool", nil}, {"channel", "Update channel", "choice", []string{"candidates", "stable"}}},
 	"TranscriptCompare": {{"model_size", "Default Whisper model", "choice", []string{"tiny", "small", "medium", "large-v3-turbo", "large-v3"}}, {"chunk_seconds", "Default chunk length", "choice", []string{"30", "60", "300", "600"}}, {"color_misread", "Misread marker color", "color", nil}, {"color_skipped", "Skipped marker color", "color", nil}, {"color_extra", "Extra marker color", "color", nil}},
+	// Global scope only (docs/prds/teleprompter-engines-and-input-devices.prd.md, "Where the device, engine and model
+	// choices are stored"): the chosen capture device is a machine fact (hardware wired to this computer), not a
+	// per-project preference, and the host validates it only as free text - the sidecar's own open call is what proves
+	// a device name is real. The "text" kind already accepts any string, including empty (unset).
+	"Teleprompter": {{"input_device", "Microphone", "text", nil}},
 }
 
 // settingsSchemas is the settings the app offers with each choice that comes from an approved catalog filled in from it: the spaCy model
@@ -892,6 +897,9 @@ func (h *Host) saveSettings(tool, scope string, values map[string]*string) error
 	}
 	if tool == "Updates" && scope != "global" {
 		return fmt.Errorf("update settings are global: a project does not choose how the app updates")
+	}
+	if tool == "Teleprompter" && scope != "global" {
+		return fmt.Errorf("teleprompter settings are global: the microphone is wired to this computer, not this project")
 	}
 	valid := map[string]fieldSchema{}
 	for _, schema := range schemas {

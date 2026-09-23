@@ -56,10 +56,21 @@ export type TeleprompterStartResult =
       installPath: string;
     };
 
+/** One input device the sidecar's `--list-devices` reported, by the exact name its capture path opens it under. */
+export type TeleprompterDevice = { name: string };
+
+/**
+ * `TeleprompterDevices` never fails Start-style (see `apps/desktop/bindings.go`): a listing problem comes back as
+ * `{devices: [], error: "..."}`, not a rejected promise, so a caller can always still try to start with a
+ * previously-chosen device.
+ */
+export type TeleprompterDevicesResult = { devices: TeleprompterDevice[]; error: string | null };
+
 export interface TeleprompterApi {
   teleprompterStart(options: TeleprompterStartOptions): Promise<TeleprompterStartResult>;
   teleprompterStop(): Promise<void>;
   teleprompterState(): Promise<TeleprompterState>;
+  teleprompterDevices(): Promise<TeleprompterDevicesResult>;
   subscribeTeleprompterEvent(onEvent: (event: TeleprompterEvent) => void): () => void;
   subscribeTeleprompterState(onState: (state: TeleprompterState) => void): () => void;
 }

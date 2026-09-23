@@ -27,7 +27,7 @@ import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from
 import { dawLinkResultSchema, projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
-import { teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
+import { teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStateSchema } from './schemas/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
 import { unknownKeys } from './schemas/strictness';
 import { parseWire, type WireContext } from './wire/parseWire';
@@ -55,6 +55,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'teleprompter-state-idle.json': teleprompterStateSchema,
   'teleprompter-state-running.json': teleprompterStateSchema,
   'teleprompter-events.json': teleprompterEventSchema.array(),
+  'teleprompter-devices.json': teleprompterDevicesResultSchema,
   'manuscript-import-selected.json': workJobSchema,
   'manuscript-import-preview.json': workJobSchema,
   'manuscript-import-preview-repaired.json': workJobSchema,
@@ -207,6 +208,13 @@ describe('answers of the mock client (it must pass the schemas the real host ans
     const state = await api.teleprompterState();
     expect(state.position?.status).toBe(seed);
     expectMatches(teleprompterStateSchema, state, `mock teleprompter ${seed}`);
+  });
+
+  it('the teleprompter device list', async () => {
+    const api = createMockApi();
+    expectMatches(teleprompterDevicesResultSchema, await api.teleprompterDevices(), 'mock teleprompter devices');
+    const empty = createMockApi({}, { teleprompterDevices: [] });
+    expectMatches(teleprompterDevicesResultSchema, await empty.teleprompterDevices(), 'mock teleprompter devices, none found');
   });
 
   it('the project-attach event', () => {
@@ -472,6 +480,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'tracksList',
       'teleprompterStart',
       'teleprompterState',
+      'teleprompterDevices',
       'updateStatus',
       'updateCheck',
       'updateDownload',
