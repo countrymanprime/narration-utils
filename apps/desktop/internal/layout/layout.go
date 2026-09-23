@@ -19,6 +19,7 @@ const (
 	TTSCatalogFile           = ConfigDir + "/tts-assets.json"
 	WhisperCatalogFile       = ConfigDir + "/whisper-assets.json"
 	SpacyCatalogFile         = ConfigDir + "/spacy-assets.json"
+	MoonshineCatalogFile     = ConfigDir + "/moonshine-assets.json"
 	ReaperDir                = "integrations/reaper"
 	LauncherFile             = ReaperDir + "/NarrationUtils_Launcher.lua"
 	FixturesDir              = "tests/fixtures"

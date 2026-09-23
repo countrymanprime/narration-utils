@@ -6,6 +6,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
@@ -13,9 +14,10 @@ import (
 
 // The per-asset-kind folders under the asset cache (internal/assets names them once, for the host and for the seeding command alike).
 const (
-	ttsCacheDir     = assets.TTSDir
-	whisperCacheDir = assets.WhisperDir
-	spacyCacheDir   = assets.SpacyDir
+	ttsCacheDir       = assets.TTSDir
+	whisperCacheDir   = assets.WhisperDir
+	spacyCacheDir     = assets.SpacyDir
+	moonshineCacheDir = assets.MoonshineDir
 )
 
 // assetCacheBase is where downloaded assets live: the per-user cache folder, never the temporary one (assets.CacheBase).
@@ -25,7 +27,7 @@ func assetCacheBase() (string, error) { return assets.CacheBase() }
 // It returns what it removed.
 func cleanAssetCaches(base string) []string {
 	var removed []string
-	for _, dir := range []string{ttsCacheDir, whisperCacheDir, spacyCacheDir} {
+	for _, dir := range []string{ttsCacheDir, whisperCacheDir, spacyCacheDir, moonshineCacheDir} {
 		removed = append(removed, assets.CleanStale(filepath.Join(base, dir))...)
 	}
 	return removed
@@ -42,7 +44,7 @@ func (h *Host) buildAssetRegistry() *assetRegistry {
 	}
 	// The packaged release resources are only unpacked when a checkout does not have every catalog.
 	packaged := ""
-	for _, catalog := range []string{layout.TTSCatalogFile, layout.WhisperCatalogFile, layout.SpacyCatalogFile} {
+	for _, catalog := range []string{layout.TTSCatalogFile, layout.WhisperCatalogFile, layout.SpacyCatalogFile, layout.MoonshineCatalogFile} {
 		if _, statErr := os.Stat(layout.Path(h.config.repoRoot, catalog)); statErr != nil {
 			packaged = h.packagedResources()
 			break
@@ -51,7 +53,8 @@ func (h *Host) buildAssetRegistry() *assetRegistry {
 	voices := buildTtsManager(h.config, packaged, filepath.Join(base, ttsCacheDir))
 	models := buildWhisperManager(h.config, packaged, filepath.Join(base, whisperCacheDir))
 	languageModels := buildSpacyManager(h.config, packaged, filepath.Join(base, spacyCacheDir))
-	return newAssetRegistry(base, voices, models, languageModels)
+	liveModels := buildMoonshineManager(h.config, packaged, filepath.Join(base, moonshineCacheDir))
+	return newAssetRegistry(base, voices, models, languageModels, liveModels)
 }
 
 // buildTtsManager reads the voice catalog (the checkout catalog, or the packaged release one) and returns a manager over root, or nil when
@@ -88,6 +91,19 @@ func buildSpacyManager(cfg config, packagedRoot, root string) *spacy.Manager {
 		catalog = filepath.Join(packagedRoot, "config", "spacy-assets.json")
 	}
 	manager, err := spacy.New(catalog, root)
+	if err != nil {
+		return nil
+	}
+	return manager
+}
+
+// buildMoonshineManager is buildTtsManager for the Moonshine live-engine model catalog.
+func buildMoonshineManager(cfg config, packagedRoot, root string) *moonshine.Manager {
+	catalog := layout.Path(cfg.repoRoot, layout.MoonshineCatalogFile)
+	if _, err := os.Stat(catalog); err != nil && packagedRoot != "" {
+		catalog = filepath.Join(packagedRoot, "config", "moonshine-assets.json")
+	}
+	manager, err := moonshine.New(catalog, root)
 	if err != nil {
 		return nil
 	}

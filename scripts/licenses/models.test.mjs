@@ -80,13 +80,14 @@ test('checkDocument reports a table that no longer matches the catalogs', () => 
   writeFileSync(join(dir, 'config', 'whisper-assets.json'), JSON.stringify(whisper));
   writeFileSync(join(dir, 'config', 'tts-assets.json'), JSON.stringify({ voices: [] }));
   writeFileSync(join(dir, 'config', 'spacy-assets.json'), JSON.stringify({ models: [] }));
+  writeFileSync(join(dir, 'config', 'moonshine-assets.json'), JSON.stringify({ models: [] }));
   const generated = generateDocument(`${BEGIN}\n${END}\n`, loadCatalogs(join(dir, 'config')), review);
 
   assert.equal(checkDocument(generated, loadCatalogs(join(dir, 'config')), review), true);
   assert.equal(checkDocument(generated.replace('Systran', 'Somebody Else'), loadCatalogs(join(dir, 'config')), review), false);
 });
 
-test('the committed provenance document matches the three catalogs (run `node scripts/licenses/models.mjs` to rewrite it)', async () => {
+test('the committed provenance document matches the four catalogs (run `node scripts/licenses/models.mjs` to rewrite it)', async () => {
   const { readFileSync } = await import('node:fs');
   const document = readFileSync(join(REPO_ROOT, 'docs/architecture/model-provenance.md'), 'utf8');
   const reviewFile = JSON.parse(readFileSync(join(REPO_ROOT, 'scripts/licenses/model-review.json'), 'utf8'));

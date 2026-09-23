@@ -52,7 +52,7 @@ func newSpacyFixture(t *testing.T) spacyFixture {
 		t.Fatal(err)
 	}
 	registry := fixture.host.registry()
-	fixture.host.assets = newAssetRegistry(registry.base, registry.tts, nil, manager)
+	fixture.host.assets = newAssetRegistry(registry.base, registry.tts, nil, manager, nil)
 	fixture.host.config.sessionDir = t.TempDir()
 	fixture.host.installJobs = map[string]*installJob{}
 	args := filepath.Join(t.TempDir(), "args.txt")
@@ -167,7 +167,7 @@ func TestABuildWithAModelNameTheAppDoesNotManagePassesItThrough(t *testing.T) {
 
 func TestABuildWithNoLanguageModelCatalogSaysSoButStillOffersRulesOnly(t *testing.T) {
 	f := newSpacyFixture(t)
-	f.host.assets = newAssetRegistry("", f.host.registry().tts, nil, nil)
+	f.host.assets = newAssetRegistry("", f.host.registry().tts, nil, nil, nil)
 	if _, err := f.host.startGuideBuild(false); err == nil || !strings.Contains(err.Error(), "language model catalog is unavailable") {
 		t.Fatalf("err = %v", err)
 	}

@@ -27,9 +27,10 @@ type seedFixture struct {
 func newSeedFixture(t *testing.T) *seedFixture {
 	t.Helper()
 	f := &seedFixture{root: t.TempDir(), cache: t.TempDir(), bodies: map[string][]byte{
-		"/voice.onnx": []byte(strings.Repeat("v", 3000)),
-		"/tiny.bin":   []byte(strings.Repeat("w", 2000)),
-		"/model.txt":  []byte(strings.Repeat("s", 1000)),
+		"/voice.onnx":  []byte(strings.Repeat("v", 3000)),
+		"/tiny.bin":    []byte(strings.Repeat("w", 2000)),
+		"/model.txt":   []byte(strings.Repeat("s", 1000)),
+		"/encoder.ort": []byte(strings.Repeat("m", 1500)),
 	}}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		f.requests.Add(1)
@@ -49,9 +50,10 @@ func newSeedFixture(t *testing.T) *seedFixture {
 		return []map[string]any{{"name": path[1:], "url": server.URL + path, "sha256": hex.EncodeToString(sum[:]), "size": len(f.bodies[path])}}
 	}
 	catalogs := map[string]any{
-		"tts-assets.json":     map[string]any{"catalogVersion": 1, "voices": []map[string]any{{"id": "voice-a", "provider": "piper", "displayName": "A", "version": "1", "files": file("/voice.onnx")}}},
-		"whisper-assets.json": map[string]any{"catalogVersion": 1, "models": []map[string]any{{"id": "tiny", "provider": "faster-whisper", "displayName": "T", "version": "1", "files": file("/tiny.bin")}, {"id": "small", "provider": "faster-whisper", "displayName": "S", "version": "1", "files": file("/tiny.bin")}}},
-		"spacy-assets.json":   map[string]any{"catalogVersion": 1, "models": []map[string]any{{"id": "en_core_web_sm", "provider": "spacy", "displayName": "SM", "version": "1", "files": file("/model.txt")}}},
+		"tts-assets.json":       map[string]any{"catalogVersion": 1, "voices": []map[string]any{{"id": "voice-a", "provider": "piper", "displayName": "A", "version": "1", "files": file("/voice.onnx")}}},
+		"whisper-assets.json":   map[string]any{"catalogVersion": 1, "models": []map[string]any{{"id": "tiny", "provider": "faster-whisper", "displayName": "T", "version": "1", "files": file("/tiny.bin")}, {"id": "small", "provider": "faster-whisper", "displayName": "S", "version": "1", "files": file("/tiny.bin")}}},
+		"spacy-assets.json":     map[string]any{"catalogVersion": 1, "models": []map[string]any{{"id": "en_core_web_sm", "provider": "spacy", "displayName": "SM", "version": "1", "files": file("/model.txt")}}},
+		"moonshine-assets.json": map[string]any{"catalogVersion": 1, "models": []map[string]any{{"id": "tiny", "provider": "moonshine", "displayName": "Tiny", "version": "1", "files": file("/encoder.ort")}, {"id": "small", "provider": "moonshine", "displayName": "Small", "version": "1", "files": file("/encoder.ort")}}},
 	}
 	if err := os.MkdirAll(filepath.Join(f.root, "config"), 0o755); err != nil {
 		t.Fatal(err)
@@ -157,7 +159,7 @@ func TestSeedingAServerThatSendsTheWrongBytesFailsAndInstallsNothing(t *testing.
 
 func TestSeedingRefusesWhatTheCatalogsDoNotApproveBeforeDownloadingAnything(t *testing.T) {
 	f := newSeedFixture(t)
-	for _, args := range [][]string{{"moonshine"}, {"tts/not-a-voice"}, {"tts", "whisper/huge"}, {}} {
+	for _, args := range [][]string{{"sherpa"}, {"tts/not-a-voice"}, {"tts", "whisper/huge"}, {}} {
 		if out, err := f.run(t, args...); err == nil {
 			t.Fatalf("%v was accepted:\n%s", args, out)
 		}

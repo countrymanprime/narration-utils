@@ -137,7 +137,7 @@ func contractServices(t *testing.T) contractFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return contractFixture{registry: newAssetRegistry(t.TempDir(), voices, models, languageModels), settings: settings.New(layout.FindRoot("."), "")}
+	return contractFixture{registry: newAssetRegistry(t.TempDir(), voices, models, languageModels, nil), settings: settings.New(layout.FindRoot("."), "")}
 }
 
 func TestContractCatalogsAndInstallJobs(t *testing.T) {

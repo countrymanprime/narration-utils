@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
@@ -68,14 +69,15 @@ type assetRegistry struct {
 	providers   []assetProvider
 	// tts and whisper are the managers behind the first two providers, for the bindings that predate the registry (the preview, the
 	// first-use gates of Transcript Compare and the Teleprompter).
-	tts     *tts.Manager
-	whisper *whisper.Manager
-	spacy   *spacy.Manager
+	tts       *tts.Manager
+	whisper   *whisper.Manager
+	spacy     *spacy.Manager
+	moonshine *moonshine.Manager
 }
 
 // newAssetRegistry registers a provider for each manager that exists.
-func newAssetRegistry(base string, voices *tts.Manager, models *whisper.Manager, languageModels *spacy.Manager) *assetRegistry {
-	registry := &assetRegistry{base: base, tts: voices, whisper: models, spacy: languageModels}
+func newAssetRegistry(base string, voices *tts.Manager, models *whisper.Manager, languageModels *spacy.Manager, liveModels *moonshine.Manager) *assetRegistry {
+	registry := &assetRegistry{base: base, tts: voices, whisper: models, spacy: languageModels, moonshine: liveModels}
 	if voices != nil {
 		registry.providers = append(registry.providers, ttsProvider{manager: voices})
 	}
@@ -84,6 +86,9 @@ func newAssetRegistry(base string, voices *tts.Manager, models *whisper.Manager,
 	}
 	if languageModels != nil {
 		registry.providers = append(registry.providers, spacyProvider{manager: languageModels})
+	}
+	if liveModels != nil {
+		registry.providers = append(registry.providers, moonshineProvider{manager: liveModels})
 	}
 	return registry
 }

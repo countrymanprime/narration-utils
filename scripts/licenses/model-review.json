@@ -39,6 +39,16 @@
       "commercialUse": "Yes (MIT, ExplosionAI)",
       "status": "In the catalog, cleared from the wheel's own notices",
       "note": "As en_core_web_sm, plus the Explosion Vectors (OSCAR 2109, Wikipedia, OpenSubtitles, WMT News Crawl) recorded in the same file. Same residual."
+    },
+    "moonshine/tiny": {
+      "commercialUse": "Yes (MIT)",
+      "status": "In the catalog (teleprompter-engines-and-input-devices.prd.md phase 5); not yet launchable (phases 6-7 pending)",
+      "note": "English streaming model, word-timestamp variant, publisher Moonshine AI. Licence re-verified 2026-09-22 directly against the repository's LICENSE file (GitHub's detector reports the repository as unrecognized): the English streaming models are explicitly MIT, distinct from the non-commercial Community License that covers only legacy non-English, non-streaming models. Pinned to the dated release path `.../quantized_26_08_21`; every file's URL, size and SHA-256 were verified by downloading and hashing once."
+    },
+    "moonshine/small": {
+      "commercialUse": "Yes (MIT)",
+      "status": "In the catalog (teleprompter-engines-and-input-devices.prd.md phase 5); not yet launchable (phases 6-7 pending)",
+      "note": "As moonshine/tiny, larger architecture."
     }
   },
   "uncatalogued": [
@@ -51,12 +61,12 @@
       "note": "Package data, not a download."
     },
     {
-      "name": "Moonshine (moonshine-voice 0.1.5 and its English streaming models)",
-      "source": "moonshine-ai/moonshine, fetched from Moonshine's own servers by the library",
-      "license": "unclear",
-      "commercialUse": "unclear",
-      "status": "Unclear: kept out of the catalog (owner decision, Q13 b)",
-      "note": "The package is MIT. The project says its English streaming models are MIT and that a non-commercial Moonshine Community License covers only legacy non-streaming models, but GitHub's detector calls the repository's licence unrecognized and no per-model text is confirmed at a pinned artifact. It needs a URL, a SHA-256 and a model card for every file before it can be catalogued; the app never lets the library download it. Not a project dependency."
+      "name": "moonshine-voice (the Python package itself, distinct from the now-catalogued models above)",
+      "source": "PyPI moonshine-voice 0.1.5, github.com/moonshine-ai/moonshine",
+      "license": "MIT",
+      "commercialUse": "Yes",
+      "status": "Not yet a project dependency: still pending pyproject.toml/uv.lock pinning and PyInstaller collection (phase 6)",
+      "note": "The models it would load are catalogued above and provisioned through the hashed asset catalog, not the library's own downloader; the package's own freeze/bundling review happens in phase 6."
     },
     {
       "name": "Other Piper voices",

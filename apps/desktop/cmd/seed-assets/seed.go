@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
@@ -217,3 +218,25 @@ func (k spacyKind) install(ctx context.Context, id string, o assets.Options) err
 }
 func (k spacyKind) verify(id string) (string, error) { return k.m.Verify(id) }
 func (k spacyKind) dir(id string) string             { return k.m.InstallDir(id) }
+
+type moonshineKind struct{ m *moonshine.Manager }
+
+func (moonshineKind) name() string { return "moonshine" }
+func (k moonshineKind) ids() []string {
+	var ids []string
+	for _, model := range k.m.Models() {
+		ids = append(ids, model.ID)
+	}
+	return ids
+}
+func (k moonshineKind) state(id string) string {
+	if model, ok := k.m.Model(id); ok {
+		return k.m.State(model)
+	}
+	return "not_installed"
+}
+func (k moonshineKind) install(ctx context.Context, id string, o assets.Options) error {
+	return k.m.Repair(ctx, id, o)
+}
+func (k moonshineKind) verify(id string) (string, error) { return k.m.Verify(id) }
+func (k moonshineKind) dir(id string) string             { return k.m.InstallDir(id) }

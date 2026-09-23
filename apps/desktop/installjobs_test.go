@@ -73,7 +73,7 @@ func newInstallFixture(t *testing.T, corrupt bool) *installFixture {
 		t.Fatal(err)
 	}
 	f.logPath = filepath.Join(dir, "host.log")
-	f.host = &Host{assets: newAssetRegistry(filepath.Join(dir, "cache"), voiceManager, modelManager, nil), installJobs: map[string]*installJob{}, log: hostlog.New(f.logPath, 0)}
+	f.host = &Host{assets: newAssetRegistry(filepath.Join(dir, "cache"), voiceManager, modelManager, nil, nil), installJobs: map[string]*installJob{}, log: hostlog.New(f.logPath, 0)}
 	return f
 }
 

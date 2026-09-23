@@ -1,17 +1,20 @@
 # First-Use Dependency Provisioning
 
-**Status: Implemented** for every kind of optional asset the app ships: Piper preview voices, Whisper transcription models and
-Story Bible spaCy language models. This document holds the rules that code, other docs and `SECURITY.md` are checked against; the
-sections from "The asset manager" on describe what implements them.
+**Status: Implemented** for every kind of optional asset the app ships: Piper preview voices, Whisper transcription models,
+Story Bible spaCy language models and, as of `teleprompter-engines-and-input-devices.prd.md` phase 5, the Moonshine live-engine
+models' catalog and provisioning (installable through Settings > Local assets like every other kind; the live Teleprompter does
+not launch it yet - that is phase 7, after the sidecar itself gains Moonshine support in phase 6). This document holds the rules
+that code, other docs and `SECURITY.md` are checked against; the sections from "The asset manager" on describe what implements them.
 
 What is delivered, and what is deliberately not:
 
-- **Delivered.** One catalog per kind (`config/{tts,whisper,spacy}-assets.json`) with pinned URLs, sizes and SHA-256; the asset
-  manager and its manifest, resume, repair and free-space check; the registry and the `Assets*` bindings; the first-use dialog for
-  Piper, Whisper and Story Bible (with the rules-only choice); Settings > Local assets; no download and no request at startup
-  other than the switch-off-able update check (tests in `apps/desktop/startup_offline_test.go`); the legacy-cache policy; the
-  developer seeding command; and the packaged smoke test, `narration-utils --smoke`, which CI runs on the Windows build. Each
-  shipped artifact's record (publisher, version, URL, SHA-256, licences, install location, update policy) is in
+- **Delivered.** One catalog per kind (`config/{tts,whisper,spacy,moonshine}-assets.json`) with pinned URLs, sizes and SHA-256; the
+  asset manager and its manifest, resume, repair and free-space check; the registry and the `Assets*` bindings (a later kind is a
+  catalog file, a provider and a row on the page, with no new binding - exactly how Moonshine's own provider was added); the
+  first-use dialog for Piper, Whisper and Story Bible (with the rules-only choice); Settings > Local assets; no download and no
+  request at startup other than the switch-off-able update check (tests in `apps/desktop/startup_offline_test.go`); the
+  legacy-cache policy; the developer seeding command; and the packaged smoke test, `narration-utils --smoke`, which CI runs on the
+  Windows build. Each shipped artifact's record (publisher, version, URL, SHA-256, licences, install location, update policy) is in
   [local dependency evaluation](../research/local-dependency-evaluation.md#shipped-assets).
 - **Not bundled.** No model, voice or dictionary is inside the release; a narrator downloads each one, once, after confirming.
 - **No automatic updates of assets.** The catalog is pinned per release and there is no "update available" state; an asset is
@@ -195,7 +198,7 @@ sequenceDiagram
 
 ## The asset registry (implemented)
 
-Every kind of asset is one provider in a registry that is built once at start and never replaced ([ADR 0079](../adr/0079-every-downloadable-asset-is-listed-installed-verified-and-removed-through-one-registry-of-providers.md)). Six generic bindings serve all of them: `AssetsList` (state, size, publisher, licence and provenance links, install path, installed and verified times, and the download running for each asset; it reads no file contents), `AssetsInstall(kind, id)` (installs, or repairs a damaged asset; a second call for a running download joins it), `AssetsInstallState`, `AssetsInstallCancel`, `AssetsVerify` and `AssetsRemove` (refused while the asset downloads; it removes only that asset). The install is the one job of [ADR 0077](../adr/0077-every-asset-install-is-one-job-with-real-bytes-a-second-start-joins-it-and-one-hook-follows-it.md). The third kind, the Story Bible language models (spaCy, [ADR 0080](../adr/0080-the-story-bible-language-model-is-a-catalog-asset-unpacked-at-install-and-the-build-asks-before-it-downloads.md)), was exactly that: a catalog file, a provider and a row on the page. A later kind (dictionaries, Moonshine) is the same. The voice and Whisper bindings that predate the registry (`TtsInstall`, `WhisperRemove`, ...) are wrappers over the same functions until the pages that use them move over.
+Every kind of asset is one provider in a registry that is built once at start and never replaced ([ADR 0079](../adr/0079-every-downloadable-asset-is-listed-installed-verified-and-removed-through-one-registry-of-providers.md)). Six generic bindings serve all of them: `AssetsList` (state, size, publisher, licence and provenance links, install path, installed and verified times, and the download running for each asset; it reads no file contents), `AssetsInstall(kind, id)` (installs, or repairs a damaged asset; a second call for a running download joins it), `AssetsInstallState`, `AssetsInstallCancel`, `AssetsVerify` and `AssetsRemove` (refused while the asset downloads; it removes only that asset). The install is the one job of [ADR 0077](../adr/0077-every-asset-install-is-one-job-with-real-bytes-a-second-start-joins-it-and-one-hook-follows-it.md). The third kind, the Story Bible language models (spaCy, [ADR 0080](../adr/0080-the-story-bible-language-model-is-a-catalog-asset-unpacked-at-install-and-the-build-asks-before-it-downloads.md)), was exactly that: a catalog file, a provider and a row on the page. The fourth kind, the Moonshine live-engine models (`teleprompter-engines-and-input-devices.prd.md` phase 5), was the same again - no new `Assets*` binding, no `hostAPIVersion` bump. Its ids (`tiny`, `small`) are the same words the Whisper catalog uses; they never collide because the install directory is built from each catalog entry's own `provider` field (`moonshine`, `faster-whisper`), not the kind alone. A later kind (dictionaries) is the same. The voice and Whisper bindings that predate the registry (`TtsInstall`, `WhisperRemove`, ...) are wrappers over the same functions until the pages that use them move over.
 
 ## The local assets page (implemented)
 
@@ -205,7 +208,7 @@ Settings > Local assets (Global scope) is the one place to see, verify, repair a
 
 `narration-utils --smoke` proves what "the release contains everything needed to start" claims, on the executable that ships: it
 unpacks the bundled resources, starts every frozen sidecar, checks that the frozen Story Bible sidecar can load its dictionary and
-start its speech phonemizer (the data a freeze silently loses), loads the three approved catalogs, writes the asset cache and checks
+start its speech phonemizer (the data a freeze silently loses), loads the four approved catalogs, writes the asset cache and checks
 the REAPER package, prints a JSON report and exits non-zero on any failure, with no window and no download. CI runs it on the
 Windows build before the asset is packaged; details, the checks and the decision not to download the voice in CI are in
 [CI and releases](../operations/ci-and-releases.md#the-packaged-app-smoke-test).

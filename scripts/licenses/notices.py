@@ -527,7 +527,7 @@ def render_report(
 
 def read_catalogs(config_dir: Path) -> list[dict]:
     items: list[dict] = []
-    for name, key in (("whisper-assets.json", "models"), ("tts-assets.json", "voices"), ("spacy-assets.json", "models")):
+    for name, key in (("whisper-assets.json", "models"), ("tts-assets.json", "voices"), ("spacy-assets.json", "models"), ("moonshine-assets.json", "models")):
         path = config_dir / name
         if path.is_file():
             items.extend(json.loads(path.read_text(encoding="utf-8")).get(key, []))

@@ -24,6 +24,8 @@ Every model, voice and data pack the app can download, where it comes from, unde
 | piper/en_US-ljspeech-high | rhasspy | [Public domain training data; Piper Voices repository MIT](https://keithito.com/LJ-Speech-Dataset/) | `1.0.0` | 108.9 MiB | The model card is silent; the LJ Speech data is public domain and the Piper Voices repository is MIT | In the catalog | The card's silence on commercial use is a residual, recorded in the local dependency evaluation. The Piper program and eSpeak NG that speak it are GPL-3.0-or-later and are bundled (owner decision D17), not downloaded. |
 | spacy/en_core_web_sm | Explosion | [MIT](https://spacy.io/models/en#en_core_web_sm) | `3.8.0` | 12.2 MiB | Yes (MIT, ExplosionAI) | In the catalog, cleared from the wheel's own notices | The wheel's LICENSES_SOURCES records the training data: OntoNotes 5 ("commercial (licensed by Explosion)"), the ClearNLP dependency conversion (a citation, no code), WordNet 3.0 (its licence, which travels with the model). Read by the S16 spike; the corpora's terms beyond Explosion's statement are not independently verified. The owner may withdraw the model. |
 | spacy/en_core_web_lg | Explosion | [MIT](https://spacy.io/models/en#en_core_web_lg) | `3.8.0` | 382.1 MiB | Yes (MIT, ExplosionAI) | In the catalog, cleared from the wheel's own notices | As en_core_web_sm, plus the Explosion Vectors (OSCAR 2109, Wikipedia, OpenSubtitles, WMT News Crawl) recorded in the same file. Same residual. |
+| moonshine/tiny | Moonshine AI | [MIT](https://github.com/moonshine-ai/moonshine/blob/main/LICENSE) | `quantized_26_08_21` | 74.1 MiB | Yes (MIT) | In the catalog (teleprompter-engines-and-input-devices.prd.md phase 5); not yet launchable (phases 6-7 pending) | English streaming model, word-timestamp variant, publisher Moonshine AI. Licence re-verified 2026-09-22 directly against the repository's LICENSE file (GitHub's detector reports the repository as unrecognized): the English streaming models are explicitly MIT, distinct from the non-commercial Community License that covers only legacy non-English, non-streaming models. Pinned to the dated release path `.../quantized_26_08_21`; every file's URL, size and SHA-256 were verified by downloading and hashing once. |
+| moonshine/small | Moonshine AI | [MIT](https://github.com/moonshine-ai/moonshine/blob/main/LICENSE) | `quantized_26_08_21` | 213.7 MiB | Yes (MIT) | In the catalog (teleprompter-engines-and-input-devices.prd.md phase 5); not yet launchable (phases 6-7 pending) | As moonshine/tiny, larger architecture. |
 
 ### Every file, with the size and SHA-256 the app checks
 
@@ -55,13 +57,31 @@ Every model, voice and data pack the app can download, where it comes from, unde
 | piper/en_US-ljspeech-high | `en_US-ljspeech-high.onnx.json` | 4,970 | `7e1f4634af596d83cca997fb7a931ba80b70f8a316a2655ee69c55365e0ace14` |
 | spacy/en_core_web_sm | `en_core_web_sm-3.8.0-py3-none-any.whl` | 12,806,118 | `1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85` |
 | spacy/en_core_web_lg | `en_core_web_lg-3.8.0-py3-none-any.whl` | 400,658,291 | `293e9547a655b25499198ab15a525b05b9407a75f10255e405e8c3854329ab63` |
+| moonshine/tiny | `adapter.ort` | 1,319,664 | `22ecc949e146c49667fda28d102d4e30749a107dc88a396292aa8f277ef1347c` |
+| moonshine/tiny | `cross_kv.ort` | 1,287,544 | `143a36667b8d05fd9d04e8c337b7ee121f37ef299aea6b3d82bdb3d3401950b4` |
+| moonshine/tiny | `decoder_kv.ort` | 32,583,720 | `8852553f312adb6c9aa4d17418015049b30f412209ee569d336548c0044627de` |
+| moonshine/tiny | `encoder.ort` | 7,675,440 | `a8414e1a5dedf9f2093d7680601dd8a9b0433e7020260eafe0e370ead91134ca` |
+| moonshine/tiny | `frontend.model.ort` | 23,344 | `5121b561417b638afce0c6c31b760e37c93cf97f80d9b0031aad1fe7b6f25d61` |
+| moonshine/tiny | `frontend.weights.ort` | 2,093,464 | `217da24ac6f522ebf02da8ef288e77d1ac68d50d4a6821433182e4fbf4204bbd` |
+| moonshine/tiny | `streaming_config.json` | 509 | `74fe5ddebd63b17caf59e8a3b18c17547ff7bce1642050edbb1c3962674f8950` |
+| moonshine/tiny | `tokenizer.bin` | 249,974 | `6884b35fd6377d4c4d32336a0bc152f36b64d1e45b6503683cdc238250a8472d` |
+| moonshine/tiny | `decoder_kv_with_attention.ort` | 32,515,016 | `c1b41adca4ef75ad8dfdfc71875b5d0ae9be959865a14498da01cbddab8c02b8` |
+| moonshine/small | `adapter.ort` | 2,870,368 | `c665f742364febad597cc9ac1e0b341ffbee0e24a1466e2f3bde95e6e4771762` |
+| moonshine/small | `cross_kv.ort` | 5,356,536 | `e2d3417144e9514055ebfefe8dcc4c0a55a55adcb8530435844c75c53e352bf6` |
+| moonshine/small | `decoder_kv.ort` | 81,878,600 | `1a05465b1dd955858dfcbee039c0020fb5dd982b0f5094c34e61735d518d771b` |
+| moonshine/small | `encoder.ort` | 44,148,576 | `2d4d973e91e8aca08c51e7e7efa28a46ab265b63d809d5294d18b86bcd85b993` |
+| moonshine/small | `frontend.model.ort` | 26,944 | `09b1210ae30dc5f0f3e45f0ebab914c254741323114f53fbbe5ae62cca35058f` |
+| moonshine/small | `frontend.weights.ort` | 7,769,464 | `7ef97521bd4bad3928f5bb6808586f4fcc6e92bd5990394112eed7d4052ec338` |
+| moonshine/small | `streaming_config.json` | 512 | `26f02b6afb22d60871a5efd85c3d38e569cc0ddb6c5eb6e93d3260152ae8a47a` |
+| moonshine/small | `tokenizer.bin` | 249,974 | `6884b35fd6377d4c4d32336a0bc152f36b64d1e45b6503683cdc238250a8472d` |
+| moonshine/small | `decoder_kv_with_attention.ort` | 81,766,608 | `19653ca93362cd0445837cbaabc9f36f462410b357dd4a102d9c8ca1c3d13c8c` |
 
 ### Not in the catalogs
 
 | Artifact | Source | Licence | Commercial use | Status | Note |
 | --- | --- | --- | --- | --- | --- |
 | Silero VAD (silero_vad_v6.onnx) | snakers4/silero-vad, inside the faster-whisper wheel | MIT | Yes | Ships inside two sidecars (ADR 0022), listed in the notices | Package data, not a download. |
-| Moonshine (moonshine-voice 0.1.5 and its English streaming models) | moonshine-ai/moonshine, fetched from Moonshine's own servers by the library | unclear | unclear | Unclear: kept out of the catalog (owner decision, Q13 b) | The package is MIT. The project says its English streaming models are MIT and that a non-commercial Moonshine Community License covers only legacy non-streaming models, but GitHub's detector calls the repository's licence unrecognized and no per-model text is confirmed at a pinned artifact. It needs a URL, a SHA-256 and a model card for every file before it can be catalogued; the app never lets the library download it. Not a project dependency. |
+| moonshine-voice (the Python package itself, distinct from the now-catalogued models above) | PyPI moonshine-voice 0.1.5, github.com/moonshine-ai/moonshine | MIT | Yes | Not yet a project dependency: still pending pyproject.toml/uv.lock pinning and PyInstaller collection (phase 6) | The models it would load are catalogued above and provisioned through the hashed asset catalog, not the library's own downloader; the package's own freeze/bundling review happens in phase 6. |
 | Other Piper voices | rhasspy/piper-voices | per voice | unclear until each model card is read | Unclear: none is in the catalog | Each voice is trained on its own dataset, and some datasets restrict commercial use. A voice is added only with its card read and a catalog entry that pins it. |
 <!-- models:end -->
 
