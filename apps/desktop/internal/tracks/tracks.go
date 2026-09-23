@@ -127,6 +127,29 @@ type Project struct {
 	Tracks []Track `json:"tracks"`
 }
 
+// ItemByGUID finds the item whose own GUID (Item.GUID, from <ITEM IGUID
+// ...>, not a take's own GUID) equals guid, and the track that holds it. It
+// is the take-review PRD's answer to Q6: a finding targets an item by its
+// GUID rather than a manuscript line-identity stamp, so re-resolving that
+// target against a freshly parsed project (immediately before a mutation,
+// to refuse a stale identity) needs no stamped ids at all - only this
+// lookup over the static model. It matches only Item.GUID: a take's own
+// GUID never matches, since a take is not a valid mutation target on its
+// own (Q4/Q5 - a candidate is added as a take *of* a target item).
+func (project Project) ItemByGUID(guid string) (track Track, item Item, ok bool) {
+	if guid == "" {
+		return Track{}, Item{}, false
+	}
+	for _, candidateTrack := range project.Tracks {
+		for _, candidateItem := range candidateTrack.Items {
+			if candidateItem.GUID == guid {
+				return candidateTrack, candidateItem, true
+			}
+		}
+	}
+	return Track{}, Item{}, false
+}
+
 // Discover returns every top-level *.rpp project file directly inside
 // folder, sorted by filename. It deliberately does not recurse: REAPER
 // writes backup copies into a "Backups" subfolder and autosave/render

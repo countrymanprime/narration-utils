@@ -50,6 +50,14 @@ func (h *Host) mediaMiddleware(next http.Handler) http.Handler {
 // immediately instead of leaving a stale file servable. It returns the
 // project's own copy of the matched path, never the requested string, so
 // the file that gets opened is always one the parsed project vouched for.
+//
+// It authorizes every take of every item, not only each item's active take
+// (item.SourceFile): the analysis evidence ledger PRD's Q10 deliberately
+// scoped its own Phase 1 to the active take only ("TR Phase 2 asks for all
+// takes; it can extend from B" - docs/prds/analysis-evidence-ledger.prd.md),
+// and this is that extension, needed so the take-review PRD's audition and
+// comparison work (later phases) can play a candidate take's own source
+// without first making it the active take in REAPER.
 func (h *Host) authorizedMediaSource(requested string) (string, bool) {
 	project, err := h.tracksList()
 	if err != nil {
@@ -57,8 +65,10 @@ func (h *Host) authorizedMediaSource(requested string) (string, bool) {
 	}
 	for _, track := range project.Tracks {
 		for _, item := range track.Items {
-			if item.SourceFile != "" && item.SourceFile == requested {
-				return item.SourceFile, true
+			for _, take := range item.Takes {
+				if take.SourceFile != "" && take.SourceFile == requested {
+					return take.SourceFile, true
+				}
 			}
 		}
 	}
