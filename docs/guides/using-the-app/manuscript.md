@@ -12,10 +12,15 @@ Text size is adjustable independently of the rest of the app.
 
 ![Manuscript reader at the large text size](../../images/ui/manuscript-reader-large.webp)
 
-Importing keeps the storytelling formatting from a Word or Markdown manuscript — italics, bold
-and underline — and line breaks inside a paragraph (verse, addresses), so the reader matches the
-original. Chapter titles and subtitles that Word stores on separate lines are shown as a title
-with its subtitle. Re-import a manuscript (Replace manuscript on [Home](home.md)) to pick this up in an older project.
+Importing keeps the storytelling formatting from a Word, Markdown, plain-text or EPUB manuscript —
+italics, bold and underline — and line breaks inside a paragraph (verse, addresses), so the reader
+matches the original. Chapter titles and subtitles that Word (or an EPUB's own table of contents)
+stores separately are shown as a title with its subtitle. An EPUB's front matter, table of
+contents and back matter (endnotes, glossary, and the like) are recognized from the book's own
+markup and kept out of the narration chapters, the same as a Word document's front matter. A
+plain-text file with no chapter markings, or an EPUB with no table of contents or headings,
+still imports as one narration chapter rather than failing or importing nothing narratable — the
+import log says so. Re-import a manuscript (Replace manuscript on [Home](home.md)) to pick this up in an older project.
 
 ![Manuscript - italic, bold and underline from the source document, and a preserved line break inside a paragraph](../../images/ui/manuscript-formatting.webp)
 

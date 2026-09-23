@@ -8,8 +8,10 @@ import (
 )
 
 // detectableExtensions are the formats the importer accepts, in the order they
-// are preferred when a project folder holds more than one.
-var detectableExtensions = []string{".docx", ".md", ".markdown"}
+// are preferred when a project folder holds more than one. .epub and .txt
+// were added in Phase 4 of the txt-and-epub-import PRD (F2); see ADR 0103,
+// which amends this list from ADR 0019's original .docx/.md/.markdown.
+var detectableExtensions = []string{".docx", ".epub", ".md", ".markdown", ".txt"}
 
 // DetectSource finds a manuscript waiting to be imported: a file named
 // "manuscript" in a supported format sitting directly in the project folder,

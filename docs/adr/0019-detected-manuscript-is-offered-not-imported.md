@@ -1,6 +1,6 @@
 # 0019. A manuscript found in the project folder is offered, never imported automatically
 
-**Status:** Accepted
+**Status:** Accepted (its extension list is amended by [ADR 0103](0103-txt-and-epub-are-accepted-import-formats-hand-rolled-drm-refused-and-offered-for-detection.md), which adds `.epub` and `.txt`; the offer/accept mechanism below stands)
 **Date:** 2026-09-18
 
 ## Context

@@ -1,8 +1,8 @@
 # Manuscript import: formatting quirks and how they are handled
 
-**Status: living catalogue.** Word and Markdown documents encode the same visible text in many ways. Several import regressions ("CHAPTER ONEBad Ideas Look Great in Neon", paragraphs that lost their line breaks) came from one of these encodings, were fixed, and came back because the reason was never written down. Each row below is a known hazard, what the document looks like, what the importer does, and where the test lives. Add a row (and a test) whenever a new one is found. The governing decision is [ADR-0013](../adr/0013-import-preserves-structural-whitespace.md); formatting spans are [ADR-0014](../adr/0014-inline-formatting-as-offset-spans.md).
+**Status: living catalogue.** Word, Markdown, plain-text and EPUB documents encode the same visible text in many ways. Several import regressions ("CHAPTER ONEBad Ideas Look Great in Neon", paragraphs that lost their line breaks) came from one of these encodings, were fixed, and came back because the reason was never written down. Each row below is a known hazard, what the document looks like, what the importer does, and where the test lives. Add a row (and a test) whenever a new one is found. The governing decision is [ADR-0013](../adr/0013-import-preserves-structural-whitespace.md); formatting spans are [ADR-0014](../adr/0014-inline-formatting-as-offset-spans.md); TXT and EPUB's own decisions are [ADR 0095](../adr/0095-txt-import-decodes-by-bom-utf-8-windows-1252-and-a-chapterless-file-becomes-one-narration-chapter.md), [ADR 0101](../adr/0101-epub-import-reads-nav-then-ncx-for-chapters-caps-entries-and-refuses-drm.md), [ADR 0102](../adr/0102-epub-content-kind-overrides-by-title-rather-than-canonical-title-renaming.md) and [ADR 0103](../adr/0103-txt-and-epub-are-accepted-import-formats-hand-rolled-drm-refused-and-offered-for-detection.md).
 
-Code: `apps/desktop/internal/importer/` (`docx.go`, `markdown.go`, `markdown_inline.go`, `richtext.go`, `headings.go`). Tests: `docx_test.go`, `markdown_test.go`.
+Code: `apps/desktop/internal/importer/` (`docx.go`, `markdown.go`, `markdown_inline.go`, `richtext.go`, `headings.go`, `txt.go`, `epub.go`, `epub_toc.go`, `epub_xhtml.go`, `epub_css.go`). Tests: `docx_test.go`, `markdown_test.go`, `txt_test.go`, `epub_test.go`, `epub_css_test.go`.
 
 ## DOCX
 
@@ -36,6 +36,36 @@ Code: `apps/desktop/internal/importer/` (`docx.go`, `markdown.go`, `markdown_inl
 | Byte-order mark | leading `EF BB BF` | Stripped | `TestMarkdownByteOrderMarkIsStripped` |
 | Number and title glued in one heading line | `# CHAPTER ONEBad Ideas…` (no separator at all) | `splitGluedHeading` repairs it, same as docx, and the split is now reported in `Draft.Notices` (previously discarded) | `TestMarkdownGluedHeadingSplitIsReportedAsANotice` |
 
+## TXT
+
+| Hazard | Source | Handling | Test |
+| --- | --- | --- | --- |
+| Encoding other than plain UTF-8 | A BOM (UTF-8, UTF-16 LE/BE) or a Windows-1252 export with no BOM at all | Decoded by BOM first, then valid UTF-8, then Windows-1252 with a `Notices` line naming the charset | `TestTxtUTF8BOMIsStripped`, `TestTxtUTF16LEAndBEDecode`, `TestTxtWindows1252FallbackIsReportedAsANotice`, `TestTxtValidUTF8NeedsNoNotice` |
+| CRLF/CR line endings | A Windows or classic-Mac export | Normalized to `\n` before blocks are split | `TestTxtCRLFAndCRLineEndingsNormalize` |
+| Chapter headings with no markup | A line (or two, the second a subtitle) matching `isNarrativeMarker` or a bare numeral/roman numeral/number word | Recognized conservatively; ALL-CAPS alone is never a heading | `TestTxtTwoLineHeadingHasSubtitle`, `TestTxtBareRomanNumeralIsAHeading`, `TestTxtBareNumberWordIsAHeading`, `TestTxtAllCapsAloneIsNotAHeading` |
+| A `Contents` block | A block of many short lines listing every chapter | Read as reference text, never as a list of chapter headings | `TestTxtContentsBlockIsReferenceNotChapterList` |
+| No chapter markup at all | A short story or excerpt with no heading line | One `narration` chapter titled from the file name, with a notice (ADR 0095) - diverges from Word/Markdown's `opening`-only chapterless behavior | `TestTxtChapterlessImportBecomesOneNarrationChapterWithNotice` |
+| Hard-wrapped source lines | Gutenberg-style text wrapped at about 70 columns | Detected (45-100 character, 70%-majority band, ADR 0095) and joined with a space; short-line blocks (verse, addresses) and single long-line blocks with no blank lines keep their own line breaks | `TestTxtHardWrapDetectionJoinsWrappedLinesWithASpace`, `TestTxtShortLinesStayAsLineBreaksVerse`, `TestTxtNoBlankLinesAndLongLinesBecomeOneParagraphPerLine` |
+| Gutenberg boilerplate | `*** START OF ... ***` / `*** END OF ... ***` markers | Stripped when both are present, reported in `Notices` | `TestTxtGutenbergBoilerplateIsStrippedAndReported` |
+| Underscore italics | `_word_`, word-bounded | Becomes an italic span; `snake_case` and a lone underscore stay literal | `TestTxtUnderscoreItalicsBecomeSpans`, `TestTxtSnakeCaseAndLoneUnderscoresStayLiteral` |
+| Glued heading | Same shape as DOCX/Markdown (`CHAPTER ONEBad Ideas`) | `splitGluedHeading` repairs it, reported in `Notices` | `TestTxtGluedHeadingIsSplitAndReported` |
+| Empty file | Zero bytes | Rejected with an error, not imported as an empty manuscript | `TestTxtEmptyFileIsRejected` |
+
+## EPUB
+
+| Hazard | Source | Handling | Test |
+| --- | --- | --- | --- |
+| Chapters not in the spine order alone | A nav document (EPUB 3) or `toc.ncx` (EPUB 2) whose targets may point mid-file, or span several files | The TOC drives chapters (nav first, NCX fallback); a chapter runs from one target to the next across files, every depth | `TestEPUBNavTOCDrivesChapters`, `TestEPUBNCXFallbackWhenNoNav` |
+| No usable TOC | Missing nav and NCX, or neither matches any spine document | Each spine document starting with its own `h1`/`h2` becomes a chapter instead, with a notice | `TestEPUBSpineFallbackWhenTOCIsMissing` |
+| No chapter markup at all | No TOC and no headings | One `narration` chapter titled from the file name, with a notice - same T4 divergence as TXT | `TestEPUBNoTOCAndNoHeadingsBecomesOneChapter` |
+| `epub:type` on a spine document's `<body>` | `cover`/`titlepage`/`frontmatter`/`dedication`/`epigraph`/`copyright-page`, `toc`/`acknowledgments`/`glossary`/`index`/`bibliography`/`endnotes`/`footnotes`/`backmatter`, `bodymatter`/`chapter`/`prologue`/`epilogue` | Forces the section's `contentKind` to `opening`/`reference`/`narration` respectively, overriding the title-text classifier (ADR 0102) | `TestEPUBBodyEpubTypeClassifiesDedicationAsOpening`, `TestEPUBBodyEpubTypeClassifiesEndnotesAsReference` |
+| Glued heading | Same shape as DOCX/Markdown/TXT | `splitGluedHeading` repairs it and now reports the split in `Notices` (previously discarded) | `TestEPUBGluedHeadingIsSplitAndReported` |
+| Non-linear spine items | `<itemref linear="no">` | Skipped, counted in a `Notices` line | `TestEPUBNonLinearItemIsSkippedAndReported` |
+| Footnote reference markers | An inline `epub:type="noteref"` element | Its own text is dropped ("the end.1" reads "the end."); a note *body* is classified `reference` only when it occupies its own whole spine document | `TestEPUBNoteReferenceMarkerIsDropped` |
+| Emphasis carried by a CSS class | `<span class="italic">` styled from an inline `<style>` or a linked stylesheet | A single-class, single-declaration `font-style`/`font-weight` rule maps to an italic/bold span, the same as `<em>`/`<strong>`; anything else counted, unstyled, in `Notices` | `TestEPUBCSSClassEmphasisFromInlineStyle`, `TestEPUBCSSClassEmphasisFromLinkedStylesheet`, `TestEPUBUnresolvedCSSClassIsCountedInNotices` |
+| DRM | A `META-INF/encryption.xml` entry outside the two known font-obfuscation algorithms, or an Adobe `META-INF/rights.xml` | Import refused with a specific message; font obfuscation alone is accepted | `TestEPUBFontObfuscationIsAccepted`, `TestEPUBDRMIsRefused`, `TestEPUBAdobeRightsXMLIsRefused` |
+| Hostile archive shapes | A `../` href leaving the archive, a missing `container.xml`, an oversized entry | Rejected before any content is read | `TestEPUBPathTraversalHrefIsRejected`, `TestEPUBMissingContainerIsRejected`, `TestEPUBOversizedEntryIsRejected` |
+
 ## Where the subtitle shows
 
 A heading's subtitle is kept on every paragraph under it (`Paragraph.ChapterSubtitle`), and the import review lists it after the title ("Chapter One — Bad Ideas Look Great in Neon") so the narrator can confirm the split before anything is written. `DraftSection.Subtitle` is the subtitle of the first paragraph of the section, which is exactly what the written chapter gets (`manuscript.canonicalize` reads the paragraph that starts the chapter), so a repeated title (merged into one section) shows its first heading's subtitle and a heading with no text has none. Tests: `TestNewDraftSectionSubtitleIsTheFirstParagraphsSubtitleAsTheCommitReadsIt`, `TestDocxSoftBreakSubtitleReachesTheSectionForTheReview`, `TestMarkdownHeadingSubtitleReachesTheSectionForTheReview` and, across the host service, `TestPreviewSectionSubtitlesAreTheSubtitlesTheWrittenChaptersGet`. The field is additive (`subtitle`, omitted when empty), so `hostAPIVersion` is unchanged. Changing a wrong split from the review (the override) is a separate, evidence-gated piece of the briefs PRD. The review is described in [the import review](import-review.md).
@@ -56,6 +86,6 @@ only from the heading structure.
 
 ## Adding a quirk
 
-1. Reproduce it with a minimal in-test document (`docxFixture` builds a `.docx` from WordprocessingML; `importMarkdown` takes a string).
+1. Reproduce it with a minimal in-test document (`docxFixture` builds a `.docx` from WordprocessingML; `importMarkdown` takes a string; TXT tests write a plain string to a temp file; `epubFixture` builds an in-memory EPUB from a name-to-content map).
 2. Write the failing test, fix it in the importer, add the row above.
 3. If the repair guesses (as glued-heading splitting does), report it in `Draft.Notices`: the import log and the review dialog's Repairs group tell the narrator ([the import review](import-review.md)).
