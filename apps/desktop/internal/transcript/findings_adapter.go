@@ -123,13 +123,12 @@ func buildFinding(row map[string]any, evidence map[string]markerEvidence, source
 
 	id := findings.StableID(analyzerName, chapterID, strconv.Itoa(paragraph), kind, spanText, strconv.Itoa(ordinal))
 
-	confidence, reason := confidenceScore("unknown")
+	confidence, _ := confidenceScore("unknown")
+	reason := "Transcript Compare's results file had no matching row, so no timing-confidence signal is available for this finding."
 	var timingGap *float64
 	if ev, ok := evidence[rowID(itemIndex, srcpos)]; ok {
 		confidence, reason = confidenceScore(ev.confidence)
 		timingGap = ev.timingGap
-	} else {
-		reason = "Transcript Compare's results file had no matching row, so no timing-confidence signal is available for this finding."
 	}
 
 	evidenceMap := map[string]any{
@@ -264,7 +263,7 @@ func parseResultsEvidence(path string) (map[string]markerEvidence, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not read Transcript Compare results for findings: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	result := map[string]markerEvidence{}
 	scanner := bufio.NewScanner(file)
@@ -310,7 +309,7 @@ func parseManifestSources(path string) map[int]string {
 	if err != nil {
 		return map[int]string{}
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	result := map[int]string{}
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {

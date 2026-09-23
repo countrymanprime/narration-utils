@@ -33,6 +33,11 @@ func denyListing(t *testing.T, dir string) {
 	t.Cleanup(func() {
 		_, _ = exec.Command("icacls", dir, "/remove:d", user).CombinedOutput()
 	})
+	// An elevated process (as on CI runners) holds backup privilege, and Go
+	// opens directories with backup semantics, so the deny is not enforced.
+	if _, err := os.ReadDir(dir); err == nil {
+		t.Skip("icacls deny is not enforced for this (elevated) process")
+	}
 }
 
 // denyRead removes the current user's permission to read path's own data
@@ -54,6 +59,10 @@ func denyRead(t *testing.T, path string) {
 	t.Cleanup(func() {
 		_, _ = exec.Command("icacls", path, "/remove:d", user).CombinedOutput()
 	})
+	// See denyListing: an elevated process reads past the deny.
+	if _, err := os.ReadFile(path); err == nil {
+		t.Skip("icacls deny is not enforced for this (elevated) process")
+	}
 }
 
 func testFinding(id, chapter string, evidenceVersion string) Finding {
@@ -459,21 +468,23 @@ func TestListOnAFreshProjectReturnsEmptyWithoutError(t *testing.T) {
 
 func TestListAndRecordDecisionFailWhenTheFindingsDirCannotBeListed(t *testing.T) {
 	project := t.TempDir()
-	dir := filepath.Join(project, "narration-utils", "findings")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	parent := filepath.Join(project, "narration-utils")
+	if err := os.MkdirAll(parent, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	denyListing(t, dir)
+	// A plain file where the findings directory belongs: os.ReadDir fails
+	// with a real error that is not fs.ErrNotExist, on every platform and
+	// without needing permissions an elevated CI runner would bypass.
+	if err := os.WriteFile(filepath.Join(parent, "findings"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	store := NewStore(project)
 	if _, err := store.List(Query{}); err == nil {
 		t.Fatal("List must surface a real (non-missing) error reading the findings directory, not swallow it")
 	}
-	// RecordDecision still appends the narrator's call to history (writing
-	// review.json does not require listing dir), but then fails trying to
-	// locate the finding to apply the decision immediately.
 	if _, _, err := store.RecordDecision("f1", "v1", StatusAccepted, "", "2026-09-19T10:00:00Z"); err == nil {
-		t.Fatal("RecordDecision must surface the same directory-listing failure from locate")
+		t.Fatal("RecordDecision must fail when the findings directory is not a directory")
 	}
 }
 
