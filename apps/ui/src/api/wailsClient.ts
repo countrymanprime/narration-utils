@@ -30,7 +30,7 @@ import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guideP
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { chapterSuggestionSchema, chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
-import { takeReviewCreateTakeResultSchema, takeReviewScanJobSchema } from './schemas/takeReview';
+import { takeComparisonJobSchema, takeReviewCreateTakeResultSchema, takeReviewScanJobSchema } from './schemas/takeReview';
 import { coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
@@ -338,6 +338,9 @@ export const wailsClient: NarrationApi = {
   takeReviewScanStart: (scope) => decode(takeReviewScanJobSchema, 'TakeReviewScanStart', host.TakeReviewScanStart(scope)),
   takeReviewScanState: () => decode(takeReviewScanJobSchema, 'TakeReviewScanState', host.TakeReviewScanState()),
   takeReviewScanCancel: () => decode(takeReviewScanJobSchema, 'TakeReviewScanCancel', host.TakeReviewScanCancel()),
+  takeComparisonStart: (findingId) => decode(takeComparisonJobSchema, 'TakeComparisonStart', host.TakeComparisonStart(findingId)),
+  takeComparisonState: () => decode(takeComparisonJobSchema, 'TakeComparisonState', host.TakeComparisonState()),
+  takeComparisonCancel: () => decode(takeComparisonJobSchema, 'TakeComparisonCancel', host.TakeComparisonCancel()),
   takeReviewCreateTake: (request) =>
     decode(
       takeReviewCreateTakeResultSchema,

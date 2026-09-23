@@ -205,6 +205,12 @@ export function SystemSaveSettings(arg1:string,arg2:string,arg3:Record<string, a
 
 export function SystemSettingsForScope(arg1:string):Promise<string>;
 
+export function TakeComparisonCancel():Promise<string>;
+
+export function TakeComparisonStart(arg1:string):Promise<string>;
+
+export function TakeComparisonState():Promise<string>;
+
 export function TakeReviewCreateTake(arg1:string,arg2:string,arg3:string,arg4:string,arg5:number,arg6:number):Promise<string>;
 
 export function TakeReviewScanCancel():Promise<string>;

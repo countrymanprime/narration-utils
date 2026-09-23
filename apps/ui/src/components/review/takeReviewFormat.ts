@@ -1,5 +1,5 @@
-import { takeReviewEvidenceSchema } from '../../api/schemas/takeReview';
-import type { Finding, TakeReviewEvidence, TakeReviewMember } from '../../types';
+import { takeComparisonEvidenceSchema, takeReviewEvidenceSchema } from '../../api/schemas/takeReview';
+import type { Finding, TakeComparisonEvidence, TakeReviewEvidence, TakeReviewMember } from '../../types';
 
 // How the Review page words a take-review finding's reads (internal/repeats.Member over the wire), shared by the reads list,
 // the "Add as take" pickers and the audition's A/B pickers so one read is named the same everywhere. Display only.
@@ -8,6 +8,13 @@ import type { Finding, TakeReviewEvidence, TakeReviewMember } from '../../types'
 export function takeReviewEvidence(finding: Finding): TakeReviewEvidence | undefined {
   if (finding.analyzer !== 'take-review') return undefined;
   const parsed = takeReviewEvidenceSchema.safeParse(finding.evidence);
+  return parsed.success ? parsed.data : undefined;
+}
+
+/** A take comparison's evidence (Phase 10), checked against its schema; undefined for any other finding or evidence that does not match. */
+export function takeComparisonEvidence(finding: Finding): TakeComparisonEvidence | undefined {
+  if (finding.analyzer !== 'take-comparison') return undefined;
+  const parsed = takeComparisonEvidenceSchema.safeParse(finding.evidence);
   return parsed.success ? parsed.data : undefined;
 }
 

@@ -91,13 +91,8 @@ func (j *takeReviewScanJob) snapshot() TakeReviewScanJob {
 // pollProgress folds the sidecar's latest progress line into the job: the percent never moves backwards, and each new
 // stage message becomes a line of live activity. A missing or unreadable line keeps what the job already shows.
 func (j *takeReviewScanJob) pollProgress() {
-	raw, err := os.ReadFile(j.progressPath)
-	if err != nil {
-		return
-	}
-	lines := strings.Split(strings.TrimSpace(string(raw)), "\n")
-	_, percent, message, err := process.ParseProgress(lines[len(lines)-1])
-	if err != nil {
+	percent, message, ok := readSidecarProgress(j.progressPath)
+	if !ok {
 		return
 	}
 	j.mu.Lock()
@@ -267,6 +262,18 @@ func (h *Host) cancelTakeReviewScan() TakeReviewScanJob {
 	_ = os.WriteFile(job.progressPath+".cancel", nil, 0o600)
 	job.cancel()
 	return job.snapshot()
+}
+
+// readSidecarProgress reads the last stage|pct|message line a sidecar wrote to its progress file (ADR 0015); ok is false
+// while there is none that parses.
+func readSidecarProgress(path string) (percent float64, message string, ok bool) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return 0, "", false
+	}
+	lines := strings.Split(strings.TrimSpace(string(raw)), "\n")
+	_, percent, message, err = process.ParseProgress(lines[len(lines)-1])
+	return percent, message, err == nil
 }
 
 func hasTrack(project tracks.Project, name string) bool {

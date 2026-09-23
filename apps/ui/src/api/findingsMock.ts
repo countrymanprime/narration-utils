@@ -3,6 +3,7 @@
 // total before paging, counts over the latest run, and a decision refused when the evidence changed (ADR 0120).
 // It exists so the Review page can be built and screenshotted without a host; the host's rules are the ones that
 // count, and apps/desktop/internal/findings/query_test.go pins them.
+import { z } from 'zod';
 import type {
   Finding,
   FindingMarker,
@@ -19,7 +20,12 @@ import type {
 } from '../types';
 import { FINDING_CATEGORIES, MAX_REVIEW_NOTE_LENGTH } from './contracts/findings';
 import { wireClone } from './mockFixtures';
-import { takeReviewEvidenceSchema } from './schemas/takeReview';
+
+// The reads of a finding that groups several, whichever analyzer wrote it (a take-review group or a take comparison of one),
+// as bindings_navigation.go's findingReads decodes evidence.members: only where each read is.
+const groupedReadsSchema = z.object({
+  members: z.array(z.object({ item_guid: z.string(), source_file: z.string(), source_start: z.number(), source_length: z.number() })),
+});
 
 const SEVERITY_ORDER: FindingSeverity[] = ['error', 'warning', 'info'];
 
@@ -163,7 +169,7 @@ function createReaperMock(mode: MockReaper, find: (id: string) => Finding) {
   let loopingId: string | undefined;
   // A read stands in for its finding: its own item, and its range in its own source (bindings_navigation.go's readTarget).
   const readOf = (id: string, read: number) => {
-    const members = takeReviewEvidenceSchema.safeParse(find(id).evidence);
+    const members = groupedReadsSchema.safeParse(find(id).evidence);
     const member = members.success ? members.data.members[read] : undefined;
     if (!member) throw new Error(`this finding has no read ${read + 1}; reload the list`);
     const start = member.source_start;
@@ -245,7 +251,7 @@ function createReaperMock(mode: MockReaper, find: (id: string) => Finding) {
 export function createFindingsMock(
   seed: Finding[],
   options: FindingsMockOptions = {},
-): FindingsApi & { saveAnalyzerFindings: (analyzer: string, chapterId: string, fresh: Finding[]) => void } {
+): FindingsApi & { saveAnalyzerFindings: (analyzer: string, chapterId: string, fresh: Finding[]) => void; saveFinding: (fresh: Finding) => void } {
   let store = wireClone(seed);
   let pendingRerun = options.rerunAfterFirstList === true;
   const find = (id: string): Finding => {
@@ -287,6 +293,13 @@ export function createFindingsMock(
       const kept = store.filter((finding) => finding.analyzer !== analyzer || chapterOf(finding) !== chapterId);
       const decided = new Map(store.map((finding) => [finding.id, finding.review]));
       store = [...kept, ...wireClone(fresh).map((finding) => ({ ...finding, review: decided.get(finding.id) ?? finding.review }))];
+    },
+    // One finding saved in a scope of its own, as a take comparison is (scoped by the group it compares): it replaces the
+    // finding with its id, keeping a decision made on the same evidence version.
+    saveFinding: (fresh) => {
+      const previous = store.find((finding) => finding.id === fresh.id);
+      const review = previous && previous.evidence_version === fresh.evidence_version ? previous.review : fresh.review;
+      store = [...store.filter((finding) => finding.id !== fresh.id), { ...wireClone(fresh), review }];
     },
   };
 }

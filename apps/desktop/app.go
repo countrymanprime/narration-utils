@@ -32,6 +32,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/recents"
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
+	"github.com/countrymanprime/narration-utils/shell/internal/takecompare"
 	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
 	"github.com/countrymanprime/narration-utils/shell/internal/transcript"
@@ -45,7 +46,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 40
+const hostAPIVersion = 41
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -70,7 +71,9 @@ type Host struct {
 	guideJob *workJob
 	// takeReviewJob is the Review page's pickup and duplicate scan (takereview_job.go); h.mu guards the pointer, the job its fields.
 	takeReviewJob *takeReviewScanJob
-	transcript    *transcript.Service
+	// takeComparisonJob compares the takes of one take-review group (takecompare_job.go); h.mu guards the pointer.
+	takeComparisonJob *takeComparisonJob
+	transcript        *transcript.Service
 	// coverage is the recording-coverage service (docs/utilities/recording-coverage.md, ADR 0128): it reads the saved .rpp and
 	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; the Coverage* bindings
 	// reach it (Phase 5, bindings_coverage.go) and it fills the manuscript chapters' recordedFraction.
@@ -107,6 +110,8 @@ type Host struct {
 	// takeReviewRunner is a seam for tests: nil means the real
 	// takereview.ProcessRunner built from project config (takereview.go).
 	takeReviewRunner takereview.SidecarRunner
+	// takeCompareRunner is the same seam for the take comparison's --take-divergence run (takecompare_job.go).
+	takeCompareRunner takecompare.SidecarRunner
 	// updates asks GitHub for a newer release and remembers the answer (ADR 0072). It is set once in NewHost and never swapped, so it is
 	// read directly, like recents.
 	updates *update.Checker
@@ -831,6 +836,9 @@ func (h *Host) idleLocked() bool {
 		}
 	}
 	if h.takeReviewJob != nil && h.takeReviewJob.running() {
+		return false
+	}
+	if h.takeComparisonJob != nil && h.takeComparisonJob.running() {
 		return false
 	}
 	for _, job := range h.installJobs {

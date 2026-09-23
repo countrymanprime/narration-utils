@@ -14,7 +14,7 @@ export function toastForJobEnd(event: JobEnded): { text: string; tone: ToastTone
 }
 
 // N3: only these kinds are worth an OS notification (Story Bible build, model/voice downloads, Transcript Compare, import, a recording
-// check, which transcribes minutes of audio, and the pickup and duplicate scan). A manuscript import that also chains a Story Bible
+// check, which transcribes minutes of audio, the pickup and duplicate scan and the take comparison). A manuscript import that also chains a Story Bible
 // build (D8) still only notifies through its own story_bible job:ended event; a fast import stays quiet on its own account like
 // everything else here.
 const NOTIFIABLE_JOB_KINDS = new Set([
@@ -26,6 +26,7 @@ const NOTIFIABLE_JOB_KINDS = new Set([
   'manuscript_import',
   'recording_coverage',
   'take_review',
+  'take_comparison',
 ]);
 
 /** N3: fast jobs stay quiet so a notification means something. */

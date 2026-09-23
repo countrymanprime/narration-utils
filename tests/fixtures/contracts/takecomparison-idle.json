@@ -1,0 +1,10 @@
+{
+  "id": null,
+  "kind": "take_comparison",
+  "phase": "idle",
+  "message": "Ready to compare takes.",
+  "percent": 0,
+  "logs": [],
+  "elapsed": 3.5,
+  "findingId": ""
+}

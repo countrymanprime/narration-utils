@@ -154,6 +154,39 @@ Nothing ranks one read over another; listen and choose.
 Dismiss a group that is a line repeated on purpose. Scanning the track again keeps your decision on a
 group whose reads did not change.
 
+### Comparing takes
+
+**Compare takes…** under a group's reads sets the reads side by side over the same part of the script.
+It transcribes each read again and measures its audio, so it takes a while; like the scan, it shows its
+own progress, **Cancel** keeps nothing, and **Continue in background** lets you keep working. Before it
+starts, each read is checked against the saved REAPER project: a read whose item was moved, trimmed or
+removed since the scan, or whose file is missing, is listed with the reason and left out. Save the
+project in REAPER first if you changed it.
+
+When it finishes, the comparison opens, and the list is filtered to **Take comparison**. It has two
+parts:
+
+- **How each read reads the script.** Every word of that part of the script, as each read said it. A
+  word read as something else is underlined with a wave, a word left out is struck through, and a word
+  the read never reached (it started late or stopped early) is dotted. Under the words, each place the
+  read departs is listed with what was heard and when, for example "Misread “very” as “remarkably” at
+  0:10.8". A read that none of these words were heard in is not compared.
+- **The audio of each read.** One row per kind of evidence, one column per read: clipping, room noise
+  (the quietest half-second, lower is quieter), level against the items either side of it, length and
+  speaking rate, and the pauses between its words. Each is measured from the read's own file, before
+  REAPER's FX and edits. A figure that cannot be measured says why (for example, a pickup on a track of
+  its own has no neighbours to compare its level with, and only WAV files are measured).
+
+![A take comparison: each read's words, with the misread and unreached words marked](../../images/ui/review-take-comparison.webp)
+
+![A take comparison's audio, one row per kind of evidence and one column per read](../../images/ui/review-take-comparison-measurements.webp)
+
+Nothing adds the rows up or picks a take: a read can be word for word but noisy, another clean but with
+a misread, and which matters is your call. **Go to**, **Loop** and **Audition reads** work as they do on
+the group. When you have chosen, make that take active in REAPER yourself; the app never changes which
+take plays. Accept, dismiss or defer the comparison like any other finding; comparing the same group
+again replaces it, and keeps your decision only if the measurements did not change.
+
 ---
 
 [← Tracks](tracks.md) · [Index](README.md) · [Settings →](settings.md)

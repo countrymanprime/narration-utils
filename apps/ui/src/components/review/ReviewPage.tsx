@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { describeApiError } from '../../api/errorMessage';
-import type { Finding, FindingsPage, FindingsSummary, TakeReviewScanJob } from '../../types';
+import type { Finding, FindingsPage, FindingsSummary, TakeComparisonJob, TakeReviewScanJob } from '../../types';
 import { LoadError } from '../layout/LoadError';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
@@ -47,11 +47,12 @@ export function ReviewPage({
   const reaper = useReaperStatus();
   const [scanning, setScanning] = useState(false);
 
-  // A pickup and duplicate scan left running in the background saves its findings when it ends: the list is read again then.
+  // A pickup and duplicate scan or a take comparison left running in the background saves its findings when it ends: the list is
+  // read again then.
   useEffect(
     () =>
       api.subscribeJobEnded((event) => {
-        if (event.kind === 'take_review' && event.outcome === 'success') setReloadKey((key) => key + 1);
+        if ((event.kind === 'take_review' || event.kind === 'take_comparison') && event.outcome === 'success') setReloadKey((key) => key + 1);
       }),
     [api],
   );
@@ -100,6 +101,14 @@ export function ReviewPage({
     if (ended?.phase !== 'success') return;
     if (ended.found > 0) changeFilters({ ...EMPTY_FILTERS, analyzer: 'take-review', sort: filters.sort });
     else setReloadKey((key) => key + 1);
+  };
+
+  // A finished comparison is shown straight away: the list is narrowed to take comparisons and the new one is opened beside it.
+  const compared = (ended: TakeComparisonJob) => {
+    const id = ended.comparisonId;
+    changeFilters({ ...EMPTY_FILTERS, analyzer: 'take-comparison', sort: filters.sort });
+    if (!id) return;
+    api.findingsGet(id).then(setSelected, (error) => notify(describeApiError(error), 'error'));
   };
 
   const retry = () => {
@@ -152,6 +161,7 @@ export function ReviewPage({
                   goToStoryBible={goToStoryBible}
                   reaperStatus={reaper.status}
                   onReaperStatusChange={reaper.refresh}
+                  onCompared={compared}
                 />
               ) : (
                 <Panel>

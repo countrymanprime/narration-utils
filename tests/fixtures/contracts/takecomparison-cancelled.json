@@ -1,0 +1,13 @@
+{
+  "id": "take-comparison-1",
+  "kind": "take_comparison",
+  "phase": "cancelled",
+  "message": "Comparison cancelled. Nothing was saved.",
+  "percent": 64,
+  "logs": [
+    "Comparing 3 reads.",
+    "Comparison cancelled. Nothing was saved."
+  ],
+  "elapsed": 3.5,
+  "findingId": "group-1"
+}

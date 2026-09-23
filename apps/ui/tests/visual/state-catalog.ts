@@ -851,6 +851,27 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Review, a pickup group accepted and Add as take pressed - the confirm with the target item and the candidate read chosen by the narrator, never preselected (Q4/Q8)',
   },
+  // Take comparison on the Review page (take-review-pickups-duplicates-take-intelligence.prd.md Phase 10)
+  {
+    page: 'review',
+    state: 'take-comparison-progress',
+    description:
+      "Review, Compare takes pressed on a pickup group - the comparison running with the sidecar's own percent and stage, Cancel and Continue in background (reached via the ?mockTakeComparison=running mock seam)",
+  },
+  {
+    page: 'review',
+    state: 'take-comparison',
+    description:
+      'Review, a take comparison finished and opened - each read of the span word by word, the misread and unreached words marked and listed with their times, each read with Go to and Loop; no ranking (Q9)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'review',
+    state: 'take-comparison-measurements',
+    description:
+      "Review, a take comparison's audio table - clipping, room noise, level, length and pauses, a row each with what it measures and a column per read, an unavailable figure with its reason; nothing adds the rows up",
+    ...KEEPS_DESKTOP_SCROLL,
+  },
 
   // Settings
   { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category', ...REFLOW },

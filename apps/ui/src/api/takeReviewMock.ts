@@ -32,7 +32,11 @@ function refusalOf(scope: TakeReviewScanScope): string | undefined {
   return missing ? `the REAPER project has no track named "${missing}"; reload the tracks and choose again` : undefined;
 }
 
-export function createTakeReviewScanMock(save: Save, publish: (event: JobEnded) => void, hold = false): Omit<TakeReviewApi, 'takeReviewCreateTake'> {
+export function createTakeReviewScanMock(
+  save: Save,
+  publish: (event: JobEnded) => void,
+  hold = false,
+): Pick<TakeReviewApi, 'takeReviewScanStart' | 'takeReviewScanState' | 'takeReviewScanCancel'> {
   let job: TakeReviewScanJob = {
     id: null,
     kind: 'take_review',

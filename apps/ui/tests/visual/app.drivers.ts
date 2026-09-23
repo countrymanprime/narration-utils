@@ -244,6 +244,26 @@ async function openPickupGroup(page: Page): Promise<Locator> {
   return page.getByRole('region', { name: 'Reads' });
 }
 
+// Compares the partial pickup group's takes through the dialog to its end and closes it: the mock saves the comparison and the
+// page opens it, narrowed to take comparisons. The end's job:ended toast is dismissed, as the scan's is.
+async function compareTakes(page: Page): Promise<Locator> {
+  const reads = await openPickupGroup(page);
+  await reads.getByRole('button', { name: 'Compare takes…' }).click();
+  const progress = page.getByRole('dialog', { name: 'Comparing takes' });
+  await progress
+    .getByRole('status')
+    .filter({ hasText: /^Compared the takes/ })
+    .waitFor();
+  await progress.getByRole('button', { name: 'Close' }).click();
+  const comparison = page.getByRole('region', { name: 'Takes side by side' });
+  await comparison.waitFor();
+  const dismissToast = page.getByRole('button', { name: 'Dismiss message' });
+  await dismissToast.click({ timeout: 1_000 }).catch(() => undefined);
+  await dismissToast.waitFor({ state: 'detached' });
+  await page.getByText('Checking whether REAPER is connected…').waitFor({ state: 'detached' });
+  return comparison;
+}
+
 async function showReaperControls(page: Page, shown: Locator): Promise<void> {
   await shown.waitFor();
   await page.getByRole('region', { name: 'In REAPER' }).scrollIntoViewIfNeeded();
@@ -1421,6 +1441,22 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const dialog = page.getByRole('alertdialog', { name: 'Add candidate as a new take' });
       await dialog.getByRole('combobox', { name: 'Target item' }).selectOption({ index: 1 });
       await dialog.getByRole('combobox', { name: 'Candidate read' }).selectOption({ index: 1 });
+    },
+    'take-comparison-progress': async (page) => {
+      await page.goto('/?mockTakeComparison=running');
+      await settlePage(page);
+      const reads = await openPickupGroup(page);
+      await reads.getByRole('button', { name: 'Compare takes…' }).click();
+      const progress = page.getByRole('dialog', { name: 'Comparing takes' });
+      await progress.getByRole('status').filter({ hasText: 'Transcribing take 2/2' }).waitFor();
+    },
+    'take-comparison': async (page) => {
+      const comparison = await compareTakes(page);
+      await comparison.scrollIntoViewIfNeeded();
+    },
+    'take-comparison-measurements': async (page) => {
+      const comparison = await compareTakes(page);
+      await comparison.getByRole('table', { name: 'The audio of each read' }).scrollIntoViewIfNeeded();
     },
     'reaper-marker-added': async (page) => {
       const dialog = await confirmApprovedMarker(page);

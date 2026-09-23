@@ -3,14 +3,15 @@ import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage } from '../../api/errorMessage';
 import { MAX_REVIEW_NOTE_LENGTH } from '../../api/contracts/findings';
 import { usePendingAction } from '../../hooks/usePendingAction';
-import type { Finding, FindingReviewStatus, ReaperStatus } from '../../types';
+import type { Finding, FindingReviewStatus, ReaperStatus, TakeComparisonJob } from '../../types';
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { Panel } from '../primitives/Panel';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { hasAudio, ReaperControls } from './ReaperControls';
 import { TakeReviewReads } from './TakeReviewReads';
-import { takeReviewEvidence } from './takeReviewFormat';
+import { TakeComparisonView } from './TakeComparisonView';
+import { takeComparisonEvidence, takeReviewEvidence } from './takeReviewFormat';
 import {
   analyzerLabel,
   categoryLabel,
@@ -52,7 +53,8 @@ function Facts({ rows, label }: { rows: Array<{ label: string; value: string }>;
  * sent with the evidence version shown here; when the host refuses it because the check ran again meanwhile (ADR 0120), the
  * latest version is fetched and shown, the typed note is kept, and the narrator is told in plain words to look again.
  * A finding with audio also has Go to, Loop and Stop in REAPER (Phase 7, ReaperControls), available while the page's REAPER
- * status says REAPER is listening. A take-review group lists its reads instead, each with its own (TakeReviewReads).
+ * status says REAPER is listening. A take-review group lists its reads instead, each with its own (TakeReviewReads), and a
+ * take comparison sets its reads side by side (TakeComparisonView, take review Phase 10).
  */
 export function FindingDetail({
   finding,
@@ -62,6 +64,7 @@ export function FindingDetail({
   goToStoryBible,
   reaperStatus,
   onReaperStatusChange,
+  onCompared,
 }: {
   finding: Finding;
   hasManuscript: boolean;
@@ -72,6 +75,8 @@ export function FindingDetail({
   onChanged: (finding: Finding, decided: boolean) => void;
   goToManuscript: (chapter: string, paragraph?: number) => void;
   goToStoryBible: (entityId: string) => void;
+  /** A comparison of this take-review group finished: the page shows it. */
+  onCompared: (ended: TakeComparisonJob) => void;
 }) {
   const api = useApi();
   const [note, setNote] = useState(finding.review.note ?? '');
@@ -144,6 +149,7 @@ export function FindingDetail({
   const decidedAt = formatDecidedAt(finding.review.timestamp);
   // A take-review group has several reads, each in its own place: they are listed with their own REAPER controls.
   const reads = takeReviewEvidence(finding);
+  const comparison = takeComparisonEvidence(finding);
   const decided = finding.review.status !== 'unreviewed';
 
   return (
@@ -174,7 +180,9 @@ export function FindingDetail({
         )}
       </div>
       {reads ? (
-        <TakeReviewReads finding={finding} evidence={reads} status={reaperStatus} onStatusChange={onReaperStatusChange} />
+        <TakeReviewReads finding={finding} evidence={reads} status={reaperStatus} onStatusChange={onReaperStatusChange} onCompared={onCompared} />
+      ) : comparison ? (
+        <TakeComparisonView finding={finding} evidence={comparison} status={reaperStatus} onStatusChange={onReaperStatusChange} />
       ) : (
         hasAudio(finding) && <ReaperControls finding={finding} status={reaperStatus} onStatusChange={onReaperStatusChange} />
       )}

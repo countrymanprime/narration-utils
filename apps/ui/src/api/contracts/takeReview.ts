@@ -73,7 +73,132 @@ export type TakeReviewCreateTakeResult = {
   newTakeGuid: string;
 };
 
+/**
+ * A take comparison (take review Phase 10, ADR 0165): a `take_comparison` finding whose `evidence` sets the reads of one
+ * take-review group side by side over the group's one span of the script. Each read is compared or says why not; a compared one
+ * has how it read every word of the span (from the sidecar's --take-divergence mode, ADR 0141) and its audio measurements, one
+ * category each, measured or unavailable with a reason (ADR 0140). Nothing adds the categories up or orders the reads (Q9).
+ */
+export type TakeComparisonWordStatus = 'matched' | 'misread' | 'skipped' | 'unread';
+
+export type TakeComparisonSpanWord = { index: number; text: string; unit: number; paragraph: number };
+
+/** How a read read one word of the span; `start`/`end` are seconds in its source file, null when it has no time for it. */
+export type TakeComparisonWord = { index: number; status: TakeComparisonWordStatus; start: number | null; end: number | null };
+
+/** One place a read departs from the script: span words `first_word`..`last_word` and the seconds of its source it occupies. */
+export type TakeComparisonDivergence = {
+  kind: string;
+  position: string;
+  first_word: number | null;
+  last_word: number | null;
+  manuscript_text: string;
+  audio_text: string;
+  start: number | null;
+  end: number | null;
+};
+
+export type TakeComparisonCounts = { matched: number; misread: number; skipped: number; unread: number; extra_words: number };
+
+/** A category's availability: `measured`, or `unavailable` with the reason (never a guessed value, ADR 0025). */
+export type TakeMetricStatus = { status: 'measured' | 'unavailable'; reason?: string };
+
+/** A run of three or more full-scale samples on one channel, timed from the start of the measured range. */
+export type TakeClipRun = { channel: number; start_seconds: number; duration_seconds: number; samples: number };
+
+/** The range measurement every audio figure comes from (internal/measure.Report), kept so each figure can be reproduced. */
+export type TakeAudioReport = {
+  file?: string;
+  sample_rate: number;
+  channels: number;
+  duration_seconds: number;
+  integrated_lufs: number | null;
+  rms_dbfs: number | null;
+  sample_peak_dbfs: number | null;
+  true_peak_dbtp: number | null;
+  noise_floor_dbfs: number | null;
+  digital_silent_windows: number;
+  full_scale_samples: number;
+  clip_run_count: number;
+  clip_runs: TakeClipRun[];
+  range?: { start_seconds: number; length_seconds: number };
+};
+
+export type TakeMetrics = {
+  take_guid: string;
+  take_index: number;
+  /** The part of its source file the take plays; null when it cannot be derived. */
+  source: { file: string; kind: string; range: { start_seconds: number; length_seconds: number } } | null;
+  audio: TakeAudioReport | null;
+  clipping: TakeMetricStatus & { full_scale_samples: number | null; clip_run_count: number | null; clip_runs: TakeClipRun[] };
+  noise: TakeMetricStatus & { noise_floor_dbfs: number | null; digital_silent_windows: number | null };
+  level_consistency: TakeMetricStatus & {
+    integrated_lufs: number | null;
+    neighbor_median_lufs: number | null;
+    delta_lu: number | null;
+    neighbors_measured: number;
+    neighbors_unavailable: number;
+  };
+  duration: TakeMetricStatus & {
+    item_seconds: number | null;
+    source_seconds: number | null;
+    audio_seconds: number | null;
+    speech_seconds: number | null;
+    words_per_minute: number | null;
+  };
+  pause_profile: TakeMetricStatus & {
+    min_pause_seconds: number;
+    long_pause_seconds: number;
+    count?: number;
+    total_seconds?: number;
+    longest_seconds?: number;
+    median_seconds?: number;
+    long_pauses?: Array<{ start_seconds: number; duration_seconds: number }>;
+    leading_seconds?: number;
+    trailing_seconds?: number | null;
+  };
+  coverage: { measured: number; total: number; unavailable: string[] };
+};
+
+/** One read of the group in the comparison, in the group's order, so Go to and Loop by index reach the same take. */
+export type TakeComparisonMember = {
+  item_guid: string;
+  take_guid: string;
+  source_file: string;
+  source_start: number;
+  source_length: number;
+  compared: boolean;
+  not_compared_reason?: string;
+  fidelity: number | null;
+  counts: TakeComparisonCounts | null;
+  words: TakeComparisonWord[];
+  divergences: TakeComparisonDivergence[];
+  metrics: TakeMetrics | null;
+};
+
+export type TakeComparisonEvidence = {
+  source_finding_id: string;
+  span: { first_unit: number; last_unit: number; words: TakeComparisonSpanWord[] };
+  model: string;
+  compared: number;
+  members: TakeComparisonMember[];
+};
+
+/** The comparison job (TakeComparisonStart/State/Cancel): the group it compares, and the comparison it saved when it succeeded. */
+export type TakeComparisonJob = Omit<WorkJob, 'kind' | 'phase' | 'preview' | 'requiresReset' | 'result' | 'detail'> & {
+  kind: 'take_comparison';
+  phase: 'idle' | 'running' | 'success' | 'cancelled' | 'error';
+  findingId: string;
+  comparisonId?: string;
+};
+
 export interface TakeReviewApi {
+  /** Compares the takes of the take-review group `findingId` as a job; rejects a finding that is not a comparable group, or while one runs. */
+  takeComparisonStart(findingId: string): Promise<TakeComparisonJob>;
+  /** The comparison job: idle, running with real progress, or how it ended (with the comparison's finding id). */
+  takeComparisonState(): Promise<TakeComparisonJob>;
+  /** Stops a running comparison; nothing is saved. Answers the job. */
+  takeComparisonCancel(): Promise<TakeComparisonJob>;
   /** Starts a pickup and duplicate scan of `scope` as a job; rejects a scope it cannot scan, or while a scan runs. */
   takeReviewScanStart(scope: TakeReviewScanScope): Promise<TakeReviewScanJob>;
   /** The scan job: idle (offering the project's saved pickup scope), running with real progress, or how it ended. */

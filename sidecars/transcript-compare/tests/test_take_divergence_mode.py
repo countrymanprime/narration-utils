@@ -11,6 +11,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from narration_common import contract_files
 
 CORE = Path(__file__).resolve().parents[1] / "core"
 if str(CORE) not in sys.path:
@@ -297,3 +298,30 @@ def test_compare_py_exits_2_on_a_usage_error(tmp_path):
 
     assert result.returncode == 2
     assert "--out required with --take-divergence" in result.stderr
+
+
+# ---------------------------------------------------------------------------
+# the results the host reads
+
+
+def test_the_results_file_is_pinned_for_the_host_that_reads_it(tmp_path):
+    """Three takes of one span, read cleanly, with a misread and with a skipped word: the file the host's
+    internal/takecompare parser and its comparison tests read (`take-divergence-results.json`, ADR 0069)."""
+    takes = [
+        {"itemGuid": "{ITEM-A}", "takeGuid": "{TAKE-A}", "sourceFile": "read-a.wav", "startOffset": 0.0, "length": 8.0},
+        {"itemGuid": "{ITEM-B}", "takeGuid": "{TAKE-B}", "sourceFile": "read-b.wav", "startOffset": 1.5, "length": 8.0},
+        {"itemGuid": "{ITEM-C}", "takeGuid": "{TAKE-C}", "sourceFile": "read-c.wav", "startOffset": 0.0, "length": 8.0},
+    ]
+    manuscript = project(tmp_path)
+    args = args_for(tmp_path, manuscript, manifest_file(tmp_path, span={"firstUnit": 0, "lastUnit": 1}, takes=takes))
+    transcriber = fake_transcriber(
+        {
+            "{TAKE-A}": "Alice was beginning to get very tired She had nothing to do",
+            "{TAKE-B}": "Alice was beginning to get very tried She had nothing to do",
+            "{TAKE-C}": "Alice was beginning to get tired She had nothing to do",
+        }
+    )
+
+    assert mode.main(Parser(), args, compare, transcriber) == mode.EXIT_DONE
+
+    contract_files.check("take-divergence-results", {"lines": Path(args.out).read_text(encoding="utf-8").splitlines()})

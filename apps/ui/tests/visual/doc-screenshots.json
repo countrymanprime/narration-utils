@@ -446,5 +446,19 @@
     "viewport": "desktop",
     "docName": "review-take-review-add-take",
     "caption": "Review - Add as take on an accepted group: the target item and the candidate read, chosen by you"
+  },
+  {
+    "page": "review",
+    "state": "take-comparison",
+    "viewport": "desktop",
+    "docName": "review-take-comparison",
+    "caption": "Review - a take comparison: each read of the same words, with the words it misread or did not reach marked and listed"
+  },
+  {
+    "page": "review",
+    "state": "take-comparison-measurements",
+    "viewport": "desktop",
+    "docName": "review-take-comparison-measurements",
+    "caption": "Review - a take comparison's audio: clipping, room noise, level, length and pauses per read, side by side, never added up"
   }
 ]

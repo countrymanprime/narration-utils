@@ -1,0 +1,13 @@
+{
+  "id": "take-comparison-1",
+  "kind": "take_comparison",
+  "phase": "running",
+  "message": "Transcribing take 2/3",
+  "percent": 33,
+  "logs": [
+    "Comparing 3 reads.",
+    "Transcribing take 2/3"
+  ],
+  "elapsed": 3.5,
+  "findingId": "group-1"
+}

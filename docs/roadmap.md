@@ -27,6 +27,8 @@ The suite helps a narrator find and review issues faster. It may analyze local m
 
 ### 2. Recording and take review
 
+**Status: built; a scan and comparison of a real chapter and the checks in REAPER are pending with the owner.** [Take review](utilities/take-review.md) finds pickups, restarts and duplicate reads on the [Review page](guides/using-the-app/review.md#pickups-and-duplicates), adds a chosen read as a take in one undo step, auditions reads side by side and compares a group's takes per category, never ranked. What is still open is [listed there](utilities/take-review.md#what-is-still-open).
+
 - Add pickup/restart and duplicate-read detection.
 - Group reviewed duplicate candidates as REAPER takes.
 - Add side-by-side audition and evidence-based take comparison.
