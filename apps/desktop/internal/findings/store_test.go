@@ -467,17 +467,12 @@ func TestListOnAFreshProjectReturnsEmptyWithoutError(t *testing.T) {
 }
 
 func TestListAndRecordDecisionFailWhenTheFindingsDirCannotBeListed(t *testing.T) {
-	project := t.TempDir()
-	parent := filepath.Join(project, "narration-utils")
-	if err := os.MkdirAll(parent, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	// A plain file where the findings directory belongs: os.ReadDir fails
-	// with a real error that is not fs.ErrNotExist, on every platform and
-	// without needing permissions an elevated CI runner would bypass.
-	if err := os.WriteFile(filepath.Join(parent, "findings"), []byte("x"), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	// A NUL byte in the project path: every file operation fails with an
+	// invalid-argument error that is not fs.ErrNotExist, on Linux and Windows
+	// alike and without needing permissions an elevated CI runner would
+	// bypass. (A plain file where the directory belongs does not work: Windows
+	// reports reading it as a directory as path-not-found.)
+	project := filepath.Join(t.TempDir(), "bad\x00project")
 
 	store := NewStore(project)
 	if _, err := store.List(Query{}); err == nil {
