@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/dictionary"
 	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
@@ -204,3 +205,53 @@ func (p moonshineProvider) install(ctx context.Context, id string, options asset
 
 func (p moonshineProvider) verify(id string) (string, error) { return p.manager.Verify(id) }
 func (p moonshineProvider) remove(id string) error           { return p.manager.Remove(id) }
+
+// dictionaryProvider serves the offline dictionary the manuscript reader's Look up reads (ADR 0097). Its install unpacks the release and
+// builds the lookup index from it (internal/dictionary), so what it takes on disk is the index, not the download.
+type dictionaryProvider struct{ manager *dictionary.Manager }
+
+func (dictionaryProvider) kind() string      { return installKindDictionary }
+func (dictionaryProvider) label() string     { return "Dictionary" }
+func (dictionaryProvider) noun() string      { return "dictionary" }
+func (dictionaryProvider) endedKind() string { return jobKindDictionaryInstall }
+
+func (p dictionaryProvider) items() []assetItem {
+	dictionaries := p.manager.Dictionaries()
+	items := make([]assetItem, 0, len(dictionaries))
+	for _, entry := range dictionaries {
+		items = append(items, p.itemFor(entry))
+	}
+	return items
+}
+
+func (p dictionaryProvider) itemFor(entry dictionary.Dictionary) assetItem {
+	return assetItem{kind: installKindDictionary, id: entry.ID, displayName: entry.DisplayName, version: entry.Version, publisher: entry.Publisher, license: entry.License,
+		licenseURL: entry.LicenseURL, modelCardURL: entry.ModelCardURL, provenanceURL: entry.ProvenanceURL, attribution: entry.Attribution, files: entry.Files,
+		dir: p.manager.InstallDir(entry.ID), diskSize: entry.DiskSize()}
+}
+
+func (p dictionaryProvider) item(id string) (assetItem, bool) {
+	entry, ok := p.manager.Dictionary(id)
+	if !ok {
+		return assetItem{}, false
+	}
+	return p.itemFor(entry), true
+}
+
+func (p dictionaryProvider) state(id string) string {
+	entry, ok := p.manager.Dictionary(id)
+	if !ok {
+		return "not_installed"
+	}
+	return p.manager.State(entry)
+}
+
+func (p dictionaryProvider) install(ctx context.Context, id string, options assets.Options) error {
+	if p.state(id) == "installed" {
+		return nil
+	}
+	return p.manager.Repair(ctx, id, options)
+}
+
+func (p dictionaryProvider) verify(id string) (string, error) { return p.manager.Verify(id) }
+func (p dictionaryProvider) remove(id string) error           { return p.manager.Remove(id) }

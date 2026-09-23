@@ -15,15 +15,16 @@ const jobEndedEvent = "job:ended"
 
 // The kinds of job that end with a jobEndedEvent. They are the words the UI matches on (apps/ui/src/api/contracts/system.ts).
 const (
-	jobKindStoryBible       = "story_bible"
-	jobKindManuscriptImport = "manuscript_import"
-	jobKindTtsInstall       = "tts_install"
-	jobKindWhisperInstall   = "whisper_install"
-	jobKindSpacyInstall     = "spacy_install"
-	jobKindMoonshineInstall = "moonshine_install"
-	jobKindAppUpdate        = "app_update"
-	jobKindTranscript       = "transcript_compare"
-	jobKindCoverage         = "recording_coverage"
+	jobKindStoryBible        = "story_bible"
+	jobKindManuscriptImport  = "manuscript_import"
+	jobKindTtsInstall        = "tts_install"
+	jobKindWhisperInstall    = "whisper_install"
+	jobKindSpacyInstall      = "spacy_install"
+	jobKindMoonshineInstall  = "moonshine_install"
+	jobKindDictionaryInstall = "dictionary_install"
+	jobKindAppUpdate         = "app_update"
+	jobKindTranscript        = "transcript_compare"
+	jobKindCoverage          = "recording_coverage"
 )
 
 // How a job ended. A job that was cancelled is reported too, so a listener can tell the narrator's own Cancel from a failure.

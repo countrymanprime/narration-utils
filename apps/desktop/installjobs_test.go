@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -307,6 +308,8 @@ func TestInstallFailureTextSaysWhatHappenedAndWhatToDo(t *testing.T) {
 		{"a host that no longer has the file", &assets.StatusError{Code: 404, Status: "404 Not Found"}, "no longer has"},
 		{"a host that is busy", &assets.StatusError{Code: 429, Status: "429 Too Many Requests"}, "busy"},
 		{"a host that is down", &assets.StatusError{Code: 503, Status: "503 Service Unavailable"}, "busy"},
+		{"an archive that cannot be unpacked", fmt.Errorf("%w: it holds 0 entries", assets.ErrBadArchive), "could not be unpacked or prepared"},
+		{"data the app cannot prepare", fmt.Errorf("%w: entries-a.json is not in the release's shape", assets.ErrBadContent), "problem with the release"},
 		{"a connection that dropped", assets.ErrIncomplete, "internet connection"},
 		{"no network at all", errors.New(`Get "https://huggingface.co/x": dial tcp: lookup huggingface.co: no such host`), "internet connection"},
 	}

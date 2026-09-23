@@ -342,6 +342,10 @@ export function RenderConfigSuggestFolder() {
   return window['go']['main']['Host']['RenderConfigSuggestFolder']();
 }
 
+export function SystemLookup(arg1) {
+  return window['go']['main']['Host']['SystemLookup'](arg1);
+}
+
 export function SystemNotify(arg1, arg2, arg3) {
   return window['go']['main']['Host']['SystemNotify'](arg1, arg2, arg3);
 }

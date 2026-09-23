@@ -10,10 +10,11 @@ import (
 // touches another. The desktop host and the developer seeding command (cmd/seed-assets) both name the cache through these, so the two
 // can never disagree about where an asset lives.
 const (
-	TTSDir       = "tts"
-	WhisperDir   = "whisper"
-	SpacyDir     = "spacy"
-	MoonshineDir = "moonshine"
+	TTSDir        = "tts"
+	WhisperDir    = "whisper"
+	SpacyDir      = "spacy"
+	MoonshineDir  = "moonshine"
+	DictionaryDir = "dictionary"
 )
 
 // CacheBase is where downloaded assets live: the per-user cache folder, outside the release, the project and the checkout. When the

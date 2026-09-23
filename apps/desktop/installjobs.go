@@ -14,10 +14,11 @@ import (
 
 // The kinds of asset install. The wrappers over the voice and model bindings (TtsInstall, WhisperInstall) each start one.
 const (
-	installKindTts       = "tts"
-	installKindWhisper   = "whisper"
-	installKindSpacy     = "spacy"
-	installKindMoonshine = "moonshine"
+	installKindTts        = "tts"
+	installKindWhisper    = "whisper"
+	installKindSpacy      = "spacy"
+	installKindMoonshine  = "moonshine"
+	installKindDictionary = "dictionary"
 )
 
 // The phases of an asset install, the words the UI polls for (apps/ui/src/api/contracts/assets.ts). Whisper used to say "running"; every
@@ -207,6 +208,9 @@ func installFailureText(err error, noun string) string {
 	switch {
 	case errors.Is(err, assets.ErrChecksumMismatch), errors.Is(err, assets.ErrSizeMismatch):
 		return "The downloaded " + noun + " did not match the approved file, so it was not installed. Try again; if it keeps happening, the file may have changed at its source."
+	case errors.Is(err, assets.ErrBadArchive), errors.Is(err, assets.ErrBadContent):
+		return "The downloaded " + noun + " matched the approved file but could not be unpacked or prepared, so it was not installed. This is a " +
+			"problem with the release, not with your connection: please report it."
 	case errors.As(err, &short):
 		return short.Error()
 	case assets.IsDiskFull(err):

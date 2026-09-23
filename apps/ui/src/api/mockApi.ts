@@ -83,6 +83,7 @@ import { createCoverageMock, type CoverageSeed } from './coverageMock';
 import type { MockResumeSeed } from './resumeMockSeed';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
+import { mockDictionaryLookup } from './dictionaryMock';
 
 const DEFAULT_PROJECT_FOLDER = 'C:/Projects/Alice-in-Wonderland';
 const DEFAULT_PROJECT_NAME = 'Alice’s Adventures in Wonderland';
@@ -406,6 +407,8 @@ export function createMockApi(
     chapterTagsEmbedAlwaysErrors?: boolean;
     /** Seeds the recording coverage mock (a refusal for every start, or stale chapters), see `CoverageSeed`. */
     coverage?: CoverageSeed;
+    /** Boots without the offline dictionary, so a lookup answers with its first-use gate (story-bible-and-import-ux-briefs.prd.md Phase 7). */
+    dictionaryMissing?: boolean;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -1361,6 +1364,7 @@ export function createMockApi(
     },
     reportClientDiagnostic: async () => {},
     systemNotify: async () => {},
+    systemLookup: async (word) => mockDictionaryLookup(word, initial.dictionaryMissing ?? false),
     manuscriptChapters: async () => {
       await manuscriptReady;
       return wireClone(chapters.map(withMeasurement));

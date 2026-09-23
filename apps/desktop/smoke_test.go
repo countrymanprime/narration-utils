@@ -33,14 +33,14 @@ func sidecarFile(name string) string {
 	return name
 }
 
-// healthyTree is what a good build embeds: the three sidecars, the four approved catalogs and the REAPER scripts.
+// healthyTree is what a good build embeds: the three sidecars, the five approved catalogs and the REAPER scripts.
 func healthyTree(t *testing.T) fstest.MapFS {
 	t.Helper()
 	tree := fstest.MapFS{}
 	for _, name := range smokeSidecars {
 		tree[resourcesRoot+"/runtime/"+name+"/"+sidecarFile(name)] = &fstest.MapFile{Data: []byte("frozen " + name)}
 	}
-	for _, catalog := range []string{"tts-assets.json", "whisper-assets.json", "spacy-assets.json", "moonshine-assets.json"} {
+	for _, catalog := range []string{"tts-assets.json", "whisper-assets.json", "spacy-assets.json", "moonshine-assets.json", "dictionary-assets.json"} {
 		body, err := os.ReadFile(layout.RepoFile("config/" + catalog))
 		if err != nil {
 			t.Fatal(err)
@@ -281,6 +281,10 @@ func TestSmokeFailsWhenACatalogIsMissingOrEmpty(t *testing.T) {
 		},
 		"broken": func(tree fstest.MapFS) {
 			tree[resourcesRoot+"/config/whisper-assets.json"] = &fstest.MapFile{Data: []byte(`{not json`)}
+		},
+		"missing dictionary": func(tree fstest.MapFS) { delete(tree, resourcesRoot+"/config/dictionary-assets.json") },
+		"empty dictionary": func(tree fstest.MapFS) {
+			tree[resourcesRoot+"/config/dictionary-assets.json"] = &fstest.MapFile{Data: []byte(`{"catalogVersion":1,"dictionaries":[]}`)}
 		},
 	} {
 		t.Run(name, func(t *testing.T) {

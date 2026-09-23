@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/dictionary"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
@@ -14,10 +15,11 @@ import (
 
 // The per-asset-kind folders under the asset cache (internal/assets names them once, for the host and for the seeding command alike).
 const (
-	ttsCacheDir       = assets.TTSDir
-	whisperCacheDir   = assets.WhisperDir
-	spacyCacheDir     = assets.SpacyDir
-	moonshineCacheDir = assets.MoonshineDir
+	ttsCacheDir        = assets.TTSDir
+	whisperCacheDir    = assets.WhisperDir
+	spacyCacheDir      = assets.SpacyDir
+	moonshineCacheDir  = assets.MoonshineDir
+	dictionaryCacheDir = assets.DictionaryDir
 )
 
 // assetCacheBase is where downloaded assets live: the per-user cache folder, never the temporary one (assets.CacheBase).
@@ -27,7 +29,7 @@ func assetCacheBase() (string, error) { return assets.CacheBase() }
 // It returns what it removed.
 func cleanAssetCaches(base string) []string {
 	var removed []string
-	for _, dir := range []string{ttsCacheDir, whisperCacheDir, spacyCacheDir, moonshineCacheDir} {
+	for _, dir := range []string{ttsCacheDir, whisperCacheDir, spacyCacheDir, moonshineCacheDir, dictionaryCacheDir} {
 		removed = append(removed, assets.CleanStale(filepath.Join(base, dir))...)
 	}
 	return removed
@@ -44,7 +46,7 @@ func (h *Host) buildAssetRegistry() *assetRegistry {
 	}
 	// The packaged release resources are only unpacked when a checkout does not have every catalog.
 	packaged := ""
-	for _, catalog := range []string{layout.TTSCatalogFile, layout.WhisperCatalogFile, layout.SpacyCatalogFile, layout.MoonshineCatalogFile} {
+	for _, catalog := range []string{layout.TTSCatalogFile, layout.WhisperCatalogFile, layout.SpacyCatalogFile, layout.MoonshineCatalogFile, layout.DictionaryCatalogFile} {
 		if _, statErr := os.Stat(layout.Path(h.config.repoRoot, catalog)); statErr != nil {
 			packaged = h.packagedResources()
 			break
@@ -54,7 +56,9 @@ func (h *Host) buildAssetRegistry() *assetRegistry {
 	models := buildWhisperManager(h.config, packaged, filepath.Join(base, whisperCacheDir))
 	languageModels := buildSpacyManager(h.config, packaged, filepath.Join(base, spacyCacheDir))
 	liveModels := buildMoonshineManager(h.config, packaged, filepath.Join(base, moonshineCacheDir))
-	return newAssetRegistry(base, voices, models, languageModels, liveModels)
+	registry := newAssetRegistry(base, voices, models, languageModels, liveModels)
+	registry.registerDictionaries(buildDictionaryManager(h.config, packaged, filepath.Join(base, dictionaryCacheDir)))
+	return registry
 }
 
 // buildTtsManager reads the voice catalog (the checkout catalog, or the packaged release one) and returns a manager over root, or nil when
@@ -104,6 +108,19 @@ func buildMoonshineManager(cfg config, packagedRoot, root string) *moonshine.Man
 		catalog = filepath.Join(packagedRoot, "config", "moonshine-assets.json")
 	}
 	manager, err := moonshine.New(catalog, root)
+	if err != nil {
+		return nil
+	}
+	return manager
+}
+
+// buildDictionaryManager is buildTtsManager for the offline dictionary catalog the reader's Look up reads (ADR 0097).
+func buildDictionaryManager(cfg config, packagedRoot, root string) *dictionary.Manager {
+	catalog := layout.Path(cfg.repoRoot, layout.DictionaryCatalogFile)
+	if _, err := os.Stat(catalog); err != nil && packagedRoot != "" {
+		catalog = filepath.Join(packagedRoot, "config", "dictionary-assets.json")
+	}
+	manager, err := dictionary.New(catalog, root)
 	if err != nil {
 		return nil
 	}

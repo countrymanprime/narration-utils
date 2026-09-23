@@ -509,7 +509,7 @@ def render_report(
             continue
         out.append(_section(f"{title} ({len(group)})"))
         out.append("\n".join(_entry(c, names[c]) for c in group))
-    out.append(_section("Models and voices: downloaded only when you ask, not in this package"))
+    out.append(_section("Models, voices and the dictionary: downloaded only when you ask, not in this package"))
     if catalogs:
         out.append(
             "Each is fetched from the address below after you confirm, checked against a fixed size and SHA-256, and kept in your own\n"
@@ -519,6 +519,9 @@ def render_report(
             out.append(
                 f"  - {item.get('provider', '')}/{item.get('id', '')} {item.get('version', '')}: {item.get('license', '')} ({item.get('publisher', '')}); {item.get('licenseUrl', '')}\n"
             )
+            # An attribution licence (CC BY: the dictionary, ADR 0097) requires the credit wherever the data is used, so it is written out.
+            if item.get("attribution"):
+                out.append(f"    Attribution: {item['attribution']}\n")
     else:
         out.append("None.\n")
     out.append(_section(f"{PROGRAM_LICENSE}: the licence of narration-utils"))
@@ -528,7 +531,13 @@ def render_report(
 
 def read_catalogs(config_dir: Path) -> list[dict]:
     items: list[dict] = []
-    for name, key in (("whisper-assets.json", "models"), ("tts-assets.json", "voices"), ("spacy-assets.json", "models"), ("moonshine-assets.json", "models")):
+    for name, key in (
+        ("whisper-assets.json", "models"),
+        ("tts-assets.json", "voices"),
+        ("spacy-assets.json", "models"),
+        ("moonshine-assets.json", "models"),
+        ("dictionary-assets.json", "dictionaries"),
+    ):
         path = config_dir / name
         if path.is_file():
             items.extend(json.loads(path.read_text(encoding="utf-8")).get(key, []))
