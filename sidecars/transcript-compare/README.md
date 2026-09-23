@@ -30,6 +30,15 @@ actually said.
 - `core/compare.py` — the backend. Runs locally via faster-whisper (no cloud, no API key) +
   a word-level diff against the project's canonical manuscript. Runs under the repo-root shared venv (`.venv/`) so it doesn't
   depend on REAPER's or the system's Python.
+- `core/take_divergence_mode.py` and `core/take_divergence.py` — `compare.py --take-divergence`, an
+  additive mode for Take Intelligence: it aligns every take in a JSON manifest to one fixed manuscript
+  span with the same diff the markers use and writes, per take, each span word's status and time and
+  every divergence as span words plus source seconds (`TAKE_DIVERGENCE|{json}` lines). The manifest,
+  output and exit codes are in the module docstring;
+  [ADR 0141](../../docs/adr/0141-per-take-divergence-is-localized-by-the-markers-diff-and-asr-word-timestamps.md)
+  and [the evaluation](../../docs/research/take-divergence-evaluation.md) explain why ASR word
+  timestamps are precise enough. `tests/divergence_harness.py` scores it against the constructed takes
+  in `tests/fixtures/divergence/`.
 - `libs/python/narration_common/spoken_forms.py` — the built-in homophone list (your/you're,
   its/it's, etc.), the number words and the filler words, shared with the teleprompter's live
   flags so both forgive the same spellings (ADR 0105). It is Python data rather than a file next

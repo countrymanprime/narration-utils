@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "source": "Paragraphs 1-3: Lewis Carroll, Alice's Adventures in Wonderland (1865), chapter I, public domain. Paragraph 4: constructed for this set.",
+  "paragraphs": [
+    "Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”",
+    "So she was considering in her own mind (as well as she could, for the hot day made her feel very sleepy and stupid), whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a White Rabbit with pink eyes ran close by her.",
+    "There was nothing so very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit say to itself, “Oh dear! Oh dear! I shall be late!”",
+    "At twenty past three the Arelian courier crossed the old stone bridge. She carried forty-two letters and one small parcel for their mayor."
+  ],
+  "cases": [
+    {
+      "id": "clean-long-sentence",
+      "description": "A clean read of a 57-word sentence: nothing may diverge.",
+      "span": [0, 0],
+      "script": [
+        {"read": "Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”"}
+      ]
+    },
+    {
+      "id": "misread-one-word-partway",
+      "description": "One word substituted a dozen words in.",
+      "span": [0, 0],
+      "script": [
+        {"read": "Alice was beginning to get very tired of sitting by her"},
+        {"misread": "sister", "as": "sitter"},
+        {"read": "on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”"}
+      ]
+    },
+    {
+      "id": "misread-phrase-late",
+      "description": "A two-word substitution near the end of a long sentence.",
+      "span": [1, 1],
+      "script": [
+        {"read": "So she was considering in her own mind (as well as she could, for the hot day made her feel very sleepy and stupid), whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a White Rabbit with"},
+        {"misread": "pink eyes", "as": "pale ears"},
+        {"read": "ran close by her."}
+      ]
+    },
+    {
+      "id": "skip-parenthesis",
+      "description": "A whole parenthetical left out mid-sentence.",
+      "span": [1, 1],
+      "script": [
+        {"read": "So she was considering in her own mind"},
+        {"skip": "(as well as she could, for the hot day made her feel very sleepy and stupid),"},
+        {"read": "whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a White Rabbit with pink eyes ran close by her."}
+      ]
+    },
+    {
+      "id": "skip-one-word",
+      "description": "A single adverb dropped.",
+      "span": [0, 0],
+      "script": [
+        {"read": "Alice was beginning to get"},
+        {"skip": "very"},
+        {"read": "tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”"}
+      ]
+    },
+    {
+      "id": "restart-mid-sentence",
+      "description": "A false start partway through, then the phrase read again.",
+      "span": [2, 4],
+      "script": [
+        {"read": "There was nothing so very remarkable in that; nor did Alice think it so"},
+        {"restart": "very much out of the"},
+        {"read": "very much out of the way to hear the Rabbit say to itself, “Oh dear! Oh dear! I shall be late!”"}
+      ]
+    },
+    {
+      "id": "restart-at-span-start",
+      "description": "The first words said, abandoned, and the sentence started again.",
+      "span": [1, 1],
+      "script": [
+        {"restart": "So she was considering"},
+        {"read": "So she was considering in her own mind (as well as she could, for the hot day made her feel very sleepy and stupid), whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a White Rabbit with pink eyes ran close by her."}
+      ]
+    },
+    {
+      "id": "stutter-repeated-word",
+      "description": "One word said twice.",
+      "span": [0, 0],
+      "script": [
+        {"read": "Alice was beginning to get very tired of sitting by her sister on the bank, and of"},
+        {"extra": "having"},
+        {"read": "having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”"}
+      ]
+    },
+    {
+      "id": "flub-near-the-end",
+      "description": "The third-last word substituted.",
+      "span": [5, 6],
+      "script": [
+        {"read": "At twenty past three the Arelian courier crossed the old stone bridge. She carried forty-two letters and one small"},
+        {"misread": "parcel", "as": "packet"},
+        {"read": "for their mayor."}
+      ]
+    },
+    {
+      "id": "two-divergences",
+      "description": "A number misread and, later, a word skipped in the same take.",
+      "span": [5, 6],
+      "script": [
+        {"read": "At twenty past three the Arelian courier crossed the old stone bridge. She carried"},
+        {"misread": "forty-two", "as": "forty-four"},
+        {"read": "letters and one"},
+        {"skip": "small"},
+        {"read": "parcel for their mayor."}
+      ]
+    },
+    {
+      "id": "chatter-around-the-span",
+      "description": "Studio talk before and after an otherwise clean read.",
+      "span": [2, 4],
+      "script": [
+        {"extra": "okay take two"},
+        {"read": "There was nothing so very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit say to itself, “Oh dear! Oh dear! I shall be late!”"},
+        {"extra": "cut there"}
+      ]
+    },
+    {
+      "id": "stops-early",
+      "description": "The take ends partway through the span's second sentence.",
+      "span": [0, 1],
+      "script": [
+        {"read": "Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?” So she was considering in her own mind"}
+      ]
+    },
+    {
+      "id": "starts-late",
+      "description": "The take begins at the span's second clause.",
+      "span": [2, 4],
+      "script": [
+        {"unread": "There was nothing so very remarkable in that;"},
+        {"read": "nor did Alice think it so very much out of the way to hear the Rabbit say to itself, “Oh dear! Oh dear! I shall be late!”"}
+      ]
+    },
+    {
+      "id": "numbers-and-homophones",
+      "description": "Numbers said as a transcriber writes digits and a homophone spelled the other way: nothing may diverge.",
+      "span": [5, 6],
+      "script": [
+        {"read": "At twenty past three", "as": "At 20 past 3"},
+        {"read": "the Arelian courier crossed the old stone bridge. She carried"},
+        {"read": "forty-two", "as": "42"},
+        {"read": "letters and one small parcel for"},
+        {"read": "their", "as": "there"},
+        {"read": "mayor."}
+      ]
+    }
+  ]
+}
