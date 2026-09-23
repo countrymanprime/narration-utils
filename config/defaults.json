@@ -1,9 +1,11 @@
 {
   "General": {
-    "log_verbosity": "normal"
+    "log_verbosity": "normal",
+    "notifications": "true"
   },
   "ManuscriptGuide": {
-    "spacy_model": "en_core_web_sm"
+    "spacy_model": "en_core_web_sm",
+    "build_after_import": "true"
   },
   "Piper": {
     "tts_provider": "piper",

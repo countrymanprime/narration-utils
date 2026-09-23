@@ -1,5 +1,5 @@
 import { apiErrorMessage, describeApiError } from '../../api/errorMessage';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileArrowUp, faFileLines } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
@@ -15,6 +15,7 @@ import { WorkDialog } from '../primitives/WorkDialog';
 import { TooltipTarget } from '../primitives/Tooltip';
 import { IconButton } from '../primitives/IconButton';
 import type { Notify } from '../primitives/Toast';
+import { combinedRequiredReason } from '../../dawAvailability';
 
 // Import runs as a host-side job; the UI only ever displays the percent and log
 // lines the host reports while polling (ADR-0015) - it never invents progress.
@@ -57,6 +58,21 @@ export function Home({
   const [groupOpen, setGroupOpen] = useState<ReviewGroupOpen>({});
   const [headingLevel, setHeadingLevel] = useState(1);
   const [, setDeclineCount] = useState(0);
+  // B1-B3: "Build the Story Bible after import", pre-filled from Settings (ManuscriptGuide.build_after_import, on by
+  // default per owner decision D8) and changeable per import. buildStarted guards against starting the chained build
+  // twice for the same import job (the poller can report 'success' more than once before its interval is cleared).
+  const [buildAfterImport, setBuildAfterImport] = useState(true);
+  const [buildAfterImportJob, setBuildAfterImportJob] = useState<WorkJob>();
+  const buildStarted = useRef(false);
+  useEffect(() => {
+    void api
+      .settingsForScope('global')
+      .then((settings) => {
+        const field = settings.ManuscriptGuide?.find((item) => item.key === 'build_after_import');
+        if (field) setBuildAfterImport(field.effectiveValue !== 'false');
+      })
+      .catch(() => {});
+  }, [api]);
   const candidate = data.manuscriptCandidate;
   const offerCandidate = !found && candidate && !declinedCandidates.has(candidate.path) && !importJob;
   useEffect(() => {
@@ -90,15 +106,64 @@ export function Home({
       window.clearInterval(timer);
     };
   }, [api, importJob?.id, importJob?.phase]);
-  // The host finishes writing the manuscript before it reports success, so the
-  // shared application state is refreshed exactly once, on that transition.
+  // The host finishes writing the manuscript before it reports success, so the shared application state is refreshed
+  // exactly once, on that transition. A checked "Build the Story Bible after import" chains straight into
+  // api.guideBuild() (B3, UI-chained for the MVP: no binding change, and a build failure never unmakes the import,
+  // which is already written and reported). The import dialog closes itself (like a successful Story Bible rebuild
+  // already does, ADR 0076) and a second WorkDialog picks up the build's own progress, its own toast on the app's job:ended
+  // subscriber included.
   useEffect(() => {
-    if (importJob?.phase === 'success') void refreshBootstrap();
-  }, [importJob?.phase, refreshBootstrap]);
+    if (importJob?.phase !== 'success') return;
+    void refreshBootstrap();
+    if (!buildAfterImport || buildStarted.current) return;
+    buildStarted.current = true;
+    notify('Manuscript imported.');
+    setImportJob(undefined);
+    void api
+      .guideBuild({})
+      .then((result) => {
+        if (result.status === 'asset_required') {
+          notify('Manuscript imported. Build the Story Bible from the Story Bible page to download its language model first.');
+          return;
+        }
+        if (result.job.phase !== 'success') setBuildAfterImportJob(result.job);
+      })
+      .catch((error) => notify(`Manuscript imported. Story Bible build failed: ${apiErrorMessage(error)}`, 'error'));
+  }, [importJob?.phase, buildAfterImport, api, notify, refreshBootstrap]);
+  // Polls the chained build the same way Guide.tsx polls its own (ADR-0015: real progress only), and clears the dialog
+  // the moment the host reports success rather than waiting for a click - the app's job:ended subscriber already
+  // raises the "Story Bible rebuild complete" toast (ADR 0076), so this dialog does not also announce it.
+  useEffect(() => {
+    if (!buildAfterImportJob?.id || !['preparing', 'running'].includes(buildAfterImportJob.phase)) return;
+    let active = true;
+    const refresh = () =>
+      void api
+        .guideBuildState()
+        .then((next) => {
+          if (!active) return;
+          if (next.phase === 'success') setBuildAfterImportJob(undefined);
+          else setBuildAfterImportJob(next);
+        })
+        .catch(
+          (error) =>
+            active &&
+            setBuildAfterImportJob((current) =>
+              current ? { ...current, phase: 'error', error: describeApiError(error), message: describeApiError(error) } : current,
+            ),
+        );
+    refresh();
+    const timer = window.setInterval(refresh, 250);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [api, buildAfterImportJob?.id, buildAfterImportJob?.phase]);
   const beginImportPreview = async (jobId: string) => {
     setHeadingLevel(1);
     setImportSelection({});
     setGroupOpen({});
+    buildStarted.current = false;
+    setBuildAfterImportJob(undefined);
     setImportJob({ id: jobId, kind: 'manuscript_import', phase: 'preparing', message: 'Preparing manuscript import…', percent: 0, logs: [], elapsed: 0 });
     try {
       setImportJob(await api.manuscriptImportPreview(jobId, { markdownHeadingLevel: 1 }));
@@ -237,6 +302,7 @@ export function Home({
             onHeadingLevelChange={changeHeadingLevel}
             groupOpen={groupOpen}
             onGroupOpenChange={(group: ReviewGroupKey, open: boolean) => setGroupOpen((current) => ({ ...current, [group]: open }))}
+            buildStoryBible={{ checked: buildAfterImport, onChange: setBuildAfterImport }}
           />
         </ConfirmDialog>
       )}
@@ -256,72 +322,85 @@ export function Home({
           close={() => setImportJob(undefined)}
         />
       )}
+      {buildAfterImportJob && <WorkDialog title="Build the Story Bible" job={buildAfterImportJob} close={() => setBuildAfterImportJob(undefined)} />}
       <AudiobookEstimatePanel
         notify={notify}
         goToManuscript={goToManuscript}
         refreshKey={data.manuscript ? `${data.manuscript.id}:${data.manuscript.importedAt}` : 'no-manuscript'}
       />
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <TooltipTarget text={found ? 'Open Proofing' : 'Import a manuscript to unlock Proofing.'} className="w-full">
-          <button
-            aria-label="Open Proofing"
-            disabled={!found}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
-            onClick={() => go('/proofing')}
-          >
-            <div className="mb-1 flex items-center justify-between">
-              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
-                Proofing
-              </span>
-              <span
-                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
-                style={
-                  lastCompleted
-                    ? { background: 'var(--review-soft)', color: 'var(--danger-text)' }
-                    : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
-                }
+      {(() => {
+        // Reviewing an existing comparison never needs a linked DAW file, only starting a new one does (PRD W16):
+        // the card is blocked when there is no manuscript, or when there is nothing to review yet and no DAW file
+        // is linked to start one with.
+        const startBlocked = !lastCompleted && !data.dawFileLinked;
+        const proofingBlocked = !found || startBlocked;
+        const proofingReason = !found
+          ? 'Import a manuscript to unlock Proofing.'
+          : (combinedRequiredReason({ manuscript: false, dawFile: startBlocked }) ?? 'Open Proofing');
+        return (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <TooltipTarget text={proofingBlocked ? proofingReason : 'Open Proofing'} className="w-full">
+              <button
+                aria-label="Open Proofing"
+                disabled={proofingBlocked}
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
+                onClick={() => go('/proofing')}
               >
-                {lastCompleted ? `${lastCompleted.rows.length} ${lastCompleted.rows.length === 1 ? 'discrepancy' : 'discrepancies'}` : 'Ready'}
-              </span>
-            </div>
-            <div className="font-semibold">{lastCompleted ? 'Review latest comparison' : 'Ready to compare selected REAPER audio'}</div>
-            <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-              {lastCompleted
-                ? `${lastCompleted.trackName || 'Selected REAPER audio'}${lastCompleted.audioItemCount ? ` · ${lastCompleted.audioItemCount} audio item${lastCompleted.audioItemCount === 1 ? '' : 's'}` : ''} · ${completedLabel(lastCompleted.completedAt)}`
-                : 'Select audio items or a track in REAPER, then start Proofing.'}
-            </div>
-          </button>
-        </TooltipTarget>
-        <TooltipTarget text={found ? 'Open Story Bible' : 'Import a manuscript to unlock Story Bible.'} className="w-full">
-          <button
-            aria-label="Open Story Bible"
-            disabled={!found}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
-            onClick={() => go('/story-bible')}
-          >
-            <div className="mb-1 flex items-center justify-between">
-              <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
-                Story Bible
-              </span>
-              <span
-                className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
-                style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
+                    Proofing
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
+                    style={
+                      lastCompleted
+                        ? { background: 'var(--review-soft)', color: 'var(--danger-text)' }
+                        : { background: 'var(--surface-2)', color: 'var(--text-muted)' }
+                    }
+                  >
+                    {lastCompleted ? `${lastCompleted.rows.length} ${lastCompleted.rows.length === 1 ? 'discrepancy' : 'discrepancies'}` : 'Ready'}
+                  </span>
+                </div>
+                <div className="font-semibold">{lastCompleted ? 'Review latest comparison' : 'Ready to compare selected REAPER audio'}</div>
+                <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+                  {lastCompleted
+                    ? `${lastCompleted.trackName || 'Selected REAPER audio'}${lastCompleted.audioItemCount ? ` · ${lastCompleted.audioItemCount} audio item${lastCompleted.audioItemCount === 1 ? '' : 's'}` : ''} · ${completedLabel(lastCompleted.completedAt)}`
+                    : 'Select audio items or a track in REAPER, then start Proofing.'}
+                </div>
+              </button>
+            </TooltipTarget>
+            <TooltipTarget text={found ? 'Open Story Bible' : 'Import a manuscript to unlock Story Bible.'} className="w-full">
+              <button
+                aria-label="Open Story Bible"
+                disabled={!found}
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-[1.1rem] text-left shadow-[var(--shadow)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-50"
+                onClick={() => go('/story-bible')}
               >
-                {entities.length} entities · {review ? 1 : 0} review
-              </span>
-            </div>
-            <div className="font-semibold">
-              {review ? `Review “${review.canonical_name}”` : entities.length ? 'Browse Story Bible entries' : 'No Story Bible entries yet'}
-            </div>
-            <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-              {review?.description.text ||
-                (entities.length
-                  ? `${entities.length} saved ${entities.length === 1 ? 'entity' : 'entities'}`
-                  : 'Build the Story Bible to discover names and terms.')}
-            </div>
-          </button>
-        </TooltipTarget>
-      </div>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
+                    Story Bible
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-[0.35rem] rounded-full px-[0.55rem] py-[0.15rem] font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.03em] uppercase"
+                    style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}
+                  >
+                    {entities.length} entities · {review ? 1 : 0} review
+                  </span>
+                </div>
+                <div className="font-semibold">
+                  {review ? `Review “${review.canonical_name}”` : entities.length ? 'Browse Story Bible entries' : 'No Story Bible entries yet'}
+                </div>
+                <div className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+                  {review?.description.text ||
+                    (entities.length
+                      ? `${entities.length} saved ${entities.length === 1 ? 'entity' : 'entities'}`
+                      : 'Build the Story Bible to discover names and terms.')}
+                </div>
+              </button>
+            </TooltipTarget>
+          </div>
+        );
+      })()}
     </div>
   );
 }
