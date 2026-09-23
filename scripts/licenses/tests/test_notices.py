@@ -295,6 +295,30 @@ class TestReport:
         assert "downloaded only when you ask" in text
         assert "faster-whisper/tiny" in text
 
+    def test_a_downloaded_asset_carries_the_attribution_its_licence_requires(self):
+        catalogs = [
+            {
+                "id": "oewn-2025",
+                "provider": "oewn",
+                "publisher": "The Open English WordNet Team",
+                "license": "CC-BY-4.0",
+                "licenseUrl": "https://github.com/globalwordnet/english-wordnet/blob/2025-edition/LICENSE.md",
+                "version": "2025",
+                "attribution": "Open English WordNet 2025 Edition, licensed under CC BY 4.0. Derived from Princeton WordNet 3.0.",
+            }
+        ]
+
+        text = notices.render_report(version="0.1.0", components=self.sample(), program_license="AGPL", catalogs=catalogs)
+
+        assert "oewn/oewn-2025 2025: CC-BY-4.0" in text
+        assert "Attribution: Open English WordNet 2025 Edition, licensed under CC BY 4.0. Derived from Princeton WordNet 3.0." in text
+
+    def test_the_dictionary_catalog_is_read_with_the_model_catalogs(self):
+        catalogs = notices.read_catalogs(REPO_ROOT / "config")
+
+        dictionary = [item for item in catalogs if item.get("provider") == "oewn"]
+        assert dictionary and "Princeton WordNet" in dictionary[0]["attribution"]
+
     def test_missing_direct_dependencies_are_reported_by_name(self):
         components = self.sample()
 

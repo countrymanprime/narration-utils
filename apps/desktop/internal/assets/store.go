@@ -166,6 +166,11 @@ type Options struct {
 	// NoResume makes an install start from nothing and leave nothing when it fails: the staging folder of an earlier attempt is removed
 	// first, and this attempt's is removed if it fails. The app's own update uses it (a program that is not wanted is not kept).
 	NoResume bool
+	// Derive, when set, is called once for each archive after it has been checked and unpacked into the staging folder, and before anything
+	// is recorded: it may build what the install keeps from what was unpacked (the dictionary's lookup index from its dataset) and remove the
+	// rest. It returns the files the install keeps from that archive, every one under the archive's own folder (RecordFile hashes one); the
+	// manifest records them in place of what was unpacked, so State and Verify read them. An error fails the install with ErrBadContent.
+	Derive func(staging string, file File, unpacked []ExtractedFile) ([]ExtractedFile, error)
 }
 
 // Install downloads every catalog-owned file into an adjacent staging
@@ -214,6 +219,11 @@ func InstallWith(ctx context.Context, root, provider, id, version string, files 
 		if err != nil {
 			return fail(err)
 		}
+		if options.Derive != nil {
+			if entries, err = derive(staging, file, entries, options.Derive); err != nil {
+				return fail(err)
+			}
+		}
 		extracted[file.Name] = entries
 	}
 	if err := pruneStaging(staging, files); err != nil {
@@ -239,7 +249,7 @@ func InstallWith(ctx context.Context, root, provider, id, version string, files 
 // resumable says whether what a failed install fetched is worth keeping for the next attempt: it is unless the narrator cancelled or a
 // file was wrong (bytes that failed their hash must not be resumed from).
 func resumable(ctx context.Context, err error) bool {
-	return ctx.Err() == nil && !errors.Is(err, ErrChecksumMismatch) && !errors.Is(err, ErrSizeMismatch) && !errors.Is(err, ErrBadArchive)
+	return ctx.Err() == nil && !errors.Is(err, ErrChecksumMismatch) && !errors.Is(err, ErrSizeMismatch) && !errors.Is(err, ErrBadArchive) && !errors.Is(err, ErrBadContent)
 }
 
 // swapIn puts the staging folder where the install belongs. An existing target (a damaged install) is renamed aside first and removed

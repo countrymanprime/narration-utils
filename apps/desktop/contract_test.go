@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
+	"github.com/countrymanprime/narration-utils/shell/internal/dictionary"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
@@ -119,6 +120,31 @@ func TestContractPreviewNeedsAVoice(t *testing.T) {
 		Attribution: "LJ Speech dataset", Files: []tts.File{{Name: "voice.onnx", Size: 114_000_000}, {Name: "voice.onnx.json", Size: 4_800}},
 	}
 	contractfile.Check(t, "guide-preview-asset-required", voiceAssetRequired(voice, "not_installed", "C:/Users/narrator/AppData/Local/narration-utils/assets/tts/piper/en_US-ljspeech-high/1.0.0"))
+}
+
+// What SystemLookup answers (story-bible-and-import-ux-briefs.prd.md Phase 7): a lookup the installed dictionary made, through the real
+// install and index of a small release in the Open English WordNet shape, and the first-use gate for the real approved dictionary.
+func TestContractDictionaryLookup(t *testing.T) {
+	f := newLookupFixture(t)
+	started, err := f.host.startAssetInstall(installKindDictionary, "oewn-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	waitForPhase(t, func() map[string]any {
+		job, _ := f.host.installJobByID(started["id"].(string), "asset")
+		return snapshotInstall(job)
+	}, "success")
+	found, err := f.host.systemLookup("Happier,")
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractfile.Check(t, "system-lookup-found", found)
+	approved, err := dictionary.New(layout.RepoFile(layout.DictionaryCatalogFile), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	entry, _ := approved.Default()
+	contractfile.Check(t, "system-lookup-asset-required", dictionaryAssetRequired(entry, "not_installed", "C:/Users/narrator/AppData/Local/narration-utils/assets/dictionary/oewn/oewn-2025/2025"))
 }
 
 // The approved catalogs, built from the repository's real config files with nothing installed (ADR 0069), and the install jobs.

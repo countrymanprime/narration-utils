@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/dictionary"
 	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
@@ -73,6 +74,18 @@ type assetRegistry struct {
 	whisper   *whisper.Manager
 	spacy     *spacy.Manager
 	moonshine *moonshine.Manager
+	// dictionary is the offline dictionary catalog the reader's Look up reads (SystemLookup, ADR 0097); nil when its catalog is unreadable.
+	dictionary *dictionary.Manager
+}
+
+// registerDictionaries adds the dictionary provider, when its catalog could be read. It is separate from newAssetRegistry so the callers
+// that build a registry of voices and models alone (most tests) do not change.
+func (r *assetRegistry) registerDictionaries(dictionaries *dictionary.Manager) {
+	if dictionaries == nil {
+		return
+	}
+	r.dictionary = dictionaries
+	r.providers = append(r.providers, dictionaryProvider{manager: dictionaries})
 }
 
 // newAssetRegistry registers a provider for each manager that exists.

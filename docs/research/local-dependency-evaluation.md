@@ -82,7 +82,7 @@ flow, per the required record below.
 
 Each row below is the record the [required dependency record](#required-dependency-record) asks
 for, taken from the catalogs the release carries (`config/tts-assets.json`,
-`config/whisper-assets.json`, `config/spacy-assets.json`, `config/moonshine-assets.json`) and, for spaCy, from the
+`config/whisper-assets.json`, `config/spacy-assets.json`, `config/moonshine-assets.json`, `config/dictionary-assets.json`) and, for spaCy, from the
 [provisioning spike](spacy-model-provisioning-spike.md). Every asset is installed by the one
 lifecycle in `apps/desktop/internal/assets` (stage, check size and SHA-256, rename into place,
 manifest), under the per-user cache `<user cache>/narration-utils/assets/<kind>/<provider>/<id>/<version>/`
@@ -168,6 +168,25 @@ for the full license and provenance record.
 | Model card, provenance | `https://github.com/moonshine-ai/moonshine` | `https://github.com/moonshine-ai/moonshine` |
 | Install location | `<cache>/assets/moonshine/moonshine/tiny/quantized_26_08_21/` | `<cache>/assets/moonshine/moonshine/small/quantized_26_08_21/` |
 | Feature | Live Teleprompter engine choice (phase 7, pending) | Same |
+
+### Open English WordNet dictionary (manuscript reader Look up)
+
+The JSON release is downloaded, checked against the pinned hash, unpacked, turned into one lookup index and deleted: only the
+index is kept, and the manifest records its hash ([ADR 0136](../adr/0136-an-asset-may-keep-only-a-file-built-at-install-from-its-verified-archive.md)).
+See [entry 11](#11-open-english-wordnet--dictionarythesaurus-lookup-story-bible-and-import-ux-briefs-d1-d2) for the licence and
+provenance record.
+
+| Field | Record |
+| --- | --- |
+| Asset | `oewn-2025`, kind `dictionary`, provider `oewn` (`config/dictionary-assets.json`) |
+| Publisher, version | The Open English WordNet Team, 2025 Edition (release tag `2025-edition`) |
+| URL | `https://github.com/globalwordnet/english-wordnet/releases/download/2025-edition/english-wordnet-2025-json.zip` |
+| SHA-256 | `7d749f6e2c39e6970e4997839dcf6e42fd281f3c2fae0171d2192bae8cfa4b51` |
+| Download, installed size | 9,986,555 bytes; 72,404,635 bytes unpacked during the install; 17,174,403 bytes kept (the index) |
+| Licence | CC BY 4.0 (OEWN), derived from Princeton WordNet 3.0 under the WordNet License; the attribution is in the catalog, the notices and every lookup answer |
+| Model card, provenance | `https://en-word.net/`; `https://github.com/globalwordnet/english-wordnet/releases/tag/2025-edition` |
+| Install location | `<cache>/assets/dictionary/oewn/oewn-2025/2025/` (index at `wordnet/index.bin`) |
+| Feature | The manuscript reader's Look up (definitions, synonyms, antonyms; Phase 8 is the panel) |
 
 ### Not assets
 
@@ -644,11 +663,11 @@ for why two live engines are supported and how they are compared.
 
 **Decision: adopt.** `Decided by stack S19d, docs/prds/story-bible-and-import-ux-briefs.prd.md` Phase 6 (D1: local dataset only,
 provisioned as a downloadable asset, never a cloud API; D2: single-word definitions, synonyms and antonyms from one dataset, US
-English). See [ADR 0097](../adr/0097-the-manuscript-reader-word-lookup-uses-the-open-english-wordnet-as-a-downloadable-asset.md) (Proposed).
+English). See [ADR 0097](../adr/0097-the-manuscript-reader-word-lookup-uses-the-open-english-wordnet-as-a-downloadable-asset.md) (Accepted 2026-09-23).
 
 **What it contributes.** A single offline dataset covering definitions, synonyms (same-synset members) and antonyms (an explicit
-lexical relation in WordNet-style data) for single US English words, looked up from the reader's selection menu (D-phase 8,
-not built by this stack: the backend, phase 7, and the UI, phase 8, are deferred).
+lexical relation in WordNet-style data) for single US English words, looked up from the reader's selection menu (the backend is
+Phase 7, delivered; the UI is Phase 8).
 
 **Candidates compared.**
 
@@ -665,31 +684,37 @@ not built by this stack: the backend, phase 7, and the UI, phase 8, are deferred
 downloading it does not affect the project's own AGPL status. This is a fresh evaluation of the dataset's own terms, not the
 Princeton WordNet License already noted as a training-data component of the spaCy models above.
 
-**Record so far** (immutable URL and exact SHA-256 to be pinned at Phase 7, when the asset catalog entry is written):
+**Record** (pinned by Phase 7 on 2026-09-23 in [`config/dictionary-assets.json`](../../config/dictionary-assets.json); the
+shipped-asset row is [Open English WordNet dictionary](#open-english-wordnet-dictionary-manuscript-reader-look-up)):
 
-- **Dataset**: Open English WordNet, 2025 Edition (core lexical version, without the Namenet proper-noun extension — this
-  feature only needs common-word definitions, synonyms and antonyms, not a gazetteer).
-- **Publisher**: Global WordNet Association / the Open English WordNet contributors.
-- **Format**: the JSON release asset (`english-wordnet-2025.json.zip` per the repository's release naming) is the candidate
-  format for a Go reader (`encoding/json`, no XML parser or RDF/Turtle dependency); the WNDB format is the fallback if the JSON
-  shape proves awkward for the lookup index Phase 7 designs.
-  size: not yet measured at the pinned artifact (the repository does not publish sizes on its release page); the 2025 Plus
-  edition's approximately 162,000 words across roughly 120,000 synsets suggests the compressed download is tens of megabytes,
-  well inside the asset-provisioning pattern's existing range (Piper voices, spaCy models).
-- **Licence**: CC BY 4.0. Required attribution text (from the repository's citation guidance): "This work includes data from
-  the Open English WordNet, which is licensed under CC BY 4.0" plus a link to the project. Displayed in the lookup overlay
-  (Phase 8) and recorded in `THIRD-PARTY-NOTICES.txt`, the same generated-notices path every other asset uses.
+- **Dataset**: Open English WordNet, 2025 Edition (core lexical version, without the Namenet proper-noun extension of the
+  "plus" assets — this feature only needs common-word definitions, synonyms and antonyms, not a gazetteer).
+- **Publisher**: the Open English WordNet Team (Global WordNet Association).
+- **Format**: the JSON release asset `english-wordnet-2025-json.zip` (the release's actual name; the earlier guess
+  `english-wordnet-2025.json.zip` does not exist): one `entries-<initial>.json` per letter and one `<pos>.<lexfile>.json` per
+  lexicographer file. Read with `encoding/json`; the WNDB fallback was not needed.
+- **URL, SHA-256, size**: `https://github.com/globalwordnet/english-wordnet/releases/download/2025-edition/english-wordnet-2025-json.zip`,
+  `7d749f6e2c39e6970e4997839dcf6e42fd281f3c2fae0171d2192bae8cfa4b51`, 9,986,555 bytes; 73 files, 72,404,635 bytes unpacked.
+  Downloaded and hashed on 2026-09-23; the hash equals the digest GitHub reports for the release asset.
+- **Licence**: CC BY 4.0 for OEWN, derived from Princeton WordNet 3.0 under the WordNet License; the repository's `LICENSE.md`
+  asks for attribution to both. The catalog's `attribution` names both licences and says the data was reorganised into an index
+  (CC BY's "indicate changes"); it is printed under the asset in `THIRD-PARTY-NOTICES.txt` (`scripts/licenses/notices.py`) and
+  returned with every lookup for the Phase 8 panel to display.
   ([Third-party notices](../operations/ci-and-releases.md#third-party-notices))
-- **Runtime dependency**: none beyond the Go standard library; the data is a static file read into an in-process index,
-  matching the "no Python server or browser transport" boundary (`codebase-map.md`).
-  **Invocation**: a downloadable asset like the Whisper/spaCy catalogs, verified by SHA-256 and installed through the shared
-  asset manager (`apps/desktop/internal/assets`); registered as a provider in release-readiness Phase 3's aggregated catalog
-  (`AssetsList`) per the PRD's architecture notes, not a parallel catalog.
+- **Runtime dependency**: none beyond the Go standard library. The install unpacks the release and builds one lookup index
+  from it (17,174,403 bytes; about 0.7 to 2.3 s and about 300 MB of memory, once), then removes the dataset
+  ([ADR 0136](../adr/0136-an-asset-may-keep-only-a-file-built-at-install-from-its-verified-archive.md)); each lookup opens the
+  index, binary-searches it with a few small reads and closes it (no server, no resident index).
+  **Invocation**: kind `dictionary` in the one asset registry (`AssetsList`, `AssetsInstall`, ...), and `SystemLookup(word)`,
+  which answers `asset_required` until the narrator confirms the download.
 - **Removal/update policy**: removable from Settings > Local assets like every other asset; no automatic updates — a new
-  edition needs a reviewed catalog change, a new pinned URL and hash, and a licence re-check (the same policy every asset here
-  follows).
-- **Test result**: not yet built (Phase 7, deferred by this stack's scope).
-- **Feature enabled**: an offline "Look up" action on a selected word in the manuscript reader (Phase 8, deferred).
+  edition needs a reviewed catalog change, a new pinned URL and hash, a re-measured `installedSize`, and a licence re-check (the
+  same policy every asset here follows).
+- **Test result**: on the real 2025 release, 130 lookups of 26 words (hits, misses, irregular and regular inflections) took
+  p50 0.5 ms and p95 1.0 to 1.5 ms, far inside the PRD's 250 ms (`internal/dictionary/release_test.go`, run with
+  `NARRATION_OEWN_DIR` / `NARRATION_OEWN_ZIP`; the gate runs the fixture tests). Installing the pinned archive through the
+  approved catalog entry produced an index of exactly the catalog's `installedSize`.
+- **Feature enabled**: an offline "Look up" action on a selected word in the manuscript reader (Phase 8).
 
 ## Clarifications for adjacent tools
 

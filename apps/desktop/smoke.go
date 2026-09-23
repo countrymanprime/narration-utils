@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/assets"
+	"github.com/countrymanprime/narration-utils/shell/internal/dictionary"
 	"github.com/countrymanprime/narration-utils/shell/internal/moonshine"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
@@ -327,7 +328,7 @@ func checkFrozenMoonshine(ctx context.Context, options smokeOptions, root string
 	return parsed.Detail, nil
 }
 
-// checkCatalogs loads the four approved asset catalogs the release carries (config/*-assets.json in the unpacked resources) and requires
+// checkCatalogs loads the five approved asset catalogs the release carries (config/*-assets.json in the unpacked resources) and requires
 // each to name at least one asset: an empty or unreadable catalog would leave the narrator nothing to download. The frozen sidecar's own
 // Moonshine support is checked apart from its catalog, by checkFrozenMoonshine.
 func checkCatalogs(root string) (string, error) {
@@ -348,13 +349,19 @@ func checkCatalogs(root string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("the Moonshine catalog could not be loaded: %w", err)
 	}
-	counts := map[string]int{"voices": len(voices.Voices()), "Whisper models": len(models.Models()), "spaCy models": len(languageModels.Models()), "Moonshine models": len(liveModels.Models())}
-	for _, kind := range []string{"voices", "Whisper models", "spaCy models", "Moonshine models"} {
+	dictionaries, err := dictionary.New(filepath.Join(configDir, "dictionary-assets.json"), "")
+	if err != nil {
+		return "", fmt.Errorf("the dictionary catalog could not be loaded: %w", err)
+	}
+	counts := map[string]int{"voices": len(voices.Voices()), "Whisper models": len(models.Models()), "spaCy models": len(languageModels.Models()), "Moonshine models": len(liveModels.Models()),
+		"dictionaries": len(dictionaries.Dictionaries())}
+	for _, kind := range []string{"voices", "Whisper models", "spaCy models", "Moonshine models", "dictionaries"} {
 		if counts[kind] == 0 {
 			return "", fmt.Errorf("the catalog of %s names no assets", kind)
 		}
 	}
-	return fmt.Sprintf("%d voice(s), %d Whisper model(s), %d spaCy model(s), %d Moonshine model(s)", counts["voices"], counts["Whisper models"], counts["spaCy models"], counts["Moonshine models"]), nil
+	return fmt.Sprintf("%d voice(s), %d Whisper model(s), %d spaCy model(s), %d Moonshine model(s), %d dictionary(ies)", counts["voices"], counts["Whisper models"], counts["spaCy models"],
+		counts["Moonshine models"], counts["dictionaries"]), nil
 }
 
 // checkReaper requires the REAPER launcher and every script it loads in the unpacked resources, and the pointer file that tells the

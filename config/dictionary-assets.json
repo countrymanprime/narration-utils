@@ -1,0 +1,29 @@
+{
+  "catalogVersion": 1,
+  "dictionaries": [
+    {
+      "id": "oewn-2025",
+      "provider": "oewn",
+      "displayName": "Open English WordNet 2025 (US English dictionary)",
+      "description": "Definitions, synonyms and antonyms for the reader's Look up, read from your own computer with no internet connection.",
+      "version": "2025",
+      "publisher": "The Open English WordNet Team",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://github.com/globalwordnet/english-wordnet/blob/2025-edition/LICENSE.md",
+      "modelCardUrl": "https://en-word.net/",
+      "provenanceUrl": "https://github.com/globalwordnet/english-wordnet/releases/tag/2025-edition",
+      "attribution": "Open English WordNet 2025 Edition, (c) 2019-present The Open English WordNet Team, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Derived from Princeton WordNet 3.0, (c) 2006 Princeton University, under the WordNet License (https://wordnet.princeton.edu/license-and-commercial-use). Reorganised into a lookup index on your computer; the wording is not changed.",
+      "installedSize": 17174403,
+      "files": [
+        {
+          "name": "english-wordnet-2025-json.zip",
+          "url": "https://github.com/globalwordnet/english-wordnet/releases/download/2025-edition/english-wordnet-2025-json.zip",
+          "sha256": "7d749f6e2c39e6970e4997839dcf6e42fd281f3c2fae0171d2192bae8cfa4b51",
+          "size": 9986555,
+          "extract": "wordnet",
+          "expand": 72404635
+        }
+      ]
+    }
+  ]
+}

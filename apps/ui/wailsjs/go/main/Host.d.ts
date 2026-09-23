@@ -173,6 +173,8 @@ export function RenderConfigState():Promise<string>;
 
 export function RenderConfigSuggestFolder():Promise<string>;
 
+export function SystemLookup(arg1:string):Promise<string>;
+
 export function SystemNotify(arg1:string,arg2:string,arg3:string):Promise<string>;
 
 export function SystemReportDiagnostic(arg1:string,arg2:string):Promise<string>;

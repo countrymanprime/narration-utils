@@ -53,6 +53,7 @@ import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schema
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
 import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
+import { dictionaryLookupResultSchema } from './schemas/dictionary';
 import { unknownKeys } from './schemas/strictness';
 import { parseWire, type WireContext } from './wire/parseWire';
 import { WireError } from './wire/WireError';
@@ -117,6 +118,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'guide-build-started.json': guideBuildResultSchema,
   'guide-build-asset-required.json': guideBuildResultSchema,
   'guide-preview-asset-required.json': guidePreviewSchema,
+  'system-lookup-found.json': dictionaryLookupResultSchema,
+  'system-lookup-asset-required.json': dictionaryLookupResultSchema,
   'project-recents.json': recentProjectsSchema,
   'project-recents-empty.json': recentProjectsSchema,
   'project-switch-attached.json': projectSwitchResultSchema,
@@ -526,6 +529,20 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(guideCreatedSchema, { id: await api.guideCreate('New', 'Character', []) }, 'mock guide create');
     const entity = (await api.guideEntities())[0];
     expectMatches(guidePreviewSchema, await api.guidePreview(entity?.id ?? ''), 'mock preview');
+  });
+
+  it('the dictionary lookup answers: a word it has, one it does not, and the first-use gate', async () => {
+    const api = createMockApi();
+    const found = await api.systemLookup('“Curious,”');
+    expectMatches(dictionaryLookupResultSchema, found, 'mock lookup');
+    expect(found.status === 'ok' && found.query === 'curious' && found.entries.length).toBe(1);
+    expectMatches(dictionaryLookupResultSchema, await api.systemLookup('zorblax'), 'mock lookup of a word it does not have');
+    expectMatches(
+      dictionaryLookupResultSchema,
+      await createMockApi({}, { dictionaryMissing: true }).systemLookup('curious'),
+      'mock lookup, asking for the dictionary',
+    );
+    await expect(api.systemLookup('two words')).rejects.toThrow(/single word/);
   });
 
   it('the project picker answers', async () => {
@@ -964,6 +981,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     const CHECKED = [
       'ready',
       'bootstrap',
+      'systemLookup',
       'saveSettings',
       'settingsForScope',
       'selectManuscript',

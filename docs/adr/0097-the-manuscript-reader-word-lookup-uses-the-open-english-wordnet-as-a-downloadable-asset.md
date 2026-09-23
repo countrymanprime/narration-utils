@@ -53,3 +53,6 @@ reciprocal terms that interact with this project's own AGPL-3.0-or-later licensi
 - The owner accepted this ADR, including the licence conclusion above, on 2026-09-23. The exact pinned artifact
   (URL/SHA-256/size) has still to be fetched and verified against a live download; that stays an open item for the
   phase that pins it.
+- Phase 7 pinned it on 2026-09-23 (`config/dictionary-assets.json`: `english-wordnet-2025-json.zip`, SHA-256
+  `7d749f6e...cfa4b51`, 9,986,555 bytes, downloaded and hashed, matching GitHub's own digest); the JSON format was kept (no WNDB
+  fallback). How the install turns it into a lookup index is [ADR 0136](0136-an-asset-may-keep-only-a-file-built-at-install-from-its-verified-archive.md).

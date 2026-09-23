@@ -30,7 +30,7 @@ function healthyTree() {
   if (process.platform === 'win32') {
     for (const dll of ['moonshine.dll', 'onnxruntime.dll']) touch('runtime', 'manuscript-teleprompter', '_internal', 'moonshine_voice', dll);
   }
-  for (const catalog of ['tts-assets.json', 'whisper-assets.json', 'spacy-assets.json', 'moonshine-assets.json']) touch('config', catalog);
+  for (const catalog of ['tts-assets.json', 'whisper-assets.json', 'spacy-assets.json', 'moonshine-assets.json', 'dictionary-assets.json']) touch('config', catalog);
   for (const file of REAPER_FILES) touch('reaper', file);
   return { root, runtime, cleanup: () => rmSync(root, { recursive: true, force: true }) };
 }
@@ -80,5 +80,7 @@ for (const dll of ['moonshine.dll', 'onnxruntime.dll']) {
   test(`a Windows teleprompter without Moonshine's ${dll} fails and names it`, { skip: process.platform !== 'win32' && 'Moonshine is Windows only' }, () =>
     withTree(['runtime', 'manuscript-teleprompter', '_internal', 'moonshine_voice', dll], new RegExp(`moonshine_voice/${dll.replace('.', '\\.')}`)));
 }
+
+test('a release without the dictionary catalog fails and names it', () => withTree(['config', 'dictionary-assets.json'], /dictionary-assets\.json/));
 
 test('a release without the REAPER launcher fails and names it', () => withTree(['reaper', REAPER_FILES[0]], new RegExp(REAPER_FILES[0])));

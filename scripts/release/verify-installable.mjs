@@ -48,8 +48,8 @@ if (process.platform === 'win32') {
     throw new Error(`Release Moonshine engine is incomplete: moonshine_voice/${moonshineMissing.join(', moonshine_voice/')}. Manuscript Teleprompter must collect the moonshine_voice binaries (scripts/release/prepare-resources.py).`);
   }
 }
-// The four approved asset catalogs travel with the release: the app reads them to know what it may offer to download.
-const catalogsMissing = ['tts-assets.json', 'whisper-assets.json', 'spacy-assets.json', 'moonshine-assets.json'].filter((name) => !existsSync(resolve(resources, 'config', name)));
+// The five approved asset catalogs travel with the release: the app reads them to know what it may offer to download.
+const catalogsMissing = ['tts-assets.json', 'whisper-assets.json', 'spacy-assets.json', 'moonshine-assets.json', 'dictionary-assets.json'].filter((name) => !existsSync(resolve(resources, 'config', name)));
 if (catalogsMissing.length) {
   throw new Error(`Release asset catalogs are missing: ${catalogsMissing.join(', ')}. prepare-resources.py copies config/ into the resources.`);
 }

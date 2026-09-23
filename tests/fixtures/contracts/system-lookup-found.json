@@ -1,0 +1,37 @@
+{
+  "dictionary": {
+    "attribution": "Test WordNet, CC BY 4.0",
+    "description": "",
+    "displayName": "Test WordNet",
+    "id": "oewn-test",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "",
+    "modelCardUrl": "",
+    "provenanceUrl": "",
+    "provider": "oewn",
+    "publisher": "OEWN",
+    "version": "2025"
+  },
+  "entries": [
+    {
+      "headword": "happy",
+      "partOfSpeech": "adjective",
+      "senses": [
+        {
+          "definition": "enjoying or showing or marked by joy or pleasure",
+          "examples": [
+            "a happy smile"
+          ],
+          "synonyms": [
+            "glad"
+          ],
+          "antonyms": [
+            "unhappy"
+          ]
+        }
+      ]
+    }
+  ],
+  "query": "happier",
+  "status": "ok"
+}
