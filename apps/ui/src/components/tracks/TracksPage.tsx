@@ -5,6 +5,7 @@ import { useApi } from '../../api/ApiContext';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { Button } from '../primitives/Button';
+import { ChapterLinksTable } from './ChapterLinksTable';
 import { useTrackPlayback } from './useTrackPlayback';
 import type { Track, TracksDiscovery, TracksProject } from '../../types';
 
@@ -206,6 +207,7 @@ export function TracksPage({ dawFileLinked, onLinkDawFile }: { dawFileLinked: bo
           </ul>
         </>
       )}
+      {project && <ChapterLinksTable tracks={project.tracks} />}
     </div>
   );
 }

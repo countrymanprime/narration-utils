@@ -4,6 +4,7 @@ import { App } from './App';
 import { ApiProvider } from './api/ApiContext';
 import { wailsClient } from './api/wailsClient';
 import { createMockApi } from './api/mockApi';
+import { WIRE_CHAPTERS } from './api/mockFixtures';
 import { ThemeProvider } from './theme/ThemeContext';
 import './styles.css';
 
@@ -75,6 +76,10 @@ const mockAssets = (['missing', 'downloading', 'verifying', 'download-fails', 'i
 // `?mockImportPreview=markdown|repaired` makes the next manuscript import a Markdown file (so the chapter heading level choice can be seen in the review dialog) or a
 // Word file whose headings the importer had to repair (so the repairs note can).
 const mockImportPreview = (['markdown', 'repaired'] as const).find((kind) => kind === mockParams.get('mockImportPreview'));
+// `?mockChapterLink=missing` seeds the first chapter with a confirmed link to a track GUID that is not in the mock
+// REAPER project, so the Tracks page's "Track missing" state can be seen without confirming and then deleting a
+// track first (analysis evidence ledger PRD, Phase 7).
+const mockChapterLinkMissing = mockParams.get('mockChapterLink') === 'missing';
 const mockInitial = {
   ...(mockImportPreview ? { importPreview: mockImportPreview } : {}),
   ...(mockAssets ? { assets: mockAssets } : {}),
@@ -93,6 +98,13 @@ const mockInitial = {
   ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),
   ...(mockNoRpp ? { tracksCandidates: [] } : {}),
   ...(mockManuscriptCandidate ? { manuscriptCandidate: { path: 'C:/Projects/Alice-in-Wonderland/manuscript.docx', name: 'manuscript.docx' } } : {}),
+  ...(mockChapterLinkMissing
+    ? {
+        chapterTrackMappings: [
+          { trackGuid: '{NOT-A-REAL-TRACK-GUID}', chapterId: WIRE_CHAPTERS[0].id, chapterTitle: WIRE_CHAPTERS[0].title, confirmedAt: '2026-09-01T12:00:00Z' },
+        ],
+      }
+    : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

@@ -296,6 +296,10 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/tracks/TracksPage.tsx::tracksDiscover#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'An inline error.'),
   'src/components/tracks/TracksPage.tsx::tracksList#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Parsing a 100 KB project file takes about 2 ms (docs/research/interaction-latency-baseline.md).'),
   'src/components/tracks/TracksPage.tsx::tracksSelect#1': row('click', 'file-io', 'none', 'none', 'ui', 'inline', 'na', 'ok', 'A small file write.'),
+  'src/components/tracks/ChapterLinksTable.tsx::manuscriptChapters#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Loaded beside the confirmed mappings to build the chapter-link list (evidence ledger PRD, Phase 7).'),
+  'src/components/tracks/ChapterLinksTable.tsx::chapterTrackMapList#1': row('effect', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The confirmed links for the current manuscript document.'),
+  'src/components/tracks/ChapterLinksTable.tsx::chapterTrackMapConfirm#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'Confirm on a chapter\'s MappingConfirm; the row is busy until the link is written and re-listed, and a refusal (an unknown chapter) is written inline.'),
+  'src/components/tracks/ChapterLinksTable.tsx::chapterTrackMapClear#1': row('click', 'file-io', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'Clear on a chapter\'s MappingConfirm; the row is busy until the link is removed and re-listed.'),
 
   // Credits (audiobook-credits-templates.prd.md, Phase 1)
   'src/components/settings/CreditsPanel.tsx::creditsTemplates#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The template library load; an inline error banner otherwise.'),

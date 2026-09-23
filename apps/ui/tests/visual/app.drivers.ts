@@ -722,6 +722,28 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Tracks');
       await clickVisible(page, 'button', /Click Track/);
     },
+    'chapter-link-confirmed': async (page) => {
+      await goToPage(page, 'Tracks');
+      await page.getByRole('button', { name: 'Play', exact: true }).first().waitFor();
+      const table = page.getByRole('table', { name: 'Chapter links' });
+      await table.scrollIntoViewIfNeeded();
+      // The first body row, by position: filtering by "has a combobox" would stop matching this same row the
+      // instant Confirm turns it into the linked view (no combobox), so `waitFor` below would wait forever.
+      const firstRow = table.locator('tbody tr').first();
+      await firstRow.getByRole('combobox').selectOption({ index: 0 });
+      await firstRow.getByRole('button', { name: 'Confirm' }).click();
+      await firstRow.getByRole('button', { name: 'Change' }).waitFor();
+    },
+    'chapter-link-missing': async (page) => {
+      // Reload with the mock's missing-track seam (see main.tsx): a confirmed link whose
+      // trackGuid is not among the mock project's tracks.
+      await page.goto('/?mockChapterLink=missing');
+      await settlePage(page);
+      await goToPage(page, 'Tracks');
+      const table = page.getByRole('table', { name: 'Chapter links' });
+      await table.scrollIntoViewIfNeeded();
+      await page.getByText('Track missing').waitFor();
+    },
   },
   teleprompter: {
     'setup-default': async (page) => {

@@ -311,6 +311,9 @@ export function createMockApi(
      * Defaults to true; false shows the not-detected state and its "Get REAPER" button.
      */
     dawCatalogInstalled?: boolean;
+    /** Seeds the confirmed chapter-track mapping (analysis evidence ledger PRD, Phase 5/7), so a link's state (a
+     * missing track, in particular) can be seen without going through Confirm in the UI first. */
+    chapterTrackMappings?: TrackMapping[];
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -367,7 +370,7 @@ export function createMockApi(
   // The confirmed chapter-track mapping (analysis evidence ledger PRD, Phase 5): keyed to one mock documentId, since the
   // mock always has exactly one manuscript document loaded.
   const mockDocumentId = 'mock-document-1';
-  let chapterTrackMappings: TrackMapping[] = [];
+  let chapterTrackMappings: TrackMapping[] = wireClone(initial.chapterTrackMappings ?? []);
   let recentProjects: RecentProject[] = [
     { path: 'C:/Projects/Alice-in-Wonderland', name: 'Alice’s Adventures in Wonderland', lastOpened: '2026-09-15T09:00:00Z' },
     { path: 'C:/Projects/Voltage-and-the-Undercroft', name: 'Voltage and the Undercroft', lastOpened: '2026-09-10T18:30:00Z' },
