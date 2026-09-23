@@ -233,6 +233,33 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(screen.queryByText('Manuscript imported.')).toBeNull();
   });
 
+  it('raises an OS notification for a slow job finishing while the window is unfocused, and not otherwise (N1-N4)', async () => {
+    let announce: (event: JobEnded) => void = () => {};
+    const systemNotify = vi.fn(async () => {});
+    const hasFocus = vi.spyOn(document, 'hasFocus');
+    renderApp({
+      subscribeJobEnded: (listener) => {
+        announce = listener;
+        return () => {};
+      },
+      systemNotify,
+    });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+
+    hasFocus.mockReturnValue(true);
+    act(() => announce({ id: 'guide-1', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 40_000 }));
+    expect(systemNotify).not.toHaveBeenCalled();
+
+    hasFocus.mockReturnValue(false);
+    act(() => announce({ id: 'guide-2', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 3_000 }));
+    expect(systemNotify).not.toHaveBeenCalled();
+
+    act(() => announce({ id: 'guide-3', kind: 'story_bible', outcome: 'success', message: 'Story Bible rebuild complete.', durationMs: 40_000 }));
+    await waitFor(() => expect(systemNotify).toHaveBeenCalledWith('story_bible', 'Task finished', 'Story Bible rebuild complete.'), { timeout: 10_000 });
+
+    hasFocus.mockRestore();
+  });
+
   it('closes the rebuild dialog by itself once the host reports the build done', async () => {
     const job = { id: 'guide-9', kind: 'story_bible' as const, message: 'Extracting names', percent: 40, logs: [], elapsed: 12 };
     let calls = 0;
@@ -555,6 +582,13 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
       manuscriptImportPreview: preview,
       manuscriptImportState: async () => hostJob,
       manuscriptChapters: async () => (imported ? importedChapters : []),
+      // This test is about the import dialog's own activity log and Home's refresh, not the B1-B3 chained build
+      // (default on, D8): turn it off so the import dialog stays open with a manual Close, as asserted below.
+      settingsForScope: async () => ({
+        ManuscriptGuide: [
+          { key: 'build_after_import', label: '', kind: 'bool', choices: [], value: 'false', isSet: true, effectiveValue: 'false', effectiveSource: 'project' },
+        ],
+      }),
       manuscriptImportCommit: async (): Promise<WorkJob> => {
         imported = true;
         return (hostJob = {

@@ -236,6 +236,10 @@ export function createMockApi(
     update?: MockUpdateSeed;
     /** How the next voice or model download behaves (see `MockAssetSeed`). */
     assets?: MockAssetSeed;
+    /** Whether the mock project boots with a linked DAW project file (PRD W13/W14). Defaults to true. */
+    dawFileLinked?: boolean;
+    /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
+    dawLinkMismatch?: boolean;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -266,6 +270,12 @@ export function createMockApi(
   let projectFolder = initial.projectFolder ?? DEFAULT_PROJECT_FOLDER;
   let projectName = initial.projectFolder === undefined ? DEFAULT_PROJECT_NAME : basename(projectFolder);
   let daw = 'REAPER';
+  // Whether the mock project has a linked DAW project file (PRD W13/W14/W19), independent of `daw`: real Bootstrap
+  // computes this from the manifest, not the label. Defaults to true so the existing default-linked mock scenarios
+  // (App.test.tsx clicking into Proofing) keep working; attaching a different project resets it, like a fresh
+  // project would have no link yet.
+  let dawFileLinked = initial.dawFileLinked ?? true;
+  let dawRppPath = `${projectFolder}/${basename(projectFolder)}.rpp`;
   // One candidate auto-selects (like the Go host); several leave the choice to the narrator.
   const tracksCandidates = initial.tracksCandidates ?? [WIRE_TRACKS_PROJECT.path];
   let tracksDiscovery: TracksDiscovery = { candidates: tracksCandidates, selected: tracksCandidates.length === 1 ? tracksCandidates[0] : '' };
@@ -278,6 +288,10 @@ export function createMockApi(
     projectFolder = path;
     projectName = name || basename(path);
     daw = 'Standalone';
+    // A newly attached project has no stored DAW link yet, matching the real host: dawFileLinked is computed from
+    // the new project's own manifest, not carried over from whatever was open before.
+    dawFileLinked = false;
+    dawRppPath = `${projectFolder}/${projectName}.rpp`;
     projectAttachSubscribers.forEach((fn) => fn({ attached: true }));
     return { switched: true };
   };
@@ -542,9 +556,9 @@ export function createMockApi(
       projectFolder,
       projectName,
       daw,
-      // Mirrors `daw`: the mock has no separate stored link, so "linked" tracks whatever the mock currently shows as the DAW label.
-      // reachable/matches stay false/unknown, same as the real host until Phase 6 (PRD W13, W14).
-      dawFileLinked: daw === 'REAPER',
+      // Its own mutable state, not derived from `daw` (PRD W13): the real host computes this from the project's
+      // manifest link, independent of the DAW label. reachable/matches stay false/unknown until Phase 6 (W14).
+      dawFileLinked,
       dawReachable: false,
       dawProjectMatches: false,
       manuscript:
@@ -941,6 +955,7 @@ export function createMockApi(
       hints = [...accepted];
     },
     reportClientDiagnostic: async () => {},
+    systemNotify: async () => {},
     manuscriptChapters: async () => {
       await manuscriptReady;
       return wireClone(chapters);
@@ -1029,6 +1044,20 @@ export function createMockApi(
     removeRecentProject: async (path) => {
       recentProjects = recentProjects.filter((entry) => entry.path.toLowerCase() !== path.toLowerCase());
       return wireClone(recentProjects);
+    },
+    linkDawFile: async () => {
+      if (initial.dawLinkMismatch) {
+        const elsewhere = 'C:/Projects/Elsewhere/Elsewhere.rpp';
+        return {
+          selected: true,
+          linked: false,
+          path: elsewhere,
+          folderMismatch: true,
+          message: `Elsewhere.rpp is outside this project's folder (${projectFolder}). Choose a REAPER project file saved inside the project, or open that project instead.`,
+        };
+      }
+      dawFileLinked = true;
+      return { selected: true, linked: true, path: dawRppPath };
     },
     tracksDiscover: async () => wireClone(tracksDiscovery),
     tracksSelect: async (path) => {

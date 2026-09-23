@@ -24,7 +24,7 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'Manuscript', label: 'Manuscript', tool: 'Manuscript', scopes: ['global', 'project'] },
   { key: 'TranscriptCompare', label: 'Proofing', tool: 'TranscriptCompare', scopes: ['global', 'project'] },
   { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'] },
-  { key: 'Daw', label: 'DAW Integration', scopes: ['global'] },
+  { key: 'Daw', label: 'DAW Integration', scopes: ['global', 'project'] },
   { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global', 'project'] },
   { key: 'LocalAssets', label: 'Local assets', scopes: ['global'] },
   { key: 'ProjectData', label: 'Project data', scopes: ['project'] },
@@ -52,12 +52,15 @@ export function Settings({
   onDirtyChange,
   registerActions,
   onProjectDataCleared,
+  onLinkDawFile,
 }: {
   data: Bootstrap;
   notify: Notify;
   onDirtyChange: (dirty: boolean) => void;
   registerActions: (actions: { save: () => Promise<void>; discard: () => Promise<void> }) => void;
   onProjectDataCleared: () => Promise<void>;
+  /** The shared "link a REAPER project file" action (PRD project-workspace-and-daw-link.prd.md, W19). */
+  onLinkDawFile: () => void;
 }) {
   const api = useApi();
   const { preference: themePreference, setPreference: setThemePreference } = useTheme();
@@ -213,7 +216,25 @@ export function Settings({
                   Settings could not be loaded: {loadError}. Select another category or try again.
                 </div>
               )}
-              {category === 'Daw' ? (
+              {category === 'Daw' && scope === 'project' ? (
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-3 rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
+                    <span className="size-2 shrink-0 rounded-full" style={{ background: data.dawFileLinked ? 'var(--character)' : 'var(--non-text)' }} />
+                    <div>
+                      {/* Copy names only the one fact the host actually has (a stored link) - reachability is still unknown (PRD W15). */}
+                      <div className="font-medium">{data.dawFileLinked ? 'REAPER project linked' : 'No REAPER project linked'}</div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {data.dawFileLinked
+                          ? 'Tracks and Proofing read from the linked .rpp file.'
+                          : 'Link a REAPER project (.rpp) file to unlock Tracks and Proofing.'}
+                      </div>
+                    </div>
+                  </div>
+                  <Button variant="ghost" onClick={onLinkDawFile}>
+                    {data.dawFileLinked ? 'Change linked project file' : 'Link a REAPER project file'}
+                  </Button>
+                </div>
+              ) : category === 'Daw' ? (
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-3 rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
                     <span className="size-2 shrink-0 rounded-full" style={{ background: 'var(--character)' }} />
