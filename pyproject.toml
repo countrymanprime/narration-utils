@@ -10,6 +10,7 @@ dependencies = [
   "faster-whisper==1.2.1",
   "httpx==0.28.1",
   "hypothesis==6.168.0",
+  "moonshine-voice==0.1.5 ; sys_platform == 'win32'",
   "numpy==2.5.3",
   "phonemizer>=3.3",
   "piper-tts==1.8.0",

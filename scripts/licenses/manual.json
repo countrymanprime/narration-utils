@@ -72,6 +72,14 @@
     "note": "A voice-activity-detection model that faster-whisper ships as package data and the sidecars collect (ADR 0022). Licence: MIT, https://github.com/snakers4/silero-vad/blob/master/LICENSE."
   },
   {
+    "name": "ONNX Runtime inside the moonshine-voice wheel (moonshine_voice/onnxruntime.dll)",
+    "version": "1.23",
+    "license": "MIT",
+    "homepage": "https://onnxruntime.ai",
+    "source": "manuscript-teleprompter (Windows, through moonshine-voice 0.1.5)",
+    "note": "The moonshine-voice wheel carries its own build of Microsoft's ONNX Runtime (file version 1.23.20251021.3) beside its moonshine.dll, which loads it; the Teleprompter sidecar collects both (scripts/release/prepare-resources.py). It is separate from the onnxruntime Python package faster-whisper uses. Licence: MIT, https://github.com/microsoft/onnxruntime/blob/main/LICENSE. Source: https://github.com/microsoft/onnxruntime."
+  },
+  {
     "name": "Microsoft Edge WebView2 Runtime (not in this package)",
     "version": "",
     "license": "LicenseRef-Microsoft-WebView2",

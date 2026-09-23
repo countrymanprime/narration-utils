@@ -42,6 +42,8 @@ class Sidecar(NamedTuple):
     paths: list[Path]
     collect_data: tuple[str, ...] = ()
     copy_metadata: tuple[str, ...] = ()
+    collect_binaries: tuple[str, ...] = ()
+    exclude_modules: tuple[str, ...] = ()
 
 
 def emit(text: str) -> None:
@@ -79,7 +81,15 @@ def reuse(name: str) -> None:
     install_runtime(name)
 
 
-def freeze(name: str, entry: Path, paths: list[Path], collect_data: tuple[str, ...] = (), copy_metadata: tuple[str, ...] = ()) -> None:
+def freeze(
+    name: str,
+    entry: Path,
+    paths: list[Path],
+    collect_data: tuple[str, ...] = (),
+    copy_metadata: tuple[str, ...] = (),
+    collect_binaries: tuple[str, ...] = (),
+    exclude_modules: tuple[str, ...] = (),
+) -> None:
     work = build_dir(name)
     args = [
         sys.executable,
@@ -103,6 +113,10 @@ def freeze(name: str, entry: Path, paths: list[Path], collect_data: tuple[str, .
         args.extend(["--collect-data", package])
     for package in copy_metadata:
         args.extend(["--copy-metadata", package])
+    for package in collect_binaries:
+        args.extend(["--collect-binaries", package])
+    for module in exclude_modules:
+        args.extend(["--exclude-module", module])
     args.append(str(entry))
     # `--clean` wipes PyInstaller's cache directory, which every run shares by default. With the freezes
     # running at once, that would delete files another one is reading, so each gets a cache of its own.
@@ -161,15 +175,25 @@ def main() -> None:
             [shared_python, sidecars_root / "transcript-compare" / "core"],
             ("faster_whisper",),
         ),
-        # live_asr.py imports script_tracker and chapter_script (siblings) inside
+        # live_asr.py imports script_tracker, chapter_script and moonshine_engine (siblings) inside
         # functions; PyInstaller finds them because their directory is on --paths.
-        # The optional Moonshine engine (moonshine_voice) is deliberately not
-        # bundled: it is not a project dependency yet.
+        # The Moonshine engine (moonshine_voice, Windows only in pyproject.toml) loads its native
+        # moonshine.dll, and the onnxruntime.dll beside it, with ctypes from its own package directory.
+        # PyInstaller cannot see a ctypes load, so the binaries are collected by hand; its data (sample
+        # WAVs, TTS embeddings) is not, since the sidecar loads models only from a catalog install.
+        # Two of its dependencies are excluded: sounddevice (PortAudio, about 2 MB of DLLs for every
+        # architecture), which moonshine_voice imports only for its own microphone, agent and TTS helpers,
+        # never for Transcriber (capture here is PyAV's dshow); and google_crc32c, an optional speed-up of
+        # its downloader's checksum, which the frozen sidecar never runs (moonshine_engine.py).
+        # verify-installable.mjs checks both DLLs are in the tree, and
+        # `narration-utils --smoke` runs `manuscript-teleprompter --check-moonshine` to prove they load.
         Sidecar(
             "manuscript-teleprompter",
             sidecars_root / "manuscript-teleprompter" / "core" / "live_asr.py",
             [shared_python, sidecars_root / "manuscript-teleprompter" / "core"],
             ("faster_whisper",),
+            collect_binaries=("moonshine_voice",) if sys.platform == "win32" else (),
+            exclude_modules=("sounddevice", "google_crc32c"),
         ),
     ]
     selected = [sidecar for sidecar in sidecars if args.sidecar in (None, sidecar.name)]
