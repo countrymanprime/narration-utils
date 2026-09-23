@@ -170,6 +170,8 @@ export function TeleprompterState():Promise<string>;
 
 export function TeleprompterStop():Promise<string>;
 
+export function TakeReviewCreateTake(arg1:string,arg2:string,arg3:string,arg4:string,arg5:number,arg6:number):Promise<string>;
+
 export function TakeReviewFindings(arg1:string):Promise<string>;
 
 export function TakeReviewScan(arg1:string):Promise<string>;

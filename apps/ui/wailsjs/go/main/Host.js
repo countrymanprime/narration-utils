@@ -338,6 +338,10 @@ export function TeleprompterStop() {
   return window['go']['main']['Host']['TeleprompterStop']();
 }
 
+export function TakeReviewCreateTake(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['main']['Host']['TakeReviewCreateTake'](arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
 export function TakeReviewFindings(arg1) {
   return window['go']['main']['Host']['TakeReviewFindings'](arg1);
 }

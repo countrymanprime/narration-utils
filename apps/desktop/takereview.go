@@ -7,11 +7,17 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/repeats"
 	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
 )
+
+// takeReviewCreateTakeTimeout bounds the confirm dialog's own wait, one notch above
+// internal/takereview.CreateTake's internal bridge-response timeout, so a REAPER
+// hang is reported by the more specific message first.
+const takeReviewCreateTakeTimeout = 12 * time.Second
 
 // takeReviewUnsafeScopeChars is everything findings.Store's scope name
 // pattern rejects (apps/desktop/internal/findings/store.go's
@@ -121,4 +127,20 @@ func (h *Host) takeReviewFindings(chapterTrackName string) ([]findings.Finding, 
 		chapterID = takeReviewChapterID(chapterTrackName)
 	}
 	return svc.findings.List(findings.Query{Analyzer: repeats.AnalyzerName, ChapterID: chapterID})
+}
+
+// takeReviewCreateTake sends the create_take bridge command for a narrator-approved candidate (phase 6 of
+// take-review-pickups-duplicates-take-intelligence.prd.md): the finding id (provenance, ADR 0098), the target
+// item's own GUID (Q4/Q6 - the narrator chooses it explicitly; this method never preselects one), the candidate's
+// own item GUID when it has one, its source file, and the matched span's range within that source. It does not
+// change the finding's review status in the store: that belongs to the Review page (review-dashboard-and-
+// findings-adoption.prd.md), which this milestone does not yet have (phase 5's own delivery note).
+func (h *Host) takeReviewCreateTake(req takereview.CreateTakeRequest) (takereview.CreateTakeResult, error) {
+	svc := h.services()
+	if svc.bridge == nil {
+		return takereview.CreateTakeResult{}, fmt.Errorf("open the project from REAPER before creating a take")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), takeReviewCreateTakeTimeout)
+	defer cancel()
+	return takereview.CreateTake(ctx, svc.bridge, takeReviewSessionDir(svc.config.sessionDir), req)
 }

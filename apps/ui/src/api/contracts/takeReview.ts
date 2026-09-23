@@ -94,9 +94,34 @@ export type TakeReviewFinding = {
   not_in_latest_run?: boolean;
 };
 
+/**
+ * What TakeReviewCreateTake needs to attach a narrator-approved candidate's source range as a new
+ * take on the target item (take-review phase 6): the finding it came from (provenance, ADR 0098),
+ * the target item the narrator explicitly chose (Q4/Q6 - never preselected on a weak match), the
+ * candidate's own item GUID when it has one (an extra staleness check the Lua command re-resolves;
+ * empty skips it), its source file, and the matched span's range within that source (seconds,
+ * source-file-relative - sourceRangeStart becomes the new take's D_STARTOFFS).
+ */
+export type TakeReviewCreateTakeRequest = {
+  findingId: string;
+  targetItemGuid: string;
+  candidateItemGuid: string;
+  sourceFile: string;
+  sourceRangeStart: number;
+  sourceRangeEnd: number;
+};
+
+/** What TakeReviewCreateTake sends back once REAPER confirms the take exists (both re-resolved by GUID). */
+export type TakeReviewCreateTakeResult = {
+  targetItemGuid: string;
+  newTakeGuid: string;
+};
+
 export interface TakeReviewApi {
   /** Runs one pickup/duplicate scan of chapterTrackName's items and takes and saves the fresh findings. */
   takeReviewScan(chapterTrackName: string): Promise<TakeReviewFinding[]>;
   /** Reads the take-review analyzer's saved findings for chapterTrackName without running a new scan. */
   takeReviewFindings(chapterTrackName: string): Promise<TakeReviewFinding[]>;
+  /** Adds a narrator-approved candidate's source range as a new take on the target item (phase 6, confirmed and undoable). */
+  takeReviewCreateTake(request: TakeReviewCreateTakeRequest): Promise<TakeReviewCreateTakeResult>;
 }

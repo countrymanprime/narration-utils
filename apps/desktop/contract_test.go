@@ -15,6 +15,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/repeats"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 	"github.com/countrymanprime/narration-utils/shell/internal/spacy"
+	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
 	"github.com/countrymanprime/narration-utils/shell/internal/tts"
 	"github.com/countrymanprime/narration-utils/shell/internal/whisper"
 )
@@ -466,4 +467,15 @@ func TestContractTakeReviewFindings(t *testing.T) {
 	manuscript := findings.Manuscript{ChapterID: "chapter-1", ChapterTitle: "Chapter 1"}
 	result := repeats.ToFindings(groups, project, manuscript, repeats.DefaultThresholds())
 	contractfile.Check(t, "takereview-findings", result)
+}
+
+// The result TakeReviewCreateTake sends once REAPER confirms a take was added (take-review
+// phase 6, ADR 0098): the target item's own GUID (unchanged) and the new take's GUID, both
+// re-resolved by narration_take_review.lua after its Undo_EndBlock2.
+func TestContractTakeReviewCreateTakeResult(t *testing.T) {
+	result := takereview.CreateTakeResult{
+		TargetItemGUID: "{11111111-0000-0000-0000-000000000001}",
+		NewTakeGUID:    "{22222222-0000-0000-0000-000000000099}",
+	}
+	contractfile.Check(t, "takereview-create-take", result)
 }

@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { Panel } from '../primitives/Panel';
 import { Button } from '../primitives/Button';
+import { ConfirmDialog } from '../primitives/ConfirmDialog';
+import { Select } from '../primitives/Select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
-import type { TakeReviewFinding } from '../../types';
+import type { TakeReviewFinding, TakeReviewMember } from '../../types';
 
 // Category labels are display-only; the wire value stays the source of truth (findings.Category, apps/desktop/internal/findings/findings.go).
 const CATEGORY_LABELS: Record<string, string> = {
@@ -33,20 +35,45 @@ function formatCoverage(finding: TakeReviewFinding): string {
   return full === members.length ? 'Full coverage' : `${full}/${members.length} full, rest partial`;
 }
 
+function sourceFileName(path: string): string {
+  return path.split(/[\\/]/).pop() || path;
+}
+
+function memberLabel(member: TakeReviewMember, index: number): string {
+  const coverage = Math.round(member.coverage * 100);
+  return `Read ${index + 1} — ${sourceFileName(member.source_file)} (${coverage}% coverage)`;
+}
+
+// Whether a finding can offer "Add as take" at all: the analyzer's own suggested_action (Q4/Q8 - a
+// candidate action is only ever a proposal, the narrator confirms it explicitly) and at least two
+// reads to choose a target and a candidate from.
+function canCreateTake(finding: TakeReviewFinding): boolean {
+  return finding.suggested_action?.kind === 'create_take' && (finding.evidence?.members.length ?? 0) >= 2;
+}
+
 /**
  * take-review's own scan trigger and results view (phase 5 of
- * take-review-pickups-duplicates-take-intelligence.prd.md): a "Scan for pickups & duplicates"
- * action against one REAPER track, and a simple table of the findings it saves - category,
- * evidence kind and manuscript location, per-category evidence only (Q9: no composite score,
- * so there is deliberately no "best take" or ranking column here). This is not the generic
- * findings-browsing Review page (review-dashboard-and-findings-adoption's own later phase);
- * it is scoped to this PRD's own scan and its own findings only.
+ * take-review-pickups-duplicates-take-intelligence.prd.md), plus phase 6's take-creation action: a
+ * "Scan for pickups & duplicates" action against one REAPER track, a simple table of the findings it
+ * saves - category, evidence kind and manuscript location, per-category evidence only (Q9: no
+ * composite score, so there is deliberately no "best take" or ranking column here) - and, per row, an
+ * "Add as take" action that lets the narrator pick which read is the target item and which is the
+ * candidate to attach, then confirms before REAPER does anything (Q4/Q8: never preselected, never
+ * automatic). This is not the generic findings-browsing Review page (review-dashboard-and-findings-
+ * adoption's own later phase); it is scoped to this PRD's own scan, findings and take-creation action.
  */
 export function TakeReviewPanel({ chapterTrackName }: { chapterTrackName: string }) {
   const api = useApi();
   const [findings, setFindings] = useState<TakeReviewFinding[]>();
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState('');
+
+  const [activeFindingId, setActiveFindingId] = useState<string | null>(null);
+  const [targetGuid, setTargetGuid] = useState('');
+  const [candidateGuid, setCandidateGuid] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [createdTakes, setCreatedTakes] = useState<Record<string, string>>({});
 
   const runScan = () => {
     setScanning(true);
@@ -56,6 +83,46 @@ export function TakeReviewPanel({ chapterTrackName }: { chapterTrackName: string
       .then((result) => setFindings(result))
       .catch((reason) => setError(String(reason)))
       .finally(() => setScanning(false));
+  };
+
+  const openCreateTake = (finding: TakeReviewFinding) => {
+    setActiveFindingId(finding.id);
+    setTargetGuid('');
+    setCandidateGuid('');
+    setCreateError('');
+  };
+  const closeCreateTake = () => {
+    if (creating) return;
+    setActiveFindingId(null);
+  };
+
+  const activeFinding = findings?.find((finding) => finding.id === activeFindingId);
+  const activeMembers = activeFinding?.evidence?.members ?? [];
+
+  const confirmCreateTake = () => {
+    const target = activeMembers.find((member) => member.item_guid === targetGuid);
+    const candidate = activeMembers.find((member) => member.item_guid === candidateGuid);
+    if (!activeFinding || !target || !candidate) {
+      setCreateError('Choose a target item and a different candidate read.');
+      return;
+    }
+    setCreating(true);
+    setCreateError('');
+    void api
+      .takeReviewCreateTake({
+        findingId: activeFinding.id,
+        targetItemGuid: target.item_guid,
+        candidateItemGuid: candidate.item_guid,
+        sourceFile: candidate.source_file,
+        sourceRangeStart: candidate.source_start,
+        sourceRangeEnd: candidate.source_start + candidate.source_length,
+      })
+      .then((result) => {
+        setCreatedTakes((previous) => ({ ...previous, [activeFinding.id]: result.newTakeGuid }));
+        setActiveFindingId(null);
+      })
+      .catch((reason) => setCreateError(String(reason)))
+      .finally(() => setCreating(false));
   };
 
   return (
@@ -88,6 +155,7 @@ export function TakeReviewPanel({ chapterTrackName }: { chapterTrackName: string
                 <TableHeader>Manuscript location</TableHeader>
                 <TableHeader>Coverage</TableHeader>
                 <TableHeader align="right">Reads</TableHeader>
+                <TableHeader align="right">Action</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -98,11 +166,68 @@ export function TakeReviewPanel({ chapterTrackName }: { chapterTrackName: string
                   <TableCell>{formatLocation(finding)}</TableCell>
                   <TableCell>{formatCoverage(finding)}</TableCell>
                   <TableCell align="right">{finding.evidence?.members.length ?? 0}</TableCell>
+                  <TableCell align="right">
+                    {createdTakes[finding.id] ? (
+                      <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                        Take added
+                      </span>
+                    ) : (
+                      <Button variant="ghost" onClick={() => openCreateTake(finding)} disabled={!canCreateTake(finding)}>
+                        Add as take
+                      </Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
+      )}
+      {activeFinding && (
+        <ConfirmDialog
+          title="Add candidate as a new take"
+          body="Choose the item this take is added to and which read to attach as its source. The previous active take stays active, and the item's length is never changed; this can be undone with one Undo in REAPER."
+          confirmLabel="Create take"
+          confirm={confirmCreateTake}
+          cancel={closeCreateTake}
+          pending={creating}
+        >
+          <div className="mt-3 flex flex-col gap-3">
+            <label className="flex flex-col gap-1 text-sm">
+              Target item (where the take is added)
+              <Select
+                label="Target item"
+                value={targetGuid}
+                onChange={setTargetGuid}
+                fullWidth
+                options={[
+                  { value: '', label: 'Choose a target item…' },
+                  ...activeMembers.map((member, index) => ({ value: member.item_guid, label: memberLabel(member, index) })),
+                ]}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Candidate (source attached as the new take)
+              <Select
+                label="Candidate read"
+                value={candidateGuid}
+                onChange={setCandidateGuid}
+                fullWidth
+                options={[
+                  { value: '', label: 'Choose a candidate read…' },
+                  ...activeMembers
+                    .filter((member) => member.item_guid !== targetGuid)
+                    .map((member, index) => ({ value: member.item_guid, label: memberLabel(member, index) })),
+                ]}
+              />
+            </label>
+            {createError && (
+              <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
+                {createError}
+              </p>
+            )}
+          </div>
+        </ConfirmDialog>
       )}
     </Panel>
   );

@@ -69,6 +69,8 @@ var eventSpecs = map[string]eventSpec{
 	// EnumProjects(-1, '')'s second return value verbatim (the empty string for an unsaved project, never omitted -
 	// spike S6 confirmed REAPER never returns nil there), and unsaved is "1" exactly when rpp is empty.
 	"PROJECT_STATUS": {required: []fieldSpec{text("run"), text("rpp"), count("unsaved")}},
+	"TAKE_CREATED":   {required: []fieldSpec{text("run"), text("targetItemGuid"), text("newTakeGuid")}},
+	"TAKE_STALE":     {required: []fieldSpec{text("run"), text("guid")}},
 }
 
 // CheckEvent validates one decoded event line (the tag first) against the table. The error names the tag, the position and name of
