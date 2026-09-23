@@ -1,6 +1,6 @@
 // Package transcript owns the asynchronous Transcript Compare state machine.
-// Its only DAW transport is the versioned file bridge; browser polling and SSE
-// are deliberately absent.
+// It reaches the DAW only through dawadapter.Review (today the versioned file
+// bridge); browser polling and SSE are deliberately absent.
 package transcript
 
 import (
@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
@@ -29,7 +30,7 @@ type Config struct{ Project, SessionDir, Python, Backend string }
 type Service struct {
 	mu                sync.RWMutex
 	config            Config
-	bridge            *bridge.Client
+	bridge            dawadapter.Review // the DAW, the REAPER bridge today (nil with no DAW session); see NewWithReview
 	settings          *settings.Store
 	sidecars          *process.Supervisor
 	changed           func(map[string]any)
@@ -46,16 +47,21 @@ type Service struct {
 	manuscriptLookup ManuscriptLookup
 }
 
-// New builds the service. When there is a bridge it subscribes to the events Transcript Compare owns: the
-// COMPARE_* family, and ERROR events for its own run (or with no run, a session-level problem). Other consumers of
-// the same client subscribe for their own events; nobody reads the log directly.
+// New builds the service over the REAPER bridge client (nil when there is no REAPER session); see NewWithReview.
 func New(config Config, client *bridge.Client, store *settings.Store, sidecars *process.Supervisor, changed func(map[string]any)) *Service {
-	s := &Service{config: config, bridge: client, settings: store, sidecars: sidecars, changed: changed, state: empty()}
-	if client != nil {
-		client.Subscribe(bridge.Subscription{
+	return NewWithReview(config, dawadapter.ReviewFor(client), store, sidecars, changed)
+}
+
+// NewWithReview builds the service over any DAW adapter. When there is one it subscribes to the events Transcript Compare
+// owns: the COMPARE_* family, and ERROR events for its own run (or with no run, a session-level problem). Other consumers
+// of the same bridge subscribe for their own events; nobody reads the log directly.
+func NewWithReview(config Config, review dawadapter.Review, store *settings.Store, sidecars *process.Supervisor, changed func(map[string]any)) *Service {
+	s := &Service{config: config, bridge: review, settings: store, sidecars: sidecars, changed: changed, state: empty()}
+	if review != nil {
+		review.Subscribe(dawadapter.Subscription{
 			Tags:   []string{"COMPARE_*", "ERROR"},
 			Owns:   s.ownsRun,
-			Handle: func(event bridge.Event) { s.Handle(event.Fields) },
+			Handle: func(event dawadapter.Event) { s.Handle(event.Fields) },
 			// An event of this run that fails its table (bridge/wire.go) is REAPER's script and this app disagreeing about the protocol:
 			// the run says so instead of carrying on with a row of zeros.
 			Invalid: s.handleInvalid,
@@ -81,7 +87,7 @@ func (s *Service) SetFindings(store *findings.Store, lookup ManuscriptLookup) {
 
 // handleInvalid ends the run in progress with a message that names the event and the field that could not be read (never a value).
 // The advice is the fix for the usual cause: the REAPER script the narrator imported is older or newer than this app.
-func (s *Service) handleInvalid(event bridge.Event, reason error) {
+func (s *Service) handleInvalid(event dawadapter.Event, reason error) {
 	message := fmt.Sprintf("The Narration Utils script in REAPER sent a message this app could not read (%v). Import the script from this app's REAPER folder again, then start a new comparison.", reason)
 	s.mu.Lock()
 	if !runInProgress(s.state) {
@@ -167,7 +173,7 @@ func (s *Service) Start(options map[string]string) error {
 	if s.bridge == nil {
 		return fmt.Errorf("the REAPER bridge is unavailable")
 	}
-	if _, err := s.bridge.Send("prepare_compare", []string{runID}); err != nil {
+	if err := s.bridge.PrepareReview(runID); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -331,8 +337,7 @@ func (s *Service) Jump(rowID string) error {
 	if !found || s.bridge == nil {
 		return fmt.Errorf("that discrepancy is no longer available")
 	}
-	_, err := s.bridge.Send("jump_to_compare_marker", []string{runID, rowID})
-	return err
+	return s.bridge.NavigateToFinding(runID, rowID)
 }
 func (s *Service) Export() error {
 	s.mu.Lock()
@@ -369,7 +374,7 @@ func (s *Service) Export() error {
 	misread, _ := s.settings.Effective("TranscriptCompare", "color_misread", "FF4040")
 	skipped, _ := s.settings.Effective("TranscriptCompare", "color_skipped", "FFC000")
 	extra, _ := s.settings.Effective("TranscriptCompare", "color_extra", "40A0FF")
-	if _, err := s.bridge.Send("export_compare_markers", []string{runID, output, misread, skipped, extra}); err != nil {
+	if err := s.bridge.ExportFindings(runID, output, dawadapter.MarkerColors{Misread: misread, Skipped: skipped, Extra: extra}); err != nil {
 		s.fail(err.Error())
 		return err
 	}
@@ -678,7 +683,7 @@ func (s *Service) finishBackend(child *process.Child) {
 		s.fail("The REAPER bridge is unavailable.")
 		return
 	}
-	if _, err := s.bridge.Send("inspect_compare_results", []string{runID, output}); err != nil {
+	if err := s.bridge.InspectFindings(runID, output); err != nil {
 		s.fail(err.Error())
 		return
 	}
