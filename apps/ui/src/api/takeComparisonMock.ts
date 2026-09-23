@@ -149,7 +149,7 @@ function comparedMember(
 }
 
 /** The comparison the mock saves for a take-review group, or undefined for a finding that is not a comparable group. */
-export function mockTakeComparisonOf(group: Finding): Finding | undefined {
+function mockTakeComparisonOf(group: Finding): Finding | undefined {
   const parsed = takeReviewEvidenceSchema.safeParse(group.evidence);
   if (group.analyzer !== 'take-review' || !parsed.success || parsed.data.members.length < 2) return undefined;
   const words = SPAN_TEXT.split(' ');
