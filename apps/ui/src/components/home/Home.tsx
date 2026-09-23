@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileArrowUp, faFileLines } from '@fortawesome/free-solid-svg-icons';
 import { useApi } from '../../api/ApiContext';
 import { usePendingAction } from '../../hooks/usePendingAction';
+import { useWorkJob } from '../../hooks/useWorkJob';
 import type { GuideEntity, ManuscriptImportSelection, TranscriptState, WorkJob } from '../../types';
 import type { Bootstrap } from '../../types';
 import { Heading } from '../primitives/Heading';
@@ -24,7 +25,7 @@ const IMPORT_POLL_MS = 200;
 // declined offer stays quiet for the rest of the session and is offered again
 // the next time the app starts (ADR-0019).
 const declinedCandidates = new Set<string>();
-const POLLED_PHASES: WorkJob['phase'][] = ['preparing', 'committing'];
+const IMPORT_POLLED_PHASES: WorkJob['phase'][] = ['preparing', 'committing'];
 
 function completedLabel(value?: string) {
   if (!value) return 'completed previously';
@@ -49,7 +50,12 @@ export function Home({
   const [entities, setEntities] = useState<GuideEntity[]>([]);
   const [lastCompleted, setLastCompleted] = useState<TranscriptState>();
   const found = Boolean(data.manuscript);
-  const [importJob, setImportJob] = useState<WorkJob>();
+  // The import's own job is polled while the host prepares or commits it; its success stays set, for the effect below to act on once.
+  const [importJob, setImportJob] = useWorkJob({
+    poll: (job) => api.manuscriptImportState(job.id!),
+    pollingPhases: IMPORT_POLLED_PHASES,
+    intervalMs: IMPORT_POLL_MS,
+  });
   // The file dialog is the host's, and pressing again while it is open would open a second one (ADR 0075).
   const choosing = usePendingAction();
   const [importSelection, setImportSelection] = useState<ManuscriptImportSelection>({});
@@ -62,7 +68,10 @@ export function Home({
   // default per owner decision D8) and changeable per import. buildStarted guards against starting the chained build
   // twice for the same import job (the poller can report 'success' more than once before its interval is cleared).
   const [buildAfterImport, setBuildAfterImport] = useState(true);
-  const [buildAfterImportJob, setBuildAfterImportJob] = useState<WorkJob>();
+  // The chained build is followed like the Story Bible page follows its own (the same hook), and its dialog clears the moment the host
+  // reports success rather than waiting for a click: the app's job:ended subscriber already raises the "Story Bible rebuild complete"
+  // toast (ADR 0076), so this dialog does not also announce it.
+  const [buildAfterImportJob, setBuildAfterImportJob] = useWorkJob({ poll: () => api.guideBuildState(), onSuccess: () => undefined });
   const buildStarted = useRef(false);
   useEffect(() => {
     void api
@@ -85,27 +94,6 @@ export function Home({
       .then(setLastCompleted)
       .catch(() => setLastCompleted(undefined));
   }, [api, data.manuscript?.id, data.manuscript?.importedAt]);
-  useEffect(() => {
-    if (!importJob?.id || !POLLED_PHASES.includes(importJob.phase)) return;
-    let active = true;
-    const refresh = () =>
-      void api
-        .manuscriptImportState(importJob.id!)
-        .then((next) => {
-          if (active) setImportJob(next);
-        })
-        .catch(
-          (error) =>
-            active &&
-            setImportJob((current) => (current ? { ...current, phase: 'error', error: describeApiError(error), message: describeApiError(error) } : current)),
-        );
-    refresh();
-    const timer = window.setInterval(refresh, IMPORT_POLL_MS);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, [api, importJob?.id, importJob?.phase]);
   // The host finishes writing the manuscript before it reports success, so the shared application state is refreshed
   // exactly once, on that transition. A checked "Build the Story Bible after import" chains straight into
   // api.guideBuild() (B3, UI-chained for the MVP: no binding change, and a build failure never unmakes the import,
@@ -129,35 +117,7 @@ export function Home({
         if (result.job.phase !== 'success') setBuildAfterImportJob(result.job);
       })
       .catch((error) => notify(`Manuscript imported. Story Bible build failed: ${apiErrorMessage(error)}`, 'error'));
-  }, [importJob?.phase, buildAfterImport, api, notify, refreshBootstrap]);
-  // Polls the chained build the same way Guide.tsx polls its own (ADR-0015: real progress only), and clears the dialog
-  // the moment the host reports success rather than waiting for a click - the app's job:ended subscriber already
-  // raises the "Story Bible rebuild complete" toast (ADR 0076), so this dialog does not also announce it.
-  useEffect(() => {
-    if (!buildAfterImportJob?.id || !['preparing', 'running'].includes(buildAfterImportJob.phase)) return;
-    let active = true;
-    const refresh = () =>
-      void api
-        .guideBuildState()
-        .then((next) => {
-          if (!active) return;
-          if (next.phase === 'success') setBuildAfterImportJob(undefined);
-          else setBuildAfterImportJob(next);
-        })
-        .catch(
-          (error) =>
-            active &&
-            setBuildAfterImportJob((current) =>
-              current ? { ...current, phase: 'error', error: describeApiError(error), message: describeApiError(error) } : current,
-            ),
-        );
-    refresh();
-    const timer = window.setInterval(refresh, 250);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, [api, buildAfterImportJob?.id, buildAfterImportJob?.phase]);
+  }, [importJob?.phase, buildAfterImport, api, notify, refreshBootstrap, setImportJob, setBuildAfterImportJob]);
   const beginImportPreview = async (jobId: string) => {
     setHeadingLevel(1);
     setImportSelection({});
@@ -327,7 +287,16 @@ export function Home({
           close={() => setImportJob(undefined)}
         />
       )}
-      {buildAfterImportJob && <WorkDialog title="Build the Story Bible" job={buildAfterImportJob} close={() => setBuildAfterImportJob(undefined)} />}
+      {buildAfterImportJob && (
+        // Like the rebuild on the Story Bible page, the build can go on in the background (ADR 0076): the host keeps running it and the
+        // app's job:ended subscriber says when it ends.
+        <WorkDialog
+          title="Build the Story Bible"
+          job={buildAfterImportJob}
+          close={() => setBuildAfterImportJob(undefined)}
+          background={() => setBuildAfterImportJob(undefined)}
+        />
+      )}
       <AudiobookEstimatePanel
         notify={notify}
         goToManuscript={goToManuscript}

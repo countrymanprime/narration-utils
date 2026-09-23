@@ -370,6 +370,12 @@ export function createMockApi(
     holdEdits?: boolean;
     /** Boots with a Story Bible rebuild that is still running, so its dialog (and Continue in background) can be seen without a host. */
     rebuildRunning?: boolean;
+    /**
+     * How the next Story Bible build behaves: `hold` starts it and keeps it running at 30 percent, and `fails` starts it and has the host
+     * report it failed at the first poll, so the chained build after an import (story-bible-and-import-ux-briefs PRD, Phase 3) can be seen
+     * running and failing without a host. Without it a build finishes at once.
+     */
+    build?: 'hold' | 'fails';
     /** Which manuscript an import picks: a Word file (the default) or a Markdown one, which has the chapter heading level choice. */
     importPreview?: MockImportKind;
     /** Boots the update state (see `MockUpdateSeed`). */
@@ -1064,6 +1070,21 @@ export function createMockApi(
           diskSize: 15251718,
           installPath: MOCK_ASSET_ROOT + '/spacy/en_core_web_sm/3.8.0',
         };
+      }
+      if (initial.build) {
+        const running: WorkJob = {
+          id: 'mock-guide',
+          kind: 'story_bible',
+          phase: 'running',
+          message: 'Extracting names and terms',
+          percent: 30,
+          logs: ['Reading canonical manuscript', 'Read 221 paragraphs in 5 chapters', 'Extracting names and terms'],
+          elapsed: 4,
+        };
+        const failure = 'The language model could not be loaded: the model folder is missing its config.cfg.';
+        storyBibleJob = initial.build === 'hold' ? running : { ...running, phase: 'error', message: failure, error: failure, logs: [...running.logs, failure] };
+        if (initial.build === 'fails') endJob({ id: 'mock-guide', kind: 'story_bible', outcome: 'error', message: failure, durationMs: 4000 });
+        return { status: 'started' as const, job: wireClone(running) };
       }
       const message = options?.rulesOnly
         ? 'Story Bible rebuild complete with the rules-only extraction, which is lower quality than a language model.'

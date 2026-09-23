@@ -73,6 +73,9 @@ const mockInvalidPayload = (['bootstrap', 'manuscript', 'storybible'] as const).
 const mockLiveDegraded = mockParams.has('mockLiveDegraded');
 // `?mockRebuildRunning=1` boots with a Story Bible rebuild still running, so its dialog can be seen without a host.
 const mockRebuildRunning = mockParams.has('mockRebuildRunning');
+// `?mockBuild=hold|fails` makes the next Story Bible build stay running, or fail at its first poll, so the build chained after an import
+// can be seen running and failing without a host.
+const mockBuild = (['hold', 'fails'] as const).find((seed) => seed === mockParams.get('mockBuild'));
 // `?mockHoldEdits=1` makes every Story Bible edit hang, so the busy Save button can be seen without a host.
 const mockHoldEdits = mockParams.has('mockHoldEdits');
 // `?mockUpdate=available|found|downloading|download-fails|ready|install-blocked|install-refused|failed|current|development` boots the mock host in that update state ("Version 0.2.7 is available", "could not reach
@@ -134,6 +137,7 @@ const mockInitial = {
   ...(mockUpdate ? { update: mockUpdate } : {}),
   ...(mockLiveDegraded ? { liveUpdatesDegraded: true } : {}),
   ...(mockRebuildRunning ? { rebuildRunning: true } : {}),
+  ...(mockBuild ? { build: mockBuild } : {}),
   ...(mockHoldEdits ? { holdEdits: true } : {}),
   ...(mockInvalidPayload ? { invalidPayload: mockInvalidPayload } : {}),
   ...(mockNoManuscript ? { noManuscript: true } : {}),

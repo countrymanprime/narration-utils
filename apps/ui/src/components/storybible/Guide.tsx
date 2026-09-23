@@ -4,11 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLock, faPlus, faRotate } from '@fortawesome/free-solid-svg-icons';
-import type { GuideBuildResult, GuideEntity, WorkJob } from '../../types';
+import type { GuideBuildResult, GuideEntity } from '../../types';
 import { categoryCssName, categoryLabel, sortEntities, STORY_BIBLE_TABS } from '../../state';
 import { useApi } from '../../api/ApiContext';
 import { useAssetInstall } from '../../hooks/useAssetInstall';
 import { usePendingAction } from '../../hooks/usePendingAction';
+import { useWorkJob } from '../../hooks/useWorkJob';
 import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
 import { Heading } from '../primitives/Heading';
@@ -66,7 +67,6 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState('All');
   const [sort, setSort] = useState<EntitySort>({ key: 'name', dir: 'asc' });
-  const [buildJob, setBuildJob] = useState<WorkJob>();
   // The start call is quick, but the button says it was heard and a second press cannot start a second rebuild (ADR 0075).
   const starting = usePendingAction();
   // The build needs a language model, an asset: when it is not installed the host says so instead of starting, and the narrator chooses to
@@ -94,6 +94,10 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
     },
     [api, notify],
   );
+  // Follows a running rebuild (ADR 0015). A success reloads the rows before the dialog goes, so the page never briefly renders on stale
+  // (pre-build) rows - that render used to trip the route ErrorBoundary once, which looked exactly like the build itself had failed. The
+  // app says the build is done: the host's job-end event is the one place that does (ADR 0076).
+  const [buildJob, setBuildJob] = useWorkJob({ poll: () => api.guideBuildState(), onSuccess: () => load() });
   const modelInstall = useAssetInstall({
     start: () => {
       if (!modelPrompt) return Promise.reject(new Error('Build the Story Bible first.'));
@@ -123,7 +127,7 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
           notify(describeApiError(error), 'error');
         }
       }),
-    [api, load, notify, resetModelInstall, starting],
+    [api, load, notify, resetModelInstall, setBuildJob, starting],
   );
   const closeModelPrompt = () => {
     setModelPrompt(undefined);
@@ -144,40 +148,9 @@ export function Guide({ notify, goToManuscript }: { notify: Notify; goToManuscri
     return () => {
       active = false;
     };
-  }, [api, notify]);
+  }, [api, notify, setBuildJob]);
   // A rebuild that ends while its dialog is dismissed or the narrator is elsewhere on this page still refreshes the entries.
   useEffect(() => api.subscribeJobEnded((event) => event.kind === 'story_bible' && void load()), [api, load]);
-  useEffect(() => {
-    if (!buildJob?.id || !['preparing', 'running'].includes(buildJob.phase)) return;
-    let active = true;
-    const refresh = () =>
-      void api
-        .guideBuildState()
-        .then(async (next) => {
-          if (!active) return;
-          if (next.phase !== 'success') setBuildJob(next);
-          else {
-            // Await the reload before dismissing the dialog, so the page never
-            // briefly renders on stale (pre-build) rows - that render used to
-            // trip the route ErrorBoundary once, which looked exactly like the
-            // build itself had failed. The app says the build is done: the
-            // host's job-end event is the one place that does (ADR 0076).
-            await load();
-            setBuildJob(undefined);
-          }
-        })
-        .catch(
-          (error) =>
-            active &&
-            setBuildJob((current) => (current ? { ...current, phase: 'error', error: describeApiError(error), message: describeApiError(error) } : current)),
-        );
-    refresh();
-    const timer = window.setInterval(refresh, 250);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, [api, buildJob?.id, buildJob?.phase, load]);
 
   // A Draft entry (a brand new, not-yet-categorized entity) is hidden from
   // every tab/search except while it's the one open in the detail pane - it

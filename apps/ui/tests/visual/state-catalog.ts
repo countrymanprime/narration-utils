@@ -59,6 +59,18 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'home', state: 'import-activity-log', description: 'Home, manuscript import finished with its live activity log populated' },
   {
     page: 'home',
+    state: 'import-build-running',
+    description:
+      'Home, the Story Bible build chained after an import (on by default, owner decision D8) still running in its own "Build the Story Bible" dialog, the import already reported (?mockBuild=hold)',
+  },
+  {
+    page: 'home',
+    state: 'import-build-failed',
+    description:
+      'Home, the chained Story Bible build failed after a successful import: the build dialog shows the reason and the import stays reported as done (?mockBuild=fails)',
+  },
+  {
+    page: 'home',
     state: 'import-confirm',
     description:
       'Home, import manuscript confirm dialog with format/paragraph/chapter preview (reached via "Replace manuscript" since a manuscript is already loaded)',

@@ -400,6 +400,27 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'button', 'Import');
       await page.getByText('Manuscript imported', { exact: true }).first().waitFor();
     },
+    'import-build-running': async (page) => {
+      // The mock's build seam (see main.tsx): the chained build starts and stays at 30 percent.
+      await page.goto('/?mockBuild=hold');
+      await settlePage(page);
+      await clickVisible(page, 'button', 'Replace manuscript');
+      await clickVisible(page, 'button', 'Import');
+      await page.getByRole('dialog', { name: 'Build the Story Bible' }).getByText('Extracting names and terms').first().waitFor();
+    },
+    'import-build-failed': async (page) => {
+      // The chained build starts and the host reports it failed at the first poll; the import was already written and said so.
+      await page.goto('/?mockBuild=fails');
+      await settlePage(page);
+      await clickVisible(page, 'button', 'Replace manuscript');
+      await clickVisible(page, 'button', 'Import');
+      await page
+        .getByRole('dialog', { name: 'Build the Story Bible' })
+        .getByText(/model folder is missing its config\.cfg/)
+        .first()
+        .waitFor();
+      await page.getByText('Manuscript imported.', { exact: true }).first().waitFor();
+    },
     'import-confirm': async (page) => {
       // The default mock state already has a manuscript loaded, so "Import
       // manuscript" isn't visible - "Replace manuscript" drives the same
