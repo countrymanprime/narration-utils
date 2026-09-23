@@ -254,6 +254,7 @@ func (h *Host) configureLocked(next config) {
 	h.settings.SetProject(h.config.projectFolder)
 	h.guide = guide.New(h.config.projectFolder, h.config.manuscriptPython, h.config.manuscriptBackend, h.settings, h.sidecars)
 	h.guide.SetPersist(h.persist)
+	h.guide.SetFindings(h.findings)
 	var client *bridge.Client
 	if h.config.sessionDir != "" {
 		client, _ = bridge.New(h.config.sessionDir)

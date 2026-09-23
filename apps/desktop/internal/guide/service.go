@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
@@ -28,6 +29,11 @@ type Service struct {
 	previewTimeout           time.Duration
 	previewLocksMu           sync.Mutex
 	previewLocks             map[string]*sync.Mutex
+	// findingsStore is nil until app.go opts in with SetFindings
+	// (review-dashboard-and-findings-adoption.prd.md Phase 3); every
+	// existing caller, including every test in this package, leaves it nil
+	// and SaveFindings is then a no-op.
+	findingsStore atomic.Pointer[findings.Store]
 }
 
 func New(project, python, backend string, store *settings.Store, sidecars *process.Supervisor) *Service {
@@ -42,6 +48,52 @@ func (s *Service) manuscript() string {
 
 // SetPersist says where to report a Story Bible file that cannot be read (ADR 0069).
 func (s *Service) SetPersist(reporter *persist.Reporter) { s.persist.Store(reporter) }
+
+// SetFindings opts this service into producing findings.Finding records for
+// entities that still need review (review-dashboard-and-findings-adoption.
+// prd.md Phase 3, Q7 option A). store persists them. Called once at service
+// construction, the same way SetPersist is; never called means
+// SaveFindings is a no-op.
+func (s *Service) SetFindings(store *findings.Store) { s.findingsStore.Store(store) }
+
+// SaveFindings reads the current Story Bible entities and saves the
+// findings BuildFindings derives from them (Q7's two conditions), replacing
+// the analyzer's whole "entities" scope in one call so an entity that no
+// longer qualifies - because it became reviewed or locked - naturally drops
+// out of the fresh set findings.Store.SaveAnalyzerFindings is given, and its
+// finding is marked "not in latest run" rather than deleted (resolved
+// upstream, per Q7). It only reads the guide file (Entities); it never
+// calls a sidecar command that could change it. Best-effort: a problem here
+// is reported through the same channel as any other derived-data failure
+// (SetPersist's reporter) but never fails the caller (a build, an edit).
+func (s *Service) SaveFindings() error {
+	store := s.findingsStore.Load()
+	if store == nil {
+		return nil
+	}
+	entities, err := s.Entities()
+	if err != nil {
+		s.persist.Load().Warn("findings_build_failed", fmt.Sprintf("Story Bible findings were not built: %v", err))
+		return err
+	}
+	fresh := BuildFindings(entities, findings.Project{Path: s.project, OutputPath: s.guidePath()})
+	valid := make([]findings.Finding, 0, len(fresh))
+	for _, f := range fresh {
+		if verr := f.Validate(); verr != nil {
+			s.persist.Load().Warn("findings_invalid", fmt.Sprintf("Story Bible produced an invalid finding, skipped: %v", verr))
+			continue
+		}
+		valid = append(valid, f)
+	}
+	// valid is saved even when empty: an empty fresh set is how every
+	// previously-open Story Bible finding resolves upstream at once (every
+	// flagged entity got reviewed or locked since the last save).
+	if _, err := store.SaveAnalyzerFindings(analyzerName, scopeName, valid); err != nil {
+		s.persist.Load().Warn("findings_save_failed", fmt.Sprintf("Story Bible findings were not saved: %v", err))
+		return err
+	}
+	return nil
+}
 
 // schemaVersion is the newest Story Bible file this host reads; the Python sidecar writes it (manuscript_guide.py SCHEMA_VERSION).
 const schemaVersion = 2
@@ -199,7 +251,12 @@ func (s *Service) Build(progress, log, model string) (string, error) {
 		return "", e
 	}
 	args := []string{"build", "--manuscript", s.manuscript(), "--out", s.guidePath(), "--progress", progress, "--log", log, "--spacy-model", model}
-	return s.Run(args...)
+	out, err := s.Run(args...)
+	if err != nil {
+		return out, err
+	}
+	_ = s.SaveFindings() // best-effort; a problem here never fails a build that already succeeded (see SaveFindings)
+	return out, nil
 }
 
 func (s *Service) Edit(id, field, value string) error {
