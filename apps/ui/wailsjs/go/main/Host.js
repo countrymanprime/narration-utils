@@ -358,6 +358,10 @@ export function TeleprompterDevices() {
   return window['go']['main']['Host']['TeleprompterDevices']();
 }
 
+export function TeleprompterLocate(arg1, arg2, arg3) {
+  return window['go']['main']['Host']['TeleprompterLocate'](arg1, arg2, arg3);
+}
+
 export function TeleprompterSeek(arg1) {
   return window['go']['main']['Host']['TeleprompterSeek'](arg1);
 }

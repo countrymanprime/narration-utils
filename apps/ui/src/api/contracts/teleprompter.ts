@@ -1,3 +1,4 @@
+import type { ChapterTrackMatch, RecordedEnd } from './chapterTrackMap';
 import type { WhisperInstallState, WhisperModel } from './whisper';
 
 /**
@@ -55,6 +56,43 @@ export type TeleprompterStartOptions = {
   startWord?: number;
 };
 
+/** The first-use gate's answer for a tail-audio locate (Whisper only): the model it needs is not installed yet. */
+export type TeleprompterModelRequired = {
+  status: 'asset_required';
+  model: Omit<WhisperModel, 'downloadSize' | 'installState'>;
+  installState: WhisperInstallState;
+  downloadSize: number;
+  diskSize: number;
+  installPath: string;
+};
+
+/**
+ * Where a recording's tail sits in the chapter (the sidecar's `locate` line, locate.py): `word` is the next script word to read,
+ * in the same index space as `TeleprompterPosition.read`; `last` the last word the tail placed and `sentence` the one holding
+ * it (token range `[start, end)`), shown for confirmation. Both are null when the tail could not be placed. `confident` is
+ * false for a tail that fits more than one place (a passage the chapter repeats) or too few words.
+ */
+export type TeleprompterLocated = {
+  word: number | null;
+  last: number | null;
+  sentence: { start: number; end: number; text: string } | null;
+  confidence: number;
+  confident: boolean;
+  matched: number;
+  heard: number;
+  runnerUp: number;
+  tokens: number;
+  heardText: string;
+};
+
+/**
+ * Why a locate has a resume word or not (teleprompter manuscript integration PRD Phase 9, ADR 0111): `found` and
+ * `low_confidence` carry one (only `found` is confident); `not_found` heard nothing that fits; `no_track` has no confirmed
+ * or confident track (the narrator picks one from `match`); `no_recording` has nothing audible on the track; `source_missing`
+ * and `source_unsupported` cannot read the last item's source file.
+ */
+export type TeleprompterLocateStatus = 'found' | 'low_confidence' | 'not_found' | 'no_track' | 'no_recording' | 'source_missing' | 'source_unsupported';
+
 export type TeleprompterStartResult =
   | { status: 'started' }
   | {
@@ -68,6 +106,27 @@ export type TeleprompterStartResult =
       diskSize: number;
       installPath: string;
     };
+
+export type TeleprompterLocateResult =
+  | {
+      status: TeleprompterLocateStatus;
+      /** The chapter's track match (candidates, every track, and the .rpp's save time for "as of last save"). */
+      match: ChapterTrackMatch;
+      /** The track that was read: the match's own, or the narrator's pick. */
+      track: { guid: string; name: string; index: number } | null;
+      recordedEnd: RecordedEnd | null;
+      /** The seconds of the source file that were transcribed. */
+      tail: { from: number; to: number } | null;
+      located: TeleprompterLocated | null;
+    }
+  | TeleprompterModelRequired;
+
+export type TeleprompterLocateOptions = {
+  /** Read this track instead of the matcher's (the narrator's pick when the match is not confident). */
+  trackGuid?: string;
+  /** Whisper model id; the host defaults to the smallest. */
+  model?: string;
+};
 
 /** One input device the sidecar's `--list-devices` reported, by the exact name its capture path opens it under. */
 export type TeleprompterDevice = { name: string };
@@ -86,6 +145,8 @@ export interface TeleprompterApi {
   teleprompterSeek(word: number): Promise<void>;
   teleprompterState(): Promise<TeleprompterState>;
   teleprompterDevices(): Promise<TeleprompterDevicesResult>;
+  /** Where to resume `chapterId` from its recorded audio (the last seconds of its track, placed in the chapter); read-only. */
+  teleprompterLocate(chapterId: string, options?: TeleprompterLocateOptions): Promise<TeleprompterLocateResult>;
   subscribeTeleprompterEvent(onEvent: (event: TeleprompterEvent) => void): () => void;
   subscribeTeleprompterState(onState: (state: TeleprompterState) => void): () => void;
 }

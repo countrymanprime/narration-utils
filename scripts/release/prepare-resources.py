@@ -175,7 +175,7 @@ def main() -> None:
             [shared_python, sidecars_root / "transcript-compare" / "core"],
             ("faster_whisper",),
         ),
-        # live_asr.py imports script_tracker, chapter_script and moonshine_engine (siblings) inside
+        # live_asr.py imports script_tracker, chapter_script, moonshine_engine and locate (siblings) inside
         # functions; PyInstaller finds them because their directory is on --paths.
         # The Moonshine engine (moonshine_voice, Windows only in pyproject.toml) loads its native
         # moonshine.dll, and the onnxruntime.dll beside it, with ctypes from its own package directory.

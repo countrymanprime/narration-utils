@@ -72,8 +72,8 @@ func TestRecordedEndIsTheLastItemsEndWithItsSourceTimeScaledByRateAndOffset(t *t
 	if !ok {
 		t.Fatal("no recorded end")
 	}
-	if !near(end.ProjectTime, 17) || !near(end.SourceTime, 9.5) {
-		t.Fatalf("end = %+v, want project 17 and source 9.5", end)
+	if !near(end.ProjectTime, 17) || !near(end.SourceTime, 9.5) || !near(end.SourceStart, 2) {
+		t.Fatalf("end = %+v, want project 17, source 9.5, starting at SOFFS 2", end)
 	}
 	if end.ItemGUID != "{B0000000-0000-4000-8000-000000000002}" || end.TakeGUID != "{C0000000-0000-4000-8000-000000000002}" {
 		t.Fatalf("end = %+v, want the second item and its take", end)
@@ -109,8 +109,8 @@ func TestRecordedEndAddsASectionsStartAndSkipsMutedItems(t *testing.T) {
 	if !ok {
 		t.Fatal("no recorded end")
 	}
-	if !near(end.ProjectTime, 36) || !near(end.SourceTime, 47) || end.Approximate {
-		t.Fatalf("end = %+v, want project 36 and source 47", end)
+	if !near(end.ProjectTime, 36) || !near(end.SourceTime, 47) || !near(end.SourceStart, 41) || end.Approximate {
+		t.Fatalf("end = %+v, want project 36 and source 41 to 47", end)
 	}
 
 	// Over the whole track the epilogue item (62-65) ends last, and its

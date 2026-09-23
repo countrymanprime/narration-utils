@@ -801,6 +801,8 @@ export function createMockApi(
             installPath: MOCK_ASSET_ROOT + '/whisper/faster-whisper/small',
           };
     },
+    trackMatch: (chapterId) => mockChapterTrackMatch(chapterId, chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings),
+    tracksProject: WIRE_TRACKS_PROJECT,
     seed: initial.teleprompter,
     devices: initial.teleprompterDevices ?? WIRE_TELEPROMPTER_DEVICES,
   });

@@ -7,17 +7,23 @@ import recordedStream from './teleprompterRecording.json';
 import { recordedStreamSchema } from './schemas/teleprompter';
 import { parseWire } from './wire/parseWire';
 import { tokenize } from '../components/teleprompter/readerModel';
+import { mockRecordedEnd } from './chapterTrackMatchMock';
 import type {
+  ChapterTrackMatch,
   ManuscriptChapter,
   ManuscriptParagraph,
   TeleprompterApi,
   TeleprompterDevice,
   TeleprompterEngine,
   TeleprompterEvent,
+  TeleprompterLocated,
+  TeleprompterLocateResult,
+  TeleprompterModelRequired,
   TeleprompterPosition,
   TeleprompterScript,
   TeleprompterStartResult,
   TeleprompterState,
+  TracksProject,
 } from '../types';
 
 const recording = parseWire(recordedStreamSchema, recordedStream, { boundary: 'mock.recording', payload: 'teleprompterRecording.json' });
@@ -28,6 +34,12 @@ const MAX_REPLAY_SECONDS = 90;
 const REPLAY_SECONDS_PER_WORD = 0.45;
 const HEARD_WORDS = 6;
 const SEED_WORDS_INTO_TEXT = 30;
+// Where the mock's tail-audio locate says a recorded chapter stopped (a fraction of its words), how many words before
+// that it "heard", and how much it "transcribed" (the host's teleprompter.DefaultTailSeconds).
+const MOCK_RESUME_FRACTION = 0.6;
+const MOCK_HEARD_WORDS = 70;
+const MOCK_TAIL_SECONDS = 30;
+const SENTENCE_END = /[.!?…]["'”’)\]]*$/;
 
 /** `ended` is a session that stopped itself at the end of the chapter (the host's auto-stop, ADR 0106). */
 export type TeleprompterSeed = 'listening' | 'waiting' | 'done' | 'ended';
@@ -45,6 +57,9 @@ type Deps = {
   paragraphs: () => ManuscriptParagraph[];
   /** The first-use gate's answer for the engine's model, or undefined when it is installed. */
   assetRequired: (engine: TeleprompterEngine) => Extract<TeleprompterStartResult, { status: 'asset_required' }> | undefined;
+  /** The chapter's track match, as the mock's ChapterTrackMatch answers it (the locate starts from it). */
+  trackMatch: (chapterId: string) => ChapterTrackMatch;
+  tracksProject: TracksProject;
   /** Boots already part-way through a chapter, as a session the host kept running. */
   seed?: TeleprompterSeed;
   /** What `teleprompterDevices` reports (an empty list exercises the picker's no-devices fallback). */
@@ -70,6 +85,53 @@ function buildScript(chapter: ManuscriptChapter, paragraphs: ManuscriptParagraph
     words.push(...paragraphWords);
   }
   return { script: { type: 'script', chapter: { id: chapter.id, title: chapter.title }, tokens: words.length, spans }, words };
+}
+
+/** The sentence holding word `last`, bounded the way locate.py bounds it (sentence ends and paragraph starts). */
+function sentenceAround(words: string[], last: number, breaks: Set<number>): { start: number; end: number; text: string } {
+  let start = last;
+  while (start > 0 && !breaks.has(start) && !SENTENCE_END.test(words[start - 1])) start -= 1;
+  let end = last + 1;
+  while (end < words.length && !breaks.has(end) && !SENTENCE_END.test(words[end - 1])) end += 1;
+  return { start, end, text: words.slice(start, end).join(' ') };
+}
+
+// The browser mock's stand-in for TeleprompterLocate (apps/desktop/teleprompterlocate.go, ADR 0111): the host's statuses
+// from the mock project's track match, and for a readable track a confident resume word part-way into the chapter. The
+// real placement (Whisper over the tail, the tracker's alignment) happens only in the sidecar.
+function mockLocate(
+  match: ChapterTrackMatch,
+  project: TracksProject,
+  { script, words }: { script: TeleprompterScript; words: string[] },
+  trackGuid: string | undefined,
+  modelRequired: TeleprompterModelRequired | undefined,
+): TeleprompterLocateResult {
+  const picked = trackGuid ?? match.track?.trackGuid;
+  const track = picked === undefined ? undefined : project.tracks.find((entry) => entry.guid === picked);
+  if (picked !== undefined && !track) throw new Error('that track is not in the selected REAPER project');
+  const base = { match, track: track ? { guid: track.guid, name: track.name, index: track.index } : null, recordedEnd: null, tail: null, located: null };
+  if (!track) return { ...base, status: 'no_track' };
+  const recordedEnd = mockRecordedEnd(track);
+  if (!recordedEnd) return { ...base, status: 'no_recording' };
+  if (!recordedEnd.sourceAvailable) return { ...base, recordedEnd, status: 'source_missing' };
+  if (!recordedEnd.supported) return { ...base, recordedEnd, status: 'source_unsupported' };
+  if (modelRequired) return modelRequired;
+  const word = Math.max(1, Math.round(words.length * MOCK_RESUME_FRACTION));
+  const heard = words.slice(Math.max(0, word - MOCK_HEARD_WORDS), word);
+  const located: TeleprompterLocated = {
+    word,
+    last: word - 1,
+    sentence: sentenceAround(words, word - 1, new Set(script.spans.map((span) => span.start))),
+    confidence: 0.84,
+    confident: true,
+    matched: heard.length,
+    heard: heard.length,
+    runnerUp: 4,
+    tokens: words.length,
+    heardText: heard.join(' '),
+  };
+  const tail = { from: Math.max(recordedEnd.sourceStart, recordedEnd.sourceTime - MOCK_TAIL_SECONDS), to: recordedEnd.sourceTime };
+  return { ...base, recordedEnd, tail, located, status: 'found' };
 }
 
 const position = (read: number, status: TeleprompterPosition['status']): TeleprompterPosition => ({
@@ -197,6 +259,15 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       return clone();
     },
     teleprompterDevices: async () => ({ devices: deps.devices.map((device) => ({ ...device })), error: null }),
+    teleprompterLocate: async (chapterId, options) => {
+      await deps.ready;
+      const match = deps.trackMatch(chapterId);
+      const chapter = findChapter(chapterId);
+      if (!chapter) throw new Error('that chapter is not part of the current manuscript');
+      return structuredClone(
+        mockLocate(match, deps.tracksProject, buildScript(chapter, deps.paragraphs()), options?.trackGuid, whisperModelRequired(deps.assetRequired('whisper'))),
+      );
+    },
     subscribeTeleprompterEvent: (onEvent) => {
       eventSubscribers.add(onEvent);
       return () => eventSubscribers.delete(onEvent);
@@ -206,4 +277,11 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       return () => stateSubscribers.delete(onState);
     },
   };
+}
+
+/** A locate only ever runs Whisper, and its answer carries no engine (`TeleprompterModelRequired`). */
+function whisperModelRequired(required: Extract<TeleprompterStartResult, { status: 'asset_required' }> | undefined): TeleprompterModelRequired | undefined {
+  if (!required) return undefined;
+  const { engine: _engine, ...rest } = required;
+  return rest;
 }

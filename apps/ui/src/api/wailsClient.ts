@@ -34,6 +34,7 @@ import {
   TELEPROMPTER_EVENT_TYPES,
   teleprompterDevicesResultSchema,
   teleprompterEventSchema,
+  teleprompterLocateResultSchema,
   teleprompterStartResultSchema,
   teleprompterStateSchema,
 } from './schemas/teleprompter';
@@ -320,6 +321,8 @@ export const wailsClient: NarrationApi = {
   teleprompterSeek: (word) => decode(voidResult, 'TeleprompterSeek', host.TeleprompterSeek(word)),
   teleprompterState: () => decode(teleprompterStateSchema, 'TeleprompterState', host.TeleprompterState()),
   teleprompterDevices: () => decode(teleprompterDevicesResultSchema, 'TeleprompterDevices', host.TeleprompterDevices()),
+  teleprompterLocate: (chapterId, options) =>
+    decode(teleprompterLocateResultSchema, 'TeleprompterLocate', host.TeleprompterLocate(chapterId, options?.trackGuid ?? '', options?.model ?? '')),
   subscribeTeleprompterEvent: subscribeTeleprompterEvents,
   subscribeTeleprompterState: (onState) => subscribeChecked('teleprompter:state', teleprompterStateSchema, onState),
   mediaUrl: (sourceFile) => `${mediaRoute}?path=${encodeURIComponent(sourceFile)}`,

@@ -570,6 +570,26 @@ func (h *Host) liveModelDir(engine, modelID string) (string, map[string]any, err
 	}
 	return dir, nil, nil
 }
+
+// teleprompterModel resolves the Whisper model a tail-audio locate uses (a live session goes through liveModelDir) from
+// the approved catalog: its id and verified install directory, or, when it is not installed yet, the asset_required
+// answer the first-use gate shows. The UI's own model directory is never used; the host computes it.
+func (h *Host) teleprompterModel(requested string) (id, dir string, required map[string]any, err error) {
+	models := h.registry().whisper
+	if models == nil {
+		return "", "", nil, h.registry().catalogUnavailable("Whisper")
+	}
+	id = resolveTeleprompterModelID(map[string]string{"model": requested})
+	model, known := models.Model(id)
+	if !known {
+		return "", "", nil, fmt.Errorf("the selected Whisper model is not in the approved catalog")
+	}
+	dir, err = models.Dir(id)
+	if err != nil {
+		return id, "", modelAssetRequired(model, models.State(model), models.InstallDir(model.ID)), nil
+	}
+	return id, dir, nil, nil
+}
 func (h *Host) TeleprompterStop() (string, error) {
 	if service := h.services().teleprompter; service != nil {
 		service.Stop()

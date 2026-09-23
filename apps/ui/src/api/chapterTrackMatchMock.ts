@@ -54,8 +54,8 @@ const candidate = (track: Track, score: number, source: ChapterTrackCandidate['s
   region: null,
 });
 
-// The mock project's items carry no SOFFS or PLAYRATE on the wire, so the source time is the item's own length.
-const recordedEnd = (track: Track): RecordedEnd | null => {
+// The mock project's items carry no SOFFS or PLAYRATE on the wire, so the source runs from 0 to the item's own length.
+export const mockRecordedEnd = (track: Track): RecordedEnd | null => {
   const last = track.items.reduce<Track['items'][number] | null>(
     (best, item) => (!best || item.position + item.length > best.position + best.length ? item : best),
     null,
@@ -66,6 +66,7 @@ const recordedEnd = (track: Track): RecordedEnd | null => {
     itemGuid: last.guid,
     takeGuid: '',
     sourceFile: last.sourceFile,
+    sourceStart: 0,
     sourceTime: last.length,
     sourceAvailable: last.sourceAvailable,
     supported: last.supported,
@@ -97,7 +98,7 @@ export function mockChapterTrackMatch(chapterId: string, chapters: ManuscriptCha
     track: chosen,
     candidates,
     warnings: [],
-    recordedEnd: recordedEnd(track),
+    recordedEnd: mockRecordedEnd(track),
   });
 
   if (linked.length === 1) return withTrack(linked[0], candidate(linked[0], 1, 'confirmed'), 'confirmed');

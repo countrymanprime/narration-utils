@@ -24,11 +24,12 @@ const chapterTrackCandidateSchema = z.object({
   region: z.object({ name: z.string(), start: z.number(), end: z.number() }).nullable(),
 }) satisfies z.ZodType<ChapterTrackCandidate>;
 
-const recordedEndSchema = z.object({
+export const recordedEndSchema = z.object({
   projectTime: z.number(),
   itemGuid: z.string(),
   takeGuid: z.string(),
   sourceFile: z.string(),
+  sourceStart: z.number(),
   sourceTime: z.number(),
   sourceAvailable: z.boolean(),
   supported: z.boolean(),
