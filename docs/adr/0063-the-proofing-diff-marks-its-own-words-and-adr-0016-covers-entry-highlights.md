@@ -1,6 +1,6 @@
 # 0063. The proofing diff marks its own words, and ADR 0016 covers entry highlights
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-21
 **Supersedes:**
 **Amends:** [ADR 0016](0016-highlight-primitive.md) (what "highlighted text" means)
@@ -24,6 +24,6 @@ The alternatives, if the owner prefers one:
 
 ## Consequences
 
-- If accepted as written: ADR 0016 gains a sentence naming what it covers, the allowlist entry keeps its reason, and nothing changes in the code.
+- Accepted as written (2026-09-23): ADR 0016 gains a sentence naming what it covers, the allowlist entry keeps its reason, and nothing changes in the code.
 - If the owner chooses the first alternative: change `Highlight` and `InlineDiffRow`, delete the allowlist entry, and the visual suite (Proofing results) and the atlas (`Highlight` stories) are the check.
 - The `<mark>` scan still fails on any other file, so the exception cannot spread.

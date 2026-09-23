@@ -548,6 +548,18 @@ in the module header, no new runtime dependency. Trade-off recorded: each
 decode re-reads the whole open segment, so CPU cost grows with model size and
 segment length (capped by `MAX_BUFFER_SECONDS`).
 
+**Third source: Autocue's script-tracking design.** The script tracker that
+turns the recognised words into a reading position,
+[`sidecars/manuscript-teleprompter/core/script_tracker.py`](../../sidecars/manuscript-teleprompter/core/script_tracker.py),
+follows the design of [Autocue](https://github.com/EdNutting/autocue): a
+forward-only speculative cursor driven by every partial hypothesis, a
+committed position driven by confirmed words, and fuzzy matching that ignores
+heard words that fit nothing nearby. Same reuse class as the two sources
+above: MIT, technique re-implemented from scratch rather than copied,
+attribution carried in the module's docstring, no new runtime dependency
+(Autocue's own Vosk or Sherpa-ONNX recogniser is not used; see
+[ADR 0034](../adr/0034-live-recognition-is-unconstrained-and-never-restricted-to-the-script.md)).
+
 ### 10. Moonshine Voice — streaming ASR candidate for the live teleprompter path
 
 **Status: models provisioned through the hashed asset catalog (`teleprompter-engines-and-input-devices.prd.md` phase 5, D17

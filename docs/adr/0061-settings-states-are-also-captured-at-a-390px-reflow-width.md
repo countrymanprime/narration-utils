@@ -1,6 +1,6 @@
 # 0061. Settings states are also captured at a 390 px reflow width
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-21
 **Supersedes:**
 **Amends:** [ADR 0037](0037-visual-suite-captures-no-phone-viewport.md) (which widths the suite captures)
@@ -11,7 +11,7 @@
 
 That example is the reason to revisit it. The Settings row collapsed only below `md` (768 px), and the collapsed-control check ([ADR 0060](0060-the-visual-suite-fails-a-collapsed-control-and-a-row-may-declare-one-narrow-on-purpose.md)) passes at all three captured widths on the pre-fix layout: at 768 px the control was 127 px. So the check could not have caught the bug it was written for. The layout is still reachable: the shell's minimum is 960 CSS px, but browser zoom divides that (400% zoom of a 1280 px window is 320 CSS px, the width WCAG 1.4.10 Reflow asks content to survive), and the responsive layout, the stacked rows and the navigation drawer are shipped code.
 
-This decision reverses part of an owner decision, so it is `Proposed`: the work follows the recommended path and the owner can reject it. The settings mobile layout PRD's own recommendation (its metrics ask for control widths "at 390px") points the same way, and the implementation plan's instruction for this stack was to run the check "at the viewports the suite captures plus any the PRD needs".
+This decision reverses part of an owner decision, so it was written as `Proposed`: the work follows the recommended path, and the owner accepted it on 2026-09-23. The settings mobile layout PRD's own recommendation (its metrics ask for control widths "at 390px") points the same way, and the implementation plan's instruction for this stack was to run the check "at the viewports the suite captures plus any the PRD needs".
 
 ## Decision
 

@@ -1,6 +1,6 @@
 # 0097. The manuscript reader's word lookup uses the Open English WordNet as a downloadable asset
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-21
 **Supersedes:** (none)
 
@@ -50,6 +50,6 @@ reciprocal terms that interact with this project's own AGPL-3.0-or-later licensi
   note in Phase 7's PR.
 - A future decision to add phrase lookups, non-US-English data, or a cloud fallback needs its own ADR (or an update
   superseding this one), not a silent scope creep of Phase 7/8.
-- This ADR is Proposed because the exact pinned artifact (URL/SHA-256/size) has not been fetched and verified against a
-  live download yet — that verification, and the owner's review of the licence conclusion above, is the open item before
-  Accepted.
+- The owner accepted this ADR, including the licence conclusion above, on 2026-09-23. The exact pinned artifact
+  (URL/SHA-256/size) has still to be fetched and verified against a live download; that stays an open item for the
+  phase that pins it.

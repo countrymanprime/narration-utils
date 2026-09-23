@@ -38,9 +38,9 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0013](0013-import-preserves-structural-whitespace.md) | Manuscript import preserves structural whitespace and repairs glued headings | Accepted |
 | [0014](0014-inline-formatting-as-offset-spans.md) | Inline formatting is stored as offset spans over canonical plain text | Accepted |
 | [0015](0015-real-progress-only.md) | Progress bars and activity logs show real work only | Accepted |
-| [0016](0016-highlight-primitive.md) | One `Highlight` primitive for entity, note and review highlights | Accepted (amends ADR-0009) |
+| [0016](0016-highlight-primitive.md) | One `Highlight` primitive for entity, note and review highlights | Accepted (amends ADR-0009; amended by ADR-0063) |
 | [0017](0017-no-legacy-css-shadowing-tailwind.md) | No unlayered legacy CSS or contradictory utilities shadow Tailwind | Accepted (amends ADR-0009) |
-| [0018](0018-story-bible-entries-read-only-until-edit.md) | Story Bible entries are read-only until Edit is pressed | Accepted |
+| [0018](0018-story-bible-entries-read-only-until-edit.md) | Story Bible entries are read-only until Edit is pressed | Accepted (amended by ADR-0036; its read-only-actions clause is superseded by ADR-0087) |
 | [0019](0019-detected-manuscript-is-offered-not-imported.md) | A manuscript found in the project folder is offered, never imported automatically | Accepted (extension list amended by ADR-0103) |
 | [0020](0020-entity-extraction-precision-over-recall.md) | Story Bible entity extraction favors precision over recall | Accepted |
 | [0021](0021-live-speech-engines-behind-one-event-contract.md) | Live speech engines are interchangeable behind one event contract | Accepted |
@@ -50,21 +50,21 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0025](0025-delivery-measurements-in-go-profiles-deferred.md) | Delivery measurements are computed in Go, and no distributor profile ships yet | Accepted |
 | [0026](0026-manuscript-line-identity-in-item-extension-data.md) | Manuscript line identity is stored in REAPER item extension data and read back through the bridge | Accepted |
 | [0027](0027-windows-gates-and-creates-the-release.md) | Windows gates pull requests and creates the release; macOS and Linux are optional, separate builds | Accepted |
-| [0028](0028-planned-work-is-specified-as-prds-and-deleted-when-built.md) | Planned work is specified as PRDs, kept apart from ADRs, and a PRD is deleted once its work is built | Proposed |
-| [0029](0029-work-is-tracked-on-github-and-decided-in-the-repo.md) | Work is tracked on GitHub, generated from files in the repo, and decisions and docs stay in the repo | Proposed |
-| [0030](0030-the-app-starts-without-a-project-and-picks-one-from-recents.md) | The app can start without a project and picks one from a per-user recents list | Proposed |
-| [0031](0031-reaper-integration-is-a-lua-file-bridge-verified-by-hand.md) | REAPER integration stays a Lua file bridge, and Lua changes are verified by hand | Proposed (its point 3 is superseded by ADR-0066) |
-| [0032](0032-analyzers-report-findings-and-never-change-audio-or-manuscript-on-their-own.md) | Analyzers report findings and never change the narrator's audio or manuscript on their own | Proposed |
-| [0033](0033-the-teleprompter-follows-speech-with-continuous-alignment-and-pause-resume.md) | The teleprompter follows what was said, with continuous alignment and pause/resume | Proposed |
-| [0034](0034-live-recognition-is-unconstrained-and-never-restricted-to-the-script.md) | Live recognition is unconstrained and is never restricted to the script's words | Proposed |
-| [0035](0035-live-transcription-techniques-are-ported-not-depended-on.md) | Live transcription techniques are ported into the sidecar, not taken as dependencies | Proposed |
-| [0036](0036-story-bible-read-only-view-is-the-disabled-form-not-entitysummary.md) | The Story Bible's read-only view is the same form with disabled controls, not `EntitySummary` | Proposed (amends ADR-0018) |
-| [0037](0037-visual-suite-captures-no-phone-viewport.md) | The visual suite captures no phone viewport | Accepted (amends ADR-0023) |
+| [0028](0028-planned-work-is-specified-as-prds-and-deleted-when-built.md) | Planned work is specified as PRDs, kept apart from ADRs, and a PRD is deleted once its work is built | Accepted |
+| [0029](0029-work-is-tracked-on-github-and-decided-in-the-repo.md) | Work is tracked on GitHub, generated from files in the repo, and decisions and docs stay in the repo | Accepted |
+| [0030](0030-the-app-starts-without-a-project-and-picks-one-from-recents.md) | The app can start without a project and picks one from a per-user recents list | Accepted |
+| [0031](0031-reaper-integration-is-a-lua-file-bridge-verified-by-hand.md) | REAPER integration stays a Lua file bridge, and Lua changes are verified by hand | Accepted (its point 3 is superseded by ADR-0066; its `if/elseif` dispatch in point 1 by ADR-0067) |
+| [0032](0032-analyzers-report-findings-and-never-change-audio-or-manuscript-on-their-own.md) | Analyzers report findings and never change the narrator's audio or manuscript on their own | Accepted |
+| [0033](0033-the-teleprompter-follows-speech-with-continuous-alignment-and-pause-resume.md) | The teleprompter follows what was said, with continuous alignment and pause/resume | Accepted |
+| [0034](0034-live-recognition-is-unconstrained-and-never-restricted-to-the-script.md) | Live recognition is unconstrained and is never restricted to the script's words | Accepted |
+| [0035](0035-live-transcription-techniques-are-ported-not-depended-on.md) | Live transcription techniques are ported into the sidecar, not taken as dependencies | Accepted |
+| [0036](0036-story-bible-read-only-view-is-the-disabled-form-not-entitysummary.md) | The Story Bible's read-only view is the same form with disabled controls, not `EntitySummary` | Accepted (amends ADR-0018) |
+| [0037](0037-visual-suite-captures-no-phone-viewport.md) | The visual suite captures no phone viewport | Accepted (amends ADR-0023; amended by ADR-0061) |
 | [0038](0038-visual-suite-captures-the-production-build.md) | The visual suite captures the production build, not the dev server | Accepted (amends ADR-0023) |
 | [0039](0039-the-project-is-licensed-agpl-3-or-later.md) | The project is licensed AGPL-3.0-or-later | Accepted |
 | [0040](0040-the-repository-is-laid-out-by-role-and-each-project-is-an-nx-project.md) | The repository is laid out by role, and each project is an Nx project | Accepted |
 | [0041](0041-host-bindings-read-project-services-through-one-snapshot-accessor.md) | Host bindings read the project-scoped services through one snapshot accessor | Accepted |
-| [0042](0042-proofing-suggestions-derive-from-current-entities-and-skip-auto-extracted-needs-review.md) | Proofing's "Suggest from manuscript" derives names from the current Story Bible and leaves out auto-extracted Needs Review entries | Proposed |
+| [0042](0042-proofing-suggestions-derive-from-current-entities-and-skip-auto-extracted-needs-review.md) | Proofing's "Suggest from manuscript" derives names from the current Story Bible and leaves out auto-extracted Needs Review entries | Accepted |
 | [0043](0043-coverage-is-a-ratchet-on-logic-directories-not-a-blanket-80-percent.md) | Coverage is a ratchet on logic directories, not a blanket 80% | Accepted |
 | [0044](0044-property-and-fuzz-tests-are-deterministic-in-the-gate.md) | Property and fuzz tests are deterministic in the gate | Accepted |
 | [0045](0045-dead-code-is-gated-at-zero-with-reasoned-ignores.md) | Dead code is gated at zero, and every ignore says why | Accepted |
@@ -79,13 +79,13 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0054](0054-tabs-and-toggle-groups-name-and-link-what-the-hand-built-strips-left-anonymous.md) | Tabs and toggle groups name and link what the hand-built strips left anonymous | Accepted |
 | [0055](0055-the-tag-input-is-a-wrapped-text-field-and-chips-that-report-and-never-edit-the-list.md) | The tag input is a wrapped text field and chips that report and never edit the list | Accepted |
 | [0056](0056-a-presentational-table-primitive-replaces-the-dtable-class-and-rows-take-the-keyboard.md) | A presentational Table primitive replaces the dtable class, and pressable rows take the keyboard | Accepted |
-| [0057](0057-a-running-job-that-cannot-be-cancelled-keeps-its-dialog-blocking-and-says-so.md) | A running job that cannot be cancelled keeps its dialog blocking and says so, and the progress bar respects reduced motion | Accepted |
+| [0057](0057-a-running-job-that-cannot-be-cancelled-keeps-its-dialog-blocking-and-says-so.md) | A running job that cannot be cancelled keeps its dialog blocking and says so, and the progress bar respects reduced motion | Accepted (its "stays blocking" rule is superseded for the Story Bible rebuild by ADR-0076) |
 | [0058](0058-heading-has-a-level-and-panel-names-its-region-with-a-level-2-title.md) | Heading has a level, and Panel names its region with a level-2 title | Accepted |
 | [0059](0059-text-colours-meet-wcag-aa-with-two-text-levels-a-non-text-token-and-derived-on-tint-text.md) | Text colours meet WCAG AA: two text levels, a non-text token, and derived on-tint text | Accepted (amends ADR-0016) |
 | [0060](0060-the-visual-suite-fails-a-collapsed-control-and-a-row-may-declare-one-narrow-on-purpose.md) | The visual suite fails a collapsed control, and a row may declare one narrow on purpose | Accepted (amends ADR-0023) |
-| [0061](0061-settings-states-are-also-captured-at-a-390px-reflow-width.md) | Settings states are also captured at a 390 px reflow width | Proposed (amends ADR-0037) |
+| [0061](0061-settings-states-are-also-captured-at-a-390px-reflow-width.md) | Settings states are also captured at a 390 px reflow width | Accepted (amends ADR-0037) |
 | [0062](0062-ui-import-rules-are-a-dependency-cruiser-config-and-a-mark-scan-that-name-their-adr.md) | UI import rules are a dependency-cruiser config and a `<mark>` scan that name their ADR | Accepted |
-| [0063](0063-the-proofing-diff-marks-its-own-words-and-adr-0016-covers-entry-highlights.md) | The proofing diff marks its own words, and ADR 0016 covers entry highlights | Proposed (amends ADR-0016) |
+| [0063](0063-the-proofing-diff-marks-its-own-words-and-adr-0016-covers-entry-highlights.md) | The proofing diff marks its own words, and ADR 0016 covers entry highlights | Accepted (amends ADR-0016) |
 | [0064](0064-the-visual-suite-runs-axe-on-every-app-state-and-a-violation-fails-unless-it-is-declared-debt.md) | The visual suite runs axe on every app state, and a violation fails unless it is declared debt | Accepted (amends ADR-0023) |
 | [0065](0065-aria-snapshots-pin-the-role-trees-of-the-dialogs-the-slide-over-and-the-navigation.md) | Aria snapshots pin the role trees of the dialogs, the slide-over and the navigation | Accepted |
 | [0066](0066-the-lua-bridge-is-tested-by-a-harness-under-lua-5-4-and-reaper-api-behaviour-is-checked-in-reaper.md) | The Lua bridge is tested by a harness under Lua 5.4, and REAPER API behaviour is checked in REAPER | Accepted (supersedes point 3 of ADR-0031) |
@@ -94,11 +94,11 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0069](0069-payloads-are-validated-with-zod-behind-parsewire-and-a-wrong-shape-fails-loudly.md) | Payloads are validated with Zod behind `parseWire`, and a wrong shape fails loudly | Accepted |
 | [0070](0070-workflow-actions-are-pinned-to-a-commit-and-zizmor-gates-the-workflows.md) | Workflow actions are pinned to a commit, and zizmor gates the workflows | Accepted |
 | [0071](0071-releases-carry-build-provenance-and-promote-refuses-a-file-the-release-workflows-did-not-build.md) | Releases carry build provenance, and promote refuses a file the release workflows did not build | Accepted |
-| [0072](0072-the-app-updates-itself-from-this-repositorys-releases-and-never-installs-without-a-click.md) | The app updates itself from this repository's releases and never installs without a click | Proposed |
+| [0072](0072-the-app-updates-itself-from-this-repositorys-releases-and-never-installs-without-a-click.md) | The app updates itself from this repository's releases and never installs without a click | Accepted |
 | [0073](0073-the-executable-is-named-narration-utils-and-carries-its-version.md) | The executable is named `narration-utils` and carries its own version | Accepted |
 | [0074](0074-the-windows-update-renames-the-running-executable-and-keeps-the-old-one-until-the-new-one-starts.md) | The Windows update renames the running executable and keeps the old one until the new one starts | Accepted |
 | [0075](0075-every-action-that-leaves-the-interface-acknowledges-within-100-ms-cannot-be-fired-twice-and-tells-the-narrator-when-it-ends.md) | Every action that leaves the interface acknowledges within 100 ms, cannot be fired twice, and tells the narrator when it ends | Accepted |
-| [0076](0076-a-host-job-ends-with-one-job-ended-event-the-app-announces-it-and-the-story-bible-rebuild-may-continue-in-the-background.md) | A host job ends with one `job:ended` event, the app announces it, and the Story Bible rebuild may continue in the background | Proposed (amends ADR-0057) |
+| [0076](0076-a-host-job-ends-with-one-job-ended-event-the-app-announces-it-and-the-story-bible-rebuild-may-continue-in-the-background.md) | A host job ends with one `job:ended` event, the app announces it, and the Story Bible rebuild may continue in the background | Accepted (amends ADR-0057) |
 | [0077](0077-every-asset-install-is-one-job-with-real-bytes-a-second-start-joins-it-and-one-hook-follows-it.md) | Every asset install is one job with real bytes, a second start joins it, and one hook follows it | Accepted |
 | [0078](0078-asset-state-comes-from-the-manifest-an-asset-is-read-in-full-once-per-session-and-a-failed-download-resumes.md) | Asset state comes from the manifest, an asset is read in full once per session, and a failed download resumes | Accepted |
 | [0079](0079-every-downloadable-asset-is-listed-installed-verified-and-removed-through-one-registry-of-providers.md) | Every downloadable asset is listed, installed, verified and removed through one registry of providers | Accepted |
@@ -107,19 +107,21 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0082](0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md) | Windows installs per user from an NSIS setup program that Wails builds and the release carries beside the update zip | Accepted |
 | [0083](0083-the-public-docs-site-is-built-by-mkdocs-with-the-material-theme-straight-from-docs-and-a-reviewed-include-list.md) | The public docs site is built by MkDocs with the Material theme straight from docs/, and a reviewed include list decides what is published | Accepted |
 | [0084](0084-repository-links-are-checked-offline-on-every-pull-request-and-diagrams-are-parsed-and-drawn-without-a-third-party.md) | Repository links are checked offline on every pull request, and diagrams are parsed and drawn without a third party | Accepted |
-| [0085](0085-the-third-party-notices-are-generated-from-the-release-and-ship-as-their-own-asset-and-not-inside-the-update-zip.md) | The third-party notices are generated from the release and ship as their own asset, not inside the update zip | Proposed |
+| [0085](0085-the-third-party-notices-are-generated-from-the-release-and-ship-as-their-own-asset-and-not-inside-the-update-zip.md) | The third-party notices are generated from the release and ship as their own asset, not inside the update zip | Accepted |
 | [0086](0086-the-import-review-is-grouped-by-what-each-section-will-be-and-reports-repairs-instead-of-a-log.md) | The import review is grouped by what each section will be, and reports the importer's repairs instead of its log | Accepted |
 | [0087](0087-story-bible-header-actions-are-mode-based-and-lock-cannot-happen-mid-edit.md) | Story Bible header actions are mode-based, and Lock cannot happen mid-edit | Accepted |
 | [0088](0088-contents-and-characters-stay-reference-hidden-by-the-reader.md) | Contents and Characters stay stored as reference chapters; hiding them in the reader is the reader PRD's own phase | Accepted |
 | [0089](0089-a-docx-table-of-contents-becomes-the-authoritative-chapter-list-above-a-match-threshold.md) | A docx's own table of contents becomes the authoritative chapter list above a match threshold | Accepted |
 | [0090](0090-the-page-flip-reader-hides-reference-chapters-superseding-the-reader-half-of-adr-0005.md) | The page-flip reader hides reference chapters, superseding the reader half of ADR 0005 | Accepted |
+| [0091](0091-story-bible-pronunciation-is-a-narrator-edited-value-the-preview-speaks-directly.md) | Story Bible pronunciation is a narrator-edited value the preview speaks directly | Accepted |
 | [0092](0092-reaper-executable-discovery-heartbeat-mechanism-and-script-plus-project-launch-are-resolved.md) | REAPER executable discovery, heartbeat mechanism and script-plus-project launch are resolved | Accepted |
-| [0093](0093-the-home-estimate-times-the-first-opening-and-closing-template-until-a-project-can-choose-one.md) | The Home estimate times the first opening and closing template until a project can choose one | Proposed |
+| [0093](0093-the-home-estimate-times-the-first-opening-and-closing-template-until-a-project-can-choose-one.md) | The Home estimate times the first opening and closing template until a project can choose one | Accepted |
 | [0094](0094-dialog-gains-a-full-size-variant-that-fills-the-viewport-with-a-margin.md) | Dialog gains a full-size variant that fills the viewport with a margin | Accepted |
 | [0095](0095-txt-import-decodes-by-bom-utf-8-windows-1252-and-a-chapterless-file-becomes-one-narration-chapter.md) | TXT import decodes by BOM/UTF-8/Windows-1252, and a chapterless file becomes one narration chapter | Accepted |
 | [0096](0096-the-public-demo-builds-under-its-own-vite-mode-and-the-router-carries-a-basename.md) | The public demo builds under its own Vite mode, and the router carries a basename | Accepted |
+| [0097](0097-the-manuscript-reader-word-lookup-uses-the-open-english-wordnet-as-a-downloadable-asset.md) | The manuscript reader's word lookup uses the Open English WordNet as a downloadable asset | Accepted |
 | [0098](0098-take-provenance-in-take-extension-data-extends-adr-0026.md) | Take provenance is stored in take-level extension data, extending ADR 0026 to takes | Accepted |
 | [0100](0100-analysis-evidence-is-two-hash-keys-one-ledger-record-per-run-and-a-narrator-confirmed-track-map.md) | Analysis evidence is two hash keys, one ledger record per run, and a narrator-confirmed track map | Accepted |
 | [0101](0101-epub-import-reads-nav-then-ncx-for-chapters-caps-entries-and-refuses-drm.md) | EPUB import reads nav then NCX for chapters, caps entries, and refuses DRM | Accepted |
-| [0102](0102-epub-content-kind-overrides-by-title-rather-than-canonical-title-renaming.md) | EPUB `epub:type` forces a section's content kind by an explicit override, not by renaming its title to one the classifier already knows | Proposed |
+| [0102](0102-epub-content-kind-overrides-by-title-rather-than-canonical-title-renaming.md) | EPUB `epub:type` forces a section's content kind by an explicit override, not by renaming its title to one the classifier already knows | Accepted |
 | [0103](0103-txt-and-epub-are-accepted-import-formats-hand-rolled-drm-refused-and-offered-for-detection.md) | TXT and EPUB are accepted import formats, hand-rolled without a library, DRM is refused, and both are offered for detection | Accepted (amends ADR-0019) |

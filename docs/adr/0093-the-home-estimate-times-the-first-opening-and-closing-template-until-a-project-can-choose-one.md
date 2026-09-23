@@ -1,6 +1,6 @@
 # 0093. The Home estimate times the first opening and closing template until a project can choose one
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-22
 
 ## Context

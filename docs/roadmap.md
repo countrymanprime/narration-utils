@@ -20,7 +20,7 @@ The suite helps a narrator find and review issues faster. It may analyze local m
 ### 1. Dashboard foundation
 
 - Adapt Manuscript Guide and Transcript Compare outputs into structured findings.
-- Add a REAPER review panel with filters, navigation, looping, and review decisions.
+- Add a review page in the app with filters and review decisions; REAPER only carries out its navigate, loop and marker actions.
 - Store user decisions in a project sidecar; no analyzer may silently change audio.
 
 ### 2. Recording and take review

@@ -1,6 +1,6 @@
 # 0085. The third-party notices are generated from the release and ship as their own asset, not inside the update zip
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-21
 
 ## Context

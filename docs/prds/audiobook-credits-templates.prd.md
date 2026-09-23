@@ -52,18 +52,29 @@ We believe templated credits filled from project data, previewed as they will be
 
 ## Open Questions
 
-- [ ] **C1. Where do credits appear first?** Options: Manuscript view, teleprompter, estimate only. Recommendation: templates plus preview plus estimate first (no sidecar work), then Manuscript pseudo-entries, then the teleprompter.
-- [ ] **C2. Ownership of each token.** Recommendation: `[Narrator]` global default with project override; `[Title]`, `[Subtitle]`, `[Author]`, `[Series]`, `[Book Number]`, `[Copyright]`, `[Year]`, `[Publisher]` per project; `[Chapter]`, `[Chapter Title]` computed from `manuscript.json` (chapter announcement templates only).
-- [ ] **C3. Seeding.** Suggest Title and Author from the cover lines (`model.go:52-68`) and `docProps/core.xml` (not read today), always as editable suggestions; never write back to the manuscript.
-- [ ] **C4. `[Copyright]` as one string or holder plus year?** Recommendation: keep `[Copyright]` free-form and add optional `[Year]` and `[Copyright Holder]` so contracts that phrase it differently still work.
-- [ ] **C5. Optional segments and custom tokens.** Support `[Subtitle]` dropping cleanly when empty (for example a segment syntax) and user-defined tokens? Recommendation: optional segments yes; custom tokens later.
-- [ ] **C6. Missing values.** Preview shows a highlighted placeholder chip and an unresolved-token count; saving is never blocked; the teleprompter Start and a "mark ready" state warn or block, because "Read by ." on a recording is worse than a warning (consistent with "disabled, not hidden", `design-system.md:34`, and ADR 0032's report-do-not-act).
-- [ ] **C7. Storage.** Recommendation: user templates in `%APPDATA%\narration-utils\credit-templates.json` (a versioned list, alongside `recent-projects.json`); project values in the project manifest when `project.json` lands (W1), otherwise a small file under `narration-utils/` outside every folder `resetDerived` and `Clear` delete; a flat `General.narrator_name` `text` setting for the global narrator default.
-- [ ] **C8. Template kinds.** Opening, closing, and an optional chapter announcement; retail sample is a computed marker, not a template.
+- [x] **C1. Where do credits appear first?** Options: Manuscript view, teleprompter, estimate only. Recommendation: templates plus preview plus estimate first (no sidecar work), then Manuscript pseudo-entries, then the teleprompter.
+  **Settled:** as recommended, by delivery: templates, preview and estimate first (#302, #303), Manuscript pseudo-entries next (#306), the teleprompter next (Phase 4).
+- [x] **C2. Ownership of each token.** Recommendation: `[Narrator]` global default with project override; `[Title]`, `[Subtitle]`, `[Author]`, `[Series]`, `[Book Number]`, `[Copyright]`, `[Year]`, `[Publisher]` per project; `[Chapter]`, `[Chapter Title]` computed from `manuscript.json` (chapter announcement templates only).
+  **Settled:** as recommended, by Phase 1: `apps/desktop/internal/credits/values.go` resolves the project's narrator value over the global default.
+- [x] **C3. Seeding.** Suggest Title and Author from the cover lines (`model.go:52-68`) and `docProps/core.xml` (not read today), always as editable suggestions; never write back to the manuscript.
+  **Settled:** as recommended, by Phase 1: `apps/desktop/internal/credits/suggestions.go` offers editable suggestions and never writes back to the manuscript.
+- [x] **C4. `[Copyright]` as one string or holder plus year?** Recommendation: keep `[Copyright]` free-form and add optional `[Year]` and `[Copyright Holder]` so contracts that phrase it differently still work.
+  **Settled:** as recommended, by Phase 1: free-form `[Copyright]` plus optional `[Year]` and `[Copyright Holder]` (`internal/credits/values.go`).
+- [x] **C5. Optional segments and custom tokens.** Support `[Subtitle]` dropping cleanly when empty (for example a segment syntax) and user-defined tokens? Recommendation: optional segments yes; custom tokens later.
+  **Settled:** as recommended, by Phase 1: `{...}` optional segments in `apps/desktop/internal/credits/renderer.go` drop cleanly when a token inside is empty; custom tokens later.
+- [x] **C6. Missing values.** Preview shows a highlighted placeholder chip and an unresolved-token count; saving is never blocked; the teleprompter Start and a "mark ready" state warn or block, because "Read by ." on a recording is worse than a warning (consistent with "disabled, not hidden", `design-system.md:34`, and ADR 0032's report-do-not-act).
+  **Settled (preview), answered 2026-09-23 (teleprompter):** the preview part shipped in Phase 1 (highlighted unresolved tokens and a list, saving never blocked). For the teleprompter the owner chose to warn and still allow Start, not block. Phase 4 carries it.
+- [x] **C7. Storage.** Recommendation: user templates in `%APPDATA%\narration-utils\credit-templates.json` (a versioned list, alongside `recent-projects.json`); project values in the project manifest when `project.json` lands (W1), otherwise a small file under `narration-utils/` outside every folder `resetDerived` and `Clear` delete; a flat `General.narrator_name` `text` setting for the global narrator default.
+  **Settled:** as recommended, by Phase 1: `credit-templates.json` in `%APPDATA%\narration-utils` (`creditTemplatesPath`, `apps/desktop/app.go`), values on the project manifest, and `General.narrator_name`.
+- [x] **C8. Template kinds.** Opening, closing, and an optional chapter announcement; retail sample is a computed marker, not a template.
+  **Settled:** as recommended, by Phase 1: `apps/desktop/internal/credits/templates.go` defines the `opening`, `closing` and `chapter_announcement` kinds.
 - [x] **C9. Time model.** Credits seconds = rendered words / 155 wpm; do they enter the record, edit and proof multipliers? Optional room tone as a user seconds-per-file setting defaulting to 0 (ADR 0025). Should the estimate gain a WPM setting instead of the fixed 155, and reconcile the "~150" label and the 200 wpm reading figure? **Resolved (Phase 2):** credits seconds are computed by `estimateCreditsSeconds` (`apps/ui/src/state.ts`), reusing the same `WORDS_PER_FINISHED_HOUR` constant as the narration estimate rather than a second 155/60 figure; they are a separate "Credits" stat and never enter the record/edit/proof multipliers, matching the Success Metrics table. Room tone is a parameter defaulting to `CREDITS_ROOM_TONE_SECONDS_PER_FILE = 0`; no Settings field exists yet (Phase 5's "Could" item), so it is not user-configurable this phase. The estimate panel's own "~150 words/min" label was corrected to "~155" (`AudiobookEstimatePanel.tsx`); Manuscript.tsx's 200 wpm figure is a distinct *silent reading* estimate (per this PRD's own Evidence section) and was intentionally left alone, not reconciled away. No WPM setting was added - the fixed 155 figure stays, per the "Single constant with the label derived from it" mitigation already in the Technical Risks table.
-- [ ] **C10. Retail sample.** A marker on the first five minutes of chapter one at most; it adds no time.
-- [ ] **C11. Recorded inside chapter files?** If narrators record credits in the chapter file, Proofing must prepend them (compare.py precedent) or it reports false extras. Recommendation: assume separate files (ACX) and document it.
-- [ ] **C12. Sequencing.** Wait for the project manifest (W1) before adding a project file, or ship with a dedicated file and migrate? Recommendation: a dedicated file behind one Go accessor so the move is a one-place change.
+- [x] **C10. Retail sample.** A marker on the first five minutes of chapter one at most; it adds no time.
+  **Answered 2026-09-23:** the narrator picks the retail sample range (at most 5 minutes, anywhere in the book), overriding the "first five minutes of chapter one" recommendation; it adds no time to the estimate. Phase 5 carries it.
+- [x] **C11. Recorded inside chapter files?** If narrators record credits in the chapter file, Proofing must prepend them (compare.py precedent) or it reports false extras. Recommendation: assume separate files (ACX) and document it.
+  **Settled:** separate files, as ADR 0093 words it; the Manuscript user guide (`docs/guides/using-the-app/manuscript.md`) now tells narrators to record credits as their own files.
+- [x] **C12. Sequencing.** Wait for the project manifest (W1) before adding a project file, or ship with a dedicated file and migrate? Recommendation: a dedicated file behind one Go accessor so the move is a one-place change.
+  **Moot:** the project manifest landed first, so credit values live on it (`project.Manifest.Credits`, `internal/credits/values.go`) and no dedicated file was needed.
 
 ## Users & Context
 
@@ -124,17 +135,17 @@ We believe templated credits filled from project data, previewed as they will be
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Templates, tokens and preview | Renderer, template store, project values, Settings Credits category, preview, ADR | pending | - | C7, C12 | - |
+| 1 | Templates, tokens and preview | Renderer, template store, project values, Settings Credits category, preview, ADR | complete | - | C7, C12 | - |
 | 2 | Estimate | Credits stat, seconds formatting, tests | complete | - | 1 | - |
 | 3 | Manuscript entries | Read-only credits before/after chapters | complete | 4 | 1; reader PRD | - |
-| 4 | Teleprompter | Credits selectable, sidecar spans, Go contract | pending | 3 | 1; teleprompter PRDs | - |
-| 5 | Extras | Optional segments, chapter announcements, room tone, retail sample marker | pending | - | 1-4 | - |
+| 4 | Teleprompter | Credits selectable, sidecar spans, Go contract; unresolved tokens warn but Start stays allowed | pending | 3 | 1; teleprompter PRDs | - |
+| 5 | Extras | Optional segments, chapter announcements, room tone, narrator-picked retail sample range (at most 5 minutes, anywhere in the book) | pending | - | 1-4 | - |
 
 **Phase 1.** Goal: templates that fill from data and preview. Success: renderer tests; a template survives Replace and Clear; PNGs at four viewports.
 **Phase 2.** Goal: honest total time. Success: narration total unchanged; credits stat correct.
 **Phase 3.** Goal: see credits where the book is read. Success: entries present, not searchable chapters, not counted twice.
-**Phase 4.** Goal: read credits with the teleprompter. Success: manual live check on the user's machine.
-**Phase 5.** Goal: optional polish. Success: per item.
+**Phase 4.** Goal: read credits with the teleprompter. Scope note (C6, owner decision 2026-09-23): when the credits text has unresolved tokens, the teleprompter shows a warning naming them and still allows Start; it never blocks. Success: manual live check on the user's machine; a credits read with an unresolved token shows the warning and starts.
+**Phase 5.** Goal: optional polish. Scope note (C10, owner decision 2026-09-23): the retail sample is a range the narrator picks, at most 5 minutes long and anywhere in the book (not fixed to the first five minutes of chapter one); it is a marker only and adds no time to the estimate. Success: per item; a sample range over 5 minutes is refused, and the estimate is unchanged by a sample.
 
 **Parallelism Notes**: Phase 1 is the base; 3 and 4 are independent after it.
 
@@ -156,9 +167,13 @@ Cross-cutting: `hostAPIVersion` re-checked at merge; ADR numbering re-checked; `
 | Front Matter keeps `contentKind: "opening"` (prior, ADR 0004) | Credits are a separate concept and store | Reuse the kind | Avoids the name collision |
 | Reference and non-narration material is excluded from totals (prior) | Credits reported separately in the estimate | Fold into the narration total | Keeps the narration figure stable |
 | Local-first (prior) | All data local | - | Standing scope |
-| Template store | User-level JSON list (proposed) | Flat settings strings | Store cannot hold lists |
-| Renderer | One Go renderer (proposed) | Per-surface rendering | One source of truth |
-| Missing tokens | Warn, block only at read time (proposed) | Block saving | Editing must stay possible |
+| Template store (decided, C7, Phase 1) | User-level versioned JSON list, `credit-templates.json` in `%APPDATA%\narration-utils`; project values on the project manifest; `General.narrator_name` for the global narrator | Flat settings strings; a dedicated project file | Store cannot hold lists; the manifest landed first (C12 moot) |
+| Renderer (decided, C5, Phase 1) | One Go renderer (`internal/credits/renderer.go`) with `{...}` optional segments; custom tokens later | Per-surface rendering | One source of truth |
+| Missing tokens (decided, C6) | Preview marks unresolved tokens and never blocks saving; the teleprompter warns and still allows Start | Block saving; block teleprompter Start | Owner decision 2026-09-23; editing and reading stay possible, and the narrator sees the gap before recording |
+| Delivery order (settled, C1) | Templates, preview and estimate (#302, #303), then Manuscript pseudo-entries (#306), then the teleprompter (Phase 4) | Manuscript or teleprompter first | Settled by delivery; no sidecar work up front |
+| Token ownership and seeding (settled, C2, C3, C4, C8) | Project narrator overrides the global default (`values.go`); editable Title/Author suggestions never written back (`suggestions.go`); free-form `[Copyright]` plus optional `[Year]` and `[Copyright Holder]`; kinds `opening`, `closing`, `chapter_announcement` (`templates.go`) | Fixed copyright shape; writing suggestions back to the manuscript | Settled by Phase 1 as recommended |
+| Retail sample (decided, C10) | The narrator picks the range, at most 5 minutes, anywhere in the book; a marker that adds no time | Fixed to the first five minutes of chapter one | Owner decision 2026-09-23, overriding the recommendation; the best sample is not always the opening |
+| Credits recorded inside chapter files (settled, C11) | Separate files (ADR 0093 wording); the Manuscript user guide says so | Prepend credits to chapter scripts in Proofing | Settled; ACX practice, and no false extras in Proofing |
 | Credits time model (Phase 2) | Reuse `WORDS_PER_FINISHED_HOUR` (155 wpm); a separate "Credits" stat; room tone defaults to 0 with no Settings field yet | A second 155/60 constant; folding into the narration total; a WPM setting now | Avoids the constants-disagree risk named in Technical Risks; keeps the narration total stable per its own Success Metric; room tone Settings UI is Phase 5 scope |
 | Which template the estimate times (Phase 2, no per-project selection yet) | The first `opening`- and first `closing`-kind template in the library, by list order (ADR 0093, Proposed) | Sum every template of each kind; show no Credits stat until selection exists | Matches the PRD's own "pick a standard template" user flow closely enough to ship Phase 2 now; documented as provisional pending real per-project template selection |
 | Which template the Manuscript pseudo-entries render (Phase 3) | Same convention as Phase 2 (ADR 0093): the first `opening`- and first `closing`-kind template in the library | A new per-project "which template plays here" selection now | ADR 0093 named this exact gap and recommended closing it "most naturally alongside Phase 3's Manuscript entries"; a real per-project selection is still future work (ADR 0093's own accepted consequence), not re-litigated as a new Proposed ADR here |

@@ -1,6 +1,6 @@
 # 0091. Story Bible pronunciation is a narrator-edited value the preview speaks directly
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-21
 **Supersedes:** (none)
 
@@ -51,6 +51,6 @@ ADR performs, because there is no new artifact yet.
 - No engine addition needs its own licence review yet, because none is added; a future PRD that proposes MFA G2P or
   any other second engine must still re-read `docs/architecture/model-provenance.md` and
   `docs/research/local-dependency-evaluation.md#license-classes` first, unchanged from the standing policy.
-- This ADR is Proposed pending the owner's review of the Piper phoneme-input approach and, more importantly, pending
-  Phase 10's real trial of whether an edited pronunciation is actually audible and correct through that path — a desk
-  check of the API surface is not the same as hearing it work.
+- The owner accepted this direction on 2026-09-23, before Phase 10's real trial of whether an edited pronunciation is
+  actually audible and correct through the Piper phoneme-input path — a desk check of the API surface is not the same
+  as hearing it work. If that listening trial fails, a new ADR supersedes this one.

@@ -1,6 +1,6 @@
 # 0035. Live transcription techniques are ported into the sidecar, not taken as dependencies
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-19
 
 ## Context
@@ -9,13 +9,13 @@ Two open-source projects solve parts of live transcription with `faster-whisper`
 
 ## Decision
 
-`tools/manuscript-teleprompter/core/live_asr.py` re-implements those techniques from scratch against this repository's own pinned `faster-whisper` stack. It does not import, vendor or run either project, and no server or client split is introduced. Its module header attributes both sources and their copyright holders (`live_asr.py:16-26`): WhisperLive (`Copyright (c) 2023 Vineet Suryan, Collabora Ltd.`) for the windowed rolling decode and word timestamps, and whisper_streaming (`Copyright (c) 2023 ÚFAL`) for LocalAgreement (`_confirm_agreed_words`, `live_asr.py:138`). The model is resolved through the existing asset catalog: the host looks up the model in `shell/internal/whisper` and passes `--model-dir` (`shell/bindings.go:415-423`, `shell/internal/teleprompter/service.go:148`), so the desktop host never relies on an auto-downloaded cache. A sidecar started by hand without `--model-dir` can still fall back to faster-whisper's own download. Both reuses are recorded in [local-dependency-evaluation.md](../research/local-dependency-evaluation.md).
+`sidecars/manuscript-teleprompter/core/live_asr.py` re-implements those techniques from scratch against this repository's own pinned `faster-whisper` stack. It does not import, vendor or run either project, and no server or client split is introduced. Its module header attributes both sources and their copyright holders (`live_asr.py:16-26`): WhisperLive (`Copyright (c) 2023 Vineet Suryan, Collabora Ltd.`) for the windowed rolling decode and word timestamps, and whisper_streaming (`Copyright (c) 2023 ÚFAL`) for LocalAgreement (`_confirm_agreed_words`, `live_asr.py:138`). The model is resolved through the existing asset catalog: the host looks up the model in `apps/desktop/internal/whisper` and passes `--model-dir` (`apps/desktop/bindings.go`, `apps/desktop/internal/teleprompter/service.go`), so the desktop host never relies on an auto-downloaded cache. A sidecar started by hand without `--model-dir` can still fall back to faster-whisper's own download. Both reuses are recorded in [local-dependency-evaluation.md](../research/local-dependency-evaluation.md).
 
 ## Consequences
 
 - No new runtime dependency, server or port, and model integrity is checked by the same catalog as every other model.
 - The port freezes a snapshot of two upstream designs. Improvements to either project are not picked up unless someone re-reads them and ports them deliberately.
 - MIT requires the notice to travel with copied code. Because this is a clean-room re-implementation of the design, there is no upstream commit to pin, and the attribution is of the technique; if any upstream source is ever copied verbatim, the exact commit and full notice must be added at that point.
-- The tracker's design also follows Autocue (MIT), credited in `script_tracker.py`'s docstring ([ADR 0033](0033-the-teleprompter-follows-speech-with-continuous-alignment-and-pause-resume.md)). It is not recorded in `docs/research/local-dependency-evaluation.md`, unlike the two above.
+- The tracker's design also follows Autocue (MIT), credited in `script_tracker.py`'s docstring ([ADR 0033](0033-the-teleprompter-follows-speech-with-continuous-alignment-and-pause-resume.md)), and is recorded beside the two above in [local-dependency-evaluation.md](../research/local-dependency-evaluation.md).
 - We own the streaming loop's bugs and its CPU cost, which grows with segment length because each decode re-reads the whole open segment (bounded by `MAX_BUFFER_SECONDS`).
 - Adopting a package or server for live transcription, or a different streaming framework, would need a new ADR that supersedes this one.

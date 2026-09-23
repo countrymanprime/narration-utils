@@ -1,6 +1,6 @@
 # 0036. The Story Bible's read-only view is the same form with disabled controls, not `EntitySummary`
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-19
 **Amends:** ADR-0018 (records the alternative it did not choose and why; its Decision is unchanged)
 

@@ -1,6 +1,6 @@
 # 0029. Work is tracked on GitHub, generated from files in the repo, and decisions and docs stay in the repo
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-19
 
 ## Context

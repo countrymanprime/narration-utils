@@ -1,6 +1,6 @@
 # 0018. Story Bible entries are read-only until Edit is pressed
 
-**Status:** Accepted (its "read-only actions stay available regardless of mode" clause is superseded by [ADR 0087](0087-story-bible-header-actions-are-mode-based-and-lock-cannot-happen-mid-edit.md); the rest stands)
+**Status:** Accepted (its "read-only actions stay available regardless of mode" clause is superseded by [ADR 0087](0087-story-bible-header-actions-are-mode-based-and-lock-cannot-happen-mid-edit.md); [ADR 0036](0036-story-bible-read-only-view-is-the-disabled-form-not-entitysummary.md) amends it by recording the alternative it did not choose; the rest stands)
 **Date:** 2026-09-18
 
 ## Context

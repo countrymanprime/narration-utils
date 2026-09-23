@@ -1,6 +1,6 @@
 # 0028. Planned work is specified as PRDs, kept apart from ADRs, and a PRD is deleted once its work is built
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-19
 
 ## Context
@@ -19,7 +19,7 @@ Planned work used to live in per-feature briefs scattered across `docs/architect
 
 - A file in `docs/architecture/` or `docs/utilities/` describes shipped behavior or a rule that shipped code cites. Three former briefs stayed for that reason: `first-use-dependency-provisioning.md`, `manuscript-teleprompter.md` and `standalone-launch.md`, each with its remaining planned work moved into a PRD.
 - Deleting a finished PRD loses the reasoning that lived in it unless that reasoning was promoted. Any decision it settled needs its ADR before the PRD goes, and any behavior it specified needs a steady-state doc. That promotion is manual and easy to skip.
-- No PRD has been completed yet, so the delete step in point 4 has not been exercised; the first one will show whether the rule is workable.
+- The delete step in point 4 has been exercised: several PRDs have since been delivered and deleted (TXT and EPUB manuscript import among them), each listed in the [`docs/prds/README.md`](../prds/README.md) index as "PRD deleted, delivered" with a pointer to its steady-state docs.
 - PRDs are long (each has a Research Summary and a Decisions Log), so the folder is heavier to read than the briefs were. The index and the phase tables are the intended entry points.
-- Code comments and docs that pointed at a removed brief now point at a PRD or ADR (for example the teleprompter comment in `shell/app.go`); a link to a PRD becomes dead when that PRD is deleted, so links from steady-state docs into `docs/prds/` are temporary by design.
+- Code comments and docs that pointed at a removed brief now point at a PRD or ADR (for example the teleprompter comment in `apps/desktop/app.go`); a link to a PRD becomes dead when that PRD is deleted, so links from steady-state docs into `docs/prds/` are temporary by design.
 - Changing this needs a new ADR that supersedes this one, for example if PRDs move out of the repository.
