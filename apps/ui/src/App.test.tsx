@@ -444,6 +444,28 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(window.location.pathname).toBe('/tracks');
   });
 
+  it('opens Review from the navigation, and a finding there opens the manuscript at its line', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Review' })[0]);
+    await screen.findByRole('heading', { name: 'Review' });
+    expect(window.location.pathname).toBe('/review');
+    const row = await screen.findByText(/pink eyes/);
+    fireEvent.click(row);
+    fireEvent.click(await screen.findByRole('button', { name: 'Show in manuscript' }));
+    await waitFor(() => expect(window.location.pathname).toBe('/manuscript'));
+  });
+
+  it('keeps Review reachable without a manuscript', async () => {
+    const source = createMockApi();
+    renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    const reviewButtons = screen.getAllByRole('button', { name: 'Review' });
+    expect(reviewButtons.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true);
+    fireEvent.click(reviewButtons[0]);
+    await screen.findByRole('heading', { name: 'Review' });
+  });
+
   it('redirects a direct manuscript-dependent URL to Home when no manuscript exists', async () => {
     window.history.replaceState(null, '', '/proofing');
     const source = createMockApi();

@@ -731,6 +731,55 @@ export const STATE_CATALOG: StateEntry[] = [
       'Teleprompter, the session stopped itself at the end of the chapter (the host auto-stop, ADR 0106) - "Stopped at the end of the chapter." with Start reading offered again and the chapter still dimmed (reached via the ?mockTeleprompter=ended mock seam)',
   },
 
+  // Review (review-dashboard-and-findings-adoption.prd.md Phase 5)
+  {
+    page: 'review',
+    state: 'default',
+    description: 'Review, the latest run of every check in one list with the counts by status, and a prompt to select a finding',
+  },
+  {
+    page: 'review',
+    state: 'empty',
+    description:
+      'Review, a project with no findings at all - "Nothing to review yet" and where findings come from (reached via the ?mockFindings=empty mock seam)',
+  },
+  {
+    page: 'review',
+    state: 'filtered',
+    description: 'Review, filtered to the Proofing comparison and to findings scored 50% or more - one row left and Clear filters offered',
+  },
+  {
+    page: 'review',
+    state: 'filtered-empty',
+    description: 'Review, filters that match nothing (Deferred) - "No findings match these filters." with Clear filters in the list',
+  },
+  {
+    page: 'review',
+    state: 'detail-open',
+    description:
+      'Review, a transcript difference selected - what the script says and what was recorded, where, the evidence, the confidence reason, and the decision controls',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'review',
+    state: 'decision-saved',
+    description: 'Review, a finding accepted with a note - "Saved as accepted.", its status and time, Reopen offered, and the list and counts updated',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'review',
+    state: 'evidence-changed',
+    description:
+      'Review, a decision refused because the check ran again since the finding was shown (ADR 0120) - the plain-language alert, the latest version and the typed note kept (reached via the ?mockFindings=changed mock seam)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'review',
+    state: 'not-in-latest-run',
+    description: 'Review, findings the latest run did not repeat included, and one selected - the "did not find this again" notice over its evidence',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+
   // Settings
   { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category', ...REFLOW },
   { page: 'settings', state: 'global-appearance', description: 'Settings, Global scope / Appearance category (theme switcher)', ...REFLOW },

@@ -109,4 +109,4 @@ change the REAPER project.
 
 ---
 
-[← Teleprompter](teleprompter.md) · [Index](README.md) · [Settings →](settings.md)
+[← Teleprompter](teleprompter.md) · [Index](README.md) · [Review →](review.md)
