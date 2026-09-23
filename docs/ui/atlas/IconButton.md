@@ -15,6 +15,7 @@ Storybook title: `Primitives/IconButton`. Source: `src/components/primitives/Ico
 - With Hint
 - Press Reports Click
 - Disabled Does Nothing
+- Disabled With Reason
 
 ## Used by
 
@@ -30,3 +31,4 @@ Storybook title: `Primitives/IconButton`. Source: `src/components/primitives/Ico
 - `src/components/proofing/Results.tsx`
 - `src/components/storybible/Guide.tsx`
 - `src/components/storybible/GuideDetail.tsx`
+- `src/components/storybible/PropertiesSection.tsx`

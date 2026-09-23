@@ -16,4 +16,4 @@ Storybook title: `Primitives/ToggleGroup`. Source: `src/components/primitives/To
 - `src/components/manuscript/Manuscript.tsx`
 - `src/components/proofing/Transcript.tsx`
 - `src/components/settings/Settings.tsx`
-- `src/components/teleprompter/TeleprompterPage.tsx`
+- `src/components/teleprompter/ReadAlongView.tsx`

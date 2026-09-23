@@ -15,7 +15,19 @@ In the icon-only layout, hover an icon (or tab to it) to see the page's name.
 ![Icon-only navigation rail with a page name shown on hover](../../images/ui/nav-rail-tooltip.webp)
 
 Manuscript, Proofing, Story Bible, and Teleprompter stay locked until a manuscript has been
-[imported on Home](home.md); hovering a locked entry says why. Home and Tracks are always available.
+[imported on Home](home.md), and Proofing also stays locked until a REAPER project (`.rpp`) is linked to the
+project. Hovering a locked entry says what is missing. Home and Tracks are always available.
+
+The pill at the right of the header shows the REAPER link, and clicking it opens a file picker to link (or
+change) the project's `.rpp` file:
+
+- **REAPER project linked**: a `.rpp` file is linked to this project.
+- **No REAPER project linked**: nothing is linked yet.
+- **Wrong REAPER project open**: REAPER is running with a different project open than the linked one. Link
+  the open project instead, or switch REAPER to the linked file.
+
+The file must be saved inside the project folder; one from another folder is refused with a message saying
+so. The same link can be made from the [Tracks](tracks.md) page and from [Settings](settings.md#daw-integration).
 
 ---
 

@@ -10,7 +10,9 @@ logic is DAW-agnostic; a thin per-DAW driver wires it into a specific host.
   transcribes a recorded chapter with a local Whisper model and diffs it against the manuscript, dropping take markers at
   every discrepancy.
 - [Tracks](docs/utilities/tracks.md) (the Tracks page) — lists the tracks of a project's REAPER `.rpp` file and plays their
-  audio, with no running REAPER needed.
+  audio, with no running REAPER needed, and scans a track for pickups and duplicate reads. With REAPER running the launcher,
+  it also stamps chapters onto REAPER items, works through a proofer's pickup list and sets up a per-chapter render; it can
+  add ID3 chapter tags to a copy of a rendered MP3.
 - [Manuscript Teleprompter](docs/architecture/manuscript-teleprompter.md) (`sidecars/manuscript-teleprompter/`, the
   Teleprompter page) — first cut: listens to a microphone with a local Whisper model and highlights the word you are
   reading in a chosen chapter.
@@ -63,8 +65,8 @@ The layout and its test rule are recorded in
 ## Supported DAWs
 
 - **Reaper** — supported. Load `integrations/reaper/NarrationUtils_Launcher.lua` as
-  the one action; it opens the centered Narration Utils workspace for both
-  utilities and their global/project settings.
+  the one action; it opens the centered Narration Utils workspace with every tool (Proofing,
+  Story Bible, Teleprompter, Tracks and the manuscript reader) and their global/project settings.
 - **Audacity** — planned, not yet implemented. Audacity's scripting model
   (mod-script-pipe, label tracks instead of take markers, no ExtState-equivalent settings
   store) is different enough from Reaper's that it needs its own driver design rather than a
@@ -160,8 +162,12 @@ dev` runs the native Wails window directly. The shipped Go importer accepts
 Markdown, DOCX, plain text and EPUB; PDF remains intentionally disabled pending corpus parity.
 
 The launcher is intentionally the only REAPER action. It starts the companion
-window; REAPER continues to service only selection, take-marker, and cursor
-requests while the window is open.
+window, and while the window is open REAPER services only the bridge's requests:
+Proofing's comparison (reading the selected items, adding take markers, moving the
+cursor to a marker), stamping and reading chapter identity on items, the pickup
+list (adding, finding and resolving pickup markers), configuring a per-chapter
+render, adding a take, and reporting the open project's state. See
+[the REAPER bridge](docs/architecture/reaper-bridge.md).
 
 ## Shared library
 

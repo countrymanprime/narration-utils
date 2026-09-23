@@ -18,7 +18,9 @@ func SpawnDetached(program string, args []string, dir string) error {
 	if err := command.Start(); err != nil {
 		return errors.Join(userError("The new version could not be started."), err)
 	}
-	return command.Process.Release()
+	// Reap the child when it exits: a released child that ends stays a zombie, and processAlive (kill 0) would call it running.
+	go func() { _ = command.Wait() }()
+	return nil
 }
 
 // processAlive reports whether the process is still running.

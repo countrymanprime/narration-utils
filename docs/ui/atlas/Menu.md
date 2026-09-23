@@ -8,6 +8,7 @@ Storybook title: `Primitives/Menu`. Source: `src/components/primitives/Menu.tsx`
 
 - Closed
 - Disabled
+- Icon Only Trigger
 - Opens On Press
 - Keyboard Chooses An Item
 

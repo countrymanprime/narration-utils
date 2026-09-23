@@ -8,6 +8,13 @@ recording progress, and shortcuts into the latest [Proofing](proofing.md) compar
 
 ![Home, manuscript found](../../images/ui/home-default.webp)
 
+Next to the narration estimates, **Credits** is the estimated reading time of the opening and closing
+credits (the first of each in [Settings, Credits](settings.md#credits)), shown in seconds under a
+minute. It is kept apart from the narration totals, and it is left out when there is no credit template.
+
+The pill at the top right of every page says whether a REAPER project is linked; see
+[Navigation](navigation.md) for its states.
+
 The estimate card's per-chapter breakdown is collapsed by default; expanding it lists every
 chapter with its word count, estimated and actual recorded length, and status.
 

@@ -9,14 +9,21 @@ and nothing you say is edited, saved, or sent anywhere.
 Choose the chapter, pick your microphone from the list (Refresh if you just plugged one in), and
 pick a model. Tiny is the fastest and keeps up on most computers; Small is more accurate but needs
 a faster one. The first time you start, the app asks before downloading the model. Your microphone
-is remembered for next time; if it is not listed you can type its name instead.
+is remembered for next time; if it is no longer connected it shows as "(not found)" until you pick it
+again or choose another. A microphone can only be picked from the list, never typed: with none listed,
+the page says "No microphone found" and Start reading stays disabled until you connect one and press
+Refresh.
 
 ![Teleprompter before a session, with the chapter, microphone and model choices above the chapter text](../../images/ui/teleprompter-setup.webp)
 
 Press Start reading and begin at the top of the chapter, title first. The setup fields fold away
 into a bar that stays at the top with the status and a Stop button. Words you have read dim, the
 word you are on is filled in, and the page scrolls to keep it near the middle of the screen.
-The highlight follows what it hears, not a timer, so it waits when you do.
+The highlight follows what it hears, not a timer, so it waits when you do. The key above the text
+shows the three looks: current word, word read, and skipped (a dotted underline).
+
+While it is listening you can click any word: a word ahead starts reading from there, and a word you
+have already read takes you back to it.
 
 ![Teleprompter listening, with read words dimmed and the current word highlighted](../../images/ui/teleprompter-listening.webp)
 
