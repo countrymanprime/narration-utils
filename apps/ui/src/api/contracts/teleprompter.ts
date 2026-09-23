@@ -98,9 +98,22 @@ export type TeleprompterState = {
   position: TeleprompterPosition | null;
 };
 
-export type TeleprompterStartOptions = {
-  /** Chapter id or title. */
-  chapter: string;
+export type TeleprompterStartOptions = (
+  | {
+      /** Chapter id or title. */
+      chapter: string;
+      credits?: never;
+    }
+  | {
+      /**
+       * Read the opening or closing credits instead of a chapter (audiobook-credits-templates.prd.md Phase 4, ADR 0150).
+       * The host renders the text itself from the first template of that kind (ADR 0093), so only the kind is sent; the
+       * session's `chapter` and its `script` event's `chapter.id` are then `credits-<kind>`.
+       */
+      credits: 'opening' | 'closing';
+      chapter?: never;
+    }
+) & {
   /** Capture device name. */
   device: string;
   /** The live engine; the host defaults to Whisper. */

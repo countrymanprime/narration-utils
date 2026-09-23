@@ -310,6 +310,8 @@ export function createMockApi(
     noManuscript?: boolean;
     manuscriptCandidate?: { path: string; name: string };
     teleprompter?: TeleprompterSeed;
+    /** The project's own credits values at boot (the credits on the teleprompter with every token resolved, Phase 4). */
+    creditValues?: CreditValues;
     /** Makes every Story Bible preview fail with this text once the voice is installed. */
     previewError?: string;
     /** Makes that payload arrive in the wrong shape, through the real `parseWire`, so the failure screens can be seen without a host. */
@@ -450,7 +452,14 @@ export function createMockApi(
     },
   ];
   let nextCreditTemplateId = 1;
-  let creditValues: CreditValues = {};
+  let creditValues: CreditValues = wireClone(initial.creditValues ?? {});
+  const mockNarratorGlobal = () => settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '';
+  // The credits text a teleprompter session reads (Phase 4, ADR 0150): the first template of the kind (ADR 0093), rendered
+  // as `creditsPreview` renders it, as the host's creditsScript does.
+  const mockCreditsText = (kind: 'opening' | 'closing') => {
+    const template = creditTemplates.find((item) => item.kind === kind);
+    return template ? renderMockCredits(template.body, resolveMockCreditValues(creditValues, mockNarratorGlobal())).text : undefined;
+  };
   const projectAttachSubscribers = new Set<(state: ProjectAttachState) => void>();
   const attachProject = (path: string, name?: string) => {
     projectFolder = path;
@@ -782,6 +791,7 @@ export function createMockApi(
     ready: manuscriptReady,
     chapters: () => chapters,
     paragraphs: () => paragraphs,
+    creditsText: mockCreditsText,
     assetRequired: (engine) => {
       if (engine === 'moonshine') {
         return moonshineInstalled
@@ -1636,10 +1646,7 @@ export function createMockApi(
       creditValues = wireClone(values);
       return wireClone(creditValues);
     },
-    creditsPreview: async (body) => {
-      const narratorGlobal = settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '';
-      return renderMockCredits(body, resolveMockCreditValues(creditValues, narratorGlobal));
-    },
+    creditsPreview: async (body) => renderMockCredits(body, resolveMockCreditValues(creditValues, mockNarratorGlobal())),
     dawCatalogList: async () => wireClone(DAW_CATALOG),
     dawCatalogOpenDownloadPage: async (id) => {
       if (!DAW_CATALOG.some((entry) => entry.id === id)) throw new Error(`Unknown DAW catalog entry "${id}"`);

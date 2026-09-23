@@ -1164,6 +1164,23 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.getByRole('group', { name: 'Chapters suggested by REAPER' }).waitFor();
       await page.getByText('Alice was beginning').first().waitFor();
     },
+    // The credits (credits PRD Phase 4): picked in the chapter picker like a chapter; a microphone is chosen so Start reading shows enabled.
+    'credits-opening': async (page) => {
+      await page.goto('/?mockCredits=filled');
+      await settlePage(page);
+      await goToPage(page, 'Teleprompter');
+      await page.getByText('Alice was beginning').first().waitFor();
+      await page.getByRole('combobox', { name: 'Chapter' }).selectOption({ label: 'Opening credits' });
+      await page.getByText('Alice’s Adventures in Wonderland, written by Lewis Carroll, narrated by Ada Finch.').waitFor();
+      await page.getByRole('combobox', { name: 'Microphone' }).selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
+    },
+    'credits-unresolved-warning': async (page) => {
+      await goToPage(page, 'Teleprompter');
+      await page.getByText('Alice was beginning').first().waitFor();
+      await page.getByRole('combobox', { name: 'Chapter' }).selectOption({ label: 'Closing credits' });
+      await page.getByRole('status', { name: /have no value/ }).waitFor();
+      await page.getByRole('combobox', { name: 'Microphone' }).selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
+    },
     // The Whisper model is not installed under ?mockAssets, so Start reading asks to download it; the mock holds the download at 40 percent.
     'model-download-progress': async (page) => {
       await page.goto('/?mockAssets=downloading');

@@ -55,8 +55,10 @@ turns them into these three event types:
         with a tracker, after a segment closes: a suspected misread, extra,
         skipped or restart, judged from confirmed words only (see flags.py)
     {"type": "script", "chapter": {"id": "c1", "title": "..."}, "tokens": 512, "spans": [{"kind": "paragraph", "id": "p1", "index": 0, "start": 6, "count": 4}]}
-        once, first, only with --manuscript: how the chapter was tokenized
-        (title, then each paragraph split on whitespace) so a frontend can
+        once, first, only with --manuscript (or a --script named with
+        --script-id and --script-title, the credits): how the chapter was
+        tokenized (title, then each paragraph split on whitespace; a named
+        script has no title and one paragraph per line) so a frontend can
         map `read` indices onto paragraphs and words (see chapter_script.py)
     {"type": "devices", "devices": [{"name": "Microphone Array (Realtek(R) Audio)"}], "error": null}
         only with --list-devices: the input devices the --mic capture path
@@ -597,19 +599,28 @@ def _check_engine_args(ap: argparse.ArgumentParser, args) -> None:
         ap.error("--start-word needs --script or --manuscript")
     if args.control_file and not has_tracker:
         ap.error("--control-file needs --script or --manuscript")
+    if bool(args.script_id) != bool(args.script_title):
+        ap.error("--script-id and --script-title go together")
+    if args.script_id and not args.script:
+        ap.error("--script-id needs --script")
 
 
 def _load_script(ap: argparse.ArgumentParser, args):
     """(tracker, `script` event, chapter text) for --manuscript/--chapter or
-    --script, or all None. Sibling modules are imported only when needed."""
+    --script, or all None. A --script named with --script-id/--script-title
+    (the credits, ADR 0150) gets a `script` event like a chapter; a plain
+    --script does not. Sibling modules are imported only when needed."""
     from flags import FlaggingTracker
     from script_tracker import script_words
 
-    if args.manuscript:
-        from chapter_script import ChapterError, load_chapter_script, script_event
+    if args.manuscript or args.script_id:
+        from chapter_script import ChapterError, load_chapter_script, load_text_script, script_event
 
         try:
-            chapter = load_chapter_script(args.manuscript, args.chapter)
+            if args.manuscript:
+                chapter = load_chapter_script(args.manuscript, args.chapter)
+            else:
+                chapter = load_text_script(args.script, args.script_id, args.script_title)
         except ChapterError as error:
             choices = f" Choose one of: {'; '.join(error.candidates)}" if error.candidates else ""
             ap.error(f"{error}{choices}")
@@ -698,6 +709,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--manuscript", default=None, help="Canonical manuscript.json to read the script from (needs --chapter); also emits a `script` event"
     )
     ap.add_argument("--chapter", default=None, help="Chapter id or title in --manuscript (narration chapters only)")
+    ap.add_argument(
+        "--script-id",
+        default=None,
+        help="Names a --script that is not a chapter (the credits) so it also emits a `script` event, one paragraph per line (needs --script-title)",
+    )
+    ap.add_argument("--script-title", default=None, help="The --script-id script's display name, e.g. 'Opening credits' (needs --script-id)")
     ap.add_argument("--start-word", type=int, default=None, help="Start the tracker already at this script word index (needs --script or --manuscript)")
     ap.add_argument(
         "--control-file",

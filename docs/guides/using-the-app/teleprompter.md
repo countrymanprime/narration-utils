@@ -29,6 +29,13 @@ beneath saying so. When the name is only a near match, or armed tracks point at 
 nothing is chosen for you: the likely chapters are offered as buttons under the picker. Save the
 REAPER project after arming a track for the app to see it.
 
+The chapter list also offers **Opening credits** first and **Closing credits** last, when your credit
+template library ([Settings, Credits](settings.md#credits)) has an opening or a closing template. The
+text is the first template of each kind filled in with the project's values, exactly as Settings
+previews it, and the highlight follows it like a chapter. If a value is missing, for example no
+narrator name yet, a warning names what is missing, the placeholder shows in brackets (such as
+[Narrator]), and Fill them in Settings opens the Credits settings. You can still start reading.
+
 Press Start reading and begin at the top of the chapter, title first. The setup fields fold away
 into a bar that stays at the top with the status, a Follow button and a Stop button. Words you have read dim, the
 word you are on is filled in, and the page scrolls to keep it near the middle of the screen.

@@ -535,6 +535,17 @@ func (h *Host) TeleprompterStart(options map[string]string) (string, error) {
 		started[key] = value
 	}
 	started["engine"], started["model"], started["modelDir"] = engine, modelID, modelDir
+	// `credits` ("opening" or "closing") reads the credits instead of a chapter (audiobook-credits-templates.prd.md
+	// Phase 4, ADR 0150): the host renders the text itself, so the UI names only which credits, never the text.
+	if kind := strings.TrimSpace(options["credits"]); kind != "" {
+		script, err := h.creditsScript(kind)
+		if err != nil {
+			return "", err
+		}
+		delete(started, "credits")
+		delete(started, "chapter")
+		return encodeBinding(map[string]any{"status": "started"}, svc.teleprompter.StartScript(script, started))
+	}
 	return encodeBinding(map[string]any{"status": "started"}, svc.teleprompter.Start(started))
 }
 

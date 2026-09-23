@@ -1,21 +1,88 @@
 import { useEffect, useState } from 'react';
+import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import { Select } from '../primitives/Select';
 import { useApi } from '../../api/ApiContext';
 import { ChapterSuggestionHint, preselectedChapter } from './ChapterSuggestionHint';
 import { ReadAlongView } from './ReadAlongView';
+import { CREDITS_LABEL, type CreditsKind } from './readerModel';
 import { ACTIVE_PHASES, errorText, useTeleprompterSession } from './useTeleprompterSession';
-import type { ChapterSuggestion, ManuscriptChapter } from '../../types';
+import type { ChapterSuggestion, CreditsRenderResult, ManuscriptChapter } from '../../types';
 
 const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
+const CREDITS_KINDS: CreditsKind[] = ['opening', 'closing'];
+/** Picker values for the credits; a chapter's value is its id, which never starts with this prefix. */
+const CREDITS_PREFIX = 'credits:';
 
-export function TeleprompterPage() {
+const creditsKindOf = (value: string): CreditsKind | undefined => CREDITS_KINDS.find((kind) => value === `${CREDITS_PREFIX}${kind}`);
+
+type Props = {
+  /** Opens Settings > Credits, where a token with no value is filled in (C6's "link to fix in Settings"). */
+  onFixCredits?: () => void;
+};
+
+/**
+ * The credits as the teleprompter reads them (audiobook-credits-templates.prd.md Phase 4, ADR 0150): the first opening- and
+ * first closing-kind template (ADR 0093), each rendered by the host's one renderer (`creditsPreview`). A secondary read, as
+ * on the Manuscript page: a failure leaves the credits out of the picker rather than blocking the chapters.
+ */
+function useCreditsPreviews(): Partial<Record<CreditsKind, CreditsRenderResult>> {
+  const api = useApi();
+  const [previews, setPreviews] = useState<Partial<Record<CreditsKind, CreditsRenderResult>>>({});
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      const templates = await api.creditsTemplates().catch(() => []);
+      const rendered = await Promise.all(
+        CREDITS_KINDS.map(async (kind) => {
+          const template = templates.find((item) => item.kind === kind);
+          const preview = template ? await api.creditsPreview(template.body).catch(() => undefined) : undefined;
+          return [kind, preview] as const;
+        }),
+      );
+      if (live) setPreviews(Object.fromEntries(rendered.filter(([, preview]) => preview && preview.words > 0)));
+    })();
+    return () => {
+      live = false;
+    };
+  }, [api]);
+  return previews;
+}
+
+/** C6 (owner decision 2026-09-23): a token with no value is named and linked to Settings, and Start stays allowed. */
+function UnresolvedCreditsWarning({ kind, tokens, onFix }: { kind: CreditsKind; tokens: string[]; onFix?: () => void }) {
+  const heading = `Some ${CREDITS_LABEL[kind].toLowerCase()} tokens have no value`;
+  return (
+    <div
+      role="status"
+      aria-label={heading}
+      className="rounded-lg border px-4 py-3 text-sm"
+      style={{ borderColor: 'var(--warn)', background: 'color-mix(in srgb, var(--warn) 10%, var(--surface))' }}
+    >
+      <p className="font-semibold" style={{ color: 'var(--warn-text)' }}>
+        {heading}
+      </p>
+      <p className="mt-1">
+        {tokens.join(', ')} will show as written, in brackets. You can still start reading; fill them in under Settings &gt; Credits first so the recording says
+        the right thing.
+      </p>
+      {onFix && (
+        <Button variant="ghost" className="mt-2" onClick={onFix}>
+          Fill them in Settings
+        </Button>
+      )}
+    </div>
+  );
+}
+
+export function TeleprompterPage({ onFixCredits }: Props = {}) {
   const api = useApi();
   const [chapters, setChapters] = useState<ManuscriptChapter[]>();
-  const [chosenChapter, setChosenChapter] = useState('');
+  const [chosen, setChosen] = useState('');
   const [suggestion, setSuggestion] = useState<ChapterSuggestion>();
   const [error, setError] = useState('');
+  const creditsPreviews = useCreditsPreviews();
 
   useEffect(() => {
     let live = true;
@@ -37,7 +104,7 @@ export function TeleprompterPage() {
         // over a session already running, whose chapter the reader is showing.
         const sessionRunning = host && ACTIVE_PHASES.includes(host.phase);
         const recording = sessionRunning ? undefined : preselectedChapter(suggested, narration);
-        setChosenChapter((current) => current || recording || (last ?? narration[0])?.id || '');
+        setChosen((current) => current || recording || (last ?? narration[0])?.id || '');
       })
       .catch((reason) => live && setError(errorText(reason)));
     return () => {
@@ -45,14 +112,26 @@ export function TeleprompterPage() {
     };
   }, [api]);
 
-  // A session in progress (or just finished) decides which chapter is shown.
-  const chapterId = chosenChapter;
-  const t = useTeleprompterSession({ chapterId, chapter: chapters?.find((item) => item.id === chapterId) });
+  const creditsKind = creditsKindOf(chosen);
+  const creditsPreview = creditsKind ? creditsPreviews[creditsKind] : undefined;
+  const chapterId = creditsKind ? '' : chosen;
+  const t = useTeleprompterSession({
+    chapterId,
+    chapter: chapters?.find((item) => item.id === chapterId),
+    credits: creditsKind && creditsPreview ? { kind: creditsKind, text: creditsPreview.text } : undefined,
+  });
 
-  const selectChapter = (id: string) => {
-    setChosenChapter(id);
+  const select = (value: string) => {
+    setChosen(value);
     t.reset();
   };
+
+  const creditsOption = (kind: CreditsKind) => (creditsPreviews[kind] ? [{ value: `${CREDITS_PREFIX}${kind}`, label: CREDITS_LABEL[kind] }] : []);
+  const options = [
+    ...creditsOption('opening'),
+    ...(chapters ?? []).map((item) => ({ value: item.id, label: item.subtitle ? `${item.title}: ${item.subtitle}` : item.title })),
+    ...creditsOption('closing'),
+  ];
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -64,6 +143,9 @@ export function TeleprompterPage() {
           </p>
         </Panel>
       )}
+      {creditsKind && creditsPreview && creditsPreview.unresolved.length > 0 && (
+        <UnresolvedCreditsWarning kind={creditsKind} tokens={creditsPreview.unresolved} onFix={onFixCredits} />
+      )}
       {chapters && chapters.length > 0 && (
         <ReadAlongView
           session={t}
@@ -72,15 +154,8 @@ export function TeleprompterPage() {
               <label className={LABEL_CLASS} htmlFor="teleprompter-chapter">
                 Chapter
               </label>
-              <Select
-                id="teleprompter-chapter"
-                className="mt-1"
-                fullWidth
-                value={chapterId}
-                onChange={selectChapter}
-                options={chapters.map((item) => ({ value: item.id, label: item.subtitle ? `${item.title}: ${item.subtitle}` : item.title }))}
-              />
-              <ChapterSuggestionHint suggestion={suggestion} chapters={chapters} value={chapterId} onChoose={selectChapter} />
+              <Select id="teleprompter-chapter" className="mt-1" fullWidth value={chosen} onChange={select} options={options} />
+              <ChapterSuggestionHint suggestion={suggestion} chapters={chapters} value={chapterId} onChoose={select} />
             </div>
           }
         />

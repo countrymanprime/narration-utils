@@ -42,6 +42,11 @@ func runFakeSidecar(mode string) {
 	}
 	args, _ := json.Marshal(os.Args[1:])
 	fmt.Printf("{\"type\":\"args\",\"args\":%s}\n", args)
+	if scriptFile := flagValue(os.Args[1:], "--script"); scriptFile != "" {
+		text, err := os.ReadFile(scriptFile)
+		echoed, _ := json.Marshal(map[string]any{"type": "scriptfile", "text": string(text), "readable": err == nil})
+		fmt.Println(string(echoed))
+	}
 	switch mode {
 	case "crash":
 		fmt.Fprintln(os.Stderr, "loading the model")
@@ -235,6 +240,103 @@ func TestStartOmitsStartWordWhenNotGiven(t *testing.T) {
 		if arg == "--start-word" {
 			t.Fatalf("--start-word should be omitted when no startWord option was given, args = %v", args)
 		}
+	}
+}
+
+func scriptOptions() map[string]string {
+	return map[string]string{"device": "Microphone Array", "model": "tiny", "modelDir": "C:/models/tiny"}
+}
+
+var closingCredits = Script{ID: "credits-closing", Title: "Closing credits", Text: "You have been listening to Alice.\nThe End."}
+
+// The credits (audiobook-credits-templates.prd.md Phase 4, ADR 0150) are not a manuscript chapter: the host hands the
+// sidecar the text it rendered as a --script file named with --script-id/--script-title, and no --manuscript/--chapter.
+func TestStartScriptLaunchesTheSidecarOnAScriptFileHoldingTheText(t *testing.T) {
+	f := newFixture(t, "stream")
+	if err := f.service.StartScript(closingCredits, scriptOptions()); err != nil {
+		t.Fatal(err)
+	}
+
+	args := echoedArgs(t, f)
+
+	if got := flagValue(args, "--script-id"); got != "credits-closing" {
+		t.Errorf("--script-id = %q (args %v)", got, args)
+	}
+	if got := flagValue(args, "--script-title"); got != "Closing credits" {
+		t.Errorf("--script-title = %q (args %v)", got, args)
+	}
+	if script := flagValue(args, "--script"); !strings.HasPrefix(script, f.session) {
+		t.Errorf("--script = %q, want a file inside the session dir", script)
+	}
+	for _, arg := range args {
+		if arg == "--manuscript" || arg == "--chapter" {
+			t.Fatalf("a script session must not name a manuscript chapter, args = %v", args)
+		}
+	}
+	waitFor(t, "the script file echo", func() bool { return f.recorder.firstEvent("scriptfile") != nil })
+	if echoed := f.recorder.firstEvent("scriptfile"); echoed["text"] != closingCredits.Text || echoed["readable"] != true {
+		t.Fatalf("the sidecar read %v, want the rendered text", echoed)
+	}
+	if chapter := f.service.Snapshot()["chapter"]; chapter != "credits-closing" {
+		t.Errorf("snapshot chapter = %v, want the script id", chapter)
+	}
+}
+
+func TestStartScriptRemovesTheScriptFileWhenTheSessionEnds(t *testing.T) {
+	f := newFixture(t, "stream")
+	if err := f.service.StartScript(closingCredits, scriptOptions()); err != nil {
+		t.Fatal(err)
+	}
+	script := flagValue(echoedArgs(t, f), "--script")
+
+	f.service.Stop()
+	// The watcher records "stopped" first and removes the session files just after, so wait on the file itself.
+	waitFor(t, "the script file to be removed", func() bool {
+		_, err := os.Stat(script)
+		return os.IsNotExist(err)
+	})
+	if got := phase(f.service); got != "stopped" {
+		t.Fatalf("phase = %q, want stopped", got)
+	}
+}
+
+func TestStartScriptDoesNotNeedAnImportedManuscript(t *testing.T) {
+	f := newFixture(t, "stream")
+	if err := os.RemoveAll(filepath.Join(f.project, "narration-utils", "manuscript")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := f.service.StartScript(closingCredits, scriptOptions()); err != nil {
+		t.Fatalf("credits are not manuscript text, so a missing manuscript must not stop them: %v", err)
+	}
+}
+
+func TestStartScriptRejectsAScriptItCannotName(t *testing.T) {
+	cases := map[string]Script{
+		"no id":    {Title: "Closing credits", Text: "The End."},
+		"no title": {ID: "credits-closing", Text: "The End."},
+		"no words": {ID: "credits-closing", Title: "Closing credits", Text: " \n\t"},
+	}
+	for name, script := range cases {
+		t.Run(name, func(t *testing.T) {
+			f := newFixture(t, "stream")
+			if err := f.service.StartScript(script, scriptOptions()); err == nil {
+				t.Fatal("expected the script to be rejected")
+			}
+			if phase(f.service) != "idle" {
+				t.Fatalf("a rejected script must leave the service idle, got %q", phase(f.service))
+			}
+		})
+	}
+}
+
+func TestStartScriptStillNeedsAMicrophone(t *testing.T) {
+	f := newFixture(t, "stream")
+	options := scriptOptions()
+	delete(options, "device")
+
+	if err := f.service.StartScript(closingCredits, options); err == nil || !strings.Contains(err.Error(), "microphone") {
+		t.Fatalf("err = %v", err)
 	}
 }
 

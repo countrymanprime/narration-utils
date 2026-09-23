@@ -42,7 +42,11 @@ export type ReaderRow = {
  * word count differs from its span is kept as plain text: the spans stay the
  * authority on positions, so one drifted paragraph cannot shift the rest.
  */
-export function buildRows(script: TeleprompterScript, chapter: Pick<ManuscriptChapter, 'title' | 'subtitle'>, paragraphs: ManuscriptParagraph[]): ReaderRow[] {
+export function buildRows(
+  script: TeleprompterScript,
+  chapter: Pick<ManuscriptChapter, 'title' | 'subtitle'>,
+  paragraphs: Array<Pick<ManuscriptParagraph, 'id' | 'text'>>,
+): ReaderRow[] {
   const byId = new Map(paragraphs.map((paragraph) => [paragraph.id, paragraph]));
   const rows: ReaderRow[] = [];
   for (const span of script.spans) {
@@ -77,6 +81,27 @@ export function previewRows(chapter: Pick<ManuscriptChapter, 'title' | 'subtitle
     { key: 'title', kind: 'title', start: 0, words: null, gaps: null, text: title },
     ...paragraphs.map((paragraph): ReaderRow => ({ key: paragraph.id, kind: 'paragraph', start: 0, words: null, gaps: null, text: paragraph.text })),
   ];
+}
+
+/** The credits the teleprompter can read instead of a chapter (audiobook-credits-templates.prd.md Phase 4, ADR 0150). */
+export type CreditsKind = 'opening' | 'closing';
+export const CREDITS_LABEL: Record<CreditsKind, string> = { opening: 'Opening credits', closing: 'Closing credits' };
+
+/**
+ * The host's rendered credits text as the reader's paragraphs: one per line that has words, `credits-<kind>-<n>` counted
+ * from 1 over those lines only - exactly how the sidecar's `chapter_script.text_script` builds its spans (any line break,
+ * `str.split()` words), so the spans of its `script` event find these paragraphs by id.
+ */
+export function creditsParagraphs(kind: CreditsKind, text: string): Array<Pick<ManuscriptParagraph, 'id' | 'text'>> {
+  const lines = text.split(/\r\n|\r|\n/).filter((line) => tokenize(line).length > 0);
+  return lines.map((line, index) => ({ id: `credits-${kind}-${index + 1}`, text: line }));
+}
+
+/** The credits as reader rows: untracked lines before a session, the sidecar's spans laid over them once one has a script. No title row: the name is not read aloud. */
+export function creditsRows(kind: CreditsKind, text: string, script: TeleprompterScript | null): ReaderRow[] {
+  const paragraphs = creditsParagraphs(kind, text);
+  if (script) return buildRows(script, { title: CREDITS_LABEL[kind] }, paragraphs);
+  return paragraphs.map((paragraph): ReaderRow => ({ key: paragraph.id, kind: 'paragraph', start: 0, words: null, gaps: null, text: paragraph.text }));
 }
 
 /** The character range [start, end) of each word of `text`: the words `splitWords` finds, in the same order. */

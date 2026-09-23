@@ -6,7 +6,7 @@
 import recordedStream from './teleprompterRecording.json';
 import { recordedStreamSchema } from './schemas/teleprompter';
 import { parseWire } from './wire/parseWire';
-import { tokenize, wordOffsets } from '../components/teleprompter/readerModel';
+import { CREDITS_LABEL, creditsParagraphs, tokenize, wordOffsets, type CreditsKind } from '../components/teleprompter/readerModel';
 import { mockRecordedEnd } from './chapterTrackMatchMock';
 import { seedLocateResult, seedTrackMatch, type MockResumeSeed } from './resumeMockSeed';
 import type {
@@ -63,6 +63,8 @@ type Deps = {
   ready: Promise<unknown>;
   chapters: () => ManuscriptChapter[];
   paragraphs: () => ManuscriptParagraph[];
+  /** The rendered opening or closing credits text, as the host's creditsScript renders it; undefined when there is no template of the kind. */
+  creditsText: (kind: CreditsKind) => string | undefined;
   /** The first-use gate's answer for the engine's model, or undefined when it is installed. */
   assetRequired: (engine: TeleprompterEngine) => Extract<TeleprompterStartResult, { status: 'asset_required' }> | undefined;
   /** The chapter's track match, as the mock's ChapterTrackMatch answers it (the locate starts from it). */
@@ -142,6 +144,18 @@ function mockLocate(
   };
   const tail = { from: Math.max(recordedEnd.sourceStart, recordedEnd.sourceTime - MOCK_TAIL_SECONDS), to: recordedEnd.sourceTime };
   return { ...base, recordedEnd, tail, located, status: 'found' };
+}
+
+/** The mock of the sidecar's `text_script` for the credits (ADR 0150): one paragraph span per line with words, no title span. */
+function buildCreditsScript(kind: CreditsKind, text: string): { script: TeleprompterScript; words: string[] } {
+  const words: string[] = [];
+  const spans: TeleprompterScript['spans'] = creditsParagraphs(kind, text).map((paragraph) => {
+    const lineWords = tokenize(paragraph.text);
+    const span = { kind: 'paragraph' as const, id: paragraph.id, index: null, start: words.length, count: lineWords.length };
+    words.push(...lineWords);
+    return span;
+  });
+  return { script: { type: 'script', chapter: { id: `credits-${kind}`, title: CREDITS_LABEL[kind] }, tokens: words.length, spans }, words };
 }
 
 const position = (read: number, status: TeleprompterPosition['status']): TeleprompterPosition => ({
@@ -260,6 +274,20 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     cancelAutoStop();
   };
   const findChapter = (query: string) => deps.chapters().find((chapter) => chapter.id === query || chapter.title === query);
+  type Planned = { id: string; built: ReturnType<typeof buildScript> };
+  const planChapter = (query: string): Planned => {
+    const chapter = findChapter(query);
+    if (!chapter) throw new Error(`Chapter ${query} was not found among the narration chapters.`);
+    return { id: query, built: buildScript(chapter, deps.paragraphs()) };
+  };
+  // The host's creditsScript and StartScript refusals (ADR 0150), in the same words.
+  const planCredits = (kind: CreditsKind): Planned => {
+    const name = CREDITS_LABEL[kind].toLowerCase();
+    const text = deps.creditsText(kind);
+    if (text === undefined) throw new Error(`there is no ${name} template: add one in Settings > Credits`);
+    if (tokenize(text).length === 0) throw new Error(`the ${name} text has no words to read`);
+    return { id: `credits-${kind}`, built: buildCreditsScript(kind, text) };
+  };
 
   // Replays the recorded read-through over words `from`..end, so a session started at a word (a resume) never goes back before it.
   const replay = (words: string[], from = 0) => {
@@ -317,12 +345,11 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       if (needed) return needed;
       if (!options.device.trim()) throw new Error('Choose a microphone.');
       await deps.ready;
-      const chapter = findChapter(options.chapter);
-      if (!chapter) throw new Error(`Chapter ${options.chapter} was not found among the narration chapters.`);
+      const { id, built } = options.credits ? planCredits(options.credits) : planChapter(options.chapter);
       cancelReplay();
-      state = { phase: 'starting', message: 'Starting the teleprompter…', engine, chapter: options.chapter, script: null, position: null };
+      state = { phase: 'starting', message: 'Starting the teleprompter…', engine, chapter: id, script: null, position: null };
       publish();
-      const { script, words } = buildScript(chapter, deps.paragraphs());
+      const { script, words } = built;
       state = { ...state, phase: 'running', message: LISTENING };
       publish();
       emit(script);

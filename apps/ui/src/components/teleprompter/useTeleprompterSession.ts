@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { useAssetInstall } from '../../hooks/useAssetInstall';
-import { buildRows, hydrateSession, initialSession, previewRows, reduceEvent, type Session } from './readerModel';
+import { buildRows, creditsRows, hydrateSession, initialSession, previewRows, reduceEvent, type CreditsKind, type Session } from './readerModel';
 import { usePacedCursor } from './usePacedCursor';
 import type {
   ManuscriptChapter,
@@ -82,14 +82,22 @@ function statusText(host: TeleprompterState, session: Session): string {
   if (host.phase === 'stopped') return host.message.trim() || 'Stopped';
   if (host.phase !== 'running') return '';
   if (session.position?.status === 'waiting') return 'Waiting for you to return to the script';
-  if (session.position?.status === 'done') return 'Done - stopping in a few seconds unless you read on';
+  if (session.position?.status === 'done')
+    return session.script?.chapter.id.startsWith('credits-')
+      ? 'Done - the end of the credits; stopping in a few seconds unless you read on'
+      : 'Done - stopping in a few seconds unless you read on';
   return 'Listening';
 }
 
 export type UseTeleprompterSessionOptions = {
-  /** Empty when nothing is chosen yet (the standalone page before a chapter loads). */
+  /** Empty when nothing is chosen yet (the standalone page before a chapter loads), and while `credits` is chosen. */
   chapterId: string;
   chapter: Pick<ManuscriptChapter, 'title' | 'subtitle'> | undefined;
+  /**
+   * The opening or closing credits instead of a chapter (audiobook-credits-templates.prd.md Phase 4, ADR 0150), with the
+   * text the host's one renderer produced (`creditsPreview`); the host renders the same text again for the sidecar.
+   */
+  credits?: { kind: CreditsKind; text: string };
   /** The standalone page migrates the pre-Phase-2 browser-storage device value once; the read-aloud modal does not (see above). */
   migrateLegacyDevice?: boolean;
 };
@@ -101,7 +109,7 @@ export type UseTeleprompterSessionOptions = {
  * with each caller (the page has a picker; the modal is opened already pointed at one chapter) - callers pass `reset()`
  * after changing `chapterId` themselves, matching the page's existing behavior.
  */
-export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice = true }: UseTeleprompterSessionOptions) {
+export function useTeleprompterSession({ chapterId, chapter, credits, migrateLegacyDevice = true }: UseTeleprompterSessionOptions) {
   const api = useApi();
   const [device, setDevice] = useState('');
   const [devices, setDevices] = useState<TeleprompterDevice[]>([]);
@@ -224,15 +232,23 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
   }, [api, chapterId]);
 
   const paragraphs = loaded?.chapterId === chapterId ? loaded.paragraphs : undefined;
+  const creditsKind = credits?.kind;
+  const creditsText = credits?.text;
   const rows = useMemo(() => {
+    if (creditsKind && creditsText !== undefined) {
+      // A session still describing a chapter (or the other credits) is not these credits' script.
+      const script = session.script?.chapter.id === `credits-${creditsKind}` ? session.script : null;
+      return creditsRows(creditsKind, creditsText, script);
+    }
     if (!chapter || !paragraphs) return [];
     return session.script ? buildRows(session.script, chapter, paragraphs) : previewRows(chapter, paragraphs);
-  }, [chapter, paragraphs, session.script]);
+  }, [creditsKind, creditsText, chapter, paragraphs, session.script]);
 
   const start = async () => {
     setError('');
     try {
-      const result = await api.teleprompterStart({ chapter: chapterId, device: device.trim(), engine, model, ...(startWord === null ? {} : { startWord }) });
+      const source = creditsKind ? { credits: creditsKind } : { chapter: chapterId };
+      const result = await api.teleprompterStart({ ...source, device: device.trim(), engine, model, ...(startWord === null ? {} : { startWord }) });
       if (result.status === 'asset_required') {
         modelInstall.reset();
         setPrompt(result);
@@ -277,8 +293,9 @@ export function useTeleprompterSession({ chapterId, chapter, migrateLegacyDevice
   // A failed or empty device listing blocks the phase (the input-devices PRD's "Microphone is never typed" decision):
   // there is no typed fallback to start with, so Start stays disabled until a device can be chosen from the list.
   const micBlockedReason = devices.length === 0 ? (devicesError ? "Couldn't list microphones." : 'No microphone found.') : undefined;
-  const canStart = Boolean(chapterId) && device.trim() !== '' && !micBlockedReason;
-  const startReason = !chapterId
+  const hasSource = Boolean(chapterId || creditsKind);
+  const canStart = hasSource && device.trim() !== '' && !micBlockedReason;
+  const startReason = !hasSource
     ? 'Choose a chapter first.'
     : micBlockedReason
       ? micBlockedReason

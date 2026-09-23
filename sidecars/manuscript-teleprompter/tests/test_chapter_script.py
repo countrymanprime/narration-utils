@@ -98,3 +98,55 @@ def test_the_script_event_describes_the_chapter_and_its_token_spans(tmp_path):
 def test_a_missing_manuscript_reports_a_chapter_error_not_a_crash(tmp_path):
     with pytest.raises(chapter_script.ChapterError):
         chapter_script.load_chapter_script(tmp_path / "nope.json", "c1")
+
+
+# A script that is not a manuscript chapter (the opening or closing credits, audiobook-credits-templates.prd.md Phase 4,
+# ADR 0150): the host renders the text and hands it over as a file, and the reader needs spans for it as for a chapter.
+
+
+def test_a_text_script_is_every_word_of_the_text_with_no_title_words():
+    script = chapter_script.text_script("Alice, written by Lewis Carroll,\n\nnarrated by  Ada.", "credits-opening", "Opening credits")
+
+    assert script.tokens == ["Alice,", "written", "by", "Lewis", "Carroll,", "narrated", "by", "Ada."]
+    assert (script.chapter_id, script.title) == ("credits-opening", "Opening credits")
+
+
+def test_a_text_script_has_one_paragraph_span_per_line_with_words_numbered_from_one():
+    script = chapter_script.text_script("One two.\r\n   \nThree.\rFour five six.", "credits-closing", "Closing credits")
+
+    assert [(s.kind, s.id, s.index, s.start, s.count) for s in script.spans] == [
+        ("paragraph", "credits-closing-1", None, 0, 2),
+        ("paragraph", "credits-closing-2", None, 2, 1),
+        ("paragraph", "credits-closing-3", None, 3, 3),
+    ]
+
+
+def test_a_text_script_event_names_the_script_by_its_id_and_title():
+    event = chapter_script.script_event(chapter_script.text_script("The End.", "credits-closing", "Closing credits"))
+
+    assert event == {
+        "type": "script",
+        "chapter": {"id": "credits-closing", "title": "Closing credits"},
+        "tokens": 2,
+        "spans": [{"kind": "paragraph", "id": "credits-closing-1", "index": None, "start": 0, "count": 2}],
+    }
+
+
+def test_a_text_script_with_no_words_is_refused():
+    with pytest.raises(chapter_script.ChapterError, match="no words"):
+        chapter_script.text_script(" \n\t", "credits-opening", "Opening credits")
+
+
+def test_load_text_script_reads_the_file_as_utf8(tmp_path):
+    path = tmp_path / "credits.txt"
+    path.write_bytes("Café au lait,\r\nread by Zoë.".encode())
+
+    script = chapter_script.load_text_script(path, "credits-opening", "Opening credits")
+
+    assert script.tokens == ["Café", "au", "lait,", "read", "by", "Zoë."]
+    assert [s.id for s in script.spans] == ["credits-opening-1", "credits-opening-2"]
+
+
+def test_load_text_script_reports_a_missing_file_as_a_chapter_error(tmp_path):
+    with pytest.raises(chapter_script.ChapterError, match="Could not read the Opening credits text"):
+        chapter_script.load_text_script(tmp_path / "gone.txt", "credits-opening", "Opening credits")

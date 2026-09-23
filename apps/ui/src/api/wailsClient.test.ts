@@ -336,6 +336,15 @@ describe('wailsClient', () => {
     await expect(wailsClient.teleprompterState()).resolves.toEqual({ phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null });
   });
 
+  it('sends the credits kind, not a chapter, to TeleprompterStart for the credits (credits PRD Phase 4)', async () => {
+    const start = vi.fn().mockResolvedValue(JSON.stringify({ status: 'started' }));
+    window.go = { main: { Host: { TeleprompterStart: start } } };
+
+    await wailsClient.teleprompterStart({ credits: 'closing', device: 'Microphone (USB)', model: 'tiny' });
+
+    expect(start).toHaveBeenCalledWith({ credits: 'closing', device: 'Microphone (USB)', model: 'tiny' });
+  });
+
   it('relays the teleprompter event and state subscriptions from the native runtime', () => {
     const listeners = new Map<string, (payload: unknown) => void>();
     const eventsOn = vi.fn((event: string, listener: (payload: unknown) => void) => {

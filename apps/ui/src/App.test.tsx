@@ -139,6 +139,18 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(screen.getByText(/Desktop host API version 1 is incompatible/)).toBeTruthy();
   });
 
+  it("opens Settings > Credits from the teleprompter's unresolved-token warning (credits PRD Phase 4, C6)", async () => {
+    window.history.replaceState(null, '', '/teleprompter');
+    renderApp();
+    const picker = (await screen.findByLabelText('Chapter')) as HTMLSelectElement;
+    await waitFor(() => expect(Array.from(picker.options, (option) => option.textContent)).toContain('Closing credits'));
+    fireEvent.change(picker, { target: { value: 'credits:closing' } });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Fill them in Settings' }));
+
+    expect(await screen.findByRole('combobox', { name: 'Template' })).toBeTruthy();
+  });
+
   it('navigates to Story Bible and lists entities from the backend', async () => {
     renderApp();
     await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));

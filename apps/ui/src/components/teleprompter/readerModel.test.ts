@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildRows,
+  creditsParagraphs,
+  creditsRows,
   hydrateSession,
   initialSession,
   nextCursor,
@@ -132,6 +134,52 @@ describe('previewRows', () => {
       ['title', null, 'CHAPTER ONE Down the Rabbit-Hole'],
       ['paragraph', null, 'Alice was  beginning\nto'],
       ['paragraph', null, 'very tired'],
+    ]);
+  });
+});
+
+// The credits on the teleprompter (audiobook-credits-templates.prd.md Phase 4, ADR 0150): the rendered text split the way
+// the sidecar's chapter_script.text_script splits it, so its spans fall on the same words.
+describe('creditsParagraphs', () => {
+  it('makes one paragraph per line with words, numbered from one over those lines only', () => {
+    expect(creditsParagraphs('closing', 'One two.\r\n   \nThree.\rFour five six.')).toEqual([
+      { id: 'credits-closing-1', text: 'One two.' },
+      { id: 'credits-closing-2', text: 'Three.' },
+      { id: 'credits-closing-3', text: 'Four five six.' },
+    ]);
+  });
+
+  it('has no paragraphs for text with no words', () => {
+    expect(creditsParagraphs('opening', ' \n\t')).toEqual([]);
+  });
+});
+
+describe('creditsRows', () => {
+  const text = 'Alice, written by Lewis Carroll,\nnarrated by [Narrator].';
+
+  it('lists every line as untracked text before a session starts, with no title row', () => {
+    expect(creditsRows('opening', text, null)).toEqual([
+      { key: 'credits-opening-1', kind: 'paragraph', start: 0, words: null, gaps: null, text: 'Alice, written by Lewis Carroll,' },
+      { key: 'credits-opening-2', kind: 'paragraph', start: 0, words: null, gaps: null, text: 'narrated by [Narrator].' },
+    ]);
+  });
+
+  it("lays the sidecar's spans over the lines once a session has a script", () => {
+    const credits: TeleprompterScript = {
+      type: 'script',
+      chapter: { id: 'credits-opening', title: 'Opening credits' },
+      tokens: 8,
+      spans: [
+        { kind: 'paragraph', id: 'credits-opening-1', index: null, start: 0, count: 5 },
+        { kind: 'paragraph', id: 'credits-opening-2', index: null, start: 5, count: 3 },
+      ],
+    };
+
+    const rows = creditsRows('opening', text, credits);
+
+    expect(rows.map((row) => [row.key, row.start, row.words])).toEqual([
+      ['credits-opening-1', 0, ['Alice,', 'written', 'by', 'Lewis', 'Carroll,']],
+      ['credits-opening-2', 5, ['narrated', 'by', '[Narrator].']],
     ]);
   });
 });

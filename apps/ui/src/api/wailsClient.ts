@@ -138,7 +138,9 @@ async function decode<S extends StandardSchemaV1>(schema: S, payload: string, re
 
 /** `TeleprompterStart` goes to the host as `Record<string, string>` (options.go-style flat map); `startWord` is the one non-string field. */
 function toStartOptions({ startWord, ...rest }: TeleprompterStartOptions): Record<string, string> {
-  return startWord === undefined ? rest : { ...rest, startWord: String(startWord) };
+  // Either `chapter` or `credits` is set; the other is absent, so dropping undefined keeps the map flat strings.
+  const flat = Object.fromEntries(Object.entries(rest).filter((entry): entry is [string, string] => entry[1] !== undefined));
+  return startWord === undefined ? flat : { ...flat, startWord: String(startWord) };
 }
 
 /** Ready and Bootstrap are the two bindings that return an object, not JSON text. */
