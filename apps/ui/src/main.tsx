@@ -91,6 +91,11 @@ const mockPickups = (['import-success', 'next-success', 'export-success', 'error
 // RenderConfigState already at that result, so the confirmed-file-names, no-regions-yet and error states can be
 // seen without a real REAPER round trip.
 const mockRenderConfig = (['success', 'no-regions', 'error'] as const).find((seed) => seed === mockParams.get('mockRenderConfig'));
+// `?mockChapterTags=ready|not-rendered` boots the Tracks page's "Embed chapter tags" dialog with ChapterTagsPreview
+// already at that result, so the ready and not-yet-rendered states can be seen without a real chapter render.
+// `?mockChapterTagsEmbedError=1` makes the embed action always fail, so the error state can be seen too.
+const mockChapterTags = (['ready', 'not-rendered'] as const).find((seed) => seed === mockParams.get('mockChapterTags'));
+const mockChapterTagsEmbedError = mockParams.has('mockChapterTagsEmbedError');
 const mockInitial = {
   ...(mockImportPreview ? { importPreview: mockImportPreview } : {}),
   ...(mockAssets ? { assets: mockAssets } : {}),
@@ -119,6 +124,8 @@ const mockInitial = {
   ...(mockLineIdentity ? { lineIdentity: mockLineIdentity } : {}),
   ...(mockPickups ? { pickups: mockPickups } : {}),
   ...(mockRenderConfig ? { renderConfig: mockRenderConfig } : {}),
+  ...(mockChapterTags ? { chapterTags: mockChapterTags } : {}),
+  ...(mockChapterTagsEmbedError ? { chapterTagsEmbedAlwaysErrors: true } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

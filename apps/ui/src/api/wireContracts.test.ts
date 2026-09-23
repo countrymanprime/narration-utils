@@ -35,6 +35,7 @@ import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSch
 import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
 import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
+import { chapterTagsEmbedResultSchema, chapterTagsPreviewSchema } from './schemas/chaptertags';
 import { unknownKeys } from './schemas/strictness';
 import { parseWire, type WireContext } from './wire/parseWire';
 import { WireError } from './wire/WireError';
@@ -141,6 +142,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'pickups-import-success.json': pickupsStateSchema,
   'render-config-idle.json': renderConfigStateSchema,
   'render-config-success.json': renderConfigStateSchema,
+  'chapter-tags-preview-idle.json': chapterTagsPreviewSchema,
+  'chapter-tags-preview-ready.json': chapterTagsPreviewSchema,
+  'chapter-tags-embed-success.json': chapterTagsEmbedResultSchema,
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -583,6 +587,22 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(createMockApi().renderConfigConfigure('   ')).rejects.toThrow(/output folder is required/);
   });
 
+  it('chapterTagsPreview and its seeded states', async () => {
+    expectMatches(chapterTagsPreviewSchema, await createMockApi().chapterTagsPreview(), 'mock chapter-tags preview idle');
+    for (const seed of ['ready', 'not-rendered'] as const) {
+      expectMatches(chapterTagsPreviewSchema, await createMockApi({}, { chapterTags: seed }).chapterTagsPreview(), `mock chapter-tags preview seed ${seed}`);
+    }
+  });
+
+  it('chapterTagsEmbed writes a tagged copy, refuses a blank destination, and can be seeded to error', async () => {
+    const api = createMockApi({}, { chapterTags: 'ready' });
+    expectMatches(chapterTagsEmbedResultSchema, await api.chapterTagsEmbed('C:/Books/Alice/renders/Alice.mp3'), 'mock chapter-tags embed success');
+    await expect(api.chapterTagsEmbed('   ')).rejects.toThrow(/choose the MP3 file/);
+    await expect(
+      createMockApi({}, { chapterTags: 'ready', chapterTagsEmbedAlwaysErrors: true }).chapterTagsEmbed('C:/Books/Alice/renders/Alice.mp3'),
+    ).rejects.toThrow();
+  });
+
   it('every method of the API is either checked in this file, void, or not a request', () => {
     // A new binding fails this until it has a schema and a row above (ADR 0069). The list of what is checked is kept by hand.
     const CHECKED = [
@@ -654,6 +674,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'renderConfigConfigure',
       'renderConfigSuggestFolder',
       'renderConfigState',
+      'chapterTagsPreview',
+      'chapterTagsEmbed',
       'teleprompterStart',
       'teleprompterState',
       'teleprompterDevices',

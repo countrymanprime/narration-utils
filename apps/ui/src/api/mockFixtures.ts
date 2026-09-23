@@ -2,6 +2,8 @@
 // public-domain Alice's Adventures in Wonderland. Multiple real-text
 // paragraphs per chapter make this a useful reader and proofing demo.
 import type {
+  ChapterTagsEmbedResult,
+  ChapterTagsPreview,
   Discrepancy,
   GuideEntity,
   LineIdentityLine,
@@ -882,6 +884,32 @@ export const WIRE_RENDER_CONFIG_ERROR: RenderConfigState = {
   folder: '',
   targets: [],
   count: 0,
+};
+
+/** No chapter render has been configured yet (mirrors tests/fixtures/contracts/chapter-tags-preview-idle.json). */
+export const WIRE_CHAPTER_TAGS_PREVIEW_IDLE: ChapterTagsPreview = { chapters: [], ready: false };
+
+/** Two chapters, both rendered - ready to embed (mirrors tests/fixtures/contracts/chapter-tags-preview-ready.json). */
+export const WIRE_CHAPTER_TAGS_PREVIEW_READY: ChapterTagsPreview = {
+  chapters: [
+    { title: 'Chapter 1', path: 'C:\\Books\\Alice\\renders\\Chapter 1.mp3', rendered: true },
+    { title: 'Chapter 2', path: 'C:\\Books\\Alice\\renders\\Chapter 2.mp3', rendered: true },
+  ],
+  ready: true,
+};
+
+/** Chapters are configured but the narrator has not pressed Render yet, so the second file does not exist. */
+export const WIRE_CHAPTER_TAGS_PREVIEW_NOT_RENDERED: ChapterTagsPreview = {
+  chapters: [
+    { title: 'Chapter 1', path: 'C:\\Books\\Alice\\renders\\Chapter 1.mp3', rendered: true },
+    { title: 'Chapter 2', path: 'C:\\Books\\Alice\\renders\\Chapter 2.mp3', rendered: false },
+  ],
+  ready: false,
+};
+
+/** A successful embed (mirrors tests/fixtures/contracts/chapter-tags-embed-success.json). */
+export const WIRE_CHAPTER_TAGS_EMBED_SUCCESS: ChapterTagsEmbedResult = {
+  outputPath: 'C:\\Books\\Alice\\renders\\Alice in Wonderland.chapters.mp3',
 };
 
 export const wireClone = <T>(value: T): T => structuredClone(value);
