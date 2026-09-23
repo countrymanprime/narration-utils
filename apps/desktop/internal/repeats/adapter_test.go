@@ -105,8 +105,8 @@ func TestToFindingsConfidenceIsTheAverageMemberQuality(t *testing.T) {
 
 	f := out[0]
 	want := (0.8 + 0.6) / 2
-	if f.Confidence != want {
-		t.Fatalf("want confidence %.3f, got %.3f", want, f.Confidence)
+	if f.Confidence == nil || *f.Confidence != want {
+		t.Fatalf("want confidence %.3f, got %v", want, f.Confidence)
 	}
 	if f.ConfidenceReason == "" {
 		t.Fatal("want a non-empty confidence reason")

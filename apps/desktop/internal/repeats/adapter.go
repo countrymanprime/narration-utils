@@ -86,7 +86,7 @@ func groupFinding(g Group, project findings.Project, manuscript findings.Manuscr
 		Manuscript:       &manuscript,
 		Category:         category,
 		Severity:         findings.SeverityInfo,
-		Confidence:       conf,
+		Confidence:       &conf,
 		ConfidenceReason: reason,
 		Evidence: map[string]any{
 			"kind":               kind,
