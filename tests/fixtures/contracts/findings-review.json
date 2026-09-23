@@ -1,0 +1,43 @@
+{
+  "analyzer": "transcript-compare",
+  "category": "transcript_discrepancy",
+  "confidence": 0.9,
+  "confidence_reason": "compare.py measured a clear pause at this discrepancy's audio boundary (timing_gap_seconds at or above its pause threshold) — stronger secondary evidence, not proof of a genuine misread, skip, or insertion.",
+  "evidence": {
+    "audio_context": "The quick brown socks jumped over the lazy dog.",
+    "kind": "MISREAD",
+    "marker_state": "pending",
+    "script_context": "The quick brown fox jumped over the lazy dog.",
+    "timing_gap_seconds": 0.42
+  },
+  "evidence_version": "sha256:9086fad03c9fe71479e582e194688a6106b2f722dff8befc7c470247033e1203",
+  "id": "da5942c2cb6459a347499a5d",
+  "manuscript": {
+    "chapter_id": "chapter-1",
+    "chapter_title": "Chapter One",
+    "expected": "the quick brown fox",
+    "recorded": "the quick brown socks",
+    "span": {
+      "paragraph_id": "chapter-1-p3"
+    }
+  },
+  "project": {
+    "path": "C:/Projects/Alice"
+  },
+  "review": {
+    "note": "Room noise, not a misread.",
+    "status": "dismissed",
+    "timestamp": "2026-09-21T10:00:00Z"
+  },
+  "schema_version": 1,
+  "severity": "warning",
+  "source": {
+    "file": "C:\\audio\\chapter-one-take3.wav"
+  },
+  "time_range": {
+    "end": 100.34,
+    "source_end": 12.34,
+    "source_start": 12.34,
+    "start": 100.34
+  }
+}

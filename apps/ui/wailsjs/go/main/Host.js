@@ -126,6 +126,22 @@ export function DawLaunch() {
   return window['go']['main']['Host']['DawLaunch']();
 }
 
+export function FindingsGet(arg1) {
+  return window['go']['main']['Host']['FindingsGet'](arg1);
+}
+
+export function FindingsList(arg1) {
+  return window['go']['main']['Host']['FindingsList'](arg1);
+}
+
+export function FindingsReview(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['Host']['FindingsReview'](arg1, arg2, arg3, arg4);
+}
+
+export function FindingsSummary() {
+  return window['go']['main']['Host']['FindingsSummary']();
+}
+
 export function GuideBuild(arg1) {
   return window['go']['main']['Host']['GuideBuild'](arg1);
 }

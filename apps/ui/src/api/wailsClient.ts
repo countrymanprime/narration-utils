@@ -32,6 +32,7 @@ import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { chapterSuggestionSchema, chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { takeReviewCreateTakeResultSchema, takeReviewFindingsSchema } from './schemas/takeReview';
 import { coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
+import { findingSchema, findingsPageSchema, findingsSummarySchema } from './schemas/findings';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
@@ -323,6 +324,10 @@ export const wailsClient: NarrationApi = {
   chapterTrackMapClear: (trackGuid) => decode(chapterTrackMappingSchema, 'ChapterTrackMapClear', host.ChapterTrackMapClear(trackGuid)),
   chapterTrackMatch: (chapterId) => decode(chapterTrackMatchSchema, 'ChapterTrackMatch', host.ChapterTrackMatch(chapterId)),
   chapterSuggestion: () => decode(chapterSuggestionSchema, 'ChapterSuggestion', host.ChapterSuggestion()),
+  findingsList: (query) => decode(findingsPageSchema, 'FindingsList', host.FindingsList(query)),
+  findingsGet: (id) => decode(findingSchema, 'FindingsGet', host.FindingsGet(id)),
+  findingsReview: ({ id, evidenceVersion, status, note }) => decode(findingSchema, 'FindingsReview', host.FindingsReview(id, evidenceVersion, status, note)),
+  findingsSummary: () => decode(findingsSummarySchema, 'FindingsSummary', host.FindingsSummary()),
   takeReviewScan: (chapterTrackName) => decode(takeReviewFindingsSchema, 'TakeReviewScan', host.TakeReviewScan(chapterTrackName)),
   takeReviewFindings: (chapterTrackName) => decode(takeReviewFindingsSchema, 'TakeReviewFindings', host.TakeReviewFindings(chapterTrackName)),
   takeReviewCreateTake: (request) =>

@@ -57,6 +57,10 @@ function walk(schema: unknown, value: unknown, path: string, found: string[]): v
     case 'literal':
     case 'enum':
       return;
+    case 'unknown':
+      // An opaque value on purpose (a finding's analyzer-specific evidence, findings-contract.md): the schema declares no keys
+      // under it, so there is nothing to call undeclared.
+      return;
     default:
       // A schema kind this walker does not know would silently hide undeclared keys under it, so it is an error to add one unseen.
       throw new Error(`unknownKeys does not know the schema kind "${def.type}"; teach schemas/strictness.ts to walk it`);

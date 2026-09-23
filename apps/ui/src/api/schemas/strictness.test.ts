@@ -61,6 +61,12 @@ describe('unknownKeys', () => {
     ).toThrow(/does not know the schema kind "lazy"/);
   });
 
+  it('treats an opaque unknown value as declaring everything under it, and still checks its siblings', () => {
+    const opaque = z.object({ evidence: z.record(z.string(), z.unknown()) });
+    expect(unknownKeys(opaque, { evidence: { kind: 'MISREAD', nested: { anything: 1 } } })).toEqual([]);
+    expect(unknownKeys(opaque, { evidence: {}, extra: 1 })).toEqual(['extra']);
+  });
+
   it('does not look under a value that is null, missing or not an object', () => {
     expect(unknownKeys(schema, { ...valid, maybe: null, optional: undefined, fromNull: null })).toEqual([]);
     expect(unknownKeys(schema, 'not an object')).toEqual([]);

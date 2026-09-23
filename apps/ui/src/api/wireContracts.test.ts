@@ -22,6 +22,7 @@ import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } fr
 import { settingsForScopeSchema } from './schemas/settings';
 import { takeReviewCreateTakeResultSchema, takeReviewFindingsSchema } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
+import { findingSchema, findingsPageSchema, findingsSummarySchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { chapterSuggestionSchema, chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
@@ -200,6 +201,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'coverage-state-complete.json': coverageStateSchema,
   // Not a payload: the reason words the host can send, which the schema's lists must equal (the test below).
   'coverage-reasons.json': z.object({ refusal: z.array(z.string()), evaluator: z.array(z.string()) }),
+  'findings-list.json': findingsPageSchema,
+  'findings-review.json': findingSchema,
+  'findings-summary.json': findingsSummarySchema,
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -910,6 +914,22 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(empty).toEqual([]);
   });
 
+  it('the review bindings answers', async () => {
+    const api = createMockApi();
+    const page = await api.findingsList({ includeNotInLatestRun: true });
+    expectMatches(findingsPageSchema, page, 'mock findings list');
+    expect(page.total).toBe(page.findings.length);
+    expect(page.findings.length).toBeGreaterThan(0);
+    const shown = page.findings[0];
+    expectMatches(findingSchema, await api.findingsGet(shown.id), 'mock findings get');
+    const reviewed = await api.findingsReview({ id: shown.id, evidenceVersion: shown.evidence_version ?? '', status: 'deferred', note: 'Check tomorrow.' });
+    expectMatches(findingSchema, reviewed, 'mock findings review');
+    expectMatches(findingsSummarySchema, await api.findingsSummary(), 'mock findings summary');
+    const empty = createMockApi({}, { findings: [] });
+    expectMatches(findingsPageSchema, await empty.findingsList({}), 'mock findings list, empty queue');
+    expectMatches(findingsSummarySchema, await empty.findingsSummary(), 'mock findings summary, empty queue');
+  });
+
   it('the take-creation answer', async () => {
     const api = createMockApi();
     const result = await api.takeReviewCreateTake({
@@ -1058,6 +1078,10 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'coverageStart',
       'coverageState',
       'coverageResult',
+      'findingsList',
+      'findingsGet',
+      'findingsReview',
+      'findingsSummary',
       'teleprompterStart',
       'teleprompterState',
       'teleprompterDevices',

@@ -334,6 +334,56 @@ describe('wailsClient', () => {
     expect(clear).toHaveBeenCalledWith('track-guid-a');
   });
 
+  it('sends the review query and decision to the host and decodes the findings it answers', async () => {
+    const finding = {
+      schema_version: 1,
+      id: 'f1',
+      analyzer: 'transcript-compare',
+      project: { path: 'C:/P' },
+      source: {},
+      category: 'transcript_discrepancy',
+      severity: 'warning',
+      confidence: null,
+      confidence_reason: 'no timing signal',
+      evidence_version: 'v1',
+      review: { status: 'dismissed', note: 'noise', timestamp: '2026-09-23T10:00:00Z' },
+    };
+    const summary = { total: 1, unreviewed: 0, accepted: 0, dismissed: 1, deferred: 0, notInLatestRun: 0, analyzers: null, categories: null, chapters: null };
+    const list = vi.fn().mockResolvedValue(JSON.stringify({ findings: null, total: 0 }));
+    const get = vi.fn().mockResolvedValue(JSON.stringify(finding));
+    const review = vi.fn().mockResolvedValue(JSON.stringify(finding));
+    window.go = {
+      main: { Host: { FindingsList: list, FindingsGet: get, FindingsReview: review, FindingsSummary: vi.fn().mockResolvedValue(JSON.stringify(summary)) } },
+    };
+
+    await expect(wailsClient.findingsList({ sort: 'confidence', limit: 50 })).resolves.toEqual({ findings: [], total: 0 });
+    expect(list).toHaveBeenCalledWith({ sort: 'confidence', limit: 50 });
+    await expect(wailsClient.findingsGet('f1')).resolves.toMatchObject({ id: 'f1', confidence: null });
+    expect(get).toHaveBeenCalledWith('f1');
+    await expect(wailsClient.findingsReview({ id: 'f1', evidenceVersion: 'v1', status: 'dismissed', note: 'noise' })).resolves.toMatchObject({
+      review: { status: 'dismissed' },
+    });
+    expect(review).toHaveBeenCalledWith('f1', 'v1', 'dismissed', 'noise');
+    await expect(wailsClient.findingsSummary()).resolves.toMatchObject({ dismissed: 1, analyzers: [], chapters: [] });
+  });
+
+  it('rejects a finding whose review status the host never sends', async () => {
+    const bad = {
+      schema_version: 1,
+      id: 'f1',
+      analyzer: 'a',
+      project: {},
+      source: {},
+      category: 'c',
+      severity: 'warning',
+      confidence: 0.5,
+      confidence_reason: 'r',
+      review: { status: 'approved' },
+    };
+    window.go = { main: { Host: { FindingsGet: vi.fn().mockResolvedValue(JSON.stringify(bad)) } } };
+    await expect(wailsClient.findingsGet('f1')).rejects.toBeInstanceOf(WireError);
+  });
+
   it('starts, stops and reads the teleprompter through the native bindings', async () => {
     const start = vi.fn().mockResolvedValue(JSON.stringify({ status: 'started' }));
     const stop = vi.fn().mockResolvedValue('null');

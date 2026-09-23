@@ -33,6 +33,17 @@ Only the Go host writes to the project's findings sidecar; REAPER Lua and the Py
 
 `resetDerived` (`apps/desktop/internal/manuscript/service.go`) removes the whole `narration-utils/findings` directory on a confirmed manuscript replace and on Clear, because findings are anchored to chapter and paragraph ids that no longer mean the same thing afterward.
 
+## Reading and deciding findings
+
+The UI reads and decides every analyzer's findings through four bindings in `apps/desktop/bindings_findings.go` ([ADR 0120](../adr/0120-findings-are-read-and-decided-through-four-generic-bindings-and-a-decision-carries-the-evidence-version-it-was-made-against.md)); none of them names an analyzer, so an analyzer that saves into the store needs no binding of its own:
+
+- `FindingsList(query)` answers `{findings, total}`: one page of the matches, filtered, sorted and paged in Go by `findings.Query` (`apps/desktop/internal/findings/query.go`). Filters are analyzer, category, severity, review status, chapter id, a minimum confidence and whether to include findings not in the latest run; sort keys are `chapter` (the default), `time`, `confidence` and `severity`, and a finding with no value for the key sorts last either way. A filter the store cannot answer fails the call.
+- `FindingsGet(id)` answers one finding, or fails when the project no longer has it.
+- `FindingsReview(id, evidenceVersion, status, note)` appends the decision and answers the finding as stored. It is refused, and nothing is recorded, when `evidenceVersion` is not the stored finding's (the analyzer ran again since the page showed it) or the finding is gone. `unreviewed` reopens a decision; the host stamps the time.
+- `FindingsSummary()` answers the latest run's counts by review status (the navigation badge is `unreviewed`), how many findings the latest run did not reproduce, and the analyzers, categories and chapters present.
+
+The finding itself crosses the boundary in this document's snake_case; the envelopes around it are camelCase like every other binding. The UI's schema is `apps/ui/src/api/schemas/findings.ts`, the golden payloads are `tests/fixtures/contracts/findings-{list,review,summary}.json`.
+
 ## Rules
 
 - Audio and manuscript paths remain local and are never embedded in a report intended for sharing unless the user asks.

@@ -21,9 +21,11 @@ export * from './api/contracts/chaptertags';
 export * from './api/contracts/takeReview';
 export * from './api/contracts/coverage';
 export * from './api/contracts/dictionary';
+export * from './api/contracts/findings';
 
 import type { ChapterTrackMapApi } from './api/contracts/chapterTrackMap';
 import type { DawCatalogApi } from './api/contracts/dawCatalog';
+import type { FindingsApi } from './api/contracts/findings';
 import type { ManuscriptApi } from './api/contracts/manuscript';
 import type { ProjectApi } from './api/contracts/project';
 import type { StoryBibleApi } from './api/contracts/storyBible';
@@ -67,4 +69,5 @@ export interface NarrationApi
     ChapterTagsApi,
     TakeReviewApi,
     CoverageApi,
-    DictionaryApi {}
+    DictionaryApi,
+    FindingsApi {}

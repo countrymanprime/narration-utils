@@ -1,0 +1,190 @@
+{
+  "findings": [
+    {
+      "analyzer": "story-bible",
+      "category": "pronunciation",
+      "confidence": 0.3,
+      "confidence_reason": "manuscript_guide.py generated this pronunciation from eSpeak NG, its fallback engine with no dictionary match - weaker evidence than a CMU dictionary hit.",
+      "evidence": {
+        "condition": "low_confidence_pronunciation",
+        "entity_id": "ent-tobias",
+        "excerpt": "Tobias Vane walked in.",
+        "pronunciation_confidence": "low"
+      },
+      "evidence_version": "sha256:e52be8d96a0f0ef1ef1ee582470d74b05096662f7135e4a52ce301403c0b962e",
+      "id": "389166738cbf3c79e3c3cc97",
+      "manuscript": {
+        "chapter_id": "chapter-1",
+        "chapter_title": "Chapter One",
+        "expected": "Tobias Vane",
+        "span": {
+          "paragraph_id": "chapter-1-p2"
+        }
+      },
+      "not_in_latest_run": true,
+      "project": {
+        "path": "C:/Projects/Alice"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "schema_version": 1,
+      "severity": "warning",
+      "source": {}
+    },
+    {
+      "analyzer": "transcript-compare",
+      "category": "transcript_discrepancy",
+      "confidence": null,
+      "confidence_reason": "compare.py could not measure an audio-timing gap at this discrepancy's boundary (no adjacent word timing available), so no numeric confidence is reported.",
+      "evidence": {
+        "audio_context": "It was and then a dark and stormy night.",
+        "existing_marker_name": "TAKE 2",
+        "kind": "EXTRA",
+        "marker_state": "existing",
+        "script_context": "It was a dark and stormy night."
+      },
+      "evidence_version": "sha256:5d9516d39919a8f7984f429336de5f0c38c24b41950f5b82d8205538f54c0840",
+      "id": "3ce5123fa8e122c2be503616",
+      "manuscript": {
+        "chapter_id": "chapter-1",
+        "chapter_title": "Chapter One",
+        "recorded": "and then",
+        "span": {
+          "paragraph_id": "chapter-1-p4"
+        }
+      },
+      "project": {
+        "path": "C:/Projects/Alice"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "schema_version": 1,
+      "severity": "info",
+      "source": {
+        "file": "C:\\audio\\chapter-one-take3.wav"
+      },
+      "time_range": {
+        "end": 155.89,
+        "source_end": 67.89,
+        "source_start": 67.89,
+        "start": 155.89
+      }
+    },
+    {
+      "analyzer": "story-bible",
+      "category": "entity",
+      "confidence": null,
+      "confidence_reason": "review_state is a narrator review flag, not a measured score, so no numeric confidence is reported.",
+      "evidence": {
+        "condition": "needs_review",
+        "entity_id": "ent-aria",
+        "excerpt": "Aria Wren walked in."
+      },
+      "evidence_version": "sha256:c73a8af8daa6e0d7aa823e2c3c52b044d047009e42ce2765345c96bcc2bbc07e",
+      "id": "43ae55aa8b3ef235ba219006",
+      "manuscript": {
+        "chapter_id": "chapter-1",
+        "chapter_title": "Chapter One",
+        "expected": "Aria Wren",
+        "span": {
+          "paragraph_id": "chapter-1-p2"
+        }
+      },
+      "project": {
+        "path": "C:/Projects/Alice"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "schema_version": 1,
+      "severity": "warning",
+      "source": {}
+    },
+    {
+      "analyzer": "transcript-compare",
+      "category": "transcript_discrepancy",
+      "confidence": 0.3,
+      "confidence_reason": "compare.py found no meaningful pause at this discrepancy's audio boundary (the words ran together) — weaker evidence, possibly a token-split artifact of the diff itself rather than a genuine discrepancy.",
+      "evidence": {
+        "audio_context": "The quick brown fox the lazy dog.",
+        "kind": "SKIPPED",
+        "marker_state": "pending",
+        "script_context": "The quick brown fox jumped over the lazy dog.",
+        "timing_gap_seconds": 0.05
+      },
+      "evidence_version": "sha256:8ce0bd29f5ea855d76f9433ed2330a85201ed5e43d7e9b805ebb21a2e9ee22d7",
+      "id": "add0f3d98d7ca2f05a7b938c",
+      "manuscript": {
+        "chapter_id": "chapter-1",
+        "chapter_title": "Chapter One",
+        "expected": "jumped over",
+        "span": {
+          "paragraph_id": "chapter-1-p3"
+        }
+      },
+      "project": {
+        "path": "C:/Projects/Alice"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "schema_version": 1,
+      "severity": "warning",
+      "source": {
+        "file": "C:\\audio\\chapter-one-take3.wav"
+      },
+      "time_range": {
+        "end": 133.1,
+        "source_end": 45.1,
+        "source_start": 45.1,
+        "start": 133.1
+      }
+    },
+    {
+      "analyzer": "transcript-compare",
+      "category": "transcript_discrepancy",
+      "confidence": 0.9,
+      "confidence_reason": "compare.py measured a clear pause at this discrepancy's audio boundary (timing_gap_seconds at or above its pause threshold) — stronger secondary evidence, not proof of a genuine misread, skip, or insertion.",
+      "evidence": {
+        "audio_context": "The quick brown socks jumped over the lazy dog.",
+        "kind": "MISREAD",
+        "marker_state": "pending",
+        "script_context": "The quick brown fox jumped over the lazy dog.",
+        "timing_gap_seconds": 0.42
+      },
+      "evidence_version": "sha256:9086fad03c9fe71479e582e194688a6106b2f722dff8befc7c470247033e1203",
+      "id": "da5942c2cb6459a347499a5d",
+      "manuscript": {
+        "chapter_id": "chapter-1",
+        "chapter_title": "Chapter One",
+        "expected": "the quick brown fox",
+        "recorded": "the quick brown socks",
+        "span": {
+          "paragraph_id": "chapter-1-p3"
+        }
+      },
+      "project": {
+        "path": "C:/Projects/Alice"
+      },
+      "review": {
+        "note": "Room noise, not a misread.",
+        "status": "dismissed",
+        "timestamp": "2026-09-21T10:00:00Z"
+      },
+      "schema_version": 1,
+      "severity": "warning",
+      "source": {
+        "file": "C:\\audio\\chapter-one-take3.wav"
+      },
+      "time_range": {
+        "end": 100.34,
+        "source_end": 12.34,
+        "source_start": 12.34,
+        "start": 100.34
+      }
+    }
+  ],
+  "total": 5
+}
