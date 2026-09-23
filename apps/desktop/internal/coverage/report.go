@@ -231,9 +231,15 @@ func (r Report) TextComplete(thresholds Thresholds) bool {
 		return false
 	}
 	for _, paragraph := range r.Paragraphs {
-		if paragraph.PresentFraction() < thresholds.MinParagraphPresent || paragraph.LongestMissingRun > thresholds.MaxMissingRun {
+		if !paragraphPasses(paragraph, thresholds) {
 			return false
 		}
 	}
 	return true
+}
+
+// paragraphPasses is one paragraph's half of TextComplete: enough of it read
+// and no missing run inside it over the limit.
+func paragraphPasses(paragraph ParagraphLine, thresholds Thresholds) bool {
+	return paragraph.PresentFraction() >= thresholds.MinParagraphPresent && paragraph.LongestMissingRun <= thresholds.MaxMissingRun
 }
