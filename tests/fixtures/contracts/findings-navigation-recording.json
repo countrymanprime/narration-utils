@@ -1,0 +1,5 @@
+{
+  "message": "REAPER is recording, so nothing was moved. Stop recording first.",
+  "outcome": "refused",
+  "reason": "recording"
+}

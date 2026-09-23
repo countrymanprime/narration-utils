@@ -133,7 +133,11 @@ const mockChapterSuggestion = (['matched', 'ambiguous'] as const).find((seed) =>
 // `?mockFindings=empty|changed` boots the Review page with no findings at all, or with an analyzer that runs again right after the page
 // lists its findings, so the empty queue and a decision refused on changed evidence (ADR 0120) can be seen without a host.
 const mockFindings = (['empty', 'changed'] as const).find((seed) => seed === mockParams.get('mockFindings'));
+// `?mockReaper=standalone|not-running|stale|recording|outdated` sets what the Review page's REAPER does for Go to, Loop and Stop
+// (review dashboard Phase 7): not there at all, gone quiet, or connected and refusing for that reason. Connected when absent.
+const mockReaper = (['standalone', 'not-running', 'stale', 'recording', 'outdated'] as const).find((seed) => seed === mockParams.get('mockReaper'));
 const mockInitial = {
+  ...(mockReaper ? { reaper: mockReaper } : {}),
   ...(mockFindings === 'empty' ? { findings: [] } : {}),
   ...(mockFindings === 'changed' ? { findingsRerun: true } : {}),
   ...(mockImportPreview ? { importPreview: mockImportPreview } : {}),

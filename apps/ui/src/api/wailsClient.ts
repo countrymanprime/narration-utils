@@ -32,7 +32,7 @@ import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { chapterSuggestionSchema, chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { takeReviewCreateTakeResultSchema, takeReviewFindingsSchema } from './schemas/takeReview';
 import { coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
-import { findingSchema, findingsPageSchema, findingsSummarySchema } from './schemas/findings';
+import { findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
@@ -328,6 +328,10 @@ export const wailsClient: NarrationApi = {
   findingsGet: (id) => decode(findingSchema, 'FindingsGet', host.FindingsGet(id)),
   findingsReview: ({ id, evidenceVersion, status, note }) => decode(findingSchema, 'FindingsReview', host.FindingsReview(id, evidenceVersion, status, note)),
   findingsSummary: () => decode(findingsSummarySchema, 'FindingsSummary', host.FindingsSummary()),
+  findingsReaperStatus: () => decode(reaperStatusSchema, 'FindingsReaperStatus', host.FindingsReaperStatus()),
+  findingsGoTo: (id) => decode(findingNavigationSchema, 'FindingsGoTo', host.FindingsGoTo(id)),
+  findingsLoop: (id) => decode(findingNavigationSchema, 'FindingsLoop', host.FindingsLoop(id)),
+  findingsStopLoop: () => decode(findingNavigationSchema, 'FindingsStopLoop', host.FindingsStopLoop()),
   takeReviewScan: (chapterTrackName) => decode(takeReviewFindingsSchema, 'TakeReviewScan', host.TakeReviewScan(chapterTrackName)),
   takeReviewFindings: (chapterTrackName) => decode(takeReviewFindingsSchema, 'TakeReviewFindings', host.TakeReviewFindings(chapterTrackName)),
   takeReviewCreateTake: (request) =>

@@ -277,6 +277,23 @@ func TestAnErrorFromREAPERIsReturnedWithItsMessage(t *testing.T) {
 	}
 }
 
+// The two refusals narration_navigation.lua words itself are told apart by their exact message, so the Review page can say
+// what to do (review dashboard Phase 7) without reading an error string of its own.
+func TestRecordingAndANoTimeRefusalFromREAPERAreToldApart(t *testing.T) {
+	for message, want := range map[string]error{
+		"REAPER is recording. Stop recording first.": ErrRecording,
+		"The finding has no usable time.":            ErrNoSourceTime,
+	} {
+		navigator, client, dir := newNavigatorSession(t)
+		startFakeReaper(t, client, dir, func(command []string) [][]string {
+			return [][]string{{"ERROR", run(command), message}}
+		})
+		if _, err := navigator.Loop(context.Background(), Target{ItemGUID: testItem, SourceStart: seconds(1)}); !errors.Is(err, want) {
+			t.Fatalf("%q: got %v, want %v", message, err, want)
+		}
+	}
+}
+
 func TestAnAnswerThisAppCannotReadIsAnErrorNotAZeroValue(t *testing.T) {
 	navigator, client, dir := newNavigatorSession(t)
 	startFakeReaper(t, client, dir, func(command []string) [][]string {

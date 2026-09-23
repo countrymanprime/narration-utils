@@ -44,6 +44,8 @@ The UI reads and decides every analyzer's findings through four bindings in `app
 
 The finding itself crosses the boundary in this document's snake_case; the envelopes around it are camelCase like every other binding. The UI's schema is `apps/ui/src/api/schemas/findings.ts`, the golden payloads are `tests/fixtures/contracts/findings-{list,review,summary}.json`.
 
+A finding that carries a REAPER item GUID can also be gone to and looped in REAPER through `FindingsGoTo(id)`, `FindingsLoop(id)` and `FindingsStopLoop()`, with `FindingsReaperStatus()` saying whether REAPER is there (`apps/desktop/bindings_navigation.go`; [going to and looping a finding](reaper-navigation.md#from-the-review-page)). They too take only the id: the host reads `source` and `time_range`'s source times from the store.
+
 ## Rules
 
 - Audio and manuscript paths remain local and are never embedded in a report intended for sharing unless the user asks.

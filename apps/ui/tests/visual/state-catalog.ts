@@ -779,6 +779,40 @@ export const STATE_CATALOG: StateEntry[] = [
     description: 'Review, findings the latest run did not repeat included, and one selected - the "did not find this again" notice over its evidence',
     ...KEEPS_DESKTOP_SCROLL,
   },
+  // Review in REAPER (review-dashboard-and-findings-adoption.prd.md Phase 7): Go to, Loop and Stop, and why they are off
+  {
+    page: 'review',
+    state: 'reaper-go-to',
+    description: 'Review, Go to in REAPER pressed on a transcript difference - REAPER selected its item and the cursor time is announced',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'review',
+    state: 'reaper-looping',
+    description: 'Review, Loop in REAPER pressed - the looped window is announced and Stop loop is offered beside Go to and Loop',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'review',
+    state: 'reaper-stale',
+    description:
+      "Review, Go to refused because the finding's item is no longer in the REAPER project - the plain-language alert, nothing moved (reached via the ?mockReaper=stale mock seam)",
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'review',
+    state: 'reaper-not-running',
+    description:
+      'Review, REAPER not answering (its heartbeat stopped) - Go to and Loop disabled with the reason under them (reached via the ?mockReaper=not-running mock seam)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'review',
+    state: 'reaper-standalone',
+    description:
+      'Review, the app opened on its own rather than from REAPER - Go to and Loop disabled, and how to connect REAPER (reached via the ?mockReaper=standalone mock seam)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
 
   // Settings
   { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category', ...REFLOW },

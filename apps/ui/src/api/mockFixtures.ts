@@ -1067,14 +1067,21 @@ export const WIRE_TAKE_REVIEW_FINDINGS: TakeReviewFinding[] = [
 // The review bindings' findings store (review dashboard Phase 4), shaped like
 // tests/fixtures/contracts/findings-list.json: Transcript Compare discrepancies (one already dismissed, one with no
 // numeric confidence), a Story Bible entity and pronunciation (no time range by design), and a pronunciation the
-// latest Story Bible run no longer flags, so every state the Review page shows has data behind it.
+// latest Story Bible run no longer flags, so every state the Review page shows has data behind it. The two Chapter 1
+// discrepancies carry the REAPER item, take and track GUIDs Go to and Loop need (Phase 6); the Chapter 2 one comes from
+// an older comparison that recorded none, so its REAPER controls say why they are off.
 export const WIRE_FINDINGS: Finding[] = [
   {
     schema_version: 1,
     id: '1a2b3c4d5e6f708192a3b4c5',
     analyzer: 'transcript-compare',
     project: { path: 'C:/Projects/Alice-in-Wonderland' },
-    source: { file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take1.wav' },
+    source: {
+      file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take1.wav',
+      track_guid: '{5E1F0000-0000-4000-8000-0000000000F1}',
+      item_guid: '{5E1F0000-0000-4000-8000-000000000001}',
+      take_guid: '{5E1F0000-0000-4000-8000-0000000000A1}',
+    },
     time_range: { start: 12.4, end: 12.4, source_start: 12.4, source_end: 12.4 },
     manuscript: {
       chapter_id: 'chapter-1',
@@ -1102,7 +1109,12 @@ export const WIRE_FINDINGS: Finding[] = [
     id: '2b3c4d5e6f708192a3b4c5d6',
     analyzer: 'transcript-compare',
     project: { path: 'C:/Projects/Alice-in-Wonderland' },
-    source: { file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take1.wav' },
+    source: {
+      file: 'C:/Projects/Alice-in-Wonderland/media/ch1_take1.wav',
+      track_guid: '{5E1F0000-0000-4000-8000-0000000000F1}',
+      item_guid: '{5E1F0000-0000-4000-8000-000000000001}',
+      take_guid: '{5E1F0000-0000-4000-8000-0000000000A1}',
+    },
     time_range: { start: 31.9, end: 31.9, source_start: 31.9, source_end: 31.9 },
     manuscript: { chapter_id: 'chapter-1', chapter_title: 'Chapter 1', expected: 'Oh dear!', span: { paragraph_id: 'p-3' } },
     category: 'transcript_discrepancy',

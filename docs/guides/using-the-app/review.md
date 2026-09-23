@@ -62,7 +62,43 @@ version, and keeps your note, so you can look again and decide.
 
 ![A decision not saved because the check ran again since the finding was shown](../../images/ui/review-evidence-changed.webp)
 
-Going to a finding in REAPER and playing it in a loop are not on this page yet.
+## Going to a finding in REAPER
+
+A finding from a Proofing comparison has an **In REAPER** row. It works when you opened the app from
+the Narration Utils action in REAPER and REAPER is still running; the app checks every few seconds
+and sends REAPER nothing until you press a button.
+
+- **Go to in REAPER** selects the finding's item, and only that item, and puts the edit cursor on the
+  spot. The page says where the cursor went.
+- **Loop in REAPER** plays the finding with two seconds either side, over and over: it sets the time
+  selection and the loop points to that window, turns repeat on and presses Play. Loop on another
+  finding moves the loop there.
+- **Stop loop** appears while a loop is playing, on every finding. It stops playback and puts back
+  your own time selection, loop points and repeat. Anything you changed yourself while the loop
+  played is kept.
+
+None of these edits your project or adds an undo step. A finding is found by its REAPER item, never by
+its old project time, so it is still found after you move the item.
+
+![A finding looping in REAPER, with Stop loop](../../images/ui/review-reaper-looping.webp)
+
+When REAPER cannot do it, nothing in REAPER changes and the page says why:
+
+- **the finding's audio changed.** The item was deleted, lost the take the check heard, or was
+  trimmed so the spot is no longer in it. Run the check again to find it where it is now.
+- **REAPER is recording.** Stop recording first.
+- **the script in REAPER is older than the app.** Import it again from the app's REAPER folder.
+- **the finding came from an older check** that did not record its REAPER item. The buttons are off;
+  run the check again.
+
+![Go to refused because the finding's item is no longer in the REAPER project](../../images/ui/review-reaper-stale.webp)
+
+When REAPER is not connected, Go to and Loop are off and the reason is under them. If you opened the
+app on its own, open it from the Narration Utils action in REAPER instead. If REAPER was closed or the
+action stopped, start it again; the buttons turn back on by themselves. A Story Bible finding has no
+audio, so it has no REAPER row.
+
+![Go to and Loop off because REAPER is not answering](../../images/ui/review-reaper-not-connected.webp)
 
 ---
 

@@ -95,7 +95,7 @@ describe('ReviewPage', () => {
     expect((screen.getByRole('combobox', { name: 'Status' }) as HTMLSelectElement).value).toBe('');
   });
 
-  it('shows a finding with its evidence and confidence reason, and no REAPER controls yet', async () => {
+  it('shows a finding with its evidence and confidence reason, and its REAPER controls', async () => {
     const user = userEvent.setup();
     renderPage();
     await openFinding(user, /pink eyes/);
@@ -105,7 +105,8 @@ describe('ReviewPage', () => {
     expect(within(detail).getByText('0.42 s')).toBeTruthy();
     expect(within(detail).getByText('0:12.4')).toBeTruthy();
     expect(within(detail).getByText(/measured a clear pause/)).toBeTruthy();
-    expect(within(detail).queryByRole('button', { name: /go to|loop/i })).toBeNull();
+    expect(within(detail).getByRole('button', { name: 'Go to in REAPER' })).toBeTruthy();
+    expect(within(detail).getByRole('button', { name: 'Loop in REAPER' })).toBeTruthy();
   });
 
   it('records a decision with its note, says so, and updates the list and the counts', async () => {
@@ -232,5 +233,108 @@ describe('ReviewPage', () => {
     fail = false;
     await user.click(screen.getByRole('button', { name: 'Retry' }));
     expect(await screen.findByRole('heading', { name: 'Nothing to review yet' })).toBeTruthy();
+  });
+});
+
+// Go to, Loop and Stop in REAPER (review dashboard Phase 7), against the mock's REAPER.
+describe('ReviewPage in REAPER', () => {
+  const inReaper = () => within(screen.getByRole('region', { name: 'In REAPER' }));
+  const button = (name: string) => inReaper().getByRole('button', { name }) as HTMLButtonElement;
+
+  it('goes to a finding and says where REAPER put the cursor', async () => {
+    const user = userEvent.setup();
+    const { api } = renderPage();
+    const goTo = vi.spyOn(api, 'findingsGoTo');
+    await openFinding(user, /pink eyes/);
+    await waitFor(() => expect(button('Go to in REAPER').disabled).toBe(false));
+    await user.click(button('Go to in REAPER'));
+    expect(await inReaper().findByText('REAPER selected the item and moved the cursor to 0:12.4.')).toBeTruthy();
+    expect(goTo).toHaveBeenCalledWith('1a2b3c4d5e6f708192a3b4c5');
+  });
+
+  it('loops a finding, offers Stop, and Stop says the selection is back', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await openFinding(user, /pink eyes/);
+    await waitFor(() => expect(button('Loop in REAPER').disabled).toBe(false));
+    expect(inReaper().queryByRole('button', { name: 'Stop loop' })).toBeNull();
+    await user.click(button('Loop in REAPER'));
+    expect(await inReaper().findByText(/Looping 0:10.4 to 0:14.4 in REAPER/)).toBeTruthy();
+    await user.click(await inReaper().findByRole('button', { name: 'Stop loop' }));
+    expect(await inReaper().findByText('Loop stopped. Your time selection and repeat are back as you had them.')).toBeTruthy();
+    await waitFor(() => expect(inReaper().queryByRole('button', { name: 'Stop loop' })).toBeNull());
+  });
+
+  it('says a loop is playing on another finding, and Stop is offered there too', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await openFinding(user, /pink eyes/);
+    await waitFor(() => expect(button('Loop in REAPER').disabled).toBe(false));
+    await user.click(button('Loop in REAPER'));
+    await inReaper().findByRole('button', { name: 'Stop loop' });
+    await openFinding(user, /Oh dear!/);
+    expect(await inReaper().findByText('A loop is playing in REAPER on another finding.')).toBeTruthy();
+    expect(button('Stop loop')).toBeTruthy();
+  });
+
+  it('shows a stale finding as an alert in plain words', async () => {
+    const user = userEvent.setup();
+    renderPage({ initial: { reaper: 'stale' } });
+    await openFinding(user, /pink eyes/);
+    await waitFor(() => expect(button('Go to in REAPER').disabled).toBe(false));
+    await user.click(button('Go to in REAPER'));
+    expect((await inReaper().findByRole('alert')).textContent).toContain("This finding's item is no longer in the REAPER project, so nothing was moved.");
+  });
+
+  it('says REAPER is recording when it refuses to move', async () => {
+    const user = userEvent.setup();
+    renderPage({ initial: { reaper: 'recording' } });
+    await openFinding(user, /pink eyes/);
+    await waitFor(() => expect(button('Loop in REAPER').disabled).toBe(false));
+    await user.click(button('Loop in REAPER'));
+    expect((await inReaper().findByRole('alert')).textContent).toBe('REAPER is recording, so nothing was moved. Stop recording first.');
+  });
+
+  it.each([
+    ['not-running', /REAPER is not answering/],
+    ['standalone', /open this app from the Narration Utils action in REAPER/],
+  ] as const)('turns the buttons off with the reason when REAPER is %s, and sends nothing', async (reaper, reason) => {
+    const user = userEvent.setup();
+    const { api } = renderPage({ initial: { reaper } });
+    const goTo = vi.spyOn(api, 'findingsGoTo');
+    await openFinding(user, /pink eyes/);
+    expect(await inReaper().findByText(reason)).toBeTruthy();
+    expect(button('Go to in REAPER').disabled).toBe(true);
+    expect(button('Loop in REAPER').disabled).toBe(true);
+    expect(goTo).not.toHaveBeenCalled();
+  });
+
+  it('turns the buttons off for a finding from an older check with no REAPER item', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Status' }), 'dismissed');
+    await waitFor(async () => expect(await rows()).toHaveLength(1));
+    await openFinding(user, /and then/);
+    expect(await inReaper().findByText(/came from an older check/)).toBeTruthy();
+    expect(button('Go to in REAPER').disabled).toBe(true);
+    expect(button('Loop in REAPER').disabled).toBe(true);
+  });
+
+  it('has no REAPER controls for a finding with no audio, such as a Story Bible entry', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Check' }), 'story-bible');
+    await waitFor(async () => expect(await rows()).toHaveLength(1));
+    await openFinding(user, /White Rabbit/);
+    await screen.findByRole('heading', { level: 3, name: 'Decision' });
+    expect(screen.queryByRole('region', { name: 'In REAPER' })).toBeNull();
+  });
+
+  it('keeps the buttons off with the reason when the status cannot be read', async () => {
+    const user = userEvent.setup();
+    renderPage({ overrides: { findingsReaperStatus: () => Promise.reject(new Error('host gone')) } });
+    await openFinding(user, /pink eyes/);
+    expect(await inReaper().findByText('Could not check whether REAPER is connected: host gone')).toBeTruthy();
+    expect(button('Go to in REAPER').disabled).toBe(true);
   });
 });

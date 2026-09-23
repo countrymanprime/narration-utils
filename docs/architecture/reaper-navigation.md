@@ -1,6 +1,6 @@
 # Going to and looping a finding in REAPER
 
-**Status: bridge commands and Go client implemented, tested in the harness and checked in a scripted REAPER 7.80 run; not yet reachable from the app** (the Review page's Go to, Loop and Stop buttons are Phase 7 of [the review dashboard PRD](../prds/review-dashboard-and-findings-adoption.prd.md)). Hearing the loop and three other steps need the owner; see the [manual checklist](#manual-verification-checklist). Decision: [ADR 0121](../adr/0121-going-to-and-looping-a-finding-is-by-guid-and-source-time-makes-no-undo-point-and-stop-restores-what-the-loop-changed.md).
+**Status: implemented end to end: bridge commands, Go client, host bindings and the Review page's Go to, Loop and Stop buttons** (Phases 6 and 7 of [the review dashboard PRD](../prds/review-dashboard-and-findings-adoption.prd.md)), tested in the harness, in Go, in the UI and the visual suite, and checked in a scripted REAPER 7.80 run. Hearing the loop, three other steps, and a run of the checklist from the page need the owner; see the [manual checklist](#manual-verification-checklist). Decision: [ADR 0121](../adr/0121-going-to-and-looping-a-finding-is-by-guid-and-source-time-makes-no-undo-point-and-stop-restores-what-the-loop-changed.md).
 
 ## What it does
 
@@ -64,7 +64,24 @@ The events are in the table in `apps/desktop/internal/bridge/wire.go` ([wire con
 | `ErrNoItemIdentity`, `ErrNoSourceTime` | The finding has no item GUID, or no usable source time (nothing is sent) |
 | `*StaleError` (`errors.Is(err, ErrStale)`) | `FINDING_STALE`, with the GUID and the reason in plain words |
 
-The answer arrives through `Client.Dispatch`, which the host's 150 ms loop already calls. A request must therefore never be made from inside a `Subscription.Handle`, which runs within `Dispatch`. The Navigator is not constructed by `app.go` yet; Phase 7 adds it next to the Transcript service on the same client, with its bindings.
+The answer arrives through `Client.Dispatch`, which the host's 150 ms loop already calls. A request must therefore never be made from inside a `Subscription.Handle`, which runs within `Dispatch`. `configureLocked` constructs it next to the Transcript service on the same client (with no client, it is standalone and refuses everything).
+
+## From the Review page
+
+Phase 7 puts the Navigator behind four host bindings (`apps/desktop/bindings_navigation.go`, host API 38) and three buttons in the Review page's finding detail (`apps/ui/src/components/review/ReaperControls.tsx`):
+
+| Binding | Sends | Answers |
+| --- | --- | --- |
+| `FindingsReaperStatus()` | nothing | `connection` (`connected`, `not_running`, `standalone`), a `message` when not connected, and `loopingFindingId` while a loop this app started is held |
+| `FindingsGoTo(id)` | `navigate_item` | `navigated` with `projectTime`, or `refused` |
+| `FindingsLoop(id)` | `loop_context` | `looping` with `loopStart` and `loopEnd`, or `refused` |
+| `FindingsStopLoop()` | `stop_loop` | `stopped` with `restored` and `kept`, or `refused` |
+
+The page sends only the finding's id; the host reads its item and take GUIDs and source times from the project's findings store. The status is read from `daw.Reachability` (the heartbeat REAPER's script sends every 1.5 s), so the page polls it every 3 s at no cost to REAPER: `standalone` when there is no bridge client, `not_running` when the heartbeat is stale. Go to and Loop are disabled with the reason under them until it is `connected`, and for a finding without an item GUID (or, for Loop, without a source time); Stop loop appears while `loopingFindingId` is set, on every finding.
+
+A request is refused in this order, and nothing is written for a refusal before the last step: no item GUID (`no_item`), for Loop no source time (`no_source_time`), no bridge (`standalone`), a stale heartbeat (`not_running`); then REAPER's own answers: `stale`, `recording` (`bridge.ErrRecording`), `script_outdated`, no answer in time (`not_running`), anything else (`failed`, with REAPER's words). A refusal is an answer, not an error, with a plain-language `message` the page shows as an alert; the payloads are wire contracts (`findingNavigationSchema`, `reaperStatusSchema`, golden files `findings-go-to.json`, `findings-loop.json`, `findings-stop-loop.json`, `findings-navigation-*.json` and `findings-reaper-status-*.json`). Checking the heartbeat first means a command is never left in the folder for a REAPER that has gone, to be acted on later without the narrator ([threat model](threat-model.md) row 5f).
+
+The host remembers which finding it looped (`findingNavigation.loopingID`) until a Stop succeeds. A project switch builds a new navigator and forgets it; REAPER's script still holds that loop until its own Stop or its exit handler.
 
 ## Verification record
 
@@ -90,7 +107,7 @@ The first run of the check also saw `SelectAllMediaItems` leave an "Unselect all
 
 ## Manual verification checklist
 
-For the owner, in REAPER with audio, on a copy of a real project. Start the session by running `NarrationUtils_Launcher.lua`; the session folder is `<REAPER resource path>/NarrationUtils/sessions/hub_<id>/`. To send a command by hand, save a one-line file such as `00000001.cmd` in its `commands/` folder (fields percent-encoded, `|`-separated, starting `1|<command>|<run id>`) and read `events.log` beside it. Until Phase 7, this is the only way to drive the commands.
+For the owner, in REAPER with audio, on a copy of a real project. Start the session by running `NarrationUtils_Launcher.lua`; the session folder is `<REAPER resource path>/NarrationUtils/sessions/hub_<id>/`. To send a command by hand, save a one-line file such as `00000001.cmd` in its `commands/` folder (fields percent-encoded, `|`-separated, starting `1|<command>|<run id>`) and read `events.log` beside it. Since Phase 7 the same steps can be run from the Review page instead (open the app from the Narration Utils action, select a Proofing finding, and use Go to in REAPER, Loop in REAPER and Stop loop); step 9 is that run.
 
 1. **Go to.** Copy an item's GUID (from the `.rpp`, `IGUID`). Send `1|navigate_item|n1|<GUID>||1.5`. The item alone is selected and the cursor sits 1.5 s into its audio; Edit > Undo history has no new entry.
 2. **Stale.** Delete that item, send the same command. Expect `FINDING_STALE|n1|<GUID>|item` and nothing selected.
@@ -100,3 +117,4 @@ For the owner, in REAPER with audio, on a copy of a real project. Start the sess
 6. **Ending the script mid-loop.** Loop again, then terminate the launcher script (Actions > Running scripts, or quit REAPER without saving). The time selection and repeat are back.
 7. **Ping after a restart.** Quit and reopen REAPER, run the launcher again, and send `ping` to the new session: `PONG`. The old session's folder gets no answer (the app would report `ErrNoAnswer`).
 8. **Recording.** Start recording on a scratch track and send `navigate_item`: `ERROR ... REAPER is recording`, nothing moves. Stop recording.
+9. **From the Review page.** Open the app from the Narration Utils action, run a Proofing comparison, open Review and select a transcript difference. Go to in REAPER selects its item and the page names the cursor time; Loop in REAPER plays it and Stop loop appears; Stop loop puts your selection and repeat back. Delete the item and press Go to: the page says the item is no longer in the project. Quit REAPER: within a few seconds Go to and Loop turn off with "REAPER is not answering". Open the app on its own (not from REAPER): they are off with the "open this app from the Narration Utils action" reason.

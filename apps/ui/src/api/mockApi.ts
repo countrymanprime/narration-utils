@@ -83,7 +83,7 @@ import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
 import { createCoverageMock, type CoverageSeed } from './coverageMock';
 import type { MockResumeSeed } from './resumeMockSeed';
-import { createFindingsMock } from './findingsMock';
+import { createFindingsMock, type MockReaper } from './findingsMock';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
 import { MOCK_DICTIONARY, MOCK_DICTIONARY_DISK_SIZE, MOCK_DICTIONARY_DOWNLOAD_SIZE, mockDictionaryLookup } from './dictionaryMock';
@@ -425,6 +425,8 @@ export function createMockApi(
     findings?: Finding[];
     /** The findings' analyzer runs again right after the page first lists them, so a decision on what it showed is refused as stale. */
     findingsRerun?: boolean;
+    /** What the Review page's REAPER does for Go to, Loop and Stop; connected when not given. */
+    reaper?: MockReaper;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -932,7 +934,7 @@ export function createMockApi(
     endJob,
     seed: initial.coverage,
   });
-  const findings = createFindingsMock(initial.findings ?? WIRE_FINDINGS, { rerunAfterFirstList: initial.findingsRerun });
+  const findings = createFindingsMock(initial.findings ?? WIRE_FINDINGS, { rerunAfterFirstList: initial.findingsRerun, reaper: initial.reaper });
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));
   };

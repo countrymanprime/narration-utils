@@ -45,7 +45,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 37
+const hostAPIVersion = 38
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -84,6 +84,9 @@ type Host struct {
 	// Swappable like transcript: configureLocked rebuilds it on every project switch. Nil when there is no bridge
 	// client (no session directory).
 	reachability *daw.Reachability
+	// navigation is the Review page's REAPER navigator on the same bridge client (bindings_navigation.go); swappable
+	// like transcript. Never nil once configured: with no bridge client it is standalone and refuses every request.
+	navigation   *findingNavigation
 	lineIdentity *lineidentity.Service
 	pickups      *pickups.Service
 	projectState *projectstate.Service
@@ -345,6 +348,9 @@ func (h *Host) configureLocked(next config) {
 	// A chapter's recordedFraction is the measured share of its words from a current, complete check, and absent otherwise (D11,
 	// Q12 A); reading it never starts a check (Q14).
 	h.manuscript.SetRecordedFractions(coverageRecordedFractions(h.coverage, settingsStore))
+	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go) are one more
+	// consumer of the same client: the navigator's answers arrive through the same Drain the transcript loop pumps.
+	h.navigation = newFindingNavigation(client)
 	// The line-identity service is the second consumer of the same bridge client (bridge.Client fans events
 	// out by tag and run, ADR 0068), so pollTranscript's Drain call already pumps its events too. Phase 7
 	// (reaper-automation-follow-through PRD) is the UI trigger, so it now emits h.emitLineIdentity the way

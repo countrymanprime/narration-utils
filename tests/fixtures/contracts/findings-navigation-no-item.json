@@ -1,0 +1,5 @@
+{
+  "message": "This finding has no REAPER item to go to, because it came from an older check. Run the check again to record one.",
+  "outcome": "refused",
+  "reason": "no_item"
+}

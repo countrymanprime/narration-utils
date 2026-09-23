@@ -3,11 +3,12 @@ import { useApi } from '../../api/ApiContext';
 import { apiErrorMessage } from '../../api/errorMessage';
 import { MAX_REVIEW_NOTE_LENGTH } from '../../api/contracts/findings';
 import { usePendingAction } from '../../hooks/usePendingAction';
-import type { Finding, FindingReviewStatus } from '../../types';
+import type { Finding, FindingReviewStatus, ReaperStatus } from '../../types';
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { Panel } from '../primitives/Panel';
 import { TooltipTarget } from '../primitives/Tooltip';
+import { hasAudio, ReaperControls } from './ReaperControls';
 import {
   analyzerLabel,
   categoryLabel,
@@ -48,7 +49,8 @@ function Facts({ rows, label }: { rows: Array<{ label: string; value: string }>;
  * One finding in full, and the narrator's decision on it (review-dashboard-and-findings-adoption.prd.md Phase 5). A decision is
  * sent with the evidence version shown here; when the host refuses it because the check ran again meanwhile (ADR 0120), the
  * latest version is fetched and shown, the typed note is kept, and the narrator is told in plain words to look again.
- * Go to and Loop in REAPER arrive with Phases 6 and 7, so there are no REAPER controls here yet.
+ * A finding with audio also has Go to, Loop and Stop in REAPER (Phase 7, ReaperControls), available while the page's REAPER
+ * status says REAPER is listening.
  */
 export function FindingDetail({
   finding,
@@ -56,9 +58,14 @@ export function FindingDetail({
   onChanged,
   goToManuscript,
   goToStoryBible,
+  reaperStatus,
+  onReaperStatusChange,
 }: {
   finding: Finding;
   hasManuscript: boolean;
+  /** Whether REAPER is listening, as the page last read it; undefined until the first answer. */
+  reaperStatus: ReaperStatus | undefined;
+  onReaperStatusChange: () => Promise<void>;
   /** The finding as the host now holds it, after a decision or a refresh; `decided` is true when a decision was saved. */
   onChanged: (finding: Finding, decided: boolean) => void;
   goToManuscript: (chapter: string, paragraph?: number) => void;
@@ -162,6 +169,7 @@ export function FindingDetail({
           </Button>
         )}
       </div>
+      {hasAudio(finding) && <ReaperControls finding={finding} status={reaperStatus} onStatusChange={onReaperStatusChange} />}
 
       <h3 className="mt-5 text-sm font-semibold">Decision</h3>
       <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>

@@ -39,6 +39,8 @@ type hostServices struct {
 	// configureLocked built no bridge client (no session directory).
 	reachability *daw.Reachability
 	bridge       *bridge.Client
+	// navigation is the Review page's REAPER navigator (bindings_navigation.go); standalone when there is no bridge.
+	navigation *findingNavigation
 }
 
 // services returns a snapshot of the swappable services. It is the only way a
@@ -82,5 +84,6 @@ func (h *Host) services() hostServices {
 		coverage:     h.coverage,
 		reachability: h.reachability,
 		bridge:       h.bridge,
+		navigation:   h.navigation,
 	}
 }

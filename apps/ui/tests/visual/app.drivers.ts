@@ -181,6 +181,29 @@ async function openFindingRow(page: Page, text: RegExp, kind: string): Promise<v
   await page.getByRole('heading', { level: 2, name: kind }).scrollIntoViewIfNeeded();
 }
 
+// Opens the first transcript difference with the mock's REAPER in `reaper` mode (`?mockReaper=`, main.tsx; connected when absent) and
+// waits for the page's first REAPER status, which is when Go to and Loop stop saying "Checking whether REAPER is connected".
+async function openReaperControls(page: Page, reaper?: 'stale' | 'not-running' | 'standalone'): Promise<void> {
+  if (reaper) {
+    await page.goto(`/?mockReaper=${reaper}`);
+    await settlePage(page);
+  }
+  await openReview(page);
+  await openFindingRow(page, /pink eyes/, 'Transcript difference');
+  await page.getByText('Checking whether REAPER is connected…').waitFor({ state: 'detached' });
+}
+
+// Presses a REAPER button and waits for what it answers, then scrolls the REAPER controls into view for the picture.
+async function pressInReaper(page: Page, name: string, answer: Locator): Promise<void> {
+  await page.getByRole('region', { name: 'In REAPER' }).getByRole('button', { name }).click();
+  await showReaperControls(page, answer);
+}
+
+async function showReaperControls(page: Page, shown: Locator): Promise<void> {
+  await shown.waitFor();
+  await page.getByRole('region', { name: 'In REAPER' }).scrollIntoViewIfNeeded();
+}
+
 // Home's chapter breakdown control exists only once the chapter list has loaded, so it is the proof that the whole page
 // (not just its heading) is there before a state that adds nothing of its own is photographed.
 async function homeLoaded(page: Page): Promise<void> {
@@ -1311,6 +1334,26 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.getByRole('switch', { name: 'Include findings the latest run did not repeat' }).click();
       await waitForFindingRows(page, 5);
       await openFindingRow(page, /Antipathies/, 'Pronunciation');
+    },
+    'reaper-go-to': async (page) => {
+      await openReaperControls(page);
+      await pressInReaper(page, 'Go to in REAPER', page.getByText('REAPER selected the item and moved the cursor to 0:12.4.'));
+    },
+    'reaper-looping': async (page) => {
+      await openReaperControls(page);
+      await pressInReaper(page, 'Loop in REAPER', page.getByRole('button', { name: 'Stop loop' }));
+    },
+    'reaper-stale': async (page) => {
+      await openReaperControls(page, 'stale');
+      await pressInReaper(page, 'Go to in REAPER', page.getByRole('alert').filter({ hasText: 'no longer in the REAPER project' }));
+    },
+    'reaper-not-running': async (page) => {
+      await openReaperControls(page, 'not-running');
+      await showReaperControls(page, page.getByText(/REAPER is not answering/));
+    },
+    'reaper-standalone': async (page) => {
+      await openReaperControls(page, 'standalone');
+      await showReaperControls(page, page.getByText(/open this app from the Narration Utils action in REAPER/));
     },
   },
   teleprompter: {

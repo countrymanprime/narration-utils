@@ -22,7 +22,7 @@ import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } fr
 import { settingsForScopeSchema } from './schemas/settings';
 import { takeReviewCreateTakeResultSchema, takeReviewFindingsSchema } from './schemas/takeReview';
 import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
-import { findingSchema, findingsPageSchema, findingsSummarySchema } from './schemas/findings';
+import { findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { chapterSuggestionSchema, chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
@@ -204,6 +204,16 @@ const GOLDEN: Record<string, z.ZodType> = {
   'findings-list.json': findingsPageSchema,
   'findings-review.json': findingSchema,
   'findings-summary.json': findingsSummarySchema,
+  'findings-reaper-status-looping.json': reaperStatusSchema,
+  'findings-reaper-status-not-running.json': reaperStatusSchema,
+  'findings-reaper-status-standalone.json': reaperStatusSchema,
+  'findings-go-to.json': findingNavigationSchema,
+  'findings-loop.json': findingNavigationSchema,
+  'findings-stop-loop.json': findingNavigationSchema,
+  'findings-navigation-stale.json': findingNavigationSchema,
+  'findings-navigation-recording.json': findingNavigationSchema,
+  'findings-navigation-no-item.json': findingNavigationSchema,
+  'findings-navigation-not-running.json': findingNavigationSchema,
 };
 
 const readGolden = (file: string): unknown => JSON.parse(readFileSync(`${GOLDEN_DIR}${file}`, 'utf8'));
@@ -930,6 +940,31 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expectMatches(findingsSummarySchema, await empty.findingsSummary(), 'mock findings summary, empty queue');
   });
 
+  it('the review REAPER bindings answers, every outcome and refusal', async () => {
+    const api = createMockApi();
+    const { findings } = await api.findingsList({ includeNotInLatestRun: true });
+    const placed = findings.find((finding) => finding.source.item_guid && finding.time_range?.source_start !== undefined);
+    const older = findings.find((finding) => finding.analyzer === 'transcript-compare' && !finding.source.item_guid);
+    if (!placed || !older) throw new Error('the mock findings lost the finding with an item or the one from an older comparison');
+    const answers: Array<[string, Promise<unknown>]> = [
+      ['go to', api.findingsGoTo(placed.id)],
+      ['loop', api.findingsLoop(placed.id)],
+      ['status while looping', api.findingsReaperStatus()],
+      ['stop', api.findingsStopLoop()],
+      ['no item', api.findingsGoTo(older.id)],
+    ];
+    for (const reaper of ['standalone', 'not-running', 'stale', 'recording', 'outdated'] as const) {
+      const refusing = createMockApi({}, { reaper });
+      answers.push([`${reaper} status`, refusing.findingsReaperStatus()], [`${reaper} go to`, refusing.findingsGoTo(placed.id)]);
+      answers.push([`${reaper} loop`, refusing.findingsLoop(placed.id)], [`${reaper} stop`, refusing.findingsStopLoop()]);
+    }
+    for (const [name, answer] of answers) {
+      const value = await answer;
+      const schema = name.endsWith('status') || name === 'status while looping' ? reaperStatusSchema : findingNavigationSchema;
+      expectMatches(schema, value, `mock ${name}`);
+    }
+  });
+
   it('the take-creation answer', async () => {
     const api = createMockApi();
     const result = await api.takeReviewCreateTake({
@@ -1082,6 +1117,10 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'findingsGet',
       'findingsReview',
       'findingsSummary',
+      'findingsReaperStatus',
+      'findingsGoTo',
+      'findingsLoop',
+      'findingsStopLoop',
       'teleprompterStart',
       'teleprompterState',
       'teleprompterDevices',
