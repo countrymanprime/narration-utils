@@ -53,10 +53,20 @@ async function throttleRequestedCpu(page: Page): Promise<void> {
 // Stops every page timer (setTimeout, requestAnimationFrame) where it stands. Installed only for
 // the states that need it: a fake clock left on for a whole run interferes with React 19's
 // transition scheduling (the mobile nav drawer stops closing after navigation).
+// The installed clock keeps running until it is paused, so on a busy page (a loaded CI runner)
+// the 10 ms target can already be behind it when pauseAt runs ("Cannot fast-forward to the
+// past"): read the clock again and retry rather than pause further ahead, which would fire timers.
 async function freezeClock(page: Page): Promise<void> {
   await page.clock.install();
-  const now = await page.evaluate(() => Date.now());
-  await page.clock.pauseAt(new Date(now + 10));
+  for (let attempt = 1; ; attempt += 1) {
+    const now = await page.evaluate(() => Date.now());
+    try {
+      await page.clock.pauseAt(new Date(now + 10));
+      return;
+    } catch (error) {
+      if (attempt >= 5 || !String(error).includes('Cannot fast-forward to the past')) throw error;
+    }
+  }
 }
 
 // Opens Chapter 1's read-aloud dialog (after a reload with a mock seam, when one is given) and waits for its resume card

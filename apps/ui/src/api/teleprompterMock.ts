@@ -410,6 +410,6 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
 /** A locate only ever runs Whisper, and its answer carries no engine (`TeleprompterModelRequired`). */
 function whisperModelRequired(required: Extract<TeleprompterStartResult, { status: 'asset_required' }> | undefined): TeleprompterModelRequired | undefined {
   if (!required) return undefined;
-  const { engine: _engine, ...rest } = required;
-  return rest;
+  const { status, model, installState, downloadSize, diskSize, installPath } = required;
+  return { status, model, installState, downloadSize, diskSize, installPath };
 }
