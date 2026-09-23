@@ -164,4 +164,5 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0152](0152-the-retail-sample-is-a-paragraph-range-on-the-project-manifest-held-to-five-minutes-by-the-host.md) | The retail sample is a paragraph range on the project manifest, held to five minutes by the host | Proposed |
 | [0155](0155-settings-gain-a-number-kind-with-a-declared-range-and-delivery-limits-are-the-narrators-own.md) | Settings gain a number kind with a declared range, and delivery limits are the narrator's own | Proposed |
 | [0160](0160-stage-recommendations-are-computed-from-tri-state-signals-by-a-pure-engine.md) | Stage recommendations are computed from tri-state signals by a pure engine | Proposed |
+| [0161](0161-stage-decisions-live-in-their-own-sidecar-and-confirm-writes-the-record-before-the-status.md) | Stage decisions live in their own sidecar, and Confirm writes the record before the status | Proposed |
 | [0165](0165-a-take-comparison-is-one-finding-per-group-over-its-one-span-built-from-the-saved-project-and-never-ranked.md) | A take comparison is one finding per group, over its one span, built from the saved project, and never ranked | Proposed |
