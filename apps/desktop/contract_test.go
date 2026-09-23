@@ -516,6 +516,50 @@ func TestContractCreditsProjectValuesAndPreview(t *testing.T) {
 	contractfile.Check(t, "credits-preview-unresolved", decodedPreview)
 }
 
+// CreditsChapterAnnouncements' answer (Phase 5, ADR 0151): one per narration chapter, the second with its optional chapter
+// title dropped and an unresolved project token reported.
+func TestContractCreditsChapterAnnouncements(t *testing.T) {
+	host := hostWithExtras(t, 10)
+	encoded, err := host.CreditsChapterAnnouncements("[Chapter]{: [Chapter Title]}. [Title].")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded any
+	decodeInto(t, encoded, &decoded)
+	contractfile.Check(t, "credits-chapter-announcements", decoded)
+}
+
+// CreditsRetailSample's answers (Phase 5, ADR 0152): a measured sample, none picked, and a saved one whose lines are gone.
+func TestContractCreditsRetailSample(t *testing.T) {
+	host := hostWithExtras(t, 100)
+	check := func(name, encoded string) {
+		t.Helper()
+		var decoded any
+		decodeInto(t, encoded, &decoded)
+		contractfile.Check(t, name, decoded)
+	}
+	none, err := host.CreditsRetailSample()
+	if err != nil {
+		t.Fatal(err)
+	}
+	check("credits-retail-sample-none", none)
+	saved, err := host.CreditsSaveRetailSample("p4", "p5")
+	if err != nil {
+		t.Fatal(err)
+	}
+	check("credits-retail-sample", saved)
+	manifest, _, _ := project.Load(host.persist, host.config.projectFolder)
+	manifest.RetailSample.EndParagraphID = "gone"
+	if err := manifest.Save(host.config.projectFolder); err != nil {
+		t.Fatal(err)
+	}
+	stale, err := host.CreditsRetailSample()
+	if err != nil {
+		t.Fatal(err)
+	}
+	check("credits-retail-sample-stale", stale)
+}
+
 // The findings TakeReviewScan and TakeReviewFindings send (take-review phase 5, ADR 0069): one
 // restart-kind pickup (a partial re-read, below the near-duplicate quality bar) and one
 // near-identical duplicate_read (full coverage, both members above it), so the review surface's

@@ -37,6 +37,9 @@ type Manifest struct {
 	// manifest directly now that it exists, rather than a separate file). Nil
 	// on a project that has never had its credit values saved.
 	Credits *credits.Values `json:"credits,omitempty"`
+	// RetailSample is the range the narrator picked as the retail sample (audiobook-credits-templates.prd.md, C10,
+	// ADR 0152), additive like Credits. Nil when none is picked.
+	RetailSample *credits.RetailSample `json:"retailSample,omitempty"`
 }
 
 // New returns a fresh manifest for a project named name, created at now.

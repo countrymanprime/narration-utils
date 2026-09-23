@@ -177,6 +177,12 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Manuscript, the Opening credits pseudo-entry expanded before Chapter 1 with an unresolved-token chip (audiobook-credits-templates.prd.md Phase 3)',
   },
+  {
+    page: 'manuscript',
+    state: 'retail-sample',
+    description:
+      'Manuscript, the retail sample picked on lines 1-3 of Chapter 3 (?mockCredits=extras, audiobook-credits-templates.prd.md Phase 5): a "Retail sample" tag on the chapter header, the sampled lines marked with a left rule, "Retail sample starts · about ..." above the first and "Retail sample ends" above the last',
+  },
 
   {
     page: 'manuscript',
@@ -874,6 +880,29 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Settings, Project scope / Credits category (PRD audiobook-credits-templates.prd.md, Phase 1): template library, live preview and project credit values',
     ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'project-credits-chapter-announcement',
+    description:
+      'Settings, Project scope / Credits, a chapter announcement template selected (Phase 5): its body "[Chapter]{: [Chapter Title]}." previews as "Chapter 1: Down the Rabbit-Hole." with "Shown for Chapter 1, one of 12 chapters", and the kind hint names [Chapter] and [Chapter Title]',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'project-credits-retail-sample',
+    description:
+      'Settings, Project scope / Credits scrolled to Retail sample (Phase 5, C10): the saved sample "Chapter 3, line 1 to Chapter 3, line 3" with its words and length, the start and end pickers, Save sample and Clear sample',
+    ...REFLOW,
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'settings',
+    state: 'project-credits-retail-sample-refused',
+    description:
+      'Settings, Project scope / Credits, Retail sample: a range from Chapter 1 to Chapter 12 refused with "a retail sample can be at most 5 minutes; this range is ... words, about ..." and nothing saved',
+    ...REFLOW,
+    ...KEEPS_DESKTOP_SCROLL,
   },
   { page: 'settings', state: 'dirty-footer', description: 'Settings, unsaved-changes footer visible', ...REFLOW, ...KEEPS_DESKTOP_SCROLL },
   { page: 'settings', state: 'navigate-away-confirm', description: 'Settings, navigate-away-while-dirty confirm dialog', ...REFLOW },

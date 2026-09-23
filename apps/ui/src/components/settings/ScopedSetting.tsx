@@ -26,6 +26,8 @@ const TOOLTIP: Record<string, string> = {
   chunk_seconds: 'Default transcription chunk length.',
   color_note: 'Color used for narrator note treatment.',
   log_verbosity: 'Controls diagnostic output shown in logs.',
+  credits_room_tone_seconds:
+    'Silence the Home estimate adds to each opening and closing credits file, head and tail together. ACX asks for 1 to 5 seconds at each end; leave 0 to count the words only.',
   check_on_startup:
     'Once a day, when the app starts, it asks GitHub whether a newer release exists. It sends nothing about you or your projects, and it never downloads anything without your click.',
   channel: 'Release candidates are the pre-releases that come before each stable release; every release so far is one.',

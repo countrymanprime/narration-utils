@@ -44,7 +44,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 34
+const hostAPIVersion = 35
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -1004,8 +1004,10 @@ type fieldSchema struct {
 var fieldSchemas = map[string][]fieldSchema{
 	// narrator_name is the global default for the [Narrator] credits token (PRD audiobook-credits-templates.prd.md,
 	// Open Questions C2 and C7: "a flat General.narrator_name text setting"); a project's own credits values may
-	// override it (project.Manifest.Credits.Narrator, credits.Values.Resolve).
-	"General":           {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}, {"notifications", "Notify me when a long task finishes while I'm away", "bool", nil}, {"narrator_name", "Narrator name (default for credits)", "text", nil}},
+	// override it (project.Manifest.Credits.Narrator, credits.Values.Resolve). credits_room_tone_seconds is the room tone
+	// the estimate adds to each opening and closing credits file (C9, Phase 5, ADR 0151): the narrator's own figure,
+	// defaulting to 0, since published room-tone guidance disagrees (ADR 0025).
+	"General":           {{"log_verbosity", "Log verbosity", "choice", []string{"quiet", "normal", "verbose"}}, {"notifications", "Notify me when a long task finishes while I'm away", "bool", nil}, {"narrator_name", "Narrator name (default for credits)", "text", nil}, {"credits_room_tone_seconds", "Room tone per credits file (seconds)", "choice", []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}}},
 	"Manuscript":        {{"color_note", "Note color", "color", nil}},
 	"ManuscriptGuide":   {{"spacy_model", "spaCy model", "choice", []string{"en_core_web_sm", "en_core_web_lg"}}, {"build_after_import", "Build the Story Bible after import", "bool", nil}},
 	"Piper":             {{"tts_provider", "TTS provider", "choice", []string{"piper"}}, {"tts_voice_id", "Preview voice", "choice", []string{"en_US-ljspeech-high"}}},

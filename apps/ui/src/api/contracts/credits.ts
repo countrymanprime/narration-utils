@@ -5,7 +5,7 @@
  * the teleprompter) will read and count.
  */
 
-/** kind: "opening", "closing" or "chapter_announcement" (Open Question C8; chapter announcements are Phase 5). */
+/** kind: "opening", "closing" or "chapter_announcement" (Open Question C8; chapter announcements render per chapter, Phase 5). */
 export type CreditTemplate = { id: string; kind: string; name: string; body: string; builtIn?: boolean };
 
 /** Render's result (apps/desktop/internal/credits.Result): text is exactly what will be read, unresolved names any `[Token]`
@@ -32,6 +32,28 @@ export type CreditValues = {
  * written back, always editable. */
 export type CreditsProjectValuesResult = { values: CreditValues; narratorGlobal: string; suggestions: Record<string, string> };
 
+/** One chapter's rendered announcement (Phase 5, Open Question C8, ADR 0151): `chapter` is the chapter's heading, which
+ * fills [Chapter]; its subtitle fills [Chapter Title]. */
+export type CreditsAnnouncement = { chapterId: string; chapter: string; result: CreditsRenderResult };
+
+/** The retail sample the narrator picked (Phase 5, Open Question C10, ADR 0152), measured against the current manuscript:
+ * where it starts and ends (the reader's line numbers, from 1 within each chapter) and how long it runs at ~155 words a
+ * minute. A marker only: it adds no time to the estimate. */
+export type RetailSample = {
+  startParagraphId: string;
+  endParagraphId: string;
+  startChapterId: string;
+  startLine: number;
+  endChapterId: string;
+  endLine: number;
+  words: number;
+  seconds: number;
+};
+
+/** CreditsRetailSample's and CreditsSaveRetailSample's answer: the sample (null when none is picked, or when a saved one
+ * cannot be measured any more) and, in that last case, why (`problem`, otherwise empty). */
+export type RetailSampleAnswer = { sample: RetailSample | null; problem: string };
+
 export interface CreditsApi {
   /** Lists the narrator's credit template library, seeding shipped defaults on first use. */
   creditsTemplates(): Promise<CreditTemplate[]>;
@@ -48,4 +70,10 @@ export interface CreditsApi {
   /** Renders body with the current project's values (falling back to the global narrator default), the same renderer
    * every credits surface uses. */
   creditsPreview(body: string): Promise<CreditsRenderResult>;
+  /** Renders body once per narration chapter, filling [Chapter] and [Chapter Title] from that chapter (Phase 5). */
+  creditsChapterAnnouncements(body: string): Promise<CreditsAnnouncement[]>;
+  /** Reads this project's retail sample, measured against the current manuscript (Phase 5). */
+  creditsRetailSample(): Promise<RetailSampleAnswer>;
+  /** Picks paragraphs start..end (both included) as the retail sample; refused over 5 minutes. Two empty ids clear it. */
+  saveCreditsRetailSample(startParagraphId: string, endParagraphId: string): Promise<RetailSampleAnswer>;
 }

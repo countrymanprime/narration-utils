@@ -13,6 +13,7 @@ import type {
   ManuscriptNote,
   ManuscriptParagraph,
   ReaderState,
+  RetailSample,
   SearchHit,
 } from '../../types';
 import { categoryCssName, chapterLineNumbers, chapterTextMatches, isListableChapter, STORY_BIBLE_TABS } from '../../state';
@@ -27,6 +28,7 @@ import { SlideOver } from '../primitives/SlideOver';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { ChapterNav } from './ChapterNav';
 import { CreditsEntry } from './CreditsEntry';
+import { retailSampleRange } from './retailSampleRange';
 import { SearchBar } from './SearchBar';
 import { ParagraphView } from './ParagraphView';
 import { SelectionMenu } from './SelectionMenu';
@@ -100,6 +102,9 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   const [creditsTemplates, setCreditsTemplates] = useState<CreditTemplate[]>([]);
   const [creditsPreviews, setCreditsPreviews] = useState<{ opening?: CreditsRenderResult; closing?: CreditsRenderResult }>({});
   const [creditsExpanded, setCreditsExpanded] = useState<{ opening: boolean; closing: boolean }>({ opening: false, closing: false });
+  // The retail sample the narrator picked in Settings > Credits (Phase 5, C10, ADR 0152): a marker on its lines, read
+  // like the credits templates above - a failure leaves the reader unmarked rather than blocking it.
+  const [retailSample, setRetailSample] = useState<RetailSample | null>(null);
   const { selection, clear: clearSelection } = useTextSelection(readerRef);
   // Reference material (Contents, Characters, ...) stays in manuscript.json and the chapter list,
   // but is never a page the narrator flips through - see isListableChapter and the reader search and
@@ -111,6 +116,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   // True once there is a query the panel has not shown results for yet - the debounce wait, or
   // (briefly) the request itself - so "No matches" never flashes before a settled answer exists (R1).
   const searchPending = Boolean(searchQuery.trim()) && searchQuery !== lastFetchedQuery;
+  const sampleRange = useMemo(() => retailSampleRange(chapters, retailSample), [chapters, retailSample]);
   const openingTemplate = creditsTemplates.find((template) => template.kind === 'opening');
   const closingTemplate = creditsTemplates.find((template) => template.kind === 'closing');
   // The read-aloud dialog's notes, memoized so its marks (and every memoized row of its reader) keep their identity.
@@ -205,6 +211,16 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
         if (active) setCreditsTemplates([]);
       }
     })();
+    return () => {
+      active = false;
+    };
+  }, [api, loadAttempt]);
+  useEffect(() => {
+    let active = true;
+    api
+      .creditsRetailSample()
+      .then((answer) => active && setRetailSample(answer.sample))
+      .catch(() => active && setRetailSample(null));
     return () => {
       active = false;
     };
@@ -519,6 +535,11 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
                   </h2>
                 </button>
                 <div className="flex items-center gap-3 justify-self-end text-right max-md:col-start-2 max-md:justify-self-start">
+                  {sampleRange?.chapterIds.has(chapter.id) && (
+                    <span className="rounded-[0.2rem] px-1.5 py-0.5 text-xs font-medium" style={{ background: 'var(--place-soft)', color: 'var(--info-text)' }}>
+                      Retail sample
+                    </span>
+                  )}
                   {isNarrationChapter(chapter) && (
                     <TooltipTarget text="Read this chapter aloud and follow along">
                       <Button variant="ghost" className="text-xs" aria-label={`Read ${chapter.title} aloud`} onClick={() => setReadAloudChapter(chapter)}>
@@ -550,6 +571,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
                       textClass={READER_TEXT_CLASSES[textSize]}
                       lineNumberPadding={LINE_NUMBER_PADDING_CLASSES[textSize]}
                       jumpTarget={jumpTarget}
+                      retailSample={sampleRange}
                       openEntity={(entity) => {
                         setDetail({ entity });
                         setSheet('detail');

@@ -7,6 +7,7 @@ import { guideEntitiesSchema, guidePropertiesSchema } from './schemas/storyBible
 import { bootstrapSchema } from './schemas/system';
 import type {
   ChapterTagsPreview,
+  CreditsAnnouncement,
   CreditsRenderResult,
   CreditTemplate,
   CreditValues,
@@ -17,6 +18,7 @@ import type {
   GuidePronunciation,
   LineIdentityState,
   ManuscriptNote,
+  ManuscriptParagraph,
   NarrationApi,
   PickupsMoment,
   PickupsState,
@@ -25,6 +27,7 @@ import type {
   ReaderState,
   RecentProject,
   RenderConfigState,
+  RetailSampleAnswer,
   Scope,
   ScopedSettingField,
   TakeReviewFinding,
@@ -269,6 +272,43 @@ function resolveMockCreditValues(values: CreditValues, narratorGlobal: string): 
   };
 }
 
+// A JS mirror of apps/desktop/internal/credits.MeasureSample (Phase 5, ADR 0152): the range start..end of the paragraphs in
+// book order, its lines within each chapter, and its length at 9,300 words per finished hour, refused over 5 minutes.
+const MOCK_WORDS_PER_FINISHED_HOUR = 9300;
+const MOCK_MAX_RETAIL_SAMPLE_SECONDS = 300;
+function measureMockRetailSample(paragraphs: ManuscriptParagraph[], startId: string, endId: string): RetailSampleAnswer['sample'] {
+  const perChapter = new Map<string, number>();
+  const lines = paragraphs.map((paragraph) => {
+    const line = (perChapter.get(paragraph.chapterId) ?? 0) + 1;
+    perChapter.set(paragraph.chapterId, line);
+    return line;
+  });
+  const start = paragraphs.findIndex((paragraph) => paragraph.id === startId);
+  const end = paragraphs.findIndex((paragraph) => paragraph.id === endId);
+  if (start === -1 || end === -1) throw new Error("the retail sample's lines are not in this manuscript; pick the range again");
+  if (end < start) throw new Error('the retail sample ends before it starts');
+  const words = paragraphs.slice(start, end + 1).reduce((total, paragraph) => total + paragraph.text.split(/\s+/).filter(Boolean).length, 0);
+  const seconds = (words * 3600) / MOCK_WORDS_PER_FINISHED_HOUR;
+  if (words * 3600 > MOCK_MAX_RETAIL_SAMPLE_SECONDS * MOCK_WORDS_PER_FINISHED_HOUR) {
+    const whole = Math.round(seconds);
+    const about =
+      whole >= 3600
+        ? `${Math.floor(whole / 3600)}h ${String(Math.floor((whole % 3600) / 60)).padStart(2, '0')}m`
+        : `${Math.floor(whole / 60)}m ${String(whole % 60).padStart(2, '0')}s`;
+    throw new Error(`a retail sample can be at most 5 minutes; this range is ${words} words, about ${about}`);
+  }
+  return {
+    startParagraphId: startId,
+    endParagraphId: endId,
+    startChapterId: paragraphs[start].chapterId,
+    startLine: lines[start],
+    endChapterId: paragraphs[end].chapterId,
+    endLine: lines[end],
+    words,
+    seconds,
+  };
+}
+
 /** Answers that go through the real `parseWire` with a payload of the wrong shape, so the failure screens can be seen without a host. */
 function invalidPayloadOverrides(which: 'bootstrap' | 'manuscript' | 'storybible', base: NarrationApi): Partial<NarrationApi> {
   switch (which) {
@@ -312,6 +352,11 @@ export function createMockApi(
     teleprompter?: TeleprompterSeed;
     /** The project's own credits values at boot (the credits on the teleprompter with every token resolved, Phase 4). */
     creditValues?: CreditValues;
+    /** Adds a chapter announcement template with this body to the library at boot (Phase 5). */
+    chapterAnnouncement?: string;
+    /** The project's retail sample at boot (Phase 5): by paragraph id, or by lines of the chapter at this index in the
+     * manuscript once it has loaded (the bundled text replaces the seed's paragraph ids). */
+    retailSample?: { startParagraphId: string; endParagraphId: string } | { chapterIndex: number; startLine: number; endLine: number };
     /** Makes every Story Bible preview fail with this text once the voice is installed. */
     previewError?: string;
     /** Makes that payload arrive in the wrong shape, through the real `parseWire`, so the failure screens can be seen without a host. */
@@ -451,8 +496,28 @@ export function createMockApi(
       builtIn: true,
     },
   ];
+  if (initial.chapterAnnouncement !== undefined)
+    creditTemplates.push({ id: 'mock-chapter-announcement', kind: 'chapter_announcement', name: 'Chapter announcement', body: initial.chapterAnnouncement });
   let nextCreditTemplateId = 1;
   let creditValues: CreditValues = wireClone(initial.creditValues ?? {});
+  let retailSample: { startParagraphId: string; endParagraphId: string } | undefined;
+  let seededSample = initial.retailSample;
+  const readRetailSample = (): RetailSampleAnswer => {
+    if (seededSample) {
+      const ids = 'chapterIndex' in seededSample ? (chapters[seededSample.chapterIndex]?.paragraphIds ?? []) : [];
+      retailSample =
+        'chapterIndex' in seededSample
+          ? { startParagraphId: ids[seededSample.startLine - 1]?.id ?? '', endParagraphId: ids[seededSample.endLine - 1]?.id ?? '' }
+          : { ...seededSample };
+      seededSample = undefined;
+    }
+    if (!retailSample) return { sample: null, problem: '' };
+    try {
+      return { sample: measureMockRetailSample(paragraphs, retailSample.startParagraphId, retailSample.endParagraphId), problem: '' };
+    } catch (error) {
+      return { sample: null, problem: error instanceof Error ? error.message : String(error) };
+    }
+  };
   const mockNarratorGlobal = () => settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '';
   // The credits text a teleprompter session reads (Phase 4, ADR 0150): the first template of the kind (ADR 0093), rendered
   // as `creditsPreview` renders it, as the host's creditsScript does.
@@ -1647,6 +1712,32 @@ export function createMockApi(
       return wireClone(creditValues);
     },
     creditsPreview: async (body) => renderMockCredits(body, resolveMockCreditValues(creditValues, mockNarratorGlobal())),
+    creditsChapterAnnouncements: async (body) => {
+      await manuscriptReady;
+      const tokens = resolveMockCreditValues(creditValues, mockNarratorGlobal());
+      return chapters
+        .filter((chapter) => (chapter.contentKind ?? 'narration') === 'narration')
+        .map((chapter): CreditsAnnouncement => ({
+          chapterId: chapter.id,
+          chapter: chapter.title,
+          result: renderMockCredits(body, { ...tokens, Chapter: chapter.title, 'Chapter Title': chapter.subtitle ?? '' }),
+        }));
+    },
+    creditsRetailSample: async () => {
+      await manuscriptReady;
+      return readRetailSample();
+    },
+    saveCreditsRetailSample: async (startParagraphId, endParagraphId) => {
+      await manuscriptReady;
+      readRetailSample();
+      if (!startParagraphId && !endParagraphId) {
+        retailSample = undefined;
+        return { sample: null, problem: '' };
+      }
+      const sample = measureMockRetailSample(paragraphs, startParagraphId, endParagraphId);
+      retailSample = { startParagraphId, endParagraphId };
+      return { sample, problem: '' };
+    },
     dawCatalogList: async () => wireClone(DAW_CATALOG),
     dawCatalogOpenDownloadPage: async (id) => {
       if (!DAW_CATALOG.some((entry) => entry.id === id)) throw new Error(`Unknown DAW catalog entry "${id}"`);

@@ -96,11 +96,24 @@ export const estimateFinishedHours = (wordCount: number): number => wordCount / 
 // estimateFinishedHours above ("Estimate constants disagree" is the PRD's own named risk, so this reuses
 // WORDS_PER_FINISHED_HOUR rather than a second 155/60 constant). Credits are read as separate files from the
 // narration chapters (ACX convention, Open Question C11), so each segment (an opening or closing template's
-// rendered text) is timed on its own and may carry its own room-tone padding. Room tone has no Settings field yet
-// (that is Phase 5's "Could" item), so it defaults to 0 seconds per file until that phase ships one (C9).
+// rendered text) is timed on its own and carries its own room-tone padding: the narrator's General >
+// "Room tone per credits file" setting (Phase 5, ADR 0151), which defaults to 0 seconds per file (C9).
 export const CREDITS_ROOM_TONE_SECONDS_PER_FILE = 0;
 export const estimateCreditsSeconds = (segmentWordCounts: number[], roomToneSecondsPerFile = CREDITS_ROOM_TONE_SECONDS_PER_FILE): number =>
   segmentWordCounts.reduce((total, words) => total + (words / WORDS_PER_FINISHED_HOUR) * 3600 + roomToneSecondsPerFile, 0);
+// Chapter announcements (Phase 5, ADR 0151) are read at the head of each chapter's own file, not as files of their own,
+// so they are timed at the same rate with no room tone.
+export const estimateAnnouncementSeconds = (announcementWordCounts: number[]): number => estimateCreditsSeconds(announcementWordCounts, 0);
+// A retail sample's length as the narrator reads it ("2m 05s"), the same rounding the host's refusal message uses.
+export const formatMinutesSeconds = (seconds: number): string => {
+  const whole = Math.round(seconds);
+  return `${Math.floor(whole / 60)}m ${String(whole % 60).padStart(2, '0')}s`;
+};
+// The room tone setting's value as the estimate uses it: a whole number of seconds, 0 when unset or unreadable.
+export const roomToneSeconds = (value: string | undefined): number => {
+  const seconds = Number.parseInt(value ?? '', 10);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+};
 
 // The reader numbers each paragraph 1, 2, 3... within its own chapter (see
 // ParagraphView's chapterParagraphIndex) rather than by its global index or

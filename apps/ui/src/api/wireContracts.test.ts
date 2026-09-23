@@ -28,7 +28,14 @@ import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
 import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
-import { creditsProjectValuesResultSchema, creditsRenderResultSchema, creditTemplateSchema, creditTemplatesSchema } from './schemas/credits';
+import {
+  creditsAnnouncementsSchema,
+  creditsProjectValuesResultSchema,
+  creditsRenderResultSchema,
+  creditTemplateSchema,
+  creditTemplatesSchema,
+  retailSampleAnswerSchema,
+} from './schemas/credits';
 import { dawCatalogListSchema } from './schemas/dawCatalog';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
@@ -120,6 +127,10 @@ const GOLDEN: Record<string, z.ZodType> = {
   'credits-templates.json': creditTemplatesSchema,
   'credits-project-values-empty.json': creditsProjectValuesResultSchema,
   'credits-preview-unresolved.json': creditsRenderResultSchema,
+  'credits-chapter-announcements.json': creditsAnnouncementsSchema,
+  'credits-retail-sample.json': retailSampleAnswerSchema,
+  'credits-retail-sample-none.json': retailSampleAnswerSchema,
+  'credits-retail-sample-stale.json': retailSampleAnswerSchema,
   'system-notice.json': noticeSchema,
   'job-ended-success.json': jobEndedSchema,
   'job-ended-error.json': jobEndedSchema,
@@ -549,6 +560,23 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(creditsRenderResultSchema, preview, 'mock credits preview');
     expect(preview.text).toBe('Neon, written by A. Writer, narrated by [Narrator].');
     expect(preview.unresolved).toEqual(['Narrator']);
+  });
+
+  it('the chapter announcements and retail sample answers (audiobook-credits-templates.prd.md, Phase 5)', async () => {
+    const api = createMockApi();
+    const announcements = await api.creditsChapterAnnouncements('[Chapter]{: [Chapter Title]}.');
+    expectMatches(creditsAnnouncementsSchema, announcements, 'mock chapter announcements');
+    expect(announcements[0].result.text).toBe('Chapter 1: Down the Rabbit-Hole.');
+
+    expectMatches(retailSampleAnswerSchema, await api.creditsRetailSample(), 'mock retail sample, none');
+    const chapter = (await api.manuscriptChapters())[1];
+    const [first, , third] = chapter.paragraphIds ?? [];
+    const saved = await api.saveCreditsRetailSample(first.id, third.id);
+    expectMatches(retailSampleAnswerSchema, saved, 'mock saved retail sample');
+    expect(saved.sample).toMatchObject({ startChapterId: chapter.id, startLine: 1, endLine: 3 });
+    expect(await api.creditsRetailSample()).toEqual(saved);
+    await expect(api.saveCreditsRetailSample(first.id, 'p-9999')).rejects.toThrow(/pick the range again/);
+    expectMatches(retailSampleAnswerSchema, await api.saveCreditsRetailSample('', ''), 'mock cleared retail sample');
   });
 
   it('the DAW catalog list and open-download-page answers, detected and not detected (Phase 2)', async () => {
@@ -1020,6 +1048,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'creditsProjectValues',
       'saveCreditsProjectValues',
       'creditsPreview',
+      'creditsChapterAnnouncements',
+      'creditsRetailSample',
+      'saveCreditsRetailSample',
     ];
     const VOID = [
       'manuscriptImportCancel',

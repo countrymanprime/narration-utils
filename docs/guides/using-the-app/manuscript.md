@@ -47,6 +47,12 @@ search. Record the credits as their own files, as ACX expects, not inside a chap
 compares a chapter file with that chapter's text only, so credits recorded inside it are reported as
 extra words.
 
+The [retail sample](settings.md#retail-sample), once picked, is marked where it is: the chapter header shows
+a **Retail sample** tag, and in the open chapter its lines have a rule down their left edge, with "Retail
+sample starts" and its length above the first line and "Last line of the retail sample" above the last.
+
+![Manuscript, the retail sample marked on lines 1 to 3 of Chapter 3](../../images/ui/manuscript-retail-sample.webp)
+
 Each narration chapter's header has a **Read aloud** button. It opens the [Teleprompter](teleprompter.md)
 read-along for that chapter in a full-screen dialog titled "Read aloud — " and the chapter title, with the
 same microphone and model choices, Start reading and Stop. Closing the dialog while it is still listening

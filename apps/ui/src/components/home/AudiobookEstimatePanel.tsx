@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
-import type { ChapterStatus, CoverageState, CreditTemplate, ManuscriptChapter } from '../../types';
-import { estimateCreditsSeconds, estimateFinishedHours } from '../../state';
+import type { ChapterStatus, CoverageState, ManuscriptChapter } from '../../types';
+import { estimateFinishedHours } from '../../state';
+import { useCreditsSeconds } from './useCreditsSeconds';
 import { useApi } from '../../api/ApiContext';
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '../primitives/Collapsible';
 import { MeterBar } from '../primitives/MeterBar';
@@ -62,10 +63,8 @@ export function AudiobookEstimatePanel({
   const api = useApi();
   const [chapters, setChapters] = useState<ManuscriptChapter[]>();
   const [breakdownOpen, setBreakdownOpen] = useState(false);
-  // Credits stat (Phase 2): undefined while loading or on failure, in which case the row is simply left out - this is
-  // a secondary stat next to the narration estimate above, so a credits-specific problem should not blank the page
-  // or throw a toast over an estimate the narrator did not ask about (mirrors CreditsPanel's own preview fallback).
-  const [creditsSeconds, setCreditsSeconds] = useState<number>();
+  // Credits stat (Phases 2 and 5): undefined while loading or on failure, in which case the row is simply left out.
+  const creditsSeconds = useCreditsSeconds(api, refreshKey);
   // Recording coverage (docs/utilities/recording-coverage.md, ADR 0130): the live state of the one check the host runs at a time, so a row
   // shows its percent even after its dialog was sent to the background, and the chapter whose check dialog is open.
   const [coverage, setCoverage] = useState<CoverageState>({ phase: 'idle', percent: 0, message: '' });
@@ -93,33 +92,6 @@ export function AudiobookEstimatePanel({
       }
     })();
   }, [api, notify, refreshKey, measuredRun]);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const templates = await api.creditsTemplates();
-        // No per-project "chosen template" exists yet (Phase 1 shipped only a library to edit and preview) - the
-        // first opening and first closing template in the library, in the order the store returns them (shipped
-        // defaults first), stand in for "the" credits until a later phase lets a narrator pick one explicitly. See
-        // ADR 0093.
-        const segments = (['opening', 'closing'] as const)
-          .map((kind) => templates.find((template): template is CreditTemplate => template.kind === kind))
-          .filter((template): template is CreditTemplate => template !== undefined);
-        if (segments.length === 0) {
-          if (active) setCreditsSeconds(undefined);
-          return;
-        }
-        const rendered = await Promise.all(segments.map((template) => api.creditsPreview(template.body)));
-        if (active) setCreditsSeconds(estimateCreditsSeconds(rendered.map((result) => result.words)));
-      } catch {
-        if (active) setCreditsSeconds(undefined);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [api, refreshKey]);
 
   if (!chapters) return null;
   const narrationChapters = chapters.filter((chapter) => (chapter.contentKind ?? 'narration') === 'narration');

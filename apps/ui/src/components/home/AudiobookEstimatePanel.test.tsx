@@ -62,6 +62,64 @@ describe('AudiobookEstimatePanel', () => {
     expect(screen.getByText('2m')).toBeTruthy();
   });
 
+  it('adds the room tone setting to each credits file and the chapter announcements to the Credits stat (Phase 5)', async () => {
+    const segment = 'word '.repeat(155).trim();
+    const base = createMockApi();
+    const api = createMockApi({
+      creditsTemplates: async () => [
+        { id: 'o', kind: 'opening', name: 'Opening', body: segment },
+        { id: 'c', kind: 'closing', name: 'Closing', body: segment },
+        { id: 'a', kind: 'chapter_announcement', name: 'Announcement', body: '[Chapter].' },
+      ],
+      creditsPreview: async (body: string) => ({ text: body, words: body.split(/\s+/).filter(Boolean).length, unresolved: [] }),
+      // Twelve chapters, each announced in 155 words: 12 minutes.
+      creditsChapterAnnouncements: async () =>
+        Array.from({ length: 12 }, (_, index) => ({
+          chapterId: `c${index}`,
+          chapter: `Chapter ${index + 1}`,
+          result: { text: segment, words: 155, unresolved: [] },
+        })),
+      settingsForScope: async (scope) => {
+        const settings = await base.settingsForScope(scope);
+        return {
+          ...settings,
+          General: settings.General.map((field) => (field.key === 'credits_room_tone_seconds' ? { ...field, value: '30', effectiveValue: '30' } : field)),
+        };
+      },
+    });
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    // Opening and closing: 60s + 30s room tone each = 3m; twelve announcements: 12m, no room tone. 15m in all.
+    await waitFor(() => expect(screen.getByText('15m')).toBeTruthy());
+  });
+
+  it('leaves the narration total unchanged by a retail sample (Phase 5, C10: a marker, never time)', async () => {
+    const plain = createMockApi();
+    const chapters = await plain.manuscriptChapters();
+    const [first, , third] = chapters[1].paragraphIds ?? [];
+    const withSample = createMockApi({}, { retailSample: { startParagraphId: first.id, endParagraphId: third.id } });
+    const finished = async (api: ReturnType<typeof createMockApi>) => {
+      render(
+        <MemoryRouter>
+          <ApiProvider api={api}>
+            <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
+          </ApiProvider>
+        </MemoryRouter>,
+      );
+      await waitFor(() => expect(screen.getByText('Credits')).toBeTruthy());
+      const text = screen.getByText('Est. finished audio').parentElement!.textContent;
+      const credits = screen.getByText('Credits').parentElement!.textContent;
+      cleanup();
+      return [text, credits];
+    };
+    expect(await finished(withSample)).toEqual(await finished(plain));
+  });
+
   it('leaves the Credits stat out when the credit template library has no opening or closing template', async () => {
     const api = createMockApi({ creditsTemplates: async () => [] });
     render(

@@ -1,7 +1,8 @@
 {
   "General": {
     "log_verbosity": "normal",
-    "notifications": "true"
+    "notifications": "true",
+    "credits_room_tone_seconds": "0"
   },
   "ManuscriptGuide": {
     "spacy_model": "en_core_web_sm",
