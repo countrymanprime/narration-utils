@@ -20,6 +20,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/lineidentity"
 	"github.com/countrymanprime/narration-utils/shell/internal/manuscript"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
@@ -38,7 +39,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 20
+const hostAPIVersion = 21
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -71,6 +72,7 @@ type Host struct {
 	// Swappable like transcript: configureLocked rebuilds it on every project switch. Nil when there is no bridge
 	// client (no session directory).
 	reachability *daw.Reachability
+	lineIdentity *lineidentity.Service
 	teleprompter *teleprompter.Service
 	recents      *recents.Store
 	// creditTemplates is the narrator's own credit-template library (audiobook-credits-templates.prd.md, Phase 1):
@@ -303,6 +305,11 @@ func (h *Host) configureLocked(next config) {
 	h.transcript = transcript.New(transcript.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir, Python: h.config.comparePython, Backend: h.config.compareBackend}, client, h.settings, h.sidecars, h.emitTranscript)
 	h.transcript.SetPersist(h.persist)
 	h.transcript.SetFindings(h.findings, h.manuscript)
+	// The line-identity service is the second consumer of the same bridge client (bridge.Client fans events
+	// out by tag and run, ADR 0068), so pollTranscript's Drain call already pumps its events too; it needs no
+	// event emission of its own yet, since no UI subscribes (that lands with the UI trigger, Phase 7 of the
+	// REAPER automation follow-through PRD).
+	h.lineIdentity = lineidentity.New(lineidentity.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir}, client, h.manuscript, nil)
 	teleprompterDir := h.config.sessionDir
 	if teleprompterDir == "" {
 		teleprompterDir = filepath.Join(os.TempDir(), "narration-utils")
