@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApi } from '../../api/ApiContext';
 import { describeApiError } from '../../api/errorMessage';
-import type { Finding, FindingsPage, FindingsSummary } from '../../types';
+import type { Finding, FindingsPage, FindingsSummary, TakeReviewScanJob } from '../../types';
 import { LoadError } from '../layout/LoadError';
+import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { Panel } from '../primitives/Panel';
 import type { Notify } from '../primitives/Toast';
@@ -11,6 +12,7 @@ import { FindingsList } from './FindingsList';
 import { ReviewFilters } from './ReviewFilters';
 import { EMPTY_FILTERS, isFiltered, queryFor, REVIEW_PAGE_SIZE, type ReviewFilterValues } from './reviewQuery';
 import { STATUS_LABELS } from './findingFormat';
+import { TakeReviewScanDialog } from './TakeReviewScanDialog';
 import { useReaperStatus } from './useReaperStatus';
 
 const countsLine = (summary: FindingsSummary): string =>
@@ -19,7 +21,8 @@ const countsLine = (summary: FindingsSummary): string =>
 /**
  * The Review page (review-dashboard-and-findings-adoption.prd.md Phase 5, Q1: a page in the app, not a REAPER panel): every
  * analyzer's findings in one queue, filtered and sorted by the host, with a finding's evidence and the narrator's decision beside
- * the list.
+ * the list. Find pickups and duplicates (take review Phase 5) starts that analyzer's scan here, and its groups are reviewed here
+ * like every other finding.
  */
 export function ReviewPage({
   notify,
@@ -42,6 +45,16 @@ export function ReviewPage({
   const [reloadKey, setReloadKey] = useState(0);
   const loadedOnce = useRef(false);
   const reaper = useReaperStatus();
+  const [scanning, setScanning] = useState(false);
+
+  // A pickup and duplicate scan left running in the background saves its findings when it ends: the list is read again then.
+  useEffect(
+    () =>
+      api.subscribeJobEnded((event) => {
+        if (event.kind === 'take_review' && event.outcome === 'success') setReloadKey((key) => key + 1);
+      }),
+    [api],
+  );
 
   // A failure before anything is on screen is the page's load error with Retry; a later one keeps what is shown and is a toast.
   const failed = useCallback(
@@ -81,6 +94,14 @@ export function ReviewPage({
     if (decided) setReloadKey((key) => key + 1);
   };
 
+  // A scan that found something shows its groups: the list is narrowed to take review, which Clear filters undoes.
+  const scanClosed = (ended?: TakeReviewScanJob) => {
+    setScanning(false);
+    if (ended?.phase !== 'success') return;
+    if (ended.found > 0) changeFilters({ ...EMPTY_FILTERS, analyzer: 'take-review', sort: filters.sort });
+    else setReloadKey((key) => key + 1);
+  };
+
   const retry = () => {
     setLoadError(undefined);
     setReloadKey((key) => key + 1);
@@ -92,14 +113,19 @@ export function ReviewPage({
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
-      <div>
-        <Heading title="Review">{summary && !nothingYet ? countsLine(summary) : undefined}</Heading>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <Heading title="Review">{summary && !nothingYet ? countsLine(summary) : undefined}</Heading>
+        </div>
+        <Button variant="ghost" onClick={() => setScanning(true)}>
+          Find pickups and duplicates…
+        </Button>
       </div>
       {nothingYet ? (
         <Panel title="Nothing to review yet">
           <p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-            Findings appear here when a check has something for you to look at: run a comparison on the Proofing page, or build the Story Bible. Each one waits
-            here until you accept, dismiss or defer it.
+            Findings appear here when a check has something for you to look at: run a comparison on the Proofing page, build the Story Bible, or find pickups
+            and duplicates on a track. Each one waits here until you accept, dismiss or defer it.
           </p>
         </Panel>
       ) : (
@@ -138,6 +164,7 @@ export function ReviewPage({
           </div>
         </>
       )}
+      {scanning && <TakeReviewScanDialog onClose={scanClosed} />}
     </div>
   );
 }

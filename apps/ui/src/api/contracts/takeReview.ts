@@ -1,45 +1,12 @@
-// The take-review pickup/duplicate scan's findings, as TakeReviewScan and TakeReviewFindings send
-// them (apps/desktop/internal/findings.Finding, produced by internal/repeats.ToFindings). Field
-// names are the wire's own snake_case (docs/architecture/findings-contract.md), not renamed to
-// camelCase: this is the shared, documented findings contract boundary, not a binding this app
-// controls end to end. Q9 of take-review-pickups-duplicates-take-intelligence.prd.md: no
-// composite score, per-category evidence only, so this type carries no ranking field at all.
+// Take review (take-review-pickups-duplicates-take-intelligence.prd.md). Its pickup and duplicate_read findings are
+// ordinary findings, read and decided through the Review page's generic bindings (FindingsApi, ADR 0120); what is its
+// own is the reads a finding groups (its `evidence`, decoded on the page with takeReviewEvidenceSchema), the scan job
+// that finds them, and the take-creation action. Evidence field names are the wire's own snake_case
+// (docs/architecture/findings-contract.md). Q9: no composite score, so nothing here ranks one read over another.
 
-export type TakeReviewProject = {
-  path: string;
-  output_path?: string;
-};
+import type { WorkJob } from './manuscript';
 
-export type TakeReviewSource = {
-  file: string;
-  track_guid?: string;
-  item_guid?: string;
-  take_guid?: string;
-};
-
-export type TakeReviewTimeRange = {
-  start: number;
-  end: number;
-  source_start?: number;
-  source_end?: number;
-};
-
-export type TakeReviewSpan = {
-  paragraph_id?: string;
-  start?: number;
-  end?: number;
-  ordinal?: number;
-};
-
-export type TakeReviewManuscript = {
-  chapter_id?: string;
-  chapter_title?: string;
-  expected?: string;
-  recorded?: string;
-  span?: TakeReviewSpan;
-};
-
-/** One read the sidecar clustered into this finding's group (internal/repeats.Member). */
+/** One read the sidecar grouped into a finding (internal/repeats.Member): an item, or one take of an item. */
 export type TakeReviewMember = {
   item_index: number;
   item_guid: string;
@@ -54,7 +21,7 @@ export type TakeReviewMember = {
   exact_copy_group: string;
 };
 
-/** internal/repeats.classify's evidence.kind: "exact_copy" | "restart" | "pickup" | "near_duplicate". */
+/** A take-review finding's `evidence`; `kind` is internal/repeats.classify's "exact_copy" | "restart" | "pickup" | "near_duplicate". */
 export type TakeReviewEvidence = {
   kind: string;
   matched_span_first: number;
@@ -62,45 +29,34 @@ export type TakeReviewEvidence = {
   members: TakeReviewMember[];
 };
 
-export type TakeReviewSuggestedAction = {
-  kind: string;
-  parameters?: Record<string, unknown>;
-  requires_confirmation: boolean;
-};
-
-export type TakeReviewReviewState = {
-  status: string;
-  note?: string;
-  timestamp?: string;
-};
-
-export type TakeReviewFinding = {
-  schema_version: number;
-  id: string;
-  analyzer: string;
-  project: TakeReviewProject;
-  source: TakeReviewSource;
-  time_range?: TakeReviewTimeRange;
-  manuscript?: TakeReviewManuscript;
-  category: string;
-  severity: string;
-  /** Nullable: confidence in the grouping itself, never a composite ranking of which take is better (Q9). */
-  confidence: number | null;
-  evidence_version?: string;
-  confidence_reason: string;
-  evidence?: TakeReviewEvidence;
-  suggested_action?: TakeReviewSuggestedAction;
-  review: TakeReviewReviewState;
-  not_in_latest_run?: boolean;
+/**
+ * What a scan covers (Q3): a chapter track's items and all their takes, plus at most one pickup addition, a pickup track or
+ * a time range in project seconds. The idle job carries the project's saved pickup addition with no chapter track, to offer.
+ */
+export type TakeReviewScanScope = {
+  chapterTrackName: string;
+  pickupTrackName?: string;
+  pickupRangeStart?: number;
+  pickupRangeEnd?: number;
 };
 
 /**
- * What TakeReviewCreateTake needs to attach a narrator-approved candidate's source range as a new
- * take on the target item (take-review phase 6): the finding it came from (provenance, ADR 0098),
- * the target item the narrator explicitly chose (Q4/Q6 - never preselected on a weak match), the
- * candidate's own item GUID when it has one (an extra staleness check the Lua command re-resolves;
- * empty skips it), its source file, and the matched span's range within that source (seconds,
- * source-file-relative - sourceRangeStart becomes the new take's D_STARTOFFS).
+ * The scan job (TakeReviewScanStart/State/Cancel), in the shape of the host's other jobs so WorkDialog shows it: the
+ * sidecar's own percent and stage (ADR 0015), the scope it runs on, and how many groups of repeated reads it saved.
+ */
+export type TakeReviewScanJob = Omit<WorkJob, 'kind' | 'phase' | 'preview' | 'requiresReset' | 'result' | 'detail'> & {
+  kind: 'take_review';
+  phase: 'idle' | 'running' | 'success' | 'cancelled' | 'error';
+  scope: TakeReviewScanScope;
+  found: number;
+};
+
+/**
+ * What TakeReviewCreateTake needs to attach a narrator-approved candidate's source range as a new take on the target item
+ * (take-review phase 6): the finding it came from (provenance, ADR 0098), the target item the narrator explicitly chose
+ * (Q4/Q6: never preselected), the candidate's own item GUID when it has one (an extra staleness check the Lua command
+ * re-resolves; empty skips it), its source file, and the matched span's range within that source (seconds,
+ * source-file-relative: sourceRangeStart becomes the new take's D_STARTOFFS).
  */
 export type TakeReviewCreateTakeRequest = {
   findingId: string;
@@ -118,10 +74,12 @@ export type TakeReviewCreateTakeResult = {
 };
 
 export interface TakeReviewApi {
-  /** Runs one pickup/duplicate scan of chapterTrackName's items and takes and saves the fresh findings. */
-  takeReviewScan(chapterTrackName: string): Promise<TakeReviewFinding[]>;
-  /** Reads the take-review analyzer's saved findings for chapterTrackName without running a new scan. */
-  takeReviewFindings(chapterTrackName: string): Promise<TakeReviewFinding[]>;
+  /** Starts a pickup and duplicate scan of `scope` as a job; rejects a scope it cannot scan, or while a scan runs. */
+  takeReviewScanStart(scope: TakeReviewScanScope): Promise<TakeReviewScanJob>;
+  /** The scan job: idle (offering the project's saved pickup scope), running with real progress, or how it ended. */
+  takeReviewScanState(): Promise<TakeReviewScanJob>;
+  /** Stops a running scan; nothing it found is saved. Answers the job. */
+  takeReviewScanCancel(): Promise<TakeReviewScanJob>;
   /** Adds a narrator-approved candidate's source range as a new take on the target item (phase 6, confirmed and undoable). */
   takeReviewCreateTake(request: TakeReviewCreateTakeRequest): Promise<TakeReviewCreateTakeResult>;
 }

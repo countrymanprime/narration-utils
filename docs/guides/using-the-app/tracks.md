@@ -45,20 +45,9 @@ once one is linked) is the same link as the pill in the [header](navigation.md).
 
 ## Pickups & duplicates
 
-Below the track list, the Pickups & duplicates panel scans the selected track for alternate reads:
-restarts, pickups and near-duplicate takes. Press **Scan for pickups & duplicates**. Each finding is a
-row with its **Category** (Pickup or Duplicate read), its **Evidence** (Exact copy, Restart, Partial
-pickup or Near duplicate), its **Manuscript location** (chapter and sentences), its **Coverage**, and
-how many **Reads** were found. A scan that finds nothing says "No repeated reads found on this track."
-
-- **Audition** plays two of the reads side by side (Read A and Read B, each with Play and Loop), with a
-  little audio before and after the matched words. It plays each read straight from its source file,
-  so REAPER's FX, gain and edits are not applied and it can sound different from the project. Nothing
-  in REAPER changes.
-- **Add as take** asks you to choose the target item (where the take is added) and the candidate read
-  (the source attached as the new take), then **Create take** adds it in REAPER. The item's active take
-  and length stay as they were, and one Undo in REAPER removes it. The row then shows "Take added".
-  Only findings the scan suggests a take for offer it.
+Finding lines you recorded more than once (restarts, pickups and near-duplicate takes) moved to the
+[Review](review.md#pickups-and-duplicates) page: **Find pickups and duplicates…** there scans a track,
+and each group it finds is reviewed with the rest of your findings.
 
 ## REAPER tools
 

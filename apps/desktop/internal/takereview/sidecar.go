@@ -22,6 +22,9 @@ type SidecarRequest struct {
 	Model          string
 	Language       string
 	MinSpanOverlap float64
+	// ProgressPath is where the sidecar writes its stage|pct|message progress line (ADR 0015), and where a
+	// "<ProgressPath>.cancel" file asks it to stop; empty runs it without either.
+	ProgressPath string
 }
 
 // SidecarRunner runs the sidecar's additive --find-repeats mode and
@@ -35,10 +38,9 @@ type SidecarRunner interface {
 
 // ProcessRunner is the real SidecarRunner: it shells out to the Transcript
 // Compare sidecar via process.Supervisor.Run, the same synchronous helper
-// the packaged smoke test and Story Bible mutations use. Phase 4 has no
-// binding, so this runs to completion rather than polling a progress file;
-// a phase 5 binding can add a progress-polling runner beside this one
-// without changing Scanner or SidecarRunner.
+// the packaged smoke test and Story Bible mutations use. It blocks until the
+// sidecar exits; the host's scan job (apps/desktop/takereview.go) tails the
+// progress file it names meanwhile, and cancelling ctx stops the process.
 type ProcessRunner struct {
 	Sidecars   *process.Supervisor
 	Python     string
@@ -55,22 +57,7 @@ func (r *ProcessRunner) FindRepeats(ctx context.Context, req SidecarRequest) (st
 	}
 
 	out := filepath.Join(r.SessionDir, fmt.Sprintf("repeats_%d.txt", time.Now().UnixNano()))
-	args := []string{"--manifest", req.ManifestPath, "--manuscript", req.ManuscriptPath, "--find-repeats", "--out", out}
-	if req.TrackName != "" {
-		args = append(args, "--track-name", req.TrackName)
-	}
-	if req.ChapterTitle != "" {
-		args = append(args, "--chapter-title", req.ChapterTitle)
-	}
-	if req.Model != "" {
-		args = append(args, "--model", req.Model)
-	}
-	if req.Language != "" {
-		args = append(args, "--language", req.Language)
-	}
-	if req.MinSpanOverlap > 0 {
-		args = append(args, "--min-span-overlap", strconv.FormatFloat(req.MinSpanOverlap, 'f', -1, 64))
-	}
+	args := findRepeatsArgs(req, out)
 	if r.Backend != "" {
 		args = append([]string{r.Backend}, args...)
 	}
@@ -88,4 +75,28 @@ func (r *ProcessRunner) FindRepeats(ctx context.Context, req SidecarRequest) (st
 		return "", fmt.Errorf("takereview: could not read the repeated-span detector's output: %w", err)
 	}
 	return string(raw), nil
+}
+
+// findRepeatsArgs is the sidecar's --find-repeats argument list for req, writing its tagged output to out.
+func findRepeatsArgs(req SidecarRequest, out string) []string {
+	args := []string{"--manifest", req.ManifestPath, "--manuscript", req.ManuscriptPath, "--find-repeats", "--out", out}
+	if req.TrackName != "" {
+		args = append(args, "--track-name", req.TrackName)
+	}
+	if req.ChapterTitle != "" {
+		args = append(args, "--chapter-title", req.ChapterTitle)
+	}
+	if req.Model != "" {
+		args = append(args, "--model", req.Model)
+	}
+	if req.Language != "" {
+		args = append(args, "--language", req.Language)
+	}
+	if req.MinSpanOverlap > 0 {
+		args = append(args, "--min-span-overlap", strconv.FormatFloat(req.MinSpanOverlap, 'f', -1, 64))
+	}
+	if req.ProgressPath != "" {
+		args = append(args, "--progress", req.ProgressPath)
+	}
+	return args
 }

@@ -109,8 +109,8 @@ export type ManuscriptFileSelection = { selected: boolean; jobId?: string };
 export type ManuscriptReader = { chapters: ManuscriptChapter[]; paragraphs: ManuscriptParagraph[]; notes: ManuscriptNote[] };
 export type WorkJob = {
   id: string | null;
-  /** The wire kinds are the first two; the others are client-side jobs shown in the same work dialog (a download, the update, a recording check). */
-  kind: 'manuscript_import' | 'story_bible' | 'app_update' | 'asset_install' | 'recording_coverage';
+  /** The wire kinds are the first two; the others are client-side jobs shown in the same work dialog (a download, the update, a recording check, the pickup and duplicate scan). */
+  kind: 'manuscript_import' | 'story_bible' | 'app_update' | 'asset_install' | 'recording_coverage' | 'take_review';
   phase: 'idle' | 'preparing' | 'ready' | 'committing' | 'running' | 'success' | 'cancelled' | 'error';
   message: string;
   percent: number;

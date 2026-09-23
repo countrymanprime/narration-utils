@@ -136,7 +136,11 @@ const mockFindings = (['empty', 'changed'] as const).find((seed) => seed === moc
 // `?mockReaper=standalone|not-running|stale|recording|outdated` sets what the Review page's REAPER does for Go to, Loop and Stop
 // (review dashboard Phase 7): not there at all, gone quiet, or connected and refusing for that reason. Connected when absent.
 const mockReaper = (['standalone', 'not-running', 'stale', 'recording', 'outdated'] as const).find((seed) => seed === mockParams.get('mockReaper'));
+// `?mockTakeReviewScan=running` holds a started pickup and duplicate scan part way through (take review Phase 5), so its real
+// progress and Cancel can be seen; without it a mock scan runs to the end in a few polls.
+const mockTakeReviewScanHold = mockParams.get('mockTakeReviewScan') === 'running';
 const mockInitial = {
+  ...(mockTakeReviewScanHold ? { takeReviewScanHold: true } : {}),
   ...(mockReaper ? { reaper: mockReaper } : {}),
   ...(mockFindings === 'empty' ? { findings: [] } : {}),
   ...(mockFindings === 'changed' ? { findingsRerun: true } : {}),

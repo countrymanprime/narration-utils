@@ -79,6 +79,24 @@ export namespace main {
 	        this.text = source["text"];
 	    }
 	}
+	export class TakeReviewScanScope {
+	    chapterTrackName: string;
+	    pickupTrackName?: string;
+	    pickupRangeStart?: number;
+	    pickupRangeEnd?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new TakeReviewScanScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.chapterTrackName = source["chapterTrackName"];
+	        this.pickupTrackName = source["pickupTrackName"];
+	        this.pickupRangeStart = source["pickupRangeStart"];
+	        this.pickupRangeEnd = source["pickupRangeEnd"];
+	    }
+	}
 
 }
 

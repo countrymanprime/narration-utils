@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { WIRE_FINDINGS } from '../../api/mockFixtures';
+import { WIRE_FINDINGS, WIRE_TAKE_REVIEW_FINDINGS } from '../../api/mockFixtures';
 import { FINDING_CATEGORIES } from '../../api/contracts/findings';
 import { analyzerLabel, categoryLabel, confidenceLabel, evidenceRows, findingSummary, formatDecidedAt, formatTime } from './findingFormat';
 
@@ -42,6 +42,24 @@ describe('findingFormat', () => {
     expect(evidenceRows({ ...WIRE_FINDINGS[0], evidence: { kind: 'SWAPPED', marker_state: 'pending', timing_gap_seconds: 'n/a' } })).toEqual([
       { label: 'Kind', value: 'Swapped' },
     ]);
+  });
+
+  it('sums up a take-review group by its kind, its reads and the script span they cover', () => {
+    const [pickup, duplicate] = WIRE_TAKE_REVIEW_FINDINGS;
+    expect(findingSummary(pickup)).toBe('Partial pickup: 2 reads of sentences 4–8');
+    expect(findingSummary(duplicate)).toBe('Near duplicate: 2 reads of sentences 13–16');
+    expect(evidenceRows(pickup)).toEqual([
+      { label: 'Kind', value: 'Partial pickup' },
+      { label: 'In the script', value: 'Sentences 4–8' },
+      { label: 'Reads', value: '2' },
+    ]);
+  });
+
+  it('words take-review evidence that does not match its schema generically, never as reads', () => {
+    const [pickup] = WIRE_TAKE_REVIEW_FINDINGS;
+    const broken = { ...pickup, evidence: { kind: 'restart', members: 'lost' } };
+    expect(findingSummary(broken)).toBe('Pickup');
+    expect(evidenceRows(broken)).toEqual([{ label: 'Kind', value: 'Restart' }]);
   });
 
   it('shows a decision time that is not a date as it came', () => {

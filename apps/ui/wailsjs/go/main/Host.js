@@ -138,12 +138,20 @@ export function FindingsGoTo(arg1) {
   return window['go']['main']['Host']['FindingsGoTo'](arg1);
 }
 
+export function FindingsGoToRead(arg1, arg2) {
+  return window['go']['main']['Host']['FindingsGoToRead'](arg1, arg2);
+}
+
 export function FindingsList(arg1) {
   return window['go']['main']['Host']['FindingsList'](arg1);
 }
 
 export function FindingsLoop(arg1) {
   return window['go']['main']['Host']['FindingsLoop'](arg1);
+}
+
+export function FindingsLoopRead(arg1, arg2) {
+  return window['go']['main']['Host']['FindingsLoopRead'](arg1, arg2);
 }
 
 export function FindingsReaperStatus() {
@@ -402,12 +410,16 @@ export function TakeReviewCreateTake(arg1, arg2, arg3, arg4, arg5, arg6) {
   return window['go']['main']['Host']['TakeReviewCreateTake'](arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
-export function TakeReviewFindings(arg1) {
-  return window['go']['main']['Host']['TakeReviewFindings'](arg1);
+export function TakeReviewScanCancel() {
+  return window['go']['main']['Host']['TakeReviewScanCancel']();
 }
 
-export function TakeReviewScan(arg1) {
-  return window['go']['main']['Host']['TakeReviewScan'](arg1);
+export function TakeReviewScanStart(arg1) {
+  return window['go']['main']['Host']['TakeReviewScanStart'](arg1);
+}
+
+export function TakeReviewScanState() {
+  return window['go']['main']['Host']['TakeReviewScanState']();
 }
 
 export function TeleprompterDevices() {

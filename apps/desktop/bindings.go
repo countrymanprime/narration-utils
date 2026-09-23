@@ -791,17 +791,23 @@ func (h *Host) ChapterSuggestion() (string, error) {
 	return encodeBinding(h.chapterSuggestionFor())
 }
 
-// TakeReviewScan runs one pickup/duplicate scan of chapterTrackName (take-review
-// phase 5's scan-and-review surface) and saves the fresh findings into the
-// project's findings store, returning the merged result.
-func (h *Host) TakeReviewScan(chapterTrackName string) (string, error) {
-	return encodeBinding(h.takeReviewScan(chapterTrackName))
+// TakeReviewScanStart starts a pickup and duplicate scan of scope as a job (take-review phase 5): the chapter track's
+// items and takes, plus at most one pickup track or time range (Q3). It answers the job; TakeReviewScanState reports
+// its real progress (ADR 0015) and TakeReviewScanCancel stops it. The findings it saves are read and decided through
+// the Review page's generic findings bindings (ADR 0120), like every other analyzer's.
+func (h *Host) TakeReviewScanStart(scope TakeReviewScanScope) (string, error) {
+	return encodeBinding(h.startTakeReviewScan(scope))
 }
 
-// TakeReviewFindings reads the take-review analyzer's saved findings for
-// chapterTrackName (every chapter when empty) without running a new scan.
-func (h *Host) TakeReviewFindings(chapterTrackName string) (string, error) {
-	return encodeBinding(h.takeReviewFindings(chapterTrackName))
+// TakeReviewScanState answers the scan job: idle (with the project's saved pickup scope to offer), running, or how it
+// ended.
+func (h *Host) TakeReviewScanState() (string, error) {
+	return encodeBinding(h.takeReviewScanState(), nil)
+}
+
+// TakeReviewScanCancel stops a running scan; nothing it found is saved. With no scan running it changes nothing.
+func (h *Host) TakeReviewScanCancel() (string, error) {
+	return encodeBinding(h.cancelTakeReviewScan(), nil)
 }
 
 // TakeReviewCreateTake adds a narrator-approved candidate's source range as a

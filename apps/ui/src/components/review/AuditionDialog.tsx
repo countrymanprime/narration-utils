@@ -6,26 +6,27 @@ import { Dialog } from '../primitives/Dialog';
 import { Button } from '../primitives/Button';
 import { Select } from '../primitives/Select';
 import { Checkbox } from '../primitives/Checkbox';
-import { AUDITION_POST_ROLL_SECONDS, AUDITION_PRE_ROLL_SECONDS, useRangePlayer, type AuditionRange } from './useRangePlayer';
+import { AUDITION_POST_ROLL_SECONDS, AUDITION_PRE_ROLL_SECONDS, useRangePlayer, type AuditionRange } from '../tracks/useRangePlayer';
 import { memberLabel } from './takeReviewFormat';
-import type { TakeReviewFinding, TakeReviewMember } from '../../types';
+import type { TakeReviewMember } from '../../types';
 
 function rangeFor(member: TakeReviewMember | undefined): AuditionRange | undefined {
   if (!member) return undefined;
   return { sourceFile: member.source_file, rangeStart: member.source_start, rangeEnd: member.source_start + member.source_length };
 }
 
+// A read is chosen by its place in the finding: two takes of one item share an item GUID, so the GUID cannot name a read.
 type SideProps = {
   side: 'A' | 'B';
   members: TakeReviewMember[];
-  selectedGuid: string;
-  onSelect: (guid: string) => void;
+  selected: number;
+  onSelect: (read: number) => void;
   player: ReturnType<typeof useRangePlayer>;
   onToggle: () => void;
 };
 
-function AuditionSide({ side, members, selectedGuid, onSelect, player, onToggle }: SideProps) {
-  const member = members.find((candidate) => candidate.item_guid === selectedGuid);
+function AuditionSide({ side, members, selected, onSelect, player, onToggle }: SideProps) {
+  const member = members[selected];
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-[var(--border)] p-3">
       <div className="flex items-center justify-between gap-2">
@@ -36,10 +37,10 @@ function AuditionSide({ side, members, selectedGuid, onSelect, player, onToggle 
       </div>
       <Select
         label={`Read ${side}`}
-        value={selectedGuid}
-        onChange={onSelect}
+        value={String(selected)}
+        onChange={(value) => onSelect(Number(value))}
         fullWidth
-        options={members.map((candidate, index) => ({ value: candidate.item_guid, label: memberLabel(candidate, index) }))}
+        options={members.map((candidate, index) => ({ value: String(index), label: memberLabel(candidate, index) }))}
       />
       <Checkbox checked={player.loop} onChange={player.setLoop}>
         Loop
@@ -55,7 +56,7 @@ function AuditionSide({ side, members, selectedGuid, onSelect, player, onToggle 
 
 /**
  * Side-by-side A/B audition (phase 7 of take-review-pickups-duplicates-take-intelligence.prd.md,
- * Q7 option A): plays two of a finding's own reads from their own raw source file, each with a
+ * Q7 option A), opened from a take-review finding on the Review page (phase 5): plays two of the finding's own reads from their own raw source file, each with a
  * fixed pre/post roll, over the same `/media` route the Tracks page player streams from
  * (apps/desktop/media.go's authorizedMediaSource already covers every take's own source, phase 2).
  * No REAPER mutation happens here at all - this is read-only playback of files the app already has
@@ -64,17 +65,16 @@ function AuditionSide({ side, members, selectedGuid, onSelect, player, onToggle 
  * plays here, so the dialog says so plainly (the risk the PRD names under "Comparing takes across
  * different processing chains misleads").
  */
-export function AuditionDialog({ finding, onClose }: { finding: TakeReviewFinding; onClose: () => void }) {
+export function AuditionDialog({ members, onClose }: { members: TakeReviewMember[]; onClose: () => void }) {
   const api = useApi();
-  const members = finding.evidence?.members ?? [];
-  const [aGuid, setAGuid] = useState(members[0]?.item_guid ?? '');
-  const [bGuid, setBGuid] = useState(members[1]?.item_guid ?? members[0]?.item_guid ?? '');
+  const [a, setA] = useState(0);
+  const [b, setB] = useState(members.length > 1 ? 1 : 0);
 
   const playerA = useRangePlayer(api.mediaUrl);
   const playerB = useRangePlayer(api.mediaUrl);
 
-  const rangeA = rangeFor(members.find((member) => member.item_guid === aGuid));
-  const rangeB = rangeFor(members.find((member) => member.item_guid === bGuid));
+  const rangeA = rangeFor(members[a]);
+  const rangeB = rangeFor(members[b]);
 
   const toggleA = () => {
     if (playerA.isPlaying) {
@@ -103,8 +103,8 @@ export function AuditionDialog({ finding, onClose }: { finding: TakeReviewFindin
         span. REAPER&rsquo;s processing chain (FX, gain, edits) is not applied, so this can sound different from the project.
       </p>
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <AuditionSide side="A" members={members} selectedGuid={aGuid} onSelect={setAGuid} player={playerA} onToggle={toggleA} />
-        <AuditionSide side="B" members={members} selectedGuid={bGuid} onSelect={setBGuid} player={playerB} onToggle={toggleB} />
+        <AuditionSide side="A" members={members} selected={a} onSelect={setA} player={playerA} onToggle={toggleA} />
+        <AuditionSide side="B" members={members} selected={b} onSelect={setB} player={playerB} onToggle={toggleB} />
       </div>
     </Dialog>
   );
