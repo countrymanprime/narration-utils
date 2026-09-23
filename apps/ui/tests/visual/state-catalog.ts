@@ -12,6 +12,16 @@ export type { StateEntry };
 // collapsed-control check runs there.
 const REFLOW = { extraViewports: [REFLOW_VIEWPORT] };
 
+// `reloadPerViewport` (lib/types.ts), with the reason as the constant's name: these rows' pictures at a smaller width
+// differ from a fresh load at that width when the suite drives the page once at desktop width and resizes (found by
+// comparing every PNG when the suite moved to one load per state, ADR 0105). A tooltip closes when the window resizes; a
+// scroll offset the driver set (a dialog body, a table, a tab strip) stays where the desktop layout put it; a popup keeps
+// the place it opened at; live progress keeps running while the other viewports are captured.
+const TOOLTIP_CLOSES_ON_RESIZE = { reloadPerViewport: true } as const;
+const KEEPS_DESKTOP_SCROLL = { reloadPerViewport: true } as const;
+const POPUP_ANCHORED_AT_FIRST_WIDTH = { reloadPerViewport: true } as const;
+const LIVE_PROGRESS_MOVES_ON = { reloadPerViewport: true } as const;
+
 export const STATE_CATALOG: StateEntry[] = [
   // Project (pre-app: no project folder attached yet)
   {
@@ -42,7 +52,7 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'hint-chips',
     description: 'Vocabulary hint chips widget (accepted + pending) - lives on Proofing, catalogued under "home" for historical reasons',
   },
-  { page: 'home', state: 'info-tooltip', description: 'Home, info icon tooltip visible', pointer: 'keep' },
+  { page: 'home', state: 'info-tooltip', description: 'Home, info icon tooltip visible', pointer: 'keep', ...TOOLTIP_CLOSES_ON_RESIZE },
   { page: 'home', state: 'manuscript-candidate-offer', description: 'Home, offer to import a manuscript file found in the project folder' },
   { page: 'home', state: 'import-activity-log', description: 'Home, manuscript import finished with its live activity log populated' },
   {
@@ -65,6 +75,7 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'home',
     state: 'import-review-characters',
     description: 'Home, import review with the character suggestions open and one unchecked: the summary and the group count both say 2 of 3',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'home',
@@ -103,14 +114,14 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   { page: 'manuscript', state: 'detail-sidebar-note', description: 'Manuscript, detail sidebar open on a note' },
   { page: 'manuscript', state: 'detail-sidebar-entity', description: 'Manuscript, detail sidebar open on an entity' },
-  { page: 'manuscript', state: 'selection-popup', description: 'Manuscript, text-selection action popup open' },
+  { page: 'manuscript', state: 'selection-popup', description: 'Manuscript, text-selection action popup open', ...POPUP_ANCHORED_AT_FIRST_WIDTH },
   {
     page: 'manuscript',
     state: 'overlapping-highlights',
     description: 'Manuscript, entity highlight overlapping a note',
     sameAs: { of: 'manuscript/reader-text-medium', reason: 'Medium is the default reader size and the overlap is visible in the default view.' },
   },
-  { page: 'manuscript', state: 'sticky-header-scrolled', description: 'Manuscript, scrolled with sticky chapter header' },
+  { page: 'manuscript', state: 'sticky-header-scrolled', description: 'Manuscript, scrolled with sticky chapter header', ...KEEPS_DESKTOP_SCROLL },
   { page: 'manuscript', state: 'chapter-collapsed', description: 'Manuscript, a chapter card collapsed' },
   { page: 'manuscript', state: 'add-note-dialog', description: 'Manuscript, Add Note dialog open after selecting text' },
   { page: 'manuscript', state: 'formatted-text-and-line-breaks', description: 'Manuscript, paragraphs with preserved bold/italic/underline and a line break' },
@@ -152,7 +163,7 @@ export const STATE_CATALOG: StateEntry[] = [
   // Proofing
   { page: 'proofing', state: 'setup-default', description: 'Proofing, setup panel default selection' },
   { page: 'proofing', state: 'setup-alt-selection', description: 'Proofing, setup panel alternate model/worker/chunk selection' },
-  { page: 'proofing', state: 'running', description: 'Proofing, running panel mid-progress with log' },
+  { page: 'proofing', state: 'running', description: 'Proofing, running panel mid-progress with log', ...LIVE_PROGRESS_MOVES_ON },
   { page: 'proofing', state: 'results-row-expanded', description: 'Proofing, results table with one discrepancy row expanded' },
   {
     page: 'proofing',
@@ -164,6 +175,7 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'disabled-button',
     description: 'Home with no manuscript - the Proofing action is locked and its tooltip says why',
     pointer: 'keep',
+    ...TOOLTIP_CLOSES_ON_RESIZE,
   },
   { page: 'proofing', state: 'toast', description: 'Proofing, a toast visible' },
   {
@@ -220,7 +232,7 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'storybible', state: 'category-character', description: 'Story Bible, Character category tab' },
   { page: 'storybible', state: 'category-place', description: 'Story Bible, Place/Location category tab' },
   { page: 'storybible', state: 'category-organization', description: 'Story Bible, Organization category tab' },
-  { page: 'storybible', state: 'category-needs-review', description: 'Story Bible, Needs Review category tab' },
+  { page: 'storybible', state: 'category-needs-review', description: 'Story Bible, Needs Review category tab', ...KEEPS_DESKTOP_SCROLL },
   {
     page: 'storybible',
     state: 'entity-selected',
@@ -241,6 +253,7 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'storybible',
     state: 'entry-properties-editing',
     description: 'Story Bible, an entry in edit mode with its properties table: a new row with a value and no name, and the message that says so',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   { page: 'storybible', state: 'entry-needs-review', description: 'Story Bible, a Needs Review entry with review-colored evidence highlights' },
   {
@@ -302,12 +315,14 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'chapter-link-confirmed',
     description:
       'Tracks, the Chapter links list at the foot of the page - the first chapter confirmed to a track shows Linked with the track name, Change and Clear (analysis evidence ledger PRD, Phase 7)',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'tracks',
     state: 'chapter-link-missing',
     description:
       'Tracks, a chapter confirmed to a track GUID no longer in the project - Track missing, with the missing-track message and Change/Clear (reached via the ?mockChapterLink=missing mock seam)',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'tracks',
@@ -318,21 +333,25 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'tracks',
     state: 'link-chapters-success',
     description: 'Tracks, "Link chapters" dialog after a completed Read - every row status shown at once (ok, drift, stale-source, removed, unrecognized)',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'tracks',
     state: 'link-chapters-conflict',
     description: 'Tracks, "Link chapters" dialog after a Stamp that hit a stale item and a conflict - both GUID lists shown',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'tracks',
     state: 'link-chapters-error',
     description: 'Tracks, "Link chapters" dialog when REAPER reports a problem - inline error message, nothing written',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'tracks',
     state: 'pickups-empty',
     description: 'Tracks, "Pickups" dialog open before any import - "No pickups yet", Next disabled, Export disabled',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'tracks',
@@ -380,29 +399,34 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'tracks',
     state: 'chapter-tags-idle',
     description: 'Tracks, "Embed chapter tags" dialog open before any chapter render is configured - "Prepare chapter render first" message, Embed disabled',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'tracks',
     state: 'chapter-tags-ready',
     description:
       'Tracks, "Embed chapter tags" dialog with two rendered chapters known - the chapter list, destination field and confirm checkbox, Embed enabled once both are filled in (reached via the ?mockChapterTags=ready mock seam)',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'tracks',
     state: 'chapter-tags-not-rendered',
     description:
       'Tracks, "Embed chapter tags" dialog with a chapter configured but not yet rendered - "not rendered yet" and the press-Render-first message, Embed disabled (reached via the ?mockChapterTags=not-rendered mock seam)',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'tracks',
     state: 'chapter-tags-success',
     description: 'Tracks, "Embed chapter tags" dialog after a completed embed - the new tagged file\'s path shown, the original file unmentioned as changed',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'tracks',
     state: 'chapter-tags-error',
     description:
       'Tracks, "Embed chapter tags" dialog when the embed fails - inline error message (reached via the ?mockChapterTags=ready&mockChapterTagsEmbedError=1 mock seam)',
+    ...KEEPS_DESKTOP_SCROLL,
   },
   {
     page: 'tracks',
@@ -420,6 +444,7 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'take-review-audition',
     description:
       'Tracks, Audition pressed on a pickup finding - the side-by-side A/B dialog with the "Raw source, no FX or edits applied" label and Read A/Read B pickers (phase 7, Q7)',
+    ...KEEPS_DESKTOP_SCROLL,
   },
 
   // Teleprompter
@@ -623,7 +648,7 @@ export const STATE_CATALOG: StateEntry[] = [
       'Settings, Project scope / Credits category (PRD audiobook-credits-templates.prd.md, Phase 1): template library, live preview and project credit values',
     ...REFLOW,
   },
-  { page: 'settings', state: 'dirty-footer', description: 'Settings, unsaved-changes footer visible', ...REFLOW },
+  { page: 'settings', state: 'dirty-footer', description: 'Settings, unsaved-changes footer visible', ...REFLOW, ...KEEPS_DESKTOP_SCROLL },
   { page: 'settings', state: 'navigate-away-confirm', description: 'Settings, navigate-away-while-dirty confirm dialog', ...REFLOW },
   {
     page: 'settings',
@@ -631,6 +656,7 @@ export const STATE_CATALOG: StateEntry[] = [
     description: 'Settings, reset/clear-override control on a field',
     pointer: 'keep',
     ...REFLOW,
+    ...KEEPS_DESKTOP_SCROLL,
   },
 
   // Global overlays (captured once against Home, not per-page)
@@ -640,6 +666,7 @@ export const STATE_CATALOG: StateEntry[] = [
     description: 'Global tooltip overlay',
     pointer: 'keep',
     sameAs: { of: 'home/info-tooltip', reason: 'The global overlay is captured by hovering the same Home info icon.' },
+    ...TOOLTIP_CLOSES_ON_RESIZE,
   },
   {
     page: 'global',
@@ -667,6 +694,7 @@ export const STATE_CATALOG: StateEntry[] = [
       reason: 'Only the icon-only rail shows tooltips; the full sidebar has nothing to hover.',
       viewports: ['desktop'],
     },
+    ...TOOLTIP_CLOSES_ON_RESIZE,
   },
 
   // Theme smoke check (Home only, not the full page/state matrix - see

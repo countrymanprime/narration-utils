@@ -27,7 +27,7 @@ The Stop hook of this plugin blocks ending a turn when UI files were edited and 
    pnpm run lint:ci
    pnpm run format:check
    pnpm run build         # typecheck plus production build
-   pnpm run screenshots   # app visual suite, one test per {page, state, viewport}
+   pnpm run screenshots   # app visual suite, one test per {page, state}, a step per viewport
    pnpm run atlas         # builds Storybook, then story x theme x viewport with play() and axe
    ```
    Do not substitute a filtered subset unless the change is trivially scoped; if you scope down, say what you

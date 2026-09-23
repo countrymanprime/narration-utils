@@ -1,9 +1,9 @@
-// ui-atlas-kit 0.3.4 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.5 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname } from 'node:path';
-import { expect, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import sharp from 'sharp';
 import * as appDrivers from '../app.drivers';
 import type { Driver } from '../app.drivers';
@@ -27,8 +27,7 @@ import {
   type RawAxeViolation,
 } from './validators';
 
-function watchForProblems(page: Page): string[] {
-  const problems: string[] = [];
+function watchForProblems(page: Page, problems: string[]): void {
   page.on('pageerror', (error) => problems.push(`uncaught error: ${error.message}`));
   page.on('console', (message) => {
     if (message.type() === 'error') problems.push(`console.error: ${message.text()}`);
@@ -40,7 +39,6 @@ function watchForProblems(page: Page): string[] {
   page.on('response', (response) => {
     if (response.status() >= 400) problems.push(`HTTP ${response.status()}: ${response.url()}`);
   });
-  return problems;
 }
 
 async function measureHorizontalOverflow(page: Page): Promise<number> {
@@ -134,18 +132,24 @@ function writeRecord(record: CaptureRecord): void {
   writeFileSync(path, JSON.stringify(record));
 }
 
-// One {state, viewport} capture: boot the app fresh, drive to the state,
-// screenshot it, and fail on anything that makes the picture untrustworthy
-// (a page error, a failed request, horizontal overflow).
-export async function captureState(page: Page, entry: StateEntry, viewport: Viewport, driver: Driver): Promise<void> {
-  const problems = watchForProblems(page);
-
+// Loads the app at this viewport, settles it and drives it to the state. Problems the page reports from here on are
+// collected in `problems`.
+async function boot(page: Page, viewport: Viewport, driver: Driver, problems: string[]): Promise<void> {
+  watchForProblems(page, problems);
   await page.setViewportSize({ width: viewport.width, height: viewport.height });
   // Optional seam in app.drivers.ts: install page.route stubs (third-party embeds) before the app loads.
   await (appDrivers as { beforeCapture?: (page: Page) => Promise<void> }).beforeCapture?.(page);
   await page.goto('/');
   await settlePage(page);
   await driver(page);
+}
+
+// Photographs the driven page at this viewport and checks it. Everything the page reported since the last capture (the
+// load and the driving included, for the first) is this capture's. Returns the failures instead of throwing, so the caller
+// can capture the remaining viewports before failing; the record and the screenshot are written either way, so the
+// picture of a failure exists.
+async function captureAt(page: Page, entry: StateEntry, viewport: Viewport, problems: string[]): Promise<string[]> {
+  await page.setViewportSize({ width: viewport.width, height: viewport.height });
   // A long page is shown whole by growing the viewport (Playwright's fullPage would stretch fixed elements).
   if (entry.fullPage) {
     const height = await page.evaluate(() => document.documentElement.scrollHeight);
@@ -188,6 +192,50 @@ export async function captureState(page: Page, entry: StateEntry, viewport: View
     ...(axe ? { axe } : {}),
   });
 
-  expect(problems, 'the app reported problems while this state was captured').toEqual([]);
-  expect(overflowPx, `page scrolls sideways by ${overflowPx}px at ${viewport.name}`).toBeLessThanOrEqual(OVERFLOW_TOLERANCE_PX);
+  const failures = problems.splice(0).map((problem) => `${viewport.name}: ${problem}`);
+  if (overflowPx > OVERFLOW_TOLERANCE_PX) failures.push(`${viewport.name}: page scrolls sideways by ${overflowPx}px`);
+  return failures;
+}
+
+function failOn(failures: string[]): void {
+  expect(failures, 'the app reported problems while this state was captured').toEqual([]);
+}
+
+// One {state, viewport} capture: boot the app fresh, drive to the state, screenshot it, and fail on anything that makes the
+// picture untrustworthy (a page error, a failed request, horizontal overflow). For a row with `reloadPerViewport`.
+export async function captureState(page: Page, entry: StateEntry, viewport: Viewport, driver: Driver): Promise<void> {
+  const problems: string[] = [];
+  await boot(page, viewport, driver, problems);
+  failOn(await captureAt(page, entry, viewport, problems));
+}
+
+// Every viewport of one state from one load: boot at the first viewport, drive once, then resize and capture at each of
+// `shared`. The captures and checks are the ones captureState makes. Each of `fresh` (a row's extraViewports: a width where
+// the layout switches, which a resize from a wide window does not reproduce, such as a tab strip scrolled to its active
+// tab on load) gets a freshly loaded page of its own. A driver that froze the page clock is the other exception: axe lets
+// time run again after the first shot (see runAxe), so the state may have moved on (a toast faded); every later viewport
+// then gets a freshly loaded page too.
+export async function captureAcrossViewports(page: Page, entry: StateEntry, shared: Viewport[], fresh: Viewport[], driver: Driver): Promise<void> {
+  const viewports = [...shared, ...fresh];
+  // Each capture is given the time a test of its own had.
+  test.setTimeout(test.info().timeout * viewports.length);
+  const failures: string[] = [];
+  let current = page;
+  let problems: string[] = [];
+  let clockFrozen = false;
+  for (const [index, viewport] of viewports.entries()) {
+    await test.step(viewport.name, async () => {
+      if (index === 0 || clockFrozen || index >= shared.length) {
+        if (index > 0) {
+          if (current !== page) await current.close();
+          current = await page.context().newPage();
+          problems = [];
+        }
+        await boot(current, viewport, driver, problems);
+        clockFrozen ||= await current.evaluate(() => '__pwClock' in globalThis);
+      }
+      failures.push(...(await captureAt(current, entry, viewport, problems)));
+    });
+  }
+  failOn(failures);
 }

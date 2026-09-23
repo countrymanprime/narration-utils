@@ -3,6 +3,28 @@
 `ui-atlas sync` refreshes the vendored core files (`plugin/templates/core`) and stamps the version. It does NOT touch
 scaffold files (yours after `init`), so the **Adopt by hand** lines below are what to copy across on upgrade.
 
+## 0.3.5
+
+- **Core:** the app suite loads and drives each state once and resizes through the viewports, instead of loading and
+  driving it again for every viewport. `app.spec.ts` makes one test per `{page, state}` (`<page> / <state>`) with a
+  `test.step` per viewport, and `lib/capture.ts` gains `captureAcrossViewports`: boot at the first viewport, drive once, then
+  for each viewport resize, settle and make the same captures and checks as before (screenshot to the same path, record,
+  overflow, collapsed controls, axe). Every viewport is captured and checked even when an earlier one fails, and the
+  failure names the viewport. The test's timeout is the per-test timeout times the number of viewports. A row's
+  `extraViewports` each get a freshly loaded page (a width where the layout switches, which a resize from a wide window
+  does not reproduce), and so does every later viewport of a driver that froze the page clock (axe lets time run again
+  after the first shot, so the state may have moved on). Loading and driving was about two thirds of a capture's own time (measured on this repo's
+  suite: load 0.77 s, drive 0.64 s, axe 0.45 s, the rest 0.2 s, median over 138 captures).
+- **Core:** `StateEntry.reloadPerViewport` (in `lib/types.ts`) keeps the old shape for one row: a test per viewport
+  (`<page> / <state> / <viewport>`), each on a freshly loaded page, for a state whose driving or rendering depends on the
+  width it was reached at.
+- **Adopt by hand:** `-g "<page>.*<state>"` still selects a state; a viewport is now a step, not a test, so `-g` can no
+  longer pick one viewport of a row. Run the suite once before and once after the upgrade and compare the PNGs
+  (`screenshots/app`): a picture that differs is a state that remembers its first viewport, so give its row
+  `reloadPerViewport: true` with the reason, or fix the page. In this repo 24 of 150 rows needed it: tooltips (a resize
+  closes them), states whose driver scrolled something at the first width, a popup anchored where it opened, and live
+  progress. A spinner caught at another angle is not a different state.
+
 ## 0.3.4
 
 - **Core:** axe runs on the app's states, not only on stories. After each capture's screenshot the suite injects `axe-core`

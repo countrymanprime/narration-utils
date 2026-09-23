@@ -38,7 +38,8 @@ ui-atlas.config.json                # detected settings + kit version stamp
 
 ## The capture contract (what makes the output trustworthy)
 
-1. One test per `{page, state, viewport}` (app) or `{story, theme, viewport}` (atlas). No retries.
+1. One test per `{page, state}` (app), which loads and drives the state once and captures each viewport as a step (a
+   `reloadPerViewport` row: one test per viewport, each freshly loaded), or per `{story, theme, viewport}` (atlas). No retries.
 2. Conditions, never sleeps. Timers are frozen only in the one state that needs it, never page-wide.
 3. Fails on: page error, failed request, console.error, sideways overflow, a collapsed control (a visible text box,
    select or textarea narrower than 64px, unless the row declares it in `narrowControls`, checked), blank image, axe

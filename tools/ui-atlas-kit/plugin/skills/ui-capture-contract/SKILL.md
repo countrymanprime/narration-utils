@@ -22,10 +22,11 @@ means the UI changed.
 ## What to do
 
 1. Check the invariants still hold: `retries: 0` in both Playwright configs (a capture that passes on the second try is
-   flaky, and a retry hides that); one test per `{page, state, viewport}` or `{story, theme, viewport}`; no
+   flaky, and a retry hides that); one test per `{page, state}` with a step per viewport (a test per viewport only for a `reloadPerViewport` row) or per `{story, theme, viewport}`; no
    `waitForTimeout` anywhere in `tests/`; `workers` capped (the app suite shares one dev server, and heavy parallelism
    causes `page.goto` timeouts, not byte diffs).
-2. Check the capture sequence in `captureState` is intact and in order: set viewport, `goto('/')`, `settlePage`
+2. Check the capture sequence in `lib/capture.ts` is intact and in order (`boot`, then `captureAt` per viewport; a row's later
+   viewports only resize and re-settle unless it has `reloadPerViewport` or its driver froze the clock): set viewport, `goto('/')`, `settlePage`
    (injects CSS zeroing animation/transition/caret, `emulateMedia({ reducedMotion: 'reduce' })`, awaits
    `document.fonts.ready` and `networkidle`), the driver, `settleFrames` (fonts, then two animation frames raced
    against a 300 ms real-time cap so a frozen clock cannot hang it), park the pointer, then

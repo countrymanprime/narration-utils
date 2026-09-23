@@ -139,10 +139,10 @@ The owner (sole maintainer) merging stacks of agent-authored PRs several times a
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0 | Baseline | `scripts/ci/run-timings.mjs <run-id>` prints per-job and per-step times and queue offsets; profile one visual and one atlas test (navigation vs driving vs checks vs screenshot) | in-progress (script done; profile pending) | - | - | - |
+| 0 | Baseline | `scripts/ci/run-timings.mjs <run-id>` prints per-job and per-step times and queue offsets; profile one visual and one atlas test (navigation vs driving vs checks vs screenshot) | complete (profile: load 0.77 s, drive 0.64 s, axe 0.45 s, rest 0.2 s per capture; ADR 0105) | - | - | - |
 | 1 | Build beside quality | Split `release` in `prerelease.yml` into `windows-build` and `publish`; write permissions only on `publish`; threat-model row | in-progress (implemented; `workflow_dispatch` check of a red quality pending) | with 2, 3, 4 | 0 | - |
 | 2 | Cache the sidecar freeze and Go | Content-hash cache of PyInstaller output, `--reuse` in `prepare-resources.py`, saved on `main` only; Go toolchain cache on Windows (dropped, D4) | in-progress (implemented; cold vs hit comparison on one commit pending) | with 1, 3, 4 | 0 | - |
-| 3 | Visual suite: one load per state | One test per `{page, state}` with a step per viewport; diff old vs new output once | pending | with 1, 2, 4 | 0 | - |
+| 3 | Visual suite: one load per state | One test per `{page, state}` with a step per viewport; diff old vs new output once | in-progress (implemented, ADR 0105; 24 rows reload per viewport; local run 4.9 to 3.2 min; CI timing pending) | with 1, 2, 4 | 0 | - |
 | 4 | Atlas: one load per story | Group a story's four variants; reload only where `play()` needs it | pending | with 1, 2, 3 | 0 | - |
 | 5 | Shard if still slow | Only if 3 or 4 misses 4 min: `--shard` across 2 jobs, merged report | pending | - | 3, 4 | - |
 | 6 | Fewer job slots | Fold the five sub-minute ubuntu jobs into `quick`; cancel-in-progress on PR-triggered workflows; update `docs/operations/ci-and-releases.md` | pending | with 1 to 4 | 0 | - |
