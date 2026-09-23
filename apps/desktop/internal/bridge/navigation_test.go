@@ -3,6 +3,7 @@ package bridge
 import (
 	"context"
 	"errors"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -377,5 +378,88 @@ func TestALateAnswerForARequestThatTimedOutIsDroppedAndTheNextRequestStillWorks(
 	})
 	if pong, err := navigator.Ping(context.Background()); err != nil || !pong.Looping {
 		t.Fatalf("got %+v, %v: the late answer must not be taken for the new request", pong, err)
+	}
+}
+
+func TestEveryRequestRefusesAnAnswerOfTheWrongKindAndReturnsREAPERsError(t *testing.T) {
+	requests := map[string]func(*Navigator) error{
+		"navigate_item": func(n *Navigator) error {
+			_, err := n.Navigate(context.Background(), Target{ItemGUID: testItem})
+			return err
+		},
+		"loop_context": func(n *Navigator) error {
+			_, err := n.Loop(context.Background(), Target{ItemGUID: testItem, SourceStart: seconds(3)})
+			return err
+		},
+		"stop_loop": func(n *Navigator) error {
+			_, err := n.StopLoop(context.Background())
+			return err
+		},
+		"ping": func(n *Navigator) error {
+			_, err := n.Ping(context.Background())
+			return err
+		},
+	}
+	for name, request := range requests {
+		t.Run(name+" wrong kind", func(t *testing.T) {
+			navigator, client, dir := newNavigatorSession(t)
+			wrong := "PONG"
+			if name == "ping" {
+				wrong = "LOOP_STOPPED"
+			}
+			startFakeReaper(t, client, dir, func(command []string) [][]string {
+				if wrong == "PONG" {
+					return [][]string{{"PONG", run(command), "1", "0", "0"}}
+				}
+				return [][]string{{"LOOP_STOPPED", run(command), "0", "0"}}
+			})
+			if err := request(navigator); err == nil || !strings.Contains(err.Error(), "does not expect") {
+				t.Fatalf("got %v", err)
+			}
+		})
+		t.Run(name+" error", func(t *testing.T) {
+			navigator, client, dir := newNavigatorSession(t)
+			startFakeReaper(t, client, dir, func(command []string) [][]string {
+				return [][]string{{"ERROR", run(command), ""}}
+			})
+			if err := request(navigator); err == nil || err.Error() != "REAPER could not do that" {
+				t.Fatalf("got %v", err)
+			}
+		})
+	}
+}
+
+func TestAStaleReasonThisHostDoesNotKnowIsStillStale(t *testing.T) {
+	err := error(&StaleError{GUID: testItem, Reason: "something-new"})
+	if !errors.Is(err, ErrStale) || err.Error() != ErrStale.Error() {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestNavigateRefusesASourceTimeThatIsNotANumber(t *testing.T) {
+	navigator, _, _ := newNavigatorSession(t)
+	if _, err := navigator.Navigate(context.Background(), Target{ItemGUID: testItem, SourceStart: seconds(math.NaN())}); !errors.Is(err, ErrNoSourceTime) {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestAFailedSendIsReportedWithTheCommand(t *testing.T) {
+	navigator, _, dir := newNavigatorSession(t)
+	if err := os.RemoveAll(filepath.Join(dir, "commands")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := navigator.Ping(context.Background()); err == nil || !strings.Contains(err.Error(), "could not send ping") {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestAnUnreadableEventWithNoRunLeavesTheRequestsInFlightAlone(t *testing.T) {
+	navigator, client, dir := newNavigatorSession(t)
+	navigator.SetTimeout(200 * time.Millisecond)
+	startFakeReaper(t, client, dir, func(command []string) [][]string {
+		return [][]string{{"FINDING_STALE", ""}, {"PONG", run(command), "1", "0", "0"}}
+	})
+	if _, err := navigator.Ping(context.Background()); err != nil {
+		t.Fatalf("a malformed run-less event must not fail the request: %v", err)
 	}
 }
