@@ -35,14 +35,20 @@ def parse_chapters(raw_path: Path) -> list[tuple[str, list[str]]]:
     body = text[text.index("\n", start) + 1 :]
 
     chapter_re = re.compile(r"^CHAPTER ([IVXLC]+)\.\s*$", re.MULTILINE)
-    matches = list(chapter_re.finditer(body))[:CHAPTER_LIMIT]
+    all_matches = list(chapter_re.finditer(body))
+    matches = all_matches[:CHAPTER_LIMIT]
 
     chapters = []
     for i, match in enumerate(matches):
         title_line_end = body.index("\n", match.end() + 1)
         chapter_title = body[match.end() : title_line_end].strip()
         content_start = title_line_end + 1
-        content_end = matches[i + 1].start() if i + 1 < len(matches) else body.index("THE END")
+        # Bound the LAST kept chapter's content at the next real chapter heading in the full
+        # match list (not the truncated one) - using body.index("THE END") here would bleed
+        # every chapter beyond CHAPTER_LIMIT into this one as plain, unmarked paragraph text
+        # (txt-and-epub-import PRD, Phase 1: the TXT importer's own heading heuristic exposed
+        # this by correctly reading those bled-in "CHAPTER IV."-shaped lines as real headings).
+        content_end = all_matches[i + 1].start() if i + 1 < len(all_matches) else body.index("THE END")
         raw_paragraphs = body[content_start:content_end].strip("\n").split("\n\n")
         paragraphs = []
         for para in raw_paragraphs:
@@ -51,6 +57,59 @@ def parse_chapters(raw_path: Path) -> list[tuple[str, list[str]]]:
                 paragraphs.append(collapsed)
         chapters.append((f"Chapter {match.group(1)}: {chapter_title}", paragraphs))
     return chapters
+
+
+def wrap_txt_line(text: str, width: int = 70) -> list[str]:
+    words = text.split()
+    lines: list[str] = []
+    current: list[str] = []
+    length = 0
+    for word in words:
+        extra = len(word) + (1 if current else 0)
+        if length + extra > width and current:
+            lines.append(" ".join(current))
+            current, length = [word], len(word)
+        else:
+            current.append(word)
+            length += extra
+    if current:
+        lines.append(" ".join(current))
+    return lines
+
+
+def write_txt(chapters: list[tuple[str, list[str]]], out_path: Path) -> None:
+    """Writes a Gutenberg-shaped, hard-wrapped alice.txt: a START/END marker pair around the
+    text (T5), a Contents block naming the chapters (never itself read as a chapter list, T3),
+    and each chapter as a two-line "CHAPTER N." / subtitle heading block, wrapped at ~70
+    columns like the real alice_raw.txt this is derived from - so the importer's hard-wrap
+    detection (T2) and underscore-italic handling (T5) both have real work to do."""
+    lines = [
+        "*** START OF THE PROJECT GUTENBERG EBOOK 11 ***",
+        "",
+        "Alice's Adventures in Wonderland",
+        "",
+        "by Lewis Carroll",
+        "",
+        "Contents",
+        "",
+    ]
+    for title, _ in chapters:
+        lines.append(f" {title}")
+    lines.append("")
+    lines.append("")
+    for title, paragraphs in chapters:
+        marker, subtitle = title.split(": ", 1)
+        lines.append(marker.upper() + ".")
+        lines.append(subtitle)
+        lines.append("")
+        for para in paragraphs:
+            lines.extend(wrap_txt_line(para))
+            lines.append("")
+    lines.append("*** END OF THE PROJECT GUTENBERG EBOOK 11 ***")
+    # newline="\n" pins LF regardless of platform - Path.write_text's universal-newline
+    # translation would otherwise write CRLF here on Windows, unlike alice_raw.txt and this
+    # script's other outputs.
+    out_path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
 
 
 def write_docx(chapters: list[tuple[str, list[str]]], out_path: Path) -> None:
@@ -127,7 +186,8 @@ def main() -> None:
     write_docx(chapters, out_dir / "alice.docx")
     write_markdown(chapters, out_dir / "alice.md")
     write_pdf(chapters, out_dir / "alice.pdf")
-    print(f"Wrote alice.docx/.md/.pdf from {len(chapters)} chapters.")
+    write_txt(chapters, out_dir / "alice.txt")
+    print(f"Wrote alice.docx/.md/.pdf/.txt from {len(chapters)} chapters.")
 
 
 if __name__ == "__main__":

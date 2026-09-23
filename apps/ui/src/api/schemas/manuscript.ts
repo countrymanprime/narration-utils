@@ -115,7 +115,7 @@ const characterCandidateSchema = z.object({
 }) satisfies z.ZodType<ManuscriptCharacterCandidate>;
 
 const importPreviewSchema = z.object({
-  format: z.enum(['docx', 'markdown', 'pdf']),
+  format: z.enum(['docx', 'markdown', 'txt', 'pdf']),
   sourceName: z.string(),
   paragraphCount: z.number(),
   chapterTitles: listFromNull(z.string()),
