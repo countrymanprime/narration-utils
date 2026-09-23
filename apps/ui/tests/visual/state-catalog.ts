@@ -16,11 +16,13 @@ const REFLOW = { extraViewports: [REFLOW_VIEWPORT] };
 // differ from a fresh load at that width when the suite drives the page once at desktop width and resizes (found by
 // comparing every PNG when the suite moved to one load per state, ADR 0105). A tooltip closes when the window resizes; a
 // scroll offset the driver set (a dialog body, a table, a tab strip) stays where the desktop layout put it; a popup keeps
-// the place it opened at; live progress keeps running while the other viewports are captured.
+// the place it opened at; live progress keeps running while the other viewports are captured. A driver that freezes the
+// page clock cannot share a load at all (lib/capture.ts says why, and fails the row without this).
 const TOOLTIP_CLOSES_ON_RESIZE = { reloadPerViewport: true } as const;
 const KEEPS_DESKTOP_SCROLL = { reloadPerViewport: true } as const;
 const POPUP_ANCHORED_AT_FIRST_WIDTH = { reloadPerViewport: true } as const;
 const LIVE_PROGRESS_MOVES_ON = { reloadPerViewport: true } as const;
+const FREEZES_THE_CLOCK = { reloadPerViewport: true } as const;
 
 export const STATE_CATALOG: StateEntry[] = [
   // Project (pre-app: no project folder attached yet)
@@ -177,7 +179,7 @@ export const STATE_CATALOG: StateEntry[] = [
     pointer: 'keep',
     ...TOOLTIP_CLOSES_ON_RESIZE,
   },
-  { page: 'proofing', state: 'toast', description: 'Proofing, a toast visible' },
+  { page: 'proofing', state: 'toast', description: 'Proofing, a toast visible', ...FREEZES_THE_CLOCK },
   {
     page: 'proofing',
     state: 'no-daw',
@@ -676,6 +678,7 @@ export const STATE_CATALOG: StateEntry[] = [
       of: 'proofing/toast',
       reason: 'The global overlay is captured by asking Proofing to suggest vocabulary hints, the same flow as the Proofing toast.',
     },
+    ...FREEZES_THE_CLOCK,
   },
   {
     page: 'global',

@@ -212,9 +212,10 @@ export async function captureState(page: Page, entry: StateEntry, viewport: View
 // Every viewport of one state from one load: boot at the first viewport, drive once, then resize and capture at each of
 // `shared`. The captures and checks are the ones captureState makes. Each of `fresh` (a row's extraViewports: a width where
 // the layout switches, which a resize from a wide window does not reproduce, such as a tab strip scrolled to its active
-// tab on load) gets a freshly loaded page of its own. A driver that froze the page clock is the other exception: axe lets
-// time run again after the first shot (see runAxe), so the state may have moved on (a toast faded); every later viewport
-// then gets a freshly loaded page too.
+// tab on load) gets a freshly loaded page of its own, in the same browser context. A driver that freezes the page clock
+// cannot share a load or a context: axe lets time run again after the first shot (see runAxe), so the state moves on (a
+// toast fades), and the fake clock belongs to the context, so a second page cannot freeze it again. Its row needs
+// `reloadPerViewport`, and the test fails with that advice if it does not have it.
 export async function captureAcrossViewports(page: Page, entry: StateEntry, shared: Viewport[], fresh: Viewport[], driver: Driver): Promise<void> {
   const viewports = [...shared, ...fresh];
   // Each capture is given the time a test of its own had.
@@ -222,17 +223,18 @@ export async function captureAcrossViewports(page: Page, entry: StateEntry, shar
   const failures: string[] = [];
   let current = page;
   let problems: string[] = [];
-  let clockFrozen = false;
   for (const [index, viewport] of viewports.entries()) {
     await test.step(viewport.name, async () => {
-      if (index === 0 || clockFrozen || index >= shared.length) {
+      if (index === 0 || index >= shared.length) {
         if (index > 0) {
           if (current !== page) await current.close();
           current = await page.context().newPage();
           problems = [];
         }
         await boot(current, viewport, driver, problems);
-        clockFrozen ||= await current.evaluate(() => '__pwClock' in globalThis);
+        if (viewports.length > 1 && (await current.evaluate(() => '__pwClock' in globalThis))) {
+          throw new Error(`${entry.page}/${entry.state}: the driver froze the page clock, so the row needs reloadPerViewport: true in state-catalog.ts`);
+        }
       }
       failures.push(...(await captureAt(current, entry, viewport, problems)));
     });

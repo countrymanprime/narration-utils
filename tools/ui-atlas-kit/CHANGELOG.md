@@ -12,8 +12,9 @@ scaffold files (yours after `init`), so the **Adopt by hand** lines below are wh
   overflow, collapsed controls, axe). Every viewport is captured and checked even when an earlier one fails, and the
   failure names the viewport. The test's timeout is the per-test timeout times the number of viewports. A row's
   `extraViewports` each get a freshly loaded page (a width where the layout switches, which a resize from a wide window
-  does not reproduce), and so does every later viewport of a driver that froze the page clock (axe lets time run again
-  after the first shot, so the state may have moved on). Loading and driving was about two thirds of a capture's own time (measured on this repo's
+  does not reproduce). A driver that freezes the page clock needs `reloadPerViewport`: axe lets time run again after the
+  first shot, so the state moves on, and the fake clock belongs to the browser context, so a second page in it cannot
+  freeze it again. The test fails with that advice when such a row lacks it. Loading and driving was about two thirds of a capture's own time (measured on this repo's
   suite: load 0.77 s, drive 0.64 s, axe 0.45 s, the rest 0.2 s, median over 138 captures).
 - **Core:** `StateEntry.reloadPerViewport` (in `lib/types.ts`) keeps the old shape for one row: a test per viewport
   (`<page> / <state> / <viewport>`), each on a freshly loaded page, for a state whose driving or rendering depends on the

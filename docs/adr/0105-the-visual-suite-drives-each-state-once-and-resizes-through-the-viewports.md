@@ -23,11 +23,12 @@ and it gives the same state every time.
    (`global-setup.ts`) are unchanged.
 2. **A fresh load stays where a resize is not the same picture.** A row's `extraViewports` (the Settings reflow width,
    ADR 0061) always get a fresh load: below `md` the layout switches (the section tab strip scrolls to its active tab on
-   load), which a resize from a wide window does not reproduce. A driver that froze the page clock gets a fresh load at
-   every later viewport, because axe lets time run again after the first shot. A row with `reloadPerViewport: true`
+   load), which a resize from a wide window does not reproduce. A state whose driver freezes the page clock (the two toasts)
+   reloads per viewport: axe lets time run again after the first shot, and Playwright's fake clock belongs to the browser
+   context, so it cannot be frozen twice in one test; the test fails with that advice if such a row does not reload. A row with `reloadPerViewport: true`
    (`lib/types.ts`) keeps the old shape, a test per viewport on a fresh page each, and says why through the constant it
    spreads in `state-catalog.ts`: `TOOLTIP_CLOSES_ON_RESIZE`, `KEEPS_DESKTOP_SCROLL`, `POPUP_ANCHORED_AT_FIRST_WIDTH`,
-   `LIVE_PROGRESS_MOVES_ON`.
+   `LIVE_PROGRESS_MOVES_ON`, `FREEZES_THE_CLOCK`.
 3. **Which rows reload was measured, not guessed.** The old suite and the new one ran on the same tree and every PNG was
    compared by hash. Two runs of the new suite differed on 2 captures (live playback and a failed-download state); those
    are noise. Of the rest, 24 rows differed at a resized viewport and now reload: 4 tooltips (closed by the resize), 18
@@ -39,7 +40,7 @@ and it gives the same state every time.
 ## Consequences
 
 - A local run of the suite went from 4.9 to 3.2 minutes on the same machine (4 workers), with every capture, check and
-  axe run still made. 126 of the 150 catalog rows are loaded and driven once instead of three or four times.
+  axe run still made. 124 of the 150 catalog rows are loaded and driven once instead of three or four times.
 - A resize is not a fresh load. A new state whose picture depends on how it was reached at a width (a scroll offset, an
   open tooltip or popup, live progress) must get `reloadPerViewport`; the way to find one is the comparison above (run
   the suite with and without the flag on the row and compare its PNGs), and the kit's CHANGELOG (0.3.5) says so.
