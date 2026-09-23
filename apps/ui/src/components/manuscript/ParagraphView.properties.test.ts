@@ -1,7 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import type { ManuscriptNote } from '../../types';
-import { composeAnnotationPieces, resolveNoteAnchor } from './ParagraphView';
+import { composeAnnotationPieces, resolveNoteAnchor } from './annotations';
 
 // Emoji and other astral characters are two UTF-16 units each, which is where an offset bug shows.
 const anyText = fc.oneof(fc.string({ unit: 'grapheme', maxLength: 24 }), fc.string({ unit: 'binary', maxLength: 24 }));

@@ -267,7 +267,24 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Manuscript, the "Read aloud" dialog after clicking an earlier word ("Go back to here", teleprompter-manuscript-integration.prd.md Phase 4) - the highlight has jumped back to the clicked word without restarting the session',
   },
-
+  {
+    page: 'manuscript',
+    state: 'read-aloud-story-bible-entry',
+    description:
+      'Manuscript, the "Read aloud" dialog listening, after clicking a Story Bible name in the text (teleprompter-manuscript-integration.prd.md Phase 5) - the rail switches to its Story bible tab with the entry, read-only; the highlight and the text stay where they were',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-note-open',
+    description:
+      'Manuscript, the "Read aloud" dialog before a session, after clicking a note mark (Phase 5) - the rail switches to its Notes tab with that note current',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-rail-hidden',
+    description:
+      'Manuscript, the "Read aloud" dialog with its reading panel hidden (Phase 5) - the text takes the width, a "Show reading panel" button stays at the side',
+  },
   // Proofing
   { page: 'proofing', state: 'setup-default', description: 'Proofing, setup panel default selection' },
   { page: 'proofing', state: 'setup-alt-selection', description: 'Proofing, setup panel alternate model/worker/chunk selection' },

@@ -4,14 +4,18 @@ import {
   hydrateSession,
   initialSession,
   nextCursor,
+  marksOnWords,
   pacedStep,
   previewRows,
+  readerMarks,
+  segmentWords,
   reduceEvent,
   sessionFromState,
   splitWords,
   tokenize,
+  wordOffsets,
 } from './readerModel';
-import type { ManuscriptParagraph, TeleprompterPosition, TeleprompterScript, TeleprompterState } from '../../types';
+import type { GuideEntity, ManuscriptNote, ManuscriptParagraph, TeleprompterPosition, TeleprompterScript, TeleprompterState } from '../../types';
 
 const script: TeleprompterScript = {
   type: 'script',
@@ -234,5 +238,120 @@ describe('sessionFromState', () => {
     const state: TeleprompterState = { phase: 'idle', message: '', engine: null, chapter: null, script: null, position: null };
 
     expect(sessionFromState(state)).toEqual(initialSession);
+  });
+});
+
+describe('wordOffsets', () => {
+  it('gives each word the character range it occupies, with the same words splitWords finds', () => {
+    const text = '  Alice was\n beginning  ';
+    const offsets = wordOffsets(text);
+    expect(offsets.map(([start, end]) => text.slice(start, end))).toEqual(splitWords(text).words);
+    expect(offsets).toEqual([
+      [2, 7],
+      [8, 11],
+      [13, 22],
+    ]);
+  });
+});
+
+const mark = (id: string, start: number, end: number) => ({ id, start, end, value: id });
+
+describe('marksOnWords', () => {
+  const text = 'Mr. Hale said Hale’s coat was wet';
+
+  it('covers every word a mark touches, so a name across a word boundary marks both words', () => {
+    expect(marksOnWords(text, [mark('mr-hale', 0, 8)])).toEqual([{ id: 'mr-hale', from: 0, to: 2, value: 'mr-hale' }]);
+  });
+
+  it('marks the whole word when a mention is only part of it (a possessive)', () => {
+    expect(marksOnWords(text, [mark('hale', 14, 18)])).toEqual([{ id: 'hale', from: 3, to: 4, value: 'hale' }]);
+  });
+
+  it('marks nothing for a range that holds only whitespace, and clamps a range that runs off the text', () => {
+    expect(marksOnWords(text, [mark('gap', 3, 4)])).toEqual([]);
+    expect(marksOnWords(text, [mark('tail', 27, 500), mark('head', -5, 2)])).toEqual([
+      { id: 'tail', from: 5, to: 7, value: 'tail' },
+      { id: 'head', from: 0, to: 1, value: 'head' },
+    ]);
+  });
+
+  it('drops a mark with an empty, reversed or non-numeric range', () => {
+    expect(marksOnWords(text, [mark('empty', 4, 4), mark('reversed', 9, 4), mark('nan', Number.NaN, 8)])).toEqual([]);
+  });
+});
+
+describe('segmentWords', () => {
+  const word = (id: string, from: number, to: number) => ({ id, from, to, value: id });
+
+  it('returns one unmarked segment for a row without marks', () => {
+    expect(segmentWords(4, [])).toEqual([{ from: 0, to: 4, marks: [] }]);
+  });
+
+  it('splits at every mark boundary and lists the longer mark first, so the shorter one is the inner layer', () => {
+    const entity = word('entity', 1, 4);
+    const note = word('note', 2, 3);
+    expect(segmentWords(5, [note, entity])).toEqual([
+      { from: 0, to: 1, marks: [] },
+      { from: 1, to: 2, marks: [entity] },
+      { from: 2, to: 3, marks: [entity, note] },
+      { from: 3, to: 4, marks: [entity] },
+      { from: 4, to: 5, marks: [] },
+    ]);
+  });
+
+  it('orders marks of the same length by id, and ignores the part of a mark past the row', () => {
+    const b = word('b', 0, 2);
+    const a = word('a', 0, 2);
+    expect(segmentWords(1, [b, a])).toEqual([{ from: 0, to: 1, marks: [a, b] }]);
+  });
+});
+
+const entity = (id: string, name: string, aliases: string[] = []): GuideEntity => ({
+  id,
+  canonical_name: name,
+  aliases: aliases.map((text) => ({ text, pronunciation: { ipa: '', source: '', confidence: '' }, occurrences: [] })),
+  category: 'Character',
+  occurrences: [],
+  occurrence_count: 0,
+  pronunciation: { ipa: '', source: '', confidence: '' },
+  description: { text: '', evidence: {} },
+  personality_notes: [],
+  relationships: [],
+  properties: [],
+  locked: false,
+  review_state: 'approved',
+});
+
+describe('readerMarks', () => {
+  const hale = entity('e1', 'Mr. Hale', ['Hale']);
+  const withEntity = (text: string, index = 0): ManuscriptParagraph => ({ ...paragraph(`p${index}`, index, text), entityIds: ['e1'] });
+  const note = (anchorStart: number, anchorEnd: number, anchorText: string, index = 0): ManuscriptNote => ({
+    id: 'n1',
+    chapter: 'c1',
+    paragraph: index,
+    text: 'Softer here.',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    anchorStart,
+    anchorEnd,
+    anchorText,
+  });
+
+  it('maps entity mentions and note anchors onto the words of the paragraph row they sit in, keyed by paragraph id', () => {
+    const marks = readerMarks([withEntity('Then Mr. Hale left the room')], [hale], [note(14, 27, 'left the room')]);
+    expect(marks.get('p0')).toEqual([
+      { id: 'entity-e1-0-5', from: 1, to: 3, value: { kind: 'entity', entity: hale } },
+      { id: 'entity-e1-1-9', from: 2, to: 3, value: { kind: 'entity', entity: hale } },
+      { id: 'note-n1', from: 3, to: 6, value: { kind: 'note', note: expect.objectContaining({ id: 'n1' }) } },
+    ]);
+  });
+
+  it('re-locates a drifted note anchor the same way the Manuscript reader does', () => {
+    const marks = readerMarks([paragraph('p0', 0, 'An edit moved the quiet door here')], [], [note(0, 5, 'quiet door')]);
+    expect(marks.get('p0')).toEqual([{ id: 'note-n1', from: 4, to: 6, value: { kind: 'note', note: expect.objectContaining({ id: 'n1' }) } }]);
+  });
+
+  it('leaves out paragraphs with no marks and notes that belong to another paragraph', () => {
+    const marks = readerMarks([paragraph('p0', 0, 'Nothing here'), paragraph('p1', 1, 'Or here')], [hale], [note(0, 7, 'Nothing', 5)]);
+    expect(marks.size).toBe(0);
   });
 });

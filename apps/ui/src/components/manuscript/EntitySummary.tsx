@@ -35,8 +35,10 @@ export const CAT_DOT_CLASS = 'size-2 flex-none rounded-full';
 // A read-only mirror of the Story Bible's own detail panel (GuideDetail),
 // for previewing an entity from the Manuscript without leaving the reader.
 // Editing (name, aliases, relationships, lock/delete) stays exclusive to
-// Story Bible - "Open in Story Bible" is the way in for that.
-export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jumpToLine: (chapter: string, paragraph: number) => void }) {
+// Story Bible - "Open in Story Bible" is the way in for that. Without `jumpToLine` the evidence has no "Go to line"
+// buttons: the read-aloud rail (teleprompter-manuscript-integration.prd.md Phase 5) shows the entry beside the text being
+// read, where leaving for another line would abandon the reading.
+export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jumpToLine?: (chapter: string, paragraph: number) => void }) {
   const evidence = allEvidence(entity);
   return (
     <div className="space-y-4">
@@ -161,11 +163,13 @@ export function EntitySummary({ entity, jumpToLine }: { entity: GuideEntity; jum
                   )}
                 </p>
               </div>
-              <TooltipTarget text="Go to this line in Manuscript">
-                <IconButton label="Go to line in Manuscript" onClick={() => jumpToLine(item.chapter, item.paragraph)} className="flex-none">
-                  <FontAwesomeIcon icon={faFileLines} />
-                </IconButton>
-              </TooltipTarget>
+              {jumpToLine && (
+                <TooltipTarget text="Go to this line in Manuscript">
+                  <IconButton label="Go to line in Manuscript" onClick={() => jumpToLine(item.chapter, item.paragraph)} className="flex-none">
+                    <FontAwesomeIcon icon={faFileLines} />
+                  </IconButton>
+                </TooltipTarget>
+              )}
             </div>
           ))
         )}
