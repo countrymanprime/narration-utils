@@ -33,6 +33,12 @@
     "auto_start_launcher": "false"
   },
   "Delivery": {},
+  "RecordingCoverage": {
+    "min_paragraph_present": "0.95",
+    "max_missing_run": "3",
+    "max_misread_run": "8",
+    "min_anchor_run": "3"
+  },
   "TakeReview": {
     "full_coverage_threshold": "0.9",
     "near_duplicate_quality_threshold": "0.97",

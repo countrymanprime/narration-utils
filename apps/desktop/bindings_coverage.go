@@ -9,6 +9,7 @@ import (
 
 	"github.com/countrymanprime/narration-utils/shell/internal/coverage"
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
+	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 )
 
 // The recording coverage bindings (recording-coverage-analysis.prd.md Phase 5). A check runs only when the narrator
@@ -19,10 +20,15 @@ import (
 // coverageStateEvent is the live event every state change of a check is sent as.
 const coverageStateEvent = "coverage:state"
 
-// coverageAlignment is the alignment every check and every read uses. The PRD's Phase 7 moves the thresholds into
-// settings; until then the Proposed, uncalibrated defaults (Q3, Q15) are the only values, so a result is never stale
-// because a start and a read disagreed.
-var coverageAlignment = coverage.DefaultAlignmentParams
+// coverageSettings are the narrator's four recording check settings (Q3) from the layered store. Every check and every
+// read takes its alignment from here, so a start and a read cannot disagree; a changed alignment makes older results
+// stale (Q13 B), a changed threshold only changes how a result is judged.
+func coverageSettings(store *settings.Store) coverage.Settings {
+	return coverage.ResolveSettings(func(key string) string {
+		value, _ := store.Effective(coverage.SettingsTool, key, "")
+		return value
+	})
+}
 
 // coverageIdle is the state reported when no project (so no coverage service) is open.
 var coverageIdle = coverage.State{Phase: coverage.PhaseIdle, Message: "Open a project, save it in REAPER, then check a chapter's recording."}
@@ -57,7 +63,7 @@ func (h *Host) coverageStart(chapterID string) (any, error) {
 	state, err := svc.coverage.Start(coverage.Request{
 		ChapterID:     chapterID,
 		Transcription: coverage.Transcription{Model: modelID, ModelDir: modelDir},
-		Alignment:     coverageAlignment,
+		Alignment:     coverageSettings(svc.settings).Alignment,
 	})
 	if reason, refused := coverage.ReasonOf(err); refused {
 		return coverageRefusal(reason, err.Error()), nil
@@ -92,11 +98,12 @@ func (h *Host) CoverageCancel() (string, error) {
 // CoverageResult reads a chapter's newest complete check back and says whether it is current, stale or never, with
 // reasons (coverage.ResultView). It never runs anything (Q14).
 func (h *Host) CoverageResult(chapterID string) (string, error) {
-	service := h.services().coverage
+	svc := h.services()
+	service := svc.coverage
 	if service == nil {
 		return encodeBinding(coverage.ResultView{ChapterID: chapterID, State: evidence.StateNever, Reasons: []string{string(coverage.ReasonNoProject)}}, nil)
 	}
-	result, err := service.Result(chapterID, coverageAlignment)
+	result, err := service.Result(chapterID, coverageSettings(svc.settings).Alignment)
 	if err != nil {
 		return "", err
 	}
@@ -104,9 +111,9 @@ func (h *Host) CoverageResult(chapterID string) (string, error) {
 }
 
 // coverageRecordedFractions is the manuscript service's recordedFraction provider: measured fractions of chapters
-// with a current, complete check (D11). It is bound to one project's coverage service in configureLocked.
-func coverageRecordedFractions(service *coverage.Service) func() map[string]float64 {
-	return func() map[string]float64 { return service.RecordedFractions(coverageAlignment) }
+// with a current, complete check (D11). It is bound to one project's coverage service and settings in configureLocked.
+func coverageRecordedFractions(service *coverage.Service, store *settings.Store) func() map[string]float64 {
+	return func() map[string]float64 { return service.RecordedFractions(coverageSettings(store).Alignment) }
 }
 
 // emitCoverage is the coverage service's state callback: a check that just ended is reported once as a job end, then

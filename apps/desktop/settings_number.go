@@ -34,6 +34,14 @@ var numberSpecs = map[string]map[string]numberSpec{
 		"true_peak_dbtp_max":   {min: bound(-60), max: bound(0), step: bound(0.1), unit: "dBTP"},
 		"noise_floor_dbfs_max": {min: bound(-120), max: bound(0), step: bound(0.1), unit: "dBFS"},
 	},
+	// The recording check's settings (recording-coverage-analysis.prd.md Q3). The ranges keep a typo out: a share is a
+	// fraction of the paragraph's words, the runs are whole words, and an anchor is at least one word.
+	"RecordingCoverage": {
+		"min_paragraph_present": {min: bound(0), max: bound(1), step: bound(0.01)},
+		"max_missing_run":       {min: bound(0), max: bound(200), step: bound(1), unit: "words"},
+		"max_misread_run":       {min: bound(0), max: bound(200), step: bound(1), unit: "words"},
+		"min_anchor_run":        {min: bound(1), max: bound(50), step: bound(1), unit: "words"},
+	},
 }
 
 // numberPairs are a tool's lowest and highest keys of one quantity: the effective lowest may not be above the effective

@@ -344,7 +344,7 @@ func (h *Host) configureLocked(next config) {
 	}, h.coverageLauncherLocked(), h.emitCoverage)
 	// A chapter's recordedFraction is the measured share of its words from a current, complete check, and absent otherwise (D11,
 	// Q12 A); reading it never starts a check (Q14).
-	h.manuscript.SetRecordedFractions(coverageRecordedFractions(h.coverage))
+	h.manuscript.SetRecordedFractions(coverageRecordedFractions(h.coverage, settingsStore))
 	// The line-identity service is the second consumer of the same bridge client (bridge.Client fans events
 	// out by tag and run, ADR 0068), so pollTranscript's Drain call already pumps its events too. Phase 7
 	// (reaper-automation-follow-through PRD) is the UI trigger, so it now emits h.emitLineIdentity the way
@@ -1041,6 +1041,16 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"sample_peak_dbfs_max", "Sample peak, highest", "number", nil},
 		{"true_peak_dbtp_max", "True peak, highest", "number", nil},
 		{"noise_floor_dbfs_max", "Noise floor, highest", "number", nil},
+	},
+	// RecordingCoverage is the recording check's four settings (docs/prds/recording-coverage-analysis.prd.md Q3, Phase 7),
+	// read by coverage.ResolveSettings. The two thresholds judge a stored result on read; the two alignment settings are
+	// in a result's parameter hash, so changing one makes older results stale (Q13 B). Their defaults are Proposed and
+	// uncalibrated (Q15) until Phase 8.
+	"RecordingCoverage": {
+		{"min_paragraph_present", "Share of each paragraph that must be read", "number", nil},
+		{"max_missing_run", "Longest run of missing words allowed", "number", nil},
+		{"max_misread_run", "Longest misread still counted as read", "number", nil},
+		{"min_anchor_run", "Shortest match that counts as read", "number", nil},
 	},
 }
 

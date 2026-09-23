@@ -15,6 +15,7 @@ import type { ThemePreference } from '../../theme/theme';
 import { AboutPanel } from './AboutPanel';
 import { CreditsPanel } from './CreditsPanel';
 import { DawCatalogPanel } from './DawCatalogPanel';
+import { RecordingCheckSummary } from './RecordingCheckSummary';
 import { ScopedSetting } from './ScopedSetting';
 import { UpdatesPanel } from './UpdatesPanel';
 import type { Notify } from '../primitives/Toast';
@@ -24,6 +25,8 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'General', label: 'General', tool: 'General', scopes: ['global'] },
   { key: 'Appearance', label: 'Appearance', scopes: ['global'] },
   { key: 'Manuscript', label: 'Manuscript', tool: 'Manuscript', scopes: ['global', 'project'] },
+  // The recording check's thresholds and alignment (docs/prds/recording-coverage-analysis.prd.md Phase 7), Proposed and uncalibrated.
+  { key: 'RecordingCoverage', label: 'Recording check', tool: 'RecordingCoverage', scopes: ['global', 'project'] },
   { key: 'TranscriptCompare', label: 'Proofing', tool: 'TranscriptCompare', scopes: ['global', 'project'] },
   { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'] },
   // The narrator's own measurement limits (docs/prds/diagnostics-delivery-and-cleanup-tools.prd.md Phase 2); none ship.
@@ -433,6 +436,7 @@ export function Settings({
                     </div>
                   )}
                   {category === 'Delivery' && <DeliveryLimitsSummary fields={fields} scope={scope} />}
+                  {category === 'RecordingCoverage' && <RecordingCheckSummary fields={fields} scope={scope} />}
                   {category === 'Piper' && (
                     <div className="mb-4 space-y-3 rounded-md p-3 text-sm" style={{ background: 'var(--surface-2)' }}>
                       <div>
