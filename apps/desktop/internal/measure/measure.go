@@ -1,8 +1,10 @@
 // Package measure computes generic audiobook delivery measurements from a
-// WAV file: integrated loudness (BS.1770-4), RMS, sample and true peak, and
-// the noise floor of the quietest room-tone window. It reads the file
-// directly, so it works in a standalone launch with no REAPER running, and
-// it never modifies audio.
+// WAV file, or a time range of one (range.go): integrated loudness
+// (BS.1770-4), RMS, sample and true peak, the noise floor of the quietest
+// room-tone window, and clipping (clipping.go). It reads the file directly,
+// so it works in a standalone launch with no REAPER running, and it never
+// modifies audio. takemetrics.go builds per-take evidence on top of a
+// range measurement.
 //
 // The measurements are deliberately distributor-neutral. Compliance with a
 // particular delivery specification is expressed as a Profile (see
@@ -46,6 +48,20 @@ type Report struct {
 	// recording has no measurable room tone there, and reporting -infinity
 	// would look like a perfect floor.
 	DigitalSilentWindows int `json:"digital_silent_windows"`
+
+	// FullScaleSamples counts samples pinned at the format's limit, in any
+	// channel. ClipRunCount counts runs of minClipRunSamples or more of
+	// them in one channel (clipping); ClipRuns lists the first
+	// maxReportedClipRuns of those runs, in the order they end. Zero is a
+	// measurement: clean audio reports 0 and an empty list, never null.
+	FullScaleSamples int64     `json:"full_scale_samples"`
+	ClipRunCount     int       `json:"clip_run_count"`
+	ClipRuns         []ClipRun `json:"clip_runs"`
+
+	// Range is the requested range when the report measures part of a
+	// file (AnalyzeRange); DurationSeconds is then how much of that range
+	// the file actually held. Nil for a whole-file report.
+	Range *Range `json:"range,omitempty"`
 }
 
 // Analyze measures WAV audio read from r.
@@ -54,49 +70,79 @@ func Analyze(r io.Reader) (Report, error) {
 	if err != nil {
 		return Report{}, err
 	}
-	format := reader.Format()
+	return measureFrames(reader, math.MaxInt64)
+}
 
-	loudness := newLoudnessMeter(format.SampleRate, format.Channels)
-	peaks := newTruePeakMeter(format.SampleRate, format.Channels)
-	floor := newNoiseFloorMeter(format.SampleRate, format.Channels)
-	var energy float64
-	var frames int64
-
-	for {
-		block, err := reader.Read(readBlockFrames)
+// measureFrames measures up to limit frames from the reader's position.
+func measureFrames(reader *WAVReader, limit int64) (Report, error) {
+	meters := newMeterSet(reader.Format())
+	for meters.frames < limit {
+		block, err := reader.Read(int(min(readBlockFrames, limit-meters.frames)))
 		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
 			return Report{}, err
 		}
-		loudness.Add(block)
-		peaks.Add(block)
-		floor.Add(block)
-		for _, channel := range block {
-			for _, s := range channel {
-				energy += s * s
-			}
+		meters.Add(block)
+	}
+	return meters.Report(), nil
+}
+
+// meterSet runs every measurement over the same stream of blocks.
+type meterSet struct {
+	format   Format
+	loudness *loudnessMeter
+	peaks    *truePeakMeter
+	floor    *noiseFloorMeter
+	clips    *clipMeter
+	energy   float64
+	frames   int64
+}
+
+func newMeterSet(format Format) *meterSet {
+	return &meterSet{
+		format:   format,
+		loudness: newLoudnessMeter(format.SampleRate, format.Channels),
+		peaks:    newTruePeakMeter(format.SampleRate, format.Channels),
+		floor:    newNoiseFloorMeter(format.SampleRate, format.Channels),
+		clips:    newClipMeter(format),
+	}
+}
+
+func (m *meterSet) Add(block [][]float64) {
+	m.loudness.Add(block)
+	m.peaks.Add(block)
+	m.floor.Add(block)
+	m.clips.Add(block)
+	for _, channel := range block {
+		for _, s := range channel {
+			m.energy += s * s
 		}
-		frames += int64(len(block[0]))
 	}
+	m.frames += int64(len(block[0]))
+}
 
-	peaks.Flush()
-
+func (m *meterSet) Report() Report {
+	m.peaks.Flush()
+	m.clips.Flush()
 	report := Report{
-		SampleRate:           format.SampleRate,
-		Channels:             format.Channels,
-		DurationSeconds:      float64(frames) / float64(format.SampleRate),
-		IntegratedLUFS:       loudness.IntegratedLUFS(),
-		SamplePeakdBFS:       ampToDB(peaks.SamplePeak()),
-		TruePeakdBTP:         ampToDB(peaks.TruePeak()),
-		NoiseFloordBFS:       floor.FloordBFS(),
-		DigitalSilentWindows: floor.silentWindows,
+		SampleRate:           m.format.SampleRate,
+		Channels:             m.format.Channels,
+		DurationSeconds:      float64(m.frames) / float64(m.format.SampleRate),
+		IntegratedLUFS:       m.loudness.IntegratedLUFS(),
+		SamplePeakdBFS:       ampToDB(m.peaks.SamplePeak()),
+		TruePeakdBTP:         ampToDB(m.peaks.TruePeak()),
+		NoiseFloordBFS:       m.floor.FloordBFS(),
+		DigitalSilentWindows: m.floor.silentWindows,
+		FullScaleSamples:     m.clips.fullScale,
+		ClipRunCount:         m.clips.runCount,
+		ClipRuns:             m.clips.runs,
 	}
-	if frames > 0 {
-		report.RMSdBFS = energyToDB(energy / float64(frames*int64(format.Channels)))
+	if m.frames > 0 {
+		report.RMSdBFS = energyToDB(m.energy / float64(m.frames*int64(m.format.Channels)))
 	}
-	return report, nil
+	return report
 }
 
 // AnalyzeFile measures the WAV file at path and records the path.
