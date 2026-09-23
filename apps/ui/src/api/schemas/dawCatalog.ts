@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { DawCatalogEntry } from '../contracts/dawCatalog';
 import { listFromNull } from './base';
 
-export const dawCatalogEntrySchema = z.object({
+const dawCatalogEntrySchema = z.object({
   id: z.string(),
   name: z.string(),
   publisher: z.string(),

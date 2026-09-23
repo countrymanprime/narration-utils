@@ -8,11 +8,11 @@ import (
 
 // TestCatalogIsALiteralNotAFetch asserts the catalog is a compile-time Go
 // value with no network- or file-shaped construction anywhere in reach: the
-// PRD's URL-integrity success metric ("a unit test asserting the catalog is
-// a literal, not a fetch", docs/prds/daw-selection-and-acquisition.prd.md)
-// and its Decisions Log ("URL source: hardcoded Go constants ... never
-// fetched or user-editable"). A real network call in this test process would
-// fail sandboxed CI, so the strongest test available is: every entry's
+// URL-integrity success metric ("a unit test asserting the catalog is a
+// literal, not a fetch") from docs/architecture/daw-integration.md's "URL
+// source" decision ("hardcoded Go constants ... never fetched or
+// user-editable"). A real network call in this test process would fail
+// sandboxed CI, so the strongest test available is: every entry's
 // DownloadURL parses as an absolute https URL, and the catalog slice is
 // non-empty and stable across calls (a fetch would need an argument this
 // function does not take).

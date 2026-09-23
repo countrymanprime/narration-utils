@@ -8,8 +8,8 @@ import (
 )
 
 // DawCatalogEntry is what DawCatalogList answers per catalog entry: the
-// Phase 1 catalog copy plus its on-demand detection fact
-// (docs/prds/daw-selection-and-acquisition.prd.md Phase 2). Path and Source
+// catalog copy plus its on-demand detection fact
+// (docs/architecture/daw-integration.md). Path and Source
 // are empty when Installed is false.
 type DawCatalogEntry struct {
 	ID          string `json:"id"`

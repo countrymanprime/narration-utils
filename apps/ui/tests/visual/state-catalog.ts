@@ -325,14 +325,21 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'settings',
     state: 'global-daw',
     description:
-      'Settings, Global scope / DAW Integration category, with the DAW catalog panel showing REAPER detected (docs/prds/daw-selection-and-acquisition.prd.md Phase 2)',
+      'Settings, Global scope / DAW Integration category, with the DAW catalog panel showing REAPER detected and a REAPER project already linked, so only the "Check again" action shows (docs/architecture/daw-integration.md)',
     ...REFLOW,
   },
   {
     page: 'settings',
     state: 'global-daw-not-detected',
     description:
-      'Settings, Global scope / DAW Integration category with REAPER not detected (?mockDawNotDetected=1, PRD daw-selection-and-acquisition.prd.md Phase 2): the not-detected dot and the "Get REAPER" button that opens the vendor\'s download page',
+      'Settings, Global scope / DAW Integration category with REAPER not detected (?mockDawNotDetected=1, docs/architecture/daw-integration.md): the not-detected dot and the "Get REAPER" button that opens the vendor\'s download page',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'global-daw-handoff',
+    description:
+      'Settings, Global scope / DAW Integration category with REAPER detected but no REAPER project linked yet (?mockNoDaw=1, docs/architecture/daw-integration.md): the "Link a REAPER project file" handoff button next to the detected entry, and the "Check again" action below it',
     ...REFLOW,
   },
   { page: 'settings', state: 'global-manuscript', description: 'Settings, Global scope / Manuscript category (note color picker)', ...REFLOW },

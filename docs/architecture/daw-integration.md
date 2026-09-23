@@ -46,3 +46,47 @@ REAPER never parses this JSON. The Wails host owns setting resolution and passes
 - A REAPER adapter can navigate, loop, and add an approved marker from a valid finding.
 - Failure to resolve a stale GUID produces a reviewable warning and does not operate on an adjacent item.
 - Audacity planning never requires REAPER ExtState or take-marker semantics.
+
+## The DAW catalog and "Get it" flow
+
+Upstream of everything else on this page: a first-time narrator has no DAW installed yet, and nothing above helps
+until one exists on the machine. `apps/desktop/internal/dawcatalog` (Go) answers, on demand, whether a supported
+DAW appears to be installed, and Settings' global-scope **DAW Integration** category shows that fact with a way to
+get the DAW and a way to re-check after installing it. The app never downloads, verifies, bundles, or executes a
+DAW installer — it only opens the vendor's own download page in the narrator's default browser and reads
+registry/filesystem state.
+
+**Catalog.** `dawcatalog.Catalog` is a Go literal — today just `dawcatalog.REAPER` (name, publisher, one neutral
+licensing line, and `reaper.fm`'s own download-page URL) — never loaded from a file or fetched at runtime, so the
+destination of every "Get it" click is auditable in code review. Audacity has no entry yet: it is deferred until
+`docs/roadmap.md`'s own precondition (a proven shared contract and REAPER workflow) is met, to avoid advertising a
+capability with no working adapter behind it.
+
+**Detection.** `dawcatalog.Detect`/`DetectAll` run on demand, never polled, behind a fakeable `Detector` interface.
+The Windows lookup is `apps/desktop/internal/daw.LocateReaperExecutable` — the same registry-then-file-association
+locator `project-workspace-and-daw-link` Phase 6 built and verified against a real REAPER install (ADR 0092) — so
+this package answers "is a supported DAW here" with the identical fact that PRD's launcher already resolves,
+instead of a second, possibly-drifting lookup. A portable REAPER install that never registers itself is a soft
+false negative: the narrator can still use "Get REAPER" or their own copy, and nothing here blocks any feature on
+detection (see below).
+
+**The UI.** `Host.DawCatalogList()` returns the catalog plus each entry's live detection state; `Host.DawCatalogOpenDownloadPage(id)` looks the id up server-side in `dawcatalog.Catalog` and calls `runtime.BrowserOpenURL` — the id, not a URL, crosses the Wails boundary, so nothing UI-supplied can pick an arbitrary destination (the same trusted-URL discipline `update.go`'s `openReleaseNotes` already uses for release notes). `DawCatalogPanel` (`apps/ui/src/components/settings/DawCatalogPanel.tsx`), shown in Settings' global-scope DAW Integration category:
+
+- Lists each entry with a detected/not-detected dot and its publisher/licence line.
+- Offers a **"Get `<name>`"** button on an undetected entry, which opens the vendor's download page; the button
+  disables and reads "Opening…" while the browser call is in flight, so a narrator cannot open two tabs.
+- Offers a **"Check again"** button that re-runs the same detection call the panel's mount already makes (one call
+  site, two triggers — the same pattern `LocalAssets`' mount-plus-"Try again" uses), reading "Checking…" and
+  disabled meanwhile, so a narrator who just installed a DAW sees it detected without leaving Settings.
+- Offers a **"Link a REAPER project file"** handoff button on a detected-but-not-yet-linked entry, which calls the
+  one shared `linkDawFile()` action Settings' project-scoped DAW panel, the header pill, and the Tracks page
+  already use (`project-workspace-and-daw-link.prd.md`, W19) — no separate binding, no new file dialog. It is
+  hidden once a project is already linked, since it would have nothing left to offer.
+
+**What detection does not do.** It never gates a feature: Tracks and Proofing are still gated on a *linked* project
+file (see above), not on whether a DAW was *detected*. This keeps the two facts — "is a DAW on this machine" and
+"is a DAW file linked to this project" — from becoming a second, redundant gate a narrator has to satisfy twice.
+
+**Trust boundary.** Registry/filesystem inspection to detect third-party software and opening a browser to a
+hardcoded, compile-time URL are both covered in [the threat model](threat-model.md); the URL's spoofing risk is nil
+because it is a Go constant, never derived from anything the narrator or network supplies.

@@ -2,10 +2,10 @@
 // workstations this suite can use, and reports on demand whether each one
 // appears to be installed.
 //
-// docs/prds/daw-selection-and-acquisition.prd.md Phase 1. This package never
-// downloads, verifies, or executes a DAW installer, and never fetches its
-// catalog from anywhere — every entry below is a Go literal, checked in
-// code review, per the PRD's Decisions Log ("URL source: hardcoded Go
+// See docs/architecture/daw-integration.md's "DAW catalog and Get it flow"
+// section. This package never downloads, verifies, or executes a DAW
+// installer, and never fetches its catalog from anywhere — every entry
+// below is a Go literal, checked in code review ("URL source: hardcoded Go
 // constants, one per DAW, never fetched or user-editable"). It answers only
 // "is a supported DAW installed" as a fact for a narrator with none; it does
 // not decide *how* to launch one (that stays

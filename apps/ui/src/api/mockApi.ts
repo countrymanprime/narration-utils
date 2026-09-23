@@ -306,8 +306,8 @@ export function createMockApi(
     /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
     dawLinkMismatch?: boolean;
     /**
-     * Whether `dawCatalogList()`'s REAPER entry reports installed (docs/prds/daw-selection-and-acquisition.prd.md
-     * Phase 2). Defaults to true; false shows the not-detected state and its "Get REAPER" button.
+     * Whether `dawCatalogList()`'s REAPER entry reports installed (docs/architecture/daw-integration.md).
+     * Defaults to true; false shows the not-detected state and its "Get REAPER" button.
      */
     dawCatalogInstalled?: boolean;
   } = {},
@@ -347,7 +347,7 @@ export function createMockApi(
   let dawFileLinked = initial.dawFileLinked ?? true;
   let dawRppPath = `${projectFolder}/${basename(projectFolder)}.rpp`;
   // Independent of dawFileLinked/dawReachable: a Phase 1 detection fact about the machine, not about this
-  // project's link (PRD daw-selection-and-acquisition.prd.md). Defaults to true so the default capture shows
+  // project's link (docs/architecture/daw-integration.md). Defaults to true so the default capture shows
   // REAPER detected; ?mockDawNotDetected=1 flips it for the not-detected + "Get REAPER" state.
   const dawCatalogInstalled = initial.dawCatalogInstalled ?? true;
   const DAW_CATALOG: DawCatalogEntry[] = [

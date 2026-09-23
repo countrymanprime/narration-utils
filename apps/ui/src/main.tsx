@@ -33,8 +33,8 @@ const mockNoRpp = mockParams.has('mockNoRpp');
 // Tracks/Settings show their unlinked DAW-link controls. The mock otherwise defaults `dawFileLinked` to true so every
 // other capture (and App.test.tsx's default click into Proofing) keeps working without this param.
 const mockNoDaw = mockParams.has('mockNoDaw');
-// `?mockDawNotDetected=1` makes the DAW catalog panel (Settings > DAW Integration, PRD daw-selection-and-
-// acquisition.prd.md Phase 2) report REAPER as not detected, so its "Get REAPER" button can be seen without a host.
+// `?mockDawNotDetected=1` makes the DAW catalog panel (Settings > DAW Integration, docs/architecture/
+// daw-integration.md) report REAPER as not detected, so its "Get REAPER" button can be seen without a host.
 const mockDawNotDetected = mockParams.has('mockDawNotDetected');
 // `?mockNoManuscript=1` boots a project with no manuscript imported yet, so
 // Home shows its manuscript-not-found banner and Proofing/Story Bible are locked.

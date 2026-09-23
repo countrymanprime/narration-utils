@@ -261,10 +261,10 @@ export function Settings({
                     void save();
                   }}
                 >
-                  {/* The DAW catalog and "Get it" flow (docs/prds/daw-selection-and-acquisition.prd.md Phase 2): a
+                  {/* The DAW catalog and "Get it" flow (docs/architecture/daw-integration.md): a
                       machine-wide detection fact, independent of any linked project, so it lives above the
                       project-scoped DAW connection facts below. */}
-                  <DawCatalogPanel notify={notify} />
+                  <DawCatalogPanel notify={notify} dawFileLinked={data.dawFileLinked} onLinkDawFile={onLinkDawFile} />
                   {/* Truthful about what the host actually knows (PRD W15): reachability is a real Phase 7 fact now
                       (a live heartbeat), not the permanent "Connected" claim Phase 3 shipped. */}
                   <div className="flex items-center gap-3 rounded-md p-3" style={{ background: 'var(--surface-2)' }}>

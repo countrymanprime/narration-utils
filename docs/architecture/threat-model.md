@@ -131,7 +131,7 @@ Boundary: the Go host and the Lua bridge in REAPER exchange files in one session
 
 ### 9. DAW detection and the download-page open (not in `SECURITY.md`; new boundary)
 
-Boundary: the Go host reads Windows registry keys and well-known filesystem paths to detect a third-party DAW, and opens a hardcoded, compile-time URL in the narrator's default browser ([DAW selection and acquisition](../prds/daw-selection-and-acquisition.prd.md) Phases 1-2; `apps/desktop/internal/dawcatalog`, `apps/desktop/dawcatalog.go`). The app never downloads, verifies, bundles or executes a DAW installer.
+Boundary: the Go host reads Windows registry keys and well-known filesystem paths to detect a third-party DAW, and opens a hardcoded, compile-time URL in the narrator's default browser ([the DAW catalog and "Get it" flow](daw-integration.md#the-daw-catalog-and-get-it-flow); `apps/desktop/internal/dawcatalog`, `apps/desktop/dawcatalog.go`). The app never downloads, verifies, bundles or executes a DAW installer.
 
 | # | Threat | Existing mitigation | Residual, owner |
 | --- | --- | --- | --- |
