@@ -180,6 +180,8 @@ export function TakeReviewScan(arg1:string):Promise<string>;
 
 export function TeleprompterDevices():Promise<string>;
 
+export function TeleprompterLocate(arg1:string,arg2:string,arg3:string):Promise<string>;
+
 export function TeleprompterSeek(arg1:number):Promise<string>;
 
 export function TeleprompterStart(arg1:Record<string, string>):Promise<string>;

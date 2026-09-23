@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTeleprompterMock } from './teleprompterMock';
+import { mockChapterTrackMatch } from './chapterTrackMatchMock';
 import { tokenize } from '../components/teleprompter/readerModel';
 import type { ManuscriptChapter, ManuscriptParagraph, TeleprompterEvent, TeleprompterState } from '../types';
 
@@ -14,6 +15,31 @@ const paragraphs: ManuscriptParagraph[] = [
   { id: 'p-2', chapterId: 'chapter-1', chapter: 'CHAPTER I', index: 1, text: sentence, entityIds: [] },
 ];
 const options = { chapter: 'chapter-1', device: 'Microphone (USB)' };
+const project = {
+  path: 'C:/Projects/Alice/Alice.rpp',
+  tracks: [
+    {
+      guid: '{T1}',
+      index: 0,
+      name: 'CHAPTER I',
+      color: '',
+      muted: false,
+      soloed: false,
+      items: [
+        {
+          guid: '{I1}',
+          position: 0,
+          length: 90,
+          name: 'ch1.wav',
+          sourceKind: 'WAVE',
+          sourceFile: 'C:/Projects/Alice/ch1.wav',
+          sourceAvailable: true,
+          supported: true,
+        },
+      ],
+    },
+  ],
+};
 
 function build(overrides: Partial<Parameters<typeof createTeleprompterMock>[0]> = {}) {
   return createTeleprompterMock({
@@ -21,6 +47,8 @@ function build(overrides: Partial<Parameters<typeof createTeleprompterMock>[0]> 
     chapters: () => chapters,
     paragraphs: () => paragraphs,
     assetRequired: () => undefined,
+    trackMatch: (chapterId) => mockChapterTrackMatch(chapterId, chapters, project, []),
+    tracksProject: project,
     devices: DEVICES,
     ...overrides,
   });
@@ -161,5 +189,38 @@ describe('teleprompter mock', () => {
     expect(state.position?.status).toBe(seed);
     if (seed === 'done') expect(state.position?.read).toBe(state.script?.tokens);
     else expect(state.position?.read).toBeGreaterThan(0);
+  });
+});
+
+describe('teleprompter mock locate', () => {
+  it('resumes a recorded chapter part-way, inside the sentence it reports', async () => {
+    const result = await build().teleprompterLocate('chapter-1');
+
+    if (result.status !== 'found' || !result.located?.sentence || result.located.word === null) throw new Error('expected a found resume word');
+    expect(result.tail).toEqual({ from: 60, to: 90 });
+    expect(result.located.sentence.start).toBeLessThan(result.located.word);
+    expect(result.located.sentence.end).toBeGreaterThanOrEqual(result.located.word);
+  });
+
+  it('asks for the model only once there is audio to read', async () => {
+    const required = {
+      status: 'asset_required' as const,
+      engine: 'whisper' as const,
+      model: {} as never,
+      installState: 'not_installed' as const,
+      downloadSize: 1,
+      diskSize: 1,
+      installPath: 'x',
+    };
+    const mock = build({
+      assetRequired: () => required,
+      tracksProject: { ...project, tracks: [] },
+      trackMatch: (id) => mockChapterTrackMatch(id, chapters, { ...project, tracks: [] }, []),
+    });
+
+    expect((await mock.teleprompterLocate('chapter-1')).status).toBe('no_track');
+    const locate = await build({ assetRequired: () => required }).teleprompterLocate('chapter-1');
+    expect(locate.status).toBe('asset_required');
+    expect(locate).not.toHaveProperty('engine');
   });
 });

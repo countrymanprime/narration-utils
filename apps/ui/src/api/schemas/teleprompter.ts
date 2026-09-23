@@ -5,11 +5,14 @@ import type {
   TeleprompterDevicesResult,
   TeleprompterEngine,
   TeleprompterEvent,
+  TeleprompterLocated,
+  TeleprompterLocateResult,
   TeleprompterPosition,
   TeleprompterScript,
   TeleprompterStartResult,
   TeleprompterState,
 } from '../contracts/teleprompter';
+import { chapterTrackMatchSchema, recordedEndSchema } from './chapterTrackMap';
 import { modelAssetRequiredSchema } from './whisper';
 
 // The live event stream (ADR 0021, ADR 0022): the sidecar prints one JSON object per line and the host relays each unchanged, so
@@ -91,3 +94,30 @@ export const recordedStreamSchema = z.object({
   tokens: z.number(),
   events: z.array(z.object({ t: z.number(), event: teleprompterPositionSchema })),
 });
+
+/** The sidecar's `locate` line (locate.py), as `TeleprompterLocate` carries it: a word and its sentence, or neither. */
+export const teleprompterLocatedSchema = z.object({
+  word: z.number().int().nonnegative().nullable(),
+  last: z.number().int().nonnegative().nullable(),
+  sentence: z.object({ start: z.number().int().nonnegative(), end: z.number().int().nonnegative(), text: z.string() }).nullable(),
+  confidence: z.number().min(0).max(1),
+  confident: z.boolean(),
+  matched: z.number().int().nonnegative(),
+  heard: z.number().int().nonnegative(),
+  runnerUp: z.number().int().nonnegative(),
+  tokens: z.number().int().nonnegative(),
+  heardText: z.string(),
+}) satisfies z.ZodType<TeleprompterLocated>;
+
+/** `TeleprompterLocate` (`apps/desktop/teleprompterlocate.go`): a status with the track match and what was read, or the first-use gate. */
+export const teleprompterLocateResultSchema = z.union([
+  modelAssetRequiredSchema,
+  z.object({
+    status: z.enum(['found', 'low_confidence', 'not_found', 'no_track', 'no_recording', 'source_missing', 'source_unsupported']),
+    match: chapterTrackMatchSchema,
+    track: z.object({ guid: z.string(), name: z.string(), index: z.number().int() }).nullable(),
+    recordedEnd: recordedEndSchema.nullable(),
+    tail: z.object({ from: z.number(), to: z.number() }).nullable(),
+    located: teleprompterLocatedSchema.nullable(),
+  }),
+]) satisfies z.ZodType<TeleprompterLocateResult>;

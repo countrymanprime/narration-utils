@@ -35,13 +35,14 @@ export type ChapterTrackCandidate = {
 };
 
 /** Where a track's recorded audio ends, as of the .rpp's last save: in project time, and in the source file the last
- * item plays (SECTION start + SOFFS + length * PLAYRATE). `approximate` when stretch markers or a looping section make
- * the source time inexact. */
+ * item plays (SECTION start + SOFFS + length * PLAYRATE), which starts at `sourceStart` (SECTION start + SOFFS).
+ * `approximate` when stretch markers or a looping section make the source time inexact. */
 export type RecordedEnd = {
   projectTime: number;
   itemGuid: string;
   takeGuid: string;
   sourceFile: string;
+  sourceStart: number;
   sourceTime: number;
   sourceAvailable: boolean;
   supported: boolean;

@@ -41,22 +41,28 @@ type chapterTrackMatch struct {
 // snapshot, so the manuscript, the mapping and the .rpp belong to the same
 // project even if a project switch lands mid-call.
 func (h *Host) chapterTrackMatchFor(chapterID string) (chapterTrackMatch, error) {
-	svc := h.services()
+	match, _, err := chapterTrackMatchIn(h.services(), chapterID)
+	return match, err
+}
+
+// chapterTrackMatchIn is chapterTrackMatchFor over one services snapshot; it also returns the parsed project, so a
+// caller (the tail-audio locate) can go on to a track the narrator picked without reading the .rpp again.
+func chapterTrackMatchIn(svc hostServices, chapterID string) (chapterTrackMatch, tracks.Project, error) {
 	documentID, store, err := mappingContext(svc)
 	if err != nil {
-		return chapterTrackMatch{}, err
+		return chapterTrackMatch{}, tracks.Project{}, err
 	}
 	chapters, err := manuscriptChapters(svc)
 	if err != nil {
-		return chapterTrackMatch{}, err
+		return chapterTrackMatch{}, tracks.Project{}, err
 	}
 	project, err := selectedProject(svc)
 	if err != nil {
-		return chapterTrackMatch{}, err
+		return chapterTrackMatch{}, tracks.Project{}, err
 	}
 	mappings, err := store.List(documentID)
 	if err != nil {
-		return chapterTrackMatch{}, err
+		return chapterTrackMatch{}, tracks.Project{}, err
 	}
 	confirmed := make(map[string]string, len(mappings))
 	for _, mapping := range mappings {
@@ -65,7 +71,7 @@ func (h *Host) chapterTrackMatchFor(chapterID string) (chapterTrackMatch, error)
 
 	result, err := chaptermatch.ForChapter(chapterID, chapters, project, confirmed)
 	if err != nil {
-		return chapterTrackMatch{}, fmt.Errorf("that chapter is not part of the current manuscript")
+		return chapterTrackMatch{}, tracks.Project{}, fmt.Errorf("that chapter is not part of the current manuscript")
 	}
 	match := chapterTrackMatch{
 		ChapterID:   chapterID,
@@ -87,7 +93,7 @@ func (h *Host) chapterTrackMatchFor(chapterID string) (chapterTrackMatch, error)
 			match.RecordedEnd = &end
 		}
 	}
-	return match, nil
+	return match, project, nil
 }
 
 // manuscriptChapters is the current manuscript's chapter list in the

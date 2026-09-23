@@ -32,7 +32,14 @@ import { creditsProjectValuesResultSchema, creditsRenderResultSchema, creditTemp
 import { dawCatalogListSchema } from './schemas/dawCatalog';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema, readySchema } from './schemas/system';
-import { teleprompterDevicesResultSchema, teleprompterEventSchema, teleprompterStartResultSchema, teleprompterStateSchema } from './schemas/teleprompter';
+import {
+  teleprompterDevicesResultSchema,
+  teleprompterEventSchema,
+  teleprompterLocatedSchema,
+  teleprompterLocateResultSchema,
+  teleprompterStartResultSchema,
+  teleprompterStateSchema,
+} from './schemas/teleprompter';
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
 import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
@@ -67,6 +74,12 @@ const GOLDEN: Record<string, z.ZodType> = {
   'teleprompter-devices.json': teleprompterDevicesResultSchema,
   'teleprompter-start-asset-required-whisper.json': teleprompterStartResultSchema,
   'teleprompter-start-asset-required-moonshine.json': teleprompterStartResultSchema,
+  // The sidecar's own `locate` line (locate.py), which the host checks and carries as `located`.
+  'teleprompter-locate.json': teleprompterLocatedSchema.extend({ type: z.literal('locate') }),
+  'teleprompter-locate-found.json': teleprompterLocateResultSchema,
+  'teleprompter-locate-no-track.json': teleprompterLocateResultSchema,
+  'teleprompter-locate-no-recording.json': teleprompterLocateResultSchema,
+  'teleprompter-locate-source-missing.json': teleprompterLocateResultSchema,
   'manuscript-import-selected.json': workJobSchema,
   'manuscript-import-preview.json': workJobSchema,
   'manuscript-import-preview-repaired.json': workJobSchema,
@@ -285,6 +298,41 @@ describe('answers of the mock client (it must pass the schemas the real host ans
     const seek = events.at(-1);
     expectMatches(teleprompterEventSchema, seek, 'mock teleprompter seek event');
     expect(seek).toMatchObject({ type: 'position', read: 3, committed: 3, jump: 'restart' });
+  });
+
+  it('the TeleprompterLocate answers, one per status the mock project reaches', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const found = await api.teleprompterLocate(chapters[0].id);
+    expectMatches(teleprompterLocateResultSchema, found, 'mock teleprompter locate, found');
+    expect(found).toMatchObject({ status: 'found', tail: { to: 612.4 } });
+    if (found.status === 'asset_required' || !found.located?.sentence) throw new Error('expected a located sentence');
+    expect(found.located.sentence.start).toBeLessThanOrEqual(found.located.last ?? -1);
+    expect(found.located.sentence.end).toBeGreaterThan(found.located.last ?? Infinity);
+
+    const missing = await api.teleprompterLocate(chapters[1].id);
+    expectMatches(teleprompterLocateResultSchema, missing, 'mock teleprompter locate, source missing');
+    expect(missing.status).toBe('source_missing');
+
+    const last = chapters[chapters.length - 1].id;
+    const noTrack = await api.teleprompterLocate(last);
+    expectMatches(teleprompterLocateResultSchema, noTrack, 'mock teleprompter locate, no track');
+    expect(noTrack.status).toBe('no_track');
+
+    const picked = await api.teleprompterLocate(last, { trackGuid: '{0E4D1D7F-D039-674D-87E6-719376DE95EC}' });
+    expect(picked.status).toBe('found');
+    await expect(api.teleprompterLocate(last, { trackGuid: '{00000000-0000-4000-8000-000000000000}' })).rejects.toThrow(/not in the selected/);
+    await expect(api.teleprompterLocate('not-a-real-chapter')).rejects.toThrow();
+  });
+
+  it('TeleprompterLocate asks for the model before transcribing a readable track', async () => {
+    const api = createMockApi({}, { assets: 'missing' });
+    const chapters = await api.manuscriptChapters();
+
+    const required = await api.teleprompterLocate(chapters[0].id);
+
+    expectMatches(teleprompterLocateResultSchema, required, 'mock teleprompter locate, asset required');
+    expect(required.status).toBe('asset_required');
   });
 
   it('teleprompterSeek rejects when no session is running', async () => {
@@ -848,6 +896,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterStart',
       'teleprompterState',
       'teleprompterDevices',
+      'teleprompterLocate',
       'updateStatus',
       'updateCheck',
       'updateDownload',

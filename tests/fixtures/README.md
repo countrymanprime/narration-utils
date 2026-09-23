@@ -38,6 +38,22 @@ cd tests/fixtures/heading-misreads
 python generate.py
 ```
 
+## teleprompter-locate/
+
+The recorded tails the teleprompter's tail-audio locate is measured on
+([ADR 0111](../../docs/adr/0111-the-resume-point-comes-from-transcribing-the-recorded-tail-and-placing-it-with-the-tracker.md),
+`sidecars/manuscript-teleprompter/tests/test_locate.py`). `chapter.txt` is Chapter I of `alice.md` (one paragraph per
+line, `_italics_` markers removed) and `chapter-repeated.txt` the same chapter with its twelfth paragraph repeated at the
+end. `tails.json` holds, per case, what the tiny Whisper model heard in the last seconds of a Piper reading that stops at
+a known word (`expectedWord`), and whether the case should be confident. Only the transcripts are committed, not the
+audio. Regenerate with the app's own installed voice and model:
+
+```powershell
+uv run python sidecars/manuscript-teleprompter/spikes/record_locate_tails.py `
+  --piper-model "$env:LOCALAPPDATA/narration-utils/assets/tts/piper/en_US-ljspeech-high/1.0.0/en_US-ljspeech-high.onnx" `
+  --model-dir "$env:LOCALAPPDATA/narration-utils/assets/whisper/faster-whisper/tiny/<commit>"
+```
+
 ## alice.txt
 
 A Gutenberg-shaped, hard-wrapped plain-text export of the same three chapters (`write_txt` in

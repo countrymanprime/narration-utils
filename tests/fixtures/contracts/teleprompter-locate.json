@@ -1,0 +1,17 @@
+{
+  "confidence": 0.812,
+  "confident": true,
+  "heard": 32,
+  "heardText": "ning do. Once or twice she had peeped into the book her sister was reading, but it had no um pictures or conversations in it, and what is the use of a",
+  "last": 51,
+  "matched": 30,
+  "runnerUp": 4,
+  "sentence": {
+    "end": 59,
+    "start": 23,
+    "text": "Once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, and what is the use of a book, thought Alice, without pictures or conversations?"
+  },
+  "tokens": 102,
+  "type": "locate",
+  "word": 52
+}

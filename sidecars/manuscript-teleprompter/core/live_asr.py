@@ -65,6 +65,10 @@ turns them into these three event types:
         only with --check-moonshine: whether this build can run Moonshine (see
         moonshine_engine.py); prints once and exits, 1 if not. The packaged
         app's smoke test reads it.
+    {"type": "locate", "word": 812, "sentence": {...}, "confidence": 0.84, "confident": true, ...}
+        only with --locate --wav FILE --tail-start S --tail-end E: seconds S
+        to E of a recording, placed in the script; prints once and exits,
+        no session follows (see locate.py for every field)
 Word timings come from the engine and are advisory: they can be noisy or run
 backwards (Moonshine's do, mostly in partials), so the only guarantee is that
 `end` is never before `start`. Consumers should rely on word ORDER, not times.
@@ -367,18 +371,20 @@ def moonshine_hypotheses(chunks: Iterable[np.ndarray], transcriber, sample_rate:
     yield from _take_all(pending)
 
 
-def make_decoder(model, language: str | None, hotwords: str | None) -> Decoder:
+def make_decoder(model, language: str | None, hotwords: str | None, vad_filter: bool = False) -> Decoder:
     """Wrap a loaded faster-whisper WhisperModel as a plain
     audio -> [(word, start, end)] function, mirroring compare.py's own
-    transcribe() word-collection loop. vad_filter is off here: the caller
-    already cut this exact span to where VAD found speech."""
+    transcribe() word-collection loop. vad_filter is off for the live engine:
+    the caller already cut this exact span to where VAD found speech. The
+    tail-audio locate (locate.py) turns it on, since a recording's tail
+    usually ends in room tone Whisper would otherwise put words into."""
 
     def decode(audio: np.ndarray) -> list[Word]:
         segments, _info = model.transcribe(
             audio,
             language=language,
             word_timestamps=True,
-            vad_filter=False,
+            vad_filter=vad_filter,
             hotwords=hotwords or None,
         )
         words = []
@@ -523,18 +529,39 @@ def ticking(chunks: Iterable[np.ndarray], clock: StreamClock, on_tick: Callable[
 EventStream = Callable[[Iterable[np.ndarray]], Iterator[dict]]
 
 
-def _load_whisper_engine(args) -> EventStream:
-    """Load the model now; return a function that streams events for a chunk
-    source (so loading never overlaps with live capture)."""
+def _load_whisper_decoder(args, vad_filter: bool = False) -> Decoder:
     from faster_whisper import WhisperModel
 
     compute_type = "int8" if args.device == "cpu" else "float16"
     log(f"Loading Whisper model '{args.model}'{' from the locally verified asset cache' if args.model_dir else ''}...")
     model = WhisperModel(args.model_dir or args.model, device=args.device, compute_type=compute_type, local_files_only=bool(args.model_dir))
-    decode = make_decoder(model, args.language, args.hotwords)
-    if args.timing:
-        decode = with_decode_timing(decode)
+    decode = make_decoder(model, args.language, args.hotwords, vad_filter=vad_filter)
+    return with_decode_timing(decode) if args.timing else decode
+
+
+def _load_whisper_engine(args) -> EventStream:
+    """Load the model now; return a function that streams events for a chunk
+    source (so loading never overlaps with live capture)."""
+    decode = _load_whisper_decoder(args)
     return lambda chunks: whisper_events(chunks, decode, decode_interval_seconds=args.decode_interval)
+
+
+def _run_locate(ap: argparse.ArgumentParser, args) -> None:
+    """--locate: place a recording's tail in the chapter and print one `locate` line (locate.py). The chapter is
+    checked before the model loads, so a wrong chapter fails fast."""
+    import locate
+    from chapter_script import ChapterError
+
+    locate.check_args(ap, args)
+    _check_engine_args(ap, args)
+    try:
+        tokens, breaks = locate.load_script(args)
+    except ChapterError as error:
+        choices = f" Choose one of: {'; '.join(error.candidates)}" if error.candidates else ""
+        ap.error(f"{error}{choices}")
+    decode = _load_whisper_decoder(args, vad_filter=True)
+    log(f"Locating seconds {args.tail_start:g} to {args.tail_end:g} of {args.wav}...")
+    _emit(locate.run(args.wav, args.tail_start, args.tail_end, tokens, breaks, decode))
 
 
 def _load_moonshine_engine(args) -> EventStream:
@@ -674,6 +701,14 @@ def build_parser() -> argparse.ArgumentParser:
         help='Sentinel file the host appends seek commands to, one JSON object per line, e.g. {"cmd": "seek", "word": 12} '
         "(needs --script or --manuscript); tailed once per chunk like --stop-file, no server or port",
     )
+    ap.add_argument(
+        "--locate",
+        action="store_true",
+        help="Instead of a session: transcribe seconds --tail-start to --tail-end of --wav, place them in the script and print one "
+        "`locate` line with the word to resume from (locate.py); needs --model-dir, never downloads a model",
+    )
+    ap.add_argument("--tail-start", type=float, default=None, help="--locate: where the tail starts in --wav, in seconds")
+    ap.add_argument("--tail-end", type=float, default=None, help="--locate: where the tail (the recorded audio) ends in --wav, in seconds")
     ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"], help="Inference device (default: cpu)")
     ap.add_argument(
         "--decode-interval",
@@ -708,6 +743,9 @@ def main() -> None:
         _emit(report)
         if not report["ok"]:
             sys.exit(1)
+        return
+    if args.locate:
+        _run_locate(ap, args)
         return
     if not args.wav and not args.mic:
         ap.error("one of --wav or --mic is required")
