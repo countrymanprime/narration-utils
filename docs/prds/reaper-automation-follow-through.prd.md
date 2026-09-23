@@ -223,7 +223,7 @@ Every spike phase below launches REAPER. D3 approves that on copies of `Challeng
 | 21 | Go transport client (web/OSC) | Trimmed OSC listener and web command client behind a setting; only if Phase 20 says yes | pending | - | 20 | - |
 | 22 | Session progress stats | Per-chapter progress from the `.rpp`; time tracking only if a data source is found | pending | 23 | diagnostics PRD Phase 8 | - |
 | 23 | Cleanup launchers | Lua allow-listed named-action launcher (Repair Pops/Clicks; Magnolius only if installed) | partial | 22 | 4 | [ADR 0146](../adr/0146-cleanup-launchers-open-an-allow-listed-reaper-action-found-by-its-name-and-change-nothing-themselves.md), [evidence](../research/reaper-cleanup-launchers.md) |
-| 24 | Spike S7: fixed-lane API behavior (approved, D3) | Added by this PRD: `I_FREEMODE`, `C_LANEPLAYS`, `I_FIXEDLANE` behavior and undo | pending | - | D3; take-review PRD decisions | - |
+| 24 | Spike S7: fixed-lane API behavior (approved, D3) | Added by this PRD: `I_FREEMODE`, `C_LANEPLAYS`, `I_FIXEDLANE` behavior and undo | complete | - | D3; take-review PRD decisions | [S7 result](../research/reaper-spike-s7-fixed-lanes.md), [ADR 0147](../adr/0147-retakes-on-fixed-lanes-are-chosen-by-lane-play-state-and-the-app-never-converts-takes-and-lanes.md) |
 | 25 | Retakes as fixed lanes | Choose the good lane per line; only after S7 and take-review decisions | pending | - | 24 | - |
 
 ### Phase Details
@@ -334,11 +334,12 @@ Every spike phase below launches REAPER. D3 approves that on copies of `Challeng
 - **Goal**: learn how lanes behave through the API before designing on them.
 - **Scope**: `I_FREEMODE=2` and `UpdateTimeline()`, `I_NUMFIXEDLANES`, `C_LANEPLAYS`, `I_FIXEDLANE`, undo behavior, effect on saved `.rpp`.
 - **Success signal**: a written result and a decision on whether Phase 25 is feasible.
+- **Status: complete.** Ran unattended in REAPER 7.80/x64 under D3 (isolated `-cfgfile`, a scratch project of synthetic tones, nothing armed or played): [`integrations/reaper/spikes/spike_s7_fixed_lanes.lua`](../../integrations/reaper/spikes/spike_s7_fixed_lanes.lua), recorded report `integrations/reaper/spikes/results/fixed-lanes-report.txt`, write-up [reaper-spike-s7-fixed-lanes.md](../research/reaper-spike-s7-fixed-lanes.md). Settled: `I_FREEMODE=2` works but on its own leaves a track that reopens with a phantom empty lane (REAPER's "Set fixed item lanes" action, or `I_NUMFIXEDLANES=1` after it, does not); `I_FIXEDLANE` grows the lane count by itself and never shrinks it; track `C_LANEPLAYS:N` is 0/1/2 (silent/exclusive/with others) and settable, one undo step each; converting takes to lanes plays lane 0 rather than the active take and copies the item line id onto every lane item; lanes back to takes makes the playing lane the active take and keeps take `P_EXT`; `I_FREEMODE=0` plays every retake at once; a comp area is a new item carrying the source's line id; the `.rpp` stores an item's lane only as a `YPOS` fraction plus the track's `ITEMLANES`/`LANESOLO`, which the static reader does not read. Fixtures `apps/desktop/internal/tracks/testdata/reaper/fixed-lanes.rpp` and `fixed-lanes-resaved.rpp`, pinned by `reaper_fixed_lanes_test.go`. **Decision: Phase 25 is feasible** in the shape [ADR 0147](../adr/0147-retakes-on-fixed-lanes-are-chosen-by-lane-play-state-and-the-app-never-converts-takes-and-lanes.md) records (Proposed): the pick is `C_LANEPLAYS:<lane>=1` in one undo block, the app never changes lane mode or converts takes and lanes, and the static reader learns lanes first. **Pending (audio hardware and the owner):** recording into lanes (one lane per pass, which lane plays after it) and listening to the chosen lane.
 
 **Phase 25 - Retakes as fixed lanes**
 - **Goal**: choose the good lane per line.
 - **Scope**: only after S7 and take-review decisions; narrator-approved, undoable, never automatic.
-- **Success signal**: TBD - needs research after S7.
+- **Success signal**: the narrator picks a lane for a line and only that lane plays; one undo restores the previous play state; nothing else in the project changes (from S7, [ADR 0147](../adr/0147-retakes-on-fixed-lanes-are-chosen-by-lane-play-state-and-the-app-never-converts-takes-and-lanes.md)). Recording into lanes still needs an owner check first.
 
 ### Standing gates for every phase
 

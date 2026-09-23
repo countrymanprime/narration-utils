@@ -1,0 +1,395 @@
+version 7.80/x64 os Win64
+APIExists UpdateTimeline true
+APIExists GetSetMediaTrackInfo_String true
+APIExists GetTrackStateChunk true
+APIExists Undo_CanUndo2 true
+
+== A. Enable fixed lanes with I_FREEMODE=2 on a track with one item; undo and redo ==
+[A before] track "A - enable by API" I_FREEMODE=0 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000001" guid={B5899082-843D-47F2-A45A-7854502B289E} takes=["line 1 read 1"]
+    chunk: FIXEDLANES 9 0 0 0 0
+set I_FREEMODE=2 -> returned true; undo label now "spike: I_FREEMODE=2 on A"
+[A after I_FREEMODE=2] track "A - enable by API" I_FREEMODE=2 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000001" guid={B5899082-843D-47F2-A45A-7854502B289E} takes=["line 1 read 1"]
+    chunk: FREEMODE 2
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: ITEMLANES 1
+    chunk: YPOS 0 0.5 2
+after undo: old track pointer still valid true redo label spike: I_FREEMODE=2 on A
+[A after undo] track "A - enable by API" I_FREEMODE=0 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000001" guid={B5899082-843D-47F2-A45A-7854502B289E} takes=["line 1 read 1"]
+[A after redo] track "A - enable by API" I_FREEMODE=2 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000001" guid={B5899082-843D-47F2-A45A-7854502B289E} takes=["line 1 read 1"]
+set I_FREEMODE=1 -> returned true; undo label now "spike: I_FREEMODE=1 (free positioning) on A"
+[A after I_FREEMODE=1] track "A - enable by API" I_FREEMODE=1 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000001" guid={B5899082-843D-47F2-A45A-7854502B289E} takes=["line 1 read 1"]
+set I_FREEMODE=2 -> returned true; undo label now "spike: I_FREEMODE=2 again on A"
+
+== A2. Enable fixed lanes on a track whose items overlap ==
+[A2 before] track "A2 - overlapping then lanes" I_FREEMODE=0 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000002" guid={5BFE533C-6CC5-4CFB-B47C-4BEF702C4601} takes=["read 1"]
+    item 1 pos=1 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000002" guid={167820F8-12B5-4020-BB5B-ABB5E8483D9B} takes=["read 2 (overlaps read 1)"]
+    item 2 pos=5 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000003" guid={79493E68-6DFE-4300-B3E9-572F539CA4B1} takes=["read 3 (no overlap)"]
+set I_FREEMODE=2 -> returned true; undo label now "spike: I_FREEMODE=2 on A2"
+[A2 after I_FREEMODE=2] track "A2 - overlapping then lanes" I_FREEMODE=2 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000002" guid={5BFE533C-6CC5-4CFB-B47C-4BEF702C4601} takes=["read 1"]
+    item 1 pos=1 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000002" guid={167820F8-12B5-4020-BB5B-ABB5E8483D9B} takes=["read 2 (overlaps read 1)"]
+    item 2 pos=5 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000003" guid={79493E68-6DFE-4300-B3E9-572F539CA4B1} takes=["read 3 (no overlap)"]
+    chunk: FREEMODE 2
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: ITEMLANES 1
+    chunk: YPOS 0 0.5 2
+    chunk: YPOS 0 0.5 2
+    chunk: YPOS 0 0.5 2
+
+== A3. The same two cases through the action "Set fixed item lanes" instead of the API ==
+undo label after Set fixed item lanes: Set/unset track fixed lanes
+[A3 after action] track "A3 - one item, action" I_FREEMODE=2 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..="1"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000001" guid={7616F4AA-B74D-4C1D-8AC5-109744199CDA} takes=["line 1 read 1"]
+    chunk: FREEMODE 2
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: LANENAME 1
+    chunk: ITEMLANES 1
+    chunk: YPOS 0 1 2
+[A4 after action] track "A4 - overlapping, action" I_FREEMODE=2 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..="1"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000002" guid={3A5856D7-D785-4C44-9F1F-6F1483D53D4E} takes=["read 1"]
+    item 1 pos=1 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000002" guid={A7FAFD90-ECF3-4FC4-A7C8-9606457581D5} takes=["read 2 (overlaps read 1)"]
+    item 2 pos=5 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000003" guid={34308271-B3DD-4894-A7A2-2FC3F32DE640} takes=["read 3 (no overlap)"]
+    chunk: FREEMODE 2
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: LANENAME 1
+    chunk: ITEMLANES 1
+    chunk: YPOS 0 1 2
+    chunk: YPOS 0 1 2
+    chunk: YPOS 0 1 2
+[A5 after API enable and I_NUMFIXEDLANES=1] track "A5 - API enable plus I_NUMFIXEDLANES=1" I_FREEMODE=2 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..="1"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000001" guid={828EFE25-6527-4730-ACA1-F78B8925A09F} takes=["line 1 read 1"]
+    chunk: FREEMODE 2
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: LANENAME 1
+    chunk: ITEMLANES 1
+    chunk: YPOS 0 1 2
+
+== B. Place items on lanes by API: I_FIXEDLANE and I_NUMFIXEDLANES ==
+set I_FREEMODE=2 -> returned true; undo label now "spike: I_FREEMODE=2 on B"
+new item on a lane track, before any I_FIXEDLANE set: b2 I_FIXEDLANE 0.0
+SetMediaItemInfo_Value(b2, I_FIXEDLANE, 1) returned true
+  read back b2 I_FIXEDLANE 1.0 track I_NUMFIXEDLANES 2.0
+  after UpdateTimeline: b2 I_FIXEDLANE 1.0 track I_NUMFIXEDLANES 2.0
+SetMediaTrackInfo_Value(track_b, I_NUMFIXEDLANES, 3) returned true
+  read back I_NUMFIXEDLANES 3.0
+SetMediaItemInfo_Value(b4, I_FIXEDLANE, 6) returned true
+  read back b4 I_FIXEDLANE 6.0 track I_NUMFIXEDLANES 7.0
+after UpdateTimeline: b4 I_FIXEDLANE 6.0 track I_NUMFIXEDLANES 7.0
+[B after placing] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=2,2,2,2,2,2,2 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=6 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+after moving b4 to lane 0: I_NUMFIXEDLANES 7.0
+[B settled] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=2,2,2,2,2,2,2 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+
+== C. Lane play state: C_LANEPLAYS by API, undo, and the lane actions ==
+set C_LANEPLAYS:1=1 -> returned true; undo label now "spike: play lane 1 exclusively"
+[B after C_LANEPLAYS:1=1] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,1,0,0,0,0,0 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+set C_LANEPLAYS:2=2 -> returned true; undo label now "spike: lane 2 plays with others"
+[B after C_LANEPLAYS:2=2] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,2,2,0,0,0,0 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+[B after undo of C_LANEPLAYS:2=2] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,1,0,0,0,0,0 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+[B after undo of C_LANEPLAYS:1=1] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=2,2,2,2,2,2,2 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+[B after redo of C_LANEPLAYS:1=1] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,1,0,0,0,0,0 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+set C_LANEPLAYS:1=0 -> returned true; undo label now "spike: lane 1 off (no lane left playing?)"
+[B after C_LANEPLAYS:1=0] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=0 C_LANEPLAYS:0..=0,0,0,0,0,0,0 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+set C_ALLLANESPLAY=1 -> returned true; undo label now "spike: C_ALLLANESPLAY=1"
+[B after C_ALLLANESPLAY=1] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=2,2,2,2,2,2,2 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+undo label after play_first: Change lane play state
+[B after action play only first lane] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0,0,0,0,0,0 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+undo label after play_next: Change lane play state
+[B after action play only next lane] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,1,0,0,0,0,0 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+[B after action show/play only one lane] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=1 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,1,0,0,0,0,0 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=1 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=1 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=1 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+[B after action show/play all lanes] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,1,0,0,0,0,0 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+[B after action play all lanes] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=2,2,2,2,2,2,2 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+set C_LANEPLAYS:1=1 -> returned true; undo label now "spike: play lane 1 exclusively (for the saved file)"
+SetMediaItemInfo_Value(item in lane 2, C_LANEPLAYS, 1) returned true
+[B after trying item C_LANEPLAYS=1] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,0,1,0,0,0,0 P_LANENAME:0..="1","2","3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+
+== D. Lane names ==
+set P_LANENAME:0 true Retake 1
+set P_LANENAME:1 true Retake 2
+set P_LANENAME:2 true Retake 3
+[B named] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,0,1,0,0,0,0 P_LANENAME:0..="Retake 1","Retake 2","Retake 3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+    chunk: FREEMODE 2
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: LANESOLO 4 0 0 0 0 0 0 0
+    chunk: LANEREC -1 -1 -1 1
+    chunk: LANENAME "Retake 1" "Retake 2" "Retake 3" 4 5 6 7
+    chunk: ITEMLANES 7
+    chunk: YPOS 0 0.142857 2
+    chunk: YPOS 0.142857 0.142857 2
+    chunk: YPOS 0.285714 0.142857 2
+    chunk: YPOS 0 0.142857 2
+
+== E. Takes and lanes (the take-review path, ADR 0098): one item with two takes ==
+[E1 before] track "E1 - takes, then I_FREEMODE=2" I_FREEMODE=0 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={97E61A71-95A2-47DD-8D30-02ED8E359E87} takes=["target (active)", "candidate"{finding=finding-0001}]
+set I_FREEMODE=2 -> returned true; undo label now "spike: I_FREEMODE=2 on a multi-take item"
+[E1 after I_FREEMODE=2 (API, no conversion)] track "E1 - takes, then I_FREEMODE=2" I_FREEMODE=2 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={97E61A71-95A2-47DD-8D30-02ED8E359E87} takes=["target (active)", "candidate"{finding=finding-0001}]
+    chunk: FREEMODE 2
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: ITEMLANES 1
+    chunk: YPOS 0 0.5 2
+[E1 after AddTakeToMediaItem on a lane track] track "E1 - takes, then I_FREEMODE=2" I_FREEMODE=2 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={97E61A71-95A2-47DD-8D30-02ED8E359E87} takes=["target (active)", "candidate"{finding=finding-0001}, "candidate added on a lane track"]
+undo label after convert takes to lanes: Set/unset track fixed lanes
+[E2 after action Set fixed lanes (convert takes to lanes)] track "E2 - takes, then convert to lanes" I_FREEMODE=2 I_NUMFIXEDLANES=2 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0 P_LANENAME:0..="1","2"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={DCFB6758-AE92-4375-A832-D9DAC2D4173C} takes=["target (active)"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={5BC15ABD-BB9C-4BAC-97FF-4A0DEE6689D7} takes=["candidate"{finding=finding-0001}]
+    chunk: FREEMODE 2
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: LANESOLO 4294967293 4294967295 4294967295 4294967295 4294967295 4294967295 4294967295 4294967295
+    chunk: LANEREC -1 -1 -1 0
+    chunk: LANENAME 1 2
+    chunk: ITEMLANES 2
+    chunk: YPOS 0 0.5 2
+    chunk: YPOS 0.5 0.5 2
+[E2 after one undo] track "E2 - takes, then convert to lanes" I_FREEMODE=0 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={DCFB6758-AE92-4375-A832-D9DAC2D4173C} takes=["target (active)", "candidate"{finding=finding-0001}]
+[E2 after redo] track "E2 - takes, then convert to lanes" I_FREEMODE=2 I_NUMFIXEDLANES=2 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0 P_LANENAME:0..="1","2"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={DCFB6758-AE92-4375-A832-D9DAC2D4173C} takes=["target (active)"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={5BC15ABD-BB9C-4BAC-97FF-4A0DEE6689D7} takes=["candidate"{finding=finding-0001}]
+undo label after convert lanes to takes: Set/unset track fixed lanes
+[E2 after action Unset fixed lanes (convert lanes to takes)] track "E2 - takes, then convert to lanes" I_FREEMODE=0 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={DCFB6758-AE92-4375-A832-D9DAC2D4173C} takes=["target (active)", "candidate"{finding=finding-0001}]
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: LANESOLO 4294967293 4294967295 4294967295 4294967295 4294967295 4294967295 4294967295 4294967295
+    chunk: LANEREC -1 -1 -1 0
+    chunk: LANENAME 1 2
+    chunk: YPOS 0 1 0
+undo label after explode takes: Explode takes to fixed lanes
+[E3 after action Explode takes to fixed lanes] track "E3 - takes, then explode to lanes" I_FREEMODE=2 I_NUMFIXEDLANES=2 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0 P_LANENAME:0..="1","2"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={58B979C8-6204-424F-8F35-7A833F5CE014} takes=["target (active)"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={022CBE90-D08B-4870-AB3C-5AF9AD0E0583} takes=["candidate"{finding=finding-0001}]
+[E4 before convert (candidate made active)] track "E4 - candidate active, then convert" I_FREEMODE=0 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=1 line_id="line-000006" guid={D021C51F-D03B-4EC9-86D6-794D6FA8F8F4} takes=["target (active)", "candidate"{finding=finding-0001}]
+[E4 after convert (candidate was active)] track "E4 - candidate active, then convert" I_FREEMODE=2 I_NUMFIXEDLANES=2 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0 P_LANENAME:0..="1","2"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={D021C51F-D03B-4EC9-86D6-794D6FA8F8F4} takes=["target (active)"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={A2D2A25D-B1D7-4751-8751-08FE3B3B465C} takes=["candidate"{finding=finding-0001}]
+set I_FREEMODE=2 -> returned true; undo label now "spike: I_FREEMODE=2 on E5"
+[E5 before convert] track "E5 - lanes, lane 1 plays, convert to takes" I_FREEMODE=2 I_NUMFIXEDLANES=3 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,1,0 P_LANENAME:0..="1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000009" guid={4BF4F8DC-CF16-4CF3-9F04-9689FD2E3BA3} takes=["retake 1"{finding=finding-e5-0}]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000009" guid={6495EF31-1450-4506-B347-2CA3905CB884} takes=["retake 2"{finding=finding-e5-1}]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000009" guid={A8A78469-310F-48F8-AB4F-3184DE45DBE3} takes=["retake 3"{finding=finding-e5-2}]
+[E5 after convert lanes to takes] track "E5 - lanes, lane 1 plays, convert to takes" I_FREEMODE=0 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=1 line_id="line-000009" guid={4BF4F8DC-CF16-4CF3-9F04-9689FD2E3BA3} takes=["retake 1"{finding=finding-e5-0}, "retake 2"{finding=finding-e5-1}, "retake 3"{finding=finding-e5-2}]
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: LANESOLO 2 0 0 0 0 0 0 0
+    chunk: LANENAME 1 2 3
+    chunk: YPOS 0 1 0
+
+== F. Comp lanes on three retakes of one line ==
+set I_FREEMODE=2 -> returned true; undo label now "spike: I_FREEMODE=2 on F"
+[F before comp] track "F - comp" I_FREEMODE=2 I_NUMFIXEDLANES=3 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=2,2,2 P_LANENAME:0..="1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={0DFFBA5C-C8FA-4C12-8D31-DFF1026ABA0A} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={88A07AB3-A556-45D6-B9A8-87B052B8365D} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={FE01F8CE-ADAB-44D6-9721-2CA5DC745915} takes=["retake 3"]
+undo label after comp into new empty lane: Set comping lane
+[F after action Comp into new empty lane] track "F - comp" I_FREEMODE=2 I_NUMFIXEDLANES=4 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0,0,0 P_LANENAME:0..="C1","1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={0DFFBA5C-C8FA-4C12-8D31-DFF1026ABA0A} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={88A07AB3-A556-45D6-B9A8-87B052B8365D} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=3 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={FE01F8CE-ADAB-44D6-9721-2CA5DC745915} takes=["retake 3"]
+    chunk: FREEMODE 2
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: LANESOLO 1 0 0 0 0 0 0 0
+    chunk: LANEREC -1 0 -1 -1
+    chunk: LANENAME C1 1 2 3
+    chunk: ITEMLANES 4
+    chunk: YPOS 0.25 0.25 2
+    chunk: YPOS 0.5 0.25 2
+    chunk: YPOS 0.75 0.25 2
+undo label after add comp areas for selected items: Add comp areas for selected items
+[F after action Add comp areas for selected items (retake 2)] track "F - comp" I_FREEMODE=2 I_NUMFIXEDLANES=4 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0,0,0 P_LANENAME:0..="C1","1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={0DFFBA5C-C8FA-4C12-8D31-DFF1026ABA0A} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={88A07AB3-A556-45D6-B9A8-87B052B8365D} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=3 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={FE01F8CE-ADAB-44D6-9721-2CA5DC745915} takes=["retake 3"]
+    item 3 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={569C2D4F-E5E5-4075-8A97-06B7912F3FD9} takes=["retake 2"]
+    chunk: FREEMODE 2
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: LANESOLO 1 0 0 0 0 0 0 0
+    chunk: LANEREC -1 0 -1 -1
+    chunk: LANENAME C1 1 2 3
+    chunk: ITEMLANES 4
+    chunk: LINKEDLANE 0 3 2 0 -1 0.01 0.01
+    chunk: YPOS 0.25 0.25 2
+    chunk: YPOS 0.5 0.25 2
+    chunk: YPOS 0.75 0.25 2
+    chunk: YPOS 0 0.25 2
+[F after one undo] track "F - comp" I_FREEMODE=2 I_NUMFIXEDLANES=4 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0,0,0 P_LANENAME:0..="C1","1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={0DFFBA5C-C8FA-4C12-8D31-DFF1026ABA0A} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={88A07AB3-A556-45D6-B9A8-87B052B8365D} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=3 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={FE01F8CE-ADAB-44D6-9721-2CA5DC745915} takes=["retake 3"]
+[F after redo] track "F - comp" I_FREEMODE=2 I_NUMFIXEDLANES=4 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0,0,0 P_LANENAME:0..="C1","1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={0DFFBA5C-C8FA-4C12-8D31-DFF1026ABA0A} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={88A07AB3-A556-45D6-B9A8-87B052B8365D} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=3 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={FE01F8CE-ADAB-44D6-9721-2CA5DC745915} takes=["retake 3"]
+    item 3 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={569C2D4F-E5E5-4075-8A97-06B7912F3FD9} takes=["retake 2"]
+[F after action Delete comp areas] track "F - comp" I_FREEMODE=2 I_NUMFIXEDLANES=4 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0,0,0 P_LANENAME:0..="C1","1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={0DFFBA5C-C8FA-4C12-8D31-DFF1026ABA0A} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={88A07AB3-A556-45D6-B9A8-87B052B8365D} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=3 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={FE01F8CE-ADAB-44D6-9721-2CA5DC745915} takes=["retake 3"]
+    item 3 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={569C2D4F-E5E5-4075-8A97-06B7912F3FD9} takes=["retake 2"]
+[F after action Turn off comping] track "F - comp" I_FREEMODE=2 I_NUMFIXEDLANES=4 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0,0,0 P_LANENAME:0..="C1","1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={0DFFBA5C-C8FA-4C12-8D31-DFF1026ABA0A} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={88A07AB3-A556-45D6-B9A8-87B052B8365D} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=3 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={FE01F8CE-ADAB-44D6-9721-2CA5DC745915} takes=["retake 3"]
+    item 3 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={569C2D4F-E5E5-4075-8A97-06B7912F3FD9} takes=["retake 2"]
+set I_FREEMODE=2 -> returned true; undo label now "spike: I_FREEMODE=2 on F2"
+[F2 with comp area on retake 3] track "F2 - comp kept" I_FREEMODE=2 I_NUMFIXEDLANES=4 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0,0,0 P_LANENAME:0..="C1","1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000010" guid={67CF871C-09DB-42CD-992D-825BC36D0C5E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000010" guid={3C5140F7-CD35-49A0-9E69-3197AED06887} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=3 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000010" guid={405E0477-A4D2-4EF4-8A25-D7F76E5BBDEE} takes=["retake 3"]
+    item 3 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000010" guid={28DCE23F-5742-4ECE-A4C1-26C5E3E94569} takes=["retake 3"]
+    chunk: FREEMODE 2
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: LANESOLO 1 0 0 0 0 0 0 0
+    chunk: LANEREC -1 0 -1 -1
+    chunk: LANENAME C1 1 2 3
+    chunk: ITEMLANES 4
+    chunk: LINKEDLANE 0 3 3 0 -1 0.01 0.01
+    chunk: YPOS 0.25 0.25 2
+    chunk: YPOS 0.5 0.25 2
+    chunk: YPOS 0.75 0.25 2
+    chunk: YPOS 0 0.25 2
+
+== G. Turn lanes off by API on a track with three lanes; undo ==
+set I_FREEMODE=2 -> returned true; undo label now "spike: I_FREEMODE=2 on G"
+set C_LANEPLAYS:1=1 -> returned true; undo label now "spike: G plays lane 1"
+[G before] track "G - lanes off by API" I_FREEMODE=2 I_NUMFIXEDLANES=3 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,1,0 P_LANENAME:0..="1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000008" guid={EA1514F1-43D8-4D3C-B481-1C1047B10A12} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000008" guid={585585F2-5EE6-4CEA-8786-CD1EE04FDE73} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000008" guid={295D82DC-9737-4343-A50A-2910648ED231} takes=["retake 3"]
+set I_FREEMODE=0 -> returned true; undo label now "spike: I_FREEMODE=0 on G"
+[G after I_FREEMODE=0] track "G - lanes off by API" I_FREEMODE=0 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000008" guid={EA1514F1-43D8-4D3C-B481-1C1047B10A12} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000008" guid={585585F2-5EE6-4CEA-8786-CD1EE04FDE73} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000008" guid={295D82DC-9737-4343-A50A-2910648ED231} takes=["retake 3"]
+    chunk: FIXEDLANES 9 0 0 0 0
+    chunk: LANESOLO 2 0 0 0 0 0 0 0
+    chunk: LANENAME 1 2 3
+    chunk: YPOS 0 0.333333 0
+    chunk: YPOS 0.333333 0.333333 0
+    chunk: YPOS 0.666667 0.333333 0
+[G after undo] track "G - lanes off by API" I_FREEMODE=2 I_NUMFIXEDLANES=3 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,1,0 P_LANENAME:0..="1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000008" guid={EA1514F1-43D8-4D3C-B481-1C1047B10A12} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000008" guid={585585F2-5EE6-4CEA-8786-CD1EE04FDE73} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000008" guid={295D82DC-9737-4343-A50A-2910648ED231} takes=["retake 3"]
+
+== H. Save, reload, read everything again ==
+save
+[reloaded] track "A - enable by API" I_FREEMODE=2 I_NUMFIXEDLANES=2 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=2,2 P_LANENAME:0..="",""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000001" guid={B5899082-843D-47F2-A45A-7854502B289E} takes=["line 1 read 1"]
+[reloaded] track "A2 - overlapping then lanes" I_FREEMODE=2 I_NUMFIXEDLANES=2 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=2,2 P_LANENAME:0..="",""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000002" guid={5BFE533C-6CC5-4CFB-B47C-4BEF702C4601} takes=["read 1"]
+    item 1 pos=1 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000002" guid={167820F8-12B5-4020-BB5B-ABB5E8483D9B} takes=["read 2 (overlaps read 1)"]
+    item 2 pos=5 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000003" guid={79493E68-6DFE-4300-B3E9-572F539CA4B1} takes=["read 3 (no overlap)"]
+[reloaded] track "A3 - one item, action" I_FREEMODE=2 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..="1"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000001" guid={7616F4AA-B74D-4C1D-8AC5-109744199CDA} takes=["line 1 read 1"]
+[reloaded] track "A4 - overlapping, action" I_FREEMODE=2 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..="1"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000002" guid={3A5856D7-D785-4C44-9F1F-6F1483D53D4E} takes=["read 1"]
+    item 1 pos=1 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000002" guid={A7FAFD90-ECF3-4FC4-A7C8-9606457581D5} takes=["read 2 (overlaps read 1)"]
+    item 2 pos=5 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000003" guid={34308271-B3DD-4894-A7A2-2FC3F32DE640} takes=["read 3 (no overlap)"]
+[reloaded] track "A5 - API enable plus I_NUMFIXEDLANES=1" I_FREEMODE=2 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..="1"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000001" guid={828EFE25-6527-4730-ACA1-F78B8925A09F} takes=["line 1 read 1"]
+[reloaded] track "B - retakes on lanes" I_FREEMODE=2 I_NUMFIXEDLANES=7 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,0,1,0,0,0,0 P_LANENAME:0..="Retake 1","Retake 2","Retake 3","4","5","6","7"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={28424EE6-CD83-45A7-BCB7-A46112C7336E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={1CA0B22E-8B79-4012-8E4B-FA1AB5879D2C} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000004" guid={6AE40BB3-97F2-4822-9548-C6C269993C80} takes=["retake 3"]
+    item 3 pos=4 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000005" guid={905F2E56-AD94-4914-8532-BAC201E57F6B} takes=["out of range lane"]
+[reloaded] track "E1 - takes, then I_FREEMODE=2" I_FREEMODE=2 I_NUMFIXEDLANES=2 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=2,2 P_LANENAME:0..="",""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=2 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={97E61A71-95A2-47DD-8D30-02ED8E359E87} takes=["target (active)", "candidate"{finding=finding-0001}, "candidate added on a lane track"]
+[reloaded] track "E2 - takes, then convert to lanes" I_FREEMODE=0 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={DCFB6758-AE92-4375-A832-D9DAC2D4173C} takes=["target (active)", "candidate"{finding=finding-0001}]
+[reloaded] track "E3 - takes, then explode to lanes" I_FREEMODE=2 I_NUMFIXEDLANES=2 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0 P_LANENAME:0..="1","2"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={58B979C8-6204-424F-8F35-7A833F5CE014} takes=["target (active)"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={022CBE90-D08B-4870-AB3C-5AF9AD0E0583} takes=["candidate"{finding=finding-0001}]
+[reloaded] track "E4 - candidate active, then convert" I_FREEMODE=2 I_NUMFIXEDLANES=2 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0 P_LANENAME:0..="1","2"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={D021C51F-D03B-4EC9-86D6-794D6FA8F8F4} takes=["target (active)"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000006" guid={A2D2A25D-B1D7-4751-8751-08FE3B3B465C} takes=["candidate"{finding=finding-0001}]
+[reloaded] track "E5 - lanes, lane 1 plays, convert to takes" I_FREEMODE=0 I_NUMFIXEDLANES=1 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=1 C_LANEPLAYS:0..=1 P_LANENAME:0..=""
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=1 line_id="line-000009" guid={4BF4F8DC-CF16-4CF3-9F04-9689FD2E3BA3} takes=["retake 1"{finding=finding-e5-0}, "retake 2"{finding=finding-e5-1}, "retake 3"{finding=finding-e5-2}]
+[reloaded] track "F - comp" I_FREEMODE=2 I_NUMFIXEDLANES=4 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0,0,0 P_LANENAME:0..="C1","1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={0DFFBA5C-C8FA-4C12-8D31-DFF1026ABA0A} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={88A07AB3-A556-45D6-B9A8-87B052B8365D} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=3 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={FE01F8CE-ADAB-44D6-9721-2CA5DC745915} takes=["retake 3"]
+    item 3 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000007" guid={569C2D4F-E5E5-4075-8A97-06B7912F3FD9} takes=["retake 2"]
+[reloaded] track "F2 - comp kept" I_FREEMODE=2 I_NUMFIXEDLANES=4 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=1,0,0,0 P_LANENAME:0..="C1","1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000010" guid={67CF871C-09DB-42CD-992D-825BC36D0C5E} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000010" guid={3C5140F7-CD35-49A0-9E69-3197AED06887} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=3 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000010" guid={405E0477-A4D2-4EF4-8A25-D7F76E5BBDEE} takes=["retake 3"]
+    item 3 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000010" guid={28DCE23F-5742-4ECE-A4C1-26C5E3E94569} takes=["retake 3"]
+[reloaded] track "G - lanes off by API" I_FREEMODE=2 I_NUMFIXEDLANES=3 C_LANESETTINGS=9 C_LANESCOLLAPSED=0 C_ALLLANESPLAY=2 C_LANEPLAYS:0..=0,1,0 P_LANENAME:0..="1","2","3"
+    item 0 pos=0 len=3 I_FIXEDLANE=0 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000008" guid={EA1514F1-43D8-4D3C-B481-1C1047B10A12} takes=["retake 1"]
+    item 1 pos=0 len=3 I_FIXEDLANE=1 C_LANEPLAYS=1 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000008" guid={585585F2-5EE6-4CEA-8786-CD1EE04FDE73} takes=["retake 2"]
+    item 2 pos=0 len=3 I_FIXEDLANE=2 C_LANEPLAYS=0 B_FIXEDLANE_HIDDEN=0 I_CURTAKE=0 line_id="line-000008" guid={295D82DC-9737-4343-A50A-2910648ED231} takes=["retake 3"]
+track B found by GUID after reload true
+item b1 found by GUID after reload true
+resave
