@@ -1,6 +1,6 @@
 """Where one take of a fixed manuscript span diverges from the manuscript.
 
-`docs/prds/take-review-pickups-duplicates-take-intelligence.prd.md` Phase 9 and ADR 0141. The
+Take review (`docs/utilities/take-review.md`), its PRD's Phase 9, and ADR 0141. The
 take's timed words (free ASR words with Whisper's word timestamps, ADR 0008) are aligned to the
 span's words with the take markers' own diff (`compare.diff_and_build_markers`), so a take's
 divergences and its markers can never disagree about what was said. The result says, for every

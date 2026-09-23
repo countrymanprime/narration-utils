@@ -1,6 +1,6 @@
 """The sidecar's per-take divergence mode: `compare.py --take-divergence`.
 
-`docs/prds/take-review-pickups-duplicates-take-intelligence.prd.md` Phase 9 and ADR 0141. For one
+Take review (`docs/utilities/take-review.md`), its PRD's Phase 9, and ADR 0141. For one
 fixed manuscript span (a chapter, found by id, and a run of its sentence units, numbered as
 `--find-repeats` numbers a repeated span) and the takes the host lists in a JSON manifest, this
 mode transcribes each take's range with Whisper word timestamps, aligns it to the span with the

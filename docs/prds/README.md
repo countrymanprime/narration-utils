@@ -47,7 +47,7 @@ Phase counts are the rows of each PRD's phase table.
 | PRD | Type | Phases | Replaces |
 | --- | --- | --- | --- |
 | [Review Dashboard and Findings Adoption](review-dashboard-and-findings-adoption.prd.md) | Feature | 8 | `docs/utilities/review-dashboard.md` |
-| [Take Review: Pickups, Duplicates, and Take Intelligence](take-review-pickups-duplicates-take-intelligence.prd.md) | Feature | 10 | `docs/utilities/duplicate-and-pickup-finder.md`, `docs/utilities/take-intelligence.md` |
+| Take Review: Pickups, Duplicates, and Take Intelligence (PRD deleted, delivered) | Feature | 10 | `docs/utilities/duplicate-and-pickup-finder.md`, `docs/utilities/take-intelligence.md`; steady state in [Take review](../utilities/take-review.md); `git log --diff-filter=D -- docs/prds/take-review-pickups-duplicates-take-intelligence.prd.md` finds it |
 | [Character Continuity Review](character-continuity-review.prd.md) | Feature | 8 | `docs/utilities/character-continuity-review.md` |
 | [Diagnostics, Delivery Reports and Cleanup Tools](diagnostics-delivery-and-cleanup-tools.prd.md) | Feature | 11 | `docs/utilities/narration-diagnostics.md`, `delivery-and-review-export.md`, `silence-cleanup.md`, `clause-split-and-level-normalize.md`, `daw-project-scan.md` |
 | [REAPER Automation Follow-Through](reaper-automation-follow-through.prd.md) | Feature (part 1, phases 1 to 5, delivered by stack S09 with two owner-only checklist steps pending; phases 6 to 25 queued) | 25 | None; sourced from `docs/research/reaper-automation-surface.md` section 9. Delivered so far: [the REAPER bridge and its harness](../architecture/reaper-bridge.md), [the S0 spike result](../research/reaper-spike-s0-item-extension-data.md) and the REAPER-saved fixtures |
@@ -81,8 +81,8 @@ These 19 planned-work files were removed when the PRDs landed (a twentieth, `hos
 | Removed file | Now specified in |
 | --- | --- |
 | `docs/utilities/review-dashboard.md` | [review-dashboard-and-findings-adoption.prd.md](review-dashboard-and-findings-adoption.prd.md) |
-| `docs/utilities/duplicate-and-pickup-finder.md` | [take-review-pickups-duplicates-take-intelligence.prd.md](take-review-pickups-duplicates-take-intelligence.prd.md) |
-| `docs/utilities/take-intelligence.md` | [take-review-pickups-duplicates-take-intelligence.prd.md](take-review-pickups-duplicates-take-intelligence.prd.md) |
+| `docs/utilities/duplicate-and-pickup-finder.md` | [Take review](../utilities/take-review.md) (delivered) |
+| `docs/utilities/take-intelligence.md` | [Take review](../utilities/take-review.md) (delivered) |
 | `docs/utilities/character-continuity-review.md` | [character-continuity-review.prd.md](character-continuity-review.prd.md) |
 | `docs/utilities/narration-diagnostics.md` | [diagnostics-delivery-and-cleanup-tools.prd.md](diagnostics-delivery-and-cleanup-tools.prd.md) |
 | `docs/utilities/delivery-and-review-export.md` | [diagnostics-delivery-and-cleanup-tools.prd.md](diagnostics-delivery-and-cleanup-tools.prd.md) |

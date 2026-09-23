@@ -118,7 +118,7 @@ func TestMediaMiddlewarePassesThroughEverythingElse(t *testing.T) {
 // Q10 (adopted there as "B: only the active take's source", with the PRD's
 // own note "TR Phase 2 asks for all takes; it can extend from B" - see
 // docs/prds/analysis-evidence-ledger.prd.md and
-// docs/prds/take-review-pickups-duplicates-take-intelligence.prd.md Phase
+// take-review-pickups-duplicates-take-intelligence.prd.md (now docs/utilities/take-review.md) Phase
 // 2). Take review's audition and comparison work (later phases) need to
 // play a candidate take's own source even when it is not the item's active
 // take, so every take of every item the selected project references is now
