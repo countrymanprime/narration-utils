@@ -1,0 +1,2 @@
+0|C:\audio\chapter-one-take3.wav|0.000000|120.000000
+1|C:\audio\chapter-one-take4.wav|0.000000|30.000000

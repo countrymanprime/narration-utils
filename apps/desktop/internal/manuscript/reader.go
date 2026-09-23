@@ -12,6 +12,49 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 )
 
+// ChapterIDByTitle resolves a chapter title to its manuscript id, for
+// adapters (Transcript Compare's, review-dashboard-and-findings-adoption.prd.md)
+// that only receive a title from a data source outside the manuscript.
+// ambiguous is true when more than one chapter shares the title exactly; ok
+// is still true, but callers should treat the match as provisional (the
+// PRD's Architecture Notes say to fall back to the title with a flag).
+func (s *Service) ChapterIDByTitle(title string) (id string, ambiguous, ok bool) {
+	data, err := s.Load()
+	if err != nil {
+		return "", false, false
+	}
+	for _, chapter := range objects(data["chapters"]) {
+		if text(chapter, "title") != title {
+			continue
+		}
+		if ok {
+			return id, true, true
+		}
+		id, ok = text(chapter, "id"), true
+	}
+	return id, false, ok
+}
+
+// ParagraphID resolves a chapter's globalIndex-th manuscript paragraph (the
+// reader contract's global "index" field, shared with Transcript Compare's
+// resolve_global_paragraph) to its stable paragraph id.
+func (s *Service) ParagraphID(chapterID string, globalIndex int) (id string, ok bool) {
+	data, err := s.Load()
+	if err != nil {
+		return "", false
+	}
+	for _, paragraph := range objects(data["paragraphs"]) {
+		if text(paragraph, "chapterId") != chapterID {
+			continue
+		}
+		index, isNumber := paragraph["index"].(float64)
+		if isNumber && int(index) == globalIndex {
+			return text(paragraph, "id"), true
+		}
+	}
+	return "", false
+}
+
 // Chapters returns the stable reader contract derived from the immutable
 // canonical manuscript plus its separately editable review sidecar.
 func (s *Service) Chapters() ([]map[string]any, error) {

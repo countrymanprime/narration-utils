@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/persist"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
@@ -37,6 +38,12 @@ type Service struct {
 	progress, logPath string
 	logAt             int64
 	files             atomic.Pointer[persist.Reporter]
+	// findingsStore and manuscriptLookup are nil until app.go opts in with
+	// SetFindings (review-dashboard-and-findings-adoption.prd.md Phase 2);
+	// every existing caller, including every test in this package, leaves
+	// them nil and saveFindings is then a no-op.
+	findingsStore    *findings.Store
+	manuscriptLookup ManuscriptLookup
 }
 
 // New builds the service. When there is a bridge it subscribes to the events Transcript Compare owns: the
@@ -59,6 +66,18 @@ func New(config Config, client *bridge.Client, store *settings.Store, sidecars *
 
 // SetPersist says where to log a last-comparison file that cannot be read (ADR 0069). It is derived data and heals.
 func (s *Service) SetPersist(reporter *persist.Reporter) { s.files.Store(reporter) }
+
+// SetFindings opts this service into producing findings.Finding records on
+// every completed comparison (review-dashboard-and-findings-adoption.prd.md
+// Phase 2). store persists them; lookup resolves manuscript chapter and
+// paragraph ids and may be nil (every finding then falls back to its raw
+// chapter title, flagged unresolved). Called once at service construction,
+// the same way SetPersist is; never called means findings are never built.
+func (s *Service) SetFindings(store *findings.Store, lookup ManuscriptLookup) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.findingsStore, s.manuscriptLookup = store, lookup
+}
 
 // handleInvalid ends the run in progress with a message that names the event and the field that could not be read (never a value).
 // The advice is the fix for the usual cause: the REAPER script the narrator imported is older or newer than this app.
@@ -433,8 +452,53 @@ func (s *Service) Handle(fields []string) {
 		if fields[0] == "COMPARE_INSPECTED" || fields[0] == "COMPARE_EXPORTED" {
 			s.persist(snapshot)
 		}
+		if fields[0] == "COMPARE_INSPECTED" {
+			s.saveFindings()
+		}
 		if s.changed != nil {
 			s.changed(snapshot)
+		}
+	}
+}
+
+// saveFindings converts this run's rows into shared findings and persists
+// them (review-dashboard-and-findings-adoption.prd.md Phase 2). It is
+// best-effort: a problem here is reported through the same channel as any
+// other derived-data failure (SetPersist's reporter) but never fails the
+// comparison the narrator is looking at, and it is a no-op until app.go
+// opts in with SetFindings.
+func (s *Service) saveFindings() {
+	s.mu.RLock()
+	store, lookup := s.findingsStore, s.manuscriptLookup
+	rows, _ := s.state["rows"].([]map[string]any)
+	output, _ := s.state["output"].(string)
+	runID, _ := s.state["runId"].(string)
+	project := s.config.Project
+	sessionDir := s.config.SessionDir
+	s.mu.RUnlock()
+	if store == nil || output == "" || len(rows) == 0 {
+		return
+	}
+	manifestPath := filepath.Join(sessionDir, "manifest_"+runID+".txt")
+	grouped, err := BuildFindings(rows, output, manifestPath, findings.Project{Path: project, OutputPath: output}, lookup)
+	if err != nil {
+		s.files.Load().Warn("findings_build_failed", fmt.Sprintf("Transcript Compare findings were not built: %v", err))
+		return
+	}
+	for scope, fresh := range grouped {
+		valid := make([]findings.Finding, 0, len(fresh))
+		for _, f := range fresh {
+			if verr := f.Validate(); verr != nil {
+				s.files.Load().Warn("findings_invalid", fmt.Sprintf("Transcript Compare produced an invalid finding, skipped: %v", verr))
+				continue
+			}
+			valid = append(valid, f)
+		}
+		if len(valid) == 0 {
+			continue
+		}
+		if _, err := store.SaveAnalyzerFindings(analyzerName, scope, valid); err != nil {
+			s.files.Load().Warn("findings_save_failed", fmt.Sprintf("Transcript Compare findings were not saved: %v", err))
 		}
 	}
 }
