@@ -41,7 +41,8 @@ PROGRAM_LICENSE = "AGPL-3.0-or-later"
 SIDECARS = ("manuscript-guide", "transcript-compare", "manuscript-teleprompter")
 # The Python packages the sidecars import at run time, which the frozen bundle must therefore contain (pyproject.toml lists test and
 # lint tools beside them, and python-docx and pypdf are not imported by any sidecar). A report that lacks one of these is wrong.
-SHIPPED_PYTHON_DIRECT = frozenset({"av", "ctranslate2", "faster-whisper", "numpy", "phonemizer", "piper-tts", "pronouncing", "spacy"})
+# The report is of the Windows release, so moonshine-voice (a Windows-only dependency, the Teleprompter's Moonshine engine) is here.
+SHIPPED_PYTHON_DIRECT = frozenset({"av", "ctranslate2", "faster-whisper", "moonshine-voice", "numpy", "phonemizer", "piper-tts", "pronouncing", "spacy"})
 GO_BUILD_TAGS = "desktop,production"
 LICENSE_FILE = re.compile(r"^(licen[cs]e|copying|notice|unlicense)([-._].*)?$", re.IGNORECASE)
 # `license.py` or `license.go` next to a licence file is code, not a licence.

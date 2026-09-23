@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -30,7 +31,9 @@ import (
 //   - every bundled sidecar exists and starts (`--help` exits 0);
 //   - the frozen Story Bible sidecar can start its espeak-ng phonemizer and read the CMU dictionary (`self-check`), which is what a freeze
 //     silently loses; with --piper-model it also speaks one word;
-//   - the three approved asset catalogs load and name assets;
+//   - on Windows, the frozen Teleprompter sidecar can load Moonshine's native library (`--check-moonshine`), which PyInstaller cannot
+//     see it needs; no model is loaded and nothing is downloaded;
+//   - the four approved asset catalogs load and name assets;
 //   - the asset cache folder can be found and written;
 //   - the REAPER launcher and its scripts are there, with the pointer to this executable.
 //
@@ -96,7 +99,10 @@ type smokeOptions struct {
 	Version    string
 	// PiperModel, when set, is a voice file the frozen guide sidecar loads and speaks one word with.
 	PiperModel string
-	Run        smokeRun
+	// Moonshine asks the frozen teleprompter sidecar to prove it can run the Moonshine engine. True on Windows, the one platform the
+	// moonshine-voice wheel is pinned for (pyproject.toml); elsewhere the sidecar is frozen without it.
+	Moonshine bool
+	Run       smokeRun
 	// CommandTimeout bounds each sidecar command; smokeCommandTimeout when zero.
 	CommandTimeout time.Duration
 }
@@ -138,6 +144,11 @@ func smoke(ctx context.Context, options smokeOptions) smokeReport {
 		add("sidecar:"+name, started, err, detail)
 	}
 	report.Checks = append(report.Checks, checkFrozenGuide(ctx, options, root)...)
+	if options.Moonshine {
+		started = time.Now()
+		detail, err := checkFrozenMoonshine(ctx, options, root)
+		add("teleprompter:moonshine", started, err, detail)
+	}
 	started = time.Now()
 	detail, err := checkCatalogs(root)
 	add("catalogs", started, err, detail)
@@ -282,10 +293,43 @@ func checkFrozenGuide(ctx context.Context, options smokeOptions, root string) []
 	return checks
 }
 
+// moonshineCheckReport is what `manuscript-teleprompter --check-moonshine` prints (sidecars/manuscript-teleprompter/core/moonshine_engine.py).
+type moonshineCheckReport struct {
+	Type   string `json:"type"`
+	Engine string `json:"engine"`
+	OK     bool   `json:"ok"`
+	Detail string `json:"detail"`
+}
+
+// checkFrozenMoonshine runs the frozen Teleprompter sidecar's own check that it can load Moonshine's native library (moonshine.dll and
+// the onnxruntime.dll beside it, loaded with ctypes, so a freeze can lose them and still start). Its verdict and its exit code must agree.
+func checkFrozenMoonshine(ctx context.Context, options smokeOptions, root string) (string, error) {
+	executable := sidecarPath(root, "manuscript-teleprompter")
+	if executable == "" {
+		return "", errors.New("the manuscript-teleprompter sidecar is missing, so its Moonshine engine could not be checked")
+	}
+	code, stdout, stderr, err := runBounded(ctx, options, executable, "--check-moonshine")
+	if err != nil {
+		return "", fmt.Errorf("the Moonshine check did not run: %w", err)
+	}
+	var parsed moonshineCheckReport
+	if jsonErr := json.Unmarshal([]byte(strings.TrimSpace(stdout)), &parsed); jsonErr != nil || parsed.Type != "engine_check" {
+		return "", fmt.Errorf("the Moonshine check (exit code %d) printed no report: %s", code, firstLine(stderr+" "+stdout))
+	}
+	switch {
+	case parsed.Engine != "moonshine":
+		return "", fmt.Errorf("the Moonshine check reported on the %q engine instead", parsed.Engine)
+	case !parsed.OK:
+		return "", fmt.Errorf("the frozen teleprompter cannot run Moonshine: %s", parsed.Detail)
+	case code != 0:
+		return "", fmt.Errorf("the Moonshine check passed but exited with exit code %d: %s", code, firstLine(stderr))
+	}
+	return parsed.Detail, nil
+}
+
 // checkCatalogs loads the four approved asset catalogs the release carries (config/*-assets.json in the unpacked resources) and requires
-// each to name at least one asset: an empty or unreadable catalog would leave the narrator nothing to download. The Moonshine catalog is
-// checked here (catalog integrity) even though the frozen sidecar cannot run `--engine moonshine` yet (phase 6, teleprompter-engines-and-
-// input-devices.prd.md): a release-readiness check on the sidecar's own Moonshine support is phase 6's, not this one's.
+// each to name at least one asset: an empty or unreadable catalog would leave the narrator nothing to download. The frozen sidecar's own
+// Moonshine support is checked apart from its catalog, by checkFrozenMoonshine.
 func checkCatalogs(root string) (string, error) {
 	configDir := filepath.Join(root, "config")
 	voices, err := tts.New(filepath.Join(configDir, "tts-assets.json"), "")
@@ -372,7 +416,7 @@ func runSmoke(ctx context.Context, arguments []string, resourcesFS fs.FS, stdout
 	}
 	supervisor := process.NewSupervisor()
 	defer func() { _ = supervisor.Close() }()
-	report := smoke(ctx, smokeOptions{Resources: resourcesFS, Executable: executablePath(), Version: version, PiperModel: parsed.piperModel, Run: supervisor.Run})
+	report := smoke(ctx, smokeOptions{Resources: resourcesFS, Executable: executablePath(), Version: version, PiperModel: parsed.piperModel, Moonshine: runtime.GOOS == "windows", Run: supervisor.Run})
 	return writeSmokeReport(report, parsed.reportPath, stdout, stderr)
 }
 

@@ -562,13 +562,11 @@ attribution carried in the module's docstring, no new runtime dependency
 
 ### 10. Moonshine Voice — streaming ASR candidate for the live teleprompter path
 
-**Status: models provisioned through the hashed asset catalog (`teleprompter-engines-and-input-devices.prd.md` phase 5, D17
-compatibility re-verified). The `moonshine-voice` Python package itself is still not a project dependency** - it is imported only
-by the optional `--engine moonshine` path of
-[`live_asr.py`](../../sidecars/manuscript-teleprompter/core/live_asr.py) and run in an ephemeral `uv` environment; `pyproject.toml`
-and `uv.lock` gain the pinned wheel only in phase 6 ("Moonshine in the sidecar and packaging"), which also does the PyInstaller
-collection and picks the removal/update policy for the *package*. This entry's own "missing before adoption" list for the
-*models* is now closed.
+**Status: adopted on Windows. Models are provisioned through the hashed asset catalog
+(`teleprompter-engines-and-input-devices.prd.md` phase 5) and the `moonshine-voice` package is pinned and frozen into the
+`manuscript-teleprompter` sidecar (phase 6, [ADR 0107](../adr/0107-moonshine-ships-inside-the-windows-teleprompter-sidecar-and-runs-only-from-a-verified-catalog-install.md)); D17 compatibility re-verified at both.** It is imported only by
+[`moonshine_engine.py`](../../sidecars/manuscript-teleprompter/core/moonshine_engine.py), on the `--engine moonshine` path of
+[`live_asr.py`](../../sidecars/manuscript-teleprompter/core/live_asr.py). The engine choice in the app is phase 7.
 
 **What it contributes.** Streaming speech recognition that caches encoder state
 instead of re-decoding, partial and final line events, word timestamps in
@@ -614,10 +612,26 @@ for why two live engines are supported and how they are compared.
   on Settings > Local assets with no new binding and no `hostAPIVersion` bump. Files are flat (no nested
   layout needed, unlike the risk register anticipated) and load from a pre-placed, hash-verified directory;
   the library's own downloader (`get_model_for_language`) is never called by the host.
-- **Still missing before the live engine ships (phase 6 and 7, unchanged from before)**: pinning
-  `moonshine-voice` itself in `pyproject.toml`/`uv.lock`, PyInstaller collection of its native libraries into
-  the frozen `manuscript-teleprompter` sidecar, wiring `--model-dir` from the catalog's install directory,
-  and the engine choice end to end in the UI.
+- **Packaging (delivered, phase 6, [ADR 0107](../adr/0107-moonshine-ships-inside-the-windows-teleprompter-sidecar-and-runs-only-from-a-verified-catalog-install.md))**: `moonshine-voice==0.1.5 ; sys_platform == 'win32'` in
+  `pyproject.toml`, hashed in `uv.lock`; the licence was read again in the pinned wheel itself
+  (`moonshine_voice-0.1.5.dist-info/licenses/LICENSE`, MIT, "Copyright (c) 2025 Moonshine AI", 2026-09-23). New
+  transitive dependencies on Windows: `google-crc32c` 1.8.0 (Apache-2.0), `platformdirs` (MIT), `sounddevice`
+  (MIT), `cffi` (MIT), `pycparser` (BSD-3-Clause); the freeze excludes `sounddevice` and `google-crc32c` (the
+  transcriber never imports the first and the second only speeds up the library's downloader, which the frozen
+  sidecar never runs). The wheel's `moonshine.dll` and its own ONNX Runtime 1.23 `onnxruntime.dll` (MIT, a
+  manual entry in the notices) are loaded with `ctypes`, so `prepare-resources.py` collects them with
+  `--collect-binaries`, `verify-installable.mjs` requires them and `narration-utils --smoke` loads them
+  (`--check-moonshine`). The frozen sidecar grows by 24.1 MB (+9.4%; 11.2 MB compressed). With `--model-dir` it
+  loads a catalog install after checking every pinned file is there; without one the frozen sidecar refuses,
+  and only a source run lets the library download. A test holds the catalog to the pinned library's own
+  offline manifest (names, URLs, sizes).
+- **Update and removal policy (package)**: a new `moonshine-voice` version is a reviewed change that re-reads
+  its licence (D17), its wheel list and DLL names, and passes the manifest test (a changed model layout or
+  version updates `config/moonshine-assets.json` in the same change). Removing it means dropping the pin, the
+  `--collect-binaries` line, the two `verify-installable` checks and the smoke check together.
+- **Still missing before the live engine ships (phase 7)**: the host passing `--engine moonshine --model-dir`
+  from the catalog's install directory, and the engine choice end to end in the UI. Non-Windows builds have no
+  Moonshine (no macOS Intel wheel; Windows-first scope).
 - **Removal and update policy**: the same as every other catalog asset (`first-use-dependency-provisioning.md`) -
   pinned per release, no automatic "update available" state, replaced only by the narrator's Remove and
   Download or Repair. A future Moonshine release (a new `quantized_*` date) is a new catalog version, not a

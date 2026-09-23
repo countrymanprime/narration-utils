@@ -37,8 +37,19 @@ if (!(existsSync(guideInternal) && readdirSync(guideInternal).some((name) => /^c
 if (guideDataMissing.length) {
   throw new Error(`Release Story Bible data is incomplete: ${guideDataMissing.join(', ')}. Manuscript Guide must collect the Piper and cmudict data and the cmudict metadata (scripts/release/prepare-resources.py).`);
 }
-// The three approved asset catalogs travel with the release: the app reads them to know what it may offer to download.
-const catalogsMissing = ['tts-assets.json', 'whisper-assets.json', 'spacy-assets.json'].filter((name) => !existsSync(resolve(resources, 'config', name)));
+// The Windows Teleprompter sidecar carries the Moonshine engine (moonshine-voice is pinned for Windows only in pyproject.toml). Its
+// package loads moonshine.dll, and the onnxruntime.dll beside it, with ctypes from its own folder, which PyInstaller cannot see:
+// prepare-resources.py collects them by hand. `narration-utils --smoke` proves they load (`--check-moonshine`); this proves they are
+// in the tree before it is embedded.
+if (process.platform === 'win32') {
+  const moonshineDir = resolve(runtime, 'manuscript-teleprompter', '_internal', 'moonshine_voice');
+  const moonshineMissing = ['moonshine.dll', 'onnxruntime.dll'].filter((name) => !existsSync(resolve(moonshineDir, name)));
+  if (moonshineMissing.length) {
+    throw new Error(`Release Moonshine engine is incomplete: moonshine_voice/${moonshineMissing.join(', moonshine_voice/')}. Manuscript Teleprompter must collect the moonshine_voice binaries (scripts/release/prepare-resources.py).`);
+  }
+}
+// The four approved asset catalogs travel with the release: the app reads them to know what it may offer to download.
+const catalogsMissing = ['tts-assets.json', 'whisper-assets.json', 'spacy-assets.json', 'moonshine-assets.json'].filter((name) => !existsSync(resolve(resources, 'config', name)));
 if (catalogsMissing.length) {
   throw new Error(`Release asset catalogs are missing: ${catalogsMissing.join(', ')}. prepare-resources.py copies config/ into the resources.`);
 }

@@ -320,8 +320,14 @@ sequenceDiagram
 
 **Packaging.** The sidecar is frozen as `manuscript-teleprompter` by
 `scripts/release/prepare-resources.py` and required by
-`scripts/release/verify-installable.mjs`. `moonshine-voice` is deliberately
-not bundled yet.
+`scripts/release/verify-installable.mjs`. On Windows it carries the Moonshine
+engine too ([ADR 0107](../adr/0107-moonshine-ships-inside-the-windows-teleprompter-sidecar-and-runs-only-from-a-verified-catalog-install.md)): `moonshine-voice` is pinned for Windows only, its
+`ctypes`-loaded `moonshine.dll` and `onnxruntime.dll` are collected by hand and
+required by `verify-installable.mjs`, and `narration-utils --smoke` runs
+`manuscript-teleprompter --check-moonshine` to prove they load. The frozen
+sidecar runs Moonshine only from a `--model-dir` holding every file of
+`config/moonshine-assets.json` (`core/moonshine_engine.py`); it never uses the
+library's downloader. Freezing it in cost 24.1 MB (+9.4%).
 
 ## Where listening runs (resolves decision #1)
 

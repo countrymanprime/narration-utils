@@ -42,12 +42,12 @@
     },
     "moonshine/tiny": {
       "commercialUse": "Yes (MIT)",
-      "status": "In the catalog (teleprompter-engines-and-input-devices.prd.md phase 5); not yet launchable (phases 6-7 pending)",
+      "status": "In the catalog (teleprompter-engines-and-input-devices.prd.md phase 5); the Windows sidecar runs it from a catalog install (phase 6), the app cannot start it yet (phase 7 pending)",
       "note": "English streaming model, word-timestamp variant, publisher Moonshine AI. Licence re-verified 2026-09-22 directly against the repository's LICENSE file (GitHub's detector reports the repository as unrecognized): the English streaming models are explicitly MIT, distinct from the non-commercial Community License that covers only legacy non-English, non-streaming models. Pinned to the dated release path `.../quantized_26_08_21`; every file's URL, size and SHA-256 were verified by downloading and hashing once."
     },
     "moonshine/small": {
       "commercialUse": "Yes (MIT)",
-      "status": "In the catalog (teleprompter-engines-and-input-devices.prd.md phase 5); not yet launchable (phases 6-7 pending)",
+      "status": "In the catalog (teleprompter-engines-and-input-devices.prd.md phase 5); the Windows sidecar runs it from a catalog install (phase 6), the app cannot start it yet (phase 7 pending)",
       "note": "As moonshine/tiny, larger architecture."
     }
   },

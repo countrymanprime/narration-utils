@@ -28,9 +28,9 @@ Both are recorded in docs/research/local-dependency-evaluation.md.
 Usage:
     python live_asr.py --wav segment.wav --model small [--model-dir DIR]
     python live_asr.py --mic "Microphone Array (Realtek(R) Audio)" --model tiny --timing
-    uv run --no-project --python 3.12 --with moonshine-voice==0.1.5 --with av==18.1.0 \\
-        python live_asr.py --engine moonshine --model small --mic "Microphone Array" --context script.txt --timing
-(moonshine-voice is an optional dependency, not in pyproject.toml, hence the ephemeral uv environment.)
+    python live_asr.py --engine moonshine --model small --model-dir DIR --mic "Microphone Array" --context script.txt --timing
+(moonshine-voice is a Windows-only dependency, loaded by moonshine_engine.py. From source, omitting --model-dir lets the
+library download the model itself; the frozen sidecar refuses to and needs a catalog install.)
 
 Output (stdout, one JSON object per line, flushed immediately; times are
 seconds of stream time). Engines only produce hypotheses; one shared layer
@@ -61,6 +61,10 @@ turns them into these three event types:
         opens them under (see devices.py); prints once and exits, no
         --wav/--mic session follows. `error` is set (devices always []) if
         listing failed - a caller must never treat that as "no microphones".
+    {"type": "engine_check", "engine": "moonshine", "ok": true, "detail": "moonshine-voice 0.1.5: ..."}
+        only with --check-moonshine: whether this build can run Moonshine (see
+        moonshine_engine.py); prints once and exits, 1 if not. The packaged
+        app's smoke test reads it.
 Word timings come from the engine and are advisory: they can be noisy or run
 backwards (Moonshine's do, mostly in partials), so the only guarantee is that
 `end` is never before `start`. Consumers should rely on word ORDER, not times.
@@ -516,34 +520,6 @@ def ticking(chunks: Iterable[np.ndarray], clock: StreamClock, on_tick: Callable[
         yield chunk
 
 
-def load_moonshine_transcriber(model: str, model_dir: str | None, update_interval: float, keyterms: str | None, context: str | None):
-    """Load a Moonshine streaming Transcriber. moonshine-voice is an optional
-    dependency imported only here, so the Whisper path never needs it."""
-    try:
-        from moonshine_voice import ModelArch, Transcriber
-    except ImportError as error:
-        raise SystemExit(
-            "--engine moonshine needs the moonshine-voice package, which is not a project dependency yet. Run with: "
-            "uv run --no-project --python 3.12 --with moonshine-voice==0.1.5 --with av==18.1.0 python <this script> ..."
-        ) from error
-
-    arch = getattr(ModelArch, MOONSHINE_ARCHS[model])
-    if model_dir:
-        model_path = model_dir
-        log(f"Loading Moonshine {MOONSHINE_ARCHS[model]} from {model_dir}...")
-    else:
-        from moonshine_voice.download import get_model_for_language
-
-        log(f"Loading Moonshine {MOONSHINE_ARCHS[model]} (first run downloads it from Moonshine's servers)...")
-        model_path, arch = get_model_for_language("en", arch, include_word_timestamps=True)
-    transcriber = Transcriber(model_path, arch, update_interval=update_interval, options={"word_timestamps": "true"})
-    if keyterms:
-        transcriber.set_keyterms([term.strip() for term in keyterms.split(",") if term.strip()])
-    if context:
-        transcriber.set_context(context)
-    return transcriber
-
-
 EventStream = Callable[[Iterable[np.ndarray]], Iterator[dict]]
 
 
@@ -562,7 +538,10 @@ def _load_whisper_engine(args) -> EventStream:
 
 
 def _load_moonshine_engine(args) -> EventStream:
-    transcriber = load_moonshine_transcriber(args.model, args.model_dir, args.decode_interval, args.hotwords, args.context_text)
+    # Which model files are loaded, and the refusal to download from the frozen sidecar, live in moonshine_engine.py.
+    from moonshine_engine import load_transcriber
+
+    transcriber = load_transcriber(MOONSHINE_ARCHS[args.model], args.model_dir, args.decode_interval, args.hotwords, args.context_text)
 
     def stream(chunks: Iterable[np.ndarray]) -> Iterator[dict]:
         try:
@@ -660,6 +639,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the input devices the --mic capture path can open (one JSON object: {type: devices, devices: [...], error}), then exit",
     )
+    ap.add_argument(
+        "--check-moonshine",
+        action="store_true",
+        help="Print whether this build can run --engine moonshine (one JSON object: {type: engine_check, engine, ok, detail}), then exit (1 if not)",
+    )
     ap.add_argument("--wav", default=None, help="Replay this audio file as if it were live mic input (fixture testing)")
     ap.add_argument("--mic", default=None, help="Capture from this input device name instead of --wav (Windows dshow device name)")
     ap.add_argument("--engine", default="whisper", choices=["whisper", "moonshine"], help="Live ASR engine (default: whisper); both emit the same events")
@@ -671,7 +655,8 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument(
         "--model-dir",
         default=None,
-        help="Local, already-verified model directory from the whisper asset catalog (apps/desktop/internal/whisper); omit to let faster-whisper resolve --model itself for direct/manual CLI use",
+        help="Local, already-verified model directory from the engine's asset catalog (apps/desktop/internal/whisper or internal/moonshine); "
+        "omit to let the engine's library resolve --model itself for direct/manual CLI use (Moonshine: source runs only, the frozen sidecar requires it)",
     )
     ap.add_argument("--language", default=None, help="Force language code, e.g. 'en' (default: auto-detect)")
     ap.add_argument("--hotwords", default=None, help="Comma-separated vocabulary hints (faster-whisper hotwords, or Moonshine key terms)")
@@ -715,6 +700,14 @@ def main() -> None:
 
         devices, error = list_input_devices()
         _emit({"type": "devices", "devices": [device.to_json() for device in devices], "error": error})
+        return
+    if args.check_moonshine:
+        from moonshine_engine import self_check
+
+        report = self_check()
+        _emit(report)
+        if not report["ok"]:
+            sys.exit(1)
         return
     if not args.wav and not args.mic:
         ap.error("one of --wav or --mic is required")

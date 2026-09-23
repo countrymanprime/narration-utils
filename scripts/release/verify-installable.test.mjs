@@ -27,7 +27,10 @@ function healthyTree() {
   touch(...internal, 'onnxruntime', 'capi', 'onnxruntime.dll');
   touch(...internal, 'cmudict', 'data', 'cmudict.dict');
   touch(...internal, 'cmudict-1.1.3.dist-info', 'METADATA');
-  for (const catalog of ['tts-assets.json', 'whisper-assets.json', 'spacy-assets.json']) touch('config', catalog);
+  if (process.platform === 'win32') {
+    for (const dll of ['moonshine.dll', 'onnxruntime.dll']) touch('runtime', 'manuscript-teleprompter', '_internal', 'moonshine_voice', dll);
+  }
+  for (const catalog of ['tts-assets.json', 'whisper-assets.json', 'spacy-assets.json', 'moonshine-assets.json']) touch('config', catalog);
   for (const file of REAPER_FILES) touch('reaper', file);
   return { root, runtime, cleanup: () => rmSync(root, { recursive: true, force: true }) };
 }
@@ -69,5 +72,13 @@ test('a frozen guide without the cmudict package metadata fails and names it', (
   withTree(['runtime', 'manuscript-guide', '_internal', 'cmudict-1.1.3.dist-info'], /cmudict-<version>\.dist-info/));
 
 test('a release without an approved asset catalog fails and names it', () => withTree(['config', 'spacy-assets.json'], /spacy-assets\.json/));
+
+test('a release without the Moonshine catalog fails and names it', () => withTree(['config', 'moonshine-assets.json'], /moonshine-assets\.json/));
+
+// Moonshine ships on Windows only (pyproject.toml), so only a Windows tree must carry its native library.
+for (const dll of ['moonshine.dll', 'onnxruntime.dll']) {
+  test(`a Windows teleprompter without Moonshine's ${dll} fails and names it`, { skip: process.platform !== 'win32' && 'Moonshine is Windows only' }, () =>
+    withTree(['runtime', 'manuscript-teleprompter', '_internal', 'moonshine_voice', dll], new RegExp(`moonshine_voice/${dll.replace('.', '\\.')}`)));
+}
 
 test('a release without the REAPER launcher fails and names it', () => withTree(['reaper', REAPER_FILES[0]], new RegExp(REAPER_FILES[0])));
