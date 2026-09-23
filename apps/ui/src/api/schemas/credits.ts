@@ -29,7 +29,6 @@ const creditValuesSchema = z.object({
   publisher: z.string().optional(),
   narrator: z.string().optional(),
 }) satisfies z.ZodType<CreditValues>;
-export { creditValuesSchema };
 
 export const creditsProjectValuesResultSchema = z.object({
   values: creditValuesSchema,
