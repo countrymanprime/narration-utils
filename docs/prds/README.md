@@ -70,7 +70,7 @@ Phase counts are the rows of each PRD's phase table.
 | [Public App Demo on GitHub Pages](public-app-demo.prd.md) | Feature | 2 | None; extends `pages.yml` beyond `release-readiness-provisioning-and-docs-site.prd.md` Phases 9-13 |
 | [Audacity Integration](audacity-integration.prd.md) | Feature | 11 (0-10) | None; corrects the "Audacity adapters" deferral of `docs/roadmap.md` and `config/roadmap.json` (D23) |
 | [Native Recording Suite](native-recording-suite.prd.md) | Feature | 6 | None; long-term/deferred like the Audacity adapters in `docs/roadmap.md`, coexists with the REAPER bridge |
-| [DAW Selection and Acquisition](daw-selection-and-acquisition.prd.md) | Feature | 4 | None; upstream of [Project Workspace: DAW Link](project-workspace-and-daw-link.prd.md), which assumes a DAW is already installed |
+| [DAW Selection and Acquisition](daw-selection-and-acquisition.prd.md) | Feature | 4 | None; upstream of [Project Workspace: DAW Link](project-workspace-and-daw-link.prd.md), which assumes a DAW is already installed. Phase 1 reuses that PRD's Phase 6 locator (`apps/desktop/internal/daw`, ADR 0092) |
 
 ## Replaced briefs
 
