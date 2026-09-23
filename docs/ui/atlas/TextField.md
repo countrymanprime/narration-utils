@@ -20,4 +20,4 @@ Storybook title: `Primitives/TextField`. Source: `src/components/primitives/Text
 - `src/components/primitives/TagInput.tsx`
 - `src/components/settings/ScopedSetting.tsx`
 - `src/components/storybible/GuideDetail.tsx`
-- `src/components/teleprompter/TeleprompterPage.tsx`
+- `src/components/storybible/PropertiesSection.tsx`
