@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/bridge"
+	"github.com/countrymanprime/narration-utils/shell/internal/daw"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
@@ -35,7 +36,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 16
+const hostAPIVersion = 17
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -63,7 +64,11 @@ type Host struct {
 	// every completed run (review-dashboard-and-findings-adoption.prd.md
 	// Phase 2). No binding reads it yet (Phase 4 does that); it exists
 	// here only so the adapter has somewhere durable to write.
-	findings     *findings.Store
+	findings *findings.Store
+	// reachability tracks the current project's bridge client PROJECT_STATUS heartbeat (ADR 0092, Phase 7).
+	// Swappable like transcript: configureLocked rebuilds it on every project switch. Nil when there is no bridge
+	// client (no session directory).
+	reachability *daw.Reachability
 	teleprompter *teleprompter.Service
 	recents      *recents.Store
 	log          *hostlog.Log
@@ -87,6 +92,10 @@ type Host struct {
 	executable    func() (string, error)
 	openFolder    func(dir string) error
 	pendingPath   string
+	// reaperLaunch and reaperLocate are seams for tests (dawlaunch.go): nil means daw.Launch and
+	// daw.LocateReaperExecutable, the real detached spawn and the real registry lookup.
+	reaperLaunch  func(program string, args []string) error
+	reaperLocate  func() (path, source string, err error)
 	confirmUpdate sync.Once
 	// writable* remember whether the install folder can be written to, for a short while (see writable).
 	writableMu  sync.Mutex
@@ -262,6 +271,9 @@ func (h *Host) configureLocked(next config) {
 			client.SetLog(func(kind, message string) { _ = h.log.Report(kind, message) })
 		}
 	}
+	// Reachability subscribes to the same client transcript.New below also subscribes: both are independent
+	// consumers of bridge.Client's fan-out (events.go), so neither steals the other's events (ADR 0068).
+	h.reachability = daw.NewReachability(client)
 	h.transcript = transcript.New(transcript.Config{Project: h.config.projectFolder, SessionDir: h.config.sessionDir, Python: h.config.comparePython, Backend: h.config.compareBackend}, client, h.settings, h.sidecars, h.emitTranscript)
 	h.transcript.SetPersist(h.persist)
 	h.transcript.SetFindings(h.findings, h.manuscript)
@@ -741,7 +753,7 @@ func (h *Host) Bootstrap() map[string]any {
 	if svc.transcript != nil {
 		transcriptState = svc.transcript.Snapshot()
 	}
-	dawFileLinked, dawReachable, dawProjectMatches := dawLinkFacts(h.persist, config.projectFolder, config.daw)
+	dawFileLinked, dawReachable, dawProjectMatches := dawLinkFacts(h.persist, config.projectFolder, config.daw, svc.reachability)
 	return map[string]any{
 		"apiVersion": hostAPIVersion, "diagnosticId": h.diagnostic, "version": h.version,
 		"projectFolder": config.projectFolder, "projectName": config.projectName, "daw": config.daw,
@@ -851,6 +863,12 @@ var fieldSchemas = map[string][]fieldSchema{
 		{"engine", "Live engine", "choice", []string{"whisper"}},
 		{"model", "Model", "choice", []string{"tiny", "small"}},
 	},
+	// DAW.reaper_path is a global override for daw.Resolve (empty means auto-detect, apps/desktop/internal/daw).
+	// DAW.auto_start_launcher is owner decision D10 (docs/prds/implementation-plan.md section 1): the app may pass
+	// NarrationUtils_Launcher.lua as REAPER's trailing script argument when it starts REAPER (Phase 8, ADR 0092
+	// W12), so the bridge is live without the narrator running the action by hand - but only when this is on, and
+	// it defaults off.
+	"DAW": {{"reaper_path", "REAPER executable (override)", "text", nil}, {"auto_start_launcher", "Start the launcher script automatically", "bool", nil}},
 }
 
 // settingsSchemas is the settings the app offers with each choice that comes from an approved catalog filled in from it: the spaCy model

@@ -1064,6 +1064,9 @@ export function createMockApi(
       dawFileLinked = true;
       return { selected: true, linked: true, path: dawRppPath };
     },
+    // The mock never grows a real heartbeat (dawReachable stays whatever Bootstrap already reports, ADR 0092
+    // Phase 7 is Go/Lua only): this just answers as if REAPER accepted the launch.
+    launchDaw: async () => ({ launched: true, path: 'C:/Program Files/REAPER (x64)/reaper.exe', source: 'uninstall_registry' }),
     tracksDiscover: async () => wireClone(tracksDiscovery),
     tracksSelect: async (path) => {
       tracksDiscovery = { ...tracksDiscovery, selected: path };

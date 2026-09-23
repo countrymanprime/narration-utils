@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { DawLinkResult, ProjectFolderSelection, ProjectSwitchResult, RecentProject } from '../contracts/project';
+import type { DawLaunchResult, DawLinkResult, ProjectFolderSelection, ProjectSwitchResult, RecentProject } from '../contracts/project';
 import { listFromNull } from './base';
 
 const recentProjectSchema = z.object({ path: z.string(), name: z.string(), lastOpened: z.string() }) satisfies z.ZodType<RecentProject>;
@@ -14,3 +14,8 @@ export const dawLinkResultSchema = z.object({
   folderMismatch: z.boolean().optional(),
   message: z.string().optional(),
 }) satisfies z.ZodType<DawLinkResult>;
+export const dawLaunchResultSchema = z.object({
+  launched: z.boolean(),
+  path: z.string(),
+  source: z.string(),
+}) satisfies z.ZodType<DawLaunchResult>;

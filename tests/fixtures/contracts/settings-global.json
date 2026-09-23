@@ -1,4 +1,26 @@
 {
+  "DAW": [
+    {
+      "choices": null,
+      "effectiveSource": "hardcoded",
+      "effectiveValue": "",
+      "isSet": false,
+      "key": "reaper_path",
+      "kind": "text",
+      "label": "REAPER executable (override)",
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "false",
+      "isSet": false,
+      "key": "auto_start_launcher",
+      "kind": "bool",
+      "label": "Start the launcher script automatically",
+      "value": ""
+    }
+  ],
   "General": [
     {
       "choices": [

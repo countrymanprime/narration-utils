@@ -17,6 +17,9 @@ const TOOLTIP: Record<string, string> = {
   input_device: 'The microphone the Teleprompter listens to. Choose it from the list on the Teleprompter page; it is remembered here.',
   engine: 'Which local speech engine listens for your voice during a Teleprompter session. Moonshine is not offered yet.',
   model: 'Which model size the live engine loads. Tiny keeps up on most computers; Small is more accurate but needs a faster one.',
+  reaper_path: 'Leave blank to auto-detect reaper.exe. Set this only when auto-detect finds the wrong install or none at all.',
+  auto_start_launcher:
+    'When Narration Utils starts REAPER, also pass the Narration Utils action as a startup script, so the bridge is live immediately. Off by default: REAPER is never changed automatically.',
 };
 const optionTip = (field: ScopedSettingField, value: string) =>
   field.key.includes('color')

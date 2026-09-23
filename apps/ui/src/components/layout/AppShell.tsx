@@ -37,6 +37,8 @@ export function AppShell({
   projectName,
   hasManuscript,
   dawFileLinked,
+  dawReachable = false,
+  dawProjectMatches = false,
   onLinkDawFile,
   linkingDawFile = false,
   children,
@@ -46,6 +48,10 @@ export function AppShell({
   projectName: string;
   hasManuscript: boolean;
   dawFileLinked: boolean;
+  /** Whether a live REAPER heartbeat has been seen recently (Phase 7, ADR 0092); false also covers "unknown". */
+  dawReachable?: boolean;
+  /** Whether that heartbeat's open project is the linked file (Phase 7); only meaningful when dawReachable is true. */
+  dawProjectMatches?: boolean;
   onLinkDawFile: () => void;
   /** True while the shared DAW-link binding is running for any of its three call sites (ADR 0075's ref guard). */
   linkingDawFile?: boolean;
@@ -60,10 +66,22 @@ export function AppShell({
   const isDisabled = (item: (typeof NAV)[number]) => (item.requiresManuscript && !hasManuscript) || (item.requiresDaw && !dawFileLinked);
   const requiredReason = (item: (typeof NAV)[number]) =>
     combinedRequiredReason({ manuscript: item.requiresManuscript && !hasManuscript, dawFile: item.requiresDaw && !dawFileLinked });
-  // Copy must not claim to know whether REAPER is running or reachable (PRD W15): dawReachable is still hardcoded
-  // unknown, so the pill only ever speaks to the one fact it actually has - whether a project file is linked.
-  const pillLabel = dawFileLinked ? 'REAPER project linked' : 'No REAPER project linked';
-  const pillTooltip = dawFileLinked ? 'Change the linked REAPER project (.rpp) file' : 'Link a REAPER project (.rpp) file';
+  // Phase 7 (ADR 0092, W10): dawReachable/dawProjectMatches are now real facts (a live PROJECT_STATUS heartbeat),
+  // not the permanently-unknown placeholders Phase 4 shipped. The mismatch state only fires when REAPER is
+  // confirmed reachable and disagrees with the linked file - a stale or absent heartbeat still reads as the plain
+  // "linked" state (PRD W15: "No DAW detected" over-promises when only the absence of a session dir is knowable).
+  const dawMismatch = dawFileLinked && dawReachable && !dawProjectMatches;
+  const pillLabel = dawMismatch ? 'Wrong REAPER project open' : dawFileLinked ? 'REAPER project linked' : 'No REAPER project linked';
+  const pillTooltip = dawMismatch
+    ? 'REAPER has a different project open than the one linked here. Click to link the open project, or switch REAPER to the linked file.'
+    : dawFileLinked
+      ? 'Change the linked REAPER project (.rpp) file'
+      : 'Link a REAPER project (.rpp) file';
+  const pillDotStyle = dawMismatch
+    ? { backgroundColor: 'var(--warn)', boxShadow: '0 0 5px var(--warn)' }
+    : dawFileLinked
+      ? { backgroundColor: 'var(--character)', boxShadow: '0 0 5px var(--character)' }
+      : { backgroundColor: 'var(--non-text)' };
   const navigation = (
     <>
       <div className="flex items-center gap-2 border-b border-[var(--border)] p-4">
@@ -145,10 +163,7 @@ export function AppShell({
               aria-label={`${pillLabel} — ${pillTooltip}`}
               className="inline-flex items-center gap-[0.4rem] rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.6rem] py-[0.2rem] font-['Barlow_Condensed',sans-serif] text-[0.8rem] font-semibold tracking-[0.03em] hover:border-[var(--accent)] disabled:pointer-events-none disabled:opacity-60"
             >
-              <span
-                className="size-[7px] flex-none rounded-full"
-                style={dawFileLinked ? { backgroundColor: 'var(--character)', boxShadow: '0 0 5px var(--character)' } : { backgroundColor: 'var(--non-text)' }}
-              />
+              <span className="size-[7px] flex-none rounded-full" style={pillDotStyle} />
               {pillLabel}
             </button>
           </TooltipTarget>

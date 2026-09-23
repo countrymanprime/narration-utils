@@ -688,4 +688,36 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeTruthy());
     expect(screen.queryByText('Open a project')).toBeNull();
   });
+
+  // Phase 8 (PRD project-workspace-and-daw-link.prd.md): the Settings DAW panel's launch action and its two new
+  // fields (reaper_path override, auto_start_launcher toggle, D10 default off).
+  it('launches REAPER from the global Settings DAW panel', async () => {
+    const launchDaw = vi.fn(createMockApi().launchDaw);
+    renderApp({ launchDaw });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    const launchButton = await screen.findByRole('button', { name: 'Launch REAPER' });
+    expect((launchButton as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(launchButton);
+    await waitFor(() => expect(launchDaw).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText(/REAPER started/)).toBeTruthy();
+
+    expect(await screen.findByLabelText('REAPER executable (override)')).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'Start the launcher script automatically' })).toBeTruthy();
+  });
+
+  it('disables Launch REAPER until a DAW project file is linked', async () => {
+    renderApp({ bootstrap: async () => ({ ...(await createMockApi().bootstrap()), dawFileLinked: false }) });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+    fireEvent.click(screen.getByRole('tab', { name: 'DAW Integration' }));
+
+    const launchButton = await screen.findByRole('button', { name: 'Launch REAPER' });
+    expect((launchButton as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText(/Link a REAPER project \(\.rpp\) file before starting REAPER\./)).toBeTruthy();
+  });
 });

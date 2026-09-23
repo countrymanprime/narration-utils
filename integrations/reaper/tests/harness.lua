@@ -209,8 +209,23 @@ function Session:tick()
   self.fake:pump()
 end
 
--- Every event appended since the last call, each as a list of percent-decoded fields.
+-- Every event appended since the last call, each as a list of percent-decoded fields, except the reachability
+-- heartbeat (PROJECT_STATUS, narration_ui_bridge.lua's tick loop, Phase 7/ADR 0092): it is appended on every
+-- session's first tick regardless of what the test is driving, so it would otherwise show up as a stray trailing
+-- event in every test file's exact event-list assertions. reachability_test.lua, which tests the heartbeat itself,
+-- reads the raw log through all_events() instead.
 function Session:events()
+  local out = {}
+  for _, event in ipairs(self:all_events()) do
+    if event[1] ~= 'PROJECT_STATUS' then
+      out[#out + 1] = event
+    end
+  end
+  return out
+end
+
+-- Every event appended since the last call to events() or all_events(), including PROJECT_STATUS.
+function Session:all_events()
   local text = H.read_text(H.join(self.dir, 'events.log')) or ''
   local fresh = text:sub(self.read_offset + 1)
   self.read_offset = #text

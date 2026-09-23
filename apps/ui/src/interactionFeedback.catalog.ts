@@ -174,6 +174,7 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/settings/Settings.tsx::clearProjectData#1': row('click', 'file-io', 'pending', 'pending', 'toast', 'toast', 'no', 'ok', 'The confirm stays open and busy until the files are removed, and cannot be confirmed twice (phase 6).'),
   'src/components/settings/Settings.tsx::ttsRemove#1': row('click', 'file-io', 'pending', 'pending', 'toast', 'toast', 'no', 'ok', 'The confirm stays open and busy until the voice is removed (phase 6).'),
   'src/components/settings/Settings.tsx::whisperRemove#1': row('click', 'file-io', 'pending', 'pending', 'toast', 'toast', 'no', 'ok', 'The confirm stays open and busy until the model is removed (phase 6).'),
+  'src/components/settings/Settings.tsx::launchDaw#1': row('click', 'instant', 'pending', 'pending', 'toast', 'toast', 'no', 'ok', 'Phase 8: the button reads "Starting REAPER…" and disables while the detached spawn is in flight, so a second click cannot start a second REAPER process; the outcome is a toast, not page state, so it does not survive navigation.'),
 
   // Settings > Local assets
   'src/components/assets/LocalAssets.tsx::assetsList#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'Reads only the manifests, so it opens at once; a failure is written on the page with Try again, and the rows stay while it reloads (phase 6).'),

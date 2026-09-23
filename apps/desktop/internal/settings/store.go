@@ -63,6 +63,9 @@ var builtinDefaults = map[string]Values{
 	"Manuscript":        {"color_note": "B85C1E"},
 	"TranscriptCompare": {"chunk_seconds": "60", "model_size": "small", "color_misread": "FF4040", "color_skipped": "FFC000", "color_extra": "40A0FF"},
 	"Teleprompter":      {"engine": "whisper", "model": "tiny"},
+	// auto_start_launcher defaults off (owner decision D10): the spike that proved REAPER auto-runs a script
+	// argument (ADR 0092, W12) does not by itself decide whether the app should always do it.
+	"DAW": {"auto_start_launcher": "false"},
 }
 
 // Defaults returns the repo file's values for tool, with any key the file does
