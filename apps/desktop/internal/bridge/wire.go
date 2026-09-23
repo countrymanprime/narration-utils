@@ -57,6 +57,9 @@ var eventSpecs = map[string]eventSpec{
 	"PICKUPS_COUNTED":  {required: []fieldSpec{text("run"), count("remaining"), count("total")}},
 	"PICKUP_NEXT":      {required: []fieldSpec{text("run"), number("position"), text("tag"), text("note")}},
 	"PICKUP_RESOLVED":  {required: []fieldSpec{text("run"), number("position"), text("tag"), text("note")}},
+	// Phase 11 (reaper-automation-follow-through PRD): configure-only render setup. targets is RENDER_TARGETS,
+	// semicolon-joined, empty when count is 0 (no chapter regions yet).
+	"RENDER_CONFIGURED": {required: []fieldSpec{text("run"), text("folder"), count("count"), text("targets")}},
 	// PROJECT_STATUS is the reachability heartbeat ADR 0092 (W10) recommends: narration_ui_bridge.lua's tick loop
 	// appends it periodically with an empty run (Fields[1] == ""), so events.go's existing fan-out (a run-less event
 	// reaches every subscriber, Subscription.wants) delivers it as a broadcast with no dedicated route needed. rpp is

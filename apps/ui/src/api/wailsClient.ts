@@ -32,6 +32,7 @@ import { TELEPROMPTER_EVENT_TYPES, teleprompterDevicesResultSchema, teleprompter
 import { equivalenceSchema, hintSuggestionsSchema, hintsSchema, lastCompletedSchema, transcriptStateSchema } from './schemas/transcript';
 import { lineIdentityStartResultSchema, lineIdentityStateSchema } from './schemas/lineidentity';
 import { pickupsImportResultSchema, pickupsStartResultSchema, pickupsStateSchema } from './schemas/pickups';
+import { renderConfigStartResultSchema, renderConfigStateSchema, renderConfigSuggestedFolderSchema } from './schemas/renderconfig';
 import type { NarrationApi } from '../types';
 import * as host from '../../wailsjs/go/main/Host';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
@@ -234,6 +235,10 @@ export const wailsClient: NarrationApi = {
   pickupsCount: () => decode(pickupsStartResultSchema, 'PickupsCount', host.PickupsCount()),
   pickupsState: () => decode(pickupsStateSchema, 'PickupsState', host.PickupsState()),
   subscribePickups: (onUpdate) => subscribeChecked('pickups:state', pickupsStateSchema, onUpdate),
+  renderConfigConfigure: (outputFolder) => decode(renderConfigStartResultSchema, 'RenderConfigConfigure', host.RenderConfigConfigure(outputFolder)),
+  renderConfigSuggestFolder: () => decode(renderConfigSuggestedFolderSchema, 'RenderConfigSuggestFolder', host.RenderConfigSuggestFolder()),
+  renderConfigState: () => decode(renderConfigStateSchema, 'RenderConfigState', host.RenderConfigState()),
+  subscribeRenderConfig: (onUpdate) => subscribeChecked('renderconfig:state', renderConfigStateSchema, onUpdate),
   projectRecents: () => decode(recentProjectsSchema, 'ProjectRecents', host.ProjectRecents()),
   selectProjectFolder: () => decode(projectFolderSelectionSchema, 'ProjectSelectFolder', host.ProjectSelectFolder()),
   switchProject: (path, name) => decode(projectSwitchResultSchema, 'ProjectSwitch', host.ProjectSwitch(path, name ?? '')),

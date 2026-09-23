@@ -87,6 +87,10 @@ const mockLineIdentity = (['success', 'conflict', 'error'] as const).find((seed)
 // PickupsState already at that result, so the remaining-count, next and export states can be seen without a real
 // REAPER round trip.
 const mockPickups = (['import-success', 'next-success', 'export-success', 'error'] as const).find((seed) => seed === mockParams.get('mockPickups'));
+// `?mockRenderConfig=success|no-regions|error` boots the Tracks page's "Prepare chapter render" dialog with
+// RenderConfigState already at that result, so the confirmed-file-names, no-regions-yet and error states can be
+// seen without a real REAPER round trip.
+const mockRenderConfig = (['success', 'no-regions', 'error'] as const).find((seed) => seed === mockParams.get('mockRenderConfig'));
 const mockInitial = {
   ...(mockImportPreview ? { importPreview: mockImportPreview } : {}),
   ...(mockAssets ? { assets: mockAssets } : {}),
@@ -114,6 +118,7 @@ const mockInitial = {
     : {}),
   ...(mockLineIdentity ? { lineIdentity: mockLineIdentity } : {}),
   ...(mockPickups ? { pickups: mockPickups } : {}),
+  ...(mockRenderConfig ? { renderConfig: mockRenderConfig } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

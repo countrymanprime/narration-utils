@@ -322,6 +322,30 @@ export const FEEDBACK_CATALOG: Record<string, FeedbackRow> = {
   'src/components/tracks/PickupsDialog.tsx::pickupsNext#1': row('click', 'job', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'A failure (no pickups remain) shows as an alert.'),
   'src/components/tracks/PickupsDialog.tsx::pickupsResolve#1': row('click', 'job', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'A failure (no open pickup at that position) shows as an alert.'),
   'src/components/tracks/PickupsDialog.tsx::pickupsExport#1': row('click', 'job', 'pending', 'pending', 'ui', 'inline', 'no', 'ok', 'A completed export triggers the browser file-save download; a failure shows as an alert.'),
+  'src/components/tracks/RenderConfigDialog.tsx::renderConfigState#1': row('mount', 'instant', 'na', 'na', 'ui', 'silent', 'na', 'exempt', 'Hydrates whatever configure run was already in flight when the dialog reopened; the live event follows anyway.'),
+  'src/components/tracks/RenderConfigDialog.tsx::renderConfigSuggestFolder#1': row(
+    'mount',
+    'instant',
+    'na',
+    'na',
+    'ui',
+    'silent',
+    'na',
+    'exempt',
+    'Only prefills the output folder field when nothing was configured yet; without it the narrator types the folder by hand.',
+  ),
+  'src/components/tracks/RenderConfigDialog.tsx::subscribeRenderConfig#1': subscription('The render-config state event, for the configure run this dialog starts.'),
+  'src/components/tracks/RenderConfigDialog.tsx::renderConfigConfigure#1': row(
+    'click',
+    'job',
+    'pending',
+    'pending',
+    'ui',
+    'inline',
+    'no',
+    'ok',
+    'Configuration only (Phase 11, Open Question 7): sets the render bounds, pattern and output folder, never triggers a render. A completed run shows the resulting file names and the manual-render instruction; a failure shows inline as an alert.',
+  ),
 
   // Credits (audiobook-credits-templates.prd.md, Phase 1)
   'src/components/settings/CreditsPanel.tsx::creditsTemplates#1': row('mount', 'file-io', 'na', 'na', 'ui', 'inline', 'na', 'ok', 'The template library load; an inline error banner otherwise.'),
@@ -368,4 +392,6 @@ export const SILENT_CATCHES: Record<string, string> = {
     'Hydrates whatever stamp or read was already in flight when the dialog reopened; the live event follows anyway.',
   'src/components/tracks/PickupsDialog.tsx#1':
     'Hydrates whatever run was already in flight, then refreshes the count; a failure here leaves the count at its last known value, and every narrator-triggered action still shows its own failure inline.',
+  'src/components/tracks/RenderConfigDialog.tsx#1':
+    'Hydrates whatever configure run was already in flight, then offers a suggested output folder when none was configured yet; the narrator can still type a folder and press Configure render either way.',
 };

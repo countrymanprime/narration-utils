@@ -274,6 +274,18 @@ export function Ready() {
   return window['go']['main']['Host']['Ready']();
 }
 
+export function RenderConfigConfigure(arg1) {
+  return window['go']['main']['Host']['RenderConfigConfigure'](arg1);
+}
+
+export function RenderConfigState() {
+  return window['go']['main']['Host']['RenderConfigState']();
+}
+
+export function RenderConfigSuggestFolder() {
+  return window['go']['main']['Host']['RenderConfigSuggestFolder']();
+}
+
 export function SystemNotify(arg1, arg2, arg3) {
   return window['go']['main']['Host']['SystemNotify'](arg1, arg2, arg3);
 }

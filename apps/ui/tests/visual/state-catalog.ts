@@ -336,6 +336,28 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'pickups-error',
     description: 'Tracks, "Pickups" dialog when REAPER reports a problem - inline error message (reached via the ?mockPickups=error mock seam)',
   },
+  {
+    page: 'tracks',
+    state: 'render-config-prefilled',
+    description: 'Tracks, "Prepare chapter render" dialog open before any configure - the suggested output folder prefilled, Configure render enabled',
+  },
+  {
+    page: 'tracks',
+    state: 'render-config-success',
+    description:
+      'Tracks, "Prepare chapter render" dialog after a completed configure - the resulting chapter file names and the "press Render in REAPER" instruction shown',
+  },
+  {
+    page: 'tracks',
+    state: 'render-config-no-regions',
+    description: 'Tracks, "Prepare chapter render" dialog after a configure with no chapter regions yet - 0 files, "create them before rendering"',
+  },
+  {
+    page: 'tracks',
+    state: 'render-config-error',
+    description:
+      'Tracks, "Prepare chapter render" dialog when REAPER reports a problem - inline error message, nothing rendered (reached via the ?mockRenderConfig=error mock seam)',
+  },
 
   // Teleprompter
   {
