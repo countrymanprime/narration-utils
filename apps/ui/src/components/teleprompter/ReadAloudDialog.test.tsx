@@ -8,12 +8,6 @@ import { createMockApi } from '../../api/mockApi';
 import { WIRE_TELEPROMPTER_DEVICES } from '../../api/mockFixtures';
 import type { NarrationApi, TeleprompterEvent, TeleprompterState } from '../../types';
 
-// These tests use the mock's compact seed manuscript, not the full Alice text it loads for the demo.
-vi.mock('../../api/aliceManuscript', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../api/aliceManuscript')>()),
-  loadAliceManuscript: () => Promise.resolve(undefined),
-}));
-
 const DEVICE_NAME = WIRE_TELEPROMPTER_DEVICES[0].name;
 const CHAPTER = { id: 'chapter-1', title: 'Chapter 1', subtitle: 'Down the Rabbit-Hole' };
 

@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { loadAliceManuscript, parseAliceManuscript } from './aliceManuscript';
+import { describe, expect, it, vi } from 'vitest';
 import { aliceChapterSeeds } from './mockFixtures';
+
+// test-setup.ts stubs the loader for every other test; these read the real module.
+const { loadAliceManuscript, parseAliceManuscript } = await vi.importActual<typeof import('./aliceManuscript')>('./aliceManuscript');
 
 const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { configure } from '@testing-library/react';
 import fc from 'fast-check';
 
@@ -21,3 +22,11 @@ URL.revokeObjectURL = () => undefined;
 // VITE_FAST_CHECK_EXPLORE=1 runs random seeds and many more runs by hand; a failing random run prints its
 // seed and counterexample, and the counterexample becomes a plain example test.
 fc.configureGlobal(import.meta.env.VITE_FAST_CHECK_EXPLORE === '1' ? { numRuns: 5000 } : { seed: 20260920, numRuns: 200 });
+
+// The mock API loads the whole of Alice's Adventures in Wonderland for the demo (api/aliceManuscript.ts). Unit tests use its
+// compact seed manuscript instead: building the Story Bible over the full book doubles a test's time and has timed one out.
+// aliceManuscript.test.ts reads the real module and the bundled text with vi.importActual.
+vi.mock('./api/aliceManuscript', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./api/aliceManuscript')>()),
+  loadAliceManuscript: () => Promise.resolve(undefined),
+}));
