@@ -542,6 +542,13 @@ export const STATE_CATALOG: StateEntry[] = [
   // Settings
   { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category', ...REFLOW },
   { page: 'settings', state: 'global-appearance', description: 'Settings, Global scope / Appearance category (theme switcher)', ...REFLOW },
+  {
+    page: 'settings',
+    state: 'global-recording-check',
+    description:
+      'Settings, Global scope / Recording check category (recording-coverage PRD Phase 7): the four number settings at their Proposed defaults (0.95, 3, 8, 3 words), under a summary that labels them uncalibrated and states the rule they make',
+    ...REFLOW,
+  },
   { page: 'settings', state: 'global-proofing', description: 'Settings, Global scope / Proofing category', ...REFLOW },
   { page: 'settings', state: 'global-storybible', description: 'Settings, Global scope / Story Bible category', ...REFLOW },
   {
@@ -692,6 +699,13 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'settings',
     state: 'local-assets-remove-confirm',
     description: 'Settings, Local assets: the danger confirm before a model is removed, with what it frees and what asks again',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
+    state: 'project-recording-check',
+    description:
+      'Settings, Project scope / Recording check category: every setting unset in the project and inheriting its default, with the note that a blank project value uses the Global one',
     ...REFLOW,
   },
   { page: 'settings', state: 'project-proofing', description: 'Settings, Project scope / Proofing category', ...REFLOW },

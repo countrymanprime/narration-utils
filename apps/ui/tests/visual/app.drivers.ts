@@ -1067,6 +1067,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Manuscript');
     },
+    'global-recording-check': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'Global');
+      await clickSettingsCategory(page, 'Recording check');
+      await page.getByText('Proposed values, not yet calibrated').waitFor();
+    },
     'global-proofing': async (page) => {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'Global');
@@ -1270,6 +1276,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Appearance');
+    },
+    'project-recording-check': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'This Project');
+      await clickSettingsCategory(page, 'Recording check');
+      await page.getByText('A value left blank here uses the Global one.').waitFor();
     },
     'project-proofing': async (page) => {
       await goToPage(page, 'Settings');

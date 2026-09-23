@@ -513,7 +513,14 @@ export function createMockApi(
     project: Object.fromEntries(
       Object.entries(globalSettings).map(([tool, fields]) => [
         tool,
-        fields.map((field) => ({ ...field, value: '', isSet: false, effectiveValue: field.value, effectiveSource: 'Global' })),
+        // A field set in Global is inherited from there; one set nowhere keeps the default the host would send.
+        fields.map((field) => ({
+          ...field,
+          value: '',
+          isSet: false,
+          effectiveValue: field.isSet ? field.value : field.effectiveValue,
+          effectiveSource: field.isSet ? 'Global' : field.effectiveSource,
+        })),
       ]),
     ),
   };

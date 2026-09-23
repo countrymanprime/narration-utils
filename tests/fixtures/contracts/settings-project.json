@@ -234,6 +234,72 @@
       "value": ""
     }
   ],
+  "RecordingCoverage": [
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "0.95",
+      "isSet": false,
+      "key": "min_paragraph_present",
+      "kind": "number",
+      "label": "Share of each paragraph that must be read",
+      "number": {
+        "max": 1,
+        "min": 0,
+        "step": 0.01,
+        "unit": ""
+      },
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "3",
+      "isSet": false,
+      "key": "max_missing_run",
+      "kind": "number",
+      "label": "Longest run of missing words allowed",
+      "number": {
+        "max": 200,
+        "min": 0,
+        "step": 1,
+        "unit": "words"
+      },
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "8",
+      "isSet": false,
+      "key": "max_misread_run",
+      "kind": "number",
+      "label": "Longest misread still counted as read",
+      "number": {
+        "max": 200,
+        "min": 0,
+        "step": 1,
+        "unit": "words"
+      },
+      "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "3",
+      "isSet": false,
+      "key": "min_anchor_run",
+      "kind": "number",
+      "label": "Shortest match that counts as read",
+      "number": {
+        "max": 50,
+        "min": 1,
+        "step": 1,
+        "unit": "words"
+      },
+      "value": ""
+    }
+  ],
   "Teleprompter": [
     {
       "choices": null,

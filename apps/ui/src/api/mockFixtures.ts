@@ -513,6 +513,18 @@ const deliveryLimit = (key: string, label: string, min: number, unit: string): S
   effectiveSource: 'hardcoded',
   number: { min, max: 0, step: 0.1, unit },
 });
+// A recording check setting as the host sends it with nothing set: its Proposed, uncalibrated default (recording-coverage PRD Q3, Q15).
+const recordingCheck = (key: string, label: string, value: string, number: ScopedSettingField['number']): ScopedSettingField => ({
+  key,
+  label,
+  kind: 'number',
+  choices: [],
+  value: '',
+  isSet: false,
+  effectiveValue: value,
+  effectiveSource: 'repo default',
+  number,
+});
 export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
   General: [
     choice('log_verbosity', 'Log verbosity', ['quiet', 'normal', 'verbose'], 'normal'),
@@ -654,6 +666,14 @@ export const wireSettings = (): Record<string, ScopedSettingField[]> => ({
     deliveryLimit('sample_peak_dbfs_max', 'Sample peak, highest', -60, 'dBFS'),
     deliveryLimit('true_peak_dbtp_max', 'True peak, highest', -60, 'dBTP'),
     deliveryLimit('noise_floor_dbfs_max', 'Noise floor, highest', -120, 'dBFS'),
+  ],
+  // The recording check's four settings (docs/prds/recording-coverage-analysis.prd.md Phase 7), mirroring the host's fieldSchemas and
+  // numberSpecs.
+  RecordingCoverage: [
+    recordingCheck('min_paragraph_present', 'Share of each paragraph that must be read', '0.95', { min: 0, max: 1, step: 0.01, unit: '' }),
+    recordingCheck('max_missing_run', 'Longest run of missing words allowed', '3', { min: 0, max: 200, step: 1, unit: 'words' }),
+    recordingCheck('max_misread_run', 'Longest misread still counted as read', '8', { min: 0, max: 200, step: 1, unit: 'words' }),
+    recordingCheck('min_anchor_run', 'Shortest match that counts as read', '3', { min: 1, max: 50, step: 1, unit: 'words' }),
   ],
 });
 export const WIRE_TRACKS_PROJECT: TracksProject = {

@@ -1,9 +1,13 @@
 # Chapter stage recommendations: the signal contract
 
-**Status: contract and engine delivered, no signal yet.** The Go types, the `Provider` interface and the pure engine
+**Status: contract and engine delivered, one signal.** The Go types, the `Provider` interface and the pure engine
 are in [`apps/desktop/internal/stages`](../../apps/desktop/internal/stages) (Phase 1 of
-[the chapter stage recommendations PRD](../prds/chapter-stage-recommendations.prd.md)). Nothing calls them yet: the
-decision store, the providers, the bindings and the Home surface are later phases. The decision is
+[the chapter stage recommendations PRD](../prds/chapter-stage-recommendations.prd.md)). The recording signal,
+`recording.text_present`, and its provider are in
+[`apps/desktop/internal/coverage`](../../apps/desktop/internal/coverage) (`signal.go`, `provider.go`;
+[ADR 0131](../adr/0131-the-recording-signal-is-read-from-stored-checks-with-thresholds-applied-on-read-and-alignment-from-settings.md)).
+Nothing calls them yet: the decision store, the service that composes the providers, the bindings and the Home surface
+are later phases. The decision is
 [ADR 0160](../adr/0160-stage-recommendations-are-computed-from-tri-state-signals-by-a-pure-engine.md).
 
 This page is for whoever implements a signal: recording coverage (`recording`), editing readiness (`editing`) and

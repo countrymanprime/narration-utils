@@ -21,13 +21,7 @@ func (s *Service) Result(chapterID string, alignment AlignmentParams) (ChapterRe
 }
 
 func (s *Service) result(chapterID string, alignment AlignmentParams) (ChapterResult, error) {
-	if s.config.Project == "" {
-		return ChapterResult{}, unknown(ReasonNoProject, "open a project first")
-	}
-	if err := alignment.validate(); err != nil {
-		return ChapterResult{}, err
-	}
-	basis, err := s.chapter(chapterID)
+	basis, err := s.readableChapter(chapterID, alignment)
 	if err != nil {
 		return ChapterResult{}, err
 	}
@@ -36,6 +30,53 @@ func (s *Service) result(chapterID string, alignment AlignmentParams) (ChapterRe
 		return ChapterResult{}, err
 	}
 	return s.evaluate(project, projectFile, basis, alignment)
+}
+
+// ResultIn is Result against a saved project the caller already parsed (the
+// stage recommendations' shared EvidenceView), so evaluating every chapter
+// reads the .rpp once.
+func (s *Service) ResultIn(project tracks.Project, projectFile evidence.LedgerProjectFile, chapterID string, alignment AlignmentParams) (ChapterResult, error) {
+	result, err := s.resultIn(project, projectFile, chapterID, alignment)
+	if reason, ok := ReasonOf(err); ok {
+		return ChapterResult{State: evidence.StateNever, Reasons: []string{string(reason)}}, nil
+	}
+	return result, err
+}
+
+func (s *Service) resultIn(project tracks.Project, projectFile evidence.LedgerProjectFile, chapterID string, alignment AlignmentParams) (ChapterResult, error) {
+	basis, err := s.readableChapter(chapterID, alignment)
+	if err != nil {
+		return ChapterResult{}, err
+	}
+	return s.evaluate(project, projectFile, basis, alignment)
+}
+
+// readableChapter checks what every read needs before the saved project: an
+// open project, valid alignment parameters and the chapter in the manuscript.
+func (s *Service) readableChapter(chapterID string, alignment AlignmentParams) (ChapterBasis, error) {
+	if s.config.Project == "" {
+		return ChapterBasis{}, unknown(ReasonNoProject, "open a project first")
+	}
+	if err := alignment.validate(); err != nil {
+		return ChapterBasis{}, err
+	}
+	return s.chapter(chapterID)
+}
+
+// latestRecord is the chapter's newest coverage ledger record of any outcome.
+func (s *Service) latestRecord(chapterID string) (*evidence.LedgerRecord, error) {
+	records, err := s.ledger.List(AnalyzerID, chapterID)
+	if err != nil || len(records) == 0 {
+		return nil, err
+	}
+	return &records[0], nil
+}
+
+// Checking reports whether a check of chapterID is running now.
+func (s *Service) Checking(chapterID string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.busy && s.state.Phase == PhaseRunning && s.state.ChapterID == chapterID
 }
 
 // RecordedFractions is the measured ManuscriptChapter.recordedFraction (D11):

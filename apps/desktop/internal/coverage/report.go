@@ -211,7 +211,8 @@ func (r Report) check(chapterID string) error {
 }
 
 // Thresholds are the narrator's pass/fail settings (Q3), applied on read so a
-// change never re-transcribes or re-aligns. Phase 7 reads them from settings.
+// change never re-transcribes or re-aligns. They come from settings
+// (ResolveSettings) and are applied by RecordingSignal.
 type Thresholds struct {
 	MinParagraphPresent float64
 	MaxMissingRun       int

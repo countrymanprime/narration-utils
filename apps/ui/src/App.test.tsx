@@ -505,6 +505,23 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(await screen.findByText('No limits set')).toBeTruthy();
   });
 
+  it('offers the recording check settings at their Proposed defaults and saves a changed threshold', async () => {
+    const store = createMockApi();
+    const saveSettings = vi.fn(store.saveSettings);
+    renderApp({ saveSettings, settingsForScope: store.settingsForScope });
+    await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
+    await screen.findByRole('heading', { name: 'Settings' });
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Recording check' }));
+    expect(await screen.findByText('Proposed values, not yet calibrated')).toBeTruthy();
+    expect(screen.getByText(/at least 95% of its words read and no more than 3 words in a row/)).toBeTruthy();
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Longest run of missing words allowed' }), { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(saveSettings).toHaveBeenCalledWith('RecordingCoverage', 'global', { max_missing_run: '5' }));
+    expect(await screen.findByText(/no more than 5 words in a row/)).toBeTruthy();
+  });
+
   it('does not call the host when an edit was put back, and leaves nothing marked unsaved', async () => {
     const saveSettings = vi.fn(createMockApi().saveSettings);
     renderApp({ saveSettings });
