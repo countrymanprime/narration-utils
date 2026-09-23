@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from 'react';
 import type { GuideEntity, ManuscriptNote, ManuscriptParagraph } from '../../types';
 import { Highlight, highlightKind } from '../primitives/Highlight';
 import { composeAnnotationPieces, entityAnnotations, noteAnnotations, type Annotation, type Piece } from './annotations';
+import type { RetailSampleRange } from './retailSampleRange';
 
 const FORMAT_TAG = { bold: 'strong', italic: 'em', underline: 'u' } as const;
 const JUMP_TARGET_CLASS = 'animate-[jump-target-pulse_1.6s_ease] bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] shadow-[inset_3px_0_0_var(--accent)]';
@@ -13,6 +14,7 @@ export function ParagraphView({
   textClass,
   lineNumberPadding,
   jumpTarget,
+  retailSample,
   openEntity,
   openNote,
 }: {
@@ -22,6 +24,8 @@ export function ParagraphView({
   textClass: string;
   lineNumberPadding: string;
   jumpTarget?: number;
+  /** The retail sample's paragraphs (Phase 5, C10): their rows are marked, with a label where it starts and ends. */
+  retailSample?: RetailSampleRange;
   openEntity: (entity: GuideEntity) => void;
   openNote: (note: ManuscriptNote) => void;
 }) {
@@ -44,6 +48,7 @@ export function ParagraphView({
           textClass={textClass}
           lineNumberPadding={lineNumberPadding}
           isJumpTarget={jumpTarget === paragraph.index}
+          retailSample={retailSample}
           openEntity={openEntity}
           openNote={openNote}
         />
@@ -60,6 +65,7 @@ function ParagraphRow({
   textClass,
   lineNumberPadding,
   isJumpTarget,
+  retailSample,
   openEntity,
   openNote,
 }: {
@@ -70,6 +76,7 @@ function ParagraphRow({
   textClass: string;
   lineNumberPadding: string;
   isJumpTarget: boolean;
+  retailSample?: RetailSampleRange;
   openEntity: (entity: GuideEntity) => void;
   openNote: (note: ManuscriptNote) => void;
 }) {
@@ -110,12 +117,20 @@ function ParagraphRow({
           </Highlight>
         );
       }, piece.text);
+  const inSample = retailSample !== undefined && paragraph.index >= retailSample.start && paragraph.index <= retailSample.end;
+  const sampleLabel =
+    inSample && paragraph.index === retailSample.start
+      ? `Retail sample starts · about ${retailSample.length}`
+      : inSample && paragraph.index === retailSample.end
+        ? 'Last line of the retail sample'
+        : undefined;
   return (
     <div
       className={`grid min-h-8 grid-cols-[3.5rem_minmax(0,1fr)] border-b border-[var(--border)] last:border-b-0 ${isJumpTarget ? JUMP_TARGET_CLASS : 'even:bg-[var(--row-alt)]'}`}
       data-paragraph={paragraph.index}
       data-source-line={paragraph.sourceLine}
       data-jump-target={isJumpTarget || undefined}
+      data-retail-sample={inSample || undefined}
     >
       <div className={gutterClass}>
         <span
@@ -125,7 +140,12 @@ function ParagraphRow({
           {chapterParagraphIndex + 1}
         </span>
       </div>
-      <div className="min-w-0 px-4 py-1">
+      <div className={`min-w-0 px-4 py-1 ${inSample ? 'shadow-[inset_3px_0_0_var(--info)]' : ''}`}>
+        {sampleLabel && (
+          <div className="text-xs font-medium" style={{ color: 'var(--info-text)' }}>
+            {sampleLabel}
+          </div>
+        )}
         <p data-paragraph-text className={`${textClass} whitespace-pre-line`}>
           {composeAnnotationPieces(paragraph.text, annotations).map(renderPiece)}
         </p>

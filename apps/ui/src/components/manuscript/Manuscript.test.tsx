@@ -463,6 +463,50 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
   });
 
+  describe('retail sample marker (PRD audiobook-credits-templates.prd.md, Phase 5, C10)', () => {
+    const sampleOnChapterTwo = async () => {
+      const chapter = (await createMockApi().manuscriptChapters())[1];
+      const ids = chapter.paragraphIds ?? [];
+      return {
+        chapter,
+        answer: {
+          sample: {
+            startParagraphId: ids[1].id,
+            endParagraphId: ids[2].id,
+            startChapterId: chapter.id,
+            startLine: 2,
+            endChapterId: chapter.id,
+            endLine: 3,
+            words: 60,
+            seconds: 23.2,
+          },
+          problem: '',
+        },
+      };
+    };
+
+    it('marks the chapter that holds the sample and, once it is open, exactly the sampled lines', async () => {
+      const { chapter, answer } = await sampleOnChapterTwo();
+      renderManuscript({ creditsRetailSample: async () => answer });
+      const heading = await screen.findByRole('heading', { name: /Chapter 2/ });
+      const article = heading.closest('article')!;
+      expect(await within(article).findByText('Retail sample')).toBeTruthy();
+      expect(within(screen.getByRole('heading', { name: /Chapter 1 —/ }).closest('article')!).queryByText('Retail sample')).toBeNull();
+
+      fireEvent.click(heading);
+      await waitFor(() => expect(article.querySelectorAll('[data-retail-sample]').length).toBe(2));
+      const marked = [...article.querySelectorAll('[data-retail-sample]')].map((row) => Number(row.getAttribute('data-paragraph')));
+      expect(marked).toEqual([chapter.paragraphIds![1].index, chapter.paragraphIds![2].index]);
+      expect(within(article).getByText(/Retail sample starts · about 0m 23s/)).toBeTruthy();
+    });
+
+    it('marks nothing when no sample is picked or the saved one cannot be measured', async () => {
+      renderManuscript({ creditsRetailSample: async () => ({ sample: null, problem: 'pick the range again' }) });
+      await screen.findByRole('heading', { name: /Chapter 2/ });
+      expect(screen.queryByText('Retail sample')).toBeNull();
+    });
+  });
+
   describe('Read aloud (teleprompter-manuscript-integration.prd.md Phase 2)', () => {
     it('opens the read-aloud modal for a narration chapter, with no separate chapter picker', async () => {
       renderManuscript();

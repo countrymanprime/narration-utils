@@ -9,8 +9,10 @@ recording progress, and shortcuts into the latest [Proofing](proofing.md) compar
 ![Home, manuscript found](../../images/ui/home-default.webp)
 
 Next to the narration estimates, **Credits** is the estimated reading time of the opening and closing
-credits (the first of each in [Settings, Credits](settings.md#credits)), shown in seconds under a
-minute. It is kept apart from the narration totals, and it is left out when there is no credit template.
+credits (the first of each in [Settings, Credits](settings.md#credits)), each with the room tone set in
+Settings, General, plus the first chapter announcement read once for every chapter, shown in seconds under
+a minute. It is kept apart from the narration totals, and it is left out when there is no credit template.
+The [retail sample](settings.md#retail-sample) adds nothing: it is part of a chapter already counted.
 
 The pill at the top right of every page says whether a REAPER project is linked; see
 [Navigation](navigation.md) for its states.

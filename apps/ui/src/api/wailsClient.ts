@@ -17,7 +17,14 @@ import {
   workJobSchema,
 } from './schemas/manuscript';
 import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchema, projectSwitchResultSchema, recentProjectsSchema } from './schemas/project';
-import { creditsProjectValuesResultSchema, creditsRenderResultSchema, creditTemplateSchema, creditTemplatesSchema } from './schemas/credits';
+import {
+  creditsAnnouncementsSchema,
+  creditsProjectValuesResultSchema,
+  creditsRenderResultSchema,
+  creditTemplateSchema,
+  creditTemplatesSchema,
+  retailSampleAnswerSchema,
+} from './schemas/credits';
 import { dawCatalogListSchema } from './schemas/dawCatalog';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { settingsForScopeSchema } from './schemas/settings';
@@ -295,6 +302,9 @@ export const wailsClient: NarrationApi = {
       ),
     ),
   creditsPreview: (body) => decode(creditsRenderResultSchema, 'CreditsPreview', host.CreditsPreview(body)),
+  creditsChapterAnnouncements: (body) => decode(creditsAnnouncementsSchema, 'CreditsChapterAnnouncements', host.CreditsChapterAnnouncements(body)),
+  creditsRetailSample: () => decode(retailSampleAnswerSchema, 'CreditsRetailSample', host.CreditsRetailSample()),
+  saveCreditsRetailSample: (start, end) => decode(retailSampleAnswerSchema, 'CreditsSaveRetailSample', host.CreditsSaveRetailSample(start, end)),
   dawCatalogList: () => decode(dawCatalogListSchema, 'DawCatalogList', host.DawCatalogList()),
   dawCatalogOpenDownloadPage: (id) => decode(voidResult, 'DawCatalogOpenDownloadPage', host.DawCatalogOpenDownloadPage(id)),
   tracksDiscover: () => decode(tracksDiscoverySchema, 'TracksDiscover', host.TracksDiscover()),

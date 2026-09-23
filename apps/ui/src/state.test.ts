@@ -7,7 +7,9 @@ import {
   chapterLineNumber,
   chapterTextMatches,
   CREDITS_ROOM_TONE_SECONDS_PER_FILE,
+  estimateAnnouncementSeconds,
   estimateCreditsSeconds,
+  roomToneSeconds,
   estimateFinishedHours,
   findAliasMatches,
   highlightEntitiesInText,
@@ -283,6 +285,19 @@ describe('Credits time (audiobook-credits-templates.prd.md, Phase 2)', () => {
 
   it('adds an explicit room-tone allowance once per segment/file when given one', () => {
     expect(estimateCreditsSeconds([155, 155], 2)).toBe(124);
+  });
+
+  it('times chapter announcements at the same rate with no room tone, since they sit inside chapter files (Phase 5)', () => {
+    expect(estimateAnnouncementSeconds([155, 155])).toBe(120);
+    expect(estimateAnnouncementSeconds([])).toBe(0);
+  });
+
+  it('reads the room tone setting as whole seconds, 0 when unset or not a number (Phase 5)', () => {
+    expect(roomToneSeconds('3')).toBe(3);
+    expect(roomToneSeconds('')).toBe(0);
+    expect(roomToneSeconds(undefined)).toBe(0);
+    expect(roomToneSeconds('loud')).toBe(0);
+    expect(roomToneSeconds('-2')).toBe(0);
   });
 });
 

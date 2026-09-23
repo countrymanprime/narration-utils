@@ -681,6 +681,16 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'button', 'Opening credits');
       await page.getByText(/unresolved token/).waitFor();
     },
+    // The retail sample (credits PRD Phase 5): ?mockCredits=extras picks lines 1-3 of Chapter 3; the chapter is opened so
+    // the marked lines show, the rest collapsed (overlapping marks elsewhere are the tracked axe debt of other states, #155).
+    'retail-sample': async (page) => {
+      await page.goto('/?mockCredits=extras');
+      await settlePage(page);
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Collapse all chapters');
+      await page.getByRole('heading', { name: /^Chapter 3 / }).click();
+      await page.getByText(/Retail sample starts/).waitFor();
+    },
   },
   proofing: {
     'disabled-button': async (page) => {
@@ -1521,6 +1531,36 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Credits');
+    },
+    // Credits PRD Phase 5: the chapter announcement template ?mockCredits=extras adds, previewed for Chapter 1.
+    'project-credits-chapter-announcement': async (page) => {
+      await page.goto('/?mockCredits=extras');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'This Project');
+      await clickSettingsCategory(page, 'Credits');
+      await page.getByRole('combobox', { name: 'Template' }).selectOption({ label: 'Chapter announcement (Chapter announcement)' });
+      await page.getByText(/Shown for Chapter 1/).waitFor();
+    },
+    // The retail sample ?mockCredits=extras picked (Chapter 3, lines 1-3), scrolled into view.
+    'project-credits-retail-sample': async (page) => {
+      await page.goto('/?mockCredits=extras');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'This Project');
+      await clickSettingsCategory(page, 'Credits');
+      await page.getByText(/line 1 to Chapter 3, line 3/).waitFor();
+      await page.getByRole('heading', { name: 'Retail sample' }).scrollIntoViewIfNeeded();
+    },
+    // A range over 5 minutes (Chapter 1 to Chapter 12) is refused, and the refusal says why.
+    'project-credits-retail-sample-refused': async (page) => {
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'This Project');
+      await clickSettingsCategory(page, 'Credits');
+      await page.getByRole('combobox', { name: 'Sample ends in' }).selectOption({ label: 'Chapter 12' });
+      await page.getByRole('button', { name: 'Save sample' }).click();
+      await page.getByText(/at most 5 minutes/).waitFor();
+      await page.getByRole('button', { name: 'Save sample' }).scrollIntoViewIfNeeded();
     },
     'dirty-footer': async (page) => {
       await goToPage(page, 'Settings');

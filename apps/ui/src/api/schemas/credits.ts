@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import type { CreditsProjectValuesResult, CreditsRenderResult, CreditTemplate, CreditValues } from '../contracts/credits';
+import type {
+  CreditsAnnouncement,
+  CreditsProjectValuesResult,
+  CreditsRenderResult,
+  CreditTemplate,
+  CreditValues,
+  RetailSample,
+  RetailSampleAnswer,
+} from '../contracts/credits';
 import { listFromNull } from './base';
 
 export const creditTemplateSchema = z.object({
@@ -35,3 +43,27 @@ export const creditsProjectValuesResultSchema = z.object({
   narratorGlobal: z.string(),
   suggestions: z.record(z.string(), z.string()),
 }) satisfies z.ZodType<CreditsProjectValuesResult>;
+
+export const creditsAnnouncementsSchema = listFromNull(
+  z.object({
+    chapterId: z.string(),
+    chapter: z.string(),
+    result: creditsRenderResultSchema,
+  }) satisfies z.ZodType<CreditsAnnouncement>,
+);
+
+const retailSampleSchema = z.object({
+  startParagraphId: z.string(),
+  endParagraphId: z.string(),
+  startChapterId: z.string(),
+  startLine: z.number(),
+  endChapterId: z.string(),
+  endLine: z.number(),
+  words: z.number(),
+  seconds: z.number(),
+}) satisfies z.ZodType<RetailSample>;
+
+export const retailSampleAnswerSchema = z.object({
+  sample: retailSampleSchema.nullable(),
+  problem: z.string(),
+}) satisfies z.ZodType<RetailSampleAnswer>;

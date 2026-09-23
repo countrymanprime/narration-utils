@@ -59,7 +59,10 @@ const mockResume = MOCK_RESUME_SEEDS.find((seed) => seed === mockParams.get('moc
 const mockNoDevices = mockParams.has('mockNoDevices');
 // `?mockCredits=filled` boots the project with its credits values set (title, author, narrator), so the credits read on the
 // teleprompter with every token resolved can be seen without saving them in Settings first (credits PRD Phase 4).
-const mockCreditsFilled = mockParams.get('mockCredits') === 'filled';
+// `?mockCredits=extras` does that too and adds a chapter announcement template and a retail sample on lines 1-3 of
+// Chapter 3 (credits PRD Phase 5), so the announcement preview and the sample marker can be seen without picking them.
+const mockCreditsExtras = mockParams.get('mockCredits') === 'extras';
+const mockCreditsFilled = mockParams.get('mockCredits') === 'filled' || mockCreditsExtras;
 // `?mockPreviewError=<text>` makes the Story Bible preview fail with that text once the
 // preview voice is installed, so the failure toast can be seen without a real host.
 const mockPreviewError = mockParams.get('mockPreviewError');
@@ -136,6 +139,7 @@ const mockInitial = {
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
   ...(mockResume ? { resume: mockResume } : {}),
   ...(mockCreditsFilled ? { creditValues: { title: 'Alice’s Adventures in Wonderland', author: 'Lewis Carroll', narrator: 'Ada Finch' } } : {}),
+  ...(mockCreditsExtras ? { chapterAnnouncement: '[Chapter]{: [Chapter Title]}.', retailSample: { chapterIndex: 2, startLine: 1, endLine: 3 } } : {}),
   ...(mockNoProject ? { projectFolder: '' } : {}),
   ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),
   ...(mockNoRpp ? { tracksCandidates: [] } : {}),

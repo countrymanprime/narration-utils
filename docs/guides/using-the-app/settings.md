@@ -15,7 +15,9 @@ Appearance controls the light/dark theme.
 
 Other categories mix dropdowns and color pickers — Manuscript's own category, for example,
 controls the color used to mark reader notes in the text. **General** (Global only) also holds the
-**Narrator name (default for credits)**. In both scopes:
+**Narrator name (default for credits)** and the **Room tone per credits file (seconds)**, 0 to 10 and 0 by
+default: the silence the [Home](home.md) estimate adds to the opening and to the closing credits file, head
+and tail together (ACX asks for 1 to 5 seconds at each end of every file). In both scopes:
 
 - **Recording check** holds the four numbers the [recording check](home.md) uses: the **Share of
   each paragraph that must be read** (0.8) and the **Longest run of missing words allowed** (3)
@@ -74,21 +76,45 @@ project file** or **Change linked project file**: the same link as the pill in t
 
 ## Credits
 
-**Credits** (This Project only) holds the audiobook's opening and closing credits.
+**Credits** (This Project only) holds the audiobook's opening and closing credits, an optional chapter
+announcement, and the retail sample.
 
-- **Templates**: pick a template to edit its **Name**, **Kind** (Opening or Closing) and **Body**, then
-  **Save template**. **New** starts a blank one, **Duplicate** copies the selected one and **Delete**
-  removes it.
+- **Templates**: pick a template to edit its **Name**, **Kind** (Opening, Closing or Chapter announcement)
+  and **Body**, then **Save template**. **New** starts a blank one, **Duplicate** copies the selected one
+  and **Delete** removes it.
 - **Tokens**: bracketed tokens in the body, such as `[Title]`, `[Author]` and `[Narrator]`, are filled
-  from the project values.
+  from the project values. Wrap a part in braces to drop it, punctuation and all, when a token in it has no
+  value: `[Title]{: [Subtitle]}` reads just the title for a book with no subtitle.
+- **Chapter announcement**: what you read at the head of every chapter. `[Chapter]` is the chapter's
+  heading as the manuscript names it ("Chapter 1") and `[Chapter Title]` its subtitle ("Down the
+  Rabbit-Hole"), so `[Chapter]{: [Chapter Title]}.` reads "Chapter 1: Down the Rabbit-Hole." and just
+  "Prologue." for a chapter with no subtitle. The first announcement template is timed for every chapter
+  in the Credits time on [Home](home.md). You record it inside each chapter file, so keep it to the chapter
+  heading and subtitle: Proofing expects the spoken chapter title there, and any other words are reported
+  as extra.
 - **Preview** shows the body with the values filled in, its word count, and any token that has no value
-  yet, highlighted and listed as unresolved.
+  yet, highlighted and listed as unresolved. A chapter announcement is previewed for the first chapter
+  ("Shown for Chapter 1, one of 12 chapters"); it needs an imported manuscript.
 - **Project values**: Title, Subtitle, Author, Series, Book number, Copyright, Year, Copyright holder,
   Publisher, and a Narrator that overrides the global default from General for this project only. A value
   is saved as you type. Where the manuscript suggests a title or author, **Use suggestion** fills it in.
 
 The first opening and closing templates appear in the [Manuscript](manuscript.md) reader and in the
 Credits time on [Home](home.md).
+
+![Settings, Credits, a chapter announcement previewed for Chapter 1](../../images/ui/settings-credits-chapter-announcement.webp)
+
+### Retail sample
+
+**Retail sample** is the stretch of the book you pick for the retailer's sample: up to 5 minutes, from
+anywhere in the book. Choose the chapter and line it **starts in** and **ends in** (the line numbers the
+[Manuscript](manuscript.md) reader shows) and **Save sample**. The panel says where it runs and how long it
+is at about 155 words a minute; a range longer than 5 minutes is refused with its length, and the sample
+you had is kept. **Clear sample** removes it. The sample is a marker in the Manuscript reader only: it adds
+no time to the estimate, since it is read again from the finished chapter. It is kept with the project, so
+replacing the manuscript keeps it; if its lines are gone, the panel says so and you pick it again.
+
+![Settings, Credits, the retail sample on Chapter 3, lines 1 to 3](../../images/ui/settings-credits-retail-sample.webp)
 
 ## Local assets
 

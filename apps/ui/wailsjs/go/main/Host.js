@@ -74,6 +74,10 @@ export function CoverageState() {
   return window['go']['main']['Host']['CoverageState']();
 }
 
+export function CreditsChapterAnnouncements(arg1) {
+  return window['go']['main']['Host']['CreditsChapterAnnouncements'](arg1);
+}
+
 export function CreditsDeleteTemplate(arg1) {
   return window['go']['main']['Host']['CreditsDeleteTemplate'](arg1);
 }
@@ -90,8 +94,16 @@ export function CreditsProjectValues() {
   return window['go']['main']['Host']['CreditsProjectValues']();
 }
 
+export function CreditsRetailSample() {
+  return window['go']['main']['Host']['CreditsRetailSample']();
+}
+
 export function CreditsSaveProjectValues(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) {
   return window['go']['main']['Host']['CreditsSaveProjectValues'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+}
+
+export function CreditsSaveRetailSample(arg1, arg2) {
+  return window['go']['main']['Host']['CreditsSaveRetailSample'](arg1, arg2);
 }
 
 export function CreditsSaveTemplate(arg1, arg2, arg3, arg4) {

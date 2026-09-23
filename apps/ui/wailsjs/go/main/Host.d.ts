@@ -39,6 +39,8 @@ export function CoverageStart(arg1:string):Promise<string>;
 
 export function CoverageState():Promise<string>;
 
+export function CreditsChapterAnnouncements(arg1:string):Promise<string>;
+
 export function CreditsDeleteTemplate(arg1:string):Promise<string>;
 
 export function CreditsDuplicateTemplate(arg1:string):Promise<string>;
@@ -47,7 +49,11 @@ export function CreditsPreview(arg1:string):Promise<string>;
 
 export function CreditsProjectValues():Promise<string>;
 
+export function CreditsRetailSample():Promise<string>;
+
 export function CreditsSaveProjectValues(arg1:string,arg2:string,arg3:string,arg4:string,arg5:string,arg6:string,arg7:string,arg8:string,arg9:string,arg10:string):Promise<string>;
+
+export function CreditsSaveRetailSample(arg1:string,arg2:string):Promise<string>;
 
 export function CreditsSaveTemplate(arg1:string,arg2:string,arg3:string,arg4:string):Promise<string>;
 

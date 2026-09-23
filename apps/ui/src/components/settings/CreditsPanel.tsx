@@ -3,6 +3,7 @@ import { apiErrorMessage } from '../../api/errorMessage';
 import { useApi } from '../../api/ApiContext';
 import { previewParts } from '../../creditsPreviewParts';
 import type { CreditsRenderResult, CreditTemplate, CreditValues } from '../../types';
+import { RetailSamplePanel } from './RetailSamplePanel';
 import { Button } from '../primitives/Button';
 import { Field } from '../primitives/Field';
 import { Select } from '../primitives/Select';
@@ -13,7 +14,14 @@ const KIND_LABEL: Record<string, string> = { opening: 'Opening', closing: 'Closi
 const KIND_OPTIONS = [
   { value: 'opening', label: 'Opening' },
   { value: 'closing', label: 'Closing' },
+  { value: 'chapter_announcement', label: 'Chapter announcement' },
 ];
+const BODY_HINT: Record<string, string> = {
+  chapter_announcement:
+    'Read at the head of every chapter. [Chapter] is the chapter heading and [Chapter Title] its subtitle; wrap a part in { } to drop it when a token in it is empty, as in [Chapter]{: [Chapter Title]}.',
+};
+const DEFAULT_BODY_HINT =
+  'Bracketed tokens such as [Title], [Author] and [Narrator] are filled from the project values below. Wrap a part in { } to drop it when a token in it is empty.';
 
 /** The project's own credit token value fields (Open Questions C2/C4/C7): every one is optional and per-project except
  * `narrator`, which overrides the global narrator default only for this project. */
@@ -51,6 +59,10 @@ export function CreditsPanel({ notify }: { notify: Notify }) {
   const [narratorGlobal, setNarratorGlobal] = useState('');
   const [suggestions, setSuggestions] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState<CreditsRenderResult>();
+  // A chapter announcement previews for the first narration chapter (Phase 5): which one, out of how many, and why there
+  // is nothing to show when the project has no manuscript yet.
+  const [previewScope, setPreviewScope] = useState<{ chapter: string; count: number }>();
+  const [previewProblem, setPreviewProblem] = useState('');
   const [loadError, setLoadError] = useState('');
   // Guards a second click while a template action or a value save is in flight (ADR 0075): every button below that
   // starts one of these disables until it ends, and the field being saved disables too.
@@ -95,14 +107,29 @@ export function CreditsPanel({ notify }: { notify: Notify }) {
 
   useEffect(() => {
     let active = true;
-    api
-      .creditsPreview(draftBody)
-      .then((result) => active && setPreview(result))
-      .catch(() => active && setPreview(undefined));
+    const show = (result: CreditsRenderResult | undefined, scope?: { chapter: string; count: number }, problem = '') => {
+      if (!active) return;
+      setPreview(result);
+      setPreviewScope(scope);
+      setPreviewProblem(problem);
+    };
+    if (draftKind === 'chapter_announcement') {
+      api
+        .creditsChapterAnnouncements(draftBody)
+        .then((announcements) =>
+          announcements[0] ? show(announcements[0].result, { chapter: announcements[0].chapter, count: announcements.length }) : show(undefined),
+        )
+        .catch((error) => show(undefined, undefined, apiErrorMessage(error)));
+    } else {
+      api
+        .creditsPreview(draftBody)
+        .then((result) => show(result))
+        .catch(() => show(undefined));
+    }
     return () => {
       active = false;
     };
-  }, [api, draftBody, values]);
+  }, [api, draftBody, draftKind, values]);
 
   const saveTemplate = async () => {
     setBusy(true);
@@ -229,7 +256,7 @@ export function CreditsPanel({ notify }: { notify: Notify }) {
             setDraftBody(value);
             setTemplateDirty(true);
           }}
-          hint="Bracketed tokens such as [Title], [Author] and [Narrator] are filled from the project values below."
+          hint={BODY_HINT[draftKind] ?? DEFAULT_BODY_HINT}
         />
         <Button variant="primary" type="button" disabled={!templateDirty || busy} pending={busy} onClick={() => void saveTemplate()}>
           Save template
@@ -254,13 +281,14 @@ export function CreditsPanel({ notify }: { notify: Notify }) {
               )}
             </p>
             <p style={{ color: 'var(--text-muted)' }}>
+              {previewScope && `Shown for ${previewScope.chapter}, one of ${previewScope.count} chapter${previewScope.count === 1 ? '' : 's'}. `}
               {preview.words} word{preview.words === 1 ? '' : 's'}
               {preview.unresolved.length > 0 &&
                 ` — ${preview.unresolved.length} unresolved token${preview.unresolved.length === 1 ? '' : 's'}: ${preview.unresolved.join(', ')}`}
             </p>
           </>
         ) : (
-          <p style={{ color: 'var(--text-muted)' }}>Nothing to preview yet.</p>
+          <p style={{ color: 'var(--text-muted)' }}>{previewProblem ? `Nothing to preview: ${previewProblem}.` : 'Nothing to preview yet.'}</p>
         )}
       </section>
 
@@ -290,6 +318,8 @@ export function CreditsPanel({ notify }: { notify: Notify }) {
           );
         })}
       </section>
+
+      <RetailSamplePanel notify={notify} />
     </div>
   );
 }

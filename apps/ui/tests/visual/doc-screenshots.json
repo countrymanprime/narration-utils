@@ -313,5 +313,26 @@
     "viewport": "desktop",
     "docName": "storybible-needs-review",
     "caption": "Story Bible - a Needs Review entry, its evidence highlighted in the review color"
+  },
+  {
+    "page": "settings",
+    "state": "project-credits-chapter-announcement",
+    "viewport": "desktop",
+    "docName": "settings-credits-chapter-announcement",
+    "caption": "Settings, Credits - a chapter announcement template previewed for Chapter 1"
+  },
+  {
+    "page": "settings",
+    "state": "project-credits-retail-sample",
+    "viewport": "desktop",
+    "docName": "settings-credits-retail-sample",
+    "caption": "Settings, Credits - the retail sample picked on Chapter 3, lines 1 to 3"
+  },
+  {
+    "page": "manuscript",
+    "state": "retail-sample",
+    "viewport": "desktop",
+    "docName": "manuscript-retail-sample",
+    "caption": "Manuscript - the retail sample marked on lines 1 to 3 of Chapter 3"
   }
 ]
