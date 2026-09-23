@@ -344,6 +344,19 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.getByRole('button', { name: 'Retry' }).waitFor();
       await page.locator('[data-tone="error"]').getByText('The app received data it could not read.').waitFor();
     },
+    'read-aloud-setup': async (page) => {
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+      await page.getByRole('dialog', { name: /Read aloud/ }).waitFor();
+    },
+    // Same mock seam and word as the standalone Teleprompter page's `listening` state, opened through the modal instead.
+    'read-aloud-listening': async (page) => {
+      await page.goto('/?mockTeleprompter=listening');
+      await settlePage(page);
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Read Chapter 1 aloud');
+      await page.locator('[data-word="35"] [data-highlight="Cursor"]').waitFor();
+    },
     'reader-text-small': async (page) => {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'small');

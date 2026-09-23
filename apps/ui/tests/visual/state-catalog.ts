@@ -130,6 +130,18 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Manuscript, the inline error with Retry when the data it loads could not be read, beside the notice Home raised for the same data; navigation still works (ADR 0069, 0075)',
   },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-setup',
+    description:
+      'Manuscript, the "Read aloud" full-size dialog (teleprompter-manuscript-integration.prd.md Phase 2) opened from a chapter header - Microphone and Whisper model fields, no chapter picker (the chapter is fixed)',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-listening',
+    description:
+      'Manuscript, the "Read aloud" dialog mid-session and listening - the setup fields collapse to a status bar with Stop, the current word highlighted and read words dimmed (reached via the ?mockTeleprompter=listening mock seam)',
+  },
 
   // Proofing
   { page: 'proofing', state: 'setup-default', description: 'Proofing, setup panel default selection' },
