@@ -44,6 +44,10 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     // category dot and a current state, the same shape as ChapterNav's rows, which Button's padded, uppercase chrome does
     // not fit. One JSX `<button>`, written once inside the entries `.map()`.
     'src/components/teleprompter/ReaderRail.tsx': 1,
+    // The read-aloud rail's Flags list (teleprompter-manuscript-integration.prd.md Phase 7): the same list row as the Story
+    // bible entries above (two lines of text and a current state), which Button's padded, uppercase chrome does not fit. One
+    // JSX `<button>`, written once inside the flags `.map()`.
+    'src/components/teleprompter/ReaderFlagsPanel.tsx': 1,
     'src/components/storybible/GuideDetail.tsx': 1,
     'src/components/tracks/TracksPage.tsx': 2,
   },

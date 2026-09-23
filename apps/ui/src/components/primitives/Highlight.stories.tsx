@@ -2,7 +2,21 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { Highlight, type HighlightKind } from './Highlight';
 
-const KINDS: HighlightKind[] = ['Character', 'Place', 'Organization', 'Lore', 'Item', 'Event', 'Review', 'Note', 'Cursor'];
+const KINDS: HighlightKind[] = [
+  'Character',
+  'Place',
+  'Organization',
+  'Lore',
+  'Item',
+  'Event',
+  'Review',
+  'Note',
+  'Cursor',
+  'Misread',
+  'Extra',
+  'Skipped',
+  'Restart',
+];
 
 const meta = {
   title: 'Primitives/Highlight',
@@ -24,6 +38,26 @@ export const Review: Story = { args: { kind: 'Review', children: 'Cheshire' } };
 export const Note: Story = { args: { kind: 'Note', children: 'a note anchored to this sentence' } };
 // The Teleprompter's current word: a solid accent fill (not a tint) that reads as a position marker.
 export const Cursor: Story = { args: { kind: 'Cursor', children: 'beginning' } };
+// The read-aloud flags (teleprompter-manuscript-integration.prd.md Phase 7): decorations only, in the Transcript Compare colour of the
+// same kind, so the words keep the text colour.
+export const Misread: Story = { args: { kind: 'Misread', children: 'beginning', description: 'Heard: begging' } };
+export const Extra: Story = { args: { kind: 'Extra', children: 'tired', label: 'Suspected extra words', description: 'Heard: um' } };
+export const Skipped: Story = { args: { kind: 'Skipped', children: 'very tired' } };
+export const Restart: Story = { args: { kind: 'Restart', children: 'she had peeped into the book' } };
+
+// Flags sit in running text and over other marks: a misread inside a story bible name keeps the name's tint, and a flag that
+// wraps keeps its decoration on both lines.
+export const FlagsInRunningText: Story = {
+  render: () => (
+    <p className="max-w-xs text-sm leading-7">
+      <Highlight kind="Character">
+        <Highlight kind="Misread">Alice</Highlight>
+      </Highlight>{' '}
+      was beginning to get <Highlight kind="Skipped">very tired</Highlight> of sitting by her sister on the <Highlight kind="Extra">bank</Highlight>, and{' '}
+      <Highlight kind="Restart">of having nothing to do: once or twice she had peeped into the book</Highlight>.
+    </p>
+  ),
+};
 
 // The highlight sits inside running text: it must paint the whole line height and keep the
 // text baseline, including where it wraps across lines (box-decoration-break: clone).

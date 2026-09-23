@@ -3,7 +3,9 @@
 // (microphone, engine, model) in global settings. Storage can be missing, full or blocked (a private window, cleared
 // site data), so every access is guarded and the dialog renders with the defaults when it fails.
 
-const RAIL_TABS = ['key', 'notes', 'bible'] as const;
+import { DEFAULT_FLAG_VISIBILITY, FLAG_KINDS, type FlagVisibility } from './readerFlags';
+
+const RAIL_TABS = ['key', 'flags', 'notes', 'bible'] as const;
 export type RailTab = (typeof RAIL_TABS)[number];
 export type RailState = { open: boolean; tab: RailTab };
 
@@ -29,6 +31,33 @@ export function loadRailState(): RailState {
 export function saveRailState(state: RailState): void {
   try {
     window.localStorage.setItem(RAIL_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    /* storage unavailable: the choice lasts for this dialog only */
+  }
+}
+
+// Which flag kinds show in the text (Phase 7): a per-viewer reading preference like the rail, starting from the owner's default.
+export const FLAG_STORAGE_KEY = 'narration.readAloud.flags';
+
+/** The stored flag kinds to show; any kind stored as anything but a boolean takes its default. */
+export function loadFlagVisibility(): FlagVisibility {
+  try {
+    const raw = window.localStorage.getItem(FLAG_STORAGE_KEY);
+    if (!raw) return DEFAULT_FLAG_VISIBILITY;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return DEFAULT_FLAG_VISIBILITY;
+    const stored = parsed as Record<string, unknown>;
+    return Object.fromEntries(
+      FLAG_KINDS.map((kind) => [kind, typeof stored[kind] === 'boolean' ? stored[kind] : DEFAULT_FLAG_VISIBILITY[kind]]),
+    ) as FlagVisibility;
+  } catch {
+    return DEFAULT_FLAG_VISIBILITY;
+  }
+}
+
+export function saveFlagVisibility(visibility: FlagVisibility): void {
+  try {
+    window.localStorage.setItem(FLAG_STORAGE_KEY, JSON.stringify(visibility));
   } catch {
     /* storage unavailable: the choice lasts for this dialog only */
   }

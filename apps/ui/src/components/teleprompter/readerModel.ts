@@ -5,6 +5,7 @@ import type {
   ManuscriptNote,
   ManuscriptParagraph,
   TeleprompterEvent,
+  TeleprompterFlag,
   TeleprompterPosition,
   TeleprompterScript,
   TeleprompterState,
@@ -119,8 +120,8 @@ export function segmentWords<T>(count: number, marks: WordMark<T>[]): WordSegmen
   });
 }
 
-/** What a reader mark opens in the side rail. Phase 7 adds its flag marks to this union. */
-export type ReaderMarkTarget = { kind: 'entity'; entity: GuideEntity } | { kind: 'note'; note: ManuscriptNote };
+/** What a reader mark opens in the side rail: a story bible entry or a note (Phase 5), or a suspected flag (Phase 7, `readerFlags.ts`). */
+export type ReaderMarkTarget = { kind: 'entity'; entity: GuideEntity } | { kind: 'note'; note: ManuscriptNote } | { kind: 'flag'; flag: TeleprompterFlag };
 export type ReaderMark = WordMark<ReaderMarkTarget>;
 
 /**
@@ -179,9 +180,11 @@ export type Session = {
   /** Word ranges [from, to) the narrator skipped past. */
   skipped: Array<[number, number]>;
   heard: string;
+  /** Every suspected flag the sidecar raised this session (ADR 0115), once each, in arrival order; the view picks which to show. */
+  flags: TeleprompterFlag[];
 };
 
-export const initialSession: Session = { script: null, position: null, cursor: 0, skipped: [], heard: '' };
+export const initialSession: Session = { script: null, position: null, cursor: 0, skipped: [], heard: '', flags: [] };
 
 function withPosition(session: Session, position: TeleprompterPosition): Session {
   const cursor = nextCursor(session.cursor, position);
@@ -192,6 +195,8 @@ function withPosition(session: Session, position: TeleprompterPosition): Session
   return { ...session, position, cursor, skipped };
 }
 
+const sameFlag = (a: TeleprompterFlag, b: TeleprompterFlag): boolean => a.kind === b.kind && a.start === b.start && a.end === b.end && a.heard === b.heard;
+
 export function reduceEvent(session: Session, event: TeleprompterEvent): Session {
   switch (event.type) {
     case 'script':
@@ -200,6 +205,9 @@ export function reduceEvent(session: Session, event: TeleprompterEvent): Session
       return withPosition(session, event);
     case 'partial':
       return { ...session, heard: event.words.map((word) => word.word).join(' ') };
+    // The same suspected problem raised again (a misread repeated the same way after going back) is one flag, not two.
+    case 'flag':
+      return session.flags.some((flag) => flag.id === event.id || sameFlag(flag, event)) ? session : { ...session, flags: [...session.flags, event] };
     default:
       return session;
   }
@@ -220,6 +228,6 @@ export function sessionFromState(state: TeleprompterState): Session {
 export function hydrateSession(session: Session, state: TeleprompterState): Session {
   if (session.script) return session;
   const snapshot = sessionFromState(state);
-  if (!session.position) return snapshot;
-  return { ...snapshot, position: session.position, cursor: session.cursor, skipped: session.skipped, heard: session.heard };
+  if (!session.position) return session.flags.length ? { ...snapshot, flags: session.flags } : snapshot;
+  return { ...snapshot, position: session.position, cursor: session.cursor, skipped: session.skipped, heard: session.heard, flags: session.flags };
 }

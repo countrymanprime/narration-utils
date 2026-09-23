@@ -285,6 +285,24 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Manuscript, the "Read aloud" dialog with its reading panel hidden (Phase 5) - the text takes the width, a "Show reading panel" button stays at the side',
   },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-flags',
+    description:
+      'Manuscript, the "Read aloud" dialog listening with suspected flags raised (teleprompter-manuscript-integration.prd.md Phase 7) - by default only skipped words (dotted underline) and restarts (dashed underline on the word read again from) show; misreads and extra words wait behind toggles (?mockTeleprompter=flagged)',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-flag-open',
+    description:
+      'Manuscript, the "Read aloud" dialog after clicking a restart flag (Phase 7) - the rail switches to its Flags tab: what the script says and what was heard, Dismiss, the disabled "Punch from here" placeholder, and the session’s flags',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-flags-all-kinds',
+    description:
+      'Manuscript, the "Read aloud" dialog with misreads and extra words turned on in the Flags tab (Phase 7) - a misread is a wavy underline, extra words heard are an insertion bar before the word they came before',
+  },
   // Proofing
   { page: 'proofing', state: 'setup-default', description: 'Proofing, setup panel default selection' },
   { page: 'proofing', state: 'setup-alt-selection', description: 'Proofing, setup panel alternate model/worker/chunk selection' },

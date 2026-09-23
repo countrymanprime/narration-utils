@@ -286,3 +286,110 @@ describe('ReadAloudDialog story bible and note marks (teleprompter-manuscript-in
     expect(within(rail).getByRole('tab', { name: 'Key', selected: true })).toBeTruthy();
   });
 });
+
+// p2 "The door stayed open." is words 7-10 of SCRIPT.
+const SKIP: TeleprompterEvent = { type: 'flag', id: 1, kind: 'skipped', start: 8, end: 9, heard: '' };
+const MISREAD: TeleprompterEvent = { type: 'flag', id: 2, kind: 'misread', start: 10, end: 11, heard: 'opened' };
+
+async function renderListening(overrides: Partial<NarrationApi> = {}) {
+  const view = renderMarked(overrides);
+  await findMark('Character');
+  view.setState({ phase: 'running', chapter: 'chapter-1' });
+  view.emit(SCRIPT);
+  view.emit({ type: 'position', read: 10, committed: 10, status: 'listening', jump: null, skipped: null });
+  view.emit(SKIP);
+  view.emit(MISREAD);
+  return view;
+}
+
+describe('ReadAloudDialog flags (teleprompter-manuscript-integration.prd.md Phase 7)', () => {
+  it('shows skipped and restart flags by default, and misreads once the narrator turns them on', async () => {
+    const user = userEvent.setup();
+    await renderListening();
+
+    expect((await findMark('Skipped')).textContent).toBe('door');
+    expect(document.querySelector('[data-highlight="Misread"][role="button"]')).toBeNull();
+
+    const rail = screen.getByRole('complementary', { name: 'Reading panel' });
+    await user.click(within(rail).getByRole('tab', { name: 'Flags' }));
+    expect(within(rail).getByText('1 more flag is of a kind not shown.')).toBeTruthy();
+    await user.click(within(rail).getByRole('checkbox', { name: 'Misreads' }));
+
+    expect((await findMark('Misread')).textContent).toBe('open.');
+  });
+
+  it('opens a flag in the Flags tab with what was heard, dismisses it, and offers "Punch from here" only as a placeholder', async () => {
+    const user = userEvent.setup();
+    const teleprompterSeek = vi.fn().mockResolvedValue(undefined);
+    await renderListening({ teleprompterSeek });
+
+    await user.click(await findMark('Skipped'));
+
+    const rail = screen.getByRole('complementary', { name: 'Reading panel' });
+    expect(within(rail).getByRole('tab', { name: 'Flags', selected: true })).toBeTruthy();
+    const detail = within(rail).getByRole('region', { name: 'Suspected skipped words' });
+    expect(within(detail).getByText('“door”')).toBeTruthy();
+    expect(within(detail).getByRole('button', { name: 'Punch from here' }).hasAttribute('disabled')).toBe(true);
+    expect(teleprompterSeek).not.toHaveBeenCalled();
+
+    await user.click(within(detail).getByRole('button', { name: 'Dismiss' }));
+
+    expect(document.querySelector('[data-highlight="Skipped"][role="button"]')).toBeNull();
+    expect(within(detail).getByText('Dismissed')).toBeTruthy();
+  });
+
+  it('keeps every flag as a finding when the session ends, with the dismissal, and says so', async () => {
+    const user = userEvent.setup();
+    const teleprompterSaveFlags = vi.fn().mockResolvedValue([]);
+    const { setState } = await renderListening({ teleprompterSaveFlags });
+    await user.click(await findMark('Skipped'));
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(teleprompterSaveFlags).not.toHaveBeenCalled();
+
+    setState({ phase: 'stopped', chapter: 'chapter-1' });
+
+    await waitFor(() => expect(teleprompterSaveFlags).toHaveBeenCalledOnce());
+    expect(teleprompterSaveFlags).toHaveBeenCalledWith('chapter-1', [
+      { kind: 'skipped', paragraphId: 'p2', wordStart: 1, wordEnd: 2, scriptStart: 8, scriptEnd: 9, heard: '', dismissed: true },
+      { kind: 'misread', paragraphId: 'p2', wordStart: 3, wordEnd: 4, scriptStart: 10, scriptEnd: 11, heard: 'opened', dismissed: false },
+    ]);
+    expect(await screen.findByText('2 flags are kept for review as suspected, unreviewed findings.')).toBeTruthy();
+  });
+
+  it('keeps the flags when the dialog is closed and when a flag is dismissed after the session', async () => {
+    const user = userEvent.setup();
+    const teleprompterSaveFlags = vi.fn().mockResolvedValue([]);
+    const { setState, onClose } = await renderListening({ teleprompterSaveFlags });
+    setState({ phase: 'stopped', chapter: 'chapter-1' });
+    await waitFor(() => expect(teleprompterSaveFlags).toHaveBeenCalledTimes(1));
+
+    await user.click(await findMark('Skipped'));
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await waitFor(() => expect(teleprompterSaveFlags).toHaveBeenCalledTimes(2));
+    expect(teleprompterSaveFlags.mock.calls[1][1][0]).toMatchObject({ kind: 'skipped', dismissed: true });
+
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(teleprompterSaveFlags).toHaveBeenCalledTimes(3);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('hides a flag an earlier session already dismissed once the host says so', async () => {
+    const teleprompterSaveFlags = vi.fn().mockResolvedValue([{ review: { status: 'dismissed' } }, { review: { status: 'unreviewed' } }]);
+    const { setState } = await renderListening({ teleprompterSaveFlags });
+    await findMark('Skipped');
+
+    setState({ phase: 'stopped', chapter: 'chapter-1' });
+
+    await waitFor(() => expect(document.querySelector('[data-highlight="Skipped"][role="button"]')).toBeNull());
+  });
+
+  it('says so in the Flags tab when the flags could not be kept', async () => {
+    const user = userEvent.setup();
+    const { setState } = await renderListening({ teleprompterSaveFlags: vi.fn().mockRejectedValue(new Error('the disk is full')) });
+    await user.click(within(screen.getByRole('complementary', { name: 'Reading panel' })).getByRole('tab', { name: 'Flags' }));
+
+    setState({ phase: 'stopped', chapter: 'chapter-1' });
+
+    expect(await screen.findByText('The flags could not be kept for review: the disk is full')).toBeTruthy();
+  });
+});

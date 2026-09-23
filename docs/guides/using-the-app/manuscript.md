@@ -63,11 +63,23 @@ guessing, and when the recording cannot be read or does not match the chapter it
 starts from the top.
 
 The dialog marks Story Bible names and your notes in the text, in the same colours as the reader here. A
-reading panel beside the text has three tabs: **Key** (what each mark means), **Notes** (the chapter's
-notes) and **Story bible** (the entries the chapter mentions). Clicking a marked name or note opens it in
-the panel, read-only; it never moves the highlight, the listening position or the scroll. The panel's
-arrow button hides it to widen the text, and the dialog remembers on this computer whether the panel is
-shown and which tab was last open.
+reading panel beside the text has four tabs: **Key** (what each mark means), **Flags** (see below),
+**Notes** (the chapter's notes) and **Story bible** (the entries the chapter mentions). Clicking a marked
+name, note or flag opens it in the panel, read-only; it never moves the highlight, the listening position
+or the scroll. The panel's arrow button hides it to widen the text, and the dialog remembers on this
+computer whether the panel is shown and which tab was last open.
+
+While you read, the dialog marks places where listening suspects something went differently from the
+script: skipped words (a dotted underline) and a restart, where you went back and read again (a dashed
+underline on the word you went back to). Misreads (a wavy underline) and extra words (a bar before the word
+they came before) can also be shown; they are off at first because live listening mishears correct reads
+too often to trust them yet. Turn each kind on or off in the **Flags** tab; the dialog remembers your
+choice on this computer. Hovering or focusing a flag says what was heard. Clicking it opens it in the Flags
+tab with the script's words and what was heard, and **Dismiss** removes it from the text. **Punch from
+here** is not available yet. Every flag is only suspected: Transcript Compare over the recording is the
+authority. When reading stops, or you close the dialog, the session's flags are kept in the project as
+unreviewed findings (a dismissed flag is kept as dismissed), so they can be reviewed later; reading the
+chapter again does not add the same flag twice.
 
 Selecting a stretch of text offers actions for it — adding a reader note or sending it to the
 Story Bible as a new entry.

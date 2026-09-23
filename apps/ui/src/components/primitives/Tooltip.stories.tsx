@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { faFileLines } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { Highlight } from './Highlight';
 import { Tooltip, TooltipTarget } from './Tooltip';
 
 const iconButtonClass =
@@ -163,5 +164,30 @@ export const DisabledButtonExplainsWhyOnFocus: Story = {
     await expect(button.parentElement).toHaveFocus();
     await expect(canvas.getByRole('group', { name: 'Import a manuscript to unlock Proofing.' })).toBe(button.parentElement);
     await expect(await within(document.body).findByRole('tooltip')).toHaveTextContent('Import a manuscript to unlock Proofing.');
+  },
+};
+
+// The inline mode (teleprompter-manuscript-integration.prd.md Phase 7): a hint on a mark inside running text. The trigger flows
+// with the line, so a mark that wraps keeps its place in the sentence, and keyboard focus on the mark shows the hint at once.
+export const InlineInRunningText: Story = {
+  render: () => (
+    <p className="max-w-xs text-sm leading-7">
+      Alice was{' '}
+      <TooltipTarget text="Heard: begging" inline>
+        <Highlight kind="Misread" onActivate={() => {}} description="Heard: begging">
+          beginning to get very tired of sitting by her sister
+        </Highlight>
+      </TooltipTarget>{' '}
+      on the bank, and of having nothing to do.
+    </p>
+  ),
+  play: async ({ canvasElement }) => {
+    const mark = within(canvasElement).getByRole('button', { name: /^beginning/ });
+    await userEvent.tab();
+    await expect(mark).toHaveFocus();
+    await expect(await within(document.body).findByRole('tooltip')).toHaveTextContent('Heard: begging');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(within(document.body).queryByRole('tooltip')).toBeNull());
+    await expect(mark).toHaveFocus();
   },
 };

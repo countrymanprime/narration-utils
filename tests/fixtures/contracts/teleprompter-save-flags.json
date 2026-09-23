@@ -1,0 +1,154 @@
+[
+  {
+    "schema_version": 1,
+    "id": "442dc58282e1cfbf8968bd2e",
+    "analyzer": "teleprompter",
+    "project": {
+      "path": "C:/Projects/Alice",
+      "output_path": "narration-utils/findings/teleprompter/ch-1.json"
+    },
+    "source": {},
+    "manuscript": {
+      "chapter_id": "ch-1",
+      "chapter_title": "Down the Rabbit-Hole",
+      "expected": "beginning",
+      "recorded": "begging",
+      "span": {
+        "paragraph_id": "p-1",
+        "start": 10,
+        "end": 19
+      }
+    },
+    "category": "transcript_discrepancy",
+    "severity": "warning",
+    "confidence": null,
+    "evidence_version": "sha256:05d155faec1934a624390735af8cba6ce10dc068d2b66d49a08463105757345f",
+    "confidence_reason": "Suspected from live speech recognition while reading aloud: the engine can mishear a correct read, so this has no score and is not proof. Transcript Compare over the recorded take is authoritative.",
+    "evidence": {
+      "heard": "begging",
+      "kind": "misread",
+      "script_words": [
+        5,
+        6
+      ],
+      "suspected": true
+    },
+    "review": {
+      "status": "dismissed",
+      "timestamp": "2026-09-23T12:00:00Z"
+    }
+  },
+  {
+    "schema_version": 1,
+    "id": "42ced9eb85eb4ce9b3f7c00b",
+    "analyzer": "teleprompter",
+    "project": {
+      "path": "C:/Projects/Alice",
+      "output_path": "narration-utils/findings/teleprompter/ch-1.json"
+    },
+    "source": {},
+    "manuscript": {
+      "chapter_id": "ch-1",
+      "chapter_title": "Down the Rabbit-Hole",
+      "expected": "very tired",
+      "span": {
+        "paragraph_id": "p-1",
+        "start": 27,
+        "end": 37
+      }
+    },
+    "category": "transcript_discrepancy",
+    "severity": "warning",
+    "confidence": null,
+    "evidence_version": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "confidence_reason": "Suspected from live speech recognition while reading aloud: the engine can mishear a correct read, so this has no score and is not proof. Transcript Compare over the recorded take is authoritative.",
+    "evidence": {
+      "heard": "",
+      "kind": "skipped",
+      "script_words": [
+        8,
+        10
+      ],
+      "suspected": true
+    },
+    "review": {
+      "status": "unreviewed"
+    }
+  },
+  {
+    "schema_version": 1,
+    "id": "3ff22ef61a7dd19237a1dd3a",
+    "analyzer": "teleprompter",
+    "project": {
+      "path": "C:/Projects/Alice",
+      "output_path": "narration-utils/findings/teleprompter/ch-1.json"
+    },
+    "source": {},
+    "manuscript": {
+      "chapter_id": "ch-1",
+      "chapter_title": "Down the Rabbit-Hole",
+      "expected": "she had peeped into the",
+      "recorded": "she had peeped into the",
+      "span": {
+        "paragraph_id": "p-2",
+        "start": 14,
+        "end": 37
+      }
+    },
+    "category": "pickup",
+    "severity": "info",
+    "confidence": null,
+    "evidence_version": "sha256:c2b1f56e1a1622aa4ebc856ba245b7ee416beacd1b327f4b250f781de2d564f8",
+    "confidence_reason": "Suspected from live speech recognition while reading aloud: the engine can mishear a correct read, so this has no score and is not proof. Transcript Compare over the recorded take is authoritative.",
+    "evidence": {
+      "heard": "she had peeped into the",
+      "kind": "restart",
+      "script_words": [
+        20,
+        25
+      ],
+      "suspected": true
+    },
+    "review": {
+      "status": "unreviewed"
+    }
+  },
+  {
+    "schema_version": 1,
+    "id": "144a8d56111702c836aad97d",
+    "analyzer": "teleprompter",
+    "project": {
+      "path": "C:/Projects/Alice",
+      "output_path": "narration-utils/findings/teleprompter/ch-1.json"
+    },
+    "source": {},
+    "manuscript": {
+      "chapter_id": "ch-1",
+      "chapter_title": "Down the Rabbit-Hole",
+      "recorded": "old",
+      "span": {
+        "paragraph_id": "p-2",
+        "start": 38,
+        "end": 38
+      }
+    },
+    "category": "transcript_discrepancy",
+    "severity": "info",
+    "confidence": null,
+    "evidence_version": "sha256:cba06b5736faf67e54b07b561eae94395e774c517a7d910a54369e1263ccfbd4",
+    "confidence_reason": "Suspected from live speech recognition while reading aloud: the engine can mishear a correct read, so this has no score and is not proof. Transcript Compare over the recorded take is authoritative.",
+    "evidence": {
+      "before": "book",
+      "heard": "old",
+      "kind": "extra",
+      "script_words": [
+        25,
+        25
+      ],
+      "suspected": true
+    },
+    "review": {
+      "status": "unreviewed"
+    }
+  }
+]

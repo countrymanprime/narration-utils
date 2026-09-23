@@ -15,6 +15,11 @@ Storybook title: `Primitives/Highlight`. Source: `src/components/primitives/High
 - Review
 - Note
 - Cursor
+- Misread
+- Extra
+- Skipped
+- Restart
+- Flags In Running Text
 - In Running Text
 - Interactive
 - Click Activates
@@ -28,4 +33,5 @@ Storybook title: `Primitives/Highlight`. Source: `src/components/primitives/High
 - `src/components/manuscript/ParagraphView.tsx`
 - `src/components/settings/CreditsPanel.tsx`
 - `src/components/storybible/GuideDetail.tsx`
+- `src/components/teleprompter/ReaderKey.tsx`
 - `src/components/teleprompter/ReaderText.tsx`

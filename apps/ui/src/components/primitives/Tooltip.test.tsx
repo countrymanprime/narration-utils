@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
+import { Highlight } from './Highlight';
 import { danglingAriaReferences } from './ariaReferences';
 import { Tooltip, TooltipProvider, TooltipTarget } from './Tooltip';
 
@@ -241,6 +242,43 @@ describe('TooltipTarget', () => {
     const wrapper = screen.getByRole('button', { name: 'View manuscript' }).parentElement;
     expect(wrapper?.getAttribute('tabindex')).toBeNull();
     expect(wrapper?.getAttribute('role')).toBeNull();
+  });
+});
+
+// The inline (flowing text) mode (teleprompter-manuscript-integration.prd.md Phase 7, deferred there by the component
+// accessibility PRD): the trigger is an inline box, so a mark that wraps across lines keeps flowing with the text around it,
+// and the hint follows the mark inside it the same way it follows a button.
+describe('TooltipTarget inline', () => {
+  const inline = (
+    <p>
+      Alice was{' '}
+      <TooltipTarget text="Heard: begging" inline>
+        <Highlight kind="Misread" onActivate={() => {}}>
+          beginning
+        </Highlight>
+      </TooltipTarget>{' '}
+      to get very tired.
+    </p>
+  );
+
+  it('flows with the line instead of becoming a flex box', () => {
+    render(inline);
+    const wrapper = screen.getByRole('button', { name: 'beginning' }).parentElement;
+    expect(wrapper?.tagName).toBe('SPAN');
+    expect(wrapper?.className.split(' ')).toContain('inline');
+    expect(wrapper?.className.split(' ')).not.toContain('inline-flex');
+  });
+
+  it('shows the hint on keyboard focus of the mark and hides it on Escape without moving focus', async () => {
+    const user = userEvent.setup();
+    render(inline);
+    await user.tab();
+    const mark = screen.getByRole('button', { name: 'beginning' });
+    expect(document.activeElement).toBe(mark);
+    expect((await screen.findByRole('tooltip')).textContent).toBe('Heard: begging');
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('tooltip')).toBeNull());
+    expect(document.activeElement).toBe(mark);
   });
 });
 

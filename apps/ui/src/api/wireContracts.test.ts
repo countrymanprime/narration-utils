@@ -35,6 +35,7 @@ import { bootstrapSchema, jobEndedSchema, noticeSchema, projectAttachStateSchema
 import {
   teleprompterDevicesResultSchema,
   teleprompterEventSchema,
+  teleprompterFlagFindingsSchema,
   teleprompterLocatedSchema,
   teleprompterLocateResultSchema,
   teleprompterStartResultSchema,
@@ -80,6 +81,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'teleprompter-locate-no-track.json': teleprompterLocateResultSchema,
   'teleprompter-locate-no-recording.json': teleprompterLocateResultSchema,
   'teleprompter-locate-source-missing.json': teleprompterLocateResultSchema,
+  'teleprompter-save-flags.json': teleprompterFlagFindingsSchema,
   'manuscript-import-selected.json': workJobSchema,
   'manuscript-import-preview.json': workJobSchema,
   'manuscript-import-preview-repaired.json': workJobSchema,
@@ -282,6 +284,18 @@ describe('answers of the mock client (it must pass the schemas the real host ans
     expectMatches(teleprompterStateSchema, state, `mock teleprompter ${seed}`);
   });
 
+  it('a teleprompter session the host kept running with suspected flags raised (flagged)', async () => {
+    const api = createMockApi({}, { teleprompter: 'flagged' });
+    const events: unknown[] = [];
+    api.subscribeTeleprompterEvent((event) => events.push(event));
+    const state = await api.teleprompterState();
+    expectMatches(teleprompterStateSchema, state, 'mock teleprompter flagged');
+    expect(state.position?.status).toBe('listening');
+    await vi.waitFor(() => expect(events.length).toBeGreaterThan(0));
+    for (const event of events) expectMatches(teleprompterEventSchema, event, 'mock teleprompter seeded flag');
+    expect(new Set(events.map((event) => (event as { kind: string }).kind))).toEqual(new Set(['misread', 'skipped', 'restart', 'extra']));
+  });
+
   it('the teleprompter device list', async () => {
     const api = createMockApi();
     expectMatches(teleprompterDevicesResultSchema, await api.teleprompterDevices(), 'mock teleprompter devices');
@@ -377,6 +391,30 @@ describe('answers of the mock client (it must pass the schemas the real host ans
 
     expectMatches(teleprompterLocateResultSchema, required, 'mock teleprompter locate, asset required');
     expect(required.status).toBe('asset_required');
+  });
+
+  it('teleprompterSaveFlags answers one suspected finding per flag, and a dismissal is kept', async () => {
+    const api = createMockApi();
+    const chapter = (await api.manuscriptChapters())[0];
+    const paragraph = (await api.manuscriptParagraphs(chapter?.id ?? ''))[0];
+    const base = { paragraphId: paragraph?.id ?? '', scriptStart: 0, scriptEnd: 1, dismissed: false };
+    const flags = [
+      { ...base, kind: 'misread' as const, wordStart: 0, wordEnd: 1, heard: 'hello', dismissed: true },
+      { ...base, kind: 'extra' as const, wordStart: 1, wordEnd: 2, heard: 'um' },
+      { ...base, kind: 'skipped' as const, wordStart: 2, wordEnd: 3, heard: '' },
+      { ...base, kind: 'restart' as const, wordStart: 0, wordEnd: 3, heard: 'the first words' },
+    ];
+    const saved = await api.teleprompterSaveFlags(chapter?.id ?? '', flags);
+    expectMatches(teleprompterFlagFindingsSchema, saved, 'mock teleprompter saved flags');
+    expect(saved.map((finding) => finding.review.status)).toEqual(['dismissed', 'unreviewed', 'unreviewed', 'unreviewed']);
+    const again = await api.teleprompterSaveFlags(
+      chapter?.id ?? '',
+      flags.map((flag) => ({ ...flag, dismissed: false })),
+    );
+    expect(again[0].review.status).toBe('dismissed');
+    await expect(
+      api.teleprompterSaveFlags(chapter?.id ?? '', [{ ...base, kind: 'misread', paragraphId: 'nope', wordStart: 0, wordEnd: 1, heard: '' }]),
+    ).rejects.toThrow(/nope/);
   });
 
   it('teleprompterSeek rejects when no session is running', async () => {
@@ -967,6 +1005,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'teleprompterState',
       'teleprompterDevices',
       'teleprompterLocate',
+      'teleprompterSaveFlags',
       'updateStatus',
       'updateCheck',
       'updateDownload',

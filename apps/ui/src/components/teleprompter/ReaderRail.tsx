@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type ComponentProps } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import type { GuideEntity, ManuscriptNote } from '../../types';
@@ -6,6 +6,7 @@ import { CAT_DOT_BG, CAT_DOT_CLASS, EntitySummary } from '../manuscript/EntitySu
 import { IconButton } from '../primitives/IconButton';
 import { Tab, TabList, TabPanel, Tabs } from '../primitives/Tabs';
 import { TooltipTarget } from '../primitives/Tooltip';
+import { ReaderFlagsPanel } from './ReaderFlagsPanel';
 import { ReaderKey } from './ReaderKey';
 import type { ReaderMarkTarget } from './readerModel';
 import type { RailState, RailTab } from './readerPreferences';
@@ -29,15 +30,17 @@ type Props = {
   /** What the narrator last opened, from a mark in the text or from the entry list here. */
   selected?: ReaderMarkTarget;
   onSelect: (target: ReaderMarkTarget) => void;
+  /** The Flags tab (Phase 7): the session's suspected flags, which kinds show, dismissal and the save status. */
+  flagPanel: Omit<ComponentProps<typeof ReaderFlagsPanel>, 'selected' | 'onSelect'>;
 };
 
 /**
- * The read-aloud dialog's side rail (teleprompter-manuscript-integration.prd.md Phase 5): the key, the chapter's notes
- * and its story bible entries, beside the text rather than over it, so opening one never covers, moves or scrolls the
+ * The read-aloud dialog's side rail (teleprompter-manuscript-integration.prd.md Phase 5): the key, the session's suspected
+ * flags (Phase 7), the chapter's notes and its story bible entries, beside the text rather than over it, so opening one never covers, moves or scrolls the
  * text being read. It is sticky and scrolls on its own. Whether it is open and which tab shows are per-viewer
  * preferences kept in browser storage (`readerPreferences.ts`); the owner of that state is `ReadAloudDialog`.
  */
-export function ReaderRail({ state, onTab, onToggle, seekable, entities, notes, selected, onSelect }: Props) {
+export function ReaderRail({ state, onTab, onToggle, seekable, entities, notes, selected, onSelect, flagPanel }: Props) {
   const entityHeadingId = useId();
   const railHeadingId = useId();
   if (!state.open)
@@ -53,10 +56,11 @@ export function ReaderRail({ state, onTab, onToggle, seekable, entities, notes, 
 
   const selectedEntity = selected?.kind === 'entity' ? selected.entity : undefined;
   const selectedNote = selected?.kind === 'note' ? selected.note : undefined;
+  const selectedFlag = selected?.kind === 'flag' ? selected.flag : undefined;
   return (
     <aside
       aria-labelledby={railHeadingId}
-      className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 shadow-[var(--shadow)] md:sticky md:top-0 md:max-h-[calc(100dvh-8rem)] md:w-[17rem] md:overflow-y-auto lg:w-[20rem]"
+      className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 shadow-[var(--shadow)] md:sticky md:top-0 md:max-h-[calc(100dvh-8rem)] md:w-[19rem] md:overflow-y-auto lg:w-[20rem]"
     >
       <div className="mb-1 flex items-center justify-between gap-2">
         <span id={railHeadingId} className={SECTION_LABEL}>
@@ -71,11 +75,15 @@ export function ReaderRail({ state, onTab, onToggle, seekable, entities, notes, 
       <Tabs value={state.tab} onChange={(tab) => onTab(tab as RailTab)}>
         <TabList label="Panel sections" activation="automatic">
           <Tab value="key">Key</Tab>
+          <Tab value="flags">Flags</Tab>
           <Tab value="notes">Notes</Tab>
           <Tab value="bible">Story bible</Tab>
         </TabList>
         <TabPanel value="key" className="pt-3">
           <ReaderKey seekable={seekable} marks layout="list" />
+        </TabPanel>
+        <TabPanel value="flags" className="pt-3">
+          <ReaderFlagsPanel {...flagPanel} selected={selectedFlag} onSelect={(flag) => onSelect({ kind: 'flag', flag })} />
         </TabPanel>
         <TabPanel value="notes" className="pt-3">
           {notes.length === 0 ? (

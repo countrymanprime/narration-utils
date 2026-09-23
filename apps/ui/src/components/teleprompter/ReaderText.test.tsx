@@ -175,3 +175,46 @@ describe('ReaderText story bible and note marks (teleprompter-manuscript-integra
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
 });
+
+const flagMark = (from: number, to: number, kind: 'misread' | 'extra' | 'skipped' | 'restart', heard: string): ReaderMark => ({
+  id: `flag-${from}`,
+  from,
+  to,
+  value: { kind: 'flag', flag: { type: 'flag', id: from + 1, kind, start: from, end: to, heard } },
+});
+
+describe('ReaderText flag marks (teleprompter-manuscript-integration.prd.md Phase 7)', () => {
+  it('draws each flag kind through Highlight, and a flag over a name keeps the name', () => {
+    const marks = new Map([['p1', [entityMark(0, 1), flagMark(0, 1, 'misread', 'Alison'), flagMark(4, 6, 'skipped', '')]]]);
+    const { container } = render(<ReaderText rows={[row()]} cursor={0} skipped={[]} follow={false} marks={marks} onOpenMark={vi.fn()} />);
+
+    const misread = container.querySelector<HTMLElement>('[data-highlight="Misread"]')!;
+    expect(misread.textContent).toBe('Alice');
+    expect(misread.closest('[data-highlight="Character"]')).not.toBeNull();
+    expect(container.querySelector('[data-highlight="Skipped"]')?.textContent).toBe('get tired');
+  });
+
+  it('describes what was heard to a screen reader and shows it as a hint on focus, and opening it never seeks', async () => {
+    const user = userEvent.setup();
+    const onSeek = vi.fn();
+    const onOpenMark = vi.fn();
+    const mark = flagMark(2, 3, 'misread', 'begging');
+    render(<ReaderText rows={[row()]} cursor={0} skipped={[]} follow={false} onSeek={onSeek} marks={new Map([['p1', [mark]]])} onOpenMark={onOpenMark} />);
+
+    const control = screen.getByRole('button', { name: 'beginning' });
+    expect(control.dataset.highlight).toBe('Misread');
+    expect(control.getAttribute('aria-description')).toBe('Suspected misread. Heard “begging”.');
+    control.focus();
+    expect((await screen.findByRole('tooltip')).textContent).toBe('Suspected misread. Heard “begging”.');
+    await user.keyboard('{Enter}');
+    expect(onOpenMark).toHaveBeenCalledWith(mark);
+    expect(onSeek).not.toHaveBeenCalled();
+  });
+
+  it('draws a flag that has no rail to open it in as a plain mark', () => {
+    const { container } = render(
+      <ReaderText rows={[row()]} cursor={0} skipped={[]} follow={false} marks={new Map([['p1', [flagMark(2, 3, 'misread', 'x')]]])} />,
+    );
+    expect(container.querySelector('[data-highlight="Misread"]')?.getAttribute('role')).toBeNull();
+  });
+});

@@ -6,7 +6,7 @@
 import recordedStream from './teleprompterRecording.json';
 import { recordedStreamSchema } from './schemas/teleprompter';
 import { parseWire } from './wire/parseWire';
-import { tokenize } from '../components/teleprompter/readerModel';
+import { tokenize, wordOffsets } from '../components/teleprompter/readerModel';
 import { mockRecordedEnd } from './chapterTrackMatchMock';
 import { seedLocateResult, seedTrackMatch, type MockResumeSeed } from './resumeMockSeed';
 import type {
@@ -18,6 +18,8 @@ import type {
   TeleprompterEngine,
   TeleprompterEvent,
   TeleprompterFlag,
+  TeleprompterFlagFinding,
+  TeleprompterFlagSave,
   TeleprompterLocateResult,
   TeleprompterLocated,
   TeleprompterModelRequired,
@@ -43,8 +45,11 @@ const MOCK_HEARD_WORDS = 70;
 const MOCK_TAIL_SECONDS = 30;
 const SENTENCE_END = /[.!?…]["'”’)\]]*$/;
 
-/** `ended` is a session that stopped itself at the end of the chapter (the host's auto-stop, ADR 0106). */
-export type TeleprompterSeed = 'listening' | 'waiting' | 'done' | 'ended';
+/**
+ * `ended` is a session that stopped itself at the end of the chapter (the host's auto-stop, ADR 0106); `flagged` is `listening`
+ * further into the text, with a session's suspected flags already raised (Phase 7).
+ */
+export type TeleprompterSeed = 'listening' | 'waiting' | 'done' | 'ended' | 'flagged';
 
 // The host's auto-stop (apps/desktop/internal/teleprompter/autostop.go): the same delay and messages, so a replay that
 // reaches the end of the chapter ends itself the way a live session does.
@@ -52,6 +57,7 @@ const AUTO_STOP_MS = 5000;
 const LISTENING = 'Listening…';
 const AUTO_STOP_ARMED = 'Reached the end of the chapter. Stopping in 5 seconds unless you keep reading.';
 const AUTO_STOPPED = 'Stopped at the end of the chapter.';
+const FLAGGED_WORDS_INTO_TEXT = 70;
 
 type Deps = {
   ready: Promise<unknown>;
@@ -154,6 +160,61 @@ function scaleFlag(flag: TeleprompterFlag, scale: (value: number) => number): Te
   return { ...flag, start, end };
 }
 
+const FLAG_CONFIDENCE_REASON =
+  'Suspected from live speech recognition while reading aloud: the engine can mishear a correct read, so this has no score and is not proof. Transcript Compare over the recorded take is authoritative.';
+
+/**
+ * The mock of `TeleprompterSaveFlags` (`apps/desktop/teleprompterflags.go`, ADR 0117): the same id rule in spirit (chapter,
+ * paragraph, kind and words, so a repeat is one finding), a dismissal kept per id and heard text, and the same record shape.
+ */
+function createFlagStore(deps: Pick<Deps, 'chapters' | 'paragraphs'>) {
+  const dismissed = new Set<string>();
+  return async (chapterId: string, flags: TeleprompterFlagSave[]): Promise<TeleprompterFlagFinding[]> => {
+    await Promise.resolve();
+    const chapter = deps.chapters().find((item) => item.id === chapterId);
+    return flags.map((flag) => {
+      const paragraph = deps.paragraphs().find((item) => item.id === flag.paragraphId && item.chapterId === chapterId);
+      if (!paragraph) throw new Error(`paragraph "${flag.paragraphId}" is not in chapter "${chapterId}"`);
+      const offsets = wordOffsets(paragraph.text);
+      if (flag.wordStart < 0 || flag.wordEnd <= flag.wordStart || flag.wordEnd > offsets.length)
+        throw new Error(`words [${flag.wordStart}, ${flag.wordEnd}) are not within the paragraph`);
+      const words = offsets.slice(flag.wordStart, flag.wordEnd).map(([from, to]) => paragraph.text.slice(from, to));
+      const extra = flag.kind === 'extra';
+      const start = offsets[flag.wordStart][0];
+      const id = `${chapterId}:${paragraph.id}:${flag.kind}:${flag.wordStart}-${flag.wordEnd}`;
+      const version = flag.heard.trim().toLowerCase();
+      if (flag.dismissed) dismissed.add(`${id}\u001f${version}`);
+      return {
+        schema_version: 1,
+        id,
+        analyzer: 'teleprompter',
+        project: { path: 'C:/Projects/Alice', output_path: `narration-utils/findings/teleprompter/${chapterId}.json` },
+        source: {},
+        manuscript: {
+          chapter_id: chapterId,
+          ...(chapter ? { chapter_title: chapter.title } : {}),
+          ...(extra ? {} : { expected: words.join(' ') }),
+          ...(flag.heard ? { recorded: flag.heard } : {}),
+          span: { paragraph_id: paragraph.id, start, end: extra ? start : offsets[flag.wordEnd - 1][1] },
+        },
+        category: flag.kind === 'restart' ? 'pickup' : 'transcript_discrepancy',
+        severity: flag.kind === 'misread' || flag.kind === 'skipped' ? 'warning' : 'info',
+        confidence: null,
+        evidence_version: `mock:${version}`,
+        confidence_reason: FLAG_CONFIDENCE_REASON,
+        evidence: {
+          kind: flag.kind,
+          heard: flag.heard,
+          suspected: true,
+          script_words: [flag.scriptStart, flag.scriptEnd],
+          ...(extra ? { before: words.join(' ') } : {}),
+        },
+        review: { status: dismissed.has(`${id}\u001f${version}`) ? 'dismissed' : 'unreviewed' },
+      };
+    });
+  };
+}
+
 export function createTeleprompterMock(deps: Deps): TeleprompterApi {
   const stateSubscribers = new Set<(state: TeleprompterState) => void>();
   const eventSubscribers = new Set<(event: TeleprompterEvent) => void>();
@@ -224,19 +285,29 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     }
   };
 
+  // The flags a `flagged` session raised: the recorded ones (the recording's word numbers counted from the chapter's first
+  // paragraph, which is where its 100 words were read), plus an extra, which the recorded session did not raise.
+  let seededFlags: TeleprompterFlag[] = [];
   const seedState = async () => {
     await deps.ready;
     const chapter = deps.chapters()[0];
     if (!chapter || !deps.seed) return;
     const { script } = buildScript(chapter, deps.paragraphs());
-    const firstParagraph = script.spans[1];
+    const firstParagraph = script.spans[1]?.start ?? 0;
     const atEnd = deps.seed === 'done' || deps.seed === 'ended';
-    const read = atEnd ? script.tokens : Math.min((firstParagraph?.start ?? 0) + SEED_WORDS_INTO_TEXT, script.tokens - 1);
-    const status = deps.seed === 'ended' ? 'done' : deps.seed;
+    const into = deps.seed === 'flagged' ? FLAGGED_WORDS_INTO_TEXT : SEED_WORDS_INTO_TEXT;
+    const read = atEnd ? script.tokens : Math.min(firstParagraph + into, script.tokens - 1);
+    const status = deps.seed === 'ended' ? 'done' : deps.seed === 'flagged' ? 'listening' : deps.seed;
     state =
       deps.seed === 'ended'
         ? { phase: 'stopped', message: AUTO_STOPPED, engine: 'whisper', chapter: chapter.id, script, position: position(read, status) }
         : { phase: 'running', message: LISTENING, engine: 'whisper', chapter: chapter.id, script, position: position(read, status) };
+    if (deps.seed !== 'flagged') return;
+    const recorded = recording.events.flatMap(({ event }) => (event.type === 'flag' ? [event] : []));
+    const extra: TeleprompterFlag = { type: 'flag', id: recorded.length + 1, kind: 'extra', start: 55, end: 55, heard: 'um, so' };
+    seededFlags = [...recorded, extra]
+      .map((flag) => ({ ...flag, start: flag.start + firstParagraph, end: flag.end + firstParagraph }))
+      .filter((flag) => flag.end <= read);
   };
 
   return {
@@ -271,6 +342,7 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       if (state.phase !== 'running') throw new Error('no teleprompter session is running');
       emit({ type: 'position', read: word, committed: word, status: 'listening', jump: 'restart', skipped: null });
     },
+    teleprompterSaveFlags: createFlagStore(deps),
     teleprompterState: async () => {
       // Concurrent first callers (React StrictMode mounts twice) must share one seeding.
       if (deps.seed) await (seeding ??= seedState());
@@ -294,6 +366,11 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
     },
     subscribeTeleprompterEvent: (onEvent) => {
       eventSubscribers.add(onEvent);
+      // A view that opens on a `flagged` session hears the flags it raised so far, as it would have while listening.
+      if (deps.seed === 'flagged')
+        void (seeding ??= seedState()).then(() => {
+          if (eventSubscribers.has(onEvent)) seededFlags.forEach((flag) => onEvent({ ...flag }));
+        });
       return () => eventSubscribers.delete(onEvent);
     },
     subscribeTeleprompterState: (onState) => {

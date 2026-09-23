@@ -76,6 +76,13 @@ describe('hydrateSession', () => {
     expect(merged.cursor).toBe(9);
     expect(merged.position?.read).toBe(9);
   });
+
+  it('keeps flags that arrived before the snapshot (the snapshot carries none, ADR 0115)', () => {
+    const flag = { type: 'flag', id: 1, kind: 'skipped', start: 6, end: 7, heard: '' } as const;
+
+    expect(hydrateSession(reduceEvent(initialSession, flag), snapshot).flags).toEqual([flag]);
+    expect(hydrateSession(reduceEvent(reduceEvent(initialSession, position(9)), flag), snapshot).flags).toEqual([flag]);
+  });
 });
 
 describe('buildRows', () => {
@@ -216,11 +223,45 @@ describe('reduceEvent', () => {
   it('starts over when a new script arrives', () => {
     let session = reduceEvent(initialSession, script);
     session = reduceEvent(session, position(9));
+    session = reduceEvent(session, { type: 'flag', id: 1, kind: 'misread', start: 6, end: 7, heard: 'wash' });
 
     session = reduceEvent(session, { ...script, chapter: { id: 'c2', title: 'Two' } });
 
     expect(session.cursor).toBe(0);
     expect(session.position).toBeNull();
+    expect(session.flags).toEqual([]);
+  });
+
+  // Phase 7: the session keeps every flag the sidecar raised, in arrival order; which ones show is the view's choice.
+  it('keeps each flag once, in the order they arrived, and leaves the cursor alone', () => {
+    let session = reduceEvent(initialSession, script);
+    session = reduceEvent(session, position(9));
+    const misread = { type: 'flag', id: 1, kind: 'misread', start: 6, end: 7, heard: 'wash' } as const;
+    const skip = { type: 'flag', id: 2, kind: 'skipped', start: 7, end: 8, heard: '' } as const;
+
+    session = reduceEvent(session, misread);
+    session = reduceEvent(session, skip);
+    session = reduceEvent(session, misread);
+
+    expect(session.flags).toEqual([misread, skip]);
+    expect(session.cursor).toBe(9);
+  });
+
+  it('keeps one flag when the same problem is raised again after going back', () => {
+    let session = reduceEvent(initialSession, { type: 'flag', id: 3, kind: 'misread', start: 6, end: 7, heard: 'wash' });
+    session = reduceEvent(session, { type: 'flag', id: 5, kind: 'misread', start: 6, end: 7, heard: 'wash' });
+    session = reduceEvent(session, { type: 'flag', id: 6, kind: 'misread', start: 6, end: 7, heard: 'was' });
+
+    expect(session.flags.map((flag) => flag.id)).toEqual([3, 6]);
+  });
+
+  it('keeps the same flag list while no flag arrives, so memoized rows stay put', () => {
+    let session = reduceEvent(initialSession, { type: 'flag', id: 1, kind: 'misread', start: 6, end: 7, heard: 'wash' });
+    const before = session.flags;
+
+    session = reduceEvent(session, position(9));
+
+    expect(session.flags).toBe(before);
   });
 });
 

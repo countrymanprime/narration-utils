@@ -34,6 +34,7 @@ import {
   TELEPROMPTER_EVENT_TYPES,
   teleprompterDevicesResultSchema,
   teleprompterEventSchema,
+  teleprompterFlagFindingsSchema,
   teleprompterLocateResultSchema,
   teleprompterStartResultSchema,
   teleprompterStateSchema,
@@ -320,6 +321,7 @@ export const wailsClient: NarrationApi = {
   teleprompterStart: (options) => decode(teleprompterStartResultSchema, 'TeleprompterStart', host.TeleprompterStart(toStartOptions(options))),
   teleprompterStop: () => decode(voidResult, 'TeleprompterStop', host.TeleprompterStop()),
   teleprompterSeek: (word) => decode(voidResult, 'TeleprompterSeek', host.TeleprompterSeek(word)),
+  teleprompterSaveFlags: (chapterId, flags) => decode(teleprompterFlagFindingsSchema, 'TeleprompterSaveFlags', host.TeleprompterSaveFlags(chapterId, flags)),
   teleprompterState: () => decode(teleprompterStateSchema, 'TeleprompterState', host.TeleprompterState()),
   teleprompterDevices: () => decode(teleprompterDevicesResultSchema, 'TeleprompterDevices', host.TeleprompterDevices()),
   teleprompterLocate: (chapterId, options) =>

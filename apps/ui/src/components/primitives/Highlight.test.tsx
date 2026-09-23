@@ -38,6 +38,44 @@ describe('Highlight colours (ADR 0059)', () => {
     expect(mark.style.boxShadow).toBe('inset 0 -1.5px 0 var(--note)');
   });
 
+  // The read-aloud flag marks (teleprompter-manuscript-integration.prd.md Phase 7): a decoration in the Transcript Compare
+  // colour of the same kind (KIND_STYLES), no tint and no text colour, so the words keep the text colour's contrast and a
+  // flag inside a story bible name still shows the name's tint.
+  it.each([
+    ['Misread', 'underline wavy var(--danger)'],
+    ['Skipped', 'underline dotted var(--warn)'],
+    ['Restart', 'underline dashed var(--accent)'],
+  ] as const)('draws a %s flag as a %s and nothing else', (kind, decoration) => {
+    render(<Highlight kind={kind}>word</Highlight>);
+    const mark = screen.getByText('word');
+    expect(mark.style.textDecoration).toBe(decoration);
+    expect(mark.style.color).toBe('');
+    expect(mark.style.background).toBe('transparent');
+  });
+
+  it('draws an extra-words flag as a caret bar before its word', () => {
+    render(<Highlight kind="Extra">word</Highlight>);
+    const mark = screen.getByText('word');
+    expect(mark.style.boxShadow).toBe('inset 0.14em 0 0 var(--info)');
+    expect(mark.style.color).toBe('');
+  });
+
+  it('names and describes an activatable mark when asked, and a plain mark stays a mark', () => {
+    render(
+      <p>
+        <Highlight kind="Extra" label="Suspected extra words" description="Heard: um" onActivate={() => {}}>
+          word
+        </Highlight>
+        <Highlight kind="Misread" description="Heard: begging">
+          other
+        </Highlight>
+      </p>,
+    );
+    const control = screen.getByRole('button', { name: 'Suspected extra words' });
+    expect(control.getAttribute('aria-description')).toBe('Heard: um');
+    expect(screen.getByText('other').getAttribute('role')).toBeNull();
+  });
+
   it('draws the Teleprompter cursor as an accent fill in the accent contrast colour', () => {
     render(<Highlight kind="Cursor">word</Highlight>);
     const mark = screen.getByText('word');

@@ -1,6 +1,9 @@
 import { Fragment, memo, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Highlight, highlightKind, type HighlightKind } from '../primitives/Highlight';
+import { TooltipTarget } from '../primitives/Tooltip';
+import { flagHint } from './readerFlags';
 import { segmentWords, splitWords, type ReaderMark, type ReaderMarkTarget, type ReaderRow, type WordSegment } from './readerModel';
+import type { TeleprompterFlagKind } from '../../types';
 
 type SkippedRange = [number, number];
 
@@ -10,9 +13,13 @@ const NO_SKIPPED: SkippedRange[] = [];
 const separator = (gap: string): string => (gap.includes('\n') ? '\n' : ' ');
 const prefersReducedMotion = (): boolean => typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Every mark goes through `Highlight` with an existing kind (ADR 0016/0017): an entity in its Story Bible category colour,
-// a note in the note colour, exactly as the Manuscript reader draws them. Phase 7 adds its flag kinds here.
-const markHighlight = (target: ReaderMarkTarget): HighlightKind => (target.kind === 'note' ? 'Note' : highlightKind(target.entity.category));
+// Every mark goes through `Highlight` (ADR 0016/0017): an entity in its Story Bible category colour, a note in the note
+// colour, exactly as the Manuscript reader draws them, and a suspected flag (Phase 7) in the flag kind of the same name.
+const FLAG_HIGHLIGHT: Record<TeleprompterFlagKind, HighlightKind> = { misread: 'Misread', extra: 'Extra', skipped: 'Skipped', restart: 'Restart' };
+function markHighlight(target: ReaderMarkTarget): HighlightKind {
+  if (target.kind === 'flag') return FLAG_HIGHLIGHT[target.flag.kind];
+  return target.kind === 'note' ? 'Note' : highlightKind(target.entity.category);
+}
 
 // Whether the word at `index` sits ahead of or behind the highlight ("Start here" moves the tracker forward without
 // restarting; "Go back to here" is the one-word-back case `nextCursor`/the seek's `jump: 'restart'` exist for). `local`
@@ -32,7 +39,7 @@ type RowWordsProps = {
   skipped: SkippedRange[];
   /** Click-to-seek (Phase 4), reachable only while a session is running (`useTeleprompterSession.seek` rejects otherwise). Absent: words are plain text. */
   onSeek?: (word: number) => void;
-  /** This row's story bible and note marks (Phase 5); a stable array per row so memo still skips the rows not being read. */
+  /** This row's story bible and note marks (Phase 5) and flag marks (Phase 7); a stable array per row so memo still skips the rows not being read. */
   marks: ReaderMark[];
   /** Opens a mark's entry in the side rail. Absent: marks are drawn but not interactive. It never seeks or scrolls the reader. */
   onOpenMark?: (mark: ReaderMark) => void;
@@ -100,11 +107,22 @@ function renderMarkedSegment(
   const firstEnding = next === undefined ? 0 : layers.findIndex((mark) => !next.marks.includes(mark));
   const carried = firstEnding === -1 ? layers.length : firstEnding;
   const innermost = layers.length - 1;
-  const wrap = (child: ReactNode, mark: ReaderMark, layer: number): ReactNode => (
-    <Highlight key={mark.id} kind={markHighlight(mark.value)} onActivate={onOpenMark && layer === innermost ? () => onOpenMark(mark) : undefined}>
-      {child}
-    </Highlight>
-  );
+  const wrap = (child: ReactNode, mark: ReaderMark, layer: number): ReactNode => {
+    const control = Boolean(onOpenMark) && layer === innermost;
+    const hint = mark.value.kind === 'flag' ? flagHint(mark.value.flag) : undefined;
+    const highlight = (
+      <Highlight key={mark.id} kind={markHighlight(mark.value)} description={hint} onActivate={control ? () => onOpenMark?.(mark) : undefined}>
+        {child}
+      </Highlight>
+    );
+    // A flag that is the control also shows what was heard as a hint (ADR 0049), flowing with the line it sits in.
+    if (!hint || !control) return highlight;
+    return (
+      <TooltipTarget key={mark.id} text={hint} inline>
+        {highlight}
+      </TooltipTarget>
+    );
+  };
   const words = Array.from({ length: to - from }, (_, offset) => renderWord(row, from + offset, false, from + offset < to - 1));
   const gap = separator(gaps[to - 1]);
   const ending = layers.slice(carried).reduceRight<ReactNode>((child, mark, offset) => wrap(child, mark, carried + offset), words);
@@ -202,7 +220,7 @@ export function ReaderText({
   follow: boolean;
   /** Click-to-seek (teleprompter-manuscript-integration.prd.md Phase 4). Pass a stable reference (see `RowWords`); omit to render plain, unclickable text (no session, or one not yet active). */
   onSeek?: (word: number) => void;
-  /** Story bible and note marks by row key (`readerMarks`, Phase 5). Keep the map's identity stable while its content is. */
+  /** Story bible and note marks by row key (`readerMarks`, Phase 5), with any flag marks (`readerFlags.withMarks`, Phase 7). Keep the map's identity stable while its content is. */
   marks?: Map<string, ReaderMark[]>;
   /** Opens a mark's entry (Phase 5); a stable reference, like `onSeek`. It must not move the cursor or scroll the reader. */
   onOpenMark?: (mark: ReaderMark) => void;
