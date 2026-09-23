@@ -125,3 +125,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0101](0101-epub-import-reads-nav-then-ncx-for-chapters-caps-entries-and-refuses-drm.md) | EPUB import reads nav then NCX for chapters, caps entries, and refuses DRM | Accepted |
 | [0102](0102-epub-content-kind-overrides-by-title-rather-than-canonical-title-renaming.md) | EPUB `epub:type` forces a section's content kind by an explicit override, not by renaming its title to one the classifier already knows | Accepted |
 | [0103](0103-txt-and-epub-are-accepted-import-formats-hand-rolled-drm-refused-and-offered-for-detection.md) | TXT and EPUB are accepted import formats, hand-rolled without a library, DRM is refused, and both are offered for detection | Accepted (amends ADR-0019) |
+| [0105](0105-the-visual-suite-drives-each-state-once-and-resizes-through-the-viewports.md) | The visual suite drives each state once and resizes through the viewports | Accepted (amends ADR-0023) |

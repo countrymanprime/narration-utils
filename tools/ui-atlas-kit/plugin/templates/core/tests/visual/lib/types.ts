@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.3.3 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.5 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import type { Viewport } from '../viewports';
 import type { NarrowControlsDeclaration, SameAsDeclaration } from './validators';
 
@@ -27,4 +27,9 @@ export interface StateEntry {
   // Text boxes and selects that are allowed to be narrower than the minimum control width on purpose (a two-digit
   // number box). Checked, not trusted: it fails when the control stops being narrow. Any other collapsed control fails.
   narrowControls?: NarrowControlsDeclaration;
+  // Load and drive the app afresh at each viewport instead of driving once and resizing (one test per viewport, the shape
+  // every row had before 0.3.5). For a state whose driving or rendering depends on the width it was reached at: resizing
+  // keeps what the first viewport left (an open menu, a measured layout), and a fresh load at the smaller width does not.
+  // Give the reason in a comment on the row.
+  reloadPerViewport?: true;
 }

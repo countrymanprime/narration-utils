@@ -52,8 +52,35 @@ def emit(text: str) -> None:
         sys.stdout.flush()
 
 
+def build_dir(name: str) -> Path:
+    return ROOT / ".release-build" / name
+
+
+def frozen_executable(name: str) -> Path:
+    return build_dir(name) / "dist" / name / (f"{name}.exe" if sys.platform == "win32" else name)
+
+
+def reusable(name: str) -> bool:
+    """A finished freeze is its executable plus the two tables of contents that scripts/licenses/notices.py reads."""
+    tocs = build_dir(name) / "work" / name
+    return frozen_executable(name).is_file() and all((tocs / toc).is_file() for toc in ("Analysis-00.toc", "PYZ-00.toc"))
+
+
+def install_runtime(name: str) -> None:
+    source = frozen_executable(name)
+    shutil.copytree(source.parent, RUNTIME / name, dirs_exist_ok=True)
+    executable = RUNTIME / name / source.name
+    if sys.platform != "win32":
+        executable.chmod(executable.stat().st_mode | 0o111)
+
+
+def reuse(name: str) -> None:
+    emit(f"[{name}] reusing the cached freeze in {build_dir(name).relative_to(ROOT).as_posix()}\n")
+    install_runtime(name)
+
+
 def freeze(name: str, entry: Path, paths: list[Path], collect_data: tuple[str, ...] = (), copy_metadata: tuple[str, ...] = ()) -> None:
-    work = ROOT / ".release-build" / name
+    work = build_dir(name)
     args = [
         sys.executable,
         "-m",
@@ -89,13 +116,10 @@ def freeze(name: str, entry: Path, paths: list[Path], collect_data: tuple[str, .
             emit(f"[{name}] {line}")
     if process.returncode != 0:
         raise subprocess.CalledProcessError(process.returncode, args)
-    source = work / "dist" / name / (f"{name}.exe" if sys.platform == "win32" else name)
+    source = frozen_executable(name)
     if not source.is_file():
         raise RuntimeError(f"PyInstaller did not produce {source}")
-    shutil.copytree(source.parent, RUNTIME / name, dirs_exist_ok=True)
-    executable = RUNTIME / name / source.name
-    if sys.platform != "win32":
-        executable.chmod(executable.stat().st_mode | 0o111)
+    install_runtime(name)
 
 
 def main() -> None:
@@ -104,6 +128,9 @@ def main() -> None:
     parser.add_argument(
         "--sidecar", choices=["manuscript-guide", "transcript-compare", "manuscript-teleprompter"], help="build one sidecar while diagnosing a platform package"
     )
+    # CI restores .release-build from a cache keyed on a hash of every input of the freeze (.github/actions/build-native) and passes
+    # --reuse only on an exact hit. A developer's .release-build can be stale, so the flag is never a default.
+    parser.add_argument("--reuse", action="store_true", help="install a finished freeze already in .release-build instead of freezing that sidecar again")
     args = parser.parse_args()
     if args.clean:
         shutil.rmtree(RESOURCES, ignore_errors=True)
@@ -149,7 +176,9 @@ def main() -> None:
     # Each freeze is one mostly single-threaded PyInstaller process with its own work and output
     # directories, so they run side by side instead of one after another.
     with ThreadPoolExecutor(max_workers=len(selected)) as pool:
-        futures = {sidecar.name: pool.submit(freeze, *sidecar) for sidecar in selected}
+        futures = {
+            sidecar.name: pool.submit(reuse, sidecar.name) if args.reuse and reusable(sidecar.name) else pool.submit(freeze, *sidecar) for sidecar in selected
+        }
     # The pool has drained, so every freeze has finished: report all failures, not just the first.
     failures = {name: error for name, future in futures.items() if (error := future.exception())}
     if failures:

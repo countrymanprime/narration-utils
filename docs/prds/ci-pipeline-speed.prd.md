@@ -139,10 +139,10 @@ The owner (sole maintainer) merging stacks of agent-authored PRs several times a
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0 | Baseline | `scripts/ci/run-timings.mjs <run-id>` prints per-job and per-step times and queue offsets; profile one visual and one atlas test (navigation vs driving vs checks vs screenshot) | pending | - | - | - |
-| 1 | Build beside quality | Split `release` in `prerelease.yml` into `windows-build` and `publish`; write permissions only on `publish`; threat-model row | pending | with 2, 3, 4 | 0 | - |
-| 2 | Cache the sidecar freeze and Go | Content-hash cache of PyInstaller output, `--reuse` in `prepare-resources.py`, saved on `main` only; Go toolchain cache on Windows | pending | with 1, 3, 4 | 0 | - |
-| 3 | Visual suite: one load per state | One test per `{page, state}` with a step per viewport; diff old vs new output once | pending | with 1, 2, 4 | 0 | - |
+| 0 | Baseline | `scripts/ci/run-timings.mjs <run-id>` prints per-job and per-step times and queue offsets; profile one visual and one atlas test (navigation vs driving vs checks vs screenshot) | complete (profile: load 0.77 s, drive 0.64 s, axe 0.45 s, rest 0.2 s per capture; ADR 0105) | - | - | - |
+| 1 | Build beside quality | Split `release` in `prerelease.yml` into `windows-build` and `publish`; write permissions only on `publish`; threat-model row | in-progress (implemented; `workflow_dispatch` check of a red quality pending) | with 2, 3, 4 | 0 | - |
+| 2 | Cache the sidecar freeze and Go | Content-hash cache of PyInstaller output, `--reuse` in `prepare-resources.py`, saved on `main` only; Go toolchain cache on Windows (dropped, D4) | in-progress (implemented; cold vs hit comparison on one commit pending) | with 1, 3, 4 | 0 | - |
+| 3 | Visual suite: one load per state | One test per `{page, state}` with a step per viewport; diff old vs new output once | in-progress (implemented, ADR 0105; 24 rows reload per viewport; local run 4.9 to 3.2 min; CI timing pending) | with 1, 2, 4 | 0 | - |
 | 4 | Atlas: one load per story | Group a story's four variants; reload only where `play()` needs it | pending | with 1, 2, 3 | 0 | - |
 | 5 | Shard if still slow | Only if 3 or 4 misses 4 min: `--shard` across 2 jobs, merged report | pending | - | 3, 4 | - |
 | 6 | Fewer job slots | Fold the five sub-minute ubuntu jobs into `quick`; cancel-in-progress on PR-triggered workflows; update `docs/operations/ci-and-releases.md` | pending | with 1 to 4 | 0 | - |
@@ -178,6 +178,7 @@ Phases 1 and 2 both touch the Windows build but different files (`prerelease.yml
 | D1 | Do not split the code into separately published packages (npm / PyPI / Go module) to build "only on change". | It is already one Nx monorepo with affected-only runs on PRs (`nx-run`, `nx-affected`). The slow jobs are not library builds: they are the Playwright suites over the whole UI and the Windows packaging, which any UI change or any release needs regardless. Publishing internal packages adds versioning, release and supply-chain surface (a registry the build trusts) and saves no time on those paths. The useful half of the idea, "don't rebuild what did not change", is Phase 2's content-hash cache of build outputs. |
 | D2 | Cache build outputs, never test verdicts. | Keeps the `nx-run` rule that a green check means the checks ran; a cached build output is still exercised by the smoke test every run. |
 | D3 | Fix per-test cost before sharding. | Sharding multiplies job slots, and slots are what the queue is short of. |
+| D4 | No Go toolchain cache on Windows. | `setup-go` (v5.6.0, `cacheWindowsDir`) extracts Go to `D:` and leaves a junction in the `C:` tool cache, so an `actions/cache` of the tool cache stores the link, not Go. Doing it anyway means copying `setup-go`'s internals; revisit only if Phase 0's timings show `setup-toolchain` still costs a minute on the Windows jobs. |
 
 ## Research Summary
 
