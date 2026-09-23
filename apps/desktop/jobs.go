@@ -23,6 +23,7 @@ const (
 	jobKindMoonshineInstall = "moonshine_install"
 	jobKindAppUpdate        = "app_update"
 	jobKindTranscript       = "transcript_compare"
+	jobKindCoverage         = "recording_coverage"
 )
 
 // How a job ended. A job that was cancelled is reported too, so a listener can tell the narrator's own Cancel from a failure.

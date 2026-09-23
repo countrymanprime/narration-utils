@@ -64,9 +64,10 @@ func (s *Service) Chapters() ([]map[string]any, error) {
 	}
 	notes := s.loadNotes()
 	paragraphs := objects(data["paragraphs"])
+	recorded := s.recordedFractions()
 	result := make([]map[string]any, 0, len(objects(data["chapters"])))
 	for _, chapter := range objects(data["chapters"]) {
-		result = append(result, chapterPayload(chapter, notes, paragraphs, true))
+		result = append(result, chapterPayload(chapter, notes, recorded, paragraphs, true))
 	}
 	return result, nil
 }
@@ -91,9 +92,10 @@ func (s *Service) Reader() (map[string]any, error) {
 		return nil, err
 	}
 	notes := s.loadNotes()
+	recorded := s.recordedFractions()
 	chapters := []map[string]any{}
 	for _, chapter := range objects(data["chapters"]) {
-		chapters = append(chapters, chapterPayload(chapter, notes, nil, false))
+		chapters = append(chapters, chapterPayload(chapter, notes, recorded, nil, false))
 	}
 	paragraphs := []map[string]any{}
 	for _, paragraph := range objects(data["paragraphs"]) {
@@ -170,7 +172,7 @@ func (s *Service) SetChapterStatus(chapterID, status string) (map[string]any, er
 	if err := s.saveNotes(notes); err != nil {
 		return nil, err
 	}
-	return chapterPayload(found, notes, nil, false), nil
+	return chapterPayload(found, notes, s.recordedFractions(), nil, false), nil
 }
 
 func (s *Service) Notes(chapterID string) []map[string]any {
@@ -412,7 +414,10 @@ func paragraphPayload(paragraph map[string]any) map[string]any {
 	}
 	return payload
 }
-func chapterPayload(chapter, notes map[string]any, paragraphs []map[string]any, includeParagraphs bool) map[string]any {
+
+// chapterPayload is one chapter as the reader contract sends it. recordedFraction is present only for a chapter the
+// recording coverage measured (recorded, from RecordedFractions): never a guess from the status (ADR 0015, Q12 A).
+func chapterPayload(chapter, notes map[string]any, recorded map[string]float64, paragraphs []map[string]any, includeParagraphs bool) map[string]any {
 	status := "not_started"
 	if stored, ok := object(notes["chapterStatus"])[text(chapter, "id")].(string); ok {
 		status = stored
@@ -420,6 +425,9 @@ func chapterPayload(chapter, notes map[string]any, paragraphs []map[string]any, 
 	result := map[string]any{"id": text(chapter, "id"), "title": text(chapter, "title"), "index": chapter["index"], "wordCount": chapter["wordCount"], "contentKind": text(chapter, "contentKind"), "status": status}
 	if subtitle := text(chapter, "subtitle"); subtitle != "" {
 		result["subtitle"] = subtitle
+	}
+	if fraction, measured := recorded[text(chapter, "id")]; measured {
+		result["recordedFraction"] = fraction
 	}
 	if includeParagraphs {
 		ids := []map[string]any{}

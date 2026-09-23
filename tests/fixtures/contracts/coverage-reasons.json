@@ -1,0 +1,36 @@
+{
+  "evaluator": [
+    "item_added",
+    "item_removed",
+    "item_trimmed",
+    "item_moved",
+    "item_muted",
+    "take_switched",
+    "source_changed",
+    "analyzer_changed",
+    "params_changed",
+    "mapping_changed",
+    "mapped_track_missing",
+    "project_unreadable"
+  ],
+  "refusal": [
+    "no_project",
+    "no_project_file",
+    "project_unreadable",
+    "no_manuscript",
+    "chapter_not_found",
+    "not_narration",
+    "unmapped",
+    "multiple_tracks",
+    "mapped_track_missing",
+    "no_items",
+    "unsupported_item",
+    "source_missing",
+    "item_unreadable",
+    "busy",
+    "sidecar_missing",
+    "invalid_params",
+    "manuscript_changed",
+    "result_missing"
+  ]
+}

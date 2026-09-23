@@ -125,7 +125,7 @@ flowchart LR
 
 | Arrow | What it is | Read more |
 | --- | --- | --- |
-| `apps/ui` to `bindings*.go` | One Wails binding call per action, a JSON string back; events (`teleprompter:event`, `teleprompter:state`, `transcript:state`, `job:ended`, `update:status`, `system:*`) go the other way | [wire contracts](wire-contracts.md) |
+| `apps/ui` to `bindings*.go` | One Wails binding call per action, a JSON string back; events (`teleprompter:event`, `teleprompter:state`, `transcript:state`, `coverage:state`, `job:ended`, `update:status`, `system:*`) go the other way | [wire contracts](wire-contracts.md) |
 | `apps/ui` to `media.go` | The webview asks `/media` for a track's audio (Range requests); the route serves only a source file that the current project's `.rpp` names | [ADR 0012](../adr/0012-media-route-for-track-playback.md) |
 | `services` and `media.go` to the project file | The host reads the `.rpp` (tracks, items, source files) and never writes it; REAPER's own Lua bridge changes the project (markers, regions, item data), one undo block per command | [Tracks](../utilities/tracks.md) |
 | `services` to `internal/process` to a sidecar | `exec.CommandContext` with an argv slice, no shell, inside a Windows Job Object; results come back on stdout (NDJSON for the teleprompter) and in files | [ADR 0022](../adr/0022-live-sidecar-events-over-wails-and-stop-file.md) |

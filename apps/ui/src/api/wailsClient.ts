@@ -24,6 +24,7 @@ import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { chapterTrackMappingSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { takeReviewCreateTakeResultSchema, takeReviewFindingsSchema } from './schemas/takeReview';
+import { coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
@@ -238,6 +239,11 @@ export const wailsClient: NarrationApi = {
     decode(noteSchema, 'ManuscriptCreateNote', host.ManuscriptCreateNote(chapterId, paragraphId, text, anchorText ?? '', anchorStart, anchorEnd)),
   noteDelete: (id) => decode(voidResult, 'ManuscriptDeleteNote', host.ManuscriptDeleteNote(id)),
   subscribeTranscript: (onUpdate) => subscribeChecked('transcript:state', transcriptStateSchema, onUpdate),
+  coverageStart: (chapterId) => decode(coverageStartResultSchema, 'CoverageStart', host.CoverageStart(chapterId)),
+  coverageState: () => decode(coverageStateSchema, 'CoverageState', host.CoverageState()),
+  coverageCancel: () => decode(voidResult, 'CoverageCancel', host.CoverageCancel()),
+  coverageResult: (chapterId) => decode(coverageResultSchema, 'CoverageResult', host.CoverageResult(chapterId)),
+  subscribeCoverage: (onUpdate) => subscribeChecked('coverage:state', coverageStateSchema, onUpdate),
   lineIdentityStamp: (rows, overwrite) => decode(lineIdentityStartResultSchema, 'LineIdentityStamp', host.LineIdentityStamp(rows, overwrite)),
   lineIdentityRead: () => decode(lineIdentityStartResultSchema, 'LineIdentityRead', host.LineIdentityRead()),
   lineIdentityState: () => decode(lineIdentityStateSchema, 'LineIdentityState', host.LineIdentityState()),

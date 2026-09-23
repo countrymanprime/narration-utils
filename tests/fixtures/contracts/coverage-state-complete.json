@@ -1,0 +1,11 @@
+{
+  "chapterId": "c-0001",
+  "completedAt": "2026-09-21T10:00:00Z",
+  "message": "Text present: 8 of 10 words.",
+  "percent": 100,
+  "phase": "complete",
+  "recordId": "id-1",
+  "runId": "1789970042000000000",
+  "stage": "DONE",
+  "startedAt": "2026-09-21T10:00:00Z"
+}

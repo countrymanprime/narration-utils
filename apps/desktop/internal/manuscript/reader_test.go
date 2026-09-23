@@ -308,3 +308,55 @@ func TestChapterIDByTitleAndParagraphIDFailWithoutAManuscript(t *testing.T) {
 		t.Fatal("no manuscript: nothing resolves")
 	}
 }
+
+// recording-coverage-analysis.prd.md Phase 5 (D11): recordedFraction is set only from a measurement the provider
+// gives, and absent for every other chapter, so the UI keeps its labeled status estimate (Q12 A).
+func TestRecordedFractionComesOnlyFromTheMeasurementProvider(t *testing.T) {
+	service, chapterID, _ := importReaderFixture(t)
+	chapters, err := service.Chapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, chapter := range chapters {
+		if _, ok := chapter["recordedFraction"]; ok {
+			t.Fatalf("with no provider no chapter may carry recordedFraction: %#v", chapter)
+		}
+	}
+
+	calls := 0
+	service.SetRecordedFractions(func() map[string]float64 {
+		calls++
+		return map[string]float64{chapterID: 0.8, "not-a-chapter": 1}
+	})
+
+	chapters, err = service.Chapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	reader, err := service.Reader()
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, err := service.SetChapterStatus(chapterID, "recording")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, list := range map[string][]map[string]any{"Chapters": chapters, "Reader": objects(reader["chapters"])} {
+		for _, chapter := range list {
+			fraction, ok := chapter["recordedFraction"]
+			if text(chapter, "id") == chapterID {
+				if fraction != 0.8 {
+					t.Fatalf("%s: measured chapter = %#v", name, chapter)
+				}
+			} else if ok {
+				t.Fatalf("%s: an unmeasured chapter must not carry recordedFraction: %#v", name, chapter)
+			}
+		}
+	}
+	if status["recordedFraction"] != 0.8 {
+		t.Fatalf("SetChapterStatus payload = %#v", status)
+	}
+	if calls != 3 {
+		t.Fatalf("the provider is asked once per payload, got %d calls", calls)
+	}
+}

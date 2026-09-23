@@ -48,6 +48,26 @@ type Service struct {
 	persist  atomic.Pointer[persist.Reporter]
 	onEnd    atomic.Pointer[func(ImportJob)]
 	manCache atomic.Pointer[manuscriptCache]
+	recorded atomic.Pointer[RecordedFractions]
+}
+
+// RecordedFractions supplies the measured share of each chapter's words present, by chapter id: what fills a chapter
+// payload's recordedFraction (recording-coverage-analysis.prd.md D11). A chapter it leaves out has no measurement and
+// its payload carries no recordedFraction (Q12 A). The host wires the recording coverage service in, so this package
+// never imports it.
+type RecordedFractions func() map[string]float64
+
+// SetRecordedFractions says where measured recorded fractions come from; nil means none are measured.
+func (s *Service) SetRecordedFractions(fn RecordedFractions) { s.recorded.Store(&fn) }
+
+// recordedFractions asks the provider once for a whole payload. Without one it is empty.
+func (s *Service) recordedFractions() map[string]float64 {
+	if fn := s.recorded.Load(); fn != nil && *fn != nil {
+		if fractions := (*fn)(); fractions != nil {
+			return fractions
+		}
+	}
+	return map[string]float64{}
 }
 
 // The parsed manuscript, kept only as long as the file's own mtime and size say it is still the
