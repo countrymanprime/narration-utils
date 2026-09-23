@@ -6,6 +6,8 @@ import {
   categoryValue,
   chapterLineNumber,
   chapterTextMatches,
+  CREDITS_ROOM_TONE_SECONDS_PER_FILE,
+  estimateCreditsSeconds,
   estimateFinishedHours,
   findAliasMatches,
   highlightEntitiesInText,
@@ -256,6 +258,31 @@ describe('windowExcerpt (R3)', () => {
   it('clamps an out-of-range match instead of slicing negatively or past the end', () => {
     expect(() => windowExcerpt('short', -5, 3, 38)).not.toThrow();
     expect(() => windowExcerpt('short', 3, 100, 38)).not.toThrow();
+  });
+});
+
+describe('Credits time (audiobook-credits-templates.prd.md, Phase 2)', () => {
+  it('times each credits segment at the same 155 wpm figure as the narration estimate', () => {
+    // 155 words/min: a 155-word segment reads in exactly 60s.
+    expect(estimateCreditsSeconds([155])).toBe(60);
+    expect(estimateCreditsSeconds([0])).toBe(0);
+  });
+
+  it('sums multiple segments (opening and closing are separate files, ACX convention/C11)', () => {
+    expect(estimateCreditsSeconds([155, 310])).toBe(180);
+  });
+
+  it('returns 0 for no segments', () => {
+    expect(estimateCreditsSeconds([])).toBe(0);
+  });
+
+  it('defaults room tone to 0 seconds per file (C9: no Settings knob until Phase 5)', () => {
+    expect(CREDITS_ROOM_TONE_SECONDS_PER_FILE).toBe(0);
+    expect(estimateCreditsSeconds([155])).toBe(estimateCreditsSeconds([155], 0));
+  });
+
+  it('adds an explicit room-tone allowance once per segment/file when given one', () => {
+    expect(estimateCreditsSeconds([155, 155], 2)).toBe(124);
   });
 });
 
