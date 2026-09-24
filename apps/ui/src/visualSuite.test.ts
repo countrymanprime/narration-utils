@@ -8,6 +8,7 @@ import {
   checkAxeFindings,
   checkAxeModeForCi,
   checkControlWidths,
+  checkDocumentScroll,
   disambiguateLabels,
   findBlankCaptures,
   findCollapsedControls,
@@ -24,7 +25,9 @@ import {
   type AxeFinding,
   type CaptureRecord,
   type ControlMeasurement,
+  type EscapedAbsolute,
 } from '../tests/visual/lib/validators';
+import { documentScroll } from '../tests/visual/app.drivers';
 
 // A stand-in image: every cell of the signature is one brightness level derived from `hash`,
 // so equal hashes are the same picture and different hashes are clearly different pictures.
@@ -41,6 +44,8 @@ function record(page: string, state: string, viewport: string, hash: string, ove
     signature: Array<number>(8).fill(level(hash)),
     maxChannelStdev: 40,
     overflowPx: 0,
+    overflowYPx: 0,
+    escapedAbsolutes: [],
     narrowestControlPx: null,
     ...overrides,
   };
@@ -226,6 +231,41 @@ describe('disambiguateLabels', () => {
     const problems = checkControlWidths(disambiguateLabels([control('Model', 40), control('Model', 30)]), declared, 'desktop');
     expect(problems).toHaveLength(1);
     expect(problems[0]).toContain('"Model (2)"');
+  });
+});
+
+describe('this app opts into the document-scroll gate', () => {
+  test('declares documentScroll as locked (app-shell-vertical-overflow.prd.md)', () => {
+    expect(documentScroll).toBe('locked');
+  });
+});
+
+describe('checkDocumentScroll', () => {
+  const escaped: EscapedAbsolute[] = [{ selector: 'div > th:nth-of-type(3)', bottom: 812 }];
+
+  test('reports nothing when the project has not opted in, however much a capture overflowed', () => {
+    expect(checkDocumentScroll(200, escaped, undefined)).toEqual([]);
+  });
+
+  test('reports nothing for an opted-in capture with no vertical overflow and nothing escaped', () => {
+    expect(checkDocumentScroll(0, [], 'locked')).toEqual([]);
+  });
+
+  test('reports vertical overflow beyond the tolerance once opted in', () => {
+    const problems = checkDocumentScroll(35, [], 'locked');
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain('35px');
+  });
+
+  test('reports each escaped element with its selector and bottom edge once opted in', () => {
+    const problems = checkDocumentScroll(0, escaped, 'locked');
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain('div > th:nth-of-type(3)');
+    expect(problems[0]).toContain('812px');
+  });
+
+  test('reports both kinds of problem together', () => {
+    expect(checkDocumentScroll(35, escaped, 'locked')).toHaveLength(2);
   });
 });
 

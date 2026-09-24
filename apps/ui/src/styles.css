@@ -137,6 +137,13 @@
   color-scheme: dark;
 }
 @layer base {
+  /* A height:100% chain, not 100vh/100dvh: exact under both WebView2 zoom and CSS zoom
+     (app-shell-vertical-overflow.prd.md, Q2). The shell (App.tsx) sizes itself off this with h-full. */
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
   body {
     margin: 0;
     background: var(--bg);

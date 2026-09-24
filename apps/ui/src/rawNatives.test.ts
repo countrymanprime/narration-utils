@@ -26,7 +26,9 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     'src/components/home/Home.tsx': 2,
     'src/components/manuscript/ChapterNav.tsx': 4,
     'src/components/manuscript/CreditsEntry.tsx': 1,
-    'src/components/manuscript/Manuscript.tsx': 2,
+    // The card's bookmark toggle and its whole-header toggle (manuscript-credits-card-parity.prd.md), moved out of
+    // Manuscript.tsx unchanged. `CreditsEntry.tsx` does not render through this yet.
+    'src/components/manuscript/ReaderCard.tsx': 2,
     'src/components/project/ProjectPicker.tsx': 3,
     'src/components/proofing/Transcript.tsx': 1,
     'src/components/settings/ScopedSetting.tsx': 1,
