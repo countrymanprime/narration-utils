@@ -85,6 +85,7 @@ Phase counts are the rows of each PRD's phase table.
 | [Recording Check Summary: a Chapter Summary First, Pickups Listed](recording-check-summary.prd.md) | Feature | 4 | None; amends the "counts, not a verdict" clause of ADR 0130 and the result view of the [recording check](../utilities/recording-coverage.md) |
 | [Chapter Track Link Control: a Track Button per Row, Relinking and Removing a Mis-imported Chapter](chapter-track-link-control.prd.md) | Feature (with a defect: Change on Tracks leaves two links) | 4 | None; builds on the confirmed chapter-track mapping of [Analysis Evidence Ledger](analysis-evidence-ledger.prd.md) (ADR 0100, ADR 0110) |
 | [DAW Chapter-Track Auto-Sync](daw-chapter-track-auto-sync.prd.md) | Feature | 9 (0-8) | None; supersedes parts of ADR 0100 (the "confirmed only" link rule) and ADR 0130 / recording-check Q14 ("runs only on a press") when delivered, and amends ADR 0110's matcher |
+| [Credits Token Setup and Front Matter Detection](credits-token-setup-and-front-matter-detection.prd.md) | Feature (with a defect: Word document properties read from the wrong path) | 4 | None; builds on [Audiobook Credits Templates](audiobook-credits-templates.prd.md) and amends its C3 seeding (ADR 0019, ADR 0093) |
 
 ## Replaced briefs
 
