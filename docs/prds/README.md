@@ -79,6 +79,7 @@ Phase counts are the rows of each PRD's phase table.
 | DAW Selection and Acquisition (PRD deleted, delivered) | Feature | 4 | None; steady state in [the DAW catalog and "Get it" flow](../architecture/daw-integration.md#the-daw-catalog-and-get-it-flow); `git log --diff-filter=D -- docs/prds/daw-selection-and-acquisition.prd.md` finds it |
 | [CI Pipeline Speed](ci-pipeline-speed.prd.md) | Feature (tooling) | 8 (0-7) | None |
 | [Tool Run Logging](tool-run-logging.prd.md) | Feature (infrastructure) | 7 | None; extends the host log of ADR 0069 |
+| [Home Stage Check Line: Remove the Explainer and Rethink Check Now](home-stage-check-line.prd.md) | Defect (UX) | 2 | None; amends the Check now line of Phase 5 of [Chapter Stage Recommendations](chapter-stage-recommendations.prd.md) |
 
 ## Replaced briefs
 
