@@ -8,7 +8,7 @@ Create a final review pass that combines narrator-visible editorial findings wit
 
 1. Run narration diagnostics for the selected chapters.
 2. Review technical findings by severity and listen in context.
-3. Run a selected generic audiobook measurement profile over render-ready material.
+3. Measure render-ready material against the project's delivery profile (ACX unless another is chosen; [Delivery](../guides/using-the-app/delivery.md)).
 4. Resolve, dismiss, or document remaining findings.
 5. Export a reviewer package containing timestamps, categories, evidence summaries, review state, and optional local audio references.
 

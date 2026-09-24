@@ -1,7 +1,7 @@
 // Package deliveryreport builds the Delivery page's exported report (diagnostics-delivery-and-cleanup-tools.prd.md
 // Phase 7): one model rendered twice, as JSON for tools and as a self-contained HTML page for a reviewer without the
 // app, carrying the same finding IDs and review states. It is pure: the host gathers the inputs (the last measurement
-// and diagnostics check, the narrator's limits, the review store, the installed assets) and writes the two files.
+// and diagnostics check, the project's delivery profile, the review store, the installed assets) and writes the two files.
 //
 // The output is deterministic: the same input gives byte-identical files apart from generated_at, because files and
 // findings are sorted and every map is written in key order. Local paths are left out unless the narrator opts in
@@ -14,20 +14,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strconv"
+	"strings"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
 )
 
 // SchemaVersion is the version of the JSON report this package writes.
-const SchemaVersion = 1
+const SchemaVersion = 2
 
 // Dir is the sidecar folder the host writes reports to, relative to the project folder; never next to the audio.
 const Dir = "narration-utils/delivery"
-
-// ProfileName names the narrator's own limits in the delivery_qc findings a report carries. The host judges the page's
-// measurements with the same name, so a finding keeps one ID on the page and in the report.
-const ProfileName = "delivery-limits"
 
 // The statuses of one file in a report.
 const (
@@ -84,9 +83,10 @@ type Input struct {
 	AppVersion  string
 	Options     Options
 
-	// Profile is the narrator's limits in force; LimitsError says why they could not be read (none are then applied).
-	Profile     measure.Profile
-	LimitsError string
+	// Profile is the delivery profile the project is judged against (ADR 0179); ProfileNotice says why the project's own
+	// choice could not be used, when it could not.
+	Profile       deliveryprofile.Profile
+	ProfileNotice string
 
 	// Measured is the last measurement's files.
 	Measured []MeasuredFile
@@ -115,6 +115,7 @@ func Build(in Input) Report {
 	for i := range files {
 		files[i].finish(all)
 	}
+	profile := profileOf(in, files, scrub)
 	return Report{
 		SchemaVersion: SchemaVersion,
 		GeneratedAt:   in.GeneratedAt,
@@ -128,10 +129,10 @@ func Build(in Input) Report {
 		Privacy:     privacyOf(in.Options),
 		Units:       units(),
 		Definitions: definitions(),
-		Limits:      limitsOf(in),
+		Profile:     profile,
 		Diagnostics: diagnosticsOf(in, scrub),
 		Review:      reviewOf(in, scrub),
-		Summary:     summarise(files, all),
+		Summary:     summarise(files, all, profile),
 		Files:       files,
 		Findings:    all,
 		Assets:      assetsOf(in, scrub),
@@ -155,7 +156,7 @@ func buildFiles(in Input, scrub scrubber) ([]File, map[string]string) {
 		if file, ok := byPath[path]; ok {
 			return file
 		}
-		file := &File{Name: name, path: path, Measurement: FileMeasurement{Status: "not_measured", Reason: "Not in the last measurement."},
+		file := &File{Name: name, path: path, Measurement: FileMeasurement{Status: "not_measured", Reason: "Not in the last measurement.", Rules: []RuleResult{}},
 			Diagnostics: FileCheck{Status: "not_checked", Reason: "Not in the last diagnostics check."}}
 		if in.Options.IncludePaths {
 			file.Path = path
@@ -165,7 +166,7 @@ func buildFiles(in Input, scrub scrubber) ([]File, map[string]string) {
 		return file
 	}
 	for _, measured := range in.Measured {
-		entry(measured.Path, measured.Name).Measurement = measurementOf(measured, scrub)
+		entry(measured.Path, measured.Name).Measurement = measurementOf(measured, in.Profile, scrub)
 	}
 	for _, checked := range in.Checked {
 		entry(checked.Path, checked.Name).Diagnostics = checkOf(checked, scrub)
@@ -183,19 +184,28 @@ func buildFiles(in Input, scrub scrubber) ([]File, map[string]string) {
 	return files, refs
 }
 
-func measurementOf(file MeasuredFile, scrub scrubber) FileMeasurement {
+func measurementOf(file MeasuredFile, profile deliveryprofile.Profile, scrub scrubber) FileMeasurement {
 	switch file.Status {
 	case "measured":
 		if file.Report == nil {
-			return FileMeasurement{Status: "failed", Reason: "The measurement has no report."}
+			return FileMeasurement{Status: "failed", Reason: "The measurement has no report.", Rules: []RuleResult{}}
 		}
 		report := *file.Report
 		report.File = ""
-		return FileMeasurement{Status: "measured", Report: &report, Fingerprint: file.Fingerprint}
+		results := deliveryprofile.EvaluateFile(*file.Report, profile).Results
+		return FileMeasurement{Status: "measured", Report: &report, Fingerprint: file.Fingerprint, Rules: ruleResults(results)}
 	case "failed":
-		return FileMeasurement{Status: "failed", Reason: "Could not be measured: " + scrub.text(file.Error)}
+		return FileMeasurement{Status: "failed", Reason: "Could not be measured: " + scrub.text(file.Error), Rules: []RuleResult{}}
 	}
-	return FileMeasurement{Status: "not_measured", Reason: "The measurement was cancelled before this file was read."}
+	return FileMeasurement{Status: "not_measured", Reason: "The measurement was cancelled before this file was read.", Rules: []RuleResult{}}
+}
+
+func ruleResults(results []deliveryprofile.Result) []RuleResult {
+	out := make([]RuleResult, len(results))
+	for i, result := range results {
+		out[i] = RuleResult{Rule: result.RuleID, Status: string(result.Status), Value: result.Value, Violation: result.Violation, Why: result.Why, Advice: result.Advice}
+	}
+	return out
 }
 
 func checkOf(file CheckedFile, scrub scrubber) FileCheck {
@@ -208,19 +218,25 @@ func checkOf(file CheckedFile, scrub scrubber) FileCheck {
 	return FileCheck{Status: "not_checked", Reason: "The diagnostics check was cancelled before this file was read."}
 }
 
-// collectFindings judges every measured report against the limits (measure.Evaluate, the same judgement as the
-// page's) and adds the diagnostics findings, each with its review state, in file then time order.
+// collectFindings judges every measured report against the profile (deliveryprofile.EvaluateFile, the same judgement
+// as the page's) and adds the diagnostics findings, each with its review state, in file then time order.
 func collectFindings(in Input, refs map[string]string, scrub scrubber) []Finding {
 	out := []Finding{}
-	add := func(path string, finding findings.Finding) {
-		out = append(out, findingOf(finding, refs[path], in.Review, scrub))
+	labels := map[string]string{}
+	for _, rule := range in.Profile.Rules {
+		labels[rule.ID] = rule.Label
 	}
-	if in.LimitsError == "" {
-		for _, file := range in.Measured {
-			if file.Status == "measured" && file.Report != nil {
-				for _, finding := range measure.Evaluate(*file.Report, in.Profile) {
-					add(file.Path, finding)
-				}
+	platform := in.Profile.Platform
+	if !in.Profile.BuiltIn {
+		platform = "the profile"
+	}
+	add := func(path string, finding findings.Finding) {
+		out = append(out, findingOf(finding, refs[path], in.Review, scrub, labels, platform))
+	}
+	for _, file := range in.Measured {
+		if file.Status == "measured" && file.Report != nil {
+			for _, finding := range deliveryprofile.EvaluateFile(*file.Report, in.Profile).Findings {
+				add(file.Path, finding)
 			}
 		}
 	}
@@ -258,7 +274,7 @@ func startOf(f Finding) float64 {
 	return f.TimeRange.Start
 }
 
-func findingOf(f findings.Finding, ref string, review ReviewLookup, scrub scrubber) Finding {
+func findingOf(f findings.Finding, ref string, review ReviewLookup, scrub scrubber, labels map[string]string, platform string) Finding {
 	state := f.Review
 	if review != nil {
 		if stored, ok := review(f.ID); ok {
@@ -268,7 +284,7 @@ func findingOf(f findings.Finding, ref string, review ReviewLookup, scrub scrubb
 	state.Note = scrub.text(state.Note)
 	out := Finding{
 		ID: f.ID, Analyzer: f.Analyzer, Category: string(f.Category), Severity: string(f.Severity), File: ref,
-		Title: titleOf(f), TimeRange: f.TimeRange, Confidence: f.Confidence, ConfidenceReason: scrub.text(f.ConfidenceReason),
+		Title: titleOf(f, labels, platform), TimeRange: f.TimeRange, Confidence: f.Confidence, ConfidenceReason: scrub.text(f.ConfidenceReason),
 		Evidence: scrub.evidence(f.Evidence), Review: state, Open: state.Status != findings.StatusDismissed,
 	}
 	if f.Manuscript != nil && (f.Manuscript.ChapterID != "" || f.Manuscript.ChapterTitle != "") {
@@ -295,11 +311,22 @@ func (f *File) finish(all []Finding) {
 	}
 }
 
-func summarise(files []File, all []Finding) Summary {
+func summarise(files []File, all []Finding, profile ProfileInfo) Summary {
 	summary := Summary{Files: len(files), ByReview: map[string]int{}, BySeverity: map[string]int{}}
+	for _, rule := range profile.Rules {
+		if rule.Scope == string(deliveryprofile.ScopeFile) {
+			summary.RuleResults.add(rule.Results)
+		}
+	}
 	for _, file := range files {
 		if file.Measurement.Status == "measured" {
 			summary.Measured++
+		}
+		for _, result := range file.Measurement.Rules {
+			if result.Status == string(deliveryprofile.StatusNotMet) {
+				summary.FilesNotMet++
+				break
+			}
 		}
 		if file.Diagnostics.Status == "checked" {
 			summary.Checked++
@@ -317,33 +344,103 @@ func summarise(files []File, all []Finding) Summary {
 	return summary
 }
 
-func limitsOf(in Input) Limits {
-	limits := Limits{Set: in.Profile.HasLimits() && in.LimitsError == "", Error: in.LimitsError, Metrics: []LimitRow{}}
-	if in.LimitsError != "" {
-		limits.Note = "Your limits could not be read, so no value was judged: " + in.LimitsError
-		return limits
+// profileOf describes the profile and counts each rule's results over the measured files, and judges the book rules.
+func profileOf(in Input, files []File, scrub scrubber) ProfileInfo {
+	profile := in.Profile
+	info := ProfileInfo{
+		Key: profile.Key(), ID: profile.ID, Version: profile.Version, Revision: profile.Revision, Title: profile.Title(),
+		Platform: profile.Platform, BuiltIn: profile.BuiltIn, BasedOn: profile.BasedOn, Note: profile.Note,
+		Notice: scrub.text(in.ProfileNotice), SourceTitle: profile.Source.Title, SourceURL: profile.Source.URL,
+		ReadOn: profile.Source.ReadOn, Rules: []ProfileRule{},
 	}
-	if !limits.Set {
-		limits.Note = "No limits set: every value is reported, and none is judged."
-		return limits
+	if !profile.BuiltIn {
+		info.Version = ""
 	}
-	limits.Note = "Your own limits, from Settings > Delivery. Bounds are inclusive; a value that could not be measured is never counted as within a limit."
-	for _, row := range metricRows(in.Profile) {
-		if row.Min != nil || row.Max != nil {
-			limits.Metrics = append(limits.Metrics, row)
+	counts := map[string]*RuleCount{}
+	reports := []measure.Report{}
+	for _, file := range in.Measured {
+		if file.Status == "measured" && file.Report != nil {
+			reports = append(reports, *file.Report)
 		}
 	}
-	return limits
+	for _, file := range files {
+		for _, result := range file.Measurement.Rules {
+			if counts[result.Rule] == nil {
+				counts[result.Rule] = &RuleCount{}
+			}
+			counts[result.Rule].count(result.Status)
+		}
+	}
+	info.Book = ruleResults(deliveryprofile.EvaluateBook(reports, profile))
+	for _, result := range info.Book {
+		counts[result.Rule] = &RuleCount{}
+		counts[result.Rule].count(result.Status)
+	}
+	for _, rule := range profile.Rules {
+		row := ProfileRule{
+			ID: rule.ID, Label: rule.Label, Scope: string(rule.Scope), Metric: rule.Metric, Unit: rule.Unit, Min: rule.Min, Max: rule.Max,
+			OneOf: rule.OneOf, Bound: boundText(rule), Level: string(rule.Level), CheckedBy: string(rule.CheckedBy), Off: rule.Off,
+			Requirement: rule.Source.Requirement, Quoted: rule.Source.Quoted, SourceURL: rule.Source.URL, ReadOn: rule.Source.ReadOn,
+			Verification: string(rule.Verification), VerificationNote: rule.VerificationNote,
+		}
+		if count := counts[rule.ID]; count != nil {
+			row.Results = *count
+		}
+		info.Rules = append(info.Rules, row)
+	}
+	return info
 }
 
-func metricRows(p measure.Profile) []LimitRow {
-	return []LimitRow{
-		{Metric: "integrated_lufs", Label: "Integrated loudness", Unit: "LUFS", Min: p.IntegratedLUFS.Min, Max: p.IntegratedLUFS.Max},
-		{Metric: "rms_dbfs", Label: "RMS", Unit: "dBFS", Min: p.RMSdBFS.Min, Max: p.RMSdBFS.Max},
-		{Metric: "sample_peak_dbfs", Label: "Sample peak", Unit: "dBFS", Min: p.SamplePeakdBFS.Min, Max: p.SamplePeakdBFS.Max},
-		{Metric: "true_peak_dbtp", Label: "True peak", Unit: "dBTP", Min: p.TruePeakdBTP.Min, Max: p.TruePeakdBTP.Max},
-		{Metric: "noise_floor_dbfs", Label: "Noise floor", Unit: "dBFS", Min: p.NoiseFloordBFS.Min, Max: p.NoiseFloordBFS.Max},
+func (c *RuleCount) count(status string) {
+	switch deliveryprofile.Status(status) {
+	case deliveryprofile.StatusMet:
+		c.Met++
+	case deliveryprofile.StatusNotMet:
+		c.NotMet++
+	case deliveryprofile.StatusNotMeasurable:
+		c.NotMeasurable++
+	case deliveryprofile.StatusNotChecked:
+		c.NotChecked++
+	case deliveryprofile.StatusOff:
+		c.Off++
 	}
+}
+
+func (c *RuleCount) add(other RuleCount) {
+	c.Met += other.Met
+	c.NotMet += other.NotMet
+	c.NotMeasurable += other.NotMeasurable
+	c.NotChecked += other.NotChecked
+	c.Off += other.Off
+}
+
+// boundText writes a rule's bound in words: "-23 to -18 dBFS", "at most -3 dBFS", "one of 44100 Hz".
+func boundText(rule deliveryprofile.Rule) string {
+	unit := ""
+	if rule.Unit != "" {
+		unit = " " + rule.Unit
+	}
+	switch {
+	case rule.BoundText != "":
+		return rule.BoundText
+	case len(rule.OneOf) > 0:
+		values := make([]string, len(rule.OneOf))
+		for i, value := range rule.OneOf {
+			values[i] = strconv.FormatFloat(value, 'f', -1, 64)
+		}
+		text := "one of " + strings.Join(values, ", ") + unit
+		if rule.SameAcrossFiles {
+			text += ", the same in every file"
+		}
+		return text
+	case rule.Min != nil && rule.Max != nil:
+		return fmt.Sprintf("%g to %g%s", *rule.Min, *rule.Max, unit)
+	case rule.Min != nil:
+		return fmt.Sprintf("at least %g%s", *rule.Min, unit)
+	case rule.Max != nil:
+		return fmt.Sprintf("at most %g%s", *rule.Max, unit)
+	}
+	return ""
 }
 
 func diagnosticsOf(in Input, scrub scrubber) DiagnosticsInfo {

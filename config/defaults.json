@@ -33,7 +33,6 @@
   "DAW": {
     "auto_start_launcher": "false"
   },
-  "Delivery": {},
   "RecordingCoverage": {
     "min_paragraph_present": "0.8",
     "max_missing_run": "3",

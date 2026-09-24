@@ -971,12 +971,18 @@ export const STATE_CATALOG: StateEntry[] = [
     ...KEEPS_DESKTOP_SCROLL,
   },
 
-  // Delivery (diagnostics-delivery-and-cleanup-tools.prd.md Phase 5)
+  // Delivery (diagnostics-delivery-and-cleanup-tools.prd.md Phase 5), judged against a delivery profile (delivery-platform-profiles.prd.md Phase 3)
   {
     page: 'delivery',
     state: 'empty',
     description:
-      'Delivery, nothing measured yet and no limits set - "No limits set", every value only reported so nothing reads as a pass (ADR 0025, 0155), and Choose files to measure',
+      'Delivery, nothing measured yet - the project judged against ACX (September 2026), built in and read-only, with how many rules the app checks, does not check, leaves to listening and has yet to verify (ADR 0179), and Choose files to measure',
+  },
+  {
+    page: 'delivery',
+    state: 'profile-rules',
+    description:
+      'Delivery, the profile\'s "Rules and their sources" opened (mockup 01) - every ACX rule with what ACX requires, how the app checks it (measured, not checked by the app, listen) and a verified, to verify or conflicting-sources mark',
   },
   {
     page: 'delivery',
@@ -988,13 +994,20 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'delivery',
     state: 'measured',
     description:
-      'Delivery, three picked files measured with no limits set - every value with its unit, a silent render whose levels are "Not measurable" (never a number) with the reason under the table, and a file it could not read with why',
+      'Delivery, three picked files measured against ACX (mockup 03) - a column per rule with its bound, the 48 kHz render not met on sample rate in words as well as colour, room tone and the MP3 "Not checked", a silent render whose levels are "Not measurable", a file it could not read with why, and each file\'s result counted',
   },
   {
     page: 'delivery',
-    state: 'outside-limits',
+    state: 'file-rules',
     description:
-      'Delivery with the project’s own limits set (?mockDeliveryLimits=1) - the limits summary, and the values outside them marked above or below the limit in words as well as colour, with their count',
+      "Delivery, a measured file opened rule by rule (mockup 04) - each rule's result, this file's value, what ACX requires and how that was verified, loudness as information",
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'delivery',
+    state: 'custom-profile',
+    description:
+      'Delivery judged by a custom profile (?mockDeliveryProfile=custom, mockup 07) - "My ACX, tighter peak", custom and based on ACX, two rules off, and every rule the app checks met',
   },
   {
     page: 'delivery',
@@ -1042,7 +1055,7 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'delivery',
     state: 'report-exported',
     description:
-      'Delivery with the project’s limits set and the files measured, then Export report - the HTML and JSON file names written to narration-utils/delivery, what the report counts, and that it holds file names only (scrolled to the Report panel)',
+      'Delivery with the files measured against ACX, then Export report - the HTML and JSON file names written to narration-utils/delivery, what the report counts, and that it holds file names only (scrolled to the Report panel)',
     ...KEEPS_DESKTOP_SCROLL,
   },
   {
@@ -1067,14 +1080,14 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'settings',
     state: 'global-delivery',
     description:
-      'Settings, Global scope / Delivery category (diagnostics PRD Phase 2): the narrator’s own measurement limits as number boxes with units and ranges, none set, so the summary says "No limits set" (no distributor numbers ship, ADR 0025)',
+      'Settings, Global scope / Delivery category (ADR 0179): the default delivery profile every project without its own choice is judged against (ACX), and the profiles, the built-in one read-only with Duplicate',
     ...REFLOW,
   },
   {
     page: 'settings',
-    state: 'global-delivery-invalid',
+    state: 'delivery-profile-editor',
     description:
-      'Settings, Global scope / Delivery with two unsaved limits typed: a valid true peak and an out-of-range sample peak whose row names the range instead of the hint',
+      "Settings / Delivery, a duplicate of ACX open in the profile editor (mockup 06): its name, each file rule on or off, the numbers of a rule with a range beside ACX's, a changed peak marked Changed, and a fixed rule that can only be turned off",
     ...REFLOW,
   },
   {
@@ -1226,7 +1239,7 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'settings',
     state: 'project-delivery',
     description:
-      'Settings, Project scope / Delivery category: every limit unset here and in Global, with the note that a blank project limit uses the Global one',
+      'Settings, Project scope / Delivery category (?mockDeliveryProfile=custom, mockup 05): the profile this project is judged against, and the profiles, ACX built in and a custom copy with its numbers changed and rules off, Duplicate, Edit and Delete',
     ...REFLOW,
   },
   {

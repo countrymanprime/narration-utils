@@ -3,6 +3,7 @@
 // names inside a report and a fingerprint are the wire's own snake_case, as internal/measure writes them; the job
 // around them is camelCase like the host's other jobs.
 
+import type { DeliveryProfile, DeliveryRuleResult } from './deliveryProfiles';
 import type { Finding } from './findings';
 import type { WorkJob } from './manuscript';
 
@@ -39,10 +40,10 @@ export type MeasureFingerprint = { size_bytes: number; modified_at: string; sha2
 export type MeasureFileStatus = 'pending' | 'measuring' | 'measured' | 'failed' | 'cancelled';
 
 /**
- * One file of a measurement: its report and fingerprint once measured, or why it could not be. `findings` are the host's
- * judgement of the report against the narrator's limits as they are when the job is read (measure.Evaluate, diagnostics PRD
- * Phase 7): `delivery_qc` findings, one for each value outside a limit or not measurable against one, with the IDs an
- * exported report carries. Empty when nothing is outside a limit, or no limit is set.
+ * One file of a measurement: its report and fingerprint once measured, or why it could not be. `rules` is the host's
+ * judgement of the report against the project's delivery profile as it is when the job is read (ADR 0179), one result per
+ * file rule in the profile's order; `findings` are the `delivery_qc` findings those results raise (a rule not met, a value
+ * not measurable, a rule's advice), with the IDs an exported report carries. Both are empty until the file is measured.
  */
 export type MeasureFileResult = {
   path: string;
@@ -51,6 +52,7 @@ export type MeasureFileResult = {
   report: MeasureReport | null;
   fingerprint: MeasureFingerprint | null;
   findings: Finding[];
+  rules: DeliveryRuleResult[];
   error?: string;
 };
 
@@ -63,8 +65,12 @@ export type MeasureJob = Omit<WorkJob, 'kind' | 'phase' | 'preview' | 'requiresR
   kind: 'measurement';
   phase: 'idle' | 'running' | 'success' | 'cancelled' | 'error';
   files: MeasureFileResult[];
-  /** Why the narrator's limits could not be read (a hand-edited settings file); no file is then judged. */
-  limitsError?: string;
+  /** The delivery profile the files are judged against. */
+  profile: DeliveryProfile | null;
+  /** The book rules' results over every measured file, in the profile's order. */
+  bookRules: DeliveryRuleResult[];
+  /** Why the project's own choice of profile could not be used, when it could not. */
+  profileNotice?: string;
 };
 
 /** What the picker chose; empty when the narrator closed it. */

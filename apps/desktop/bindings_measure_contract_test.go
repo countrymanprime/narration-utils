@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
-	"github.com/countrymanprime/narration-utils/shell/internal/deliveryreport"
+	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
 )
 
@@ -48,21 +48,11 @@ func contractMeasureJob() *measureJob {
 	return job
 }
 
-// contractLimits are limits the first contract file breaks (its true peak) and the silent render cannot be judged
-// against, so the pinned success shows both kinds of the host's delivery_qc finding (Phase 7).
-func contractLimits(t *testing.T) measure.Profile {
+// pinMeasureJob pins a job as the bindings answer it: judged against the built-in ACX profile, which the first contract
+// file misses (a 48 kHz render) and the silent render cannot be judged against (ADR 0179).
+func pinMeasureJob(t *testing.T, name string, job MeasureJob) {
 	t.Helper()
-	profile, err := measure.ProfileFromLimits(deliveryreport.ProfileName, map[string]string{"true_peak_dbtp_max": "-3.5"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return profile
-}
-
-// pinMeasureJob pins a job as the bindings answer it: judged against profile.
-func pinMeasureJob(t *testing.T, name string, job MeasureJob, profile measure.Profile) {
-	t.Helper()
-	job = judgeMeasureJob(job, profile, "")
+	job = judgeMeasureJob(job, deliveryprofile.ACX(), "")
 	job.Elapsed = 3.5
 	contractfile.Check(t, name, job)
 }
@@ -70,31 +60,30 @@ func pinMeasureJob(t *testing.T, name string, job MeasureJob, profile measure.Pr
 func TestContractMeasureBindings(t *testing.T) {
 	contractfile.Check(t, "measure-pick", MeasurePickResult{Paths: contractMeasurePaths})
 	contractfile.Check(t, "measure-pick-cancelled", MeasurePickResult{Paths: []string{}})
-	limits := contractLimits(t)
-	pinMeasureJob(t, "measure-idle", NewHost().measureState(), measure.Profile{})
+	pinMeasureJob(t, "measure-idle", NewHost().measureState())
 
 	running := contractMeasureJob()
 	running.begin(0)
 	running.complete(0, contractMeasured(contractMeasurePaths[0]), nil)
 	running.begin(1)
 	running.progress(1, 21_000, 42_000)
-	pinMeasureJob(t, "measure-running", running.snapshot(), limits)
+	pinMeasureJob(t, "measure-running", running.snapshot())
 
 	finished := contractMeasureJob()
 	finished.complete(0, contractMeasured(contractMeasurePaths[0]), nil)
 	finished.complete(1, contractUnavailable(contractMeasurePaths[1]), nil)
 	finished.complete(2, measure.FileMeasurement{}, errors.New("not a RIFF/WAVE file"))
 	finished.finish(false, nil)
-	pinMeasureJob(t, "measure-success", finished.snapshot(), limits)
+	pinMeasureJob(t, "measure-success", finished.snapshot())
 
 	cancelled := contractMeasureJob()
 	cancelled.complete(0, contractMeasured(contractMeasurePaths[0]), nil)
 	cancelled.begin(1)
 	cancelled.finish(true, nil)
-	pinMeasureJob(t, "measure-cancelled", cancelled.snapshot(), limits)
+	pinMeasureJob(t, "measure-cancelled", cancelled.snapshot())
 
 	broken := contractMeasureJob()
 	broken.begin(0)
 	broken.finish(false, errors.New("runtime error: index out of range [4] with length 4"))
-	pinMeasureJob(t, "measure-error", broken.snapshot(), limits)
+	pinMeasureJob(t, "measure-error", broken.snapshot())
 }

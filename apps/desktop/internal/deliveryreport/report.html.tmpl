@@ -12,6 +12,7 @@ body { margin: 0 auto; max-width: 72rem; padding: 1.5rem 1rem 3rem; font: 15px/1
 h1 { font-size: 1.6rem; margin: 0 0 .25rem; } h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; border-bottom: 1px solid var(--line); padding-bottom: .25rem; }
 p, li { max-width: 60rem; } .muted { color: var(--muted); } .open { color: var(--danger); font-weight: 600; }
 .notice { background: var(--band); border-left: 4px solid var(--line); padding: .75rem 1rem; }
+.profile { border: 1px solid var(--line); padding: .75rem 1rem; }
 .scroll { overflow-x: auto; } table { border-collapse: collapse; width: 100%; font-size: .9rem; }
 th, td { border-bottom: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
 th { background: var(--band); } td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -23,33 +24,47 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
 <header>
 <h1>Delivery report</h1>
 <p class="muted">Generated {{.GeneratedAt}} by {{.App.Name}} {{.App.Version}}{{range .Analyzers}} · {{.Name}} analyzer v{{.Version}}{{end}}</p>
+<p class="profile"><strong>Judged against {{.Profile.Title}}</strong> · profile <code>{{.Profile.Key}}</code> · {{if .Profile.BuiltIn}}built in, read-only{{else}}custom{{with .Profile.BasedOn}}, based on <code>{{.}}</code>{{end}}{{end}}<br><span class="muted">{{profileLine .Profile}}</span>{{with .Profile.Note}}<br><span class="muted">{{.}}</span>{{end}}{{with .Profile.Notice}}<br><span class="open">{{.}}</span>{{end}}</p>
 <p class="notice">{{.Notice}}</p>
 </header>
 
 <h2>Summary</h2>
 <ul>
 <li>{{.Summary.Files}} file(s): {{.Summary.Measured}} measured, {{.Summary.NotMeasured}} not measured; {{.Summary.Checked}} checked for diagnostics, {{.Summary.NotChecked}} not checked.</li>
+<li><span{{if .Summary.RuleResults.NotMet}} class="open"{{end}}>{{ruleSummary .}}</span></li>
 <li><span{{if .Summary.OpenFindings}} class="open"{{end}}>{{.Summary.OpenFindings}} open finding(s)</span> of {{.Summary.Findings}} (open means not dismissed). By review: {{counts .Summary.ByReview}}. By severity: {{counts .Summary.BySeverity}}.</li>
 <li>Scope: {{.Scope.Description}}</li>
 <li>Privacy: {{.Privacy.Note}}</li>
 </ul>
 
-<h2>Limits</h2>
-<p>{{.Limits.Note}}</p>
-{{if .Limits.Metrics}}<ul>{{range .Limits.Metrics}}<li>{{.Label}}: {{limitText .}}</li>{{end}}</ul>{{end}}
+<h2>Delivery profile: {{.Profile.Title}}</h2>
+<p class="muted">Bounds are inclusive. A value that could not be measured, and a rule not checked by the app or to listen for, never counts as met.</p>
+<div class="scroll"><table>
+<thead><tr><th>Rule</th><th>{{if .Profile.BuiltIn}}{{.Profile.Platform}} requires{{else}}Requirement{{end}}</th><th>How it was checked</th><th>Verification</th><th>Result</th></tr></thead>
+<tbody>
+{{range .Profile.Rules}}<tr id="rule-{{.ID}}">
+<td><code>{{.ID}}</code><br>{{.Label}} <span class="muted">({{.Scope}})</span></td>
+<td>{{if .Quoted}}&ldquo;{{.Requirement}}&rdquo;{{else}}{{.Requirement}}{{end}}</td>
+<td>{{checkedText .}}</td>
+<td>{{verifiedText .}}</td>
+<td{{if .Results.NotMet}} class="open"{{end}}>{{resultCount .Results}}</td>
+</tr>
+{{end}}</tbody>
+</table></div>
 
 <h2>Files</h2>
 <div class="scroll"><table>
-<thead><tr><th>File</th><th>Status</th><th>Measurements</th><th>Diagnostics</th><th>Fingerprint</th></tr></thead>
+<thead><tr><th>File</th><th>Status</th><th>Measurements</th><th>Against the profile</th><th>Diagnostics</th><th>Fingerprint</th></tr></thead>
 <tbody>
 {{range .Files}}<tr id="file-{{.Ref}}">
 <td><strong>{{.Ref}}</strong> {{.Name}}{{if .Path}}<br><code>{{.Path}}</code>{{end}}</td>
 <td{{if .OpenFindings}} class="open"{{end}}>{{statusText .}}</td>
 <td>{{if .Measurement.Report}}<ul class="plain">{{range metrics .Measurement.Report}}<li>{{.Label}}: {{.Value}}</li>{{end}}</ul>{{else}}{{.Measurement.Reason}}{{end}}</td>
+<td>{{if .Measurement.Rules}}<ul class="plain">{{range fileRules $ .Measurement.Rules}}<li>{{.}}</li>{{end}}</ul>{{else}}<span class="muted">Not judged</span>{{end}}</td>
 <td>{{if .Diagnostics.Summary}}<ul class="plain"><li>Clip regions: {{.Diagnostics.Summary.ClipRegions}}</li><li>Level shifts: {{.Diagnostics.Summary.LevelShifts}}</li><li>Silences: {{.Diagnostics.Summary.Silences}}</li><li>Room-tone segments: {{.Diagnostics.Summary.RoomToneSegments}}</li><li>Pacing: {{if eq .Diagnostics.Summary.Pacing.Status "measured"}}measured{{else}}not available{{with .Diagnostics.Summary.Pacing.Reason}} ({{.}}){{end}}{{end}}</li></ul>{{else}}{{.Diagnostics.Reason}}{{end}}</td>
 <td>{{with .Measurement.Fingerprint}}<code title="SHA-256 {{.SHA256}}">{{shortHash .}}</code><br><span class="muted">{{.SizeBytes}} bytes, modified {{.ModifiedAt}}</span>{{else}}<span class="muted">None</span>{{end}}</td>
 </tr>
-{{else}}<tr><td colspan="5">No files.</td></tr>
+{{else}}<tr><td colspan="6">No files.</td></tr>
 {{end}}</tbody>
 </table></div>
 

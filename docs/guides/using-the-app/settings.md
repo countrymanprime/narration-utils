@@ -33,13 +33,16 @@ and tail together (ACX asks for 1 to 5 seconds at each end of every file). In bo
   for misread, skipped and extra words. It shows whether the chosen model is installed, with
   **Remove local model…** once it is.
 - **Story Bible** picks the spaCy model and whether to **Build the Story Bible after import**.
-- **Delivery** holds your own limits for measured chapter audio: the lowest and highest integrated
-  loudness (LUFS) and RMS level (dBFS), and the highest sample peak (dBFS), true peak (dBTP) and noise
-  floor (dBFS). None is set until you type one, and no distributor's numbers are built in, so the
-  category says **No limits set** until you do; a measurement with no limit is reported without being
-  checked. Each box shows its unit and allowed range, says what is wrong with a value it cannot save,
-  and refuses a lowest limit above its highest. Empty a box to remove a limit; in This Project, a
-  blank box uses the Global limit. The [Delivery](delivery.md) page measures files against them.
+- **Delivery** chooses the delivery profile the [Delivery](delivery.md) page and its report judge
+  against. In This Project, pick this project's profile, or the Global default; in Global, pick the
+  default for every project that has not chosen one (ACX until you change it). A choice takes effect at
+  once. The **Profiles** list shows the built-in ACX profile, read-only, and your custom profiles with
+  what each is based on, how many numbers you changed and how many rules are off. **Duplicate** makes a
+  custom copy and opens it in the editor, where you can rename it, turn a rule off, and change the
+  lowest and highest of a rule that has a range (a length is in minutes); a rule with a fixed value can
+  only be turned off, and a copy cannot add a kind of rule the app does not check. **Edit** and
+  **Delete** work on a custom profile; a project that chose a deleted profile goes back to the Global
+  default.
 - **TTS** picks the provider and the preview voice used to [hear a name](story-bible.md#hearing-a-name),
   with **Remove local voice…** once the voice is installed.
 

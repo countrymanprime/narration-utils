@@ -228,15 +228,15 @@ async function confirmApprovedMarker(page: Page): Promise<Locator> {
   return dialog;
 }
 
-// Opens Delivery (after a reload with mock seams, when given) and waits for the narrator's limits to have been read, so the
-// summary shows what the page judges against (diagnostics PRD Phase 5).
+// Opens Delivery (after a reload with mock seams, when given) and waits for the delivery profile to have been read, so the panel
+// shows what the page judges against (delivery-platform-profiles.prd.md Phase 3).
 async function openDelivery(page: Page, query = ''): Promise<void> {
   if (query) {
     await page.goto(`/${query}`);
     await settlePage(page);
   }
   await goToPage(page, 'Delivery');
-  await page.getByText(/^(No limits set\.|These are your own limits)/).waitFor();
+  await page.getByRole('button', { name: /^Rules and their sources/ }).waitFor();
 }
 
 // Opens Delivery and measures the mock picker's three files (two WAVs, one of them silent, and an MP3). The mock reads a quarter of
@@ -1685,12 +1685,26 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     measured: async (page) => {
       await measureOnDelivery(page);
-      await measurementEnded(page, 'Measured 2 of 3 files; 1 could not be measured.');
+      await measurementEnded(page, /^Measured 2 of 3 files; 1 could not be measured\./);
+      await page.getByText(/^1 rule not met in 1 file/).waitFor();
     },
-    'outside-limits': async (page) => {
-      await measureOnDelivery(page, '?mockDeliveryLimits=1');
-      await measurementEnded(page, 'Measured 2 of 3 files; 1 could not be measured.');
-      await page.getByText('3 values are outside your limits.').waitFor();
+    'profile-rules': async (page) => {
+      await openDelivery(page);
+      await page.getByRole('button', { name: /^Rules and their sources/ }).click();
+      await page.getByRole('table', { name: 'Rules and their sources' }).waitFor();
+    },
+    'file-rules': async (page) => {
+      await measureOnDelivery(page);
+      await measurementEnded(page, /^Measured 2 of 3 files; 1 could not be measured\./);
+      await page.getByRole('table', { name: 'Measurements' }).getByRole('row').filter({ hasText: 'Chapter 01.wav' }).click();
+      const detail = page.getByRole('table', { name: 'Chapter 01.wav, rule by rule' });
+      await detail.waitFor();
+      await detail.scrollIntoViewIfNeeded();
+    },
+    'custom-profile': async (page) => {
+      await measureOnDelivery(page, '?mockDeliveryProfile=custom');
+      await measurementEnded(page, /^Measured 2 of 3 files; 1 could not be measured\./);
+      await page.getByText(/^Every rule the app checks is met/).waitFor();
     },
     cancelled: async (page) => {
       await measureOnDelivery(page, '?mockMeasure=running');
@@ -1712,7 +1726,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     },
     'diagnostics-findings': async (page) => {
       await measureOnDelivery(page);
-      await measurementEnded(page, 'Measured 2 of 3 files; 1 could not be measured.');
+      await measurementEnded(page, /^Measured 2 of 3 files; 1 could not be measured\./);
       await page.getByRole('tab', { name: 'Diagnostics' }).click();
       await page.getByRole('button', { name: 'Check the 3 measured files' }).click();
       await diagnosticsEnded(page, 'Checked 2 of 3 files; 1 could not be checked.');
@@ -1728,8 +1742,8 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await diagnosticsEnded(page, /^The diagnostics stopped unexpectedly\. Choose/);
     },
     'report-exported': async (page) => {
-      await measureOnDelivery(page, '?mockDeliveryLimits=1');
-      await measurementEnded(page, 'Measured 2 of 3 files; 1 could not be measured.');
+      await measureOnDelivery(page);
+      await measurementEnded(page, /^Measured 2 of 3 files; 1 could not be measured\./);
       await page.getByRole('button', { name: 'Export report', exact: true }).click();
       await page.getByText(/^Wrote delivery-report-/).waitFor();
       await page.getByRole('region', { name: 'Report' }).scrollIntoViewIfNeeded();
@@ -1882,15 +1896,16 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Delivery');
-      await page.getByText('No limits set').waitFor();
+      await page.getByRole('combobox', { name: 'Default delivery profile' }).waitFor();
     },
-    'global-delivery-invalid': async (page) => {
+    'delivery-profile-editor': async (page) => {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'Global');
       await clickSettingsCategory(page, 'Delivery');
-      await page.getByRole('textbox', { name: 'True peak, highest' }).fill('-3');
-      await page.getByRole('textbox', { name: 'Sample peak, highest' }).fill('5');
-      await page.getByText('Enter a value from -60 to 0 dBFS.').scrollIntoViewIfNeeded();
+      await page.getByRole('button', { name: 'Duplicate' }).click();
+      const editor = page.getByRole('dialog', { name: 'Edit profile' });
+      await editor.getByRole('textbox', { name: 'Peak, highest (dBFS)' }).fill('-3.5');
+      await editor.getByText('Changed').waitFor();
     },
     'global-daw': async (page) => {
       await goToPage(page, 'Settings');
@@ -2089,10 +2104,13 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickSettingsCategory(page, 'Story Bible');
     },
     'project-delivery': async (page) => {
+      await page.goto('/?mockDeliveryProfile=custom');
+      await settlePage(page);
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Delivery');
-      await page.getByText('A limit left blank here uses the Global one.').waitFor();
+      await page.getByRole('combobox', { name: 'Delivery profile for this project' }).waitFor();
+      await page.getByText('My ACX, tighter peak', { exact: true }).waitFor();
     },
     'project-daw': async (page) => {
       await goToPage(page, 'Settings');
