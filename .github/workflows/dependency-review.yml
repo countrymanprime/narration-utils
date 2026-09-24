@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: [main]
 permissions: { contents: read }
+concurrency:
+  group: dependency-review-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   review:
     timeout-minutes: 10

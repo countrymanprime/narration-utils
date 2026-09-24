@@ -40,7 +40,11 @@ repository (read with `gh api repos/countrymanprime/narration-utils/rulesets`, a
   no required checks it could only advise, and a new action or script in the release path is a change to review on its own.
   Adding one later means a small, SHA-pinned job in `ci.yml`.
 - **Draft pull requests are not skipped.** `ci.yml` has no draft condition, so every push to a draft runs the same checks as a
-  ready pull request (a newer push cancels the run before it). No other workflow has a draft condition either.
+  ready pull request. No other workflow has a draft condition either.
+- **A pull request's runs stop when they stop mattering.** Every workflow a pull request starts has a `concurrency` group
+  with `cancel-in-progress`, so a newer push cancels the run before it, and `cancel-closed-pr.yml` cancels whatever is
+  still queued or running when the pull request is merged or closed (a merge starts its own runs on `main`). Runs on
+  `main` and the release workflows are never cancelled.
 - macOS and Linux are deliberately
   not built on pull requests (see [ADR-0027](../adr/0027-windows-gates-and-creates-the-release.md)), so `Build (Windows)`
   is the only native build a pull request runs.
@@ -90,6 +94,7 @@ Each file in `.github/workflows`, what starts it, and the checks it shows on a p
 | `codeql.yml` (`CodeQL`) | pull request to `main` that is not docs- or Markdown-only (same-repository, not Dependabot), push to `main`, weekly (Monday 05:23 UTC), manual | `Analyze (go)`, `Analyze (javascript-typescript)`, `Analyze (python)` | advisory |
 | `dependency-review.yml` | pull request to `main` | `review` (fails on a high-severity advisory, or on a licence outside the allow-list, that a pull request adds to a **runtime** dependency; needs the dependency graph; [the licence policy](github-workflow.md#the-dependency-licence-allow-list)) | advisory |
 | `labeler.yml` | `pull_request_target` (opened, synchronize, reopened, ready for review) | `label` | not a check that gates anything |
+| `cancel-closed-pr.yml` | `pull_request_target` (closed: merged or closed without merging) | `cancel`: cancels every unfinished run of the pull request's head commit | not a check that gates anything |
 | `pages.yml` (`Pages`) | push to `main` (any change, docs included); a pull request that changes `docs/`, `tools/docs-site/`, the Storybook config, `pyproject.toml`, `uv.lock` or the workflow (`build` only); manual | `build`, `deploy` ([below](#the-pages-workflow)); `deploy` never runs for a pull request | the `build` job is the docs link check for a documentation-only pull request; advisory like the rest |
 | `sync-labels.yml`, `sync-milestones.yml` | push to `main` that changes `.github/labels.json`, `config/roadmap.json` or `scripts/github/**`, and the workflow file; manual | `sync` | run after a merge, never on a pull request |
 
@@ -147,6 +152,10 @@ The permission model, so a change can be judged against it:
   `run:` body.
 - `labeler.yml` uses `pull_request_target` so forks can be labelled; it checks out nothing and runs no pull request
   code (the comment at its top says why that is safe).
+- `cancel-closed-pr.yml` uses `pull_request_target` too, so it can cancel the runs of fork and Dependabot pull requests,
+  whose `pull_request` token is read-only. It checks out nothing, runs no pull request code and holds only `actions: write`;
+  the head SHA and number reach its shell through `env:`. Its trigger carries the one inline zizmor ignore
+  (`dangerous-triggers`), with that reason.
 
 Install-time settings are written in the repository so a default that changes upstream cannot change them silently:
 

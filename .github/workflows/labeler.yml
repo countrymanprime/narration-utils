@@ -6,6 +6,10 @@ on:
   pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
 permissions: { contents: read, pull-requests: write }
+# Keyed on the pull request number: under pull_request_target github.ref is the base branch, which every pull request shares.
+concurrency:
+  group: labeler-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 jobs:
   label:
     timeout-minutes: 5
