@@ -14,4 +14,6 @@ Storybook title: `Primitives/Switch`. Source: `src/components/primitives/Switch.
 
 ## Used by
 
+- `src/components/review/ReviewFilters.tsx`
+- `src/components/settings/DeliveryProfileEditor.tsx`
 - `src/components/settings/ScopedSetting.tsx`

@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Manuscript } from './Manuscript';
+import { saveCreditsExpanded } from './creditsExpandedStorage';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
 import { WireError } from '../../api/wire/WireError';
@@ -583,6 +584,8 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
     });
 
     it('a "#credits-opening"/"#credits-closing" deep link (Home\'s credits rows, credits-in-chapter-table.prd.md Phase 2, CT7) opens the matching entry', async () => {
+      // Both cards open by default (MC5), so start them collapsed: the hash alone must open the closing one.
+      saveCreditsExpanded('/projects/alice', { opening: false, closing: false });
       renderManuscript({}, vi.fn(), ['/manuscript#credits-closing']);
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       // Collapsed entries show no unresolved-token count (asserted above); the closing entry opening on its own,

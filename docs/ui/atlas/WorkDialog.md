@@ -26,6 +26,9 @@ Storybook title: `Primitives/WorkDialog`. Source: `src/components/primitives/Wor
 
 - `src/components/assets/AssetInstallPrompt.tsx`
 - `src/components/home/Home.tsx`
+- `src/components/home/RecordingCheck.tsx`
+- `src/components/review/TakeComparisonDialog.tsx`
+- `src/components/review/TakeReviewScanDialog.tsx`
 - `src/components/settings/UpdateDownloadDialog.tsx`
 - `src/components/settings/UpdatesPanel.tsx`
 - `src/components/storybible/Guide.tsx`

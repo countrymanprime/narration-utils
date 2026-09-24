@@ -22,16 +22,23 @@ Storybook title: `Primitives/Dialog`. Source: `src/components/primitives/Dialog.
 - Returns Focus To The Opener
 - Auto Focus Child Wins
 - Full Size
+- With Footer
 
 ## Used by
 
+- `src/components/home/RecordingCheck.tsx`
 - `src/components/manuscript/AddNoteDialog.tsx`
 - `src/components/primitives/ConfirmDialog.tsx`
 - `src/components/primitives/WorkDialog.tsx`
 - `src/components/project/NewProjectDialog.tsx`
+- `src/components/review/AuditionDialog.tsx`
+- `src/components/review/TakeComparisonDialog.tsx`
+- `src/components/review/TakeReviewScanDialog.tsx`
+- `src/components/settings/DeliveryProfileEditor.tsx`
 - `src/components/teleprompter/ReadAloudDialog.tsx`
-- `src/components/tracks/AuditionDialog.tsx`
 - `src/components/tracks/ChapterTagsDialog.tsx`
+- `src/components/tracks/CleanupToolsDialog.tsx`
 - `src/components/tracks/LinkChaptersDialog.tsx`
 - `src/components/tracks/PickupsDialog.tsx`
 - `src/components/tracks/RenderConfigDialog.tsx`
+- `src/components/tracks/RetakeLanesDialog.tsx`

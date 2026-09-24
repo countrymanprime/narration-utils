@@ -20,7 +20,7 @@ microphone that is no longer connected shows as "(not found)" until you pick it 
 A microphone can only be picked from the list, never typed: with none listed, the microphone popover
 says "No microphone found" and Play stays disabled until you connect one and press Refresh.
 
-![Teleprompter before a session, with the chapter, microphone, engine and model choices above the chapter text](../../images/ui/teleprompter-setup.webp)
+![Teleprompter before a session: the chapter picker above the text, and the control bar with Play, the microphone and the engine settings at the bottom](../../images/ui/teleprompter-setup.webp)
 
 If the project has a REAPER project, the chapter can come from it. The app reads the project as it was
 last saved and looks at the track you have armed for recording (or, with none armed, the selected

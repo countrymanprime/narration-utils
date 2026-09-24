@@ -193,7 +193,7 @@
     "state": "setup-default",
     "viewport": "desktop",
     "docName": "teleprompter-setup",
-    "caption": "Teleprompter - before a session, with the chapter, microphone and model choices above the chapter text"
+    "caption": "Teleprompter - before a session: the chapter picker above the text, and the control bar with Play, the microphone and the engine settings at the bottom"
   },
   {
     "page": "teleprompter",
@@ -376,6 +376,27 @@
     "viewport": "desktop",
     "docName": "manuscript-retail-sample",
     "caption": "Manuscript - the retail sample marked on lines 1 to 3 of Chapter 3"
+  },
+  {
+    "page": "manuscript",
+    "state": "read-aloud-setup",
+    "viewport": "desktop",
+    "docName": "manuscript-read-aloud-resume",
+    "caption": "Manuscript - the Read aloud dialog before reading, with the Where you stopped notice above the text, the reading panel beside it and the control bar below"
+  },
+  {
+    "page": "manuscript",
+    "state": "read-aloud-listening",
+    "viewport": "desktop",
+    "docName": "manuscript-read-aloud-listening",
+    "caption": "Manuscript - Read aloud listening, with read words dimmed, the current word highlighted and Story Bible names marked"
+  },
+  {
+    "page": "manuscript",
+    "state": "read-aloud-flag-open",
+    "viewport": "desktop",
+    "docName": "manuscript-read-aloud-flag",
+    "caption": "Manuscript - a suspected restart opened in the Flags tab, with the script's words and what was heard"
   },
   {
     "page": "review",

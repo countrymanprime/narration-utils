@@ -28,8 +28,10 @@ Storybook title: `Primitives/ConfirmDialog`. Source: `src/components/primitives/
 - `src/components/assets/AssetInstallPrompt.tsx`
 - `src/components/assets/LocalAssetRow.tsx`
 - `src/components/home/Home.tsx`
+- `src/components/review/ReaperControls.tsx`
+- `src/components/review/TakeReviewReads.tsx`
+- `src/components/settings/DeliveryProfilesPanel.tsx`
 - `src/components/settings/Settings.tsx`
 - `src/components/settings/UpdatesPanel.tsx`
 - `src/components/storybible/GuideDetail.tsx`
 - `src/components/teleprompter/ReadAloudDialog.tsx`
-- `src/components/tracks/TakeReviewPanel.tsx`

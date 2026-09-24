@@ -30,7 +30,10 @@ Storybook title: `Primitives/Field`. Source: `src/components/primitives/Field.ts
 
 - `src/components/manuscript/AddNoteDialog.tsx`
 - `src/components/project/NewProjectDialog.tsx`
+- `src/components/review/FindingDetail.tsx`
+- `src/components/review/TakeReviewScanDialog.tsx`
 - `src/components/settings/CreditsPanel.tsx`
+- `src/components/settings/DeliveryProfileEditor.tsx`
 - `src/components/storybible/GuideDetail.tsx`
 - `src/components/tracks/ChapterTagsDialog.tsx`
 - `src/components/tracks/RenderConfigDialog.tsx`
