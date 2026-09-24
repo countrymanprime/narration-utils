@@ -1,6 +1,6 @@
 # 0168. A coverage region carries its bounds as optional `before` and `after` points, with no version bump
 
-**Status:** Proposed
+**Status:** Accepted (owner, 2026-09-23)
 **Date:** 2026-09-23
 **Amends:** ADR-0127 (the `COVERAGE_REGION` payload)
 
@@ -28,4 +28,5 @@ Every `COVERAGE_REGION` payload gains two keys, `before` and `after`, each `{ite
 - A result made before this change has no bounds. A reader that needs them, the planner, must treat a missing bound as the edge of the item's played range, as it would for a head or a tail, or run the check again. Nothing forces that re-run.
 - The UI and the stage recommendations do not show the bounds yet; `position` still names the place in the Home dialog and the signal's evidence.
 - The bounds are data the host reads from a sidecar's file ([threat model](../architecture/threat-model.md) row 4e): they are labels until the planner uses them, and the planner must check them against the manifest's items before it turns one into a slice of audio.
+- The owner accepted this on 2026-09-23 on the workflow the check assumes for now: each chapter is recorded on its own track, so the end of one chapter never runs into the next. A head or tail window that runs to the edge of the item's played range therefore stays inside the chapter's own recording, and the cost of not bounding it by a read title is only a little more audio to re-check.
 - Changing what bounds a region (for example, letting a read title bound a head) means a new ADR that supersedes this one, and bumping `AnalyzerVersion` if the verdict could change.
