@@ -3,7 +3,7 @@
 // host measured against; a kind or key this page does not know is said to be undescribed rather than guessed at.
 import type { DiagnosticsSourceKind, DiagnosticsThresholds, Finding } from '../../types';
 import { formatTime } from '../review/findingFormat';
-import { formatLevel } from './deliveryLimits';
+import { formatLevel } from './deliveryFormat';
 
 const UNDESCRIBED = 'Not described here';
 

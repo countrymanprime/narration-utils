@@ -61,12 +61,15 @@
   --danger: #b5473c;
   --warn: #b5871e;
   --info: #3f6ea6;
+  /* A requirement met (the Delivery page's rule results, ADR 0179): the fourth status colour beside danger, warn and info. */
+  --ok: #3d8a50;
   /* Text-safe companions of the status colours, for text on the page and on their soft fills (ADR 0059): --danger, --warn and
      --info stay for borders, dots and fills. Light darkens the colour: danger and info toward --text, warn to an explicit dark
      amber (a mix toward the olive text desaturated it to a grey-brown); in dark the fill colour already passes. */
   --danger-text: color-mix(in srgb, var(--danger) 85%, var(--text));
   --warn-text: #755507;
   --info-text: color-mix(in srgb, var(--info) 90%, var(--text));
+  --ok-text: color-mix(in srgb, var(--ok) 70%, var(--text));
   --bookmark: #3b6fc4;
   /* Alternating reader rows: a touch darker than --surface, like banded table rows. */
   --row-alt: color-mix(in srgb, var(--surface) 94%, var(--text));
@@ -128,9 +131,11 @@
   --danger: #db7a6e;
   --warn: #e0b255;
   --info: #6e9fdb;
+  --ok: #74c28a;
   --danger-text: var(--danger);
   --warn-text: var(--warn);
   --info-text: var(--info);
+  --ok-text: var(--ok);
   --bookmark: #6e9fdb;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25);
   --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.3);

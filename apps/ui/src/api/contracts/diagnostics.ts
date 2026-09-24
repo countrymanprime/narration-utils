@@ -62,7 +62,7 @@ export type DiagnosticsFileResult = {
  * The diagnostics job (DiagnosticsAnalyze/State/Cancel), in the shape of the measurement job. `sourceKind` is null
  * before any check; `thresholds` are the ones a check uses, answered even when idle so they are never hidden.
  */
-export type DiagnosticsJob = Omit<MeasureJob, 'kind' | 'files' | 'limitsError'> & {
+export type DiagnosticsJob = Omit<MeasureJob, 'kind' | 'files' | 'profile' | 'bookRules' | 'profileNotice'> & {
   kind: 'diagnostics';
   sourceKind: DiagnosticsSourceKind | null;
   thresholds: DiagnosticsThresholds;

@@ -1,0 +1,40 @@
+# The delivery profile editor (delivery-platform-profiles.prd.md Phase 4, ADR 0180): a modal dialog named "Edit profile", what the
+# copy is based on, its name as a labelled field, a named table of the file rules where each rule has an on/off switch named for the
+# rule, number boxes named for the rule and the bound (with the unit), a fixed rule that can only be turned off, and Cancel and
+# Save profile. The page behind it is aria-hidden.
+- /children: equal
+# The two toast live regions stay in the tree on purpose (see dialog-add-note.aria.yml); Duplicate's toast is in the status one.
+- main:
+  - alert
+  - status
+- dialog "Edit profile":
+  - heading "Edit profile" [level=2]
+  - button "Close"
+  - paragraph: /Based on ACX \(September \d+\)\. Saving makes revision 2/
+  - textbox "Name"
+  - table "Rules of this profile":
+    - rowgroup:
+      - row "On Rule Lowest Highest ACX"
+    - rowgroup:
+      - row /^RMS on RMS/:
+        - cell "RMS on":
+          - switch "RMS on" [checked]
+        - cell "RMS"
+        - cell:
+          - textbox "RMS, lowest (dBFS)"
+        - cell:
+          - textbox "RMS, highest (dBFS)"
+      - row /^Peak on Peak Changed/:
+        - cell "Peak on":
+          - switch "Peak on" [checked]
+        - cell "Peak Changed"
+        - cell "none"
+        - cell:
+          - textbox "Peak, highest (dBFS)": "-3.5"
+      - row /^Sample rate on Sample rate Fixed by ACX; can only be turned off/:
+        - cell "Sample rate on":
+          - switch "Sample rate on" [checked]
+        - cell "Sample rate"
+        - cell "Fixed by ACX; can only be turned off"
+  - button "Cancel"
+  - button "Save profile"

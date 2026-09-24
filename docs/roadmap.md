@@ -43,7 +43,7 @@ The suite helps a narrator find and review issues faster. It may analyze local m
 
 - Add editorial/technical findings and chapter summaries.
 - Produce generic audiobook measurement reports and reviewer packages.
-- Add distributor profiles only after their rules are independently specified and validated.
+- Add distributor profiles only after their rules are independently specified and validated. ACX ships as `acx@2026-09` ([ADR 0179](adr/0179-a-built-in-dated-acx-delivery-profile-ships-and-a-project-is-judged-against-its-selected-profile.md)), each rule marked verified, to verify or conflicting in [ACX delivery requirements](research/acx-delivery-requirements.md); the owner's reading of ACX's page and the ACX Check comparison are pending.
 
 ## Release-readiness work item: first-use dependency provisioning
 

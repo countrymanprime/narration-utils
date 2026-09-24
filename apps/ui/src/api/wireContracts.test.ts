@@ -8,6 +8,8 @@ import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from 
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
 import { deliveryQcEvidenceSchema, deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
+import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/deliveryProfiles';
+import { MOCK_ACX, mockCustomProfile } from './deliveryProfilesMock';
 import { diagnosticsJobSchema } from './schemas/diagnostics';
 import {
   bookmarkSchema,
@@ -263,6 +265,9 @@ const GOLDEN: Record<string, z.ZodType> = {
   'measure-cancelled.json': measureJobSchema,
   'measure-error.json': measureJobSchema,
   'delivery-report-export.json': deliveryReportExportSchema,
+  'delivery-profiles.json': deliveryProfilesStateSchema,
+  'delivery-profiles-no-project.json': deliveryProfilesStateSchema,
+  'delivery-profile-saved.json': deliveryProfileSchema,
   'diagnostics-idle.json': diagnosticsJobSchema,
   'diagnostics-running.json': diagnosticsJobSchema,
   'diagnostics-success.json': diagnosticsJobSchema,
@@ -1189,26 +1194,72 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(cancelled.files.map((file) => file.status)).toEqual(['cancelled', 'cancelled', 'cancelled']);
   });
 
-  it('a measurement is judged by the host against the limits in force, in the shape the host pins', async () => {
+  it("a measurement is judged by the host against the project's profile, rule by rule, in the shape the host pins", async () => {
     const pinned = measureJobSchema.parse(readGolden('measure-success.json'));
     const pinnedFindings = pinned.files.flatMap((file) => file.findings);
-    expect(pinnedFindings.map((finding) => deliveryQcEvidenceSchema.parse(finding.evidence).metric)).toEqual(['true_peak_dbtp', 'true_peak_dbtp']);
-    const api = createMockApi({}, { deliveryLimits: { true_peak_dbtp_max: '-3.5' } });
+    expect(pinnedFindings.map((finding) => deliveryQcEvidenceSchema.parse(finding.evidence).rule)).toEqual([
+      'acx.sample_rate',
+      'acx.rms',
+      'acx.peak',
+      'acx.noise_floor',
+    ]);
+    const api = createMockApi();
     const picked = await api.measurePickFiles();
     let job = await api.measureAnalyze(picked.paths);
     while (job.phase === 'running') job = await api.measureState();
     expectMatches(measureJobSchema, job, 'mock measurement, judged');
-    const mockFindings = job.files.flatMap((file) => file.findings);
-    expect(mockFindings.map((finding) => [finding.category, finding.severity, deliveryQcEvidenceSchema.parse(finding.evidence).violation])).toEqual(
-      pinnedFindings.map((finding) => [finding.category, finding.severity, deliveryQcEvidenceSchema.parse(finding.evidence).violation]),
-    );
-    await api.saveSettings('Delivery', 'project', { true_peak_dbtp_max: null });
-    expect((await api.measureState()).files.flatMap((file) => file.findings)).toEqual([]);
+    const shape = (files: typeof job.files) =>
+      files.map((file) => [
+        file.rules.map((rule) => [rule.ruleId, rule.status, rule.violation]),
+        file.findings.map((finding) => [
+          finding.severity,
+          deliveryQcEvidenceSchema.parse(finding.evidence).rule,
+          deliveryQcEvidenceSchema.parse(finding.evidence).violation,
+        ]),
+      ]);
+    expect(shape(job.files)).toEqual(shape(pinned.files));
+    expect(job.bookRules).toEqual(pinned.bookRules);
+    expect(job.profile).toEqual(pinned.profile);
+    const copy = await api.deliveryDuplicateProfile('acx', '2026-09');
+    await api.deliverySelectProfile('project', copy.id, '');
+    expect((await api.measureState()).profile?.id).toBe(copy.id);
+  });
+
+  it('the delivery profiles answer as the host pins them, and refuse the way the host does', async () => {
+    const pinned = deliveryProfilesStateSchema.parse(readGolden('delivery-profiles.json'));
+    expect(pinned.profiles[0]).toEqual(MOCK_ACX);
+    const api = createMockApi();
+    const state = await api.deliveryProfiles();
+    expectMatches(deliveryProfilesStateSchema, state, 'mock delivery profiles');
+    expect(state).toMatchObject({ globalDefault: pinned.globalDefault, projectProfile: 'acx@2026-09', projectChoice: null });
+    const copy = await api.deliveryDuplicateProfile('acx', '2026-09');
+    expectMatches(deliveryProfileSchema, copy, 'mock duplicate');
+    expect(copy).toMatchObject({ builtIn: false, revision: 1, basedOn: 'acx@2026-09', name: 'ACX (September 2026) copy' });
+    const rules = copy.rules.map((rule) => ({
+      id: rule.id,
+      off: rule.id === 'acx.room_tone_head',
+      min: rule.min,
+      max: rule.id === 'acx.peak' ? -3.5 : rule.max,
+    }));
+    const saved = await api.deliverySaveProfile({ id: copy.id, name: 'My ACX, tighter peak', rules });
+    expectMatches(deliveryProfileSchema, saved, 'mock saved profile');
+    const pinnedSaved = deliveryProfileSchema.parse(readGolden('delivery-profile-saved.json'));
+    expect({ ...saved, id: pinnedSaved.id }).toEqual({ ...pinnedSaved, revision: 2 });
+    await expect(api.deliverySaveProfile({ id: 'acx', name: 'ACX', rules: [] })).rejects.toThrow(/built-in/);
+    await expect(api.deliverySaveProfile({ id: copy.id, name: 'x', rules: rules.slice(1) })).rejects.toThrow(/cannot add or drop/);
+    const chosen = await api.deliverySelectProfile('project', copy.id, '');
+    expect(chosen.projectProfile).toBe(`${copy.id}@r2`);
+    await expect(api.deliverySelectProfile('project', 'missing', '')).rejects.toThrow(/no delivery profile/);
+    const deleted = await api.deliveryDeleteProfile(copy.id);
+    expectMatches(deliveryProfilesStateSchema, deleted, 'mock after delete');
+    expect(deleted.notice).toMatch(/no longer there/);
+    await expect(api.deliveryDeleteProfile('acx')).rejects.toThrow(/built-in/);
+    expect((await createMockApi({}, { deliveryProfile: 'custom' }).deliveryProfiles()).projectProfile).toBe(`${mockCustomProfile().id}@r3`);
   });
 
   it('the report export answers what it wrote, and refuses the way the host does', async () => {
     const pinned = deliveryReportExportSchema.parse(readGolden('delivery-report-export.json'));
-    const api = createMockApi({}, { deliveryLimits: { true_peak_dbtp_max: '-3.5' } });
+    const api = createMockApi();
     await expect(api.deliveryExportReport(false)).rejects.toThrow(/nothing has been measured or checked/);
     const picked = await api.measurePickFiles();
     let job = await api.measureAnalyze(picked.paths);
@@ -1216,7 +1267,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     while (job.phase === 'running') job = await api.measureState();
     const written = await api.deliveryExportReport(false);
     expectMatches(deliveryReportExportSchema, written, 'mock report export');
-    expect(written).toMatchObject({ folder: pinned.folder, htmlFile: pinned.htmlFile, files: 3, findings: 2, openFindings: 2, pathsIncluded: false });
+    expect(written).toMatchObject({ folder: pinned.folder, htmlFile: pinned.htmlFile, files: 3, findings: 4, openFindings: 4, pathsIncluded: false });
     const again = await api.deliveryExportReport(true);
     expect(again.htmlFile).toBe('delivery-report-20260923-140000Z-2.html');
     expect(again.pathsIncluded).toBe(true);
@@ -1555,6 +1606,11 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'measureState',
       'measureCancel',
       'deliveryExportReport',
+      'deliveryProfiles',
+      'deliverySelectProfile',
+      'deliveryDuplicateProfile',
+      'deliverySaveProfile',
+      'deliveryDeleteProfile',
       'diagnosticsAnalyze',
       'diagnosticsState',
       'diagnosticsCancel',

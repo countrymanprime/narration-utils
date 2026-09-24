@@ -22,6 +22,7 @@ Not covered: the contrast of component borders (`--border` is 1.56:1 on white; A
 | `--danger-text` | `--danger` darkened 15% toward `--text` | `--danger` | 4.98 or more | 4.87 or more |
 | `--warn-text` | `#755507` | `--warn` | 4.62 or more | 5.29 or more |
 | `--info-text` | `--info` darkened 10% toward `--text` | `--info` | 4.66 or more | 5.30 or more |
+| `--ok-text` | `--ok` darkened 30% toward `--text` | `--ok` | 4.5 or more | 4.5 or more |
 
 The surfaces are `--bg`, `--surface`, `--surface-2`, `--surface-3` and `--row-alt` (a reader row, a touch darker than `--surface`). The status companions are measured on the page surfaces (`--bg`, `--surface`, `--surface-2`) and on the soft fills they sit on (`--review-soft`, a warn tint, `--accent-soft`, `--place-soft`); the other tokens on all five. There are two text levels, not three: `--text-faint` was deleted, because it carried real labels at 2.2 to 3.7:1. The step between prose and a label is carried by size, weight, case and typeface. `--non-text` is never the colour of text.
 
@@ -34,6 +35,7 @@ The surfaces are `--bg`, `--surface`, `--surface-2`, `--surface-3` and `--row-al
 | An icon, dot, decorative glyph, an unset colour | `--non-text` (and list it in `NON_TEXT_USES` in `paletteContrast.test.ts` with what it draws) |
 | The current item on an accent tint (navigation, tabs) | `--accent-strong` |
 | Error, warning or info text, on the page or on a soft fill | `--danger-text`, `--warn-text`, `--info-text`; `--danger`, `--warn` and `--info` stay for borders, dots and fills |
+| A requirement met (the Delivery page's rule results) | `--ok-text`; `--ok` stays for borders, dots and fills |
 | An entity's text on a tint of its own colour (highlights, badges) | `--<kind>-text` |
 | Anything else | A token from `styles.css` with a pair declared in `paletteContrast.test.ts`; never a Tailwind palette colour (`text-red-400`) or a literal colour |
 
