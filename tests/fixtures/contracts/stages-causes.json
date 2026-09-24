@@ -1,0 +1,12 @@
+[
+  "analysis_running",
+  "incomplete_run",
+  "measurement_unavailable",
+  "multiple_tracks",
+  "never_analyzed",
+  "project_unreadable",
+  "provider_error",
+  "stale",
+  "unconfirmed_mapping",
+  "unmapped_track"
+]

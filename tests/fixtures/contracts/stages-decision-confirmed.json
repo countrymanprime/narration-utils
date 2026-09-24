@@ -1,0 +1,20 @@
+{
+  "chapter": {
+    "causes": [],
+    "chapterId": "c-0001",
+    "confirmation": {
+      "at": "2026-09-21T10:00:00Z",
+      "basisKey": "0000000000000000000000000000000000000000000000000000000000000000",
+      "evidenceChanged": false,
+      "from": "recording",
+      "target": "editing"
+    },
+    "from": "editing",
+    "noneReason": "no_required_signals",
+    "signals": [],
+    "target": "proofing",
+    "title": "Chapter One",
+    "verdict": "none"
+  },
+  "status": "ok"
+}

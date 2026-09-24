@@ -90,6 +90,7 @@ import { mockChapterSuggestion } from './chapterSuggestionMock';
 import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './mockImportPreview';
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
 import { createCoverageMock, type CoverageSeed } from './coverageMock';
+import { createStagesMock, type StagesSeed } from './stagesMock';
 import type { MockResumeSeed } from './resumeMockSeed';
 import { createFindingsMock, type MockReaper } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
@@ -431,6 +432,8 @@ export function createMockApi(
     chapterTagsEmbedAlwaysErrors?: boolean;
     /** Seeds the recording coverage mock (a refusal for every start, or stale chapters), see `CoverageSeed`. */
     coverage?: CoverageSeed;
+    /** Seeds the stage recommendations mock (a chapter's recording evidence, a live confirmation, a dismissal), see `StagesSeed`. */
+    stages?: StagesSeed;
     /**
      * Boots without the offline dictionary (`missing`) or with one that fails its check (`damaged`), so a lookup answers with its first-use
      * gate (story-bible-and-import-ux-briefs.prd.md Phases 7-8). A download seed of `assets` boots without it too.
@@ -971,6 +974,14 @@ export function createMockApi(
     assetRequired: whisperAssetRequired,
     endJob,
     seed: initial.coverage,
+  });
+  const stages = createStagesMock({
+    ready: manuscriptReady,
+    chapters: () => chapters.map(withMeasurement),
+    setStatus: (chapterId, status) => {
+      chapters = chapters.map((chapter) => (chapter.id === chapterId ? { ...chapter, status } : chapter));
+    },
+    seed: initial.stages,
   });
   const { saveAnalyzerFindings, saveFinding, ...findings } = createFindingsMock(initial.findings ?? WIRE_FINDINGS, {
     rerunAfterFirstList: initial.findingsRerun,
@@ -2043,6 +2054,7 @@ export function createMockApi(
     },
     ...teleprompter,
     ...coverage,
+    ...stages,
     ...findings,
     mediaUrl: (sourceFile) => mockAudioSource() ?? sourceFile,
   };
