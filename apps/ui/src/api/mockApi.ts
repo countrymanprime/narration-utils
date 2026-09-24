@@ -85,7 +85,7 @@ import {
   wireSettings,
 } from './mockFixtures';
 import { loadAliceManuscript } from './aliceManuscript';
-import { mockChapterTrackLinks, mockChapterTrackMatch } from './chapterTrackMatchMock';
+import { mockChapterTrackLinks, mockChapterTrackMatch, mockRecordedLength } from './chapterTrackMatchMock';
 import { mockChapterSuggestion } from './chapterSuggestionMock';
 import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './mockImportPreview';
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
@@ -1490,7 +1490,10 @@ export function createMockApi(
     systemLookup: async (word) => mockDictionaryLookup(word, dictionaryState),
     manuscriptChapters: async () => {
       await manuscriptReady;
-      return wireClone(chapters.map(withMeasurement));
+      const readable = Boolean(tracksDiscovery.selected);
+      return wireClone(
+        chapters.map((chapter) => ({ ...withMeasurement(chapter), ...mockRecordedLength(chapter.id, WIRE_TRACKS_PROJECT, chapterTrackMappings, readable) })),
+      );
     },
     manuscriptParagraphs: async (chapter) => {
       await manuscriptReady;

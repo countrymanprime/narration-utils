@@ -403,6 +403,9 @@ func (h *Host) configureLocked(next config) {
 	// A chapter's recordedFraction is the measured share of its words from a current, complete check, and absent otherwise (D11,
 	// Q12 A); reading it never starts a check (Q14).
 	h.manuscript.SetRecordedFractions(coverageRecordedFractions(h.coverage, settingsStore))
+	// A chapter's recordedSeconds is its one confirmed track's recorded length in the saved .rpp, and a reason otherwise
+	// (actual-recorded-column PRD Phase 2); never an estimate.
+	h.manuscript.SetRecordedLengths(recordedLengths(projectFolder, settingsStore, h.manuscript))
 	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist)
 	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go) are one more
 	// consumer of the same client: the navigator's answers arrive through the same Drain the transcript loop pumps.

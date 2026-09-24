@@ -226,6 +226,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'takereview-scan-error.json': takeReviewScanJobSchema,
   'takereview-create-take.json': takeReviewCreateTakeResultSchema,
   'manuscript-chapters-measured.json': chaptersSchema,
+  'manuscript-chapters-recorded.json': chaptersSchema,
   'coverage-result-current.json': coverageResultSchema,
   'coverage-result-stale.json': coverageResultSchema,
   'coverage-result-never.json': coverageResultSchema,
@@ -337,6 +338,12 @@ describe('golden payloads written by the Go host and the Python sidecars', () =>
     expect(chapters.map((chapter) => chapter.recordedFraction)).toEqual([0.75, ...chapters.slice(1).map(() => undefined)]);
     const unmeasured = parseWire(chaptersSchema, readGolden('manuscript-chapters.json'), ctx('chapters'));
     expect(unmeasured.every((chapter) => chapter.recordedFraction === undefined)).toBe(true);
+  });
+
+  it('recordedSeconds is only on a chapter with a linked track, and the others say why', () => {
+    const chapters = parseWire(chaptersSchema, readGolden('manuscript-chapters-recorded.json'), ctx('chapters'));
+    expect(chapters.map((chapter) => chapter.recordedSeconds)).toEqual([2520.5, ...chapters.slice(1).map(() => undefined)]);
+    expect(chapters.map((chapter) => chapter.recordedUnavailable)).toEqual([undefined, 'unlinked', ...chapters.slice(2).map(() => undefined)]);
   });
 
   it('the golden completed run keeps its rows and marker states through the schema', () => {
@@ -889,6 +896,20 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expectMatches(chapterTrackLinksSchema, noProject, 'mock chapter track links, no project');
     expect(noProject.project).toBe('none');
     expect(noProject.tracks).toHaveLength(0);
+  });
+
+  it('the chapter list carries recorded seconds only for a chapter with a linked track', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    expectMatches(chaptersSchema, chapters, 'mock chapters, nothing linked');
+    expect(chapters.every((chapter) => chapter.recordedUnavailable === 'unlinked' && chapter.recordedSeconds === undefined)).toBe(true);
+
+    const [first] = WIRE_TRACKS_PROJECT.tracks;
+    await api.chapterTrackSet(chapters[0].id, first.guid);
+    const linked = await api.manuscriptChapters();
+    expectMatches(chaptersSchema, linked, 'mock chapters, one linked');
+    expect(linked[0].recordedSeconds).toBeGreaterThan(0);
+    expect(linked[0].recordedUnavailable).toBeUndefined();
   });
 
   it('the ChapterTrackMatch answers', async () => {

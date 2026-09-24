@@ -7,7 +7,7 @@ import type {
   RecordedEnd,
   TrackMapping,
 } from './contracts/chapterTrackMap';
-import type { ManuscriptChapter } from './contracts/manuscript';
+import type { ManuscriptChapter, RecordedUnavailable } from './contracts/manuscript';
 import type { Track, TracksProject } from './contracts/tracks';
 
 // The browser mock's stand-in for the host's chapter-to-track matcher (apps/desktop/internal/chaptermatch, ADR 0110).
@@ -185,4 +185,34 @@ export function mockChapterTrackLinks(
         };
       }),
   };
+}
+
+/** The mock's recorded length for a chapter (actual-recorded-column PRD Phase 2), by the host's rule: only a chapter with
+ * one confirmed link to a track in the project has seconds, the union of its items (the mock has no mutes or lanes on
+ * the wire); every other chapter says why not. */
+export function mockRecordedLength(
+  chapterId: string,
+  project: TracksProject,
+  mappings: TrackMapping[],
+  projectReadable: boolean,
+): { recordedSeconds: number } | { recordedUnavailable: RecordedUnavailable } {
+  const links = mappings.filter((mapping) => mapping.chapterId === chapterId);
+  if (links.length === 0) return { recordedUnavailable: 'unlinked' };
+  if (!projectReadable) return { recordedUnavailable: 'no_project' };
+  if (links.length > 1) return { recordedUnavailable: 'multiple_tracks' };
+  const track = project.tracks.find((candidate) => candidate.guid === links[0].trackGuid);
+  if (!track) return { recordedUnavailable: 'track_missing' };
+  const spans = track.items.map((item) => [item.position, item.position + item.length]).sort((a, b) => a[0] - b[0]);
+  let total = 0;
+  let current: number[] | null = null;
+  for (const span of spans) {
+    if (current && span[0] <= current[1]) {
+      current[1] = Math.max(current[1], span[1]);
+      continue;
+    }
+    if (current) total += current[1] - current[0];
+    current = [...span];
+  }
+  if (current) total += current[1] - current[0];
+  return { recordedSeconds: total };
 }
