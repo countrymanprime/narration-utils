@@ -12,7 +12,10 @@ printing the device list to its own log - but PyAV's log capture
 `(level, context, message)` records, one FFmpeg log "context" per source
 (here `"dshow"`). This sidecar makes no other use of FFmpeg's log, and
 `av.logging.Capture(local=True)` only intercepts calls made on the current
-thread while the context manager is open, so nothing else is affected.
+thread while the context manager is open, so nothing else is affected. The
+capture only receives what the log level lets through, and PyAV's default
+level is off, so `capture_dshow_log` raises it to INFO for the listing and
+restores it afterwards.
 
 FFmpeg's dshow lister prints two lines per device, e.g.:
     "Microphone Array (Realtek(R) Audio)" (audio)
@@ -87,15 +90,27 @@ def parse_device_list(entries: list[LogEntry]) -> list[Device]:
 
 def capture_dshow_log() -> list[LogEntry]:
     """Ask ffmpeg (through PyAV) to list its dshow devices and capture the log lines it prints, instead of any capture
-    output: `list_devices` is a listing mode, so opening it this way always raises, and that is expected and discarded."""
+    output: `list_devices` is a listing mode, so opening it this way always raises, and that is expected and discarded.
+
+    FFmpeg prints the list at INFO, but PyAV's default log level is None (FFmpeg logging off), so a capture at the
+    default level receives nothing and every machine looks microphone-less. The level is raised to INFO for the listing
+    only (never lowered if something already made it more verbose) and put back afterwards, even on failure, so the
+    rest of the sidecar does not start relaying FFmpeg's log."""
     import av
     import av.logging
 
-    with av.logging.Capture(local=True) as log:
-        try:
-            av.open(file="dummy", format="dshow", options={"list_devices": "true"})
-        except Exception:  # noqa: BLE001, S110 - listing always raises (see module docstring); the log, not the exception, is the result
-            pass
+    previous_level = av.logging.get_level()
+    if previous_level is None or previous_level < av.logging.INFO:
+        av.logging.set_level(av.logging.INFO)
+    try:
+        with av.logging.Capture(local=True) as log:
+            try:
+                av.open(file="dummy", format="dshow", options={"list_devices": "true"})
+            except Exception:  # noqa: BLE001, S110 - listing always raises (see module docstring); the log, not the exception, is the result
+                pass
+    finally:
+        if av.logging.get_level() != previous_level:
+            av.logging.set_level(previous_level)
     return list(log)
 
 

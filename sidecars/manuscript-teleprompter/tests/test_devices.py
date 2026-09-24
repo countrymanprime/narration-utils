@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
@@ -101,3 +102,142 @@ def test_parse_device_list_ignores_log_entries_from_other_ffmpeg_contexts():
     entries = [(32, "in", 'this looks like "a device" (audio) but is not from dshow\n')]
 
     assert devices.parse_device_list(entries) == []
+
+
+class _FakeAvLogging:
+    """Stands in for `av.logging`. PyAV's default level is None (FFmpeg logging off) and FFmpeg prints the dshow device
+    list at INFO (32), so a capture opened at the default level receives nothing: the reason the real listing came back
+    empty while every test above, which injects a finished capture, still passed."""
+
+    INFO = 32
+    VERBOSE = 40
+
+    def __init__(self, level):
+        self.level = level
+        self.set_calls = []
+        self.level_during_open = "never opened"
+        self.captured = []
+
+    def get_level(self):
+        return self.level
+
+    def set_level(self, level):
+        self.set_calls.append(level)
+        self.level = level
+
+    def Capture(self, local):
+        assert local is True
+        captured = self.captured
+
+        class _Capture:
+            def __enter__(self):
+                return captured
+
+            def __exit__(self, *exc):
+                return False
+
+        return _Capture()
+
+
+def _install_fake_av(monkeypatch, fake_logging):
+    """A fake `av` whose `open` behaves like FFmpeg's dshow lister: it logs the device list only when the level lets INFO
+    through, then raises (list_devices is not a real capture)."""
+
+    class _FakeAv:
+        logging = fake_logging
+
+        @staticmethod
+        def open(file, format, options):
+            fake_logging.level_during_open = fake_logging.level
+            if fake_logging.level is not None and fake_logging.level >= fake_logging.INFO:
+                fake_logging.captured.extend(REAL_LOG_CAPTURE)
+            raise RuntimeError("Immediate exit requested")
+
+    monkeypatch.setitem(sys.modules, "av", _FakeAv)
+    monkeypatch.setitem(sys.modules, "av.logging", fake_logging)
+
+
+def test_capture_dshow_log_raises_the_default_off_level_to_info_for_the_listing_then_turns_it_back_off(monkeypatch):
+    fake_logging = _FakeAvLogging(level=None)
+    _install_fake_av(monkeypatch, fake_logging)
+
+    entries = devices.capture_dshow_log()
+
+    assert fake_logging.level_during_open == fake_logging.INFO
+    assert fake_logging.set_calls == [fake_logging.INFO, None]
+    assert fake_logging.level is None
+    assert [device.name for device in devices.list_input_devices(capture=lambda: entries)[0]] == [
+        "Analogue 1 + 2 (Focusrite USB Audio)",
+        "Microphone Array (Realtek(R) Audio)",
+    ]
+
+
+def test_capture_dshow_log_leaves_an_already_more_verbose_level_alone(monkeypatch):
+    fake_logging = _FakeAvLogging(level=_FakeAvLogging.VERBOSE)
+    _install_fake_av(monkeypatch, fake_logging)
+
+    devices.capture_dshow_log()
+
+    assert fake_logging.level_during_open == fake_logging.VERBOSE
+    assert fake_logging.level == fake_logging.VERBOSE
+
+
+def test_capture_dshow_log_restores_the_previous_level_even_when_the_capture_itself_fails(monkeypatch):
+    fake_logging = _FakeAvLogging(level=None)
+    _install_fake_av(monkeypatch, fake_logging)
+
+    def broken_capture(local):
+        raise RuntimeError("log capture unavailable")
+
+    monkeypatch.setattr(fake_logging, "Capture", broken_capture)
+
+    with pytest.raises(RuntimeError, match="log capture unavailable"):
+        devices.capture_dshow_log()
+
+    assert fake_logging.level is None
+
+
+def _active_capture_endpoints():
+    """How many audio capture endpoints Windows itself reports as active, read from the registry rather than through
+    FFmpeg, so the real-PyAV test below can tell "no microphone here" from "the listing is broken"."""
+    import winreg
+
+    active = 0
+    path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture"
+    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path) as captures:
+        for index in range(winreg.QueryInfoKey(captures)[0]):
+            with winreg.OpenKey(captures, winreg.EnumKey(captures, index)) as endpoint:
+                state, _type = winreg.QueryValueEx(endpoint, "DeviceState")
+                active += (state & 0xF) == 1  # DEVICE_STATE_ACTIVE; the high bits are flags
+    return active
+
+
+def _real_dshow_available():
+    if sys.platform != "win32":
+        return False
+    try:
+        import av
+    except ImportError:
+        return False
+    return "dshow" in av.formats_available
+
+
+@pytest.mark.skipif(not _real_dshow_available(), reason="the dshow device lister exists only in a Windows FFmpeg build")
+def test_capture_dshow_log_really_receives_ffmpegs_device_list_through_pyav():
+    try:
+        microphones = _active_capture_endpoints()
+    except OSError:
+        microphones = 0
+    if microphones == 0:
+        pytest.skip("Windows reports no active microphone on this machine (e.g. a CI runner); never depend on one")
+    import av.logging
+
+    level_before = av.logging.get_level()
+
+    entries = devices.capture_dshow_log()
+
+    assert av.logging.get_level() == level_before
+    assert any(context == "dshow" for _level, context, _message in entries), "PyAV's log capture received no dshow output"
+    listed, error = devices.list_input_devices(capture=lambda: entries)
+    assert error is None
+    assert listed, "Windows reports an active microphone but the dshow listing found no audio device"
