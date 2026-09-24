@@ -47,11 +47,14 @@ jobs:
         run: |
           mkdir prerelease-assets
           gh release download "$TAG" --dir prerelease-assets
+          # Every asset is named for the bare version (docs/adr/0197), the same on the candidate and the stable release.
+          VERSION="${TAG#v}"
+          VERSION="${VERSION%-rc}"
           # Fails unless every platform's asset has been attached (macOS and Linux upload after
           # the Windows build publishes the release), matches its .sha256, and, with --attestations, has build
           # provenance from the release workflow on main (gh attestation verify; GITHUB_REPOSITORY is set by
           # Actions). A candidate built before attestations existed cannot be promoted; the next one can.
-          node scripts/release/assets.mjs verify prerelease-assets --attestations
+          node scripts/release/assets.mjs verify prerelease-assets "$VERSION" --attestations
       - name: Create the stable tag and release without rebuilding
         env:
           GH_TOKEN: ${{ github.token }}

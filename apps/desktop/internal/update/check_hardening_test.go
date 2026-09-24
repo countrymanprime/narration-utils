@@ -36,7 +36,7 @@ func TestACacheThatHoldsABadDigestIsDroppedWithItsETag(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(checker.CachePath), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	bad := `{"schema":1,"etag":"\"v1\"","checkedAt":"2026-09-20T00:00:00Z","releases":[{"tag":"v0.2.7-rc","asset":{"name":"narration-utils-windows-x64.zip","size":10,"digest":"nonsense"},"checksum":{"name":"narration-utils-windows-x64.zip.sha256","size":10}}]}`
+	bad := `{"schema":1,"etag":"\"v1\"","checkedAt":"2026-09-20T00:00:00Z","releases":[{"tag":"v0.2.7-rc","asset":{"name":"narration-utils-0.2.7-windows-x64.zip","size":10,"digest":"nonsense"},"checksum":{"name":"narration-utils-0.2.7-windows-x64.zip.sha256","size":10}}]}`
 	if err := os.WriteFile(checker.CachePath, []byte(bad), 0o600); err != nil {
 		t.Fatal(err)
 	}

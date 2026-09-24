@@ -1,5 +1,5 @@
 name: Build native package
-description: Build the Wails app on the current runner and package it as release-assets/narration-utils-<platform>.<ext> with a .sha256 beside it (Windows also gets its setup program)
+description: Build the Wails app on the current runner and package it as release-assets/narration-utils-<version>-<platform>.<ext> with a .sha256 beside it (Windows also gets its setup program and notices)
 
 inputs:
   platform:
@@ -156,6 +156,7 @@ runs:
           .release-build/*/dist
           .release-build/*/work/*/*.toc
         key: ${{ steps.freeze-cache.outputs.cache-primary-key }}
+    # Named for the version in the root package.json, which the step above set to the release version (docs/adr/0197).
     - name: Package the release asset
       shell: bash
       env:

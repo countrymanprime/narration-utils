@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 // Names, packages and verifies what each platform releases:
-// narration-utils-<platform>.<ext> plus a narration-utils-<platform>.<ext>.sha256 beside it, and on Windows also the setup
-// program narration-utils-windows-x64-setup.exe with its own .sha256 (docs/adr/0082). The archive is what the in-app updater
-// downloads; the setup program is for a first install.
+// narration-utils-<version>-<platform>.<ext> plus a .sha256 beside it, and on Windows also the setup program
+// narration-utils-<version>-windows-x64-setup.exe and the notices narration-utils-<version>-THIRD-PARTY-NOTICES.txt, each with its own
+// .sha256 (docs/adr/0082, docs/adr/0197). The version is in every name so that downloads of different releases can be told apart at a
+// glance. The archive is what the in-app updater downloads (apps/desktop/internal/update/manifest.go builds the same name); the setup
+// program is for a first install.
 // Every platform builds and uploads its own asset at a different time, so checksums are per
 // asset rather than one SHA256SUMS.txt that would need every platform to have finished.
 
@@ -17,11 +19,11 @@ const APP_BINARY = 'narration-utils';
 const MAC_APP_BUNDLE = 'Narration Utils.app';
 
 // The setup program NSIS builds (apps/desktop/build/windows/installer/project.nsi names its OutFile the same, and a test keeps the
-// two equal). The name carries no version, like every asset (docs/adr/0073).
+// two equal). This is its name in the build folder, which carries no version; packaging gives it the released name (installerName).
 export const WINDOWS_INSTALLER = 'narration-utils-windows-x64-setup.exe';
 
-// The third-party licences and the source offer of the release (scripts/licenses/notices.py; docs/operations/ci-and-releases.md,
-// "Third-party notices"). It is its own asset, not a second file in the update zip: the in-app updater refuses a zip that holds
+// The third-party licences and the source offer of the release, under the name scripts/licenses/notices.py writes into the build folder
+// (docs/operations/ci-and-releases.md, "Third-party notices"); packaging gives it the released name (noticesName). It is its own asset, not a second file in the update zip: the in-app updater refuses a zip that holds
 // anything but narration-utils.exe (docs/adr/0074), and a client that predates a two-file zip would refuse every update to it.
 export const NOTICES_FILE = 'THIRD-PARTY-NOTICES.txt';
 
@@ -101,49 +103,65 @@ function platformEntry(platform) {
   return PLATFORMS[platform];
 }
 
-export const assetName = (platform) => `narration-utils-${platform}${platformEntry(platform).extension}`;
-export const checksumName = (platform) => `${assetName(platform)}.sha256`;
-export const installerName = (platform) => platformEntry(platform).installer;
-export const noticesName = (platform) => platformEntry(platform).notices;
+// The version in every released name is bare MAJOR.MINOR.PATCH, each part one to six digits with no leading zero: the rule the app's
+// updater reads a version by (apps/desktop/internal/update/version.go). A candidate and its promotion are the same bytes, so v0.2.7-rc
+// and v0.2.7 publish the same names.
+const RELEASE_VERSION = /^(0|[1-9]\d{0,5})\.(0|[1-9]\d{0,5})\.(0|[1-9]\d{0,5})$/;
+
+export function requireVersion(version) {
+  if (typeof version !== 'string' || !RELEASE_VERSION.test(version)) {
+    throw new Error(`"${version}" is not a release version. Expected bare MAJOR.MINOR.PATCH, for example 0.2.7 (no v, no -rc).`);
+  }
+  return version;
+}
+
+const released = (version, name) => `narration-utils-${requireVersion(version)}-${name}`;
+
+export const assetName = (platform, version) => released(version, `${platform}${platformEntry(platform).extension}`);
+export const checksumName = (platform, version) => `${assetName(platform, version)}.sha256`;
+export const installerName = (platform, version) => (platformEntry(platform).installer ? released(version, `${platform}-setup.exe`) : undefined);
+export const noticesName = (platform, version) => (platformEntry(platform).notices ? released(version, platformEntry(platform).notices) : undefined);
 export const sha256File = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
 
 // Every downloadable of a platform: the archive and, when there is one, the setup program and the notices. Each has a .sha256 beside it.
-const platformAssets = (platform) => [assetName(platform), installerName(platform), noticesName(platform)].filter(Boolean);
+const platformAssets = (platform, version) =>
+  [assetName(platform, version), installerName(platform, version), noticesName(platform, version)].filter(Boolean);
 
-// Every file a platform puts on a release, each asset followed by its checksum.
-export const releaseFiles = (platform) => platformAssets(platform).flatMap((name) => [name, `${name}.sha256`]);
+// Every file a platform puts on the release of this version, each asset followed by its checksum.
+export const releaseFiles = (platform, version) => platformAssets(platform, version).flatMap((name) => [name, `${name}.sha256`]);
 
 const writeChecksum = (out, name) => writeFileSync(join(out, `${name}.sha256`), `${sha256File(join(out, name))}  ${name}\n`);
 
-export function packageAsset({ platform, binDir, outDir }) {
+export function packageAsset({ platform, binDir, outDir, version }) {
   const { archive, installer, notices } = platformEntry(platform);
   const bin = resolve(binDir);
   const out = resolve(outDir);
-  const target = join(out, assetName(platform));
+  const target = join(out, assetName(platform, version));
   // Before anything is written or zipped: a build without its setup program is not a release.
   if (installer) requireInstaller(bin, installer);
   if (notices) requireNotices(bin, notices);
   mkdirSync(out, { recursive: true });
   rmSync(target, { force: true });
   archive({ binDir: bin, outDir: out, target });
-  writeChecksum(out, assetName(platform));
+  writeChecksum(out, assetName(platform, version));
   if (installer) {
-    copyFileSync(join(bin, installer), join(out, installer));
-    writeChecksum(out, installer);
+    copyFileSync(join(bin, installer), join(out, installerName(platform, version)));
+    writeChecksum(out, installerName(platform, version));
   }
   if (notices) {
-    copyFileSync(join(bin, notices), join(out, notices));
-    writeChecksum(out, notices);
+    copyFileSync(join(bin, notices), join(out, noticesName(platform, version)));
+    writeChecksum(out, noticesName(platform, version));
   }
   return target;
 }
 
-// Returns human-readable problems; an empty array means the release is safe to promote: every
+// Returns human-readable problems; an empty array means the release of this version is safe to promote: every
 // required platform is present and intact, and any optional platform that is present is intact.
-export function verifyAssets(dir) {
+export function verifyAssets(dir, version) {
+  requireVersion(version);
   const problems = [];
   for (const [platform, { required }] of Object.entries(PLATFORMS)) {
-    const files = releaseFiles(platform);
+    const files = releaseFiles(platform, version);
     const present = files.filter((file) => existsSync(join(dir, file)));
     if (present.length === 0 && !required) continue;
     const absent = files.filter((file) => !present.includes(file));
@@ -156,7 +174,7 @@ export function verifyAssets(dir) {
       problems.push(`Incomplete upload: ${present[0]} has no ${absent[0]}`);
       continue;
     }
-    for (const name of platformAssets(platform)) {
+    for (const name of platformAssets(platform, version)) {
       const sumName = `${name}.sha256`;
       const expected = readFileSync(join(dir, sumName), 'utf8').trim().split(/\s+/)[0];
       if (!/^[0-9a-f]{64}$/.test(expected)) problems.push(`${sumName} does not contain a SHA-256 checksum`);
@@ -164,8 +182,8 @@ export function verifyAssets(dir) {
     }
   }
   // Promote publishes every file in the directory, so a file that is not a release asset must stop it: nothing built or
-  // attested it.
-  const known = new Set(Object.keys(PLATFORMS).flatMap(releaseFiles));
+  // attested it. A file named for another version is one of those too.
+  const known = new Set(Object.keys(PLATFORMS).flatMap((platform) => releaseFiles(platform, version)));
   for (const name of readdirSync(dir).sort()) {
     if (!known.has(name)) {
       problems.push(`Unexpected file ${name}: promote publishes every file, and only the release assets are built and attested by the workflows`);
@@ -195,11 +213,12 @@ const runGh = (args) => execFileSync('gh', args, { encoding: 'utf8', stdio: ['ig
 
 // Returns a problem for every present asset or checksum that has no attestation from the workflow that should have built
 // it. Meant for promote, which has the network and the GitHub CLI; `verifyAssets` stays offline.
-export function verifyAttestations(dir, { repository, run = runGh } = {}) {
+export function verifyAttestations(dir, { repository, version, run = runGh } = {}) {
   if (!repository) throw new Error('Verifying attestations needs the repository, for example countrymanprime/narration-utils.');
+  requireVersion(version);
   const problems = [];
   for (const [platform, { signerWorkflow }] of Object.entries(PLATFORMS)) {
-    for (const name of releaseFiles(platform)) {
+    for (const name of releaseFiles(platform, version)) {
       const file = join(dir, name);
       if (!existsSync(file)) continue;
       try {
@@ -218,39 +237,51 @@ function exitWith(problems) {
   process.exit(1);
 }
 
-const USAGE = 'Usage: assets.mjs package <platform> | assets.mjs verify <dir> [--attestations]';
+const USAGE = 'Usage: assets.mjs package <platform> [<version>] | assets.mjs verify <dir> <version> [--attestations]';
 
-function verifyCommand(dir, flags) {
+function verifyCommand(dir, version, flags) {
   const unknown = flags.find((flag) => flag !== '--attestations');
   if (unknown) {
     console.error(`Unknown flag ${unknown}. ${USAGE}`);
     process.exit(2);
   }
-  const problems = verifyAssets(dir);
+  const problems = verifyAssets(dir, version);
   if (problems.length) exitWith(problems);
-  const shipped = Object.keys(PLATFORMS).filter((platform) => existsSync(join(dir, assetName(platform))));
-  console.log(`Verified ${shipped.join(', ')} in ${dir}.`);
+  const shipped = Object.keys(PLATFORMS).filter((platform) => existsSync(join(dir, assetName(platform, version))));
+  console.log(`Verified ${shipped.join(', ')} of ${version} in ${dir}.`);
   if (!flags.includes('--attestations')) return;
   const repository = process.env.GITHUB_REPOSITORY;
   if (!repository) {
     console.error('--attestations needs GITHUB_REPOSITORY (owner/repo) and an authenticated GitHub CLI.');
     process.exit(2);
   }
-  const attestationProblems = verifyAttestations(dir, { repository });
+  const attestationProblems = verifyAttestations(dir, { repository, version });
   if (attestationProblems.length) exitWith(attestationProblems);
   console.log(`Every asset and checksum is attested by the release workflows of ${repository}.`);
 }
 
-function main([command, argument, ...flags]) {
-  if (command === 'package' && argument) {
+// The version packaging names the files with, when none is given: the root package.json's, which the build stamped into the program
+// (build-native applies the computed release version to it before building).
+const checkedInVersion = () => JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version;
+
+function main([command, argument, ...rest]) {
+  if (command === 'package' && argument && rest.length <= 1) {
     const asset = packageAsset({
       platform: argument,
       binDir: process.env.WAILS_BIN_DIR ?? 'apps/desktop/build/bin',
       outDir: process.env.RELEASE_ASSETS_DIR ?? 'release-assets',
+      version: rest[0] ?? checkedInVersion(),
     });
     console.log(`Packaged ${asset}`);
-  } else if (command === 'verify' && argument) {
-    verifyCommand(argument, flags);
+  } else if (command === 'verify' && argument && rest[0] && !rest[0].startsWith('--')) {
+    const [version, ...flags] = rest;
+    try {
+      requireVersion(version);
+    } catch (error) {
+      console.error(`${error.message} ${USAGE}`);
+      process.exit(2);
+    }
+    verifyCommand(argument, version, flags);
   } else {
     console.error(USAGE);
     process.exit(2);

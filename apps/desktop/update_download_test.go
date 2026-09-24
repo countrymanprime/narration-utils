@@ -48,7 +48,7 @@ func newReleaseFiles(t *testing.T) *releaseFiles {
 	fake.zip = buffer.Bytes()
 	fake.checksum = func(body []byte) string {
 		sum := sha256.Sum256(body)
-		return hex.EncodeToString(sum[:]) + "  narration-utils-windows-x64.zip\n"
+		return hex.EncodeToString(sum[:]) + "  narration-utils-0.2.7-windows-x64.zip\n"
 	}
 	fake.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
@@ -58,7 +58,7 @@ func newReleaseFiles(t *testing.T) *releaseFiles {
 				Size int64  `json:"size"`
 			}
 			list := []map[string]any{{"tag_name": "v0.2.7-rc", "prerelease": true, "published_at": "2026-09-20T10:00:00Z", "assets": []asset{
-				{Name: "narration-utils-windows-x64.zip", Size: int64(len(fake.zip))}, {Name: "narration-utils-windows-x64.zip.sha256", Size: 100},
+				{Name: "narration-utils-0.2.7-windows-x64.zip", Size: int64(len(fake.zip))}, {Name: "narration-utils-0.2.7-windows-x64.zip.sha256", Size: 100},
 			}}}
 			body, _ := json.Marshal(list)
 			_, _ = w.Write(body)
@@ -252,7 +252,7 @@ func TestOnlyOneDownloadRunsAtATimeAndItCanBeCancelled(t *testing.T) {
 
 func TestAFailedDownloadEndsInAnErrorTheNarratorCanRead(t *testing.T) {
 	fake := newReleaseFiles(t)
-	fake.checksum = func([]byte) string { return strings.Repeat("0", 64) + "  narration-utils-windows-x64.zip\n" }
+	fake.checksum = func([]byte) string { return strings.Repeat("0", 64) + "  narration-utils-0.2.7-windows-x64.zip\n" }
 	host := downloadHost(t, fake)
 	if _, err := host.UpdateCheck(); err != nil {
 		t.Fatal(err)
@@ -271,7 +271,7 @@ func TestAFailedDownloadEndsInAnErrorTheNarratorCanRead(t *testing.T) {
 	// The failure is not a wall: a good download can follow.
 	fake.checksum = func(body []byte) string {
 		sum := sha256.Sum256(body)
-		return hex.EncodeToString(sum[:]) + "  narration-utils-windows-x64.zip\n"
+		return hex.EncodeToString(sum[:]) + "  narration-utils-0.2.7-windows-x64.zip\n"
 	}
 	again := startDownload(t, host)
 	if job := waitForJob(t, host, again.ID, finished); job.Phase != "ready" {

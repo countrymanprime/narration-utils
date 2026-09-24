@@ -10,7 +10,10 @@ import (
 
 const testRepository = "countrymanprime/narration-utils"
 
-var windows = Platform{Key: "windows-x64", Asset: "narration-utils-windows-x64.zip", Checksum: "narration-utils-windows-x64.zip.sha256", SelfReplace: true}
+var windows = Platform{Key: "windows-x64", Extension: ".zip", SelfReplace: true}
+
+// windowsZip is the Windows archive of release 0.2.7, the version most tests stage.
+var windowsZip = windows.AssetName(Version{0, 2, 7})
 
 type fakeAsset struct {
 	Name               string `json:"name"`
@@ -30,20 +33,22 @@ type fakeRelease struct {
 	Assets      []fakeAsset `json:"assets"`
 }
 
-func goodAssets() []fakeAsset {
+// goodAssets are the files of the release tagged tag: every name carries the tag's bare version.
+func goodAssets(tag string) []fakeAsset {
+	version, _, _ := ParseTag(tag)
 	return []fakeAsset{
-		{Name: windows.Asset, Size: 400 << 20},
-		{Name: windows.Checksum, Size: 100},
-		{Name: "narration-utils-linux-x64.tar.gz", Size: 200 << 20},
+		{Name: windows.AssetName(version), Size: 400 << 20},
+		{Name: windows.ChecksumName(version), Size: 100},
+		{Name: "narration-utils-" + version.String() + "-linux-x64.tar.gz", Size: 200 << 20},
 	}
 }
 
 func rc(tag string) fakeRelease {
-	return fakeRelease{TagName: tag, Prerelease: true, PublishedAt: "2026-09-20T10:00:00Z", Assets: goodAssets()}
+	return fakeRelease{TagName: tag, Prerelease: true, PublishedAt: "2026-09-20T10:00:00Z", Assets: goodAssets(tag)}
 }
 
 func stable(tag string) fakeRelease {
-	return fakeRelease{TagName: tag, PublishedAt: "2026-09-21T10:00:00Z", Assets: goodAssets()}
+	return fakeRelease{TagName: tag, PublishedAt: "2026-09-21T10:00:00Z", Assets: goodAssets(tag)}
 }
 
 func marshal(t testing.TB, value any) []byte {
@@ -76,7 +81,7 @@ func TestParseReleasesKeepsTheReleasesThatCarryThePlatformAsset(t *testing.T) {
 	if first.Version != (Version{0, 2, 7}) || first.Candidate || !releases[1].Candidate {
 		t.Fatalf("versions or candidates wrong: %+v %+v", first, releases[1])
 	}
-	if first.Asset.Name != windows.Asset || first.Asset.Size != 400<<20 || first.Checksum.Name != windows.Checksum {
+	if first.Asset.Name != windowsZip || first.Asset.Size != 400<<20 || first.Checksum.Name != windowsZip+".sha256" {
 		t.Fatalf("assets = %+v %+v", first.Asset, first.Checksum)
 	}
 }
@@ -86,7 +91,7 @@ func TestParseReleasesKeepsTheReleasesThatCarryThePlatformAsset(t *testing.T) {
 func TestTheURLsAreBuiltFromTheRepositoryAndNeverTakenFromTheJSON(t *testing.T) {
 	release := stable("v0.2.7")
 	release.HTMLURL = "https://evil.example/releases/tag/v0.2.7"
-	release.Assets[0].BrowserDownloadURL = "https://evil.example/narration-utils-windows-x64.zip"
+	release.Assets[0].BrowserDownloadURL = "https://evil.example/narration-utils-0.2.7-windows-x64.zip"
 	releases, _, err := ParseReleases(marshal(t, []fakeRelease{release}), testRepository, windows)
 	if err != nil || len(releases) != 1 {
 		t.Fatalf("releases %v err %v", releases, err)
@@ -95,7 +100,7 @@ func TestTheURLsAreBuiltFromTheRepositoryAndNeverTakenFromTheJSON(t *testing.T) 
 	if got.NotesURL != "https://github.com/countrymanprime/narration-utils/releases/tag/v0.2.7" {
 		t.Fatalf("notes URL = %s", got.NotesURL)
 	}
-	if got.Asset.URL != "https://github.com/countrymanprime/narration-utils/releases/download/v0.2.7/narration-utils-windows-x64.zip" {
+	if got.Asset.URL != "https://github.com/countrymanprime/narration-utils/releases/download/v0.2.7/narration-utils-0.2.7-windows-x64.zip" {
 		t.Fatalf("asset URL = %s", got.Asset.URL)
 	}
 	if got.Checksum.URL != got.Asset.URL+".sha256" {
@@ -106,17 +111,19 @@ func TestTheURLsAreBuiltFromTheRepositoryAndNeverTakenFromTheJSON(t *testing.T) 
 func TestParseReleasesRefusesEachHostileOrMalformedRelease(t *testing.T) {
 	mutate := func(edit func(*fakeRelease)) fakeRelease {
 		release := stable("v0.2.8")
-		release.Assets = goodAssets()
+		release.Assets = goodAssets(release.TagName)
 		edit(&release)
 		return release
 	}
 	cases := map[string]fakeRelease{
-		"a draft":                   mutate(func(r *fakeRelease) { r.Draft = true }),
-		"a tag with another suffix": mutate(func(r *fakeRelease) { r.TagName = "v0.2.8-beta" }),
-		"a tag that is a path":      mutate(func(r *fakeRelease) { r.TagName = "v0.2.8/../../x" }),
+		"a draft":                                   mutate(func(r *fakeRelease) { r.Draft = true }),
+		"a tag with another suffix":                 mutate(func(r *fakeRelease) { r.TagName = "v0.2.8-beta" }),
+		"a tag that is a path":                      mutate(func(r *fakeRelease) { r.TagName = "v0.2.8/../../x" }),
 		"a candidate tag that is not a pre-release": mutate(func(r *fakeRelease) { r.TagName = "v0.2.8-rc" }),
 		"a stable tag marked as a pre-release":      mutate(func(r *fakeRelease) { r.Prerelease = true }),
 		"no platform asset":                         mutate(func(r *fakeRelease) { r.Assets = r.Assets[1:] }),
+		"the files of another version":              mutate(func(r *fakeRelease) { r.Assets = goodAssets("v0.2.7") }),
+		"an asset name without the version":         mutate(func(r *fakeRelease) { r.Assets[0].Name = "narration-utils-windows-x64.zip" }),
 		"no checksum":                               mutate(func(r *fakeRelease) { r.Assets = append(r.Assets[:1], r.Assets[2:]...) }),
 		"the asset listed twice":                    mutate(func(r *fakeRelease) { r.Assets = append(r.Assets, r.Assets[0]) }),
 		"the checksum listed twice":                 mutate(func(r *fakeRelease) { r.Assets = append(r.Assets, r.Assets[1]) }),
@@ -252,7 +259,8 @@ func TestPlatformForKnowsTheThreeReleasePlatformsAndOnlyWindowsReplacesItself(t 
 		if !ok || platform.Key != test.key || platform.SelfReplace != test.replaces {
 			t.Errorf("PlatformFor(%s, %s) = %+v, %v", test.goos, test.goarch, platform, ok)
 		}
-		if !strings.HasPrefix(platform.Asset, "narration-utils-"+test.key) || platform.Checksum != platform.Asset+".sha256" {
+		asset := platform.AssetName(Version{0, 2, 7})
+		if asset != "narration-utils-0.2.7-"+test.key+platform.Extension || platform.ChecksumName(Version{0, 2, 7}) != asset+".sha256" {
 			t.Errorf("asset names %+v", platform)
 		}
 	}
@@ -281,7 +289,7 @@ func FuzzParseReleases(f *testing.F) {
 		f.Fatal(err)
 	}
 	f.Add(seed)
-	f.Add([]byte(`[{"tag_name":"v0.2.7","assets":[{"name":"narration-utils-windows-x64.zip","size":1}]}]`))
+	f.Add([]byte(`[{"tag_name":"v0.2.7","assets":[{"name":"narration-utils-0.2.7-windows-x64.zip","size":1}]}]`))
 	f.Add([]byte(`{}`))
 	f.Add([]byte(`[null,1,"x",[],{}]`))
 	f.Fuzz(func(t *testing.T, body []byte) {
@@ -293,7 +301,7 @@ func FuzzParseReleases(f *testing.F) {
 			if !strings.HasPrefix(release.Asset.URL, "https://github.com/"+testRepository+"/releases/download/"+release.Tag+"/") {
 				t.Fatalf("an asset URL outside the repository: %s", release.Asset.URL)
 			}
-			if release.Asset.Name != windows.Asset || release.Checksum.Name != windows.Checksum {
+			if release.Asset.Name != windows.AssetName(release.Version) || release.Checksum.Name != windows.ChecksumName(release.Version) {
 				t.Fatalf("an unknown asset name: %+v", release)
 			}
 			if release.Asset.Size <= 0 || release.Asset.Size > MaxAssetBytes {

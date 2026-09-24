@@ -305,10 +305,11 @@ func TestACacheFileFromAnotherSchemaOrWithBadReleasesIsIgnored(t *testing.T) {
 	// A cache is data on disk that a narrator or another program could edit: its releases are checked like a fresh answer, and the
 	// URLs are rebuilt from the repository whatever the file says.
 	hostile := `{"schema":1,"checkedAt":"2026-09-20T00:00:00Z","releases":[` +
-		`{"tag":"v0.2.8","asset":{"name":"narration-utils-windows-x64.zip","size":10,"url":"https://evil.example/x.zip"},"checksum":{"name":"narration-utils-windows-x64.zip.sha256","size":10,"url":"https://evil.example/x.sha256"},"notesUrl":"https://evil.example/notes"},` +
-		`{"tag":"v0.2.9","asset":{"name":"evil.exe","size":10},"checksum":{"name":"narration-utils-windows-x64.zip.sha256","size":10}},` +
-		`{"tag":"not-a-tag","asset":{"name":"narration-utils-windows-x64.zip","size":10},"checksum":{"name":"narration-utils-windows-x64.zip.sha256","size":10}},` +
-		`{"tag":"v0.3.0","asset":{"name":"narration-utils-windows-x64.zip","size":-1},"checksum":{"name":"narration-utils-windows-x64.zip.sha256","size":10}}]}`
+		`{"tag":"v0.2.8","asset":{"name":"narration-utils-0.2.8-windows-x64.zip","size":10,"url":"https://evil.example/x.zip"},"checksum":{"name":"narration-utils-0.2.8-windows-x64.zip.sha256","size":10,"url":"https://evil.example/x.sha256"},"notesUrl":"https://evil.example/notes"},` +
+		`{"tag":"v0.2.9","asset":{"name":"evil.exe","size":10},"checksum":{"name":"narration-utils-0.2.9-windows-x64.zip.sha256","size":10}},` +
+		`{"tag":"v0.3.1","asset":{"name":"narration-utils-0.2.8-windows-x64.zip","size":10},"checksum":{"name":"narration-utils-0.2.8-windows-x64.zip.sha256","size":10}},` +
+		`{"tag":"not-a-tag","asset":{"name":"narration-utils-0.2.8-windows-x64.zip","size":10},"checksum":{"name":"narration-utils-0.2.8-windows-x64.zip.sha256","size":10}},` +
+		`{"tag":"v0.3.0","asset":{"name":"narration-utils-0.3.0-windows-x64.zip","size":-1},"checksum":{"name":"narration-utils-0.3.0-windows-x64.zip.sha256","size":10}}]}`
 	if err := os.WriteFile(checker.CachePath, []byte(hostile), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -318,7 +319,7 @@ func TestACacheFileFromAnotherSchemaOrWithBadReleasesIsIgnored(t *testing.T) {
 	}
 	kept := state.Releases[0]
 	base := "https://github.com/" + testRepository + "/releases"
-	if kept.Asset.URL != base+"/download/v0.2.8/narration-utils-windows-x64.zip" || kept.Checksum.URL != kept.Asset.URL+".sha256" || kept.NotesURL != base+"/tag/v0.2.8" {
+	if kept.Asset.URL != base+"/download/v0.2.8/narration-utils-0.2.8-windows-x64.zip" || kept.Checksum.URL != kept.Asset.URL+".sha256" || kept.NotesURL != base+"/tag/v0.2.8" {
 		t.Fatalf("the URLs come from the repository, not the file: %+v", kept)
 	}
 }

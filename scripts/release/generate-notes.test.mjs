@@ -30,7 +30,7 @@ test('the release notes point at the third-party notices and the source offer', 
   const notes = releaseNotes({});
 
   assert.match(notes, /## Licences and source/);
-  assert.match(notes, /THIRD-PARTY-NOTICES\.txt/);
+  assert.match(notes, /`narration-utils-0\.1\.0-THIRD-PARTY-NOTICES\.txt`/);
   assert.match(notes, /AGPL-3\.0-or-later/);
 });
 
@@ -60,11 +60,11 @@ test('the release notes say how to install on Windows and that the download is u
   const notes = releaseNotes({ GITHUB_REPOSITORY: 'countrymanprime/narration-utils' });
 
   assert.match(notes, /## Installing on Windows/);
-  assert.match(notes, /narration-utils-windows-x64-setup\.exe/);
+  assert.match(notes, /`narration-utils-0\.1\.0-windows-x64-setup\.exe`/);
   assert.match(notes, /unsigned/i);
   assert.match(notes, /More info/);
   assert.match(notes, /Run anyway/);
-  assert.match(notes, /narration-utils-windows-x64\.zip/);
+  assert.match(notes, /`narration-utils-0\.1\.0-windows-x64\.zip`/);
 });
 
 test('the install section comes after the changes and before the verification section', () => {
