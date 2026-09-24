@@ -119,6 +119,7 @@ Cross-cutting: each phase follows `CLAUDE.md`: plan with an issue and `Closes #<
 | Evaluate on read (prior, parent PRD Q5) | Kept; the read triggers may gain window focus (proposed, Q2) | Background file watching; a cache | No stored truth (D1); a focus read is cheap and needs no watcher |
 | The table's line shows only on a failed read (proposed, Q1 A) | Error with retry, otherwise nothing | A "checked" status; Check now with a toast | Every other re-read is automatic; the summary chips already count suggestions |
 | No ADR expected | The delivering PR notes the change in the parent PRD's Phase 5 and Decisions Log | A new ADR | No ADR records the line or the button; if Q2 A amends the Q5 trigger list, `adr-author` decides at merge whether that is a recorded decision |
+| Open questions (owner, 2026-09-24) | Every open question takes this PRD's recommended answer, as shown in its approved Visual Spec mockups, except where a row below says otherwise | Answer each question separately | The owner approved the mockups that depict the recommendations; see D39 in the [implementation plan](implementation-plan.md#6-owner-decisions-2026-09-24) |
 
 ## Research Summary
 

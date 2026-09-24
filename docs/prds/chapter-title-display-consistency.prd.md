@@ -295,6 +295,8 @@ This work crosses no trust boundary: display text only, and file names are uncha
 | One formatter plus one primitive (proposed, Q5) | `chapterName()` for text, `TitleSubtitle` for markup | Per-page helpers | Accessible names and visible names cannot drift apart |
 | Guard (proposed) | AST ratchet on `.subtitle` reads | ESLint rule; review only | Follows `rawNatives.test.ts` (ADR 0053); no new lint plugin |
 | Spoken and matched text unchanged | Out of scope | Add the subtitle to the tracked title span | ADR 0126 and ADR 0151 already decide spoken headings; Q9 keeps the subtitle visible without changing tracking |
+| Open questions (owner, 2026-09-24) | Every open question takes this PRD's recommended answer, as shown in its approved Visual Spec mockups, except where a row below says otherwise | Answer each question separately | The owner approved the mockups that depict the recommendations; see D39 in the [implementation plan](implementation-plan.md#6-owner-decisions-2026-09-24) |
+| The rule (owner, 2026-09-24, Q1, Q2, Q7, D34) | "Title — Subtitle", the book's own casing (no CSS capitals on chapter names); plain-text outputs (REAPER regions, file names, MP3 tags) use the same rule with " - " where an em dash could break a consumer | Colon separator; forced capitals | Matches the majority today; colons appear inside real titles |
 
 ## Research Summary
 

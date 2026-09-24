@@ -331,6 +331,11 @@ Cross-cutting: each phase follows `CLAUDE.md`:
 | Removal (proposed, TL2) | Reclassify as reference and restore by reclassifying back | Hard delete; new flag; merge | Every recording surface already hides reference chapters and the text and ids stay (ADR 0088, ADR 0090) |
 | Undo (proposed, TL6) | A confirm, then a Removed list with Restore | A toast Undo | No primitive change; findable later |
 | Icon (proposed, TL1) | The Tracks navigation icon plus the track's REAPER colour | A waveform, a link icon | Matches where tracks live in the app and what the narrator sees in REAPER |
+| Open questions (owner, 2026-09-24) | Every open question takes this PRD's recommended answer, as shown in its approved Visual Spec mockups, except where a row below says otherwise | Answer each question separately | The owner approved the mockups that depict the recommendations; see D39 in the [implementation plan](implementation-plan.md#6-owner-decisions-2026-09-24) |
+| Unbuilt data in the real app (owner, 2026-09-24, D24) | Visible UI is built in full; in mock mode it runs on sample data, and in the real app a surface whose data is not built yet shows an honest "not available yet" state. Controls that would act on REAPER stay disabled with the reason | Hide unbuilt UI until its data exists | The owner can use and judge every screen now; each backend phase switches on a screen that already exists |
+| REAPER commands before the owner's verification pass (owner, 2026-09-24, D38) | Built in full with harness tests, their ReaScript calls documented from the API reference, and behind an "Experimental REAPER actions" Settings switch (off) until the owner and Claude verify them on a copy of a test project; commands that write to REAPER stay off until then | Wait to build them until the owner can test | Nothing waits on hardware, and nothing touches a real project before it is verified |
+| Removing a mis-imported chapter (owner, 2026-09-24, TL2, D31) | Reclassify it as reference material; never delete | Hard delete; front matter | Reference is already hidden everywhere, keeps text and statuses, and is reversible |
+| Tracks per chapter (owner, 2026-09-24, TL3, D32) | Exactly one track per chapter: this is a one-track-per-chapter workflow | Several tracks per chapter | Coverage and the matcher already assume it |
 
 ## Research Summary
 

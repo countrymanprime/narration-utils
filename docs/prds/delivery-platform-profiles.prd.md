@@ -263,6 +263,9 @@ Also: the diagnostics PRD's "What We're NOT Building" ("A distributor (ACX or ot
 | Finding ID (proposed) | Profile id plus rule id, not version | Profile name (today) | Stable across ACX versions; changed before the review store ingests them |
 | Unverifiable requirement (proposed) | "Not checked by the app" with why, never a pass | Omit it | A missing rule reads as a pass |
 | Levels on MP3 (proposed) | Out of scope; container check only | Decode MP3 | DX-2 owns decoding; header parsing is enough for bitrate, CBR and sample rate |
+| Open questions (owner, 2026-09-24) | Every open question takes this PRD's recommended answer, as shown in its approved Visual Spec mockups, except where a row below says otherwise | Answer each question separately | The owner approved the mockups that depict the recommendations; see D39 in the [implementation plan](implementation-plan.md#6-owner-decisions-2026-09-24) |
+| Unbuilt data in the real app (owner, 2026-09-24, D24) | Visible UI is built in full; in mock mode it runs on sample data, and in the real app a surface whose data is not built yet shows an honest "not available yet" state. Controls that would act on REAPER stay disabled with the reason | Hide unbuilt UI until its data exists | The owner can use and judge every screen now; each backend phase switches on a screen that already exists |
+| Peak and platforms (owner, 2026-09-24, P8, P3, D36) | ACX's −3 dB is judged on sample peak, with true peak shown as advice; ACX is the only built-in profile for now | True peak; ship other platforms | Matches common ACX checkers; the owner only delivers to ACX now |
 
 ## Research Summary
 

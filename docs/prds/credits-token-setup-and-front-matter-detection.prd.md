@@ -351,6 +351,10 @@ Cross-cutting:
 | Detection runs after import over `manuscript.json` (proposed) | Parser over the `opening` chapters' stored text, plus a re-read of the stored source's metadata | Detect only at import time | Existing projects benefit without a re-import (the owner's case); import-time structure is a later Could (Phase 4) |
 | Extend `suggestions.go` (proposed) | One detector behind the existing `suggestions` field plus an additive `detected` | A second, separate suggestion path | One source of truth; the existing Settings UI keeps working |
 | The `storedPath` defect (found here) | Join under the project folder and confine to `sources/` | Leave it | The docProps source has never fired on a real import; the test's made-up path hid it |
+| Open questions (owner, 2026-09-24) | Every open question takes this PRD's recommended answer, as shown in its approved Visual Spec mockups, except where a row below says otherwise | Answer each question separately | The owner approved the mockups that depict the recommendations; see D39 in the [implementation plan](implementation-plan.md#6-owner-decisions-2026-09-24) |
+| Unbuilt data in the real app (owner, 2026-09-24, D24) | Visible UI is built in full; in mock mode it runs on sample data, and in the real app a surface whose data is not built yet shows an honest "not available yet" state. Controls that would act on REAPER stay disabled with the reason | Hide unbuilt UI until its data exists | The owner can use and judge every screen now; each backend phase switches on a screen that already exists |
+| Prompt form (owner, 2026-09-24, CS1, D35) | A dialog once per project, then a banner while tokens stay unresolved | Banner only | The owner asked to be prompted; the banner keeps it from nagging |
+| Title casing (owner, 2026-09-24, CS3, D34) | Re-case only an all-capitals title to title case; otherwise keep the book's own casing | Always title case | Matches the title display rule |
 
 ## Research Summary
 
