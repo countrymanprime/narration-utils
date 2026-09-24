@@ -134,6 +134,10 @@ export function DawLaunch() {
   return window['go']['main']['Host']['DawLaunch']();
 }
 
+export function DeliveryExportReport(arg1) {
+  return window['go']['main']['Host']['DeliveryExportReport'](arg1);
+}
+
 export function DiagnosticsAnalyze(arg1, arg2) {
   return window['go']['main']['Host']['DiagnosticsAnalyze'](arg1, arg2);
 }

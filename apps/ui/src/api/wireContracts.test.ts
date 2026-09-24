@@ -7,7 +7,7 @@ import { createMockApi } from './mockApi';
 import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from './mockFixtures';
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
-import { measureJobSchema, measurePickResultSchema } from './schemas/measure';
+import { deliveryQcEvidenceSchema, deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
 import { diagnosticsJobSchema } from './schemas/diagnostics';
 import {
   bookmarkSchema,
@@ -246,6 +246,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'measure-success.json': measureJobSchema,
   'measure-cancelled.json': measureJobSchema,
   'measure-error.json': measureJobSchema,
+  'delivery-report-export.json': deliveryReportExportSchema,
   'diagnostics-idle.json': diagnosticsJobSchema,
   'diagnostics-running.json': diagnosticsJobSchema,
   'diagnostics-success.json': diagnosticsJobSchema,
@@ -1109,6 +1110,39 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(cancelled.files.map((file) => file.status)).toEqual(['cancelled', 'cancelled', 'cancelled']);
   });
 
+  it('a measurement is judged by the host against the limits in force, in the shape the host pins', async () => {
+    const pinned = measureJobSchema.parse(readGolden('measure-success.json'));
+    const pinnedFindings = pinned.files.flatMap((file) => file.findings);
+    expect(pinnedFindings.map((finding) => deliveryQcEvidenceSchema.parse(finding.evidence).metric)).toEqual(['true_peak_dbtp', 'true_peak_dbtp']);
+    const api = createMockApi({}, { deliveryLimits: { true_peak_dbtp_max: '-3.5' } });
+    const picked = await api.measurePickFiles();
+    let job = await api.measureAnalyze(picked.paths);
+    while (job.phase === 'running') job = await api.measureState();
+    expectMatches(measureJobSchema, job, 'mock measurement, judged');
+    const mockFindings = job.files.flatMap((file) => file.findings);
+    expect(mockFindings.map((finding) => [finding.category, finding.severity, deliveryQcEvidenceSchema.parse(finding.evidence).violation])).toEqual(
+      pinnedFindings.map((finding) => [finding.category, finding.severity, deliveryQcEvidenceSchema.parse(finding.evidence).violation]),
+    );
+    await api.saveSettings('Delivery', 'project', { true_peak_dbtp_max: null });
+    expect((await api.measureState()).files.flatMap((file) => file.findings)).toEqual([]);
+  });
+
+  it('the report export answers what it wrote, and refuses the way the host does', async () => {
+    const pinned = deliveryReportExportSchema.parse(readGolden('delivery-report-export.json'));
+    const api = createMockApi({}, { deliveryLimits: { true_peak_dbtp_max: '-3.5' } });
+    await expect(api.deliveryExportReport(false)).rejects.toThrow(/nothing has been measured or checked/);
+    const picked = await api.measurePickFiles();
+    let job = await api.measureAnalyze(picked.paths);
+    await expect(api.deliveryExportReport(false)).rejects.toThrow(/wait for the measurement/);
+    while (job.phase === 'running') job = await api.measureState();
+    const written = await api.deliveryExportReport(false);
+    expectMatches(deliveryReportExportSchema, written, 'mock report export');
+    expect(written).toMatchObject({ folder: pinned.folder, htmlFile: pinned.htmlFile, files: 3, findings: 2, openFindings: 2, pathsIncluded: false });
+    const again = await api.deliveryExportReport(true);
+    expect(again.htmlFile).toBe('delivery-report-20260923-140000Z-2.html');
+    expect(again.pathsIncluded).toBe(true);
+  });
+
   it('the diagnostics job answers over the picked files, with the findings and thresholds the host pins', async () => {
     const api = createMockApi();
     const idle = await api.diagnosticsState();
@@ -1438,6 +1472,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'measureAnalyze',
       'measureState',
       'measureCancel',
+      'deliveryExportReport',
       'diagnosticsAnalyze',
       'diagnosticsState',
       'diagnosticsCancel',

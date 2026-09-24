@@ -21,6 +21,11 @@ integrations/reaper/** text eol=lf
 # Golden payloads written by the Go and Python tests are compared byte for byte (ADR 0069): a CRLF checkout would fail every one.
 tests/fixtures/contracts/** text eol=lf
 
+# The Delivery report embeds its HTML template (go:embed) and compares the page it renders with a golden file: a CRLF
+# checkout on a Windows runner puts CRLF into the page, fails the golden test and ships CRLF in the build.
+apps/desktop/**/*.tmpl text eol=lf
+apps/desktop/**/testdata/*.golden.* text eol=lf
+
 # The demo's sample manuscript is Project Gutenberg's file byte for byte (CRLF line endings and all), so it can be checked
 # against the published one; aliceManuscript.ts reads either line ending.
 apps/ui/src/api/fixtures/alice-in-wonderland.txt -text
