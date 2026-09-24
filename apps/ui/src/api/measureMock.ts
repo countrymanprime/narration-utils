@@ -3,7 +3,8 @@
 // running), a running job that reads one more quarter of a file per poll (standing in for the bytes the host reads, ADR
 // 0015), and results in the shape tests/fixtures/contracts/measure-success.json pins: a chapter with every level, a
 // render of digital silence whose levels are all unavailable (null, never a number), and a file that is not a WAV.
-// `hold` keeps a started measurement part way through.
+// `hold` keeps a started measurement part way through; `fails` breaks it at its first poll the way
+// tests/fixtures/contracts/measure-error.json pins (the file being read fails, the rest are cancelled).
 import type { JobEnded, MeasureApi, MeasureFileResult, MeasureJob, MeasureReport } from '../types';
 import { wireClone } from './mockFixtures';
 
@@ -74,14 +75,31 @@ function measuredResult(file: MeasureFileResult, index: number): MeasureFileResu
   };
 }
 
-export function createMeasureMock(publish: (event: JobEnded) => void, hold = false): MeasureApi {
+export type MockMeasureSeed = 'hold' | 'fails';
+
+const BROKE = 'runtime error: index out of range [4] with length 4';
+
+export function createMeasureMock(publish: (event: JobEnded) => void, seed?: MockMeasureSeed): MeasureApi {
+  const hold = seed === 'hold';
   const picked = new Set<string>();
   let job: MeasureJob = { id: null, kind: 'measurement', phase: 'idle', message: 'Choose the files to measure.', percent: 0, logs: [], elapsed: 0, files: [] };
   let quarters = 0;
 
-  const end = (phase: 'success' | 'cancelled', message: string) => {
+  const end = (phase: 'success' | 'cancelled' | 'error', message: string) => {
     job = { ...job, phase, message, logs: [...job.logs, message], percent: phase === 'success' ? 100 : job.percent };
     publish({ id: job.id ?? '', kind: 'measurement', outcome: phase, message, durationMs: Math.round(job.elapsed * 1000) });
+  };
+
+  // The host's recover() in measure_job.go: the file being read fails with the reason, the ones after it are not read.
+  const breakDown = () => {
+    job = {
+      ...job,
+      error: BROKE,
+      files: job.files.map((file, i) =>
+        i === 0 ? { ...file, status: 'failed', error: `the measurement stopped unexpectedly: ${BROKE}` } : { ...file, status: 'cancelled' },
+      ),
+    };
+    end('error', 'The measurement stopped unexpectedly.');
   };
 
   const measuring = (index: number): Pick<MeasureJob, 'files' | 'message'> => ({
@@ -92,6 +110,10 @@ export function createMeasureMock(publish: (event: JobEnded) => void, hold = fal
   // Each poll reads one more quarter of the current file; the fourth quarter measures it and moves to the next.
   const advance = () => {
     if (job.phase !== 'running' || hold) return;
+    if (seed === 'fails') {
+      breakDown();
+      return;
+    }
     quarters += 1;
     const index = Math.floor((quarters - 1) / QUARTERS_PER_FILE);
     const percent = Math.min(99, Math.floor((100 * quarters) / (QUARTERS_PER_FILE * job.files.length)));
