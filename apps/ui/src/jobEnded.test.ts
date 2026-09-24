@@ -47,7 +47,18 @@ describe('shouldNotifyForJobEnd (N1-N4)', () => {
   });
 
   it('notifies for a qualifying job that ran 10s or more while unfocused (N3)', () => {
-    for (const kind of ['story_bible', 'tts_install', 'whisper_install', 'spacy_install', 'transcript_compare', 'manuscript_import', 'recording_coverage']) {
+    for (const kind of [
+      'story_bible',
+      'tts_install',
+      'whisper_install',
+      'spacy_install',
+      'transcript_compare',
+      'manuscript_import',
+      'recording_coverage',
+      'take_review',
+      'take_comparison',
+      'measurement',
+    ]) {
       expect(shouldNotifyForJobEnd(ended({ kind, durationMs: 10_000 }), false), kind).toBe(true);
     }
   });

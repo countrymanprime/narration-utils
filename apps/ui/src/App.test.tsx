@@ -466,6 +466,20 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     await screen.findByRole('heading', { name: 'Review' });
   });
 
+  it('opens Delivery from the navigation without a manuscript, and its Change limits opens Settings at Delivery', async () => {
+    const source = createMockApi();
+    renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    const deliveryButtons = screen.getAllByRole('button', { name: 'Delivery' });
+    expect(deliveryButtons.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true);
+    fireEvent.click(deliveryButtons[0]);
+    await screen.findByRole('heading', { name: 'Delivery', level: 1 });
+    expect(window.location.pathname).toBe('/delivery');
+    fireEvent.click(await screen.findByRole('button', { name: 'Change limits' }));
+    await waitFor(() => expect(window.location.pathname).toBe('/settings'));
+    expect(await screen.findByText(/These are your own limits: no distributor/)).toBeTruthy();
+  });
+
   it('redirects a direct manuscript-dependent URL to Home when no manuscript exists', async () => {
     window.history.replaceState(null, '', '/proofing');
     const source = createMockApi();

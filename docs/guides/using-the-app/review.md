@@ -189,4 +189,4 @@ again replaces it, and keeps your decision only if the measurements did not chan
 
 ---
 
-[← Tracks](tracks.md) · [Index](README.md) · [Settings →](settings.md)
+[← Tracks](tracks.md) · [Index](README.md) · [Delivery →](delivery.md)

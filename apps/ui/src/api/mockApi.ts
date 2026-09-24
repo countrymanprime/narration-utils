@@ -95,7 +95,7 @@ import type { MockResumeSeed } from './resumeMockSeed';
 import { createFindingsMock, type MockReaper } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
 import { createTakeComparisonMock } from './takeComparisonMock';
-import { createMeasureMock } from './measureMock';
+import { createMeasureMock, type MockMeasureSeed } from './measureMock';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
 import { MOCK_DICTIONARY, MOCK_DICTIONARY_DISK_SIZE, MOCK_DICTIONARY_DOWNLOAD_SIZE, mockDictionaryLookup } from './dictionaryMock';
@@ -449,8 +449,10 @@ export function createMockApi(
     takeReviewScanHold?: boolean;
     /** Holds a started take comparison part way through, so its real progress can be looked at (take review Phase 10). */
     takeComparisonHold?: boolean;
-    /** Holds a started measurement part way through, so its real progress can be looked at (diagnostics PRD Phase 1). */
-    measureHold?: boolean;
+    /** Holds a started measurement part way through, so its real progress can be looked at, or breaks it (diagnostics PRD Phases 1 and 5). */
+    measure?: MockMeasureSeed;
+    /** The project's Delivery limits, by key (`true_peak_dbtp_max: '-3'`), set as if saved in Settings (diagnostics PRD Phase 5). */
+    deliveryLimits?: Record<string, string>;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -647,6 +649,12 @@ export function createMockApi(
       ]),
     ),
   };
+  const deliveryLimits = initial.deliveryLimits ?? {};
+  settings.project.Delivery = settings.project.Delivery.map((field) =>
+    field.key in deliveryLimits
+      ? { ...field, value: deliveryLimits[field.key], isSet: true, effectiveValue: deliveryLimits[field.key], effectiveSource: 'project' }
+      : field,
+  );
   const subscribers = new Set<(state: TranscriptState) => void>();
   let nextId = 1;
   let lineIdentity: LineIdentityState = wireClone(
@@ -981,7 +989,7 @@ export function createMockApi(
   });
   const takeReviewScan = createTakeReviewScanMock(saveAnalyzerFindings, endJob, initial.takeReviewScanHold);
   const takeComparison = createTakeComparisonMock({ get: findings.findingsGet, save: saveFinding }, endJob, initial.takeComparisonHold);
-  const measurement = createMeasureMock(endJob, initial.measureHold);
+  const measurement = createMeasureMock(endJob, initial.measure);
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));
   };
