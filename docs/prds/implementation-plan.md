@@ -168,12 +168,14 @@ These cover the 16 PRDs drafted on 2026-09-24 from the owner's review of the app
 
 | Input | When |
 | --- | --- |
-| Whether an orchestrating session may merge green, conflict-free PRs into `main` in dependency order, instead of D20's owner-merges rule | Before S27 starts. Until then D20 holds and later stacks stack on unmerged branches. |
+| ~~Whether an orchestrating session may merge green, conflict-free PRs into `main` in dependency order, instead of D20's owner-merges rule~~ | Answered 2026-09-24: yes, see D40 in section 8. |
 | Launch the Wails v3 build once on Windows | After S26 merges, before S27 onward. |
 | Approve one test recording on a copy of a project | During S37. |
 | Real REAPER track names from a current project (auto-sync S5) | Before auto-sync Phase 1's rules are extended; the matcher's current rules stand until then. |
 
 ## 7. The 2026-09-24 train
+
+> Superseded for scheduling by [section 8](#8-the-lane-train-2026-09-24): the stack scopes below are kept for reference, but section 8's lanes and queues decide who builds what and in which order.
 
 Runs after the weekly usage reset, from a fresh orchestrating session (a long session re-reads its history on every check-in). At most four streams at once; each stream is one to three phases. Model per stream: Opus for host logic, wire contracts, the Wails migration and REAPER commands; Sonnet for UI; Haiku for PRD and doc bookkeeping. ADR numbers and `hostAPIVersion` bumps are reserved per stream before launch.
 
@@ -213,3 +215,65 @@ Later, not in this train: the edit and proof workspace's Phase 10 (merging Telep
 | S35 | queued | |
 | S36 | queued | |
 | S37 | queued | |
+
+## 8. The lane train (2026-09-24)
+
+On 2026-09-24 the owner asked for every remaining PRD phase to be planned and run around the clock by parallel sessions that don't collide, with stacked pull requests and paced credit use. This section replaces section 7's scheduling. It adds the older PRDs' remaining phases and fixes section 7's gaps: seven pending phases were in no stream (auto-sync P0, nav P0, the remainders of control-bar P3, title P1 and overflow P1, workspace P0 and P7, delivery P0); two dependencies ran backwards (summary P3 before P1, auto-sync P6's host side before P4); host bindings sat in UI streams; and title P3 was split across two streams. Live state (lane status, queue, holds, the budget, reserved numbers) is on the [Train control issue #509](https://github.com/countrymanprime/narration-utils/issues/509), not in this file, so state updates never cause merge conflicts. Steps only the owner can take are on the [Owner queue issue #510](https://github.com/countrymanprime/narration-utils/issues/510).
+
+### Owner decisions (2026-09-24, second set)
+
+| # | Decision | Effect |
+| --- | --- | --- |
+| D40 | **The coordinator merges.** It squash-merges the bottom PR of a stack only when: the head contains the current `main` tip; the D43 gate is green on that head; there is no CHANGES_REQUESTED review and no open red-circle thread; the PR is not a draft; and Claude Approvals passes where the repo runs it. It then deletes the branch, so GitHub retargets the child PR to `main`. | Supersedes D20. Never merge on a red gate; never rewrite another stream's history. |
+| D41 | **Three worker lanes plus one coordinator**, never more. | See the lanes below. |
+| D42 | **The Wails gate is soft.** While S26 is open, the other lanes do only work that adds no binding and touches no Wails-generated or `.github/` file. Binding work waits for S26 to merge and for the owner to launch the v3 build. | Keeps wave 0 at three lanes. |
+| D43 | **A light merge gate.** Only `Build (Windows)` and `ui-dist` block a merge. The `quality` jobs (`js`, `go`, `lua`, `python`, `repo-scripts`, `docs-site`, `ui-visual`, `ui-atlas`, `ui-atlas-kit`) are advisory. Each PR records the targeted local checks for what it changed: Go tests of changed packages, the Lua harness, Vitest of changed UI, pytest of changed sidecars, lint and typecheck of the touched projects. A lane's next stream first fixes any quality job the lane left red. At each wave boundary the non-visual quality jobs are brought back to green, and the final sweep restores the full gate. | A deliberate deviation from CLAUDE.md's "full `pnpm check`" for the length of the train. |
+| D44 | **The full visual suite and the atlas run once, at the end.** A UI PR captures only the states of the pages it changed and looks at each viewport. It captures more only on a conflict with another UI change, or when its area depends on regenerated screenshots (nav and header). `docs/images/ui` and `docs/ui` are regenerated only by the nav and header PRs and by the final sweep. | Workers never regenerate doc screenshots otherwise. |
+| D45 | **Hold on credits instead of pacing by a fixed number.** The weekly limit resets at 22:00 America/New_York. When too little usage is left for the next stream, or a session fails on a usage limit, the coordinator ticks HOLD-UNTIL-RESET on #509: running workers finish, nothing new starts, and the first run after the reset clears it. If remaining usage can't be read, a weekly stream budget on #509 (25 to start) is the fallback. | The owner's manual stop is the HOLD box on #509. |
+| D46 | **Built UI matches the PRD's mockups.** A stream whose phase has mockups listed in its PRD's Visual Spec (`docs/prds/mockups/<prd>/`, plus `home-combined/` and `manuscript-combined/`) opens each one before coding, builds to match layout, order, wording, states and tooltips, drives the visual suite to the mockup's state at its viewport, and compares the two. Its PR carries a **Mockup check** table: mockup → capture → "matches" or "differs: why". Close-out PRs recheck the "after" mockups before deleting a PRD, and the final sweep rechecks every mockup still in the tree. | A UI PR with mockups and no table does not merge. |
+
+### How it runs
+
+- **Coordinator:** an hourly Routine that starts a fresh Sonnet session each time. Each run reads #509; lists the open PRs, their gate and their reviews; applies D45; merges the PRs that qualify one at a time, then merges `main` into the remaining bottom PRs; fixes mechanical conflicts itself (`hostAPIVersion`, ADR index, PRD status cells, regenerated `Host.*`) and starts an Opus fixer for anything harder; starts the next stream in each free lane; rewrites #509. It posts nothing when nothing changed, plus one summary comment a day.
+- **Workers:** one cloud session per stream of 1–3 phases, with one PR per phase. Each PR after the first is based on the previous one; the first is based on `main`. A worker opens its PRs, subscribes to them, drives the D43 gate green, then ends its session. It never merges. After 3 failed rounds on one PR, it marks the PR draft, writes the failure output into it, notes it on #509, and ends.
+- **Prompts stand alone,** because a running session can't be sent messages. Each prompt names the stream, the lane's files, the PRD phases, the exact mockup files for each phase, the lane's ADR block, and these rules.
+- **Nothing stacks across lanes.** A stream that needs another lane's work starts only once that work has merged.
+- **Model per lane:** Opus for lanes A and B, S26 and fixers; Sonnet for lane C and the coordinator; Haiku for bookkeeping-only close-outs.
+
+| Lane | Owns | Never touches |
+| --- | --- | --- |
+| **A: host core** | Root `apps/desktop/*.go` (bindings, `app.go`), `internal/{evidence,chaptersync,manuscript,project,coverage,teleprompter,stages,proofing,editing,preview,runlog,guide,findings}`, the schemas, goldens and mocks of its own contracts | UI components, Lua |
+| **B: REAPER bridge, audio, sidecars** | `integrations/reaper/**`, `internal/{bridge,daw,measure,tracks,takecompare,importer,transcript}`, `sidecars/**`, `libs/python/**`, `scripts/release/reaper-files.mjs`, the bridge rows of the threat model and `SECURITY.md` | UI components |
+| **C: UI** | `apps/ui/src/components/**`, `hooks/**`, `App.tsx`, `tests/visual/**`, `docs/guides/using-the-app/**` | Go, Lua, `api/schemas` (it builds on lane A's mocks) |
+
+Shared serialization points:
+- **`hostAPIVersion`:** a PR that adds a binding bumps it to the value on `main` + 1. On a collision, whoever merges `main` in second takes the higher value + 1 and regenerates `Host.*`.
+- **ADR blocks:** A 0200–0229, B 0230–0259, C 0260–0289, coordinator and tooling 0290–0299.
+- **Append-only rows:** `fieldSchemas`, `config/defaults.json` and `Settings.tsx` rows are only ever added.
+- **One at a time, train-wide:** a PR that touches the `AppShell.tsx` nav or header, and any `.github/workflows` PR.
+
+### Queues
+
+⛔ = starts only after the named stream has merged. Scopes are PRD phases; each PRD's phase detail still governs.
+
+| Wave | Lane A (host) | Lane B (bridge, audio, sidecars) | Lane C (UI) |
+| --- | --- | --- | --- |
+| 0 | **A1** S26 Wails v3 migration: short PRD and ADR, lifecycle, window and menu, regenerated bindings and events, zoom input kept, build, installer and release workflows, threat model; reconcile the nav PRD with D29 | **B1** S28 bridge commands behind the D38 switch: first the API research and verification-pass docs, then `chapter_track_state` (also TMI-11's command half), the heartbeat edit counter, `arm_only`, `record_start`/`record_stop`, `set_active_take`, `list_fx_chains`/`apply_fx_chain`, one `create_regions` shared by RF-7 and credits P4; no bindings. Then **B2**: MC-3, delivery P5 and P6, the DX-9 analyzer core (owns the `silence_cleanup` classifier), the title P4 helper, importer #387 and #388, import-structure P4 Markdown TOC | **C1** without host changes: title P1 and P2 remainders, overflow P2, credits-setup P1 remainder, summary P1, track-link P2, vocabulary-hints P2 close-out, parity P3 close-out (already built), control-bar P3 check, public-demo P2 |
+| 1 (⛔ A1 and the owner's launch) | **A2** auto-sync P2, summary P2, resume P2. **A3** host bindings for lane C: resume P3, track-link P3, credits-setup P2, auto-sync P3 | **B3** EP-0 desk work, EP-1, peaks, the trim-aware player fix, MC-4. **B4** (⛔ A3) control-bar P4, P5 and P6, the rest of TMI-11 | **C2** nav P1, P2 and P3 on `Window.SetZoom` (runs alone) |
+| 2 | **A4** (⛔ B1) auto-sync P4, P6 host, P7, P8 | **B5** RF-7 with credits P4, RF-13, EL-8, PW-5, TMI-12, RF-22 | **C3** (⛔ A3) Home: toast action, auto-sync P3 UI, track-link P3 UI, summary P3 and P4, stage line P2. **C4** (⛔ A3) credits-setup P2 and P3, parity P2, all of title P3. **C5** (⛔ B4) control-bar P4–P7 UI, resume P3 UI |
+| 3 | **A5** credits P3, credits-setup P4, resume P4 and P5 host | **B6** DX-10, DX-11, the DX-8 remainder | **C6a** EP-2, EP-4, EP-5 UI; **C6b** EP-3, EP-6, EP-7; **C6c** EP-8, EP-9 (⛔ B3). **C7** delivery P7, DX-9 UI, auto-sync P6 UI |
+| 4 | **A6** SR-6, PS-1/2/4/5, ER-2/3/5/6, SR-7, preview host phases. **A7** tool-run-logging P1–P4 and P7. **A8** CC-2, CC-3, CC-5 | **B7** tool-run-logging P5 and P6, CC-4 | **C8** SR-8, SR-9 (agent half), ER-7, PS-6/7, preview P3 and the close-outs. **C9** CC-6, CC-7. **C10** TMI-13 last and alone |
+
+- **Filler,** in any idle lane, never alongside S26 or another `.github` PR: CI-speed P4, P6 and P7, and TS7 P2.
+- **Wave checkpoints (D43):** the non-visual quality jobs go green on `main` before the next wave starts.
+- **Final sweep (D43, D44, D46):** the full `pnpm check`, visual suite, atlas and aria snapshots, a mockup pass, doc screenshots regenerated once, and the whole `quality` workflow green.
+- **Not scheduled:**
+  - native-recording-suite: long-term.
+  - EP-10: D30.
+  - TS7 P3: waits on upstream.
+  - release-readiness P15 and P16: D7, owner-run.
+  - auto-sync P5 and nav P4: out under D39.
+  - Audacity phases 4 and 6–9: after the owner's S-A1/S-A2 spikes.
+  - SB-10 and SB-11: after SB-9.
+
+  These join a lane once their gate clears.
