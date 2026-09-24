@@ -282,7 +282,7 @@ def test_transcript_errors_counts_a_dropped_word(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# the model cascade (docs/prds/recording-check-model-cascade.prd.md, Phase 1)
+# the model cascade (the calibration note's "Model cascade (Phase 1)")
 
 
 def _played(*ranges):

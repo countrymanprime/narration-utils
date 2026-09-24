@@ -25,7 +25,7 @@ It adds four things the Phase 1 harness and the Phase 2 spike do not have:
   `NARRATION_COVERAGE_CORPUS` layout, outside the repository, and `audio_report` runs the real
   sidecar with a Whisper model over it and times it.
 
-The model cascade's Phase 1 (`docs/prds/recording-check-model-cascade.prd.md`) adds two more:
+Phase 1 of the model cascade PRD (the note's "Model cascade (Phase 1)" section) adds two more:
 
 - `cascade` simulates the two-pass check: a fast model over the whole chapter, windows planned from
   the regions that fail it (`plan_windows`, the PRD's MC3 constants), a stronger model over those
@@ -705,7 +705,7 @@ def audio_report(corpus: Path, whispers: Sequence[Whisper], settings: Settings, 
 
 
 # ---------------------------------------------------------------------------
-# the model cascade (docs/prds/recording-check-model-cascade.prd.md, Phase 1)
+# the model cascade (the calibration note's "Model cascade (Phase 1)")
 
 WINDOW_MIN_SECONDS = 25.0
 """MC3: Whisper costs a 30-second block however little of it is audio, so a window shorter than
