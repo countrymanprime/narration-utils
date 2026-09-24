@@ -91,7 +91,8 @@ func chapterCandidates(track tracks.Track, chapters []Chapter, project tracks.Pr
 		}
 	}
 	if strings.TrimSpace(track.Name) != "" {
-		if match := MatchTitle(titles, track.Name); match.Index >= 0 {
+		// A pickup track is never a candidate for its chapter's link (as in ForChapter).
+		if match := MatchTitle(titles, track.Name); match.Index >= 0 && match.Marker != MarkerPickup {
 			add(match.Index, ChapterCandidate{ChapterID: chapters[match.Index].ID, ChapterTitle: chapters[match.Index].Title, Score: match.Score, Source: SourceTrackName, confident: match.Confident})
 		}
 	}
@@ -102,7 +103,7 @@ func chapterCandidates(track tracks.Track, chapters []Chapter, project tracks.Pr
 		if _, audible := track.RecordedEnd(&tracks.Span{Start: region.Start, End: region.End}); !audible {
 			continue
 		}
-		if match := MatchTitle(titles, region.Name); match.Index >= 0 {
+		if match := MatchTitle(titles, region.Name); match.Index >= 0 && match.Marker != MarkerPickup {
 			ref := RegionRef{Name: region.Name, Start: region.Start, End: region.End}
 			add(match.Index, ChapterCandidate{ChapterID: chapters[match.Index].ID, ChapterTitle: chapters[match.Index].Title, Score: match.Score, Source: SourceRegionName, Region: &ref, confident: match.Confident})
 		}

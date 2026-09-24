@@ -1,5 +1,8 @@
 export type ChapterStatus = 'not_started' | 'recording' | 'editing' | 'proofing' | 'finalized';
 export type ManuscriptContentKind = 'narration' | 'opening' | 'reference';
+/** Why a chapter has no recorded length (actual-recorded-column PRD AR3): no linked track, several, the linked track is
+ * not in the saved project, or no saved project could be read. */
+export type RecordedUnavailable = 'unlinked' | 'multiple_tracks' | 'track_missing' | 'no_project';
 export type ManuscriptChapter = {
   id: string;
   title: string;
@@ -7,6 +10,11 @@ export type ManuscriptChapter = {
   index: number;
   wordCount: number;
   recordedFraction?: number;
+  /** The chapter's one confirmed track's recorded audio in the saved project, in seconds: the union of its unmuted items
+   * on playing lanes (AR2 A). Only on the chapter list, and never an estimate. */
+  recordedSeconds?: number;
+  /** Set instead of `recordedSeconds` when the chapter has none, saying why. */
+  recordedUnavailable?: RecordedUnavailable;
   status: ChapterStatus;
   /** Omitted by manuscripts imported before structural classification. */
   contentKind?: ManuscriptContentKind;

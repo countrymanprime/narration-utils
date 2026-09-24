@@ -47,6 +47,7 @@ import re
 import sys
 import time
 import traceback
+import unicodedata
 from pathlib import Path
 
 import numpy as np
@@ -61,7 +62,9 @@ from narration_common.logging_utils import log, set_log_file
 from narration_common.progress import write_progress
 from narration_common.spoken_forms import (
     FILLER_WORDS,
-    NUMBER_WORDS,  # noqa: F401 - re-exported: the property tests read compare.NUMBER_WORDS
+    NUMBER_WORDS,  # also re-exported: the property tests read compare.NUMBER_WORDS
+    QUOTE_NORMALIZE_TABLE,
+    TOKEN_RE,
     canonical_tokens,
     merge_number_words,
 )
@@ -825,6 +828,177 @@ def normalized_tokens(s):
     return tokens
 
 
+# --- Chapter label pre-pass (docs/prds/daw-chapter-track-auto-sync.prd.md Phase 1, S5, S9) ---
+# The same pass as apps/desktop/internal/chaptermatch/label.go's LabelTokens: a track named "Ch. 6", "Ch6", "06",
+# "Sixth Chapter", "Chapter VI" or "Chapter 6 v2" reads as the chapter label it is before find_chapter_by_track_name
+# compares it, headings alike. tests/fixtures/chapter-track-match/parity-cases.json's labelTokens cases pin the two.
+
+MARKER_NONE, MARKER_TAKE, MARKER_PICKUP, MARKER_CREDITS = "", "take", "pickup", "credits"
+_LABEL_ALIASES = frozenset({"ch", "chap", "chapt", "chpt"})
+_LABELS = frozenset({"chapter", "part", "book"})
+_ORDINAL_WORDS = {
+    "first": "one", "second": "two", "third": "three", "fourth": "four", "fifth": "five", "sixth": "six",
+    "seventh": "seven", "eighth": "eight", "ninth": "nine", "tenth": "ten", "eleventh": "eleven",
+    "twelfth": "twelve", "thirteenth": "thirteen", "fourteenth": "fourteen", "fifteenth": "fifteen",
+    "sixteenth": "sixteen", "seventeenth": "seventeen", "eighteenth": "eighteen", "nineteenth": "nineteen",
+    "twentieth": "twenty", "thirtieth": "thirty", "fortieth": "forty", "fiftieth": "fifty",
+    "sixtieth": "sixty", "seventieth": "seventy", "eightieth": "eighty", "ninetieth": "ninety",
+    "hundredth": "hundred",
+}  # fmt: skip
+_MATTER_SYNONYMS = {"intro": "introduction", "forward": "foreword", "acknowledgements": "acknowledgments"}
+_MATTER_WORDS = frozenset({"prologue", "epilogue", "introduction", "foreword", "preface", "afterword", "acknowledgments"})
+_TAKE_WORDS = frozenset({"take", "v", "version", "comp", "final", "edit", "alt"})
+_PICKUP_WORDS = frozenset({"pickup", "pickups", "pu", "pus"})
+_CREDITS_LEAD = {"opening": "opening", "intro": "opening", "introduction": "opening", "closing": "closing", "end": "closing", "ending": "closing"}
+_ROMAN_RE = re.compile(r"^[ivxlc]+$")
+_ORDINAL_DIGITS_RE = re.compile(r"^(\d+)(st|nd|rd|th)$")
+_LETTER_THEN_DIGITS_RE = re.compile(r"([A-Za-z])(\d)")
+_ROMAN_NUMERALS = ((100, "c"), (90, "xc"), (50, "l"), (40, "xl"), (10, "x"), (9, "ix"), (5, "v"), (4, "iv"), (1, "i"))
+
+
+def _is_digits(token):
+    return token.isascii() and token.isdigit()
+
+
+def _is_ordinal(token):
+    return token in _ORDINAL_WORDS or bool(_ORDINAL_DIGITS_RE.match(token))
+
+
+def _is_numberish(token):
+    return _is_digits(token) or token in NUMBER_WORDS or _is_ordinal(token) or bool(_ROMAN_RE.match(token))
+
+
+def _ordinal_ahead(tokens, i):
+    """Whether the run of number words starting at i ends in an ordinal ("twenty first")."""
+    for token in tokens[i:]:
+        if _is_ordinal(token):
+            return True
+        if token not in NUMBER_WORDS:
+            return False
+    return False
+
+
+def _ordinal_run(run):
+    out = []
+    for token in run:
+        if token in _ORDINAL_WORDS:
+            out.append(_ORDINAL_WORDS[token])
+        elif _ORDINAL_DIGITS_RE.match(token):
+            out.append(_ORDINAL_DIGITS_RE.match(token).group(1))
+        else:
+            out.append(token)
+    return out
+
+
+def _to_roman(value):
+    out = []
+    for number, text in _ROMAN_NUMERALS:
+        while value >= number:
+            out.append(text)
+            value -= number
+    return "".join(out)
+
+
+def _roman_value(token):
+    values = {"i": 1, "v": 5, "x": 10, "l": 50, "c": 100}
+    total = 0
+    for index, char in enumerate(token):
+        value = values[char]
+        if index + 1 < len(token) and value < values[token[index + 1]]:
+            total -= value
+        else:
+            total += value
+    if total < 1 or total > 100 or _to_roman(total) != token:
+        return None
+    return total
+
+
+def _label_rules(tokens):
+    out = []
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        following = tokens[i + 1] if i + 1 < len(tokens) else ""
+        if token in _LABEL_ALIASES and _is_numberish(following):
+            out.append("chapter")
+        elif i == 0 and token in _MATTER_SYNONYMS:
+            out.append(_MATTER_SYNONYMS[token])
+        elif _is_ordinal(token) or (token in NUMBER_WORDS and _ordinal_ahead(tokens, i)):
+            # An ordinal run before a label moves after it: "Sixth Chapter", "Twenty First Chapter".
+            j = i
+            while j < len(tokens) and (_is_ordinal(tokens[j]) or tokens[j] in NUMBER_WORDS):
+                j += 1
+            words = _ordinal_run(tokens[i:j])
+            if j < len(tokens) and tokens[j] in _LABELS:
+                out.append(tokens[j])
+                out.extend(words)
+                i = j + 1
+                continue
+            out.extend(words)
+            i = j
+            continue
+        elif token == "the" and out and out[-1] in _LABELS and _is_ordinal(following):
+            pass  # "Chapter the Sixth": the article between a label and its ordinal goes.
+        elif out and out[-1] in _LABELS and _ROMAN_RE.match(token):
+            value = _roman_value(token)
+            out.append(token if value is None else str(value))
+        else:
+            out.append(token)
+        i += 1
+    return out
+
+
+def _trim_leading_zeros(token):
+    if not _is_digits(token):
+        return token
+    return token.lstrip("0") or "0"
+
+
+def _strip_markers(tokens):
+    marker = MARKER_NONE
+    end = len(tokens)
+    while end > 1:
+        last = tokens[end - 1]
+        if last in _PICKUP_WORDS:
+            cut, kind = 1, MARKER_PICKUP
+        elif last in _TAKE_WORDS:
+            cut, kind = 1, MARKER_TAKE
+        elif _is_digits(last) and end > 2 and tokens[end - 2] in _TAKE_WORDS:
+            cut, kind = 2, MARKER_TAKE
+        else:
+            break
+        if end - cut < 1:
+            break
+        end -= cut
+        if marker != MARKER_PICKUP:
+            marker = kind
+    if end == len(tokens) or not (_is_digits(tokens[end - 1]) or tokens[end - 1] in _MATTER_WORDS):
+        return tokens, MARKER_NONE
+    return tokens[:end], marker
+
+
+def label_tokens(s):
+    """normalized_tokens with the chapter label pre-pass, and the marker it took off the end (Go's LabelTokens). Accents
+    fold, letters split from the digits after them ("Ch6", "v2"); "ch"/"chap"/"chapt"/"chpt" before a number read as
+    "chapter", a Roman numeral after chapter/part/book reads as its number, an ordinal reads as a number and moves after
+    the label it precedes ("Sixth Chapter"), leading zeros go ("06"), a track number before the label goes ("06 -
+    Chapter 6"), front-matter spellings fold ("Intro"), trailing take or pickup markers after a number or a front/back
+    matter heading are removed and reported, and a credits name ("End Credits") is reported as credits."""
+    folded = "".join(char for char in unicodedata.normalize("NFD", s) if unicodedata.category(char) != "Mn")
+    folded = unicodedata.normalize("NFC", folded)
+    folded = _LETTER_THEN_DIGITS_RE.sub(r"\1 \2", folded)
+    tokens = [token.lower() for token in TOKEN_RE.findall(folded.translate(QUOTE_NORMALIZE_TABLE))]
+    if len(tokens) == 2 and tokens[1] == "credits" and tokens[0] in _CREDITS_LEAD:
+        return [_CREDITS_LEAD[tokens[0]], "credits"], MARKER_CREDITS
+    tokens = _label_rules(tokens)
+    tokens = [_CUSTOM_CANON.get(token, token) for token in canonical_tokens(" ".join(tokens))]
+    tokens, _ = merge_number_words(tokens, list(range(len(tokens))))
+    tokens = [_trim_leading_zeros(token) for token in tokens]
+    if len(tokens) > 2 and _is_digits(tokens[0]) and tokens[1] in _LABELS:
+        tokens = tokens[1:]
+    return _strip_markers(tokens)
+
+
 def _contains_token_run(haystack, needle):
     n = len(needle)
     if n == 0 or n > len(haystack):
@@ -833,11 +1007,24 @@ def _contains_token_run(haystack, needle):
 
 
 def find_chapter_by_track_name(chapters, track_name):
+    """Both sides go through label_tokens, so "Ch. 6", "Chapter VI" and "Sixth Chapter" meet "Chapter 6" exactly. A
+    take or pickup track ("Chapter 6 v2", "Chapter 6 (pickups)") scores 0.9 at best, so it stays behind the chapter's
+    own track; a credits name ("End Credits") matches no chapter."""
     candidate_titles = [display_title(c["title"]) for c in chapters]
-    target_tokens = normalized_tokens(track_name)
+    target_tokens, marker = label_tokens(track_name)
+    if marker == MARKER_CREDITS:
+        log(f"Track '{track_name}' is a credits track, not a chapter. Asking for an explicit chapter selection.")
+        return None, 0.0, candidate_titles
+    chapter, score, candidates = _find_chapter_by_label(chapters, track_name, target_tokens, candidate_titles)
+    if chapter is not None and marker in (MARKER_TAKE, MARKER_PICKUP):
+        score = min(score, 0.9)
+    return chapter, score, candidates
+
+
+def _find_chapter_by_label(chapters, track_name, target_tokens, candidate_titles):
     titles = "\n".join(f"  - {t}" for t in candidate_titles)
 
-    chapter_tokens_list = [(c, normalized_tokens(c["title"])) for c in chapters]
+    chapter_tokens_list = [(c, label_tokens(c["title"])[0]) for c in chapters]
 
     # 1. exact match
     for chapter, toks in chapter_tokens_list:

@@ -26,6 +26,11 @@ def test_normalized_tokens_match_the_shared_cases(case):
     assert compare.normalized_tokens(case["input"]) == case["tokens"]
 
 
+@pytest.mark.parametrize("case", PARITY["labelTokens"], ids=lambda case: repr(case["input"]))
+def test_label_tokens_match_the_shared_cases(case):
+    assert compare.label_tokens(case["input"]) == (case["tokens"], case["marker"])
+
+
 @pytest.mark.parametrize("case", PARITY["matches"], ids=lambda case: case["name"])
 def test_find_chapter_by_track_name_matches_the_shared_cases(case):
     chapters = [{"title": title, "position": index} for index, title in enumerate(case["chapters"])]

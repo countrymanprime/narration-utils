@@ -102,6 +102,18 @@ func TestContractImportJobsAndReaderPayloads(t *testing.T) {
 		t.Fatal(err)
 	}
 	pin(t, "manuscript-chapters-measured", measured)
+
+	// A chapter with a linked track carries recordedSeconds, one without carries why not (actual-recorded-column PRD
+	// Phase 2); a chapter the provider leaves out carries neither.
+	service.SetRecordedFractions(nil)
+	service.SetRecordedLengths(func() map[string]RecordedLength {
+		return map[string]RecordedLength{first: {Seconds: 2520.5}, text(chapters[1], "id"): {Unavailable: RecordedUnlinked}}
+	})
+	recorded, err := service.Chapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pin(t, "manuscript-chapters-recorded", recorded)
 }
 
 // A job's elapsed time is the only value that varies between runs.

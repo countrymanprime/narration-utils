@@ -66,6 +66,47 @@ describe('ChapterLinksTable', () => {
     await waitFor(() => expect(within(firstRow).getByText('Not linked')).toBeTruthy());
   });
 
+  it('Change to another track leaves one link, not two', async () => {
+    const user = userEvent.setup();
+    const api = renderTable();
+    const table = await screen.findByRole('table', { name: 'Chapter links' });
+    const firstRow = chapterRow(table, WIRE_CHAPTERS[0].title);
+    await user.selectOptions(within(firstRow).getByRole('combobox'), WIRE_TRACKS_PROJECT.tracks[0].guid);
+    await user.click(within(firstRow).getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(within(firstRow).getByText('Linked')).toBeTruthy());
+
+    await user.click(within(firstRow).getByRole('button', { name: 'Change' }));
+    await user.selectOptions(within(firstRow).getByRole('combobox'), WIRE_TRACKS_PROJECT.tracks[1].guid);
+    await user.click(within(firstRow).getByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() => expect(within(firstRow).getAllByText(WIRE_TRACKS_PROJECT.tracks[1].name).length).toBeGreaterThan(0));
+    const { mappings } = await api.chapterTrackMapList();
+    expect(mappings.filter((mapping) => mapping.chapterId === WIRE_CHAPTERS[0].id).map((mapping) => mapping.trackGuid)).toEqual([
+      WIRE_TRACKS_PROJECT.tracks[1].guid,
+    ]);
+  });
+
+  it('Clear removes every link a chapter holds, including a double link left by an older Change', async () => {
+    const user = userEvent.setup();
+    const api = createMockApi();
+    await api.chapterTrackMapConfirm(WIRE_TRACKS_PROJECT.tracks[0].guid, WIRE_CHAPTERS[0].id);
+    await api.chapterTrackMapConfirm(WIRE_TRACKS_PROJECT.tracks[1].guid, WIRE_CHAPTERS[0].id);
+    render(
+      <ApiProvider api={api}>
+        <ChapterLinksTable tracks={WIRE_TRACKS_PROJECT.tracks} />
+      </ApiProvider>,
+    );
+    const table = await screen.findByRole('table', { name: 'Chapter links' });
+    const firstRow = chapterRow(table, WIRE_CHAPTERS[0].title);
+    await waitFor(() => expect(within(firstRow).getByText('Linked')).toBeTruthy());
+
+    await user.click(within(firstRow).getByRole('button', { name: 'Clear' }));
+
+    await waitFor(() => expect(within(firstRow).getByText('Not linked')).toBeTruthy());
+    const { mappings } = await api.chapterTrackMapList();
+    expect(mappings.filter((mapping) => mapping.chapterId === WIRE_CHAPTERS[0].id)).toHaveLength(0);
+  });
+
   it('shows a link to a track that no longer exists as Track missing', async () => {
     const api = createMockApi();
     await api.chapterTrackMapConfirm('{NOT-A-REAL-TRACK-GUID}', WIRE_CHAPTERS[0].id);
