@@ -22,11 +22,24 @@ chapter with its word count, estimated and actual recorded length, and status.
 
 ![Home, per-chapter breakdown expanded](../../images/ui/home-chapter-table-expanded.webp)
 
-Under each actual recorded length a small label says where the number comes from. **measured**
-means a recording check of the saved REAPER project found that share of the chapter's words in
-the audio. **estimated from status** means the chapter has no current check, so the length is
-guessed from its status (half for Recording, all of it from Editing on). A check that is out of
-date no longer counts as measured.
+**Actual recorded** shows how much audio a chapter's linked REAPER track holds, as of the last
+save: the union of its unmuted items, overlaps counted once. A chapter with no confirmed link, a
+link to more than one track, a linked track no longer in the saved project, or no project at all
+shows a dash instead, with the reason in a tooltip and its accessible name. It never guesses from
+the chapter's status or from a recording check's word share, so changing the status leaves the
+column unchanged. The headline **Actual recorded** stat above the table sums the real times of
+linked chapters only, and its tooltip says how many of the book's chapters that covers.
+
+The table's first row is **Opening credits** and its last row is **Closing credits**: not
+chapters, but the same first opening and first closing template the Credits stat and the
+Manuscript page use, each with its own status, word count and estimated length (including room
+tone). The row's title links to the matching entry on the Manuscript page. A template with an
+unresolved token (`[Author]` never filled in) shows a warning next to its name without blocking
+anything; a missing template reads "Not set up" with a link to [Settings, Credits](settings.md#credits).
+Their **Check** is disabled for now (a recording check reads manuscript chapters only), and their
+**Actual recorded** is always a dash until a later phase can measure them. The progress line adds
+"· credits N of 2" once a credits row is finalized; the header count, **Est. finished audio**, the
+progress bar and the rest of the row totals stay narration-only, as before.
 
 ### Checking a chapter's recording
 
@@ -100,11 +113,13 @@ there too.
 
 ![Home - evidence changed since you confirmed](../../images/ui/home-stage-evidence-changed.webp)
 
-The suggestions are read again when Home opens, when a recording check ends, when you change a
-status yourself, and when you press **Check now** (above the table and in the evidence view).
-Check now only reads the evidence again; it never starts a check. If the evidence changed while
-you were looking, Confirm and Dismiss refuse and say so, and the suggestions are read again. The
-status select stays as it was: you can always set a status by hand.
+The suggestions are read again when Home opens, when a recording check ends, and when you change a
+status yourself, so nothing above the table asks you to press anything. If a read fails, the
+reason appears above the table with **Try again**, which only reads the evidence again; it never
+starts a check. The evidence view keeps its own **Check now** for the same purpose. If the
+evidence changed while you were looking, Confirm and Dismiss refuse and say so, and the
+suggestions are read again. The status select stays as it was: you can always set a status by
+hand.
 
 Importing (or replacing) the manuscript opens a confirm dialog previewing the detected format,
 paragraph count, and proposed chapters before anything changes. Each section is listed with its

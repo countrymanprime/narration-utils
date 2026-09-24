@@ -2,10 +2,11 @@ import { describeApiError } from '../../api/errorMessage';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
-import type { ChapterStatus, CoverageState, ManuscriptChapter } from '../../types';
+import { faChevronDown, faChevronUp, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
+import type { ChapterStatus, CoverageState, ManuscriptChapter, RecordedUnavailable } from '../../types';
 import { estimateFinishedHours } from '../../state';
 import { useCreditsSeconds } from './useCreditsSeconds';
+import { useCreditsRows, type CreditsKind } from './useCreditsRows';
 import { useApi } from '../../api/ApiContext';
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '../primitives/Collapsible';
 import { MeterBar } from '../primitives/MeterBar';
@@ -34,7 +35,32 @@ const fmtHours = (hours: number) => {
 // hour/minute format once a template runs a minute or longer.
 const fmtCreditsSeconds = (seconds: number) => (seconds < 60 ? `${Math.round(seconds)}s` : fmtHours(seconds / 3600));
 
-const RECORDED_FRACTION: Record<ChapterStatus, number> = { not_started: 0, recording: 0.5, editing: 1, proofing: 1, finalized: 1 };
+// Actual recorded (actual-recorded-column.prd.md Phase 3, AR2): a chapter just started can have a few seconds on its
+// track, which fmtHours alone would round down to "0m" - show seconds under a minute, same convention as fmtCreditsSeconds.
+const fmtRecordedTime = (seconds: number) => (seconds < 60 ? `${Math.round(seconds)}s` : fmtHours(seconds / 3600));
+
+// Why a chapter has no Actual recorded time, named for the dash's tooltip and accessible name (AR3). The mockup's wording
+// for `track_missing` ("Linked track is not in the saved project", 02-dash-reason-tooltip.webp) is the spec; the others
+// match its noun-phrase style.
+const RECORDED_UNAVAILABLE_REASON: Record<RecordedUnavailable, string> = {
+  unlinked: 'No REAPER track linked',
+  multiple_tracks: 'Linked to more than one REAPER track',
+  track_missing: 'Linked track is not in the saved project',
+  no_project: 'No REAPER project is open',
+};
+
+// Credits rows (credits-in-chapter-table.prd.md Phase 2): Opening credits first, Closing credits last (CT6), not
+// manuscript chapters, so they are never in narrationChapters and never touch stages, coverage or manuscriptSetChapterStatus.
+const CREDITS_LABEL: Record<CreditsKind, string> = { opening: 'Opening credits', closing: 'Closing credits' };
+const CREDITS_CHECK_DISABLED_REASON = 'The recording check reads manuscript chapters; credits are not checked yet';
+
+// A single unresolved token reads as its own name (matching the mockup, 04-unresolved-token-warning.webp); several
+// fall back to the count-and-list wording CreditsEntry/CreditsPanel already use elsewhere.
+const unresolvedWarning = (unresolved: string[]): string | undefined => {
+  if (unresolved.length === 0) return undefined;
+  if (unresolved.length === 1) return `${unresolved[0]} not filled in`;
+  return `${unresolved.length} tokens not filled in: ${unresolved.join(', ')}`;
+};
 
 export type StatusTotal = { count: number; hours: number; words: number };
 
@@ -69,6 +95,8 @@ export function AudiobookEstimatePanel({
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   // Credits stat (Phases 2 and 5): undefined while loading or on failure, in which case the row is simply left out.
   const creditsSeconds = useCreditsSeconds(api, refreshKey);
+  // Credits table rows (credits-in-chapter-table.prd.md Phase 2): Opening credits first, Closing credits last.
+  const { rows: creditsRows, setStatus: setCreditsStatus } = useCreditsRows(api, refreshKey, (error) => notify(describeApiError(error), 'error'));
   // Recording coverage (docs/utilities/recording-coverage.md, ADR 0130): the live state of the one check the host runs at a time, so a row
   // shows its percent even after its dialog was sent to the background, and the chapter whose check dialog is open.
   const [coverage, setCoverage] = useState<CoverageState>({ phase: 'idle', percent: 0, message: '' });
@@ -106,6 +134,82 @@ export function AudiobookEstimatePanel({
     })();
   }, [api, notify, refreshKey, measuredRun]);
 
+  const creditsTableRow = (kind: CreditsKind) => {
+    const row = creditsRows![kind];
+    const label = CREDITS_LABEL[kind];
+    if (!row.template) {
+      return (
+        <TableRow key={`credits-${kind}`}>
+          <TableCell>
+            <div className="font-medium">{label}</div>
+            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              Not set up ·{' '}
+              <Link className="hover:underline" to="/settings#credits">
+                Add {kind === 'opening' ? 'an opening' : 'a closing'} template in Settings › Credits
+              </Link>
+            </div>
+          </TableCell>
+          <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+            —
+          </TableCell>
+          <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+            —
+          </TableCell>
+          <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+            —
+          </TableCell>
+          <TableCell />
+          <TableCell />
+        </TableRow>
+      );
+    }
+    const warning = unresolvedWarning(row.unresolved);
+    return (
+      <TableRow key={`credits-${kind}`}>
+        <TableCell>
+          <div>
+            <Link className="font-medium hover:underline" to={`/manuscript#credits-${kind}`}>
+              {label}
+            </Link>
+          </div>
+          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            <span>{row.template.name}</span>
+            {warning && (
+              <>
+                {' · '}
+                <FontAwesomeIcon icon={faTriangleExclamation} aria-hidden="true" style={{ color: 'var(--danger-text)' }} /> <span>{warning}</span>
+              </>
+            )}
+          </div>
+        </TableCell>
+        <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+          {(row.words ?? 0).toLocaleString()}
+        </TableCell>
+        <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+          {fmtCreditsSeconds(row.estimatedSeconds ?? 0)}
+        </TableCell>
+        <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+          —
+        </TableCell>
+        <TableCell>
+          <Select
+            label={`${label} status`}
+            value={row.status}
+            options={STATUS_ORDER.map((status) => ({ value: status, label: STATUS_LABELS[status] }))}
+            onChange={(value) => void setCreditsStatus(kind, value as ChapterStatus)}
+          />
+        </TableCell>
+        <TableCell align="right">
+          <TooltipTarget text={CREDITS_CHECK_DISABLED_REASON}>
+            <Button variant="ghost" className="px-3 py-1 whitespace-nowrap" disabled aria-label={`Check recording of ${label}`}>
+              Check
+            </Button>
+          </TooltipTarget>
+        </TableCell>
+      </TableRow>
+    );
+  };
+
   if (!chapters) return null;
   const narrationChapters = chapters.filter((chapter) => (chapter.contentKind ?? 'narration') === 'narration');
   if (narrationChapters.length === 0)
@@ -113,10 +217,14 @@ export function AudiobookEstimatePanel({
 
   const totalWords = narrationChapters.reduce((sum, c) => sum + c.wordCount, 0);
   const finishedHours = estimateFinishedHours(totalWords);
-  const recordedHours = narrationChapters.reduce((sum, c) => sum + estimateFinishedHours(c.wordCount) * (c.recordedFraction ?? RECORDED_FRACTION[c.status]), 0);
+  // Actual recorded (actual-recorded-column.prd.md Phase 3, AR1): summed only from chapters with a linked track's
+  // recorded seconds - never a status or word-share guess, so it drops when nothing is linked yet.
+  const recordedChapters = narrationChapters.filter((c) => c.recordedSeconds !== undefined);
+  const recordedSecondsTotal = recordedChapters.reduce((sum, c) => sum + (c.recordedSeconds ?? 0), 0);
+  const recordedTooltip = `From ${recordedChapters.length} of ${narrationChapters.length} chapters with a linked track, as of the saved REAPER project. Nothing here is estimated.`;
   const stats = [
     { label: 'Est. finished audio', value: fmtHours(finishedHours) },
-    { label: 'Actual recorded', value: fmtHours(recordedHours) },
+    { label: 'Actual recorded', value: recordedChapters.length > 0 ? fmtRecordedTime(recordedSecondsTotal) : '—', tooltip: recordedTooltip },
     { label: 'Est. record time', value: fmtHours(finishedHours * 3) },
     { label: 'Est. edit time', value: fmtHours(finishedHours * 2) },
     { label: 'Est. proof time', value: fmtHours(finishedHours * 1) },
@@ -152,8 +260,9 @@ export function AudiobookEstimatePanel({
         <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}>
           {stats.map((stat) => (
             <div key={stat.label}>
-              <div className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
+              <div className="flex items-center font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 {stat.label}
+                {stat.tooltip && <Tooltip text={stat.tooltip} label={`About ${stat.label}`} />}
               </div>
               <div className="mt-1 font-['IBM_Plex_Mono',ui-monospace,monospace] text-2xl font-semibold">{stat.value}</div>
             </div>
@@ -166,6 +275,7 @@ export function AudiobookEstimatePanel({
             </span>
             <span className="font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-muted)' }}>
               {finalizedCount} of {narrationChapters.length} chapters finalized
+              {creditsRows && ` · credits ${[creditsRows.opening, creditsRows.closing].filter((row) => row.status === 'finalized').length} of 2`}
             </span>
           </div>
           <MeterBar
@@ -197,18 +307,20 @@ export function AudiobookEstimatePanel({
                 <TableHeader>Chapter</TableHeader>
                 <TableHeader align="right">Words</TableHeader>
                 <TableHeader align="right">Est. finished length</TableHeader>
-                <TableHeader align="right">Actual recorded</TableHeader>
+                <TableHeader
+                  align="right"
+                  info="The audio on the chapter’s linked REAPER track: its unmuted items, overlaps counted once, as of the saved project. A dash means no track is linked."
+                >
+                  Actual recorded
+                </TableHeader>
                 <TableHeader>Status</TableHeader>
                 <TableHeader hiddenLabel="Recording check" />
               </TableRow>
             </TableHead>
             <TableBody>
+              {creditsRows && creditsTableRow('opening')}
               {narrationChapters.map((chapter) => {
                 const finished = estimateFinishedHours(chapter.wordCount);
-                // D11/Q12: a measured share of the chapter's words from a current recording check wins; without one, the status guess stays
-                // and says it is a guess.
-                const measured = chapter.recordedFraction !== undefined;
-                const fraction = chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status];
                 const running = coverage.phase === 'running' && coverage.chapterId === chapter.id;
                 return (
                   <TableRow key={chapter.id}>
@@ -241,10 +353,13 @@ export function AudiobookEstimatePanel({
                       {fmtHours(finished)}
                     </TableCell>
                     <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
-                      {fraction > 0 ? fmtHours(finished * fraction) : '—'}
-                      <span className="block font-['IBM_Plex_Sans',sans-serif] text-[0.7rem] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
-                        {measured ? 'measured' : 'estimated from status'}
-                      </span>
+                      {chapter.recordedSeconds !== undefined ? (
+                        fmtRecordedTime(chapter.recordedSeconds)
+                      ) : (
+                        <TooltipTarget text={RECORDED_UNAVAILABLE_REASON[chapter.recordedUnavailable ?? 'unlinked']}>
+                          <span aria-label={RECORDED_UNAVAILABLE_REASON[chapter.recordedUnavailable ?? 'unlinked']}>—</span>
+                        </TooltipTarget>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Select
@@ -257,7 +372,17 @@ export function AudiobookEstimatePanel({
                             setChapters((current) =>
                               current?.map((c) =>
                                 c.id === chapter.id
-                                  ? { ...c, ...updated, wordCount: c.wordCount, subtitle: c.subtitle, recordedFraction: c.recordedFraction }
+                                  ? {
+                                      ...c,
+                                      ...updated,
+                                      wordCount: c.wordCount,
+                                      subtitle: c.subtitle,
+                                      recordedFraction: c.recordedFraction,
+                                      // A status update doesn't re-read the linked track (actual-recorded-column.prd.md Phase 1,
+                                      // "status is inert"): keep the row's own recorded time and reason.
+                                      recordedSeconds: c.recordedSeconds,
+                                      recordedUnavailable: c.recordedUnavailable,
+                                    }
                                   : c,
                               ),
                             );
@@ -297,6 +422,7 @@ export function AudiobookEstimatePanel({
                   </TableRow>
                 );
               })}
+              {creditsRows && creditsTableRow('closing')}
             </TableBody>
           </Table>
         </CollapsiblePanel>

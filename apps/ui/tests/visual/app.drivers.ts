@@ -75,9 +75,9 @@ async function freezeClock(page: Page): Promise<void> {
   }
 }
 
-// Opens Chapter 1's read-aloud dialog (after a reload with a mock seam, when one is given) and waits for its resume card
-// to have answered (teleprompter-manuscript-integration.prd.md Phase 10): the lookup's "Finding where..." line is gone.
-async function openResumeCard(page: Page, query = ''): Promise<void> {
+// Opens Chapter 1's read-aloud dialog (after a reload with a mock seam, when one is given) and waits for its resume
+// prompt to have answered (read-aloud-resume-from-daw.prd.md Phase 1): the lookup's "Finding where..." line is gone.
+async function openResumePrompt(page: Page, query = ''): Promise<void> {
   if (query) {
     await page.goto(`/${query}`);
     await settlePage(page);
@@ -572,6 +572,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'chapter-table-expanded': async (page) => {
       await clickVisible(page, 'button', /Show per-chapter breakdown/);
     },
+    'chapter-table-credits-missing': async (page) => {
+      await page.goto('/?mockCreditsMissing=1');
+      await settlePage(page);
+      await homeLoaded(page);
+      await clickVisible(page, 'button', /Show per-chapter breakdown/);
+    },
     'hint-chips': async (page) => {
       await goToPage(page, 'Proofing');
       await clickVisible(page, 'button', /Suggest from manuscript/);
@@ -746,62 +752,49 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.locator('[data-tone="error"]').getByText('The app received data it could not read.').waitFor();
     },
     'read-aloud-setup': async (page) => {
-      await openResumeCard(page);
+      await openResumePrompt(page);
       await page.getByRole('button', { name: 'Resume from here' }).waitFor();
     },
-    'read-aloud-resume-chosen': async (page) => {
-      await openResumeCard(page);
-      await page.getByRole('button', { name: 'Resume from here' }).click();
-      await page.getByText(/Start reading picks up at word/).waitFor();
-    },
-    // Reduced motion lands the highlight on the start word at once (usePacedCursor), and the frozen clock holds the mock's
-    // replay, so the shot shows the session exactly at the resume word.
-    'read-aloud-resumed': async (page) => {
-      await page.emulateMedia({ reducedMotion: 'reduce' });
-      await openResumeCard(page);
-      await page.getByRole('button', { name: 'Resume from here' }).click();
-      const summary = await page.getByText(/Start reading picks up at word/).textContent();
-      const word = Number(/word ([\d,]+)/.exec(summary ?? '')?.[1]?.replace(/,/g, ''));
-      await page.getByRole('combobox', { name: 'Microphone' }).selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
-      await freezeClock(page);
-      await page.getByRole('button', { name: 'Start reading' }).click();
-      await page.locator(`[data-word="${word}"] [data-highlight="Cursor"]`).waitFor();
-    },
     'read-aloud-resume-low-confidence': async (page) => {
-      await openResumeCard(page, '?mockResume=low_confidence');
+      await openResumePrompt(page, '?mockResume=low_confidence');
       await page.getByText(/could also fit elsewhere/).waitFor();
     },
+    'read-aloud-resume-complete': async (page) => {
+      await openResumePrompt(page, '?mockResume=complete');
+      await page.getByText('This chapter is recorded to the end. Play reads from the top.').waitFor();
+    },
     'read-aloud-resume-not-found': async (page) => {
-      await openResumeCard(page, '?mockResume=not_found');
+      await openResumePrompt(page, '?mockResume=not_found');
       await page.getByText(/did not match this chapter/).waitFor();
     },
-    'read-aloud-resume-pick-track': async (page) => {
-      await openResumeCard(page, '?mockResume=ambiguous');
-      await page.getByRole('combobox', { name: 'Track' }).waitFor();
-    },
     'read-aloud-resume-no-track': async (page) => {
-      await openResumeCard(page, '?mockResume=none');
+      await openResumePrompt(page, '?mockResume=none');
       await page.getByText(/No track in Alice.rpp matches this chapter/).waitFor();
     },
-    'read-aloud-resume-no-recording': async (page) => {
-      await openResumeCard(page, '?mockResume=no_recording');
-      await page.getByText(/has no recorded audio yet/).waitFor();
-    },
-    'read-aloud-resume-source-missing': async (page) => {
-      await openResumeCard(page, '?mockResume=source_missing');
-      await page.getByText(/audio file is missing/).waitFor();
-    },
-    'read-aloud-resume-source-unsupported': async (page) => {
-      await openResumeCard(page, '?mockResume=source_unsupported');
-      await page.getByText(/cannot be read as audio/).waitFor();
-    },
     'read-aloud-resume-model-required': async (page) => {
-      await openResumeCard(page, '?mockAssets=missing');
+      await openResumePrompt(page, '?mockAssets=missing');
       await page.getByRole('button', { name: 'Download model…' }).waitFor();
     },
     'read-aloud-resume-error': async (page) => {
-      await openResumeCard(page, '?mockResume=error');
+      await openResumePrompt(page, '?mockResume=error');
       await page.getByRole('button', { name: 'Try again' }).waitFor();
+    },
+    // The prompt is gone the instant a choice is made (read-aloud-resume-from-daw.prd.md Phase 1): no summary, no Change.
+    'read-aloud-resume-after-choice': async (page) => {
+      await openResumePrompt(page);
+      await page.getByRole('button', { name: 'Resume from here' }).click();
+      await page.getByRole('region', { name: 'Where you stopped' }).waitFor({ state: 'detached' });
+    },
+    // A full session (start, then stop) inside the same dialog open, then a wait for the dialog to settle back to idle:
+    // the prompt must not return for the rest of this open, so the next Start begins at the top with nothing to clear.
+    'read-aloud-resume-after-session': async (page) => {
+      await openResumePrompt(page);
+      await page.getByRole('combobox', { name: 'Microphone' }).selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
+      await page.getByRole('button', { name: 'Start reading' }).click();
+      await page.getByRole('button', { name: 'Stop', exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Stop', exact: true }).click();
+      await page.getByRole('button', { name: 'Start reading' }).waitFor();
+      await page.getByRole('region', { name: 'Where you stopped' }).waitFor({ state: 'detached' });
     },
     // Same mock seam and word as the standalone Teleprompter page's `listening` state, opened through the modal instead.
     'read-aloud-listening': async (page) => {
@@ -859,6 +852,23 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const dialog = page.getByRole('dialog', { name: /Read aloud/ });
       await dialog.getByRole('button', { name: 'Hide reading panel' }).click();
       await dialog.getByRole('button', { name: 'Show reading panel' }).waitFor();
+    },
+    // Layout fixes (read-aloud-control-bar.prd.md Phase 1): the resume card shares the text column's axis, and the
+    // reading panel spans the dialog body from its content top to its bottom, whatever the chapter's length.
+    'read-aloud-rail-full-height': async (page) => {
+      await openResumePrompt(page);
+      const dialog = page.getByRole('dialog', { name: /Read aloud/ });
+      const box = await dialog.boundingBox();
+      const card = await dialog.getByRole('region', { name: 'Where you stopped' }).boundingBox();
+      // The text's own Panel, not its inner "Chapter text" region, which sits inset by the Panel's padding: the card is a
+      // Panel too, so comparing panel to panel is the like-for-like edge the PRD means by "the text column's axis".
+      const text = await dialog.getByRole('region', { name: 'Chapter text' }).locator('xpath=ancestor::section[1]').boundingBox();
+      const rail = await dialog.getByRole('complementary', { name: 'Reading panel' }).boundingBox();
+      if (!box || !card || !text || !rail) throw new Error('The read-aloud layout has no boxes to measure.');
+      if (Math.abs(card.x - text.x) > 1 || Math.abs(card.x + card.width - (text.x + text.width)) > 1)
+        throw new Error('The resume card is not aligned with the text column.');
+      if (rail.y - box.y > 90) throw new Error("The reading panel does not start at the dialog body's content top.");
+      if (box.y + box.height - (rail.y + rail.height) > 30) throw new Error("The reading panel does not reach the dialog body's bottom.");
     },
     // Suspected flags (teleprompter-manuscript-integration.prd.md Phase 7): the `flagged` mock seam is a session further into
     // the chapter whose flags arrive as the dialog subscribes. The rail's key has flag swatches too, so marks are found as controls.
