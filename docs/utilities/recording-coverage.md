@@ -142,7 +142,10 @@ docs/prds/recording-coverage-analysis.prd.md` finds it).
   `coverage_calibration.py` (Phase 8), each pinned by its own test file.
 - `apps/desktop/internal/coverage`: service tests with a fake sidecar (fresh, all-cached, one-item edit, cancel, every
   refusal and staleness cause), the signal table, settings and a provider test through `stages.Collect`. A test runs
-  the real sidecar over cached words when the checkout has a Python environment.
+  the real sidecar over cached words when the checkout has a Python environment. `corpus_test.go` stores the
+  sidecar's pinned output for every fixture case (`fixtures/coverage/results.golden.json`, written by
+  `test_coverage_results_golden.py`) as a complete check and runs `stages.Service` over it: `editing` is suggested
+  for exactly the cases labelled complete.
 - UI: `RecordingCheck.test.tsx`, the wire contracts for `coverage:state` and the four bindings
   ([wire contracts](../architecture/wire-contracts.md)), the visual states `home/recording-check-*` and
   `settings/*-recording-check`, and the aria snapshot of the dialog.

@@ -224,15 +224,21 @@ var regionLabels = map[string]string{
 func measuredEvidence(stored *StoredResult, settings Settings) []stages.Evidence {
 	report := stored.Report
 	summary := report.Summary
+	failing := failingParagraphs(report, settings.Thresholds)
 	entries := []stages.Evidence{{
 		Kind: "coverage", Label: "Text present",
-		Value: fmt.Sprintf("%d of %s present, %d missing (longest run %d), %d extra", summary.PresentTokens, words(summary.BodyTokens), summary.MissingTokens, summary.LongestMissingRun, summary.ExtraTokens),
+		Value: fmt.Sprintf("%d of %s present, %d missing (longest run %d), %d extra; %d of %s passing",
+			summary.PresentTokens, words(summary.BodyTokens), summary.MissingTokens, summary.LongestMissingRun, summary.ExtraTokens,
+			len(report.Paragraphs)-len(failing), plural(len(report.Paragraphs), "paragraph")),
 	}}
 	numbers := paragraphNumbers(report)
 	regions := slices.Clone(report.Regions)
 	slices.SortStableFunc(regions, func(a, b RegionLine) int { return cmp.Compare(b.TokenCount, a.TokenCount) })
 	for _, region := range regions {
 		entries = append(entries, regionEvidence(region, numbers))
+	}
+	for _, paragraph := range failing {
+		entries = append(entries, paragraphEvidence(paragraph, numbers))
 	}
 	entries = append(entries, stages.Evidence{
 		Kind: "items", Label: "Audio checked",
@@ -249,6 +255,27 @@ func measuredEvidence(stored *StoredResult, settings Settings) []stages.Evidence
 			percent(settings.Thresholds.MinParagraphPresent), words(settings.Thresholds.MaxMissingRun)),
 	})
 	return entries
+}
+
+// failingParagraphs are the report's paragraphs that break a threshold, in
+// chapter order: the per-paragraph evidence of a measured signal.
+func failingParagraphs(report Report, thresholds Thresholds) []ParagraphLine {
+	failing := []ParagraphLine{}
+	for _, paragraph := range report.Paragraphs {
+		if !paragraphPasses(paragraph, thresholds) {
+			failing = append(failing, paragraph)
+		}
+	}
+	return failing
+}
+
+func paragraphEvidence(paragraph ParagraphLine, numbers map[string]int) stages.Evidence {
+	return stages.Evidence{
+		Kind: "paragraph", Label: "Paragraph short",
+		Value: fmt.Sprintf("%s: %d of %s read (%s), longest missing run %s", describeParagraphs([]string{paragraph.ID}, numbers),
+			paragraph.Present, words(paragraph.Tokens), percent(paragraph.PresentFraction()), words(paragraph.LongestMissingRun)),
+		ParagraphIDs: []string{paragraph.ID},
+	}
 }
 
 func regionEvidence(region RegionLine, numbers map[string]int) stages.Evidence {

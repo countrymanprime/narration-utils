@@ -8,6 +8,7 @@
 | --- | --- |
 | `sidecars/transcript-compare/tests/fixtures/coverage/manuscript.json` | A canonical manuscript (schema 1, the file the importer writes and `compare.py` reads) with four narration chapters: three public-domain excerpts from *Alice's Adventures in Wonderland* (1865), Chapters I, II and X, and one chapter written for this repo with invented names and numbers. Chapter X repeats its refrain paragraph word for word. |
 | `sidecars/transcript-compare/tests/fixtures/coverage/cases/*.json` | 16 cases. Each is one scripted recording of one chapter, with a label for every paragraph and the expected chapter verdict. |
+| `sidecars/transcript-compare/tests/fixtures/coverage/results.golden.json` | The results lines the sidecar's coverage mode writes for every case at the shipped settings, with each case's label. Written by `test_coverage_results_golden.py` (`UPDATE_CONTRACTS=1` after an intended change) and read by `apps/desktop/internal/coverage/corpus_test.go`, which runs the stage recommendations over each case. |
 | `sidecars/transcript-compare/tests/coverage_harness.py` | Loads and validates a corpus, renders scripted recordings into timed transcript words, scores an analyzer and prints the label table. Also holds the order-blind stub analyzer. |
 | `sidecars/transcript-compare/tests/test_coverage_harness.py` | Tests for the format rules, the scoring, the stub and the corpus hook, and checks on the committed set: every condition has a case, both verdicts appear in each split, no audio, under 64 KiB. |
 

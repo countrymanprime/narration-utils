@@ -39,7 +39,8 @@ were left open:
   paragraph passes, `not_met` otherwise, naming the largest region over the missing-run limit ("paragraph 2: 14 words not
   read"). With no such region it names the paragraph with the longest run over the limit, and then the paragraph with the
   smallest share read. Paragraphs are numbered from 1 within the chapter, as the Home check numbers them. Evidence is typed
-  `coverage`, `region` (largest first, with paragraph ids and the source time), `items` and `analysis`, and the analysis
+  `coverage` (with how many paragraphs pass), `region` (largest first, with paragraph ids and the source time), `paragraph`
+  (each paragraph that fails a threshold, in chapter order; added by stage recommendations Phase 3), `items` and `analysis`, and the analysis
   entry labels the thresholds Proposed and uncalibrated. A stale signal carries one `stale` entry with the reasons.
 - **Basis:** the compared complete record's id and fingerprint (equal to the chapter's current fingerprint when the
   result is current), a newer incomplete record's id, and the saved project's modified time. So a threshold change keeps the basis
