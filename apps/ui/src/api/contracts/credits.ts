@@ -27,10 +27,27 @@ export type CreditValues = {
   narrator?: string;
 };
 
+/** Confidence is how sure a DetectedCandidate is (credits-token-setup-and-front-matter-detection.prd.md): "high" when
+ * two sources agree or an explicit marker was seen, "medium" for one pattern with a positional cue, "low" for a
+ * descriptor-derived guess or a lone, unconfirmed source. */
+export type Confidence = 'high' | 'medium' | 'low';
+
+/** One credits token value detected from the manuscript's front matter or the stored source file's own metadata
+ * (Phase 1 of credits-token-setup-and-front-matter-detection.prd.md): never written anywhere on its own, only ever
+ * offered (ADR 0019). token is a credits.Values field name ("Title", "Author", "Series", "BookNumber", "Year",
+ * "CopyrightHolder", "Publisher", "Subtitle"), not the render token's bracket form. */
+export type DetectedCandidate = { token: string; value: string; source: string; confidence: Confidence; lines?: string[] };
+
 /** CreditsProjectValues' payload: the project's own saved values, the global narrator default (General.narrator_name),
- * and title/author suggestions seeded from the manuscript's cover lines and docProps (Open Question C3) - never
- * written back, always editable. */
-export type CreditsProjectValuesResult = { values: CreditValues; narratorGlobal: string; suggestions: Record<string, string> };
+ * and title/author suggestions seeded from the manuscript's front matter and file metadata (Open Question C3) - never
+ * written back, always editable. detected carries the same candidates with their source and confidence; suggestions
+ * alone stays wire-compatible with what this always returned. */
+export type CreditsProjectValuesResult = {
+  values: CreditValues;
+  narratorGlobal: string;
+  suggestions: Record<string, string>;
+  detected: DetectedCandidate[];
+};
 
 /** One chapter's rendered announcement (Phase 5, Open Question C8, ADR 0151): `chapter` is the chapter's heading, which
  * fills [Chapter]; its subtitle fills [Chapter Title]. */
@@ -54,6 +71,14 @@ export type RetailSample = {
  * cannot be measured any more) and, in that last case, why (`problem`, otherwise empty). */
 export type RetailSampleAnswer = { sample: RetailSample | null; problem: string };
 
+/** A credits row's status (Credits in the Chapter Table, CT2): the same five values a manuscript chapter's own status
+ * has ("not_started" | "recording" | "editing" | "proofing" | "finalized"). */
+export type CreditsStatus = string;
+
+/** CreditsStatuses' payload: "opening" and/or "closing" keys, each a CreditsStatus. A kind never set is absent, and the
+ * UI treats that as "not_started", the same default a manuscript chapter with no note has. */
+export type CreditsStatuses = Record<string, CreditsStatus>;
+
 export interface CreditsApi {
   /** Lists the narrator's credit template library, seeding shipped defaults on first use. */
   creditsTemplates(): Promise<CreditTemplate[]>;
@@ -76,4 +101,9 @@ export interface CreditsApi {
   creditsRetailSample(): Promise<RetailSampleAnswer>;
   /** Picks paragraphs start..end (both included) as the retail sample; refused over 5 minutes. Two empty ids clear it. */
   saveCreditsRetailSample(startParagraphId: string, endParagraphId: string): Promise<RetailSampleAnswer>;
+  /** Reads this project's credits row statuses (Credits in the Chapter Table, Phase 1). */
+  creditsStatuses(): Promise<CreditsStatuses>;
+  /** Sets kind ("opening" or "closing") to status, on the project manifest so it survives Replace manuscript and Clear
+   * derived data, unlike a manuscript chapter's own status. */
+  setCreditsStatus(kind: string, status: CreditsStatus): Promise<CreditsStatuses>;
 }

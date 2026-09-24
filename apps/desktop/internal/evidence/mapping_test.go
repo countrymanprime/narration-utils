@@ -374,3 +374,114 @@ func TestConfirmStampsConfirmedAtWithTheStoreSClock(t *testing.T) {
 		t.Fatalf("ConfirmedAt = %v, want %v", mapping.ConfirmedAt, fixed)
 	}
 }
+
+// --- SetChapter / ClearChapter: one track per chapter (chapter-track-link-control PRD Phase 1, TL3 A) ---
+
+func TestSetChapterReplacesTheChapterSOldLinkInsteadOfAddingASecond(t *testing.T) {
+	store := NewMappingStore(t.TempDir())
+	if _, err := store.Confirm("doc-1", "track-x", "c-0001", "Chapter One"); err != nil {
+		t.Fatal(err)
+	}
+	set, err := store.SetChapter("doc-1", "c-0001", "Chapter One", "track-y")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if set.Link.TrackGUID != "track-y" || set.Link.ChapterID != "c-0001" || set.Link.ConfirmedAt.IsZero() {
+		t.Fatalf("SetChapter link = %#v", set.Link)
+	}
+	if set.Displaced != nil {
+		t.Fatalf("Displaced = %#v, want none: track-y belonged to no chapter", set.Displaced)
+	}
+	list, _ := store.List("doc-1")
+	if len(list) != 1 || list[0].TrackGUID != "track-y" {
+		t.Fatalf("List = %#v, want only the new link (never two for one chapter)", list)
+	}
+}
+
+func TestSetChapterReportsTheChapterItTookTheTrackFrom(t *testing.T) {
+	store := NewMappingStore(t.TempDir())
+	if _, err := store.Confirm("doc-1", "track-y", "c-0005", "Chapter Five"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Confirm("doc-1", "track-x", "c-0006", "Chapter Six"); err != nil {
+		t.Fatal(err)
+	}
+	set, err := store.SetChapter("doc-1", "c-0006", "Chapter Six", "track-y")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if set.Displaced == nil || set.Displaced.ChapterID != "c-0005" || set.Displaced.ChapterTitle != "Chapter Five" {
+		t.Fatalf("Displaced = %#v, want Chapter Five's link", set.Displaced)
+	}
+	list, _ := store.List("doc-1")
+	if len(list) != 1 || list[0].TrackGUID != "track-y" || list[0].ChapterID != "c-0006" {
+		t.Fatalf("List = %#v, want only track-y -> c-0006", list)
+	}
+}
+
+func TestSetChapterToItsOwnTrackDisplacesNothing(t *testing.T) {
+	store := NewMappingStore(t.TempDir())
+	if _, err := store.Confirm("doc-1", "track-y", "c-0001", "Chapter One"); err != nil {
+		t.Fatal(err)
+	}
+	set, err := store.SetChapter("doc-1", "c-0001", "Chapter One", "track-y")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if set.Displaced != nil {
+		t.Fatalf("Displaced = %#v, want none when relinking to the same track", set.Displaced)
+	}
+}
+
+func TestSetChapterCollapsesAnExistingDoubleLink(t *testing.T) {
+	store := NewMappingStore(t.TempDir())
+	// Two links for one chapter, as the old Tracks page Change left behind.
+	for _, guid := range []string{"track-x", "track-y"} {
+		if _, err := store.Confirm("doc-1", guid, "c-0001", "Chapter One"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := store.SetChapter("doc-1", "c-0001", "Chapter One", "track-x"); err != nil {
+		t.Fatal(err)
+	}
+	list, _ := store.List("doc-1")
+	if len(list) != 1 || list[0].TrackGUID != "track-x" {
+		t.Fatalf("List = %#v, want the one kept link", list)
+	}
+}
+
+func TestSetChapterRefusesMissingArguments(t *testing.T) {
+	store := NewMappingStore(t.TempDir())
+	for _, args := range [][3]string{{"", "c-0001", "t"}, {"doc-1", "", "t"}, {"doc-1", "c-0001", ""}} {
+		if _, err := store.SetChapter(args[0], args[1], "Title", args[2]); err == nil {
+			t.Fatalf("SetChapter%v succeeded, want a refusal", args)
+		}
+	}
+}
+
+func TestClearChapterRemovesEveryLinkForTheChapterAndNoOther(t *testing.T) {
+	store := NewMappingStore(t.TempDir())
+	for _, link := range [][2]string{{"track-x", "c-0001"}, {"track-y", "c-0001"}, {"track-z", "c-0002"}} {
+		if _, err := store.Confirm("doc-1", link[0], link[1], "Title"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	removed, err := store.ClearChapter("doc-1", "c-0001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(removed) != 2 {
+		t.Fatalf("removed = %#v, want both of c-0001's links", removed)
+	}
+	list, _ := store.List("doc-1")
+	if len(list) != 1 || list[0].ChapterID != "c-0002" {
+		t.Fatalf("List = %#v, want only c-0002's link", list)
+	}
+	again, err := store.ClearChapter("doc-1", "c-0001")
+	if err != nil || len(again) != 0 {
+		t.Fatalf("clearing an unlinked chapter = %#v, %v; want nothing removed and no error", again, err)
+	}
+	if _, err := store.ClearChapter("doc-1", ""); err == nil {
+		t.Fatal("ClearChapter without a chapter succeeded, want a refusal")
+	}
+}

@@ -1,5 +1,5 @@
 {
-  "_about": "Parity cases for find_chapter_by_track_name (sidecars/transcript-compare/core/compare.py) and its Go port (apps/desktop/internal/chaptermatch). Expected values are what the Python matcher returns; both test suites read this file. index is the matched chapter position or null; score is the matcher score.",
+  "_about": "Parity cases for find_chapter_by_track_name (sidecars/transcript-compare/core/compare.py) and its Go port (apps/desktop/internal/chaptermatch). Expected values are what the Python matcher returns; both test suites read this file. index is the matched chapter position or null; score is the matcher score. labelTokens pins label_tokens / LabelTokens, the chapter label pre-pass of the DAW chapter-track auto-sync PRD Phase 1; marker is '' (none), 'take', 'pickup' or 'credits'. labelTokens pins label_tokens / LabelTokens, the chapter label pre-pass of the DAW chapter-track auto-sync PRD Phase 1; marker is '' (none), 'take', 'pickup' or 'credits'.",
   "normalizedTokens": [
     {
       "input": "CHAPTER ONE",
@@ -306,6 +306,645 @@
       "track": "Chapter 0",
       "index": 0,
       "score": 0.8888888888888888
+    },
+    {
+      "name": "auto-sync evidence: Ch. 6",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "Ch. 6",
+      "index": 7,
+      "score": 1.0
+    },
+    {
+      "name": "auto-sync evidence: Ch 6",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "Ch 6",
+      "index": 7,
+      "score": 1.0
+    },
+    {
+      "name": "auto-sync evidence: Ch6",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "Ch6",
+      "index": 7,
+      "score": 1.0
+    },
+    {
+      "name": "auto-sync evidence: CH06",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "CH06",
+      "index": 7,
+      "score": 1.0
+    },
+    {
+      "name": "auto-sync evidence: 06",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "06",
+      "index": 7,
+      "score": 0.95
+    },
+    {
+      "name": "auto-sync evidence: Chapter 06",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "Chapter 06",
+      "index": 7,
+      "score": 1.0
+    },
+    {
+      "name": "auto-sync evidence: Chapter6",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "Chapter6",
+      "index": 7,
+      "score": 1.0
+    },
+    {
+      "name": "auto-sync evidence: Chap 6",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "Chap 6",
+      "index": 7,
+      "score": 1.0
+    },
+    {
+      "name": "auto-sync evidence: 06 - Chapter 6",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "06 - Chapter 6",
+      "index": 7,
+      "score": 1.0
+    },
+    {
+      "name": "auto-sync evidence: Sixth Chapter",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "Sixth Chapter",
+      "index": 7,
+      "score": 1.0
+    },
+    {
+      "name": "auto-sync evidence: Chapter VI",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "Chapter VI",
+      "index": 7,
+      "score": 1.0
+    },
+    {
+      "name": "auto-sync evidence: Chapter 6 v2",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "Chapter 6 v2",
+      "index": 7,
+      "score": 0.9
+    },
+    {
+      "name": "auto-sync evidence: Chapter 6 - take 2",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "Chapter 6 - take 2",
+      "index": 7,
+      "score": 0.9
+    },
+    {
+      "name": "auto-sync evidence: Chapter 6 (pickups)",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "Chapter 6 (pickups)",
+      "index": 7,
+      "score": 0.9
+    },
+    {
+      "name": "auto-sync evidence: Opening Credits",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "Opening Credits",
+      "index": null,
+      "score": 0.0
+    },
+    {
+      "name": "auto-sync evidence: Épilogue",
+      "chapters": [
+        "A Message from the Author",
+        "PROLOGUE — The Last Good Applause",
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 16",
+        "Chapter 21",
+        "Epilogue",
+        "Acknowledgments"
+      ],
+      "track": "Épilogue",
+      "index": 16,
+      "score": 1.0
+    }
+  ],
+  "labelTokens": [
+    {
+      "input": "Ch. 6",
+      "tokens": [
+        "chapter",
+        "6"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "Ch6",
+      "tokens": [
+        "chapter",
+        "6"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "CH06",
+      "tokens": [
+        "chapter",
+        "6"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "06",
+      "tokens": [
+        "6"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "06 - Chapter 6",
+      "tokens": [
+        "chapter",
+        "6"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "Sixth Chapter",
+      "tokens": [
+        "chapter",
+        "6"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "6th Chapter",
+      "tokens": [
+        "chapter",
+        "6"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "Chapter the Sixth",
+      "tokens": [
+        "chapter",
+        "6"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "Twenty First Chapter",
+      "tokens": [
+        "chapter",
+        "21"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "Chapter VI",
+      "tokens": [
+        "chapter",
+        "6"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "Chapter VI: The Storm",
+      "tokens": [
+        "chapter",
+        "6",
+        "the",
+        "storm"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "Part II, Chapter 3",
+      "tokens": [
+        "part",
+        "2",
+        "chapter",
+        "3"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "Chapter 6 v2",
+      "tokens": [
+        "chapter",
+        "6"
+      ],
+      "marker": "take"
+    },
+    {
+      "input": "Chapter 6 - take 2",
+      "tokens": [
+        "chapter",
+        "6"
+      ],
+      "marker": "take"
+    },
+    {
+      "input": "Chapter 6 (pickups)",
+      "tokens": [
+        "chapter",
+        "6"
+      ],
+      "marker": "pickup"
+    },
+    {
+      "input": "Chapter 6 pickups take 2",
+      "tokens": [
+        "chapter",
+        "6"
+      ],
+      "marker": "pickup"
+    },
+    {
+      "input": "Prologue pickups",
+      "tokens": [
+        "prologue"
+      ],
+      "marker": "pickup"
+    },
+    {
+      "input": "Épilogue",
+      "tokens": [
+        "epilogue"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "Intro",
+      "tokens": [
+        "introduction"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "Acknowledgements",
+      "tokens": [
+        "acknowledgments"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "Opening Credits",
+      "tokens": [
+        "opening",
+        "credits"
+      ],
+      "marker": "credits"
+    },
+    {
+      "input": "End Credits",
+      "tokens": [
+        "closing",
+        "credits"
+      ],
+      "marker": "credits"
+    },
+    {
+      "input": "I Am Legend",
+      "tokens": [
+        "i",
+        "am",
+        "legend"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "A nice chap",
+      "tokens": [
+        "a",
+        "nice",
+        "chap"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "The Final Edit",
+      "tokens": [
+        "the",
+        "final",
+        "edit"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "The Second Coming",
+      "tokens": [
+        "the",
+        "2",
+        "coming"
+      ],
+      "marker": ""
+    },
+    {
+      "input": "Chapter 12: The Final",
+      "tokens": [
+        "chapter",
+        "12",
+        "the",
+        "final"
+      ],
+      "marker": ""
     }
   ]
 }

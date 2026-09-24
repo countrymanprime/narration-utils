@@ -45,21 +45,24 @@ export function ChapterLinksTable({ tracks }: { tracks: Track[] }) {
     };
   }, [reload]);
 
+  // Set, not Confirm: it replaces the chapter's link rather than adding a second one beside it
+  // (chapter-track-link-control PRD Phase 1), so a Change never leaves the chapter linked to two tracks.
   const confirm = (chapterId: string, trackGuid: string) => {
     setBusyChapterId(chapterId);
     setError('');
     api
-      .chapterTrackMapConfirm(trackGuid, chapterId)
+      .chapterTrackSet(chapterId, trackGuid)
       .then(() => reload())
       .catch((reason) => setError(String(reason)))
       .finally(() => setBusyChapterId(''));
   };
 
-  const clear = (chapterId: string, trackGuid: string) => {
+  // Clears every link the chapter holds, including a second one an older Change left behind.
+  const clear = (chapterId: string) => {
     setBusyChapterId(chapterId);
     setError('');
     api
-      .chapterTrackMapClear(trackGuid)
+      .chapterTrackUnlink(chapterId)
       .then(() => reload())
       .catch((reason) => setError(String(reason)))
       .finally(() => setBusyChapterId(''));
@@ -97,7 +100,7 @@ export function ChapterLinksTable({ tracks }: { tracks: Track[] }) {
                   linkedTrackName={row.trackName}
                   busy={busyChapterId === row.chapter.id}
                   onConfirm={(trackGuid) => confirm(row.chapter.id, trackGuid)}
-                  onClear={() => row.mapping && clear(row.chapter.id, row.mapping.trackGuid)}
+                  onClear={() => clear(row.chapter.id)}
                 />
               </TableCell>
             </TableRow>

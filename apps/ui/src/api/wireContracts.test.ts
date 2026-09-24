@@ -35,7 +35,14 @@ import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSch
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
-import { chapterSuggestionSchema, chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
+import {
+  chapterSuggestionSchema,
+  chapterTrackLinksSchema,
+  chapterTrackMappingSchema,
+  chapterTrackMatchSchema,
+  chapterTrackSetSchema,
+  trackMappingSchema,
+} from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
@@ -44,6 +51,7 @@ import {
   creditsAnnouncementsSchema,
   creditsProjectValuesResultSchema,
   creditsRenderResultSchema,
+  creditsStatusesSchema,
   creditTemplateSchema,
   creditTemplatesSchema,
   retailSampleAnswerSchema,
@@ -149,6 +157,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'credits-retail-sample.json': retailSampleAnswerSchema,
   'credits-retail-sample-none.json': retailSampleAnswerSchema,
   'credits-retail-sample-stale.json': retailSampleAnswerSchema,
+  'credits-status-empty.json': creditsStatusesSchema,
+  'credits-status-set.json': creditsStatusesSchema,
   'system-notice.json': noticeSchema,
   'job-ended-success.json': jobEndedSchema,
   'job-ended-error.json': jobEndedSchema,
@@ -189,6 +199,11 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-track-match-matched.json': chapterTrackMatchSchema,
   'chapter-track-match-ambiguous.json': chapterTrackMatchSchema,
   'chapter-track-match-none.json': chapterTrackMatchSchema,
+  'chapter-track-links-ready.json': chapterTrackLinksSchema,
+  'chapter-track-links-no-project.json': chapterTrackLinksSchema,
+  'chapter-track-links-conflict.json': chapterTrackLinksSchema,
+  'chapter-track-set-displaced.json': chapterTrackSetSchema,
+  'chapter-track-unlink.json': chapterTrackMappingSchema,
   'chapter-suggestion-matched.json': chapterSuggestionSchema,
   'chapter-suggestion-ambiguous.json': chapterSuggestionSchema,
   'chapter-suggestion-none.json': chapterSuggestionSchema,
@@ -214,6 +229,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'takereview-scan-error.json': takeReviewScanJobSchema,
   'takereview-create-take.json': takeReviewCreateTakeResultSchema,
   'manuscript-chapters-measured.json': chaptersSchema,
+  'manuscript-chapters-recorded.json': chaptersSchema,
   'coverage-result-current.json': coverageResultSchema,
   'coverage-result-stale.json': coverageResultSchema,
   'coverage-result-never.json': coverageResultSchema,
@@ -325,6 +341,12 @@ describe('golden payloads written by the Go host and the Python sidecars', () =>
     expect(chapters.map((chapter) => chapter.recordedFraction)).toEqual([0.75, ...chapters.slice(1).map(() => undefined)]);
     const unmeasured = parseWire(chaptersSchema, readGolden('manuscript-chapters.json'), ctx('chapters'));
     expect(unmeasured.every((chapter) => chapter.recordedFraction === undefined)).toBe(true);
+  });
+
+  it('recordedSeconds is only on a chapter with a linked track, and the others say why', () => {
+    const chapters = parseWire(chaptersSchema, readGolden('manuscript-chapters-recorded.json'), ctx('chapters'));
+    expect(chapters.map((chapter) => chapter.recordedSeconds)).toEqual([2520.5, ...chapters.slice(1).map(() => undefined)]);
+    expect(chapters.map((chapter) => chapter.recordedUnavailable)).toEqual([undefined, 'unlinked', ...chapters.slice(2).map(() => undefined)]);
   });
 
   it('the golden completed run keeps its rows and marker states through the schema', () => {
@@ -699,6 +721,21 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(retailSampleAnswerSchema, await api.saveCreditsRetailSample('', ''), 'mock cleared retail sample');
   });
 
+  it('the credits row statuses (credits-in-chapter-table.prd.md, Phase 1)', async () => {
+    const api = createMockApi();
+    expectMatches(creditsStatusesSchema, await api.creditsStatuses(), 'mock credits statuses, empty');
+    expect(await api.creditsStatuses()).toEqual({});
+
+    const afterOpening = await api.setCreditsStatus('opening', 'finalized');
+    expectMatches(creditsStatusesSchema, afterOpening, 'mock credits statuses, opening set');
+    expect(afterOpening).toEqual({ opening: 'finalized' });
+
+    const afterClosing = await api.setCreditsStatus('closing', 'recording');
+    expectMatches(creditsStatusesSchema, afterClosing, 'mock credits statuses, both set');
+    expect(afterClosing).toEqual({ opening: 'finalized', closing: 'recording' });
+    expect(await api.creditsStatuses()).toEqual(afterClosing);
+  });
+
   it('the DAW catalog list and open-download-page answers, detected and not detected (Phase 2)', async () => {
     const detected = await createMockApi().dawCatalogList();
     expectMatches(dawCatalogListSchema, detected, 'mock catalog, detected');
@@ -849,6 +886,48 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(cleared.mappings).toHaveLength(0);
 
     await expect(api.chapterTrackMapConfirm('{0E4D1D7F-D039-674D-87E6-719376DE95EC}', 'not-a-real-chapter')).rejects.toThrow();
+  });
+
+  it('the ChapterTrackSet, ChapterTrackUnlink and ChapterTrackLinks answers', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const ready = await api.chapterTrackLinks();
+    expectMatches(chapterTrackLinksSchema, ready, 'mock chapter track links, ready');
+    expect(ready.project).toBe('ready');
+    expect(ready.tracks.length).toBeGreaterThan(0);
+
+    const [first, second] = WIRE_TRACKS_PROJECT.tracks;
+    await api.chapterTrackSet(chapters[0].id, first.guid);
+    const moved = await api.chapterTrackSet(chapters[1].id, first.guid);
+    expectMatches(chapterTrackSetSchema, moved, 'mock chapter track set, displacing a link');
+    expect(moved.displaced?.chapterId).toBe(chapters[0].id);
+    const relinked = await api.chapterTrackSet(chapters[1].id, second.guid);
+    expect(relinked.displaced).toBeNull();
+    expect(relinked.mappings.filter((mapping) => mapping.chapterId === chapters[1].id)).toHaveLength(1);
+
+    const unlinked = await api.chapterTrackUnlink(chapters[1].id);
+    expectMatches(chapterTrackMappingSchema, unlinked, 'mock chapter track unlink');
+    expect(unlinked.mappings).toHaveLength(0);
+    await expect(api.chapterTrackSet('not-a-real-chapter', first.guid)).rejects.toThrow();
+
+    const noProject = await createMockApi({}, { tracksCandidates: [] }).chapterTrackLinks();
+    expectMatches(chapterTrackLinksSchema, noProject, 'mock chapter track links, no project');
+    expect(noProject.project).toBe('none');
+    expect(noProject.tracks).toHaveLength(0);
+  });
+
+  it('the chapter list carries recorded seconds only for a chapter with a linked track', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    expectMatches(chaptersSchema, chapters, 'mock chapters, nothing linked');
+    expect(chapters.every((chapter) => chapter.recordedUnavailable === 'unlinked' && chapter.recordedSeconds === undefined)).toBe(true);
+
+    const [first] = WIRE_TRACKS_PROJECT.tracks;
+    await api.chapterTrackSet(chapters[0].id, first.guid);
+    const linked = await api.manuscriptChapters();
+    expectMatches(chaptersSchema, linked, 'mock chapters, one linked');
+    expect(linked[0].recordedSeconds).toBeGreaterThan(0);
+    expect(linked[0].recordedUnavailable).toBeUndefined();
   });
 
   it('the ChapterTrackMatch answers', async () => {
@@ -1433,6 +1512,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterTrackMapList',
       'chapterTrackMapConfirm',
       'chapterTrackMapClear',
+      'chapterTrackSet',
+      'chapterTrackUnlink',
+      'chapterTrackLinks',
       'chapterTrackMatch',
       'chapterSuggestion',
       'lineIdentityStamp',
@@ -1507,6 +1589,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'creditsChapterAnnouncements',
       'creditsRetailSample',
       'saveCreditsRetailSample',
+      'creditsStatuses',
+      'setCreditsStatus',
     ];
     const VOID = [
       'manuscriptImportCancel',
