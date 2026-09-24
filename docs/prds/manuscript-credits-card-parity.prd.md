@@ -124,7 +124,7 @@ We believe that giving the credits the same card as a chapter (whole-header togg
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | One Manuscript card | `ReaderCard` for chapters and credits; whole-header toggle with `aria-expanded`/`aria-controls`; credits read time, chevron, sticky header, text size, rows; Expand and Collapse all; remembered open state; visual states; guide | partial — pending: only the phase's first commit landed (the chapter card moved into `ReaderCard.tsx` unchanged, verified byte-identical); the whole-header toggle, `aria-expanded`/`aria-controls`, `CreditsEntry`'s migration onto the shared card, read time, Expand/Collapse all and the remembered open state are not yet built | - | MC1, MC3 to MC7, MC10 | - |
+| 1 | One Manuscript card | `ReaderCard` for chapters and credits; whole-header toggle with `aria-expanded`/`aria-controls`; credits read time, chevron, sticky header, text size, rows; Expand and Collapse all; remembered open state; visual states; guide | complete | - | MC1, MC3 to MC7, MC10 | - |
 | 2 | Read aloud on credits | `ReadAloudDialog` source union, credits mode (no resume card, flags not kept), shared unresolved warning, Read aloud on the credits card, ADR, visual and aria states, guides | pending | - | 1; MC2, MC8, MC9 | - |
 | 3 | Deep link to a credits card | `/manuscript#credits-<kind>` opens and scrolls to the card, for the chapter-table PRD's CT7 link | pending | 2 | 1; CT7 answered | - |
 

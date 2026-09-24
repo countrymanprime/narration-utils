@@ -8,7 +8,7 @@ afterEach(cleanup);
 describe('TitleSubtitle', () => {
   it('draws the title and subtitle inline, joined by an em dash', () => {
     const { container } = render(<TitleSubtitle title="PROLOGUE" subtitle="The Last Good Applause" />);
-    expect(container.textContent).toBe('PROLOGUE — The Last Good Applause');
+    expect(container.textContent).toBe('PROLOGUE — The Last Good Applause');
   });
 
   it('draws the title alone when there is no subtitle', () => {
@@ -55,5 +55,20 @@ describe('TitleSubtitle', () => {
   it('stacked with no subtitle renders no subtitle line', () => {
     const { container } = render(<TitleSubtitle title="A Message from the Author" layout="stacked" />);
     expect(container.textContent).toBe('A Message from the Author');
+  });
+
+  // The accessible-name algorithm trims each child element's own computed name before joining it with its
+  // siblings, and does not add a separator back at the join - unlike plain textContent, which the tests above read.
+  // A separator that lives inside the title or subtitle element (or inside a span of its own) loses its surrounding
+  // spaces there, so a name computed *in context* (every real call site: a heading inside a toggle button, a link)
+  // can silently read "Chapter 2— The Pool of Tears" even while textContent still looks right. Every ReaderCard,
+  // ChapterNav and Home row wraps TitleSubtitle this way, so this is the shape that must stay correct.
+  it.each(['inline', 'stacked'] as const)('keeps the em dash and its spaces in the accessible name computed inside a button (%s)', (layout) => {
+    render(
+      <button type="button">
+        <TitleSubtitle title="Chapter 2" subtitle="The Pool of Tears" layout={layout} />
+      </button>,
+    );
+    expect(screen.getByRole('button', { name: 'Chapter 2 — The Pool of Tears' })).toBeTruthy();
   });
 });

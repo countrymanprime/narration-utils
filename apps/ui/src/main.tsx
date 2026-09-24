@@ -49,6 +49,10 @@ const mockNoManuscript = mockParams.has('mockNoManuscript');
 // `?mockManuscriptCandidate=1` boots a project with no imported manuscript but a
 // manuscript.docx in its folder, so Home shows the import offer.
 const mockManuscriptCandidate = mockParams.has('mockManuscriptCandidate');
+// `?mockManuscript=mixed` adds a buttonless Front Matter row and a 5-digit word count to the Manuscript page's chapter
+// list, so the header's aligned stat block and action slot can be seen across a mix of row shapes
+// (manuscript-chapter-header-alignment.prd.md).
+const mockManuscriptMixed = mockParams.get('mockManuscript') === 'mixed';
 // `?mockTeleprompter=listening|waiting|done|flagged` boots the teleprompter already part-way
 // through the first chapter, as a session the host kept running (`flagged`: further in, with suspected flags raised);
 // `ended` boots one that already stopped itself at the end of the chapter (the host's auto-stop).
@@ -207,6 +211,7 @@ const mockInitial = {
   ...(mockMultipleRpp ? { tracksCandidates: ['C:/Projects/Alice-in-Wonderland/Alice.rpp', 'C:/Projects/Alice-in-Wonderland/Alice-alt-mix.rpp'] } : {}),
   ...(mockNoRpp ? { tracksCandidates: [] } : {}),
   ...(mockManuscriptCandidate ? { manuscriptCandidate: { path: 'C:/Projects/Alice-in-Wonderland/manuscript.docx', name: 'manuscript.docx' } } : {}),
+  ...(mockManuscriptMixed ? { mockManuscript: 'mixed' as const } : {}),
   ...(mockChapterLinkMissing
     ? {
         chapterTrackMappings: [

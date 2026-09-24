@@ -11,6 +11,7 @@ import { SEARCH_DEBOUNCE_MS } from '../../hooks/useDebouncedValue';
 afterEach(() => {
   vi.useRealTimers();
   cleanup();
+  window.localStorage.clear();
 });
 
 function renderManuscript(
@@ -25,7 +26,7 @@ function renderManuscript(
     <div className="shell-content">
       <MemoryRouter initialEntries={initialEntries}>
         <ApiProvider api={api}>
-          <Manuscript notify={notify} focusStoryBibleEntity={focusStoryBibleEntity} />
+          <Manuscript notify={notify} focusStoryBibleEntity={focusStoryBibleEntity} projectFolder="/projects/alice" />
         </ApiProvider>
       </MemoryRouter>
     </div>,
@@ -499,7 +500,7 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
   });
 
   describe('credits pseudo-entries (PRD audiobook-credits-templates.prd.md, Phase 3)', () => {
-    it('shows an Opening credits entry before the first chapter and a Closing credits entry after the last, both collapsed by default', async () => {
+    it('shows an Opening credits entry before the first chapter and a Closing credits entry after the last, both open by default (MC5)', async () => {
       renderManuscript();
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 12 — Alice’s Evidence' }));
@@ -511,22 +512,57 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       expect(order[0]).toBe('opening');
       expect(order.at(-1)).toBe('closing');
 
-      // Collapsed by default: no rendered preview text or unresolved-token count is shown yet.
-      expect(within(opening as HTMLElement).queryByText(/unresolved token/)).toBeNull();
-      expect(within(closing as HTMLElement).queryByText(/unresolved token/)).toBeNull();
+      // Open by default (MC5): the rendered preview and its unresolved-token count already show, with no click needed.
+      expect(await within(opening as HTMLElement).findByText(/unresolved token/)).toBeTruthy();
+      expect(within(closing as HTMLElement).queryByText(/unresolved token/)).toBeTruthy();
     });
 
-    it('expanding the Opening credits entry shows the rendered preview with an unresolved-token chip, never silent empty text (C6)', async () => {
+    it('shows an unresolved-token chip, never silent empty text (C6)', async () => {
       renderManuscript();
       await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      const opening = screen.getByRole('heading', { name: 'Opening credits' }).closest('[data-credits-entry]') as HTMLElement;
 
-      fireEvent.click(screen.getByRole('button', { name: /Opening credits/ }));
       // The mock's default project has no Title/Author/Narrator value set, so the shipped opening template's
       // tokens are all unresolved - each renders as its own bracketed chip rather than empty text.
-      expect(await screen.findByText('[Title]')).toBeTruthy();
-      expect(screen.getByText('[Author]')).toBeTruthy();
-      expect(screen.getByText('[Narrator]')).toBeTruthy();
-      expect(screen.getByText(/3 unresolved tokens: Title, Author, Narrator/)).toBeTruthy();
+      expect(await within(opening).findByText('[Title]')).toBeTruthy();
+      expect(within(opening).getByText('[Author]')).toBeTruthy();
+      expect(within(opening).getByText('[Narrator]')).toBeTruthy();
+      expect(within(opening).getByText(/3 unresolved tokens: Title, Author, Narrator/)).toBeTruthy();
+    });
+
+    it('collapsing a credits card hides its preview, and remembers that per project across a reload (MC5 b)', async () => {
+      renderManuscript();
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      const opening = () => screen.getByRole('heading', { name: 'Opening credits' }).closest('[data-credits-entry]') as HTMLElement;
+      await within(opening()).findByText('[Title]');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Opening credits' }));
+      await waitFor(() => expect(within(opening()).queryByText('[Title]')).toBeNull());
+      cleanup();
+
+      renderManuscript();
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      expect(screen.getByRole('button', { name: 'Opening credits' }).getAttribute('aria-expanded')).toBe('false');
+      expect(within(opening()).queryByText('[Title]')).toBeNull();
+    });
+
+    it('Expand all and Collapse all include the credits cards, and never send a credits id to readerStateSave or manuscriptParagraphs', async () => {
+      const saveStateSpy = vi.fn(async () => ({ expandedChapters: [], bookmarks: [] }));
+      const paragraphsSpy = vi.fn(async () => []);
+      renderManuscript({ readerStateSave: saveStateSpy, manuscriptParagraphs: paragraphsSpy });
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+
+      fireEvent.click(screen.getByRole('button', { name: 'Collapse all chapters' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Opening credits' }).getAttribute('aria-expanded')).toBe('false'));
+      expect(screen.getByRole('button', { name: 'Closing credits' }).getAttribute('aria-expanded')).toBe('false');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Expand all chapters' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Opening credits' }).getAttribute('aria-expanded')).toBe('true'));
+      expect(screen.getByRole('button', { name: 'Closing credits' }).getAttribute('aria-expanded')).toBe('true');
+
+      for (const call of [...saveStateSpy.mock.calls, ...paragraphsSpy.mock.calls]) {
+        expect(JSON.stringify(call)).not.toMatch(/opening|closing/);
+      }
     });
 
     it('a credits entry is not a chapter: it is absent from Chapters & Search and never counted in the chapter list', async () => {

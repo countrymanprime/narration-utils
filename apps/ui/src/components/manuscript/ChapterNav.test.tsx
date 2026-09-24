@@ -148,4 +148,14 @@ describe('ChapterNav', () => {
     );
     expect(screen.getByText('A Long and Winding Subtitle')).toBeTruthy();
   });
+
+  // chapter-title-display-consistency.prd.md: the row draws the name through TitleSubtitle, so its accessible name
+  // agrees with every other screen ("Chapter 1 — Down the Rabbit-Hole"), not the old stacked-with-no-separator reading.
+  it('reads the title and subtitle as one name, joined by an em dash (chapter-title-display-consistency.prd.md)', () => {
+    const chapters = [chapter({ id: 'c1', title: 'Chapter One', subtitle: 'Down the Rabbit-Hole' })];
+    render(
+      <ChapterNav chapters={chapters} bookmarks={[]} searchQuery="" searchResults={[]} lineNumbers={new Map()} select={vi.fn()} removeBookmark={vi.fn()} />,
+    );
+    expect(screen.getByRole('button', { name: /^Chapter One — Down the Rabbit-Hole/ })).toBeTruthy();
+  });
 });

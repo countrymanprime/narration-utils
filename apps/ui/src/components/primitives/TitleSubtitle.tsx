@@ -7,6 +7,14 @@ import { TooltipTarget } from './Tooltip';
 //
 // `inline` (the default) is one text run: "Title — Subtitle". `stacked` puts the title over a muted subtitle line, with a
 // visually hidden " — " between them so a screen reader hears the same name either way.
+//
+// The separator (in both layouts) is written as a plain text node sitting directly between the title and subtitle
+// elements - not nested inside either one, and not wrapped in a span of its own - because the accessible-name
+// algorithm trims each *element* child's own computed name before concatenating it with its siblings, with no space
+// re-inserted at the join. A separator living inside one of those elements (or inside its own wrapping span) loses
+// its surrounding spaces there and produces "Chapter 2— The Pool of Tears"; a bare text-node sibling does not, since
+// it is not itself a name-bearing element and so is never trimmed. Keep it this way; TitleSubtitle.test.tsx pins the
+// accessible name computed *inside a button*, not just raw textContent, to catch a regression here.
 export function TitleSubtitle({
   title,
   subtitle,
@@ -28,10 +36,10 @@ export function TitleSubtitle({
       <span className={`normal-case ${className}`}>
         <span className={`block font-semibold ${truncate ? 'truncate' : ''}`}>{title}</span>
         {subtitle && (
-          <span className={`block font-normal text-[var(--text-muted)] ${truncate ? 'truncate' : ''}`}>
-            <span className="sr-only"> — </span>
-            {subtitle}
-          </span>
+          <>
+            {' '}
+            <span className="sr-only">—</span> <span className={`block font-normal text-[var(--text-muted)] ${truncate ? 'truncate' : ''}`}>{subtitle}</span>
+          </>
         )}
       </span>
     );
@@ -41,9 +49,10 @@ export function TitleSubtitle({
     <span className={`normal-case ${truncate ? 'block truncate' : ''} ${className}`}>
       <span className="font-semibold">{title}</span>
       {subtitle && (
-        <span className="font-normal text-[var(--text-muted)]">
-          {' '}— {subtitle}
-        </span>
+        <>
+          {' — '}
+          <span className="font-normal text-[var(--text-muted)]">{subtitle}</span>
+        </>
       )}
     </span>
   );

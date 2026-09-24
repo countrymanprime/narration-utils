@@ -40,12 +40,14 @@ jumping between chapters without scrolling through the full text.
 
 **Opening credits** sits before the first chapter and **Closing credits** after the last, when the
 credit template library (Settings, This Project, [Credits](settings.md#credits)) has an opening or a
-closing template. Each shows its word count; open it to read the credits with the project's values
-filled in. A token with no value yet stays in brackets, highlighted, and a line below lists the
-unresolved tokens. These entries are read-only and are not chapters: they are not in the chapter list or
-search. Record the credits as their own files, as ACX expects, not inside a chapter file: Proofing
-compares a chapter file with that chapter's text only, so credits recorded inside it are reported as
-extra words.
+closing template. Each shows its word count and a read time, and opens and closes the same way a
+chapter card does — press anywhere on its header, not just the title — with a chevron showing which
+way it is set. Both are open by default and stay open or closed the way you leave them for as long as
+you keep the project open. Open one to read the credits with the project's values filled in. A token
+with no value yet stays in brackets, highlighted, and a line below lists the unresolved tokens. These
+entries are read-only and are not chapters: they are not in the chapter list or search. Record the
+credits as their own files, as ACX expects, not inside a chapter file: Proofing compares a chapter file
+with that chapter's text only, so credits recorded inside it are reported as extra words.
 
 The [retail sample](settings.md#retail-sample), once picked, is marked where it is: the chapter header shows
 a **Retail sample** tag, and in the open chapter its lines have a rule down their left edge, with "Retail

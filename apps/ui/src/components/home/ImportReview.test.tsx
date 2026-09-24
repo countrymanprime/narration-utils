@@ -175,7 +175,7 @@ describe('ImportReview', () => {
 
   it('keeps a long title and subtitle in one row that can be cut short, with the whole line for a hover', () => {
     renderReview();
-    const row = screen.getByText('Chapter Four');
+    const row = screen.getByText('Chapter Four').closest('[title]')!;
     expect(row.className).toContain('truncate');
     expect(row.getAttribute('title')).toMatch(/^Chapter Four — In Which Alice Considers/);
   });
@@ -197,7 +197,7 @@ describe('ImportReview subtitles (story-bible-and-import-ux-briefs PRD, Phase 5)
     renderReview();
     await user.click(subtitleBox('Down the Rabbit-Hole'));
     expect(subtitleBox('Down the Rabbit-Hole').getAttribute('aria-checked')).toBe('false');
-    expect(screen.getByText('Chapter One Down the Rabbit-Hole').getAttribute('title')).toBe('Chapter One Down the Rabbit-Hole');
+    expect(screen.getByText('Chapter One Down the Rabbit-Hole').closest('[title]')!.getAttribute('title')).toBe('Chapter One Down the Rabbit-Hole');
     expect(screen.getByRole('combobox', { name: 'Chapter One Down the Rabbit-Hole content type' })).toBeTruthy();
     expect(screen.getByRole('combobox', { name: 'Chapter Two — The Pool of Tears content type' })).toBeTruthy();
   });

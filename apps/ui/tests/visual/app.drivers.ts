@@ -990,6 +990,31 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Manuscript');
       await clickVisible(page, 'button', 'Collapse all chapters');
     },
+    // manuscript-chapter-header-alignment.prd.md: the stat block (words, read time) and the action slot (Read aloud,
+    // empty on Front Matter) are fixed-width columns, so every row's stat block ends at the same x and every Read
+    // aloud button starts at the same x, whether or not that row has a button. Collapsed, so every header in view at
+    // once; the assertion below is the "driver assertion" the PRD calls for, not just a screenshot.
+    'chapter-header-columns': async (page) => {
+      await page.goto('/?mockManuscript=mixed');
+      await settlePage(page);
+      await goToPage(page, 'Manuscript');
+      await clickVisible(page, 'button', 'Collapse all chapters');
+      await page.getByRole('button', { name: 'Front Matter' }).waitFor();
+      await page
+        .getByRole('button', { name: /^Read .* aloud$/ })
+        .first()
+        .waitFor();
+      await page.waitForFunction(() => {
+        const buttons = [...document.querySelectorAll<HTMLElement>('article header button[aria-label^="Read "]')];
+        const stats = [...document.querySelectorAll<HTMLElement>('article header [class*="min-w-"]')];
+        if (buttons.length < 2 || stats.length < 3) return false;
+        const left = buttons[0].getBoundingClientRect().left;
+        const right = stats[0].getBoundingClientRect().right;
+        const buttonsAlign = buttons.every((button) => Math.abs(button.getBoundingClientRect().left - left) <= 1);
+        const statsAlign = stats.every((stat) => Math.abs(stat.getBoundingClientRect().right - right) <= 1);
+        return buttonsAlign && statsAlign;
+      });
+    },
     'word-lookup-definition': async (page) => {
       await lookUpInReader(page, 'bank');
       await page.getByRole('dialog', { name: 'Look up: bank' }).getByText('sloping land', { exact: false }).waitFor();

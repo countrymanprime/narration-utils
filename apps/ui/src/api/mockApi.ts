@@ -18,6 +18,7 @@ import type {
   GuideProperty,
   GuidePronunciation,
   LineIdentityState,
+  ManuscriptChapter,
   ManuscriptNote,
   ManuscriptParagraph,
   NarrationApi,
@@ -291,6 +292,40 @@ function resolveMockCreditValues(values: CreditValues, narratorGlobal: string): 
   };
 }
 
+// `?mockManuscript=mixed` (manuscript-chapter-header-alignment.prd.md): a buttonless row (Front Matter, contentKind
+// 'opening') before the narration chapters, and one narration chapter's word count raised to 5 digits, so the
+// header's stat block and action slot can be shown lining up across a 3-, a 4- and a 5-digit count, with and without
+// a Read aloud button, without a second, forked mock. A pure function (not inlined in the Alice-loading promise
+// chain) so it has its own unit test, independent of whether the bundled Alice text loads in a given environment.
+export function applyMixedManuscriptMock(
+  chapters: ManuscriptChapter[],
+  paragraphs: ManuscriptParagraph[],
+): { chapters: ManuscriptChapter[]; paragraphs: ManuscriptParagraph[] } {
+  const frontMatterId = 'front-matter';
+  const frontMatterParagraph: ManuscriptParagraph = {
+    id: 'p-front-matter-0',
+    chapterId: frontMatterId,
+    chapter: 'Front Matter',
+    index: -1,
+    sourceLine: 1,
+    text: 'Also by the same author.',
+    entityIds: [],
+  };
+  const frontMatter: ManuscriptChapter = {
+    id: frontMatterId,
+    title: 'Front Matter',
+    index: -1,
+    wordCount: 318,
+    status: 'not_started',
+    contentKind: 'opening',
+    paragraphIds: [{ id: frontMatterParagraph.id, index: frontMatterParagraph.index }],
+  };
+  return {
+    chapters: [frontMatter, ...chapters.map((chapter, index) => (index === 0 ? { ...chapter, wordCount: 12_406 } : chapter))],
+    paragraphs: [frontMatterParagraph, ...paragraphs],
+  };
+}
+
 // A JS mirror of apps/desktop/internal/credits.MeasureSample (Phase 5, ADR 0152): the range start..end of the paragraphs in
 // book order, its lines within each chapter, and its length at 9,300 words per finished hour, refused over 5 minutes.
 const MOCK_WORDS_PER_FINISHED_HOUR = 9300;
@@ -459,6 +494,15 @@ export function createMockApi(
     measure?: MockMeasureSeed;
     /** Holds a started diagnostics check part way through, or breaks it (diagnostics PRD Phase 6). */
     diagnostics?: MockDiagnosticsSeed;
+    /** The project's Delivery limits, by key (`true_peak_dbtp_max: '-3'`), set as if saved in Settings (diagnostics PRD Phase 5). */
+    deliveryLimits?: Record<string, string>;
+    /**
+     * `mixed` adds a buttonless Front Matter chapter (contentKind 'opening', a 3-digit word count) before the Alice
+     * chapters and raises one chapter's word count to 5 digits, so the header alignment mock has a mix of 3-, 4- and
+     * 5-digit counts and a row with no Read aloud button alongside rows that have one
+     * (manuscript-chapter-header-alignment.prd.md). Off by default so every existing screenshot is unchanged.
+     */
+    mockManuscript?: 'mixed';
     /** Boots with a custom delivery profile chosen for the project (delivery-platform-profiles.prd.md); ACX judges otherwise. */
     deliveryProfile?: MockDeliveryProfileSeed;
   } = {},
@@ -607,6 +651,11 @@ export function createMockApi(
       ...chapter,
       paragraphIds: paragraphs.filter((paragraph) => paragraph.chapterId === chapter.id).map(({ id, index }) => ({ id, index })),
     }));
+    if (initial.mockManuscript === 'mixed') {
+      const mixed = applyMixedManuscriptMock(chapters, paragraphs);
+      chapters = mixed.chapters;
+      paragraphs = mixed.paragraphs;
+    }
     // WIRE_ENTITIES' occurrence paragraph numbers are computed against the
     // small local seed fixture, not the real manuscript text just loaded
     // above, so they'd point at the wrong line ("go to line" landing

@@ -1,11 +1,47 @@
 import { describe, expect, it } from 'vitest';
-import { createMockApi } from './mockApi';
+import { applyMixedManuscriptMock, createMockApi } from './mockApi';
+import type { ManuscriptChapter, ManuscriptParagraph } from '../types';
 
 // createMockApi() is the mock host used by the browser demo and by most component tests (imported by
 // ApiProvider). Its credits functions are a JS mirror of apps/desktop/internal/credits.Render (PRD
 // audiobook-credits-templates.prd.md, Open Questions C5/C6), and its install-job and template-library edge
 // cases are otherwise only reached indirectly, if at all, through component tests. These exercise that
 // behavior directly, against the public NarrationApi surface, rather than through a rendered component.
+
+describe('applyMixedManuscriptMock (?mockManuscript=mixed, manuscript-chapter-header-alignment.prd.md)', () => {
+  const chapters: ManuscriptChapter[] = [
+    { id: 'c1', title: 'Chapter 1', index: 0, wordCount: 3182, status: 'not_started', contentKind: 'narration' },
+    { id: 'c2', title: 'Chapter 2', index: 1, wordCount: 2044, status: 'not_started', contentKind: 'narration' },
+  ];
+  const paragraphs: ManuscriptParagraph[] = [{ id: 'p1', chapterId: 'c1', chapter: 'Chapter 1', index: 0, text: 'Once upon a time.', entityIds: [] }];
+
+  it('adds a buttonless Front Matter row (contentKind opening) before the narration chapters, with a 3-digit count', () => {
+    const mixed = applyMixedManuscriptMock(chapters, paragraphs);
+    expect(mixed.chapters[0]).toMatchObject({ id: 'front-matter', contentKind: 'opening' });
+    expect(String(mixed.chapters[0].wordCount)).toHaveLength(3);
+    expect(mixed.chapters.slice(1).map((chapter) => chapter.id)).toEqual(['c1', 'c2']);
+  });
+
+  it('raises the first narration chapter to a 5-digit count, leaving the others alone', () => {
+    const mixed = applyMixedManuscriptMock(chapters, paragraphs);
+    expect(String(mixed.chapters[1].wordCount)).toHaveLength(5);
+    expect(mixed.chapters[2].wordCount).toBe(2044);
+  });
+
+  it('gives the Front Matter row a paragraph, so its (buttonless, collapsed) card can still be expanded', () => {
+    const mixed = applyMixedManuscriptMock(chapters, paragraphs);
+    expect(mixed.paragraphs.filter((paragraph) => paragraph.chapterId === 'front-matter').length).toBe(1);
+    expect(mixed.paragraphs).toHaveLength(paragraphs.length + 1);
+  });
+});
+
+describe('createMockApi mockManuscript option', () => {
+  it('is unchanged by default: no Front Matter row', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    expect(chapters.find((chapter) => chapter.id === 'front-matter')).toBeUndefined();
+  });
+});
 
 describe('mockApi credits preview (renderMockCredits)', () => {
   it('keeps an optional {…} segment, with its own punctuation, when every token inside it resolves', async () => {

@@ -98,7 +98,7 @@ The narrator on the Manuscript page, scanning the chapter list to pick the next 
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Stats then action, in fixed columns | Reorder the chapter header cluster, fixed-width stat block and action slot (empty on rows with no action), `tabular-nums`, the mixed-rows mock flag and visual state with an alignment assertion, unit tests, design-system bullet, doc screenshots; the credits cards too if Q3 lands here | pending | - | Q1-Q6; after the `ReaderCard` move of the credits parity PRD if that lands first | - |
+| 1 | Stats then action, in fixed columns | Reorder the chapter header cluster, fixed-width stat block and action slot (empty on rows with no action), `tabular-nums`, the mixed-rows mock flag and visual state with an alignment assertion, unit tests, design-system bullet, doc screenshots; the credits cards too if Q3 lands here | complete | - | Q1-Q6; after the `ReaderCard` move of the credits parity PRD if that lands first | - |
 
 ### Phase Details
 

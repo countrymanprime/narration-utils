@@ -27,6 +27,7 @@ import { SlideOver } from '../primitives/SlideOver';
 import { Tooltip, TooltipTarget } from '../primitives/Tooltip';
 import { ChapterNav } from './ChapterNav';
 import { CreditsEntry } from './CreditsEntry';
+import { loadCreditsExpanded, saveCreditsExpanded, type CreditsExpanded } from './creditsExpandedStorage';
 import { ReaderCard } from './ReaderCard';
 import { retailSampleRange } from './retailSampleRange';
 import { SearchBar } from './SearchBar';
@@ -61,7 +62,16 @@ const defaultState: ReaderState = { expandedChapters: [], bookmarks: [] };
 const escapeSelector = (value: string) =>
   typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(value) : value.replace(/(["\\])/g, '\\$1');
 
-export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; focusStoryBibleEntity: (id: string) => void }) {
+export function Manuscript({
+  notify,
+  focusStoryBibleEntity,
+  projectFolder,
+}: {
+  notify: Notify;
+  focusStoryBibleEntity: (id: string) => void;
+  /** Keys the credits cards' remembered open state (MC5 b): a project's own choice, not the viewer's in general. */
+  projectFolder: string;
+}) {
   const api = useApi();
   const location = useLocation();
   const routerNavigate = useNavigate();
@@ -105,7 +115,19 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
   // library returns, rendered with the current project's values.
   const [creditsTemplates, setCreditsTemplates] = useState<CreditTemplate[]>([]);
   const [creditsPreviews, setCreditsPreviews] = useState<{ opening?: CreditsRenderResult; closing?: CreditsRenderResult }>({});
-  const [creditsExpanded, setCreditsExpanded] = useState<{ opening: boolean; closing: boolean }>({ opening: false, closing: false });
+  // Open by default (MC5), remembered per project in browser storage - never in expandedChapters/readerStateSave,
+  // since a credits id is not a chapter id and the host's paragraph fetch would fail for one.
+  const [creditsExpanded, setCreditsExpandedState] = useState<CreditsExpanded>(() => loadCreditsExpanded(projectFolder));
+  const setCreditsExpanded = useCallback(
+    (next: CreditsExpanded | ((current: CreditsExpanded) => CreditsExpanded)) => {
+      setCreditsExpandedState((current) => {
+        const resolved = typeof next === 'function' ? next(current) : next;
+        saveCreditsExpanded(projectFolder, resolved);
+        return resolved;
+      });
+    },
+    [projectFolder],
+  );
   // The retail sample the narrator picked in Settings > Credits (Phase 5, C10, ADR 0152): a marker on its lines, read
   // like the credits templates above - a failure leaves the reader unmarked rather than blocking it.
   const [retailSample, setRetailSample] = useState<RetailSample | null>(null);
@@ -498,13 +520,22 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
               <TooltipTarget text="Expand all chapters">
                 <IconButton
                   label="Expand all chapters"
-                  onClick={() => void saveState({ ...readerState, expandedChapters: recordedChapters.map((chapter) => chapter.id) })}
+                  onClick={() => {
+                    void saveState({ ...readerState, expandedChapters: recordedChapters.map((chapter) => chapter.id) });
+                    setCreditsExpanded({ opening: true, closing: true });
+                  }}
                 >
                   <FontAwesomeIcon icon={faAnglesDown} />
                 </IconButton>
               </TooltipTarget>
               <TooltipTarget text="Collapse all chapters">
-                <IconButton label="Collapse all chapters" onClick={() => void saveState({ ...readerState, expandedChapters: [] })}>
+                <IconButton
+                  label="Collapse all chapters"
+                  onClick={() => {
+                    void saveState({ ...readerState, expandedChapters: [] });
+                    setCreditsExpanded({ opening: false, closing: false });
+                  }}
+                >
                   <FontAwesomeIcon icon={faAnglesUp} />
                 </IconButton>
               </TooltipTarget>
@@ -519,6 +550,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
             preview={creditsPreviews.opening}
             expanded={creditsExpanded.opening}
             onToggle={() => setCreditsExpanded((current) => ({ ...current, opening: !current.opening }))}
+            textClass={READER_TEXT_CLASSES[textSize]}
           />
         )}
         {recordedChapters.map((chapter) => {
@@ -573,6 +605,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
             preview={creditsPreviews.closing}
             expanded={creditsExpanded.closing}
             onToggle={() => setCreditsExpanded((current) => ({ ...current, closing: !current.closing }))}
+            textClass={READER_TEXT_CLASSES[textSize]}
           />
         )}
       </div>
