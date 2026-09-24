@@ -237,6 +237,30 @@ describe('Dialog is a real modal', () => {
     expect(within(dialog).queryAllByRole('button')).toHaveLength(0);
     await waitFor(() => expect(dialog.querySelector('[tabindex="0"]')).toBe(document.activeElement));
   });
+
+  // read-aloud-control-bar.prd.md Phase 3, amending ADR 0094: a region between the body and `actions` that never
+  // scrolls with the body, for the read-aloud dialog's control bar.
+  it('draws the footer outside the scrolling body and above actions, and draws nothing when it is absent', async () => {
+    render(
+      <Dialog title="Read aloud" actions={<Button variant="primary">Close</Button>} footer={<div data-testid="bar">Reading controls</div>}>
+        <p>Body</p>
+      </Dialog>,
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Read aloud' });
+    const body = dialog.querySelector('[tabindex="0"]');
+    const footer = screen.getByTestId('bar');
+    expect(body?.contains(footer)).toBe(false);
+    const actions = dialog.querySelector('[data-dialog-actions]');
+    expect(footer.compareDocumentPosition(actions!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    cleanup();
+    render(
+      <Dialog title="Rebuild" actions={null}>
+        <p>Working</p>
+      </Dialog>,
+    );
+    expect(screen.queryByTestId('bar')).toBeNull();
+  });
 });
 
 // teleprompter-manuscript-integration.prd.md Phase 1: `size="full"` fills the viewport with a margin and scrolls its

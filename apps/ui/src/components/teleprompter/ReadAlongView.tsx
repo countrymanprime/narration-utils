@@ -1,25 +1,21 @@
 import type { ReactNode } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCrosshairs, faMicrophone, faStop } from '@fortawesome/free-solid-svg-icons';
 import { AssetFacts } from '../assets/AssetFacts';
 import { AssetInstallPrompt } from '../assets/AssetInstallPrompt';
-import { Button } from '../primitives/Button';
 import { Panel } from '../primitives/Panel';
-import { ToggleGroup } from '../primitives/ToggleGroup';
-import { TooltipTarget } from '../primitives/Tooltip';
-import { MicrophoneField } from './MicrophoneField';
 import { ReaderKey } from './ReaderKey';
 import { ReaderText } from './ReaderText';
 import type { ReaderMark } from './readerModel';
-import { useFollowCursor } from './useFollowCursor';
-import { ENGINE_LABELS, MODELS, type TeleprompterSession } from './useTeleprompterSession';
-
-const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
+import type { FollowCursor } from './useFollowCursor';
+import { ENGINE_LABELS, type TeleprompterSession } from './useTeleprompterSession';
 
 type Props = {
   session: TeleprompterSession;
-  /** Extra setup fields shown above the microphone/model row while idle (the standalone page's chapter picker). */
-  extraSetupFields?: ReactNode;
+  /**
+   * Following for the shared reader (engines-and-input-devices.prd.md Phase 10): computed by the caller and shared with
+   * `ReadingControlBar`'s Follow button (read-aloud-control-bar.prd.md Phase 3), which now lives outside this view (the
+   * dialog's non-scrolling footer, or the standalone page's own sticky bar).
+   */
+  follow: FollowCursor;
   /**
    * Rendered first in the text column, on the text's own axis (read-aloud-control-bar.prd.md Phase 1): the read-aloud
    * dialog's resume card. Absent when there is nothing to show (a running session, or credits mode).
@@ -36,94 +32,16 @@ type Props = {
 };
 
 /**
- * The setup fields (while idle), status bar, Start/Stop, reader text and model-download prompt - everything a reading
- * session shows once a chapter is chosen. Shared by `TeleprompterPage` and `ReadAloudDialog`
- * (teleprompter-manuscript-integration.prd.md Phase 2) so both mount one view until the standalone page is retired
- * (Phase 13). Chapter choice itself is not this component's job: the caller supplies `extraSetupFields` for it (or
- * nothing, when the chapter is fixed, as in the modal).
+ * The reader text, status line and model-download prompt - everything a reading session shows once a chapter is chosen.
+ * Shared by `TeleprompterPage` and `ReadAloudDialog` (teleprompter-manuscript-integration.prd.md Phase 2) so both mount
+ * one view until the standalone page is retired (Phase 13). Chapter choice is not this component's job, and neither -
+ * since read-aloud-control-bar.prd.md Phase 3 - is Start/Stop, the microphone or the engine/model choice: those moved
+ * into `ReadingControlBar`, which the caller renders outside this view (a `Dialog` footer, or the page's own sticky bar).
  */
-export function ReadAlongView({ session: t, extraSetupFields, header, marks, onOpenMark, aside }: Props) {
-  // Scrolling by hand pauses following until the current word is back in the band or Follow is pressed (engines PRD Phase 10).
-  const follow = useFollowCursor({ active: t.active, cursor: t.cursor });
+export function ReadAlongView({ session: t, follow, header, marks, onOpenMark, aside }: Props) {
   const main = (
     <div className="mx-auto w-full max-w-3xl min-w-0 space-y-4">
       {header}
-      <div className={t.active ? 'sticky top-0 z-10' : ''}>
-        <Panel>
-          {!t.active && (
-            // Beside a rail the column is narrower than the viewport says, so the fields pair up a breakpoint later.
-            <div className={`grid gap-4 ${aside ? 'lg:grid-cols-2' : 'md:grid-cols-2'}`}>
-              {extraSetupFields}
-              <MicrophoneField
-                value={t.device}
-                onChange={t.changeDevice}
-                devices={t.devices}
-                error={t.devicesError}
-                onRefresh={t.loadDevices}
-                refreshing={t.devicesLoading}
-              />
-              {/* The engine choice shows only where the host can launch more than one (Moonshine ships on Windows only, ADR 0107). */}
-              {t.engines.length > 1 && (
-                <div>
-                  <span className={LABEL_CLASS}>Engine</span>
-                  <ToggleGroup label="Engine" className="mt-1.5 flex-wrap gap-1.5" value={t.engine} onChange={t.changeEngine} options={t.engines} />
-                </div>
-              )}
-              <div className={t.engines.length > 1 ? '' : aside ? 'lg:col-span-2' : 'md:col-span-2'}>
-                <span className={LABEL_CLASS}>{t.engines.length > 1 ? 'Model' : `${ENGINE_LABELS[t.engine]} model`}</span>
-                <ToggleGroup
-                  label="Model"
-                  className="mt-1.5 flex-wrap gap-1.5"
-                  value={t.model}
-                  onChange={t.changeModel}
-                  options={MODELS.map((option) => ({ value: option.value, label: option.label, title: option.caption }))}
-                />
-              </div>
-            </div>
-          )}
-          <div className={`flex flex-wrap items-center justify-between gap-3 ${t.active ? '' : 'mt-4'}`}>
-            <div className="min-w-0 text-sm">
-              <span
-                role="status"
-                className="font-semibold"
-                style={{ color: t.session.position?.status === 'waiting' && t.active ? 'var(--warn-text)' : undefined }}
-              >
-                {t.status}
-              </span>
-              {t.session.script && (
-                <span className="ml-2 font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
-                  {t.session.cursor.toLocaleString()} of {t.session.script.tokens.toLocaleString()} words
-                </span>
-              )}
-              {t.active && t.session.heard && (
-                <div className="truncate text-xs" style={{ color: 'var(--text-muted)' }}>
-                  Heard: {t.session.heard}
-                </div>
-              )}
-              <div aria-live="polite" className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                {t.active && !follow.following && 'Following paused. Scroll back to the highlighted word or press Follow.'}
-              </div>
-            </div>
-            {t.active ? (
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Always shown while a session runs, so it is where the narrator expects it; enabled only while following is paused. */}
-                <Button variant="ghost" onClick={follow.resume} disabled={follow.following}>
-                  <FontAwesomeIcon icon={faCrosshairs} /> Follow
-                </Button>
-                <Button variant="danger" onClick={t.stop} disabled={t.host.phase === 'stopping'}>
-                  <FontAwesomeIcon icon={faStop} /> Stop
-                </Button>
-              </div>
-            ) : (
-              <TooltipTarget text={t.startReason}>
-                <Button onClick={() => void t.start()} disabled={!t.canStart}>
-                  <FontAwesomeIcon icon={faMicrophone} /> Start reading
-                </Button>
-              </TooltipTarget>
-            )}
-          </div>
-        </Panel>
-      </div>
       {(t.error || t.host.phase === 'error') && (
         <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
           {t.error || t.host.message}

@@ -26,6 +26,10 @@ type DialogProps = {
   // WorkDialog only ever shows one action at a time - 'between' would strand
   // it on the left, so it opts into 'end' instead.
   actionsAlign?: 'between' | 'end';
+  // A region between the body and `actions` that never scrolls with it (read-aloud-control-bar.prd.md Phase 3, amending
+  // ADR 0094): the read-aloud dialog's control bar, kept visible in every scroll position. Absent, most dialogs draw
+  // nothing here. Unlike `actions` it has no padding or alignment opinion of its own - a toolbar lays out its own row.
+  footer?: ReactNode;
   children: ReactNode;
 } & (
   | { variant?: 'dialog'; description?: ReactNode }
@@ -58,6 +62,7 @@ export function Dialog({
   size = 'default',
   actions,
   actionsAlign = 'between',
+  footer,
   children,
 }: DialogProps) {
   // Both families share their parts; typing them as one keeps the wrapper a single shell.
@@ -132,6 +137,11 @@ export function Dialog({
               )}
               {children}
             </div>
+            {hasContent(footer) && (
+              <div className="flex-none border-t" style={{ borderColor: 'var(--border)' }}>
+                {footer}
+              </div>
+            )}
             {hasContent(actions) && (
               <div
                 data-dialog-actions

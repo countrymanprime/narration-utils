@@ -26,7 +26,7 @@ import { isWireError } from './api/wire/WireError';
 import { describeApiError } from './api/errorMessage';
 
 // The Settings categories another page can open Settings at, by URL anchor.
-const SETTINGS_ANCHORS: Record<string, string> = { '#credits': 'Credits', '#delivery': 'Delivery' };
+const SETTINGS_ANCHORS: Record<string, string> = { '#credits': 'Credits', '#delivery': 'Delivery', '#teleprompter': 'Teleprompter' };
 
 const LIVE_UPDATES_DEGRADED = 'Some live updates from the desktop host could not be read, so what you see may be out of date. Reopen the page to refresh it.';
 

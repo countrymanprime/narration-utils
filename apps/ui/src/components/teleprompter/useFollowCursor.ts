@@ -10,8 +10,9 @@ const FOLLOW_BAND = { top: 0.25, bottom: 0.7 } as const;
 export const SCROLL_SETTLE_MS = 150;
 
 const SCROLL_KEYS = new Set(['PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown', ' ']);
-// Roles whose arrow keys move a selection or a value, not the page.
-const KEY_WIDGET_ROLES = new Set([
+// Roles whose arrow keys move a selection or a value, not the page. Exported for `ReadingControlBar`'s Space shortcut
+// (read-aloud-control-bar.prd.md Phase 3, Q10), which reuses the same "is this a widget, not the page" check.
+export const KEY_WIDGET_ROLES = new Set([
   'combobox',
   'grid',
   'listbox',
@@ -30,8 +31,8 @@ const KEY_WIDGET_ROLES = new Set([
   'tree',
   'treeitem',
 ]);
-const EDITABLE = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
-const SPACE_ACTIVATES = 'button, a[href], summary, [role="button"], [role="checkbox"], [role="switch"]';
+export const EDITABLE = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
+export const SPACE_ACTIVATES = 'button, a[href], summary, [role="button"], [role="checkbox"], [role="switch"]';
 
 const prefersReducedMotion = (): boolean => typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 

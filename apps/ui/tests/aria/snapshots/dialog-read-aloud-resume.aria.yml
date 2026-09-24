@@ -1,7 +1,9 @@
 # The read-aloud dialog (a modal dialog, not an alertdialog) with its resume prompt (read-aloud-resume-from-daw.prd.md
 # Phase 1): a compact region named "Where you stopped" (an aria-label, no visible heading) holding the track and save
 # time, the matched sentence as a quote with the resume word in bold, and the choices. Nothing in it starts reading:
-# Start reading stays the session's button.
+# the control bar's Play button (below) stays the session's button. The bar itself (read-aloud-control-bar.prd.md
+# Phase 3) is a named toolbar in the dialog's non-scrolling footer, so it comes after the body's own children here even
+# though it is drawn last on screen (`dialog-read-aloud-controls.aria.yml` pins it on its own).
 - /children: equal
 # The two toast live regions stay in the tree on purpose (see dialog-add-note.aria.yml).
 - main:
@@ -18,7 +20,11 @@
     - button "Resume from here"
     - button "Start from the top"
     - button "Pick a word"
-  - combobox "Microphone"
-  - group "Choose a microphone first.":
-    - button "Start reading" [disabled]
   - region "Chapter text"
+  - toolbar "Reading controls":
+    - group "Choose a microphone first.":
+      - button "Play" [disabled]
+    - button "Stop reading" [disabled]
+    - status
+    - 'button "Microphone: not chosen"'
+    - button "Settings"

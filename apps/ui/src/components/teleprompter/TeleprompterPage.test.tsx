@@ -2,6 +2,7 @@
 import type { ComponentProps } from 'react';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeleprompterPage } from './TeleprompterPage';
 import { ApiProvider } from '../../api/ApiContext';
@@ -60,9 +61,11 @@ function renderPage(
       initial,
     );
   render(
-    <ApiProvider api={api}>
-      <TeleprompterPage {...props} />
-    </ApiProvider>,
+    <MemoryRouter>
+      <ApiProvider api={api}>
+        <TeleprompterPage {...props} />
+      </ApiProvider>
+    </MemoryRouter>,
   );
   return {
     api,
@@ -74,9 +77,19 @@ function renderPage(
   };
 }
 
+async function openMicPopover(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: /^Microphone:/ }));
+}
+
+async function openSettingsPopover(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: 'Settings' }));
+}
+
 async function startReading(user: ReturnType<typeof userEvent.setup>) {
-  await user.selectOptions(await screen.findByLabelText('Microphone'), DEVICE_NAME);
-  await user.click(screen.getByRole('button', { name: 'Start reading' }));
+  await openMicPopover(user);
+  // { selector: 'select' } disambiguates from the popover popup itself, which shares the same accessible name "Microphone".
+  await user.selectOptions(await screen.findByLabelText('Microphone', { selector: 'select' }), DEVICE_NAME);
+  await user.click(screen.getByRole('button', { name: 'Play' }));
 }
 
 const currentWord = () => document.querySelector('[data-highlight="Cursor"]')?.textContent;
@@ -86,43 +99,51 @@ describe('TeleprompterPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    const start = (await screen.findByRole('button', { name: 'Start reading' })) as HTMLButtonElement;
+    const start = (await screen.findByRole('button', { name: 'Play' })) as HTMLButtonElement;
     expect(start.disabled).toBe(true);
     expect((screen.getByLabelText('Chapter') as HTMLSelectElement).value).toBe('chapter-1');
 
-    await user.selectOptions(screen.getByLabelText('Microphone'), DEVICE_NAME);
+    await openMicPopover(user);
+    await user.selectOptions(screen.getByLabelText('Microphone', { selector: 'select' }), DEVICE_NAME);
     expect(start.disabled).toBe(false);
   });
 
   it('lists the enumerated devices in the picker, not a typed field', async () => {
+    const user = userEvent.setup();
     renderPage();
 
-    const field = (await screen.findByLabelText('Microphone')) as HTMLSelectElement;
+    await openMicPopover(user);
+    const field = (await screen.findByLabelText('Microphone', { selector: 'select' })) as HTMLSelectElement;
     expect(field.tagName).toBe('SELECT');
     expect(Array.from(field.options).map((option) => option.textContent)).toContain(DEVICE_NAME);
   });
 
   it('blocks Start with a clear message when device enumeration returns nothing, and offers no typed fallback', async () => {
+    const user = userEvent.setup();
     renderPage({}, { teleprompterDevices: [] });
 
+    await openMicPopover(user);
     expect(await screen.findByText(/No microphone found/)).toBeTruthy();
     expect(screen.queryByRole('combobox', { name: 'Microphone' })).toBeNull();
-    const start = screen.getByRole('button', { name: 'Start reading' }) as HTMLButtonElement;
+    const start = screen.getByRole('button', { name: 'Play' }) as HTMLButtonElement;
     expect(start.disabled).toBe(true);
   });
 
   it('blocks Start with a distinct message when device enumeration fails outright', async () => {
+    const user = userEvent.setup();
     renderPage({ teleprompterDevices: async () => ({ devices: [], error: 'Could not list input devices' }) });
 
+    await openMicPopover(user);
     expect(await screen.findByText(/Couldn't list microphones/)).toBeTruthy();
-    const start = screen.getByRole('button', { name: 'Start reading' }) as HTMLButtonElement;
+    const start = screen.getByRole('button', { name: 'Play' }) as HTMLButtonElement;
     expect(start.disabled).toBe(true);
   });
 
   it('remembers the microphone between visits, persisted through the global settings, not browser storage', async () => {
     const user = userEvent.setup();
     const { api } = renderPage();
-    await user.selectOptions(await screen.findByLabelText('Microphone'), OTHER_DEVICE_NAME);
+    await openMicPopover(user);
+    await user.selectOptions(await screen.findByLabelText('Microphone', { selector: 'select' }), OTHER_DEVICE_NAME);
     await waitFor(async () => {
       const settings = await api.settingsForScope('global');
       expect(settings.Teleprompter?.find((field) => field.key === 'input_device')?.value).toBe(OTHER_DEVICE_NAME);
@@ -130,8 +151,9 @@ describe('TeleprompterPage', () => {
     cleanup();
 
     renderPage({}, {}, api);
+    await openMicPopover(user);
 
-    expect(((await screen.findByLabelText('Microphone')) as HTMLSelectElement).value).toBe(OTHER_DEVICE_NAME);
+    expect(((await screen.findByLabelText('Microphone', { selector: 'select' })) as HTMLSelectElement).value).toBe(OTHER_DEVICE_NAME);
   });
 
   it('migrates a browser-storage device from before Phase 2, once, into the global settings', async () => {
@@ -151,9 +173,13 @@ describe('TeleprompterPage', () => {
     const api = createMockApi();
     await api.saveSettings('Teleprompter', 'global', { input_device: OTHER_DEVICE_NAME });
 
+    const user = userEvent.setup();
     renderPage({}, {}, api);
+    await openMicPopover(user);
 
-    await waitFor(async () => expect((await screen.findByLabelText('Microphone')) as HTMLSelectElement).toHaveProperty('value', OTHER_DEVICE_NAME));
+    await waitFor(async () =>
+      expect((await screen.findByLabelText('Microphone', { selector: 'select' })) as HTMLSelectElement).toHaveProperty('value', OTHER_DEVICE_NAME),
+    );
     const settings = await api.settingsForScope('global');
     expect(settings.Teleprompter?.find((field) => field.key === 'input_device')?.value).toBe(OTHER_DEVICE_NAME);
   });
@@ -175,6 +201,7 @@ describe('TeleprompterPage', () => {
     const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
     const { api } = renderPage({ teleprompterStart });
 
+    await openSettingsPopover(user);
     const engines = await screen.findByRole('group', { name: 'Engine' });
     await user.click(within(engines).getByRole('button', { name: 'Moonshine' }));
     await startReading(user);
@@ -192,6 +219,7 @@ describe('TeleprompterPage', () => {
 
     renderPage({}, {}, api);
 
+    await openSettingsPopover(user);
     const moonshine = await screen.findByRole('button', { name: 'Moonshine' });
     await waitFor(() => expect(moonshine.getAttribute('aria-pressed')).toBe('true'));
     await startReading(user);
@@ -199,6 +227,7 @@ describe('TeleprompterPage', () => {
   });
 
   it('offers no engine choice where the host can launch only Whisper', async () => {
+    const user = userEvent.setup();
     const base = createMockApi();
     const settingsForScope: NarrationApi['settingsForScope'] = async (scope) => {
       const settings = await base.settingsForScope(scope);
@@ -209,6 +238,7 @@ describe('TeleprompterPage', () => {
     };
     renderPage({ settingsForScope });
 
+    await openSettingsPopover(user);
     await screen.findByRole('group', { name: 'Model' });
     expect(screen.queryByRole('group', { name: 'Engine' })).toBeNull();
   });
@@ -217,6 +247,7 @@ describe('TeleprompterPage', () => {
     const user = userEvent.setup();
     const { api } = renderPage();
 
+    await openSettingsPopover(user);
     await user.click(await screen.findByRole('button', { name: 'Small' }));
 
     await waitFor(async () => {
@@ -235,6 +266,7 @@ describe('TeleprompterPage', () => {
 
     renderPage({}, {}, api);
 
+    await openSettingsPopover(user);
     const small = await screen.findByRole('button', { name: 'Small' });
     await waitFor(() => expect(small.getAttribute('aria-pressed')).toBe('true'));
 
@@ -254,7 +286,7 @@ describe('TeleprompterPage', () => {
 
     await waitFor(() => expect(currentWord()).toBe('beginning'));
     expect(screen.getByRole('status').textContent).toMatch(/Listening/);
-    expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Stop reading' })).toBeTruthy();
   });
 
   it('shows what was heard while it follows', async () => {
@@ -322,7 +354,7 @@ describe('TeleprompterPage', () => {
 
     await waitFor(() => expect(screen.getByRole('status').textContent).toMatch(/Waiting for you to return to the script/));
     await waitFor(() => expect(currentWord()).toBeTruthy());
-    expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Stop reading' })).toBeTruthy();
   });
 
   it('shows a finished chapter from the host', async () => {
@@ -341,19 +373,19 @@ describe('TeleprompterPage', () => {
     renderPage({}, { teleprompter: 'ended' });
 
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Stopped at the end of the chapter.'));
-    expect(screen.getByRole('button', { name: 'Start reading' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy();
   });
 
   it('stops the session and offers to start again', async () => {
     const user = userEvent.setup();
     const teleprompterStop = vi.fn().mockResolvedValue(undefined);
     const { setState } = renderPage({ teleprompterStop }, { teleprompter: 'listening' });
-    await user.click(await screen.findByRole('button', { name: 'Stop' }));
+    await user.click(await screen.findByRole('button', { name: 'Stop reading' }));
 
     setState({ phase: 'stopped', message: 'Stopped.', chapter: 'chapter-1' });
 
     expect(teleprompterStop).toHaveBeenCalled();
-    expect(await screen.findByRole('button', { name: 'Start reading' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Play' })).toBeTruthy();
   });
 
   it('reports why a session could not start', async () => {
@@ -367,7 +399,7 @@ describe('TeleprompterPage', () => {
 
   it('shows the host error message when a session fails', async () => {
     const { setState } = renderPage();
-    await screen.findByRole('button', { name: 'Start reading' });
+    await screen.findByRole('button', { name: 'Play' });
 
     setState({ phase: 'error', message: 'No such microphone.' });
 
@@ -415,6 +447,7 @@ describe('TeleprompterPage', () => {
     const assetsInstall = vi.spyOn(api, 'assetsInstall');
     const teleprompterStart = vi.spyOn(api, 'teleprompterStart');
 
+    await openSettingsPopover(user);
     await user.click(await screen.findByRole('button', { name: 'Moonshine' }));
     expect(assetsInstall).not.toHaveBeenCalled();
     await startReading(user);

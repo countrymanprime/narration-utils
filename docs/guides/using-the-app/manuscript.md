@@ -54,22 +54,24 @@ sample starts" and its length above the first line and "Last line of the retail 
 ![Manuscript, the retail sample marked on lines 1 to 3 of Chapter 3](../../images/ui/manuscript-retail-sample.webp)
 
 Each narration chapter's header has a **Read aloud** button. It opens the [Teleprompter](teleprompter.md)
-read-along for that chapter in a full-screen dialog titled "Read aloud — " and the chapter title, with the
-same microphone and model choices, Start reading and Stop. Closing the dialog while it is still listening
-asks first ("Stop reading?"); Stop and close ends the session, and nothing recorded in REAPER is affected.
+read-along for that chapter in a full-screen dialog titled "Read aloud — " and the chapter title, with a
+compact control bar at the bottom that stays in view while you scroll: **Play**, **Stop reading**, the
+microphone (a popover with its device list and Refresh) and **Settings** (a popover with the engine and
+model). Closing the dialog while it is still listening asks first ("Stop reading?"); Stop and close ends the
+session, and nothing recorded in REAPER is affected.
 
 Above the text, a compact **Where you stopped** notice looks for the chapter's track in the project's
 REAPER file and listens to the last 30 seconds recorded on it (with the same local Whisper model, which it
 asks to download first if it is missing). It shows the track, that this is as of the project's last save,
-and the sentence it matched. **Resume from here** makes Start reading begin at that word; **Start from the
-top** and **Pick a word** (start reading, then click the word you want) are the other choices, and nothing
-starts until you press Start reading. Choosing any of the three clears the notice at once for the rest of
-this dialog's open: it does not ask again after a session ends, so the next Start begins at the top with
-nothing to clear. A chapter already recorded to its last word says so instead of offering to resume past
-the end. When the match is uncertain or a confirmed track has a problem (renamed, missing, or linked to
-more than one chapter), the notice says so with a link to the Tracks page instead of asking you to pick a
-track here; when the recording cannot be read or does not match the chapter it says why and reading starts
-from the top.
+and the sentence it matched. **Resume from here** makes Play begin at that word - shown as a clearable chip
+in the control bar ("Starts at '…'") until you start or clear it; **Start from the top** and **Pick a word**
+(start reading, then click the word you want) are the other choices, and nothing starts until you press
+Play. Choosing any of the three clears the notice at once for the rest of this dialog's open: it does not
+ask again after a session ends, so the next Play begins at the top with nothing to clear. A chapter already
+recorded to its last word says so instead of offering to resume past the end. When the match is uncertain or
+a confirmed track has a problem (renamed, missing, or linked to more than one chapter), the notice says so
+with a link to the Tracks page instead of asking you to pick a track here; when the recording cannot be read
+or does not match the chapter it says why and reading starts from the top.
 
 The dialog marks Story Bible names and your notes in the text, in the same colours as the reader here. A
 reading panel beside the text has four tabs: **Key** (what each mark means), **Flags** (see below),

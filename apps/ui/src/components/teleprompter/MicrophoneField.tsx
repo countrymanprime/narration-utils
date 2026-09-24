@@ -1,3 +1,6 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faRotate } from '@fortawesome/free-solid-svg-icons';
+import { Button } from '../primitives/Button';
 import { Select } from '../primitives/Select';
 import type { TeleprompterDevice } from '../../types';
 
@@ -31,9 +34,9 @@ export function MicrophoneField({ value, onChange, devices, error, onRefresh, re
   const listEmpty = devices.length === 0;
 
   const refreshButton = onRefresh && (
-    <button type="button" className="text-xs text-[var(--accent)] underline" onClick={onRefresh} disabled={refreshing}>
-      {refreshing ? 'Refreshing…' : 'Refresh'}
-    </button>
+    <Button variant="ghost" className="px-2! py-1! text-[0.7rem]!" onClick={onRefresh} pending={refreshing}>
+      <FontAwesomeIcon icon={faRotate} /> {refreshing ? 'Refreshing…' : 'Refresh'}
+    </Button>
   );
 
   if (listEmpty) {

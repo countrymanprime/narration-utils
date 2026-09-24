@@ -229,3 +229,38 @@ export const FullSize: Story = {
     await expect(args.onClose).toHaveBeenCalledOnce();
   },
 };
+
+// read-aloud-control-bar.prd.md Phase 3, amending ADR 0094: a `footer` region between the body and `actions` that never
+// scrolls with the body - the read-aloud dialog's control bar (`ReadingControlBar`) renders here so Play/Stop and the
+// microphone stay visible while the chapter text scrolls.
+export const WithFooter: Story = {
+  args: {
+    title: 'Read aloud',
+    size: 'full',
+    actions: null,
+    footer: (
+      <div className="flex items-center justify-between px-4 py-2.5 text-sm" role="toolbar" aria-label="Reading controls">
+        <Button variant="primary">Play</Button>
+        <span>Ready</span>
+      </div>
+    ),
+    children: (
+      <div>
+        {Array.from({ length: 40 }, (_, index) => (
+          <p key={index} className="text-sm">
+            Line {index + 1} of the chapter.
+          </p>
+        ))}
+      </div>
+    ),
+  },
+  play: async () => {
+    const dialog = await screen.findByRole('dialog', { name: 'Read aloud' });
+    const bar = within(dialog).getByRole('toolbar', { name: 'Reading controls' });
+    await expect(bar).toBeVisible();
+    // The footer sits outside the scrolling body: scrolling the body leaves the bar in place.
+    const body = dialog.querySelector('[tabindex="0"]') as HTMLElement;
+    body.scrollTop = body.scrollHeight;
+    await expect(bar).toBeVisible();
+  },
+};

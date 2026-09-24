@@ -295,7 +295,8 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'manuscript',
     state: 'read-aloud-setup',
     description:
-      'Manuscript, the "Read aloud" full-size dialog opened from a chapter header - Microphone, Engine and Model fields, no chapter picker (the chapter is fixed); above them the resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) offers where the recording ends as a compact choice: the matched track, "as of the project\'s last save", the matched sentence, and Resume from here / Start from the top / Pick a word',
+      'Manuscript, the "Read aloud" full-size dialog opened from a chapter header - a non-scrolling control bar at the bottom (read-aloud-control-bar.prd.md Phase 3) with Play, Stop reading, status, the microphone and Settings popover buttons, no chapter picker (the chapter is fixed); above the text the resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) offers where the recording ends as a compact choice: the matched track, "as of the project\'s last save", the matched sentence, and Resume from here / Start from the top / Pick a word',
+    ...REFLOW,
   },
   {
     page: 'manuscript',
@@ -342,13 +343,13 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'manuscript',
     state: 'read-aloud-resume-after-session',
     description:
-      'Manuscript, the "Read aloud" dialog after a session has started and ended once - the resume prompt does not come back for the rest of this dialog\'s open, so the next Start reading begins at the top with nothing to clear',
+      'Manuscript, the "Read aloud" dialog after a session has started and ended once - the resume prompt does not come back for the rest of this dialog\'s open, so the next Play begins at the top with nothing to clear',
   },
   {
     page: 'manuscript',
     state: 'read-aloud-listening',
     description:
-      'Manuscript, the "Read aloud" dialog mid-session and listening - the setup fields collapse to a status bar with Stop, the current word highlighted and read words dimmed (reached via the ?mockTeleprompter=listening mock seam)',
+      'Manuscript, the "Read aloud" dialog mid-session and listening - the control bar shows Listening, the word count, Stop reading and Follow (disabled, following), the current word highlighted and read words dimmed (reached via the ?mockTeleprompter=listening mock seam)',
   },
   {
     page: 'manuscript',
@@ -390,6 +391,20 @@ export const STATE_CATALOG: StateEntry[] = [
       reason:
         'The rail is already open and the resume prompt already shown in read-aloud-setup, the same default state this row measures; the alignment and full-height checks run as bounding-box assertions in the driver, not from the screenshot.',
     },
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-mic-popover',
+    description:
+      'Manuscript, the "Read aloud" dialog with the control bar\'s microphone popover open (read-aloud-control-bar.prd.md Phase 3) - the device list, the selected device, and Refresh; no level meter yet (Phase 4)',
+    ...REFLOW,
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-settings-popover',
+    description:
+      'Manuscript, the "Read aloud" dialog with the control bar\'s Settings popover open (read-aloud-control-bar.prd.md Phase 3) - Engine (when the host offers more than one) and Model as toggle groups, and a "More in Settings" link',
+    ...REFLOW,
   },
   {
     page: 'manuscript',
@@ -748,24 +763,24 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'teleprompter',
     state: 'credits-unresolved-warning',
     description:
-      'Teleprompter, "Closing credits" chosen with no project credits values - a warning names the tokens with no value (Title, Author, Narrator) with "Fill them in Settings", the placeholders show in brackets in the text, and Start reading is still enabled (C6: warn, never block)',
+      'Teleprompter, "Closing credits" chosen with no project credits values - a warning names the tokens with no value (Title, Author, Narrator) with "Fill them in Settings", the placeholders show in brackets in the text, and Play is still enabled (C6: warn, never block)',
   },
   {
     page: 'teleprompter',
     state: 'model-download-progress',
-    description: 'Teleprompter, the Whisper model download after Start reading, with real bytes and Cancel (?mockAssets=downloading)',
+    description: 'Teleprompter, the Whisper model download after Play, with real bytes and Cancel (?mockAssets=downloading)',
   },
   {
     page: 'teleprompter',
     state: 'moonshine-model-required',
     description:
-      'Teleprompter, Moonshine chosen as the engine and Start reading pressed with its model not installed - the first-use question names the engine, its size, publisher and licence, and nothing downloads until Download model (?mockAssets=missing)',
+      'Teleprompter, Moonshine chosen as the engine and Play pressed with its model not installed - the first-use question names the engine, its size, publisher and licence, and nothing downloads until Download model (?mockAssets=missing)',
   },
   {
     page: 'teleprompter',
     state: 'no-microphone-blocked',
     description:
-      'Teleprompter, device enumeration found nothing - "No microphone found" blocking message, no dropdown and no typed fallback, Start reading disabled (?mockNoDevices=1)',
+      'Teleprompter, device enumeration found nothing - "No microphone found" blocking message, no dropdown and no typed fallback, Play disabled (?mockNoDevices=1)',
   },
   {
     page: 'teleprompter',
@@ -795,7 +810,7 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'teleprompter',
     state: 'stopped-at-end',
     description:
-      'Teleprompter, the session stopped itself at the end of the chapter (the host auto-stop, ADR 0106) - "Stopped at the end of the chapter." with Start reading offered again and the chapter still dimmed (reached via the ?mockTeleprompter=ended mock seam)',
+      'Teleprompter, the session stopped itself at the end of the chapter (the host auto-stop, ADR 0106) - "Stopped at the end of the chapter." with Play offered again and the chapter still dimmed (reached via the ?mockTeleprompter=ended mock seam)',
   },
 
   // Review (review-dashboard-and-findings-adoption.prd.md Phase 5)
