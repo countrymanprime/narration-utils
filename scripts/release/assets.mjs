@@ -108,7 +108,7 @@ function platformEntry(platform) {
 // and v0.2.7 publish the same names.
 const RELEASE_VERSION = /^(0|[1-9]\d{0,5})\.(0|[1-9]\d{0,5})\.(0|[1-9]\d{0,5})$/;
 
-export function requireVersion(version) {
+function requireVersion(version) {
   if (typeof version !== 'string' || !RELEASE_VERSION.test(version)) {
     throw new Error(`"${version}" is not a release version. Expected bare MAJOR.MINOR.PATCH, for example 0.2.7 (no v, no -rc).`);
   }
