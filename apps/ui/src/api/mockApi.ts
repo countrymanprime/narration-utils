@@ -373,6 +373,9 @@ export function createMockApi(
     creditValues?: CreditValues;
     /** Adds a chapter announcement template with this body to the library at boot (Phase 5). */
     chapterAnnouncement?: string;
+    /** Drops the closing credit templates from the seeded library (credits-in-chapter-table.prd.md Phase 2, CT5): the
+     * Home table's Closing credits row then shows "Not set up" with a link to Settings > Credits. */
+    creditsMissingClosing?: boolean;
     /** The project's retail sample at boot (Phase 5): by paragraph id, or by lines of the chapter at this index in the
      * manuscript once it has loaded (the bundled text replaces the seed's paragraph ids). */
     retailSample?: { startParagraphId: string; endParagraphId: string } | { chapterIndex: number; startLine: number; endLine: number };
@@ -544,6 +547,7 @@ export function createMockApi(
       builtIn: true,
     },
   ];
+  if (initial.creditsMissingClosing) creditTemplates = creditTemplates.filter((template) => template.kind !== 'closing');
   if (initial.chapterAnnouncement !== undefined)
     creditTemplates.push({ id: 'mock-chapter-announcement', kind: 'chapter_announcement', name: 'Chapter announcement', body: initial.chapterAnnouncement });
   let nextCreditTemplateId = 1;

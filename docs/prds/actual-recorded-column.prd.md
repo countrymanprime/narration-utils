@@ -2,7 +2,7 @@
 
 **Source:** owner report of 2026-09-24 on the Actual recorded column of Home's per-chapter breakdown (columns Chapter, Words, Est. finished length, Actual recorded, Status, Check). Every row read "–" with a small "estimated from status" caption. The owner: "I don't like the 'estimated from status' here." "Before the status is selected, it shows the message with just a dash. Not helpful. Empty can still be a dash, but we should not put an 'estimated' value in the 'actual recorded' column. That is dumb." "After choosing 'Recording', it fills in half of the estimated finished length? Why? Before editing, it is likely longer than the actual finished length anyway, so this mock data is inaccurate even as a placeholder." Citations are `file:line` at `accb3bc` (code unchanged since `7a20a9e`, which the sibling PRDs cite). Supersedes the "recorded column names its source" clause of [ADR 0130](../adr/0130-the-home-recording-check-opens-on-the-stored-result-runs-only-on-a-press-and-labels-the-recorded-length-measured-or-estimated.md) and decision Q12 of the delivered recording coverage work ([recording-coverage.md](../utilities/recording-coverage.md)); takes over the Home half of Phase 8 of [Diagnostics, Delivery Reports and Cleanup Tools](diagnostics-delivery-and-cleanup-tools.prd.md) if the owner agrees (AR7). Related: [Home Stage Check Line](home-stage-check-line.prd.md) and [Credits in the Chapter Table](credits-in-chapter-table.prd.md) (same table), and three sibling PRDs drafted the same day (DAW chapter-track auto-sync, a per-row track-link button, a recording-check summary).
 
-**Status (2026-09-24):** draft; open questions AR1 to AR8 wait for the owner. No tracking issue yet: open one (`docs/operations/github-workflow.md`) before Phase 1.
+**Status (2026-09-24):** complete (Phases 1 to 3); open questions AR1 to AR8 resolved per their recommendations, approved via the Visual Spec mockups.
 
 ## Problem Statement
 
@@ -120,9 +120,9 @@ We believe that showing only a time read from the chapter's linked track, and a 
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Remove the status estimate | Drop `RECORDED_FRACTION`, the fallback and both captions; status is inert; the stat stops summing guesses (AR5); tests, mock comments, `home.md` | pending | 2 | AR4, AR5 | - |
+| 1 | Remove the status estimate | Drop `RECORDED_FRACTION`, the fallback and both captions; status is inert; the stat stops summing guesses (AR5); tests, mock comments, `home.md` | complete | 2 | AR4, AR5 | - |
 | 2 | Recorded seconds on the chapter payload | Interval union over the confirmed track's items in the saved `.rpp`; provider and `recordedSeconds` (plus reason) on `ManuscriptChapters`; Zod schema, golden, `wireContracts` row, mock; benchmark | complete | 1 | AR2, AR3, AR6, AR7 | - |
-| 3 | The column and stat show recorded time | Cell, dash reason, stat, header tooltip; visual states and screenshots; docs; superseding ADR | pending | - | 1, 2; AR1, AR8 | - |
+| 3 | The column and stat show recorded time | Cell, dash reason, stat, header tooltip; visual states and screenshots; docs; superseding ADR | complete | - | 1, 2; AR1, AR8 | - |
 
 ### Phase Details
 

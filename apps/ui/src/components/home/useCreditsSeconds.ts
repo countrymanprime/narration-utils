@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import type { CreditTemplate, NarrationApi } from '../../types';
 import { estimateAnnouncementSeconds, estimateCreditsSeconds, roomToneSeconds } from '../../state';
 
-const firstOfKind = (templates: CreditTemplate[], kind: string) => templates.find((template) => template.kind === kind);
+// Shared with useCreditsRows.ts (credits-in-chapter-table.prd.md Phase 2) so the Credits stat and the credits rows can
+// never disagree about which template of a kind is "the" one (ADR 0093).
+export const firstOfKind = (templates: CreditTemplate[], kind: string) => templates.find((template) => template.kind === kind);
 
 // The room tone setting (General > "Room tone per credits file", Phase 5): a secondary read, 0 when it cannot be read.
-async function readRoomTone(api: NarrationApi): Promise<number> {
+export async function readRoomTone(api: NarrationApi): Promise<number> {
   try {
     const settings = await api.settingsForScope('global');
     return roomToneSeconds(settings.General?.find((field) => field.key === 'credits_room_tone_seconds')?.effectiveValue);

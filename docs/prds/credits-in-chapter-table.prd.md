@@ -2,7 +2,7 @@
 
 **Source:** owner report of 2026-09-24 on the Home page's per-chapter breakdown (columns Chapter, Words, Est. finished length, Actual recorded, Status, with a status select and a Check button per row): "Every audiobook has opening and closing credits. I know they appear in the manuscript page but they are not here. They should be, as they are something that would be recorded." The owner drew an arrow above the first row ("A Message from the Author"): Opening credits come first, Closing credits last. Citations are `file:line` at `7a20a9e`. Builds on the delivered parts of [Audiobook Credits Templates](audiobook-credits-templates.prd.md) (templates, renderer, the Credits stat, the Manuscript entries, the teleprompter) and touches the same table as [Chapter Stage Recommendations](chapter-stage-recommendations.prd.md). Not covered here: the stage check line and "Check now" above the table (a separate PRD).
 
-**Status (2026-09-24):** draft; open questions CT1 to CT9 wait for the owner. No tracking issue yet: open one (`docs/operations/github-workflow.md`) before Phase 1.
+**Status (2026-09-24):** Phases 1 and 2 complete; open questions CT1 to CT7, CT9 resolved per their recommendations. Phases 3 and 4 (CT4 option (c), CT8) remain.
 
 ## Problem Statement
 
@@ -116,7 +116,7 @@ We believe showing the credits as the first and last rows of the chapter table, 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Credits status store and bindings | `Manifest.CreditsStatus`, `CreditsStatuses`/`CreditsSetStatus`, Zod schema, goldens, wireContracts row, mock, `hostAPIVersion` bump, ADR | complete | - | CT2, CT3 | - |
-| 2 | Credits rows in the table | First and last rows with words, length, actual recorded, status select, disabled Check, link, warnings; progress text; visual states | pending | - | 1; CT1, CT4 to CT7, CT9 | - |
+| 2 | Credits rows in the table | First and last rows with words, length, actual recorded, status select, disabled Check, link, warnings; progress text; visual states | complete | - | 1; CT1, CT4 to CT7, CT9 | - |
 | 3 | Recording check for credits | Coverage basis from rendered text, credits track links and suggestions, measured actual recorded, ADR | pending | 4 | 2; CT4 (c) | - |
 | 4 | Credits in REAPER chapter regions | Credits rows in the chapter-regions payload; harness test if the payload changes; scripted REAPER check | pending | 3 | 2; REAPER automation Phase 7; CT8 | - |
 

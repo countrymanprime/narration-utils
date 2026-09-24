@@ -51,6 +51,12 @@ export const STATE_CATALOG: StateEntry[] = [
   { page: 'home', state: 'chapter-table-expanded', description: 'Home, chapter table expanded' },
   {
     page: 'home',
+    state: 'chapter-table-credits-missing',
+    description:
+      'Home, chapter table expanded with no closing credit template configured: the Closing credits row reads "Not set up" and links to Settings > Credits (credits-in-chapter-table.prd.md Phase 2, CT5)',
+  },
+  {
+    page: 'home',
     state: 'hint-chips',
     description: 'Vocabulary hint chips widget (accepted + pending) - lives on Proofing, catalogued under "home" for historical reasons',
   },

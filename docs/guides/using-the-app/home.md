@@ -22,9 +22,24 @@ chapter with its word count, estimated and actual recorded length, and status.
 
 ![Home, per-chapter breakdown expanded](../../images/ui/home-chapter-table-expanded.webp)
 
-**Actual recorded** shows a dash until the app can read how much audio a chapter's linked REAPER
-track actually holds; it never guesses from the chapter's status or from a recording check's word
-share, so changing the status leaves the column unchanged.
+**Actual recorded** shows how much audio a chapter's linked REAPER track holds, as of the last
+save: the union of its unmuted items, overlaps counted once. A chapter with no confirmed link, a
+link to more than one track, a linked track no longer in the saved project, or no project at all
+shows a dash instead, with the reason in a tooltip and its accessible name. It never guesses from
+the chapter's status or from a recording check's word share, so changing the status leaves the
+column unchanged. The headline **Actual recorded** stat above the table sums the real times of
+linked chapters only, and its tooltip says how many of the book's chapters that covers.
+
+The table's first row is **Opening credits** and its last row is **Closing credits**: not
+chapters, but the same first opening and first closing template the Credits stat and the
+Manuscript page use, each with its own status, word count and estimated length (including room
+tone). The row's title links to the matching entry on the Manuscript page. A template with an
+unresolved token (`[Author]` never filled in) shows a warning next to its name without blocking
+anything; a missing template reads "Not set up" with a link to [Settings, Credits](settings.md#credits).
+Their **Check** is disabled for now (a recording check reads manuscript chapters only), and their
+**Actual recorded** is always a dash until a later phase can measure them. The progress line adds
+"· credits N of 2" once a credits row is finalized; the header count, **Est. finished audio**, the
+progress bar and the rest of the row totals stay narration-only, as before.
 
 ### Checking a chapter's recording
 
