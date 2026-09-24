@@ -17,6 +17,7 @@
       "status": "failed",
       "report": null,
       "fingerprint": null,
+      "findings": [],
       "error": "the measurement stopped unexpectedly: runtime error: index out of range [4] with length 4"
     },
     {
@@ -24,14 +25,16 @@
       "name": "Chapter 02.wav",
       "status": "cancelled",
       "report": null,
-      "fingerprint": null
+      "fingerprint": null,
+      "findings": []
     },
     {
       "path": "C:/Renders/Chapter 03.mp3",
       "name": "Chapter 03.mp3",
       "status": "cancelled",
       "report": null,
-      "fingerprint": null
+      "fingerprint": null,
+      "findings": []
     }
   ]
 }

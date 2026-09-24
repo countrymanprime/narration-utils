@@ -3,6 +3,7 @@
 // names inside a report and a fingerprint are the wire's own snake_case, as internal/measure writes them; the job
 // around them is camelCase like the host's other jobs.
 
+import type { Finding } from './findings';
 import type { WorkJob } from './manuscript';
 
 /** A stretch of a source file in seconds (internal/measure.Range). */
@@ -37,13 +38,19 @@ export type MeasureFingerprint = { size_bytes: number; modified_at: string; sha2
 
 export type MeasureFileStatus = 'pending' | 'measuring' | 'measured' | 'failed' | 'cancelled';
 
-/** One file of a measurement: its report and fingerprint once measured, or why it could not be. */
+/**
+ * One file of a measurement: its report and fingerprint once measured, or why it could not be. `findings` are the host's
+ * judgement of the report against the narrator's limits as they are when the job is read (measure.Evaluate, diagnostics PRD
+ * Phase 7): `delivery_qc` findings, one for each value outside a limit or not measurable against one, with the IDs an
+ * exported report carries. Empty when nothing is outside a limit, or no limit is set.
+ */
 export type MeasureFileResult = {
   path: string;
   name: string;
   status: MeasureFileStatus;
   report: MeasureReport | null;
   fingerprint: MeasureFingerprint | null;
+  findings: Finding[];
   error?: string;
 };
 
@@ -56,10 +63,27 @@ export type MeasureJob = Omit<WorkJob, 'kind' | 'phase' | 'preview' | 'requiresR
   kind: 'measurement';
   phase: 'idle' | 'running' | 'success' | 'cancelled' | 'error';
   files: MeasureFileResult[];
+  /** Why the narrator's limits could not be read (a hand-edited settings file); no file is then judged. */
+  limitsError?: string;
 };
 
 /** What the picker chose; empty when the narrator closed it. */
 export type MeasurePickResult = { paths: string[] };
+
+/**
+ * What one report export wrote (DeliveryExportReport, diagnostics PRD Phase 7): the folder relative to the project
+ * (`narration-utils/delivery`), the two file names in it, and what the report counts. `openFindings` are the findings not
+ * dismissed.
+ */
+export type DeliveryReportExport = {
+  folder: string;
+  htmlFile: string;
+  jsonFile: string;
+  files: number;
+  findings: number;
+  openFindings: number;
+  pathsIncluded: boolean;
+};
 
 export interface MeasureApi {
   /** Opens the picker for the audio files to measure. Only paths chosen here can be measured. */
@@ -70,4 +94,10 @@ export interface MeasureApi {
   measureState(): Promise<MeasureJob>;
   /** Stops a running measurement; files already measured keep their results. Answers the job. */
   measureCancel(): Promise<MeasureJob>;
+  /**
+   * Writes an HTML and a JSON report of the last measurement and diagnostics check into the project's sidecar folder.
+   * `includePaths` writes each file's full path; otherwise only file names. Rejects without a project, while a job runs, or
+   * when nothing was measured or checked.
+   */
+  deliveryExportReport(includePaths: boolean): Promise<DeliveryReportExport>;
 }

@@ -147,8 +147,15 @@ function checkedResult(file: DiagnosticsFileResult, kind: DiagnosticsSourceKind)
 
 export type MockDiagnosticsSeed = 'hold' | 'fails';
 
-/** `picked` is the measurement mock's picker allowlist: the host checks only paths MeasurePickFiles chose (ADR 0156). */
-export function createDiagnosticsMock(publish: (event: JobEnded) => void, picked: ReadonlySet<string>, seed?: MockDiagnosticsSeed): DiagnosticsApi {
+/**
+ * `picked` is the measurement mock's picker allowlist: the host checks only paths MeasurePickFiles chose (ADR 0156).
+ * `peekDiagnostics` is the check as it stands, without moving it on, for the report export (it is not a binding).
+ */
+export function createDiagnosticsMock(
+  publish: (event: JobEnded) => void,
+  picked: ReadonlySet<string>,
+  seed?: MockDiagnosticsSeed,
+): DiagnosticsApi & { peekDiagnostics(): DiagnosticsJob } {
   let job: DiagnosticsJob = {
     id: null,
     kind: 'diagnostics',
@@ -240,6 +247,7 @@ export function createDiagnosticsMock(publish: (event: JobEnded) => void, picked
       advance();
       return wireClone(job);
     },
+    peekDiagnostics: () => wireClone(job),
     diagnosticsCancel: async () => {
       if (job.phase === 'running') {
         const checked = job.files.filter((file) => file.status === 'checked').length;

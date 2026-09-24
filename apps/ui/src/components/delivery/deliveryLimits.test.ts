@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ScopedSettingField } from '../../types';
+import type { Finding, ScopedSettingField } from '../../types';
 import { DELIVERY_METRICS, deliveryLimitsFrom, formatLevel, formatLength, judge, setLimitCount } from './deliveryLimits';
 
 const field = (key: string, effectiveValue: string): ScopedSettingField => ({
@@ -39,26 +39,46 @@ describe('deliveryLimitsFrom', () => {
   });
 });
 
-// The same rules as measure.Evaluate (apps/desktop/internal/measure/profile.go): the bounds are inclusive, a value above the
-// highest is checked before one below the lowest, and a value that could not be measured is never a pass.
+// The host judges (measure.Evaluate, apps/desktop/internal/measure/profile.go) and sends each file's delivery_qc findings; the page
+// only reads which value a finding is about and the limit it broke.
+const qc = (evidence: Record<string, unknown>, category = 'delivery_qc'): Finding => ({
+  schema_version: 1,
+  id: `qc-${String(evidence.metric)}`,
+  analyzer: 'measure',
+  project: {},
+  source: { file: 'C:/Renders/Chapter 01.wav' },
+  category,
+  severity: 'error',
+  confidence: 1,
+  confidence_reason: 'deterministic measurement of the decoded samples',
+  evidence,
+  review: { status: 'unreviewed' },
+});
+
 describe('judge', () => {
-  it('reports a value with no limit without checking it', () => {
-    expect(judge(-19.4, {})).toEqual({ kind: 'unchecked' });
+  it('reports a value the host raised no finding about', () => {
+    expect(judge(-19.4, 'integrated_lufs', [])).toEqual({ kind: 'reported' });
+    expect(judge(-19.4, 'integrated_lufs', [qc({ metric: 'true_peak_dbtp', violation: 'above_max', limit_max: -3 })])).toEqual({ kind: 'reported' });
   });
 
-  it('passes a value on either bound, since the bounds are inclusive', () => {
-    expect(judge(-23, { min: -23, max: -18 })).toEqual({ kind: 'within' });
-    expect(judge(-18, { min: -23, max: -18 })).toEqual({ kind: 'within' });
-  });
-
-  it('marks a value above the highest or below the lowest with the limit it broke', () => {
-    expect(judge(-2.5, { max: -3 })).toEqual({ kind: 'above', limit: -3 });
-    expect(judge(-25, { min: -23, max: -18 })).toEqual({ kind: 'below', limit: -23 });
+  it('marks a value the host found above the highest or below the lowest with the limit it broke', () => {
+    expect(judge(-2.5, 'true_peak_dbtp', [qc({ metric: 'true_peak_dbtp', violation: 'above_max', limit_max: -3 })])).toEqual({ kind: 'above', limit: -3 });
+    expect(judge(-25, 'integrated_lufs', [qc({ metric: 'integrated_lufs', violation: 'below_min', limit_min: -23, limit_max: -18 })])).toEqual({
+      kind: 'below',
+      limit: -23,
+    });
   });
 
   it('never counts a value that could not be measured as within a limit', () => {
-    expect(judge(null, { max: -3 })).toEqual({ kind: 'unavailable' });
-    expect(judge(null, {})).toEqual({ kind: 'unavailable' });
+    expect(judge(null, 'true_peak_dbtp', [qc({ metric: 'true_peak_dbtp', available: false })])).toEqual({ kind: 'unavailable' });
+    expect(judge(null, 'true_peak_dbtp', [])).toEqual({ kind: 'unavailable' });
+  });
+
+  it('leaves out a finding that is not a delivery_qc finding or whose evidence does not read as one', () => {
+    expect(judge(-2.5, 'true_peak_dbtp', [qc({ metric: 'true_peak_dbtp', violation: 'above_max', limit_max: -3 }, 'audio_quality')])).toEqual({
+      kind: 'reported',
+    });
+    expect(judge(-2.5, 'true_peak_dbtp', [qc({ metric: 'true_peak_dbtp', violation: 'louder' })])).toEqual({ kind: 'reported' });
   });
 });
 
