@@ -312,6 +312,9 @@ def test_cached_words_give_the_report_with_no_transcription(tmp_path, cached_pro
         "firstWord": "So",
         "lastWord": "do.",
         "position": {"itemIndex": 2, "itemGuid": "{B}", "sourceTime": last_p2_word_end},
+        # A tail is bounded by the end of the last matched word and runs to the end of the chapter's audio.
+        "before": {"itemIndex": 2, "itemGuid": "{B}", "sourceTime": last_p2_word_end},
+        "after": None,
     }
     assert progress.lines[0][0] == "START"
     assert [stage for stage, _pct, _msg in progress.lines[-3:]] == ["ALIGN", "WRITE", "DONE"]
@@ -332,6 +335,40 @@ def test_a_skip_names_the_item_and_source_time_where_the_text_is_missing(tmp_pat
     assert (region["kind"], region["paragraphIds"], region["firstWord"], region["lastWord"]) == ("skip", ["p-000002"], "Once", "reading.")
     # The skipped text sits where the next read word ("So", the first word of item 1) starts.
     assert region["position"] == {"itemIndex": 1, "itemGuid": "{B}", "sourceTime": 2.0}
+    # A region across two items: it starts after "bank." ends in item 0 and ends where "So" starts in item 1.
+    bank_end = round(30.0 + (len(P1.split()) - 1) * WORD_SECONDS + 0.25, 3)
+    assert region["before"] == {"itemIndex": 0, "itemGuid": "{A}", "sourceTime": bank_end}
+    assert region["after"] == {"itemIndex": 1, "itemGuid": "{B}", "sourceTime": 2.0}
+
+
+def test_a_skip_inside_one_item_is_bounded_by_the_words_read_on_either_side(tmp_path, progress):
+    manuscript = _project(tmp_path)
+    _words_file(tmp_path / "words" / "item-0.json", f"{P1} {P3}", 5.0, 20.0)
+    manifest = _write_manifest(tmp_path / "m.json", [_item(0, "{A}", start=5.0, length=15.0)])
+    args = _args(tmp_path, manuscript, manifest)
+
+    mode.run(args, compare, transcriber=_never_transcribe)
+
+    (region,) = _lines(args.out)["COVERAGE_REGION"]
+    p1 = len(P1.split())
+    assert (region["kind"], region["paragraphIds"]) == ("skip", ["p-000002"])
+    # "before" is where "bank." ends, "after" where "So" starts: source seconds of item 0.
+    assert region["before"] == {"itemIndex": 0, "itemGuid": "{A}", "sourceTime": round(5.0 + (p1 - 1) * WORD_SECONDS + 0.25, 3)}
+    assert region["after"] == {"itemIndex": 0, "itemGuid": "{A}", "sourceTime": round(5.0 + p1 * WORD_SECONDS, 3)}
+
+
+def test_a_head_has_no_bound_before_it_even_after_the_title_was_read(tmp_path, progress):
+    manuscript = _project(tmp_path)
+    _words_file(tmp_path / "words" / "item-0.json", f"{TITLE} {SUBTITLE} {P2} {P3}", 0.0, 12.0)
+    manifest = _write_manifest(tmp_path / "m.json", [_item(0, "{A}", start=0.0, length=12.0)])
+    args = _args(tmp_path, manuscript, manifest)
+
+    mode.run(args, compare, transcriber=_never_transcribe)
+
+    (region,) = _lines(args.out)["COVERAGE_REGION"]
+    heading = len(f"{TITLE} {SUBTITLE}".split())
+    assert (region["kind"], region["before"]) == ("head", None)
+    assert region["after"] == {"itemIndex": 0, "itemGuid": "{A}", "sourceTime": round(heading * WORD_SECONDS, 3)}
 
 
 def test_a_head_with_no_audio_at_all_has_no_position(tmp_path, progress):
@@ -344,7 +381,8 @@ def test_a_head_with_no_audio_at_all_has_no_position(tmp_path, progress):
     lines = _lines(args.out)
     assert lines["COVERAGE"][0]["presentTokens"] == 0
     assert lines["COVERAGE"][0]["items"]["analyzed"] == 0
-    assert [(region["kind"], region["position"]) for region in lines["COVERAGE_REGION"]] == [("head", None)]
+    regions = [(region["kind"], region["position"], region["before"], region["after"]) for region in lines["COVERAGE_REGION"]]
+    assert regions == [("head", None, None, None)]
 
 
 def test_a_missing_words_file_is_transcribed_once_and_written(tmp_path, cached_project, progress):

@@ -5,7 +5,7 @@ pure: it takes one word-level alignment between the chapter's tokens and the tra
 (the opcodes `diff_and_build_markers` in `compare.py` already computes, so coverage and the take
 markers can never disagree) and reports, per paragraph (`p-NNNNNN`), how many body tokens were
 read in place, the longest run of missing tokens, and typed regions of missing text naming their
-first and last words.
+first and last words and the matched transcript tokens that bound them (ADR 0168).
 
 The rules (the Definitions of the delivered PRD, now "What counts as read" in that page):
 
@@ -153,6 +153,11 @@ class Region:
     doc_start: int  # token index of the first missing token
     doc_end: int  # token index after the last
     audio_index: int  # transcript token index where the missing text would sit
+    # The region's bounds in the transcript: the last token of the nearest anchor with body text
+    # before it, and the first token of the nearest one after it. None where no such anchor exists:
+    # always for a head (a read title is optional text and never bounds one) and for a tail.
+    audio_before: int | None = None
+    audio_after: int | None = None
 
 
 @dataclass(frozen=True)
@@ -308,7 +313,25 @@ def _run_length(status: Sequence[str | None], start: int, end: int) -> int:
     return sum(value is not None for value in status[start:end])
 
 
-def _region(aligned: AlignedChapter, status: Sequence[str | None], audio_at: Sequence[int], start: int, end: int) -> Region:
+def _body_anchors(aligned: AlignedChapter, params: AlignmentParams) -> list[_Gap]:
+    """The anchors that hold body text, in order: the matched words that can bound a region."""
+    return [
+        gap
+        for kind, gap in _segments(aligned.opcodes, params.min_anchor_run)
+        if kind == "anchor" and any(aligned.token_paragraph[i] != HEADING for i in range(gap.i1, gap.i2))
+    ]
+
+
+def _bounds(anchors: Sequence[_Gap], doc_start: int, doc_end: int) -> tuple[int | None, int | None]:
+    """The transcript tokens that bound the doc tokens `[doc_start, doc_end)`: the last token of the
+    last anchor ending at or before `doc_start`, and the first token of the first anchor starting
+    at or after `doc_end`."""
+    before = next((anchor.j2 - 1 for anchor in reversed(anchors) if anchor.i2 <= doc_start), None)
+    after = next((anchor.j1 for anchor in anchors if anchor.i1 >= doc_end), None)
+    return before, after
+
+
+def _region(aligned: AlignedChapter, status: Sequence[str | None], audio_at: Sequence[int], anchors: Sequence[_Gap], start: int, end: int) -> Region:
     """One missing run as a region, of its first token's kind. A run lies inside one gap, because
     anchors are present text, so it has one kind; head and tail relabel whole runs. The one
     exception, an anchor of heading tokens alone between two gaps, takes the first gap's kind."""
@@ -316,7 +339,10 @@ def _region(aligned: AlignedChapter, status: Sequence[str | None], audio_at: Seq
     kind = status[tokens[0]]
     paragraph_ids = tuple(dict.fromkeys(aligned.paragraph_ids[aligned.token_paragraph[i]] for i in tokens))
     audio_index = 0 if kind == "head" else len(aligned.audio_tokens) if kind == "tail" else audio_at[tokens[0]]
-    return Region(kind, paragraph_ids, len(tokens), aligned.doc_words[tokens[0]], aligned.doc_words[tokens[-1]], tokens[0], tokens[-1] + 1, audio_index)
+    before, after = _bounds(anchors, tokens[0], tokens[-1] + 1)
+    return Region(
+        kind, paragraph_ids, len(tokens), aligned.doc_words[tokens[0]], aligned.doc_words[tokens[-1]], tokens[0], tokens[-1] + 1, audio_index, before, after
+    )
 
 
 def _paragraphs(aligned: AlignedChapter, status: Sequence[str | None], runs: Sequence[tuple[int, int]]) -> tuple[ParagraphCoverage, ...]:
@@ -342,6 +368,7 @@ def compute_coverage(aligned: AlignedChapter, params: AlignmentParams | None = N
     status, audio_at, matched_audio = _statuses(aligned, params)
     runs = _missing_runs(status)
     paragraphs = _paragraphs(aligned, status, runs)
+    anchors = _body_anchors(aligned, params)
     return ChapterCoverage(
         params=params,
         body_tokens=sum(paragraph.tokens for paragraph in paragraphs),
@@ -349,5 +376,5 @@ def compute_coverage(aligned: AlignedChapter, params: AlignmentParams | None = N
         extra_tokens=len(aligned.audio_tokens) - matched_audio,
         longest_missing_run=max((_run_length(status, start, end) for start, end in runs), default=0),
         paragraphs=paragraphs,
-        regions=tuple(_region(aligned, status, audio_at, start, end) for start, end in runs),
+        regions=tuple(_region(aligned, status, audio_at, anchors, start, end) for start, end in runs),
     )

@@ -299,6 +299,21 @@ describe('golden payloads written by the Go host and the Python sidecars', () =>
     expect([...COVERAGE_EVALUATOR_REASONS]).toEqual(declared.evaluator);
   });
 
+  it('a coverage region keeps its bounds, and a missing bound reads as absent (ADR 0168)', () => {
+    const current = parseWire(coverageResultSchema, readGolden('coverage-result-current.json'), ctx('coverage result'));
+    const [tail] = current.result?.regions ?? [];
+    expect(tail.before).toEqual({ itemIndex: 1, itemGuid: '{ITEM-B}', sourceTime: 0.3 });
+    expect(tail.after).toBeUndefined();
+    // A result stored before the sidecar reported bounds has neither key.
+    const golden = z
+      .looseObject({ result: z.looseObject({ regions: z.array(z.record(z.string(), z.unknown())) }) })
+      .parse(readGolden('coverage-result-current.json'));
+    const regions = golden.result.regions.map(({ before: _before, after: _after, ...rest }) => rest);
+    const older = { ...golden, result: { ...golden.result, regions } };
+    const [oldTail] = parseWire(coverageResultSchema, older, ctx('coverage result')).result?.regions ?? [];
+    expect([oldTail.before, oldTail.after]).toEqual([undefined, undefined]);
+  });
+
   it('the stage cause and refusal lists are the ones the host declares', () => {
     expect([...STAGE_UNKNOWN_CAUSES]).toEqual(z.array(z.string()).parse(readGolden('stages-causes.json')));
     expect([...STAGE_REFUSAL_REASONS]).toEqual(z.array(z.string()).parse(readGolden('stages-refusal-reasons.json')));

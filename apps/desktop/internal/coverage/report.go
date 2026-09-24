@@ -80,14 +80,19 @@ func (p ParagraphLine) PresentFraction() float64 {
 	return float64(p.Present) / float64(p.Tokens)
 }
 
-// RegionPosition is where missing text would sit in the audio.
+// RegionPosition is a point in the audio: an item and a time in its source file.
 type RegionPosition struct {
 	ItemIndex  int     `json:"itemIndex"`
 	ItemGUID   string  `json:"itemGuid"`
 	SourceTime float64 `json:"sourceTime"`
 }
 
-// RegionLine is one COVERAGE_REGION line.
+// RegionLine is one COVERAGE_REGION line. Position is where the missing text
+// would sit. Before and After bound it (ADR 0168): the end of the last matched
+// word before the region and the start of the first matched word after it,
+// each in its own item. Either is nil at a chapter edge (always before a head,
+// after a tail), when nothing was said, and in a result written before the
+// sidecar reported bounds.
 type RegionLine struct {
 	Kind         string          `json:"kind"`
 	ParagraphIDs []string        `json:"paragraphIds"`
@@ -95,6 +100,8 @@ type RegionLine struct {
 	FirstWord    string          `json:"firstWord"`
 	LastWord     string          `json:"lastWord"`
 	Position     *RegionPosition `json:"position"`
+	Before       *RegionPosition `json:"before"`
+	After        *RegionPosition `json:"after"`
 }
 
 // Report is a whole results file.

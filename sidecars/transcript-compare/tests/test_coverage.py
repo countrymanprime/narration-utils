@@ -63,6 +63,45 @@ def test_a_paragraph_skipped_inside_the_read_is_a_skip_region():
     assert [p.present for p in result.paragraphs] == [6, 0, 6]
 
 
+# ---------------------------------------------------------------------------
+# region bounds: the matched transcript tokens on either side of a region
+
+
+def test_a_skip_is_bounded_by_the_matched_tokens_on_either_side():
+    (region,) = cov.compute_coverage(_aligned([P1, P2, P3], f"{P1} {P3}")).regions
+    assert (region.audio_before, region.audio_after) == (5, 6)  # "foxtrot", then "mike"
+
+
+def test_a_head_has_no_bound_before_it_even_when_the_title_was_read():
+    (region,) = cov.compute_coverage(_aligned([P1, P2], f"chapter two {P2}", heading="chapter two")).regions
+    assert (region.kind, region.audio_before, region.audio_after) == ("head", None, 2)
+
+
+def test_a_tail_has_no_bound_after_it():
+    (region,) = cov.compute_coverage(_aligned([P1, P2, P3], f"{P1} {P2}")).regions
+    assert (region.kind, region.audio_before, region.audio_after) == ("tail", 11, None)
+
+
+def test_a_region_is_bounded_by_anchors_not_by_the_speech_inside_its_gap():
+    # The chance match of "the" inside the speech joins the gap; it is not a bound.
+    paragraph = "golf hotel the india juliet kilo lima mike november oscar papa"
+    speech = "we will wait until the dog stops barking and carry on now"
+    (region,) = cov.compute_coverage(_aligned([P1, paragraph, P3], f"{P1} {speech} {P3}")).regions
+    assert (region.kind, region.audio_before, region.audio_after) == ("different_text", 5, 6 + len(speech.split()))
+
+
+def test_a_short_read_is_bounded_by_the_anchors_around_its_gap():
+    # "india juliet" said as "indigo": one word misread (present), one short; "indigo" is inside the bounds.
+    result = cov.compute_coverage(_aligned([P1, "golf hotel india juliet", P3], f"{P1} golf hotel indigo {P3}"))
+    (region,) = result.regions
+    assert (region.kind, region.first_word, region.audio_before, region.audio_after) == ("short_read", "juliet", 7, 9)
+
+
+def test_nothing_read_has_no_bounds():
+    (region,) = cov.compute_coverage(_aligned([P1, P2], "something else entirely")).regions
+    assert (region.audio_before, region.audio_after) == (None, None)
+
+
 def test_a_misread_counts_as_present_and_is_not_extra():
     result = cov.compute_coverage(_aligned([P1, P2], "alpha bravo charlie delta echo foxtrot golf hotel indigo julia kilo lima"))
     assert result.present_tokens == 12

@@ -1,6 +1,7 @@
 package coverage
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -116,5 +117,52 @@ func TestAResultsFileIsReadFromDiskWithABound(t *testing.T) {
 	_ = big.Close()
 	if _, err := readReport(big.Name(), "c-0001"); err == nil || !strings.Contains(err.Error(), "larger than") {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+// boundedRegions are COVERAGE_REGION lines as a sidecar that bounds its regions
+// writes them (docs/utilities/recording-coverage.md, ADR 0168): a skip across
+// two items, and a tail, bounded only before.
+const boundedRegions = `COVERAGE_REGION|{"after":{"itemGuid":"{B}","itemIndex":2,"sourceTime":0.5},"before":{"itemGuid":"{A}","itemIndex":0,"sourceTime":19.75},"firstWord":"tired","kind":"skip","lastWord":"bank.","paragraphIds":["p-000002"],"position":{"itemGuid":"{B}","itemIndex":2,"sourceTime":0.5},"tokenCount":2}
+COVERAGE_REGION|{"after":null,"before":{"itemGuid":"{B}","itemIndex":2,"sourceTime":5.25},"firstWord":"So","kind":"tail","lastWord":"do.","paragraphIds":["p-000003"],"position":{"itemGuid":"{B}","itemIndex":2,"sourceTime":5.25},"tokenCount":12}
+`
+
+func TestARegionCarriesTheMatchedWordsThatBoundItInTheAudio(t *testing.T) {
+	head, _, _ := strings.Cut(sampleResults, "COVERAGE_REGION|")
+	report, err := parseReport([]byte(head+boundedRegions), "c-0001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	skip, tail := report.Regions[0], report.Regions[1]
+	if skip.Before == nil || *skip.Before != (RegionPosition{ItemIndex: 0, ItemGUID: "{A}", SourceTime: 19.75}) {
+		t.Fatalf("skip before = %+v", skip.Before)
+	}
+	if skip.After == nil || *skip.After != (RegionPosition{ItemIndex: 2, ItemGUID: "{B}", SourceTime: 0.5}) {
+		t.Fatalf("skip after = %+v", skip.After)
+	}
+	if tail.Before == nil || tail.Before.SourceTime != 5.25 || tail.After != nil {
+		t.Fatalf("tail bounds = %+v, %+v", tail.Before, tail.After)
+	}
+}
+
+func TestAResultWrittenBeforeRegionBoundsStillReads(t *testing.T) {
+	report, err := parseReport([]byte(sampleResults), "c-0001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, region := range report.Regions {
+		if region.Before != nil || region.After != nil {
+			t.Fatalf("a results file without bounds must read with none: %+v", region)
+		}
+	}
+	// A result stored by an earlier version: its regions have no before or after.
+	stored := `{"schemaVersion":1,"recordId":"r-1","chapterId":"c-0001","model":"small","alignment":{"maxMisreadRun":8,"minAnchorRun":3},
+		"report":{"summary":{"schemaVersion":1,"chapterId":"c-0001"},"regions":[{"kind":"tail","paragraphIds":["p-000003"],"tokenCount":12,"firstWord":"So","lastWord":"do.","position":null}]}}`
+	var result StoredResult
+	if err := json.Unmarshal([]byte(stored), &result); err != nil {
+		t.Fatal(err)
+	}
+	if region := result.Report.Regions[0]; region.Before != nil || region.After != nil || region.Kind != "tail" {
+		t.Fatalf("stored region = %+v", region)
 	}
 }

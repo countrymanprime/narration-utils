@@ -104,6 +104,8 @@ function reportFor(chapter: ManuscriptChapter, fraction: number): CoverageReport
               firstWord: 'the',
               lastWord: 'end.',
               position: { itemIndex: 0, itemGuid, sourceTime: playedSeconds },
+              // A tail is bounded only before, by the end of the last word read.
+              before: { itemIndex: 0, itemGuid, sourceTime: playedSeconds },
             },
           ]
         : [],
