@@ -19,11 +19,14 @@ import (
 // Client.Dispatch through transcript.Service.Drain): so a request must never be made from a Subscription's Handle,
 // which runs inside Dispatch and would wait for itself until the timeout.
 type Navigator struct {
-	client  *Client
-	mu      sync.Mutex // guards everything below
+	client *Client
+	mu     sync.Mutex // guards everything below
+	// +checklocks:mu
 	timeout time.Duration
+	// +checklocks:mu
 	pending map[string]chan answer
-	next    uint64
+	// +checklocks:mu
+	next uint64
 }
 
 // DefaultAnswerTimeout is how long a request waits for REAPER: a few of the bridge's defer ticks and the host's

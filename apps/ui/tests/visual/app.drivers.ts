@@ -1696,6 +1696,21 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await checkOnDiagnostics(page, '?mockDiagnostics=fails');
       await diagnosticsEnded(page, /^The diagnostics stopped unexpectedly\. Choose/);
     },
+    'report-exported': async (page) => {
+      await measureOnDelivery(page, '?mockDeliveryLimits=1');
+      await measurementEnded(page, 'Measured 2 of 3 files; 1 could not be measured.');
+      await page.getByRole('button', { name: 'Export report', exact: true }).click();
+      await page.getByText(/^Wrote delivery-report-/).waitFor();
+      await page.getByRole('region', { name: 'Report' }).scrollIntoViewIfNeeded();
+    },
+    'report-refused': async (page) => {
+      await openDelivery(page);
+      await page.getByRole('button', { name: 'Export report', exact: true }).click();
+      await page
+        .getByRole('alert')
+        .getByText(/^The report was not written: nothing has been measured or checked/)
+        .waitFor();
+    },
   },
   teleprompter: {
     'setup-default': async (page) => {

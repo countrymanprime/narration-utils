@@ -41,7 +41,8 @@ type Service struct {
 	bridge     *bridge.Client
 	manuscript *manuscript.Service
 	changed    func(map[string]any)
-	state      map[string]any
+	// +checklocks:mu
+	state map[string]any
 }
 
 // New builds the service. When there is a bridge it subscribes to the events line identity owns: the
@@ -160,6 +161,8 @@ func (s *Service) Snapshot() map[string]any {
 	defer s.mu.RUnlock()
 	return s.snapshotLocked()
 }
+
+// +checklocksread:s.mu
 func (s *Service) snapshotLocked() map[string]any { return clone(s.state) }
 func (s *Service) notify() {
 	if s.changed != nil {
@@ -209,6 +212,7 @@ func runInProgress(state map[string]any) bool {
 // acceptsLocked says whether an event belongs to the run in progress, the same rule transcript.Service
 // applies: every event carries its run ID as its first argument, and an ERROR with an empty run ID belongs
 // to whatever run is in progress (a session-level problem, such as an unsupported protocol).
+// +checklocksread:s.mu
 func (s *Service) acceptsLocked(fields []string) bool {
 	runID, _ := s.state["runId"].(string)
 	if fields[0] == "ERROR" {

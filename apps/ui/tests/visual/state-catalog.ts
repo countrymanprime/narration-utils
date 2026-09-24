@@ -1031,6 +1031,19 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Delivery / Diagnostics, a check that broke (?mockDiagnostics=fails) - the alert asking to choose the files again, the reason on the file it broke on, the files after it not read',
   },
+  // Delivery, the report export (diagnostics-delivery-and-cleanup-tools.prd.md Phase 7)
+  {
+    page: 'delivery',
+    state: 'report-exported',
+    description:
+      'Delivery with the project’s limits set and the files measured, then Export report - the HTML and JSON file names written to narration-utils/delivery, what the report counts, and that it holds file names only (scrolled to the Report panel)',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'delivery',
+    state: 'report-refused',
+    description: 'Delivery, Export report before anything was measured - the host’s refusal as an alert, and nothing written',
+  },
 
   // Settings
   { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category', ...REFLOW },

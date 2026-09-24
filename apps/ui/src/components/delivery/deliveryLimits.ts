@@ -1,9 +1,10 @@
-// The Delivery page's reading of the narrator's own limits (the layered settings' Delivery section, ADR 0155) and how a
-// measured value stands against them. The rules are measure.Evaluate's (apps/desktop/internal/measure/profile.go): the
-// bounds are inclusive, "above the highest" is checked before "below the lowest", and a value that could not be measured
-// is never a pass. The page judges against the limits as they are now, so changing one in Settings re-judges what is on
-// screen without measuring again; the stored delivery_qc findings with their IDs come from the host (PRD Phases 6 and 7).
-import type { ScopedSettingField } from '../../types';
+// The Delivery page's reading of the narrator's own limits (the layered settings' Delivery section, ADR 0155), for the
+// limits summary, and of how a measured value stands against them. The host judges (measure.Evaluate, diagnostics PRD
+// Phase 7): every answer of the measurement carries each file's delivery_qc findings against the limits as they are when it
+// is read, so changing one in Settings re-judges what is on screen without measuring again, and an exported report carries
+// the same findings with the same IDs. The page only reads which value a finding is about and the limit it broke.
+import { deliveryQcEvidenceSchema } from '../../api/schemas/measure';
+import type { Finding, ScopedSettingField } from '../../types';
 
 type DeliveryMetricKey = 'integrated_lufs' | 'rms_dbfs' | 'sample_peak_dbfs' | 'true_peak_dbtp' | 'noise_floor_dbfs';
 
@@ -22,7 +23,8 @@ export const DELIVERY_METRICS: readonly DeliveryMetric[] = [
 export type MetricLimit = { min?: number; max?: number };
 export type DeliveryLimits = Record<DeliveryMetricKey, MetricLimit>;
 
-export type Judgement = { kind: 'unchecked' } | { kind: 'within' } | { kind: 'unavailable' } | { kind: 'above' | 'below'; limit: number };
+/** How one value stands: no finding about it, not measurable, or outside a limit (with the limit it broke). */
+export type Judgement = { kind: 'reported' } | { kind: 'unavailable' } | { kind: 'above' | 'below'; limit: number };
 
 const parse = (text: string): number | undefined => {
   if (text.trim() === '') return undefined;
@@ -55,12 +57,22 @@ export function setLimitCount(limits: DeliveryLimits): number {
   return DELIVERY_METRICS.reduce((count, { key }) => count + (limits[key].min !== undefined ? 1 : 0) + (limits[key].max !== undefined ? 1 : 0), 0);
 }
 
-export function judge(value: number | null, limit: MetricLimit): Judgement {
+/**
+ * How a value stands, from the host's findings for its file: a value that could not be measured is never a pass, and one
+ * the host found outside a limit is marked with that limit. A finding whose evidence does not read as a delivery_qc
+ * finding is left out rather than guessed at.
+ */
+export function judge(value: number | null, metric: DeliveryMetricKey, findings: readonly Finding[]): Judgement {
   if (value === null || !Number.isFinite(value)) return { kind: 'unavailable' };
-  if (limit.min === undefined && limit.max === undefined) return { kind: 'unchecked' };
-  if (limit.max !== undefined && value > limit.max) return { kind: 'above', limit: limit.max };
-  if (limit.min !== undefined && value < limit.min) return { kind: 'below', limit: limit.min };
-  return { kind: 'within' };
+  for (const finding of findings) {
+    if (finding.category !== 'delivery_qc') continue;
+    const evidence = deliveryQcEvidenceSchema.safeParse(finding.evidence);
+    if (!evidence.success || evidence.data.metric !== metric) continue;
+    const { violation, limit_max: max, limit_min: min } = evidence.data;
+    if (violation === 'above_max' && max !== undefined) return { kind: 'above', limit: max };
+    if (violation === 'below_min' && min !== undefined) return { kind: 'below', limit: min };
+  }
+  return { kind: 'reported' };
 }
 
 /** A level as the page writes it: one decimal, with a typographic minus so a column of negatives reads cleanly. */

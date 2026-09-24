@@ -54,8 +54,9 @@ func PercentEncode(value string) string {
 type Client struct {
 	mu         sync.Mutex // guards counter (the command file names)
 	sessionDir string
-	counter    uint64
-	events     events
+	// +checklocks:mu
+	counter uint64
+	events  events
 }
 
 func New(sessionDir string) (*Client, error) {

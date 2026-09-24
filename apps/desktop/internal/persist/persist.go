@@ -127,6 +127,9 @@ func (r *Reporter) quarantine(path, what string) {
 
 var pathLocks sync.Map
 
+// lockPath returns with the path's mutex held and hands back its unlock; the mutex is looked up at run time, so
+// checklocks cannot follow it.
+// +checklocksignore
 func lockPath(path string) func() {
 	lock, _ := pathLocks.LoadOrStore(filepath.Clean(path), &sync.Mutex{})
 	mutex, _ := lock.(*sync.Mutex)

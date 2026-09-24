@@ -83,13 +83,18 @@ const itemSchema = z.object({
   language: optionalFromNull(z.string()),
 }) satisfies z.ZodType<CoverageItem>;
 
+const regionPositionSchema = z.object({ itemIndex: z.number(), itemGuid: z.string(), sourceTime: z.number() });
+
 const regionSchema = z.object({
   kind: z.enum(['head', 'tail', 'skip', 'short_read', 'different_text']),
   paragraphIds: listFromNull(z.string()),
   tokenCount: z.number(),
   firstWord: z.string(),
   lastWord: z.string(),
-  position: optionalFromNull(z.object({ itemIndex: z.number(), itemGuid: z.string(), sourceTime: z.number() })),
+  position: optionalFromNull(regionPositionSchema),
+  // The region's bounds (ADR 0168): null at a chapter edge, and absent from a result stored before them.
+  before: optionalFromNull(regionPositionSchema),
+  after: optionalFromNull(regionPositionSchema),
 }) satisfies z.ZodType<CoverageRegion>;
 
 const reportSchema = z.object({

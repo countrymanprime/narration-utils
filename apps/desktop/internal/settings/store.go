@@ -21,8 +21,10 @@ import (
 type Values map[string]string
 
 type Store struct {
-	mu      sync.Mutex
-	repo    string
+	mu sync.Mutex
+	// +checklocks:mu
+	repo string
+	// +checklocks:mu
 	project string
 	persist atomic.Pointer[persist.Reporter]
 }

@@ -99,8 +99,10 @@ func (h *Host) importJobEnded(job manuscript.ImportJob) {
 // transcriptWatch turns the transcript's state changes into one jobEnded per run: it notices the state leaving an active phase for
 // success, error or cancelled. The state itself keeps arriving through transcript:state.
 type transcriptWatch struct {
-	mu      sync.Mutex
-	active  bool
+	mu sync.Mutex
+	// +checklocks:mu
+	active bool
+	// +checklocks:mu
 	started time.Time
 }
 

@@ -24,7 +24,8 @@ type Service struct {
 	config  Config
 	bridge  *bridge.Client
 	changed func(map[string]any)
-	state   map[string]any
+	// +checklocks:mu
+	state map[string]any
 }
 
 // New builds the service and, when there is a bridge, subscribes to the events pickups owns: every PICKUPS_*
@@ -225,6 +226,7 @@ func runInProgress(state map[string]any) bool {
 	return false
 }
 
+// +checklocks:s.mu
 func (s *Service) acceptsLocked(fields []string) bool {
 	runID, _ := s.state["runId"].(string)
 	if fields[0] == "ERROR" {

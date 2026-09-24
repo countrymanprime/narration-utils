@@ -993,8 +993,9 @@ export function createMockApi(
   const takeReviewScan = createTakeReviewScanMock(saveAnalyzerFindings, endJob, initial.takeReviewScanHold);
   const takeComparison = createTakeComparisonMock({ get: findings.findingsGet, save: saveFinding }, endJob, initial.takeComparisonHold);
   const measurePicked = new Set<string>();
-  const measurement = createMeasureMock(endJob, initial.measure, measurePicked);
-  const diagnostics = createDiagnosticsMock(endJob, measurePicked, initial.diagnostics);
+  const deliveryLimitValues = () => Object.fromEntries(settings.project.Delivery.map((field) => [field.key, field.effectiveValue]));
+  const { peekDiagnostics, ...diagnostics } = createDiagnosticsMock(endJob, measurePicked, initial.diagnostics);
+  const measurement = createMeasureMock(endJob, initial.measure, measurePicked, deliveryLimitValues, peekDiagnostics);
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));
   };

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -31,13 +32,16 @@ const (
 )
 
 // MeasureFileResult is one file of a measurement. Report and Fingerprint are set once it is measured; a report's
-// unmeasurable values are null, never a number (ADR 0025). Error says why a failed file could not be measured.
+// unmeasurable values are null, never a number (ADR 0025). Error says why a failed file could not be measured. Findings
+// are the host's judgement of the report against the narrator's limits in force when the job is read (measure.Evaluate,
+// judgeMeasureJob): delivery_qc findings with the IDs an exported report carries, empty when nothing is outside a limit.
 type MeasureFileResult struct {
 	Path        string               `json:"path"`
 	Name        string               `json:"name"`
 	Status      string               `json:"status"`
 	Report      *measure.Report      `json:"report"`
 	Fingerprint *measure.Fingerprint `json:"fingerprint"`
+	Findings    []findings.Finding   `json:"findings"`
 	Error       string               `json:"error,omitempty"`
 }
 
@@ -54,6 +58,9 @@ type MeasureJob struct {
 	Elapsed float64             `json:"elapsed"`
 	Error   string              `json:"error,omitempty"`
 	Files   []MeasureFileResult `json:"files"`
+	// LimitsError says why the narrator's limits could not be read (a hand-edited settings file), so no file is judged.
+	// judgeMeasureJob sets it, never the job itself.
+	LimitsError string `json:"limitsError,omitempty"`
 }
 
 // MeasurePickResult is what the picker chose; empty when the narrator closed it.
@@ -62,20 +69,31 @@ type MeasurePickResult struct {
 }
 
 type measureJob struct {
-	mu        sync.RWMutex
-	id        string
-	phase     string
-	message   string
+	mu sync.RWMutex
+	// +checklocks:mu
+	id string
+	// +checklocks:mu
+	phase string
+	// +checklocks:mu
+	message string
+	// +checklocks:mu
 	errorText string
-	percent   int
-	logs      []string
-	started   time.Time
-	files     []MeasureFileResult
+	// +checklocks:mu
+	percent int
+	// +checklocks:mu
+	logs []string
+	// +checklocks:mu
+	started time.Time
+	// +checklocks:mu
+	files []MeasureFileResult
 	// weights are the files' sizes when the job started (at least 1), so the percent is the share of all bytes read.
-	weights     []int64
+	// +checklocks:mu
+	weights []int64
+	// +checklocks:mu
 	totalWeight int64
-	doneWeight  int64
-	cancel      context.CancelFunc
+	// +checklocks:mu
+	doneWeight int64
+	cancel     context.CancelFunc
 }
 
 func (j *measureJob) running() bool {

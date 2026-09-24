@@ -35,15 +35,24 @@ type TakeComparisonJob struct {
 }
 
 type takeComparisonJob struct {
-	mu           sync.RWMutex
-	id           string
-	phase        string
-	message      string
-	errorText    string
-	percent      int
-	logs         []string
-	started      time.Time
-	findingID    string
+	mu sync.RWMutex
+	// +checklocks:mu
+	id string
+	// +checklocks:mu
+	phase string
+	// +checklocks:mu
+	message string
+	// +checklocks:mu
+	errorText string
+	// +checklocks:mu
+	percent int
+	// +checklocks:mu
+	logs []string
+	// +checklocks:mu
+	started time.Time
+	// +checklocks:mu
+	findingID string
+	// +checklocks:mu
 	comparisonID string
 	progressPath string
 	cancel       context.CancelFunc

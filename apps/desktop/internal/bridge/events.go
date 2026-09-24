@@ -41,15 +41,22 @@ type subscriber struct {
 // events is the fan-out half of Client: one cursor over events.log and the consumers it feeds. Before it existed
 // every consumer read the log through the same cursor, so a second consumer stole the first one's events.
 type events struct {
-	dispatchMu  sync.Mutex // one Dispatch at a time, so delivery order is log order
-	mu          sync.Mutex // guards everything below
+	dispatchMu sync.Mutex // one Dispatch at a time, so delivery order is log order
+	mu         sync.Mutex // guards everything below
+	// +checklocks:mu
 	eventOffset int64
-	nextID      uint64
+	// +checklocks:mu
+	nextID uint64
+	// +checklocks:mu
 	subscribers []subscriber
+	// +checklocks:mu
 	undelivered int
-	malformed   int
-	invalid     int
-	report      func(kind, message string)
+	// +checklocks:mu
+	malformed int
+	// +checklocks:mu
+	invalid int
+	// +checklocks:mu
+	report func(kind, message string)
 }
 
 // Subscribe registers a consumer and returns the function that removes it. Events already read are not replayed. An

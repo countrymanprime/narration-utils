@@ -1,6 +1,6 @@
 # Recording Check Model Cascade
 
-**Source:** owner conversation of 2026-09-23, after the Q7 model comparison of [#425](https://github.com/countrymanprime/narration-utils/issues/425) (item 1). Builds on the delivered recording check ([steady state](../utilities/recording-coverage.md), [calibration note](../research/recording-coverage-calibration.md), ADRs [0125](../adr/0125-recording-coverage-ground-truth-is-scripted-recordings-with-paragraph-labels-and-a-corpus-directory-variable.md) to [0132](../adr/0132-the-recording-check-ships-0-8-3-8-3-chosen-on-synthetic-fixtures-and-labelled-uncalibrated.md)). Citations are `file:line` on `main` at dd006030. Nothing here is built yet.
+**Source:** owner conversation of 2026-09-23, after the Q7 model comparison of [#425](https://github.com/countrymanprime/narration-utils/issues/425) (item 1). Builds on the delivered recording check ([steady state](../utilities/recording-coverage.md), [calibration note](../research/recording-coverage-calibration.md), ADRs [0125](../adr/0125-recording-coverage-ground-truth-is-scripted-recordings-with-paragraph-labels-and-a-corpus-directory-variable.md) to [0132](../adr/0132-the-recording-check-ships-0-8-3-8-3-chosen-on-synthetic-fixtures-and-labelled-uncalibrated.md)). Citations are `file:line` on `main` at dd006030. Phase 2 (region bounds) is built; nothing else is yet.
 
 ## Problem Statement
 
@@ -121,13 +121,13 @@ We believe a `tiny` pass with `large-v3-turbo` re-checks of the missing regions 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Harness evidence | `coverage_calibration.py cascade` simulates the cascade (first-pass words, windows, re-check words, splice, align) and a `windows` benchmark command; results in the calibration note | complete: go ([evidence](../research/recording-coverage-calibration.md#model-cascade-phase-1): no false met and no false not met on two Piper takes at 0.95 and 0.8, 116% to 124% of `small`'s time on the short synthetic chapters and 30% on a 55-minute real chapter; one real-chapter disagreement pending the owner's ear) | with 2 | - | - |
-| 2 | Region bounds | `before`/`after` on `COVERAGE_REGION`, Go types, Zod, goldens, mock | pending | with 1 | - | - |
+| 2 | Region bounds | `before`/`after` on `COVERAGE_REGION`, Go types, Zod, goldens, mock | complete | with 1 | - | - |
 | 3 | Re-check mode and splice | Windows-only sidecar mode, per-span provenance, `wordsVersion` bump, model check on reuse | pending | - | 2 | - |
 | 4 | Planner and orchestration | Go planner, two-pass service run, cache key, one job | pending | - | 1, 3 | - |
 | 5 | Settings, dialog and docs | On/off and model settings, the missing-model choice, labels, visual states, steady-state docs, ADR | pending | - | 4 | - |
 
 **Phase 1.** Goal: prove the cascade on the corpus before the product changes. It reuses `Whisper(model, model_dir)` (`tests/coverage_calibration.py:164`) and the pure alignment, and adds the benchmark from this PRD's Evidence as a command. Success: the Key Hypothesis's numbers on both Piper takes, recorded in the calibration note. If the cascade misses them, stop here.
-**Phase 2.** Goal: every region knows where it sits in the audio. Success: sidecar tests for a skip, a head, a tail and a region across two items; contract tests.
+**Phase 2.** Goal: every region knows where it sits in the audio. Success: sidecar tests for a skip, a head, a tail and a region across two items; contract tests. **Delivered** ([ADR 0168](../adr/0168-a-coverage-region-carries-its-bounds-as-optional-before-and-after-points-with-no-version-bump.md)): `Region.audio_before`/`audio_after` from the anchors with body text (`recording_coverage.py`), written as `before`/`after` in each word's own item (`coverage_mode.py`); pinned by `tests/test_coverage.py` (skip, head after a read title, tail, different text, short read, nothing read), `tests/test_coverage_mode.py` (a skip in one item, a skip across two items, a head, a tail, no words) and the regenerated `fixtures/coverage/results.golden.json`; Go `RegionLine.Before`/`After` with `report_test.go` (bounds read; an old results file and an old stored result read with none); the Zod schema, the regenerated `coverage-result-*` goldens, a `wireContracts.test.ts` case and the mock. No version bump: the fields are additive and the verdict is unchanged.
 **Phase 3.** Goal: the sidecar re-checks windows without touching the timeline. Success: tests for splice, edge words, overlapping windows and a silent window; an all-cached re-run after a splice loads no model.
 **Phase 4.** Goal: one check, two passes. Success: service tests with a fake sidecar for no regions (one pass), some regions (windows), most of the chapter (whole-chapter fallback), cancel in each stage and failure in each stage; planner unit tests with the benchmark's cost table.
 **Phase 5.** Goal: the narrator can turn it on and sees what it did. Success: Vitest for the settings and labels, the visual suite across viewports for the new states, and `docs/utilities/recording-coverage.md` updated; the PRD is deleted in this PR.
@@ -164,4 +164,4 @@ Cross-cutting: each phase follows `CLAUDE.md`: plan, `change-impact-scan`, TDD, 
 ---
 
 *Generated: 2026-09-23*
-*Status: READY - open questions MC1 to MC7 answered (2026-09-23); no phase started*
+*Status: IN PROGRESS - open questions MC1 to MC7 answered (2026-09-23); Phase 2 complete*

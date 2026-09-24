@@ -24,13 +24,28 @@ const (
 
 // updateJob is one download of one release. Its bytes are the real bytes received (ADR 0015).
 type updateJob struct {
-	mu                                     sync.RWMutex
-	id, version, phase, message, errorText string
-	done, total                            int64
-	cancel                                 context.CancelFunc
-	started                                time.Time
-	staged                                 update.Staged
-	hasStaged                              bool
+	mu sync.RWMutex
+	// id is set when the job is made and never changes, so it is read without mu.
+	id string
+	// +checklocks:mu
+	version string
+	// +checklocks:mu
+	phase string
+	// +checklocks:mu
+	message string
+	// +checklocks:mu
+	errorText string
+	// +checklocks:mu
+	done int64
+	// +checklocks:mu
+	total  int64
+	cancel context.CancelFunc
+	// +checklocks:mu
+	started time.Time
+	// +checklocks:mu
+	staged update.Staged
+	// +checklocks:mu
+	hasStaged bool
 }
 
 // updateRunning reports whether the job is still working: not ready, failed or cancelled.

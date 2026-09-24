@@ -34,7 +34,7 @@ type Template struct {
 // templates" table: an ACX-minimum opening, an ACX-best-practice closing, and
 // a with-copyright variant labelled as a contractual option, not an ACX
 // requirement (PRD Evidence, ACX conventions).
-var defaultTemplates = []Template{
+var defaultTemplates = []Template{ // +checklocksignore: read-only data, read under the store lock by chance
 	{ID: "default-opening-acx-minimum", Kind: "opening", Name: "ACX minimum (opening)", Body: "[Title], written by [Author], narrated by [Narrator].", BuiltIn: true},
 	{ID: "default-closing-acx-best-practice", Kind: "closing", Name: "ACX best practice (closing)", Body: "You have been listening to [Title], written by [Author], narrated by [Narrator]. The End.", BuiltIn: true},
 	{ID: "default-with-copyright", Kind: "closing", Name: "With copyright (contractual)", Body: "[Title]. Written by [Author]. Read by [Narrator]. Copyright by [Copyright].", BuiltIn: true},

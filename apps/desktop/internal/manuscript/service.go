@@ -42,9 +42,11 @@ type ImportJob struct {
 }
 
 type Service struct {
-	mu       sync.Mutex
-	notesMu  sync.Mutex
-	project  string
+	mu      sync.Mutex
+	notesMu sync.Mutex
+	// +checklocks:mu
+	project string
+	// +checklocks:mu
 	jobs     map[string]*ImportJob
 	persist  atomic.Pointer[persist.Reporter]
 	onEnd    atomic.Pointer[func(ImportJob)]

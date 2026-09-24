@@ -22,7 +22,8 @@ type StreamChild struct {
 	done    chan struct{}
 
 	stderrMu sync.Mutex
-	stderr   []byte
+	// +checklocks:stderrMu
+	stderr []byte
 }
 
 // Done is closed once the process has exited and every stdout line has been

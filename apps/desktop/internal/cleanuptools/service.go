@@ -48,7 +48,8 @@ type Service struct {
 	config  Config
 	bridge  *bridge.Client
 	changed func(map[string]any)
-	state   map[string]any
+	// +checklocks:mu
+	state map[string]any
 }
 
 // New builds the service and, when there is a bridge, subscribes to CLEANUP_LAUNCHED and ERROR events for its own
@@ -149,6 +150,7 @@ func (s *Service) handleInvalid(_ bridge.Event, reason error) {
 
 // acceptsLocked keeps only this run's events while a launch is in flight; a run-less ERROR is a session-level
 // problem and fails the launch in flight.
+// +checklocks:s.mu
 func (s *Service) acceptsLocked(fields []string) bool {
 	if s.state["phase"] != "launching" || len(fields) < 2 {
 		return false

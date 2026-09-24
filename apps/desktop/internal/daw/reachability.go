@@ -24,9 +24,11 @@ const heartbeatTimeout = 5 * time.Second
 type Reachability struct {
 	mu       sync.Mutex
 	lastSeen time.Time
-	rpp      string
-	unsaved  bool
-	now      func() time.Time
+	// +checklocks:mu
+	rpp string
+	// +checklocks:mu
+	unsaved bool
+	now     func() time.Time
 }
 
 // NewReachability subscribes to client's PROJECT_STATUS broadcasts. client may be nil (no live bridge for this
