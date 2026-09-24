@@ -120,7 +120,7 @@ We believe a `tiny` pass with `large-v3-turbo` re-checks of the missing regions 
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Harness evidence | `coverage_calibration.py cascade` simulates the cascade (first-pass words, windows, re-check words, splice, align) and a `windows` benchmark command; results in the calibration note | pending | with 2 | - | - |
+| 1 | Harness evidence | `coverage_calibration.py cascade` simulates the cascade (first-pass words, windows, re-check words, splice, align) and a `windows` benchmark command; results in the calibration note | complete: go ([evidence](../research/recording-coverage-calibration.md#model-cascade-phase-1): no false met and no false not met on two Piper takes at 0.95 and 0.8, 116% to 124% of `small`'s time on the short synthetic chapters and 30% on a 55-minute real chapter; one real-chapter disagreement pending the owner's ear) | with 2 | - | - |
 | 2 | Region bounds | `before`/`after` on `COVERAGE_REGION`, Go types, Zod, goldens, mock | complete | with 1 | - | - |
 | 3 | Re-check mode and splice | Windows-only sidecar mode, per-span provenance, `wordsVersion` bump, model check on reuse | pending | - | 2 | - |
 | 4 | Planner and orchestration | Go planner, two-pass service run, cache key, one job | pending | - | 1, 3 | - |

@@ -223,6 +223,134 @@ for chapters with repeated passages, or when a false "not met" from `small` need
 case here where it beats `large-v3-turbo`. Both are one
 synthetic voice on one machine, so the real-corpus limit below still applies.
 
+## Model cascade (Phase 1)
+
+Phase 1 of the model cascade PRD asks whether a `tiny` first pass, with `large-v3-turbo` re-checking only the regions
+that fail the chapter, is as good as one model and cheaper. Two commands measure it:
+
+```bash
+uv run python sidecars/transcript-compare/tests/coverage_calibration.py windows --corpus <dir> --model tiny=<model dir> --model small=<model dir> --model large-v3-turbo=<model dir>
+uv run python sidecars/transcript-compare/tests/coverage_calibration.py cascade --corpus <dir> --model tiny=<model dir> --model small=<model dir> --model large-v3-turbo=<model dir> --work <dir outside the repo>
+uv run python sidecars/transcript-compare/tests/coverage_calibration.py cascade --manifest <host manifest> --manuscript <manuscript.json> --chapter-id <id> --model ... --work <dir>
+```
+
+`cascade` runs each model alone through the sidecar (the `audio` path and its words cache, which now keeps the time of
+the run that transcribed it). It then aligns the first pass in process with the sidecar's own alignment and coverage
+code, and takes the regions that fail the chapter: a run over `max_missing_run`, or a region in a failing paragraph.
+A "met" first pass stands and loads nothing more. Each failing region's audio bounds are the last matched word before
+it and the first after it, read from the alignment's `equal` opcodes. The PRD's Phase 2 will emit these bounds from the
+sidecar, and Phase 4 should read them from there. The windows follow MC3: 3 s past each bound, padded to at least
+25 s, merged when less than 20 s apart, one slice per item a gap crosses, the item's edge at a chapter edge, and one
+whole-chapter pass when the windows exceed 60% of the played audio. `large-v3-turbo` transcribes the windows with one
+load a run. Its words replace the first pass's by word midpoint, except within 0.5 s of a cut edge, where the first
+pass keeps the word. Then the chapter is aligned again. The re-check time counts the model load for every case that
+had a window, and the second alignment. Measured on 2026-09-23 on the same machine as above (AMD Ryzen 9 9955HX, 32
+threads, CPU, int8). Another agent's work may have shared the CPU, so the times are within a few seconds.
+
+### Window length
+
+The sidecar's settings (`vad_filter`, `word_timestamps`, int8, CPU), the median of 3 at different offsets in the 12
+minutes of the second Piper take:
+
+| Window | 5 s | 10 s | 20 s | 30 s | 45 s | 60 s | 120 s | 240 s | Model load |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| tiny | 0.2 | 0.3 | 0.4 | 0.7 | 1.2 | 1.4 | 3.3 | 7.1 | 0.2 |
+| small | 1.2 | 1.4 | 2.0 | 3.7 | 6.6 | 7.7 | 16.8 | 41.0 | 0.9 |
+| large-v3-turbo | 4.6 | 4.5 | 5.5 | 10.5 | 11.6 | 24.8 | 30.7 | 58.3 | 2.8 |
+
+Seconds. It repeats the PRD's scratch figures: with `large-v3-turbo` a window up to 20 s costs about as much as 5 s,
+and the cost steps at 30 s. Three separate 10-second windows took 11.5 s against 16.0 s for one 60-second window over
+all three. So padding a window to 25 s is free, and merging saves time only when the joined window needs fewer 30 s
+blocks. The 60 s median (24.8 s) sits above the 45 s and 120 s ones, which is probably run-to-run noise.
+
+### The synthetic corpus
+
+The first Piper take was not kept, so the second take (the one Q7 used) and a fresh third take of the 16 cases were
+run. Both takes, at both settings:
+
+| Take | Settings | Method | False met | False not met | Seconds | Against `small` |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2 | 0.95 | tiny | 0 | 0 | 34.4 | 32% |
+| 2 | 0.95 | cascade | 0 | 0 | 134.4 | 124% |
+| 2 | 0.95 | small | 0 | 1 | 108.4 | 100% |
+| 2 | 0.95 | large-v3-turbo | 0 | 1 | 228.0 | 210% |
+| 2 | 0.8 | cascade | 0 | 0 | 134.4 | 124% |
+| 2 | 0.8 | large-v3-turbo | 0 | 0 | 228.0 | 210% |
+| 3 | 0.95 | tiny | 0 | 3 | 35.1 | 30% |
+| 3 | 0.95 | cascade | 0 | 0 | 143.6 | 123% |
+| 3 | 0.95 | small | 0 | 0 | 116.8 | 100% |
+| 3 | 0.95 | large-v3-turbo | 0 | 0 | 234.0 | 200% |
+| 3 | 0.8 | tiny | 0 | 2 | 35.1 | 30% |
+| 3 | 0.8 | cascade | 0 | 0 | 135.1 | 116% |
+
+At 0.8, take 2 `tiny` and `small` are as at 0.95, and take 3 `small` and `large-v3-turbo` are too.
+
+- **No false "met" from any method.** The cascade called every complete chapter complete on both takes.
+- **The re-check rescued every false "not met" `tiny` made.** On take 3, `tiny` failed `c2-subtitle-read`,
+  `c3-refrain-complete` and `c4-names-and-numbers`. The windows over those regions, read by `large-v3-turbo`, passed all
+  three.
+- **Each incomplete chapter paid for a re-check, and most of them were whole-chapter passes.** These chapters last 0.4
+  to 1.2 minutes, so one 25-second window is often over 60% of the chapter. The re-check cost 7 to 21 s a case, model
+  load included. That is why the cascade came to 116% to 124% of `small` here and not the third the PRD hoped for. On
+  a chapter of normal length a window is a small share (next section).
+
+### A real chapter (owner-approved, unlabelled)
+
+One chapter of the owner's own narration was used, with the owner's permission: four unedited takes, 55.1 minutes
+played, with pickups and deliberate mistakes. It was read from a copy of the project outside the repository, with the
+audio linked in place, read only. The host's own `buildPlan` built the manifest in a scratch test that was not kept.
+Nothing from the chapter is in this repository: no words, only counts, times and positions. It has no labels, so
+`large-v3-turbo` alone is the reference.
+
+| Settings | Run | Verdict | Failing regions | Windows (s) | Seconds | Against `small` | Regions shared with the reference | Only this run | Only the reference |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.95 | tiny | not met | 5 | | 103.7 | 25% | 1 | 4 | 2 |
+| 0.95 | small | not met | 2 | | 414.3 | 100% | 0 | 2 | 3 |
+| 0.95 | large-v3-turbo | not met | 3 | | 765.3 | 185% | 3 | 0 | 0 |
+| 0.95 | cascade | not met | 2 | 4 (130) | 129.6 | 31% | 0 | 2 | 3 |
+| 0.8 | tiny | not met | 4 | | 103.7 | 25% | 1 | 3 | 1 |
+| 0.8 | small | met | 0 | | 414.3 | 100% | 0 | 0 | 2 |
+| 0.8 | large-v3-turbo | not met | 2 | | 765.3 | 185% | 2 | 0 | 0 |
+| 0.8 | cascade | met | 0 | 3 (105) | 125.5 | 30% | 0 | 0 | 2 |
+
+- **Time:** the cascade took 30% of `small`'s time and 16% to 17% of `large-v3-turbo`'s. It re-checked 105 to 130 seconds of
+  55 minutes, 19 to 23 s of CPU plus a 2.8 s load.
+- **The one different verdict:** at 0.8, the cascade (like `small`) says met and `large-v3-turbo` says not met.
+  `large-v3-turbo`'s larger region is 22 words of `different_text` at item 2, 21:31. There, `large-v3-turbo` wrote no
+  words for 20 seconds (21:34 to 21:54 of the source), and `tiny` and `small` both heard speech the whole way. They
+  wrote 169 and 174 words from 21:00 to 22:40, against 131, almost all of them in the chapter's vocabulary. So this
+  looks like `large-v3-turbo` losing a stretch of speech (a false "not met" from the reference), not `tiny` inventing
+  text. `tiny` did not flag the stretch, so the cascade never re-checked it. Only listening can settle it. The other
+  region is one word at item 3, 4:59, which both runs report on different manuscript words.
+- **The cascade's regions at 0.95** are single words (`short_read`) at item 2, 7:08 and item 3, 4:59. The reference's
+  are the stretch above, one word at item 2, 25:50 and one word at item 3, 4:59.
+
+Places to check by ear (item in play order, counted from 1; time in the item's source file):
+
+| Where | What | Found by |
+| --- | --- | --- |
+| item 2, 21:31 (silence in `large-v3-turbo` from 21:34 to 21:54) | 22 words, `different_text` | `large-v3-turbo` only |
+| item 2, 25:50 | 1 word, `short_read` | `large-v3-turbo` only (0.95) |
+| item 2, 7:08 | 1 word, `short_read` | cascade only (0.95) |
+| item 3, 4:59 | 1 word, `short_read` | both, on different manuscript words |
+
+### Go or no-go
+
+The PRD's Key Hypothesis, over the calibration corpus: no false "met", no more false "not met" than `large-v3-turbo`
+alone, and a total time within 40% of `small`'s.
+
+- **Take 2:** false met 0; false not met 0 (`large-v3-turbo` 1 at 0.95, 0 at 0.8); 134.4 s against a limit of
+  151.7 s (124%). **Go.**
+- **Take 3:** false met 0; false not met 0 (`large-v3-turbo` 0); 143.6 s at 0.95 and 135.1 s at 0.8, against a limit
+  of 163.5 s (123% and 116%). **Go.**
+- **The real chapter** gives no evidence of a false "met" from the first pass. The one verdict it differs on points
+  the other way, at a place where the reference itself lost 20 seconds of speech. That is pending the owner's ear.
+  The cascade took 30% of `small`'s time there, which is the PRD's "about a third" on a chapter of real length.
+
+So Phase 1 is a go. Two things for the later phases: on chapters shorter than about a minute the whole-chapter
+fallback runs almost every time and the cascade costs more than `small`, and `tiny` can mark a stretch present that
+`large-v3-turbo` would not, which is the trust MC6's spot checks would test.
+
 ## Limits
 
 - **A synthetic voice and synthetic noise.** Piper reads cleanly, at an even pace, with no room noise, breaths or mouth
