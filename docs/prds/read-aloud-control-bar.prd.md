@@ -184,7 +184,7 @@ The narrator, recording a chapter at a desk with REAPER open beside the app (or 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Layout fixes | Resume card into the text column (a `header` slot on `ReadAlongView`); rail a full-height column; tests, visual rows with an alignment assertion, aria re-read | pending | 2, 4, 6 | - | - |
-| 2 | Popover primitive | `Popover` on Base UI above the dialog layer; Escape order with the dialog; story, atlas, design-system row, ADR | pending | 1, 4, 6 | - | - |
+| 2 | Popover primitive | `Popover` on Base UI above the dialog layer; Escape order with the dialog; story, atlas, design-system row, ADR | complete | 1, 4, 6 | - | - |
 | 3 | Control bar | `ReadingControlBar` outside the scroll (Dialog footer slot, Q1), microphone and gear popovers, Play/Stop/status/Follow, the start-point slot (sibling RD9), Space shortcut (Q10), narrow layout (Q12), standalone page (Q11); visual rows with reflow, aria snapshots, catalog, guide, ADR | pending | 4, 6 | 1, 2, Q1, Q2, Q10, Q11, Q12 | - |
 | 4 | Input level | Sidecar `level` events and `--meter` mode; Go relay and meter child; bindings; wire contract, golden, mock; meter in the bar and popover | pending | 1, 2, 6 (sidecar and Go half); UI half after 3 | Q6 | - |
 | 5 | Pause | Control-channel pause/resume, frozen tracker clock, `paused` state, binding, contract, mock; Pause in the bar | pending | 6 | 3, Q3 | - |
