@@ -231,7 +231,8 @@ export const WIRE_CHAPTERS: ManuscriptChapter[] = aliceChapters.map((chapter, in
   })),
   wordCount: chapter.paragraphs.join(' ').split(/\s+/).length * 4,
   // Chapters 1-3 were checked and read in full, 4-6 were checked with a third of their text still to record, the rest were never
-  // checked, so their recorded length is the estimate from their status (docs/utilities/recording-coverage.md D11, Q12).
+  // checked (docs/utilities/recording-coverage.md D11, Q12). The share only drives the recording check and stage suggestions now;
+  // Home's Actual recorded column no longer estimates from it (actual-recorded-column.prd.md Phase 1).
   ...(index < 6 ? { recordedFraction: index < 3 ? 1 : 0.65 } : {}),
   status: index < 3 ? 'finalized' : index < 6 ? 'recording' : index < 8 ? 'editing' : index < 10 ? 'proofing' : 'not_started',
 }));

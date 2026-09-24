@@ -40,6 +40,25 @@ describe('AudiobookEstimatePanel', () => {
     expect(screen.getAllByText((_, node) => node?.textContent === 'Chapter 1 — Down the Rabbit-Hole').length).toBeGreaterThan(0);
   });
 
+  it('shows a plain dash for Actual recorded and leaves it unchanged when the status changes (actual-recorded-column.prd.md Phase 1)', async () => {
+    const api = createMockApi();
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await waitFor(() => screen.getByText('Audiobook estimate'));
+    expect(screen.getByText('Actual recorded').nextElementSibling?.textContent).toBe('—');
+    fireEvent.click(screen.getByRole('button', { name: /Show per-chapter breakdown/ }));
+    const select = screen.getByLabelText('Chapter 1 status') as HTMLSelectElement;
+    const cellsBefore = screen.getAllByText('—').length;
+    fireEvent.change(select, { target: { value: 'recording' } });
+    await waitFor(() => expect(select.value).toBe('recording'));
+    expect(screen.getAllByText('—').length).toBe(cellsBefore);
+  });
+
   it('shows a Credits stat timed from the first opening and closing templates at 155 wpm', async () => {
     const api = createMockApi({
       creditsTemplates: async () => [

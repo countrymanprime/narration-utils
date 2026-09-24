@@ -38,16 +38,17 @@ const openCheck = async (title: string) => {
 };
 
 describe('recording check on Home', () => {
-  it('labels a recorded length as measured only when a current check measured it', async () => {
+  it('never shows a status- or check-derived recorded length', async () => {
     await openBreakdown();
-    expect(within(row('Chapter 1')).getByText('measured')).toBeTruthy();
-    expect(within(row('Chapter 4')).getByText('measured')).toBeTruthy();
-    expect(within(row('Chapter 7')).getByText('estimated from status')).toBeTruthy();
+    // No estimate, checked or not: actual-recorded-column.prd.md Phase 1 drops the status guess and the check's word share alike.
+    expect(within(row('Chapter 1')).queryByText('measured')).toBeNull();
+    expect(within(row('Chapter 4')).queryByText('measured')).toBeNull();
+    expect(within(row('Chapter 7')).queryByText('estimated from status')).toBeNull();
+    for (const title of ['Chapter 1', 'Chapter 4', 'Chapter 7']) expect(within(row(title)).getByText('—')).toBeTruthy();
   });
 
   it('says a stale check no longer measures the chapter', async () => {
     await openBreakdown({ coverage: { stale: [WIRE_CHAPTERS[3].id] } });
-    expect(within(row('Chapter 4')).getByText('estimated from status')).toBeTruthy();
     const dialog = await openCheck('Chapter 4');
     expect(await within(dialog).findByText('This result is out of date')).toBeTruthy();
     expect(within(dialog).getByText('An item on the chapter’s track was trimmed since this check.')).toBeTruthy();
@@ -90,7 +91,7 @@ describe('recording check on Home', () => {
     expect(within(dialog).getByRole('button', { name: /^Paragraphs/ })).toBeTruthy();
   });
 
-  it('runs a check with real progress, then shows its result and measures the chapter', async () => {
+  it('runs a check with real progress and shows its result, leaving the recorded length column untouched', async () => {
     await openBreakdown();
     const dialog = await openCheck('Chapter 7');
     fireEvent.click(await within(dialog).findByRole('button', { name: 'Check recording' }));
@@ -100,7 +101,7 @@ describe('recording check on Home', () => {
     const result = await screen.findByRole('dialog', { name: 'Recording check: Chapter 7' }, { timeout: 3000 });
     expect(await within(result).findByText('All the text is recorded')).toBeTruthy();
     fireEvent.click(within(result).getByRole('button', { name: 'Close' }));
-    await waitFor(() => expect(within(row('Chapter 7')).getByText('measured')).toBeTruthy());
+    await waitFor(() => expect(within(row('Chapter 7')).getByText('—')).toBeTruthy());
   });
 
   it('cancels a running check and keeps the dialog until it is closed', async () => {
