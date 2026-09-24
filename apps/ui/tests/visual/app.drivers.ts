@@ -241,6 +241,28 @@ async function measureOnDelivery(page: Page, query = ''): Promise<void> {
   await page.getByRole('table', { name: 'Measurements' }).waitFor();
 }
 
+// Opens Delivery's Diagnostics tab (diagnostics PRD Phase 6), after a reload with mock seams when given, once its thresholds are read.
+async function openDiagnostics(page: Page, query = ''): Promise<void> {
+  await openDelivery(page, query);
+  await page.getByRole('tab', { name: 'Diagnostics' }).click();
+  await page.getByRole('region', { name: 'Thresholds' }).getByText('Room-tone change').waitFor();
+}
+
+// Opens the Diagnostics tab and checks the mock picker's three files (the unheld mock reads a quarter of a file per poll).
+async function checkOnDiagnostics(page: Page, query = ''): Promise<void> {
+  await openDiagnostics(page, query);
+  await page.getByRole('button', { name: 'Choose files to check…' }).click();
+  await page.getByRole('table', { name: 'Checked files' }).waitFor();
+}
+
+// Waits for the diagnostics check to end with `message`, then dismisses the toast its end raises (as measurementEnded does).
+async function diagnosticsEnded(page: Page, message: string | RegExp): Promise<void> {
+  await page.getByRole('region', { name: 'Diagnostics' }).getByText(message).waitFor({ timeout: 15_000 });
+  const dismissToast = page.getByRole('button', { name: 'Dismiss message' });
+  await dismissToast.click({ timeout: 1_000 }).catch(() => undefined);
+  await dismissToast.waitFor({ state: 'detached' });
+}
+
 // Waits for the measurement to end with `message` on the page (the unheld mock reads three files in twelve polls, about six
 // seconds), then dismisses the toast the same end raises (job:ended, ADR 0076), which would otherwise race the screenshot.
 async function measurementEnded(page: Page, message: string | RegExp): Promise<void> {
@@ -1584,6 +1606,32 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     error: async (page) => {
       await measureOnDelivery(page, '?mockMeasure=fails');
       await measurementEnded(page, /^The measurement stopped unexpectedly\. Choose/);
+    },
+    'diagnostics-empty': async (page) => {
+      await openDiagnostics(page);
+      await page.getByText(/^Nothing checked yet/).waitFor();
+    },
+    'diagnostics-running': async (page) => {
+      await checkOnDiagnostics(page, '?mockDiagnostics=running');
+      await page.getByRole('progressbar', { name: 'Checking' }).waitFor();
+      await page.getByText('Checking Chapter 01.wav (1 of 3).').waitFor();
+    },
+    'diagnostics-findings': async (page) => {
+      await measureOnDelivery(page);
+      await measurementEnded(page, 'Measured 2 of 3 files; 1 could not be measured.');
+      await page.getByRole('tab', { name: 'Diagnostics' }).click();
+      await page.getByRole('button', { name: 'Check the 3 measured files' }).click();
+      await diagnosticsEnded(page, 'Checked 2 of 3 files; 1 could not be checked.');
+      await page.getByRole('table', { name: 'Findings' }).waitFor();
+    },
+    'diagnostics-cancelled': async (page) => {
+      await checkOnDiagnostics(page, '?mockDiagnostics=running');
+      await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+      await page.getByText(/^Diagnostics cancelled\./).waitFor();
+    },
+    'diagnostics-error': async (page) => {
+      await checkOnDiagnostics(page, '?mockDiagnostics=fails');
+      await diagnosticsEnded(page, /^The diagnostics stopped unexpectedly\. Choose/);
     },
   },
   teleprompter: {

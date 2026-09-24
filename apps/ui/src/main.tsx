@@ -152,6 +152,8 @@ const mockTakeComparisonHold = mockParams.get('mockTakeComparison') === 'running
 // project with its own delivery limits set, so the page's limits summary and the values outside them can be seen without saving
 // them in Settings first. The numbers only exercise the page: no distributor's numbers ship (ADR 0025).
 const mockMeasure = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockMeasure'));
+// `?mockDiagnostics=running|fails` does the same for the Delivery page's Diagnostics tab (diagnostics PRD Phase 6).
+const mockDiagnostics = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockDiagnostics'));
 const MOCK_DELIVERY_LIMITS = {
   integrated_lufs_min: '-23',
   integrated_lufs_max: '-18',
@@ -162,6 +164,7 @@ const MOCK_DELIVERY_LIMITS = {
 const mockDeliveryLimits = mockParams.has('mockDeliveryLimits');
 const mockInitial = {
   ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
+  ...(mockDiagnostics ? { diagnostics: mockDiagnostics === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
   ...(mockDeliveryLimits ? { deliveryLimits: MOCK_DELIVERY_LIMITS } : {}),
   ...(mockTakeReviewScanHold ? { takeReviewScanHold: true } : {}),
   ...(mockTakeComparisonHold ? { takeComparisonHold: true } : {}),

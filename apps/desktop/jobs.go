@@ -28,6 +28,7 @@ const (
 	jobKindTakeReview        = "take_review"
 	jobKindTakeComparison    = "take_comparison"
 	jobKindMeasurement       = "measurement"
+	jobKindDiagnostics       = "diagnostics"
 )
 
 // How a job ended. A job that was cancelled is reported too, so a listener can tell the narrator's own Cancel from a failure.

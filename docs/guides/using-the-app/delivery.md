@@ -39,6 +39,29 @@ in Settings judges the values on screen again, without measuring the files again
 
 ![Measured values against the project's own limits, with three outside them](../../images/ui/delivery-outside-limits.webp)
 
+## Diagnostics
+
+The **Diagnostics** tab checks the same kind of files for clipping, level shifts, room-tone changes
+and long pauses. Press **Check the measured files** to check what you just measured, or **Choose
+files to check…** to pick others. First say what the files are, **Rendered chapters** or **Raw
+recordings**: room tone and level mean different things in each, because a render may have been gated
+or cleaned on purpose, so a room-tone change in a render is only information. The bar shows the audio
+read so far, and **Cancel** keeps what was already checked.
+
+Each file gets a line with its length, how many clip regions and level shifts it has and how much of it
+is silence. Pacing and the speaking rate need the transcript's word timing, so a file checked here says
+**Not available** with the reason, and no long pause is guessed from silence alone.
+
+Under it, each finding gives its time in the file, what it is and why it was raised, what was measured
+(for example the loudness before and after a level shift), the threshold that raised it, and the file
+and the kind of source it was measured in. Listen at those times in REAPER: the tab plays nothing,
+changes nothing and saves nothing, so every finding is a candidate to listen to, not a verdict, and
+stays unreviewed. **Thresholds** lists every threshold the check uses, even before you check anything.
+They are starting values, not a delivery specification, and cannot be changed yet. When nothing reaches
+a threshold, the tab says so without calling the file a pass.
+
+![The measured files checked: each file summarised, and each finding with its time, what was measured, the threshold that raised it and the source](../../images/ui/delivery-diagnostics-findings.webp)
+
 ---
 
 [← Review](review.md) · [Index](README.md) · [Settings →](settings.md)

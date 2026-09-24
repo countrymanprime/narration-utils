@@ -1,0 +1,49 @@
+{
+  "id": "diagnostics-1",
+  "kind": "diagnostics",
+  "phase": "error",
+  "message": "The diagnostics stopped unexpectedly.",
+  "percent": 0,
+  "logs": [
+    "Checking 3 files.",
+    "The diagnostics stopped unexpectedly."
+  ],
+  "elapsed": 3.5,
+  "error": "runtime error: index out of range [4] with length 4",
+  "sourceKind": "processed_render",
+  "thresholds": {
+    "clip_ceiling_dbfs": 0,
+    "silence_floor_dbfs": -50,
+    "min_silence_seconds": 0.3,
+    "level_shift_lu": 4,
+    "room_tone_step_db": 6,
+    "pauses": {
+      "min_pause_seconds": 0.3,
+      "long_pause_seconds": 2
+    }
+  },
+  "files": [
+    {
+      "path": "C:/Renders/Chapter 01.wav",
+      "name": "Chapter 01.wav",
+      "status": "failed",
+      "summary": null,
+      "findings": null,
+      "error": "the diagnostics stopped unexpectedly: runtime error: index out of range [4] with length 4"
+    },
+    {
+      "path": "C:/Renders/Chapter 02.wav",
+      "name": "Chapter 02.wav",
+      "status": "cancelled",
+      "summary": null,
+      "findings": null
+    },
+    {
+      "path": "C:/Renders/Chapter 03.mp3",
+      "name": "Chapter 03.mp3",
+      "status": "cancelled",
+      "summary": null,
+      "findings": null
+    }
+  ]
+}

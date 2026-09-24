@@ -48,7 +48,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 44
+const hostAPIVersion = 46
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -79,7 +79,10 @@ type Host struct {
 	// chose this session, the only paths MeasureAnalyze accepts (ADR 0156). h.mu guards both; neither is per project.
 	measureJob    *measureJob
 	measurePicked map[string]bool
-	transcript    *transcript.Service
+	// diagnosticsJob runs the windowed diagnostics over picked files (diagnostics_job.go, the Diagnostics view); it
+	// accepts the same picked paths as measureJob. h.mu guards the pointer; it is not per project.
+	diagnosticsJob *diagnosticsJob
+	transcript     *transcript.Service
 	// coverage is the recording-coverage service (docs/utilities/recording-coverage.md, ADR 0128): it reads the saved .rpp and
 	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; the Coverage* bindings
 	// reach it (Phase 5, bindings_coverage.go) and it fills the manuscript chapters' recordedFraction.
@@ -124,6 +127,8 @@ type Host struct {
 	// picker and measure.MeasureFile.
 	pickAudioFiles func() ([]string, error)
 	measureFile    measureFileFunc
+	// diagnoseFile is the same seam for the diagnostics job: nil means measure.DiagnoseFile.
+	diagnoseFile diagnoseFileFunc
 	// updates asks GitHub for a newer release and remembers the answer (ADR 0072). It is set once in NewHost and never swapped, so it is
 	// read directly, like recents.
 	updates *update.Checker
@@ -863,7 +868,7 @@ func (h *Host) canAttachLocked() bool {
 }
 
 // idleLocked reports whether nothing is running that a restart or a project switch would displace: an import draft, a Story Bible
-// build, a download, a comparison, a measurement or a teleprompter session. The caller holds h.mu.
+// build, a download, a comparison, a measurement, a diagnostics check or a teleprompter session. The caller holds h.mu.
 func (h *Host) idleLocked() bool {
 	if h.manuscript != nil && !h.manuscript.CanSwitchProject() {
 		return false
@@ -883,6 +888,9 @@ func (h *Host) idleLocked() bool {
 		return false
 	}
 	if h.measureJob != nil && h.measureJob.running() {
+		return false
+	}
+	if h.diagnosticsJob != nil && h.diagnosticsJob.running() {
 		return false
 	}
 	for _, job := range h.installJobs {

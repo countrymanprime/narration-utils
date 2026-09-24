@@ -488,5 +488,12 @@
     "viewport": "desktop",
     "docName": "delivery-outside-limits",
     "caption": "Delivery - measured values against the project's own limits, three of them outside"
+  },
+  {
+    "page": "delivery",
+    "state": "diagnostics-findings",
+    "viewport": "desktop",
+    "docName": "delivery-diagnostics-findings",
+    "caption": "Delivery, Diagnostics - the measured files checked: each file summarised, and each finding with its time, what was measured, the threshold that raised it and the source"
   }
 ]

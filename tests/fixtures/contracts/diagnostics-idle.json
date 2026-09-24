@@ -1,0 +1,22 @@
+{
+  "id": null,
+  "kind": "diagnostics",
+  "phase": "idle",
+  "message": "Choose the files to check.",
+  "percent": 0,
+  "logs": [],
+  "elapsed": 3.5,
+  "sourceKind": null,
+  "thresholds": {
+    "clip_ceiling_dbfs": 0,
+    "silence_floor_dbfs": -50,
+    "min_silence_seconds": 0.3,
+    "level_shift_lu": 4,
+    "room_tone_step_db": 6,
+    "pauses": {
+      "min_pause_seconds": 0.3,
+      "long_pause_seconds": 2
+    }
+  },
+  "files": []
+}
