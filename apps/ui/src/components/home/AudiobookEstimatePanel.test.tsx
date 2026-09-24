@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AudiobookEstimatePanel, rollupChapterStatuses } from './AudiobookEstimatePanel';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
+import { WIRE_CHAPTERS } from '../../api/mockFixtures';
 
 afterEach(cleanup);
 
@@ -40,7 +41,7 @@ describe('AudiobookEstimatePanel', () => {
     expect(screen.getAllByText((_, node) => node?.textContent === 'Chapter 1 — Down the Rabbit-Hole').length).toBeGreaterThan(0);
   });
 
-  it('shows a plain dash for Actual recorded and leaves it unchanged when the status changes (actual-recorded-column.prd.md Phase 1)', async () => {
+  it('shows a plain dash for Actual recorded, with the reason as its accessible name, and leaves it unchanged when the status changes (actual-recorded-column.prd.md Phase 1 and 3)', async () => {
     const api = createMockApi();
     render(
       <MemoryRouter>
@@ -52,11 +53,63 @@ describe('AudiobookEstimatePanel', () => {
     await waitFor(() => screen.getByText('Audiobook estimate'));
     expect(screen.getByText('Actual recorded').nextElementSibling?.textContent).toBe('—');
     fireEvent.click(screen.getByRole('button', { name: /Show per-chapter breakdown/ }));
+    // The default demo has no confirmed chapter-track links, so every row reads "—", named for a screen reader (AR3).
+    expect(screen.getAllByLabelText('No REAPER track linked').length).toBe(12);
     const select = screen.getByLabelText('Chapter 1 status') as HTMLSelectElement;
     const cellsBefore = screen.getAllByText('—').length;
     fireEvent.change(select, { target: { value: 'recording' } });
     await waitFor(() => expect(select.value).toBe('recording'));
     expect(screen.getAllByText('—').length).toBe(cellsBefore);
+  });
+
+  it("shows the linked track's recorded length in the cell and stat, and sums only linked chapters (actual-recorded-column.prd.md Phase 3, AR1, AR2, AR6)", async () => {
+    const api = createMockApi({
+      manuscriptChapters: async () => [
+        { ...WIRE_CHAPTERS[0], recordedSeconds: 2520.5 }, // 42m
+        { ...WIRE_CHAPTERS[1], recordedSeconds: 45 }, // under a minute: seconds, not "0m"
+        { ...WIRE_CHAPTERS[2], recordedUnavailable: 'multiple_tracks' },
+        ...WIRE_CHAPTERS.slice(3),
+      ],
+    });
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await waitFor(() => screen.getByText('Audiobook estimate'));
+    // Headline stat: only the two linked chapters' seconds are summed (2520.5 + 45 = 2565.5s = 42m46s -> 43m).
+    expect(screen.getByText('Actual recorded').nextElementSibling?.textContent).toBe('43m');
+    fireEvent.click(screen.getByRole('button', { name: /Show per-chapter breakdown/ }));
+    expect(screen.getByText('42m')).toBeTruthy();
+    expect(screen.getByText('45s')).toBeTruthy();
+    expect(screen.getByLabelText('Linked to more than one REAPER track')).toBeTruthy();
+    // Status never touches this column (Phase 1): changing Chapter 1's status leaves its recorded cell alone.
+    fireEvent.change(screen.getByLabelText('Chapter 1 status'), { target: { value: 'recording' } });
+    await waitFor(() => expect((screen.getByLabelText('Chapter 1 status') as HTMLSelectElement).value).toBe('recording'));
+    expect(screen.getByText('42m')).toBeTruthy();
+  });
+
+  it('tells how many chapters are linked in the headline stat tooltip and defines the column in its header tooltip (AR1, AR2, AR8)', async () => {
+    const api = createMockApi({
+      manuscriptChapters: async () => [{ ...WIRE_CHAPTERS[0], recordedSeconds: 60 }, ...WIRE_CHAPTERS.slice(1)],
+    });
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await waitFor(() => screen.getByText('Audiobook estimate'));
+    expect(screen.getByLabelText('About Actual recorded').getAttribute('aria-description')).toBe(
+      'From 1 of 12 chapters with a linked track, as of the saved REAPER project. Nothing here is estimated.',
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Show per-chapter breakdown/ }));
+    expect(screen.getByLabelText('About the Actual recorded column').getAttribute('aria-description')).toBe(
+      'The audio on the chapter’s linked REAPER track: its unmuted items, overlaps counted once, as of the saved project. A dash means no track is linked.',
+    );
   });
 
   it('shows a Credits stat timed from the first opening and closing templates at 155 wpm', async () => {

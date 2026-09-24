@@ -1,4 +1,5 @@
 import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from 'react';
+import { Tooltip } from './Tooltip';
 
 // A presentational data table (ADR 0056). It replaces the `table.dtable` rules in components.css: the look lives here, in
 // tokens, and the parts stay the browser's own table elements (`table`, `thead`, `tbody`, `tr`, `th`, `td`), so the table
@@ -83,6 +84,7 @@ export function TableHeader({
   sorted,
   onSort,
   hiddenLabel,
+  info,
   className = '',
   style,
   children,
@@ -92,6 +94,8 @@ export function TableHeader({
   onSort?: () => void;
   // The name of a column with no visible header (a column of buttons), for a screen reader.
   hiddenLabel?: string;
+  // Definition text for an "i" icon after the label (a non-obvious column, e.g. what it counts or as of when).
+  info?: string;
   className?: string;
   style?: CSSProperties;
   children?: string;
@@ -113,8 +117,13 @@ export function TableHeader({
         >
           {children} {arrow}
         </button>
+      ) : children ? (
+        <>
+          {children}
+          {info && <Tooltip text={info} label={`About the ${children} column`} />}
+        </>
       ) : (
-        (children ?? <span className="sr-only">{hiddenLabel}</span>)
+        <span className="sr-only">{hiddenLabel}</span>
       )}
     </th>
   );

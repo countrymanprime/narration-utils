@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
-import type { ChapterStatus, CoverageState, ManuscriptChapter } from '../../types';
+import type { ChapterStatus, CoverageState, ManuscriptChapter, RecordedUnavailable } from '../../types';
 import { estimateFinishedHours } from '../../state';
 import { useCreditsSeconds } from './useCreditsSeconds';
 import { useApi } from '../../api/ApiContext';
@@ -33,6 +33,20 @@ const fmtHours = (hours: number) => {
 // read that as "no credits time" rather than "eighteen seconds". Show seconds below a minute; fall back to fmtHours'
 // hour/minute format once a template runs a minute or longer.
 const fmtCreditsSeconds = (seconds: number) => (seconds < 60 ? `${Math.round(seconds)}s` : fmtHours(seconds / 3600));
+
+// Actual recorded (actual-recorded-column.prd.md Phase 3, AR2): a chapter just started can have a few seconds on its
+// track, which fmtHours alone would round down to "0m" - show seconds under a minute, same convention as fmtCreditsSeconds.
+const fmtRecordedTime = (seconds: number) => (seconds < 60 ? `${Math.round(seconds)}s` : fmtHours(seconds / 3600));
+
+// Why a chapter has no Actual recorded time, named for the dash's tooltip and accessible name (AR3). The mockup's wording
+// for `track_missing` ("Linked track is not in the saved project", 02-dash-reason-tooltip.webp) is the spec; the others
+// match its noun-phrase style.
+const RECORDED_UNAVAILABLE_REASON: Record<RecordedUnavailable, string> = {
+  unlinked: 'No REAPER track linked',
+  multiple_tracks: 'Linked to more than one REAPER track',
+  track_missing: 'Linked track is not in the saved project',
+  no_project: 'No REAPER project is open',
+};
 
 export type StatusTotal = { count: number; hours: number; words: number };
 
@@ -111,11 +125,14 @@ export function AudiobookEstimatePanel({
 
   const totalWords = narrationChapters.reduce((sum, c) => sum + c.wordCount, 0);
   const finishedHours = estimateFinishedHours(totalWords);
-  // No real recorded duration is read from REAPER yet (actual-recorded-column.prd.md Phase 1): the stat never
-  // guesses from a status or a word share, so it shows a plain dash until a later phase adds it.
+  // Actual recorded (actual-recorded-column.prd.md Phase 3, AR1): summed only from chapters with a linked track's
+  // recorded seconds - never a status or word-share guess, so it drops when nothing is linked yet.
+  const recordedChapters = narrationChapters.filter((c) => c.recordedSeconds !== undefined);
+  const recordedSecondsTotal = recordedChapters.reduce((sum, c) => sum + (c.recordedSeconds ?? 0), 0);
+  const recordedTooltip = `From ${recordedChapters.length} of ${narrationChapters.length} chapters with a linked track, as of the saved REAPER project. Nothing here is estimated.`;
   const stats = [
     { label: 'Est. finished audio', value: fmtHours(finishedHours) },
-    { label: 'Actual recorded', value: '—' },
+    { label: 'Actual recorded', value: recordedChapters.length > 0 ? fmtRecordedTime(recordedSecondsTotal) : '—', tooltip: recordedTooltip },
     { label: 'Est. record time', value: fmtHours(finishedHours * 3) },
     { label: 'Est. edit time', value: fmtHours(finishedHours * 2) },
     { label: 'Est. proof time', value: fmtHours(finishedHours * 1) },
@@ -151,8 +168,9 @@ export function AudiobookEstimatePanel({
         <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}>
           {stats.map((stat) => (
             <div key={stat.label}>
-              <div className="font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
+              <div className="flex items-center font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--text-muted)] uppercase">
                 {stat.label}
+                {stat.tooltip && <Tooltip text={stat.tooltip} label={`About ${stat.label}`} />}
               </div>
               <div className="mt-1 font-['IBM_Plex_Mono',ui-monospace,monospace] text-2xl font-semibold">{stat.value}</div>
             </div>
@@ -196,7 +214,12 @@ export function AudiobookEstimatePanel({
                 <TableHeader>Chapter</TableHeader>
                 <TableHeader align="right">Words</TableHeader>
                 <TableHeader align="right">Est. finished length</TableHeader>
-                <TableHeader align="right">Actual recorded</TableHeader>
+                <TableHeader
+                  align="right"
+                  info="The audio on the chapter’s linked REAPER track: its unmuted items, overlaps counted once, as of the saved project. A dash means no track is linked."
+                >
+                  Actual recorded
+                </TableHeader>
                 <TableHeader>Status</TableHeader>
                 <TableHeader hiddenLabel="Recording check" />
               </TableRow>
@@ -236,7 +259,13 @@ export function AudiobookEstimatePanel({
                       {fmtHours(finished)}
                     </TableCell>
                     <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
-                      <span aria-label="Recorded length isn’t tracked yet">—</span>
+                      {chapter.recordedSeconds !== undefined ? (
+                        fmtRecordedTime(chapter.recordedSeconds)
+                      ) : (
+                        <TooltipTarget text={RECORDED_UNAVAILABLE_REASON[chapter.recordedUnavailable ?? 'unlinked']}>
+                          <span aria-label={RECORDED_UNAVAILABLE_REASON[chapter.recordedUnavailable ?? 'unlinked']}>—</span>
+                        </TooltipTarget>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Select
@@ -249,7 +278,17 @@ export function AudiobookEstimatePanel({
                             setChapters((current) =>
                               current?.map((c) =>
                                 c.id === chapter.id
-                                  ? { ...c, ...updated, wordCount: c.wordCount, subtitle: c.subtitle, recordedFraction: c.recordedFraction }
+                                  ? {
+                                      ...c,
+                                      ...updated,
+                                      wordCount: c.wordCount,
+                                      subtitle: c.subtitle,
+                                      recordedFraction: c.recordedFraction,
+                                      // A status update doesn't re-read the linked track (actual-recorded-column.prd.md Phase 1,
+                                      // "status is inert"): keep the row's own recorded time and reason.
+                                      recordedSeconds: c.recordedSeconds,
+                                      recordedUnavailable: c.recordedUnavailable,
+                                    }
                                   : c,
                               ),
                             );

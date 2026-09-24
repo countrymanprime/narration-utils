@@ -22,9 +22,13 @@ chapter with its word count, estimated and actual recorded length, and status.
 
 ![Home, per-chapter breakdown expanded](../../images/ui/home-chapter-table-expanded.webp)
 
-**Actual recorded** shows a dash until the app can read how much audio a chapter's linked REAPER
-track actually holds; it never guesses from the chapter's status or from a recording check's word
-share, so changing the status leaves the column unchanged.
+**Actual recorded** shows how much audio a chapter's linked REAPER track holds, as of the last
+save: the union of its unmuted items, overlaps counted once. A chapter with no confirmed link, a
+link to more than one track, a linked track no longer in the saved project, or no project at all
+shows a dash instead, with the reason in a tooltip and its accessible name. It never guesses from
+the chapter's status or from a recording check's word share, so changing the status leaves the
+column unchanged. The headline **Actual recorded** stat above the table sums the real times of
+linked chapters only, and its tooltip says how many of the book's chapters that covers.
 
 ### Checking a chapter's recording
 
