@@ -1,0 +1,43 @@
+name: Cancel runs of a closed pull request
+# A newer push already cancels the run before it (each pull request workflow has a `concurrency` group with
+# `cancel-in-progress`), but nothing stops the runs of a pull request that is merged or closed: they would go on using
+# runners for a result nobody reads (a merge starts its own runs on main). This cancels every run the pull request
+# started that has not finished yet.
+# pull_request_target so it also works for fork and Dependabot pull requests, whose `pull_request` token is read-only
+# and could not cancel anything. It checks out nothing and runs no pull request code: it only calls the Actions API
+# with the pull request's head SHA and number, passed through env.
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] -- no checkout, no pull request code; see the comment above
+    types: [closed]
+permissions: {}
+jobs:
+  cancel:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write # to list and cancel the pull request's workflow runs
+    steps:
+      - name: Cancel unfinished runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SELF_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # The unfinished runs of the pull request's head commit. Only pull request events: a push of the same commit
+          # (the branch itself, or main after a fast-forward) is not this pull request's to cancel. A run that lists
+          # pull requests must list this one; a fork's run lists none, so it is matched on the SHA alone.
+          for status in queued in_progress waiting pending requested; do
+            gh api --paginate "repos/$REPO/actions/runs?head_sha=$HEAD_SHA&status=$status&per_page=100" \
+              --jq ".workflow_runs[]
+                | select(.id != $SELF_RUN_ID)
+                | select(.event == \"pull_request\" or .event == \"pull_request_target\")
+                | select((.pull_requests | length) == 0 or any(.pull_requests[]; .number == $PR_NUMBER))
+                | .id"
+          done | sort -u | while read -r run_id; do
+            echo "Cancelling run $run_id"
+            # A run can finish between the listing and the cancel; that is not a failure.
+            gh api -X POST "repos/$REPO/actions/runs/$run_id/cancel" --silent || echo "Run $run_id could not be cancelled (already finished?)"
+          done
