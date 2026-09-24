@@ -15,7 +15,8 @@ import (
 )
 
 type Child struct {
-	mu       sync.RWMutex
+	mu sync.RWMutex
+	// +checklocks:mu
 	exitCode *int
 }
 

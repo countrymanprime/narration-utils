@@ -178,6 +178,10 @@ if (mode === 'go-lint') {
   run('go', ['-C', dir, 'vet', './...']);
   // golangci-lint v2 (config: <dir>/.golangci.yml): errcheck, govet, staticcheck, unused, ineffassign and gosec.
   run('golangci-lint', ['run', './...'], { cwd: join(root, dir) });
+  // gVisor's checklocks: a field annotated `// +checklocks:mu` is only touched with mu held, and a field that is
+  // always used under a lock but has no annotation is reported too, so a new guarded field gets one. Product code
+  // only (-test=false): tests set seams on a Host no goroutine can see yet, and the race detector covers them.
+  run('checklocks', ['-test=false', './...'], { cwd: join(root, dir) });
   process.exit(0);
 }
 

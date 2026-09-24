@@ -13,6 +13,7 @@ import {
   pythonVersionError,
   runBootstrap,
   GOLANGCI_LINT_VERSION,
+  CHECKLOCKS_VERSION,
   STYLUA_VERSION,
   UV_VERSION,
   WAILS_VERSION,
@@ -24,6 +25,7 @@ test('reads all pinned Go/Wails quality-tool versions from the toolchain manifes
   assert.equal(GO_VERSION, '1.27.1');
   assert.equal(WAILS_VERSION, 'v2.16.0');
   assert.equal(GOLANGCI_LINT_VERSION, 'v2.13.2');
+  assert.equal(CHECKLOCKS_VERSION, 'v0.0.0-20260924014505-db6c1a7c24b4');
   assert.equal(STYLUA_VERSION, 'v2.1.0');
 });
 
@@ -48,6 +50,10 @@ test('build plan installs locked dependencies and creates a production-like work
   const commands = bootstrapCommands('/repo', 'python3', 'linux');
   assert.deepEqual(commands[1], ['uv', ['sync', '--locked']]);
   assert.ok(commands.some(([command, args]) => command === 'pnpm' && args.join(' ') === 'install --frozen-lockfile'));
+  assert.ok(
+    commands.some(([command, args]) => command === 'go' && args.join(' ') === `install gvisor.dev/gvisor/tools/checklocks/cmd/checklocks@${CHECKLOCKS_VERSION}`),
+    'the Go lint target runs checklocks through go vet',
+  );
   const builds = buildCommands();
   assert.ok(builds.some(([command, args]) => command === 'go' && args.join(' ') === '-C apps/desktop test ./...'));
   assert.ok(builds.some(([command, args]) => command === 'pnpm' && args.join(' ') === '--dir apps/desktop run build'));

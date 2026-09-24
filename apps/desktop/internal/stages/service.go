@@ -19,7 +19,7 @@ var (
 	ErrNotRecommended = errors.New("there is no suggestion to act on for this chapter")
 	// ErrNothingToRevert refuses a Revert of a chapter with no live
 	// confirmation.
-	ErrNothingToRevert = errors.New("this chapter has no confirmed suggestion to revert")
+	ErrNothingToRevert = errors.New("this chapter has no confirmed suggestion to revert") // +checklocksignore: an error value, returned under the lock by chance
 )
 
 // Config is what the host gives the service. The manuscript is read through

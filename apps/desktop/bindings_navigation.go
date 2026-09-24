@@ -34,7 +34,8 @@ type findingNavigation struct {
 	// standalone is true when there is no bridge at all: the app was opened on its own, not from REAPER's action.
 	standalone bool
 	mu         sync.Mutex // guards loopingID
-	loopingID  string
+	// +checklocks:mu
+	loopingID string
 }
 
 func newFindingNavigation(client *bridge.Client) *findingNavigation {

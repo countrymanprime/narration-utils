@@ -32,7 +32,8 @@ type Service struct {
 	config  Config
 	bridge  *bridge.Client
 	changed func(map[string]any)
-	state   map[string]any
+	// +checklocks:mu
+	state map[string]any
 }
 
 // New builds the service and, when there is a bridge, subscribes to PROJECT_STATE and ERROR events for its own
@@ -140,6 +141,7 @@ func (s *Service) handleInvalid(event bridge.Event, reason error) {
 	}
 }
 
+// +checklocks:s.mu
 func (s *Service) acceptsLocked(fields []string) bool {
 	runID, _ := s.state["runId"].(string)
 	if fields[0] == "ERROR" {

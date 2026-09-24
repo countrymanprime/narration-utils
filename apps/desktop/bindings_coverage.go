@@ -132,7 +132,8 @@ func (h *Host) emitCoverage(state coverage.State) {
 
 // coverageWatch turns a check's states into one jobEnded per run: the first terminal state of a run id ends it.
 type coverageWatch struct {
-	mu    sync.Mutex
+	mu sync.Mutex
+	// +checklocks:mu
 	ended string
 }
 

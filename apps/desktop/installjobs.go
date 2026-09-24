@@ -33,22 +33,38 @@ const (
 
 // installJob is one download of one approved asset. Its bytes are the real bytes received (ADR 0015).
 type installJob struct {
-	mu                                           sync.RWMutex
-	id, kind, assetID, phase, message, errorText string
+	mu sync.RWMutex
+	// id, kind and assetID are set when the job is made and never change, so they are read without mu.
+	id      string
+	kind    string
+	assetID string
+	// +checklocks:mu
+	phase string
+	// +checklocks:mu
+	message string
+	// +checklocks:mu
+	errorText string
 	// downloadingText is the message while bytes arrive, so a file that follows a checked one does not keep saying it is checking.
+	// +checklocks:mu
 	downloadingText string
-	done, total     int64
+	// +checklocks:mu
+	done int64
+	// +checklocks:mu
+	total int64
 	// received keeps the bytes of each file so far, so a job of several files reports one running total that never goes back.
+	// +checklocks:mu
 	received map[string]int64
 	ctx      context.Context
 	cancel   context.CancelFunc
 	// finished is closed when the job has ended, so a start that follows a cancel can wait for the files to be free.
 	finished chan struct{}
-	started  time.Time
+	// +checklocks:mu
+	started time.Time
 }
 
-// installSeq keeps job ids apart when two installs start within one clock tick.
-var installSeq atomic.Int64
+// installSeq keeps job ids apart when two installs start within one clock tick. It is an atomic; checklocks
+// sees it used only under h.mu and would ask for an annotation it does not need.
+var installSeq atomic.Int64 // +checklocksignore
 
 // running reports whether the job is still working: downloading or checking its files.
 func (j *installJob) running() bool {
@@ -57,6 +73,7 @@ func (j *installJob) running() bool {
 	return j.runningLocked()
 }
 
+// +checklocksread:j.mu
 func (j *installJob) runningLocked() bool {
 	return j.phase == installPhaseDownloading || j.phase == installPhaseVerifying
 }

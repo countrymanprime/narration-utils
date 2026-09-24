@@ -22,13 +22,16 @@ import (
 )
 
 type Service struct {
-	persist                  atomic.Pointer[persist.Reporter]
-	project, python, backend string
-	settings                 *settings.Store
-	sidecars                 *process.Supervisor
-	previewTimeout           time.Duration
-	previewLocksMu           sync.Mutex
-	previewLocks             map[string]*sync.Mutex
+	persist        atomic.Pointer[persist.Reporter]
+	project        string
+	python         string
+	backend        string
+	settings       *settings.Store
+	sidecars       *process.Supervisor
+	previewTimeout time.Duration
+	previewLocksMu sync.Mutex
+	// +checklocks:previewLocksMu
+	previewLocks map[string]*sync.Mutex
 	// findingsStore is nil until app.go opts in with SetFindings
 	// (review-dashboard-and-findings-adoption.prd.md Phase 3); every
 	// existing caller, including every test in this package, leaves it nil

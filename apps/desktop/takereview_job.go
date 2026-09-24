@@ -58,15 +58,24 @@ type TakeReviewScanJob struct {
 }
 
 type takeReviewScanJob struct {
-	mu           sync.RWMutex
-	id           string
-	phase        string
-	message      string
-	errorText    string
-	percent      int
-	logs         []string
-	started      time.Time
-	scope        TakeReviewScanScope
+	mu sync.RWMutex
+	// +checklocks:mu
+	id string
+	// +checklocks:mu
+	phase string
+	// +checklocks:mu
+	message string
+	// +checklocks:mu
+	errorText string
+	// +checklocks:mu
+	percent int
+	// +checklocks:mu
+	logs []string
+	// +checklocks:mu
+	started time.Time
+	// +checklocks:mu
+	scope TakeReviewScanScope
+	// +checklocks:mu
 	found        int
 	progressPath string
 	cancel       context.CancelFunc
