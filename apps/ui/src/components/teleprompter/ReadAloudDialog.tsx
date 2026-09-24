@@ -3,12 +3,14 @@ import { useApi } from '../../api/ApiContext';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Dialog } from '../primitives/Dialog';
 import { ReadAlongView } from './ReadAlongView';
+import { ReadingControlBar } from './ReadingControlBar';
 import { ResumePrompt } from './ResumePrompt';
 import { ReaderRail } from './ReaderRail';
 import type { FlagSaveState } from './ReaderFlagsPanel';
 import { flagMarks, flagSaves, flagText, visibleFlags, withMarks, type FlagVisibility } from './readerFlags';
 import { readerMarks, type ReaderMark, type ReaderMarkTarget, type ReaderRow } from './readerModel';
 import { loadFlagVisibility, loadRailState, saveFlagVisibility, saveRailState, type RailState } from './readerPreferences';
+import { useFollowCursor } from './useFollowCursor';
 import { errorText, useTeleprompterSession } from './useTeleprompterSession';
 import type { GuideEntity, ManuscriptChapter, ManuscriptNote, TeleprompterFlag, TeleprompterScript } from '../../types';
 
@@ -55,9 +57,16 @@ const byReadingOrder = (a: ManuscriptNote, b: ManuscriptNote): number => a.parag
  */
 export function ReadAloudDialog({ chapter, entities = NO_ENTITIES, notes = NO_NOTES, onClose }: Props) {
   const session = useTeleprompterSession({ chapterId: chapter.id, chapter, migrateLegacyDevice: false });
+  // Scrolling by hand pauses following until the current word is back in the band or Follow is pressed (engines PRD
+  // Phase 10); computed here, not inside `ReadAlongView`, so `ReadingControlBar`'s Follow button (in the dialog's
+  // non-scrolling footer, read-aloud-control-bar.prd.md Phase 3) shares the same state.
+  const follow = useFollowCursor({ active: session.active, cursor: session.cursor });
   const [confirmClose, setConfirmClose] = useState(false);
   const [rail, setRail] = useState<RailState>(loadRailState);
   const [selected, setSelected] = useState<ReaderMarkTarget>();
+  // The resume prompt's chosen quote (read-aloud-control-bar.prd.md Phase 3's start-point chip), alongside the session's
+  // own `startWord`; cleared together with it (see the active/inactive effect below).
+  const [startLabel, setStartLabel] = useState<string>();
 
   const { paragraphs, rows } = session;
   const { script, flags } = session.session;
@@ -92,6 +101,7 @@ export function ReadAloudDialog({ chapter, entities = NO_ENTITIES, notes = NO_NO
     if (wasActive.current && !session.active) {
       keep();
       setStartWord(null);
+      setStartLabel(undefined);
     }
     wasActive.current = session.active;
   }, [session.active, keep, setStartWord]);
@@ -121,13 +131,36 @@ export function ReadAloudDialog({ chapter, entities = NO_ENTITIES, notes = NO_NO
 
   return (
     <>
-      <Dialog title={`Read aloud — ${chapter.title}`} size="full" onClose={requestClose} actions={null}>
+      <Dialog
+        title={`Read aloud — ${chapter.title}`}
+        size="full"
+        onClose={requestClose}
+        actions={null}
+        footer={
+          <ReadingControlBar
+            session={session}
+            follow={follow}
+            startPoint={session.startWord !== null ? { label: startLabel ?? 'a chosen word', onClear: () => setStartWord(null) } : undefined}
+          />
+        }
+      >
         <ReadAlongView
           session={session}
+          follow={follow}
           // The resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) sits in the text column's header slot, on the
           // text's own axis (read-aloud-control-bar.prd.md Phase 1): mounted for the dialog's whole life, not remounted
           // between sessions, so it settles once (on a choice or a session starting) and stays gone.
-          header={<ResumePrompt chapterId={chapter.id} model={session.model} active={session.active} onStartWord={session.setStartWord} />}
+          header={
+            <ResumePrompt
+              chapterId={chapter.id}
+              model={session.model}
+              active={session.active}
+              onStartWord={(word, label) => {
+                session.setStartWord(word);
+                setStartLabel(label);
+              }}
+            />
+          }
           marks={marks}
           onOpenMark={openMark}
           aside={

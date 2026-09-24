@@ -25,6 +25,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     snapshot: 'dialog-read-aloud-resume.aria.yml',
   },
   {
+    name: "the read-aloud dialog's control bar is a named toolbar with Play/Stop reading, status, Follow, the microphone and Settings",
+    state: ['manuscript', 'read-aloud-listening'],
+    snapshot: 'dialog-read-aloud-controls.aria.yml',
+  },
+  {
     name: 'the chapters overlay is a modal slide-over named for what it holds',
     state: ['manuscript', 'chapters-overlay-open'],
     snapshot: 'slide-over-chapters.aria.yml',

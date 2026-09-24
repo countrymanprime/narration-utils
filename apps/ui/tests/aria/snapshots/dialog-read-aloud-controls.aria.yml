@@ -1,0 +1,21 @@
+# The read-aloud dialog's control bar (read-aloud-control-bar.prd.md Phase 3): a named toolbar, outside the dialog's
+# scrolling body, with Play (disabled while a session is active - there is no Pause yet), Stop reading, the status and
+# word count, Follow (enabled once the narrator scrolls by hand, ADR 0119), the microphone popover trigger (named by the
+# chosen device) and Settings. No REAPER toggle and no level meter yet (later phases).
+- /children: equal
+# The two toast live regions stay in the tree on purpose (see dialog-add-note.aria.yml).
+- main:
+  - alert
+  - status
+- dialog "Read aloud — Chapter 1":
+  - heading "Read aloud — Chapter 1" [level=2]
+  - button "Close"
+  - toolbar "Reading controls":
+    - group "Choose a microphone first.":
+      - button "Play" [disabled]
+    - button "Stop reading"
+    - status: Listening
+    - text: /\d+ of \d+,\d+ words/
+    - button "Follow" [disabled]
+    - 'button "Microphone: not chosen"'
+    - button "Settings"

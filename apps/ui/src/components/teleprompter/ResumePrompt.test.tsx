@@ -59,9 +59,14 @@ function renderDialog(overrides: Partial<NarrationApi> = {}, initial: Initial = 
 
 const prompt = () => screen.findByRole('region', { name: 'Where you stopped' });
 
+async function openMicPopover(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: /^Microphone:/ }));
+}
+
 async function startReading(user: ReturnType<typeof userEvent.setup>) {
+  await openMicPopover(user);
   await user.selectOptions(await screen.findByRole('combobox', { name: 'Microphone' }), DEVICE_NAME);
-  await user.click(screen.getByRole('button', { name: 'Start reading' }));
+  await user.click(screen.getByRole('button', { name: 'Play' }));
 }
 
 describe('ResumePrompt', () => {

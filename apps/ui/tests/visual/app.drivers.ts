@@ -89,6 +89,25 @@ async function openResumePrompt(page: Page, query = ''): Promise<void> {
   await card.getByText(/Finding where your recording/).waitFor({ state: 'detached' });
 }
 
+// The control bar's own toolbar, scoped so its Microphone/Settings triggers never collide with a same-named control
+// elsewhere on the page (the standalone Teleprompter page's nav rail also has a "Settings" link).
+const controlBar = (page: Page) => page.getByRole('toolbar', { name: 'Reading controls' });
+
+// The microphone picker sits behind the control bar's popover (read-aloud-control-bar.prd.md Phase 3): its combobox
+// does not exist in the DOM until the trigger button is clicked (Popover unmounts its content while closed).
+async function openMicPopover(page: Page): Promise<void> {
+  await controlBar(page)
+    .getByRole('button', { name: /^Microphone:/ })
+    .click();
+  await page.getByRole('combobox', { name: 'Microphone' }).waitFor();
+}
+
+// Engine and Model sit behind the control bar's Settings popover (Phase 3), same reasoning as `openMicPopover`.
+async function openSettingsPopover(page: Page): Promise<void> {
+  await controlBar(page).getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('group', { name: 'Model' }).waitFor();
+}
+
 async function clickVisible(page: Page, role: Parameters<Page['getByRole']>[0], name: string | RegExp): Promise<void> {
   // The nav rail is visible at every captured viewport except the reflow one, where only Settings states are captured
   // and they navigate through clickNav, so the click's own auto-wait is enough.
@@ -789,11 +808,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     // the prompt must not return for the rest of this open, so the next Start begins at the top with nothing to clear.
     'read-aloud-resume-after-session': async (page) => {
       await openResumePrompt(page);
+      await openMicPopover(page);
       await page.getByRole('combobox', { name: 'Microphone' }).selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
-      await page.getByRole('button', { name: 'Start reading' }).click();
-      await page.getByRole('button', { name: 'Stop', exact: true }).waitFor();
-      await page.getByRole('button', { name: 'Stop', exact: true }).click();
-      await page.getByRole('button', { name: 'Start reading' }).waitFor();
+      await page.getByRole('button', { name: 'Play' }).click();
+      await page.getByRole('button', { name: 'Stop reading', exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Stop reading', exact: true }).click();
+      await page.getByRole('button', { name: 'Play' }).waitFor();
       await page.getByRole('region', { name: 'Where you stopped' }).waitFor({ state: 'detached' });
     },
     // Same mock seam and word as the standalone Teleprompter page's `listening` state, opened through the modal instead.
@@ -858,7 +878,10 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'read-aloud-rail-full-height': async (page) => {
       await openResumePrompt(page);
       const dialog = page.getByRole('dialog', { name: /Read aloud/ });
-      const box = await dialog.boundingBox();
+      // The scrolling body's own box, not the whole dialog (read-aloud-control-bar.prd.md Phase 3 added a `footer`
+      // below the body, so the dialog's own bottom edge is no longer the body's). `:scope >` keeps this to the
+      // dialog's own body div, not the many marked words inside the text that are also `tabindex="0"`.
+      const box = await dialog.locator(':scope > div[tabindex="0"]').boundingBox();
       const card = await dialog.getByRole('region', { name: 'Where you stopped' }).boundingBox();
       // The text's own Panel, not its inner "Chapter text" region, which sits inset by the Panel's padding: the card is a
       // Panel too, so comparing panel to panel is the like-for-like edge the PRD means by "the text column's axis".
@@ -869,6 +892,17 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
         throw new Error('The resume card is not aligned with the text column.');
       if (rail.y - box.y > 90) throw new Error("The reading panel does not start at the dialog body's content top.");
       if (box.y + box.height - (rail.y + rail.height) > 30) throw new Error("The reading panel does not reach the dialog body's bottom.");
+    },
+    // The control bar's microphone popover (read-aloud-control-bar.prd.md Phase 3): the device list and Refresh, no level
+    // meter yet (Phase 4).
+    'read-aloud-mic-popover': async (page) => {
+      await openResumePrompt(page);
+      await openMicPopover(page);
+    },
+    // The control bar's Settings popover (Phase 3): Engine and Model, each a toggle group, and "More in Settings".
+    'read-aloud-settings-popover': async (page) => {
+      await openResumePrompt(page);
+      await openSettingsPopover(page);
     },
     // Suspected flags (teleprompter-manuscript-integration.prd.md Phase 7): the `flagged` mock seam is a session further into
     // the chapter whose flags arrive as the dialog subscribes. The rail's key has flag swatches too, so marks are found as controls.
@@ -1764,7 +1798,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.getByRole('group', { name: 'Chapters suggested by REAPER' }).waitFor();
       await page.getByText('Alice was beginning').first().waitFor();
     },
-    // The credits (credits PRD Phase 4): picked in the chapter picker like a chapter; a microphone is chosen so Start reading shows enabled.
+    // The credits (credits PRD Phase 4): picked in the chapter picker like a chapter; a microphone is chosen so Play shows enabled.
     'credits-opening': async (page) => {
       await page.goto('/?mockCredits=filled');
       await settlePage(page);
@@ -1772,6 +1806,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.getByText('Alice was beginning').first().waitFor();
       await page.getByRole('combobox', { name: 'Chapter' }).selectOption({ label: 'Opening credits' });
       await page.getByText('Alice’s Adventures in Wonderland, written by Lewis Carroll, narrated by Ada Finch.').waitFor();
+      await openMicPopover(page);
       await page.getByRole('combobox', { name: 'Microphone' }).selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
     },
     'credits-unresolved-warning': async (page) => {
@@ -1779,31 +1814,33 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await page.getByText('Alice was beginning').first().waitFor();
       await page.getByRole('combobox', { name: 'Chapter' }).selectOption({ label: 'Closing credits' });
       await page.getByRole('status', { name: /have no value/ }).waitFor();
+      await openMicPopover(page);
       await page.getByRole('combobox', { name: 'Microphone' }).selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
     },
-    // The Whisper model is not installed under ?mockAssets, so Start reading asks to download it; the mock holds the download at 40 percent.
+    // The Whisper model is not installed under ?mockAssets, so Play asks to download it; the mock holds the download at 40 percent.
     'model-download-progress': async (page) => {
       await page.goto('/?mockAssets=downloading');
       await settlePage(page);
       await goToPage(page, 'Teleprompter');
       await page.getByText('Alice was beginning').first().waitFor();
-      // A plain `getByLabel('Microphone')` also matches the disabled Start button's tooltip wrapper (aria-label
-      // "Choose a microphone first.") while no device is chosen yet, so this scopes to the select itself.
+      await openMicPopover(page);
       await page.getByRole('combobox', { name: 'Microphone' }).selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
-      await page.getByRole('button', { name: 'Start reading' }).click();
+      await page.getByRole('button', { name: 'Play' }).click();
       await page.getByRole('button', { name: 'Download model' }).click();
       await page.getByRole('dialog', { name: 'Downloading Whisper model' }).waitFor();
       await page.getByText(/185 of 464 MB/).waitFor();
     },
-    // Choosing Moonshine never downloads: its model is missing under ?mockAssets=missing, so Start reading asks first, naming the engine.
+    // Choosing Moonshine never downloads: its model is missing under ?mockAssets=missing, so Play asks first, naming the engine.
     'moonshine-model-required': async (page) => {
       await page.goto('/?mockAssets=missing');
       await settlePage(page);
       await goToPage(page, 'Teleprompter');
       await page.getByText('Alice was beginning').first().waitFor();
+      await openMicPopover(page);
       await page.getByRole('combobox', { name: 'Microphone' }).selectOption({ label: 'Microphone Array (Realtek(R) Audio)' });
+      await openSettingsPopover(page);
       await page.getByRole('group', { name: 'Engine' }).getByRole('button', { name: 'Moonshine' }).click();
-      await page.getByRole('button', { name: 'Start reading' }).click();
+      await page.getByRole('button', { name: 'Play' }).click();
       await page.getByRole('alertdialog', { name: 'Download local Moonshine model?' }).waitFor();
     },
     'no-microphone-blocked': async (page) => {
@@ -1811,6 +1848,7 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await settlePage(page);
       await goToPage(page, 'Teleprompter');
       await page.getByText('Alice was beginning').first().waitFor();
+      await page.getByRole('button', { name: 'Microphone: not chosen' }).click();
       await page.getByText('No microphone found').waitFor();
     },
     // The seams boot a session already 30 words into the first paragraph (word

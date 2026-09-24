@@ -6,18 +6,19 @@ The Teleprompter follows you as you read a chapter aloud: it listens through you
 with a local speech engine and highlights the word you are on. It needs an [imported manuscript](home.md),
 and nothing you say is edited, saved, or sent anywhere.
 
-Choose the chapter, pick your microphone from the list (Refresh if you just plugged one in), and
-pick an engine and a model. On Windows there are two engines, Whisper (the default) and Moonshine;
-both highlight the same way, so try each and keep the one that follows your voice more smoothly.
-Elsewhere only Whisper is offered, and the engine choice is not shown. Tiny is the fastest model and
-keeps up on most computers; Small is more accurate but needs a faster one. Choosing an engine or a
-model never downloads anything: the first time you start with one whose model is not on this computer,
-the app asks first, naming the engine, the download size, the publisher and the licence, and downloads
-only if you say so. Your microphone, engine and model are remembered for next time (they are the same
-choices as in [Settings](settings.md) › Teleprompter); a microphone that is no longer connected shows as
-"(not found)" until you pick it again or choose another. A microphone can only be picked from the list, never typed: with none listed,
-the page says "No microphone found" and Start reading stays disabled until you connect one and press
-Refresh.
+Choose the chapter, then set up the control bar at the bottom of the page, which stays in view while
+you scroll: its microphone button opens a popover with your device list (Refresh if you just plugged
+one in), and its Settings (gear) button opens a popover with the engine and model. On Windows there are
+two engines, Whisper (the default) and Moonshine; both highlight the same way, so try each and keep the
+one that follows your voice more smoothly. Elsewhere only Whisper is offered, and the engine choice is
+not shown. Tiny is the fastest model and keeps up on most computers; Small is more accurate but needs a
+faster one. Choosing an engine or a model never downloads anything: the first time you start with one
+whose model is not on this computer, the app asks first, naming the engine, the download size, the
+publisher and the licence, and downloads only if you say so. Your microphone, engine and model are
+remembered for next time (they are the same choices as in [Settings](settings.md) › Teleprompter); a
+microphone that is no longer connected shows as "(not found)" until you pick it again or choose another.
+A microphone can only be picked from the list, never typed: with none listed, the microphone popover
+says "No microphone found" and Play stays disabled until you connect one and press Refresh.
 
 ![Teleprompter before a session, with the chapter, microphone, engine and model choices above the chapter text](../../images/ui/teleprompter-setup.webp)
 
@@ -36,11 +37,13 @@ previews it, and the highlight follows it like a chapter. If a value is missing,
 narrator name yet, a warning names what is missing, the placeholder shows in brackets (such as
 [Narrator]), and Fill them in Settings opens the Credits settings. You can still start reading.
 
-Press Start reading and begin at the top of the chapter, title first. The setup fields fold away
-into a bar that stays at the top with the status, a Follow button and a Stop button. Words you have read dim, the
-word you are on is filled in, and the page scrolls to keep it near the middle of the screen.
-The highlight follows what it hears, not a timer, so it waits when you do. The key above the text
-shows the three looks: current word, word read, and skipped (a dotted underline).
+Press Play (or Space, when focus is not in a field, button or other control) to begin at the top of the
+chapter, title first; the bar's status and word count update as you go, and Follow appears enabled once
+you scroll the text by hand, so you can bring the highlight back into view. Words you have read dim, the
+word you are on is filled in, and the page scrolls to keep it near the middle of the screen. The
+highlight follows what it hears, not a timer, so it waits when you do. The key above the text shows the
+three looks: current word, word read, and skipped (a dotted underline). Press Stop reading (in the bar)
+to end the session.
 
 While it is listening you can click any word: a word ahead starts reading from there, and a word you
 have already read takes you back to it.

@@ -6,7 +6,9 @@ import { Select } from '../primitives/Select';
 import { useApi } from '../../api/ApiContext';
 import { ChapterSuggestionHint, preselectedChapter } from './ChapterSuggestionHint';
 import { ReadAlongView } from './ReadAlongView';
+import { ReadingControlBar } from './ReadingControlBar';
 import { CREDITS_LABEL, type CreditsKind } from './readerModel';
+import { useFollowCursor } from './useFollowCursor';
 import { ACTIVE_PHASES, errorText, useTeleprompterSession } from './useTeleprompterSession';
 import type { ChapterSuggestion, CreditsRenderResult, ManuscriptChapter } from '../../types';
 
@@ -120,6 +122,7 @@ export function TeleprompterPage({ onFixCredits }: Props = {}) {
     chapter: chapters?.find((item) => item.id === chapterId),
     credits: creditsKind && creditsPreview ? { kind: creditsKind, text: creditsPreview.text } : undefined,
   });
+  const follow = useFollowCursor({ active: t.active, cursor: t.cursor });
 
   const select = (value: string) => {
     setChosen(value);
@@ -147,23 +150,27 @@ export function TeleprompterPage({ onFixCredits }: Props = {}) {
         <UnresolvedCreditsWarning kind={creditsKind} tokens={creditsPreview.unresolved} onFix={onFixCredits} />
       )}
       {chapters && chapters.length > 0 && (
-        <ReadAlongView
-          session={t}
-          extraSetupFields={
-            <div>
-              <label className={LABEL_CLASS} htmlFor="teleprompter-chapter">
-                Chapter
-              </label>
-              <Select id="teleprompter-chapter" className="mt-1" fullWidth value={chosen} onChange={select} options={options} />
-              <ChapterSuggestionHint suggestion={suggestion} chapters={chapters} value={chapterId} onChoose={select} />
-            </div>
-          }
-        />
+        <>
+          <Panel>
+            <label className={LABEL_CLASS} htmlFor="teleprompter-chapter">
+              Chapter
+            </label>
+            <Select id="teleprompter-chapter" className="mt-1" fullWidth value={chosen} onChange={select} options={options} />
+            <ChapterSuggestionHint suggestion={suggestion} chapters={chapters} value={chapterId} onChoose={select} />
+          </Panel>
+          <ReadAlongView session={t} follow={follow} />
+        </>
       )}
       {error && (
         <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>
           {error}
         </p>
+      )}
+      {chapters && chapters.length > 0 && (
+        // Sticky, not a `Dialog` footer (Q11 A): the standalone page has no dialog shell of its own.
+        <div className="sticky bottom-0 rounded-[0.55rem] border bg-[var(--surface)]" style={{ borderColor: 'var(--border)' }}>
+          <ReadingControlBar session={t} follow={follow} />
+        </div>
       )}
     </div>
   );

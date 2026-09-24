@@ -23,9 +23,24 @@ type Props = {
   model: string;
   /** True once a session is running: the prompt settles (and stays hidden) the moment one starts. */
   active: boolean;
-  /** Sets where the next Start begins (`useTeleprompterSession.setStartWord`); null is the top. */
-  onStartWord: (word: number | null) => void;
+  /**
+   * Sets where the next Start begins (`useTeleprompterSession.setStartWord`); null is the top. `label` is the control
+   * bar's start-point chip text (read-aloud-control-bar.prd.md Phase 3), a short quote starting at the chosen word;
+   * absent when the choice is "from the top" (word is null).
+   */
+  onStartWord: (word: number | null, label?: string) => void;
 };
+
+/** The start-point chip's text: a short quote beginning at the resume word, truncated with an ellipsis. */
+const CHIP_WORD_LIMIT = 6;
+function chipLabel(sentence: Sentence, word: number): string | undefined {
+  const words = sentence.text.split(/\s+/).filter(Boolean);
+  const at = word - sentence.start;
+  if (words.length !== sentence.end - sentence.start || at < 0 || at >= words.length) return undefined;
+  const tail = words.slice(at);
+  const truncated = tail.length > CHIP_WORD_LIMIT;
+  return `…${tail.slice(0, CHIP_WORD_LIMIT).join(' ')}${truncated ? '…' : ''}`;
+}
 
 /**
  * The matched sentence as a quote, with the resume word in bold when it falls inside it. `sentence.text` is the sentence's
@@ -94,7 +109,7 @@ function PromptBody({
   onAskForModel,
 }: {
   state: LocateState;
-  onChoose: (word: number | null) => void;
+  onChoose: (word: number | null, label?: string) => void;
   onRetry: () => void;
   onAskForModel: () => void;
 }) {
@@ -124,7 +139,7 @@ function PromptBody({
   return <LocatedBody result={result} onChoose={onChoose} />;
 }
 
-function LocatedBody({ result, onChoose }: { result: Located; onChoose: (word: number | null) => void }) {
+function LocatedBody({ result, onChoose }: { result: Located; onChoose: (word: number | null, label?: string) => void }) {
   const { match, track, located } = result;
   const trackName = track?.name;
   if (result.status === 'no_track') {
@@ -176,7 +191,10 @@ function LocatedBody({ result, onChoose }: { result: Located; onChoose: (word: n
       <Actions
         buttons={
           <>
-            <Button variant={located.confident ? 'primary' : 'ghost'} onClick={() => onChoose(point.word)}>
+            <Button
+              variant={located.confident ? 'primary' : 'ghost'}
+              onClick={() => onChoose(point.word, point.sentence ? chipLabel(point.sentence, point.word) : undefined)}
+            >
               Resume from here
             </Button>
             <Button variant="ghost" onClick={() => onChoose(null)}>
@@ -259,8 +277,8 @@ export function ResumePrompt({ chapterId, model, active, onStartWord }: Props) {
 
   if (settled || active) return null;
 
-  const choose = (word: number | null) => {
-    onStartWord(word);
+  const choose = (word: number | null, label?: string) => {
+    onStartWord(word, label);
     setSettled(true);
   };
 

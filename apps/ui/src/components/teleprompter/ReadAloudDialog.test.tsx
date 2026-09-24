@@ -48,14 +48,21 @@ function renderDialog(overrides: Partial<NarrationApi> = {}, onClose = vi.fn(), 
   };
 }
 
+async function openMicPopover(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: /^Microphone:/ }));
+}
+
 describe('ReadAloudDialog', () => {
   it('opens as a full-size dialog titled with the chapter, with no chapter picker (the chapter is fixed)', async () => {
+    const user = userEvent.setup();
     renderDialog();
 
     const dialog = await screen.findByRole('dialog', { name: /Read aloud.*Chapter 1/ });
     expect(dialog).toBeTruthy();
     expect(screen.queryByLabelText('Chapter')).toBeNull();
-    expect(await screen.findByLabelText('Microphone')).toBeTruthy();
+    await openMicPopover(user);
+    // { selector: 'select' } disambiguates from the popover popup itself, which shares the same accessible name "Microphone".
+    expect(await screen.findByLabelText('Microphone', { selector: 'select' })).toBeTruthy();
   });
 
   it('starts a session for the fixed chapter once a microphone is chosen', async () => {
@@ -63,9 +70,10 @@ describe('ReadAloudDialog', () => {
     const teleprompterStart = vi.fn().mockResolvedValue({ status: 'started' });
     renderDialog({ teleprompterStart });
 
+    await openMicPopover(user);
     const field = await screen.findByRole('combobox', { name: 'Microphone' });
     await user.selectOptions(field, DEVICE_NAME);
-    await user.click(screen.getByRole('button', { name: 'Start reading' }));
+    await user.click(screen.getByRole('button', { name: 'Play' }));
 
     expect(teleprompterStart).toHaveBeenCalledWith({ chapter: 'chapter-1', device: DEVICE_NAME, engine: 'whisper', model: 'tiny' });
   });
@@ -74,7 +82,7 @@ describe('ReadAloudDialog', () => {
     const user = userEvent.setup();
     const { onClose } = renderDialog();
 
-    await screen.findByRole('combobox', { name: 'Microphone' });
+    await screen.findByRole('button', { name: /^Microphone:/ });
     await user.click(screen.getByRole('button', { name: 'Close' }));
 
     expect(onClose).toHaveBeenCalled();
@@ -86,7 +94,7 @@ describe('ReadAloudDialog', () => {
     const teleprompterStop = vi.fn().mockResolvedValue(undefined);
     const { onClose, setState } = renderDialog({ teleprompterStop });
     setState({ phase: 'running', message: 'Listening…', chapter: 'chapter-1' });
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop reading' })).toBeTruthy());
 
     await user.click(screen.getByRole('button', { name: 'Close' }));
 
@@ -108,7 +116,7 @@ describe('ReadAloudDialog', () => {
     const teleprompterStop = vi.fn().mockResolvedValue(undefined);
     const { onClose, setState } = renderDialog({ teleprompterStop });
     setState({ phase: 'running', message: 'Listening…', chapter: 'chapter-1' });
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop reading' })).toBeTruthy());
 
     await user.keyboard('{Escape}');
 
@@ -125,7 +133,7 @@ describe('ReadAloudDialog', () => {
     const user = userEvent.setup();
     const { onClose } = renderDialog();
 
-    await screen.findByRole('combobox', { name: 'Microphone' });
+    await screen.findByRole('button', { name: /^Microphone:/ });
     await user.keyboard('{Escape}');
 
     expect(onClose).toHaveBeenCalled();
@@ -137,7 +145,7 @@ describe('ReadAloudDialog', () => {
     const teleprompterStop = vi.fn().mockResolvedValue(undefined);
     const { onClose, setState } = renderDialog({ teleprompterStop });
     setState({ phase: 'running', message: 'Listening…', chapter: 'chapter-1' });
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop reading' })).toBeTruthy());
 
     await user.click(screen.getByRole('button', { name: 'Close' }));
     const confirm = await screen.findByRole('alertdialog', { name: 'Stop reading?' });
@@ -145,7 +153,7 @@ describe('ReadAloudDialog', () => {
 
     expect(teleprompterStop).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Stop reading' })).toBeTruthy();
   });
 });
 

@@ -32,11 +32,6 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     'src/components/project/ProjectPicker.tsx': 3,
     'src/components/proofing/Transcript.tsx': 1,
     'src/components/settings/ScopedSetting.tsx': 1,
-    // "Refresh": a small inline text link beside the label, the same shape as ScopedSetting.tsx's Reset link above,
-    // not a `Button` (its uppercase, padded look does not fit inline text). The typed-field branch and its own
-    // "Choose from the list" button are gone (no typed fallback - dropdown-only per the "Microphone is never typed"
-    // decision, docs/prds/teleprompter-engines-and-input-devices.prd.md).
-    'src/components/teleprompter/MicrophoneField.tsx': 1,
     // The click-to-seek word ("Start here" / "Go back to here", teleprompter-manuscript-integration.prd.md Phase 4):
     // one word among hundreds inside running prose, so it needs `Button`'s bare click/keyboard semantics without its
     // padded, uppercase button chrome, which would break the text flow and read as a real action button rather than a
