@@ -179,7 +179,9 @@ export function AppShell({
               </button>
             </TooltipTarget>
           </header>
-          <div className={`scroll-chrome-hidden flex-1 overflow-y-auto ${isActivePath(pathname, '/manuscript') ? 'p-0' : 'p-4 md:p-6'}`}>{children}</div>
+          <div className={`scroll-chrome-hidden relative flex-1 overflow-y-auto ${isActivePath(pathname, '/manuscript') ? 'p-0' : 'p-4 md:p-6'}`}>
+            {children}
+          </div>
         </main>
       </div>
     </div>
