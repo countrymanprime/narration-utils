@@ -90,6 +90,7 @@ Phase counts are the rows of each PRD's phase table.
 | [Manuscript Chapter Header Alignment: Stats Before the Action, in Fixed Columns](manuscript-chapter-header-alignment.prd.md) | Defect (UX) | 1 | None; coordinates with [Manuscript Credits Card Parity](manuscript-credits-card-parity.prd.md) (same header, shared ReaderCard) |
 | [App Navigation and Zoom Controls: Back, Forward and Zoom in the Header](app-navigation-and-zoom-controls.prd.md) | Feature | 5 (0-4) | None |
 | [Read Aloud Resume from the DAW: Where REAPER Is, Where the Prompter Was, and a Prompt That Goes Away](read-aloud-resume-from-daw.prd.md) | Defect (UX), then feature | 5 | None; supersedes decisions 5 and 6 of ADR 0112 and adds a second resume source beside ADR 0111 when delivered; builds the resume half of Phase 11 of [Teleprompter Manuscript Integration](teleprompter-manuscript-integration.prd.md) (`chapter_track_state`) |
+| [Read Aloud Control Bar: a Compact Media Bar That Never Scrolls Away, a Full-Height Reading Panel and an Aligned Resume Card](read-aloud-control-bar.prd.md) | Feature (with two layout defects) | 7 | None; reopens "Arm/record" from the Won't list of [Teleprompter Manuscript Integration](teleprompter-manuscript-integration.prd.md) for record-with-reading, and shares the resume card's slot and the read-only REAPER command `chapter_track_state` with [Read Aloud Resume from the DAW](read-aloud-resume-from-daw.prd.md) |
 
 ## Replaced briefs
 
