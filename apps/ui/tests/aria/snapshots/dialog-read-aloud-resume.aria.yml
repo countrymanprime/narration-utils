@@ -1,6 +1,7 @@
-# The read-aloud dialog (a modal dialog, not an alertdialog) with its resume card (teleprompter-manuscript-integration.prd.md
-# Phase 10): a region named by its heading holding the track and save time, the resume point, the matched sentence as a
-# quote with the resume word in bold, and the choices. Nothing in it starts reading: Start reading stays the session's button.
+# The read-aloud dialog (a modal dialog, not an alertdialog) with its resume prompt (read-aloud-resume-from-daw.prd.md
+# Phase 1): a compact region named "Where you stopped" (an aria-label, no visible heading) holding the track and save
+# time, the matched sentence as a quote with the resume word in bold, and the choices. Nothing in it starts reading:
+# Start reading stays the session's button.
 - /children: equal
 # The two toast live regions stay in the tree on purpose (see dialog-add-note.aria.yml).
 - main:
@@ -10,15 +11,13 @@
   - heading /Read aloud/ [level=2]
   - button "Close"
   - region "Where you stopped":
-    - heading "Where you stopped" [level=2]
-    - paragraph: /track, .* as of the project's last save/
-    - paragraph: /Resume at word [\d,]+ of [\d,]+ \(\d+% sure\)/
+    - paragraph: /track · as of the project's last save/
+    - paragraph: "Continuing where your recording ends:"
     - blockquote:
       - strong
     - button "Resume from here"
     - button "Start from the top"
     - button "Pick a word"
-    - button "Another track"
   - combobox "Microphone"
   - group "Choose a microphone first.":
     - button "Start reading" [disabled]

@@ -120,7 +120,7 @@ We believe that showing only a time read from the chapter's linked track, and a 
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Remove the status estimate | Drop `RECORDED_FRACTION`, the fallback and both captions; status is inert; the stat stops summing guesses (AR5); tests, mock comments, `home.md` | pending | 2 | AR4, AR5 | - |
+| 1 | Remove the status estimate | Drop `RECORDED_FRACTION`, the fallback and both captions; status is inert; the stat stops summing guesses (AR5); tests, mock comments, `home.md` | complete | 2 | AR4, AR5 | - |
 | 2 | Recorded seconds on the chapter payload | Interval union over the confirmed track's items in the saved `.rpp`; provider and `recordedSeconds` (plus reason) on `ManuscriptChapters`; Zod schema, golden, `wireContracts` row, mock; benchmark | complete | 1 | AR2, AR3, AR6, AR7 | - |
 | 3 | The column and stat show recorded time | Cell, dash reason, stat, header tooltip; visual states and screenshots; docs; superseding ADR | pending | - | 1, 2; AR1, AR8 | - |
 

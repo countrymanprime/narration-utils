@@ -20,6 +20,11 @@ type Props = {
   session: TeleprompterSession;
   /** Extra setup fields shown above the microphone/model row while idle (the standalone page's chapter picker). */
   extraSetupFields?: ReactNode;
+  /**
+   * Rendered first in the text column, on the text's own axis (read-aloud-control-bar.prd.md Phase 1): the read-aloud
+   * dialog's resume card. Absent when there is nothing to show (a running session, or credits mode).
+   */
+  header?: ReactNode;
   /** Story bible, note and flag marks by row key, and what opening one does (teleprompter-manuscript-integration.prd.md Phases 5 and 7; see `ReaderText`). */
   marks?: Map<string, ReaderMark[]>;
   onOpenMark?: (mark: ReaderMark) => void;
@@ -37,11 +42,12 @@ type Props = {
  * (Phase 13). Chapter choice itself is not this component's job: the caller supplies `extraSetupFields` for it (or
  * nothing, when the chapter is fixed, as in the modal).
  */
-export function ReadAlongView({ session: t, extraSetupFields, marks, onOpenMark, aside }: Props) {
+export function ReadAlongView({ session: t, extraSetupFields, header, marks, onOpenMark, aside }: Props) {
   // Scrolling by hand pauses following until the current word is back in the band or Follow is pressed (engines PRD Phase 10).
   const follow = useFollowCursor({ active: t.active, cursor: t.cursor });
   const main = (
     <div className="mx-auto w-full max-w-3xl min-w-0 space-y-4">
+      {header}
       <div className={t.active ? 'sticky top-0 z-10' : ''}>
         <Panel>
           {!t.active && (
@@ -169,9 +175,13 @@ export function ReadAlongView({ session: t, extraSetupFields, marks, onOpenMark,
     </div>
   );
   if (!aside) return main;
-  // The rail is its own column, so opening an entry in an open rail never reflows or scrolls the text column.
+  // The rail is its own column, so opening an entry in an open rail never reflows or scrolls the text column. `h-full` gives
+  // this grid the dialog body's own (definite, flexbox-computed) height, and `md:grid-rows-[minmax(0,1fr)]` makes the single
+  // row match that height rather than the tallest item's content height, so `md:items-stretch` stretches the rail to exactly
+  // the visible body, top to bottom, whatever the chapter's length (read-aloud-control-bar.prd.md Phase 1). The text column's
+  // own content still overflows it normally; only the rail's box is bounded, sticky and scrolls on its own.
   return (
-    <div className="grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+    <div className="grid h-full items-start gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[minmax(0,1fr)] md:items-stretch">
       {main}
       {aside}
     </div>

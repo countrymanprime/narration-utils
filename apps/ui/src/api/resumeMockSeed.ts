@@ -7,10 +7,12 @@ import type { TeleprompterLocateResult } from './contracts/teleprompter';
  * recording or Whisper run. Unset, the mock project's own tracks decide (Chapter 1 found, Chapter 2's source missing, the
  * last chapter no track).
  */
-export type MockResumeSeed = 'low_confidence' | 'not_found' | 'ambiguous' | 'none' | 'no_recording' | 'source_missing' | 'source_unsupported' | 'error';
+export type MockResumeSeed =
+  'low_confidence' | 'complete' | 'not_found' | 'ambiguous' | 'none' | 'no_recording' | 'source_missing' | 'source_unsupported' | 'error';
 
 export const MOCK_RESUME_SEEDS: readonly MockResumeSeed[] = [
   'low_confidence',
+  'complete',
   'not_found',
   'ambiguous',
   'none',
@@ -63,6 +65,10 @@ export function seedLocateResult(result: TeleprompterLocateResult, seed: MockRes
       };
     case 'low_confidence':
       return result.located ? { ...result, located: { ...result.located, confidence: LOW_CONFIDENCE, confident: false }, status: 'low_confidence' } : result;
+    // The recording already reaches the chapter's last word (read-aloud-resume-from-daw.prd.md Phase 1: a placed word with
+    // no script words after it is complete, and must never be offered as a place to resume).
+    case 'complete':
+      return result.located ? { ...result, located: { ...result.located, word: result.located.tokens } } : result;
     case 'not_found':
       return result.located
         ? {

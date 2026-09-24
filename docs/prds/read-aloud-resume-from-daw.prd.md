@@ -164,7 +164,7 @@ Phases 1 to 3 answer the owner's report without REAPER running: the prompt goes 
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | The prompt goes away | `ResumePrompt` (one line or compact choice), dismissed per open, finished-chapter state, one-based words, track problems as a link; visual and aria states; supersedes ADR 0112 points 5 and 6 (new ADR) | pending | 2 | RD9; sequence with `read-aloud-control-bar.prd.md` | - |
+| 1 | The prompt goes away | `ResumePrompt` (one line or compact choice), dismissed per open, finished-chapter state, one-based words, track problems as a link; visual and aria states; supersedes ADR 0112 points 4 and 5 ([ADR 0187](../adr/0187-the-resume-prompt-is-a-compact-notice-that-settles-once-per-dialog-open.md)) | complete | 2 | RD9; sequence with `read-aloud-control-bar.prd.md` | - |
 | 2 | Prompter position store | `<chapter>.reading.json` written at session end, read back; schema, golden, `wireContracts` row, mock; threat model row | pending | 1 | - | - |
 | 3 | Reconcile two sources | `teleprompter.Reconcile`, `TeleprompterLocate` gains `lastReading` and `verdict`, `hostAPIVersion` bump, agreement notice and compact choice; ADR | pending | - | 1, 2; RD1, RD3, RD8 | - |
 | 4 | Live DAW state | `chapter_track_state` in `narration_track_state.lua` (harness tests first), `wire.go`, Go client with fallback, cursor-to-source mapping, "in REAPER now" label; threat model; scripted REAPER check (owner sign-off pending) | pending | - | 3; RD2 | - |

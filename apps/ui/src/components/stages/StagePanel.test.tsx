@@ -118,7 +118,7 @@ describe('stage suggestions on Home', () => {
     expect((screen.getByLabelText('Chapter 4 status') as HTMLSelectElement).value).toBe('recording');
   });
 
-  it('reads every row as "Couldn’t check" when the suggestions cannot be read, and Check now tries again', async () => {
+  it('reads every row as "Couldn’t check" when the suggestions cannot be read, and Try again retries', async () => {
     let fail = true;
     const base = mixedApi();
     const api = {
@@ -134,8 +134,17 @@ describe('stage suggestions on Home', () => {
     expect(screen.getByRole('alert').textContent).toBe('Couldn’t check stage suggestions: the saved REAPER project could not be read');
     expect(within(row('Chapter 4')).getByText('Couldn’t check')).toBeTruthy();
     fail = false;
-    fireEvent.click(screen.getByRole('button', { name: 'Check now' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(within(row('Chapter 4')).getByText('Suggested: Editing')).toBeTruthy());
+  });
+
+  it('shows no Check now above the table after a successful read', async () => {
+    renderPanel(mixedApi());
+    await expandBreakdown();
+    await waitFor(() => expect(within(row('Chapter 4')).getByText('Suggested: Editing')).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Check now' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('says a row is being checked until the first read answers', async () => {

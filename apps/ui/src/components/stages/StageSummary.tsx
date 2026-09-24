@@ -42,21 +42,22 @@ export function StageSummaryChips({ state, onShow }: { state: StagesState; onSho
   );
 }
 
-/** The line above the breakdown table: what the suggestions are read from, the error when they could not be, and Check now. */
+/**
+ * The line above the breakdown table: shown only when the last read failed, with the reason and a retry
+ * (docs/prds/home-stage-check-line.prd.md Phase 1). Every other read happens by itself, so there is nothing to say
+ * and no idle button when the read succeeded.
+ */
 export function StageCheckLine({ state, onCheckNow }: { state: StagesState; onCheckNow: () => void }) {
+  // `refresh` keeps the previous error on screen while a retry is loading (useStageRecommendations.ts), so Try again
+  // shows its pending spinner instead of the line vanishing mid-retry; the initial mount read has no error yet.
+  if (state.phase === 'ready' || !state.error) return null;
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs">
-      {state.phase === 'error' ? (
-        <p role="alert" style={{ color: 'var(--danger-text)' }}>
-          Couldn’t check stage suggestions: {state.error}
-        </p>
-      ) : (
-        <p style={{ color: 'var(--text-muted)' }}>
-          Stage suggestions come from the saved REAPER project and the last recording checks. Nothing changes until you confirm.
-        </p>
-      )}
+      <p role="alert" style={{ color: 'var(--danger-text)' }}>
+        Couldn’t check stage suggestions: {state.error}
+      </p>
       <Button variant="ghost" className="px-3 py-1" pending={state.phase === 'loading'} onClick={onCheckNow}>
-        Check now
+        Try again
       </Button>
     </div>
   );
