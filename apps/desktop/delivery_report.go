@@ -226,7 +226,7 @@ func reportFileExists(path string) bool {
 
 func writeFileAtomically(path string, data []byte) error {
 	temporary := path + ".tmp"
-	if err := os.WriteFile(temporary, data, 0o644); err != nil {
+	if err := os.WriteFile(temporary, data, 0o600); err != nil {
 		return fmt.Errorf("could not write the report: %w", err)
 	}
 	if err := os.Rename(temporary, path); err != nil {
