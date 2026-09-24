@@ -385,6 +385,11 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'read-aloud-rail-full-height',
     description:
       'Manuscript, the "Read aloud" dialog with the resume card present and the reading panel open (read-aloud-control-bar.prd.md Phase 1) - the resume card shares the text column\'s left and right edges, and the panel spans the dialog body from its content top to its bottom',
+    sameAs: {
+      of: 'manuscript/read-aloud-setup',
+      reason:
+        'The rail is already open and the resume prompt already shown in read-aloud-setup, the same default state this row measures; the alignment and full-height checks run as bounding-box assertions in the driver, not from the screenshot.',
+    },
   },
   {
     page: 'manuscript',
