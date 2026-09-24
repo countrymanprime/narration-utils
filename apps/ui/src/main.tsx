@@ -40,6 +40,9 @@ const mockNoDaw = mockParams.has('mockNoDaw');
 // `?mockDawNotDetected=1` makes the DAW catalog panel (Settings > DAW Integration, docs/architecture/
 // daw-integration.md) report REAPER as not detected, so its "Get REAPER" button can be seen without a host.
 const mockDawNotDetected = mockParams.has('mockDawNotDetected');
+// `?mockCreditsMissing=1` drops the closing credit templates (credits-in-chapter-table.prd.md Phase 2, CT5): Home's
+// chapter table shows the Closing credits row as "Not set up" with a link to Settings > Credits.
+const mockCreditsMissing = mockParams.has('mockCreditsMissing');
 // `?mockNoManuscript=1` boots a project with no manuscript imported yet, so
 // Home shows its manuscript-not-found banner and Proofing/Story Bible are locked.
 const mockNoManuscript = mockParams.has('mockNoManuscript');
@@ -193,6 +196,7 @@ const mockInitial = {
   ...(mockNoManuscript ? { noManuscript: true } : {}),
   ...(mockNoDaw ? { dawFileLinked: false } : {}),
   ...(mockDawNotDetected ? { dawCatalogInstalled: false } : {}),
+  ...(mockCreditsMissing ? { creditsMissingClosing: true } : {}),
   ...(mockPreviewError ? { previewError: mockPreviewError } : {}),
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),

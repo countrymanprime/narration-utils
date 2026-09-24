@@ -178,3 +178,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0179](0179-a-built-in-dated-acx-delivery-profile-ships-and-a-project-is-judged-against-its-selected-profile.md) | A built-in, dated ACX delivery profile ships, and a project is judged against its selected profile | Proposed |
 | [0180](0180-custom-delivery-profiles-are-copies-of-a-built-in-kept-in-a-user-level-file.md) | Custom delivery profiles are copies of a built-in, kept in a user-level file | Proposed |
 | [0187](0187-the-resume-prompt-is-a-compact-notice-that-settles-once-per-dialog-open.md) | The resume prompt is a compact notice that settles once per dialog open | Proposed (amends ADR-0112) |
+| [0193](0193-homes-actual-recorded-is-the-linked-tracks-recorded-length-from-the-saved-project-and-never-an-estimate.md) | Home's Actual recorded is the linked track's recorded length from the saved project, and never an estimate | Accepted (supersedes part of ADR-0130) |
