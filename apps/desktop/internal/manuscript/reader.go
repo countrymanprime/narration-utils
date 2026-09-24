@@ -58,26 +58,39 @@ func (s *Service) ParagraphID(chapterID string, globalIndex int) (id string, ok 
 // Chapters returns the stable reader contract derived from the immutable
 // canonical manuscript plus its separately editable review sidecar.
 func (s *Service) Chapters() ([]map[string]any, error) {
-	return s.chapters(s.recordedFractions)
+	return s.chapters(true)
 }
 
 // ChaptersUnmeasured is Chapters without recordedFraction, which reads the saved project and every stored coverage result:
 // the stage recommendations read the statuses only and build their own evidence view, so they skip that second parse.
 func (s *Service) ChaptersUnmeasured() ([]map[string]any, error) {
-	return s.chapters(func() map[string]float64 { return nil })
+	return s.chapters(false)
 }
 
-func (s *Service) chapters(measured func() map[string]float64) ([]map[string]any, error) {
+// chapters is the chapter list; measure adds recordedFraction and the recorded length (recordedSeconds or
+// recordedUnavailable), which only the chapter list carries.
+func (s *Service) chapters(measure bool) ([]map[string]any, error) {
 	data, err := s.Load()
 	if err != nil {
 		return nil, err
 	}
 	notes := s.loadNotes()
 	paragraphs := objects(data["paragraphs"])
-	recorded := measured()
+	recorded, lengths := map[string]float64{}, map[string]RecordedLength{}
+	if measure {
+		recorded, lengths = s.recordedFractions(), s.recordedLengths()
+	}
 	result := make([]map[string]any, 0, len(objects(data["chapters"])))
 	for _, chapter := range objects(data["chapters"]) {
-		result = append(result, chapterPayload(chapter, notes, recorded, paragraphs, true))
+		payload := chapterPayload(chapter, notes, recorded, paragraphs, true)
+		if length, known := lengths[text(chapter, "id")]; known {
+			if length.Unavailable != "" {
+				payload["recordedUnavailable"] = string(length.Unavailable)
+			} else {
+				payload["recordedSeconds"] = length.Seconds
+			}
+		}
+		result = append(result, payload)
 	}
 	return result, nil
 }

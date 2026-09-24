@@ -272,7 +272,7 @@ function AppRoutes() {
   };
 
   return (
-    <div className="h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
+    <div className="relative h-full overflow-hidden" style={{ background: 'var(--bg)' }}>
       <TooltipProvider>
         <AppShell
           pathname={location.pathname}

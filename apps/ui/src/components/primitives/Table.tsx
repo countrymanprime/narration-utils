@@ -101,7 +101,7 @@ export function TableHeader({
     <th
       scope="col"
       aria-sort={onSort ? (sorted ?? 'none') : undefined}
-      className={`border-b border-[var(--border)] px-[0.7rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.05em] text-[var(--text-muted)] uppercase ${CELL_ALIGN[align]} ${className}`}
+      className={`relative border-b border-[var(--border)] px-[0.7rem] py-2 font-['Barlow_Condensed',sans-serif] text-[0.72rem] font-semibold tracking-[0.05em] text-[var(--text-muted)] uppercase ${CELL_ALIGN[align]} ${className}`}
       style={style}
     >
       {onSort ? (

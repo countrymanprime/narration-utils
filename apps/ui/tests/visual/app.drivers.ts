@@ -15,6 +15,12 @@ export type Driver = (page: Page) => Promise<void>;
 /** @public */
 export { AXE_DEBT as axeDebt } from './axe-debt';
 
+// The document never scrolls: the page area (AppShell.tsx) is the app's one scroll container, and nothing under #root
+// lays out against the document (app-shell-vertical-overflow.prd.md, ADR 0009 stays the rule for the page area itself).
+// Turns on the vendored lib/capture.ts's vertical-overflow and escaped-absolute checks, with no per-row escape hatch.
+/** @public */
+export const documentScroll = 'locked';
+
 // Two switches for a run of the suite, both off by default. The vendored lib/capture.ts calls this by name before every
 // capture (a namespace import Knip cannot follow, hence @public).
 //

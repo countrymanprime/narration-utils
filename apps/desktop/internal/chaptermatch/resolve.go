@@ -162,7 +162,10 @@ func nameCandidates(target int, titles []string, project tracks.Project, chapter
 		if strings.TrimSpace(track.Name) == "" || !eligible(track) {
 			continue
 		}
-		if match := MatchTitle(titles, track.Name); match.Index == target {
+		// A pickup track ("Chapter 6 pickups") is not the chapter's own track, so
+		// it is never a candidate for the link (daw-chapter-track-auto-sync PRD
+		// S11); a take track ("Chapter 6 v2") is, but never a confident one.
+		if match := MatchTitle(titles, track.Name); match.Index == target && match.Marker != MarkerPickup {
 			add(Candidate{TrackGUID: track.GUID, TrackName: track.Name, TrackIndex: track.Index, Score: match.Score, Source: SourceTrackName, confident: match.Confident})
 		}
 	}
@@ -171,7 +174,7 @@ func nameCandidates(target int, titles []string, project tracks.Project, chapter
 			continue
 		}
 		match := MatchTitle(titles, region.Name)
-		if match.Index != target {
+		if match.Index != target || match.Marker == MarkerPickup {
 			continue
 		}
 		span := tracks.Span{Start: region.Start, End: region.End}

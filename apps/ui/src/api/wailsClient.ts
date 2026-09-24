@@ -21,6 +21,7 @@ import {
   creditsAnnouncementsSchema,
   creditsProjectValuesResultSchema,
   creditsRenderResultSchema,
+  creditsStatusesSchema,
   creditTemplateSchema,
   creditTemplatesSchema,
   retailSampleAnswerSchema,
@@ -29,7 +30,14 @@ import { dawCatalogListSchema } from './schemas/dawCatalog';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
-import { chapterSuggestionSchema, chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
+import {
+  chapterSuggestionSchema,
+  chapterTrackLinksSchema,
+  chapterTrackMappingSchema,
+  chapterTrackMatchSchema,
+  chapterTrackSetSchema,
+  trackMappingSchema,
+} from './schemas/chapterTrackMap';
 import { takeComparisonJobSchema, takeReviewCreateTakeResultSchema, takeReviewScanJobSchema } from './schemas/takeReview';
 import { deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
 import { diagnosticsJobSchema } from './schemas/diagnostics';
@@ -330,6 +338,8 @@ export const wailsClient: NarrationApi = {
   creditsChapterAnnouncements: (body) => decode(creditsAnnouncementsSchema, 'CreditsChapterAnnouncements', host.CreditsChapterAnnouncements(body)),
   creditsRetailSample: () => decode(retailSampleAnswerSchema, 'CreditsRetailSample', host.CreditsRetailSample()),
   saveCreditsRetailSample: (start, end) => decode(retailSampleAnswerSchema, 'CreditsSaveRetailSample', host.CreditsSaveRetailSample(start, end)),
+  creditsStatuses: () => decode(creditsStatusesSchema, 'CreditsStatuses', host.CreditsStatuses()),
+  setCreditsStatus: (kind, status) => decode(creditsStatusesSchema, 'CreditsSetStatus', host.CreditsSetStatus(kind, status)),
   dawCatalogList: () => decode(dawCatalogListSchema, 'DawCatalogList', host.DawCatalogList()),
   dawCatalogOpenDownloadPage: (id) => decode(voidResult, 'DawCatalogOpenDownloadPage', host.DawCatalogOpenDownloadPage(id)),
   tracksDiscover: () => decode(tracksDiscoverySchema, 'TracksDiscover', host.TracksDiscover()),
@@ -338,6 +348,9 @@ export const wailsClient: NarrationApi = {
   chapterTrackMapList: () => decode(chapterTrackMappingSchema, 'ChapterTrackMapList', host.ChapterTrackMapList()),
   chapterTrackMapConfirm: (trackGuid, chapterId) => decode(trackMappingSchema, 'ChapterTrackMapConfirm', host.ChapterTrackMapConfirm(trackGuid, chapterId)),
   chapterTrackMapClear: (trackGuid) => decode(chapterTrackMappingSchema, 'ChapterTrackMapClear', host.ChapterTrackMapClear(trackGuid)),
+  chapterTrackSet: (chapterId, trackGuid) => decode(chapterTrackSetSchema, 'ChapterTrackSet', host.ChapterTrackSet(chapterId, trackGuid)),
+  chapterTrackUnlink: (chapterId) => decode(chapterTrackMappingSchema, 'ChapterTrackUnlink', host.ChapterTrackUnlink(chapterId)),
+  chapterTrackLinks: () => decode(chapterTrackLinksSchema, 'ChapterTrackLinks', host.ChapterTrackLinks()),
   chapterTrackMatch: (chapterId) => decode(chapterTrackMatchSchema, 'ChapterTrackMatch', host.ChapterTrackMatch(chapterId)),
   chapterSuggestion: () => decode(chapterSuggestionSchema, 'ChapterSuggestion', host.ChapterSuggestion()),
   findingsList: (query) => decode(findingsPageSchema, 'FindingsList', host.FindingsList(query)),

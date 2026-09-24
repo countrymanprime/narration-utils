@@ -5,6 +5,7 @@ import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useRef, useState, type ReactNode } from 'react';
 import { HINT_POPUP_SELECTOR } from './hintLayer';
 import { IconButton } from './IconButton';
+import { POPOVER_POPUP_SELECTOR } from './Popover';
 
 type DialogProps = {
   title: string;
@@ -85,8 +86,10 @@ export function Dialog({
       disablePointerDismissal
       onOpenChange={(_open, details) => {
         if (details.reason !== 'escape-key') return;
-        // Escape belongs to a hint that is showing (a tooltip inside the dialog), and to a handler that already took it.
-        if (!dismiss || details.event.defaultPrevented || document.querySelector(HINT_POPUP_SELECTOR)) details.cancel();
+        // Escape belongs to a hint or a Popover that is showing (a tooltip, a device picker, a settings panel inside the
+        // dialog), and to a handler that already took it.
+        if (!dismiss || details.event.defaultPrevented || document.querySelector(HINT_POPUP_SELECTOR) || document.querySelector(POPOVER_POPUP_SELECTOR))
+          details.cancel();
         else dismiss();
       }}
     >

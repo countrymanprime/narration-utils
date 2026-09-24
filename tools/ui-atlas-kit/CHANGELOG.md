@@ -3,6 +3,19 @@
 `ui-atlas sync` refreshes the vendored core files (`plugin/templates/core`) and stamps the version. It does NOT touch
 scaffold files (yours after `init`), so the **Adopt by hand** lines below are what to copy across on upgrade.
 
+## 0.3.6
+
+- **Core, opt-in:** a project can declare `export const documentScroll = 'locked'` from its `app.drivers.ts` to turn on
+  two checks the suite runs on every capture, with no per-row escape hatch: `lib/capture.ts` measures
+  `documentElement.scrollHeight - clientHeight` (`measureVerticalOverflow`) and scans `#root` for a rendered,
+  `position: absolute` element whose `offsetParent` is `<body>` or `null` (`findEscapedAbsolutes`) - a containing block
+  that escaped the app's shell and lays out against the document instead. Both are recorded on `CaptureRecord`
+  (`overflowYPx`, `escapedAbsolutes`) on every run; `lib/validators.ts`'s `checkDocumentScroll` only turns either into a
+  failure when the project opted in. A structural check, not a captured-size one: it catches a zoom-only escape (a page
+  that only overflows at one window height and zoom level) that no viewport in the matrix happens to reproduce.
+  **Adopt by hand:** nothing to migrate for a project that does not declare `documentScroll`; one that does should expect
+  new failures until every page scrolls inside its own container and nothing escapes the shell.
+
 ## 0.3.5
 
 - **Core:** the app suite loads and drives each state once and resizes through the viewports, instead of loading and

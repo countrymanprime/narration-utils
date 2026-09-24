@@ -404,6 +404,45 @@ func TestContractChapterTrackMatch(t *testing.T) {
 	}
 }
 
+// The chapter track link control's payloads (chapter-track-link-control PRD Phase 1): ChapterTrackLinks with a ready
+// project, with no .rpp, and with a double link, a missing track and a renamed one; ChapterTrackSet taking a track from
+// another chapter; ChapterTrackUnlink. Paths are made portable, ids and times fixed by Stabilize.
+func TestContractChapterTrackLinks(t *testing.T) {
+	pin := func(t *testing.T, name string, folder string, raw string) {
+		t.Helper()
+		var payload any
+		if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+			t.Fatal(err)
+		}
+		stable, err := contractfile.PortablePaths(payload, folder, "C:/Projects/Alice")
+		if err != nil {
+			t.Fatal(err)
+		}
+		contractfile.Check(t, name, stable)
+	}
+	call := func(raw string, err error) string {
+		t.Helper()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return raw
+	}
+
+	noProject, _ := newTestHostForMapping(t)
+	pin(t, "chapter-track-links-no-project", noProject.config.projectFolder, call(noProject.ChapterTrackLinks()))
+
+	host, ids := newTestHostForChapterMatch(t)
+	folder := host.config.projectFolder
+	pin(t, "chapter-track-links-ready", folder, call(host.ChapterTrackLinks()))
+
+	for _, link := range [][2]string{{chapterLinksTrackII, ids[1]}, {chapterLinksTrackIJ, ids[1]}, {chapterLinksTrack, ids[2]}, {"{DEADBEEF-0000-4000-8000-000000000000}", ids[0]}} {
+		call(host.ChapterTrackMapConfirm(link[0], link[1]))
+	}
+	pin(t, "chapter-track-links-conflict", folder, call(host.ChapterTrackLinks()))
+	pin(t, "chapter-track-set-displaced", folder, call(host.ChapterTrackSet(ids[0], chapterLinksTrack)))
+	pin(t, "chapter-track-unlink", folder, call(host.ChapterTrackUnlink(ids[1])))
+}
+
 // ChapterSuggestion's payload (teleprompter-engines-and-input-devices PRD Phase 11, ADR 0113): the armed track's
 // chapter, two armed tracks naming different chapters (a choice), and nothing armed or selected.
 func TestContractChapterSuggestion(t *testing.T) {
@@ -589,6 +628,31 @@ func TestContractCreditsRetailSample(t *testing.T) {
 		t.Fatal(err)
 	}
 	check("credits-retail-sample-stale", stale)
+}
+
+// CreditsStatuses' and CreditsSetStatus's payloads (Credits in the Chapter Table, Phase 1, ADR 0183): empty before
+// anything is set, then both kinds once set.
+func TestContractCreditsStatuses(t *testing.T) {
+	host := hostWithExtras(t, 10)
+	check := func(name, encoded string) {
+		t.Helper()
+		var decoded any
+		decodeInto(t, encoded, &decoded)
+		contractfile.Check(t, name, decoded)
+	}
+	empty, err := host.CreditsStatuses()
+	if err != nil {
+		t.Fatal(err)
+	}
+	check("credits-status-empty", empty)
+	if _, err := host.CreditsSetStatus("opening", "finalized"); err != nil {
+		t.Fatal(err)
+	}
+	set, err := host.CreditsSetStatus("closing", "recording")
+	if err != nil {
+		t.Fatal(err)
+	}
+	check("credits-status-set", set)
 }
 
 // The take-review findings as the Review page lists them (FindingsList filtered to the take-review analyzer,
