@@ -40,19 +40,40 @@ type TitleMatch struct {
 	// Rabit Hole" against "The Rabbit Hole" is 0.97), so the score alone does
 	// not say how the name matched.
 	Confident bool
+	// Marker is set when the name is a take, pickup or credits track
+	// (LabelTokens). A take or pickup match scores ScoreContainedAmbiguous at
+	// best and is never confident, so a "Chapter 6 pickups" track stays a
+	// candidate beside the chapter's own track and never links on its own; a
+	// credits name matches no chapter (ADR 0150).
+	Marker Marker
 }
 
 // MatchTitle is FindChapterByTrackName with the kind of match kept.
+// Both sides go through LabelTokens, the canonicalising pre-pass
+// (daw-chapter-track-auto-sync PRD Phase 1), so "Ch. 6", "Chapter VI" and
+// "Sixth Chapter" meet "Chapter 6" as an exact match.
 func MatchTitle(titles []string, name string) TitleMatch {
-	target := NormalizedTokens(name)
+	match := matchLabels(titles, name)
+	if match.Marker == MarkerTake || match.Marker == MarkerPickup {
+		match.Score = min(match.Score, ScoreContainedAmbiguous)
+		match.Confident = false
+	}
+	return match
+}
+
+func matchLabels(titles []string, name string) TitleMatch {
+	target, marker := LabelTokens(name)
+	if marker == MarkerCredits {
+		return TitleMatch{Index: -1, Marker: marker}
+	}
 	chapterTokens := make([][]string, len(titles))
 	for i, title := range titles {
-		chapterTokens[i] = NormalizedTokens(title)
+		chapterTokens[i], _ = LabelTokens(title)
 	}
 
 	for i, tokens := range chapterTokens {
 		if equalTokens(tokens, target) {
-			return TitleMatch{Index: i, Score: ScoreExact, Confident: true}
+			return TitleMatch{Index: i, Score: ScoreExact, Confident: true, Marker: marker}
 		}
 	}
 
@@ -63,10 +84,10 @@ func MatchTitle(titles []string, name string) TitleMatch {
 		}
 	}
 	if len(contained) == 1 {
-		return TitleMatch{Index: contained[0], Score: ScoreContained, Confident: true}
+		return TitleMatch{Index: contained[0], Score: ScoreContained, Confident: true, Marker: marker}
 	}
 	if len(contained) > 1 {
-		return TitleMatch{Index: shortestTitle(titles, contained), Score: ScoreContainedAmbiguous}
+		return TitleMatch{Index: shortestTitle(titles, contained), Score: ScoreContainedAmbiguous, Marker: marker}
 	}
 
 	targetText := strings.Join(target, " ")
@@ -77,9 +98,9 @@ func MatchTitle(titles []string, name string) TitleMatch {
 		}
 	}
 	if best < 0 || bestScore < FuzzyThreshold {
-		return TitleMatch{Index: -1}
+		return TitleMatch{Index: -1, Marker: marker}
 	}
-	return TitleMatch{Index: best, Score: bestScore}
+	return TitleMatch{Index: best, Score: bestScore, Marker: marker}
 }
 
 func equalTokens(a, b []string) bool {
