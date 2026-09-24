@@ -854,6 +854,23 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await dialog.getByRole('button', { name: 'Hide reading panel' }).click();
       await dialog.getByRole('button', { name: 'Show reading panel' }).waitFor();
     },
+    // Layout fixes (read-aloud-control-bar.prd.md Phase 1): the resume card shares the text column's axis, and the
+    // reading panel spans the dialog body from its content top to its bottom, whatever the chapter's length.
+    'read-aloud-rail-full-height': async (page) => {
+      await openResumeCard(page);
+      const dialog = page.getByRole('dialog', { name: /Read aloud/ });
+      const box = await dialog.boundingBox();
+      const card = await dialog.getByRole('region', { name: 'Where you stopped' }).boundingBox();
+      // The text's own Panel, not its inner "Chapter text" region, which sits inset by the Panel's padding: the card is a
+      // Panel too, so comparing panel to panel is the like-for-like edge the PRD means by "the text column's axis".
+      const text = await dialog.getByRole('region', { name: 'Chapter text' }).locator('xpath=ancestor::section[1]').boundingBox();
+      const rail = await dialog.getByRole('complementary', { name: 'Reading panel' }).boundingBox();
+      if (!box || !card || !text || !rail) throw new Error('The read-aloud layout has no boxes to measure.');
+      if (Math.abs(card.x - text.x) > 1 || Math.abs(card.x + card.width - (text.x + text.width)) > 1)
+        throw new Error('The resume card is not aligned with the text column.');
+      if (rail.y - box.y > 90) throw new Error("The reading panel does not start at the dialog body's content top.");
+      if (box.y + box.height - (rail.y + rail.height) > 30) throw new Error("The reading panel does not reach the dialog body's bottom.");
+    },
     // Suspected flags (teleprompter-manuscript-integration.prd.md Phase 7): the `flagged` mock seam is a session further into
     // the chapter whose flags arrive as the dialog subscribes. The rail's key has flag swatches too, so marks are found as controls.
     'read-aloud-flags': async (page) => {

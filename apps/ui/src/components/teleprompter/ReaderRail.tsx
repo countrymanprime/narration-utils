@@ -60,7 +60,7 @@ export function ReaderRail({ state, onTab, onToggle, seekable, entities, notes, 
   return (
     <aside
       aria-labelledby={railHeadingId}
-      className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 shadow-[var(--shadow)] md:sticky md:top-0 md:max-h-[calc(100dvh-8rem)] md:w-[19rem] md:overflow-y-auto lg:w-[20rem]"
+      className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 shadow-[var(--shadow)] md:sticky md:top-0 md:h-full md:w-[19rem] md:overflow-y-auto lg:w-[20rem]"
     >
       <div className="mb-1 flex items-center justify-between gap-2">
         <span id={railHeadingId} className={SECTION_LABEL}>

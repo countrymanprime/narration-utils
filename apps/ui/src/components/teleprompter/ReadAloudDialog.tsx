@@ -116,14 +116,11 @@ export function ReadAloudDialog({ chapter, entities = NO_ENTITIES, notes = NO_NO
   return (
     <>
       <Dialog title={`Read aloud — ${chapter.title}`} size="full" onClose={requestClose} actions={null}>
-        {/* The resume card (Phase 10) sits above the reading view between sessions only; a running session moves by word click. */}
-        {!session.active && (
-          <div className="mx-auto mb-4 max-w-3xl">
-            <ResumeCard chapterId={chapter.id} model={session.model} onStartWord={session.setStartWord} />
-          </div>
-        )}
         <ReadAlongView
           session={session}
+          // The resume card (Phase 10) sits in the text column's header slot between sessions only, on the text's own axis
+          // (read-aloud-control-bar.prd.md Phase 1); a running session moves by word click.
+          header={!session.active && <ResumeCard chapterId={chapter.id} model={session.model} onStartWord={session.setStartWord} />}
           marks={marks}
           onOpenMark={openMark}
           aside={

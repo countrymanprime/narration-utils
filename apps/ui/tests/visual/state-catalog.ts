@@ -400,6 +400,12 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'manuscript',
+    state: 'read-aloud-rail-full-height',
+    description:
+      'Manuscript, the "Read aloud" dialog with the resume card present and the reading panel open (read-aloud-control-bar.prd.md Phase 1) - the resume card shares the text column\'s left and right edges, and the panel spans the dialog body from its content top to its bottom',
+  },
+  {
+    page: 'manuscript',
     state: 'read-aloud-flags',
     description:
       'Manuscript, the "Read aloud" dialog listening with suspected flags raised (teleprompter-manuscript-integration.prd.md Phase 7) - by default only skipped words (dotted underline) and restarts (dashed underline on the word read again from) show; misreads and extra words wait behind toggles (?mockTeleprompter=flagged)',
