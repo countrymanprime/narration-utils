@@ -1,0 +1,60 @@
+{
+  "id": "measure-1",
+  "kind": "measurement",
+  "phase": "running",
+  "message": "Measuring Chapter 02.wav (2 of 3).",
+  "percent": 50,
+  "logs": [
+    "Measuring 3 files.",
+    "Measured Chapter 01.wav."
+  ],
+  "elapsed": 3.5,
+  "files": [
+    {
+      "path": "C:/Renders/Chapter 01.wav",
+      "name": "Chapter 01.wav",
+      "status": "measured",
+      "report": {
+        "file": "C:/Renders/Chapter 01.wav",
+        "sample_rate": 48000,
+        "channels": 2,
+        "duration_seconds": 1843.5,
+        "integrated_lufs": -19.4,
+        "rms_dbfs": -21.2,
+        "sample_peak_dbfs": -3.6,
+        "true_peak_dbtp": -3.1,
+        "noise_floor_dbfs": -66.8,
+        "digital_silent_windows": 0,
+        "full_scale_samples": 4,
+        "clip_run_count": 1,
+        "clip_runs": [
+          {
+            "channel": 1,
+            "start_seconds": 612.25,
+            "duration_seconds": 0.0000833,
+            "samples": 4
+          }
+        ]
+      },
+      "fingerprint": {
+        "size_bytes": 530928044,
+        "modified_at": "2026-09-23T14:02:11.5Z",
+        "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      }
+    },
+    {
+      "path": "C:/Renders/Chapter 02.wav",
+      "name": "Chapter 02.wav",
+      "status": "measuring",
+      "report": null,
+      "fingerprint": null
+    },
+    {
+      "path": "C:/Renders/Chapter 03.mp3",
+      "name": "Chapter 03.mp3",
+      "status": "pending",
+      "report": null,
+      "fingerprint": null
+    }
+  ]
+}

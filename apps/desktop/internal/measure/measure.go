@@ -13,6 +13,7 @@
 package measure
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -66,17 +67,17 @@ type Report struct {
 
 // Analyze measures WAV audio read from r.
 func Analyze(r io.Reader) (Report, error) {
-	reader, err := NewWAVReader(r)
-	if err != nil {
-		return Report{}, err
-	}
-	return measureFrames(reader, math.MaxInt64)
+	return analyze(context.Background(), r, Options{}, -1)
 }
 
-// measureFrames measures up to limit frames from the reader's position.
-func measureFrames(reader *WAVReader, limit int64) (Report, error) {
+// measureFrames measures up to limit frames from the reader's position, checking ctx before every block and
+// telling meter after it (analyze.go).
+func measureFrames(ctx context.Context, reader *WAVReader, limit int64, meter *progressMeter) (Report, error) {
 	meters := newMeterSet(reader.Format())
 	for meters.frames < limit {
+		if err := ctx.Err(); err != nil {
+			return Report{}, err
+		}
 		block, err := reader.Read(int(min(readBlockFrames, limit-meters.frames)))
 		if errors.Is(err, io.EOF) {
 			break
@@ -85,7 +86,9 @@ func measureFrames(reader *WAVReader, limit int64) (Report, error) {
 			return Report{}, err
 		}
 		meters.Add(block)
+		meter.tick()
 	}
+	meter.finish()
 	return meters.Report(), nil
 }
 

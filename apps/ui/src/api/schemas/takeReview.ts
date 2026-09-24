@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import type {
-  TakeAudioReport,
   TakeComparisonEvidence,
   TakeComparisonJob,
   TakeComparisonMember,
@@ -12,6 +11,7 @@ import type {
   TakeReviewScanScope,
 } from '../contracts/takeReview';
 import { listFromNull } from './base';
+import { measureClipRunSchema, measureRangeSchema, measureReportSchema } from './measure';
 
 const takeReviewMemberSchema = z.object({
   item_index: z.number(),
@@ -68,32 +68,12 @@ export const takeReviewCreateTakeResultSchema = z.object({
 const metricStatus = { status: z.enum(['measured', 'unavailable']), reason: z.string().optional() };
 const nullableNumber = z.number().nullable();
 
-const rangeSchema = z.object({ start_seconds: z.number(), length_seconds: z.number() });
-const clipRunSchema = z.object({ channel: z.number(), start_seconds: z.number(), duration_seconds: z.number(), samples: z.number() });
-
-const takeAudioReportSchema = z.object({
-  file: z.string().optional(),
-  sample_rate: z.number(),
-  channels: z.number(),
-  duration_seconds: z.number(),
-  integrated_lufs: nullableNumber,
-  rms_dbfs: nullableNumber,
-  sample_peak_dbfs: nullableNumber,
-  true_peak_dbtp: nullableNumber,
-  noise_floor_dbfs: nullableNumber,
-  digital_silent_windows: z.number(),
-  full_scale_samples: z.number(),
-  clip_run_count: z.number(),
-  clip_runs: listFromNull(clipRunSchema),
-  range: rangeSchema.optional(),
-}) satisfies z.ZodType<TakeAudioReport>;
-
 const takeMetricsSchema = z.object({
   take_guid: z.string(),
   take_index: z.number(),
-  source: z.object({ file: z.string(), kind: z.string(), range: rangeSchema }).nullable(),
-  audio: takeAudioReportSchema.nullable(),
-  clipping: z.object({ ...metricStatus, full_scale_samples: nullableNumber, clip_run_count: nullableNumber, clip_runs: listFromNull(clipRunSchema) }),
+  source: z.object({ file: z.string(), kind: z.string(), range: measureRangeSchema }).nullable(),
+  audio: measureReportSchema.nullable(),
+  clipping: z.object({ ...metricStatus, full_scale_samples: nullableNumber, clip_run_count: nullableNumber, clip_runs: listFromNull(measureClipRunSchema) }),
   noise: z.object({ ...metricStatus, noise_floor_dbfs: nullableNumber, digital_silent_windows: nullableNumber }),
   level_consistency: z.object({
     ...metricStatus,

@@ -5,6 +5,7 @@
 // (docs/architecture/findings-contract.md). Q9: no composite score, so nothing here ranks one read over another.
 
 import type { WorkJob } from './manuscript';
+import type { MeasureClipRun, MeasureReport } from './measure';
 
 /** One read the sidecar grouped into a finding (internal/repeats.Member): an item, or one take of an item. */
 export type TakeReviewMember = {
@@ -104,25 +105,10 @@ export type TakeComparisonCounts = { matched: number; misread: number; skipped: 
 export type TakeMetricStatus = { status: 'measured' | 'unavailable'; reason?: string };
 
 /** A run of three or more full-scale samples on one channel, timed from the start of the measured range. */
-export type TakeClipRun = { channel: number; start_seconds: number; duration_seconds: number; samples: number };
+export type TakeClipRun = MeasureClipRun;
 
 /** The range measurement every audio figure comes from (internal/measure.Report), kept so each figure can be reproduced. */
-export type TakeAudioReport = {
-  file?: string;
-  sample_rate: number;
-  channels: number;
-  duration_seconds: number;
-  integrated_lufs: number | null;
-  rms_dbfs: number | null;
-  sample_peak_dbfs: number | null;
-  true_peak_dbtp: number | null;
-  noise_floor_dbfs: number | null;
-  digital_silent_windows: number;
-  full_scale_samples: number;
-  clip_run_count: number;
-  clip_runs: TakeClipRun[];
-  range?: { start_seconds: number; length_seconds: number };
-};
+export type TakeAudioReport = MeasureReport;
 
 export type TakeMetrics = {
   take_guid: string;

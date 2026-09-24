@@ -94,6 +94,7 @@ import type { MockResumeSeed } from './resumeMockSeed';
 import { createFindingsMock, type MockReaper } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
 import { createTakeComparisonMock } from './takeComparisonMock';
+import { createMeasureMock } from './measureMock';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
 import { MOCK_DICTIONARY, MOCK_DICTIONARY_DISK_SIZE, MOCK_DICTIONARY_DOWNLOAD_SIZE, mockDictionaryLookup } from './dictionaryMock';
@@ -445,6 +446,8 @@ export function createMockApi(
     takeReviewScanHold?: boolean;
     /** Holds a started take comparison part way through, so its real progress can be looked at (take review Phase 10). */
     takeComparisonHold?: boolean;
+    /** Holds a started measurement part way through, so its real progress can be looked at (diagnostics PRD Phase 1). */
+    measureHold?: boolean;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -967,6 +970,7 @@ export function createMockApi(
   });
   const takeReviewScan = createTakeReviewScanMock(saveAnalyzerFindings, endJob, initial.takeReviewScanHold);
   const takeComparison = createTakeComparisonMock({ get: findings.findingsGet, save: saveFinding }, endJob, initial.takeComparisonHold);
+  const measurement = createMeasureMock(endJob, initial.measureHold);
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));
   };
@@ -1933,6 +1937,7 @@ export function createMockApi(
     },
     ...takeReviewScan,
     ...takeComparison,
+    ...measurement,
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,
       newTakeGuid: '{99999999-0000-4000-8000-000000000099}',

@@ -318,6 +318,22 @@ export function ManuscriptSetChapterStatus(arg1, arg2) {
   return window['go']['main']['Host']['ManuscriptSetChapterStatus'](arg1, arg2);
 }
 
+export function MeasureAnalyze(arg1) {
+  return window['go']['main']['Host']['MeasureAnalyze'](arg1);
+}
+
+export function MeasureCancel() {
+  return window['go']['main']['Host']['MeasureCancel']();
+}
+
+export function MeasurePickFiles() {
+  return window['go']['main']['Host']['MeasurePickFiles']();
+}
+
+export function MeasureState() {
+  return window['go']['main']['Host']['MeasureState']();
+}
+
 export function PickupsCount() {
   return window['go']['main']['Host']['PickupsCount']();
 }

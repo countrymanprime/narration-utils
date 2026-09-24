@@ -48,7 +48,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 43
+const hostAPIVersion = 44
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -75,7 +75,11 @@ type Host struct {
 	takeReviewJob *takeReviewScanJob
 	// takeComparisonJob compares the takes of one take-review group (takecompare_job.go); h.mu guards the pointer.
 	takeComparisonJob *takeComparisonJob
-	transcript        *transcript.Service
+	// measureJob measures the narrator's picked audio files (measure_job.go); measurePicked is every path the picker
+	// chose this session, the only paths MeasureAnalyze accepts (ADR 0156). h.mu guards both; neither is per project.
+	measureJob    *measureJob
+	measurePicked map[string]bool
+	transcript    *transcript.Service
 	// coverage is the recording-coverage service (docs/utilities/recording-coverage.md, ADR 0128): it reads the saved .rpp and
 	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; the Coverage* bindings
 	// reach it (Phase 5, bindings_coverage.go) and it fills the manuscript chapters' recordedFraction.
@@ -116,6 +120,10 @@ type Host struct {
 	takeReviewRunner takereview.SidecarRunner
 	// takeCompareRunner is the same seam for the take comparison's --take-divergence run (takecompare_job.go).
 	takeCompareRunner takecompare.SidecarRunner
+	// pickAudioFiles and measureFile are seams for tests (measure_job.go): nil means the operating system's multiple-file
+	// picker and measure.MeasureFile.
+	pickAudioFiles func() ([]string, error)
+	measureFile    measureFileFunc
 	// updates asks GitHub for a newer release and remembers the answer (ADR 0072). It is set once in NewHost and never swapped, so it is
 	// read directly, like recents.
 	updates *update.Checker
@@ -855,7 +863,7 @@ func (h *Host) canAttachLocked() bool {
 }
 
 // idleLocked reports whether nothing is running that a restart or a project switch would displace: an import draft, a Story Bible
-// build, a download, a comparison or a teleprompter session. The caller holds h.mu.
+// build, a download, a comparison, a measurement or a teleprompter session. The caller holds h.mu.
 func (h *Host) idleLocked() bool {
 	if h.manuscript != nil && !h.manuscript.CanSwitchProject() {
 		return false
@@ -872,6 +880,9 @@ func (h *Host) idleLocked() bool {
 		return false
 	}
 	if h.takeComparisonJob != nil && h.takeComparisonJob.running() {
+		return false
+	}
+	if h.measureJob != nil && h.measureJob.running() {
 		return false
 	}
 	for _, job := range h.installJobs {

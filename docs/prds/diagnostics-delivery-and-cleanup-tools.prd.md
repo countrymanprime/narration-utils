@@ -4,9 +4,9 @@
 
 **Status (2026-09-23):** issue [#408](https://github.com/countrymanprime/narration-utils/issues/408) (closed when #412 merged, although it tracks the whole PRD).
 
-- **Delivered:** phase 2 (#412, the settings number kind and the narrator's own delivery limits; ADR 0155, Proposed); phase 4 (the windowed analyzers `measure.Diagnose`, with findings; ADR 0158, Proposed).
-- **Left:** phases 1, 3 and 5 to 11.
-- **Needs the owner:** review ADRs 0155 and 0158; the REAPER checks of phase 10 (preview and apply) when it is built.
+- **Delivered:** phase 2 (#412, the settings number kind and the narrator's own delivery limits; ADR 0155, Proposed); phase 4 (#444, the windowed analyzers `measure.Diagnose`, with findings; ADR 0158, Proposed); phase 1 (the measurement job and its four bindings, `MeasurePickFiles/Analyze/State/Cancel`, with real progress, cancel, a range and the file fingerprint; ADR 0156, Proposed; `hostAPIVersion` 44).
+- **Left:** phases 3 and 5 to 11.
+- **Needs the owner:** review ADRs 0155, 0156 and 0158; the REAPER checks of phase 10 (preview and apply) when it is built.
 - **Agents without the owner:** phases 1, 3 and 4 have no dependencies, then 5 to 7 and 9; phase 8 can use the chapter-track matcher (teleprompter manuscript integration phase 8, delivered).
 
 Roadmap milestone 4 ("Diagnostics and delivery") plus the adjacent planned utilities that share its measurement code: Narration Diagnostics, Delivery and Review Export, Silence Cleanup, Clause Splitting and Level Normalization, and the unbuilt remainder of DAW Project Scan. Citations are `file:line` on worktree HEAD `b9d348d` for anything checked in code; "per docs" marks a claim taken from a document and not verified. `origin/main` is now at `d5cc994`. Since `b9d348d` it gained documentation (the teleprompter integration plan, the split guide `docs/guides/using-the-app/*.md` with its index and `apps/ui/src/docsGuide.test.ts` guard, `docs/operations/github-workflow.md`), GitHub metadata and CI files (a `github-scripts` job in `_quality.yml`, so the `lua` job cited below moved to `:115-123`), and two dependency bumps. No other source file cited below changed, so its line cites still hold. The next free ADR number is whatever is free at merge time (0027 at `d5cc994`).
@@ -77,7 +77,7 @@ We believe a local, profile-neutral measurement page with reproducible report ex
 | Input never modified | 0 files change (SHA-256 before equals after) across analyze, diagnostics and export | Go test asserting file hashes |
 | Unavailable is never a number | 100% of silent, short and unsupported inputs report `null` or a named error, never `0` or `-Inf` | Table test over silence, sub-window, digital-silent and float NaN fixtures |
 | Second-tool agreement on real chapters | Integrated LUFS and true peak within 0.1 LU / 0.1 dB of a second meter on 3 real chapters (proposal; tool choice TBD) | Manual comparison by the user, recorded in the PR |
-| Throughput | TBD - baseline needs measurement in Phase 1 (a one-hour stereo 48 kHz file) | Benchmark recorded in the PR; target set afterward |
+| Throughput | TBD - baseline measured in Phase 1: about 90 s per hour of 24-bit stereo 48 kHz (AMD Ryzen 9 9955HX, `BenchmarkAnalyzeOneHourStereo48k`, three runs 89 to 92 s); the true-peak oversampler takes about 80% of it | Benchmark recorded in the PR; target set afterward |
 | Progress honesty | Job progress is monotonic and reflects bytes read (ADR 0015) | Go test like `TestImportJobReportsRealProgressAndLogs` |
 | New Go coverage | At least 80% on new packages and functions | `go test -cover` |
 | UI verification | Every new state reviewed as PNG at desktop, small-desktop, tablet and mobile | `apps/ui/screenshots/app/<page>/<state>/<viewport>.png` per CLAUDE.md |
@@ -190,7 +190,7 @@ Phases 1 to 7 (measurement job, settings-driven limits, EBU validation, windowed
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Measurement job and binding | `measure` gains context, real progress and optional range; job service, start/state/cancel/file-picker bindings; host API bump; contract and mock; fingerprint evidence | pending | 2, 3, 4 | - | - |
+| 1 | Measurement job and binding | `measure` gains context, real progress and optional range; job service, start/state/cancel/file-picker bindings; host API bump; contract and mock; fingerprint evidence | complete | 2, 3, 4 | - | - |
 | 2 | Delivery settings and limits | Numeric settings kind, `Delivery` section, `Profile` built from settings (adds sample-peak limit, no defaults), validation | complete | 1, 3, 4 | - | - |
 | 3 | EBU validation | Gated test over the official files, fetch/README, recorded result; docs note | partial (gated test, expected table, README and docs note done; the recorded run over the official files is pending: `tech.ebu.ch` refuses scripted downloads, so the owner downloads the zip by hand) | 1, 2, 4 | - | - |
 | 4 | Windowed analyzers | Clipping, short-term loudness series, silence map, room-tone segments in Go with findings emission; fixtures | complete | 1, 2, 3 | - | - |

@@ -1,0 +1,37 @@
+{
+  "id": "measure-1",
+  "kind": "measurement",
+  "phase": "error",
+  "message": "The measurement stopped unexpectedly.",
+  "percent": 0,
+  "logs": [
+    "Measuring 3 files.",
+    "The measurement stopped unexpectedly."
+  ],
+  "elapsed": 3.5,
+  "error": "runtime error: index out of range [4] with length 4",
+  "files": [
+    {
+      "path": "C:/Renders/Chapter 01.wav",
+      "name": "Chapter 01.wav",
+      "status": "failed",
+      "report": null,
+      "fingerprint": null,
+      "error": "the measurement stopped unexpectedly: runtime error: index out of range [4] with length 4"
+    },
+    {
+      "path": "C:/Renders/Chapter 02.wav",
+      "name": "Chapter 02.wav",
+      "status": "cancelled",
+      "report": null,
+      "fingerprint": null
+    },
+    {
+      "path": "C:/Renders/Chapter 03.mp3",
+      "name": "Chapter 03.mp3",
+      "status": "cancelled",
+      "report": null,
+      "fingerprint": null
+    }
+  ]
+}

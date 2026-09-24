@@ -66,8 +66,13 @@ type WAVReader struct {
 	src        *bufio.Reader
 	remaining  int64 // bytes left in the data chunk, or -1 to read to EOF
 	frameBytes int
-	buf        []byte
-	done       bool
+	// dataStart is the byte offset of the first sample in the stream, dataSize the data chunk's declared size (-1 when
+	// the header is unfinished) and consumed how many data bytes have been read or skipped: the measurement's progress.
+	dataStart int64
+	dataSize  int64
+	consumed  int64
+	buf       []byte
+	done      bool
 }
 
 // NewWAVReader parses the header and positions the reader at the first
@@ -88,6 +93,7 @@ func NewWAVReader(r io.Reader) (*WAVReader, error) {
 
 	var format Format
 	haveFormat := false
+	offset := int64(len(header))
 	for {
 		var chunkHeader [8]byte
 		if _, err := io.ReadFull(src, chunkHeader[:]); err != nil {
@@ -101,6 +107,7 @@ func NewWAVReader(r io.Reader) (*WAVReader, error) {
 		}
 		id := string(chunkHeader[0:4])
 		size := binary.LittleEndian.Uint32(chunkHeader[4:8])
+		offset += int64(len(chunkHeader))
 
 		switch id {
 		case "fmt ":
@@ -109,6 +116,7 @@ func NewWAVReader(r io.Reader) (*WAVReader, error) {
 				return nil, err
 			}
 			format, haveFormat = parsed, true
+			offset += int64(size) + int64(size%2)
 		case "data":
 			if !haveFormat {
 				return nil, errors.New("WAV data chunk appears before the fmt chunk")
@@ -130,6 +138,8 @@ func NewWAVReader(r io.Reader) (*WAVReader, error) {
 				src:        src,
 				remaining:  remaining,
 				frameBytes: format.Channels * format.BitsPerSample / 8,
+				dataStart:  offset,
+				dataSize:   remaining,
 			}, nil
 		default:
 			if err := skipChunk(src, size); err != nil {
@@ -138,6 +148,7 @@ func NewWAVReader(r io.Reader) (*WAVReader, error) {
 				}
 				return nil, errors.New("WAV file has no data chunk")
 			}
+			offset += int64(size) + int64(size%2)
 		}
 	}
 }
@@ -215,6 +226,7 @@ func (w *WAVReader) Read(maxFrames int) ([][]float64, error) {
 	if w.remaining >= 0 {
 		w.remaining -= int64(n)
 	}
+	w.consumed += int64(n)
 
 	frames := n / w.frameBytes
 	if frames == 0 {
@@ -245,6 +257,7 @@ func (w *WAVReader) Skip(frames int64) (int64, error) {
 	if w.remaining >= 0 {
 		w.remaining -= n
 	}
+	w.consumed += n
 	return n / int64(w.frameBytes), nil
 }
 

@@ -1,6 +1,7 @@
 package measure
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"math"
@@ -50,23 +51,7 @@ func secondsToFrames(seconds float64, rate int) int64 {
 // a range entirely after the end measures nothing, which reads as zero
 // duration and every level unavailable.
 func AnalyzeRange(r io.Reader, rng Range) (Report, error) {
-	if err := rng.validate(); err != nil {
-		return Report{}, err
-	}
-	reader, err := NewWAVReader(r)
-	if err != nil {
-		return Report{}, err
-	}
-	first, count := rng.frames(reader.Format().SampleRate)
-	if _, err := reader.Skip(first); err != nil {
-		return Report{}, fmt.Errorf("skipping to the range start: %w", err)
-	}
-	report, err := measureFrames(reader, count)
-	if err != nil {
-		return Report{}, err
-	}
-	report.Range = &rng
-	return report, nil
+	return analyze(context.Background(), r, Options{Range: &rng}, -1)
 }
 
 // AnalyzeFileRange measures the given range of the WAV file at path and

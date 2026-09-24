@@ -1,0 +1,10 @@
+{
+  "id": null,
+  "kind": "measurement",
+  "phase": "idle",
+  "message": "Choose the files to measure.",
+  "percent": 0,
+  "logs": [],
+  "elapsed": 3.5,
+  "files": []
+}
