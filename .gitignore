@@ -17,7 +17,9 @@ apps/ui/coverage/
 .hypothesis/
 *.tsbuildinfo
 logs/
-.claude/
+# Local Claude Code state stays out; the shared settings (plugin marketplaces for cloud sessions) are tracked.
+.claude/*
+!.claude/settings.json
 apps/desktop/cmd/narration-utils/frontend/dist/*
 !apps/desktop/cmd/narration-utils/frontend/dist/.gitkeep
 apps/desktop/cmd/narration-utils/frontend/wailsjs/
