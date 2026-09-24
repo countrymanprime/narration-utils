@@ -179,8 +179,9 @@ type fakeSidecar struct {
 	errorMessage string // the ERROR line's message
 	badResults   bool   // exit 0 with a results file that does not parse
 	launchErr    error
-	present      int    // present tokens of 10 (default 10)
-	during       func() // called after the items, before the results are written
+	present      int      // present tokens of 10 (default 10)
+	results      []string // when set, the results file's lines as the real sidecar wrote them (corpus_test.go)
+	during       func()   // called after the items, before the results are written
 
 	// pauseAfter > 0 pauses after that many transcriptions until resume is closed.
 	pauseAfter int
@@ -308,7 +309,9 @@ func (f *fakeSidecar) run(args []string) int {
 		return f.exitCode
 	}
 	results := "COVERAGE|not json\n"
-	if !f.badResults {
+	if len(f.results) > 0 {
+		results = strings.Join(f.results, "\n") + "\n"
+	} else if !f.badResults {
 		present := f.present
 		if present == 0 {
 			present = 10

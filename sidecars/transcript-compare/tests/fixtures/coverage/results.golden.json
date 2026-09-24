@@ -1,0 +1,253 @@
+{
+ "cases": {
+  "c1-complete-title-omitted": {
+   "analyzerTextComplete": true,
+   "chapterId": "c-0001",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":209,\"chapterId\":\"c-0001\",\"extraTokens\":0,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":83.2,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":0,\"missingTokens\":0,\"presentTokens\":209,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":83.2,\"status\":\"analyzed\",\"wordCount\":207,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000001\",\"longestMissingRun\":0,\"present\":57,\"tokens\":57}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000002\",\"longestMissingRun\":0,\"present\":56,\"tokens\":56}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000003\",\"longestMissingRun\":0,\"present\":35,\"tokens\":35}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000004\",\"longestMissingRun\":0,\"present\":21,\"tokens\":21}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000005\",\"longestMissingRun\":0,\"present\":40,\"tokens\":40}"
+   ],
+   "split": "tune",
+   "textComplete": true
+  },
+  "c1-multiple-items-trimmed": {
+   "analyzerTextComplete": true,
+   "chapterId": "c-0001",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":209,\"chapterId\":\"c-0001\",\"extraTokens\":0,\"items\":{\"analyzed\":3,\"muted\":0,\"playedSeconds\":85.5,\"reused\":3,\"transcribed\":0},\"longestMissingRun\":0,\"missingTokens\":0,\"presentTokens\":209,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":45.699999999999996,\"status\":\"analyzed\",\"wordCount\":112,\"words\":\"reused\"}",
+    "COVERAGE_ITEM|{\"index\":1,\"itemGuid\":\"item-2\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":14.9,\"status\":\"analyzed\",\"wordCount\":35,\"words\":\"reused\"}",
+    "COVERAGE_ITEM|{\"index\":2,\"itemGuid\":\"item-3\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":24.9,\"status\":\"analyzed\",\"wordCount\":60,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000001\",\"longestMissingRun\":0,\"present\":57,\"tokens\":57}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000002\",\"longestMissingRun\":0,\"present\":56,\"tokens\":56}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000003\",\"longestMissingRun\":0,\"present\":35,\"tokens\":35}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000004\",\"longestMissingRun\":0,\"present\":21,\"tokens\":21}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000005\",\"longestMissingRun\":0,\"present\":40,\"tokens\":40}"
+   ],
+   "split": "held_out",
+   "textComplete": true
+  },
+  "c1-retakes-false-starts": {
+   "analyzerTextComplete": true,
+   "chapterId": "c-0001",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":209,\"chapterId\":\"c-0001\",\"extraTokens\":35,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":101.2,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":0,\"missingTokens\":0,\"presentTokens\":209,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":101.2,\"status\":\"analyzed\",\"wordCount\":242,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000001\",\"longestMissingRun\":0,\"present\":57,\"tokens\":57}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000002\",\"longestMissingRun\":0,\"present\":56,\"tokens\":56}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000003\",\"longestMissingRun\":0,\"present\":35,\"tokens\":35}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000004\",\"longestMissingRun\":0,\"present\":21,\"tokens\":21}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000005\",\"longestMissingRun\":0,\"present\":40,\"tokens\":40}"
+   ],
+   "split": "tune",
+   "textComplete": true
+  },
+  "c1-skipped-paragraph": {
+   "analyzerTextComplete": false,
+   "chapterId": "c-0001",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":209,\"chapterId\":\"c-0001\",\"extraTokens\":0,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":69.2,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":35,\"missingTokens\":35,\"presentTokens\":174,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":69.2,\"status\":\"analyzed\",\"wordCount\":172,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000001\",\"longestMissingRun\":0,\"present\":57,\"tokens\":57}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000002\",\"longestMissingRun\":0,\"present\":56,\"tokens\":56}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000003\",\"longestMissingRun\":35,\"present\":0,\"tokens\":35}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000004\",\"longestMissingRun\":0,\"present\":21,\"tokens\":21}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000005\",\"longestMissingRun\":0,\"present\":40,\"tokens\":40}",
+    "COVERAGE_REGION|{\"firstWord\":\"There\",\"kind\":\"skip\",\"lastWord\":\"late!\\\"\",\"paragraphIds\":[\"p-000003\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":44.8},\"tokenCount\":35}"
+   ],
+   "split": "tune",
+   "textComplete": false
+  },
+  "c1-title-read": {
+   "analyzerTextComplete": true,
+   "chapterId": "c-0001",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":209,\"chapterId\":\"c-0001\",\"extraTokens\":0,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":85.0,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":0,\"missingTokens\":0,\"presentTokens\":209,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":85.0,\"status\":\"analyzed\",\"wordCount\":209,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000001\",\"longestMissingRun\":0,\"present\":57,\"tokens\":57}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000002\",\"longestMissingRun\":0,\"present\":56,\"tokens\":56}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000003\",\"longestMissingRun\":0,\"present\":35,\"tokens\":35}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000004\",\"longestMissingRun\":0,\"present\":21,\"tokens\":21}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000005\",\"longestMissingRun\":0,\"present\":40,\"tokens\":40}"
+   ],
+   "split": "held_out",
+   "textComplete": true
+  },
+  "c1-trim-hides-text": {
+   "analyzerTextComplete": false,
+   "chapterId": "c-0001",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":209,\"chapterId\":\"c-0001\",\"extraTokens\":15,\"items\":{\"analyzed\":3,\"muted\":0,\"playedSeconds\":76.5,\"reused\":3,\"transcribed\":0},\"longestMissingRun\":35,\"missingTokens\":35,\"presentTokens\":174,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":45.199999999999996,\"status\":\"analyzed\",\"wordCount\":112,\"words\":\"reused\"}",
+    "COVERAGE_ITEM|{\"index\":1,\"itemGuid\":\"item-2\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":6.9,\"status\":\"analyzed\",\"wordCount\":15,\"words\":\"reused\"}",
+    "COVERAGE_ITEM|{\"index\":2,\"itemGuid\":\"item-3\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":24.4,\"status\":\"analyzed\",\"wordCount\":60,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000001\",\"longestMissingRun\":0,\"present\":57,\"tokens\":57}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000002\",\"longestMissingRun\":0,\"present\":56,\"tokens\":56}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000003\",\"longestMissingRun\":35,\"present\":0,\"tokens\":35}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000004\",\"longestMissingRun\":0,\"present\":21,\"tokens\":21}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000005\",\"longestMissingRun\":0,\"present\":40,\"tokens\":40}",
+    "COVERAGE_REGION|{\"firstWord\":\"There\",\"kind\":\"skip\",\"lastWord\":\"late!\\\"\",\"paragraphIds\":[\"p-000003\"],\"position\":{\"itemGuid\":\"item-2\",\"itemIndex\":1,\"sourceTime\":0.5},\"tokenCount\":35}"
+   ],
+   "split": "tune",
+   "textComplete": false
+  },
+  "c1-truncated-tail": {
+   "analyzerTextComplete": false,
+   "chapterId": "c-0001",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":209,\"chapterId\":\"c-0001\",\"extraTokens\":0,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":59.2,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":61,\"missingTokens\":61,\"presentTokens\":148,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":59.199999999999996,\"status\":\"analyzed\",\"wordCount\":147,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000001\",\"longestMissingRun\":0,\"present\":57,\"tokens\":57}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000002\",\"longestMissingRun\":0,\"present\":56,\"tokens\":56}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000003\",\"longestMissingRun\":0,\"present\":35,\"tokens\":35}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000004\",\"longestMissingRun\":61,\"present\":0,\"tokens\":21}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000005\",\"longestMissingRun\":61,\"present\":0,\"tokens\":40}",
+    "COVERAGE_REGION|{\"firstWord\":\"In\",\"kind\":\"tail\",\"lastWord\":\"well.\",\"paragraphIds\":[\"p-000004\",\"p-000005\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":58.8},\"tokenCount\":61}"
+   ],
+   "split": "tune",
+   "textComplete": false
+  },
+  "c2-late-start": {
+   "analyzerTextComplete": false,
+   "chapterId": "c-0002",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":146,\"chapterId\":\"c-0002\",\"extraTokens\":1,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":46.2,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":36,\"missingTokens\":36,\"presentTokens\":110,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":46.199999999999996,\"status\":\"analyzed\",\"wordCount\":112,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000006\",\"longestMissingRun\":36,\"present\":0,\"tokens\":36}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000007\",\"longestMissingRun\":0,\"present\":37,\"tokens\":37}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000008\",\"longestMissingRun\":0,\"present\":41,\"tokens\":41}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000009\",\"longestMissingRun\":0,\"present\":32,\"tokens\":32}",
+    "COVERAGE_REGION|{\"firstWord\":\"\\\"Curiouser\",\"kind\":\"head\",\"lastWord\":\"feet!\\\"\",\"paragraphIds\":[\"p-000006\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":0.0},\"tokenCount\":36}"
+   ],
+   "split": "held_out",
+   "textComplete": false
+  },
+  "c2-pickup-at-end": {
+   "analyzerTextComplete": false,
+   "chapterId": "c-0002",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":146,\"chapterId\":\"c-0002\",\"extraTokens\":41,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":64.0,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":37,\"missingTokens\":37,\"presentTokens\":109,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":64.0,\"status\":\"analyzed\",\"wordCount\":149,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000006\",\"longestMissingRun\":0,\"present\":36,\"tokens\":36}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000007\",\"longestMissingRun\":37,\"present\":0,\"tokens\":37}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000008\",\"longestMissingRun\":0,\"present\":41,\"tokens\":41}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000009\",\"longestMissingRun\":0,\"present\":32,\"tokens\":32}",
+    "COVERAGE_REGION|{\"firstWord\":\"Just\",\"kind\":\"skip\",\"lastWord\":\"door.\",\"paragraphIds\":[\"p-000007\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":14.0},\"tokenCount\":37}"
+   ],
+   "split": "tune",
+   "textComplete": false
+  },
+  "c2-skipped-sentence": {
+   "analyzerTextComplete": false,
+   "chapterId": "c-0002",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":146,\"chapterId\":\"c-0002\",\"extraTokens\":0,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":52.0,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":16,\"missingTokens\":16,\"presentTokens\":130,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":52.0,\"status\":\"analyzed\",\"wordCount\":129,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000006\",\"longestMissingRun\":0,\"present\":36,\"tokens\":36}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000007\",\"longestMissingRun\":16,\"present\":21,\"tokens\":37}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000008\",\"longestMissingRun\":0,\"present\":41,\"tokens\":41}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000009\",\"longestMissingRun\":0,\"present\":32,\"tokens\":32}",
+    "COVERAGE_REGION|{\"firstWord\":\"She\",\"kind\":\"skip\",\"lastWord\":\"door.\",\"paragraphIds\":[\"p-000007\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":22.4},\"tokenCount\":16}"
+   ],
+   "split": "held_out",
+   "textComplete": false
+  },
+  "c2-subtitle-read": {
+   "analyzerTextComplete": true,
+   "chapterId": "c-0002",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":146,\"chapterId\":\"c-0002\",\"extraTokens\":0,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":62.3,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":0,\"missingTokens\":0,\"presentTokens\":146,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":62.3,\"status\":\"analyzed\",\"wordCount\":151,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000006\",\"longestMissingRun\":0,\"present\":36,\"tokens\":36}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000007\",\"longestMissingRun\":0,\"present\":37,\"tokens\":37}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000008\",\"longestMissingRun\":0,\"present\":41,\"tokens\":41}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000009\",\"longestMissingRun\":0,\"present\":32,\"tokens\":32}"
+   ],
+   "split": "tune",
+   "textComplete": true
+  },
+  "c3-refrain-complete": {
+   "analyzerTextComplete": true,
+   "chapterId": "c-0003",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":121,\"chapterId\":\"c-0003\",\"extraTokens\":0,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":48.8,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":0,\"missingTokens\":0,\"presentTokens\":121,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":48.8,\"status\":\"analyzed\",\"wordCount\":121,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000010\",\"longestMissingRun\":0,\"present\":24,\"tokens\":24}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000011\",\"longestMissingRun\":0,\"present\":26,\"tokens\":26}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000012\",\"longestMissingRun\":0,\"present\":25,\"tokens\":25}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000013\",\"longestMissingRun\":0,\"present\":26,\"tokens\":26}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000014\",\"longestMissingRun\":0,\"present\":20,\"tokens\":20}"
+   ],
+   "split": "tune",
+   "textComplete": true
+  },
+  "c3-refrain-read-once": {
+   "analyzerTextComplete": false,
+   "chapterId": "c-0003",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":121,\"chapterId\":\"c-0003\",\"extraTokens\":0,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":38.4,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":26,\"missingTokens\":26,\"presentTokens\":95,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":38.4,\"status\":\"analyzed\",\"wordCount\":95,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000010\",\"longestMissingRun\":0,\"present\":24,\"tokens\":24}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000011\",\"longestMissingRun\":0,\"present\":26,\"tokens\":26}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000012\",\"longestMissingRun\":0,\"present\":25,\"tokens\":25}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000013\",\"longestMissingRun\":26,\"present\":0,\"tokens\":26}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000014\",\"longestMissingRun\":0,\"present\":20,\"tokens\":20}",
+    "COVERAGE_REGION|{\"firstWord\":\"Will\",\"kind\":\"skip\",\"lastWord\":\"dance?\",\"paragraphIds\":[\"p-000013\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":30.0},\"tokenCount\":26}"
+   ],
+   "split": "held_out",
+   "textComplete": false
+  },
+  "c4-misread": {
+   "analyzerTextComplete": true,
+   "chapterId": "c-0004",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":61,\"chapterId\":\"c-0004\",\"extraTokens\":1,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":25.2,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":0,\"missingTokens\":0,\"presentTokens\":61,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":25.2,\"status\":\"analyzed\",\"wordCount\":62,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000015\",\"longestMissingRun\":0,\"present\":17,\"tokens\":17}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000016\",\"longestMissingRun\":0,\"present\":24,\"tokens\":24}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000017\",\"longestMissingRun\":0,\"present\":20,\"tokens\":20}"
+   ],
+   "split": "held_out",
+   "textComplete": true
+  },
+  "c4-names-and-numbers": {
+   "analyzerTextComplete": true,
+   "chapterId": "c-0004",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":61,\"chapterId\":\"c-0004\",\"extraTokens\":0,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":29.0,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":0,\"missingTokens\":0,\"presentTokens\":61,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":29.0,\"status\":\"analyzed\",\"wordCount\":69,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000015\",\"longestMissingRun\":0,\"present\":17,\"tokens\":17}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000016\",\"longestMissingRun\":0,\"present\":24,\"tokens\":24}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000017\",\"longestMissingRun\":0,\"present\":20,\"tokens\":20}"
+   ],
+   "split": "tune",
+   "textComplete": true
+  },
+  "c4-unrelated-speech": {
+   "analyzerTextComplete": false,
+   "chapterId": "c-0004",
+   "lines": [
+    "COVERAGE|{\"alignment\":{\"maxMisreadRun\":8,\"minAnchorRun\":3},\"analysis\":{\"equivalencesHash\":null,\"language\":null,\"model\":\"scripted\"},\"bodyTokens\":61,\"chapterId\":\"c-0004\",\"extraTokens\":24,\"items\":{\"analyzed\":1,\"muted\":0,\"playedSeconds\":24.8,\"reused\":1,\"transcribed\":0},\"longestMissingRun\":24,\"missingTokens\":24,\"presentTokens\":37,\"schemaVersion\":1}",
+    "COVERAGE_ITEM|{\"index\":0,\"itemGuid\":\"item-1\",\"language\":\"en\",\"model\":\"scripted\",\"playedSeconds\":24.799999999999997,\"status\":\"analyzed\",\"wordCount\":61,\"words\":\"reused\"}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000015\",\"longestMissingRun\":0,\"present\":17,\"tokens\":17}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000016\",\"longestMissingRun\":24,\"present\":0,\"tokens\":24}",
+    "COVERAGE_PARAGRAPH|{\"id\":\"p-000017\",\"longestMissingRun\":0,\"present\":20,\"tokens\":20}",
+    "COVERAGE_REGION|{\"firstWord\":\"Her\",\"kind\":\"different_text\",\"lastWord\":\"astrolabe.\",\"paragraphIds\":[\"p-000016\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":6.8},\"tokenCount\":24}"
+   ],
+   "split": "held_out",
+   "textComplete": false
+  }
+ },
+ "schemaVersion": 1,
+ "settings": {
+  "maxMisreadRun": 8,
+  "maxMissingRun": 3,
+  "minAnchorRun": 3,
+  "minParagraphPresent": 0.8
+ }
+}

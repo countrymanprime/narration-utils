@@ -210,13 +210,23 @@ func TestRecordingSignalEvidenceIsTyped(t *testing.T) {
 	for _, entry := range got.Evidence {
 		kinds = append(kinds, entry.Kind)
 	}
-	want := []string{"coverage", "region", "region", "items", "analysis"}
+	want := []string{"coverage", "region", "region", "paragraph", "paragraph", "items", "analysis"}
 	if !reflect.DeepEqual(kinds, want) {
 		t.Fatalf("evidence kinds %v, want %v", kinds, want)
 	}
 	coverage := got.Evidence[0]
-	if !strings.Contains(coverage.Value, "82 of 100 words") || !strings.Contains(coverage.Value, "14") || !strings.Contains(coverage.Value, "2 extra") {
+	if !strings.Contains(coverage.Value, "82 of 100 words") || !strings.Contains(coverage.Value, "14") || !strings.Contains(coverage.Value, "2 extra") ||
+		!strings.Contains(coverage.Value, "1 of 3 paragraphs passing") {
 		t.Fatalf("coverage evidence %+v", coverage)
+	}
+	// Every paragraph that fails a threshold is listed in chapter order, with its share and longest run.
+	short, run := got.Evidence[3], got.Evidence[4]
+	if short.Label != "Paragraph short" || !reflect.DeepEqual(short.ParagraphIDs, []string{"p-000002"}) ||
+		short.Value != "paragraph 2: 6 of 20 words read (30%), longest missing run 14 words" {
+		t.Fatalf("paragraph evidence %+v", short)
+	}
+	if !reflect.DeepEqual(run.ParagraphIDs, []string{"p-000003"}) || run.Value != "paragraph 3: 36 of 40 words read (90%), longest missing run 4 words" {
+		t.Fatalf("paragraph evidence %+v", run)
 	}
 	// Regions come largest first, with paragraph ids and the audio position.
 	skip := got.Evidence[1]
@@ -224,15 +234,27 @@ func TestRecordingSignalEvidenceIsTyped(t *testing.T) {
 		!strings.Contains(skip.Value, "paragraph 2: 14 words, from “down” to “rabbit-hole”") || !strings.Contains(skip.Value, "item 1") {
 		t.Fatalf("region evidence %+v", skip)
 	}
-	items := got.Evidence[3]
+	items := got.Evidence[5]
 	if !strings.Contains(items.Value, "2 items") || !strings.Contains(items.Value, "1 muted") || !strings.Contains(items.Value, "2:05") {
 		t.Fatalf("items evidence %+v", items)
 	}
-	analysis := got.Evidence[4]
+	analysis := got.Evidence[6]
 	for _, part := range []string{"small", "misread run up to 8", "anchor run at least 3", "80%", "3 words", "uncalibrated"} {
 		if !strings.Contains(analysis.Value, part) {
 			t.Fatalf("analysis evidence %q lacks %q", analysis.Value, part)
 		}
+	}
+}
+
+func TestRecordingSignalListsNoParagraphWhenEveryOnePasses(t *testing.T) {
+	got := RecordingSignal(input(currentWith(scatteredDrops)))
+	for _, entry := range got.Evidence {
+		if entry.Kind == "paragraph" {
+			t.Fatalf("a passing paragraph is listed: %+v", entry)
+		}
+	}
+	if !strings.Contains(got.Evidence[0].Value, "2 of 2 paragraphs passing") {
+		t.Fatalf("coverage evidence %+v", got.Evidence[0])
 	}
 }
 
