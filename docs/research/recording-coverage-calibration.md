@@ -17,7 +17,7 @@ transcribed. A test checks that the in-process run and the `compare.py` command 
 ```bash
 uv run python sidecars/transcript-compare/tests/coverage_calibration.py synthetic   # the sweep below (about 10 minutes)
 uv run python sidecars/transcript-compare/tests/coverage_calibration.py render-audio --voice <piper .onnx> --out <dir outside the repo>
-uv run python sidecars/transcript-compare/tests/coverage_calibration.py audio --corpus <that dir> --model small=<model dir> --model tiny=<model dir>
+uv run python sidecars/transcript-compare/tests/coverage_calibration.py audio --corpus <that dir> --model small=<model dir> --model tiny=<model dir> --model medium=<model dir> --model large-v3-turbo=<model dir>
 ```
 
 ### The cases
@@ -186,14 +186,42 @@ minute. A second check that reuses every words file transcribes nothing and took
 machine scales the transcription part. These figures are for this machine and a clean synthetic voice. They are not a
 promise.
 
-### The larger model (Q7): pending
+### The larger model (Q7)
 
-Q7 asks for `small` to be compared with one larger model. No larger catalog model (`medium`, `large-v3-turbo`,
-`large-v3`) was installed on the machine that ran this, and installing one is a download of 1.5 GB or more, which needs
-the owner's go-ahead. `tiny` was compared instead, as the smaller end. The larger comparison is tracked in
-[#425](https://github.com/countrymanprime/narration-utils/issues/425) (see
-[the recording check page](../utilities/recording-coverage.md#not-done-yet)). Run it with
-`audio --model medium=<dir>`.
+Q7 asks for `small` to be compared with one larger model. With the owner's go-ahead, `large-v3-turbo` was installed
+from the catalog, hash-verified (`go run ./cmd/seed-assets whisper/large-v3-turbo`, the app's own managers). The 16
+cases were then spoken again with the same Piper voice and run through the sidecar with `small` and
+`large-v3-turbo`, and then `medium` (also installed with the owner's go-ahead), on the same machine, on 2026-09-23
+([#425](https://github.com/countrymanprime/narration-utils/issues/425)):
+
+| Model | Cases | False met | False not met (shipped 0.8) | False not met (Proposed 0.95) | Words dropped / swapped / added (all cases) | 12.0 audio minutes, 16 checks |
+| --- | --- | --- | --- | --- | --- | --- |
+| tiny | 16 | 0 | 0 | 0 | 19 / 89 / 8 | 36 s (about 3 s per audio minute) |
+| small | 16 | 0 | 1 | 1 | 48 / 48 / 4 | 117 s (about 9.7 s per audio minute) |
+| large-v3-turbo | 16 | 0 | 0 | 0 | 12 / 31 / 12 | 239 s (about 20 s per audio minute) |
+| medium | 16 | 0 | 0 | 1 | 35 / 32 / 3 | 337 s (about 28 s per audio minute) |
+
+- **Neither model passed a chapter that was not read.** Both had no false "met", at both settings.
+- **`small` failed one complete chapter this time.** In `c3-refrain-complete` it dropped a run of 13 words in the
+  refrain, which is longer than `max_missing_run` 3, so the chapter came out "not met" (105 of 121 words present).
+  The first run above did not show this. The new render is a fresh Piper take of the same text, and a Piper take
+  varies slightly from one run to the next. So this is `small` losing repeated text on some takes, not a change in
+  the check. A narrator sees it as a false "not met" on a chapter with a repeated passage.
+- **`large-v3-turbo` heard that chapter and got it right** (119 of 121). It also dropped none of the false starts in
+  `c1-retakes-false-starts`, where `small` dropped 23. It added more words than `small` in `c4-unrelated-speech` (9
+  against 1), which does not change a verdict because that paragraph is not credited anyway.
+- **It costs about twice the time.** About 20 s of CPU per audio minute against about 10 s for `small`, so a first
+  check of a 30-minute chapter takes about 10 minutes on this machine instead of about 5. Loading the model took
+  under 5 s.
+- **`medium` is slower than `large-v3-turbo` and no better.** It read the refrain chapter in full (121 of 121), but
+  it took 66 s on that 0.54-minute chapter, and it dropped 4 words of `c1-retakes-false-starts` that the script
+  needs. That chapter passes at the shipped 0.8 but not at 0.95. All in, about 28 s of CPU per audio minute, so
+  about 14 minutes for a first check of a 30-minute chapter.
+
+So `small` stays the default: it gives no false "met", and it takes half the time. `large-v3-turbo` is worth choosing
+for chapters with repeated passages, or when a false "not met" from `small` needs a second opinion. `medium` has no
+case here where it beats `large-v3-turbo`. Both are one
+synthetic voice on one machine, so the real-corpus limit below still applies.
 
 ## Limits
 
