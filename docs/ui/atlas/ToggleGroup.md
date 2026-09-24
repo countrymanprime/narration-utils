@@ -13,7 +13,8 @@ Storybook title: `Primitives/ToggleGroup`. Source: `src/components/primitives/To
 
 ## Used by
 
+- `src/components/delivery/DiagnosticsTab.tsx`
 - `src/components/manuscript/Manuscript.tsx`
 - `src/components/proofing/Transcript.tsx`
 - `src/components/settings/Settings.tsx`
-- `src/components/teleprompter/ReadAlongView.tsx`
+- `src/components/teleprompter/ReadingControlBar.tsx`

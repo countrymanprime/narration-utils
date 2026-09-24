@@ -18,6 +18,7 @@ Storybook title: `Primitives/TextField`. Source: `src/components/primitives/Text
 
 - `src/components/primitives/SearchField.tsx`
 - `src/components/primitives/TagInput.tsx`
+- `src/components/settings/DeliveryProfileEditor.tsx`
 - `src/components/settings/ScopedSetting.tsx`
 - `src/components/storybible/GuideDetail.tsx`
 - `src/components/storybible/PropertiesSection.tsx`

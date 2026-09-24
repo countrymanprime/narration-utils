@@ -62,6 +62,8 @@ microphone (a popover with its device list and Refresh) and **Settings** (a popo
 model). Closing the dialog while it is still listening asks first ("Stop reading?"); Stop and close ends the
 session, and nothing recorded in REAPER is affected.
 
+![Manuscript - the Read aloud dialog before reading, with the Where you stopped notice above the text, the reading panel beside it and the control bar below](../../images/ui/manuscript-read-aloud-resume.webp)
+
 Above the text, a compact **Where you stopped** notice looks for the chapter's track in the project's
 REAPER file and listens to the last 30 seconds recorded on it (with the same local Whisper model, which it
 asks to download first if it is missing). It shows the track, that this is as of the project's last save,
@@ -82,6 +84,8 @@ name, note or flag opens it in the panel, read-only; it never moves the highligh
 or the scroll. The panel's arrow button hides it to widen the text, and the dialog remembers on this
 computer whether the panel is shown and which tab was last open.
 
+![Manuscript - Read aloud listening, with read words dimmed, the current word highlighted and Story Bible names marked](../../images/ui/manuscript-read-aloud-listening.webp)
+
 While you read, the dialog marks places where listening suspects something went differently from the
 script: skipped words (a dotted underline) and a restart, where you went back and read again (a dashed
 underline on the word you went back to). Misreads (a wavy underline) and extra words (a bar before the word
@@ -93,6 +97,8 @@ here** is not available yet. Every flag is only suspected: Transcript Compare ov
 authority. When reading stops, or you close the dialog, the session's flags are kept in the project as
 unreviewed findings (a dismissed flag is kept as dismissed), so they can be reviewed later; reading the
 chapter again does not add the same flag twice.
+
+![Manuscript - a suspected restart opened in the Flags tab, with the script's words and what was heard](../../images/ui/manuscript-read-aloud-flag.webp)
 
 Selecting a stretch of text offers actions for it — adding a reader note or sending it to the
 Story Bible as a new entry. When the selection is one word, it also offers **Look up**.

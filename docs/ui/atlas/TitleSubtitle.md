@@ -17,4 +17,6 @@ Storybook title: `Primitives/TitleSubtitle`. Source: `src/components/primitives/
 
 ## Used by
 
-- nothing outside its own stories and tests yet
+- `src/components/home/ImportReview.tsx`
+- `src/components/manuscript/ChapterNav.tsx`
+- `src/components/manuscript/ReaderCard.tsx`
