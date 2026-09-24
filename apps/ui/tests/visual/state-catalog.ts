@@ -187,7 +187,7 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'home',
     state: 'stage-error',
     description:
-      'Home, the stage suggestions could not be read (?mockStages=error): the error chip, the reason above the table with Check now, and "Couldn’t check" in every row',
+      'Home, the stage suggestions could not be read (?mockStages=error): the error chip, the reason above the table with Try again, and "Couldn’t check" in every row',
   },
   {
     page: 'home',
