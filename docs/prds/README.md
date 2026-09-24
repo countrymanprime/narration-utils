@@ -80,6 +80,7 @@ Phase counts are the rows of each PRD's phase table.
 | [CI Pipeline Speed](ci-pipeline-speed.prd.md) | Feature (tooling) | 8 (0-7) | None |
 | [Tool Run Logging](tool-run-logging.prd.md) | Feature (infrastructure) | 7 | None; extends the host log of ADR 0069 |
 | [Home Stage Check Line: Remove the Explainer and Rethink Check Now](home-stage-check-line.prd.md) | Defect (UX) | 2 | None; amends the Check now line of Phase 5 of [Chapter Stage Recommendations](chapter-stage-recommendations.prd.md) |
+| [Credits in the Chapter Table](credits-in-chapter-table.prd.md) | Feature (defect report) | 4 | None; builds on [Audiobook Credits Templates](audiobook-credits-templates.prd.md) (ADR 0093, ADR 0150) |
 
 ## Replaced briefs
 
