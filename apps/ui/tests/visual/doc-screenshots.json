@@ -106,6 +106,27 @@
   },
   {
     "page": "home",
+    "state": "stage-suggestions",
+    "viewport": "desktop",
+    "docName": "home-stage-suggestions",
+    "caption": "Home - stage suggestions under each chapter's status: suggested with Confirm, can't tell yet, not ready, evidence changed since you confirmed, and confirmed"
+  },
+  {
+    "page": "home",
+    "state": "stage-evidence-recommended",
+    "viewport": "desktop",
+    "docName": "home-stage-evidence",
+    "caption": "Home - Why: the evidence behind a suggestion, the saved project it was read from and how old that is, with Confirm and Dismiss"
+  },
+  {
+    "page": "home",
+    "state": "stage-evidence-changed",
+    "viewport": "desktop",
+    "docName": "home-stage-evidence-changed",
+    "caption": "Home - evidence changed since you confirmed: the check that is no longer met and Revert; nothing moved on its own"
+  },
+  {
+    "page": "home",
     "state": "import-confirm",
     "viewport": "desktop",
     "docName": "home-import-confirm",

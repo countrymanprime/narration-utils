@@ -23,6 +23,8 @@ export type CoverageSeed = {
   stale?: string[];
   /** A started check stops at its last transcribing step and never ends, so the running dialog can be seen without a race. */
   hold?: boolean;
+  /** Chapters with a current check that found this share of their words, as if checked in this session (instead of their fixture's). */
+  measured?: Record<string, number>;
 };
 
 type Deps = {
@@ -116,7 +118,7 @@ export function createCoverageMock(deps: Deps): CoverageApi & {
   let timers: ReturnType<typeof setTimeout>[] = [];
   const subscribers = new Set<(state: CoverageState) => void>();
   // Fractions measured by a check run in this session; they replace the fixture's.
-  const measured = new Map<string, number>();
+  const measured = new Map<string, number>(Object.entries(deps.seed?.measured ?? {}));
   const stale = new Set(deps.seed?.stale ?? []);
 
   const publish = () => subscribers.forEach((listener) => listener({ ...state }));

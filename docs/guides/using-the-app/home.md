@@ -62,6 +62,50 @@ chapter that is not linked to its REAPER track gets the track picker right there
 as on the [Tracks](tracks.md) page), a missing project file points to Tracks, and a missing
 Transcript Compare tool points to [Settings](settings.md).
 
+### Stage suggestions
+
+Home suggests when a chapter looks ready for its next stage, from evidence the app already has,
+and never changes a status on its own. For now the only rule is the recording one: a chapter in
+Recording is suggested for Editing when its current recording check finds every paragraph of its
+text in the recording, in order (misreads allowed). Editing and Proofing have no check yet, so
+chapters there get no suggestion. Missing evidence never counts as done: a chapter nobody has
+checked reads "Can't tell yet", not ready.
+
+While the breakdown is collapsed, chips under the estimate's title say how many chapters have a
+suggestion and how many have evidence that changed since you confirmed them; either chip opens
+the breakdown. There, under each chapter's status:
+
+- **Suggested: Editing** with **Confirm**, **Dismiss** and **Why**. Confirm moves the chapter to
+  the suggested stage and records what the evidence was; the row then reads "Confirmed from
+  Recording" with **Revert**, which moves it back. Dismiss hides the suggestion until the
+  evidence changes.
+- **Not ready for Editing**: a check found text missing. **Why** shows where.
+- **Can't tell yet** with the cause: not checked yet, changed since the last check, no track
+  linked, the project file not readable, and so on.
+- **Evidence changed since you confirmed**, with **Revert to Recording**: a check after you
+  confirmed found text missing. Nothing moves until you revert; an edit alone (which changes the
+  audio, as editing does) never raises it.
+- **Couldn't check**: the suggestions could not be read at all. The reason is above the table.
+
+![Home - stage suggestions under each chapter's status](../../images/ui/home-stage-suggestions.webp)
+
+**Why** opens the evidence at the side of the page: the verdict in a sentence, each check with
+its state and reason, the facts behind it (the text present, each missing region with **Go to
+paragraph**), and the saved REAPER project it was read from with how old that file is. For a
+check that cannot tell, it says what to do and offers the way there, usually **Open recording
+check**, where you can run the check or link the chapter's track. Confirm, Dismiss and Revert are
+there too.
+
+![Home - the evidence behind a suggestion](../../images/ui/home-stage-evidence.webp)
+
+![Home - evidence changed since you confirmed](../../images/ui/home-stage-evidence-changed.webp)
+
+The suggestions are read again when Home opens, when a recording check ends, when you change a
+status yourself, and when you press **Check now** (above the table and in the evidence view).
+Check now only reads the evidence again; it never starts a check. If the evidence changed while
+you were looking, Confirm and Dismiss refuse and say so, and the suggestions are read again. The
+status select stays as it was: you can always set a status by hand.
+
 Importing (or replacing) the manuscript opens a confirm dialog previewing the detected format,
 paragraph count, and proposed chapters before anything changes. Each section is listed with its
 subtitle after the title ("Chapter One — Down the Rabbit-Hole") when the heading had one, so you can

@@ -40,6 +40,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     snapshot: 'slide-over-word-lookup.aria.yml',
   },
   {
+    name: 'the stage suggestion evidence is a modal slide-over named for the chapter, each check a named region, with Confirm, Dismiss and Check now',
+    state: ['home', 'stage-evidence-recommended'],
+    snapshot: 'slide-over-stage-evidence.aria.yml',
+  },
+  {
     name: 'the dictionary download question is an alert dialog',
     state: ['manuscript', 'word-lookup-not-installed'],
     snapshot: 'confirm-download-dictionary.aria.yml',
@@ -103,4 +108,23 @@ test('the note on reference material reached by keyboard also takes the first Es
   await expect(dialog).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
+});
+
+// The evidence view of a stage suggestion hands over to the recording check (chapter-stage-recommendations.prd.md Phase 5): the slide-over
+// closes and the dialog opens with focus inside it, not on the Why button the closing slide-over returns focus to. Escape on the slide-over
+// alone returns focus to the row's Why.
+test('Open recording check in a stage suggestion moves focus into the recording check dialog', async ({ page }) => {
+  await openApp(page, DESKTOP, ['home', 'stage-evidence-unknown']);
+  await page.getByRole('dialog', { name: 'Stage suggestion: Chapter 5' }).getByRole('button', { name: 'Open recording check' }).click();
+  const check = page.getByRole('dialog', { name: 'Recording check: Chapter 5' });
+  await expect(check).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Stage suggestion: Chapter 5' })).toHaveCount(0);
+  await expect.poll(() => check.evaluate((dialog) => dialog.contains(document.activeElement))).toBe(true);
+});
+
+test('Escape closes a stage suggestion’s evidence and returns focus to its Why button', async ({ page }) => {
+  await openApp(page, DESKTOP, ['home', 'stage-evidence-recommended']);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Stage suggestion: Chapter 4' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Why: Chapter 4' })).toBeFocused();
 });
