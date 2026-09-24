@@ -382,5 +382,41 @@
     "file": "narration_retake_lanes.lua",
     "find": "if not has_lane_api() then",
     "replace": "if false then"
+  },
+  {
+    "name": "a stale track GUID answers for another track",
+    "file": "narration_track_state.lua",
+    "find": "track = find_track(wanted)\n    if not track then",
+    "replace": "track = find_track(wanted) or reaper.GetTrack(0, 0)\n    if not track then"
+  },
+  {
+    "name": "the track item limit is lifted",
+    "file": "narration_track_state.lua",
+    "find": "local ITEM_LIMIT = 1000",
+    "replace": "local ITEM_LIMIT = 100000"
+  },
+  {
+    "name": "every track counts as armed",
+    "file": "narration_track_state.lua",
+    "find": "if armed(reaper.GetTrack(0, index)) then",
+    "replace": "if true then"
+  },
+  {
+    "name": "the first take is reported instead of the active one",
+    "file": "narration_track_state.lua",
+    "find": "local take = reaper.GetActiveTake(item)",
+    "replace": "local take = reaper.GetTake(item, 0)"
+  },
+  {
+    "name": "track state is answered on a REAPER without the calls it needs",
+    "file": "narration_track_state.lua",
+    "find": "    if not reaper.APIExists(name) then\n      event(session_dir, 'ERROR', run_id, 'This REAPER version cannot report its transport and tracks.')",
+    "replace": "    if false then\n      event(session_dir, 'ERROR', run_id, 'This REAPER version cannot report its transport and tracks.')"
+  },
+  {
+    "name": "the heartbeat drops the edit counter",
+    "file": "narration_ui_bridge.lua",
+    "find": "ctx.event('PROJECT_STATUS', '', rpp, rpp == '' and '1' or '0', change_count)",
+    "replace": "ctx.event('PROJECT_STATUS', '', rpp, rpp == '' and '1' or '0')"
   }
 ]

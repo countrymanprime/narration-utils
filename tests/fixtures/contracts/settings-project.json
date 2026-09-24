@@ -19,6 +19,16 @@
       "kind": "bool",
       "label": "Start the launcher script automatically",
       "value": ""
+    },
+    {
+      "choices": null,
+      "effectiveSource": "repo_default",
+      "effectiveValue": "false",
+      "isSet": false,
+      "key": "experimental_reaper_actions",
+      "kind": "bool",
+      "label": "Experimental REAPER actions",
+      "value": ""
     }
   ],
   "General": [
