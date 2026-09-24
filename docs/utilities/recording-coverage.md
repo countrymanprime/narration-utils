@@ -103,8 +103,11 @@ The Settings page labels them **Proposed values, not yet calibrated**. They were
 the synthetic fixtures run through the shipped path, 600 candidates, and five levels of simulated transcriber error.
 The shipped values give no false "met" on the held-out cases at any level. They pass every complete chapter under
 light error, where the owner's starting value of 0.95 failed 7 of 35. On Piper renders of the committed cases,
-transcribed by the real sidecar with `small` and `tiny`, all 16 cases come out right. The full tables and the time
-budget (about 10 s of CPU per audio minute with `small` on the machine measured) are in
+transcribed by the real sidecar with `small` and `tiny`, all 16 cases come out right. A second Piper take compared
+`small` with `large-v3-turbo`: neither passed an unread chapter, `small` failed one complete chapter with a
+repeated passage, and `large-v3-turbo` got all 16 right at about twice the time. `medium` was slower than
+`large-v3-turbo` and no more accurate. The full tables and the time
+budget (about 10 s of CPU per audio minute with `small` and about 20 s with `large-v3-turbo` on the machine measured) are in
 [the calibration note](../research/recording-coverage-calibration.md).
 
 ## Decisions
@@ -163,9 +166,6 @@ manifest names the audio the sidecar reads and the words files it writes) is row
 
 Tracked in [#425](https://github.com/countrymanprime/narration-utils/issues/425):
 
-- **A larger Whisper model.** Q7 asks for `small` to be compared with one larger model for missing words and time.
-  Only `tiny` and `small` were installed where the calibration ran, and a larger model is a download of 1.5 GB or more
-  that needs the owner's go-ahead.
 - **A cross-check against REAPER.** An optional, owner-run check that the standalone manifest matches the Lua
   `manifest_<run>.txt` for one chapter. It is read-only, but it needs REAPER open.
 - **A real, permissioned corpus.** It would replace the synthetic calibration and drop the "uncalibrated" label.
