@@ -84,10 +84,14 @@ func chapterIDs(data map[string]any) []string {
 // projectParseCache keeps the last parse of the selected .rpp while its path, modification time and size are
 // unchanged, so reading the chapter list again (after a status change, a check, an import) costs a stat, not a parse.
 type projectParseCache struct {
-	mu      sync.Mutex
-	path    string
+	mu sync.Mutex
+	// +checklocks:mu
+	path string
+	// +checklocks:mu
 	modTime time.Time
-	size    int64
+	// +checklocks:mu
+	size int64
+	// +checklocks:mu
 	project tracks.Project
 }
 
