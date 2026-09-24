@@ -88,6 +88,7 @@ Phase counts are the rows of each PRD's phase table.
 | [Credits Token Setup and Front Matter Detection](credits-token-setup-and-front-matter-detection.prd.md) | Feature (with a defect: Word document properties read from the wrong path) | 4 | None; builds on [Audiobook Credits Templates](audiobook-credits-templates.prd.md) and amends its C3 seeding (ADR 0019, ADR 0093) |
 | [Manuscript Credits Card Parity: Credits Open, Close and Read Aloud Like a Chapter](manuscript-credits-card-parity.prd.md) | Defect (UX), then feature | 3 | None; supersedes the read-aloud clause of ADR 0150 when delivered, builds on [Audiobook Credits Templates](audiobook-credits-templates.prd.md) and sits beside [Credits in the Chapter Table](credits-in-chapter-table.prd.md) |
 | [Manuscript Chapter Header Alignment: Stats Before the Action, in Fixed Columns](manuscript-chapter-header-alignment.prd.md) | Defect (UX) | 1 | None; coordinates with [Manuscript Credits Card Parity](manuscript-credits-card-parity.prd.md) (same header, shared ReaderCard) |
+| [App Navigation and Zoom Controls: Back, Forward and Zoom in the Header](app-navigation-and-zoom-controls.prd.md) | Feature | 5 (0-4) | None |
 
 ## Replaced briefs
 
