@@ -23,6 +23,8 @@ export function ChapterTagsEmbed(arg1:string):Promise<string>;
 
 export function ChapterTagsPreview():Promise<string>;
 
+export function ChapterTrackLinks():Promise<string>;
+
 export function ChapterTrackMapClear(arg1:string):Promise<string>;
 
 export function ChapterTrackMapConfirm(arg1:string,arg2:string):Promise<string>;
@@ -30,6 +32,10 @@ export function ChapterTrackMapConfirm(arg1:string,arg2:string):Promise<string>;
 export function ChapterTrackMapList():Promise<string>;
 
 export function ChapterTrackMatch(arg1:string):Promise<string>;
+
+export function ChapterTrackSet(arg1:string,arg2:string):Promise<string>;
+
+export function ChapterTrackUnlink(arg1:string):Promise<string>;
 
 export function CleanupToolsLaunch(arg1:string):Promise<string>;
 

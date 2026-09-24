@@ -42,6 +42,10 @@ export function ChapterTagsPreview() {
   return window['go']['main']['Host']['ChapterTagsPreview']();
 }
 
+export function ChapterTrackLinks() {
+  return window['go']['main']['Host']['ChapterTrackLinks']();
+}
+
 export function ChapterTrackMapClear(arg1) {
   return window['go']['main']['Host']['ChapterTrackMapClear'](arg1);
 }
@@ -56,6 +60,14 @@ export function ChapterTrackMapList() {
 
 export function ChapterTrackMatch(arg1) {
   return window['go']['main']['Host']['ChapterTrackMatch'](arg1);
+}
+
+export function ChapterTrackSet(arg1, arg2) {
+  return window['go']['main']['Host']['ChapterTrackSet'](arg1, arg2);
+}
+
+export function ChapterTrackUnlink(arg1) {
+  return window['go']['main']['Host']['ChapterTrackUnlink'](arg1);
 }
 
 export function CleanupToolsLaunch(arg1) {

@@ -35,7 +35,14 @@ import { COVERAGE_EVALUATOR_REASONS, COVERAGE_REFUSAL_REASONS, coverageResultSch
 import { STAGE_REFUSAL_REASONS, STAGE_UNKNOWN_CAUSES, stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
-import { chapterSuggestionSchema, chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
+import {
+  chapterSuggestionSchema,
+  chapterTrackLinksSchema,
+  chapterTrackMappingSchema,
+  chapterTrackMatchSchema,
+  chapterTrackSetSchema,
+  trackMappingSchema,
+} from './schemas/chapterTrackMap';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
 import { updateJobSchema, updateStatusSchema } from './schemas/update';
 import { startResultSchema, whisperCatalogSchema, whisperInstallJobSchema } from './schemas/whisper';
@@ -189,6 +196,11 @@ const GOLDEN: Record<string, z.ZodType> = {
   'chapter-track-match-matched.json': chapterTrackMatchSchema,
   'chapter-track-match-ambiguous.json': chapterTrackMatchSchema,
   'chapter-track-match-none.json': chapterTrackMatchSchema,
+  'chapter-track-links-ready.json': chapterTrackLinksSchema,
+  'chapter-track-links-no-project.json': chapterTrackLinksSchema,
+  'chapter-track-links-conflict.json': chapterTrackLinksSchema,
+  'chapter-track-set-displaced.json': chapterTrackSetSchema,
+  'chapter-track-unlink.json': chapterTrackMappingSchema,
   'chapter-suggestion-matched.json': chapterSuggestionSchema,
   'chapter-suggestion-ambiguous.json': chapterSuggestionSchema,
   'chapter-suggestion-none.json': chapterSuggestionSchema,
@@ -851,6 +863,34 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     await expect(api.chapterTrackMapConfirm('{0E4D1D7F-D039-674D-87E6-719376DE95EC}', 'not-a-real-chapter')).rejects.toThrow();
   });
 
+  it('the ChapterTrackSet, ChapterTrackUnlink and ChapterTrackLinks answers', async () => {
+    const api = createMockApi();
+    const chapters = await api.manuscriptChapters();
+    const ready = await api.chapterTrackLinks();
+    expectMatches(chapterTrackLinksSchema, ready, 'mock chapter track links, ready');
+    expect(ready.project).toBe('ready');
+    expect(ready.tracks.length).toBeGreaterThan(0);
+
+    const [first, second] = WIRE_TRACKS_PROJECT.tracks;
+    await api.chapterTrackSet(chapters[0].id, first.guid);
+    const moved = await api.chapterTrackSet(chapters[1].id, first.guid);
+    expectMatches(chapterTrackSetSchema, moved, 'mock chapter track set, displacing a link');
+    expect(moved.displaced?.chapterId).toBe(chapters[0].id);
+    const relinked = await api.chapterTrackSet(chapters[1].id, second.guid);
+    expect(relinked.displaced).toBeNull();
+    expect(relinked.mappings.filter((mapping) => mapping.chapterId === chapters[1].id)).toHaveLength(1);
+
+    const unlinked = await api.chapterTrackUnlink(chapters[1].id);
+    expectMatches(chapterTrackMappingSchema, unlinked, 'mock chapter track unlink');
+    expect(unlinked.mappings).toHaveLength(0);
+    await expect(api.chapterTrackSet('not-a-real-chapter', first.guid)).rejects.toThrow();
+
+    const noProject = await createMockApi({}, { tracksCandidates: [] }).chapterTrackLinks();
+    expectMatches(chapterTrackLinksSchema, noProject, 'mock chapter track links, no project');
+    expect(noProject.project).toBe('none');
+    expect(noProject.tracks).toHaveLength(0);
+  });
+
   it('the ChapterTrackMatch answers', async () => {
     const api = createMockApi();
     const chapters = await api.manuscriptChapters();
@@ -1433,6 +1473,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'chapterTrackMapList',
       'chapterTrackMapConfirm',
       'chapterTrackMapClear',
+      'chapterTrackSet',
+      'chapterTrackUnlink',
+      'chapterTrackLinks',
       'chapterTrackMatch',
       'chapterSuggestion',
       'lineIdentityStamp',
