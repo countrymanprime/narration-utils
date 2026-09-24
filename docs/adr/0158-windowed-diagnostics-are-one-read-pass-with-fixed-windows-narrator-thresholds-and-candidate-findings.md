@@ -56,11 +56,12 @@ rules out any delivery specification's numbers, and a long pause must never be c
   read, an intentional silence, clipping, a room-tone change, a level shift and unresolved transcript timing. Each
   reported range reproduces its condition when `AnalyzeRange` measures that range again.
 - Phase 1's job and `Report` are untouched, so the two phases merge independently. Running diagnostics as a job with
-  progress is left to the phase that binds it (Phase 6), with the ctx hook already there.
+  progress is left to the phase that binds it (Phase 6, which added `DiagnosticInput.Progress` beside the ctx hook).
 - The starting thresholds are judgement calls and have not been checked against real chapters. A narrator who finds
-  them wrong changes them. The settings keys that carry them arrive with the Diagnostics view (Phase 6), using
+  them wrong will change them once settings keys carry them, using
   [ADR 0155](0155-settings-gain-a-number-kind-with-a-declared-range-and-delivery-limits-are-the-narrators-own.md)'s
-  number kind.
+  number kind. Phase 6 (the Diagnostics view, read-only) shows them with every check and on every finding; the keys
+  arrive with Phase 9, which brings the analyzer thresholds into the layered settings.
 - The id ignores the audio's content (like `measure.Evaluate`'s). A re-render that moves an event keeps or changes its
   id with its start time, and stale-dismissal handling stays with the fingerprint evidence of Open Question 5.
 - Changing a window, the id or the severity policy needs a new ADR that supersedes this one.

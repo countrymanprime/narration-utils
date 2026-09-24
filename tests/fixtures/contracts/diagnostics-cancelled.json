@@ -1,0 +1,158 @@
+{
+  "id": "diagnostics-1",
+  "kind": "diagnostics",
+  "phase": "cancelled",
+  "message": "Diagnostics cancelled. 1 of 3 files was checked.",
+  "percent": 33,
+  "logs": [
+    "Checking 3 files.",
+    "Checked Chapter 01.wav: 3 findings.",
+    "Diagnostics cancelled. 1 of 3 files was checked."
+  ],
+  "elapsed": 3.5,
+  "sourceKind": "processed_render",
+  "thresholds": {
+    "clip_ceiling_dbfs": 0,
+    "silence_floor_dbfs": -50,
+    "min_silence_seconds": 0.3,
+    "level_shift_lu": 4,
+    "room_tone_step_db": 6,
+    "pauses": {
+      "min_pause_seconds": 0.3,
+      "long_pause_seconds": 2
+    }
+  },
+  "files": [
+    {
+      "path": "C:/Renders/Chapter 01.wav",
+      "name": "Chapter 01.wav",
+      "status": "checked",
+      "summary": {
+        "duration_seconds": 1843.5,
+        "sample_rate": 48000,
+        "channels": 2,
+        "clip_regions": 1,
+        "level_shifts": 1,
+        "silences": 2,
+        "silence_seconds": 2.5,
+        "room_tone_segments": 2,
+        "pacing": {
+          "status": "unavailable",
+          "reason": "no transcript timing for this audio"
+        },
+        "words_per_minute": null
+      },
+      "findings": [
+        {
+          "schema_version": 1,
+          "id": "97b9802a195636050e15f8bf",
+          "analyzer": "diagnostics",
+          "project": {},
+          "source": {
+            "file": "C:/Renders/Chapter 01.wav"
+          },
+          "time_range": {
+            "start": 612.25,
+            "end": 612.3125,
+            "source_start": 612.25,
+            "source_end": 612.3125
+          },
+          "category": "audio_quality",
+          "severity": "warning",
+          "confidence": 1,
+          "confidence_reason": "deterministic: runs of 3 or more samples at or above the ceiling in the decoded audio of a processed render",
+          "evidence": {
+            "ceiling_dbfs": 0,
+            "channels": [
+              1
+            ],
+            "kind": "clipping",
+            "longest_run_samples": 9,
+            "min_run_samples": 3,
+            "source_kind": "processed_render"
+          },
+          "review": {
+            "status": "unreviewed"
+          }
+        },
+        {
+          "schema_version": 1,
+          "id": "80ee6ea529c275f6667a0797",
+          "analyzer": "diagnostics",
+          "project": {},
+          "source": {
+            "file": "C:/Renders/Chapter 01.wav"
+          },
+          "time_range": {
+            "start": 905,
+            "end": 906,
+            "source_start": 905,
+            "source_end": 906
+          },
+          "category": "audio_quality",
+          "severity": "warning",
+          "confidence": null,
+          "confidence_reason": "a candidate from the mean short-term loudness of the read either side, in a processed render; a deliberate change in delivery moves it too, so listen before acting",
+          "evidence": {
+            "after_lufs": -25.25,
+            "before_lufs": -19.5,
+            "context_seconds": 10,
+            "delta_lu": -5.75,
+            "kind": "level_shift",
+            "level_shift_lu": 4,
+            "source_kind": "processed_render"
+          },
+          "review": {
+            "status": "unreviewed"
+          }
+        },
+        {
+          "schema_version": 1,
+          "id": "b0d5319b7d6de674d466b7d9",
+          "analyzer": "diagnostics",
+          "project": {},
+          "source": {
+            "file": "C:/Renders/Chapter 01.wav"
+          },
+          "time_range": {
+            "start": 1180.5,
+            "end": 1201.25,
+            "source_start": 1180.5,
+            "source_end": 1201.25
+          },
+          "category": "audio_quality",
+          "severity": "info",
+          "confidence": null,
+          "confidence_reason": "a candidate from the RMS of the silences either side, in a processed render; a pickup session, a noise gate or noise reduction also changes it",
+          "evidence": {
+            "after_dbfs": -60.25,
+            "before_dbfs": -68.5,
+            "delta_db": 8.25,
+            "kind": "room_tone_change",
+            "min_silence_seconds": 0.3,
+            "room_tone_step_db": 6,
+            "silence_floor_dbfs": -50,
+            "source_kind": "processed_render"
+          },
+          "review": {
+            "status": "unreviewed"
+          }
+        }
+      ]
+    },
+    {
+      "path": "C:/Renders/Chapter 02.wav",
+      "name": "Chapter 02.wav",
+      "status": "cancelled",
+      "summary": null,
+      "findings": null
+    },
+    {
+      "path": "C:/Renders/Chapter 03.mp3",
+      "name": "Chapter 03.mp3",
+      "status": "cancelled",
+      "summary": null,
+      "findings": null
+    }
+  ]
+}

@@ -26,6 +26,7 @@ export * from './api/contracts/stages';
 export * from './api/contracts/dictionary';
 export * from './api/contracts/findings';
 export * from './api/contracts/measure';
+export * from './api/contracts/diagnostics';
 
 import type { ChapterTrackMapApi } from './api/contracts/chapterTrackMap';
 import type { DawCatalogApi } from './api/contracts/dawCatalog';
@@ -53,6 +54,7 @@ import type { CoverageApi } from './api/contracts/coverage';
 import type { StagesApi } from './api/contracts/stages';
 import type { DictionaryApi } from './api/contracts/dictionary';
 import type { MeasureApi } from './api/contracts/measure';
+import type { DiagnosticsApi } from './api/contracts/diagnostics';
 
 /** The app compatibility facade; domain interfaces remain independently testable. */
 export interface NarrationApi
@@ -82,4 +84,5 @@ export interface NarrationApi
     StagesApi,
     DictionaryApi,
     FindingsApi,
-    MeasureApi {}
+    MeasureApi,
+    DiagnosticsApi {}

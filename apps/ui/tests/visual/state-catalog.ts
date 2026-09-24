@@ -1001,6 +1001,36 @@ export const STATE_CATALOG: StateEntry[] = [
     description:
       'Delivery, a measurement that broke (?mockMeasure=fails) - the alert asking to choose the files again, the reason on the file it broke on, the files after it not read',
   },
+  // Delivery, Diagnostics tab (diagnostics-delivery-and-cleanup-tools.prd.md Phase 6)
+  {
+    page: 'delivery',
+    state: 'diagnostics-empty',
+    description:
+      'Delivery / Diagnostics, nothing checked yet - "Rendered chapters" or "Raw recordings", Choose files to check, and every threshold the check uses shown before any finding (ADR 0158)',
+  },
+  {
+    page: 'delivery',
+    state: 'diagnostics-running',
+    description:
+      'Delivery / Diagnostics, a check part way through (?mockDiagnostics=running) - its real progress from the bytes read (ADR 0015), what it is reading, Cancel, and the source-kind choice locked while it runs',
+  },
+  {
+    page: 'delivery',
+    state: 'diagnostics-findings',
+    description:
+      'Delivery / Diagnostics, the measured files checked without picking them again - each file summarised (pacing not available without transcript timing), a file it could not read with why, and each finding with its time, what was measured, the threshold that raised it and the source kind, read-only and unreviewed',
+  },
+  {
+    page: 'delivery',
+    state: 'diagnostics-cancelled',
+    description: 'Delivery / Diagnostics, a running check cancelled - "Diagnostics cancelled.", with every file not yet read saying so',
+  },
+  {
+    page: 'delivery',
+    state: 'diagnostics-error',
+    description:
+      'Delivery / Diagnostics, a check that broke (?mockDiagnostics=fails) - the alert asking to choose the files again, the reason on the file it broke on, the files after it not read',
+  },
 
   // Settings
   { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category', ...REFLOW },

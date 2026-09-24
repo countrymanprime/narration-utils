@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 )
 
 // Diagnostics are the windowed analyzers (diagnostics PRD, phase 4): clip
@@ -110,6 +109,9 @@ type DiagnosticInput struct {
 	// Words is the transcript of the measured audio, timed from its start.
 	// Nil means there is none, so pacing is unavailable.
 	Words []Word
+	// Progress, when set, is told the audio bytes read so far, as for
+	// AnalyzeContext (ADR 0015).
+	Progress Progress
 }
 
 // Diagnostics is what the windowed analyzers found in one file.
@@ -131,11 +133,22 @@ type Diagnostics struct {
 	// none: no transcript, or timing that does not resolve against this
 	// audio. It is never guessed from the silence map.
 	Pacing PauseProfileEvidence `json:"pacing"`
+
+	// words is how many timed words Pacing was profiled from (0 when it is
+	// unavailable), for the summary's speaking rate.
+	words int
 }
 
 // Diagnose runs the windowed analyzers over WAV audio read from r. It
 // checks ctx between blocks and returns ctx's error once it is done.
 func Diagnose(ctx context.Context, r io.Reader, in DiagnosticInput) (Diagnostics, error) {
+	return diagnose(ctx, r, in, -1)
+}
+
+// diagnose is Diagnose given the length of r when it is known (a file),
+// which bounds the progress total of a data chunk whose size was never
+// recorded.
+func diagnose(ctx context.Context, r io.Reader, in DiagnosticInput, streamBytes int64) (Diagnostics, error) {
 	if err := in.SourceKind.validate(); err != nil {
 		return Diagnostics{}, err
 	}
@@ -148,23 +161,27 @@ func Diagnose(ctx context.Context, r io.Reader, in DiagnosticInput) (Diagnostics
 			return Diagnostics{}, err
 		}
 	}
+	if err := ctx.Err(); err != nil {
+		return Diagnostics{}, err
+	}
 	reader, err := NewWAVReader(r)
 	if err != nil {
 		return Diagnostics{}, err
 	}
 
-	limit := int64(math.MaxInt64)
+	first, limit := int64(0), int64(math.MaxInt64)
 	if in.Range != nil {
-		first, count := in.Range.frames(reader.Format().SampleRate)
-		if _, err := reader.Skip(first); err != nil {
-			return Diagnostics{}, fmt.Errorf("skipping to the range start: %w", err)
-		}
-		limit = count
+		first, limit = in.Range.frames(reader.Format().SampleRate)
 	}
-	meters := newDiagnosticMeters(reader.Format(), opts)
-	if err := meters.readAll(ctx, reader, limit); err != nil {
+	meter := progressMeter{reader: reader, report: in.Progress, total: reader.bytesToRead(first, limit, streamBytes)}
+	if err := skipFrames(ctx, reader, first, &meter); err != nil {
 		return Diagnostics{}, err
 	}
+	meters := newDiagnosticMeters(reader.Format(), opts)
+	if err := meters.readAll(ctx, reader, limit, &meter); err != nil {
+		return Diagnostics{}, err
+	}
+	meter.finish()
 
 	result := meters.result()
 	result.SourceKind, result.Options = in.SourceKind, opts
@@ -173,20 +190,25 @@ func Diagnose(ctx context.Context, r io.Reader, in DiagnosticInput) (Diagnostics
 		result.Range = &rng
 	}
 	result.Pacing = diagnosticPacing(in.Words, result.DurationSeconds, opts.Pauses)
+	if result.Pacing.Status == StatusMeasured {
+		result.words = len(in.Words)
+	}
 	return result, nil
 }
 
-// DiagnoseFile runs Diagnose over the WAV file at path and records the path.
+// DiagnoseFile runs Diagnose over the WAV file at path, opened read-only,
+// and records the path. An error names what was wrong, not the path: the
+// caller already has it.
 func DiagnoseFile(ctx context.Context, path string, in DiagnosticInput) (Diagnostics, error) {
-	file, err := os.Open(path)
+	file, info, err := openForReading(path)
 	if err != nil {
 		return Diagnostics{}, err
 	}
 	defer func() { _ = file.Close() }() // read-only
 
-	result, err := Diagnose(ctx, file, in)
+	result, err := diagnose(ctx, file, in, info.Size())
 	if err != nil {
-		return Diagnostics{}, fmt.Errorf("%s: %w", path, err)
+		return Diagnostics{}, err
 	}
 	result.File = path
 	return result, nil
@@ -212,8 +234,9 @@ func newDiagnosticMeters(format Format, opts DiagnosticOptions) *diagnosticMeter
 	}
 }
 
-// readAll feeds up to limit frames from reader to every analyzer.
-func (m *diagnosticMeters) readAll(ctx context.Context, reader *WAVReader, limit int64) error {
+// readAll feeds up to limit frames from reader to every analyzer, telling
+// meter after each block.
+func (m *diagnosticMeters) readAll(ctx context.Context, reader *WAVReader, limit int64, meter *progressMeter) error {
 	for m.frames < limit {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -229,6 +252,7 @@ func (m *diagnosticMeters) readAll(ctx context.Context, reader *WAVReader, limit
 		m.shortTerm.Add(block)
 		m.silences.Add(block)
 		m.frames += int64(len(block[0]))
+		meter.tick()
 	}
 	return nil
 }

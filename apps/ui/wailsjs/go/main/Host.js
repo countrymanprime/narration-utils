@@ -134,6 +134,18 @@ export function DawLaunch() {
   return window['go']['main']['Host']['DawLaunch']();
 }
 
+export function DiagnosticsAnalyze(arg1, arg2) {
+  return window['go']['main']['Host']['DiagnosticsAnalyze'](arg1, arg2);
+}
+
+export function DiagnosticsCancel() {
+  return window['go']['main']['Host']['DiagnosticsCancel']();
+}
+
+export function DiagnosticsState() {
+  return window['go']['main']['Host']['DiagnosticsState']();
+}
+
 export function FindingsAddMarker(arg1) {
   return window['go']['main']['Host']['FindingsAddMarker'](arg1);
 }

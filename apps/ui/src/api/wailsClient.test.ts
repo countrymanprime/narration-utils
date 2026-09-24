@@ -39,6 +39,38 @@ describe('wailsClient', () => {
     await expect(wailsClient.measureCancel()).resolves.toMatchObject({ phase: 'cancelled' });
   });
 
+  it('checks, polls and cancels diagnostics through the native bindings and the job schema', async () => {
+    const thresholds = {
+      clip_ceiling_dbfs: 0,
+      silence_floor_dbfs: -50,
+      min_silence_seconds: 0.3,
+      level_shift_lu: 4,
+      room_tone_step_db: 6,
+      pauses: { min_pause_seconds: 0.3, long_pause_seconds: 2 },
+    };
+    const job = {
+      id: 'diagnostics-1',
+      kind: 'diagnostics',
+      phase: 'running',
+      message: 'Checking 1 file.',
+      percent: 0,
+      logs: null,
+      elapsed: 0,
+      sourceKind: 'raw_recording',
+      thresholds,
+      files: null,
+    };
+    const analyze = vi.fn().mockResolvedValue(JSON.stringify(job));
+    const state = vi.fn().mockResolvedValue(JSON.stringify({ ...job, phase: 'success', percent: 100 }));
+    const cancel = vi.fn().mockResolvedValue(JSON.stringify({ ...job, phase: 'cancelled' }));
+    window.go = { main: { Host: { DiagnosticsAnalyze: analyze, DiagnosticsState: state, DiagnosticsCancel: cancel } } };
+
+    await expect(wailsClient.diagnosticsAnalyze(['C:/R/Chapter 01.wav'], 'raw_recording')).resolves.toMatchObject({ phase: 'running', logs: [], files: [] });
+    expect(analyze).toHaveBeenCalledWith(['C:/R/Chapter 01.wav'], 'raw_recording');
+    await expect(wailsClient.diagnosticsState()).resolves.toMatchObject({ phase: 'success', percent: 100 });
+    await expect(wailsClient.diagnosticsCancel()).resolves.toMatchObject({ phase: 'cancelled' });
+  });
+
   it('rejects a measurement whose level is a number the host never sends', async () => {
     const report = { sample_rate: 48000, channels: 2, duration_seconds: 1, integrated_lufs: '-19', rms_dbfs: null, sample_peak_dbfs: null };
     const job = {

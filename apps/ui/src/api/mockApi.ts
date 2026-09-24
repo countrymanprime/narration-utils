@@ -96,6 +96,7 @@ import { createFindingsMock, type MockReaper } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
 import { createTakeComparisonMock } from './takeComparisonMock';
 import { createMeasureMock, type MockMeasureSeed } from './measureMock';
+import { createDiagnosticsMock, type MockDiagnosticsSeed } from './diagnosticsMock';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
 import { MOCK_DICTIONARY, MOCK_DICTIONARY_DISK_SIZE, MOCK_DICTIONARY_DOWNLOAD_SIZE, mockDictionaryLookup } from './dictionaryMock';
@@ -451,6 +452,8 @@ export function createMockApi(
     takeComparisonHold?: boolean;
     /** Holds a started measurement part way through, so its real progress can be looked at, or breaks it (diagnostics PRD Phases 1 and 5). */
     measure?: MockMeasureSeed;
+    /** Holds a started diagnostics check part way through, or breaks it (diagnostics PRD Phase 6). */
+    diagnostics?: MockDiagnosticsSeed;
     /** The project's Delivery limits, by key (`true_peak_dbtp_max: '-3'`), set as if saved in Settings (diagnostics PRD Phase 5). */
     deliveryLimits?: Record<string, string>;
   } = {},
@@ -989,7 +992,9 @@ export function createMockApi(
   });
   const takeReviewScan = createTakeReviewScanMock(saveAnalyzerFindings, endJob, initial.takeReviewScanHold);
   const takeComparison = createTakeComparisonMock({ get: findings.findingsGet, save: saveFinding }, endJob, initial.takeComparisonHold);
-  const measurement = createMeasureMock(endJob, initial.measure);
+  const measurePicked = new Set<string>();
+  const measurement = createMeasureMock(endJob, initial.measure, measurePicked);
+  const diagnostics = createDiagnosticsMock(endJob, measurePicked, initial.diagnostics);
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));
   };
@@ -1957,6 +1962,7 @@ export function createMockApi(
     ...takeReviewScan,
     ...takeComparison,
     ...measurement,
+    ...diagnostics,
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,
       newTakeGuid: '{99999999-0000-4000-8000-000000000099}',

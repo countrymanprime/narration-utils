@@ -8,6 +8,7 @@ import { WIRE_TAKE_REVIEW_FINDINGS, WIRE_TRACKS_PROJECT, WIRE_TRANSCRIPT } from 
 import { WIRE_TAKE_COMPARISON_FINDING } from './takeComparisonMock';
 import { MOCK_MEASURE_PATHS } from './measureMock';
 import { measureJobSchema, measurePickResultSchema } from './schemas/measure';
+import { diagnosticsJobSchema } from './schemas/diagnostics';
 import {
   bookmarkSchema,
   chapterSchema,
@@ -245,6 +246,11 @@ const GOLDEN: Record<string, z.ZodType> = {
   'measure-success.json': measureJobSchema,
   'measure-cancelled.json': measureJobSchema,
   'measure-error.json': measureJobSchema,
+  'diagnostics-idle.json': diagnosticsJobSchema,
+  'diagnostics-running.json': diagnosticsJobSchema,
+  'diagnostics-success.json': diagnosticsJobSchema,
+  'diagnostics-cancelled.json': diagnosticsJobSchema,
+  'diagnostics-error.json': diagnosticsJobSchema,
   // compare.py --take-divergence's results file, pinned by its pytest suite and read by the Go host's parser
   // (internal/takecompare), never by the UI: the host turns it into take_comparison evidence, checked above.
   'take-divergence-results.json': z.object({ lines: z.array(z.string()) }),
@@ -1088,6 +1094,38 @@ describe('answers of the mock client for the settings, voice, model, transcript 
     expect(cancelled.files.map((file) => file.status)).toEqual(['cancelled', 'cancelled', 'cancelled']);
   });
 
+  it('the diagnostics job answers over the picked files, with the findings and thresholds the host pins', async () => {
+    const api = createMockApi();
+    const idle = await api.diagnosticsState();
+    expectMatches(diagnosticsJobSchema, idle, 'mock diagnostics, idle');
+    const pinnedIdle = diagnosticsJobSchema.parse(readGolden('diagnostics-idle.json'));
+    expect(idle.thresholds).toEqual(pinnedIdle.thresholds);
+    await expect(api.diagnosticsAnalyze(MOCK_MEASURE_PATHS, 'processed_render')).rejects.toThrow(/not chosen in the file picker/);
+    const picked = await api.measurePickFiles();
+    await expect(api.diagnosticsAnalyze(picked.paths, 'master' as never)).rejects.toThrow(/raw recordings or processed renders/);
+    await expect(api.diagnosticsAnalyze([], 'processed_render')).rejects.toThrow(/at least one file/);
+    let job = await api.diagnosticsAnalyze(picked.paths, 'processed_render');
+    expectMatches(diagnosticsJobSchema, job, 'mock diagnostics, started');
+    await expect(api.diagnosticsAnalyze(picked.paths, 'processed_render')).rejects.toThrow(/already running/);
+    let percent = job.percent;
+    while (job.phase === 'running') {
+      job = await api.diagnosticsState();
+      expectMatches(diagnosticsJobSchema, job, `mock diagnostics, ${job.phase} at ${job.percent}%`);
+      expect(job.percent).toBeGreaterThanOrEqual(percent);
+      percent = job.percent;
+    }
+    const pinned = diagnosticsJobSchema.parse(readGolden('diagnostics-success.json'));
+    expect(job.message).toBe(pinned.message);
+    expect(job.files.map((file) => file.status)).toEqual(pinned.files.map((file) => file.status));
+    expect(job.files[0].findings).toEqual(pinned.files[0].findings.map((finding) => ({ ...finding, source: { file: MOCK_MEASURE_PATHS[0] } })));
+    expect(job.files[1].findings).toEqual([]);
+    const raw = await api.diagnosticsAnalyze(picked.paths, 'raw_recording');
+    expect(raw.sourceKind).toBe('raw_recording');
+    const cancelled = await api.diagnosticsCancel();
+    expectMatches(diagnosticsJobSchema, cancelled, 'mock diagnostics, cancelled');
+    expect(cancelled.files.map((file) => file.status)).toEqual(['cancelled', 'cancelled', 'cancelled']);
+  });
+
   it('the evidence of every take-review finding the host pins, and of the mock fixture', () => {
     const pinned = findingsPageSchema.parse(readGolden('findings-list-take-review.json'));
     for (const finding of [...pinned.findings, ...WIRE_TAKE_REVIEW_FINDINGS]) {
@@ -1385,6 +1423,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'measureAnalyze',
       'measureState',
       'measureCancel',
+      'diagnosticsAnalyze',
+      'diagnosticsState',
+      'diagnosticsCancel',
       'findingsList',
       'findingsGet',
       'findingsReview',

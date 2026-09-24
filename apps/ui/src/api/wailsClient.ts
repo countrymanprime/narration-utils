@@ -32,6 +32,7 @@ import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
 import { chapterSuggestionSchema, chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
 import { takeComparisonJobSchema, takeReviewCreateTakeResultSchema, takeReviewScanJobSchema } from './schemas/takeReview';
 import { measureJobSchema, measurePickResultSchema } from './schemas/measure';
+import { diagnosticsJobSchema } from './schemas/diagnostics';
 import { coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
@@ -360,6 +361,9 @@ export const wailsClient: NarrationApi = {
   measureAnalyze: (paths) => decode(measureJobSchema, 'MeasureAnalyze', host.MeasureAnalyze(paths)),
   measureState: () => decode(measureJobSchema, 'MeasureState', host.MeasureState()),
   measureCancel: () => decode(measureJobSchema, 'MeasureCancel', host.MeasureCancel()),
+  diagnosticsAnalyze: (paths, sourceKind) => decode(diagnosticsJobSchema, 'DiagnosticsAnalyze', host.DiagnosticsAnalyze(paths, sourceKind)),
+  diagnosticsState: () => decode(diagnosticsJobSchema, 'DiagnosticsState', host.DiagnosticsState()),
+  diagnosticsCancel: () => decode(diagnosticsJobSchema, 'DiagnosticsCancel', host.DiagnosticsCancel()),
   takeReviewCreateTake: (request) =>
     decode(
       takeReviewCreateTakeResultSchema,

@@ -79,9 +79,9 @@ export type MockMeasureSeed = 'hold' | 'fails';
 
 const BROKE = 'runtime error: index out of range [4] with length 4';
 
-export function createMeasureMock(publish: (event: JobEnded) => void, seed?: MockMeasureSeed): MeasureApi {
+/** `picked` is the picker's allowlist, shared with the diagnostics mock the way the host shares it (ADR 0156). */
+export function createMeasureMock(publish: (event: JobEnded) => void, seed?: MockMeasureSeed, picked = new Set<string>()): MeasureApi {
   const hold = seed === 'hold';
-  const picked = new Set<string>();
   let job: MeasureJob = { id: null, kind: 'measurement', phase: 'idle', message: 'Choose the files to measure.', percent: 0, logs: [], elapsed: 0, files: [] };
   let quarters = 0;
 

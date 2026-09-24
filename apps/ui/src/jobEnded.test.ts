@@ -58,6 +58,7 @@ describe('shouldNotifyForJobEnd (N1-N4)', () => {
       'take_review',
       'take_comparison',
       'measurement',
+      'diagnostics',
     ]) {
       expect(shouldNotifyForJobEnd(ended({ kind, durationMs: 10_000 }), false), kind).toBe(true);
     }
