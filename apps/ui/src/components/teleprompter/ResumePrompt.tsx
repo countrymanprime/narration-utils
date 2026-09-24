@@ -32,7 +32,7 @@ type Props = {
  * script words joined by spaces (locate.py), so its word `word - start` is the resume word; a text that does not split
  * into `end - start` words is shown without the emphasis rather than with it on the wrong word.
  */
-export function ResumeSentence({ sentence, word }: { sentence: Sentence; word: number }) {
+function ResumeSentence({ sentence, word }: { sentence: Sentence; word: number }) {
   const words = sentence.text.split(/\s+/).filter(Boolean);
   const at = word - sentence.start;
   const marked = words.length === sentence.end - sentence.start && at >= 0 && at < words.length;
