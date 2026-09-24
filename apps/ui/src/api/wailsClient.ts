@@ -40,6 +40,7 @@ import {
 } from './schemas/chapterTrackMap';
 import { takeComparisonJobSchema, takeReviewCreateTakeResultSchema, takeReviewScanJobSchema } from './schemas/takeReview';
 import { deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
+import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/deliveryProfiles';
 import { diagnosticsJobSchema } from './schemas/diagnostics';
 import { coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
@@ -375,6 +376,11 @@ export const wailsClient: NarrationApi = {
   measureState: () => decode(measureJobSchema, 'MeasureState', host.MeasureState()),
   measureCancel: () => decode(measureJobSchema, 'MeasureCancel', host.MeasureCancel()),
   deliveryExportReport: (includePaths) => decode(deliveryReportExportSchema, 'DeliveryExportReport', host.DeliveryExportReport(includePaths)),
+  deliveryProfiles: () => decode(deliveryProfilesStateSchema, 'DeliveryProfiles', host.DeliveryProfiles()),
+  deliverySelectProfile: (scope, id, version) => decode(deliveryProfilesStateSchema, 'DeliverySelectProfile', host.DeliverySelectProfile(scope, id, version)),
+  deliveryDuplicateProfile: (id, version) => decode(deliveryProfileSchema, 'DeliveryDuplicateProfile', host.DeliveryDuplicateProfile(id, version)),
+  deliverySaveProfile: (edit) => decode(deliveryProfileSchema, 'DeliverySaveProfile', host.DeliverySaveProfile(JSON.stringify(edit))),
+  deliveryDeleteProfile: (id) => decode(deliveryProfilesStateSchema, 'DeliveryDeleteProfile', host.DeliveryDeleteProfile(id)),
   diagnosticsAnalyze: (paths, sourceKind) => decode(diagnosticsJobSchema, 'DiagnosticsAnalyze', host.DiagnosticsAnalyze(paths, sourceKind)),
   diagnosticsState: () => decode(diagnosticsJobSchema, 'DiagnosticsState', host.DiagnosticsState()),
   diagnosticsCancel: () => decode(diagnosticsJobSchema, 'DiagnosticsCancel', host.DiagnosticsCancel()),

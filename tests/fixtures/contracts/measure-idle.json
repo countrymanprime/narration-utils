@@ -6,5 +6,365 @@
   "percent": 0,
   "logs": [],
   "elapsed": 3.5,
-  "files": []
+  "files": [],
+  "profile": {
+    "id": "acx",
+    "version": "2026-09",
+    "revision": 0,
+    "name": "ACX",
+    "platform": "ACX",
+    "builtIn": true,
+    "source": {
+      "title": "ACX Audio Submission Requirements",
+      "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+      "requirement": "",
+      "quoted": false,
+      "readOn": "2026-09-20"
+    },
+    "rules": [
+      {
+        "id": "acx.rms",
+        "label": "RMS",
+        "scope": "file",
+        "metric": "rms_dbfs",
+        "unit": "dBFS",
+        "min": -23,
+        "max": -18,
+        "oneOf": null,
+        "sameAcrossFiles": false,
+        "advice": null,
+        "level": "required",
+        "checkedBy": "measured",
+        "source": {
+          "title": "ACX Audio Submission Requirements",
+          "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+          "requirement": "Each file measures between -23 dB and -18 dB RMS.",
+          "quoted": false,
+          "readOn": "2026-09-23"
+        },
+        "verification": "to_verify",
+        "verificationNote": "RMS definition to compare with ACX Check: the app measures the whole file, silences included, over every channel."
+      },
+      {
+        "id": "acx.peak",
+        "label": "Peak",
+        "scope": "file",
+        "metric": "sample_peak_dbfs",
+        "unit": "dBFS",
+        "min": null,
+        "max": -3,
+        "oneOf": null,
+        "sameAcrossFiles": false,
+        "advice": {
+          "metric": "true_peak_dbtp",
+          "max": -3,
+          "unit": "dBTP",
+          "text": "true peak above −3 dBTP may clip after MP3 encoding"
+        },
+        "level": "required",
+        "checkedBy": "measured",
+        "source": {
+          "title": "ACX Audio Submission Requirements",
+          "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+          "requirement": "Each file has peak values no higher than -3 dB.",
+          "quoted": false,
+          "readOn": "2026-09-23"
+        },
+        "verification": "to_verify",
+        "verificationNote": "Sample or true peak to confirm: the app judges the sample peak and shows the true peak as advice."
+      },
+      {
+        "id": "acx.noise_floor",
+        "label": "Noise floor",
+        "scope": "file",
+        "metric": "noise_floor_dbfs",
+        "unit": "dBFS",
+        "min": null,
+        "max": -60,
+        "oneOf": null,
+        "sameAcrossFiles": false,
+        "advice": null,
+        "level": "required",
+        "checkedBy": "measured",
+        "source": {
+          "title": "ACX Audio Submission Requirements",
+          "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+          "requirement": "Each file has a noise floor no higher than -60 dB RMS.",
+          "quoted": false,
+          "readOn": "2026-09-23"
+        },
+        "verification": "to_verify",
+        "verificationNote": "Window definition to compare with ACX Check: the app takes the quietest 0.5 s that is not digital silence."
+      },
+      {
+        "id": "acx.sample_rate",
+        "label": "Sample rate",
+        "scope": "file",
+        "metric": "sample_rate",
+        "unit": "Hz",
+        "min": null,
+        "max": null,
+        "oneOf": [
+          44100
+        ],
+        "sameAcrossFiles": false,
+        "advice": null,
+        "level": "required",
+        "checkedBy": "measured",
+        "source": {
+          "title": "ACX Audio Submission Requirements",
+          "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+          "requirement": "Each file is sampled at 44.1 kHz.",
+          "quoted": false,
+          "readOn": "2026-09-23"
+        },
+        "verification": "verified"
+      },
+      {
+        "id": "acx.file_length",
+        "label": "File length",
+        "scope": "file",
+        "metric": "duration_seconds",
+        "unit": "s",
+        "min": null,
+        "max": 7200,
+        "oneOf": null,
+        "sameAcrossFiles": false,
+        "advice": null,
+        "level": "required",
+        "checkedBy": "measured",
+        "source": {
+          "title": "ACX Audio Submission Requirements",
+          "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+          "requirement": "Each file is no longer than 120 minutes.",
+          "quoted": false,
+          "readOn": "2026-09-20"
+        },
+        "verification": "verified"
+      },
+      {
+        "id": "acx.room_tone_head",
+        "label": "Room tone, head",
+        "scope": "file",
+        "metric": "head_room_tone_seconds",
+        "unit": "s",
+        "min": 0.5,
+        "max": 5,
+        "oneOf": null,
+        "sameAcrossFiles": false,
+        "advice": null,
+        "level": "required",
+        "checkedBy": "not_yet",
+        "notCheckedWhy": "Not checked by the app yet: measuring room tone at the file's edges comes later.",
+        "source": {
+          "title": "ACX Audio Submission Requirements",
+          "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+          "requirement": "1 to 5 seconds of room tone at the beginning of each file.",
+          "quoted": false,
+          "readOn": "2026-09-20"
+        },
+        "verification": "conflicting",
+        "verificationNote": "ACX's page was read as 1 to 5 s; current guides say 0.5 to 1 s. Judged 0.5 to 5 s (the looser reading) until the owner reads ACX's page."
+      },
+      {
+        "id": "acx.room_tone_tail",
+        "label": "Room tone, tail",
+        "scope": "file",
+        "metric": "tail_room_tone_seconds",
+        "unit": "s",
+        "min": 1,
+        "max": 5,
+        "oneOf": null,
+        "sameAcrossFiles": false,
+        "advice": null,
+        "level": "required",
+        "checkedBy": "not_yet",
+        "notCheckedWhy": "Not checked by the app yet: measuring room tone at the file's edges comes later.",
+        "source": {
+          "title": "ACX Audio Submission Requirements",
+          "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+          "requirement": "1 to 5 seconds of room tone at the end of each file.",
+          "quoted": false,
+          "readOn": "2026-09-20"
+        },
+        "verification": "verified"
+      },
+      {
+        "id": "acx.format",
+        "label": "MP3 format",
+        "scope": "file",
+        "metric": "mp3_format",
+        "unit": "",
+        "min": null,
+        "max": null,
+        "oneOf": null,
+        "boundText": "192 kbps+ CBR",
+        "sameAcrossFiles": false,
+        "advice": null,
+        "level": "required",
+        "checkedBy": "not_yet",
+        "notCheckedWhy": "This is a WAV render; check the MP3 you upload.",
+        "source": {
+          "title": "ACX Audio Submission Requirements",
+          "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+          "requirement": "Each file is an MP3 at 192 kbps or higher, constant bit rate (CBR).",
+          "quoted": false,
+          "readOn": "2026-09-23"
+        },
+        "verification": "verified"
+      },
+      {
+        "id": "acx.channels",
+        "label": "Channels",
+        "scope": "book",
+        "metric": "channels",
+        "unit": "",
+        "min": null,
+        "max": null,
+        "oneOf": [
+          1,
+          2
+        ],
+        "sameAcrossFiles": true,
+        "advice": null,
+        "level": "required",
+        "checkedBy": "measured",
+        "source": {
+          "title": "ACX Audio Submission Requirements",
+          "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+          "requirement": "Every file is mono or stereo, the same in every file.",
+          "quoted": false,
+          "readOn": "2026-09-20"
+        },
+        "verification": "to_verify",
+        "verificationNote": "The same-in-every-file wording and any mono preference are to read on ACX's page."
+      },
+      {
+        "id": "acx.one_section_per_file",
+        "label": "One section per file",
+        "scope": "book",
+        "metric": "one_section_per_file",
+        "unit": "",
+        "min": null,
+        "max": null,
+        "oneOf": null,
+        "sameAcrossFiles": false,
+        "advice": null,
+        "level": "required",
+        "checkedBy": "listen",
+        "notCheckedWhy": "Listen: each file holds one chapter or section and starts with its section header.",
+        "source": {
+          "title": "ACX Audio Submission Requirements",
+          "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+          "requirement": "Each file holds one chapter or section and starts with a section header.",
+          "quoted": false,
+          "readOn": "2026-09-20"
+        },
+        "verification": "verified"
+      },
+      {
+        "id": "acx.credits",
+        "label": "Credits files",
+        "scope": "book",
+        "metric": "credits_files",
+        "unit": "",
+        "min": null,
+        "max": null,
+        "oneOf": null,
+        "sameAcrossFiles": false,
+        "advice": null,
+        "level": "required",
+        "checkedBy": "not_yet",
+        "notCheckedWhy": "Not checked by the app yet: the book checklist comes later.",
+        "source": {
+          "title": "ACX Audio Submission Requirements",
+          "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+          "requirement": "Opening and closing credits should be separate files",
+          "quoted": true,
+          "readOn": "2026-09-20"
+        },
+        "verification": "verified"
+      },
+      {
+        "id": "acx.retail_sample",
+        "label": "Retail sample",
+        "scope": "book",
+        "metric": "retail_sample_seconds",
+        "unit": "s",
+        "min": null,
+        "max": 300,
+        "oneOf": null,
+        "sameAcrossFiles": false,
+        "advice": null,
+        "level": "required",
+        "checkedBy": "not_yet",
+        "notCheckedWhy": "Not checked by the app yet: the book checklist comes later.",
+        "source": {
+          "title": "ACX Audio Submission Requirements",
+          "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+          "requirement": "A retail audio sample of 5 minutes or less.",
+          "quoted": false,
+          "readOn": "2026-09-20"
+        },
+        "verification": "verified",
+        "verificationNote": "Some guides also give a 1 minute minimum; to read on ACX's page."
+      },
+      {
+        "id": "acx.consistency",
+        "label": "Consistency",
+        "scope": "book",
+        "metric": "consistency",
+        "unit": "",
+        "min": null,
+        "max": null,
+        "oneOf": null,
+        "sameAcrossFiles": false,
+        "advice": null,
+        "level": "required",
+        "checkedBy": "listen",
+        "notCheckedWhy": "Listen: consistent sound and levels across files, no extraneous sounds.",
+        "source": {
+          "title": "ACX Audio Submission Requirements",
+          "url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+          "requirement": "Consistent in overall sound and formatting, free of extraneous sounds.",
+          "quoted": false,
+          "readOn": "2026-09-20"
+        },
+        "verification": "to_verify",
+        "verificationNote": "Recorded from guides; ACX's own wording is to read on its page."
+      }
+    ]
+  },
+  "bookRules": [
+    {
+      "ruleId": "acx.channels",
+      "status": "not_measurable",
+      "value": null,
+      "why": "No measured file to judge."
+    },
+    {
+      "ruleId": "acx.one_section_per_file",
+      "status": "not_checked",
+      "value": null,
+      "why": "Listen: each file holds one chapter or section and starts with its section header."
+    },
+    {
+      "ruleId": "acx.credits",
+      "status": "not_checked",
+      "value": null,
+      "why": "Not checked by the app yet: the book checklist comes later."
+    },
+    {
+      "ruleId": "acx.retail_sample",
+      "status": "not_checked",
+      "value": null,
+      "why": "Not checked by the app yet: the book checklist comes later."
+    },
+    {
+      "ruleId": "acx.consistency",
+      "status": "not_checked",
+      "value": null,
+      "why": "Listen: consistent sound and levels across files, no extraneous sounds."
+    }
+  ]
 }

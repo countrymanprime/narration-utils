@@ -24,7 +24,18 @@ describe('wailsClient', () => {
   });
 
   it('picks, measures, polls and cancels a measurement through the native bindings and the job schema', async () => {
-    const job = { id: 'measure-1', kind: 'measurement', phase: 'running', message: 'Measuring 1 file.', percent: 0, logs: null, elapsed: 0, files: null };
+    const job = {
+      id: 'measure-1',
+      kind: 'measurement',
+      phase: 'running',
+      message: 'Measuring 1 file.',
+      percent: 0,
+      logs: null,
+      elapsed: 0,
+      files: null,
+      profile: null,
+      bookRules: null,
+    };
     const pick = vi.fn().mockResolvedValue(JSON.stringify({ paths: ['C:/R/Chapter 01.wav'] }));
     const analyze = vi.fn().mockResolvedValue(JSON.stringify(job));
     const state = vi.fn().mockResolvedValue(JSON.stringify({ ...job, phase: 'success', percent: 100 }));

@@ -1,6 +1,6 @@
 # 0025. Delivery measurements are computed in Go, and no distributor profile ships yet
 
-**Status:** Accepted
+**Status:** Superseded by ADR-0179 (the "no distributor profile ships" decision; the measurement in Go stands)
 **Date:** 2026-09-19
 
 ## Context

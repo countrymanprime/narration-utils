@@ -33,3 +33,11 @@ Whether this project's use counts as "internal research and development" rather 
 In every `pnpm check`, the signals rebuilt from the Table 1 descriptions pass. At 48 kHz, 24-bit stereo, cases 1 to 5 read within ±0.1 LU of the expected loudness, and cases 15 to 19 read within +0.2 / -0.4 dB of the expected true peak. These are rebuilt from the table, not the EBU's files, so they do not replace the recorded run.
 
 When a run is recorded, add a row above and paste the test's `-v` lines under it. Open an issue for any case outside tolerance, and link it from the row.
+
+## Comparison with Audacity's ACX Check (the ACX profile)
+
+The built-in ACX delivery profile (`acx@2026-09`, [ACX delivery requirements](../research/acx-delivery-requirements.md), ADR 0179) judges `measure`'s RMS, sample peak and noise floor against ACX's numbers. Whether `measure`'s definitions agree with ACX's own check is what this comparison records: the same verdict per rule, and values within 0.5 dB (the PRD's proposal).
+
+| Date | Commit | Files | RMS (app / ACX Check) | Peak (app / ACX Check) | Noise floor (app / ACX Check) | Verdicts agree |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-09-24 | This change | `internal/measure` fixtures and two real chapters | - | - | - | **Pending owner.** ACX Check runs in Audacity by hand; no agent session can run it. Until a row is recorded, the profile marks RMS, peak and noise floor "to verify". |

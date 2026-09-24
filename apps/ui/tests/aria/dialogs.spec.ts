@@ -35,6 +35,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     snapshot: 'dialog-recording-check.aria.yml',
   },
   {
+    name: 'the delivery profile editor is a modal dialog with its name field, a switch and number boxes per rule, and Save profile',
+    state: ['settings', 'delivery-profile-editor'],
+    snapshot: 'dialog-delivery-profile-editor.aria.yml',
+  },
+  {
     name: 'the look-up panel is a modal slide-over named for the word, its definitions a list under a heading per part of speech',
     state: ['manuscript', 'word-lookup-definition'],
     snapshot: 'slide-over-word-lookup.aria.yml',

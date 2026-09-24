@@ -1,11 +1,9 @@
 package main
 
 import (
-	"sort"
 	"strings"
 	"testing"
 
-	"github.com/countrymanprime/narration-utils/shell/internal/measure"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 )
 
@@ -84,32 +82,14 @@ func TestEveryNumberFieldHasARangeAndEveryRangeAField(t *testing.T) {
 	}
 }
 
-// The Delivery section is exactly the limits measure.ProfileFromLimits reads: a field it did not read would be a setting
-// that changes nothing, and a limit with no field could only be set by hand-editing a file.
-func TestTheDeliveryFieldsAreTheMeasurementLimits(t *testing.T) {
-	var fields []string
-	for _, schema := range fieldSchemas["Delivery"] {
-		fields = append(fields, schema.key)
+// The old Delivery limits (ADR 0155 decision 5) left the settings page when delivery profiles replaced them (ADR 0179):
+// the keys stay in the settings files, read once to move them into a profile, and no field offers them.
+func TestTheOldDeliveryLimitsAreNoLongerSettings(t *testing.T) {
+	if fields := fieldSchemas["Delivery"]; len(fields) != 0 {
+		t.Fatalf("Delivery fields = %v, want none: the profile judges, not settings", fields)
 	}
-	keys := measure.LimitKeys()
-	sort.Strings(fields)
-	sort.Strings(keys)
-	if strings.Join(fields, ",") != strings.Join(keys, ",") {
-		t.Fatalf("Delivery fields = %v, measure.LimitKeys() = %v", fields, keys)
-	}
-}
-
-func TestTheDeliverySectionShipsNoLimitsSoAnEmptyProfileRaisesNothing(t *testing.T) {
-	host := newTestHostForDeliverySettings(t, t.TempDir())
-	profile, err := measure.ProfileFromLimits("narrator limits", effectiveValues(host, "Delivery"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if profile.HasLimits() {
-		t.Fatalf("profile = %+v, want no limits: no distributor numbers ship (ADR 0025)", profile)
-	}
-	if got := measure.Evaluate(measure.Report{File: "chapter-01.wav"}, profile); len(got) != 0 {
-		t.Fatalf("Evaluate() = %+v, want nothing", got)
+	if specs := numberSpecs["Delivery"]; len(specs) != 0 {
+		t.Fatalf("Delivery number ranges = %v, want none", specs)
 	}
 }
 
@@ -119,19 +99,19 @@ func TestSettingsForScopeSendsTheRangeOfANumberField(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fields, _ := result["Delivery"].([]map[string]any)
-	var peak map[string]any
+	fields, _ := result["RecordingCoverage"].([]map[string]any)
+	var run map[string]any
 	for _, field := range fields {
-		if field["key"] == "true_peak_dbtp_max" {
-			peak = field
+		if field["key"] == "max_missing_run" {
+			run = field
 		}
 	}
-	if peak == nil || peak["kind"] != "number" {
-		t.Fatalf("Delivery fields = %v, want true_peak_dbtp_max as a number", fields)
+	if run == nil || run["kind"] != "number" {
+		t.Fatalf("RecordingCoverage fields = %v, want max_missing_run as a number", fields)
 	}
-	number, _ := peak["number"].(map[string]any)
-	if number["unit"] != "dBTP" || number["step"] != 0.1 || number["min"] == nil || number["max"] == nil {
-		t.Fatalf("number = %v, want its range, step and unit", peak["number"])
+	number, _ := run["number"].(map[string]any)
+	if number["unit"] != "words" || number["step"] != 1.0 || number["min"] == nil || number["max"] == nil {
+		t.Fatalf("number = %v, want its range, step and unit", run["number"])
 	}
 	general, _ := result["General"].([]map[string]any)
 	if _, ok := general[0]["number"]; ok {
@@ -139,72 +119,16 @@ func TestSettingsForScopeSendsTheRangeOfANumberField(t *testing.T) {
 	}
 }
 
-func TestSavingADeliveryLimitValidatesItAndStoresIt(t *testing.T) {
+func TestSavingANumberSettingValidatesItAndStoresIt(t *testing.T) {
 	host := newTestHostForDeliverySettings(t, t.TempDir())
-	if err := host.saveSettings("Delivery", "global", map[string]*string{"true_peak_dbtp_max": ptr("loud")}); err == nil || !strings.Contains(err.Error(), "must be a number") {
-		t.Fatalf("saveSettings(loud) = %v, want a non-numeric value rejected", err)
+	if err := host.saveSettings("RecordingCoverage", "global", map[string]*string{"max_missing_run": ptr("many")}); err == nil || !strings.Contains(err.Error(), "must be a number") {
+		t.Fatalf("saveSettings(many) = %v, want a non-numeric value rejected", err)
 	}
-	if err := host.saveSettings("Delivery", "global", map[string]*string{"true_peak_dbtp_max": ptr("-3")}); err != nil {
+	if err := host.saveSettings("RecordingCoverage", "global", map[string]*string{"max_missing_run": ptr("7")}); err != nil {
 		t.Fatal(err)
 	}
-	if value, source := host.settings.Effective("Delivery", "true_peak_dbtp_max", ""); value != "-3" || source != "global" {
-		t.Fatalf("Effective() = %q from %s, want -3 from global", value, source)
-	}
-	// A null clears a global limit (Save keeps it as the explicit JSON null reset), so it reads as no limit again.
-	if err := host.saveSettings("Delivery", "global", map[string]*string{"true_peak_dbtp_max": nil}); err != nil {
-		t.Fatal(err)
-	}
-	if value, _ := host.settings.Effective("Delivery", "true_peak_dbtp_max", ""); value != "" {
-		t.Fatalf("Effective() = %q after clearing, want no limit", value)
-	}
-}
-
-func TestSavingAMinimumAboveItsMaximumIsRejectedAcrossTheLayers(t *testing.T) {
-	host := newTestHostForDeliverySettings(t, t.TempDir())
-	if err := host.saveSettings("Delivery", "global", map[string]*string{"rms_dbfs_min": ptr("-18"), "rms_dbfs_max": ptr("-23")}); err == nil || !strings.Contains(err.Error(), "RMS level") {
-		t.Fatalf("saveSettings() = %v, want min above max rejected by name", err)
-	}
-	if err := host.saveSettings("Delivery", "global", map[string]*string{"rms_dbfs_min": ptr("-23")}); err != nil {
-		t.Fatal(err)
-	}
-	// The project's maximum is compared with the global minimum it would sit on top of.
-	if err := host.saveSettings("Delivery", "project", map[string]*string{"rms_dbfs_max": ptr("-30")}); err == nil || !strings.Contains(err.Error(), "above") {
-		t.Fatalf("saveSettings(project max below global min) = %v, want it rejected", err)
-	}
-	if err := host.saveSettings("Delivery", "project", map[string]*string{"rms_dbfs_max": ptr("-18")}); err != nil {
-		t.Fatal(err)
-	}
-	// And a global change is compared with the project override that stays on top of it.
-	if err := host.saveSettings("Delivery", "global", map[string]*string{"rms_dbfs_min": ptr("-10")}); err == nil {
-		t.Fatal("a global minimum above the open project's maximum must be rejected")
-	}
-	// Removing the project override leaves the global minimum alone, which is valid.
-	if err := host.saveSettings("Delivery", "project", map[string]*string{"rms_dbfs_max": nil}); err != nil {
-		t.Fatal(err)
-	}
-}
-
-// The success signal of Phase 2: a project override beats the global value, which beats the repository default.
-func TestTheDeliveryProfileTakesProjectThenGlobalThenDefault(t *testing.T) {
-	host := newTestHostForDeliverySettings(t, t.TempDir())
-	if err := host.saveSettings("Delivery", "global", map[string]*string{"true_peak_dbtp_max": ptr("-3"), "noise_floor_dbfs_max": ptr("-60")}); err != nil {
-		t.Fatal(err)
-	}
-	if err := host.saveSettings("Delivery", "project", map[string]*string{"true_peak_dbtp_max": ptr("-1.5")}); err != nil {
-		t.Fatal(err)
-	}
-	profile, err := measure.ProfileFromLimits("narrator limits", effectiveValues(host, "Delivery"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if profile.TruePeakdBTP.Max == nil || *profile.TruePeakdBTP.Max != -1.5 {
-		t.Errorf("true peak max = %v, want the project's -1.5", profile.TruePeakdBTP.Max)
-	}
-	if profile.NoiseFloordBFS.Max == nil || *profile.NoiseFloordBFS.Max != -60 {
-		t.Errorf("noise floor max = %v, want the global -60", profile.NoiseFloordBFS.Max)
-	}
-	if profile.IntegratedLUFS.Min != nil || profile.IntegratedLUFS.Max != nil {
-		t.Errorf("loudness = %+v, want no limit (the default is none)", profile.IntegratedLUFS)
+	if value, source := host.settings.Effective("RecordingCoverage", "max_missing_run", ""); value != "7" || source != "global" {
+		t.Fatalf("Effective() = %q from %s, want 7 from global", value, source)
 	}
 }
 

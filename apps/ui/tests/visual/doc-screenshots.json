@@ -487,7 +487,14 @@
     "state": "empty",
     "viewport": "desktop",
     "docName": "delivery-empty",
-    "caption": "Delivery - nothing measured yet, and no limits set so every value is only reported"
+    "caption": "Delivery - nothing measured yet, judged against ACX (September 2026): how many rules the app checks, does not check and leaves to listening"
+  },
+  {
+    "page": "delivery",
+    "state": "profile-rules",
+    "viewport": "desktop",
+    "docName": "delivery-profile-rules",
+    "caption": "Delivery - the ACX profile's rules and their sources: what ACX requires, how the app checks it, and whether it is verified"
   },
   {
     "page": "delivery",
@@ -501,14 +508,21 @@
     "state": "measured",
     "viewport": "desktop",
     "docName": "delivery-measured",
-    "caption": "Delivery - three files measured: every value with its unit, a silent render not measurable, an MP3 that could not be read"
+    "caption": "Delivery - three files judged against ACX rule by rule: a 48 kHz render not met on sample rate, room tone and the MP3 not checked by the app, a silent render not measurable, an MP3 that could not be read"
   },
   {
     "page": "delivery",
-    "state": "outside-limits",
+    "state": "file-rules",
     "viewport": "desktop",
-    "docName": "delivery-outside-limits",
-    "caption": "Delivery - measured values against the project's own limits, three of them outside"
+    "docName": "delivery-file-rules",
+    "caption": "Delivery - one file against ACX, rule by rule, with what ACX requires and how it was verified"
+  },
+  {
+    "page": "delivery",
+    "state": "custom-profile",
+    "viewport": "desktop",
+    "docName": "delivery-custom-profile",
+    "caption": "Delivery - judged by a custom profile based on ACX, with two rules turned off"
   },
   {
     "page": "delivery",

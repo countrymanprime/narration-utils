@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "generated_at": "2026-09-23T14:00:00Z",
   "app": {
     "name": "Narration Utils",
@@ -8,16 +8,16 @@
   "analyzers": [
     {
       "name": "measure",
-      "version": 1,
+      "version": 2,
       "description": "Integrated loudness (ITU-R BS.1770-4), RMS, sample and true peak, noise floor and duration of each whole file"
     },
     {
       "name": "diagnostics",
-      "version": 1,
+      "version": 2,
       "description": "Clipping, short-term loudness shifts, silences and room-tone changes, against the thresholds listed"
     }
   ],
-  "notice": "A generic technical measurement of the files listed, made on the narrator's computer. It is not a certification: it does not say that a distributor (ACX or another) will accept these files, and it does not replace an engineer's review. Every open finding, and every file that was not measured or checked, is listed.",
+  "notice": "A generic technical measurement of the files listed, made on the narrator's computer. It is not a certification: it does not say that a distributor (ACX or another) will accept these files, and it does not replace an engineer's review. A rule marked \"not checked by the app\" or \"listen\" was not judged, and never counts as met. Every open finding, and every file that was not measured or checked, is listed.",
   "scope": {
     "kind": "chosen_files",
     "description": "The files the narrator chose on the Delivery page in this session: the last measurement and the last diagnostics check. Files are not matched to chapters yet, so each is listed by its file name."
@@ -32,34 +32,381 @@
     "noise_floor_dbfs": "dBFS",
     "rms_dbfs": "dBFS",
     "sample_peak_dbfs": "dBFS",
+    "sample_rate": "Hz",
     "time_range": "s from the start of the file",
     "true_peak_dbtp": "dBTP"
   },
   "definitions": {
     "integrated_lufs": "Gated integrated loudness per ITU-R BS.1770-4 over the whole file.",
     "noise_floor_dbfs": "The RMS of the quietest 0.5 s window that is not digital silence.",
-    "not_measurable": "A value that is null could not be measured (silence, or audio too short); it is never a number and never counts as within a limit.",
-    "rms_dbfs": "RMS over the whole file, silences included; not any distributor's own RMS definition.",
+    "not_checked": "A rule the app cannot check yet (for example the MP3 you upload, when the WAV render was measured) or one to listen for; it is never counted as met.",
+    "not_measurable": "A value that is null could not be measured (silence, or audio too short); it is never a number and never counts as met.",
+    "rms_dbfs": "RMS over the whole file, silences included, over every channel; whether it matches a distributor's own RMS definition is still to verify.",
     "sample_peak_dbfs": "The highest decoded sample.",
     "true_peak_dbtp": "The highest inter-sample peak, from oversampling (4x at 48 kHz and below, 2x above; ITU-R BS.1770-4 Annex 2)."
   },
-  "limits": {
-    "set": true,
-    "note": "Your own limits, from Settings \u003e Delivery. Bounds are inclusive; a value that could not be measured is never counted as within a limit.",
-    "metrics": [
+  "profile": {
+    "key": "acx@2026-09",
+    "id": "acx",
+    "version": "2026-09",
+    "title": "ACX (September 2026)",
+    "platform": "ACX",
+    "built_in": true,
+    "source_title": "ACX Audio Submission Requirements",
+    "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+    "read_on": "2026-09-20",
+    "rules": [
       {
-        "metric": "integrated_lufs",
-        "label": "Integrated loudness",
-        "unit": "LUFS",
-        "min": -20,
-        "max": null
+        "id": "acx.rms",
+        "label": "RMS",
+        "scope": "file",
+        "metric": "rms_dbfs",
+        "unit": "dBFS",
+        "min": -23,
+        "max": -18,
+        "bound": "-23 to -18 dBFS",
+        "level": "required",
+        "checked_by": "measured",
+        "requirement": "Each file measures between -23 dB and -18 dB RMS.",
+        "quoted": false,
+        "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+        "read_on": "2026-09-23",
+        "verification": "to_verify",
+        "verification_note": "RMS definition to compare with ACX Check: the app measures the whole file, silences included, over every channel.",
+        "results": {
+          "met": 2,
+          "not_met": 0,
+          "not_measurable": 0,
+          "not_checked": 0,
+          "off": 0
+        }
       },
       {
-        "metric": "true_peak_dbtp",
-        "label": "True peak",
-        "unit": "dBTP",
+        "id": "acx.peak",
+        "label": "Peak",
+        "scope": "file",
+        "metric": "sample_peak_dbfs",
+        "unit": "dBFS",
         "min": null,
-        "max": -3
+        "max": -3,
+        "bound": "at most -3 dBFS",
+        "level": "required",
+        "checked_by": "measured",
+        "requirement": "Each file has peak values no higher than -3 dB.",
+        "quoted": false,
+        "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+        "read_on": "2026-09-23",
+        "verification": "to_verify",
+        "verification_note": "Sample or true peak to confirm: the app judges the sample peak and shows the true peak as advice.",
+        "results": {
+          "met": 2,
+          "not_met": 0,
+          "not_measurable": 0,
+          "not_checked": 0,
+          "off": 0
+        }
+      },
+      {
+        "id": "acx.noise_floor",
+        "label": "Noise floor",
+        "scope": "file",
+        "metric": "noise_floor_dbfs",
+        "unit": "dBFS",
+        "min": null,
+        "max": -60,
+        "bound": "at most -60 dBFS",
+        "level": "required",
+        "checked_by": "measured",
+        "requirement": "Each file has a noise floor no higher than -60 dB RMS.",
+        "quoted": false,
+        "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+        "read_on": "2026-09-23",
+        "verification": "to_verify",
+        "verification_note": "Window definition to compare with ACX Check: the app takes the quietest 0.5 s that is not digital silence.",
+        "results": {
+          "met": 2,
+          "not_met": 0,
+          "not_measurable": 0,
+          "not_checked": 0,
+          "off": 0
+        }
+      },
+      {
+        "id": "acx.sample_rate",
+        "label": "Sample rate",
+        "scope": "file",
+        "metric": "sample_rate",
+        "unit": "Hz",
+        "min": null,
+        "max": null,
+        "one_of": [
+          44100
+        ],
+        "bound": "one of 44100 Hz",
+        "level": "required",
+        "checked_by": "measured",
+        "requirement": "Each file is sampled at 44.1 kHz.",
+        "quoted": false,
+        "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+        "read_on": "2026-09-23",
+        "verification": "verified",
+        "results": {
+          "met": 0,
+          "not_met": 2,
+          "not_measurable": 0,
+          "not_checked": 0,
+          "off": 0
+        }
+      },
+      {
+        "id": "acx.file_length",
+        "label": "File length",
+        "scope": "file",
+        "metric": "duration_seconds",
+        "unit": "s",
+        "min": null,
+        "max": 7200,
+        "bound": "at most 7200 s",
+        "level": "required",
+        "checked_by": "measured",
+        "requirement": "Each file is no longer than 120 minutes.",
+        "quoted": false,
+        "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+        "read_on": "2026-09-20",
+        "verification": "verified",
+        "results": {
+          "met": 2,
+          "not_met": 0,
+          "not_measurable": 0,
+          "not_checked": 0,
+          "off": 0
+        }
+      },
+      {
+        "id": "acx.room_tone_head",
+        "label": "Room tone, head",
+        "scope": "file",
+        "metric": "head_room_tone_seconds",
+        "unit": "s",
+        "min": 0.5,
+        "max": 5,
+        "bound": "0.5 to 5 s",
+        "level": "required",
+        "checked_by": "not_yet",
+        "requirement": "1 to 5 seconds of room tone at the beginning of each file.",
+        "quoted": false,
+        "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+        "read_on": "2026-09-20",
+        "verification": "conflicting",
+        "verification_note": "ACX's page was read as 1 to 5 s; current guides say 0.5 to 1 s. Judged 0.5 to 5 s (the looser reading) until the owner reads ACX's page.",
+        "results": {
+          "met": 0,
+          "not_met": 0,
+          "not_measurable": 0,
+          "not_checked": 2,
+          "off": 0
+        }
+      },
+      {
+        "id": "acx.room_tone_tail",
+        "label": "Room tone, tail",
+        "scope": "file",
+        "metric": "tail_room_tone_seconds",
+        "unit": "s",
+        "min": 1,
+        "max": 5,
+        "bound": "1 to 5 s",
+        "level": "required",
+        "checked_by": "not_yet",
+        "requirement": "1 to 5 seconds of room tone at the end of each file.",
+        "quoted": false,
+        "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+        "read_on": "2026-09-20",
+        "verification": "verified",
+        "results": {
+          "met": 0,
+          "not_met": 0,
+          "not_measurable": 0,
+          "not_checked": 2,
+          "off": 0
+        }
+      },
+      {
+        "id": "acx.format",
+        "label": "MP3 format",
+        "scope": "file",
+        "metric": "mp3_format",
+        "min": null,
+        "max": null,
+        "bound": "192 kbps+ CBR",
+        "level": "required",
+        "checked_by": "not_yet",
+        "requirement": "Each file is an MP3 at 192 kbps or higher, constant bit rate (CBR).",
+        "quoted": false,
+        "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+        "read_on": "2026-09-23",
+        "verification": "verified",
+        "results": {
+          "met": 0,
+          "not_met": 0,
+          "not_measurable": 0,
+          "not_checked": 2,
+          "off": 0
+        }
+      },
+      {
+        "id": "acx.channels",
+        "label": "Channels",
+        "scope": "book",
+        "metric": "channels",
+        "min": null,
+        "max": null,
+        "one_of": [
+          1,
+          2
+        ],
+        "bound": "one of 1, 2, the same in every file",
+        "level": "required",
+        "checked_by": "measured",
+        "requirement": "Every file is mono or stereo, the same in every file.",
+        "quoted": false,
+        "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+        "read_on": "2026-09-20",
+        "verification": "to_verify",
+        "verification_note": "The same-in-every-file wording and any mono preference are to read on ACX's page.",
+        "results": {
+          "met": 1,
+          "not_met": 0,
+          "not_measurable": 0,
+          "not_checked": 0,
+          "off": 0
+        }
+      },
+      {
+        "id": "acx.one_section_per_file",
+        "label": "One section per file",
+        "scope": "book",
+        "metric": "one_section_per_file",
+        "min": null,
+        "max": null,
+        "bound": "",
+        "level": "required",
+        "checked_by": "listen",
+        "requirement": "Each file holds one chapter or section and starts with a section header.",
+        "quoted": false,
+        "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+        "read_on": "2026-09-20",
+        "verification": "verified",
+        "results": {
+          "met": 0,
+          "not_met": 0,
+          "not_measurable": 0,
+          "not_checked": 1,
+          "off": 0
+        }
+      },
+      {
+        "id": "acx.credits",
+        "label": "Credits files",
+        "scope": "book",
+        "metric": "credits_files",
+        "min": null,
+        "max": null,
+        "bound": "",
+        "level": "required",
+        "checked_by": "not_yet",
+        "requirement": "Opening and closing credits should be separate files",
+        "quoted": true,
+        "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+        "read_on": "2026-09-20",
+        "verification": "verified",
+        "results": {
+          "met": 0,
+          "not_met": 0,
+          "not_measurable": 0,
+          "not_checked": 1,
+          "off": 0
+        }
+      },
+      {
+        "id": "acx.retail_sample",
+        "label": "Retail sample",
+        "scope": "book",
+        "metric": "retail_sample_seconds",
+        "unit": "s",
+        "min": null,
+        "max": 300,
+        "bound": "at most 300 s",
+        "level": "required",
+        "checked_by": "not_yet",
+        "requirement": "A retail audio sample of 5 minutes or less.",
+        "quoted": false,
+        "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+        "read_on": "2026-09-20",
+        "verification": "verified",
+        "verification_note": "Some guides also give a 1 minute minimum; to read on ACX's page.",
+        "results": {
+          "met": 0,
+          "not_met": 0,
+          "not_measurable": 0,
+          "not_checked": 1,
+          "off": 0
+        }
+      },
+      {
+        "id": "acx.consistency",
+        "label": "Consistency",
+        "scope": "book",
+        "metric": "consistency",
+        "min": null,
+        "max": null,
+        "bound": "",
+        "level": "required",
+        "checked_by": "listen",
+        "requirement": "Consistent in overall sound and formatting, free of extraneous sounds.",
+        "quoted": false,
+        "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
+        "read_on": "2026-09-20",
+        "verification": "to_verify",
+        "verification_note": "Recorded from guides; ACX's own wording is to read on its page.",
+        "results": {
+          "met": 0,
+          "not_met": 0,
+          "not_measurable": 0,
+          "not_checked": 1,
+          "off": 0
+        }
+      }
+    ],
+    "book_results": [
+      {
+        "rule": "acx.channels",
+        "status": "met",
+        "value": 2
+      },
+      {
+        "rule": "acx.one_section_per_file",
+        "status": "not_checked",
+        "value": null,
+        "why": "Listen: each file holds one chapter or section and starts with its section header."
+      },
+      {
+        "rule": "acx.credits",
+        "status": "not_checked",
+        "value": null,
+        "why": "Not checked by the app yet: the book checklist comes later."
+      },
+      {
+        "rule": "acx.retail_sample",
+        "status": "not_checked",
+        "value": null,
+        "why": "Not checked by the app yet: the book checklist comes later."
+      },
+      {
+        "rule": "acx.consistency",
+        "status": "not_checked",
+        "value": null,
+        "why": "Listen: consistent sound and levels across files, no extraneous sounds."
       }
     ]
   },
@@ -91,13 +438,20 @@
     "not_checked": 2,
     "findings": 4,
     "open_findings": 4,
+    "rule_results": {
+      "met": 8,
+      "not_met": 2,
+      "not_measurable": 0,
+      "not_checked": 6,
+      "off": 0
+    },
+    "files_not_met": 2,
     "by_review": {
       "unreviewed": 4
     },
     "by_severity": {
-      "error": 1,
-      "info": 2,
-      "warning": 1
+      "error": 2,
+      "warning": 2
     }
   },
   "files": [
@@ -105,7 +459,7 @@
       "ref": "F1",
       "name": "Chapter 01.wav",
       "status": "open_findings",
-      "open_findings": 2,
+      "open_findings": 3,
       "measurement": {
         "status": "measured",
         "report": {
@@ -126,7 +480,54 @@
           "size_bytes": 530928044,
           "modified_at": "2026-09-23T14:02:11.5Z",
           "sha256": "9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f"
-        }
+        },
+        "rules": [
+          {
+            "rule": "acx.rms",
+            "status": "met",
+            "value": -21.2
+          },
+          {
+            "rule": "acx.peak",
+            "status": "met",
+            "value": -3.6,
+            "advice": "true peak above −3 dBTP may clip after MP3 encoding"
+          },
+          {
+            "rule": "acx.noise_floor",
+            "status": "met",
+            "value": -66.8
+          },
+          {
+            "rule": "acx.sample_rate",
+            "status": "not_met",
+            "value": 48000,
+            "violation": "not_one_of"
+          },
+          {
+            "rule": "acx.file_length",
+            "status": "met",
+            "value": 1843.5
+          },
+          {
+            "rule": "acx.room_tone_head",
+            "status": "not_checked",
+            "value": null,
+            "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+          },
+          {
+            "rule": "acx.room_tone_tail",
+            "status": "not_checked",
+            "value": null,
+            "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+          },
+          {
+            "rule": "acx.format",
+            "status": "not_checked",
+            "value": null,
+            "why": "This is a WAV render; check the MP3 you upload."
+          }
+        ]
       },
       "diagnostics": {
         "status": "checked",
@@ -151,7 +552,7 @@
       "ref": "F2",
       "name": "Chapter 02.wav",
       "status": "open_findings",
-      "open_findings": 2,
+      "open_findings": 1,
       "measurement": {
         "status": "measured",
         "report": {
@@ -172,7 +573,53 @@
           "size_bytes": 176444,
           "modified_at": "2026-09-23T14:05:00Z",
           "sha256": "e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3"
-        }
+        },
+        "rules": [
+          {
+            "rule": "acx.rms",
+            "status": "met",
+            "value": -21.2
+          },
+          {
+            "rule": "acx.peak",
+            "status": "met",
+            "value": -3.6
+          },
+          {
+            "rule": "acx.noise_floor",
+            "status": "met",
+            "value": -66.8
+          },
+          {
+            "rule": "acx.sample_rate",
+            "status": "not_met",
+            "value": 48000,
+            "violation": "not_one_of"
+          },
+          {
+            "rule": "acx.file_length",
+            "status": "met",
+            "value": 1843.5
+          },
+          {
+            "rule": "acx.room_tone_head",
+            "status": "not_checked",
+            "value": null,
+            "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+          },
+          {
+            "rule": "acx.room_tone_tail",
+            "status": "not_checked",
+            "value": null,
+            "why": "Not checked by the app yet: measuring room tone at the file's edges comes later."
+          },
+          {
+            "rule": "acx.format",
+            "status": "not_checked",
+            "value": null,
+            "why": "This is a WAV render; check the MP3 you upload."
+          }
+        ]
       },
       "diagnostics": {
         "status": "checked",
@@ -200,7 +647,8 @@
       "open_findings": 0,
       "measurement": {
         "status": "failed",
-        "reason": "Could not be measured: open Chapter 03.mp3: not a RIFF/WAVE file"
+        "reason": "Could not be measured: open Chapter 03.mp3: not a RIFF/WAVE file",
+        "rules": []
       },
       "diagnostics": {
         "status": "not_checked",
@@ -214,7 +662,8 @@
       "open_findings": 0,
       "measurement": {
         "status": "not_measured",
-        "reason": "The measurement was cancelled before this file was read."
+        "reason": "The measurement was cancelled before this file was read.",
+        "rules": []
       },
       "diagnostics": {
         "status": "not_checked",
@@ -224,18 +673,44 @@
   ],
   "findings": [
     {
-      "id": "986fb4386a579a4fdd5ccdeb",
+      "id": "208a2a3c6bab601dc8569bea",
       "analyzer": "measure",
       "category": "delivery_qc",
       "severity": "error",
-      "title": "True peak above your highest limit",
+      "title": "Sample rate not one ACX accepts",
       "file": "F1",
       "confidence": 1,
       "confidence_reason": "deterministic measurement of the decoded samples",
       "evidence": {
+        "allowed": [
+          44100
+        ],
+        "metric": "sample_rate",
+        "profile": "acx@2026-09",
+        "rule": "acx.sample_rate",
+        "value": 48000,
+        "violation": "not_one_of"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "open": true
+    },
+    {
+      "id": "75fc89e66e5ae45854748ea4",
+      "analyzer": "measure",
+      "category": "delivery_qc",
+      "severity": "warning",
+      "title": "Peak: advice",
+      "file": "F1",
+      "confidence": 1,
+      "confidence_reason": "deterministic measurement of the decoded samples",
+      "evidence": {
+        "advice": "true peak above −3 dBTP may clip after MP3 encoding",
         "limit_max": -3,
         "metric": "true_peak_dbtp",
-        "profile": "delivery-limits",
+        "profile": "acx@2026-09",
+        "rule": "acx.peak",
         "value": -2.4,
         "violation": "above_max"
       },
@@ -275,37 +750,23 @@
       "open": true
     },
     {
-      "id": "44d75f494d263f6dfdc53e8b",
+      "id": "b9f5b3028125893accbf3ddc",
       "analyzer": "measure",
       "category": "delivery_qc",
-      "severity": "info",
-      "title": "Integrated loudness not measurable, so not judged",
+      "severity": "error",
+      "title": "Sample rate not one ACX accepts",
       "file": "F2",
       "confidence": 1,
-      "confidence_reason": "the measurement could not be made (silence, or audio shorter than the measurement window)",
+      "confidence_reason": "deterministic measurement of the decoded samples",
       "evidence": {
-        "available": false,
-        "metric": "integrated_lufs",
-        "profile": "delivery-limits"
-      },
-      "review": {
-        "status": "unreviewed"
-      },
-      "open": true
-    },
-    {
-      "id": "760c57cc6cac112ffb303bc7",
-      "analyzer": "measure",
-      "category": "delivery_qc",
-      "severity": "info",
-      "title": "True peak not measurable, so not judged",
-      "file": "F2",
-      "confidence": 1,
-      "confidence_reason": "the measurement could not be made (silence, or audio shorter than the measurement window)",
-      "evidence": {
-        "available": false,
-        "metric": "true_peak_dbtp",
-        "profile": "delivery-limits"
+        "allowed": [
+          44100
+        ],
+        "metric": "sample_rate",
+        "profile": "acx@2026-09",
+        "rule": "acx.sample_rate",
+        "value": 48000,
+        "violation": "not_one_of"
       },
       "review": {
         "status": "unreviewed"
