@@ -25,8 +25,23 @@ It adds four things the Phase 1 harness and the Phase 2 spike do not have:
   `NARRATION_COVERAGE_CORPUS` layout, outside the repository, and `audio_report` runs the real
   sidecar with a Whisper model over it and times it.
 
+The model cascade's Phase 1 (`docs/prds/recording-check-model-cascade.prd.md`) adds two more:
+
+- `cascade` simulates the two-pass check: a fast model over the whole chapter, windows planned from
+  the regions that fail it (`plan_windows`, the PRD's MC3 constants), a stronger model over those
+  windows only (one load a run), its words spliced into the first pass's (`splice`), and the chapter
+  aligned again by the same pure alignment and coverage code the sidecar runs (`align_words`). It
+  reports it per case against single-model runs, or, over an unlabelled chapter (a host manifest),
+  against a reference model;
+- `windows` benchmarks what a window of each length costs to transcribe.
+
 Run it: `uv run python sidecars/transcript-compare/tests/coverage_calibration.py synthetic` prints
-the tables of the research note; `render-audio` and `audio` are the optional audio runs.
+the tables of the research note; `render-audio`, `audio`, `cascade` and `windows` are the optional
+audio runs.
+
+The file is over the 800-line soft ceiling on purpose: the PRD keeps the calibration harness in one
+module (its coverage floor is 100%, `scripts/ci/coverage-floors.json`), and the cascade's product
+code, where a split would matter, lands in Phases 3 and 4.
 """
 
 from __future__ import annotations
@@ -43,7 +58,7 @@ import sys
 import tempfile
 import time
 import wave
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType, SimpleNamespace
@@ -62,6 +77,7 @@ if str(CORE) not in sys.path:
 
 import compare as engine  # needs CORE on sys.path, as coverage_mode itself does
 import coverage_mode
+import recording_coverage as coverage_model
 
 SIDECAR = CORE / "compare.py"
 REPOSITORY = Path(__file__).resolve().parents[3]
@@ -196,11 +212,15 @@ def write_inputs(case: harness.Case, words_dir: Path) -> Path:
 
 
 def _args(case: harness.Case, manuscript: Path, words_dir: Path, out: Path, settings: Settings, whisper: Whisper | None) -> list[str]:
+    return _sidecar_args(case.chapter.id, manuscript, words_dir, out, settings, whisper)
+
+
+def _sidecar_args(chapter_id: str, manuscript: Path, words_dir: Path, out: Path, settings: Settings, whisper: Whisper | None) -> list[str]:
     args = [
         "--coverage",
         "--manifest", str(words_dir / "manifest.json"),
         "--manuscript", str(manuscript),
-        "--chapter-id", case.chapter.id,
+        "--chapter-id", chapter_id,
         "--words-dir", str(words_dir),
         "--out", str(out),
         "--progress", str(out.with_suffix(".progress")),
@@ -243,14 +263,33 @@ def run_cli(case: harness.Case, manuscript: Path, words_dir: Path, out: Path, se
     """`compare.py --coverage` as a subprocess, as the host launches it. Words files already in
     `words_dir` are reused, so a second run with other alignment settings transcribes nothing."""
     write_inputs(case, words_dir)
+    return _run_sidecar(case.id, _args(case, manuscript, words_dir, out, settings, whisper), out)
+
+
+def _run_sidecar(label: str, args: list[str], out: Path) -> SidecarResult:
     started = time.perf_counter()
-    done = subprocess.run(
-        [sys.executable, str(SIDECAR), *_args(case, manuscript, words_dir, out, settings, whisper)], capture_output=True, text=True, check=False
-    )
+    done = subprocess.run([sys.executable, str(SIDECAR), *args], capture_output=True, text=True, check=False)
     seconds = time.perf_counter() - started
     if done.returncode != 0:
-        raise RuntimeError(f"{case.id}: the sidecar exited with {done.returncode}: {done.stderr[-2000:]}")
+        raise RuntimeError(f"{label}: the sidecar exited with {done.returncode}: {done.stderr[-2000:]}")
     return read_results(out, seconds)
+
+
+STORED_SECONDS = "seconds.json"
+"""Beside a words cache: the wall time of the run that transcribed it, so a run that reuses every
+words file still reports what the check cost."""
+
+
+def with_stored_seconds(result: SidecarResult, words_dir: Path) -> SidecarResult:
+    """The result with the time of the run that transcribed its words: stored when this run
+    transcribed something, read back when it reused everything."""
+    stored = words_dir / STORED_SECONDS
+    if result.summary["items"]["transcribed"]:
+        stored.write_text(json.dumps({"seconds": result.seconds}), encoding="utf-8")
+        return result
+    if stored.exists():
+        return dataclasses.replace(result, seconds=json.loads(stored.read_text(encoding="utf-8"))["seconds"])
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -646,7 +685,7 @@ def audio_report(corpus: Path, whispers: Sequence[Whisper], settings: Settings, 
         outcome = Tally()
         for case in audio_cases:
             words_dir = work / whisper.model / case.id
-            result = run_cli(case, corpus / "manuscript.json", words_dir, words_dir / "results.txt", settings, whisper)
+            result = with_stored_seconds(run_cli(case, corpus / "manuscript.json", words_dir, words_dir / "results.txt", settings, whisper), words_dir)
             got = text_complete(result, settings)
             outcome = outcome.add(case.expected.text_complete, got)
             played = result.summary["items"]["playedSeconds"] / 60
@@ -665,6 +704,654 @@ def audio_report(corpus: Path, whispers: Sequence[Whisper], settings: Settings, 
     return "\n".join(lines)
 
 
+# ---------------------------------------------------------------------------
+# the model cascade (docs/prds/recording-check-model-cascade.prd.md, Phase 1)
+
+WINDOW_MIN_SECONDS = 25.0
+"""MC3: Whisper costs a 30-second block however little of it is audio, so a window shorter than
+this costs as much as one this long (the `windows` benchmark)."""
+WINDOW_PAST_BOUND_SECONDS = 3.0
+"""MC3's "a few seconds past each bound": the window starts this far before the last matched word
+before a gap and ends this far after the first matched word after it."""
+WINDOW_MERGE_GAP_SECONDS = 20.0
+"""MC3: two windows of one item less than this apart become one."""
+WHOLE_CHAPTER_SHARE = 0.6
+"""MC3: windows over this share of the chapter's played audio become one whole-chapter pass."""
+SPLICE_EDGE_SECONDS = 0.5
+"""Where a window cuts the audio, a word within this of the cut is left to the first pass: the
+re-check may have heard only part of it."""
+TIME_LIMIT_AGAINST_SMALL = 1.4
+"""The Key Hypothesis: the cascade's total time within 40% of `small`'s."""
+
+
+@dataclass(frozen=True)
+class Target:
+    """One chapter check: the host's manifest items, the manuscript, and the verdict it should get
+    (None for an unlabelled real chapter)."""
+
+    id: str
+    manuscript: Path
+    chapter_id: str
+    items: tuple[coverage_mode.ManifestItem, ...]
+    expected: bool | None
+
+
+def case_target(case: harness.Case, manuscript: Path, words_dir: Path) -> Target:
+    """A corpus case as a check: its manifest written as `write_inputs` writes it."""
+    items = coverage_mode.read_manifest(write_inputs(case, words_dir))
+    return Target(case.id, manuscript, case.chapter.id, items, case.expected.text_complete)
+
+
+def manifest_target(target_id: str, manifest: Path, manuscript: Path, chapter_id: str) -> Target:
+    """A chapter the host would check, from the manifest it would write."""
+    return Target(target_id, manuscript, chapter_id, coverage_mode.read_manifest(manifest), None)
+
+
+def write_manifest(target: Target, words_dir: Path) -> Path:
+    words_dir.mkdir(parents=True, exist_ok=True)
+    items = [
+        {
+            "index": item.index,
+            "itemGuid": item.item_guid,
+            "sourceFile": item.source_file,
+            "startOffset": item.start_offset,
+            "length": item.length,
+            "wordsFile": item.words_file,
+            "muted": item.muted,
+        }
+        for item in target.items
+    ]
+    manifest = words_dir / "manifest.json"
+    manifest.write_text(json.dumps({"schemaVersion": coverage_mode.MANIFEST_SCHEMA_VERSION, "items": items}), encoding="utf-8")
+    return manifest
+
+
+def run_target(target: Target, words_dir: Path, settings: Settings, whisper: Whisper) -> SidecarResult:  # pragma: no cover - needs a Whisper model
+    """`compare.py --coverage` over the target, reusing and timing its words cache."""
+    write_manifest(target, words_dir)
+    out = words_dir / "results.txt"
+    return with_stored_seconds(_run_sidecar(target.id, _sidecar_args(target.chapter_id, target.manuscript, words_dir, out, settings, whisper), out), words_dir)
+
+
+def read_item_words(target: Target, words_dir: Path) -> dict[int, coverage_mode.ItemWords]:
+    """The words file of every played item, as a run over `words_dir` left them."""
+    words = {}
+    for item in target.items:
+        if item.muted:
+            continue
+        found = coverage_mode.read_words_file(words_dir / item.words_file)
+        if found is None:
+            raise FileNotFoundError(f"{target.id}: no words file for item {item.index} in {words_dir}")
+        words[item.index] = found
+    return words
+
+
+@dataclass(frozen=True)
+class Aligned:
+    """The chapter aligned to a set of words, as `coverage_mode.run` aligns it, with the item and
+    source seconds of every joined transcript word."""
+
+    coverage: coverage_model.ChapterCoverage
+    alignment: dict
+    timeline: coverage_mode._Timeline
+    sources: tuple[tuple[int, float, float], ...]
+
+
+def align_words(target: Target, words: Mapping[int, coverage_mode.ItemWords], settings: Settings) -> Aligned:
+    """`coverage_mode.run`'s alignment over words already in hand (the sidecar module is Phase 2's
+    to change, so its five alignment lines are repeated here; a test pins them to the sidecar)."""
+    manuscript = str(target.manuscript)
+    engine.register_project_equivalences(manuscript)
+    chapter = coverage_mode._chapter(engine, manuscript, target.chapter_id)
+    results = [
+        coverage_mode._ItemResult(item, None, None, ())
+        if item.muted
+        else coverage_mode._ItemResult(item, "reused", words[item.index], tuple(coverage_mode.played_words(words[item.index], item)))
+        for item in target.items
+    ]
+    timeline = coverage_mode._timeline(results)
+    sources = tuple((result.item.index, start, end) for result in results if result.source for _text, start, end in result.played)
+    heading = " ".join(part for part in (chapter["title"], chapter.get("subtitle") or "") if part)
+    sentence_units, tokens, unit_idx, raw_words = engine.build_chapter_units({"title": heading, "paragraphs": chapter["paragraphs"]})
+    _markers, _covered, alignment = engine.diff_and_build_markers(tokens, unit_idx, raw_words, timeline.words, 1)
+    params = coverage_model.AlignmentParams(settings.max_misread_run, settings.min_anchor_run)
+    coverage = coverage_model.compute_coverage(coverage_model.aligned_chapter_from_markers(alignment, sentence_units, chapter["paragraph_ids"]), params)
+    return Aligned(coverage, alignment, timeline, sources)
+
+
+def _thresholds(settings: Settings) -> coverage_model.Thresholds:
+    return coverage_model.Thresholds(settings.min_paragraph_present, settings.max_missing_run)
+
+
+def is_complete(coverage: coverage_model.ChapterCoverage, settings: Settings) -> bool:
+    return coverage.text_complete(_thresholds(settings))
+
+
+def failing_regions(coverage: coverage_model.ChapterCoverage, settings: Settings) -> tuple[coverage_model.Region, ...]:
+    """The regions that make the chapter "not met": a run over `max_missing_run`, or a region in a
+    paragraph that fails. None when the chapter is met: a "met" stands (the PRD's safety rule)."""
+    if is_complete(coverage, settings):
+        return ()
+    failing = {paragraph.id for paragraph in coverage.paragraphs if not paragraph.passes(_thresholds(settings))}
+    return tuple(region for region in coverage.regions if region.token_count > settings.max_missing_run or failing & set(region.paragraph_ids))
+
+
+@dataclass(frozen=True)
+class Bound:
+    """A point in the audio: a played item and source seconds."""
+
+    item: int
+    time: float
+
+
+@dataclass(frozen=True)
+class Gap:
+    """A region's audio bounds: the end of the last matched word before it and the start of the
+    first matched word after it; None at a chapter edge."""
+
+    before: Bound | None
+    after: Bound | None
+
+
+def region_gap(region: coverage_model.Region, aligned: Aligned) -> Gap:
+    """A region's bounds from the alignment's `equal` opcodes on either side of its manuscript
+    tokens, mapped through `index_map` to the joined transcript word and its item. Phase 2 emits
+    these bounds from the sidecar; Phase 4 should read them from there instead."""
+    before = after = None
+    for tag, i1, i2, j1, j2 in aligned.alignment["opcodes"]:
+        if tag != "equal":
+            continue
+        if i2 <= region.doc_start:
+            before = j2 - 1
+        elif i1 >= region.doc_end:
+            after = j1
+            break
+
+    def bound(audio_index: int | None, edge: int) -> Bound | None:
+        if audio_index is None:
+            return None
+        item, *times = aligned.sources[aligned.alignment["index_map"][audio_index]]
+        return Bound(item, times[edge])
+
+    return Gap(bound(before, 1), bound(after, 0))
+
+
+@dataclass(frozen=True)
+class Played:
+    """An unmuted item's played range, in source seconds."""
+
+    index: int
+    start: float
+    end: float
+
+
+def played_ranges(target: Target) -> tuple[Played, ...]:
+    return tuple(Played(item.index, item.start_offset, item.end) for item in target.items if not item.muted)
+
+
+@dataclass(frozen=True)
+class Span:
+    """A window of one item's source audio to re-check."""
+
+    item: int
+    start: float
+    end: float
+
+    @property
+    def seconds(self) -> float:
+        return self.end - self.start
+
+
+@dataclass(frozen=True)
+class WindowPlan:
+    spans: tuple[Span, ...]
+    whole_chapter: bool
+
+    @property
+    def seconds(self) -> float:
+        return sum(span.seconds for span in self.spans)
+
+
+def _gap_spans(gap: Gap, played: Sequence[Played]) -> list[Span]:
+    """A gap's bounds plus the margin past each, one slice per item it crosses; a missing bound
+    runs to the chapter's edge."""
+    position = {item.index: n for n, item in enumerate(played)}
+    first = position[gap.before.item] if gap.before else 0
+    last = position[gap.after.item] if gap.after else len(played) - 1
+    start = gap.before.time - WINDOW_PAST_BOUND_SECONDS if gap.before else played[first].start
+    end = gap.after.time + WINDOW_PAST_BOUND_SECONDS if gap.after else played[last].end
+    spans = []
+    for n in range(first, last + 1):
+        item = played[n]
+        span = Span(item.index, max(item.start, start) if n == first else item.start, min(item.end, end) if n == last else item.end)
+        if span.seconds > 0:
+            spans.append(span)
+    return spans
+
+
+def _padded(span: Span, item: Played) -> Span:
+    """At least `WINDOW_MIN_SECONDS`, around the span's middle, shifted to stay inside the item."""
+    if item.end - item.start <= WINDOW_MIN_SECONDS:
+        return Span(item.index, item.start, item.end)
+    if span.seconds >= WINDOW_MIN_SECONDS:
+        return span
+    extra = (WINDOW_MIN_SECONDS - span.seconds) / 2
+    start, end = span.start - extra, span.end + extra
+    if start < item.start:
+        start, end = item.start, end + item.start - start
+    if end > item.end:
+        start, end = start - (end - item.end), item.end
+    return Span(span.item, start, end)
+
+
+def _merged(spans: Sequence[Span]) -> list[Span]:
+    merged: list[Span] = []
+    for span in sorted(spans, key=lambda s: s.start):
+        if merged and span.start - merged[-1].end < WINDOW_MERGE_GAP_SECONDS:
+            merged[-1] = Span(span.item, merged[-1].start, max(merged[-1].end, span.end))
+        else:
+            merged.append(span)
+    return merged
+
+
+def plan_windows(gaps: Sequence[Gap], played: Sequence[Played]) -> WindowPlan:
+    """MC3's plan: each gap's bounds padded, merged per item, or the whole chapter when the windows
+    would cover more than `WHOLE_CHAPTER_SHARE` of it. Items in play order."""
+    raw = [span for gap in gaps for span in _gap_spans(gap, played)]
+    spans = []
+    for item in played:
+        spans += _merged([_padded(span, item) for span in raw if span.item == item.index])
+    plan = WindowPlan(tuple(spans), False)
+    if plan.seconds > WHOLE_CHAPTER_SHARE * sum(item.end - item.start for item in played):
+        return WindowPlan(tuple(Span(item.index, item.start, item.end) for item in played), True)
+    return plan
+
+
+Word = coverage_mode.Word
+
+
+def splice(first: Sequence[Word], spans: Sequence[Span], recheck: Sequence[Sequence[Word]], played: Played) -> tuple[Word, ...]:
+    """One item's words after a re-check: inside each window the re-check's words replace the first
+    pass's, by word midpoint. Where a window cuts the audio (not at the item's own edge), the
+    `SPLICE_EDGE_SECONDS` next to the cut stay the first pass's, so a word the cut split is neither
+    lost nor counted twice."""
+
+    def interior(span: Span) -> tuple[float, float]:
+        start = span.start + (SPLICE_EDGE_SECONDS if span.start > played.start else 0.0)
+        end = span.end - (SPLICE_EDGE_SECONDS if span.end < played.end else 0.0)
+        return start, end
+
+    inside = [interior(span) for span in spans]
+
+    def rechecked(word: Word, zone: tuple[float, float]) -> bool:
+        return zone[0] <= (word[1] + word[2]) / 2 <= zone[1]
+
+    kept = [word for word in first if not any(rechecked(word, zone) for zone in inside)]
+    new = [word for zone, words in zip(inside, recheck, strict=True) for word in words if rechecked(word, zone)]
+    return tuple(sorted(kept + new, key=lambda word: (word[1], word[2])))
+
+
+SpanTranscriber = Callable[[coverage_mode.ManifestItem, Span], tuple[coverage_mode.ItemWords, float]]
+"""Transcribes one window of an item; returns its words (source seconds) and the seconds it took."""
+
+
+@dataclass(frozen=True)
+class Cascade:
+    first: Aligned
+    final: Aligned
+    plan: WindowPlan
+    words: Mapping[int, coverage_mode.ItemWords]
+    recheck_seconds: float
+    align_seconds: float
+    first_complete: bool
+    complete: bool
+
+
+def cascade(target: Target, first_words: Mapping[int, coverage_mode.ItemWords], transcribe: SpanTranscriber, settings: Settings) -> Cascade:
+    """The two-pass check: a "met" first pass stands; otherwise the failing regions' windows are
+    re-checked, spliced in, and the chapter is aligned again by the unchanged rules."""
+    first = align_words(target, first_words, settings)
+    if is_complete(first.coverage, settings):
+        return Cascade(first, first, WindowPlan((), False), dict(first_words), 0.0, 0.0, True, True)
+    played = {item.index: item for item in played_ranges(target)}
+    plan = plan_windows([region_gap(region, first) for region in failing_regions(first.coverage, settings)], tuple(played.values()))
+    items = {item.index: item for item in target.items}
+    rechecked: dict[int, list[tuple[Span, coverage_mode.ItemWords]]] = {}
+    seconds = 0.0
+    for span in plan.spans:
+        words, took = transcribe(items[span.item], span)
+        rechecked.setdefault(span.item, []).append((span, words))
+        seconds += took
+    spliced = dict(first_words)
+    for index, pairs in rechecked.items():
+        base = first_words[index]
+        words = splice(base.words, [span for span, _ in pairs], [new.words for _, new in pairs], played[index])
+        spliced[index] = dataclasses.replace(base, words=words, model=f"{base.model}+{pairs[0][1].model}")
+    started = time.perf_counter()
+    final = align_words(target, spliced, settings)
+    return Cascade(first, final, plan, spliced, seconds, time.perf_counter() - started, False, is_complete(final.coverage, settings))
+
+
+def cached_span_transcriber(directory: Path, inner: SpanTranscriber) -> SpanTranscriber:
+    """Keeps each re-checked window's words and time in `directory`, so a repeated run transcribes
+    nothing and still reports what the window cost."""
+
+    def transcribe(item: coverage_mode.ManifestItem, span: Span) -> tuple[coverage_mode.ItemWords, float]:
+        name = f"{span.item:03d}-{span.start:.3f}-{span.end:.3f}"
+        words_path, seconds_path = directory / f"{name}.json", directory / f"{name}.seconds.json"
+        cached = coverage_mode.read_words_file(words_path)
+        if cached is not None and seconds_path.exists():
+            return cached, json.loads(seconds_path.read_text(encoding="utf-8"))["seconds"]
+        words, seconds = inner(item, span)
+        coverage_mode.write_words_file(words_path, words)
+        seconds_path.write_text(json.dumps({"seconds": seconds}), encoding="utf-8")
+        return words, seconds
+
+    return transcribe
+
+
+def whisper_span_transcriber(whisper: Whisper, manuscript: Path) -> tuple[SpanTranscriber, float]:  # pragma: no cover - needs a Whisper model
+    """The sidecar's own transcriber over windows, with the model loaded once for the run (as the
+    re-check mode will): returns it and the seconds the load took."""
+    started = time.perf_counter()
+    model = coverage_mode._load_whisper_model(whisper.model, str(whisper.model_dir) if whisper.model_dir else None, whisper.device)
+    load = time.perf_counter() - started
+    hotwords = engine.load_vocabulary_hints(str(manuscript))
+    transcriber = coverage_mode.WhisperTranscriber(engine, model_size=whisper.model, language=whisper.language, hotwords=hotwords, model_factory=lambda: model)
+
+    def transcribe(item: coverage_mode.ManifestItem, span: Span) -> tuple[coverage_mode.ItemWords, float]:
+        window = dataclasses.replace(item, start_offset=span.start, length=span.seconds)
+        began = time.perf_counter()
+        words = transcriber(window, lambda _seconds: None)
+        return words, time.perf_counter() - began
+
+    return transcribe, load
+
+
+# reports ---------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Single:
+    complete: bool
+    seconds: float
+
+
+@dataclass(frozen=True)
+class CascadeRow:
+    case_id: str
+    expected: bool
+    first: bool
+    cascade: bool
+    windows: int
+    window_seconds: float
+    whole_chapter: bool
+    first_seconds: float
+    recheck_seconds: float  # the re-check model's load (when it had windows) and its windows
+    align_seconds: float
+    singles: Mapping[str, Single]
+
+    @property
+    def total(self) -> float:
+        return self.first_seconds + self.recheck_seconds + self.align_seconds
+
+
+@dataclass(frozen=True)
+class Hypothesis:
+    go: bool
+    false_met: int
+    false_not_met: int
+    large_false_not_met: int
+    cascade_seconds: float
+    small_seconds: float
+
+
+def hypothesis(rows: Sequence[CascadeRow], small: str = "small", large: str = "large-v3-turbo") -> Hypothesis:
+    """The PRD's Key Hypothesis on a corpus: no false met, no more false not met than the large
+    model alone, and a total time within 40% of `small`'s."""
+    ours, theirs = Tally(), Tally()
+    for row in rows:
+        ours, theirs = ours.add(row.expected, row.cascade), theirs.add(row.expected, row.singles[large].complete)
+    seconds = sum(row.total for row in rows)
+    small_seconds = sum(row.singles[small].seconds for row in rows)
+    go = ours.false_met == 0 and ours.false_not_met <= theirs.false_not_met and seconds <= TIME_LIMIT_AGAINST_SMALL * small_seconds
+    return Hypothesis(go, ours.false_met, ours.false_not_met, theirs.false_not_met, seconds, small_seconds)
+
+
+def cascade_table(rows: Sequence[CascadeRow], settings: Settings, first: str = "tiny", recheck: str = "large-v3-turbo") -> str:
+    singles = list(rows[0].singles) if rows else []
+    lines = [
+        f"Settings: {_settings_text(settings)}",
+        "",
+        f"| Case | Expected | {first} | Cascade | Windows | Window s | First pass s | Re-check s | Total s | "
+        + " | ".join(f"{name} | {name} s" for name in singles)
+        + " |",
+        "| --- " * (9 + 2 * len(singles)) + "|",
+    ]
+    for row in rows:
+        windows = f"{row.windows}{' (whole chapter)' if row.whole_chapter else ''}"
+        cells = [row.case_id, row.expected, row.first, row.cascade, windows, f"{row.window_seconds:.0f}", f"{row.first_seconds:.1f}"]
+        cells += [f"{row.recheck_seconds:.1f}", f"{row.total:.1f}"]
+        cells += [cell for name in singles for cell in (row.singles[name].complete, f"{row.singles[name].seconds:.1f}")]
+        lines.append("| " + " | ".join(str(cell) for cell in cells) + " |")
+    small_seconds = sum(row.singles["small"].seconds for row in rows) if "small" in singles else 0.0
+    methods = [(first, lambda r: r.first, lambda r: r.first_seconds), (f"cascade ({first} + {recheck})", lambda r: r.cascade, lambda r: r.total)]
+    methods += [(name, lambda r, n=name: r.singles[n].complete, lambda r, n=name: r.singles[n].seconds) for name in singles]
+    lines += ["", "| Method | Cases | False met | False not met | Seconds | Against small |", "| --- | --- | --- | --- | --- | --- |"]
+    for name, verdict, seconds in methods:
+        tally = Tally()
+        for row in rows:
+            tally = tally.add(row.expected, verdict(row))
+        total = sum(seconds(row) for row in rows)
+        share = f"{total / small_seconds:.0%}" if small_seconds else ""
+        lines.append(f"| {name} | {tally.cases} | {tally.false_met} | {tally.false_not_met} | {total:.1f} | {share} |")
+    result = hypothesis(rows)
+    judged = (
+        f"{'Go' if result.go else 'No-go'}: cascade false met {result.false_met}, false not met {result.false_not_met} "
+        f"(large-v3-turbo alone {result.large_false_not_met}), {result.cascade_seconds:.1f} s against small's {result.small_seconds:.1f} s "
+        f"(limit {TIME_LIMIT_AGAINST_SMALL * result.small_seconds:.1f} s)."
+    )
+    return "\n".join([*lines, "", judged])
+
+
+@dataclass(frozen=True)
+class FoundRegion:
+    """A region without its words: kind, size, manuscript token range, and where it sits in the
+    audio (the sidecar's `position`), so a report on private narration carries no text."""
+
+    kind: str
+    tokens: int
+    doc_start: int
+    doc_end: int
+    item: int | None
+    time: float | None
+
+
+def found_regions(aligned: Aligned, regions: Sequence[coverage_model.Region] | None = None) -> tuple[FoundRegion, ...]:
+    found = []
+    for region in aligned.coverage.regions if regions is None else regions:
+        position = coverage_mode._region_position(region, aligned.alignment, aligned.timeline)
+        item, at = (position["itemIndex"], position["sourceTime"]) if position else (None, None)
+        found.append(FoundRegion(region.kind, region.token_count, region.doc_start, region.doc_end, item, at))
+    return tuple(found)
+
+
+def region_agreement(ours: Sequence[FoundRegion], theirs: Sequence[FoundRegion]) -> tuple[int, list[FoundRegion], list[FoundRegion]]:
+    """Regions are the same gap when their manuscript tokens overlap: how many of ours the other
+    run found too, ours it did not, and its own we did not."""
+
+    def overlap(a: FoundRegion, b: FoundRegion) -> bool:
+        return a.doc_start < b.doc_end and b.doc_start < a.doc_end
+
+    only_ours = [a for a in ours if not any(overlap(a, b) for b in theirs)]
+    only_theirs = [b for b in theirs if not any(overlap(a, b) for a in ours)]
+    return len(ours) - len(only_ours), only_ours, only_theirs
+
+
+def position_text(region: FoundRegion) -> str:
+    """Where to listen: the item in play order (1-based) and its source time."""
+    if region.item is None or region.time is None:
+        return "no audio"
+    return f"item {region.item + 1} at {int(region.time // 60)}:{int(region.time % 60):02d}"
+
+
+@dataclass(frozen=True)
+class ChapterRun:
+    name: str
+    verdicts: Mapping[str, bool]
+    regions: tuple[FoundRegion, ...]
+    seconds: float
+    windows: int | None = None
+    window_seconds: float | None = None
+
+
+def chapter_report(runs: Sequence[ChapterRun], reference: str) -> str:
+    """An unlabelled chapter: each run's verdicts, regions and time, and its regions against the
+    reference run's, with every disagreement as a place to listen."""
+    ref = next(run for run in runs if run.name == reference)
+    labels = list(ref.verdicts)
+    lines = [
+        f"| Run | {' | '.join(labels)} | Regions | Windows | Window s | Seconds | Also found by {reference} | Only this run | Only {reference} |",
+        "| --- " * (len(labels) + 8) + "|",
+    ]
+    disagreements = []
+    for run in runs:
+        both, mine, theirs = region_agreement(run.regions, ref.regions)
+        windows = "" if run.windows is None else run.windows
+        window_seconds = "" if run.window_seconds is None else f"{run.window_seconds:.0f}"
+        verdicts = " | ".join(str(run.verdicts[label]) for label in labels)
+        lines.append(
+            f"| {run.name} | {verdicts} | {len(run.regions)} | {windows} | {window_seconds} | {run.seconds:.1f} | {both} | {len(mine)} | {len(theirs)} |"
+        )
+        if run.name != reference and (mine or theirs):
+            disagreements.append(f"\n{run.name} against {reference}:")
+            disagreements += [f"- {position_text(r)}: {r.kind}, {r.tokens} words, found by {run.name} only" for r in mine]
+            disagreements += [f"- {position_text(r)}: {r.kind}, {r.tokens} words, found by {reference} only" for r in theirs]
+    return "\n".join(lines + disagreements)
+
+
+def cascade_corpus_report(
+    corpus: Path, whispers: Mapping[str, Whisper], first: str, recheck: str, settings_list: Sequence[Settings], work: Path
+) -> str:  # pragma: no cover - needs Whisper models
+    """The cascade over every case of a corpus, against each model alone (the `audio` words cache
+    in `work` is reused, so a repeated run transcribes nothing)."""
+    manuscript = corpus / "manuscript.json"
+    cases = harness.load_corpus(corpus).cases
+    transcribe, load = whisper_span_transcriber(whispers[recheck], manuscript)
+    sections = []
+    for settings in settings_list:
+        rows = []
+        for case in cases:
+            target = case_target(case, manuscript, work / "targets" / case.id)
+            singles = {name: run_target(target, work / name / case.id, settings, whisper) for name, whisper in whispers.items()}
+            cached = cached_span_transcriber(work / f"recheck-{recheck}" / case.id, transcribe)
+            outcome = cascade(target, read_item_words(target, work / first / case.id), cached, settings)
+            windows, window_seconds = len(outcome.plan.spans), outcome.plan.seconds
+            rows.append(
+                CascadeRow(
+                    case.id,
+                    case.expected.text_complete,
+                    outcome.first_complete,
+                    outcome.complete,
+                    windows,
+                    window_seconds,
+                    outcome.plan.whole_chapter,
+                    singles[first].seconds,
+                    outcome.recheck_seconds + (load if windows else 0.0),
+                    outcome.align_seconds,
+                    {name: Single(text_complete(result, settings), result.seconds) for name, result in singles.items() if name != first},
+                )
+            )
+        sections.append(cascade_table(rows, settings, first, recheck))
+    return f"Re-check model load: {load:.1f} s, charged to every case with a window.\n\n" + "\n\n".join(sections)
+
+
+def cascade_chapter_report(
+    target: Target, whispers: Mapping[str, Whisper], first: str, recheck: str, settings_list: Sequence[Settings], work: Path
+) -> str:  # pragma: no cover - needs Whisper models and the audio
+    """The cascade over one unlabelled chapter, against each model alone, with `recheck` alone as
+    the reference. Prints positions, counts and times only: never a word of the chapter."""
+    transcribe, load = whisper_span_transcriber(whispers[recheck], target.manuscript)
+    results = {name: run_target(target, work / name / target.id, settings_list[0], whisper) for name, whisper in whispers.items()}
+    words = {name: read_item_words(target, work / name / target.id) for name in whispers}
+    sections = [f"Re-check model load: {load:.1f} s. Played audio: {sum(p.end - p.start for p in played_ranges(target)) / 60:.1f} minutes."]
+    for settings in settings_list:
+        label = _settings_text(settings)
+        runs = []
+        for name in whispers:
+            aligned = align_words(target, words[name], settings)
+            regions = found_regions(aligned, failing_regions(aligned.coverage, settings))
+            runs.append(ChapterRun(name, {label: is_complete(aligned.coverage, settings)}, regions, results[name].seconds))
+        outcome = cascade(target, words[first], cached_span_transcriber(work / f"recheck-{recheck}" / target.id, transcribe), settings)
+        windows, window_seconds = len(outcome.plan.spans), outcome.plan.seconds
+        seconds = results[first].seconds + outcome.recheck_seconds + (load if windows else 0.0) + outcome.align_seconds
+        regions = found_regions(outcome.final, failing_regions(outcome.final.coverage, settings))
+        runs.append(ChapterRun(f"cascade ({first} + {recheck})", {label: outcome.complete}, regions, seconds, windows, window_seconds))
+        whole = " (whole chapter)" if outcome.plan.whole_chapter else ""
+        sections.append(f"Settings {label}: cascade re-check {outcome.recheck_seconds:.1f} s over {windows} windows{whole}\n\n{chapter_report(runs, recheck)}")
+    return "\n\n".join(sections)
+
+
+# the window benchmark --------------------------------------------------------
+
+BENCH_WINDOWS = (5, 10, 20, 30, 45, 60, 120, 240)
+BENCH_REPEATS = 3
+BENCH_STRIDE_SECONDS = 97.0
+
+
+def bench_offsets(total: float, window: float, repeats: int, stride: float = BENCH_STRIDE_SECONDS) -> list[float]:
+    """Where each repeat of a window starts: a different stretch of the audio each time."""
+    if total <= window:
+        return [0.0] * repeats
+    return [(n * stride) % (total - window) for n in range(repeats)]
+
+
+def windows_table(model: str, load: float, rows: Sequence[tuple[int, float]], three: float, one: float) -> str:
+    lines = [
+        f"{model}: model load {load:.1f} s (median of {BENCH_REPEATS})",
+        "",
+        "| Window (s) | Median (s) | Seconds per audio minute |",
+        "| --- | --- | --- |",
+    ]
+    lines += [f"| {window} | {seconds:.1f} | {seconds / window * 60:.1f} |" for window, seconds in rows]
+    lines += ["", f"Merging: three 10 s windows {three:.1f} s; one 60 s window over them {one:.1f} s"]
+    return "\n".join(lines)
+
+
+def _bench_transcribe(model, clip: np.ndarray, language: str | None) -> float:  # pragma: no cover - needs a Whisper model
+    """Seconds to transcribe a clip with the sidecar's settings."""
+    began = time.perf_counter()
+    segments, _info = model.transcribe(clip, language=language, word_timestamps=True, vad_filter=True)
+    for _segment in segments:  # the segments are a generator: transcription happens here
+        pass
+    return time.perf_counter() - began
+
+
+def windows_report(corpus: Path, whispers: Sequence[Whisper]) -> str:  # pragma: no cover - needs Whisper models
+    """Model load and transcription time by window length, with the sidecar's settings (int8 on
+    the CPU, `vad_filter`, `word_timestamps`), over the corpus's audio joined end to end."""
+    import statistics
+
+    from faster_whisper import decode_audio
+
+    rate = 16000
+    audio = np.concatenate([decode_audio(str(path), sampling_rate=rate) for path in sorted((corpus / "audio").glob("*.wav"))])
+    total = len(audio) / rate
+    sections = [f"Audio: {total / 60:.1f} minutes; CPU threads: {os.cpu_count()}"]
+    for whisper in whispers:
+        loads = [model_load_seconds(whisper) for _ in range(BENCH_REPEATS)]
+        model = coverage_mode._load_whisper_model(whisper.model, str(whisper.model_dir) if whisper.model_dir else None, whisper.device)
+
+        def run(start: float, seconds: float, model=model, language=whisper.language) -> float:
+            return _bench_transcribe(model, audio[int(start * rate) : int((start + seconds) * rate)], language)
+
+        run(0.0, 5.0)  # warm-up, not timed
+        rows = [(window, statistics.median([run(start, window) for start in bench_offsets(total, window, BENCH_REPEATS)])) for window in BENCH_WINDOWS]
+        three = sum(run(start, 10.0) for start in (0.0, 25.0, 50.0))
+        sections.append(windows_table(whisper.model, statistics.median(loads), rows, three, run(0.0, 60.0)))
+    return "\n\n".join(sections)
+
+
 def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - a command line over the functions above
     parser = argparse.ArgumentParser(description="Calibrate the recording check's four settings on the synthetic fixtures.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -677,10 +1364,35 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - a comm
     audio.add_argument("--model", action="append", required=True, help="name=directory of a faster-whisper model, repeatable")
     audio.add_argument("--settings", default=_settings_text(PROPOSED), help="min_paragraph_present,max_missing_run,max_misread_run,min_anchor_run")
     audio.add_argument("--work", type=Path, default=None, help="where words files are kept between runs (default: a temporary directory)")
+    cascade_cmd = sub.add_parser("cascade", help="simulate the two-model check over a corpus, or over one chapter from a host manifest")
+    cascade_cmd.add_argument("--corpus", type=Path, default=Path(os.environ.get(harness.CORPUS_ENV, "")) or None)
+    cascade_cmd.add_argument("--manifest", type=Path, help="a host coverage manifest: check this one unlabelled chapter instead of a corpus")
+    cascade_cmd.add_argument("--manuscript", type=Path, help="with --manifest: the canonical manuscript.json")
+    cascade_cmd.add_argument("--chapter-id", help="with --manifest: the manuscript chapter")
+    cascade_cmd.add_argument("--model", action="append", required=True, help="name=directory of a faster-whisper model, repeatable; each also runs alone")
+    cascade_cmd.add_argument("--first", default="tiny", help="the first-pass model (MC2)")
+    cascade_cmd.add_argument("--recheck", default="large-v3-turbo", help="the re-check model (MC2), and the reference for an unlabelled chapter")
+    cascade_cmd.add_argument("--settings", action="append", help="as for audio, repeatable (default: the Proposed and the shipped settings)")
+    cascade_cmd.add_argument("--work", type=Path, required=True, help="the words cache, shared with `audio` (keep it outside the repository)")
+    windows = sub.add_parser("windows", help="benchmark model load and transcription time by window length")
+    windows.add_argument("--corpus", type=Path, default=Path(os.environ.get(harness.CORPUS_ENV, "")) or None)
+    windows.add_argument("--model", action="append", required=True, help="name=directory of a faster-whisper model, repeatable")
     args = parser.parse_args(argv)
     if args.command == "render-audio":
         for path in render_audio_corpus(args.voice, args.out):
             print(path)
+        return 0
+    if args.command in ("cascade", "windows"):
+        whispers = {name: Whisper(name, Path(directory)) for name, _, directory in (spec.partition("=") for spec in args.model)}
+        if args.command == "windows":
+            print(windows_report(args.corpus, list(whispers.values())))
+            return 0
+        settings_list = [_parse_settings(text) for text in args.settings] if args.settings else [PROPOSED, SHIPPED]
+        if args.manifest:
+            target = manifest_target(args.manifest.stem, args.manifest, args.manuscript, args.chapter_id)
+            print(cascade_chapter_report(target, whispers, args.first, args.recheck, settings_list, args.work))
+        else:
+            print(cascade_corpus_report(args.corpus, whispers, args.first, args.recheck, settings_list, args.work))
         return 0
     with tempfile.TemporaryDirectory() as scratch:
         work = Path(scratch)
@@ -688,11 +1400,14 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - a comm
             text, _chosen = synthetic_report(work)
             print(text)
             return 0
-        a, b, c, d = (part.strip() for part in args.settings.split(","))
-        settings = Settings(float(a), int(b), int(c), int(d))
         whispers = [Whisper(name, Path(directory)) for name, _, directory in (spec.partition("=") for spec in args.model)]
-        print(audio_report(args.corpus, whispers, settings, args.work or work))
+        print(audio_report(args.corpus, whispers, _parse_settings(args.settings), args.work or work))
     return 0
+
+
+def _parse_settings(text: str) -> Settings:  # pragma: no cover - the command line
+    a, b, c, d = (part.strip() for part in text.split(","))
+    return Settings(float(a), int(b), int(c), int(d))
 
 
 if __name__ == "__main__":  # pragma: no cover

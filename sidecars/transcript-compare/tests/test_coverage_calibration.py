@@ -279,3 +279,394 @@ def test_transcript_errors_counts_a_dropped_word(tmp_path):
     counts = cal.transcript_errors(case, cal.SidecarResult({}, (), (), ({"index": 0, "itemGuid": item.id},)), tmp_path)
 
     assert (counts["dropped"], counts["swapped"], counts["added"]) == (1, 0, 0)
+
+
+# ---------------------------------------------------------------------------
+# the model cascade (docs/prds/recording-check-model-cascade.prd.md, Phase 1)
+
+
+def _played(*ranges):
+    return tuple(cal.Played(index, start, end) for index, (start, end) in enumerate(ranges))
+
+
+def _gap(before=None, after=None):
+    return cal.Gap(cal.Bound(*before) if before else None, cal.Bound(*after) if after else None)
+
+
+def test_a_short_gap_becomes_one_window_padded_to_the_minimum_around_its_bounds():
+    plan = cal.plan_windows([_gap((0, 100.0), (0, 104.0))], _played((0.0, 600.0)))
+
+    (span,) = plan.spans
+    assert span.seconds == pytest.approx(cal.WINDOW_MIN_SECONDS)
+    assert span.start < 100.0 - cal.WINDOW_PAST_BOUND_SECONDS and span.end > 104.0 + cal.WINDOW_PAST_BOUND_SECONDS
+    assert (span.start + span.end) / 2 == pytest.approx(102.0)
+    assert not plan.whole_chapter
+
+
+def test_a_long_gap_keeps_its_bounds_plus_the_margin_past_each():
+    (span,) = cal.plan_windows([_gap((0, 100.0), (0, 160.0))], _played((0.0, 600.0))).spans
+
+    assert (span.start, span.end) == pytest.approx((100.0 - cal.WINDOW_PAST_BOUND_SECONDS, 160.0 + cal.WINDOW_PAST_BOUND_SECONDS))
+
+
+def test_padding_shifts_inside_the_item_and_a_short_item_is_read_whole():
+    (near_start,) = cal.plan_windows([_gap((0, 5.0), (0, 8.0))], _played((2.0, 600.0))).spans
+    assert (near_start.start, near_start.end) == pytest.approx((2.0, 2.0 + cal.WINDOW_MIN_SECONDS))
+
+    (near_end,) = cal.plan_windows([_gap((0, 595.0), (0, 597.0))], _played((0.0, 600.0))).spans
+    assert (near_end.start, near_end.end) == pytest.approx((600.0 - cal.WINDOW_MIN_SECONDS, 600.0))
+
+    (short,) = cal.plan_windows([_gap((0, 5.0), (0, 8.0))], _played((1.0, 16.0), (0.0, 600.0))).spans
+    assert (short.item, short.start, short.end) == (0, 1.0, 16.0)
+
+
+def test_a_head_runs_from_the_first_item_start_and_a_tail_to_the_last_item_end():
+    played = _played((0.0, 300.0), (10.0, 400.0))
+
+    (head,) = cal.plan_windows([_gap(None, (0, 50.0))], played).spans
+    assert (head.item, head.start, head.end) == pytest.approx((0, 0.0, 50.0 + cal.WINDOW_PAST_BOUND_SECONDS))
+
+    (tail,) = cal.plan_windows([_gap((1, 350.0), None)], played).spans
+    assert (tail.item, tail.start, tail.end) == pytest.approx((1, 350.0 - cal.WINDOW_PAST_BOUND_SECONDS, 400.0))
+
+
+def test_a_gap_across_items_becomes_one_slice_per_item_and_the_items_between_are_whole():
+    played = _played((0.0, 300.0), (5.0, 200.0), (0.0, 500.0))
+
+    spans = cal.plan_windows([_gap((0, 290.0), (2, 10.0))], played).spans
+
+    assert [span.item for span in spans] == [0, 1, 2]
+    assert (spans[0].start, spans[0].end) == pytest.approx((300.0 - cal.WINDOW_MIN_SECONDS, 300.0))
+    assert (spans[1].start, spans[1].end) == (5.0, 200.0)
+    assert (spans[2].start, spans[2].end) == pytest.approx((0.0, cal.WINDOW_MIN_SECONDS))
+
+
+def test_windows_closer_than_the_merge_gap_merge_and_others_stay_apart():
+    played = _played((0.0, 900.0))
+    near = cal.plan_windows([_gap((0, 100.0), (0, 101.0)), _gap((0, 130.0), (0, 131.0))], played).spans
+    far = cal.plan_windows([_gap((0, 100.0), (0, 101.0)), _gap((0, 160.0), (0, 161.0))], played).spans
+
+    assert len(near) == 1 and near[0].start < 100.0 and near[0].end > 131.0
+    assert len(far) == 2 and far[1].start - far[0].end >= cal.WINDOW_MERGE_GAP_SECONDS
+
+
+def test_windows_over_the_share_of_the_chapter_become_a_whole_chapter_pass():
+    played = _played((0.0, 60.0), (2.0, 42.0))
+
+    plan = cal.plan_windows([_gap((0, 10.0), (0, 40.0)), _gap((1, 10.0), (1, 20.0))], played)
+
+    assert plan.whole_chapter
+    assert [(span.item, span.start, span.end) for span in plan.spans] == [(0, 0.0, 60.0), (1, 2.0, 42.0)]
+    assert plan.seconds == pytest.approx(100.0)
+
+
+def test_no_gap_plans_no_window():
+    plan = cal.plan_windows([], _played((0.0, 60.0)))
+
+    assert plan.spans == () and plan.seconds == 0 and not plan.whole_chapter
+
+
+def test_the_splice_replaces_first_pass_words_inside_a_window_and_keeps_the_rest():
+    first = [("a", 1.0, 1.4), ("b", 10.0, 10.4), ("c", 20.0, 20.4), ("d", 40.0, 40.4)]
+    recheck = [("B", 10.1, 10.5), ("x", 15.0, 15.4), ("C", 20.0, 20.3)]
+
+    words = cal.splice(first, [cal.Span(0, 5.0, 30.0)], [recheck], cal.Played(0, 0.0, 60.0))
+
+    assert [word[0] for word in words] == ["a", "B", "x", "C", "d"]
+
+
+def test_the_splice_trusts_neither_pass_twice_at_a_cut_edge():
+    # A word cut by the window's start: the re-check heard part of it at the edge, the first pass all of it.
+    first = [("cut", 4.8, 5.3), ("in", 12.0, 12.4), ("end", 29.7, 30.3)]
+    recheck = [("ut", 5.0, 5.3), ("in", 12.0, 12.4), ("en", 29.7, 30.0)]
+
+    words = cal.splice(first, [cal.Span(0, 5.0, 30.0)], [recheck], cal.Played(0, 0.0, 60.0))
+
+    assert words == (("cut", 4.8, 5.3), ("in", 12.0, 12.4), ("end", 29.7, 30.3))
+
+
+def test_the_splice_has_no_edge_where_the_window_meets_the_item_edge():
+    recheck = [("first", 0.0, 0.3), ("last", 59.8, 60.0)]
+
+    words = cal.splice([("old", 0.0, 0.4)], [cal.Span(0, 0.0, 60.0)], [recheck], cal.Played(0, 0.0, 60.0))
+
+    assert [word[0] for word in words] == ["first", "last"]
+
+
+def _case(case_id):
+    return next(case for case in harness.load_corpus(harness.FIXTURE_DIR).cases if case.id == case_id)
+
+
+def _scripted_words(case, target, drop=()):
+    words = {}
+    for item, spec in zip(target.items, case.items, strict=True):
+        kept = tuple((w.text, w.start, w.end) for n, w in enumerate(spec.words) if n not in drop)
+        words[item.index] = cal.coverage_mode.ItemWords(kept, item.start_offset, item.end, "tiny", "en", None)
+    return words
+
+
+def test_the_in_process_alignment_is_the_sidecars(tmp_path):
+    case = _case("c2-skipped-sentence")
+    target = cal.case_target(case, MANUSCRIPT, tmp_path / "t")
+
+    aligned = cal.align_words(target, _scripted_words(case, target), cal.SHIPPED)
+    sidecar = cal.run_in_process(case, MANUSCRIPT, tmp_path / "s", cal.SHIPPED)
+
+    assert aligned.coverage.present_tokens == sidecar.summary["presentTokens"]
+    assert len(aligned.coverage.regions) == len(sidecar.regions)
+    assert cal.is_complete(aligned.coverage, cal.SHIPPED) == cal.text_complete(sidecar, cal.SHIPPED) is False
+    assert [region.item for region in cal.found_regions(aligned)] == [r["position"]["itemIndex"] for r in sidecar.regions]
+    assert [region.time for region in cal.found_regions(aligned)] == [r["position"]["sourceTime"] for r in sidecar.regions]
+
+
+def test_a_skip_is_bounded_by_the_matched_words_on_either_side(tmp_path):
+    case = _case("c2-skipped-sentence")
+    target = cal.case_target(case, MANUSCRIPT, tmp_path)
+    chapter = case.chapter
+    said = len(chapter.paragraphs[0].text.split()) + len(harness.split_sentences(chapter.paragraphs[1].text)[0].split())
+    words = case.items[0].words
+
+    aligned = cal.align_words(target, _scripted_words(case, target), cal.SHIPPED)
+    (region,) = cal.failing_regions(aligned.coverage, cal.SHIPPED)
+    gap = cal.region_gap(region, aligned)
+
+    assert gap.before == cal.Bound(0, words[said - 1].end)
+    assert gap.after == cal.Bound(0, words[said].start)
+
+
+def test_a_head_is_bounded_by_the_title_when_it_was_read(tmp_path):
+    case = _case("c2-late-start")  # "Chapter two." read, then the first paragraph skipped
+    target = cal.case_target(case, MANUSCRIPT, tmp_path)
+    words = case.items[0].words
+
+    read = cal.align_words(target, _scripted_words(case, target), cal.SHIPPED)
+    untitled = cal.align_words(target, _scripted_words(case, target, drop=range(2)), cal.SHIPPED)
+
+    assert cal.region_gap(read.coverage.regions[0], read).before.time <= words[1].end
+    assert cal.region_gap(untitled.coverage.regions[0], untitled).before is None
+
+
+def test_a_tail_has_no_word_after(tmp_path):
+    case = _case("c1-truncated-tail")
+    target = cal.case_target(case, MANUSCRIPT, tmp_path)
+    aligned = cal.align_words(target, _scripted_words(case, target), cal.SHIPPED)
+    gaps = [cal.region_gap(region, aligned) for region in aligned.coverage.regions if region.kind == "tail"]
+
+    assert gaps and all(gap.after is None and gap.before is not None for gap in gaps)
+
+
+def test_an_alignment_with_no_words_has_no_bounds(tmp_path):
+    case = _case("c2-late-start")
+    target = cal.case_target(case, MANUSCRIPT, tmp_path)
+    silent = {index: dataclasses.replace(words, words=()) for index, words in _scripted_words(case, target).items()}
+
+    aligned = cal.align_words(target, silent, cal.SHIPPED)
+
+    assert {cal.region_gap(region, aligned) for region in aligned.coverage.regions} == {cal.Gap(None, None)}
+    assert {(region.item, region.time) for region in cal.found_regions(aligned)} == {(None, None)}
+
+
+def _coverage(paragraphs, regions, longest):
+    return cal.coverage_model.ChapterCoverage(
+        cal.coverage_model.AlignmentParams(),
+        sum(p.tokens for p in paragraphs),
+        sum(p.present for p in paragraphs),
+        0,
+        longest,
+        tuple(paragraphs),
+        tuple(regions),
+    )
+
+
+def test_only_regions_that_fail_the_chapter_are_rechecked():
+    passing = cal.coverage_model.ParagraphCoverage("p-1", 100, 98, 2)
+    failing = cal.coverage_model.ParagraphCoverage("p-2", 20, 17, 3)
+    short = cal.coverage_model.Region("skip", ("p-1",), 2, "a", "b", 0, 2, 0)
+    in_failing = cal.coverage_model.Region("skip", ("p-2",), 3, "a", "b", 110, 113, 50)
+    long_run = cal.coverage_model.Region("skip", ("p-1",), 4, "a", "b", 10, 14, 5)
+
+    assert cal.failing_regions(_coverage([passing, failing], [short, in_failing], 3), cal.PROPOSED) == (in_failing,)
+    assert cal.failing_regions(_coverage([passing], [short, long_run], 4), cal.SHIPPED) == (long_run,)
+    assert cal.failing_regions(_coverage([passing], [short], 2), cal.SHIPPED) == ()
+
+
+def _truth_transcriber(case, calls):
+    def transcribe(item, span):
+        calls.append(span)
+        words = tuple((w.text, w.start, w.end) for w in case.items[span.item].words if span.start <= w.start and w.end <= span.end)
+        return cal.coverage_mode.ItemWords(words, span.start, span.end, "large-v3-turbo", "en", None), 2.5
+
+    return transcribe
+
+
+def test_the_cascade_rechecks_words_the_first_pass_lost_and_calls_the_chapter_complete(tmp_path):
+    case = _case("c2-subtitle-read")
+    target = cal.case_target(case, MANUSCRIPT, tmp_path)
+    calls = []
+
+    outcome = cal.cascade(target, _scripted_words(case, target, drop=range(60, 67)), _truth_transcriber(case, calls), cal.PROPOSED)
+
+    assert not outcome.first_complete and outcome.complete
+    assert len(calls) == 1 and outcome.plan.spans == tuple(calls) and not outcome.plan.whole_chapter
+    assert outcome.recheck_seconds == 2.5
+    assert outcome.final.coverage.present_tokens == outcome.final.coverage.body_tokens
+    assert outcome.words[0].model == "tiny+large-v3-turbo"
+
+
+def test_the_cascade_keeps_a_real_gap_missing(tmp_path):
+    case = _case("c2-skipped-sentence")
+    target = cal.case_target(case, MANUSCRIPT, tmp_path)
+
+    outcome = cal.cascade(target, _scripted_words(case, target), _truth_transcriber(case, []), cal.PROPOSED)
+
+    assert not outcome.first_complete and not outcome.complete and outcome.plan.spans
+
+
+def test_a_complete_first_pass_never_loads_the_second_model(tmp_path):
+    case = _case("c2-subtitle-read")
+    target = cal.case_target(case, MANUSCRIPT, tmp_path)
+    calls = []
+
+    outcome = cal.cascade(target, _scripted_words(case, target), _truth_transcriber(case, calls), cal.PROPOSED)
+
+    assert outcome.first_complete and outcome.complete and outcome.plan.spans == () and calls == []
+    assert outcome.recheck_seconds == 0 and outcome.final is outcome.first
+
+
+def test_the_first_pass_words_are_read_from_each_items_words_file(tmp_path):
+    case = _case("c1-multiple-items-trimmed")
+    target = cal.case_target(case, MANUSCRIPT, tmp_path)
+
+    words = cal.read_item_words(target, tmp_path)
+
+    assert sorted(words) == [0, 1, 2]
+    with pytest.raises(FileNotFoundError, match="no words file"):
+        cal.read_item_words(target, tmp_path / "elsewhere")
+
+
+def test_a_muted_item_is_left_out_of_the_alignment_and_the_windows(tmp_path):
+    case = _case("c1-multiple-items-trimmed")
+    target = cal.case_target(case, MANUSCRIPT, tmp_path)
+    muted = dataclasses.replace(target, items=(dataclasses.replace(target.items[0], muted=True), *target.items[1:]))
+    words = {index: w for index, w in _scripted_words(case, target).items() if index}
+
+    aligned = cal.align_words(muted, words, cal.SHIPPED)
+
+    assert sorted(cal.read_item_words(muted, tmp_path)) == [1, 2]
+    assert [p.index for p in cal.played_ranges(muted)] == [1, 2]
+    assert aligned.coverage.present_tokens < aligned.coverage.body_tokens
+
+
+def test_rechecked_windows_are_kept_with_their_time_and_never_transcribed_twice(tmp_path):
+    calls = []
+
+    def inner(item, span):
+        calls.append(span)
+        return cal.coverage_mode.ItemWords((("word", span.start + 1, span.start + 1.4),), span.start, span.end, "large-v3-turbo", "en", None), 7.0
+
+    item = cal.coverage_mode.ManifestItem(0, "g", "a.wav", 0.0, 60.0, "w.json", False)
+    cached = cal.cached_span_transcriber(tmp_path, inner)
+
+    first = cached(item, cal.Span(0, 5.0, 30.0))
+    again = cached(item, cal.Span(0, 5.0, 30.0))
+
+    assert calls == [cal.Span(0, 5.0, 30.0)]
+    assert first == again and again[1] == 7.0
+
+
+def test_a_run_that_reused_every_words_file_reports_the_time_of_the_run_that_transcribed(tmp_path):
+    transcribed = cal.SidecarResult({"items": {"transcribed": 2}}, (), (), (), 40.0)
+    reused = cal.SidecarResult({"items": {"transcribed": 0}}, (), (), (), 0.4)
+
+    assert cal.with_stored_seconds(reused, tmp_path).seconds == 0.4  # nothing stored yet
+    assert cal.with_stored_seconds(transcribed, tmp_path).seconds == 40.0
+    assert cal.with_stored_seconds(reused, tmp_path).seconds == 40.0
+
+
+def test_a_manifest_target_reads_the_hosts_manifest(tmp_path):
+    manifest = tmp_path / "manifest.json"
+    item = {"index": 0, "itemGuid": "g", "sourceFile": "a.wav", "startOffset": 2.0, "length": 60.0, "wordsFile": "w-1.json", "muted": False}
+    manifest.write_text(json.dumps({"schemaVersion": 1, "items": [item]}), encoding="utf-8")
+
+    target = cal.manifest_target("real", manifest, MANUSCRIPT, "c-0001")
+    written = cal.write_manifest(target, tmp_path / "words")
+
+    assert target.expected is None and target.items[0].start_offset == 2.0
+    assert json.loads(written.read_text(encoding="utf-8"))["items"] == [item]
+
+
+def _row(case_id, expected, tiny, cascade, small, large, windows=0, recheck=0.0):
+    singles = {"small": cal.Single(small, 30.0), "large-v3-turbo": cal.Single(large, 60.0)}
+    return cal.CascadeRow(case_id, expected, tiny, cascade, windows, windows * 25.0, False, 10.0, recheck, 0.1, singles)
+
+
+def test_the_cascade_report_tallies_verdicts_and_times_and_judges_the_hypothesis():
+    rows = [
+        _row("a", True, True, True, True, True),
+        _row("b", False, False, False, False, False, 1, 8.0),
+        _row("c", True, False, True, False, True, 2, 9.0),
+    ]
+
+    text = cal.cascade_table(rows, cal.PROPOSED)
+    verdict = cal.hypothesis(rows)
+
+    assert "| c | True | False | True | 2 | 50 | 10.0 | 9.0 | 19.1 | False | 30.0 | True | 60.0 |" in text
+    assert "| cascade (tiny + large-v3-turbo) | 3 | 0 | 0 | 47.3 |" in text
+    assert "| small | 3 | 0 | 1 | 90.0 |" in text
+    assert verdict.go and verdict.cascade_seconds == pytest.approx(47.3) and verdict.small_seconds == 90.0
+    assert "Go:" in text
+
+
+def test_the_hypothesis_fails_on_a_false_met_more_false_not_met_or_too_much_time():
+    false_met = [_row("a", False, True, True, False, False)]
+    worse = [_row("a", True, False, False, True, True)]
+    slow = [_row("a", True, False, True, True, True, 3, 200.0)]
+
+    assert not cal.hypothesis(false_met).go
+    assert not cal.hypothesis(worse).go
+    assert not cal.hypothesis(slow).go
+    assert "No-go:" in cal.cascade_table(slow, cal.PROPOSED)
+
+
+def _found(start, end, item=0, time=1.0):
+    return cal.FoundRegion("skip", end - start, start, end, item, time)
+
+
+def test_regions_agree_when_their_manuscript_words_overlap():
+    ours = [_found(0, 5), _found(20, 30), _found(50, 52)]
+    theirs = [_found(3, 8), _found(40, 45)]
+
+    both, only_ours, only_theirs = cal.region_agreement(ours, theirs)
+
+    assert both == 1 and only_ours == [ours[1], ours[2]] and only_theirs == [theirs[1]]
+
+
+def test_a_position_reads_as_item_and_minutes():
+    assert cal.position_text(cal.FoundRegion("skip", 4, 0, 4, 2, 125.4)) == "item 3 at 2:05"
+    assert cal.position_text(cal.FoundRegion("tail", 4, 0, 4, None, None)) == "no audio"
+
+
+def test_the_chapter_report_compares_each_run_with_the_reference():
+    ref = cal.ChapterRun("large-v3-turbo", {"proposed": False, "shipped": True}, (_found(10, 16, 0, 61.0),), 300.0)
+    both = cal.ChapterRun("cascade", {"proposed": False, "shipped": False}, (_found(11, 16, 0, 61.5), _found(90, 99, 1, 5.0)), 90.0, 2, 50.0)
+
+    text = cal.chapter_report([ref, both], "large-v3-turbo")
+
+    assert "| cascade | False | False | 2 | 2 | 50 | 90.0 | 1 | 1 | 0 |" in text
+    assert "- item 2 at 0:05: skip, 9 words, found by cascade only" in text
+    assert "| large-v3-turbo | False | True | 1 |  |  | 300.0 | 1 | 0 | 0 |" in text
+
+
+def test_benchmark_offsets_differ_and_stay_inside_the_audio():
+    offsets = cal.bench_offsets(600.0, 60.0, 3)
+
+    assert len(set(offsets)) == 3 and all(0 <= o <= 540.0 for o in offsets)
+    assert cal.bench_offsets(30.0, 60.0, 2) == [0.0, 0.0]
+
+
+def test_the_benchmark_table_lists_each_window_and_the_merge_comparison():
+    text = cal.windows_table("large-v3-turbo", 3.2, [(5, 4.6), (60, 16.8)], 12.2, 14.4)
+
+    assert "large-v3-turbo: model load 3.2 s" in text
+    assert "| 60 | 16.8 | 16.8 |" in text
+    assert "three 10 s windows 12.2 s; one 60 s window over them 14.4 s" in text
