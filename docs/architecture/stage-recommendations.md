@@ -198,13 +198,15 @@ project copy (`STAGES_TIMING_PROJECT`).
 
 Phase 5 shows the recommendations in the Home estimate card (`apps/ui/src/components/stages/`, wired into
 `components/home/AudiobookEstimatePanel.tsx`). `useStageRecommendations` reads `StageRecommendations()` when Home opens,
-after a manuscript import, after a recording check ends or its dialog closes, after a status is changed by hand and on
-Check now; nothing is cached across reads (D1, Q5). `StageSuggestion` sits under each chapter's status select, which stays
-the narrator's override: the verdict in a few words, Confirm and Dismiss for `recommended`, Revert for a live
-confirmation, and the "evidence changed since you confirmed" notice with Revert for a `contradiction`. `StageEvidence` is
-the evidence view in the existing `SlideOver` (Q11): each signal's state, reason and evidence (a paragraph it names links
-to the manuscript), the saved project's modified time and its age, and for an unknown cause what resolves it
-(`stageText.ts`, `CAUSE_TEXT`: the recording check dialog, the Tracks page, or Check now). `StageSummary` holds the chips
-on the collapsed card and the Check now line above the table. Confirm is one click, reversible by Revert (Q13). A refusal
-is shown as an error toast and the recommendations are read again; a failed read shows "Couldn't check" in every row.
-The mock's `?mockStages=mixed|error` seeds (`apps/ui/src/main.tsx`) drive the visual states `home/stage-*`.
+after a manuscript import, after a recording check ends or its dialog closes, after a status is changed by hand and, on a
+failed read, when Try again is pressed; nothing is cached across reads (D1, Q5). `StageSuggestion` sits under each
+chapter's status select, which stays the narrator's override: the verdict in a few words, Confirm and Dismiss for
+`recommended`, Revert for a live confirmation, and the "evidence changed since you confirmed" notice with Revert for a
+`contradiction`. `StageEvidence` is the evidence view in the existing `SlideOver` (Q11): each signal's state, reason and
+evidence (a paragraph it names links to the manuscript), the saved project's modified time and its age, and for an
+unknown cause what resolves it (`stageText.ts`, `CAUSE_TEXT`: the recording check dialog, the Tracks page, or Check now).
+`StageSummary` holds the chips on the collapsed card; `StageCheckLine` above the table renders nothing while the read
+succeeds and only the reason and a Try again retry when it fails (`home-stage-check-line.prd.md` Phase 1). Confirm is one
+click, reversible by Revert (Q13). A refusal is shown as an error toast and the recommendations are read again; a failed
+read shows "Couldn't check" in every row. The mock's `?mockStages=mixed|error` seeds (`apps/ui/src/main.tsx`) drive the
+visual states `home/stage-*`.

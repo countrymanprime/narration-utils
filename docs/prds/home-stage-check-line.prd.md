@@ -84,7 +84,7 @@ The narrator on Home with the per-chapter breakdown open, usually between sessio
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Remove the explainer and the idle Check now | Drop the sentence; show the line above the table only on a failed read, with its reason and a retry (Q1, Q3, Q4); tests, interaction catalog row, state descriptions, guide and architecture doc, doc screenshot | pending | 2 | - | - |
+| 1 | Remove the explainer and the idle Check now | Drop the sentence; show the line above the table only on a failed read, with its reason and a retry (Q1, Q3, Q4); tests, interaction catalog row, state descriptions, guide and architecture doc, doc screenshot | complete | 2 | - | - |
 | 2 | Re-read on focus | Throttled re-read of suggestions and chapters when the window regains focus (only if Q2 is A); tests, catalog row, docs | pending | 1 | Q2 | - |
 
 ### Phase Details

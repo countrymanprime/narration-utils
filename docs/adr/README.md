@@ -174,3 +174,4 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0170](0170-the-delivery-report-is-built-by-the-host-into-the-project-sidecar-without-paths-and-the-host-judges-the-limits.md) | The Delivery report is built by the host into the project sidecar without paths, and the host judges the limits | Proposed |
 | [0171](0171-the-race-detector-runs-only-where-there-is-concurrency-and-checklocks-guards-the-locks.md) | The race detector runs only where there is concurrency, and checklocks guards the locks | Proposed |
 | [0172](0172-popover-is-an-interactive-layer-above-the-dialog-and-escape-defers-to-the-topmost-one.md) | Popover is an interactive layer above the dialog, and Escape defers to the topmost one | Proposed |
+| [0187](0187-the-resume-prompt-is-a-compact-notice-that-settles-once-per-dialog-open.md) | The resume prompt is a compact notice that settles once per dialog open | Proposed (amends ADR-0112) |

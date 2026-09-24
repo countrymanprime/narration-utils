@@ -3,7 +3,7 @@ import { useApi } from '../../api/ApiContext';
 import { ConfirmDialog } from '../primitives/ConfirmDialog';
 import { Dialog } from '../primitives/Dialog';
 import { ReadAlongView } from './ReadAlongView';
-import { ResumeCard } from './ResumeCard';
+import { ResumePrompt } from './ResumePrompt';
 import { ReaderRail } from './ReaderRail';
 import type { FlagSaveState } from './ReaderFlagsPanel';
 import { flagMarks, flagSaves, flagText, visibleFlags, withMarks, type FlagVisibility } from './readerFlags';
@@ -42,8 +42,8 @@ const byReadingOrder = (a: ManuscriptNote, b: ManuscriptNote): number => a.parag
 /**
  * Reading mode as a Manuscript chapter action (teleprompter-manuscript-integration.prd.md Phase 2): a full-size
  * `Dialog` around the same session core and reader view the standalone Teleprompter page uses (`useTeleprompterSession`,
- * `ReadAlongView`), opened already pointed at one chapter, so there is no chapter picker here. The resume card above the
- * view is Phase 10's (`ResumeCard`).
+ * `ReadAlongView`), opened already pointed at one chapter, so there is no chapter picker here. The resume prompt in the
+ * text column's header slot is `ResumePrompt` (read-aloud-resume-from-daw.prd.md Phase 1).
  *
  * Phase 5 adds the story bible and note marks and the side rail (Key, Notes, Story bible) they open in; Phase 7 adds the
  * suspected flags, their Flags tab and keeping them as findings (`useKeptFlags`, ADR 0117). Opening a mark only changes the rail: it never seeks the tracker, moves the highlight or scrolls the text. The rail's open state and
@@ -82,13 +82,19 @@ export function ReadAloudDialog({ chapter, entities = NO_ENTITIES, notes = NO_NO
   }, []);
 
   // A session that ends while the dialog is open (Stop, the sidecar stopping, auto-stop at Done) keeps its flags then: by the
-  // time the host reports it stopped, the sidecar's last flags have arrived.
+  // time the host reports it stopped, the sidecar's last flags have arrived. It also resets the start word to the top
+  // (read-aloud-resume-from-daw.prd.md Phase 1, ADR 0112): the resume prompt does not come back to ask again, so the next
+  // Start must not silently reuse a stale choice from the session that just ended.
   const wasActive = useRef(session.active);
   const { keep } = keepFlags;
+  const { setStartWord } = session;
   useEffect(() => {
-    if (wasActive.current && !session.active) keep();
+    if (wasActive.current && !session.active) {
+      keep();
+      setStartWord(null);
+    }
     wasActive.current = session.active;
-  }, [session.active, keep]);
+  }, [session.active, keep, setStartWord]);
 
   // A dismissal during a session is kept with the rest when the session ends; after it has ended, it is kept at once, so the
   // finding is dismissed in the store rather than deleted (ADR 0117).
@@ -116,14 +122,12 @@ export function ReadAloudDialog({ chapter, entities = NO_ENTITIES, notes = NO_NO
   return (
     <>
       <Dialog title={`Read aloud — ${chapter.title}`} size="full" onClose={requestClose} actions={null}>
-        {/* The resume card (Phase 10) sits above the reading view between sessions only; a running session moves by word click. */}
-        {!session.active && (
-          <div className="mx-auto mb-4 max-w-3xl">
-            <ResumeCard chapterId={chapter.id} model={session.model} onStartWord={session.setStartWord} />
-          </div>
-        )}
         <ReadAlongView
           session={session}
+          // The resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) sits in the text column's header slot, on the
+          // text's own axis (read-aloud-control-bar.prd.md Phase 1): mounted for the dialog's whole life, not remounted
+          // between sessions, so it settles once (on a choice or a session starting) and stays gone.
+          header={<ResumePrompt chapterId={chapter.id} model={session.model} active={session.active} onStartWord={session.setStartWord} />}
           marks={marks}
           onOpenMark={openMark}
           aside={

@@ -34,8 +34,6 @@ const fmtHours = (hours: number) => {
 // hour/minute format once a template runs a minute or longer.
 const fmtCreditsSeconds = (seconds: number) => (seconds < 60 ? `${Math.round(seconds)}s` : fmtHours(seconds / 3600));
 
-const RECORDED_FRACTION: Record<ChapterStatus, number> = { not_started: 0, recording: 0.5, editing: 1, proofing: 1, finalized: 1 };
-
 export type StatusTotal = { count: number; hours: number; words: number };
 
 // Keep the progress bar's domain model independent from its rendering.  This
@@ -113,10 +111,11 @@ export function AudiobookEstimatePanel({
 
   const totalWords = narrationChapters.reduce((sum, c) => sum + c.wordCount, 0);
   const finishedHours = estimateFinishedHours(totalWords);
-  const recordedHours = narrationChapters.reduce((sum, c) => sum + estimateFinishedHours(c.wordCount) * (c.recordedFraction ?? RECORDED_FRACTION[c.status]), 0);
+  // No real recorded duration is read from REAPER yet (actual-recorded-column.prd.md Phase 1): the stat never
+  // guesses from a status or a word share, so it shows a plain dash until a later phase adds it.
   const stats = [
     { label: 'Est. finished audio', value: fmtHours(finishedHours) },
-    { label: 'Actual recorded', value: fmtHours(recordedHours) },
+    { label: 'Actual recorded', value: '—' },
     { label: 'Est. record time', value: fmtHours(finishedHours * 3) },
     { label: 'Est. edit time', value: fmtHours(finishedHours * 2) },
     { label: 'Est. proof time', value: fmtHours(finishedHours * 1) },
@@ -205,10 +204,6 @@ export function AudiobookEstimatePanel({
             <TableBody>
               {narrationChapters.map((chapter) => {
                 const finished = estimateFinishedHours(chapter.wordCount);
-                // D11/Q12: a measured share of the chapter's words from a current recording check wins; without one, the status guess stays
-                // and says it is a guess.
-                const measured = chapter.recordedFraction !== undefined;
-                const fraction = chapter.recordedFraction ?? RECORDED_FRACTION[chapter.status];
                 const running = coverage.phase === 'running' && coverage.chapterId === chapter.id;
                 return (
                   <TableRow key={chapter.id}>
@@ -241,10 +236,7 @@ export function AudiobookEstimatePanel({
                       {fmtHours(finished)}
                     </TableCell>
                     <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
-                      {fraction > 0 ? fmtHours(finished * fraction) : '—'}
-                      <span className="block font-['IBM_Plex_Sans',sans-serif] text-[0.7rem] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
-                        {measured ? 'measured' : 'estimated from status'}
-                      </span>
+                      <span aria-label="Recorded length isn’t tracked yet">—</span>
                     </TableCell>
                     <TableCell>
                       <Select
