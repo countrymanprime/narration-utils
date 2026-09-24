@@ -81,6 +81,8 @@ Phase counts are the rows of each PRD's phase table.
 | [Tool Run Logging](tool-run-logging.prd.md) | Feature (infrastructure) | 7 | None; extends the host log of ADR 0069 |
 | [Home Stage Check Line: Remove the Explainer and Rethink Check Now](home-stage-check-line.prd.md) | Defect (UX) | 2 | None; amends the Check now line of Phase 5 of [Chapter Stage Recommendations](chapter-stage-recommendations.prd.md) |
 | [Credits in the Chapter Table](credits-in-chapter-table.prd.md) | Feature (defect report) | 4 | None; builds on [Audiobook Credits Templates](audiobook-credits-templates.prd.md) (ADR 0093, ADR 0150) |
+| [Actual Recorded: Show Only Measured Recorded Time](actual-recorded-column.prd.md) | Defect (UX), then feature | 3 | None; supersedes the caption clause of ADR 0130 and recording coverage Q12, and takes over the Home half of Phase 8 of [Diagnostics, Delivery Reports and Cleanup Tools](diagnostics-delivery-and-cleanup-tools.prd.md) (AR7) |
+| [Recording Check Summary: a Chapter Summary First, Pickups Listed](recording-check-summary.prd.md) | Feature | 4 | None; amends the "counts, not a verdict" clause of ADR 0130 and the result view of the [recording check](../utilities/recording-coverage.md) |
 
 ## Replaced briefs
 
