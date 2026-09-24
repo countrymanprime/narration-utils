@@ -154,8 +154,28 @@ export function DawLaunch() {
   return window['go']['main']['Host']['DawLaunch']();
 }
 
+export function DeliveryDeleteProfile(arg1) {
+  return window['go']['main']['Host']['DeliveryDeleteProfile'](arg1);
+}
+
+export function DeliveryDuplicateProfile(arg1, arg2) {
+  return window['go']['main']['Host']['DeliveryDuplicateProfile'](arg1, arg2);
+}
+
 export function DeliveryExportReport(arg1) {
   return window['go']['main']['Host']['DeliveryExportReport'](arg1);
+}
+
+export function DeliveryProfiles() {
+  return window['go']['main']['Host']['DeliveryProfiles']();
+}
+
+export function DeliverySaveProfile(arg1) {
+  return window['go']['main']['Host']['DeliverySaveProfile'](arg1);
+}
+
+export function DeliverySelectProfile(arg1, arg2, arg3) {
+  return window['go']['main']['Host']['DeliverySelectProfile'](arg1, arg2, arg3);
 }
 
 export function DiagnosticsAnalyze(arg1, arg2) {

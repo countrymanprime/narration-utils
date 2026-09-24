@@ -12,81 +12,163 @@ import (
 	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
+	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/deliveryreport"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
+	projectmanifest "github.com/countrymanprime/narration-utils/shell/internal/project"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 )
 
-// The report export (diagnostics PRD Phase 7) and the host's judgement of a measurement against the narrator's limits,
-// which the Delivery page shows and the report carries with the same IDs.
+// The report export (diagnostics PRD Phase 7) and the host's judgement of a measurement against the project's delivery
+// profile (ADR 0179), which the Delivery page shows and the report carries with the same IDs.
 
-func saveDeliveryLimits(t *testing.T, store *settings.Store, values map[string]string) {
+// withProfileStore gives host a delivery-profile store in a temporary folder.
+func withProfileStore(t *testing.T, host *Host) *Host {
 	t.Helper()
-	changes := map[string]*string{}
-	for key, value := range values {
-		changes[key] = &value
-	}
-	if err := store.Save(deliverySettingsTool, "project", changes); err != nil {
-		t.Fatal(err)
-	}
+	host.deliveryProfiles = deliveryprofile.NewStore(filepath.Join(t.TempDir(), deliveryprofile.FileName))
+	return host
 }
 
-func TestTheHostJudgesAMeasurementAgainstTheLimitsInForceWhenItIsRead(t *testing.T) {
-	project := t.TempDir()
-	host := &Host{settings: settings.New(t.TempDir(), project)}
+func finishedContractJob() *measureJob {
 	job := contractMeasureJob()
 	job.complete(0, contractMeasured(contractMeasurePaths[0]), nil)
 	job.complete(1, contractUnavailable(contractMeasurePaths[1]), nil)
 	job.complete(2, measure.FileMeasurement{}, errors.New("not a RIFF/WAVE file"))
 	job.finish(false, nil)
+	return job
+}
 
-	unjudged := host.judgeMeasure(job.snapshot())
-	for _, file := range unjudged.Files {
-		if file.Findings == nil || len(file.Findings) != 0 {
-			t.Fatalf("with no limits set, %s has findings %v, want an empty list", file.Name, file.Findings)
+func ruleStatus(file MeasureFileResult, id string) deliveryprofile.Status {
+	for _, result := range file.Rules {
+		if result.RuleID == id {
+			return result.Status
 		}
 	}
+	return ""
+}
 
-	saveDeliveryLimits(t, host.settings, map[string]string{"true_peak_dbtp_max": "-3.5", "integrated_lufs_min": "-19"})
+func TestTheHostJudgesAMeasurementAgainstTheProjectsProfileWhenItIsRead(t *testing.T) {
+	project := t.TempDir()
+	host := withProfileStore(t, &Host{config: config{projectFolder: project, projectName: "Alice"}, settings: settings.New(t.TempDir(), project)})
+	job := finishedContractJob()
+
 	judged := host.judgeMeasure(job.snapshot())
-	first := judged.Files[0].Findings
-	want := measure.Evaluate(*judged.Files[0].Report, mustProfile(t, host.settings))
-	if len(first) != 2 || first[0].ID != want[0].ID || first[1].ID != want[1].ID {
-		t.Fatalf("Chapter 01 findings = %+v, want Evaluate's %+v", first, want)
+	if judged.Profile == nil || judged.Profile.Key() != "acx@2026-09" || judged.ProfileNotice != "" {
+		t.Fatalf("a new project is judged against %v (%q), want ACX with no notice", judged.Profile, judged.ProfileNotice)
 	}
-	if got := len(judged.Files[1].Findings); got != 2 {
-		t.Fatalf("the silent render raises %d findings, want 2 not-measurable ones", got)
+	first := judged.Files[0]
+	if ruleStatus(first, "acx.sample_rate") != deliveryprofile.StatusNotMet || ruleStatus(first, "acx.format") != deliveryprofile.StatusNotChecked {
+		t.Fatalf("Chapter 01 rules = %+v, want the 48 kHz render not met and the MP3 not checked", first.Rules)
 	}
-	if len(judged.Files[2].Findings) != 0 {
-		t.Fatal("a file that could not be measured is not judged")
+	want := deliveryprofile.EvaluateFile(*first.Report, deliveryprofile.ACX()).Findings
+	if len(first.Findings) != 1 || first.Findings[0].ID != want[0].ID {
+		t.Fatalf("Chapter 01 findings = %+v, want EvaluateFile's %+v", first.Findings, want)
+	}
+	if got := len(judged.Files[1].Findings); got != 3 {
+		t.Fatalf("the silent render raises %d findings, want 3 not-measurable ones", got)
+	}
+	if judged.Files[2].Findings == nil || len(judged.Files[2].Findings) != 0 || len(judged.Files[2].Rules) != 0 {
+		t.Fatal("a file that could not be measured is not judged, and its lists are empty, not null")
+	}
+	if len(judged.BookRules) != 5 || judged.BookRules[0].RuleID != "acx.channels" {
+		t.Fatalf("book rules = %+v", judged.BookRules)
 	}
 
-	saveDeliveryLimits(t, host.settings, map[string]string{"true_peak_dbtp_max": ""})
-	if got := len(host.judgeMeasure(job.snapshot()).Files[0].Findings); got != 1 {
-		t.Fatalf("after clearing a limit, Chapter 01 has %d findings, want 1: a limit changed in Settings re-judges", got)
+	copied, err := host.profileStore().Duplicate(deliveryprofile.Ref{ID: "acx"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	copied.Rules[3].Off = true // sample rate
+	if _, err := host.profileStore().Save(copied); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := host.selectDeliveryProfile("project", copied.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+	rejudged := host.judgeMeasure(job.snapshot())
+	if rejudged.Profile.ID != copied.ID || len(rejudged.Files[0].Findings) != 0 || ruleStatus(rejudged.Files[0], "acx.sample_rate") != deliveryprofile.StatusOff {
+		t.Fatalf("after choosing a copy with the sample rate off: %s, findings %+v", rejudged.Profile.Key(), rejudged.Files[0].Findings)
+	}
+
+	if err := host.profileStore().Delete(copied.ID); err != nil {
+		t.Fatal(err)
+	}
+	fallen := host.judgeMeasure(job.snapshot())
+	if fallen.Profile.Key() != "acx@2026-09" || !strings.Contains(fallen.ProfileNotice, "no longer there") {
+		t.Fatalf("after deleting the chosen profile: %s, notice %q", fallen.Profile.Key(), fallen.ProfileNotice)
 	}
 }
 
-func mustProfile(t *testing.T, store *settings.Store) measure.Profile {
+func saveDeliveryLimits(t *testing.T, store *settings.Store, scope string, values map[string]string) {
 	t.Helper()
-	profile, problem := deliveryProfile(store)
-	if problem != "" {
-		t.Fatal(problem)
+	changes := map[string]*string{}
+	for key, value := range values {
+		changes[key] = &value
 	}
-	return profile
+	if err := store.Save(deliverySettingsTool, scope, changes); err != nil {
+		t.Fatal(err)
+	}
 }
 
-func TestUnreadableLimitsJudgeNothingAndSayWhy(t *testing.T) {
-	store := settings.New(t.TempDir(), t.TempDir())
-	report := contractMeasured("a.wav").Report
-	job := judgeMeasureJob(MeasureJob{Files: []MeasureFileResult{{Status: measureFileMeasured, Report: &report}}},
-		measure.Profile{}, "delivery limit true_peak_dbtp_max is \"loud\", which is not a finite number")
-	if job.LimitsError == "" || len(job.Files[0].Findings) != 0 {
-		t.Fatalf("job = %+v", job)
+func TestOldLimitsMoveIntoProfilesSoAProjectJudgesTheSameValuesTheSameWay(t *testing.T) {
+	cases := []struct {
+		name         string
+		global       map[string]string
+		project      map[string]string
+		wantProfile  string
+		wantManifest bool
+	}{
+		{"no limits", nil, nil, "acx@", false},
+		{"global only", map[string]string{"true_peak_dbtp_max": "-3.5"}, nil, "custom-", false},
+		{"a project override", nil, map[string]string{"rms_dbfs_min": "-26"}, "custom-", true},
+		{"a project set equal to ACX", nil, map[string]string{"rms_dbfs_min": "-23", "rms_dbfs_max": "-18", "sample_peak_dbfs_max": "-3", "noise_floor_dbfs_max": "-60"}, "acx@", true},
 	}
-	if profile, problem := deliveryProfile(store); problem != "" || profile.HasLimits() || profile.Name != deliveryreport.ProfileName {
-		t.Fatalf("empty settings = %+v, %q; want a named profile with no limits", profile, problem)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			project := t.TempDir()
+			t.Setenv("APPDATA", t.TempDir())
+			store := settings.New(t.TempDir(), project)
+			if tc.global != nil {
+				saveDeliveryLimits(t, store, "global", tc.global)
+			}
+			if tc.project != nil {
+				saveDeliveryLimits(t, store, "project", tc.project)
+			}
+			host := withProfileStore(t, &Host{config: config{projectFolder: project, projectName: "Alice"}, settings: store})
+			judged := host.judgeMeasure(finishedContractJob().snapshot())
+			if !strings.HasPrefix(judged.Profile.Key(), tc.wantProfile) || judged.ProfileNotice != "" {
+				t.Fatalf("judged against %s (%q), want %s", judged.Profile.Key(), judged.ProfileNotice, tc.wantProfile)
+			}
+			manifest, ok, _ := projectmanifest.Load(nil, project)
+			if chosen := ok && manifest.DeliveryProfile != nil; chosen != tc.wantManifest {
+				t.Fatalf("the manifest holds a choice: %v, want %v", chosen, tc.wantManifest)
+			}
+			again := host.judgeMeasure(finishedContractJob().snapshot())
+			if again.Profile.Key() != judged.Profile.Key() {
+				t.Fatalf("a second read judged against %s, the first %s", again.Profile.Key(), judged.Profile.Key())
+			}
+			if catalog, _ := host.profileStore().Catalog(); len(catalog.Profiles) > 2 {
+				t.Fatalf("%d profiles after two reads, want the limits moved once", len(catalog.Profiles))
+			}
+		})
+	}
+}
+
+func TestAHandEditedLimitIsReportedNotGuessedAt(t *testing.T) {
+	project := t.TempDir()
+	t.Setenv("APPDATA", t.TempDir())
+	store := settings.New(t.TempDir(), project)
+	if err := os.MkdirAll(filepath.Join(project, "narration-utils"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(project, "narration-utils", "settings.json"), []byte(`{"Delivery":{"rms_dbfs_min":"loud"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	host := withProfileStore(t, &Host{config: config{projectFolder: project}, settings: store})
+	judged := host.judgeMeasure(finishedContractJob().snapshot())
+	if judged.Profile.Key() != "acx@2026-09" || !strings.Contains(judged.ProfileNotice, "not a finite number") {
+		t.Fatalf("judged against %s with notice %q, want ACX and the reason the limits were not moved", judged.Profile.Key(), judged.ProfileNotice)
 	}
 }
 
@@ -107,7 +189,7 @@ func exportHost(t *testing.T, checked bool) (*Host, string, []string) {
 		}
 		paths = append(paths, path)
 	}
-	host := &Host{config: config{projectFolder: project}, settings: settings.New(t.TempDir(), project), findings: findings.NewStore(project), version: "0.9.0-test"}
+	host := withProfileStore(t, &Host{config: config{projectFolder: project}, settings: settings.New(t.TempDir(), project), findings: findings.NewStore(project), version: "0.9.0-test"})
 	job := &measureJob{id: "measure-1", phase: "running", started: time.Now(), cancel: func() {}}
 	for _, path := range paths {
 		job.files = append(job.files, MeasureFileResult{Path: path, Name: filepath.Base(path), Status: measureFilePending})
@@ -168,7 +250,6 @@ var driveOrUNCPath = regexp.MustCompile(`(?i)\b[a-z]:[\\/]|\\\\\\\\|OutgoingAudi
 
 func TestAnExportWritesBothFilesInTheSidecarFolderWithoutPathsAndLeavesTheAudioAlone(t *testing.T) {
 	host, project, paths := exportHost(t, true)
-	saveDeliveryLimits(t, host.settings, map[string]string{"true_peak_dbtp_max": "-3.5"})
 	before := hashes(t, paths)
 
 	export, err := host.exportDeliveryReport(false)
@@ -210,7 +291,6 @@ func TestAnExportWritesBothFilesInTheSidecarFolderWithoutPathsAndLeavesTheAudioA
 
 func TestTheReportCarriesTheSameIDsAsThePageAndTheStoresReviewDecision(t *testing.T) {
 	host, project, _ := exportHost(t, false)
-	saveDeliveryLimits(t, host.settings, map[string]string{"true_peak_dbtp_max": "-3.5"})
 	onPage := host.judgeMeasure(host.measureState()).Files[0].Findings
 	if len(onPage) != 1 {
 		t.Fatalf("the page is shown %d findings for Chapter 01, want 1", len(onPage))

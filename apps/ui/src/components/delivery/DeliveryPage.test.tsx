@@ -6,7 +6,6 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
-import { judgeMockFile } from '../../api/measureMock';
 import { deliveryReportExportSchema, measureJobSchema } from '../../api/schemas/measure';
 import type { MeasureJob, NarrationApi } from '../../types';
 import { DeliveryPage } from './DeliveryPage';
@@ -19,8 +18,6 @@ type Initial = Parameters<typeof createMockApi>[1];
 const contract = (name: string): MeasureJob =>
   measureJobSchema.parse(JSON.parse(readFileSync(join(__dirname, '..', '..', '..', '..', '..', 'tests', 'fixtures', 'contracts', name), 'utf8')));
 
-const LIMITS = { integrated_lufs_min: '-23', integrated_lufs_max: '-18', rms_dbfs_min: '-20', true_peak_dbtp_max: '-3.5', noise_floor_dbfs_max: '-70' };
-
 function renderPage({ overrides = {}, initial = {} }: { overrides?: Partial<NarrationApi>; initial?: Initial } = {}) {
   const api = createMockApi(overrides, initial);
   const openSettings = vi.fn();
@@ -32,17 +29,13 @@ function renderPage({ overrides = {}, initial = {} }: { overrides?: Partial<Narr
   return { api, openSettings };
 }
 
-/**
- * A host that measures the picked files at its first poll and answers the success payload, as the host pins it (judged against a
- * true-peak limit of -3.5 dBTP) or, given `limits`, judged against those by measure.Evaluate's rules.
- */
-const measuresAtOnce = (limits?: Record<string, string>, change: (job: MeasureJob) => MeasureJob = (job) => job): Partial<NarrationApi> => {
+/** A host that measures the picked files at its first poll and answers the success payload as the host pins it (judged against ACX). */
+const measuresAtOnce = (change: (job: MeasureJob) => MeasureJob = (job) => job): Partial<NarrationApi> => {
   const success = contract('measure-success.json');
-  const judged = limits ? { ...success, files: success.files.map((file) => ({ ...file, findings: judgeMockFile(file, limits) })) } : success;
   return {
     measurePickFiles: async () => ({ paths: success.files.map((file) => file.path) }),
     measureAnalyze: async () => contract('measure-running.json'),
-    measureState: vi.fn<NarrationApi['measureState']>().mockResolvedValueOnce(contract('measure-idle.json')).mockResolvedValue(change(judged)),
+    measureState: vi.fn<NarrationApi['measureState']>().mockResolvedValueOnce(contract('measure-idle.json')).mockResolvedValue(change(success)),
   };
 };
 
@@ -56,50 +49,99 @@ const rowFor = async (name: string) => {
 };
 
 describe('DeliveryPage', () => {
-  it('says nothing is measured yet and that no limits are set, so nothing reads as a pass', async () => {
+  it('names the profile the project is judged against, with every rule and its source, before anything is measured', async () => {
+    const user = userEvent.setup();
     renderPage();
-    expect(await screen.findByText(/No limits set\. Every value is reported without being checked/)).toBeTruthy();
+    expect(await screen.findByText('ACX (September 2026)')).toBeTruthy();
+    expect(screen.getByText('Built in · read-only')).toBeTruthy();
+    expect(screen.getByText('6 checked by the app')).toBeTruthy();
+    expect(screen.getByText('5 not checked by the app')).toBeTruthy();
+    expect(screen.getByText('2 listen')).toBeTruthy();
+    expect(screen.getByText('6 to verify')).toBeTruthy();
     expect(await screen.findByText(/Nothing measured yet/)).toBeTruthy();
-    expect(screen.queryByRole('table')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /Rules and their sources/ }));
+    const rules = screen.getByRole('table', { name: 'Rules and their sources' });
+    expect(within(rules).getAllByRole('row')).toHaveLength(14);
+    expect(within(rules).getByRole('columnheader', { name: 'ACX requires' })).toBeTruthy();
+    expect(within(rules).getByText('Measured: −23 to −18 dBFS')).toBeTruthy();
+    expect(within(rules).getByText(/The WAV is measured; check the MP3 you upload/)).toBeTruthy();
+    expect(within(rules).getByText('Conflicting sources')).toBeTruthy();
+    expect(within(rules).getByText('“Opening and closing credits should be separate files”')).toBeTruthy();
   });
 
-  it('measures the picked files and lists every value with its unit, a silent file as not measurable, and a file it could not read', async () => {
+  it('judges each measured file rule by rule, a silent file as not measurable and a rule the app cannot check as not checked', async () => {
     const user = userEvent.setup();
-    renderPage({ overrides: measuresAtOnce({}) });
+    renderPage({ overrides: measuresAtOnce() });
     await user.click(await screen.findByRole('button', { name: 'Choose files to measure…' }));
 
-    expect(await screen.findByText('Measured 2 of 3 files; 1 could not be measured.')).toBeTruthy();
+    expect(await screen.findByText('Measured 2 of 3 files; 1 could not be measured. Judged against ACX (September 2026).')).toBeTruthy();
+    expect(screen.getByText('1 rule not met in 1 file: sample rate in Chapter 01.wav.')).toBeTruthy();
+    expect(screen.getByText(/3 rules per file are not checked by the app \(room tone at the head and tail and MP3 format\)/)).toBeTruthy();
     const table = screen.getByRole('table', { name: 'Measurements' });
-    expect(within(table).getByRole('columnheader', { name: 'Loudness (LUFS)' })).toBeTruthy();
-    expect(within(table).getByRole('columnheader', { name: 'True peak (dBTP)' })).toBeTruthy();
+    expect(within(table).getByRole('columnheader', { name: /RMS\s+−23 to −18 dBFS/ })).toBeTruthy();
+    expect(within(table).getByRole('columnheader', { name: /Room tone\s+head · tail/ })).toBeTruthy();
 
     const chapter = await rowFor('Chapter 01.wav');
-    expect(chapter.textContent).toContain('−19.4');
+    expect(chapter.textContent).toContain('−21.2');
     expect(chapter.textContent).toContain('48 kHz · stereo');
-    expect(chapter.textContent).toContain('30:43');
-    expect(chapter.textContent).not.toContain('above');
+    expect(chapter.textContent).toContain('Not met not 44.1 kHz');
+    expect(within(chapter).getAllByText('Not checked')).toHaveLength(2);
+    expect(chapter.textContent).toContain('1 not met');
+    expect(chapter.textContent).toContain('4 met · 3 not checked');
 
     const silent = await rowFor('Chapter 02.wav');
-    expect(within(silent).getAllByText('Not measurable')).toHaveLength(5);
-    expect(screen.getByText(/It is never counted as within a limit/)).toBeTruthy();
+    expect(within(silent).getAllByText('Not measurable')).toHaveLength(3);
+    expect(silent.textContent).toContain('3 not checked · 3 not measurable');
+    expect(screen.getByText(/It is never counted as met/)).toBeTruthy();
 
     expect((await rowFor('Chapter 03.mp3')).textContent).toContain('Could not be measured: not a RIFF/WAVE file');
   });
 
-  it('marks each value outside the narrator’s limits with the limit it broke, and counts them', async () => {
+  it('opens a file against the profile, rule by rule, with the requirement and its verification', async () => {
     const user = userEvent.setup();
-    renderPage({ overrides: measuresAtOnce(LIMITS), initial: { deliveryLimits: LIMITS } });
-    expect(await screen.findByText('−23.0 to −18.0 LUFS')).toBeTruthy();
-    expect(screen.getByText('at most −3.5 dBTP')).toBeTruthy();
+    renderPage({ overrides: measuresAtOnce() });
     await user.click(await screen.findByRole('button', { name: 'Choose files to measure…' }));
+    await user.click(await rowFor('Chapter 01.wav'));
 
-    expect(await screen.findByText('3 values are outside your limits.')).toBeTruthy();
-    const chapter = await rowFor('Chapter 01.wav');
-    expect(chapter.textContent).toContain('below −20.0');
-    expect(chapter.textContent).toContain('above −3.5');
-    expect(chapter.textContent).toContain('above −70.0');
-    // A silent file is not measurable, never within: it adds nothing to the count and has no "above" or "below".
-    expect((await rowFor('Chapter 02.wav')).textContent).not.toMatch(/above|below/);
+    const detail = await screen.findByRole('table', { name: 'Chapter 01.wav, rule by rule' });
+    expect(screen.getByText('Chapter 01.wav against ACX (September 2026)')).toBeTruthy();
+    expect(screen.getByText(/Loudness −19.4 LUFS \(information: ACX sets no LUFS rule\)/)).toBeTruthy();
+    const rate = within(detail)
+      .getAllByRole('row')
+      .find((row) => row.textContent?.includes('acx.sample_rate'));
+    expect(rate?.textContent).toContain('Not met');
+    expect(rate?.textContent).toContain('not 44.1 kHz');
+    const format = within(detail)
+      .getAllByRole('row')
+      .find((row) => row.textContent?.includes('acx.format'));
+    expect(format?.textContent).toContain('Not checked by the app');
+    expect(format?.textContent).toContain('This is a WAV render; check the MP3 you upload.');
+
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('table', { name: 'Chapter 01.wav, rule by rule' })).toBeNull();
+  });
+
+  it('shows a custom profile, what it is based on, and its rules turned off', async () => {
+    const user = userEvent.setup();
+    renderPage({ initial: { deliveryProfile: 'custom' } });
+    expect(await screen.findByText('My ACX, tighter peak')).toBeTruthy();
+    expect(screen.getByText('Custom')).toBeTruthy();
+    expect(screen.getByText(/Custom, based on ACX \(September 2026\), revision 3/)).toBeTruthy();
+    expect(screen.getByText('2 off')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /Rules and their sources/ }));
+    const rules = screen.getByRole('table', { name: 'Rules and their sources' });
+    expect(within(rules).getByRole('columnheader', { name: 'Requirement' })).toBeTruthy();
+    expect(within(rules).getByText('Measured: ≤ −3.5 dBFS')).toBeTruthy();
+    expect(within(rules).getAllByText(/^Off: not judged/)).toHaveLength(2);
+  });
+
+  it('says why the project’s own choice of profile could not be used', async () => {
+    const user = userEvent.setup();
+    const notice = 'The delivery profile this project chose is no longer there, so it is judged against the Global default.';
+    renderPage({ overrides: measuresAtOnce((job) => ({ ...job, profileNotice: notice })) });
+    await user.click(await screen.findByRole('button', { name: 'Choose files to measure…' }));
+    expect((await screen.findByRole('status')).textContent).toBe(notice);
   });
 
   it('shows a running measurement with its real progress, and Cancel keeps what was measured', async () => {
@@ -115,7 +157,7 @@ describe('DeliveryPage', () => {
     expect(screen.getByRole('button', { name: 'Choose files to measure…' }).hasAttribute('disabled')).toBe(true);
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(await screen.findByText('Measurement cancelled. 0 of 3 files were measured.')).toBeTruthy();
+    expect(await screen.findByText(/^Measurement cancelled\. 0 of 3 files were measured\./)).toBeTruthy();
     expect((await rowFor('Chapter 01.wav')).textContent).toContain('Not measured: the measurement was cancelled.');
     expect(screen.queryByRole('progressbar')).toBeNull();
   });
@@ -160,28 +202,9 @@ describe('DeliveryPage', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('a measurement is already running');
   });
 
-  it('marks a value the host found outside a limit, from the host’s own payload', async () => {
-    const user = userEvent.setup();
-    renderPage({ overrides: measuresAtOnce() });
-    await user.click(await screen.findByRole('button', { name: 'Choose files to measure…' }));
-    expect(await screen.findByText('1 value is outside your limits.')).toBeTruthy();
-    expect((await rowFor('Chapter 01.wav')).textContent).toContain('above −3.5');
-  });
-
-  it('judges nothing when the host cannot read the limits, and says why', async () => {
-    const user = userEvent.setup();
-    const unreadable = (job: MeasureJob): MeasureJob => ({
-      ...job,
-      limitsError: 'delivery limit true_peak_dbtp_max is "loud", which is not a finite number',
-      files: job.files.map((file) => ({ ...file, findings: [] })),
-    });
-    renderPage({ overrides: { ...measuresAtOnce(undefined, unreadable), settingsForScope: async () => Promise.reject(new Error('settings file is locked')) } });
-    expect((await screen.findByRole('alert')).textContent).toContain('Your limits could not be read, so every value is only reported: settings file is locked');
-    await user.click(await screen.findByRole('button', { name: 'Choose files to measure…' }));
-    expect(await screen.findByText('Measured 2 of 3 files; 1 could not be measured.')).toBeTruthy();
-    expect((await rowFor('Chapter 01.wav')).textContent).not.toMatch(/above|below/);
-    const alerts = (await screen.findAllByRole('alert')).map((alert) => alert.textContent);
-    expect(alerts).toContain('Your limits could not be read, so no value is judged: delivery limit true_peak_dbtp_max is "loud", which is not a finite number');
+  it('says so when the profiles cannot be read', async () => {
+    renderPage({ overrides: { deliveryProfiles: async () => Promise.reject(new Error('the profiles file is locked')) } });
+    expect((await screen.findByRole('alert')).textContent).toBe('The delivery profile could not be read: the profiles file is locked');
   });
 
   it('exports a report of what was measured, with file names only unless the narrator includes locations', async () => {
@@ -192,7 +215,7 @@ describe('DeliveryPage', () => {
     const deliveryExportReport = vi.fn<NarrationApi['deliveryExportReport']>().mockResolvedValue(pinned);
     renderPage({ overrides: { ...measuresAtOnce(), deliveryExportReport } });
     await user.click(await screen.findByRole('button', { name: 'Choose files to measure…' }));
-    await screen.findByText('Measured 2 of 3 files; 1 could not be measured.');
+    await screen.findByText(/^Measured 2 of 3 files; 1 could not be measured\./);
 
     await user.click(screen.getByRole('button', { name: 'Export report' }));
     expect(deliveryExportReport).toHaveBeenLastCalledWith(false);
@@ -212,10 +235,10 @@ describe('DeliveryPage', () => {
     expect((await screen.findByRole('alert')).textContent).toBe('The report was not written: nothing has been measured or checked in this session yet');
   });
 
-  it('opens Settings at the Delivery limits', async () => {
+  it('opens Settings at the Delivery profile', async () => {
     const user = userEvent.setup();
     const { openSettings } = renderPage();
-    await user.click(await screen.findByRole('button', { name: 'Change limits' }));
+    await user.click(await screen.findByRole('button', { name: 'Change profile' }));
     expect(openSettings).toHaveBeenCalledTimes(1);
   });
 });

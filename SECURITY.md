@@ -36,6 +36,11 @@ especially welcome:
   and the Delivery report it writes (only into the project's `narration-utils/delivery` folder, never over an earlier report, and without
   any local path, audio or manuscript text unless the narrator chooses to include file locations); a report that leaks a path the narrator
   did not include is in scope.
+- The delivery profiles the app reads back to judge the rendered files (the user-level `delivery-profiles.json` beside
+  `credit-templates.json`, and the project's choice in `project.json`,
+  [ADR 0180](docs/adr/0180-custom-delivery-profiles-are-copies-of-a-built-in-kept-in-a-user-level-file.md)): a file that makes the app
+  run, open, fetch or write anything, or that is used without being validated, is in scope; one that only changes a verdict is the
+  documented residual risk (threat model row 6i).
 - Weaknesses in the release pipeline (for example an installer or checksum that does not match the reviewed build, or a release asset without valid build provenance). What the pipeline promises, and what it does not: every release asset has a SHA-256 file (it detects a damaged download, not a tampered one) and a build-provenance attestation you can check with `gh attestation verify` ([Build provenance](docs/operations/ci-and-releases.md#build-provenance)); the releases are **unsigned** by decision, so Windows SmartScreen warns and that warning alone is not a vulnerability; and the owner-only settings that back the pipeline (rulesets, the `production` environment, immutable releases, action pinning) are listed in [Tracking work on GitHub](docs/operations/github-workflow.md#repository-settings-that-only-the-owner-can-change).
 
 - The arguments and session files the app hands its local sidecars, for example a value from the interface becoming a

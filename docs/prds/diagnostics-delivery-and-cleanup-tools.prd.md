@@ -53,7 +53,7 @@ We believe a local, profile-neutral measurement page with reproducible report ex
 
 ## What We're NOT Building
 
-- **A distributor (ACX or other) profile** - prior decision (ADR 0025, roadmap milestone 4): none ships until its rules are independently specified and validated. Which related profile work is in or out is Open Question 1.
+- **A distributor (ACX or other) profile** - prior decision (ADR 0025, roadmap milestone 4): none ships until its rules are independently specified and validated. Which related profile work is in or out is Open Question 1. **Superseded** by [Delivery Platform Profiles](delivery-platform-profiles.prd.md) (ADR 0179): a built-in, dated ACX profile ships, each rule citing ACX's page, and Delivery judges against the project's selected profile.
 - **Pass/fail certification language** ("ACX approved") - the export never guarantees acceptance by ACX or another distributor, never uploads audio, never replaces an engineer's review, and never conceals unresolved findings (they are always listed).
 - **Any automatic audio edit or processing** - prior decision: no analyzer silently changes audio; cleanup actions are preview-then-approve, undoable, and REAPER item/take parameter changes, never rendered edits.
 - **Measurement in a Python sidecar or in REAPER** - prior decision (ADR 0025): Go, so it works in a standalone launch with no REAPER.
@@ -134,7 +134,7 @@ When I finish rendering chapters, I want a fast, reproducible technical check wi
 | Could | Abrupt pickup-join detection (level or room-tone step at a known item boundary), with playback context in REAPER | after 8 (needs item boundaries) |
 | Could | Preview markers and approve-to-apply trims in REAPER | 10 |
 | Could | Clause split and per-item level normalize with before/after report | 11 |
-| Won't (this cycle) | Distributor profiles, MP3 measurement, in-app audition, mouth-noise detection, cross-session comparison and narrator baselines, pacing heatmaps and trends, batch reports and handoff checklists, cleanup auto-tuning and batch preview, per-book level-consistency reports, per-genre or per-character targets (see What We're NOT Building) | later |
+| Won't (this cycle) | Distributor profiles (since delivered by [Delivery Platform Profiles](delivery-platform-profiles.prd.md), ADR 0179), MP3 measurement, in-app audition, mouth-noise detection, cross-session comparison and narrator baselines, pacing heatmaps and trends, batch reports and handoff checklists, cleanup auto-tuning and batch preview, per-book level-consistency reports, per-genre or per-character targets (see What We're NOT Building) | later |
 
 ### MVP Scope
 

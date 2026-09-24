@@ -20,21 +20,26 @@ import (
 var pageSource string
 
 var page = template.Must(template.New("report").Funcs(template.FuncMap{
-	"level":      formatLevel,
-	"optLevel":   formatOptionalLevel,
-	"clock":      formatClock,
-	"timeRange":  formatTimeRange,
-	"evidence":   evidenceLines,
-	"statusText": fileStatusText,
-	"reviewText": reviewText,
-	"severity":   strings.ToUpper,
-	"limitText":  limitText,
-	"shortHash":  shortHash,
-	"metrics":    reportMetrics,
-	"fileName":   func(r Report, ref string) string { return r.fileName(ref) },
-	"thresholds": thresholdLines,
-	"sourceKind": sourceKindText,
-	"counts":     countLines,
+	"level":        formatLevel,
+	"optLevel":     formatOptionalLevel,
+	"clock":        formatClock,
+	"timeRange":    formatTimeRange,
+	"evidence":     evidenceLines,
+	"statusText":   fileStatusText,
+	"reviewText":   reviewText,
+	"severity":     strings.ToUpper,
+	"profileLine":  profileLine,
+	"ruleSummary":  ruleSummary,
+	"checkedText":  checkedText,
+	"verifiedText": verifiedText,
+	"resultCount":  resultCount,
+	"fileRules":    fileRuleLines,
+	"shortHash":    shortHash,
+	"metrics":      reportMetrics,
+	"fileName":     func(r Report, ref string) string { return r.fileName(ref) },
+	"thresholds":   thresholdLines,
+	"sourceKind":   sourceKindText,
+	"counts":       countLines,
 }).Parse(pageSource))
 
 // HTML renders the report as one self-contained page.
@@ -138,15 +143,106 @@ func reviewText(state findings.ReviewState) string {
 	return text
 }
 
-func limitText(row LimitRow) string {
+// profileLine says where the profile's rules come from and how many of each kind it holds.
+func profileLine(p ProfileInfo) string {
+	checked, notChecked, listen, toVerify, conflicting := 0, 0, 0, 0, 0
+	for _, rule := range p.Rules {
+		switch rule.CheckedBy {
+		case "measured":
+			checked++
+		case "listen":
+			listen++
+		default:
+			notChecked++
+		}
+		switch rule.Verification {
+		case "to_verify":
+			toVerify++
+		case "conflicting":
+			conflicting++
+		}
+	}
+	source := ""
+	if p.SourceTitle != "" {
+		source = "Rules cite " + p.SourceTitle
+		if p.SourceURL != "" {
+			source += " (" + p.SourceURL + ")"
+		}
+		if p.ReadOn != "" {
+			source += ", read " + p.ReadOn
+		}
+		source += ". "
+	}
+	return fmt.Sprintf("%s%d rules: %d checked by the app, %d not checked by the app, %d listen. %d to verify, %d with conflicting sources.",
+		source, len(p.Rules), checked, notChecked, listen, toVerify, conflicting)
+}
+
+// ruleSummary is the summary line of the file rules' results.
+func ruleSummary(r Report) string {
+	c := r.Summary.RuleResults
+	return fmt.Sprintf("Against %s: %d rule result(s) not met in %d file(s); %d met; %d not checked by the app; %d not measurable.",
+		r.Profile.Title, c.NotMet, r.Summary.FilesNotMet, c.Met, c.NotChecked, c.NotMeasurable)
+}
+
+func checkedText(rule ProfileRule) string {
+	if rule.Off {
+		return "Turned off in this profile: not judged"
+	}
+	switch rule.CheckedBy {
+	case "measured":
+		if rule.Bound == "" {
+			return "Measured"
+		}
+		return "Measured, " + rule.Bound
+	case "listen":
+		return "Listen: not judged by the app"
+	}
+	return "Not checked by the app"
+}
+
+func verifiedText(rule ProfileRule) string {
+	text := map[string]string{"verified": "Verified", "to_verify": "To verify", "conflicting": "Conflicting sources"}[rule.Verification]
+	if rule.Verification == "verified" && rule.ReadOn != "" {
+		text += " " + rule.ReadOn
+	}
+	if rule.VerificationNote != "" {
+		text += ": " + rule.VerificationNote
+	}
+	return text
+}
+
+func resultCount(c RuleCount) string {
 	parts := []string{}
-	if row.Min != nil {
-		parts = append(parts, "lowest "+formatLevel(*row.Min))
+	for _, part := range []struct {
+		n    int
+		text string
+	}{{c.Met, "met"}, {c.NotMet, "not met"}, {c.NotMeasurable, "not measurable"}, {c.NotChecked, "not checked"}, {c.Off, "off"}} {
+		if part.n > 0 {
+			parts = append(parts, fmt.Sprintf("%d %s", part.n, part.text))
+		}
 	}
-	if row.Max != nil {
-		parts = append(parts, "highest "+formatLevel(*row.Max))
+	if len(parts) == 0 {
+		return "Nothing measured"
 	}
-	return strings.Join(parts, ", ") + " " + row.Unit
+	return strings.Join(parts, ", ")
+}
+
+// fileRuleLines lists a file's result per rule in words.
+func fileRuleLines(r Report, rules []RuleResult) []string {
+	labels := map[string]string{}
+	for _, rule := range r.Profile.Rules {
+		labels[rule.ID] = rule.Label
+	}
+	words := map[string]string{"met": "met", "not_met": "NOT MET", "not_measurable": "not measurable", "not_checked": "not checked", "off": "off"}
+	lines := make([]string, 0, len(rules))
+	for _, result := range rules {
+		line := labels[result.Rule] + ": " + words[result.Status]
+		if result.Advice != "" {
+			line += " (advice: " + result.Advice + ")"
+		}
+		lines = append(lines, line)
+	}
+	return lines
 }
 
 func shortHash(fingerprint *measure.Fingerprint) string {
@@ -169,6 +265,8 @@ func reportMetrics(report *measure.Report) []metricCell {
 		{"Sample peak (dBFS)", formatOptionalLevel(report.SamplePeakdBFS)},
 		{"True peak (dBTP)", formatOptionalLevel(report.TruePeakdBTP)},
 		{"Noise floor (dBFS)", formatOptionalLevel(report.NoiseFloordBFS)},
+		{"Sample rate (Hz)", strconv.Itoa(report.SampleRate)},
+		{"Channels", strconv.Itoa(report.Channels)},
 		{"Length", formatClock(report.DurationSeconds)},
 		{"Silent windows", strconv.Itoa(report.DigitalSilentWindows)},
 	}

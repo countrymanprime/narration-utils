@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -33,8 +34,8 @@ const (
 
 // MeasureFileResult is one file of a measurement. Report and Fingerprint are set once it is measured; a report's
 // unmeasurable values are null, never a number (ADR 0025). Error says why a failed file could not be measured. Findings
-// are the host's judgement of the report against the narrator's limits in force when the job is read (measure.Evaluate,
-// judgeMeasureJob): delivery_qc findings with the IDs an exported report carries, empty when nothing is outside a limit.
+// are the host's judgement of the report against the project's delivery profile when the job is read (judgeMeasureJob,
+// ADR 0179): delivery_qc findings with the IDs an exported report carries, empty when no rule is missed.
 type MeasureFileResult struct {
 	Path        string               `json:"path"`
 	Name        string               `json:"name"`
@@ -42,7 +43,9 @@ type MeasureFileResult struct {
 	Report      *measure.Report      `json:"report"`
 	Fingerprint *measure.Fingerprint `json:"fingerprint"`
 	Findings    []findings.Finding   `json:"findings"`
-	Error       string               `json:"error,omitempty"`
+	// Rules is the file's result per file rule of the profile in force, in the profile's order; empty until measured.
+	Rules []deliveryprofile.Result `json:"rules"`
+	Error string                   `json:"error,omitempty"`
 }
 
 // MeasureJob is the measurement as the UI sees it, in the shape of the other host jobs: Phase is idle, running,
@@ -58,9 +61,12 @@ type MeasureJob struct {
 	Elapsed float64             `json:"elapsed"`
 	Error   string              `json:"error,omitempty"`
 	Files   []MeasureFileResult `json:"files"`
-	// LimitsError says why the narrator's limits could not be read (a hand-edited settings file), so no file is judged.
-	// judgeMeasureJob sets it, never the job itself.
-	LimitsError string `json:"limitsError,omitempty"`
+	// Profile is the delivery profile the files are judged against, BookRules its book rules' results over every
+	// measured file, and ProfileNotice says why the project's choice could not be used, when it could not.
+	// judgeMeasureJob sets them, never the job itself.
+	Profile       *deliveryprofile.Profile `json:"profile"`
+	BookRules     []deliveryprofile.Result `json:"bookRules"`
+	ProfileNotice string                   `json:"profileNotice,omitempty"`
 }
 
 // MeasurePickResult is what the picker chose; empty when the narrator closed it.

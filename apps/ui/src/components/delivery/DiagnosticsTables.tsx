@@ -1,7 +1,7 @@
 import type { DiagnosticsFileResult, DiagnosticsSourceKind, DiagnosticsSummary, Finding } from '../../types';
 import { severityLabel } from '../review/findingFormat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
-import { formatLength } from './deliveryLimits';
+import { formatLength } from './deliveryFormat';
 import { findingKindLabel, measuredText, sourceKindLabel, thresholdText, timeRangeText } from './diagnosticsFormat';
 
 const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace] whitespace-nowrap";
