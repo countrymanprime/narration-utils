@@ -33,7 +33,7 @@ type Props = {
 
 /** The start-point chip's text: a short quote beginning at the resume word, truncated with an ellipsis. */
 const CHIP_WORD_LIMIT = 6;
-export function chipLabel(sentence: Sentence, word: number): string | undefined {
+function chipLabel(sentence: Sentence, word: number): string | undefined {
   const words = sentence.text.split(/\s+/).filter(Boolean);
   const at = word - sentence.start;
   if (words.length !== sentence.end - sentence.start || at < 0 || at >= words.length) return undefined;
@@ -193,7 +193,7 @@ function LocatedBody({ result, onChoose }: { result: Located; onChoose: (word: n
           <>
             <Button
               variant={located.confident ? 'primary' : 'ghost'}
-              onClick={() => onChoose(point.word, point.sentence && chipLabel(point.sentence, point.word))}
+              onClick={() => onChoose(point.word, point.sentence ? chipLabel(point.sentence, point.word) : undefined)}
             >
               Resume from here
             </Button>

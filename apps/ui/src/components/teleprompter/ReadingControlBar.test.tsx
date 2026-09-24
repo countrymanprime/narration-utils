@@ -152,8 +152,8 @@ describe('ReadingControlBar', () => {
   it('opens the settings popover with Engine (when offered) and Model, and a link to Settings', async () => {
     const user = userEvent.setup();
     const engines = [
-      { value: 'whisper', label: 'Whisper', title: 'OpenAI Whisper' },
-      { value: 'moonshine', label: 'Moonshine', title: 'Moonshine' },
+      { value: 'whisper' as const, label: 'Whisper', title: 'OpenAI Whisper' },
+      { value: 'moonshine' as const, label: 'Moonshine', title: 'Moonshine' },
     ];
     renderBar(baseSession({ engines }), followCursor());
 
@@ -179,8 +179,8 @@ describe('ReadingControlBar', () => {
   it('locks Engine and Model while a session is active', async () => {
     const user = userEvent.setup();
     const engines = [
-      { value: 'whisper', label: 'Whisper', title: 'OpenAI Whisper' },
-      { value: 'moonshine', label: 'Moonshine', title: 'Moonshine' },
+      { value: 'whisper' as const, label: 'Whisper', title: 'OpenAI Whisper' },
+      { value: 'moonshine' as const, label: 'Moonshine', title: 'Moonshine' },
     ];
     renderBar(baseSession({ engines, active: true }), followCursor());
 

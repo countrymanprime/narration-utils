@@ -14,7 +14,7 @@ import { ENGINE_LABELS, MODELS, type TeleprompterSession } from './useTeleprompt
 const LABEL_CLASS = 'block text-[0.82rem] font-medium text-[var(--text-muted)]';
 
 /** The start point the sibling PRD's resume prompt chose, shown as a clearable chip while idle (its RD9). */
-export type StartPoint = { label: string; onClear: () => void };
+type StartPoint = { label: string; onClear: () => void };
 
 type Props = {
   session: TeleprompterSession;
