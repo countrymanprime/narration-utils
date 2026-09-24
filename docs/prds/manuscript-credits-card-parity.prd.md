@@ -155,6 +155,8 @@ Cross-cutting: each phase follows `CLAUDE.md`: plan, `change-impact-scan` (`Read
 | Whole-header toggle (proposed) | One toggle button stretched over the header, other controls above it | Header `onClick` on a non-button; the `Disclosure` primitive; nested buttons | Keeps valid HTML, one tab stop and the title as the name; no primitive change |
 | Credits in the read-aloud dialog (proposed, supersedes a clause of ADR 0150) | Dialog in credits mode through the existing `credits` session source; flags shown, not kept; no resume card | Link to the Teleprompter page preselected on the credits; keep credits page-only | The owner wants to read from the card; the page is set to be retired (Phase 13); the host path already exists |
 | Unresolved tokens (prior, C6) | Warn and allow Start in the dialog too | Block | The owner's decision on the Teleprompter page; one rule on both surfaces |
+| Open questions (owner, 2026-09-24) | Every open question takes this PRD's recommended answer, as shown in its approved Visual Spec mockups, except where a row below says otherwise | Answer each question separately | The owner approved the mockups that depict the recommendations; see D39 in the [implementation plan](implementation-plan.md#6-owner-decisions-2026-09-24) |
+| Unbuilt data in the real app (owner, 2026-09-24, D24) | Visible UI is built in full; in mock mode it runs on sample data, and in the real app a surface whose data is not built yet shows an honest "not available yet" state. Controls that would act on REAPER stay disabled with the reason | Hide unbuilt UI until its data exists | The owner can use and judge every screen now; each backend phase switches on a screen that already exists |
 
 ## Research Summary
 

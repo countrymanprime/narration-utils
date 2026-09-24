@@ -150,6 +150,9 @@ Cross-cutting: each phase follows `CLAUDE.md`: plan, `change-impact-scan`, TDD, 
 | Status store (proposed, CT3) | Project manifest | `manuscript-notes.json` `chapterStatus` | That file is wiped by `resetDerived`; credits text is not |
 | Totals (proposed, CT1) | Narration totals unchanged; credits in the progress text | Fold credits into every total | Keeps the credits PRD's metric and the Credits stat meaningful |
 | Check (proposed, CT4) | Disabled with a reason, built in Phase 3 | Hidden; built now | The table stays consistent; coverage needs a new basis first |
+| Open questions (owner, 2026-09-24) | Every open question takes this PRD's recommended answer, as shown in its approved Visual Spec mockups, except where a row below says otherwise | Answer each question separately | The owner approved the mockups that depict the recommendations; see D39 in the [implementation plan](implementation-plan.md#6-owner-decisions-2026-09-24) |
+| Unbuilt data in the real app (owner, 2026-09-24, D24) | Visible UI is built in full; in mock mode it runs on sample data, and in the real app a surface whose data is not built yet shows an honest "not available yet" state. Controls that would act on REAPER stay disabled with the reason | Hide unbuilt UI until its data exists | The owner can use and judge every screen now; each backend phase switches on a screen that already exists |
+| REAPER commands before the owner's verification pass (owner, 2026-09-24, D38) | Built in full with harness tests, their ReaScript calls documented from the API reference, and behind an "Experimental REAPER actions" Settings switch (off) until the owner and Claude verify them on a copy of a test project; commands that write to REAPER stay off until then | Wait to build them until the owner can test | Nothing waits on hardware, and nothing touches a real project before it is verified |
 
 ## Research Summary
 

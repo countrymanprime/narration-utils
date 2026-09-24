@@ -155,6 +155,7 @@ Cross-cutting: each phase follows `CLAUDE.md`: plan with an issue and `Closes #<
 | Word share leaves the column (proposed, AR4) | Shown with the check, not as a duration | Keep "measured" × estimate | It is coverage, not time |
 | Supersession | A new ADR supersedes ADR 0130's caption clause and coverage Q12 | Amend ADR 0130 in place while it is still Proposed | ADRs are immutable once accepted; the owner may choose to amend 0130 before accepting it, which saves an ADR |
 | Ownership of recorded seconds (proposed, AR7) | This PRD, narrowing diagnostics Phase 8 | Wait for DX-8 | Its dependency is delivered and the owner asked now |
+| Open questions (owner, 2026-09-24) | Every open question takes this PRD's recommended answer, as shown in its approved Visual Spec mockups, except where a row below says otherwise | Answer each question separately | The owner approved the mockups that depict the recommendations; see D39 in the [implementation plan](implementation-plan.md#6-owner-decisions-2026-09-24) |
 
 ## Research Summary
 

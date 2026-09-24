@@ -127,6 +127,7 @@ Cross-cutting: follows `CLAUDE.md`: an issue with `Closes #<n>`, `change-impact-
 | Reorder in the DOM (proposed) | Move the elements | CSS `order` | DOM order equals visual order, so reading and tab order match what is seen |
 | Alignment method (proposed, Q2 A) | Fixed widths per card | A page-wide `subgrid` | One file, no cross-card coupling, cannot overflow |
 | No ADR expected | A bullet in `design-system.md` | A new ADR | No ADR recorded the old order; `adr-author` decides at merge if the reserved-slot rule reads as a recorded decision |
+| Open questions (owner, 2026-09-24) | Every open question takes this PRD's recommended answer, as shown in its approved Visual Spec mockups, except where a row below says otherwise | Answer each question separately | The owner approved the mockups that depict the recommendations; see D39 in the [implementation plan](implementation-plan.md#6-owner-decisions-2026-09-24) |
 
 ## Research Summary
 

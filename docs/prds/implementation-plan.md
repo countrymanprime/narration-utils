@@ -140,3 +140,76 @@ Updated by the last PR of each stack. Values: `queued`, `in progress`, `pr open`
 | S23 | in progress | issue #310, still open (Phase 8 is a Could, not yet built, so no PR has closed it). Delivered: [analysis-evidence-ledger](analysis-evidence-ledger.prd.md) (EL) Phases 1 to 7 - item model and parser superset, source identity/fingerprint/analysis key, the analysis ledger, the per-item result cache, the confirmed chapter-track mapping store and bindings, the staleness evaluator, and the mapping confirm UI (`MappingConfirm`, the Tracks page's `Chapter links` list); see that PRD's phase entries and [ADR 0100](../adr/0100-analysis-evidence-is-two-hash-keys-one-ledger-record-per-run-and-a-narrator-confirmed-track-map.md) (Accepted) for the fingerprint/ledger/mapping architecture. The PRD stays (not deleted): Phase 8, the live change counter, is an explicit Could and is left `pending`; its Lua/Go half was separately built by reaper-automation-follow-through's change-indicator phase and can be picked up from there. Remaining in S23: EL Phase 8 (optional), then [character-continuity-review](character-continuity-review.prd.md), queued. take-review-pickups-duplicates-take-intelligence is delivered (Phases 1 to 10: #328 (1), #340 (2), #344 (3), #347 (4), #351 and #430 (5, the Review page surface), #356 (6), #358 (7), #397 (8, take metrics), #401 (9, per-take divergence) and #439 (10, take comparison); issue #343 is closed by #439; the PRD is deleted and its steady state is [Take review](../utilities/take-review.md), with ADRs 0098, 0124, 0140, 0141 and 0165). No new open ADR from Phase 7 (Q6 and Q7 had recommendations to adopt, not open owner questions). |
 | S24 | in progress | recording-coverage-analysis: #385 (phase 1, the synthetic fixtures and harness), #389 (2, the coverage model and alignment spike), #393 (3, the sidecar coverage mode), #399 (4, the Go coverage service), #405 (5, the bindings and `recordedFraction`), #416 (6, the Home check), #419 (7, the `recording` signal and settings) and #427 (8, the calibration and close-out; issue #382, closed by it; the owner and download follow-ups are #425). Delivered: recording-coverage-analysis, all eight phases, and its PRD is deleted; see [the recording check](../utilities/recording-coverage.md), [the calibration](../research/recording-coverage-calibration.md) and ADRs 0125 to 0132 (all Proposed). The defaults ship as 0.8, 3, 8 and 3, chosen on the synthetic fixtures under simulated transcriber error and labelled uncalibrated (Q15). chapter-stage-recommendations (issue #409): #411 (phase 1, the signal contract and the pure engine; ADR 0160, Proposed). Next, doable by an agent without the owner: its phases 2 to 6 (SR-3, the recording signal provider, is unblocked by recording coverage phase 7's `coverage.SignalProvider`). Editing readiness, proofing readiness and the proofing preview are queued. |
 | S25 | partial | #404 (phase 3, the `DAWAdapter` boundary; ADR 0143), #410 (5, `--daw Audacity`; ADR 0144) and #414 (10, the installer's Start Menu launcher; ADR 0145); phase 0 landed with the PRD (#278); issue #402, open. Delivered: phases 0, 3, 5 and 10. Owner decision 2026-09-23: Audacity 3.x only (4.0 dropped the Macro Manager and the scripting pipe), and a macro launcher is infeasible because nothing Audacity loads can start a program ([the feasibility note](../research/audacity-launcher-feasibility.md)), so the launcher is the installer entry "Narration Utils for Audacity". Left: the owner's S-A1/S-A2 spike session (phases 1 and 2), then phases 4 and 6 to 9; the owner also tests the Start Menu entry on a real install (#414). Not gated on S22 (D23). |
+
+## 6. Owner decisions (2026-09-24)
+
+These cover the 16 PRDs drafted on 2026-09-24 from the owner's review of the app (the rows from [Home Stage Check Line](home-stage-check-line.prd.md) to [App Shell Vertical Overflow](app-shell-vertical-overflow.prd.md) in the [index](README.md#index)). Each is also a row in the Decisions Log of the PRDs it touches. Section 1's rules still hold (D20: the owner merges; D22: recommendations by default).
+
+| # | Decision | Effect |
+| --- | --- | --- |
+| D24 | **Visible UI is built in full, even where its data is not.** In mock mode it runs on sample data; in the real app a surface whose data is not built yet shows an honest "not available yet" state. Controls that would act on REAPER stay disabled with the reason. | UI streams never wait on host or REAPER streams; each backend phase switches on an existing screen. |
+| D25 | **Auto-links are real links** (auto-sync S3): a confident two-way match links, labelled "Auto-linked", undoable; a fuzzy match never links; hand-made links are never overwritten. | Supersedes the "confirmed only" part of ADR 0100 when auto-sync Phase 2 lands. |
+| D26 | **The Check button is retired** for the check-status column (auto-sync S14), and the recording check summary lives in a chapter slide-over (summary RS7). | Built together in one stream (S31) so Home always has an entry point. |
+| D27 | **Background recording checks only while REAPER is idle and not recording, never on battery** (auto-sync S7). | Auto-sync Phase 7 is in scope; until it lands a changed chapter shows "Out of date". |
+| D28 | **Record in REAPER: yes.** Arming disarms every other track and remembers the previous arms, restoring them when a recording the app started stops; off by default, per project, a confirm the first time; the app only stops recordings it started; one owner-approved test recording on a copy of a project. | Control bar Phase 7 and the bridge's `arm_only`/`record_start`/`record_stop`. |
+| D29 | **Migrate the desktop shell to Wails v3 beta** (pinned, starting at `v3.0.0-beta.25`) and zoom with its runtime `Window.SetZoom`, with full controls and the level remembered. Wails v2.16 has no runtime zoom call (only the startup `ZoomFactor`). | The migration is stack S26, run first and alone; the owner launches the new build before S27 onward start. |
+| D30 | **The edit and proof workspace is the future home of Teleprompter, Tracks and Proofing.** MVP is a chapter route under Tracks with audio played in the app; the three pages stay separate until the workspace's workflows are refined, then its Phase 10 rebuilds and integrates them. | Workspace phases 1 to 9 are in this train; Phase 10 is planned later. |
+| D31 | **Removing a mis-imported chapter reclassifies it as reference**, never deletes it. | Track-link Phase 3. |
+| D32 | **One track per chapter.** | Track-link, auto-sync (S10) and the workspace assume it. |
+| D33 | **"Pickups" are the recording check's missing regions**; take review's repeated reads show as a count with Open Review; REAPER pickup markers show as a project-wide count; each keeps its own label. | Summary, auto-sync Phase 8, workspace flags. |
+| D34 | **Chapter names: "Title — Subtitle" in the book's own casing**; plain-text outputs use the same rule with " - " where an em dash could break a consumer. | Title display Phases 2 to 4; credits-setup CS3. |
+| D35 | **Credits setup: a dialog once per project, then a banner.** | Credits-setup Phases 2 and 3. |
+| D36 | **Delivery: sample peak judges ACX's −3 dB, true peak is advice; ACX is the only built-in profile.** | Delivery P8 and P3 answered. |
+| D37 | **Microphone: level meter only**, no gain. | Control bar Phase 4. |
+| D38 | **REAPER work is built in full now, verified together later.** Every new bridge command gets harness tests, its ReaScript calls documented from the API reference in `docs/research/reaper-api-for-planned-commands.md`, and ships behind an "Experimental REAPER actions" Settings switch (off). Commands that write to REAPER stay off until the owner and Claude run `docs/operations/reaper-verification-pass.md` on a copy of a test project (D3's rules apply). | Stacks S28 and S36 build; stack S37 verifies and switches them on. |
+| D39 | **Every other open question in those 16 PRDs takes the recommended answer** shown in each PRD's approved Visual Spec (`docs/prds/mockups/`). | The mockups are the visual spec; a PR that departs from one says why. |
+
+### Inputs still owed by the owner
+
+| Input | When |
+| --- | --- |
+| Whether an orchestrating session may merge green, conflict-free PRs into `main` in dependency order, instead of D20's owner-merges rule | Before S27 starts. Until then D20 holds and later stacks stack on unmerged branches. |
+| Launch the Wails v3 build once on Windows | After S26 merges, before S27 onward. |
+| Approve one test recording on a copy of a project | During S37. |
+| Real REAPER track names from a current project (auto-sync S5) | Before auto-sync Phase 1's rules are extended; the matcher's current rules stand until then. |
+
+## 7. The 2026-09-24 train
+
+Runs after the weekly usage reset, from a fresh orchestrating session (a long session re-reads its history on every check-in). At most four streams at once; each stream is one to three phases. Model per stream: Opus for host logic, wire contracts, the Wails migration and REAPER commands; Sonnet for UI; Haiku for PRD and doc bookkeeping. ADR numbers and `hostAPIVersion` bumps are reserved per stream before launch.
+
+Lessons from the first overnight run (S26's predecessors, PRs #480 to #500), now rules:
+- Before merging stacked streams, run the full gate on the combination: two PRs that pass alone broke `main` together (a Manuscript deep-link test written for collapsed credits cards met the open-by-default change), which stopped release candidates.
+- A docs-only PR skips the quality workflow, so run `node --test scripts/ci/*.test.mjs` locally when a PRD names paths (#491).
+- A stream's prompt carries its PRD phases, the mockup folders, its ADR range and these rules; the orchestrator cannot message a running cloud session, so the prompt must stand alone.
+
+| Stack | Wave | Model | Scope |
+| --- | --- | --- | --- |
+| S26 | 0, alone | Opus | Wails v3 beta migration: a short PRD and ADR, app lifecycle, window and menu APIs, regenerated bindings (`Host.{js,d.ts}`, `wailsClient.ts`), events including the REAPER bridge events in `wire.go`, Ctrl+wheel and pinch zoom kept, build, installer and release pipeline, threat model and `SECURITY.md` for the new dependency. Also, docs only and in parallel: `docs/research/reaper-api-for-planned-commands.md` (Sonnet) and `docs/operations/reaper-verification-pass.md` (Sonnet). |
+| S27 | 1 | Opus | Host data: auto-sync P2 (planner, mapping v2) and P6 (status, host side); summary P2 (host judgement) and P3 (other pickups); resume P2 (prompter position store) and P3 (reconcile, host side); credits-setup P1 (finish detection). |
+| S28 | 1 | Opus | REAPER bridge, behind D38's switch: `chapter_track_state` (play and record state, play and edit cursor, armed tracks, edit counter), the edit counter on the heartbeat, `arm_only` (disarm others, remember and restore, D28), `record_start`/`record_stop`, `set_active_take`, `list_fx_chains`/`apply_fx_chain` (split plus take FX in one undo block), `create_regions` for credits; harness tests first, `wire.go` rows, threat model and `SECURITY.md`. |
+| S29 | 1 | Sonnet | Shell: Back and Forward (nav P1), zoom controls on `Window.SetZoom` with the level remembered (nav P2, P3), overflow P2. |
+| S30 | 1 | Opus | Workspace data: P1 (alignment output, trim and play rate on the wire, played ranges), waveform peaks for P5, and the trim-aware Tracks player fix. |
+| S31 | 2 | Sonnet | Home: a Toast action slot (Undo); track-link P2 and P3; auto-sync P3 (consent, Needs you, Auto-linked toast) and P6 (status column retiring Check); summary P1 and P4 (slide-over); title display for Home. |
+| S32 | 2 | Sonnet | Credits and Manuscript: credits-setup P2 and P3; parity P2 (Read aloud on credits) and the P3 status cleanup (the deep link already exists); title display P3 for the remaining places. |
+| S33 | 2 | Sonnet | Read aloud: control bar P4 (sidecar level events and the meter), P5 (Pause) and P7's UI wired to S28 behind the switch; resume P3's UI states; the Read aloud title rule. |
+| S34 | 2 | Sonnet | Delivery P5 (room tone, digital silence), P6 (MP3 container check), P7 (book checklist); title display P4 (plain-text outputs). |
+| S35 | 3 | Sonnet (Opus reviews the data flow) | Workspace MVP: P2 (listen, follow, flags, click to seek), P4 (findings in the text), P5 (waveform), P6 (takes panel on `set_active_take`), P3 (Go to and Loop in REAPER), P8 and P9 (FX menu on S28's commands), behind D38's switch where REAPER is involved. |
+| S36 | 3 | Opus | Integration: auto-sync P4 (watch and auto-sync on the heartbeat), P7 (idle background checks), P8 (pickup tracks); resume P4 and P5; credits P3 (credits recording check) and P4 (credits regions); track-link P4; stage line P2 (re-read on focus); credits-setup P4. |
+| S37 | 4, with the owner | Owner and Claude, locally | Run `docs/operations/reaper-verification-pass.md` on a copy of a test project with an isolated `-cfgfile` (D3); confirm each command, switch it on, set the PRD phases to `complete`; the one approved test recording. |
+
+Later, not in this train: the edit and proof workspace's Phase 10 (merging Teleprompter, Tracks and Proofing, D30), and dropping the Wails beta pin when v3 is stable.
+
+| Stack | Status | PRs |
+| --- | --- | --- |
+| S26 | queued | |
+| S27 | queued | |
+| S28 | queued | |
+| S29 | queued | |
+| S30 | queued | |
+| S31 | queued | |
+| S32 | queued | |
+| S33 | queued | |
+| S34 | queued | |
+| S35 | queued | |
+| S36 | queued | |
+| S37 | queued | |

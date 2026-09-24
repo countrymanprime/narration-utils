@@ -201,6 +201,8 @@ Cross-cutting: follows `CLAUDE.md`: an issue and `Closes #<n>`; `change-impact-s
 | Shell height (proposed, Q2 A) | `height: 100%` chain | `100vh` / `100dvh` | Exact under both WebView2 zoom and CSS zoom (measured) |
 | Gate (proposed, Q3 A) | Overflow plus an escaped-absolute check, opt-in in the kit | Overflow only | Zoom-only escapes (Home at 125%) appear at no captured size; the structural check sees them anyway |
 | ADR | Likely one: "the document never scrolls; the shell's page area is the only page scroller, and the suite fails an escape" | A `design-system.md` line only | It is a rule every future page must follow and the suite enforces; `adr-author` decides at merge |
+| Open questions (owner, 2026-09-24) | Every open question takes this PRD's recommended answer, as shown in its approved Visual Spec mockups, except where a row below says otherwise | Answer each question separately | The owner approved the mockups that depict the recommendations; see D39 in the [implementation plan](implementation-plan.md#6-owner-decisions-2026-09-24) |
+| Zoom interplay (owner, 2026-09-24, D29) | Zoom is the webview's own zoom through Wails v3 `Window.SetZoom`, never CSS `zoom` on the page root | CSS zoom | This PRD measured CSS zoom breaking `100vh` layouts |
 
 ## Research Summary
 
