@@ -324,3 +324,99 @@ Cross-cutting: each phase follows `CLAUDE.md`: an issue and `Closes #<n>`; `chan
 
 *Generated: 2026-09-24*
 *Status: DRAFT - open questions EP1 to EP18 wait for the owner*
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before 1024](mockups/edit-and-proof-workspace/00-before-1024.webp)
+
+*Before 1024* (`00-before-1024.webp`)
+
+![Before](mockups/edit-and-proof-workspace/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Playing follow 1024](mockups/edit-and-proof-workspace/01-playing-follow-1024.webp)
+
+*Playing follow 1024* (`01-playing-follow-1024.webp`)
+
+![Playing follow](mockups/edit-and-proof-workspace/01-playing-follow.webp)
+
+*Playing follow* (`01-playing-follow.webp`)
+
+![Entry open workspace from tracks 1024](mockups/edit-and-proof-workspace/01a-entry-open-workspace-from-tracks-1024.webp)
+
+*Entry open workspace from tracks 1024* (`01a-entry-open-workspace-from-tracks-1024.webp`)
+
+![Entry open workspace from tracks](mockups/edit-and-proof-workspace/01a-entry-open-workspace-from-tracks.webp)
+
+*Entry open workspace from tracks* (`01a-entry-open-workspace-from-tracks.webp`)
+
+![Flag detail open 1024](mockups/edit-and-proof-workspace/02-flag-detail-open-1024.webp)
+
+*Flag detail open 1024* (`02-flag-detail-open-1024.webp`)
+
+![Flag detail open](mockups/edit-and-proof-workspace/02-flag-detail-open.webp)
+
+*Flag detail open* (`02-flag-detail-open.webp`)
+
+![Click word to seek 1024](mockups/edit-and-proof-workspace/03-click-word-to-seek-1024.webp)
+
+*Click word to seek 1024* (`03-click-word-to-seek-1024.webp`)
+
+![Click word to seek](mockups/edit-and-proof-workspace/03-click-word-to-seek.webp)
+
+*Click word to seek* (`03-click-word-to-seek.webp`)
+
+![Takes panel ab 1024](mockups/edit-and-proof-workspace/04-takes-panel-ab-1024.webp)
+
+*Takes panel ab 1024* (`04-takes-panel-ab-1024.webp`)
+
+![Takes panel ab](mockups/edit-and-proof-workspace/04-takes-panel-ab.webp)
+
+*Takes panel ab* (`04-takes-panel-ab.webp`)
+
+![Selection context menu fx 1024](mockups/edit-and-proof-workspace/05-selection-context-menu-fx-1024.webp)
+
+*Selection context menu fx 1024* (`05-selection-context-menu-fx-1024.webp`)
+
+![Selection context menu fx](mockups/edit-and-proof-workspace/05-selection-context-menu-fx.webp)
+
+*Selection context menu fx* (`05-selection-context-menu-fx.webp`)
+
+![Apply fx confirm 1024](mockups/edit-and-proof-workspace/05c-apply-fx-confirm-1024.webp)
+
+*Apply fx confirm 1024* (`05c-apply-fx-confirm-1024.webp`)
+
+![Apply fx confirm](mockups/edit-and-proof-workspace/05c-apply-fx-confirm.webp)
+
+*Apply fx confirm* (`05c-apply-fx-confirm.webp`)
+
+![Reaper offline 1024](mockups/edit-and-proof-workspace/06-reaper-offline-1024.webp)
+
+*Reaper offline 1024* (`06-reaper-offline-1024.webp`)
+
+![Reaper offline](mockups/edit-and-proof-workspace/06-reaper-offline.webp)
+
+*Reaper offline* (`06-reaper-offline.webp`)
+
+![Unsaved changes in reaper 1024](mockups/edit-and-proof-workspace/07-unsaved-changes-in-reaper-1024.webp)
+
+*Unsaved changes in reaper 1024* (`07-unsaved-changes-in-reaper-1024.webp`)
+
+![Unsaved changes in reaper](mockups/edit-and-proof-workspace/07-unsaved-changes-in-reaper.webp)
+
+*Unsaved changes in reaper* (`07-unsaved-changes-in-reaper.webp`)
+
+![Long run page consolidation](mockups/edit-and-proof-workspace/08-long-run-page-consolidation.webp)
+
+*Long run page consolidation* (`08-long-run-page-consolidation.webp`)
+
+![Alternative (not the recommendation): Phase10 chapter nav item 1024](mockups/edit-and-proof-workspace/08b-alt-phase10-chapter-nav-item-1024.webp)
+
+*Alternative (not the recommendation): Phase10 chapter nav item 1024* (`08b-alt-phase10-chapter-nav-item-1024.webp`)
+
+![Alternative (not the recommendation): Phase10 chapter nav item](mockups/edit-and-proof-workspace/08b-alt-phase10-chapter-nav-item.webp)
+
+*Alternative (not the recommendation): Phase10 chapter nav item* (`08b-alt-phase10-chapter-nav-item.webp`)

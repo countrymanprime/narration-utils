@@ -271,3 +271,43 @@ Cross-cutting: each phase follows `CLAUDE.md`. Plan with an issue and `Closes #<
 
 *Generated: 2026-09-24*
 *Status: DRAFT - open questions S1 to S14 wait for the owner*
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before](mockups/daw-chapter-track-auto-sync/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Sync consent dialog](mockups/daw-chapter-track-auto-sync/01-sync-consent-dialog.webp)
+
+*Sync consent dialog* (`01-sync-consent-dialog.webp`)
+
+![Needs you list tracks page](mockups/daw-chapter-track-auto-sync/02-needs-you-list-tracks-page.webp)
+
+*Needs you list tracks page* (`02-needs-you-list-tracks-page.webp`)
+
+![Auto linked toast undo](mockups/daw-chapter-track-auto-sync/03-auto-linked-toast-undo.webp)
+
+*Auto linked toast undo* (`03-auto-linked-toast-undo.webp`)
+
+![Row check status replaces check](mockups/daw-chapter-track-auto-sync/04-row-check-status-replaces-check.webp)
+
+*Row check status replaces check* (`04-row-check-status-replaces-check.webp`)
+
+### Together with the related PRDs
+
+The same screen with every PRD that changes it applied at once.
+
+![Before](mockups/home-combined/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Home after](mockups/home-combined/01-home-after.webp)
+
+*Home after* (`01-home-after.webp`)
+
+![Home after summary open](mockups/home-combined/02-home-after-summary-open.webp)
+
+*Home after summary open* (`02-home-after-summary-open.webp`)

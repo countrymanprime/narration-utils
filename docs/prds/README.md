@@ -38,6 +38,8 @@ Every PRD uses the same sections, in this order:
 12. Decisions Log
 13. Research Summary
 
+A PRD with UI changes ends with a **Visual Spec** section of owner-approved mockups, kept under [`mockups/<prd-name>/`](mockups/) and deleted with the PRD.
+
 Most PRDs open with a `**Supersedes:**` or `**Source:**` line naming what they replace or draw from. Each PRD's phase table has one `Status` cell per phase; the pull request that delivers a phase updates that cell.
 
 ## Index

@@ -124,3 +124,35 @@ Cross-cutting: each phase follows `CLAUDE.md`: plan with an issue and `Closes #<
 
 - Read: `StageSummary.tsx`, `useStageRecommendations.ts`, `StageSuggestion.tsx`, `StageEvidence.tsx`, `stageText.ts`, `AudiobookEstimatePanel.tsx`, `Button.tsx`, `stagesMock.ts`, `StagePanel.test.tsx`; `apps/desktop/bindings_stages.go`, `internal/stages/engine.go` and `types.go`, `internal/coverage/provider.go`; `state-catalog.ts`, `app.drivers.ts`, `doc-screenshots.json`, `tests/aria/dialogs.spec.ts`; `docs/guides/using-the-app/home.md`, `docs/architecture/stage-recommendations.md`, `docs/architecture/interaction-feedback.md`, `interactionFeedback.catalog.ts`; the parent PRD.
 - Not done: the button was not pressed in the desktop app against a real project, so the diagnosis is from the code. What would confirm it: on the owner's project, the chapters' statuses (how many are in Recording) and whether any Recording chapter has a linked track and a recording check result; if none does, no read can change a row.
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before](mockups/home-stage-check-line/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![After normal no line](mockups/home-stage-check-line/01-after-normal-no-line.webp)
+
+*After normal no line* (`01-after-normal-no-line.webp`)
+
+![After error try again](mockups/home-stage-check-line/02-after-error-try-again.webp)
+
+*After error try again* (`02-after-error-try-again.webp`)
+
+### Together with the related PRDs
+
+The same screen with every PRD that changes it applied at once.
+
+![Before](mockups/home-combined/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Home after](mockups/home-combined/01-home-after.webp)
+
+*Home after* (`01-home-after.webp`)
+
+![Home after summary open](mockups/home-combined/02-home-after-summary-open.webp)
+
+*Home after summary open* (`02-home-after-summary-open.webp`)

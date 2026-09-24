@@ -160,3 +160,47 @@ Cross-cutting: each phase follows `CLAUDE.md`: plan, `change-impact-scan`, TDD, 
 
 *Generated: 2026-09-24*
 *Status: DRAFT - open questions CT1 to CT9 wait for the owner*
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before](mockups/credits-in-chapter-table/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Opening credits first row](mockups/credits-in-chapter-table/01-opening-credits-first-row.webp)
+
+*Opening credits first row* (`01-opening-credits-first-row.webp`)
+
+![Closing credits last row](mockups/credits-in-chapter-table/02-closing-credits-last-row.webp)
+
+*Closing credits last row* (`02-closing-credits-last-row.webp`)
+
+![Disabled check reason](mockups/credits-in-chapter-table/03-disabled-check-reason.webp)
+
+*Disabled check reason* (`03-disabled-check-reason.webp`)
+
+![Unresolved token warning](mockups/credits-in-chapter-table/04-unresolved-token-warning.webp)
+
+*Unresolved token warning* (`04-unresolved-token-warning.webp`)
+
+![Closing not set up](mockups/credits-in-chapter-table/05-closing-not-set-up.webp)
+
+*Closing not set up* (`05-closing-not-set-up.webp`)
+
+### Together with the related PRDs
+
+The same screen with every PRD that changes it applied at once.
+
+![Before](mockups/home-combined/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Home after](mockups/home-combined/01-home-after.webp)
+
+*Home after* (`01-home-after.webp`)
+
+![Home after summary open](mockups/home-combined/02-home-after-summary-open.webp)
+
+*Home after summary open* (`02-home-after-summary-open.webp`)

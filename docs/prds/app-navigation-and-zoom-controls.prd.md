@@ -220,3 +220,71 @@ Cross-cutting: each phase follows `CLAUDE.md`: an issue and `Closes #<n>`; `chan
 
 - **Read:** `apps/desktop/main.go`, `wails.json`, `go.mod`, `app.go` (`hostAPIVersion`, settings scopes), `internal/settings/store.go`, `dawcatalog.go`, `update.go`; Wails v2.16.0 `internal/frontend/desktop/windows/frontend.go` (accelerators, zoom, swipe, new windows), `pkg/options/windows/windows.go`, `pkg/runtime/window.go`, the darwin window options; `apps/ui/src/App.tsx`, `main.tsx`, `components/layout/AppShell.tsx`, `components/manuscript/Manuscript.tsx`, `components/storybible/Guide.tsx`, `components/settings/Settings.tsx`, `components/teleprompter/useFollowCursor.ts`, `theme/theme.ts`, the external-link call sites; `tests/visual/viewports.ts`, `state-catalog.ts`, `tests/aria/navigation.spec.ts` and its snapshots, `helpers.ts`; ADRs 0027, 0037, 0048, 0051, 0053, 0061, 0065; `docs/design/design-system.md`, `docs/architecture/threat-model.md`, `docs/prds/README.md`.
 - **Not done (Phase 0 does them):** the packaged Windows app was not run, so four things are inferred, not observed: (1) Ctrl+=/-/0 do nothing today (inferred from `PutAreBrowserAcceleratorKeysEnabled(false)` and WebView2's documentation); (2) whether a Ctrl+wheel level survives a relaunch; (3) whether mouse buttons 4/5 navigate, and whether `preventDefault` stops them; (4) Alt+Left/Right (expected: nothing). The owner can answer (2) and (3) in a minute: zoom with Ctrl+wheel, quit and reopen; and press the mouse's back button after moving from Home to Settings.
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before header desktop](mockups/app-navigation-and-zoom-controls/00-before-header-desktop.webp)
+
+*Before header desktop* (`00-before-header-desktop.webp`)
+
+![Before header reflow](mockups/app-navigation-and-zoom-controls/00-before-header-reflow.webp)
+
+*Before header reflow* (`00-before-header-reflow.webp`)
+
+![Before](mockups/app-navigation-and-zoom-controls/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Desktop default first page 100](mockups/app-navigation-and-zoom-controls/01-desktop-default-first-page-100.webp)
+
+*Desktop default first page 100* (`01-desktop-default-first-page-100.webp`)
+
+![Header crop default](mockups/app-navigation-and-zoom-controls/01a-header-crop-default.webp)
+
+*Header crop default* (`01a-header-crop-default.webp`)
+
+![Desktop back enabled zoom 125](mockups/app-navigation-and-zoom-controls/02-desktop-back-enabled-zoom-125.webp)
+
+*Desktop back enabled zoom 125* (`02-desktop-back-enabled-zoom-125.webp`)
+
+![Header crop back enabled zoom 125](mockups/app-navigation-and-zoom-controls/02a-header-crop-back-enabled-zoom-125.webp)
+
+*Header crop back enabled zoom 125* (`02a-header-crop-back-enabled-zoom-125.webp`)
+
+![Tooltip back shortcut](mockups/app-navigation-and-zoom-controls/03-tooltip-back-shortcut.webp)
+
+*Tooltip back shortcut* (`03-tooltip-back-shortcut.webp`)
+
+![Tooltip reset zoom](mockups/app-navigation-and-zoom-controls/04-tooltip-reset-zoom.webp)
+
+*Tooltip reset zoom* (`04-tooltip-reset-zoom.webp`)
+
+![Tooltip back disabled](mockups/app-navigation-and-zoom-controls/05-tooltip-back-disabled.webp)
+
+*Tooltip back disabled* (`05-tooltip-back-disabled.webp`)
+
+![Tablet 768 both enabled zoom 150](mockups/app-navigation-and-zoom-controls/06-tablet-768-both-enabled-zoom-150.webp)
+
+*Tablet 768 both enabled zoom 150* (`06-tablet-768-both-enabled-zoom-150.webp`)
+
+![Reflow 390 header optionA](mockups/app-navigation-and-zoom-controls/07-reflow-390-header-optionA.webp)
+
+*Reflow 390 header optionA* (`07-reflow-390-header-optionA.webp`)
+
+![Reflow 390 header optionA 100](mockups/app-navigation-and-zoom-controls/07a-reflow-390-header-optionA-100.webp)
+
+*Reflow 390 header optionA 100* (`07a-reflow-390-header-optionA-100.webp`)
+
+![Alternative (not the recommendation): Reflow 390 zoom menu optionB](mockups/app-navigation-and-zoom-controls/07b-alt-reflow-390-zoom-menu-optionB.webp)
+
+*Alternative (not the recommendation): Reflow 390 zoom menu optionB* (`07b-alt-reflow-390-zoom-menu-optionB.webp`)
+
+![Header crop max 200](mockups/app-navigation-and-zoom-controls/08-header-crop-max-200.webp)
+
+*Header crop max 200* (`08-header-crop-max-200.webp`)
+
+![Window 1280 at 150 real zoom](mockups/app-navigation-and-zoom-controls/09-window-1280-at-150-real-zoom.webp)
+
+*Window 1280 at 150 real zoom* (`09-window-1280-at-150-real-zoom.webp`)

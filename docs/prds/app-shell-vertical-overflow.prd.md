@@ -222,3 +222,19 @@ Cross-cutting: follows `CLAUDE.md`: an issue and `Closes #<n>`; `change-impact-s
   - No run inside WebView2 on Windows, so the classic scrollbar and gutter are inferred from Base UI's code and Chromium with scrollbars shown, not seen.
   - The owner's Read aloud instance was not reproduced. No mock Manuscript state overflows, so the page under the owner's dialog must have held content the mock lacks (a table header label, a Base UI input or similar). Phase 2's desktop check covers it.
   - The visual suite and `pnpm check` were not run.
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before](mockups/app-shell-vertical-overflow/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Before scrolled past app](mockups/app-shell-vertical-overflow/00b-before-scrolled-past-app.webp)
+
+*Before scrolled past app* (`00b-before-scrolled-past-app.webp`)
+
+![After](mockups/app-shell-vertical-overflow/01-after.webp)
+
+*After* (`01-after.webp`)

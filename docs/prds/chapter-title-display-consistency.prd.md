@@ -307,3 +307,75 @@ This work crosses no trust boundary: display text only, and file names are uncha
   - The sibling PRDs in the compatibility table.
 - Greps: `subtitle`, `chapter.title`, `uppercase`/`text-transform`/`italic`, `ToUpper` in the importer, `display_title`/`displayTitle`, `create_chapter_regions` callers.
 - Not done: the owner's project was not opened and no screenshot was taken. The owner's "PROLOGUE"/"A Message from the Author" book is not in the repository, and the diagnosis of which capitals are source and which are CSS comes from the code (no `uppercase` on the Home cell; `uppercase` on `ReaderText.tsx:238`). `read-aloud-control-bar.prd.md` was not on disk when this was written, so its exact overlap is inferred from its name and from its sibling's compatibility table.
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before](mockups/chapter-title-display-consistency/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Manuscript cards after](mockups/chapter-title-display-consistency/01-manuscript-cards-after.webp)
+
+*Manuscript cards after* (`01-manuscript-cards-after.webp`)
+
+![Manuscript cards before](mockups/chapter-title-display-consistency/01-manuscript-cards-before.webp)
+
+*Manuscript cards before* (`01-manuscript-cards-before.webp`)
+
+![Home table after](mockups/chapter-title-display-consistency/02-home-table-after.webp)
+
+*Home table after* (`02-home-table-after.webp`)
+
+![Home table before](mockups/chapter-title-display-consistency/02-home-table-before.webp)
+
+*Home table before* (`02-home-table-before.webp`)
+
+![Chapters search after](mockups/chapter-title-display-consistency/03-chapters-search-after.webp)
+
+*Chapters search after* (`03-chapters-search-after.webp`)
+
+![Chapters search before](mockups/chapter-title-display-consistency/03-chapters-search-before.webp)
+
+*Chapters search before* (`03-chapters-search-before.webp`)
+
+![Read aloud heading after](mockups/chapter-title-display-consistency/04-read-aloud-heading-after.webp)
+
+*Read aloud heading after* (`04-read-aloud-heading-after.webp`)
+
+![Read aloud heading before](mockups/chapter-title-display-consistency/04-read-aloud-heading-before.webp)
+
+*Read aloud heading before* (`04-read-aloud-heading-before.webp`)
+
+![Read aloud heading prologue after](mockups/chapter-title-display-consistency/05-read-aloud-heading-prologue-after.webp)
+
+*Read aloud heading prologue after* (`05-read-aloud-heading-prologue-after.webp`)
+
+![Read aloud heading prologue before](mockups/chapter-title-display-consistency/05-read-aloud-heading-prologue-before.webp)
+
+*Read aloud heading prologue before* (`05-read-aloud-heading-prologue-before.webp`)
+
+![Read aloud while reading after](mockups/chapter-title-display-consistency/06-read-aloud-while-reading-after.webp)
+
+*Read aloud while reading after* (`06-read-aloud-while-reading-after.webp`)
+
+![Read aloud while reading before](mockups/chapter-title-display-consistency/06-read-aloud-while-reading-before.webp)
+
+*Read aloud while reading before* (`06-read-aloud-while-reading-before.webp`)
+
+![Teleprompter select after](mockups/chapter-title-display-consistency/07-teleprompter-select-after.webp)
+
+*Teleprompter select after* (`07-teleprompter-select-after.webp`)
+
+![Teleprompter select before](mockups/chapter-title-display-consistency/07-teleprompter-select-before.webp)
+
+*Teleprompter select before* (`07-teleprompter-select-before.webp`)
+
+### Together with the related PRDs
+
+The same screen with every PRD that changes it applied at once.
+
+![Manuscript after](mockups/manuscript-combined/01-manuscript-after.webp)
+
+*Manuscript after* (`01-manuscript-after.webp`)

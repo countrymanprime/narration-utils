@@ -209,3 +209,43 @@ Cross-cutting: each phase follows `CLAUDE.md`: an issue and `Closes #<n>`, `chan
 
 *Generated: 2026-09-24*
 *Status: DRAFT - open questions RS1 to RS8 wait for the owner*
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before](mockups/recording-check-summary/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Slideover not complete](mockups/recording-check-summary/01-slideover-not-complete.webp)
+
+*Slideover not complete* (`01-slideover-not-complete.webp`)
+
+![Slideover not complete full height](mockups/recording-check-summary/01b-slideover-not-complete-full-height.webp)
+
+*Slideover not complete full height* (`01b-slideover-not-complete-full-height.webp`)
+
+![Slideover passes](mockups/recording-check-summary/02-slideover-passes.webp)
+
+*Slideover passes* (`02-slideover-passes.webp`)
+
+![Alternative (not the recommendation): Summary in dialog](mockups/recording-check-summary/03b-alt-summary-in-dialog.webp)
+
+*Alternative (not the recommendation): Summary in dialog* (`03b-alt-summary-in-dialog.webp`)
+
+### Together with the related PRDs
+
+The same screen with every PRD that changes it applied at once.
+
+![Before](mockups/home-combined/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Home after](mockups/home-combined/01-home-after.webp)
+
+*Home after* (`01-home-after.webp`)
+
+![Home after summary open](mockups/home-combined/02-home-after-summary-open.webp)
+
+*Home after summary open* (`02-home-after-summary-open.webp`)

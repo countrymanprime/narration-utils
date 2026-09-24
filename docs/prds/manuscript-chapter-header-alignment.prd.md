@@ -132,3 +132,35 @@ Cross-cutting: follows `CLAUDE.md`: an issue with `Closes #<n>`, `change-impact-
 
 - Read: `Manuscript.tsx` (the header, `isNarrationChapter`), `CreditsEntry.tsx`, `Button.tsx`, `state.ts` (`isListableChapter`), `aliceManuscript.ts` and its fixture (word counts), `main.tsx` (mock flags), `mockApi.ts`, `Manuscript.test.tsx`, `tests/visual/viewports.ts`, `state-catalog.ts`, `app.drivers.ts`, `doc-screenshots.json`, `tests/aria/snapshots/`, `styles.css` (fonts), `docs/design/design-system.md`, `docs/guides/using-the-app/manuscript.md`, `teleprompter-manuscript-integration.prd.md`; grep of `docs/adr`.
 - Not done: the owner's project was not opened and no screenshot was captured; the diagnosis is from the code (per-card `auto` column, variable-width stat block to the right of the button). The mock cannot reproduce it until the mixed-rows flag exists.
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before tablet](mockups/manuscript-chapter-header-alignment/00-before-tablet.webp)
+
+*Before tablet* (`00-before-tablet.webp`)
+
+![Before](mockups/manuscript-chapter-header-alignment/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![After](mockups/manuscript-chapter-header-alignment/01-after.webp)
+
+*After* (`01-after.webp`)
+
+![After tablet](mockups/manuscript-chapter-header-alignment/02-after-tablet.webp)
+
+*After tablet* (`02-after-tablet.webp`)
+
+![After with retail sample](mockups/manuscript-chapter-header-alignment/03-after-with-retail-sample.webp)
+
+*After with retail sample* (`03-after-with-retail-sample.webp`)
+
+### Together with the related PRDs
+
+The same screen with every PRD that changes it applied at once.
+
+![Manuscript after](mockups/manuscript-combined/01-manuscript-after.webp)
+
+*Manuscript after* (`01-manuscript-after.webp`)

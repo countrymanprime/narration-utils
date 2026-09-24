@@ -257,3 +257,103 @@ Cross-cutting: each phase follows `CLAUDE.md`: an issue and `Closes #<n>`; `chan
 
 - **Read:** `apps/ui/src/components/teleprompter/{ReadAloudDialog.tsx,ReadAlongView.tsx,ReaderRail.tsx,MicrophoneField.tsx,ResumeCard.tsx,useTeleprompterSession.ts,useFollowCursor.ts}`, `components/primitives/{Dialog.tsx,Menu.tsx,MeterBar.tsx,Tooltip.tsx}` and the primitives list, `rawNatives.test.ts`, `interactionFeedback.catalog.ts`, `tests/visual/{state-catalog.ts,viewports.ts}`, `tests/aria/dialogs.spec.ts` and `dialog-read-aloud-resume.aria.yml`; `sidecars/manuscript-teleprompter/core/{devices.py,live_asr.py,control_channel.py}`; `apps/desktop/app.go` (Teleprompter settings, host API), `bindings_navigation.go`, `internal/bridge/{navigation.go,wire.go}`; `integrations/reaper/{narration_navigation.lua,narration_ui_bridge.lua}` and the command registrations, `spikes/{navigation_check.lua,spike_s5_render.lua}`; Wails v2.16.0 `internal/frontend/desktop/windows/frontend.go`; ADRs 0022, 0033, 0047, 0050, 0064, 0065, 0066, 0067, 0094, 0100, 0104, 0106, 0107, 0112, 0113, 0117, 0119, 0121, 0122; `docs/architecture/threat-model.md`; the PRDs Teleprompter Manuscript Integration, Teleprompter Engines and Input Devices, REAPER Automation Follow-Through, Manuscript Credits Card Parity, App Navigation and Zoom Controls, DAW Chapter-Track Auto-Sync, Native Recording Suite.
 - **Not done:** the app was not run; the layout causes are read from the classes and checked by arithmetic against the viewports, and Phase 1's visual rows confirm them. REAPER's behaviour for Transport: Record under each record mode, pausing while recording, and the save-media prompt on stop are not established; Phase 7's scripted run answers them. Whether dshow and WASAPI names differ on the owner's machine was not checked (it matters only if Q6 B is chosen).
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before 1024](mockups/read-aloud-control-bar/00-before-1024.webp)
+
+*Before 1024* (`00-before-1024.webp`)
+
+![Before](mockups/read-aloud-control-bar/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Idle 1024](mockups/read-aloud-control-bar/01-idle-1024.webp)
+
+*Idle 1024* (`01-idle-1024.webp`)
+
+![Idle](mockups/read-aloud-control-bar/01-idle.webp)
+
+*Idle* (`01-idle.webp`)
+
+![Alternative (not the recommendation): Bar top 1024](mockups/read-aloud-control-bar/01b-alt-bar-top-1024.webp)
+
+*Alternative (not the recommendation): Bar top 1024* (`01b-alt-bar-top-1024.webp`)
+
+![Alternative (not the recommendation): Bar top](mockups/read-aloud-control-bar/01b-alt-bar-top.webp)
+
+*Alternative (not the recommendation): Bar top* (`01b-alt-bar-top.webp`)
+
+![Reading scrolled 1024](mockups/read-aloud-control-bar/02-reading-scrolled-1024.webp)
+
+*Reading scrolled 1024* (`02-reading-scrolled-1024.webp`)
+
+![Reading scrolled](mockups/read-aloud-control-bar/02-reading-scrolled.webp)
+
+*Reading scrolled* (`02-reading-scrolled.webp`)
+
+![Mic popover 1024](mockups/read-aloud-control-bar/03-mic-popover-1024.webp)
+
+*Mic popover 1024* (`03-mic-popover-1024.webp`)
+
+![Mic popover](mockups/read-aloud-control-bar/03-mic-popover.webp)
+
+*Mic popover* (`03-mic-popover.webp`)
+
+![Gear popover 1024](mockups/read-aloud-control-bar/04-gear-popover-1024.webp)
+
+*Gear popover 1024* (`04-gear-popover-1024.webp`)
+
+![Gear popover](mockups/read-aloud-control-bar/04-gear-popover.webp)
+
+*Gear popover* (`04-gear-popover.webp`)
+
+![Reaper first confirm 1024](mockups/read-aloud-control-bar/05-reaper-first-confirm-1024.webp)
+
+*Reaper first confirm 1024* (`05-reaper-first-confirm-1024.webp`)
+
+![Reaper first confirm](mockups/read-aloud-control-bar/05-reaper-first-confirm.webp)
+
+*Reaper first confirm* (`05-reaper-first-confirm.webp`)
+
+![Reaper armed 1024](mockups/read-aloud-control-bar/06-reaper-armed-1024.webp)
+
+*Reaper armed 1024* (`06-reaper-armed-1024.webp`)
+
+![Reaper armed](mockups/read-aloud-control-bar/06-reaper-armed.webp)
+
+*Reaper armed* (`06-reaper-armed.webp`)
+
+![Reaper recording 1024](mockups/read-aloud-control-bar/07-reaper-recording-1024.webp)
+
+*Reaper recording 1024* (`07-reaper-recording-1024.webp`)
+
+![Reaper recording](mockups/read-aloud-control-bar/07-reaper-recording.webp)
+
+*Reaper recording* (`07-reaper-recording.webp`)
+
+![Reaper not armed 1024](mockups/read-aloud-control-bar/08-reaper-not-armed-1024.webp)
+
+*Reaper not armed 1024* (`08-reaper-not-armed-1024.webp`)
+
+![Reaper not armed](mockups/read-aloud-control-bar/08-reaper-not-armed.webp)
+
+*Reaper not armed* (`08-reaper-not-armed.webp`)
+
+![Paused 1024](mockups/read-aloud-control-bar/09-paused-1024.webp)
+
+*Paused 1024* (`09-paused-1024.webp`)
+
+![Paused](mockups/read-aloud-control-bar/09-paused.webp)
+
+*Paused* (`09-paused.webp`)
+
+![Finished still recording 1024](mockups/read-aloud-control-bar/10-finished-still-recording-1024.webp)
+
+*Finished still recording 1024* (`10-finished-still-recording-1024.webp`)
+
+![Finished still recording](mockups/read-aloud-control-bar/10-finished-still-recording.webp)
+
+*Finished still recording* (`10-finished-still-recording.webp`)

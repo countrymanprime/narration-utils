@@ -216,3 +216,63 @@ Cross-cutting: each phase follows `CLAUDE.md`: plan, `change-impact-scan` (`Read
 - No stored prompter position exists anywhere (host memory only, cleared per session).
 - Existing bridge reads to reuse: play state arithmetic (`narration_navigation.lua:105-111`), `GetCursorPosition` (`narration_pickups.lua:171`), the heartbeat and reachability (`wire.go:73`, `reachability.go`). The file protocol and harness make a new read-only command routine (`docs/architecture/reaper-bridge.md`).
 - Open REAPER questions for the scripted run: when an unsaved, just-stopped take's source file is complete enough to decode; whether `GetPlayPosition` or the edit cursor is the better "where the narrator is" while paused (teleprompter PRD spike 1 covers the play-position half).
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before 1024](mockups/read-aloud-resume-from-daw/00-before-1024.webp)
+
+*Before 1024* (`00-before-1024.webp`)
+
+![Before](mockups/read-aloud-resume-from-daw/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Agree 1024](mockups/read-aloud-resume-from-daw/01-agree-1024.webp)
+
+*Agree 1024* (`01-agree-1024.webp`)
+
+![Agree](mockups/read-aloud-resume-from-daw/01-agree.webp)
+
+*Agree* (`01-agree.webp`)
+
+![Disagree 1024](mockups/read-aloud-resume-from-daw/02-disagree-1024.webp)
+
+*Disagree 1024* (`02-disagree-1024.webp`)
+
+![Disagree](mockups/read-aloud-resume-from-daw/02-disagree.webp)
+
+*Disagree* (`02-disagree.webp`)
+
+![Recorded to end 1024](mockups/read-aloud-resume-from-daw/03-recorded-to-end-1024.webp)
+
+*Recorded to end 1024* (`03-recorded-to-end-1024.webp`)
+
+![Recorded to end](mockups/read-aloud-resume-from-daw/03-recorded-to-end.webp)
+
+*Recorded to end* (`03-recorded-to-end.webp`)
+
+![After play prompt gone 1024](mockups/read-aloud-resume-from-daw/04-after-play-prompt-gone-1024.webp)
+
+*After play prompt gone 1024* (`04-after-play-prompt-gone-1024.webp`)
+
+![After play prompt gone](mockups/read-aloud-resume-from-daw/04-after-play-prompt-gone.webp)
+
+*After play prompt gone* (`04-after-play-prompt-gone.webp`)
+
+![Checking 1024](mockups/read-aloud-resume-from-daw/05-checking-1024.webp)
+
+*Checking 1024* (`05-checking-1024.webp`)
+
+![Checking](mockups/read-aloud-resume-from-daw/05-checking.webp)
+
+*Checking* (`05-checking.webp`)
+
+![Last reading only 1024](mockups/read-aloud-resume-from-daw/06-last-reading-only-1024.webp)
+
+*Last reading only 1024* (`06-last-reading-only-1024.webp`)
+
+![Last reading only](mockups/read-aloud-resume-from-daw/06-last-reading-only.webp)
+
+*Last reading only* (`06-last-reading-only.webp`)

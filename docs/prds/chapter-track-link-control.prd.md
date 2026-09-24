@@ -357,3 +357,67 @@ Cross-cutting: each phase follows `CLAUDE.md`:
 
 *Generated: 2026-09-24*
 *Status: DRAFT - open questions TL1 to TL10 wait for the owner*
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before](mockups/chapter-track-link-control/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Track button states](mockups/chapter-track-link-control/01-track-button-states.webp)
+
+*Track button states* (`01-track-button-states.webp`)
+
+![Slideover linked](mockups/chapter-track-link-control/02-slideover-linked.webp)
+
+*Slideover linked* (`02-slideover-linked.webp`)
+
+![Slideover ambiguous](mockups/chapter-track-link-control/03-slideover-ambiguous.webp)
+
+*Slideover ambiguous* (`03-slideover-ambiguous.webp`)
+
+![Slideover suggested relink warning](mockups/chapter-track-link-control/04-slideover-suggested-relink-warning.webp)
+
+*Slideover suggested relink warning* (`04-slideover-suggested-relink-warning.webp`)
+
+![Slideover track missing](mockups/chapter-track-link-control/05-slideover-track-missing.webp)
+
+*Slideover track missing* (`05-slideover-track-missing.webp`)
+
+![Remove from recording confirm](mockups/chapter-track-link-control/06-remove-from-recording-confirm.webp)
+
+*Remove from recording confirm* (`06-remove-from-recording-confirm.webp`)
+
+![Removed from recording list](mockups/chapter-track-link-control/07-removed-from-recording-list.webp)
+
+*Removed from recording list* (`07-removed-from-recording-list.webp`)
+
+![No project line](mockups/chapter-track-link-control/08-no-project-line.webp)
+
+*No project line* (`08-no-project-line.webp`)
+
+![Tablet 768 track column](mockups/chapter-track-link-control/09-tablet-768-track-column.webp)
+
+*Tablet 768 track column* (`09-tablet-768-track-column.webp`)
+
+![Tablet 768 before](mockups/chapter-track-link-control/09b-tablet-768-before.webp)
+
+*Tablet 768 before* (`09b-tablet-768-before.webp`)
+
+### Together with the related PRDs
+
+The same screen with every PRD that changes it applied at once.
+
+![Before](mockups/home-combined/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Home after](mockups/home-combined/01-home-after.webp)
+
+*Home after* (`01-home-after.webp`)
+
+![Home after summary open](mockups/home-combined/02-home-after-summary-open.webp)
+
+*Home after summary open* (`02-home-after-summary-open.webp`)

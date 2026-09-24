@@ -165,3 +165,43 @@ Cross-cutting: each phase follows `CLAUDE.md`: plan with an issue and `Closes #<
 
 *Generated: 2026-09-24*
 *Status: DRAFT - open questions AR1 to AR8 wait for the owner*
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before](mockups/actual-recorded-column/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![After table](mockups/actual-recorded-column/01-after-table.webp)
+
+*After table* (`01-after-table.webp`)
+
+![Dash reason tooltip](mockups/actual-recorded-column/02-dash-reason-tooltip.webp)
+
+*Dash reason tooltip* (`02-dash-reason-tooltip.webp`)
+
+![Headline stat tooltip](mockups/actual-recorded-column/03-headline-stat-tooltip.webp)
+
+*Headline stat tooltip* (`03-headline-stat-tooltip.webp`)
+
+![Column header tooltip](mockups/actual-recorded-column/04-column-header-tooltip.webp)
+
+*Column header tooltip* (`04-column-header-tooltip.webp`)
+
+### Together with the related PRDs
+
+The same screen with every PRD that changes it applied at once.
+
+![Before](mockups/home-combined/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Home after](mockups/home-combined/01-home-after.webp)
+
+*Home after* (`01-home-after.webp`)
+
+![Home after summary open](mockups/home-combined/02-home-after-summary-open.webp)
+
+*Home after summary open* (`02-home-after-summary-open.webp`)

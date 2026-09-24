@@ -165,3 +165,39 @@ Cross-cutting: each phase follows `CLAUDE.md`: plan, `change-impact-scan` (`Read
 
 *Generated: 2026-09-24*
 *Status: DRAFT - open questions MC1 to MC10 wait for the owner*
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before](mockups/manuscript-credits-card-parity/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Credits open by default](mockups/manuscript-credits-card-parity/01-credits-open-by-default.webp)
+
+*Credits open by default* (`01-credits-open-by-default.webp`)
+
+![Whole header toggle focus](mockups/manuscript-credits-card-parity/02-whole-header-toggle-focus.webp)
+
+*Whole header toggle focus* (`02-whole-header-toggle-focus.webp`)
+
+![Credits text size large](mockups/manuscript-credits-card-parity/03-credits-text-size-large.webp)
+
+*Credits text size large* (`03-credits-text-size-large.webp`)
+
+![Collapse all closing credits last](mockups/manuscript-credits-card-parity/04-collapse-all-closing-credits-last.webp)
+
+*Collapse all closing credits last* (`04-collapse-all-closing-credits-last.webp`)
+
+![Read aloud dialog opening credits](mockups/manuscript-credits-card-parity/05-read-aloud-dialog-opening-credits.webp)
+
+*Read aloud dialog opening credits* (`05-read-aloud-dialog-opening-credits.webp`)
+
+### Together with the related PRDs
+
+The same screen with every PRD that changes it applied at once.
+
+![Manuscript after](mockups/manuscript-combined/01-manuscript-after.webp)
+
+*Manuscript after* (`01-manuscript-after.webp`)

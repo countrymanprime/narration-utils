@@ -276,3 +276,55 @@ Also: the diagnostics PRD's "What We're NOT Building" ("A distributor (ACX or ot
 
 *Generated: 2026-09-24*
 *Status: DRAFT - open questions P1 to P10 need the owner*
+
+## Visual Spec
+
+Mockups approved by the owner on 2026-09-24. They were rendered from the real app (dark theme, the app's own fonts and components) with throwaway edits and invented sample data, so names, numbers and body text are placeholders; the layout, controls, states and wording are the spec. Each shows the recommended answer to the open questions unless its caption says it is an alternative. Where a mockup and the text above disagree, raise it before building rather than silently following either.
+
+![Before](mockups/delivery-platform-profiles/00-before.webp)
+
+*Before* (`00-before.webp`)
+
+![Profile panel acx rules and sources](mockups/delivery-platform-profiles/01-profile-panel-acx-rules-and-sources.webp)
+
+*Profile panel acx rules and sources* (`01-profile-panel-acx-rules-and-sources.webp`)
+
+![Measured pass acx](mockups/delivery-platform-profiles/02-measured-pass-acx.webp)
+
+*Measured pass acx* (`02-measured-pass-acx.webp`)
+
+![Measured failing acx](mockups/delivery-platform-profiles/03-measured-failing-acx.webp)
+
+*Measured failing acx* (`03-measured-failing-acx.webp`)
+
+![Failing file rule by rule with source](mockups/delivery-platform-profiles/04-failing-file-rule-by-rule-with-source.webp)
+
+*Failing file rule by rule with source* (`04-failing-file-rule-by-rule-with-source.webp`)
+
+![Settings project profile picker](mockups/delivery-platform-profiles/05-settings-project-profile-picker.webp)
+
+*Settings project profile picker* (`05-settings-project-profile-picker.webp`)
+
+![Custom profile editor](mockups/delivery-platform-profiles/06-custom-profile-editor.webp)
+
+*Custom profile editor* (`06-custom-profile-editor.webp`)
+
+![Page judged by custom profile](mockups/delivery-platform-profiles/07-page-judged-by-custom-profile.webp)
+
+*Page judged by custom profile* (`07-page-judged-by-custom-profile.webp`)
+
+![Report header names profile](mockups/delivery-platform-profiles/08-report-header-names-profile.webp)
+
+*Report header names profile* (`08-report-header-names-profile.webp`)
+
+![Report header before](mockups/delivery-platform-profiles/08a-report-header-before.webp)
+
+*Report header before* (`08a-report-header-before.webp`)
+
+![Settings picker reflow 390](mockups/delivery-platform-profiles/09-settings-picker-reflow-390.webp)
+
+*Settings picker reflow 390* (`09-settings-picker-reflow-390.webp`)
+
+![Measured failing tablet 768](mockups/delivery-platform-profiles/10-measured-failing-tablet-768.webp)
+
+*Measured failing tablet 768* (`10-measured-failing-tablet-768.webp`)
