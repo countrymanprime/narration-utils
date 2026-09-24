@@ -18,11 +18,15 @@ import { Settings } from './components/settings/Settings';
 import { TeleprompterPage } from './components/teleprompter/TeleprompterPage';
 import { TracksPage } from './components/tracks/TracksPage';
 import { ReviewPage } from './components/review/ReviewPage';
+import { DeliveryPage } from './components/delivery/DeliveryPage';
 import { TooltipProvider } from './components/primitives/Tooltip';
 import { ErrorBoundary } from './components/primitives/ErrorBoundary';
 import { DESKTOP_HOST_API_VERSION } from './hostApi';
 import { isWireError } from './api/wire/WireError';
 import { describeApiError } from './api/errorMessage';
+
+// The Settings categories another page can open Settings at, by URL anchor.
+const SETTINGS_ANCHORS: Record<string, string> = { '#credits': 'Credits', '#delivery': 'Delivery' };
 
 const LIVE_UPDATES_DEGRADED = 'Some live updates from the desktop host could not be read, so what you see may be out of date. Reopen the page to refresh it.';
 
@@ -322,6 +326,7 @@ function AppRoutes() {
                   <ReviewPage notify={setNotice} hasManuscript={Boolean(data.manuscript)} goToManuscript={goToManuscript} goToStoryBible={goToStoryBible} />
                 }
               />
+              <Route path="/delivery" element={<DeliveryPage openSettings={() => guardedNavigate('/settings#delivery')} />} />
               <Route
                 path="/settings"
                 element={
@@ -337,7 +342,7 @@ function AppRoutes() {
                       guardedNavigate('/');
                     }}
                     onLinkDawFile={() => void linkDawFile()}
-                    initialCategory={location.hash === '#credits' ? 'Credits' : undefined}
+                    initialCategory={SETTINGS_ANCHORS[location.hash]}
                   />
                 }
               />
