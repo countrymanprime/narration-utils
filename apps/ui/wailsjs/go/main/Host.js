@@ -434,6 +434,22 @@ export function RetakeLanesState() {
   return window['go']['main']['Host']['RetakeLanesState']();
 }
 
+export function StageConfirm(arg1, arg2, arg3) {
+  return window['go']['main']['Host']['StageConfirm'](arg1, arg2, arg3);
+}
+
+export function StageDismiss(arg1, arg2, arg3) {
+  return window['go']['main']['Host']['StageDismiss'](arg1, arg2, arg3);
+}
+
+export function StageRecommendations() {
+  return window['go']['main']['Host']['StageRecommendations']();
+}
+
+export function StageRevert(arg1) {
+  return window['go']['main']['Host']['StageRevert'](arg1);
+}
+
 export function SystemLookup(arg1) {
   return window['go']['main']['Host']['SystemLookup'](arg1);
 }

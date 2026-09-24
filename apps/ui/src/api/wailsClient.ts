@@ -34,6 +34,7 @@ import { takeComparisonJobSchema, takeReviewCreateTakeResultSchema, takeReviewSc
 import { measureJobSchema, measurePickResultSchema } from './schemas/measure';
 import { diagnosticsJobSchema } from './schemas/diagnostics';
 import { coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
+import { stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
 import { findingMarkerSchema, findingNavigationSchema, findingSchema, findingsPageSchema, findingsSummarySchema, reaperStatusSchema } from './schemas/findings';
 import { assetCatalogSchema, assetInstallJobSchema, assetVerifyResultSchema } from './schemas/assets';
 import { ttsCatalogSchema, ttsInstallJobSchema } from './schemas/tts';
@@ -267,6 +268,10 @@ export const wailsClient: NarrationApi = {
   coverageState: () => decode(coverageStateSchema, 'CoverageState', host.CoverageState()),
   coverageCancel: () => decode(voidResult, 'CoverageCancel', host.CoverageCancel()),
   coverageResult: (chapterId) => decode(coverageResultSchema, 'CoverageResult', host.CoverageResult(chapterId)),
+  stageRecommendations: () => decode(stageRecommendationsSchema, 'StageRecommendations', host.StageRecommendations()),
+  stageConfirm: (chapterId, target, basisKey) => decode(stageDecisionResultSchema, 'StageConfirm', host.StageConfirm(chapterId, target, basisKey)),
+  stageDismiss: (chapterId, target, basisKey) => decode(stageDecisionResultSchema, 'StageDismiss', host.StageDismiss(chapterId, target, basisKey)),
+  stageRevert: (chapterId) => decode(stageDecisionResultSchema, 'StageRevert', host.StageRevert(chapterId)),
   subscribeCoverage: (onUpdate) => subscribeChecked('coverage:state', coverageStateSchema, onUpdate),
   lineIdentityStamp: (rows, overwrite) => decode(lineIdentityStartResultSchema, 'LineIdentityStamp', host.LineIdentityStamp(rows, overwrite)),
   lineIdentityRead: () => decode(lineIdentityStartResultSchema, 'LineIdentityRead', host.LineIdentityRead()),

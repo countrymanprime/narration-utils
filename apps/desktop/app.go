@@ -34,6 +34,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/renderconfig"
 	"github.com/countrymanprime/narration-utils/shell/internal/retakelanes"
 	"github.com/countrymanprime/narration-utils/shell/internal/settings"
+	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 	"github.com/countrymanprime/narration-utils/shell/internal/takecompare"
 	"github.com/countrymanprime/narration-utils/shell/internal/takereview"
 	"github.com/countrymanprime/narration-utils/shell/internal/teleprompter"
@@ -87,6 +88,10 @@ type Host struct {
 	// runs the Transcript Compare sidecar's --coverage mode. Swapped on every project switch like transcript; the Coverage* bindings
 	// reach it (Phase 5, bindings_coverage.go) and it fills the manuscript chapters' recordedFraction.
 	coverage *coverage.Service
+	// stages is the chapter stage recommendation service (chapter-stage-recommendations.prd.md Phase 4, bindings_stages.go):
+	// the recording signal over coverage, the decision store and the manuscript's status path. Swapped with coverage on every
+	// project switch; it computes on read and stores no recommendation (D1).
+	stages *stages.Service
 	// findings is the project's findings store: Transcript Compare's and the
 	// Guide's adapters save into it on every completed run
 	// (review-dashboard-and-findings-adoption.prd.md Phases 2-3), and
@@ -372,6 +377,7 @@ func (h *Host) configureLocked(next config) {
 	// A chapter's recordedFraction is the measured share of its words from a current, complete check, and absent otherwise (D11,
 	// Q12 A); reading it never starts a check (Q14).
 	h.manuscript.SetRecordedFractions(coverageRecordedFractions(h.coverage, settingsStore))
+	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist)
 	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go) are one more
 	// consumer of the same client: the navigator's answers arrive through the same Drain the transcript loop pumps.
 	h.navigation = newFindingNavigation(client)

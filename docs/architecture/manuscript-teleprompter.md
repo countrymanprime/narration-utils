@@ -379,6 +379,16 @@ real capture) inside `av.logging.Capture`, which receives ffmpeg's own device
 listing as the log text it would otherwise print to stderr, and parses that
 into a device list. No ffmpeg subprocess, no log-file scraping.
 
+**Log level.** ffmpeg prints the listing at INFO, and PyAV's default log
+level is None (ffmpeg logging off), so the capture only receives it if the
+level lets INFO through. `capture_dshow_log` raises the level to INFO for the
+listing (leaving a more verbose level alone) and restores the previous level
+in a `finally`, so the rest of the sidecar never relays ffmpeg's log. Without
+that step the sidecar listed no devices at all on Windows, which the Phase 1
+tests missed because they inject a finished capture; `test_devices.py` now
+pins the level handling and, on a Windows machine with an active microphone,
+runs the real PyAV listing.
+
 Verified on the development machine (2026-09-22, real hardware): `ffmpeg
 -list_devices true -f dshow -i dummy` and the PyAV spike agreed on the same
 four devices (two audio, one video, one virtual "none" device); the sidecar

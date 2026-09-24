@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -358,5 +359,34 @@ func TestRecordedFractionComesOnlyFromTheMeasurementProvider(t *testing.T) {
 	}
 	if calls != 3 {
 		t.Fatalf("the provider is asked once per payload, got %d calls", calls)
+	}
+}
+
+func TestChaptersUnmeasuredKeepsTheStatusesAndNeverAsksForTheFractions(t *testing.T) {
+	service, chapterID, _ := importReaderFixture(t)
+	calls := 0
+	service.SetRecordedFractions(func() map[string]float64 {
+		calls++
+		return map[string]float64{chapterID: 0.8}
+	})
+	if _, err := service.SetChapterStatus(chapterID, "recording"); err != nil {
+		t.Fatal(err)
+	}
+	measured, err := service.Chapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls = 0
+
+	chapters, err := service.ChaptersUnmeasured()
+
+	if err != nil || calls != 0 || len(chapters) != len(measured) {
+		t.Fatalf("chapters = %d of %d, err = %v, provider calls = %d", len(chapters), len(measured), err, calls)
+	}
+	for index, chapter := range chapters {
+		delete(measured[index], "recordedFraction")
+		if !reflect.DeepEqual(chapter, measured[index]) {
+			t.Fatalf("chapter %d = %#v, want %#v", index, chapter, measured[index])
+		}
 	}
 }
