@@ -1,6 +1,6 @@
 # 0155. Settings gain a number kind with a declared range, and delivery limits are the narrator's own
 
-**Status:** Proposed
+**Status:** Proposed; decision 5 superseded by ADR-0179
 **Date:** 2026-09-23
 
 ## Context

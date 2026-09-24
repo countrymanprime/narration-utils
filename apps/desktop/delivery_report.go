@@ -8,20 +8,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/deliveryreport"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
-	"github.com/countrymanprime/narration-utils/shell/internal/settings"
 )
 
 // The Delivery page's report export (diagnostics-delivery-and-cleanup-tools.prd.md Phase 7). The page sends only the
 // narrator's one choice, whether to include full paths; the host builds the report from what it already holds (the last
-// measurement and diagnostics check, the narrator's limits, the project's review store, the installed assets) and writes
+// measurement and diagnostics check, the project's delivery profile, the project's review store, the installed assets) and writes
 // an HTML and a JSON file into the project's narration-utils/delivery folder. It never writes next to the audio, never
 // changes a source file, and never overwrites an earlier report.
-
-// deliverySettingsTool is the settings section that holds the narrator's delivery limits (ADR 0155).
-const deliverySettingsTool = "Delivery"
 
 // maxReportNameAttempts bounds the search for a free file name when reports are exported within the same second.
 const maxReportNameAttempts = 100
@@ -38,43 +35,32 @@ type DeliveryReportExport struct {
 	PathsIncluded bool   `json:"pathsIncluded"`
 }
 
-// deliveryProfile builds the narrator's limits in force from the layered settings (project over global over default).
-// It answers why they could not be read instead of a profile when a hand-edited value is not a number.
-func deliveryProfile(store *settings.Store) (measure.Profile, string) {
-	values := map[string]string{}
-	if store != nil {
-		for _, key := range measure.LimitKeys() {
-			values[key], _ = store.Effective(deliverySettingsTool, key, "")
-		}
-	}
-	profile, err := measure.ProfileFromLimits(deliveryreport.ProfileName, values)
-	if err != nil {
-		return measure.Profile{Name: deliveryreport.ProfileName}, err.Error()
-	}
-	return profile, ""
-}
-
-// judgeMeasureJob adds the host's judgement of every measured file against the limits in force (measure.Evaluate): its
-// delivery_qc findings, with the IDs a report carries. It judges on every read, so a limit changed in Settings re-judges
-// a measurement without measuring again.
-func judgeMeasureJob(job MeasureJob, profile measure.Profile, limitsError string) MeasureJob {
-	job.LimitsError = limitsError
+// judgeMeasureJob adds the host's judgement of every measured file against the delivery profile in force
+// (deliveryprofile.EvaluateFile, ADR 0179): each file's result per rule and its delivery_qc findings, with the IDs a
+// report carries, and the book rules over every measured file. It judges on every read, so choosing another profile
+// re-judges a measurement without measuring again.
+func judgeMeasureJob(job MeasureJob, profile deliveryprofile.Profile, notice string) MeasureJob {
+	job.Profile, job.ProfileNotice = &profile, notice
 	files := make([]MeasureFileResult, len(job.Files))
+	reports := []measure.Report{}
 	for i, file := range job.Files {
-		file.Findings = []findings.Finding{}
-		if limitsError == "" && file.Status == measureFileMeasured && file.Report != nil {
-			file.Findings = append(file.Findings, measure.Evaluate(*file.Report, profile)...)
+		file.Findings, file.Rules = []findings.Finding{}, []deliveryprofile.Result{}
+		if file.Status == measureFileMeasured && file.Report != nil {
+			judgement := deliveryprofile.EvaluateFile(*file.Report, profile)
+			file.Rules, file.Findings = judgement.Results, judgement.Findings
+			reports = append(reports, *file.Report)
 		}
 		files[i] = file
 	}
 	job.Files = files
+	job.BookRules = deliveryprofile.EvaluateBook(reports, profile)
 	return job
 }
 
-// judgeMeasure judges job against the limits the current project's settings hold.
+// judgeMeasure judges job against the profile the current project is judged against.
 func (h *Host) judgeMeasure(job MeasureJob) MeasureJob {
-	profile, limitsError := deliveryProfile(h.services().settings)
-	return judgeMeasureJob(job, profile, limitsError)
+	profile, _, notice := h.selectedDeliveryProfile(h.services())
+	return judgeMeasureJob(job, profile, notice)
 }
 
 // exportDeliveryReport writes the report of the last measurement and diagnostics check.
@@ -122,7 +108,7 @@ func (h *Host) deliveryReportInput(svc hostServices, includePaths bool) (deliver
 		Options:   deliveryreport.Options{IncludePaths: includePaths},
 		CheckNote: "No diagnostics check has run in this session, so the files were not checked for clipping, level shifts or room-tone changes.",
 	}
-	in.Profile, in.LimitsError = deliveryProfile(svc.settings)
+	in.Profile, _, in.ProfileNotice = h.selectedDeliveryProfile(svc)
 	if measured != nil {
 		for _, file := range measured.snapshot().Files {
 			in.Measured = append(in.Measured, deliveryreport.MeasuredFile{

@@ -97,6 +97,7 @@ import { createFindingsMock, type MockReaper } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
 import { createTakeComparisonMock } from './takeComparisonMock';
 import { createMeasureMock, type MockMeasureSeed } from './measureMock';
+import { createDeliveryProfilesMock, type MockDeliveryProfileSeed } from './deliveryProfilesMock';
 import { createDiagnosticsMock, type MockDiagnosticsSeed } from './diagnosticsMock';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
@@ -455,8 +456,8 @@ export function createMockApi(
     measure?: MockMeasureSeed;
     /** Holds a started diagnostics check part way through, or breaks it (diagnostics PRD Phase 6). */
     diagnostics?: MockDiagnosticsSeed;
-    /** The project's Delivery limits, by key (`true_peak_dbtp_max: '-3'`), set as if saved in Settings (diagnostics PRD Phase 5). */
-    deliveryLimits?: Record<string, string>;
+    /** Boots with a custom delivery profile chosen for the project (delivery-platform-profiles.prd.md); ACX judges otherwise. */
+    deliveryProfile?: MockDeliveryProfileSeed;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -654,12 +655,6 @@ export function createMockApi(
       ]),
     ),
   };
-  const deliveryLimits = initial.deliveryLimits ?? {};
-  settings.project.Delivery = settings.project.Delivery.map((field) =>
-    field.key in deliveryLimits
-      ? { ...field, value: deliveryLimits[field.key], isSet: true, effectiveValue: deliveryLimits[field.key], effectiveSource: 'project' }
-      : field,
-  );
   const subscribers = new Set<(state: TranscriptState) => void>();
   let nextId = 1;
   let lineIdentity: LineIdentityState = wireClone(
@@ -995,9 +990,9 @@ export function createMockApi(
   const takeReviewScan = createTakeReviewScanMock(saveAnalyzerFindings, endJob, initial.takeReviewScanHold);
   const takeComparison = createTakeComparisonMock({ get: findings.findingsGet, save: saveFinding }, endJob, initial.takeComparisonHold);
   const measurePicked = new Set<string>();
-  const deliveryLimitValues = () => Object.fromEntries(settings.project.Delivery.map((field) => [field.key, field.effectiveValue]));
+  const { current: deliveryProfile, ...deliveryProfiles } = createDeliveryProfilesMock(initial.deliveryProfile);
   const { peekDiagnostics, ...diagnostics } = createDiagnosticsMock(endJob, measurePicked, initial.diagnostics);
-  const measurement = createMeasureMock(endJob, initial.measure, measurePicked, deliveryLimitValues, peekDiagnostics);
+  const measurement = createMeasureMock(endJob, initial.measure, measurePicked, deliveryProfile, peekDiagnostics);
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));
   };
@@ -1998,6 +1993,7 @@ export function createMockApi(
     ...takeReviewScan,
     ...takeComparison,
     ...measurement,
+    ...deliveryProfiles,
     ...diagnostics,
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,

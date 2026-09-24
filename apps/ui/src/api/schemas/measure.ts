@@ -9,6 +9,7 @@ import type {
   MeasureReport,
 } from '../contracts/measure';
 import { listFromNull } from './base';
+import { deliveryProfileSchema, deliveryRuleResultSchema } from './deliveryProfiles';
 import { findingSchema } from './findings';
 
 const nullableNumber = z.number().nullable();
@@ -52,6 +53,7 @@ const measureFileResultSchema = z.object({
   report: measureReportSchema.nullable(),
   fingerprint: measureFingerprintSchema.nullable(),
   findings: listFromNull(findingSchema),
+  rules: listFromNull(deliveryRuleResultSchema),
   error: z.string().optional(),
 });
 
@@ -65,18 +67,28 @@ export const measureJobSchema = z.object({
   elapsed: z.number(),
   error: z.string().optional(),
   files: listFromNull(measureFileResultSchema),
-  limitsError: z.string().optional(),
+  profile: deliveryProfileSchema.nullable(),
+  bookRules: listFromNull(deliveryRuleResultSchema),
+  profileNotice: z.string().optional(),
 }) satisfies z.ZodType<MeasureJob>;
 
 export const measurePickResultSchema = z.object({ paths: listFromNull(z.string()) }) satisfies z.ZodType<MeasurePickResult>;
 
-/** The evidence of the host's delivery_qc finding (measure.Evaluate): the metric, and how and against which limit it broke. */
+/**
+ * The evidence of the host's delivery_qc finding (deliveryprofile.EvaluateFile, ADR 0179): the rule and profile, the metric,
+ * and how and against which bound it missed.
+ */
 export const deliveryQcEvidenceSchema = z.object({
   metric: z.string(),
-  violation: z.enum(['above_max', 'below_min']).optional(),
+  rule: z.string(),
+  profile: z.string(),
+  value: z.number().optional(),
+  violation: z.enum(['above_max', 'below_min', 'not_one_of']).optional(),
   limit_min: z.number().optional(),
   limit_max: z.number().optional(),
+  allowed: z.array(z.number()).optional(),
   available: z.boolean().optional(),
+  advice: z.string().optional(),
 });
 
 export const deliveryReportExportSchema = z.object({

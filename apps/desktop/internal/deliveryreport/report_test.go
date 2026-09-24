@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
 )
@@ -48,10 +49,7 @@ func clipFinding(path string, start float64) findings.Finding {
 }
 
 func sampleInput() Input {
-	profile, err := measure.ProfileFromLimits(ProfileName, map[string]string{"integrated_lufs_min": "-20", "true_peak_dbtp_max": "-3"})
-	if err != nil {
-		panic(err)
-	}
+	profile := deliveryprofile.ACX()
 	kind := measure.SourceProcessedRender
 	thresholds := measure.DefaultDiagnosticOptions()
 	summary := &measure.DiagnosticSummary{DurationSeconds: 1843.5, SampleRate: 48000, Channels: 2, ClipRegions: 1,
@@ -207,7 +205,7 @@ func TestMeasurementsAreJudgedByTheSameRulesAndIDsAsTheHost(t *testing.T) {
 	want := map[string]string{}
 	for _, file := range in.Measured {
 		if file.Report != nil {
-			for _, f := range measure.Evaluate(*file.Report, in.Profile) {
+			for _, f := range deliveryprofile.EvaluateFile(*file.Report, in.Profile).Findings {
 				want[f.ID] = string(f.Severity)
 			}
 		}
@@ -229,7 +227,7 @@ func TestMeasurementsAreJudgedByTheSameRulesAndIDsAsTheHost(t *testing.T) {
 		}
 	}
 	slices.Sort(titles)
-	wantTitles := "F1 True peak above your highest limit|F2 Integrated loudness not measurable, so not judged|F2 True peak not measurable, so not judged"
+	wantTitles := "F1 Peak: advice|F1 Sample rate not one ACX accepts|F2 Sample rate not one ACX accepts"
 	if strings.Join(titles, "|") != wantTitles {
 		t.Errorf("titles = %v", titles)
 	}
@@ -253,7 +251,7 @@ func TestAReviewDecisionFromTheStoreIsCarriedAndADismissalClosesTheFinding(t *te
 			t.Fatalf("the dismissed finding = %+v", f)
 		}
 	}
-	if report.Summary.OpenFindings != 3 || report.Summary.ByReview["dismissed"] != 1 || report.Files[0].OpenFindings != 1 {
+	if report.Summary.OpenFindings != 3 || report.Summary.ByReview["dismissed"] != 1 || report.Files[0].OpenFindings != 2 {
 		t.Fatalf("summary = %+v, file 1 = %+v", report.Summary, report.Files[0])
 	}
 	in.Review, in.ReviewNote = nil, "No project is open, so there are no review decisions."
@@ -262,23 +260,68 @@ func TestAReviewDecisionFromTheStoreIsCarriedAndADismissalClosesTheFinding(t *te
 	}
 }
 
-func TestNoLimitsAndUnreadableLimitsJudgeNothingAndSaySo(t *testing.T) {
-	in := sampleInput()
-	in.Profile = measure.Profile{Name: ProfileName}
-	report := Build(in)
-	if report.Limits.Set || !strings.Contains(report.Limits.Note, "No limits set") {
-		t.Fatalf("limits = %+v", report.Limits)
+func TestTheReportNamesTheProfileAndEveryRuleWithItsSourceAndResults(t *testing.T) {
+	report := Build(sampleInput())
+	profile := report.Profile
+	if profile.Key != "acx@2026-09" || profile.Title != "ACX (September 2026)" || !profile.BuiltIn || !strings.HasPrefix(profile.SourceURL, "https://help.acx.com/") {
+		t.Fatalf("profile = %+v", profile)
 	}
-	in = sampleInput()
-	in.LimitsError = "delivery limit true_peak_dbtp_max is \"loud\", which is not a finite number"
-	report = Build(in)
-	for _, f := range report.Findings {
-		if f.Category == string(findings.CategoryDeliveryQC) {
-			t.Fatal("unreadable limits judge nothing")
+	if len(profile.Rules) != len(deliveryprofile.ACX().Rules) {
+		t.Fatalf("%d rules, want every rule of ACX", len(profile.Rules))
+	}
+	byID := map[string]ProfileRule{}
+	for _, rule := range profile.Rules {
+		if rule.Requirement == "" || rule.Verification == "" || rule.CheckedBy == "" {
+			t.Errorf("rule %s lacks its requirement, verification or check: %+v", rule.ID, rule)
+		}
+		byID[rule.ID] = rule
+	}
+	if got := byID["acx.sample_rate"].Results; got.NotMet != 2 || got.Met != 0 {
+		t.Errorf("sample rate results = %+v, want 2 not met (48 kHz renders)", got)
+	}
+	if got := byID["acx.rms"].Results; got.Met != 2 {
+		t.Errorf("RMS results = %+v, want 2 met", got)
+	}
+	if got := byID["acx.format"].Results; got.NotChecked != 2 || got.Met != 0 {
+		t.Errorf("MP3 results = %+v, want 2 not checked and never met", got)
+	}
+	if got := byID["acx.channels"].Results; got.Met != 1 {
+		t.Errorf("channels (book) results = %+v, want met once for the book", got)
+	}
+	if report.Summary.FilesNotMet != 2 || report.Summary.RuleResults.NotMet != 2 || report.Summary.RuleResults.NotChecked != 6 {
+		t.Errorf("summary = %+v", report.Summary)
+	}
+	for _, file := range report.Files {
+		if file.Measurement.Status == "measured" && len(file.Measurement.Rules) != 8 {
+			t.Errorf("%s has %d rule results, want one per file rule", file.Name, len(file.Measurement.Rules))
+		}
+		if file.Measurement.Rules == nil {
+			t.Errorf("%s writes its rules as null, want a list", file.Name)
 		}
 	}
-	if report.Limits.Set || report.Limits.Error == "" {
-		t.Fatalf("limits = %+v", report.Limits)
+	if !strings.Contains(report.Notice, "never counts as met") {
+		t.Errorf("the notice %q does not say a rule not checked never counts as met", report.Notice)
+	}
+}
+
+func TestACustomProfileAndANoticeAreNamed(t *testing.T) {
+	in := sampleInput()
+	custom := deliveryprofile.ACX().Clone()
+	custom.ID, custom.BuiltIn, custom.Revision, custom.Name, custom.BasedOn, custom.Version = "custom-1", false, 3, "My ACX", "acx@2026-09", ""
+	custom.Rules[3].Off = true // sample rate
+	in.Profile, in.ProfileNotice = custom, "The delivery profile this project chose is no longer there, so it is judged against the Global default."
+	report := Build(in)
+	if report.Profile.Key != "custom-1@r3" || report.Profile.BuiltIn || report.Profile.BasedOn != "acx@2026-09" || report.Profile.Notice == "" {
+		t.Fatalf("profile = %+v", report.Profile)
+	}
+	for _, f := range report.Findings {
+		if f.Category == string(findings.CategoryDeliveryQC) && strings.Contains(f.Title, "Sample rate") {
+			t.Fatalf("a rule turned off raised %q", f.Title)
+		}
+	}
+	_, page := render(t, in)
+	if !strings.Contains(page, "Judged against My ACX") || !strings.Contains(page, "no longer there") {
+		t.Fatal("the HTML does not name the custom profile and the notice")
 	}
 }
 

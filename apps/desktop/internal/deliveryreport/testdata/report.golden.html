@@ -12,6 +12,7 @@ body { margin: 0 auto; max-width: 72rem; padding: 1.5rem 1rem 3rem; font: 15px/1
 h1 { font-size: 1.6rem; margin: 0 0 .25rem; } h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; border-bottom: 1px solid var(--line); padding-bottom: .25rem; }
 p, li { max-width: 60rem; } .muted { color: var(--muted); } .open { color: var(--danger); font-weight: 600; }
 .notice { background: var(--band); border-left: 4px solid var(--line); padding: .75rem 1rem; }
+.profile { border: 1px solid var(--line); padding: .75rem 1rem; }
 .scroll { overflow-x: auto; } table { border-collapse: collapse; width: 100%; font-size: .9rem; }
 th, td { border-bottom: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
 th { background: var(--band); } td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -22,37 +23,136 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
 <body>
 <header>
 <h1>Delivery report</h1>
-<p class="muted">Generated 2026-09-23T14:00:00Z by Narration Utils 0.9.0 · measure analyzer v1 · diagnostics analyzer v1</p>
-<p class="notice">A generic technical measurement of the files listed, made on the narrator&#39;s computer. It is not a certification: it does not say that a distributor (ACX or another) will accept these files, and it does not replace an engineer&#39;s review. Every open finding, and every file that was not measured or checked, is listed.</p>
+<p class="muted">Generated 2026-09-23T14:00:00Z by Narration Utils 0.9.0 · measure analyzer v2 · diagnostics analyzer v2</p>
+<p class="profile"><strong>Judged against ACX (September 2026)</strong> · profile <code>acx@2026-09</code> · built in, read-only<br><span class="muted">Rules cite ACX Audio Submission Requirements (https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements), read 2026-09-20. 13 rules: 6 checked by the app, 5 not checked by the app, 2 listen. 5 to verify, 1 with conflicting sources.</span></p>
+<p class="notice">A generic technical measurement of the files listed, made on the narrator&#39;s computer. It is not a certification: it does not say that a distributor (ACX or another) will accept these files, and it does not replace an engineer&#39;s review. A rule marked &#34;not checked by the app&#34; or &#34;listen&#34; was not judged, and never counts as met. Every open finding, and every file that was not measured or checked, is listed.</p>
 </header>
 
 <h2>Summary</h2>
 <ul>
 <li>4 file(s): 2 measured, 2 not measured; 2 checked for diagnostics, 2 not checked.</li>
-<li><span class="open">4 open finding(s)</span> of 4 (open means not dismissed). By review: unreviewed 4. By severity: error 1, info 2, warning 1.</li>
+<li><span class="open">Against ACX (September 2026): 2 rule result(s) not met in 2 file(s); 8 met; 6 not checked by the app; 0 not measurable.</span></li>
+<li><span class="open">4 open finding(s)</span> of 4 (open means not dismissed). By review: unreviewed 4. By severity: error 2, warning 2.</li>
 <li>Scope: The files the narrator chose on the Delivery page in this session: the last measurement and the last diagnostics check. Files are not matched to chapters yet, so each is listed by its file name.</li>
 <li>Privacy: Files are named by their file name only; no folder or full path is written, and any path in a message is replaced. No audio is embedded or linked, and no manuscript text is written.</li>
 </ul>
 
-<h2>Limits</h2>
-<p>Your own limits, from Settings &gt; Delivery. Bounds are inclusive; a value that could not be measured is never counted as within a limit.</p>
-<ul><li>Integrated loudness: lowest −20.0 LUFS</li><li>True peak: highest −3.0 dBTP</li></ul>
+<h2>Delivery profile: ACX (September 2026)</h2>
+<p class="muted">Bounds are inclusive. A value that could not be measured, and a rule not checked by the app or to listen for, never counts as met.</p>
+<div class="scroll"><table>
+<thead><tr><th>Rule</th><th>ACX requires</th><th>How it was checked</th><th>Verification</th><th>Result</th></tr></thead>
+<tbody>
+<tr id="rule-acx.rms">
+<td><code>acx.rms</code><br>RMS <span class="muted">(file)</span></td>
+<td>Each file measures between -23 dB and -18 dB RMS.</td>
+<td>Measured, -23 to -18 dBFS</td>
+<td>To verify: RMS definition to compare with ACX Check: the app measures the whole file, silences included, over every channel.</td>
+<td>2 met</td>
+</tr>
+<tr id="rule-acx.peak">
+<td><code>acx.peak</code><br>Peak <span class="muted">(file)</span></td>
+<td>Each file has peak values no higher than -3 dB.</td>
+<td>Measured, at most -3 dBFS</td>
+<td>To verify: Sample or true peak to confirm: the app judges the sample peak and shows the true peak as advice.</td>
+<td>2 met</td>
+</tr>
+<tr id="rule-acx.noise_floor">
+<td><code>acx.noise_floor</code><br>Noise floor <span class="muted">(file)</span></td>
+<td>Each file has a noise floor no higher than -60 dB RMS.</td>
+<td>Measured, at most -60 dBFS</td>
+<td>To verify: Window definition to compare with ACX Check: the app takes the quietest 0.5 s that is not digital silence.</td>
+<td>2 met</td>
+</tr>
+<tr id="rule-acx.sample_rate">
+<td><code>acx.sample_rate</code><br>Sample rate <span class="muted">(file)</span></td>
+<td>Each file is sampled at 44.1 kHz.</td>
+<td>Measured, one of 44100 Hz</td>
+<td>Verified 2026-09-23</td>
+<td class="open">2 not met</td>
+</tr>
+<tr id="rule-acx.file_length">
+<td><code>acx.file_length</code><br>File length <span class="muted">(file)</span></td>
+<td>Each file is no longer than 120 minutes.</td>
+<td>Measured, at most 7200 s</td>
+<td>Verified 2026-09-20</td>
+<td>2 met</td>
+</tr>
+<tr id="rule-acx.room_tone_head">
+<td><code>acx.room_tone_head</code><br>Room tone, head <span class="muted">(file)</span></td>
+<td>1 to 5 seconds of room tone at the beginning of each file.</td>
+<td>Not checked by the app</td>
+<td>Conflicting sources: ACX&#39;s page was read as 1 to 5 s; current guides say 0.5 to 1 s. Judged 0.5 to 5 s (the looser reading) until the owner reads ACX&#39;s page.</td>
+<td>2 not checked</td>
+</tr>
+<tr id="rule-acx.room_tone_tail">
+<td><code>acx.room_tone_tail</code><br>Room tone, tail <span class="muted">(file)</span></td>
+<td>1 to 5 seconds of room tone at the end of each file.</td>
+<td>Not checked by the app</td>
+<td>Verified 2026-09-20</td>
+<td>2 not checked</td>
+</tr>
+<tr id="rule-acx.format">
+<td><code>acx.format</code><br>MP3 format <span class="muted">(file)</span></td>
+<td>Each file is an MP3 at 192 kbps or higher, constant bit rate (CBR).</td>
+<td>Not checked by the app</td>
+<td>Verified 2026-09-23</td>
+<td>2 not checked</td>
+</tr>
+<tr id="rule-acx.channels">
+<td><code>acx.channels</code><br>Channels <span class="muted">(book)</span></td>
+<td>Every file is mono or stereo, the same in every file.</td>
+<td>Measured, one of 1, 2, the same in every file</td>
+<td>To verify: The same-in-every-file wording and any mono preference are to read on ACX&#39;s page.</td>
+<td>1 met</td>
+</tr>
+<tr id="rule-acx.one_section_per_file">
+<td><code>acx.one_section_per_file</code><br>One section per file <span class="muted">(book)</span></td>
+<td>Each file holds one chapter or section and starts with a section header.</td>
+<td>Listen: not judged by the app</td>
+<td>Verified 2026-09-20</td>
+<td>1 not checked</td>
+</tr>
+<tr id="rule-acx.credits">
+<td><code>acx.credits</code><br>Credits files <span class="muted">(book)</span></td>
+<td>&ldquo;Opening and closing credits should be separate files&rdquo;</td>
+<td>Not checked by the app</td>
+<td>Verified 2026-09-20</td>
+<td>1 not checked</td>
+</tr>
+<tr id="rule-acx.retail_sample">
+<td><code>acx.retail_sample</code><br>Retail sample <span class="muted">(book)</span></td>
+<td>A retail audio sample of 5 minutes or less.</td>
+<td>Not checked by the app</td>
+<td>Verified 2026-09-20: Some guides also give a 1 minute minimum; to read on ACX&#39;s page.</td>
+<td>1 not checked</td>
+</tr>
+<tr id="rule-acx.consistency">
+<td><code>acx.consistency</code><br>Consistency <span class="muted">(book)</span></td>
+<td>Consistent in overall sound and formatting, free of extraneous sounds.</td>
+<td>Listen: not judged by the app</td>
+<td>To verify: Recorded from guides; ACX&#39;s own wording is to read on its page.</td>
+<td>1 not checked</td>
+</tr>
+</tbody>
+</table></div>
 
 <h2>Files</h2>
 <div class="scroll"><table>
-<thead><tr><th>File</th><th>Status</th><th>Measurements</th><th>Diagnostics</th><th>Fingerprint</th></tr></thead>
+<thead><tr><th>File</th><th>Status</th><th>Measurements</th><th>Against the profile</th><th>Diagnostics</th><th>Fingerprint</th></tr></thead>
 <tbody>
 <tr id="file-F1">
 <td><strong>F1</strong> Chapter 01.wav</td>
-<td class="open">2 open findings</td>
-<td><ul class="plain"><li>Loudness (LUFS): −19.4</li><li>RMS (dBFS): −21.2</li><li>Sample peak (dBFS): −3.6</li><li>True peak (dBTP): −2.4</li><li>Noise floor (dBFS): −66.8</li><li>Length: 30:43.500</li><li>Silent windows: 0</li></ul></td>
+<td class="open">3 open findings</td>
+<td><ul class="plain"><li>Loudness (LUFS): −19.4</li><li>RMS (dBFS): −21.2</li><li>Sample peak (dBFS): −3.6</li><li>True peak (dBTP): −2.4</li><li>Noise floor (dBFS): −66.8</li><li>Sample rate (Hz): 48000</li><li>Channels: 2</li><li>Length: 30:43.500</li><li>Silent windows: 0</li></ul></td>
+<td><ul class="plain"><li>RMS: met</li><li>Peak: met (advice: true peak above −3 dBTP may clip after MP3 encoding)</li><li>Noise floor: met</li><li>Sample rate: NOT MET</li><li>File length: met</li><li>Room tone, head: not checked</li><li>Room tone, tail: not checked</li><li>MP3 format: not checked</li></ul></td>
 <td><ul class="plain"><li>Clip regions: 1</li><li>Level shifts: 0</li><li>Silences: 0</li><li>Room-tone segments: 0</li><li>Pacing: not available (no transcript timing)</li></ul></td>
 <td><code title="SHA-256 9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f">9f9f9f9f9f9f</code><br><span class="muted">530928044 bytes, modified 2026-09-23T14:02:11.5Z</span></td>
 </tr>
 <tr id="file-F2">
 <td><strong>F2</strong> Chapter 02.wav</td>
-<td class="open">2 open findings</td>
-<td><ul class="plain"><li>Loudness (LUFS): Not measurable</li><li>RMS (dBFS): −21.2</li><li>Sample peak (dBFS): −3.6</li><li>True peak (dBTP): Not measurable</li><li>Noise floor (dBFS): −66.8</li><li>Length: 30:43.500</li><li>Silent windows: 0</li></ul></td>
+<td class="open">1 open finding</td>
+<td><ul class="plain"><li>Loudness (LUFS): Not measurable</li><li>RMS (dBFS): −21.2</li><li>Sample peak (dBFS): −3.6</li><li>True peak (dBTP): Not measurable</li><li>Noise floor (dBFS): −66.8</li><li>Sample rate (Hz): 48000</li><li>Channels: 2</li><li>Length: 30:43.500</li><li>Silent windows: 0</li></ul></td>
+<td><ul class="plain"><li>RMS: met</li><li>Peak: met</li><li>Noise floor: met</li><li>Sample rate: NOT MET</li><li>File length: met</li><li>Room tone, head: not checked</li><li>Room tone, tail: not checked</li><li>MP3 format: not checked</li></ul></td>
 <td><ul class="plain"><li>Clip regions: 1</li><li>Level shifts: 0</li><li>Silences: 0</li><li>Room-tone segments: 0</li><li>Pacing: not available (no transcript timing)</li></ul></td>
 <td><code title="SHA-256 e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3">e3e3e3e3e3e3</code><br><span class="muted">176444 bytes, modified 2026-09-23T14:05:00Z</span></td>
 </tr>
@@ -60,6 +160,7 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
 <td><strong>F3</strong> Chapter 03.mp3</td>
 <td>Not fully checked</td>
 <td>Could not be measured: open Chapter 03.mp3: not a RIFF/WAVE file</td>
+<td><span class="muted">Not judged</span></td>
 <td>Not in the last diagnostics check.</td>
 <td><span class="muted">None</span></td>
 </tr>
@@ -67,6 +168,7 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
 <td><strong>F4</strong> Chapter 04.wav</td>
 <td>Not fully checked</td>
 <td>The measurement was cancelled before this file was read.</td>
+<td><span class="muted">Not judged</span></td>
 <td>Not in the last diagnostics check.</td>
 <td><span class="muted">None</span></td>
 </tr>
@@ -78,12 +180,20 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
 <div class="scroll"><table>
 <thead><tr><th>Finding</th><th>File</th><th>Time</th><th>Severity</th><th>What was measured</th><th>Review</th></tr></thead>
 <tbody>
-<tr id="finding-986fb4386a579a4fdd5ccdeb">
-<td><strong>True peak above your highest limit</strong><br><code>986fb4386a579a4fdd5ccdeb</code><br><span class="muted">delivery_qc · measure</span></td>
+<tr id="finding-208a2a3c6bab601dc8569bea">
+<td><strong>Sample rate not one ACX accepts</strong><br><code>208a2a3c6bab601dc8569bea</code><br><span class="muted">delivery_qc · measure</span></td>
 <td><a href="#file-F1">F1</a> Chapter 01.wav</td>
 <td class="num">Whole file</td>
 <td>ERROR</td>
-<td><ul class="plain"><li><code>limit_max: -3</code></li><li><code>metric: true_peak_dbtp</code></li><li><code>profile: delivery-limits</code></li><li><code>value: -2.4</code></li><li><code>violation: above_max</code></li></ul><span class="muted">deterministic measurement of the decoded samples</span></td>
+<td><ul class="plain"><li><code>allowed: [44100]</code></li><li><code>metric: sample_rate</code></li><li><code>profile: acx@2026-09</code></li><li><code>rule: acx.sample_rate</code></li><li><code>value: 48000</code></li><li><code>violation: not_one_of</code></li></ul><span class="muted">deterministic measurement of the decoded samples</span></td>
+<td class="open">Unreviewed</td>
+</tr>
+<tr id="finding-75fc89e66e5ae45854748ea4">
+<td><strong>Peak: advice</strong><br><code>75fc89e66e5ae45854748ea4</code><br><span class="muted">delivery_qc · measure</span></td>
+<td><a href="#file-F1">F1</a> Chapter 01.wav</td>
+<td class="num">Whole file</td>
+<td>WARNING</td>
+<td><ul class="plain"><li><code>advice: true peak above −3 dBTP may clip after MP3 encoding</code></li><li><code>limit_max: -3</code></li><li><code>metric: true_peak_dbtp</code></li><li><code>profile: acx@2026-09</code></li><li><code>rule: acx.peak</code></li><li><code>value: -2.4</code></li><li><code>violation: above_max</code></li></ul><span class="muted">deterministic measurement of the decoded samples</span></td>
 <td class="open">Unreviewed</td>
 </tr>
 <tr id="finding-fa486a76ef24a25c8a91b73a">
@@ -94,20 +204,12 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
 <td><ul class="plain"><li><code>ceiling_dbfs: 0</code></li><li><code>kind: clipping</code></li><li><code>note: read from Chapter 01.wav</code></li><li><code>source_kind: processed_render</code></li></ul><span class="muted">deterministic: runs of 3 or more samples at or above the ceiling</span></td>
 <td class="open">Unreviewed</td>
 </tr>
-<tr id="finding-44d75f494d263f6dfdc53e8b">
-<td><strong>Integrated loudness not measurable, so not judged</strong><br><code>44d75f494d263f6dfdc53e8b</code><br><span class="muted">delivery_qc · measure</span></td>
+<tr id="finding-b9f5b3028125893accbf3ddc">
+<td><strong>Sample rate not one ACX accepts</strong><br><code>b9f5b3028125893accbf3ddc</code><br><span class="muted">delivery_qc · measure</span></td>
 <td><a href="#file-F2">F2</a> Chapter 02.wav</td>
 <td class="num">Whole file</td>
-<td>INFO</td>
-<td><ul class="plain"><li><code>available: false</code></li><li><code>metric: integrated_lufs</code></li><li><code>profile: delivery-limits</code></li></ul><span class="muted">the measurement could not be made (silence, or audio shorter than the measurement window)</span></td>
-<td class="open">Unreviewed</td>
-</tr>
-<tr id="finding-760c57cc6cac112ffb303bc7">
-<td><strong>True peak not measurable, so not judged</strong><br><code>760c57cc6cac112ffb303bc7</code><br><span class="muted">delivery_qc · measure</span></td>
-<td><a href="#file-F2">F2</a> Chapter 02.wav</td>
-<td class="num">Whole file</td>
-<td>INFO</td>
-<td><ul class="plain"><li><code>available: false</code></li><li><code>metric: true_peak_dbtp</code></li><li><code>profile: delivery-limits</code></li></ul><span class="muted">the measurement could not be made (silence, or audio shorter than the measurement window)</span></td>
+<td>ERROR</td>
+<td><ul class="plain"><li><code>allowed: [44100]</code></li><li><code>metric: sample_rate</code></li><li><code>profile: acx@2026-09</code></li><li><code>rule: acx.sample_rate</code></li><li><code>value: 48000</code></li><li><code>violation: not_one_of</code></li></ul><span class="muted">deterministic measurement of the decoded samples</span></td>
 <td class="open">Unreviewed</td>
 </tr>
 </tbody>
@@ -121,6 +223,6 @@ ul.plain { list-style: none; padding: 0; margin: 0; }
 <ul><li>LJSpeech (piper <code>en_US-ljspeech-high</code>), version 1.0.0</li><li>Whisper small (whisper <code>small</code>), version 1.0, OpenAI, <a href="https://huggingface.co/openai/whisper-small">provenance</a></li></ul>
 
 <h2>Definitions</h2>
-<ul><li><code>integrated_lufs</code>: Gated integrated loudness per ITU-R BS.1770-4 over the whole file.</li><li><code>noise_floor_dbfs</code>: The RMS of the quietest 0.5 s window that is not digital silence.</li><li><code>not_measurable</code>: A value that is null could not be measured (silence, or audio too short); it is never a number and never counts as within a limit.</li><li><code>rms_dbfs</code>: RMS over the whole file, silences included; not any distributor&#39;s own RMS definition.</li><li><code>sample_peak_dbfs</code>: The highest decoded sample.</li><li><code>true_peak_dbtp</code>: The highest inter-sample peak, from oversampling (4x at 48 kHz and below, 2x above; ITU-R BS.1770-4 Annex 2).</li></ul>
+<ul><li><code>integrated_lufs</code>: Gated integrated loudness per ITU-R BS.1770-4 over the whole file.</li><li><code>noise_floor_dbfs</code>: The RMS of the quietest 0.5 s window that is not digital silence.</li><li><code>not_checked</code>: A rule the app cannot check yet (for example the MP3 you upload, when the WAV render was measured) or one to listen for; it is never counted as met.</li><li><code>not_measurable</code>: A value that is null could not be measured (silence, or audio too short); it is never a number and never counts as met.</li><li><code>rms_dbfs</code>: RMS over the whole file, silences included, over every channel; whether it matches a distributor&#39;s own RMS definition is still to verify.</li><li><code>sample_peak_dbfs</code>: The highest decoded sample.</li><li><code>true_peak_dbtp</code>: The highest inter-sample peak, from oversampling (4x at 48 kHz and below, 2x above; ITU-R BS.1770-4 Annex 2).</li></ul>
 </body>
 </html>

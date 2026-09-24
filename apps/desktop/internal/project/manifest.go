@@ -46,6 +46,15 @@ type Manifest struct {
 	// manuscript and Clear derived data the way the credits values themselves do. Nil or a missing key means
 	// "not_started", the same default a manuscript chapter with no note has.
 	CreditsStatus map[string]string `json:"creditsStatus,omitempty"`
+	// DeliveryProfile is the delivery profile this project is judged against (delivery-platform-profiles.prd.md P1,
+	// ADR 0179), additive like Credits. Nil: the Global default.
+	DeliveryProfile *DeliveryProfileRef `json:"deliveryProfile,omitempty"`
+}
+
+// DeliveryProfileRef names a delivery profile: a built-in's id and version, or a custom profile's id.
+type DeliveryProfileRef struct {
+	ID      string `json:"id"`
+	Version string `json:"version,omitempty"`
 }
 
 // New returns a fresh manifest for a project named name, created at now.

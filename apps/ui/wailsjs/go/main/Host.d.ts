@@ -79,7 +79,17 @@ export function DawCatalogOpenDownloadPage(arg1:string):Promise<string>;
 
 export function DawLaunch():Promise<string>;
 
+export function DeliveryDeleteProfile(arg1:string):Promise<string>;
+
+export function DeliveryDuplicateProfile(arg1:string,arg2:string):Promise<string>;
+
 export function DeliveryExportReport(arg1:boolean):Promise<string>;
+
+export function DeliveryProfiles():Promise<string>;
+
+export function DeliverySaveProfile(arg1:string):Promise<string>;
+
+export function DeliverySelectProfile(arg1:string,arg2:string,arg3:string):Promise<string>;
 
 export function DiagnosticsAnalyze(arg1:Array<string>,arg2:string):Promise<string>;
 
