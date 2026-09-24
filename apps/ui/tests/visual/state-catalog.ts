@@ -295,72 +295,54 @@ export const STATE_CATALOG: StateEntry[] = [
     page: 'manuscript',
     state: 'read-aloud-setup',
     description:
-      'Manuscript, the "Read aloud" full-size dialog (teleprompter-manuscript-integration.prd.md Phase 2) opened from a chapter header - Microphone, Engine and Model fields, no chapter picker (the chapter is fixed); above them the resume card (Phase 10) offers where the recording ends: the matched track, "as of the project\'s last save", the resume word with its sentence and confidence, and Resume from here / Start from the top / Pick a word',
-  },
-  {
-    page: 'manuscript',
-    state: 'read-aloud-resume-chosen',
-    description:
-      'Manuscript, the "Read aloud" dialog after "Resume from here" - the resume card folds to one line naming the word and sentence Start reading will begin at, with Change',
-  },
-  {
-    page: 'manuscript',
-    state: 'read-aloud-resumed',
-    description:
-      'Manuscript, the "Read aloud" dialog just after Start reading from a chosen resume point - the session starts at the located word (the highlight is there, the words before it read), the resume card gone; timers frozen so the replay cannot move it on',
-    ...FREEZES_THE_CLOCK,
+      'Manuscript, the "Read aloud" full-size dialog opened from a chapter header - Microphone, Engine and Model fields, no chapter picker (the chapter is fixed); above them the resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) offers where the recording ends as a compact choice: the matched track, "as of the project\'s last save", the matched sentence, and Resume from here / Start from the top / Pick a word',
   },
   {
     page: 'manuscript',
     state: 'read-aloud-resume-low-confidence',
     description:
-      'Manuscript, the resume card when the end of the recording also fits elsewhere in the chapter (?mockResume=low_confidence) - offered as a guess to check, with its confidence and sentence; Resume from here is not the primary action',
+      'Manuscript, the resume prompt when the end of the recording also fits elsewhere in the chapter (?mockResume=low_confidence) - offered as a guess to check, with its confidence and sentence; Resume from here is not the primary action',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-complete',
+    description:
+      'Manuscript, the resume prompt when the recording already reaches the chapter\'s last word - "This chapter is recorded to the end", no Resume from here, only Pick a word (fixes offering to resume past the end)',
   },
   {
     page: 'manuscript',
     state: 'read-aloud-resume-not-found',
     description:
-      "Manuscript, the resume card when the recording's tail did not match the chapter (?mockResume=not_found) - no resume word; says reading starts from the top, shows what was heard, offers Pick a word and Another track",
-  },
-  {
-    page: 'manuscript',
-    state: 'read-aloud-resume-pick-track',
-    description:
-      'Manuscript, the resume card when more than one track could hold the chapter (?mockResume=ambiguous) - it never guesses: a Track picker (possible matches first) and Read this track, reading from the top until then',
+      "Manuscript, the resume prompt when the recording's tail did not match the chapter (?mockResume=not_found) - no resume word; says reading starts from the top, shows what was heard, offers Pick a word",
   },
   {
     page: 'manuscript',
     state: 'read-aloud-resume-no-track',
     description:
-      'Manuscript, the resume card when no track in the REAPER project matches the chapter (?mockResume=none) - says reading starts from the top, with a picker of every track',
-  },
-  {
-    page: 'manuscript',
-    state: 'read-aloud-resume-no-recording',
-    description: "Manuscript, the resume card when the chapter's track has nothing recorded yet (?mockResume=no_recording) - reading starts from the top",
-  },
-  {
-    page: 'manuscript',
-    state: 'read-aloud-resume-source-missing',
-    description:
-      "Manuscript, the resume card when the last item's audio file is missing (?mockResume=source_missing) - names the file, reading starts from the top",
-  },
-  {
-    page: 'manuscript',
-    state: 'read-aloud-resume-source-unsupported',
-    description:
-      "Manuscript, the resume card when the last item's source cannot be read as audio (?mockResume=source_unsupported) - names the file, reading starts from the top",
+      'Manuscript, the resume prompt when no track in the REAPER project matches the chapter (?mockResume=none) - says reading starts from the top, with a "Link a track" link to the Tracks page instead of a picker in place (Chapter Track Link Control owns linking)',
   },
   {
     page: 'manuscript',
     state: 'read-aloud-resume-model-required',
     description:
-      'Manuscript, the resume card when the Whisper model the lookup needs is not downloaded (?mockAssets=missing) - says so with a Download model button that opens the first-use confirm; nothing downloads by itself',
+      'Manuscript, the resume prompt when the Whisper model the lookup needs is not downloaded (?mockAssets=missing) - says so with a Download model button that opens the first-use confirm; nothing downloads by itself',
   },
   {
     page: 'manuscript',
     state: 'read-aloud-resume-error',
-    description: 'Manuscript, the resume card when the lookup failed (?mockResume=error) - the reason as an alert, Try again, reading from the top meanwhile',
+    description: 'Manuscript, the resume prompt when the lookup failed (?mockResume=error) - the reason as an alert, Try again, reading from the top meanwhile',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-after-choice',
+    description:
+      'Manuscript, the "Read aloud" dialog after "Resume from here" - the resume prompt is gone at once (no summary, no Change): the header slot above the text is empty',
+  },
+  {
+    page: 'manuscript',
+    state: 'read-aloud-resume-after-session',
+    description:
+      'Manuscript, the "Read aloud" dialog after a session has started and ended once - the resume prompt does not come back for the rest of this dialog\'s open, so the next Start reading begins at the top with nothing to clear',
   },
   {
     page: 'manuscript',
