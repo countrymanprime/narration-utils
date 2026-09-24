@@ -322,15 +322,15 @@ describe('the summary and the groups of the review', () => {
 describe('the subtitle of each chapter in the review', () => {
   it('shows the subtitle of a chapter after its title, and only its title when the heading had none', async () => {
     const { dialog } = await openReview();
-    expect(dialog.getByText('Chapter One').textContent).toBe('Chapter One — Down the Rabbit-Hole');
-    expect(dialog.getByText('Chapter Two').textContent).toBe('Chapter Two — The Pool of Tears');
-    expect(dialog.getByText('Chapter Three').textContent).toBe('Chapter Three');
+    expect(dialog.getByText('Chapter One').closest('[title]')!.textContent).toBe('Chapter One — Down the Rabbit-Hole');
+    expect(dialog.getByText('Chapter Two').closest('[title]')!.textContent).toBe('Chapter Two — The Pool of Tears');
+    expect(dialog.getByText('Chapter Three').closest('[title]')!.textContent).toBe('Chapter Three');
   });
 
   it('keeps the whole title and subtitle in the title attribute of the row, for a name cut short', async () => {
     const { dialog } = await openReview();
-    expect(dialog.getByText('Chapter One').getAttribute('title')).toBe('Chapter One — Down the Rabbit-Hole');
-    expect(dialog.getByText('Chapter Three').getAttribute('title')).toBe('Chapter Three');
+    expect(dialog.getByText('Chapter One').closest('[title]')!.getAttribute('title')).toBe('Chapter One — Down the Rabbit-Hole');
+    expect(dialog.getByText('Chapter Three').closest('[title]')!.getAttribute('title')).toBe('Chapter Three');
   });
 
   it('names the select of a row for the subtitle too, so two chapters with one title can be told apart', async () => {

@@ -293,7 +293,13 @@ function AppRoutes() {
               />
               <Route
                 path="/manuscript"
-                element={data.manuscript ? <Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} /> : <Navigate to="/" replace />}
+                element={
+                  data.manuscript ? (
+                    <Manuscript notify={setNotice} focusStoryBibleEntity={goToStoryBible} projectFolder={data.projectFolder} />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                }
               />
               <Route
                 path="/story-bible"

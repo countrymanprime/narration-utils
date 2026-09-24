@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import type { ManuscriptContentKind, ManuscriptImportPreview, ManuscriptImportSection, ManuscriptImportSelection } from '../../types';
+import { chapterName } from '../../chapterName';
 import { Button } from '../primitives/Button';
 import { Checkbox } from '../primitives/Checkbox';
 import { Disclosure } from '../primitives/Disclosure';
 import { Select } from '../primitives/Select';
 import { Tooltip } from '../primitives/Tooltip';
+import { TitleSubtitle } from '../primitives/TitleSubtitle';
 import {
   checkedCandidateIds,
   describeReview,
@@ -40,7 +42,7 @@ const LEGEND_CLASSES = "px-1 font-['Barlow_Condensed',sans-serif] text-[0.72rem]
 function sectionName(section: ManuscriptImportSection, selection: ManuscriptImportSelection): string {
   const heading = reviewedHeading(section, selection);
   if (heading.textLine) return `${heading.title} · ${heading.textLine} ${TEXT_LINE_NOTE}`;
-  return heading.subtitle ? `${heading.title} — ${heading.subtitle}` : heading.title;
+  return chapterName(heading);
 }
 
 // Said of a subtitle line turned off that becomes the chapter's first paragraph again, so it is narrated (an epigraph under a plain-text heading).
@@ -143,13 +145,16 @@ export function ImportReview({
             return (
               <div key={section.id} className="flex items-center gap-3 text-sm">
                 <span className="min-w-0 flex-1 truncate" title={name}>
-                  {heading.title}
-                  {heading.subtitle && <span className="text-[var(--text-muted)]"> — {heading.subtitle}</span>}
-                  {heading.textLine && (
-                    <span className="text-[var(--text-muted)]">
-                      {' '}
-                      · {heading.textLine} {TEXT_LINE_NOTE}
-                    </span>
+                  {heading.textLine ? (
+                    <>
+                      {heading.title}
+                      <span className="text-[var(--text-muted)]">
+                        {' '}
+                        · {heading.textLine} {TEXT_LINE_NOTE}
+                      </span>
+                    </>
+                  ) : (
+                    <TitleSubtitle title={heading.title} subtitle={heading.subtitle} />
                   )}
                 </span>
                 {hasSubtitleChoice(section) && (

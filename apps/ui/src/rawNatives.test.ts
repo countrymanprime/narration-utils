@@ -25,9 +25,8 @@ const CEILING: Record<NativeTag, Record<string, number>> = {
     'src/components/layout/AppShell.tsx': 1,
     'src/components/home/Home.tsx': 2,
     'src/components/manuscript/ChapterNav.tsx': 4,
-    'src/components/manuscript/CreditsEntry.tsx': 1,
-    // The card's bookmark toggle and its whole-header toggle (manuscript-credits-card-parity.prd.md), moved out of
-    // Manuscript.tsx unchanged. `CreditsEntry.tsx` does not render through this yet.
+    // The card's bookmark toggle and its whole-header toggle (manuscript-credits-card-parity.prd.md). `CreditsEntry.tsx`
+    // now renders through this and has no raw button of its own (its old toggle button is gone, ceiling 0 below).
     'src/components/manuscript/ReaderCard.tsx': 2,
     'src/components/project/ProjectPicker.tsx': 3,
     'src/components/proofing/Transcript.tsx': 1,

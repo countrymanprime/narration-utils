@@ -4,6 +4,7 @@ import { STATUS_COLOR } from '../../chapterStatus';
 import { chapterLineNumber, isListableChapter, windowExcerpt } from '../../state';
 import type { ManuscriptChapter, ReaderBookmark, SearchHit } from '../../types';
 import { Highlight } from '../primitives/Highlight';
+import { TitleSubtitle } from '../primitives/TitleSubtitle';
 
 // Renders a hit's excerpt windowed to the row's width (R3), with the matched term highlighted at
 // its real position - not re-found by text search, since the excerpt can repeat the query term.
@@ -80,12 +81,7 @@ export function ChapterNav({
             >
               <span className="mt-[0.4rem] size-2 flex-none rounded-full" style={{ background: STATUS_COLOR[chapter.status] }} />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{chapter.title}</span>
-                {chapter.subtitle && (
-                  <span className="block truncate text-xs" style={{ color: 'var(--text-muted)' }}>
-                    {chapter.subtitle}
-                  </span>
-                )}
+                <TitleSubtitle title={chapter.title} subtitle={chapter.subtitle} layout="stacked" truncate className="text-sm" />
               </span>
               {chapterBookmark && <FontAwesomeIcon className="mt-[0.15rem] flex-none text-[var(--bookmark)]" icon={faBookmark} />}
               <span className="mt-[0.15rem] flex-none font-['IBM_Plex_Mono',ui-monospace,monospace] text-xs" style={{ color: 'var(--text-muted)' }}>

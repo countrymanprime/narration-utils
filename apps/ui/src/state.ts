@@ -115,6 +115,16 @@ export const roomToneSeconds = (value: string | undefined): number => {
   return Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
 };
 
+// A chapter or credits card's read time (manuscript-credits-card-parity.prd.md, MC6): the same 200 words/minute figure
+// the chapter header always used, but now shared by every card so a short credits segment reads "~2 s read" instead of
+// rounding up to "~1 min read". Seconds under a minute (below 200 words); minutes at and above it, matching the old
+// chapter-only formula exactly there (the round trip through seconds cannot push a large word count's minutes off by one).
+export const readTimeLabel = (words: number): string => {
+  const totalSeconds = Math.round((words / 200) * 60);
+  if (totalSeconds < 60) return `~${totalSeconds} s read`;
+  return `~${Math.round(words / 200)} min read`;
+};
+
 // The reader numbers each paragraph 1, 2, 3... within its own chapter (see
 // ParagraphView's chapterParagraphIndex) rather than by its global index or
 // its raw source-document line - anything elsewhere that references "line

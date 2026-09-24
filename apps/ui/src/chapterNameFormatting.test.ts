@@ -24,8 +24,12 @@ const ALLOW_LIST = new Set([
 // aloud heading and the Teleprompter select, and the ceiling reaches zero.
 const CEILING: Record<string, number> = {
   [join('src', 'components', 'home', 'AudiobookEstimatePanel.tsx')]: 5,
-  [join('src', 'components', 'home', 'ImportReview.tsx')]: 4,
-  [join('src', 'components', 'manuscript', 'ChapterNav.tsx')]: 2,
+  // Phase 2: the joined-title row now goes through chapterName()/TitleSubtitle; one read left is the prop handoff to
+  // TitleSubtitle (`subtitle={heading.subtitle}`), and one is the Subtitle checkbox's own accessible-name suffix
+  // ("Subtitle — {section.subtitle}"), which shows the raw second line, not a formatted chapter name.
+  [join('src', 'components', 'home', 'ImportReview.tsx')]: 2,
+  // Phase 2: the row now goes through TitleSubtitle; the one read left is the prop handoff (`subtitle={chapter.subtitle}`).
+  [join('src', 'components', 'manuscript', 'ChapterNav.tsx')]: 1,
   // The chapter card moved into ReaderCard.tsx (manuscript-credits-card-parity.prd.md, Phase 1's first commit); this
   // is now only the prop handoff (`subtitle={chapter.subtitle}`), since ReaderCard reads the plain `subtitle` prop,
   // not `.subtitle`.

@@ -15,6 +15,7 @@ import {
   highlightEntitiesInText,
   highlightTerms,
   isTranscriptActive,
+  readTimeLabel,
   selectDiscrepancy,
   sortEntities,
   windowExcerpt,
@@ -181,6 +182,20 @@ describe('Manuscript search/bookmark line numbers (R5)', () => {
 
   it('prefers paragraphIds over a stale loaded map', () => {
     expect(chapterLineNumber(chapter, 11, new Map([[11, 99]]))).toBe(2);
+  });
+});
+
+describe('readTimeLabel (manuscript-credits-card-parity.prd.md, MC6: one read-time helper for chapters and credits)', () => {
+  it('shows seconds under a minute', () => {
+    expect(readTimeLabel(0)).toBe('~0 s read');
+    expect(readTimeLabel(7)).toBe('~2 s read');
+    expect(readTimeLabel(99)).toBe('~30 s read');
+    expect(readTimeLabel(100)).toBe('~30 s read');
+  });
+
+  it('switches to minutes at and above 200 words, matching the old chapter-only formula', () => {
+    expect(readTimeLabel(201)).toBe('~1 min read');
+    expect(readTimeLabel(3182)).toBe('~16 min read');
   });
 });
 

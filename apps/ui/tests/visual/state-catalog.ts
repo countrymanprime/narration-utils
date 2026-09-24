@@ -267,6 +267,12 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   { page: 'manuscript', state: 'sticky-header-scrolled', description: 'Manuscript, scrolled with sticky chapter header', ...KEEPS_DESKTOP_SCROLL },
   { page: 'manuscript', state: 'chapter-collapsed', description: 'Manuscript, a chapter card collapsed' },
+  {
+    page: 'manuscript',
+    state: 'chapter-header-columns',
+    description:
+      'Manuscript, mixed chapter rows (?mockManuscript=mixed): a Front Matter row with no Read aloud and 3-, 4- and 5-digit word counts - the stats and the buttons in two aligned columns, a chevron last (manuscript-chapter-header-alignment.prd.md, manuscript-credits-card-parity.prd.md)',
+  },
   { page: 'manuscript', state: 'add-note-dialog', description: 'Manuscript, Add Note dialog open after selecting text' },
   { page: 'manuscript', state: 'formatted-text-and-line-breaks', description: 'Manuscript, paragraphs with preserved bold/italic/underline and a line break' },
   { page: 'manuscript', state: 'chapter-bookmarked', description: 'Manuscript, a chapter bookmarked (blue bookmark icon)' },
