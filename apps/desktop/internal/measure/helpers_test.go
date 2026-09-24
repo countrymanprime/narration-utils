@@ -142,3 +142,5 @@ func within(t *testing.T, name string, got *float64, want, tol float64) {
 		t.Fatalf("%s = %.4f, want %.4f ± %.3f", name, *got, want, tol)
 	}
 }
+
+func ptr(v float64) *float64 { return &v }
