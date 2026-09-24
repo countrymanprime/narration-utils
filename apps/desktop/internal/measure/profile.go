@@ -8,6 +8,10 @@ import (
 
 const analyzerName = "measure"
 
+// AnalyzerVersion is the version of the measurements and of the findings this package raises. It changes when a value
+// or a finding changes meaning, so an exported report says which analyzers made it (diagnostics PRD Phase 7).
+const AnalyzerVersion = 1
+
 // Limit is an inclusive bound on one measurement. A nil bound is unbounded,
 // and a Limit with neither bound means the metric is not checked.
 type Limit struct {

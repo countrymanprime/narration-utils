@@ -516,5 +516,12 @@
     "viewport": "desktop",
     "docName": "delivery-diagnostics-findings",
     "caption": "Delivery, Diagnostics - the measured files checked: each file summarised, and each finding with its time, what was measured, the threshold that raised it and the source"
+  },
+  {
+    "page": "delivery",
+    "state": "report-exported",
+    "viewport": "desktop",
+    "docName": "delivery-report-exported",
+    "caption": "Delivery - Export report wrote an HTML and a JSON report into the project's narration-utils/delivery folder, with file names only"
   }
 ]

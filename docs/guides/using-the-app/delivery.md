@@ -62,6 +62,31 @@ a threshold, the tab says so without calling the file a pass.
 
 ![The measured files checked: each file summarised, and each finding with its time, what was measured, the threshold that raised it and the source](../../images/ui/delivery-diagnostics-findings.webp)
 
+## Exporting a report
+
+**Export report**, under the tabs, writes the last measurement and the last diagnostics check to two
+files in your project's `narration-utils/delivery` folder: an HTML page a reviewer can open in any
+browser without the app, and a JSON file with the same findings for tools. Each export gets its own
+name from the time it was made (`delivery-report-20260923-140000Z.html`), so an earlier report is never
+overwritten, and nothing is ever written next to your audio.
+
+The report lists every file you measured or checked, and says for each one whether it was measured
+and checked, and if not, why. Every value has its unit, and the report says how RMS and the noise floor
+are measured. Your limits are listed with the value each finding broke. Each finding has an ID, its
+file, its time in the file, what was measured against which threshold, and its review state. The HTML
+and the JSON use the same IDs, and the Measurements tab's values outside a limit are those same
+findings. A finding is **open** unless it has been dismissed, and every open finding is listed. The
+review state comes from the project's review decisions; Delivery's findings are not on the Review page
+yet, so for now they are all open and unreviewed. The report also names the app's and the analyzers' versions, and each
+installed voice and model with its version. It is a measurement, not a distributor's approval.
+
+Files are named only by their file name unless you tick **Include each file's full location**: no
+folder, user name or other path is written, and a path inside a message is replaced. No audio and no
+manuscript text is ever written into the report. Export needs a project open (the report is kept with
+it), and waits until a measurement or check has finished.
+
+![Export report wrote an HTML and a JSON report into the project's narration-utils/delivery folder, with file names only](../../images/ui/delivery-report-exported.webp)
+
 ---
 
 [← Review](review.md) · [Index](README.md) · [Settings →](settings.md)

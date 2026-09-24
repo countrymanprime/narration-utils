@@ -2,7 +2,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowDown, faArrowUp } from '@fortawesome/free-solid-svg-icons';
 import type { MeasureFileResult, MeasureReport } from '../../types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../primitives/Table';
-import { DELIVERY_METRICS, formatLength, formatLevel, judge, type DeliveryLimits, type Judgement } from './deliveryLimits';
+import { DELIVERY_METRICS, formatLength, formatLevel, judge, type Judgement } from './deliveryLimits';
 
 const MONO = "font-['IBM_Plex_Mono',ui-monospace,monospace] whitespace-nowrap";
 const MUTED = { color: 'var(--text-muted)' };
@@ -55,10 +55,10 @@ function MetricCell({ value, judgement }: { value: number | null; judgement: Jud
 
 /**
  * One row per picked file (diagnostics PRD user flow step 3): every measurement with its unit in the column header, a value that could
- * not be measured written as "Not measurable" (never a number, ADR 0025), a value outside the narrator's limit marked with the limit it
- * broke in words as well as colour, and a file that could not be read with the reason instead of numbers.
+ * not be measured written as "Not measurable" (never a number, ADR 0025), a value the host found outside the narrator's limit marked
+ * with the limit it broke in words as well as colour, and a file that could not be read with the reason instead of numbers.
  */
-export function MeasurementsTable({ files, limits }: { files: readonly MeasureFileResult[]; limits: DeliveryLimits | undefined }) {
+export function MeasurementsTable({ files }: { files: readonly MeasureFileResult[] }) {
   return (
     <Table label="Measurements" className="mt-3">
       <TableHead>
@@ -88,7 +88,7 @@ export function MeasurementsTable({ files, limits }: { files: readonly MeasureFi
                 <>
                   {DELIVERY_METRICS.map((metric) => {
                     const value = report[metric.key];
-                    return <MetricCell key={metric.key} value={value} judgement={judge(value, limits?.[metric.key] ?? {})} />;
+                    return <MetricCell key={metric.key} value={value} judgement={judge(value, metric.key, file.findings)} />;
                   })}
                   <TableCell align="right" className={MONO}>
                     {formatLength(report.duration_seconds)}
@@ -110,14 +110,14 @@ export function MeasurementsTable({ files, limits }: { files: readonly MeasureFi
   );
 }
 
-/** How many measured values are outside the narrator's limits, and how many could not be measured, across every file. */
-export function tally(files: readonly MeasureFileResult[], limits: DeliveryLimits | undefined): { outside: number; unavailable: number } {
+/** How many measured values the host found outside the narrator's limits, and how many could not be measured, across every file. */
+export function tally(files: readonly MeasureFileResult[]): { outside: number; unavailable: number } {
   let outside = 0;
   let unavailable = 0;
   for (const file of files) {
     if (file.status !== 'measured' || !file.report) continue;
     for (const metric of DELIVERY_METRICS) {
-      const kind = judge(file.report[metric.key], limits?.[metric.key] ?? {}).kind;
+      const kind = judge(file.report[metric.key], metric.key, file.findings).kind;
       if (kind === 'above' || kind === 'below') outside += 1;
       if (kind === 'unavailable') unavailable += 1;
     }

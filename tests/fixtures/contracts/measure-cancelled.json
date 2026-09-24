@@ -41,21 +41,48 @@
         "size_bytes": 530928044,
         "modified_at": "2026-09-23T14:02:11.5Z",
         "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-      }
+      },
+      "findings": [
+        {
+          "schema_version": 1,
+          "id": "ae4afc22ff021376c86c1c5a",
+          "analyzer": "measure",
+          "project": {},
+          "source": {
+            "file": "C:/Renders/Chapter 01.wav"
+          },
+          "category": "delivery_qc",
+          "severity": "error",
+          "confidence": 1,
+          "confidence_reason": "deterministic measurement of the decoded samples",
+          "evidence": {
+            "limit_max": -3.5,
+            "metric": "true_peak_dbtp",
+            "profile": "delivery-limits",
+            "value": -3.1,
+            "violation": "above_max"
+          },
+          "review": {
+            "status": "unreviewed"
+          }
+        }
+      ]
     },
     {
       "path": "C:/Renders/Chapter 02.wav",
       "name": "Chapter 02.wav",
       "status": "cancelled",
       "report": null,
-      "fingerprint": null
+      "fingerprint": null,
+      "findings": []
     },
     {
       "path": "C:/Renders/Chapter 03.mp3",
       "name": "Chapter 03.mp3",
       "status": "cancelled",
       "report": null,
-      "fingerprint": null
+      "fingerprint": null,
+      "findings": []
     }
   ]
 }

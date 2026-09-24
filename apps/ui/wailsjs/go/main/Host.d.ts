@@ -69,6 +69,8 @@ export function DawCatalogOpenDownloadPage(arg1:string):Promise<string>;
 
 export function DawLaunch():Promise<string>;
 
+export function DeliveryExportReport(arg1:boolean):Promise<string>;
+
 export function DiagnosticsAnalyze(arg1:Array<string>,arg2:string):Promise<string>;
 
 export function DiagnosticsCancel():Promise<string>;

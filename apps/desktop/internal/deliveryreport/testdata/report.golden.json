@@ -1,0 +1,335 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-23T14:00:00Z",
+  "app": {
+    "name": "Narration Utils",
+    "version": "0.9.0"
+  },
+  "analyzers": [
+    {
+      "name": "measure",
+      "version": 1,
+      "description": "Integrated loudness (ITU-R BS.1770-4), RMS, sample and true peak, noise floor and duration of each whole file"
+    },
+    {
+      "name": "diagnostics",
+      "version": 1,
+      "description": "Clipping, short-term loudness shifts, silences and room-tone changes, against the thresholds listed"
+    }
+  ],
+  "notice": "A generic technical measurement of the files listed, made on the narrator's computer. It is not a certification: it does not say that a distributor (ACX or another) will accept these files, and it does not replace an engineer's review. Every open finding, and every file that was not measured or checked, is listed.",
+  "scope": {
+    "kind": "chosen_files",
+    "description": "The files the narrator chose on the Delivery page in this session: the last measurement and the last diagnostics check. Files are not matched to chapters yet, so each is listed by its file name."
+  },
+  "privacy": {
+    "paths_included": false,
+    "note": "Files are named by their file name only; no folder or full path is written, and any path in a message is replaced. No audio is embedded or linked, and no manuscript text is written."
+  },
+  "units": {
+    "duration_seconds": "s",
+    "integrated_lufs": "LUFS",
+    "noise_floor_dbfs": "dBFS",
+    "rms_dbfs": "dBFS",
+    "sample_peak_dbfs": "dBFS",
+    "time_range": "s from the start of the file",
+    "true_peak_dbtp": "dBTP"
+  },
+  "definitions": {
+    "integrated_lufs": "Gated integrated loudness per ITU-R BS.1770-4 over the whole file.",
+    "noise_floor_dbfs": "The RMS of the quietest 0.5 s window that is not digital silence.",
+    "not_measurable": "A value that is null could not be measured (silence, or audio too short); it is never a number and never counts as within a limit.",
+    "rms_dbfs": "RMS over the whole file, silences included; not any distributor's own RMS definition.",
+    "sample_peak_dbfs": "The highest decoded sample.",
+    "true_peak_dbtp": "The highest inter-sample peak, from oversampling (4x at 48 kHz and below, 2x above; ITU-R BS.1770-4 Annex 2)."
+  },
+  "limits": {
+    "set": true,
+    "note": "Your own limits, from Settings \u003e Delivery. Bounds are inclusive; a value that could not be measured is never counted as within a limit.",
+    "metrics": [
+      {
+        "metric": "integrated_lufs",
+        "label": "Integrated loudness",
+        "unit": "LUFS",
+        "min": -20,
+        "max": null
+      },
+      {
+        "metric": "true_peak_dbtp",
+        "label": "True peak",
+        "unit": "dBTP",
+        "min": null,
+        "max": -3
+      }
+    ]
+  },
+  "diagnostics": {
+    "run": true,
+    "note": "Findings are candidates to listen to against these thresholds, never verdicts.",
+    "source_kind": "processed_render",
+    "thresholds": {
+      "clip_ceiling_dbfs": 0,
+      "silence_floor_dbfs": -50,
+      "min_silence_seconds": 0.3,
+      "level_shift_lu": 4,
+      "room_tone_step_db": 6,
+      "pauses": {
+        "min_pause_seconds": 0.3,
+        "long_pause_seconds": 2
+      }
+    }
+  },
+  "review": {
+    "available": true,
+    "note": "Each finding carries the narrator's latest decision from this project's review store; one never decided is unreviewed."
+  },
+  "summary": {
+    "files": 4,
+    "measured": 2,
+    "not_measured": 2,
+    "checked": 2,
+    "not_checked": 2,
+    "findings": 4,
+    "open_findings": 4,
+    "by_review": {
+      "unreviewed": 4
+    },
+    "by_severity": {
+      "error": 1,
+      "info": 2,
+      "warning": 1
+    }
+  },
+  "files": [
+    {
+      "ref": "F1",
+      "name": "Chapter 01.wav",
+      "status": "open_findings",
+      "open_findings": 2,
+      "measurement": {
+        "status": "measured",
+        "report": {
+          "sample_rate": 48000,
+          "channels": 2,
+          "duration_seconds": 1843.5,
+          "integrated_lufs": -19.4,
+          "rms_dbfs": -21.2,
+          "sample_peak_dbfs": -3.6,
+          "true_peak_dbtp": -2.4,
+          "noise_floor_dbfs": -66.8,
+          "digital_silent_windows": 0,
+          "full_scale_samples": 0,
+          "clip_run_count": 0,
+          "clip_runs": []
+        },
+        "fingerprint": {
+          "size_bytes": 530928044,
+          "modified_at": "2026-09-23T14:02:11.5Z",
+          "sha256": "9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f"
+        }
+      },
+      "diagnostics": {
+        "status": "checked",
+        "summary": {
+          "duration_seconds": 1843.5,
+          "sample_rate": 48000,
+          "channels": 2,
+          "clip_regions": 1,
+          "level_shifts": 0,
+          "silences": 0,
+          "silence_seconds": 0,
+          "room_tone_segments": 0,
+          "pacing": {
+            "status": "unavailable",
+            "reason": "no transcript timing"
+          },
+          "words_per_minute": null
+        }
+      }
+    },
+    {
+      "ref": "F2",
+      "name": "Chapter 02.wav",
+      "status": "open_findings",
+      "open_findings": 2,
+      "measurement": {
+        "status": "measured",
+        "report": {
+          "sample_rate": 48000,
+          "channels": 2,
+          "duration_seconds": 1843.5,
+          "integrated_lufs": null,
+          "rms_dbfs": -21.2,
+          "sample_peak_dbfs": -3.6,
+          "true_peak_dbtp": null,
+          "noise_floor_dbfs": -66.8,
+          "digital_silent_windows": 0,
+          "full_scale_samples": 0,
+          "clip_run_count": 0,
+          "clip_runs": []
+        },
+        "fingerprint": {
+          "size_bytes": 176444,
+          "modified_at": "2026-09-23T14:05:00Z",
+          "sha256": "e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3"
+        }
+      },
+      "diagnostics": {
+        "status": "checked",
+        "summary": {
+          "duration_seconds": 1843.5,
+          "sample_rate": 48000,
+          "channels": 2,
+          "clip_regions": 1,
+          "level_shifts": 0,
+          "silences": 0,
+          "silence_seconds": 0,
+          "room_tone_segments": 0,
+          "pacing": {
+            "status": "unavailable",
+            "reason": "no transcript timing"
+          },
+          "words_per_minute": null
+        }
+      }
+    },
+    {
+      "ref": "F3",
+      "name": "Chapter 03.mp3",
+      "status": "incomplete",
+      "open_findings": 0,
+      "measurement": {
+        "status": "failed",
+        "reason": "Could not be measured: open Chapter 03.mp3: not a RIFF/WAVE file"
+      },
+      "diagnostics": {
+        "status": "not_checked",
+        "reason": "Not in the last diagnostics check."
+      }
+    },
+    {
+      "ref": "F4",
+      "name": "Chapter 04.wav",
+      "status": "incomplete",
+      "open_findings": 0,
+      "measurement": {
+        "status": "not_measured",
+        "reason": "The measurement was cancelled before this file was read."
+      },
+      "diagnostics": {
+        "status": "not_checked",
+        "reason": "Not in the last diagnostics check."
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "986fb4386a579a4fdd5ccdeb",
+      "analyzer": "measure",
+      "category": "delivery_qc",
+      "severity": "error",
+      "title": "True peak above your highest limit",
+      "file": "F1",
+      "confidence": 1,
+      "confidence_reason": "deterministic measurement of the decoded samples",
+      "evidence": {
+        "limit_max": -3,
+        "metric": "true_peak_dbtp",
+        "profile": "delivery-limits",
+        "value": -2.4,
+        "violation": "above_max"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "open": true
+    },
+    {
+      "id": "fa486a76ef24a25c8a91b73a",
+      "analyzer": "diagnostics",
+      "category": "audio_quality",
+      "severity": "warning",
+      "title": "Clipping",
+      "file": "F1",
+      "chapter": {
+        "id": "ch-1",
+        "title": "Down the Rabbit-Hole"
+      },
+      "time_range": {
+        "start": 612.25,
+        "end": 612.252,
+        "source_start": 612.25,
+        "source_end": 612.252
+      },
+      "confidence": 1,
+      "confidence_reason": "deterministic: runs of 3 or more samples at or above the ceiling",
+      "evidence": {
+        "ceiling_dbfs": 0,
+        "kind": "clipping",
+        "note": "read from Chapter 01.wav",
+        "source_kind": "processed_render"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "open": true
+    },
+    {
+      "id": "44d75f494d263f6dfdc53e8b",
+      "analyzer": "measure",
+      "category": "delivery_qc",
+      "severity": "info",
+      "title": "Integrated loudness not measurable, so not judged",
+      "file": "F2",
+      "confidence": 1,
+      "confidence_reason": "the measurement could not be made (silence, or audio shorter than the measurement window)",
+      "evidence": {
+        "available": false,
+        "metric": "integrated_lufs",
+        "profile": "delivery-limits"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "open": true
+    },
+    {
+      "id": "760c57cc6cac112ffb303bc7",
+      "analyzer": "measure",
+      "category": "delivery_qc",
+      "severity": "info",
+      "title": "True peak not measurable, so not judged",
+      "file": "F2",
+      "confidence": 1,
+      "confidence_reason": "the measurement could not be made (silence, or audio shorter than the measurement window)",
+      "evidence": {
+        "available": false,
+        "metric": "true_peak_dbtp",
+        "profile": "delivery-limits"
+      },
+      "review": {
+        "status": "unreviewed"
+      },
+      "open": true
+    }
+  ],
+  "assets": {
+    "available": true,
+    "items": [
+      {
+        "kind": "piper",
+        "id": "en_US-ljspeech-high",
+        "name": "LJSpeech",
+        "version": "1.0.0"
+      },
+      {
+        "kind": "whisper",
+        "id": "small",
+        "name": "Whisper small",
+        "version": "1.0",
+        "publisher": "OpenAI",
+        "provenance_url": "https://huggingface.co/openai/whisper-small"
+      }
+    ]
+  }
+}
