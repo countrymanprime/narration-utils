@@ -39,7 +39,7 @@ const evidenceSchema = z.object({
   paragraphIds: optionalFromNull(z.array(z.string())),
 });
 
-export const stageSignalSchema = z.object({
+const stageSignalSchema = z.object({
   id: z.string(),
   stage: stageSchema,
   state: z.enum(['met', 'not_met', 'unknown']),
@@ -50,7 +50,7 @@ export const stageSignalSchema = z.object({
   computedAt: z.string(),
 }) satisfies z.ZodType<StageSignal>;
 
-export const stageChapterRecommendationSchema = z.object({
+const stageChapterRecommendationSchema = z.object({
   chapterId: z.string(),
   title: z.string(),
   from: stageSchema,

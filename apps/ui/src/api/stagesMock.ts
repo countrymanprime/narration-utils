@@ -8,6 +8,7 @@ import type {
   ChapterStatus,
   ManuscriptChapter,
   StageChapterRecommendation,
+  StageConfirmation,
   StageDecisionResult,
   StageNoneReason,
   StageRecommendations,
@@ -19,7 +20,7 @@ import type {
 } from '../types';
 
 /** What the recording check of a chapter says: `met`, `not_met`, or `unknown` with its cause. */
-export type StageRecordingScenario = 'met' | 'not_met' | { unknown: StageUnknownCause };
+type StageRecordingScenario = 'met' | 'not_met' | { unknown: StageUnknownCause };
 
 export type StagesSeed = {
   /** The recording signal of these chapters, instead of the one their recordedFraction gives. */
@@ -110,11 +111,8 @@ function recordingSignal(chapter: ManuscriptChapter, scenario: StageRecordingSce
 
 export function createStagesMock(deps: Deps): StagesApi {
   const recording = new Map(Object.entries(deps.seed?.recording ?? {}));
-  const confirmations = new Map(
-    (deps.seed?.confirmed ?? []).map((id) => [
-      id,
-      { from: 'recording' as ChapterStatus, target: 'editing' as ChapterStatus, basisKey: keyFor(id, 'editing', 'met'), at: MOCK_TIME },
-    ]),
+  const confirmations = new Map<string, Omit<StageConfirmation, 'evidenceChanged'>>(
+    (deps.seed?.confirmed ?? []).map((id) => [id, { from: 'recording', target: 'editing', basisKey: keyFor(id, 'editing', 'met'), at: MOCK_TIME }]),
   );
   const dismissed = new Set((deps.seed?.dismissed ?? []).map((id) => keyFor(id, 'editing', 'met')));
 
