@@ -20,7 +20,7 @@ const deliverySourceSchema = z.object({
 
 const deliveryAdviceSchema = z.object({ metric: z.string(), max: z.number(), unit: z.string(), text: z.string() }) satisfies z.ZodType<DeliveryAdvice>;
 
-export const deliveryRuleSchema = z.object({
+const deliveryRuleSchema = z.object({
   id: z.string(),
   label: z.string(),
   scope: z.enum(['file', 'book']),

@@ -1,7 +1,7 @@
 // The Delivery page's reading of a delivery profile (docs/prds/delivery-platform-profiles.prd.md, ADR 0179): how a profile is
 // named, how a rule's bound and a measured value are written, and the words for a rule's result. The host judges
 // (deliveryprofile.EvaluateFile, on every read of the measurement); the page only shows its results.
-import type { DeliveryProfile, DeliveryRule, DeliveryRuleResult, DeliveryRuleStatus } from '../../types';
+import type { DeliveryProfile, DeliveryRule, DeliveryRuleResult } from '../../types';
 import { formatLength, formatLevel } from './deliveryFormat';
 
 /** The key the host names a profile by: id@version for a built-in, id@r<revision> for a custom profile. */
@@ -91,14 +91,6 @@ export function describeMiss(rule: DeliveryRule, result: DeliveryRuleResult, own
   }
   return '';
 }
-
-export const STATUS_WORDS: Record<DeliveryRuleStatus, string> = {
-  met: 'Met',
-  not_met: 'Not met',
-  not_measurable: 'Not measurable',
-  not_checked: 'Not checked',
-  off: 'Off',
-};
 
 /** How many rules the app checks, does not check, and leaves to listening; how many are to verify or conflicting. */
 export function profileCounts(profile: DeliveryProfile) {
