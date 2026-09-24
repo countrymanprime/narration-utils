@@ -252,6 +252,9 @@ describe('ReadAloudDialog story bible and note marks (teleprompter-manuscript-in
     emit(SCRIPT);
     emit({ type: 'position', read: 8, committed: 8, status: 'listening', jump: null, skipped: null });
     await waitFor(() => expect(document.querySelector('[data-word="8"] [data-highlight="Cursor"]')).toBeTruthy());
+    // The follow scroll for word 8 runs in an effect after the highlight renders; wait for it, or on a slow runner it lands
+    // after mockClear below and is counted against the mark clicks.
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
     const body = screen.getByRole('dialog').querySelector<HTMLElement>('[tabindex="0"]')!;
     body.scrollTop = 120;
     scrollIntoView.mockClear();
