@@ -15,6 +15,7 @@ import type { ThemePreference } from '../../theme/theme';
 import { AboutPanel } from './AboutPanel';
 import { CreditsPanel } from './CreditsPanel';
 import { DawCatalogPanel } from './DawCatalogPanel';
+import { DeliveryProfilesPanel } from './DeliveryProfilesPanel';
 import { RecordingCheckSummary } from './RecordingCheckSummary';
 import { ScopedSetting } from './ScopedSetting';
 import { UpdatesPanel } from './UpdatesPanel';
@@ -29,8 +30,8 @@ const SETTINGS_CATEGORIES: SettingsCategory[] = [
   { key: 'RecordingCoverage', label: 'Recording check', tool: 'RecordingCoverage', scopes: ['global', 'project'] },
   { key: 'TranscriptCompare', label: 'Proofing', tool: 'TranscriptCompare', scopes: ['global', 'project'] },
   { key: 'ManuscriptGuide', label: 'Story Bible', tool: 'ManuscriptGuide', scopes: ['global', 'project'] },
-  // The narrator's own measurement limits (docs/prds/diagnostics-delivery-and-cleanup-tools.prd.md Phase 2); none ship.
-  { key: 'Delivery', label: 'Delivery', tool: 'Delivery', scopes: ['global', 'project'] },
+  // The delivery profile a project is judged against, and the custom profiles (docs/prds/delivery-platform-profiles.prd.md, ADR 0179).
+  { key: 'Delivery', label: 'Delivery', scopes: ['project', 'global'] },
   { key: 'Daw', label: 'DAW Integration', tool: 'DAW', scopes: ['global', 'project'] },
   { key: 'Piper', label: 'TTS', tool: 'Piper', scopes: ['global', 'project'] },
   { key: 'Teleprompter', label: 'Teleprompter', tool: 'Teleprompter', scopes: ['global'] },
@@ -57,21 +58,6 @@ function changedValues(fields: readonly ScopedSettingField[], values: Record<str
   const saved = (field: ScopedSettingField, next: string) => (field.kind === 'number' && next === '' ? null : next);
   return Object.fromEntries(
     fields.filter((field) => isChanged(field, values[field.key] ?? field.value)).map((field) => [field.key, saved(field, values[field.key] ?? '')]),
-  );
-}
-
-// What the Delivery limits amount to, as saved: none ship (ADR 0025), so until the narrator sets one every measurement is
-// reported without being checked, and the page says so rather than implying a pass.
-function DeliveryLimitsSummary({ fields, scope }: { fields: readonly ScopedSettingField[]; scope: Scope }) {
-  const set = fields.filter((field) => field.effectiveValue !== '').length;
-  return (
-    <div className="mb-4 space-y-1 rounded-md p-3 text-sm" style={{ background: 'var(--surface-2)' }}>
-      <div className="font-medium">{set === 0 ? 'No limits set' : `${set} of ${fields.length} limits set`}</div>
-      <div style={{ color: 'var(--text-muted)' }}>
-        These are your own limits: no distributor&apos;s numbers are built in. A measurement with no limit is reported without being checked; one outside its
-        limit is listed for you to review. {scope === 'project' ? 'A limit left blank here uses the Global one.' : ''}
-      </div>
-    </div>
   );
 }
 
@@ -385,6 +371,8 @@ export function Settings({
                 <LocalAssets notify={notify} />
               ) : category === 'Credits' ? (
                 <CreditsPanel notify={notify} />
+              ) : category === 'Delivery' ? (
+                <DeliveryProfilesPanel scope={scope} notify={notify} />
               ) : category === 'ProjectData' ? (
                 <div className="space-y-4 text-sm">
                   <div className="rounded-md p-3" style={{ background: 'var(--surface-2)' }}>
@@ -442,7 +430,6 @@ export function Settings({
                       )}
                     </div>
                   )}
-                  {category === 'Delivery' && <DeliveryLimitsSummary fields={fields} scope={scope} />}
                   {category === 'RecordingCoverage' && <RecordingCheckSummary fields={fields} scope={scope} />}
                   {category === 'Piper' && (
                     <div className="mb-4 space-y-3 rounded-md p-3 text-sm" style={{ background: 'var(--surface-2)' }}>

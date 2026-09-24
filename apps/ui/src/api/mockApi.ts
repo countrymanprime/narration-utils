@@ -9,6 +9,7 @@ import type {
   ChapterTagsPreview,
   CreditsAnnouncement,
   CreditsRenderResult,
+  CreditsStatuses,
   CreditTemplate,
   CreditValues,
   DawCatalogEntry,
@@ -85,7 +86,7 @@ import {
   wireSettings,
 } from './mockFixtures';
 import { loadAliceManuscript } from './aliceManuscript';
-import { mockChapterTrackMatch } from './chapterTrackMatchMock';
+import { mockChapterTrackLinks, mockChapterTrackMatch, mockRecordedLength } from './chapterTrackMatchMock';
 import { mockChapterSuggestion } from './chapterSuggestionMock';
 import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './mockImportPreview';
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
@@ -96,6 +97,7 @@ import { createFindingsMock, type MockReaper } from './findingsMock';
 import { createTakeReviewScanMock } from './takeReviewMock';
 import { createTakeComparisonMock } from './takeComparisonMock';
 import { createMeasureMock, type MockMeasureSeed } from './measureMock';
+import { createDeliveryProfilesMock, type MockDeliveryProfileSeed } from './deliveryProfilesMock';
 import { createDiagnosticsMock, type MockDiagnosticsSeed } from './diagnosticsMock';
 import { createInstallMock, installSeedFor, LOCAL_ASSETS_SEEDS, type MockAssetSeed } from './assetInstallMock';
 import type { AssetInstallState } from './contracts/assets';
@@ -454,8 +456,8 @@ export function createMockApi(
     measure?: MockMeasureSeed;
     /** Holds a started diagnostics check part way through, or breaks it (diagnostics PRD Phase 6). */
     diagnostics?: MockDiagnosticsSeed;
-    /** The project's Delivery limits, by key (`true_peak_dbtp_max: '-3'`), set as if saved in Settings (diagnostics PRD Phase 5). */
-    deliveryLimits?: Record<string, string>;
+    /** Boots with a custom delivery profile chosen for the project (delivery-platform-profiles.prd.md); ACX judges otherwise. */
+    deliveryProfile?: MockDeliveryProfileSeed;
   } = {},
 ): NarrationApi {
   let updateStatus = seedUpdateStatus(initial.update);
@@ -546,6 +548,7 @@ export function createMockApi(
     creditTemplates.push({ id: 'mock-chapter-announcement', kind: 'chapter_announcement', name: 'Chapter announcement', body: initial.chapterAnnouncement });
   let nextCreditTemplateId = 1;
   let creditValues: CreditValues = wireClone(initial.creditValues ?? {});
+  let creditsStatuses: CreditsStatuses = {};
   let retailSample: { startParagraphId: string; endParagraphId: string } | undefined;
   let seededSample = initial.retailSample;
   const readRetailSample = (): RetailSampleAnswer => {
@@ -652,12 +655,6 @@ export function createMockApi(
       ]),
     ),
   };
-  const deliveryLimits = initial.deliveryLimits ?? {};
-  settings.project.Delivery = settings.project.Delivery.map((field) =>
-    field.key in deliveryLimits
-      ? { ...field, value: deliveryLimits[field.key], isSet: true, effectiveValue: deliveryLimits[field.key], effectiveSource: 'project' }
-      : field,
-  );
   const subscribers = new Set<(state: TranscriptState) => void>();
   let nextId = 1;
   let lineIdentity: LineIdentityState = wireClone(
@@ -993,9 +990,9 @@ export function createMockApi(
   const takeReviewScan = createTakeReviewScanMock(saveAnalyzerFindings, endJob, initial.takeReviewScanHold);
   const takeComparison = createTakeComparisonMock({ get: findings.findingsGet, save: saveFinding }, endJob, initial.takeComparisonHold);
   const measurePicked = new Set<string>();
-  const deliveryLimitValues = () => Object.fromEntries(settings.project.Delivery.map((field) => [field.key, field.effectiveValue]));
+  const { current: deliveryProfile, ...deliveryProfiles } = createDeliveryProfilesMock(initial.deliveryProfile);
   const { peekDiagnostics, ...diagnostics } = createDiagnosticsMock(endJob, measurePicked, initial.diagnostics);
-  const measurement = createMeasureMock(endJob, initial.measure, measurePicked, deliveryLimitValues, peekDiagnostics);
+  const measurement = createMeasureMock(endJob, initial.measure, measurePicked, deliveryProfile, peekDiagnostics);
   const publish = () => {
     subscribers.forEach((fn) => fn(wireClone(transcript)));
   };
@@ -1490,7 +1487,10 @@ export function createMockApi(
     systemLookup: async (word) => mockDictionaryLookup(word, dictionaryState),
     manuscriptChapters: async () => {
       await manuscriptReady;
-      return wireClone(chapters.map(withMeasurement));
+      const readable = Boolean(tracksDiscovery.selected);
+      return wireClone(
+        chapters.map((chapter) => ({ ...withMeasurement(chapter), ...mockRecordedLength(chapter.id, WIRE_TRACKS_PROJECT, chapterTrackMappings, readable) })),
+      );
     },
     manuscriptParagraphs: async (chapter) => {
       await manuscriptReady;
@@ -1895,6 +1895,10 @@ export function createMockApi(
       values: wireClone(creditValues),
       narratorGlobal: settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '',
       suggestions: { Title: 'Alice’s Adventures in Wonderland', Author: 'Lewis Carroll' },
+      detected: [
+        { token: 'Title', value: 'Alice’s Adventures in Wonderland', source: 'the title page', confidence: 'high' },
+        { token: 'Author', value: 'Lewis Carroll', source: 'the byline', confidence: 'high' },
+      ],
     }),
     saveCreditsProjectValues: async (values) => {
       creditValues = wireClone(values);
@@ -1927,6 +1931,11 @@ export function createMockApi(
       retailSample = { startParagraphId, endParagraphId };
       return { sample, problem: '' };
     },
+    creditsStatuses: async () => wireClone(creditsStatuses),
+    setCreditsStatus: async (kind, status) => {
+      creditsStatuses = { ...creditsStatuses, [kind]: status };
+      return wireClone(creditsStatuses);
+    },
     dawCatalogList: async () => wireClone(DAW_CATALOG),
     dawCatalogOpenDownloadPage: async (id) => {
       if (!DAW_CATALOG.some((entry) => entry.id === id)) throw new Error(`Unknown DAW catalog entry "${id}"`);
@@ -1952,6 +1961,27 @@ export function createMockApi(
       chapterTrackMappings = chapterTrackMappings.filter((existing) => existing.trackGuid !== trackGuid);
       return { documentId: mockDocumentId, mappings: wireClone(chapterTrackMappings) };
     },
+    chapterTrackSet: async (chapterId, trackGuid) => {
+      await manuscriptReady;
+      const chapter = chapters.find((candidate) => candidate.id === chapterId);
+      if (!chapter) throw new Error('that chapter is not part of the current manuscript');
+      if (!trackGuid) throw new Error('choose a track before linking a chapter');
+      const displaced = chapterTrackMappings.find((existing) => existing.trackGuid === trackGuid && existing.chapterId !== chapterId) ?? null;
+      const link: TrackMapping = { trackGuid, chapterId, chapterTitle: chapter.title, confirmedAt: new Date().toISOString() };
+      chapterTrackMappings = [...chapterTrackMappings.filter((existing) => existing.trackGuid !== trackGuid && existing.chapterId !== chapterId), link];
+      return wireClone({ documentId: mockDocumentId, link, displaced, mappings: chapterTrackMappings });
+    },
+    chapterTrackUnlink: async (chapterId) => {
+      await manuscriptReady;
+      if (!chapters.some((candidate) => candidate.id === chapterId)) throw new Error('that chapter is not part of the current manuscript');
+      chapterTrackMappings = chapterTrackMappings.filter((existing) => existing.chapterId !== chapterId);
+      return { documentId: mockDocumentId, mappings: wireClone(chapterTrackMappings) };
+    },
+    chapterTrackLinks: async () => {
+      await manuscriptReady;
+      const state = tracksDiscovery.candidates.length === 0 ? 'none' : tracksDiscovery.selected ? 'ready' : 'choose';
+      return wireClone(mockChapterTrackLinks(chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings, state));
+    },
     chapterTrackMatch: async (chapterId) => {
       await manuscriptReady;
       return wireClone(mockChapterTrackMatch(chapterId, chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings));
@@ -1963,6 +1993,7 @@ export function createMockApi(
     ...takeReviewScan,
     ...takeComparison,
     ...measurement,
+    ...deliveryProfiles,
     ...diagnostics,
     takeReviewCreateTake: async (request) => ({
       targetItemGuid: request.targetItemGuid,

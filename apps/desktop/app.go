@@ -19,6 +19,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/daw"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawadapter"
 	"github.com/countrymanprime/narration-utils/shell/internal/dawcatalog"
+	"github.com/countrymanprime/narration-utils/shell/internal/deliveryprofile"
 	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/guide"
 	"github.com/countrymanprime/narration-utils/shell/internal/hostlog"
@@ -49,7 +50,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 47
+const hostAPIVersion = 49
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -127,7 +128,10 @@ type Host struct {
 	// creditTemplates is the narrator's own credit-template library (audiobook-credits-templates.prd.md, Phase 1):
 	// user-level like recents, set once in NewHost and never swapped by a project switch.
 	creditTemplates *credits.TemplateStore
-	log             *hostlog.Log
+	// deliveryProfiles is the narrator's custom delivery profiles and their Global default (delivery-platform-profiles.prd.md,
+	// ADR 0179): user-level like creditTemplates, set once in NewHost and never swapped by a project switch.
+	deliveryProfiles *deliveryprofile.Store
+	log              *hostlog.Log
 	// takeReviewRunner is a seam for tests: nil means the real
 	// takereview.ProcessRunner built from project config (takereview.go).
 	takeReviewRunner takereview.SidecarRunner
@@ -255,8 +259,10 @@ func NewHost() *Host {
 	notes.SetPersist(reporter)
 	recent.SetPersist(reporter)
 	templates.SetPersist(reporter)
+	profiles := deliveryprofile.NewStore(deliveryProfilesPath())
+	profiles.SetPersist(reporter)
 	notes.SetOnJobEnd(func(job manuscript.ImportJob) { host.importJobEnded(job) })
-	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
+	host = &Host{diagnostic: fmt.Sprintf("go-%d", time.Now().UnixNano()), version: version, config: config{repoRoot: repoRoot}, manuscript: notes, sidecars: process.NewSupervisor(), settings: store, installJobs: map[string]*installJob{}, recents: recent, creditTemplates: templates, deliveryProfiles: profiles, log: logger, persist: reporter, updates: update.NewChecker(version, updateCachePath(), reporter), stager: newUpdateStager(), pendingPath: updatePendingPath()}
 	return host
 }
 
@@ -403,6 +409,9 @@ func (h *Host) configureLocked(next config) {
 	// A chapter's recordedFraction is the measured share of its words from a current, complete check, and absent otherwise (D11,
 	// Q12 A); reading it never starts a check (Q14).
 	h.manuscript.SetRecordedFractions(coverageRecordedFractions(h.coverage, settingsStore))
+	// A chapter's recordedSeconds is its one confirmed track's recorded length in the saved .rpp, and a reason otherwise
+	// (actual-recorded-column PRD Phase 2); never an estimate.
+	h.manuscript.SetRecordedLengths(recordedLengths(projectFolder, settingsStore, h.manuscript))
 	h.stages = stagesService(h.config.projectFolder, h.manuscript, h.coverage, settingsStore, h.coverageUnavailable(h.config.comparePython, settingsStore), h.persist)
 	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go) are one more
 	// consumer of the same client: the navigator's answers arrive through the same Drain the transcript loop pumps.
@@ -1146,18 +1155,6 @@ var fieldSchemas = map[string][]fieldSchema{
 	// W12), so the bridge is live without the narrator running the action by hand - but only when this is on, and
 	// it defaults off.
 	"DAW": {{"reaper_path", "REAPER executable (override)", "text", nil}, {"auto_start_launcher", "Start the launcher script automatically", "bool", nil}},
-	// Delivery holds the narrator's own measurement limits (docs/prds/diagnostics-delivery-and-cleanup-tools.prd.md
-	// Phase 2), read by measure.ProfileFromLimits. Every field is a "number" whose range is in numberSpecs; none has a
-	// default, so an empty section is a profile with no limits.
-	"Delivery": {
-		{"integrated_lufs_min", "Integrated loudness, lowest", "number", nil},
-		{"integrated_lufs_max", "Integrated loudness, highest", "number", nil},
-		{"rms_dbfs_min", "RMS level, lowest", "number", nil},
-		{"rms_dbfs_max", "RMS level, highest", "number", nil},
-		{"sample_peak_dbfs_max", "Sample peak, highest", "number", nil},
-		{"true_peak_dbtp_max", "True peak, highest", "number", nil},
-		{"noise_floor_dbfs_max", "Noise floor, highest", "number", nil},
-	},
 	// RecordingCoverage is the recording check's four settings (docs/utilities/recording-coverage.md Q3, ADR 0131),
 	// read by coverage.ResolveSettings. The two thresholds judge a stored result on read; the two alignment settings are
 	// in a result's parameter hash, so changing one makes older results stale (Q13 B). Their defaults are Proposed and
@@ -1251,9 +1248,6 @@ func (h *Host) saveSettings(tool, scope string, values map[string]*string) error
 		if err := validateSettingValue(tool, schema, *value); err != nil {
 			return err
 		}
-	}
-	if err := h.checkNumberPairs(tool, scope, values); err != nil {
-		return err
 	}
 	return h.services().settings.Save(tool, scope, values)
 }

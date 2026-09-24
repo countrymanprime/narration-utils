@@ -40,6 +40,21 @@ type Manifest struct {
 	// RetailSample is the range the narrator picked as the retail sample (audiobook-credits-templates.prd.md, C10,
 	// ADR 0152), additive like Credits. Nil when none is picked.
 	RetailSample *credits.RetailSample `json:"retailSample,omitempty"`
+	// CreditsStatus is the chapter-table row status of the opening and closing credits ("opening"/"closing" keys, one
+	// of the five chapter statuses each), additive like Credits (credits-in-chapter-table.prd.md, CT2/CT3, ADR 0183).
+	// It lives here rather than in manuscript-notes.json (like a chapter's own status) so it survives Replace
+	// manuscript and Clear derived data the way the credits values themselves do. Nil or a missing key means
+	// "not_started", the same default a manuscript chapter with no note has.
+	CreditsStatus map[string]string `json:"creditsStatus,omitempty"`
+	// DeliveryProfile is the delivery profile this project is judged against (delivery-platform-profiles.prd.md P1,
+	// ADR 0179), additive like Credits. Nil: the Global default.
+	DeliveryProfile *DeliveryProfileRef `json:"deliveryProfile,omitempty"`
+}
+
+// DeliveryProfileRef names a delivery profile: a built-in's id and version, or a custom profile's id.
+type DeliveryProfileRef struct {
+	ID      string `json:"id"`
+	Version string `json:"version,omitempty"`
 }
 
 // New returns a fresh manifest for a project named name, created at now.

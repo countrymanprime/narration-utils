@@ -29,6 +29,11 @@ const (
 	noiseWindowSeconds = 0.5
 )
 
+// AnalyzerVersion is the version of the measurements and of the findings raised from them. It changes when a value or a
+// finding changes meaning, so an exported report says which analyzers made it (diagnostics PRD Phase 7). 2: delivery
+// findings are raised per rule of a delivery profile (ADR 0179), not per limit.
+const AnalyzerVersion = 2
+
 // Report holds the measurements for one file. A nil value means the
 // measurement could not be made (silence, or audio shorter than the
 // measurement needs) and is serialised as null: nothing is fabricated.

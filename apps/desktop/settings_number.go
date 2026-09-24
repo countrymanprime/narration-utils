@@ -5,8 +5,6 @@ import (
 	"math"
 	"regexp"
 	"strconv"
-
-	"github.com/countrymanprime/narration-utils/shell/internal/measure"
 )
 
 // numberSpec is the range of a "number" setting: an inclusive minimum and maximum, a step the value must sit on
@@ -21,19 +19,7 @@ type numberSpec struct {
 
 func bound(value float64) *float64 { return &value }
 
-// The narrator's own delivery limits (Open Questions 1 and 9 of the diagnostics PRD, both on their recommendation, D22):
-// one limit set per settings layer, no built-in numbers (config/defaults.json's Delivery section is empty, ADR 0025).
-// The ranges only keep a typo out; they are not advice.
 var numberSpecs = map[string]map[string]numberSpec{
-	"Delivery": {
-		"integrated_lufs_min":  {min: bound(-70), max: bound(0), step: bound(0.1), unit: "LUFS"},
-		"integrated_lufs_max":  {min: bound(-70), max: bound(0), step: bound(0.1), unit: "LUFS"},
-		"rms_dbfs_min":         {min: bound(-100), max: bound(0), step: bound(0.1), unit: "dBFS"},
-		"rms_dbfs_max":         {min: bound(-100), max: bound(0), step: bound(0.1), unit: "dBFS"},
-		"sample_peak_dbfs_max": {min: bound(-60), max: bound(0), step: bound(0.1), unit: "dBFS"},
-		"true_peak_dbtp_max":   {min: bound(-60), max: bound(0), step: bound(0.1), unit: "dBTP"},
-		"noise_floor_dbfs_max": {min: bound(-120), max: bound(0), step: bound(0.1), unit: "dBFS"},
-	},
 	// The recording check's settings (docs/utilities/recording-coverage.md Q3). The ranges keep a typo out: a share is a
 	// fraction of the paragraph's words, the runs are whole words, and an anchor is at least one word.
 	"RecordingCoverage": {
@@ -43,10 +29,6 @@ var numberSpecs = map[string]map[string]numberSpec{
 		"min_anchor_run":        {min: bound(1), max: bound(50), step: bound(1), unit: "words"},
 	},
 }
-
-// numberPairs are a tool's lowest and highest keys of one quantity: the effective lowest may not be above the effective
-// highest once a save lands.
-var numberPairs = map[string][][2]string{"Delivery": measure.LimitPairs()}
 
 // wire is the range as the Settings page receives it (the `number` object of a ScopedSettingField).
 func (spec numberSpec) wire() map[string]any {
@@ -115,49 +97,4 @@ func schemaFor(tool, key string) (fieldSchema, bool) {
 		}
 	}
 	return fieldSchema{}, false
-}
-
-// checkNumberPairs refuses a save that would leave a pair's effective lowest above its effective highest, looking at
-// every layer as it will be once the save lands: a project maximum is compared with the global minimum beneath it, and a
-// global change with the project override that stays on top of it.
-func (h *Host) checkNumberPairs(tool, scope string, values map[string]*string) error {
-	for _, pair := range numberPairs[tool] {
-		lowText := h.valueAfterSave(tool, scope, pair[0], values)
-		highText := h.valueAfterSave(tool, scope, pair[1], values)
-		if lowText == "" || highText == "" {
-			continue
-		}
-		low, lowErr := strconv.ParseFloat(lowText, 64)
-		high, highErr := strconv.ParseFloat(highText, 64)
-		if lowErr != nil || highErr != nil || low <= high {
-			continue
-		}
-		lowField, _ := schemaFor(tool, pair[0])
-		highField, _ := schemaFor(tool, pair[1])
-		return fmt.Errorf("%s (%s) is above %s (%s)", lowField.label, lowText, highField.label, highText)
-	}
-	return nil
-}
-
-// valueAfterSave is key's effective value once values are saved to scope. A nil value removes the key from that scope.
-func (h *Host) valueAfterSave(tool, scope, key string, values map[string]*string) string {
-	store := h.services().settings
-	layers := []struct {
-		name   string
-		values map[string]string
-	}{{"project", store.Project(tool)}, {"global", store.Global(tool)}, {"repo_default", store.Defaults(tool)}}
-	for _, layer := range layers {
-		if layer.name == scope {
-			if change, changed := values[key]; changed {
-				if change != nil {
-					return *change
-				}
-				continue
-			}
-		}
-		if value, ok := layer.values[key]; ok {
-			return value
-		}
-	}
-	return ""
 }

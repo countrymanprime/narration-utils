@@ -769,6 +769,20 @@ func (h *Host) ChapterTrackMapClear(trackGUID string) (string, error) {
 	return encodeBinding(h.mappingClear(trackGUID))
 }
 
+// ChapterTrackSet, ChapterTrackUnlink and ChapterTrackLinks are the chapter
+// track link control's host half (chapter-track-link-control PRD Phase 1): Set
+// makes a track the chapter's one link, replacing its old one and saying which
+// chapter the track was taken from; Unlink clears every link a chapter holds;
+// Links reads every narration chapter's link state and track facts from one
+// parse of the saved .rpp.
+func (h *Host) ChapterTrackSet(chapterID, trackGUID string) (string, error) {
+	return encodeBinding(h.chapterTrackSet(chapterID, trackGUID))
+}
+func (h *Host) ChapterTrackUnlink(chapterID string) (string, error) {
+	return encodeBinding(h.chapterTrackUnlink(chapterID))
+}
+func (h *Host) ChapterTrackLinks() (string, error) { return encodeBinding(h.chapterTrackLinks()) }
+
 func (h *Host) TracksDiscover() (string, error) { return encodeBinding(h.tracksDiscover()) }
 func (h *Host) TracksSelect(path string) (string, error) {
 	return encodeBinding(h.tracksSelect(path))

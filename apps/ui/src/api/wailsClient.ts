@@ -21,6 +21,7 @@ import {
   creditsAnnouncementsSchema,
   creditsProjectValuesResultSchema,
   creditsRenderResultSchema,
+  creditsStatusesSchema,
   creditTemplateSchema,
   creditTemplatesSchema,
   retailSampleAnswerSchema,
@@ -29,9 +30,17 @@ import { dawCatalogListSchema } from './schemas/dawCatalog';
 import { guideBuildResultSchema, guideCreatedSchema, guideEntitiesSchema, guidePreviewSchema } from './schemas/storyBible';
 import { settingsForScopeSchema } from './schemas/settings';
 import { tracksDiscoverySchema, tracksProjectSchema } from './schemas/tracks';
-import { chapterSuggestionSchema, chapterTrackMappingSchema, chapterTrackMatchSchema, trackMappingSchema } from './schemas/chapterTrackMap';
+import {
+  chapterSuggestionSchema,
+  chapterTrackLinksSchema,
+  chapterTrackMappingSchema,
+  chapterTrackMatchSchema,
+  chapterTrackSetSchema,
+  trackMappingSchema,
+} from './schemas/chapterTrackMap';
 import { takeComparisonJobSchema, takeReviewCreateTakeResultSchema, takeReviewScanJobSchema } from './schemas/takeReview';
 import { deliveryReportExportSchema, measureJobSchema, measurePickResultSchema } from './schemas/measure';
+import { deliveryProfileSchema, deliveryProfilesStateSchema } from './schemas/deliveryProfiles';
 import { diagnosticsJobSchema } from './schemas/diagnostics';
 import { coverageResultSchema, coverageStartResultSchema, coverageStateSchema } from './schemas/coverage';
 import { stageDecisionResultSchema, stageRecommendationsSchema } from './schemas/stages';
@@ -330,6 +339,8 @@ export const wailsClient: NarrationApi = {
   creditsChapterAnnouncements: (body) => decode(creditsAnnouncementsSchema, 'CreditsChapterAnnouncements', host.CreditsChapterAnnouncements(body)),
   creditsRetailSample: () => decode(retailSampleAnswerSchema, 'CreditsRetailSample', host.CreditsRetailSample()),
   saveCreditsRetailSample: (start, end) => decode(retailSampleAnswerSchema, 'CreditsSaveRetailSample', host.CreditsSaveRetailSample(start, end)),
+  creditsStatuses: () => decode(creditsStatusesSchema, 'CreditsStatuses', host.CreditsStatuses()),
+  setCreditsStatus: (kind, status) => decode(creditsStatusesSchema, 'CreditsSetStatus', host.CreditsSetStatus(kind, status)),
   dawCatalogList: () => decode(dawCatalogListSchema, 'DawCatalogList', host.DawCatalogList()),
   dawCatalogOpenDownloadPage: (id) => decode(voidResult, 'DawCatalogOpenDownloadPage', host.DawCatalogOpenDownloadPage(id)),
   tracksDiscover: () => decode(tracksDiscoverySchema, 'TracksDiscover', host.TracksDiscover()),
@@ -338,6 +349,9 @@ export const wailsClient: NarrationApi = {
   chapterTrackMapList: () => decode(chapterTrackMappingSchema, 'ChapterTrackMapList', host.ChapterTrackMapList()),
   chapterTrackMapConfirm: (trackGuid, chapterId) => decode(trackMappingSchema, 'ChapterTrackMapConfirm', host.ChapterTrackMapConfirm(trackGuid, chapterId)),
   chapterTrackMapClear: (trackGuid) => decode(chapterTrackMappingSchema, 'ChapterTrackMapClear', host.ChapterTrackMapClear(trackGuid)),
+  chapterTrackSet: (chapterId, trackGuid) => decode(chapterTrackSetSchema, 'ChapterTrackSet', host.ChapterTrackSet(chapterId, trackGuid)),
+  chapterTrackUnlink: (chapterId) => decode(chapterTrackMappingSchema, 'ChapterTrackUnlink', host.ChapterTrackUnlink(chapterId)),
+  chapterTrackLinks: () => decode(chapterTrackLinksSchema, 'ChapterTrackLinks', host.ChapterTrackLinks()),
   chapterTrackMatch: (chapterId) => decode(chapterTrackMatchSchema, 'ChapterTrackMatch', host.ChapterTrackMatch(chapterId)),
   chapterSuggestion: () => decode(chapterSuggestionSchema, 'ChapterSuggestion', host.ChapterSuggestion()),
   findingsList: (query) => decode(findingsPageSchema, 'FindingsList', host.FindingsList(query)),
@@ -362,6 +376,11 @@ export const wailsClient: NarrationApi = {
   measureState: () => decode(measureJobSchema, 'MeasureState', host.MeasureState()),
   measureCancel: () => decode(measureJobSchema, 'MeasureCancel', host.MeasureCancel()),
   deliveryExportReport: (includePaths) => decode(deliveryReportExportSchema, 'DeliveryExportReport', host.DeliveryExportReport(includePaths)),
+  deliveryProfiles: () => decode(deliveryProfilesStateSchema, 'DeliveryProfiles', host.DeliveryProfiles()),
+  deliverySelectProfile: (scope, id, version) => decode(deliveryProfilesStateSchema, 'DeliverySelectProfile', host.DeliverySelectProfile(scope, id, version)),
+  deliveryDuplicateProfile: (id, version) => decode(deliveryProfileSchema, 'DeliveryDuplicateProfile', host.DeliveryDuplicateProfile(id, version)),
+  deliverySaveProfile: (edit) => decode(deliveryProfileSchema, 'DeliverySaveProfile', host.DeliverySaveProfile(JSON.stringify(edit))),
+  deliveryDeleteProfile: (id) => decode(deliveryProfilesStateSchema, 'DeliveryDeleteProfile', host.DeliveryDeleteProfile(id)),
   diagnosticsAnalyze: (paths, sourceKind) => decode(diagnosticsJobSchema, 'DiagnosticsAnalyze', host.DiagnosticsAnalyze(paths, sourceKind)),
   diagnosticsState: () => decode(diagnosticsJobSchema, 'DiagnosticsState', host.DiagnosticsState()),
   diagnosticsCancel: () => decode(diagnosticsJobSchema, 'DiagnosticsCancel', host.DiagnosticsCancel()),

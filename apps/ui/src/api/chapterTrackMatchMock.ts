@@ -1,5 +1,13 @@
-import type { ChapterTrackCandidate, ChapterTrackMatch, RecordedEnd, TrackMapping } from './contracts/chapterTrackMap';
-import type { ManuscriptChapter } from './contracts/manuscript';
+import type {
+  ChapterTrackCandidate,
+  ChapterTrackLinks,
+  ChapterTrackLinksProject,
+  ChapterTrackMatch,
+  ChapterTrackSummary,
+  RecordedEnd,
+  TrackMapping,
+} from './contracts/chapterTrackMap';
+import type { ManuscriptChapter, RecordedUnavailable } from './contracts/manuscript';
 import type { Track, TracksProject } from './contracts/tracks';
 
 // The browser mock's stand-in for the host's chapter-to-track matcher (apps/desktop/internal/chaptermatch, ADR 0110).
@@ -112,4 +120,99 @@ export function mockChapterTrackMatch(chapterId: string, chapters: ManuscriptCha
   }
   const best = project.tracks.find((track) => track.guid === candidates[0].trackGuid);
   return best ? withTrack(best, candidates[0], 'matched') : { ...base, status: 'none', track: null, candidates: [], warnings: [], recordedEnd: null };
+}
+
+const summarizeTrack = (track: Track, mappings: TrackMapping[]): ChapterTrackSummary => {
+  const ends = track.items.map((item) => item.position + item.length);
+  return {
+    guid: track.guid,
+    index: track.index,
+    name: track.name,
+    color: track.color,
+    muted: track.muted,
+    soloed: track.soloed,
+    itemCount: track.items.length,
+    playableCount: track.items.filter((item) => item.sourceAvailable && item.supported).length,
+    missingSourceCount: track.items.filter((item) => !item.sourceAvailable).length,
+    unsupportedCount: track.items.filter((item) => item.sourceAvailable && !item.supported).length,
+    span: track.items.length ? { start: Math.min(...track.items.map((item) => item.position)), end: Math.max(...ends) } : null,
+    linkedChapterId: mappings.find((mapping) => mapping.trackGuid === track.guid)?.chapterId ?? '',
+  };
+};
+
+const PROJECT_MESSAGE: Record<ChapterTrackLinksProject, string> = {
+  ready: '',
+  none: 'No REAPER project (.rpp) file was found in this project folder.',
+  choose: 'Choose which REAPER project file to use on the Tracks page.',
+  error: 'Could not read the REAPER project file.',
+};
+
+/** The mock's ChapterTrackLinks (chapter-track-link-control PRD Phase 1): every narration chapter's match against the
+ * mock project, from mockChapterTrackMatch, plus each track's facts. A link to a track the project no longer has is
+ * reported as missing, as the host does. */
+export function mockChapterTrackLinks(
+  chapters: ManuscriptChapter[],
+  project: TracksProject,
+  mappings: TrackMapping[],
+  state: ChapterTrackLinksProject,
+): ChapterTrackLinks {
+  const ready = state === 'ready';
+  const present = new Set(project.tracks.map((track) => track.guid));
+  return {
+    project: state,
+    message: PROJECT_MESSAGE[state],
+    projectFile: ready ? project.path : '',
+    savedAt: ready ? '2026-09-21T10:00:00Z' : '',
+    tracks: ready ? project.tracks.map((track) => summarizeTrack(track, mappings)) : [],
+    chapters: chapters
+      .filter((chapter) => chapter.contentKind !== 'reference' && chapter.contentKind !== 'opening')
+      .map((chapter) => {
+        const links = mappings.filter((mapping) => mapping.chapterId === chapter.id);
+        if (!ready) {
+          return { chapterId: chapter.id, chapterTitle: chapter.title, status: 'none', track: null, candidates: [], warnings: [], links, recordedEnd: null };
+        }
+        const match = mockChapterTrackMatch(chapter.id, chapters, project, mappings);
+        const warnings = links.some((link) => !present.has(link.trackGuid)) ? [...match.warnings, 'confirmed-track-missing' as const] : match.warnings;
+        return {
+          chapterId: chapter.id,
+          chapterTitle: chapter.title,
+          status: match.status,
+          track: match.track,
+          candidates: match.candidates,
+          warnings,
+          links,
+          recordedEnd: match.recordedEnd,
+        };
+      }),
+  };
+}
+
+/** The mock's recorded length for a chapter (actual-recorded-column PRD Phase 2), by the host's rule: only a chapter with
+ * one confirmed link to a track in the project has seconds, the union of its items (the mock has no mutes or lanes on
+ * the wire); every other chapter says why not. */
+export function mockRecordedLength(
+  chapterId: string,
+  project: TracksProject,
+  mappings: TrackMapping[],
+  projectReadable: boolean,
+): { recordedSeconds: number } | { recordedUnavailable: RecordedUnavailable } {
+  const links = mappings.filter((mapping) => mapping.chapterId === chapterId);
+  if (links.length === 0) return { recordedUnavailable: 'unlinked' };
+  if (!projectReadable) return { recordedUnavailable: 'no_project' };
+  if (links.length > 1) return { recordedUnavailable: 'multiple_tracks' };
+  const track = project.tracks.find((candidate) => candidate.guid === links[0].trackGuid);
+  if (!track) return { recordedUnavailable: 'track_missing' };
+  const spans = track.items.map((item) => [item.position, item.position + item.length]).sort((a, b) => a[0] - b[0]);
+  let total = 0;
+  let current: number[] | null = null;
+  for (const span of spans) {
+    if (current && span[0] <= current[1]) {
+      current[1] = Math.max(current[1], span[1]);
+      continue;
+    }
+    if (current) total += current[1] - current[0];
+    current = [...span];
+  }
+  if (current) total += current[1] - current[0];
+  return { recordedSeconds: total };
 }

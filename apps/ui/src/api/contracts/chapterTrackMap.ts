@@ -92,12 +92,72 @@ export type ChapterSuggestion = {
   warnings: Array<ChapterTrackMatchWarning | 'confirmed-chapter-missing'>;
 };
 
+/** ChapterTrackSet's answer (chapter-track-link-control PRD Phase 1): the chapter's one link as written, the link the
+ * track held for another chapter before (null when the track was free), and every link that remains. */
+export type ChapterTrackSetResult = {
+  documentId: string;
+  link: TrackMapping;
+  displaced: TrackMapping | null;
+  mappings: TrackMapping[];
+};
+
+/** Whether the saved .rpp could be read: ready, none found, several found and none chosen, or unreadable. */
+export type ChapterTrackLinksProject = 'ready' | 'none' | 'choose' | 'error';
+
+/** One track's facts as of the .rpp's last save. `playableCount` counts supported items whose source is present;
+ * `span` runs from the first item's start to the last item's end (null with no items); `linkedChapterId` is the chapter
+ * the track is confirmed for, '' when none. */
+export type ChapterTrackSummary = {
+  guid: string;
+  index: number;
+  name: string;
+  color: string;
+  muted: boolean;
+  soloed: boolean;
+  itemCount: number;
+  playableCount: number;
+  missingSourceCount: number;
+  unsupportedCount: number;
+  span: { start: number; end: number } | null;
+  linkedChapterId: string;
+};
+
+/** One narration chapter's link state: the matcher's answer, every confirmed link it holds (a missing track's too), and
+ * where the matched track's audio ends. */
+export type ChapterTrackLink = {
+  chapterId: string;
+  chapterTitle: string;
+  status: ChapterTrackMatchStatus;
+  track: ChapterTrackCandidate | null;
+  candidates: ChapterTrackCandidate[];
+  warnings: ChapterTrackMatchWarning[];
+  links: TrackMapping[];
+  recordedEnd: RecordedEnd | null;
+};
+
+/** ChapterTrackLinks' answer: every narration chapter and every track from one parse of the saved .rpp. When `project`
+ * is not ready, `message` says why, `tracks` is empty and each chapter's status is `none`, with its links still listed. */
+export type ChapterTrackLinks = {
+  project: ChapterTrackLinksProject;
+  message: string;
+  projectFile: string;
+  savedAt: string;
+  tracks: ChapterTrackSummary[];
+  chapters: ChapterTrackLink[];
+};
+
 export interface ChapterTrackMapApi {
   chapterTrackMapList(): Promise<ChapterTrackMapping>;
   /** Confirms trackGuid as chapterId's link; refuses a chapterId outside the current manuscript. */
   chapterTrackMapConfirm(trackGuid: string, chapterId: string): Promise<TrackMapping>;
   /** Clears trackGuid's confirmed link, if any, and returns the links that remain. */
   chapterTrackMapClear(trackGuid: string): Promise<ChapterTrackMapping>;
+  /** Makes trackGuid chapterId's one link, replacing its old one; `displaced` names the chapter the track was taken from. */
+  chapterTrackSet(chapterId: string, trackGuid: string): Promise<ChapterTrackSetResult>;
+  /** Clears every link chapterId holds and returns the links that remain. */
+  chapterTrackUnlink(chapterId: string): Promise<ChapterTrackMapping>;
+  /** Every narration chapter's link state and track facts from one parse of the saved .rpp; read-only. */
+  chapterTrackLinks(): Promise<ChapterTrackLinks>;
   /** Finds the track holding chapterId in the selected .rpp and where its recorded audio ends; read-only. */
   chapterTrackMatch(chapterId: string): Promise<ChapterTrackMatch>;
   /** Suggests the chapter being recorded from the selected .rpp's armed (else selected) track; read-only. */

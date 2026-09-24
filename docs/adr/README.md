@@ -47,7 +47,7 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0022](0022-live-sidecar-events-over-wails-and-stop-file.md) | The host relays live sidecar events over Wails events and stops the sidecar with a stop file | Accepted |
 | [0023](0023-visual-suite-capture-contract-and-storybook.md) | The visual suite is a validated capture contract, and Storybook is the component layer | Accepted |
 | [0024](0024-teleprompter-highlight-follows-the-sidecars-spans.md) | The teleprompter highlight follows the sidecar's spans and only ever catches up to the real position | Accepted (amends ADR-0016; amended, proposed, by ADR-0119) |
-| [0025](0025-delivery-measurements-in-go-profiles-deferred.md) | Delivery measurements are computed in Go, and no distributor profile ships yet | Accepted |
+| [0025](0025-delivery-measurements-in-go-profiles-deferred.md) | Delivery measurements are computed in Go, and no distributor profile ships yet | Superseded by ADR-0179 |
 | [0026](0026-manuscript-line-identity-in-item-extension-data.md) | Manuscript line identity is stored in REAPER item extension data and read back through the bridge | Accepted |
 | [0027](0027-windows-gates-and-creates-the-release.md) | Windows gates pull requests and creates the release; macOS and Linux are optional, separate builds | Accepted |
 | [0028](0028-planned-work-is-specified-as-prds-and-deleted-when-built.md) | Planned work is specified as PRDs, kept apart from ADRs, and a PRD is deleted once its work is built | Accepted |
@@ -164,7 +164,7 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0150](0150-the-teleprompter-reads-credits-as-a-host-rendered-script-file-not-a-chapter.md) | The teleprompter reads the credits as a host-rendered script file, not as a chapter | Proposed |
 | [0151](0151-chapter-announcements-render-per-narration-chapter-and-are-timed-with-the-credits.md) | Chapter announcements render per narration chapter and are timed with the credits; room tone is the narrator's setting | Proposed |
 | [0152](0152-the-retail-sample-is-a-paragraph-range-on-the-project-manifest-held-to-five-minutes-by-the-host.md) | The retail sample is a paragraph range on the project manifest, held to five minutes by the host | Proposed |
-| [0155](0155-settings-gain-a-number-kind-with-a-declared-range-and-delivery-limits-are-the-narrators-own.md) | Settings gain a number kind with a declared range, and delivery limits are the narrator's own | Proposed |
+| [0155](0155-settings-gain-a-number-kind-with-a-declared-range-and-delivery-limits-are-the-narrators-own.md) | Settings gain a number kind with a declared range, and delivery limits are the narrator's own | Proposed; decision 5 superseded by ADR-0179 |
 | [0156](0156-measurement-reads-only-files-picked-this-session-as-one-job-and-fingerprints-the-bytes-it-read.md) | Measurement reads only files picked this session, as one job, and fingerprints the bytes it read | Proposed |
 | [0158](0158-windowed-diagnostics-are-one-read-pass-with-fixed-windows-narrator-thresholds-and-candidate-findings.md) | Windowed diagnostics are one read pass with fixed windows, narrator thresholds and candidate findings | Proposed |
 | [0160](0160-stage-recommendations-are-computed-from-tri-state-signals-by-a-pure-engine.md) | Stage recommendations are computed from tri-state signals by a pure engine | Proposed |
@@ -174,4 +174,8 @@ The `design-spec-guard` skill (`.claude/skills/design-spec-guard/`) reads this f
 | [0170](0170-the-delivery-report-is-built-by-the-host-into-the-project-sidecar-without-paths-and-the-host-judges-the-limits.md) | The Delivery report is built by the host into the project sidecar without paths, and the host judges the limits | Proposed |
 | [0171](0171-the-race-detector-runs-only-where-there-is-concurrency-and-checklocks-guards-the-locks.md) | The race detector runs only where there is concurrency, and checklocks guards the locks | Proposed |
 | [0172](0172-popover-is-an-interactive-layer-above-the-dialog-and-escape-defers-to-the-topmost-one.md) | Popover is an interactive layer above the dialog, and Escape defers to the topmost one | Proposed |
+| [0175](0175-chapter-track-matching-reads-chapter-labels-through-one-shared-pre-pass-and-a-take-or-pickup-track-is-never-confident.md) | Chapter-track matching reads chapter labels through one shared pre-pass, and a take or pickup track is never confident | Proposed (amends ADR-0110) |
+| [0179](0179-a-built-in-dated-acx-delivery-profile-ships-and-a-project-is-judged-against-its-selected-profile.md) | A built-in, dated ACX delivery profile ships, and a project is judged against its selected profile | Proposed |
+| [0180](0180-custom-delivery-profiles-are-copies-of-a-built-in-kept-in-a-user-level-file.md) | Custom delivery profiles are copies of a built-in, kept in a user-level file | Proposed |
 | [0187](0187-the-resume-prompt-is-a-compact-notice-that-settles-once-per-dialog-open.md) | The resume prompt is a compact notice that settles once per dialog open | Proposed (amends ADR-0112) |
+| [0196](0196-the-read-aloud-control-bar-lives-in-a-dialog-footer-slot-and-space-plays-or-stops-a-session.md) | The read-aloud control bar lives in a Dialog footer slot, and Space plays or stops a session | Proposed (amends ADR-0094, ADR-0119) |

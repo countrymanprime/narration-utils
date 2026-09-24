@@ -466,7 +466,7 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     await screen.findByRole('heading', { name: 'Review' });
   });
 
-  it('opens Delivery from the navigation without a manuscript, and its Change limits opens Settings at Delivery', async () => {
+  it('opens Delivery from the navigation without a manuscript, and its Change profile opens Settings at Delivery', async () => {
     const source = createMockApi();
     renderApp({ bootstrap: async () => ({ ...(await source.bootstrap()), manuscript: null }) });
     await screen.findByRole('heading', { name: 'Welcome back' });
@@ -475,9 +475,9 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     fireEvent.click(deliveryButtons[0]);
     await screen.findByRole('heading', { name: 'Delivery', level: 1 });
     expect(window.location.pathname).toBe('/delivery');
-    fireEvent.click(await screen.findByRole('button', { name: 'Change limits' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Change profile' }));
     await waitFor(() => expect(window.location.pathname).toBe('/settings'));
-    expect(await screen.findByText(/These are your own limits: no distributor/)).toBeTruthy();
+    expect(await screen.findByRole('combobox', { name: 'Delivery profile for this project' })).toBeTruthy();
   });
 
   it('redirects a direct manuscript-dependent URL to Home when no manuscript exists', async () => {
@@ -545,27 +545,42 @@ describe('App (integration, driven through the mock NarrationApi)', () => {
     expect(saveSettings).toHaveBeenCalledWith('TranscriptCompare', 'project', { model_size: 'large-v3' });
   });
 
-  it('offers the delivery limits empty, saves a typed limit, and clears one with null rather than an empty string', async () => {
-    // One mock answers both calls, so what is saved is what the page reads back.
+  it('chooses the Global default profile, duplicates ACX, edits the copy and deletes it in Settings > Delivery', async () => {
     const store = createMockApi();
-    const saveSettings = vi.fn(store.saveSettings);
-    renderApp({ saveSettings, settingsForScope: store.settingsForScope });
+    const deliverySelectProfile = vi.fn(store.deliverySelectProfile);
+    const deliverySaveProfile = vi.fn(store.deliverySaveProfile);
+    renderApp({ ...store, deliverySelectProfile, deliverySaveProfile });
     await waitFor(() => screen.getByRole('heading', { name: 'Welcome back' }));
     fireEvent.click(screen.getAllByRole('button', { name: 'Settings' })[0]);
     await screen.findByRole('heading', { name: 'Settings' });
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Delivery' }));
-    expect(await screen.findByText('No limits set')).toBeTruthy();
-    const peak = await screen.findByRole('textbox', { name: 'True peak, highest' });
-    fireEvent.change(peak, { target: { value: '-3' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(saveSettings).toHaveBeenCalledWith('Delivery', 'global', { true_peak_dbtp_max: '-3' }));
-    await waitFor(() => expect(screen.queryByText('No limits set')).toBeNull());
+    const choice = await screen.findByRole('combobox', { name: 'Default delivery profile' });
+    expect((choice as HTMLSelectElement).value).toBe('acx@2026-09');
+    expect(screen.getByText(/Built in · read-only · 13 rules · from help.acx.com, read 2026-09-20/)).toBeTruthy();
 
-    fireEvent.change(await screen.findByRole('textbox', { name: 'True peak, highest' }), { target: { value: '' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(saveSettings).toHaveBeenLastCalledWith('Delivery', 'global', { true_peak_dbtp_max: null }));
-    expect(await screen.findByText('No limits set')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Duplicate' }));
+    const editor = await screen.findByRole('dialog', { name: 'Edit profile' });
+    fireEvent.change(within(editor).getByRole('textbox', { name: 'Name' }), { target: { value: 'My ACX, tighter peak' } });
+    fireEvent.change(within(editor).getByRole('textbox', { name: 'Peak, highest (dBFS)' }), { target: { value: '-3.5' } });
+    expect(within(editor).getByText('Changed')).toBeTruthy();
+    fireEvent.click(within(editor).getByRole('switch', { name: 'Room tone, head on' }));
+    fireEvent.click(within(editor).getByRole('button', { name: 'Save profile' }));
+    await waitFor(() => expect(deliverySaveProfile).toHaveBeenCalledTimes(1));
+    const edit = deliverySaveProfile.mock.calls[0][0];
+    expect(edit.name).toBe('My ACX, tighter peak');
+    expect(edit.rules.find((rule) => rule.id === 'acx.peak')?.max).toBe(-3.5);
+    expect(edit.rules.find((rule) => rule.id === 'acx.room_tone_head')?.off).toBe(true);
+    expect(await screen.findByText(/revision 2 · 1 number changed · 1 rule off/)).toBeTruthy();
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Default delivery profile' }), { target: { value: edit.id } });
+    await waitFor(() => expect(deliverySelectProfile).toHaveBeenCalledWith('global', edit.id, ''));
+    expect(await screen.findByText(/Used by: Global default/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete profile' }));
+    await waitFor(() => expect(screen.queryByText('My ACX, tighter peak')).toBeNull());
+    expect((screen.getByRole('combobox', { name: 'Default delivery profile' }) as HTMLSelectElement).value).toBe('acx@2026-09');
   });
 
   it('offers the recording check settings at their defaults and saves a changed threshold', async () => {

@@ -42,6 +42,10 @@ export function ChapterTagsPreview() {
   return window['go']['main']['Host']['ChapterTagsPreview']();
 }
 
+export function ChapterTrackLinks() {
+  return window['go']['main']['Host']['ChapterTrackLinks']();
+}
+
 export function ChapterTrackMapClear(arg1) {
   return window['go']['main']['Host']['ChapterTrackMapClear'](arg1);
 }
@@ -56,6 +60,14 @@ export function ChapterTrackMapList() {
 
 export function ChapterTrackMatch(arg1) {
   return window['go']['main']['Host']['ChapterTrackMatch'](arg1);
+}
+
+export function ChapterTrackSet(arg1, arg2) {
+  return window['go']['main']['Host']['ChapterTrackSet'](arg1, arg2);
+}
+
+export function ChapterTrackUnlink(arg1) {
+  return window['go']['main']['Host']['ChapterTrackUnlink'](arg1);
 }
 
 export function CleanupToolsLaunch(arg1) {
@@ -118,6 +130,14 @@ export function CreditsSaveTemplate(arg1, arg2, arg3, arg4) {
   return window['go']['main']['Host']['CreditsSaveTemplate'](arg1, arg2, arg3, arg4);
 }
 
+export function CreditsSetStatus(arg1, arg2) {
+  return window['go']['main']['Host']['CreditsSetStatus'](arg1, arg2);
+}
+
+export function CreditsStatuses() {
+  return window['go']['main']['Host']['CreditsStatuses']();
+}
+
 export function CreditsTemplates() {
   return window['go']['main']['Host']['CreditsTemplates']();
 }
@@ -134,8 +154,28 @@ export function DawLaunch() {
   return window['go']['main']['Host']['DawLaunch']();
 }
 
+export function DeliveryDeleteProfile(arg1) {
+  return window['go']['main']['Host']['DeliveryDeleteProfile'](arg1);
+}
+
+export function DeliveryDuplicateProfile(arg1, arg2) {
+  return window['go']['main']['Host']['DeliveryDuplicateProfile'](arg1, arg2);
+}
+
 export function DeliveryExportReport(arg1) {
   return window['go']['main']['Host']['DeliveryExportReport'](arg1);
+}
+
+export function DeliveryProfiles() {
+  return window['go']['main']['Host']['DeliveryProfiles']();
+}
+
+export function DeliverySaveProfile(arg1) {
+  return window['go']['main']['Host']['DeliverySaveProfile'](arg1);
+}
+
+export function DeliverySelectProfile(arg1, arg2, arg3) {
+  return window['go']['main']['Host']['DeliverySelectProfile'](arg1, arg2, arg3);
 }
 
 export function DiagnosticsAnalyze(arg1, arg2) {

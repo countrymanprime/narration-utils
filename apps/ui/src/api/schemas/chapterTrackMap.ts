@@ -3,7 +3,11 @@ import type {
   ChapterCandidate,
   ChapterSuggestion,
   ChapterTrackCandidate,
+  ChapterTrackLink,
+  ChapterTrackLinks,
   ChapterTrackMapping,
+  ChapterTrackSetResult,
+  ChapterTrackSummary,
   ChapterTrackMatch,
   RecordedEnd,
   TrackMapping,
@@ -44,6 +48,8 @@ export const recordedEndSchema = z.object({
   approximate: z.boolean(),
 }) satisfies z.ZodType<RecordedEnd>;
 
+const matchWarningSchema = z.enum(['confirmed-track-missing', 'confirmed-track-renamed', 'confirmed-links-conflict']);
+
 const matchStatusSchema = z.enum(['confirmed', 'matched', 'uncertain', 'ambiguous', 'none']);
 
 const chapterCandidateSchema = z.object({
@@ -73,7 +79,49 @@ export const chapterTrackMatchSchema = z.object({
   status: matchStatusSchema,
   track: chapterTrackCandidateSchema.nullable(),
   candidates: z.array(chapterTrackCandidateSchema),
-  warnings: z.array(z.enum(['confirmed-track-missing', 'confirmed-track-renamed', 'confirmed-links-conflict'])),
+  warnings: z.array(matchWarningSchema),
   tracks: z.array(z.object({ guid: z.string(), name: z.string(), index: z.number().int() })),
   recordedEnd: recordedEndSchema.nullable(),
 }) satisfies z.ZodType<ChapterTrackMatch>;
+
+export const chapterTrackSetSchema = z.object({
+  documentId: z.string(),
+  link: trackMappingSchema,
+  displaced: trackMappingSchema.nullable(),
+  mappings: listFromNull(trackMappingSchema),
+}) satisfies z.ZodType<ChapterTrackSetResult>;
+
+const chapterTrackSummarySchema = z.object({
+  guid: z.string(),
+  index: z.number().int(),
+  name: z.string(),
+  color: z.string(),
+  muted: z.boolean(),
+  soloed: z.boolean(),
+  itemCount: z.number().int().nonnegative(),
+  playableCount: z.number().int().nonnegative(),
+  missingSourceCount: z.number().int().nonnegative(),
+  unsupportedCount: z.number().int().nonnegative(),
+  span: z.object({ start: z.number(), end: z.number() }).nullable(),
+  linkedChapterId: z.string(),
+}) satisfies z.ZodType<ChapterTrackSummary>;
+
+const chapterTrackLinkSchema = z.object({
+  chapterId: z.string(),
+  chapterTitle: z.string(),
+  status: matchStatusSchema,
+  track: chapterTrackCandidateSchema.nullable(),
+  candidates: z.array(chapterTrackCandidateSchema),
+  warnings: z.array(matchWarningSchema),
+  links: z.array(trackMappingSchema),
+  recordedEnd: recordedEndSchema.nullable(),
+}) satisfies z.ZodType<ChapterTrackLink>;
+
+export const chapterTrackLinksSchema = z.object({
+  project: z.enum(['ready', 'none', 'choose', 'error']),
+  message: z.string(),
+  projectFile: z.string(),
+  savedAt: z.string(),
+  tracks: z.array(chapterTrackSummarySchema),
+  chapters: z.array(chapterTrackLinkSchema),
+}) satisfies z.ZodType<ChapterTrackLinks>;

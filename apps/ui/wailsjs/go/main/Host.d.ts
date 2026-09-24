@@ -23,6 +23,8 @@ export function ChapterTagsEmbed(arg1:string):Promise<string>;
 
 export function ChapterTagsPreview():Promise<string>;
 
+export function ChapterTrackLinks():Promise<string>;
+
 export function ChapterTrackMapClear(arg1:string):Promise<string>;
 
 export function ChapterTrackMapConfirm(arg1:string,arg2:string):Promise<string>;
@@ -30,6 +32,10 @@ export function ChapterTrackMapConfirm(arg1:string,arg2:string):Promise<string>;
 export function ChapterTrackMapList():Promise<string>;
 
 export function ChapterTrackMatch(arg1:string):Promise<string>;
+
+export function ChapterTrackSet(arg1:string,arg2:string):Promise<string>;
+
+export function ChapterTrackUnlink(arg1:string):Promise<string>;
 
 export function CleanupToolsLaunch(arg1:string):Promise<string>;
 
@@ -61,6 +67,10 @@ export function CreditsSaveRetailSample(arg1:string,arg2:string):Promise<string>
 
 export function CreditsSaveTemplate(arg1:string,arg2:string,arg3:string,arg4:string):Promise<string>;
 
+export function CreditsSetStatus(arg1:string,arg2:string):Promise<string>;
+
+export function CreditsStatuses():Promise<string>;
+
 export function CreditsTemplates():Promise<string>;
 
 export function DawCatalogList():Promise<string>;
@@ -69,7 +79,17 @@ export function DawCatalogOpenDownloadPage(arg1:string):Promise<string>;
 
 export function DawLaunch():Promise<string>;
 
+export function DeliveryDeleteProfile(arg1:string):Promise<string>;
+
+export function DeliveryDuplicateProfile(arg1:string,arg2:string):Promise<string>;
+
 export function DeliveryExportReport(arg1:boolean):Promise<string>;
+
+export function DeliveryProfiles():Promise<string>;
+
+export function DeliverySaveProfile(arg1:string):Promise<string>;
+
+export function DeliverySelectProfile(arg1:string,arg2:string,arg3:string):Promise<string>;
 
 export function DiagnosticsAnalyze(arg1:Array<string>,arg2:string):Promise<string>;
 

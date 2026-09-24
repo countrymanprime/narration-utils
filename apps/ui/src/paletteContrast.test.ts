@@ -87,6 +87,7 @@ const PAIRS: PairSpec[] = [
   ),
   text('warn-on-accent-soft', 'SKIPPED word in the inline diff: warn text on accent-soft', 'var(--warn-text)', ['surface-2'], 'var(--accent-soft)'),
   text('info', 'the text-safe info colour on the page', 'var(--info-text)', PAGE_SURFACES),
+  text('ok', 'a rule met on the Delivery page: the text-safe ok colour', 'var(--ok-text)', PAGE_SURFACES),
   text('info-on-place-soft', 'EXTRA word in the inline diff: info text on place-soft', 'var(--info-text)', ['surface-2'], 'var(--place-soft)'),
   ...KINDS.map((kind) =>
     text(
@@ -312,6 +313,7 @@ const tokensUsedAsText = (): Set<string> => new Set([...textColourUses().values(
 // (a conditional, a fallback or a colour map slips past a pattern for text colours). Whether a listed use really is an icon,
 // a dot or a decorative glyph is the reviewer's call: the test only makes every use visible.
 const NON_TEXT_USES: Record<string, { count: number; what: string }> = {
+  'components/delivery/DeliveryProfilePanel.tsx': { count: 1, what: 'the ear icon beside a rule the narrator checks by listening' },
   'chapterStatus.ts': { count: 1, what: 'the Not Started status colour: a dot and a meter segment, never text' },
   'components/layout/AppShell.tsx': { count: 2, what: 'the folder icon beside the project name, and the header pill dot when no DAW file is linked' },
   'components/manuscript/ChapterNav.tsx': { count: 1, what: 'a line-hit result row icon (faParagraph)' },

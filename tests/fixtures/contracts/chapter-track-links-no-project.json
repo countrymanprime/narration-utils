@@ -1,0 +1,39 @@
+{
+  "chapters": [
+    {
+      "candidates": [],
+      "chapterId": "c-0001",
+      "chapterTitle": "Chapter I: Down the Rabbit-Hole",
+      "links": [],
+      "recordedEnd": null,
+      "status": "none",
+      "track": null,
+      "warnings": []
+    },
+    {
+      "candidates": [],
+      "chapterId": "c-0002",
+      "chapterTitle": "Chapter II: The Pool of Tears",
+      "links": [],
+      "recordedEnd": null,
+      "status": "none",
+      "track": null,
+      "warnings": []
+    },
+    {
+      "candidates": [],
+      "chapterId": "c-0003",
+      "chapterTitle": "Chapter III: A Caucus-Race and a Long Tale",
+      "links": [],
+      "recordedEnd": null,
+      "status": "none",
+      "track": null,
+      "warnings": []
+    }
+  ],
+  "message": "No REAPER project (.rpp) file was found in this project folder.",
+  "project": "none",
+  "projectFile": "",
+  "savedAt": "",
+  "tracks": []
+}

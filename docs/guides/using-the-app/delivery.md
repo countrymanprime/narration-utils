@@ -2,13 +2,29 @@
 
 # Delivery
 
-Delivery measures your rendered chapter files, so you can check them before handing them to a
-reviewer or a distributor without another tool. For each file it shows the integrated loudness (LUFS),
-the RMS level, the sample and true peaks, the noise floor, the length and how many windows were
-digital silence, each with its unit. Your files are only read, never changed, and Delivery is always in
-the navigation: it needs neither a manuscript nor a REAPER project.
+Delivery measures your rendered chapter files against the delivery profile of the platform you upload
+to, rule by rule, so you can check them before uploading without another tool. Out of the box every
+project is judged against **ACX (September 2026)**, ACX's audio submission requirements as the app
+recorded them; you can [choose another profile](#the-delivery-profile) or make your own. Your files are
+only read, never changed, and Delivery is always in the navigation: it needs neither a manuscript nor a
+REAPER project.
 
-![Delivery page before anything is measured, with no limits set](../../images/ui/delivery-empty.webp)
+![Delivery page before anything is measured, judged against ACX](../../images/ui/delivery-empty.webp)
+
+## The delivery profile
+
+The **Delivery profile** panel names the profile the project is judged against and how many of its
+rules the app checks, how many it cannot check yet, how many are for you to listen for, and how many
+are still to verify. **Rules and their sources** lists every rule with what the platform requires, how
+the app checks it, and whether that requirement was read on the platform's own page (**Verified**), is
+still **To verify**, or has **Conflicting sources** (room tone at the head of a file: ACX's page was
+read as 1 to 5 s, current guides say 0.5 to 1 s, so the app judges the looser 0.5 to 5 s). A rule the
+app cannot check, such as the MP3 you upload when it measured the WAV render, is listed as **Not checked
+by the app** and never counted as met. The profile is a measurement, not ACX's approval.
+
+![The ACX profile's rules and their sources](../../images/ui/delivery-profile-rules.webp)
+
+**Change profile** opens [Settings, Delivery](settings.md), where you choose this project's profile.
 
 ## Measuring files
 
@@ -20,24 +36,34 @@ runs; the app says when it ends, and Delivery shows the last measurement when yo
 
 ![A measurement in progress, with its real progress and Cancel](../../images/ui/delivery-running.webp)
 
+The table has a column for each rule of the profile, with its bound under the name. Each value says
+**Met** or **Not met** (with the bound it missed, "not 44.1 kHz", "below −23"), in words as well as
+colour, and the last column counts each file's results. Above the table, the page says which rules each
+file missed, or that every rule the app checks is met, and which rules it did not check for you to check
+yourself before uploading. Choosing another profile judges the values on screen again, without measuring
+the files again.
+
 A value that could not be measured says **Not measurable**, never a number: a silent render has no
 loudness or noise floor to measure, and a very short file has too little audio for some of them. It is
-never counted as within a limit.
+never counted as met.
 
-![Three files measured: every value with its unit, a silent render not measurable, and an MP3 that could not be read](../../images/ui/delivery-measured.webp)
+![Three files judged against ACX: a 48 kHz render not met on sample rate, a silent render not measurable, and an MP3 that could not be read](../../images/ui/delivery-measured.webp)
 
-## Your limits
+Press a file's row for every rule with this file's value, what the platform requires and how it was
+verified. Integrated loudness (LUFS) and the true peak are shown there for information: ACX's page, as
+recorded, sets no LUFS rule, and a true peak above −3 dBTP is shown as advice because it may clip after
+MP3 encoding.
 
-The limits are your own, set in [Settings, Delivery](settings.md): no distributor's
-numbers are built in. Until you set one, **Your limits** says **No limits set**, and every value is
-reported without being checked, so nothing on the page reads as a pass. **Change limits** opens that
-Settings category.
+![One file against ACX, rule by rule](../../images/ui/delivery-file-rules.webp)
 
-With limits set, the page lists them, marks each value outside one in red with the limit it broke
-("above −3.5", "below −20.0"), and counts them under the measurement's result. Changing a limit
-in Settings judges the values on screen again, without measuring the files again.
+## Custom profiles
 
-![Measured values against the project's own limits, with three outside them](../../images/ui/delivery-outside-limits.webp)
+To judge against other numbers, duplicate ACX in [Settings, Delivery](settings.md) and change
+its numbers or turn a rule off; the page then names your profile and what it is based on. If you had set
+your own limits before delivery profiles, they were moved into a custom profile named **Your limits**
+(or ACX, when they were ACX's numbers), so your files are judged the same way as before.
+
+![Delivery judged by a custom profile based on ACX, with two rules turned off](../../images/ui/delivery-custom-profile.webp)
 
 ## Diagnostics
 
@@ -72,10 +98,10 @@ overwritten, and nothing is ever written next to your audio.
 
 The report lists every file you measured or checked, and says for each one whether it was measured
 and checked, and if not, why. Every value has its unit, and the report says how RMS and the noise floor
-are measured. Your limits are listed with the value each finding broke. Each finding has an ID, its
+are measured. The report names the profile and its version, and lists every rule with what the platform
+requires, how the app checked it, how it was verified and how many files met it. Each finding has an ID, its
 file, its time in the file, what was measured against which threshold, and its review state. The HTML
-and the JSON use the same IDs, and the Measurements tab's values outside a limit are those same
-findings. A finding is **open** unless it has been dismissed, and every open finding is listed. The
+and the JSON use the same IDs, and the Measurements tab's rules not met are those same findings. A finding is **open** unless it has been dismissed, and every open finding is listed. The
 review state comes from the project's review decisions; Delivery's findings are not on the Review page
 yet, so for now they are all open and unreviewed. The report also names the app's and the analyzers' versions, and each
 installed voice and model with its version. It is a measurement, not a distributor's approval.

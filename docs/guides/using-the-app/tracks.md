@@ -105,7 +105,9 @@ has changed since you last saved, the dialog says so and changes nothing.
 Below the track list, Chapter links shows every narration chapter with the track it's confirmed
 to, so checks that need to know "which audio is this chapter" (a future Home row, an evidence
 view) don't guess by name. A chapter starts **Not linked**; choose a track and press Confirm to
-link it. A confirmed chapter shows **Linked** with the track's name, and Change or Clear. If the
+link it. A confirmed chapter shows **Linked** with the track's name, and Change or Clear. Change
+replaces the chapter's link, so a chapter is never left linked to two tracks; a track already
+linked to another chapter moves to this one. Clear removes every link the chapter has. If the
 confirmed track is deleted, or the project points somewhere else, the chapter shows **Track
 missing** until it's relinked or cleared. These links are kept in the app's own project data and never
 change the REAPER project.
