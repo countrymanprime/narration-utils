@@ -60,13 +60,13 @@ We believe a `tiny` pass with `large-v3-turbo` re-checks of the missing regions 
 
 ## Open Questions
 
-- [ ] **MC1. Default or opt-in?** Recommendation: opt-in (a Recording check setting, off) until the real corpus confirms the first pass never gives a false "met", then on by default in its own PR with an ADR.
-- [ ] **MC2. Which models?** Recommendation: two settings, first pass (default `tiny`) and re-check (default `large-v3-turbo`), from the approved list; the re-check model must not be smaller than the first.
-- [ ] **MC3. Window rules as settings or constants?** Recommendation: constants measured by the benchmark, in one place: pad each window to 25 s, merge windows less than 20 s apart, and transcribe the whole chapter when the windows cover more than 60% of it. Expose them only if the real corpus shows they need tuning per machine.
-- [ ] **MC4. The re-check model is not installed.** Recommendation: the check asks for the download as it does today for its one model (`RecordingCheck.tsx:152-178`), with "Check with tiny only" as the other choice; a tiny-only result is labelled as such.
-- [ ] **MC5. What the result shows.** Recommendation: "Checked with tiny; 3 passages re-checked with large-v3-turbo" in the dialog and on the stored result, and the region list marks which regions the second model confirmed missing.
-- [ ] **MC6. Spot checks of "met" chapters (Could).** Re-check a small sample of "met" paragraphs, or those with long misread runs, so a false "met" from the first pass would show up in use. Recommendation: not in the first delivery; revisit with the real corpus.
-- [ ] **MC7. Staleness.** A cascade result and a single-model result of the same chapter are both current today (the model is outside the parameter hash, Q13). Recommendation: keep Q13; the label says which models made it.
+- [x] **MC1. Default or opt-in?** Recommendation: opt-in (a Recording check setting, off) until the real corpus confirms the first pass never gives a false "met", then on by default in its own PR with an ADR. **Answered 2026-09-23: opt-in, off by default.**
+- [x] **MC2. Which models?** Recommendation: two settings, first pass (default `tiny`) and re-check (default `large-v3-turbo`), from the approved list; the re-check model must not be smaller than the first. **Answered 2026-09-23: two settings, first pass `tiny` and re-check `large-v3-turbo`.**
+- [x] **MC3. Window rules as settings or constants?** Recommendation: constants measured by the benchmark, in one place: pad each window to 25 s, merge windows less than 20 s apart, and transcribe the whole chapter when the windows cover more than 60% of it. Expose them only if the real corpus shows they need tuning per machine. **Answered 2026-09-23: constants (25 s, 20 s, 60%), not settings.**
+- [x] **MC4. The re-check model is not installed.** Recommendation: the check asks for the download as it does today for its one model (`RecordingCheck.tsx:152-178`), with "Check with tiny only" as the other choice; a tiny-only result is labelled as such. **Answered 2026-09-23: offer the download, or a labelled tiny-only check.**
+- [x] **MC5. What the result shows.** Recommendation: "Checked with tiny; 3 passages re-checked with large-v3-turbo" in the dialog and on the stored result, and the region list marks which regions the second model confirmed missing. **Answered 2026-09-23: name both models and the re-checked passages, and mark confirmed regions.**
+- [x] **MC6. Spot checks of "met" chapters (Could).** Re-check a small sample of "met" paragraphs, or those with long misread runs, so a false "met" from the first pass would show up in use. Recommendation: not in the first delivery; revisit with the real corpus. **Answered 2026-09-23: not in the first delivery.**
+- [x] **MC7. Staleness.** A cascade result and a single-model result of the same chapter are both current today (the model is outside the parameter hash, Q13). Recommendation: keep Q13; the label says which models made it. **Answered 2026-09-23: keep Q13.**
 
 ## Users & Context
 
@@ -150,10 +150,11 @@ Cross-cutting: each phase follows `CLAUDE.md`: plan, `change-impact-scan`, TDD, 
 
 | Decision | Choice | Alternatives | Rationale |
 | --- | --- | --- | --- |
-| Trust "met" from the first pass | Yes, re-check only "not met" regions (proposed) | Re-check everything; spot checks | 96 verdicts, no false "met" from any model; MC6 keeps a spot check open |
-| Window size | Bounded by matched words, padded to 25 s, merged under 20 s apart (proposed) | A fixed 1 to 2 minutes either side | Whisper costs per 30 s block; the bounds are where the missing text must be |
-| Whole-chapter fallback | Above 60% of the chapter (proposed) | Always windows | Near that point the windows cost as much as the whole |
-| Splice, then re-align | The verdict comes from the unchanged rules over merged words (proposed) | Let the second model overrule a region directly | One set of rules; the result is reproducible from cached words |
+| Open questions MC1 to MC7 | The owner adopted every recommendation (2026-09-23) | - | Recorded on each question above |
+| Trust "met" from the first pass | Yes, re-check only "not met" regions (adopted) | Re-check everything; spot checks | 96 verdicts, no false "met" from any model; MC6 keeps a spot check open |
+| Window size | Bounded by matched words, padded to 25 s, merged under 20 s apart (adopted) | A fixed 1 to 2 minutes either side | Whisper costs per 30 s block; the bounds are where the missing text must be |
+| Whole-chapter fallback | Above 60% of the chapter (adopted) | Always windows | Near that point the windows cost as much as the whole |
+| Splice, then re-align | The verdict comes from the unchanged rules over merged words (adopted) | Let the second model overrule a region directly | One set of rules; the result is reproducible from cached words |
 | Model and staleness | Keep Q13 (ADR 0128) | Put the model pair in the parameter hash | A better re-check should not make older results stale |
 
 ## Research Summary
@@ -163,4 +164,4 @@ Cross-cutting: each phase follows `CLAUDE.md`: plan, `change-impact-scan`, TDD, 
 ---
 
 *Generated: 2026-09-23*
-*Status: DRAFT - open questions MC1 to MC7 for the owner*
+*Status: READY - open questions MC1 to MC7 answered (2026-09-23); no phase started*

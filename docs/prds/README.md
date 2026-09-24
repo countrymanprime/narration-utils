@@ -75,7 +75,7 @@ Phase counts are the rows of each PRD's phase table.
 | [Public App Demo on GitHub Pages](public-app-demo.prd.md) | Feature | 2 | None; extends `pages.yml` beyond `release-readiness-provisioning-and-docs-site.prd.md` Phases 9-13 |
 | [Audacity Integration](audacity-integration.prd.md) | Feature (phases 0, 3, 5 and 10 delivered; remaining phases 1 and 2, the owner's spikes, then 4 and 6 to 9) | 11 (0-10) | None; corrects the "Audacity adapters" deferral of `docs/roadmap.md` and `config/roadmap.json` (D23) |
 | [Native Recording Suite](native-recording-suite.prd.md) | Feature | 6 | None; long-term/deferred like the Audacity adapters in `docs/roadmap.md`, coexists with the REAPER bridge |
-| [Recording Check Model Cascade](recording-check-model-cascade.prd.md) | Feature (draft, open questions MC1 to MC7) | 5 | None; extends the delivered recording check ([steady state](../utilities/recording-coverage.md)) with a fast first pass and re-checks of the missing regions |
+| [Recording Check Model Cascade](recording-check-model-cascade.prd.md) | Feature (open questions answered; no phase started) | 5 | None; extends the delivered recording check ([steady state](../utilities/recording-coverage.md)) with a fast first pass and re-checks of the missing regions |
 | DAW Selection and Acquisition (PRD deleted, delivered) | Feature | 4 | None; steady state in [the DAW catalog and "Get it" flow](../architecture/daw-integration.md#the-daw-catalog-and-get-it-flow); `git log --diff-filter=D -- docs/prds/daw-selection-and-acquisition.prd.md` finds it |
 | [CI Pipeline Speed](ci-pipeline-speed.prd.md) | Feature (tooling) | 8 (0-7) | None |
 
