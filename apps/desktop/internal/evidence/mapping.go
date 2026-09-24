@@ -140,6 +140,79 @@ func (s *MappingStore) Clear(documentID, trackGUID string) error {
 	return s.writeLocked(file)
 }
 
+// ChapterLinkSet is SetChapter's answer: the link as written, and the link
+// the track held for another chapter before, if any (the chapter that lost
+// its track, so the UI can name it).
+type ChapterLinkSet struct {
+	Link      TrackMapping  `json:"link"`
+	Displaced *TrackMapping `json:"displaced"`
+}
+
+// SetChapter makes trackGUID chapterID's one confirmed link
+// (chapter-track-link-control PRD Phase 1, TL3 A: one track per chapter). In
+// one locked write it removes every link chapterID holds and every link on
+// trackGUID, then appends the new one, so a relink replaces rather than adds
+// (Confirm's upsert by track left the old track linked too). A link the
+// track held for a different chapter is returned as Displaced.
+func (s *MappingStore) SetChapter(documentID, chapterID, chapterTitle, trackGUID string) (ChapterLinkSet, error) {
+	if documentID == "" || trackGUID == "" || chapterID == "" {
+		return ChapterLinkSet{}, fmt.Errorf("a confirmed mapping needs a document, a track and a chapter")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	file := s.readLocked(documentID)
+	var displaced *TrackMapping
+	kept := make([]TrackMapping, 0, len(file.Mappings)+1)
+	for _, existing := range file.Mappings {
+		switch {
+		case existing.TrackGUID == trackGUID && existing.ChapterID != chapterID:
+			previous := existing
+			displaced = &previous
+		case existing.TrackGUID == trackGUID, existing.ChapterID == chapterID:
+		default:
+			kept = append(kept, existing)
+		}
+	}
+	link := TrackMapping{TrackGUID: trackGUID, ChapterID: chapterID, ChapterTitle: chapterTitle, ConfirmedAt: s.clock()}
+	file.DocumentID = documentID
+	file.Mappings = append(kept, link)
+	if err := s.writeLocked(file); err != nil {
+		return ChapterLinkSet{}, err
+	}
+	return ChapterLinkSet{Link: link, Displaced: displaced}, nil
+}
+
+// ClearChapter removes every link chapterID holds for documentID and returns
+// the removed links. A chapter with no link is not an error (Clear's rule).
+func (s *MappingStore) ClearChapter(documentID, chapterID string) ([]TrackMapping, error) {
+	if documentID == "" || chapterID == "" {
+		return nil, fmt.Errorf("clearing a chapter's links needs a document and a chapter")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	file := s.readLocked(documentID)
+	var removed []TrackMapping
+	kept := make([]TrackMapping, 0, len(file.Mappings))
+	for _, existing := range file.Mappings {
+		if existing.ChapterID == chapterID {
+			removed = append(removed, existing)
+		} else {
+			kept = append(kept, existing)
+		}
+	}
+	if len(removed) == 0 {
+		return nil, nil
+	}
+	file.DocumentID = documentID
+	file.Mappings = kept
+	if err := s.writeLocked(file); err != nil {
+		return nil, err
+	}
+	return removed, nil
+}
+
 // List returns every confirmed link for documentID, sorted by TrackGUID for
 // a stable order. A document with no file yet, or whose stored file belongs
 // to a different (stale) documentID, reads as an empty list - never an

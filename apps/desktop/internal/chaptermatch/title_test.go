@@ -19,6 +19,11 @@ type parityCases struct {
 		Input  string   `json:"input"`
 		Tokens []string `json:"tokens"`
 	} `json:"normalizedTokens"`
+	LabelTokens []struct {
+		Input  string   `json:"input"`
+		Tokens []string `json:"tokens"`
+		Marker Marker   `json:"marker"`
+	} `json:"labelTokens"`
 	Matches []struct {
 		Name     string   `json:"name"`
 		Chapters []string `json:"chapters"`
@@ -52,6 +57,19 @@ func TestNormalizedTokensMatchThePythonMatcher(t *testing.T) {
 		}
 		if !reflect.DeepEqual(got, c.Tokens) {
 			t.Errorf("NormalizedTokens(%q) = %q, want %q", c.Input, got, c.Tokens)
+		}
+	}
+}
+
+func TestLabelTokensMatchThePythonMatcher(t *testing.T) {
+	cases := loadParity(t).LabelTokens
+	if len(cases) == 0 {
+		t.Fatal("the parity file holds no labelTokens cases")
+	}
+	for _, c := range cases {
+		tokens, marker := LabelTokens(c.Input)
+		if !reflect.DeepEqual(tokens, c.Tokens) || marker != c.Marker {
+			t.Errorf("LabelTokens(%q) = %q %q, want %q %q", c.Input, tokens, marker, c.Tokens, c.Marker)
 		}
 	}
 }

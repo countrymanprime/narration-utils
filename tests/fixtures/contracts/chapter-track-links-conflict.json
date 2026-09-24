@@ -1,0 +1,152 @@
+{
+  "chapters": [
+    {
+      "candidates": [],
+      "chapterId": "c-0001",
+      "chapterTitle": "Chapter I: Down the Rabbit-Hole",
+      "links": [
+        {
+          "chapterId": "c-0001",
+          "chapterTitle": "Chapter I: Down the Rabbit-Hole",
+          "confirmedAt": "2026-09-21T10:00:00Z",
+          "trackGuid": "{DEADBEEF-0000-4000-8000-000000000000}"
+        }
+      ],
+      "recordedEnd": null,
+      "status": "none",
+      "track": null,
+      "warnings": [
+        "confirmed-track-missing"
+      ]
+    },
+    {
+      "candidates": [
+        {
+          "region": null,
+          "score": 1,
+          "source": "confirmed",
+          "trackGuid": "{22222222-2222-4222-8222-222222222222}",
+          "trackIndex": 1,
+          "trackName": "Chapter II"
+        },
+        {
+          "region": null,
+          "score": 1,
+          "source": "confirmed",
+          "trackGuid": "{33333333-3333-4333-8333-333333333333}",
+          "trackIndex": 2,
+          "trackName": "Chapter II"
+        }
+      ],
+      "chapterId": "c-0002",
+      "chapterTitle": "Chapter II: The Pool of Tears",
+      "links": [
+        {
+          "chapterId": "c-0002",
+          "chapterTitle": "Chapter II: The Pool of Tears",
+          "confirmedAt": "2026-09-21T10:00:00Z",
+          "trackGuid": "{22222222-2222-4222-8222-222222222222}"
+        },
+        {
+          "chapterId": "c-0002",
+          "chapterTitle": "Chapter II: The Pool of Tears",
+          "confirmedAt": "2026-09-21T10:00:00Z",
+          "trackGuid": "{33333333-3333-4333-8333-333333333333}"
+        }
+      ],
+      "recordedEnd": null,
+      "status": "ambiguous",
+      "track": null,
+      "warnings": [
+        "confirmed-links-conflict"
+      ]
+    },
+    {
+      "candidates": [],
+      "chapterId": "c-0003",
+      "chapterTitle": "Chapter III: A Caucus-Race and a Long Tale",
+      "links": [
+        {
+          "chapterId": "c-0003",
+          "chapterTitle": "Chapter III: A Caucus-Race and a Long Tale",
+          "confirmedAt": "2026-09-21T10:00:00Z",
+          "trackGuid": "{11111111-1111-4111-8111-111111111111}"
+        }
+      ],
+      "recordedEnd": {
+        "approximate": false,
+        "itemGuid": "{22222222-1111-4111-8111-111111111111}",
+        "projectTime": 17,
+        "sourceAvailable": true,
+        "sourceFile": "C:/Projects/Alice/media/ch1.wav",
+        "sourceStart": 2,
+        "sourceTime": 9.5,
+        "supported": true,
+        "takeGuid": "{32222222-1111-4111-8111-111111111111}"
+      },
+      "status": "confirmed",
+      "track": {
+        "region": null,
+        "score": 1,
+        "source": "confirmed",
+        "trackGuid": "{11111111-1111-4111-8111-111111111111}",
+        "trackIndex": 0,
+        "trackName": "Chapter I"
+      },
+      "warnings": [
+        "confirmed-track-renamed"
+      ]
+    }
+  ],
+  "message": "",
+  "project": "ready",
+  "projectFile": "C:/Projects/Alice/Alice.rpp",
+  "savedAt": "2026-09-21T10:00:00Z",
+  "tracks": [
+    {
+      "color": "",
+      "guid": "{11111111-1111-4111-8111-111111111111}",
+      "index": 0,
+      "itemCount": 2,
+      "linkedChapterId": "c-0003",
+      "missingSourceCount": 0,
+      "muted": false,
+      "name": "Chapter I",
+      "playableCount": 2,
+      "soloed": false,
+      "span": {
+        "end": 17,
+        "start": 0
+      },
+      "unsupportedCount": 0
+    },
+    {
+      "color": "",
+      "guid": "{22222222-2222-4222-8222-222222222222}",
+      "index": 1,
+      "itemCount": 0,
+      "linkedChapterId": "c-0002",
+      "missingSourceCount": 0,
+      "muted": false,
+      "name": "Chapter II",
+      "playableCount": 0,
+      "soloed": false,
+      "span": null,
+      "unsupportedCount": 0
+    },
+    {
+      "color": "",
+      "guid": "{33333333-3333-4333-8333-333333333333}",
+      "index": 2,
+      "itemCount": 0,
+      "linkedChapterId": "c-0002",
+      "missingSourceCount": 0,
+      "muted": false,
+      "name": "Chapter II",
+      "playableCount": 0,
+      "soloed": false,
+      "span": null,
+      "unsupportedCount": 0
+    }
+  ]
+}

@@ -31,6 +31,8 @@ export const chapterSchema = z.object({
   index: z.number(),
   wordCount: z.number(),
   recordedFraction: z.number().min(0).max(1).optional(),
+  recordedSeconds: z.number().nonnegative().optional(),
+  recordedUnavailable: z.enum(['unlinked', 'multiple_tracks', 'track_missing', 'no_project']).optional(),
   status: z.enum(['not_started', 'recording', 'editing', 'proofing', 'finalized']),
   contentKind: contentKindFromWire,
   paragraphIds: z.array(z.object({ id: z.string(), index: z.number() })).optional(),

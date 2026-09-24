@@ -390,3 +390,61 @@ func TestChaptersUnmeasuredKeepsTheStatusesAndNeverAsksForTheFractions(t *testin
 		}
 	}
 }
+
+// actual-recorded-column PRD Phase 2 (AR2, AR3): a chapter's recordedSeconds comes only from the recorded-length
+// provider (the linked track's audio in the saved project), and a chapter the provider cannot answer carries the
+// reason instead. The status never fills it, and ChaptersUnmeasured never asks.
+func TestRecordedSecondsComesOnlyFromTheRecordedLengthProvider(t *testing.T) {
+	service, chapterID, _ := importReaderFixture(t)
+	chapters, err := service.Chapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, chapter := range chapters {
+		if _, ok := chapter["recordedSeconds"]; ok {
+			t.Fatalf("with no provider no chapter may carry recordedSeconds: %#v", chapter)
+		}
+	}
+	other := text(chapters[1], "id")
+	calls := 0
+	service.SetRecordedLengths(func() map[string]RecordedLength {
+		calls++
+		return map[string]RecordedLength{chapterID: {Seconds: 2520}, other: {Unavailable: RecordedUnlinked}}
+	})
+	if _, err := service.SetChapterStatus(chapterID, "recording"); err != nil {
+		t.Fatal(err)
+	}
+	calls = 0
+	chapters, err = service.Chapters()
+	if err != nil || calls != 1 {
+		t.Fatalf("Chapters: err = %v, provider calls = %d; want one call", err, calls)
+	}
+	for _, chapter := range chapters {
+		seconds, hasSeconds := chapter["recordedSeconds"]
+		reason, hasReason := chapter["recordedUnavailable"]
+		switch text(chapter, "id") {
+		case chapterID:
+			if seconds != 2520.0 || hasReason {
+				t.Fatalf("linked chapter = %#v, want 2520 s and no reason", chapter)
+			}
+		case other:
+			if hasSeconds || reason != "unlinked" {
+				t.Fatalf("unlinked chapter = %#v, want the reason and no seconds", chapter)
+			}
+		default:
+			if hasSeconds || hasReason {
+				t.Fatalf("a chapter the provider left out = %#v, want neither field", chapter)
+			}
+		}
+	}
+	calls = 0
+	unmeasured, err := service.ChaptersUnmeasured()
+	if err != nil || calls != 0 {
+		t.Fatalf("ChaptersUnmeasured: err = %v, provider calls = %d; want none", err, calls)
+	}
+	for _, chapter := range unmeasured {
+		if _, ok := chapter["recordedSeconds"]; ok {
+			t.Fatalf("ChaptersUnmeasured chapter = %#v, want no recordedSeconds", chapter)
+		}
+	}
+}

@@ -52,6 +52,7 @@ type Service struct {
 	onEnd    atomic.Pointer[func(ImportJob)]
 	manCache atomic.Pointer[manuscriptCache]
 	recorded atomic.Pointer[RecordedFractions]
+	lengths  atomic.Pointer[RecordedLengths]
 }
 
 // RecordedFractions supplies the measured share of each chapter's words present, by chapter id: what fills a chapter
@@ -71,6 +72,44 @@ func (s *Service) recordedFractions() map[string]float64 {
 		}
 	}
 	return map[string]float64{}
+}
+
+// RecordedUnavailable says why a chapter has no recorded length (actual-recorded-column PRD AR3 A, AR6 A).
+type RecordedUnavailable string
+
+const (
+	// RecordedUnlinked: no REAPER track is linked to the chapter.
+	RecordedUnlinked RecordedUnavailable = "unlinked"
+	// RecordedMultipleTracks: the chapter is linked to more than one track (the recording check's multiple_tracks).
+	RecordedMultipleTracks RecordedUnavailable = "multiple_tracks"
+	// RecordedTrackMissing: the linked track is not in the saved project.
+	RecordedTrackMissing RecordedUnavailable = "track_missing"
+	// RecordedNoProject: no saved REAPER project could be read.
+	RecordedNoProject RecordedUnavailable = "no_project"
+)
+
+// RecordedLength is one chapter's recorded audio: Seconds, or why there is none (Unavailable set).
+type RecordedLength struct {
+	Seconds     float64
+	Unavailable RecordedUnavailable
+}
+
+// RecordedLengths supplies each chapter's recorded length from its confirmed track in the saved project, by chapter
+// id: what fills a chapter payload's recordedSeconds, or recordedUnavailable (actual-recorded-column PRD Phase 2). A
+// chapter it leaves out carries neither. The host wires it in, so this package never reads a REAPER project.
+type RecordedLengths func() map[string]RecordedLength
+
+// SetRecordedLengths says where recorded lengths come from; nil means none are known.
+func (s *Service) SetRecordedLengths(fn RecordedLengths) { s.lengths.Store(&fn) }
+
+// recordedLengths asks the provider once for a whole payload. Without one it is empty.
+func (s *Service) recordedLengths() map[string]RecordedLength {
+	if fn := s.lengths.Load(); fn != nil && *fn != nil {
+		if lengths := (*fn)(); lengths != nil {
+			return lengths
+		}
+	}
+	return map[string]RecordedLength{}
 }
 
 // The parsed manuscript, kept only as long as the file's own mtime and size say it is still the
