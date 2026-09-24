@@ -27,10 +27,27 @@ export type CreditValues = {
   narrator?: string;
 };
 
+/** Confidence is how sure a DetectedCandidate is (credits-token-setup-and-front-matter-detection.prd.md): "high" when
+ * two sources agree or an explicit marker was seen, "medium" for one pattern with a positional cue, "low" for a
+ * descriptor-derived guess or a lone, unconfirmed source. */
+export type Confidence = 'high' | 'medium' | 'low';
+
+/** One credits token value detected from the manuscript's front matter or the stored source file's own metadata
+ * (Phase 1 of credits-token-setup-and-front-matter-detection.prd.md): never written anywhere on its own, only ever
+ * offered (ADR 0019). token is a credits.Values field name ("Title", "Author", "Series", "BookNumber", "Year",
+ * "CopyrightHolder", "Publisher", "Subtitle"), not the render token's bracket form. */
+export type DetectedCandidate = { token: string; value: string; source: string; confidence: Confidence; lines?: string[] };
+
 /** CreditsProjectValues' payload: the project's own saved values, the global narrator default (General.narrator_name),
- * and title/author suggestions seeded from the manuscript's cover lines and docProps (Open Question C3) - never
- * written back, always editable. */
-export type CreditsProjectValuesResult = { values: CreditValues; narratorGlobal: string; suggestions: Record<string, string> };
+ * and title/author suggestions seeded from the manuscript's front matter and file metadata (Open Question C3) - never
+ * written back, always editable. detected carries the same candidates with their source and confidence; suggestions
+ * alone stays wire-compatible with what this always returned. */
+export type CreditsProjectValuesResult = {
+  values: CreditValues;
+  narratorGlobal: string;
+  suggestions: Record<string, string>;
+  detected: DetectedCandidate[];
+};
 
 /** One chapter's rendered announcement (Phase 5, Open Question C8, ADR 0151): `chapter` is the chapter's heading, which
  * fills [Chapter]; its subtitle fills [Chapter Title]. */

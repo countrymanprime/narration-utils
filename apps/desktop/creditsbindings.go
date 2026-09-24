@@ -47,9 +47,12 @@ func (h *Host) CreditsDeleteTemplate(id string) (string, error) {
 
 // CreditsProjectValues returns the current project's own credit token
 // values, the global narrator default, and suggestions seeded from the
-// imported manuscript's cover lines and docProps (C3) for any field the
-// project has not set yet. It never writes anything: suggestions are for the
-// narrator to accept or ignore.
+// imported manuscript's front matter and file metadata (C3, amended by
+// credits-token-setup-and-front-matter-detection.prd.md Phase 1) for any
+// field the project has not set yet. It never writes anything: suggestions
+// are for the narrator to accept or ignore. detected carries the same
+// candidates with their source and confidence (additive; suggestions alone
+// stays wire-compatible with what this always returned).
 func (h *Host) CreditsProjectValues() (string, error) {
 	svc := h.services()
 	projectFolder := svc.config.projectFolder
@@ -69,6 +72,7 @@ func (h *Host) CreditsProjectValues() (string, error) {
 		"values":         values,
 		"narratorGlobal": narratorGlobal,
 		"suggestions":    credits.SuggestFromManuscript(projectFolder),
+		"detected":       credits.Detect(projectFolder),
 	}, nil)
 }
 

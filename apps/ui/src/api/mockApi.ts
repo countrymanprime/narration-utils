@@ -1897,6 +1897,10 @@ export function createMockApi(
       values: wireClone(creditValues),
       narratorGlobal: settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '',
       suggestions: { Title: 'Alice’s Adventures in Wonderland', Author: 'Lewis Carroll' },
+      detected: [
+        { token: 'Title', value: 'Alice’s Adventures in Wonderland', source: 'the title page', confidence: 'high' },
+        { token: 'Author', value: 'Lewis Carroll', source: 'the byline', confidence: 'high' },
+      ],
     }),
     saveCreditsProjectValues: async (values) => {
       creditValues = wireClone(values);
