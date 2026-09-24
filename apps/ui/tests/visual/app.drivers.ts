@@ -93,7 +93,7 @@ async function clickVisible(page: Page, role: Parameters<Page['getByRole']>[0], 
     .click();
 }
 
-type AppPage = 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Review' | 'Settings';
+type AppPage = 'Home' | 'Manuscript' | 'Proofing' | 'Story Bible' | 'Teleprompter' | 'Tracks' | 'Review' | 'Delivery' | 'Settings';
 
 // Every page opens with the shared `Heading` primitive, an <h1>: it is what proves the page has arrived. Home's is "Welcome back".
 const PAGE_HEADING: Record<AppPage, string> = {
@@ -104,6 +104,7 @@ const PAGE_HEADING: Record<AppPage, string> = {
   Teleprompter: 'Teleprompter',
   Tracks: 'Tracks',
   Review: 'Review',
+  Delivery: 'Delivery',
   Settings: 'Settings',
 };
 
@@ -219,6 +220,34 @@ async function confirmApprovedMarker(page: Page): Promise<Locator> {
   const dialog = page.getByRole('alertdialog', { name: 'Add a marker in REAPER' });
   await dialog.waitFor();
   return dialog;
+}
+
+// Opens Delivery (after a reload with mock seams, when given) and waits for the narrator's limits to have been read, so the
+// summary shows what the page judges against (diagnostics PRD Phase 5).
+async function openDelivery(page: Page, query = ''): Promise<void> {
+  if (query) {
+    await page.goto(`/${query}`);
+    await settlePage(page);
+  }
+  await goToPage(page, 'Delivery');
+  await page.getByText(/^(No limits set\.|These are your own limits)/).waitFor();
+}
+
+// Opens Delivery and measures the mock picker's three files (two WAVs, one of them silent, and an MP3). The mock reads a quarter of
+// a file per poll, so a measurement that is not held runs to its end in a few seconds.
+async function measureOnDelivery(page: Page, query = ''): Promise<void> {
+  await openDelivery(page, query);
+  await page.getByRole('button', { name: 'Choose files to measure…' }).click();
+  await page.getByRole('table', { name: 'Measurements' }).waitFor();
+}
+
+// Waits for the measurement to end with `message` on the page (the unheld mock reads three files in twelve polls, about six
+// seconds), then dismisses the toast the same end raises (job:ended, ADR 0076), which would otherwise race the screenshot.
+async function measurementEnded(page: Page, message: string | RegExp): Promise<void> {
+  await page.getByRole('region', { name: 'Measurements' }).getByText(message).waitFor({ timeout: 15_000 });
+  const dismissToast = page.getByRole('button', { name: 'Dismiss message' });
+  await dismissToast.click({ timeout: 1_000 }).catch(() => undefined);
+  await dismissToast.waitFor({ state: 'detached' });
 }
 
 // Opens Find pickups and duplicates (take review Phase 5) once the tracks have filled the form.
@@ -1526,6 +1555,35 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await dialog.getByRole('button', { name: 'Add marker', exact: true }).click();
       await dialog.waitFor({ state: 'detached' });
       await showReaperControls(page, page.getByText(/^Marker added in REAPER: MISREAD:/));
+    },
+  },
+  delivery: {
+    empty: async (page) => {
+      await openDelivery(page);
+      await page.getByText(/^Nothing measured yet/).waitFor();
+    },
+    running: async (page) => {
+      await measureOnDelivery(page, '?mockMeasure=running');
+      await page.getByRole('progressbar', { name: 'Measuring' }).waitFor();
+      await page.getByText('Measuring Chapter 01.wav (1 of 3).').waitFor();
+    },
+    measured: async (page) => {
+      await measureOnDelivery(page);
+      await measurementEnded(page, 'Measured 2 of 3 files; 1 could not be measured.');
+    },
+    'outside-limits': async (page) => {
+      await measureOnDelivery(page, '?mockDeliveryLimits=1');
+      await measurementEnded(page, 'Measured 2 of 3 files; 1 could not be measured.');
+      await page.getByText('3 values are outside your limits.').waitFor();
+    },
+    cancelled: async (page) => {
+      await measureOnDelivery(page, '?mockMeasure=running');
+      await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+      await page.getByText(/^Measurement cancelled\./).waitFor();
+    },
+    error: async (page) => {
+      await measureOnDelivery(page, '?mockMeasure=fails');
+      await measurementEnded(page, /^The measurement stopped unexpectedly\. Choose/);
     },
   },
   teleprompter: {

@@ -914,6 +914,43 @@ export const STATE_CATALOG: StateEntry[] = [
     ...KEEPS_DESKTOP_SCROLL,
   },
 
+  // Delivery (diagnostics-delivery-and-cleanup-tools.prd.md Phase 5)
+  {
+    page: 'delivery',
+    state: 'empty',
+    description:
+      'Delivery, nothing measured yet and no limits set - "No limits set", every value only reported so nothing reads as a pass (ADR 0025, 0155), and Choose files to measure',
+  },
+  {
+    page: 'delivery',
+    state: 'running',
+    description:
+      'Delivery, a measurement part way through (?mockMeasure=running) - its real progress from the bytes read (ADR 0015), what it is reading, Cancel, and each file waiting or being measured',
+  },
+  {
+    page: 'delivery',
+    state: 'measured',
+    description:
+      'Delivery, three picked files measured with no limits set - every value with its unit, a silent render whose levels are "Not measurable" (never a number) with the reason under the table, and a file it could not read with why',
+  },
+  {
+    page: 'delivery',
+    state: 'outside-limits',
+    description:
+      'Delivery with the project’s own limits set (?mockDeliveryLimits=1) - the limits summary, and the values outside them marked above or below the limit in words as well as colour, with their count',
+  },
+  {
+    page: 'delivery',
+    state: 'cancelled',
+    description: 'Delivery, a running measurement cancelled - "Measurement cancelled.", with every file not yet read saying so',
+  },
+  {
+    page: 'delivery',
+    state: 'error',
+    description:
+      'Delivery, a measurement that broke (?mockMeasure=fails) - the alert asking to choose the files again, the reason on the file it broke on, the files after it not read',
+  },
+
   // Settings
   { page: 'settings', state: 'global-general', description: 'Settings, Global scope / General category', ...REFLOW },
   { page: 'settings', state: 'global-appearance', description: 'Settings, Global scope / Appearance category (theme switcher)', ...REFLOW },

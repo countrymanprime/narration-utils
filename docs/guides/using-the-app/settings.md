@@ -39,7 +39,7 @@ and tail together (ACX asks for 1 to 5 seconds at each end of every file). In bo
   category says **No limits set** until you do; a measurement with no limit is reported without being
   checked. Each box shows its unit and allowed range, says what is wrong with a value it cannot save,
   and refuses a lowest limit above its highest. Empty a box to remove a limit; in This Project, a
-  blank box uses the Global limit.
+  blank box uses the Global limit. The [Delivery](delivery.md) page measures files against them.
 - **TTS** picks the provider and the preview voice used to [hear a name](story-bible.md#hearing-a-name),
   with **Remove local voice…** once the voice is installed.
 
@@ -170,4 +170,4 @@ If Narration Utils will not start after an update and the program file is missin
 
 ---
 
-[← Review](review.md) · [Index](README.md)
+[← Delivery](delivery.md) · [Index](README.md)

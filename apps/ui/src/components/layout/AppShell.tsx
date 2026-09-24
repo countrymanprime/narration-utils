@@ -5,6 +5,7 @@ import {
   faBookOpen,
   faFileLines,
   faFolder,
+  faGaugeHigh,
   faGear,
   faHouse,
   faLayerGroup,
@@ -33,6 +34,9 @@ const NAV = [
   // Every check's findings in one queue (review-dashboard-and-findings-adoption.prd.md Phase 5). Not gated: take-review findings need
   // no manuscript, and the page says itself when there is nothing to review yet.
   { name: 'Review', path: '/review', icon: faListCheck, requiresManuscript: false, requiresDaw: false },
+  // Measuring rendered chapter files (diagnostics-delivery-and-cleanup-tools.prd.md Phase 5). Not gated: it reads files the narrator
+  // picks, so it needs neither a manuscript nor a REAPER project.
+  { name: 'Delivery', path: '/delivery', icon: faGaugeHigh, requiresManuscript: false, requiresDaw: false },
 ];
 const isActivePath = (pathname: string, path: string) => (path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`));
 

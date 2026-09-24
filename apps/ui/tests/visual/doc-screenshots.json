@@ -460,5 +460,33 @@
     "viewport": "desktop",
     "docName": "review-take-comparison-measurements",
     "caption": "Review - a take comparison's audio: clipping, room noise, level, length and pauses per read, side by side, never added up"
+  },
+  {
+    "page": "delivery",
+    "state": "empty",
+    "viewport": "desktop",
+    "docName": "delivery-empty",
+    "caption": "Delivery - nothing measured yet, and no limits set so every value is only reported"
+  },
+  {
+    "page": "delivery",
+    "state": "running",
+    "viewport": "desktop",
+    "docName": "delivery-running",
+    "caption": "Delivery - a measurement in progress, with its real progress and Cancel"
+  },
+  {
+    "page": "delivery",
+    "state": "measured",
+    "viewport": "desktop",
+    "docName": "delivery-measured",
+    "caption": "Delivery - three files measured: every value with its unit, a silent render not measurable, an MP3 that could not be read"
+  },
+  {
+    "page": "delivery",
+    "state": "outside-limits",
+    "viewport": "desktop",
+    "docName": "delivery-outside-limits",
+    "caption": "Delivery - measured values against the project's own limits, three of them outside"
   }
 ]

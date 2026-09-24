@@ -147,7 +147,22 @@ const mockReaper = (['standalone', 'not-running', 'stale', 'recording', 'outdate
 const mockTakeReviewScanHold = mockParams.get('mockTakeReviewScan') === 'running';
 // `?mockTakeComparison=running` does the same for a take comparison (take review Phase 10).
 const mockTakeComparisonHold = mockParams.get('mockTakeComparison') === 'running';
+// `?mockMeasure=running|fails` holds a started measurement part way through (so the Delivery page's progress and Cancel can be seen),
+// or breaks it at its first poll (diagnostics-delivery-and-cleanup-tools.prd.md Phases 1 and 5). `?mockDeliveryLimits=1` boots the
+// project with its own delivery limits set, so the page's limits summary and the values outside them can be seen without saving
+// them in Settings first. The numbers only exercise the page: no distributor's numbers ship (ADR 0025).
+const mockMeasure = (['running', 'fails'] as const).find((seed) => seed === mockParams.get('mockMeasure'));
+const MOCK_DELIVERY_LIMITS = {
+  integrated_lufs_min: '-23',
+  integrated_lufs_max: '-18',
+  rms_dbfs_min: '-20',
+  true_peak_dbtp_max: '-3.5',
+  noise_floor_dbfs_max: '-70',
+};
+const mockDeliveryLimits = mockParams.has('mockDeliveryLimits');
 const mockInitial = {
+  ...(mockMeasure ? { measure: mockMeasure === 'running' ? ('hold' as const) : ('fails' as const) } : {}),
+  ...(mockDeliveryLimits ? { deliveryLimits: MOCK_DELIVERY_LIMITS } : {}),
   ...(mockTakeReviewScanHold ? { takeReviewScanHold: true } : {}),
   ...(mockTakeComparisonHold ? { takeComparisonHold: true } : {}),
   ...(mockReaper ? { reaper: mockReaper } : {}),
