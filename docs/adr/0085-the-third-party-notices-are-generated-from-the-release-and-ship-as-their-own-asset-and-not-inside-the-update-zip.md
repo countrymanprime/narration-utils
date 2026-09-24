@@ -1,6 +1,6 @@
 # 0085. The third-party notices are generated from the release and ship as their own asset, not inside the update zip
 
-**Status:** Accepted
+**Status:** Accepted (its asset names are superseded by [ADR 0197](0197-every-release-asset-name-carries-the-bare-version.md))
 **Date:** 2026-09-21
 
 ## Context

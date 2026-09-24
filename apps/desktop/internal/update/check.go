@@ -130,7 +130,7 @@ func (c *Checker) revalidate(releases []Release) []Release {
 	var kept []Release
 	for _, release := range releases {
 		version, candidate, err := ParseTag(release.Tag)
-		if err != nil || release.Asset.Name != c.Platform.Asset || release.Checksum.Name != c.Platform.Checksum {
+		if err != nil || release.Asset.Name != c.Platform.AssetName(version) || release.Checksum.Name != c.Platform.ChecksumName(version) {
 			continue
 		}
 		if release.Asset.Size <= 0 || release.Asset.Size > MaxAssetBytes || release.Checksum.Size <= 0 || release.Checksum.Size > MaxChecksumBytes {
@@ -179,7 +179,7 @@ func (c *Checker) Check(ctx context.Context) (State, error) {
 	}
 	defer c.checking.Store(false)
 	state := c.State()
-	if c.Platform.Asset == "" {
+	if c.Platform.Key == "" {
 		return state, ErrNoPlatform
 	}
 	// A rate limit says when to come back, and that holds for a click as well as for the automatic check.
@@ -302,7 +302,7 @@ func (c *Checker) rateLimitReset(header string) time.Time {
 // Due reports whether the automatic check should run now: switched on, past any rate-limit wait, and a day since the last
 // attempt (two hours after one that failed). A clock set back never leaves the check silent for good.
 func (c *Checker) Due(enabled bool, now time.Time) bool {
-	if !enabled || c.Platform.Asset == "" {
+	if !enabled || c.Platform.Key == "" {
 		return false
 	}
 	state := c.State()
@@ -369,7 +369,7 @@ func (c *Checker) Status(channel Channel) Status {
 
 // Newer is the newest release on the channel if it is newer than the running version: the release an update would install.
 func (c *Checker) Newer(channel Channel) (Release, bool) {
-	if c.Platform.Asset == "" {
+	if c.Platform.Key == "" {
 		return Release{}, false
 	}
 	release, ok := Newest(c.State().Releases, channel)

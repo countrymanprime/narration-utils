@@ -62,7 +62,7 @@ type releaseServer struct {
 
 func newReleaseServer(t *testing.T, zipBody []byte) *releaseServer {
 	t.Helper()
-	fake := &releaseServer{zip: zipBody, checksum: func(body []byte) string { return sumHex(body) + "  " + windows.Asset + "\n" }}
+	fake := &releaseServer{zip: zipBody, checksum: func(body []byte) string { return sumHex(body) + "  " + windowsZip + "\n" }}
 	fake.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, ".sha256"):
@@ -92,8 +92,8 @@ func (f *releaseServer) release(version string) Release {
 	base := f.server.URL + "/download/v" + version + "/"
 	return Release{
 		Tag: "v" + version, Version: parsed,
-		Asset:    Asset{Name: windows.Asset, Size: int64(len(f.zip)), URL: base + windows.Asset},
-		Checksum: Asset{Name: windows.Checksum, Size: 100, URL: base + windows.Checksum},
+		Asset:    Asset{Name: windows.AssetName(parsed), Size: int64(len(f.zip)), URL: base + windows.AssetName(parsed)},
+		Checksum: Asset{Name: windows.ChecksumName(parsed), Size: 100, URL: base + windows.ChecksumName(parsed)},
 	}
 }
 
@@ -143,17 +143,17 @@ func TestStageRefusesEachWayTheDownloadCanBeWrong(t *testing.T) {
 	good := buildZip(t, map[string][]byte{stageExecutableName: goodExecutable()})
 	cases := map[string]func(*releaseServer){
 		"a checksum that does not match": func(f *releaseServer) {
-			f.checksum = func([]byte) string { return strings.Repeat("0", 64) + "  " + windows.Asset + "\n" }
+			f.checksum = func([]byte) string { return strings.Repeat("0", 64) + "  " + windowsZip + "\n" }
 		},
 		"a checksum for another file": func(f *releaseServer) {
-			f.checksum = func(b []byte) string { return sumHex(b) + "  narration-utils-linux-x64.tar.gz\n" }
+			f.checksum = func(b []byte) string { return sumHex(b) + "  narration-utils-0.2.7-linux-x64.tar.gz\n" }
 		},
 		"a checksum file that is not a checksum": func(f *releaseServer) {
 			f.checksum = func([]byte) string { return "<html>not found</html>" }
 		},
 		"an empty checksum file": func(f *releaseServer) { f.checksum = func([]byte) string { return "" } },
 		"a checksum in capitals is fine but one with a wrong length is not": func(f *releaseServer) {
-			f.checksum = func(b []byte) string { return sumHex(b)[:60] + "  " + windows.Asset + "\n" }
+			f.checksum = func(b []byte) string { return sumHex(b)[:60] + "  " + windowsZip + "\n" }
 		},
 		"a file that is not the size the release lists": func(f *releaseServer) {
 			f.zip = append(append([]byte{}, f.zip...), 0)
@@ -361,7 +361,7 @@ func TestStageRemovesWhatOlderUpdatesLeftBehind(t *testing.T) {
 func TestAPlatformThatDoesNotReplaceItselfStagesNothing(t *testing.T) {
 	fake := newReleaseServer(t, buildZip(t, map[string][]byte{stageExecutableName: goodExecutable()}))
 	stager := newStager(t)
-	stager.Platform = Platform{Key: "linux-x64", Asset: "narration-utils-linux-x64.tar.gz", Checksum: "narration-utils-linux-x64.tar.gz.sha256"}
+	stager.Platform = Platform{Key: "linux-x64", Extension: ".tar.gz"}
 	if _, err := stager.Stage(context.Background(), fake.release("0.2.7"), nil); err == nil {
 		t.Fatal("linux must not stage an update")
 	}
@@ -381,7 +381,7 @@ func TestAHugeChecksumFileIsNotReadPastItsBound(t *testing.T) {
 func TestAChecksumInCapitalsWithABinaryMarkerIsRead(t *testing.T) {
 	body := buildZip(t, map[string][]byte{stageExecutableName: goodExecutable()})
 	fake := newReleaseServer(t, body)
-	fake.checksum = func(b []byte) string { return strings.ToUpper(sumHex(b)) + " *" + windows.Asset + "\r\n" }
+	fake.checksum = func(b []byte) string { return strings.ToUpper(sumHex(b)) + " *" + windowsZip + "\r\n" }
 	if _, err := newStager(t).Stage(context.Background(), fake.release("0.2.7"), nil); err != nil {
 		t.Fatal(err)
 	}

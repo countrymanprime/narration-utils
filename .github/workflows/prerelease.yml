@@ -138,6 +138,7 @@ jobs:
       - name: Check the files are the ones the build recorded
         env:
           CHECKSUMS: ${{ needs.windows-build.outputs.checksums }}
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
           printf '%s\n' "$CHECKSUMS" > "$RUNNER_TEMP/checksums.txt"
           sha256sum --check --strict "$RUNNER_TEMP/checksums.txt"
@@ -148,7 +149,7 @@ jobs:
             echo "::error::release-assets holds $present files but the build recorded $recorded."
             exit 1
           fi
-          node scripts/release/assets.mjs verify release-assets
+          node scripts/release/assets.mjs verify release-assets "$VERSION"
       # Build provenance (SLSA Build L2) for everything a narrator can download (the zip, the setup program and their checksums, all in
       # release-assets), and for the executable inside the zip so it can be verified after extraction. The subjects are digests, checked
       # above against the ones the build job recorded. Before the prune and the release on purpose: if this step fails the run stops and

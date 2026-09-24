@@ -8,8 +8,8 @@ Unicode true
 ##  - Per user. No administrator prompt; the program goes under %LOCALAPPDATA%\Programs and the uninstall entry under HKCU. The app
 ##    replaces itself in place when it updates (docs/architecture/in-app-update.md) and needs an install folder it can write to.
 ##  - The program is narration-utils.exe, the name the REAPER launcher and the updater expect, not "Narration Utils.exe".
-##  - The setup file has an unversioned name, narration-utils-windows-x64-setup.exe (scripts/release/assets.mjs, and a test keeps the
-##    two equal), so it can be attested and promoted like every other release asset.
+##  - The setup file is built as narration-utils-windows-x64-setup.exe (scripts/release/assets.mjs, and a test keeps the two equal);
+##    packaging releases it as narration-utils-<version>-windows-x64-setup.exe, like every other release asset (docs/adr/0197).
 ##  - The Start Menu entries are always made: the app, and "for Audacity" (--daw Audacity, the Audacity launcher). The desktop
 ##    shortcut is a choice on the components page.
 ##  - The uninstaller removes only what the installer and the updater put in the install folder, never the folder's other contents

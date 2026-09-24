@@ -3,11 +3,15 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, writeFileSync } from 'node:fs';
 
+import { assetName, installerName, noticesName } from './assets.mjs';
+
 const candidate = process.argv[2] ?? process.env.RELEASE_TAG;
 if (!candidate) throw new Error('Provide a candidate tag as an argument or RELEASE_TAG.');
 const stableTags = execFileSync('git', ['tag', '--list', 'v[0-9]*', '--sort=-version:refname'], { encoding: 'utf8' })
   .split(/\r?\n/)
   .filter((tag) => tag && !tag.includes('-'));
+// The asset names carry the bare version, the same for a candidate and its promotion (docs/adr/0197).
+const version = candidate.replace(/^v/, '').replace(/-rc$/, '');
 const previous = stableTags.find((tag) => tag !== candidate) ?? '';
 const range = previous ? `${previous}..${candidate}` : candidate;
 const rows = execFileSync('git', ['log', '--format=%h%x1f%s', range], { encoding: 'utf8' })
@@ -32,11 +36,11 @@ for (const [key, title] of sections) {
 output.push(
   '## Installing on Windows',
   '',
-  'Download `narration-utils-windows-x64-setup.exe` and run it. It installs Narration Utils for your user account only (no administrator prompt) and adds a Start Menu entry (plus **Narration Utils for Audacity**, which opens the app ready for an Audacity 3.x project) and, if you leave it ticked, a desktop shortcut. Uninstall it from Settings > Apps; that removes the program and the shortcuts and leaves your settings, your downloaded voices and models and your project folders alone.',
+  `Download \`${installerName('windows-x64', version)}\` and run it. It installs Narration Utils for your user account only (no administrator prompt) and adds a Start Menu entry (plus **Narration Utils for Audacity**, which opens the app ready for an Audacity 3.x project) and, if you leave it ticked, a desktop shortcut. Uninstall it from Settings > Apps; that removes the program and the shortcuts and leaves your settings, your downloaded voices and models and your project folders alone.`,
   '',
   'This release is **unsigned**. Windows SmartScreen may say it "prevented an unrecognized app from starting": choose **More info**, then **Run anyway**. That warning is about the missing signature, not about a problem found in the file; to check the file came from this repository, follow the steps below.',
   '',
-  'Once installed, the app updates itself from these releases after you click **Install and restart** (Settings > About & updates). `narration-utils-windows-x64.zip` is that update package, not something to run by hand.',
+  `Once installed, the app updates itself from these releases after you click **Install and restart** (Settings > About & updates). \`${assetName('windows-x64', version)}\` is that update package, not something to run by hand.`,
   '',
 );
 // The program is AGPL-3.0-or-later (docs/adr/0039) and bundles GPL-family components, so the licences and the source offer are their own asset
@@ -44,7 +48,7 @@ output.push(
 output.push(
   '## Licences and source',
   '',
-  'Narration Utils is free software under the AGPL-3.0-or-later licence. `THIRD-PARTY-NOTICES.txt` on this release lists every third-party component in the program with its licence and licence text, includes the full AGPL text, and says where the complete source of this release is: this repository, at the tag this release was built from.',
+  `Narration Utils is free software under the AGPL-3.0-or-later licence. \`${noticesName('windows-x64', version)}\` on this release lists every third-party component in the program with its licence and licence text, includes the full AGPL text, and says where the complete source of this release is: this repository, at the tag this release was built from.`,
   '',
 );
 // Every asset is attested by the release workflow (docs/adr/0071); say how a narrator checks one.

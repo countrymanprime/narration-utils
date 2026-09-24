@@ -158,7 +158,7 @@ func TestACheckerBuiltForThisMachineUsesTheRealClockAndRepository(t *testing.T) 
 	if (&Checker{}).Clock().IsZero() {
 		t.Fatal("a checker with no clock uses the real one")
 	}
-	if platform, ok := CurrentPlatform(); ok && platform.Asset == "" {
+	if platform, ok := CurrentPlatform(); ok && platform.Extension == "" {
 		t.Fatal("a known platform has an asset name")
 	}
 }

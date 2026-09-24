@@ -37,9 +37,10 @@ func newFakeReleaseServer(t *testing.T, tags ...string) *fakeReleaseServer {
 	}
 	var releases []release
 	for _, tag := range tags {
+		prefix := "narration-utils-" + strings.TrimSuffix(strings.TrimPrefix(tag, "v"), "-rc") + "-"
 		releases = append(releases, release{Tag: tag, Prerelease: strings.HasSuffix(tag, "-rc"), PublishedAt: "2026-09-20T10:00:00Z", Assets: []asset{
-			{Name: "narration-utils-windows-x64.zip", Size: 400 << 20}, {Name: "narration-utils-windows-x64.zip.sha256", Size: 100},
-			{Name: "narration-utils-linux-x64.tar.gz", Size: 200 << 20}, {Name: "narration-utils-macos-arm64.zip", Size: 100 << 20},
+			{Name: prefix + "windows-x64.zip", Size: 400 << 20}, {Name: prefix + "windows-x64.zip.sha256", Size: 100},
+			{Name: prefix + "linux-x64.tar.gz", Size: 200 << 20}, {Name: prefix + "macos-arm64.zip", Size: 100 << 20},
 		}})
 	}
 	body, err := json.Marshal(releases)

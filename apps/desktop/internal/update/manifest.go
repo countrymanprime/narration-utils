@@ -44,14 +44,22 @@ func ParseChannel(text string) Channel {
 	return ChannelCandidates
 }
 
-// Platform is one release platform: the names of its asset and checksum (scripts/release/assets.mjs owns the table this mirrors),
-// and whether the app can replace itself there.
+// Platform is one release platform: its key and archive extension, from which the names of each release's asset and checksum are
+// built (scripts/release/assets.mjs owns the table this mirrors), and whether the app can replace itself there.
 type Platform struct {
 	Key         string
-	Asset       string
-	Checksum    string
+	Extension   string
 	SelfReplace bool
 }
+
+// AssetName is the platform's archive in the release of this version: narration-utils-<version>-<platform>.<ext>
+// (docs/adr/0197). The version is bare, so a candidate and its promotion publish the same file names.
+func (p Platform) AssetName(version Version) string {
+	return "narration-utils-" + version.String() + "-" + p.Key + p.Extension
+}
+
+// ChecksumName is the .sha256 beside AssetName.
+func (p Platform) ChecksumName(version Version) string { return p.AssetName(version) + ".sha256" }
 
 // PlatformFor is the release platform of a Go OS and architecture, if there is one. Only Windows is a supported platform and
 // replaces itself; macOS and Linux are preview assets and are told about a newer release only (owner decision D7).
@@ -67,8 +75,7 @@ func PlatformFor(goos, goarch string) (Platform, bool) {
 	default:
 		return Platform{}, false
 	}
-	asset := "narration-utils-" + key + extension
-	return Platform{Key: key, Asset: asset, Checksum: asset + ".sha256", SelfReplace: goos == "windows"}, true
+	return Platform{Key: key, Extension: extension, SelfReplace: goos == "windows"}, true
 }
 
 // CurrentPlatform is the release platform this program runs on.
@@ -175,11 +182,11 @@ func parseRelease(entry json.RawMessage, base string, platform Platform) (Releas
 	if candidate != listed.Prerelease {
 		return Release{}, "the tag and the pre-release flag disagree"
 	}
-	asset, reason := pickAsset(listed.Assets, platform.Asset, MaxAssetBytes)
+	asset, reason := pickAsset(listed.Assets, platform.AssetName(version), MaxAssetBytes)
 	if reason != "" {
 		return Release{}, "the platform asset: " + reason
 	}
-	checksum, reason := pickAsset(listed.Assets, platform.Checksum, MaxChecksumBytes)
+	checksum, reason := pickAsset(listed.Assets, platform.ChecksumName(version), MaxChecksumBytes)
 	if reason != "" {
 		return Release{}, "the checksum: " + reason
 	}

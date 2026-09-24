@@ -210,25 +210,30 @@ release. To retry one, re-run its workflow run, or start **Build macOS** /
 `v0.2.1-rc`); the upload overwrites, and it works for a promoted release too.
 Other workflows can call them with `uses:` and a `tag` input.
 
-Each platform ships one asset named `narration-utils-<platform>.<ext>`, with a
+Each platform ships one asset named `narration-utils-<version>-<platform>.<ext>`, with a
 `.sha256` beside it; Windows also ships its setup program and its third-party notices, named and checksummed the same way. Only Windows is required
 (and for Windows all three files are: a build that lost its setup program or its notices is not promotable):
 
 | Platform | Asset | Contents |
 | --- | --- | --- |
-| `windows-x64` | `narration-utils-windows-x64.zip` | `narration-utils.exe` (what the in-app updater downloads) |
-| `windows-x64` | `narration-utils-windows-x64-setup.exe` | the NSIS setup program (what a narrator runs first; [below](#the-windows-setup-program)) |
-| `windows-x64` | `THIRD-PARTY-NOTICES.txt` | the licences of everything the program contains, the AGPL text and the source offer ([Third-party notices](#third-party-notices)); **not** inside the zip |
-| `macos-arm64` | `narration-utils-macos-arm64.zip` | `Narration Utils.app` |
-| `linux-x64` | `narration-utils-linux-x64.tar.gz` | `narration-utils` binary |
+| `windows-x64` | `narration-utils-<version>-windows-x64.zip` | `narration-utils.exe` (what the in-app updater downloads) |
+| `windows-x64` | `narration-utils-<version>-windows-x64-setup.exe` | the NSIS setup program (what a narrator runs first; [below](#the-windows-setup-program)) |
+| `windows-x64` | `narration-utils-<version>-THIRD-PARTY-NOTICES.txt` | the licences of everything the program contains, the AGPL text and the source offer ([Third-party notices](#third-party-notices)); **not** inside the zip |
+| `macos-arm64` | `narration-utils-<version>-macos-arm64.zip` | `Narration Utils.app` |
+| `linux-x64` | `narration-utils-<version>-linux-x64.tar.gz` | `narration-utils` binary |
 
-The asset names carry no version and the program inside carries no version in its name: the version is stamped **into** the
-program ([The version inside the program](#the-version-inside-the-program)), where the app can show it and compare it with a
-newer release ([ADR 0073](../adr/0073-the-executable-is-named-narration-utils-and-carries-its-version.md)).
+`<version>` is the bare version (`0.2.7`), the same on a candidate (`v0.2.7-rc`) and its promotion (`v0.2.7`), so promote
+re-publishes the files without renaming them, and downloads of different releases can be told apart by name
+([ADR 0197](../adr/0197-every-release-asset-name-carries-the-bare-version.md)). The program inside keeps a name with no version
+(`narration-utils.exe`, which the REAPER launcher looks for); the version is also stamped **into** the program
+([The version inside the program](#the-version-inside-the-program)), where the app can show it and compare it with a newer release
+([ADR 0073](../adr/0073-the-executable-is-named-narration-utils-and-carries-its-version.md)). The build folder keeps unversioned
+names too (`narration-utils-windows-x64-setup.exe`, `THIRD-PARTY-NOTICES.txt`); packaging gives the released ones.
 
 `scripts/release/assets.mjs` owns that table, packages each asset in CI
-(`pnpm release:package <platform>`), and checks a downloaded release
-(`pnpm release:verify-assets <dir>`, offline: sizes and checksums only; promote adds `--attestations`).
+(`pnpm release:package <platform>`, named for the root `package.json` version unless a version follows the platform), and checks a
+downloaded release (`pnpm release:verify-assets <dir> <version>`, offline: sizes and checksums only; promote adds `--attestations`). A file
+named for another version is refused as an unexpected file.
 
 Use **Promote pre-release** with the RC tag when it is ready. Approval on the
 `production` environment gates the job, which then validates main ancestry and
@@ -237,8 +242,8 @@ checksum and has build provenance (see [Build provenance](#build-provenance)). A
 is ignored (that release is Windows-only); one that is attached must be complete, match and be attested. It creates the
 stable tag and GitHub release from the exact same downloaded assets and never
 rebuilds an approved candidate. Release candidates
-published before per-asset checksums (they carry `SHA256SUMS.txt`), and ones published before attestations, cannot
-be promoted this way.
+published before per-asset checksums (they carry `SHA256SUMS.txt`), ones published before attestations, and ones published before the
+version was in the asset names, cannot be promoted this way.
 
 ## The version inside the program
 
@@ -260,16 +265,18 @@ version that depends on who built it. `Bootstrap` returns it and Settings > Abou
 ### What the in-app updater depends on
 
 The app replaces itself from these releases ([in-app update](../architecture/in-app-update.md)), so the shape of a Windows release is
-a contract: the asset is `narration-utils-windows-x64.zip` with a `narration-utils-windows-x64.zip.sha256` beside it in
-`sha256sum` format naming that zip; the zip holds exactly one entry, `narration-utils.exe`; the tag is `v<version>-rc` for a
+a contract: the asset is `narration-utils-<version>-windows-x64.zip`, `<version>` being the tag's bare version, with a
+`narration-utils-<version>-windows-x64.zip.sha256` beside it in `sha256sum` format naming that zip; the zip holds exactly one entry, `narration-utils.exe`; the tag is `v<version>-rc` for a
 candidate (a pre-release) and `v<version>` for its promotion; and the program reports its own bare version for `--version`.
 The updater refuses anything else, so changing one of these means changing `apps/desktop/internal/update` in the same pull request
-(`scripts/release/assets.mjs` and the updater's `PlatformFor` mirror each other). The setup program is not part of that contract: the
-updater matches its zip and checksum by exact name and ignores every other asset.
+(`scripts/release/assets.mjs` and the updater's `PlatformFor` and `Platform.AssetName` mirror each other). The setup program is not part of
+that contract: the updater matches its zip and checksum by exact name and ignores every other asset. A copy built before the version was in the
+names looks for `narration-utils-windows-x64.zip`, finds nothing on a newer release and is updated once by hand
+([ADR 0197](../adr/0197-every-release-asset-name-carries-the-bare-version.md)).
 
 ## The Windows setup program
 
-A narrator installs from `narration-utils-windows-x64-setup.exe`, an NSIS installer that Wails builds ([ADR 0082](../adr/0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md)).
+A narrator installs from `narration-utils-<version>-windows-x64-setup.exe`, an NSIS installer that Wails builds ([ADR 0082](../adr/0082-windows-installs-per-user-from-an-nsis-setup-program-that-wails-builds-and-the-release-carries-beside-the-update-zip.md)).
 
 - **How it is built.** `.github/actions/build-native` passes `-nsis` to `scripts/release/wails-build.mjs` on `windows-x64`, after a step
   that installs NSIS (`choco install nsis`, version pinned in the step) when `makensis` is not already on the runner. `wails doctor`
@@ -297,7 +304,7 @@ A narrator installs from `narration-utils-windows-x64-setup.exe`, an NSIS instal
   uninstaller deletes, no network, no signing, that the file is tracked); `assets.test.mjs` and `wails-build.test.mjs` cover packaging, the
   checksum, the promote checks and the missing-installer failure. `makensis` is not on a development machine, so the compile is proven only by the
   `Build (Windows)` job; an install on a clean machine is the owner's check (the first stable rehearsal, PRD phase 16).
-- **Install and uninstall by hand** for a check: run the setup program; `narration-utils-windows-x64-setup.exe /S` installs silently
+- **Install and uninstall by hand** for a check: run the setup program; `narration-utils-<version>-windows-x64-setup.exe /S` installs silently
   (both shortcuts) and `"%LOCALAPPDATA%\Programs\Narration Utils\uninstall.exe" /S` removes it.
 
 ## The packaged-app smoke test
@@ -356,7 +363,7 @@ level 3). The subjects are identified by digest:
 
 | Platform | Signed by (the workflow the certificate names) | Subjects |
 | --- | --- | --- |
-| Windows | `.github/workflows/prerelease.yml`, the `publish` job | `narration-utils-windows-x64.zip`, `narration-utils-windows-x64-setup.exe`, their `.sha256` files, and `narration-utils.exe` (so the executable can be checked after the zip is extracted, which an in-app update can do) |
+| Windows | `.github/workflows/prerelease.yml`, the `publish` job | `narration-utils-<version>-windows-x64.zip`, `narration-utils-<version>-windows-x64-setup.exe`, the notices, their `.sha256` files, and `narration-utils.exe` (so the executable can be checked after the zip is extracted, which an in-app update can do) |
 | macOS | `.github/workflows/_attach-platform.yml` (the reusable workflow, not `build-macos.yml`) | the zip and its `.sha256` |
 | Linux | `.github/workflows/_attach-platform.yml` | the archive, its `.sha256`, and `narration-utils` |
 
@@ -374,7 +381,7 @@ level 3). The subjects are identified by digest:
 - A release candidate published before this change has no attestations, so promote refuses it (it cannot be promoted
   once attestations are enforced, as a candidate with `SHA256SUMS.txt` could not be promoted after ADR 0027). Only the
   newest ten candidates are kept in any case.
-- **Promote verifies before it publishes.** `node scripts/release/assets.mjs verify <dir> --attestations` (the
+- **Promote verifies before it publishes.** `node scripts/release/assets.mjs verify <dir> <version> --attestations` (the
   `--attestations` flag needs `GITHUB_REPOSITORY` and an authenticated GitHub CLI, so `pnpm release:verify-assets` stays
   offline) runs `gh attestation verify` for the archive and the checksum of every platform present, pinned with
   `--repo`, `--signer-workflow <repository>/<workflow from the table above>`, `--source-ref refs/heads/main` and
@@ -394,7 +401,7 @@ level 3). The subjects are identified by digest:
 With the [GitHub CLI](https://cli.github.com), in the folder holding the file:
 
 ```bash
-gh attestation verify narration-utils-windows-x64-setup.exe --repo countrymanprime/narration-utils
+gh attestation verify narration-utils-0.2.7-windows-x64-setup.exe --repo countrymanprime/narration-utils
 ```
 
 Success prints the workflow, commit and run that built the file; a modified or unattested file fails. To insist on the
