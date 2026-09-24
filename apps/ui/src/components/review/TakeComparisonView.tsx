@@ -23,7 +23,7 @@ const WORD_STYLE: Record<Exclude<TakeComparisonWordStatus, 'matched'>, { classNa
 function WordStrip({ evidence, member }: { evidence: TakeComparisonEvidence; member: TakeComparisonMember }) {
   const statuses = new Map(member.words.map((word) => [word.index, word.status]));
   return (
-    <p className="mt-2 text-sm leading-7">
+    <p className="relative mt-2 text-sm leading-7">
       {evidence.span.words.map((word, index) => {
         const status = statuses.get(word.index) ?? 'matched';
         const style = status === 'matched' ? undefined : WORD_STYLE[status];

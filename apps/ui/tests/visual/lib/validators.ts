@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.3.4 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.6 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 // Pure checks over what one visual-suite run captured. Kept free of Playwright
 // and Node APIs so they are unit-tested by Vitest (src/visualSuite.test.ts) and
 // reused unchanged by global-setup.ts's post-run teardown.
@@ -28,6 +28,21 @@ export interface AxeDebt {
   viewports?: string[];
 }
 
+// An absolutely positioned element under the app root whose containing block escaped the shell (its offsetParent is
+// <body> or null, so it lays out and scrolls against the document instead of the app's own scroll container).
+export interface EscapedAbsolute {
+  // A short CSS-ish path to the element, for a failure to point at.
+  selector: string;
+  // getBoundingClientRect().bottom at capture time, in document px.
+  bottom: number;
+}
+
+// Opt-in for the vertical-overflow and escaped-absolute checks (app-shell-vertical-overflow.prd.md). A project declares
+// `documentScroll = 'locked'` from its drivers once every page scrolls inside the shell's own scroll container and the
+// document itself never scrolls; there is no per-row escape hatch (Q3 A), because a real escape belongs to every window
+// size and zoom level, not one row's problem.
+export type DocumentScrollMode = 'locked';
+
 export interface CaptureRecord {
   page: string;
   state: string;
@@ -43,6 +58,12 @@ export interface CaptureRecord {
   maxChannelStdev: number;
   // documentElement.scrollWidth - clientWidth at capture time.
   overflowPx: number;
+  // documentElement.scrollHeight - clientHeight at capture time. Recorded regardless of documentScroll, like overflowPx;
+  // only fails the capture when the project opts in.
+  overflowYPx: number;
+  // Absolutely positioned elements under the app root whose containing block is the document, found regardless of
+  // documentScroll; only fails the capture when the project opts in.
+  escapedAbsolutes: EscapedAbsolute[];
   // Width of the narrowest text-like control on screen at capture time, or null when there was none. Not a check on
   // its own (checkControlWidths is); it is what a threshold is calibrated from, and the teardown prints the run's minimum.
   narrowestControlPx: number | null;
@@ -103,6 +124,7 @@ export const SIGNATURE_HEIGHT = 36;
 export const SIGNATURE_TOLERANCE = 3;
 export const BLANK_STDEV_THRESHOLD = 1;
 export const OVERFLOW_TOLERANCE_PX = 1;
+export const VERTICAL_OVERFLOW_TOLERANCE_PX = 1;
 // Narrower than this, a text box or select cannot show a value or be operated (a hex colour is six characters and a
 // select needs its arrow). Flat, not a fraction of the container: the failure it exists for is a control squeezed to a
 // sliver by a layout, and the smallest legitimate control (a colour hex box beside its swatch) is more than twice this.
@@ -122,6 +144,21 @@ export function findBlankCaptures(records: readonly CaptureRecord[]): CaptureRec
 
 export function findOverflowingCaptures(records: readonly CaptureRecord[]): CaptureRecord[] {
   return records.filter((record) => record.overflowPx > OVERFLOW_TOLERANCE_PX);
+}
+
+// Problems for one capture's vertical-overflow measurement and escaped-absolute scan. Both are recorded on every capture
+// (see CaptureRecord), but only fail it when the project opts into documentScroll: 'locked' - a project that has not
+// finished getting every page onto one scroll container is not held to it yet.
+export function checkDocumentScroll(overflowYPx: number, escaped: readonly EscapedAbsolute[], mode: DocumentScrollMode | undefined): string[] {
+  if (mode !== 'locked') return [];
+  const problems: string[] = [];
+  if (overflowYPx > VERTICAL_OVERFLOW_TOLERANCE_PX)
+    problems.push(`the document scrolls vertically by ${overflowYPx}px - the page area should be the only scroll container`);
+  for (const element of escaped)
+    problems.push(
+      `escaped the shell's containing block: ${element.selector} is absolutely positioned but lays out against the document (bottom ${element.bottom}px) - give its container position: relative`,
+    );
+  return problems;
 }
 
 function declaresSameAs(declared: readonly DeclaredState[], key: string, otherKey: string, viewport: string): boolean {

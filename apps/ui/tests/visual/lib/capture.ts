@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.3.5 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.6 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -13,6 +13,7 @@ import type { StateEntry } from './types';
 import {
   checkAxeFindings,
   checkControlWidths,
+  checkDocumentScroll,
   disambiguateLabels,
   NON_TEXT_INPUT_TYPES,
   OVERFLOW_TOLERANCE_PX,
@@ -24,6 +25,8 @@ import {
   type AxeFinding,
   type CaptureRecord,
   type ControlMeasurement,
+  type DocumentScrollMode,
+  type EscapedAbsolute,
   type RawAxeViolation,
 } from './validators';
 
@@ -43,6 +46,51 @@ function watchForProblems(page: Page, problems: string[]): void {
 
 async function measureHorizontalOverflow(page: Page): Promise<number> {
   return page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+}
+
+async function measureVerticalOverflow(page: Page): Promise<number> {
+  return page.evaluate(() => document.documentElement.scrollHeight - document.documentElement.clientHeight);
+}
+
+// Absolutely positioned elements under #root whose containing block escaped the shell: rendered, position: absolute, and
+// offsetParent is <body> or null (no positioned ancestor caught it). Structural, so it finds a zoom-only escape that no
+// captured viewport happens to overflow at (app-shell-vertical-overflow.prd.md).
+async function findEscapedAbsolutes(page: Page): Promise<EscapedAbsolute[]> {
+  return page.evaluate(() => {
+    const root = document.getElementById('root');
+    if (!root) return [];
+    const selectorOf = (element: Element): string => {
+      const parts: string[] = [];
+      let node: Element | null = element;
+      let depth = 0;
+      while (node && node !== root && depth < 6) {
+        let part = node.tagName.toLowerCase();
+        if (node.id) {
+          parts.unshift(`${part}#${node.id}`);
+          break;
+        }
+        const parent: Element | null = node.parentElement;
+        if (parent) {
+          const siblings = Array.from(parent.children).filter((sibling) => sibling.tagName === node!.tagName);
+          if (siblings.length > 1) part += `:nth-of-type(${siblings.indexOf(node) + 1})`;
+        }
+        parts.unshift(part);
+        node = parent;
+        depth += 1;
+      }
+      return parts.join(' > ');
+    };
+    const found: EscapedAbsolute[] = [];
+    for (const element of root.querySelectorAll<HTMLElement>('*')) {
+      const style = getComputedStyle(element);
+      if (style.position !== 'absolute' || style.display === 'none' || style.visibility === 'hidden') continue;
+      const offsetParent = element.offsetParent;
+      if (offsetParent === document.body || offsetParent === null) {
+        found.push({ selector: selectorOf(element), bottom: Math.round(element.getBoundingClientRect().bottom) });
+      }
+    }
+    return found;
+  });
 }
 
 // Every visible text box, select and textarea, with its accessible name and rendered width. A control in the layout with
@@ -162,6 +210,10 @@ async function captureAt(page: Page, entry: StateEntry, viewport: Viewport, prob
   if (entry.pointer !== 'keep') await page.mouse.move(viewport.width - 1, viewport.height - 1);
 
   const overflowPx = await measureHorizontalOverflow(page);
+  const overflowYPx = await measureVerticalOverflow(page);
+  const escapedAbsolutes = await findEscapedAbsolutes(page);
+  const documentScroll = (appDrivers as { documentScroll?: DocumentScrollMode }).documentScroll;
+  problems.push(...checkDocumentScroll(overflowYPx, escapedAbsolutes, documentScroll));
   // A control squeezed to a sliver shrinks instead of overflowing, so it needs its own check. Reported after the shot is
   // taken and recorded, so the picture of the failure exists.
   const controls = await measureTextControls(page);
@@ -188,6 +240,8 @@ async function captureAt(page: Page, entry: StateEntry, viewport: Viewport, prob
     signature: await signatureOf(png),
     maxChannelStdev: await maxChannelStdev(png),
     overflowPx,
+    overflowYPx,
+    escapedAbsolutes,
     narrowestControlPx: controls.length > 0 ? Math.min(...controls.map((control) => control.width)) : null,
     ...(axe ? { axe } : {}),
   });

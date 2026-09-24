@@ -1,4 +1,4 @@
-// ui-atlas-kit 0.3.5 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
+// ui-atlas-kit 0.3.6 vendored: do not edit here. Change plugin/templates/core in the kit and run `ui-atlas sync`.
 import type { Viewport } from '../viewports';
 import type { NarrowControlsDeclaration, SameAsDeclaration } from './validators';
 
