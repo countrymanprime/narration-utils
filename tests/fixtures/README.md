@@ -62,6 +62,14 @@ wrapped at about 70 columns, and `_word_` underscore italics, matching `alice_ra
 shape (PRD Evidence). Used by the TXT importer's parity and hazard tests
 (`apps/desktop/internal/importer/txt_test.go`).
 
+## after-the-applause.md
+
+The front matter from the owner's report on `credits-token-setup-and-front-matter-detection.prd.md` (a title split
+across lines, an all-capitals title, a genre descriptor, a bare-name byline and a copyright line), imported through
+`manuscript.Service` and read by `credits.Detect` in `apps/desktop/creditsdetect_test.go`, so the fix for the
+`storedPath` double-join defect and the front matter parser are both exercised against a real commit()-produced
+project rather than a hand-built `manuscript.json`.
+
 ## alice.docx / alice.md / alice.pdf
 
 The first three chapters of *Alice's Adventures in Wonderland* (Lewis

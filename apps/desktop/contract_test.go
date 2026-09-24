@@ -630,6 +630,31 @@ func TestContractCreditsRetailSample(t *testing.T) {
 	check("credits-retail-sample-stale", stale)
 }
 
+// CreditsStatuses' and CreditsSetStatus's payloads (Credits in the Chapter Table, Phase 1, ADR 0183): empty before
+// anything is set, then both kinds once set.
+func TestContractCreditsStatuses(t *testing.T) {
+	host := hostWithExtras(t, 10)
+	check := func(name, encoded string) {
+		t.Helper()
+		var decoded any
+		decodeInto(t, encoded, &decoded)
+		contractfile.Check(t, name, decoded)
+	}
+	empty, err := host.CreditsStatuses()
+	if err != nil {
+		t.Fatal(err)
+	}
+	check("credits-status-empty", empty)
+	if _, err := host.CreditsSetStatus("opening", "finalized"); err != nil {
+		t.Fatal(err)
+	}
+	set, err := host.CreditsSetStatus("closing", "recording")
+	if err != nil {
+		t.Fatal(err)
+	}
+	check("credits-status-set", set)
+}
+
 // The take-review findings as the Review page lists them (FindingsList filtered to the take-review analyzer,
 // take-review phase 5, ADR 0069): one partial pickup (a read below full coverage) and one near-identical
 // duplicate_read (full coverage, both reads above the quality bar), each with its reads in evidence.members, which

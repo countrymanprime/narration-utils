@@ -3,8 +3,10 @@ import type {
   CreditsAnnouncement,
   CreditsProjectValuesResult,
   CreditsRenderResult,
+  CreditsStatuses,
   CreditTemplate,
   CreditValues,
+  DetectedCandidate,
   RetailSample,
   RetailSampleAnswer,
 } from '../contracts/credits';
@@ -38,10 +40,19 @@ const creditValuesSchema = z.object({
   narrator: z.string().optional(),
 }) satisfies z.ZodType<CreditValues>;
 
+const detectedCandidateSchema = z.object({
+  token: z.string(),
+  value: z.string(),
+  source: z.string(),
+  confidence: z.enum(['high', 'medium', 'low']),
+  lines: z.array(z.string()).optional(),
+}) satisfies z.ZodType<DetectedCandidate>;
+
 export const creditsProjectValuesResultSchema = z.object({
   values: creditValuesSchema,
   narratorGlobal: z.string(),
   suggestions: z.record(z.string(), z.string()),
+  detected: listFromNull(detectedCandidateSchema),
 }) satisfies z.ZodType<CreditsProjectValuesResult>;
 
 export const creditsAnnouncementsSchema = listFromNull(
@@ -67,3 +78,8 @@ export const retailSampleAnswerSchema = z.object({
   sample: retailSampleSchema.nullable(),
   problem: z.string(),
 }) satisfies z.ZodType<RetailSampleAnswer>;
+
+// The same five statuses a manuscript chapter's own status has (apps/ui/src/api/schemas/manuscript.ts's chapterSchema).
+const creditsStatusSchema = z.enum(['not_started', 'recording', 'editing', 'proofing', 'finalized']);
+
+export const creditsStatusesSchema = z.record(z.string(), creditsStatusSchema) satisfies z.ZodType<CreditsStatuses>;

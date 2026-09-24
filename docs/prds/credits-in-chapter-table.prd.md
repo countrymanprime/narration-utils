@@ -115,7 +115,7 @@ We believe showing the credits as the first and last rows of the chapter table, 
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Credits status store and bindings | `Manifest.CreditsStatus`, `CreditsStatuses`/`CreditsSetStatus`, Zod schema, goldens, wireContracts row, mock, `hostAPIVersion` bump, ADR | pending | - | CT2, CT3 | - |
+| 1 | Credits status store and bindings | `Manifest.CreditsStatus`, `CreditsStatuses`/`CreditsSetStatus`, Zod schema, goldens, wireContracts row, mock, `hostAPIVersion` bump, ADR | complete | - | CT2, CT3 | - |
 | 2 | Credits rows in the table | First and last rows with words, length, actual recorded, status select, disabled Check, link, warnings; progress text; visual states | pending | - | 1; CT1, CT4 to CT7, CT9 | - |
 | 3 | Recording check for credits | Coverage basis from rendered text, credits track links and suggestions, measured actual recorded, ADR | pending | 4 | 2; CT4 (c) | - |
 | 4 | Credits in REAPER chapter regions | Credits rows in the chapter-regions payload; harness test if the payload changes; scripted REAPER check | pending | 3 | 2; REAPER automation Phase 7; CT8 | - |
