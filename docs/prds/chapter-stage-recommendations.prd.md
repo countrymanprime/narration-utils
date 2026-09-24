@@ -4,10 +4,10 @@
 
 **Status (2026-09-23):** issue [#409](https://github.com/countrymanprime/narration-utils/issues/409).
 
-- **Delivered:** phase 1 (#411, the signal contract and the pure engine; ADR 0160, Proposed); phase 2 (the decision store and the confirmation service; ADR 0161, Proposed).
-- **Left:** phases 3 to 9.
+- **Delivered:** phase 1 (#411, the signal contract and the pure engine; ADR 0160, Proposed); phase 2 (the decision store and the confirmation service; ADR 0161, Proposed); phase 3 (the recording signal provider checked end to end against the recording-coverage corpus, with per-paragraph evidence and the shared evidence view; no new ADR).
+- **Left:** phases 4 to 9.
 - **Needs the owner:** review ADRs 0160 and 0161 and the D22 defaults (this PRD's open questions were unanswered).
-- **Agents without the owner:** SR-3 to SR-6. SR-3 (the recording signal provider) is unblocked by recording coverage phase 7's `coverage.SignalProvider`. SR-7 waits on editing readiness (ER-6), SR-8 on proofing readiness (PS-1, PS-5).
+- **Agents without the owner:** SR-4 to SR-6. SR-4 wires `coverage.NewSignalProvider` and `coverage.Service.EvidenceView` into `stages.Config`. SR-7 waits on editing readiness (ER-6), SR-8 on proofing readiness (PS-1, PS-5).
 
 ## Problem Statement
 
@@ -213,7 +213,7 @@ Every phase follows the `CLAUDE.md` workflow: plan (find or open the tracking is
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Signal contract and engine | `apps/desktop/internal/stages` types, provider interface, pure engine, verdicts, basis key, contract doc; exhaustive table tests; fake providers | complete | EL-1 to EL-6, RC | - | - |
 | 2 | Decision store and confirmation service | Sidecar store, Confirm, Dismiss, Revert, basis-mismatch refusal, contradiction notice, `resetDerived` entry, crash tests | complete | 3 | 1 | - |
-| 3 | Recording signal provider | Adapter from RC's coverage result and EL's staleness and mapping to signals with causes; fixtures; service test on the RC corpus | pending | 2 | 1, RC-7, EL-5, EL-6 | - |
+| 3 | Recording signal provider | Adapter from RC's coverage result and EL's staleness and mapping to signals with causes; fixtures; service test on the RC corpus | complete | 2 | 1, RC-7, EL-5, EL-6 | - |
 | 4 | Bindings, contract and mock | Four bindings, TypeScript contract, mock, wailsClient, generated Host files, host API bump, timing measurement | pending | - | 2, 3 | - |
 | 5 | Home surface (MVP) | `StageSuggestion`, evidence `SlideOver`, breakdown-table integration, summary chip, Check now, states, docs and screenshots | pending | - | 4 | - |
 | 6 | Required-check settings | `StageRecommendations` settings tool, defaults, Settings UI, engine wiring, optional master switch | pending | 7, 8 | 1, 5 | - |
@@ -322,6 +322,10 @@ Phase 1 has no dependencies and can run beside EL and RC; it should merge before
 | Q2 Confirm sets the status (D22 default, Phase 2) | Record first, then `SetChapterStatus`, record removed if the status write fails; an orphaned record is ignored because its target is not the status | Record only; derive the status | Owner has not answered; PRD recommendation A adopted per D22; ADR 0161 |
 | Q10 only a fresh `not_met` raises the notice (D22 default, Phase 2) | The confirmed stage's signals are re-evaluated; `not_met` gives the notice, a changed basis alone gives `evidenceChanged` | Any stale basis raises it | Owner has not answered; PRD recommendation B adopted per D22; ADR 0161 |
 | The stages service reads the manuscript through functions (Phase 2) | `Config` takes `LoadManuscript`, `Chapters` and `SetChapterStatus`, like `coverage.Config` | Import the manuscript package | `manuscript` imports `stages` (through `coverage`, and now for `resetDerived`), so the reverse import would be a cycle |
+| The recording provider stays in `internal/coverage` (Phase 3) | `coverage.SignalProvider` (RC Phase 7, ADR 0131) is the Phase 3 provider; no `stages/recording*.go` | A second adapter in `internal/stages` | `coverage` already imports `stages`, so a provider in `stages` would be an import cycle, and a second copy would drift |
+| The shared `EvidenceView` is built by the coverage service (Phase 3) | `coverage.Service.EvidenceView` has `stages.Config.View`'s signature: the saved project resolved and parsed once by the recording check's own rules (D6), its modified time, the ledger and the mapping; an unusable project is `ProjectErr` carrying the refusal, so the provider keeps that refusal's action ("choose the saved project on the Tracks page") | A builder in `internal/stages` | The rules for which `.rpp` counts live in `coverage`; a copy would let the two disagree. A later signal that needs the view reads the same one |
+| Recording evidence per paragraph (Phase 3) | The coverage line says how many paragraphs pass; each region, largest first; then every paragraph that fails a threshold, with its share read and longest missing run; passing paragraphs are not listed | Every paragraph | A long chapter would list a hundred lines of "all read". RC has no out-of-order region: text read out of order shows as `skip` and `short_read` regions, so the PRD's "out-of-order paragraphs" are those |
+| Corpus service test (Phase 3) | The sidecar's real results lines for every committed coverage case at the shipped settings are pinned in `fixtures/coverage/results.golden.json` (`UPDATE_CONTRACTS=1`), and a Go test stores each as a complete check and runs `stages.Service` over it | Hand-written reports; running Python from Go tests | Tests the analyzer's real output without a Python run in the Go suite; all 16 cases agree with their labels (8 recommended, 8 not ready) |
 
 ## Research Summary
 

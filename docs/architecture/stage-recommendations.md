@@ -9,7 +9,9 @@ are in [`apps/desktop/internal/stages`](../../apps/desktop/internal/stages) (Pha
 The decision store and the service that composes the providers, the engine and the manuscript's status path are in
 `internal/stages` too (`store.go`, `service.go`, `assess.go`; Phase 2,
 [ADR 0161](../adr/0161-stage-decisions-live-in-their-own-sidecar-and-confirm-writes-the-record-before-the-status.md)).
-The host does not build the service yet: the bindings and the Home surface are later phases. The contract's decision is
+`coverage.Service.EvidenceView` builds the view every provider shares (`stages.Config.View`), and a test runs the
+service over the recording-coverage corpus (Phase 3). The host does not build the service yet: the bindings and the Home
+surface are later phases. The contract's decision is
 [ADR 0160](../adr/0160-stage-recommendations-are-computed-from-tri-state-signals-by-a-pure-engine.md).
 
 This page is for whoever implements a signal: recording coverage (`recording`), editing readiness (`editing`) and
@@ -87,6 +89,9 @@ type Provider interface {
 - `Signals` reads existing evidence only. It must not decode audio, transcribe, reach the network or start an
   analysis; the narrator starts analyses. `EvidenceView` is built once per evaluation and shared: the parsed saved
   project, its modified time, the ledger and the confirmed mapping, the inputs `evidence.EvaluateChapter` takes.
+- `coverage.Service.EvidenceView` fills the view: the saved project is resolved and parsed by the recording check's
+  rules. When it cannot be used, `ProjectErr` is the check's refusal (no file chosen, not in the project folder,
+  unreadable), so a provider can name the action.
 - Return an error only when you cannot answer at all. `Collect` then reports every declared id as `unknown` with cause
   `provider_error` and ignores any signals you returned with the error.
 
