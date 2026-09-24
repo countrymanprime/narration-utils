@@ -232,6 +232,37 @@ func TestProviderUnknownCauses(t *testing.T) {
 			t.Fatalf("signal = %+v", signal)
 		}
 	})
+	t.Run("a check cancelled after a complete one", func(t *testing.T) {
+		p := newTestProject(t)
+		service := p.service(&fakeSidecar{})
+		run(t, service, testRequest())
+		p.items[0].length = 12 // a longer item range the cached words do not cover, so the second check transcribes and can be paused
+		p.writeRPP()
+		sidecar := &fakeSidecar{pauseAfter: 1, paused: make(chan struct{}), resume: make(chan struct{})}
+		cancelled := p.service(sidecar)
+		if _, err := cancelled.Start(testRequest()); err != nil {
+			t.Fatal(err)
+		}
+		<-sidecar.paused
+		cancelled.Cancel()
+		close(sidecar.resume)
+		cancelled.Wait()
+		settings, unavailable := DefaultSettings, ""
+		signal := oneSignal(t, providerFor(cancelled, &settings, &unavailable), chapterOne(), viewOf(t, p))
+		if signal.Cause != stages.CauseIncompleteRun || !strings.Contains(signal.Reason, "cancelled") {
+			t.Fatalf("signal = %+v", signal)
+		}
+	})
+	t.Run("no saved project file is chosen", func(t *testing.T) {
+		p := newTestProject(t)
+		service := p.service(&fakeSidecar{})
+		service.config.ProjectFile = func() (string, error) { return "", errors.New("not chosen") }
+		settings, unavailable := DefaultSettings, ""
+		signal := oneSignal(t, providerFor(service, &settings, &unavailable), chapterOne(), service.EvidenceView(context.Background(), testDocument))
+		if signal.Cause != stages.CauseProjectUnreadable || !strings.Contains(signal.Reason, "Tracks page") {
+			t.Fatalf("signal = %+v", signal)
+		}
+	})
 	t.Run("the saved project could not be read", func(t *testing.T) {
 		p := newTestProject(t)
 		view := viewOf(t, p)
@@ -242,6 +273,45 @@ func TestProviderUnknownCauses(t *testing.T) {
 			t.Fatalf("signal = %+v", signal)
 		}
 	})
+}
+
+func TestEvidenceViewParsesTheSavedProjectOnce(t *testing.T) {
+	p := newTestProject(t)
+	service := p.service(&fakeSidecar{})
+
+	view := service.EvidenceView(context.Background(), testDocument)
+	want := viewOf(t, p)
+	if view.ProjectErr != nil || view.DocumentID != testDocument || view.ProjectFolder != p.dir || view.ProjectFile != want.ProjectFile {
+		t.Fatalf("view = %+v", view)
+	}
+	if len(view.Project.Tracks) != 1 || view.Project.Tracks[0].GUID != testTrack || len(view.Project.Tracks[0].Items) != 2 {
+		t.Fatalf("project = %+v", view.Project)
+	}
+	if view.Ledger == nil || view.Mapping == nil {
+		t.Fatal("the view must carry the project's ledger and mapping stores")
+	}
+	links, err := view.Mapping.List(testDocument)
+	if err != nil || len(links) != 1 || links[0].TrackGUID != testTrack {
+		t.Fatalf("mapping = %+v, %v", links, err)
+	}
+}
+
+func TestEvidenceViewReportsAnUnreadableProject(t *testing.T) {
+	p := newTestProject(t)
+	if err := os.Remove(p.rpp); err != nil {
+		t.Fatal(err)
+	}
+	service := p.service(&fakeSidecar{})
+
+	view := service.EvidenceView(context.Background(), testDocument)
+	if reason, ok := ReasonOf(view.ProjectErr); !ok || reason != ReasonProjectUnreadable {
+		t.Fatalf("project error = %v", view.ProjectErr)
+	}
+	settings, unavailable := DefaultSettings, ""
+	signal := oneSignal(t, providerFor(service, &settings, &unavailable), chapterOne(), view)
+	if signal.Cause != stages.CauseProjectUnreadable || !strings.Contains(signal.Reason, "Save it again") {
+		t.Fatalf("signal = %+v", signal)
+	}
 }
 
 func TestProviderFailsWhenItCannotAnswer(t *testing.T) {

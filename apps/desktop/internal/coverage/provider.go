@@ -50,8 +50,7 @@ func (p *SignalProvider) Signals(ctx context.Context, chapter stages.ChapterCont
 		return nil, errors.New("no project is open")
 	}
 	if view.ProjectErr != nil {
-		reason := "The saved REAPER project file could not be read: " + view.ProjectErr.Error()
-		return []stages.Signal{stampedUnknown(stages.CauseProjectUnreadable, reason, p.now())}, nil
+		return []stages.Signal{p.projectUnreadable(view.ProjectErr)}, nil
 	}
 	settings := p.settings()
 	result, err := p.service.ResultIn(view.Project, view.ProjectFile, chapter.ChapterID, settings.Alignment)
@@ -70,6 +69,34 @@ func (p *SignalProvider) Signals(ctx context.Context, chapter stages.ChapterCont
 		Result: result, Latest: latest, Running: p.service.Checking(chapter.ChapterID), Unavailable: unavailable,
 		Unconfirmed: slices.Contains(result.Reasons, string(ReasonUnmapped)) && p.suggested(chapter, view), Settings: settings, ComputedAt: p.now(),
 	})}, nil
+}
+
+// projectUnreadable answers a view whose saved project could not be read. A
+// refusal the coverage service named (no file chosen, a file outside the
+// project folder, an unreadable file) keeps its own action; any other error
+// is quoted.
+func (p *SignalProvider) projectUnreadable(err error) stages.Signal {
+	if reason, ok := ReasonOf(err); ok {
+		if cause, text, ok := contextCause(ChapterResult{State: evidence.StateNever, Reasons: []string{string(reason)}}, false); ok {
+			return stampedUnknown(cause, text, p.now())
+		}
+	}
+	return stampedUnknown(stages.CauseProjectUnreadable, "The saved REAPER project file could not be read: "+err.Error(), p.now())
+}
+
+// EvidenceView builds the view one stage evaluation shares across every
+// provider (stages.Config.View): the saved project resolved, checked and
+// parsed once by the same rules as a recording check (D6), its modified time,
+// and the project's ledger and confirmed mapping. A saved project that cannot
+// be used is ProjectErr, a refusal with its Reason, never a failed read.
+func (s *Service) EvidenceView(_ context.Context, documentID string) stages.EvidenceView {
+	view := stages.EvidenceView{DocumentID: documentID, ProjectFolder: s.config.Project, Ledger: s.ledger, Mapping: s.mapping}
+	if s.config.Project == "" {
+		view.ProjectErr = unknown(ReasonNoProject, "open a project first")
+		return view
+	}
+	view.Project, view.ProjectFile, view.ProjectErr = s.savedProject()
+	return view
 }
 
 func (p *SignalProvider) settings() Settings {

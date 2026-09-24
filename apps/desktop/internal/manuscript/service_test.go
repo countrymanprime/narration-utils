@@ -11,6 +11,7 @@ import (
 	"github.com/countrymanprime/narration-utils/shell/internal/evidence"
 	"github.com/countrymanprime/narration-utils/shell/internal/importer"
 	"github.com/countrymanprime/narration-utils/shell/internal/layout"
+	"github.com/countrymanprime/narration-utils/shell/internal/stages"
 )
 
 func TestCommitCreatesProjectOwnedCanonicalManuscript(t *testing.T) {
@@ -294,6 +295,26 @@ func TestResetDerivedClearsTheRecordingCoverageDirectory(t *testing.T) {
 	}
 	if _, err := os.Stat(coverage.Dir(project)); !os.IsNotExist(err) {
 		t.Fatalf("resetDerived left the recording coverage directory behind: %v", err)
+	}
+}
+
+// Stage decisions name chapter ids, which a re-import renumbers, so resetDerived clears them with the rest
+// (chapter-stage-recommendations.prd.md Q1 and Phase 2).
+func TestResetDerivedClearsTheStageDecisionsFile(t *testing.T) {
+	project := t.TempDir()
+	path := stages.DecisionsFile(project)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(`{"schemaVersion":1,"documentId":"doc-1","decisions":[]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resetDerived(project); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("resetDerived left the stage decisions file behind: %v", err)
 	}
 }
 
