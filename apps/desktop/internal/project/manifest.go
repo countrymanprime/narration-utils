@@ -40,6 +40,12 @@ type Manifest struct {
 	// RetailSample is the range the narrator picked as the retail sample (audiobook-credits-templates.prd.md, C10,
 	// ADR 0152), additive like Credits. Nil when none is picked.
 	RetailSample *credits.RetailSample `json:"retailSample,omitempty"`
+	// CreditsStatus is the chapter-table row status of the opening and closing credits ("opening"/"closing" keys, one
+	// of the five chapter statuses each), additive like Credits (credits-in-chapter-table.prd.md, CT2/CT3, ADR 0183).
+	// It lives here rather than in manuscript-notes.json (like a chapter's own status) so it survives Replace
+	// manuscript and Clear derived data the way the credits values themselves do. Nil or a missing key means
+	// "not_started", the same default a manuscript chapter with no note has.
+	CreditsStatus map[string]string `json:"creditsStatus,omitempty"`
 }
 
 // New returns a fresh manifest for a project named name, created at now.

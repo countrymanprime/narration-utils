@@ -54,6 +54,14 @@ export type RetailSample = {
  * cannot be measured any more) and, in that last case, why (`problem`, otherwise empty). */
 export type RetailSampleAnswer = { sample: RetailSample | null; problem: string };
 
+/** A credits row's status (Credits in the Chapter Table, CT2): the same five values a manuscript chapter's own status
+ * has ("not_started" | "recording" | "editing" | "proofing" | "finalized"). */
+export type CreditsStatus = string;
+
+/** CreditsStatuses' payload: "opening" and/or "closing" keys, each a CreditsStatus. A kind never set is absent, and the
+ * UI treats that as "not_started", the same default a manuscript chapter with no note has. */
+export type CreditsStatuses = Record<string, CreditsStatus>;
+
 export interface CreditsApi {
   /** Lists the narrator's credit template library, seeding shipped defaults on first use. */
   creditsTemplates(): Promise<CreditTemplate[]>;
@@ -76,4 +84,9 @@ export interface CreditsApi {
   creditsRetailSample(): Promise<RetailSampleAnswer>;
   /** Picks paragraphs start..end (both included) as the retail sample; refused over 5 minutes. Two empty ids clear it. */
   saveCreditsRetailSample(startParagraphId: string, endParagraphId: string): Promise<RetailSampleAnswer>;
+  /** Reads this project's credits row statuses (Credits in the Chapter Table, Phase 1). */
+  creditsStatuses(): Promise<CreditsStatuses>;
+  /** Sets kind ("opening" or "closing") to status, on the project manifest so it survives Replace manuscript and Clear
+   * derived data, unlike a manuscript chapter's own status. */
+  setCreditsStatus(kind: string, status: CreditsStatus): Promise<CreditsStatuses>;
 }

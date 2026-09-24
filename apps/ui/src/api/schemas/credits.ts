@@ -3,6 +3,7 @@ import type {
   CreditsAnnouncement,
   CreditsProjectValuesResult,
   CreditsRenderResult,
+  CreditsStatuses,
   CreditTemplate,
   CreditValues,
   RetailSample,
@@ -67,3 +68,8 @@ export const retailSampleAnswerSchema = z.object({
   sample: retailSampleSchema.nullable(),
   problem: z.string(),
 }) satisfies z.ZodType<RetailSampleAnswer>;
+
+// The same five statuses a manuscript chapter's own status has (apps/ui/src/api/schemas/manuscript.ts's chapterSchema).
+export const creditsStatusSchema = z.enum(['not_started', 'recording', 'editing', 'proofing', 'finalized']);
+
+export const creditsStatusesSchema = z.record(z.string(), creditsStatusSchema) satisfies z.ZodType<CreditsStatuses>;

@@ -73,6 +73,8 @@ var stressReaders = []stressReader{
 	{"TeleprompterSeek", func(h *Host) { _, _ = h.TeleprompterSeek(1) }},
 	{"ChapterTrackMatch", func(h *Host) { _, _ = h.ChapterTrackMatch("c-0001") }},
 	{"ChapterSuggestion", func(h *Host) { _, _ = h.ChapterSuggestion() }},
+	{"CreditsStatuses", func(h *Host) { _, _ = h.CreditsStatuses() }},
+	{"CreditsSetStatus (unknown kind)", func(h *Host) { _, _ = h.CreditsSetStatus("missing", "finalized") }},
 	{"TeleprompterLocate", func(h *Host) { _, _ = h.TeleprompterLocate("c-0001", "", "") }},
 	{"TeleprompterSaveFlags", func(h *Host) {
 		_, _ = h.TeleprompterSaveFlags("ch-1", []liveflags.Flag{{Kind: "misread", ParagraphID: "p-1", WordStart: 0, WordEnd: 1}})

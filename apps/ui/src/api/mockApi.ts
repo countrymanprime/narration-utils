@@ -9,6 +9,7 @@ import type {
   ChapterTagsPreview,
   CreditsAnnouncement,
   CreditsRenderResult,
+  CreditsStatuses,
   CreditTemplate,
   CreditValues,
   DawCatalogEntry,
@@ -546,6 +547,7 @@ export function createMockApi(
     creditTemplates.push({ id: 'mock-chapter-announcement', kind: 'chapter_announcement', name: 'Chapter announcement', body: initial.chapterAnnouncement });
   let nextCreditTemplateId = 1;
   let creditValues: CreditValues = wireClone(initial.creditValues ?? {});
+  let creditsStatuses: CreditsStatuses = {};
   let retailSample: { startParagraphId: string; endParagraphId: string } | undefined;
   let seededSample = initial.retailSample;
   const readRetailSample = (): RetailSampleAnswer => {
@@ -1926,6 +1928,11 @@ export function createMockApi(
       const sample = measureMockRetailSample(paragraphs, startParagraphId, endParagraphId);
       retailSample = { startParagraphId, endParagraphId };
       return { sample, problem: '' };
+    },
+    creditsStatuses: async () => wireClone(creditsStatuses),
+    setCreditsStatus: async (kind, status) => {
+      creditsStatuses = { ...creditsStatuses, [kind]: status };
+      return wireClone(creditsStatuses);
     },
     dawCatalogList: async () => wireClone(DAW_CATALOG),
     dawCatalogOpenDownloadPage: async (id) => {
