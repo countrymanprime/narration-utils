@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
+import { Popover } from './Popover';
 import { tabInsideTrap } from './tabInsideTrap';
 
 afterEach(cleanup);
@@ -92,6 +93,33 @@ describe('Dialog is a real modal', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Open dialog' })));
+  });
+
+  it('lets Escape close a Popover inside it first, leaving the dialog open', async () => {
+    const user = userEvent.setup();
+    function WithPopover() {
+      const [open, setOpen] = useState(false);
+      return (
+        <div>
+          <button onClick={() => setOpen(true)}>Open dialog</button>
+          {open && (
+            <Dialog title="Read aloud" onClose={() => setOpen(false)} actions={null}>
+              <Popover trigger={<Button>Microphone</Button>} label="Microphone">
+                <button type="button">Refresh</button>
+              </Popover>
+            </Dialog>
+          )}
+        </div>
+      );
+    }
+    render(<WithPopover />);
+    await user.click(screen.getByRole('button', { name: 'Open dialog' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Read aloud' });
+    await user.click(within(dialog).getByRole('button', { name: 'Microphone' }));
+    await screen.findByRole('dialog', { name: 'Microphone' });
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Microphone' })).toBeNull());
+    expect(screen.getByRole('dialog', { name: 'Read aloud' })).toBeTruthy();
   });
 
   it('returns focus to the opener when a button closes it', async () => {
