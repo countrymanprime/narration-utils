@@ -4,8 +4,9 @@
 // 0015), and results in the shape tests/fixtures/contracts/measure-success.json pins: a chapter with every level, a
 // render of digital silence whose levels are all unavailable (null, never a number), and a file that is not a WAV.
 // `hold` keeps a started measurement part way through; `fails` breaks it at its first poll the way
-// tests/fixtures/contracts/measure-error.json pins (the file being read fails, the rest are cancelled).
-import type { JobEnded, MeasureApi, MeasureFileResult, MeasureJob, MeasureReport } from '../types';
+// tests/fixtures/contracts/measure-error.json pins (the file being read fails, the rest are cancelled). Every answer is
+// judged against the project's Delivery limits as they are when it is read, by measure.Evaluate's rules (Phase 7).
+import type { DiagnosticsJob, Finding, JobEnded, MeasureApi, MeasureFileResult, MeasureJob, MeasureReport } from '../types';
 import { wireClone } from './mockFixtures';
 
 /** What the mock's picker chooses: three rendered chapters, the third one not a WAV. */
@@ -54,6 +55,61 @@ function report(path: string, silent: boolean): MeasureReport {
 }
 
 const baseName = (path: string): string => path.split(/[\\/]/).pop() ?? path;
+/** The measurements a limit can apply to, in measure.Evaluate's order. */
+const LIMITED = ['integrated_lufs', 'rms_dbfs', 'sample_peak_dbfs', 'true_peak_dbtp', 'noise_floor_dbfs'] as const;
+
+const limitValue = (text: string | undefined): number | undefined => {
+  if (text === undefined || text.trim() === '') return undefined;
+  const value = Number(text);
+  return Number.isFinite(value) ? value : undefined;
+};
+
+function deliveryFinding(file: MeasureFileResult, metric: string, kind: string, fields: Pick<Finding, 'severity' | 'confidence_reason' | 'evidence'>): Finding {
+  return {
+    schema_version: 1,
+    id: `mock-measure-${baseName(file.path)}-${metric}-${kind}`.replace(/[^A-Za-z0-9-]/g, '-'),
+    analyzer: 'measure',
+    project: {},
+    source: { file: file.path },
+    category: 'delivery_qc',
+    confidence: 1,
+    ...fields,
+    review: { status: 'unreviewed' },
+  };
+}
+
+/** measure.Evaluate over one measured file: out of range is an error, not measurable against a limit is information. */
+export function judgeMockFile(file: MeasureFileResult, limits: Readonly<Record<string, string>>): Finding[] {
+  if (file.status !== 'measured' || !file.report) return [];
+  const report = file.report;
+  return LIMITED.flatMap((metric) => {
+    const min = limitValue(limits[`${metric}_min`]);
+    const max = limitValue(limits[`${metric}_max`]);
+    if (min === undefined && max === undefined) return [];
+    const base = { metric, profile: 'delivery-limits' };
+    const value = report[metric];
+    if (value === null) {
+      return [
+        deliveryFinding(file, metric, 'unavailable', {
+          severity: 'info',
+          confidence_reason: 'the measurement could not be made (silence, or audio shorter than the measurement window)',
+          evidence: { ...base, available: false },
+        }),
+      ];
+    }
+    const violation = max !== undefined && value > max ? 'above_max' : min !== undefined && value < min ? 'below_min' : undefined;
+    if (!violation) return [];
+    const bounds = { ...(min !== undefined ? { limit_min: min } : {}), ...(max !== undefined ? { limit_max: max } : {}) };
+    return [
+      deliveryFinding(file, metric, 'out_of_range', {
+        severity: 'error',
+        confidence_reason: 'deterministic measurement of the decoded samples',
+        evidence: { ...base, value, violation, ...bounds },
+      }),
+    ];
+  });
+}
+
 const files = (count: number): string => (count === 1 ? '1 file' : `${count} files`);
 
 /** The host's end-of-job sentence (measuredMessage in measure_job.go). */
@@ -79,11 +135,24 @@ export type MockMeasureSeed = 'hold' | 'fails';
 
 const BROKE = 'runtime error: index out of range [4] with length 4';
 
-/** `picked` is the picker's allowlist, shared with the diagnostics mock the way the host shares it (ADR 0156). */
-export function createMeasureMock(publish: (event: JobEnded) => void, seed?: MockMeasureSeed, picked = new Set<string>()): MeasureApi {
+/**
+ * `picked` is the picker's allowlist, shared with the diagnostics mock the way the host shares it (ADR 0156); `limits` reads
+ * the project's Delivery limits as they are now, by key; `checked` is the diagnostics check as it stands, which the report
+ * export covers too.
+ */
+export function createMeasureMock(
+  publish: (event: JobEnded) => void,
+  seed?: MockMeasureSeed,
+  picked = new Set<string>(),
+  limits: () => Readonly<Record<string, string>> = () => ({}),
+  checked: () => DiagnosticsJob | undefined = () => undefined,
+): MeasureApi {
   const hold = seed === 'hold';
   let job: MeasureJob = { id: null, kind: 'measurement', phase: 'idle', message: 'Choose the files to measure.', percent: 0, logs: [], elapsed: 0, files: [] };
   let quarters = 0;
+  let exports = 0;
+  // The host judges on every read (judgeMeasureJob), so a limit changed in Settings re-judges what was measured.
+  const judged = (): MeasureJob => wireClone({ ...job, files: job.files.map((file) => ({ ...file, findings: judgeMockFile(file, limits()) })) });
 
   const end = (phase: 'success' | 'cancelled' | 'error', message: string) => {
     job = { ...job, phase, message, logs: [...job.logs, message], percent: phase === 'success' ? 100 : job.percent };
@@ -155,14 +224,37 @@ export function createMeasureMock(publish: (event: JobEnded) => void, seed?: Moc
         percent: 0,
         logs: [message],
         elapsed: 0,
-        files: unique.map((path) => ({ path, name: baseName(path), status: 'pending', report: null, fingerprint: null })),
+        files: unique.map((path) => ({ path, name: baseName(path), status: 'pending', report: null, fingerprint: null, findings: [] })),
       };
       if (hold) job = { ...job, ...measuring(0), percent: Math.floor(100 / (2 * unique.length)), elapsed: 12 };
-      return wireClone(job);
+      return judged();
     },
     measureState: async () => {
       advance();
-      return wireClone(job);
+      return judged();
+    },
+    // The host's exportDeliveryReport (delivery_report.go): the same refusals, and what it counts. The mock writes nothing;
+    // a second export in the same second gets the host's -2 name.
+    deliveryExportReport: async (includePaths) => {
+      const check = checked();
+      if (job.phase === 'running' || check?.phase === 'running')
+        throw new Error('wait for the measurement or the diagnostics check to finish, then export the report');
+      const checkedFiles = check?.files ?? [];
+      if (job.files.length === 0 && checkedFiles.length === 0) {
+        throw new Error('nothing has been measured or checked in this session yet');
+      }
+      exports += 1;
+      const stem = `delivery-report-20260923-140000Z${exports > 1 ? `-${exports}` : ''}`;
+      const all = [...judged().files.flatMap((file) => file.findings), ...checkedFiles.flatMap((file) => (file.status === 'checked' ? file.findings : []))];
+      return {
+        folder: 'narration-utils/delivery',
+        htmlFile: `${stem}.html`,
+        jsonFile: `${stem}.json`,
+        files: new Set([...job.files, ...checkedFiles].map((file) => file.path)).size,
+        findings: all.length,
+        openFindings: all.length,
+        pathsIncluded: includePaths,
+      };
     },
     measureCancel: async () => {
       if (job.phase === 'running') {
@@ -170,7 +262,7 @@ export function createMeasureMock(publish: (event: JobEnded) => void, seed?: Moc
         job = { ...job, files: job.files.map((file) => (file.status === 'pending' || file.status === 'measuring' ? { ...file, status: 'cancelled' } : file)) };
         end('cancelled', `Measurement cancelled. ${measured} of ${files(job.files.length)} ${measured === 1 ? 'was' : 'were'} measured.`);
       }
-      return wireClone(job);
+      return judged();
     },
   };
 }

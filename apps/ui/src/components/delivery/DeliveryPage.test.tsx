@@ -6,7 +6,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiProvider } from '../../api/ApiContext';
 import { createMockApi } from '../../api/mockApi';
-import { measureJobSchema } from '../../api/schemas/measure';
+import { judgeMockFile } from '../../api/measureMock';
+import { deliveryReportExportSchema, measureJobSchema } from '../../api/schemas/measure';
 import type { MeasureJob, NarrationApi } from '../../types';
 import { DeliveryPage } from './DeliveryPage';
 
@@ -31,12 +32,19 @@ function renderPage({ overrides = {}, initial = {} }: { overrides?: Partial<Narr
   return { api, openSettings };
 }
 
-/** A host that measures the picked files at its first poll and answers the success payload. */
-const measuresAtOnce = (): Partial<NarrationApi> => ({
-  measurePickFiles: async () => ({ paths: contract('measure-success.json').files.map((file) => file.path) }),
-  measureAnalyze: async () => contract('measure-running.json'),
-  measureState: vi.fn<NarrationApi['measureState']>().mockResolvedValueOnce(contract('measure-idle.json')).mockResolvedValue(contract('measure-success.json')),
-});
+/**
+ * A host that measures the picked files at its first poll and answers the success payload, as the host pins it (judged against a
+ * true-peak limit of -3.5 dBTP) or, given `limits`, judged against those by measure.Evaluate's rules.
+ */
+const measuresAtOnce = (limits?: Record<string, string>, change: (job: MeasureJob) => MeasureJob = (job) => job): Partial<NarrationApi> => {
+  const success = contract('measure-success.json');
+  const judged = limits ? { ...success, files: success.files.map((file) => ({ ...file, findings: judgeMockFile(file, limits) })) } : success;
+  return {
+    measurePickFiles: async () => ({ paths: success.files.map((file) => file.path) }),
+    measureAnalyze: async () => contract('measure-running.json'),
+    measureState: vi.fn<NarrationApi['measureState']>().mockResolvedValueOnce(contract('measure-idle.json')).mockResolvedValue(change(judged)),
+  };
+};
 
 const rowFor = async (name: string) => {
   const table = await screen.findByRole('table', { name: 'Measurements' });
@@ -57,7 +65,7 @@ describe('DeliveryPage', () => {
 
   it('measures the picked files and lists every value with its unit, a silent file as not measurable, and a file it could not read', async () => {
     const user = userEvent.setup();
-    renderPage({ overrides: measuresAtOnce() });
+    renderPage({ overrides: measuresAtOnce({}) });
     await user.click(await screen.findByRole('button', { name: 'Choose files to measure…' }));
 
     expect(await screen.findByText('Measured 2 of 3 files; 1 could not be measured.')).toBeTruthy();
@@ -80,7 +88,7 @@ describe('DeliveryPage', () => {
 
   it('marks each value outside the narrator’s limits with the limit it broke, and counts them', async () => {
     const user = userEvent.setup();
-    renderPage({ overrides: measuresAtOnce(), initial: { deliveryLimits: LIMITS } });
+    renderPage({ overrides: measuresAtOnce(LIMITS), initial: { deliveryLimits: LIMITS } });
     expect(await screen.findByText('−23.0 to −18.0 LUFS')).toBeTruthy();
     expect(screen.getByText('at most −3.5 dBTP')).toBeTruthy();
     await user.click(await screen.findByRole('button', { name: 'Choose files to measure…' }));
@@ -152,13 +160,56 @@ describe('DeliveryPage', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('a measurement is already running');
   });
 
-  it('reports every value unchecked when the limits cannot be read, and says why', async () => {
+  it('marks a value the host found outside a limit, from the host’s own payload', async () => {
     const user = userEvent.setup();
-    renderPage({ overrides: { ...measuresAtOnce(), settingsForScope: async () => Promise.reject(new Error('settings file is locked')) } });
+    renderPage({ overrides: measuresAtOnce() });
+    await user.click(await screen.findByRole('button', { name: 'Choose files to measure…' }));
+    expect(await screen.findByText('1 value is outside your limits.')).toBeTruthy();
+    expect((await rowFor('Chapter 01.wav')).textContent).toContain('above −3.5');
+  });
+
+  it('judges nothing when the host cannot read the limits, and says why', async () => {
+    const user = userEvent.setup();
+    const unreadable = (job: MeasureJob): MeasureJob => ({
+      ...job,
+      limitsError: 'delivery limit true_peak_dbtp_max is "loud", which is not a finite number',
+      files: job.files.map((file) => ({ ...file, findings: [] })),
+    });
+    renderPage({ overrides: { ...measuresAtOnce(undefined, unreadable), settingsForScope: async () => Promise.reject(new Error('settings file is locked')) } });
     expect((await screen.findByRole('alert')).textContent).toContain('Your limits could not be read, so every value is only reported: settings file is locked');
     await user.click(await screen.findByRole('button', { name: 'Choose files to measure…' }));
     expect(await screen.findByText('Measured 2 of 3 files; 1 could not be measured.')).toBeTruthy();
     expect((await rowFor('Chapter 01.wav')).textContent).not.toMatch(/above|below/);
+    const alerts = (await screen.findAllByRole('alert')).map((alert) => alert.textContent);
+    expect(alerts).toContain('Your limits could not be read, so no value is judged: delivery limit true_peak_dbtp_max is "loud", which is not a finite number');
+  });
+
+  it('exports a report of what was measured, with file names only unless the narrator includes locations', async () => {
+    const user = userEvent.setup();
+    const pinned = deliveryReportExportSchema.parse(
+      JSON.parse(readFileSync(join(__dirname, '..', '..', '..', '..', '..', 'tests', 'fixtures', 'contracts', 'delivery-report-export.json'), 'utf8')),
+    );
+    const deliveryExportReport = vi.fn<NarrationApi['deliveryExportReport']>().mockResolvedValue(pinned);
+    renderPage({ overrides: { ...measuresAtOnce(), deliveryExportReport } });
+    await user.click(await screen.findByRole('button', { name: 'Choose files to measure…' }));
+    await screen.findByText('Measured 2 of 3 files; 1 could not be measured.');
+
+    await user.click(screen.getByRole('button', { name: 'Export report' }));
+    expect(deliveryExportReport).toHaveBeenLastCalledWith(false);
+    expect(await screen.findByText(/^Wrote/)).toBeTruthy();
+    expect(screen.getByText(pinned.htmlFile)).toBeTruthy();
+    expect(screen.getByText('3 files, 3 open findings of 4; file names only, no locations.')).toBeTruthy();
+
+    await user.click(screen.getByRole('checkbox', { name: /Include each file’s full location/ }));
+    await user.click(screen.getByRole('button', { name: 'Export report' }));
+    expect(deliveryExportReport).toHaveBeenLastCalledWith(true);
+  });
+
+  it('shows why a report was not written', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: 'Export report' }));
+    expect((await screen.findByRole('alert')).textContent).toBe('The report was not written: nothing has been measured or checked in this session yet');
   });
 
   it('opens Settings at the Delivery limits', async () => {

@@ -11,6 +11,7 @@ import { deliveryLimitsFrom } from './deliveryLimits';
 import { DeliveryLimitsPanel, type LimitsState } from './DeliveryLimitsPanel';
 import { DiagnosticsTab } from './DiagnosticsTab';
 import { MeasurementsTable, tally } from './MeasurementsTable';
+import { ReportExportPanel } from './ReportExportPanel';
 
 /** How often a running measurement is read. */
 const POLL_MS = 500;
@@ -23,9 +24,9 @@ const plural = (count: number, one: string, many: string) => `${count} ${count =
 /**
  * Delivery (docs/prds/diagnostics-delivery-and-cleanup-tools.prd.md Phase 5): the narrator picks rendered chapter files, the host
  * measures them as a job with real progress and Cancel (ADR 0015, ADR 0156), and the page lists every measurement with its unit
- * against the narrator's own limits (ADR 0155). The host keeps the last measurement, so leaving the page and coming back shows it
- * again, and one still running is picked up where it is. The Diagnostics tab (Phase 6) checks the same files with the windowed analyzers.
- * Nothing here changes a file.
+ * as the host judges it against the narrator's own limits (ADR 0155, Phase 7). The host keeps the last measurement, so leaving the
+ * page and coming back shows it again, and one still running is picked up where it is. The Diagnostics tab (Phase 6) checks the same
+ * files with the windowed analyzers, and the Report panel (Phase 7) exports both. Nothing here changes an audio file.
  */
 export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
   const api = useApi();
@@ -85,10 +86,9 @@ export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
 
   const cancel = () => void api.measureCancel().then(setJob, (error) => setProblem(apiErrorMessage(error)));
 
-  const judgedLimits = limits.status === 'ready' ? limits.limits : undefined;
   const files = job?.files ?? [];
   const ended = job !== undefined && (job.phase === 'success' || job.phase === 'cancelled' || job.phase === 'error');
-  const { outside, unavailable } = tally(files, judgedLimits);
+  const { outside, unavailable } = tally(files);
   // The files of a measurement that has ended were picked, so the Diagnostics tab can check them without picking them again.
   const measuredPaths = ended ? files.map((file) => file.path) : [];
 
@@ -123,6 +123,11 @@ export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
                 {problem}
               </p>
             )}
+            {job?.limitsError && files.length > 0 && (
+              <p role="alert" className="mt-2 text-sm" style={DANGER}>
+                Your limits could not be read, so no value is judged: {job.limitsError}
+              </p>
+            )}
             {job && running && (
               <div className="mt-3 flex flex-col gap-2">
                 <ProgressBar label="Measuring" value={job.percent} running valueText={`${job.percent}% read`} />
@@ -146,7 +151,7 @@ export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
                 ) : (
                   <p aria-live="polite">{job.message}</p>
                 )}
-                {judgedLimits && outside > 0 && (
+                {outside > 0 && (
                   <p className="mt-1 font-medium" style={DANGER}>
                     {plural(outside, 'value is', 'values are')} outside your limits.
                   </p>
@@ -160,7 +165,7 @@ export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
                   tabIndex={0}
                   className="overflow-x-auto focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none focus-visible:ring-inset"
                 >
-                  <MeasurementsTable files={files} limits={judgedLimits} />
+                  <MeasurementsTable files={files} />
                 </div>
                 {unavailable > 0 && (
                   <p className="mt-2 text-xs" style={MUTED}>
@@ -182,6 +187,7 @@ export function DeliveryPage({ openSettings }: { openSettings: () => void }) {
           <DiagnosticsTab measuredPaths={measuredPaths} />
         </TabPanel>
       </Tabs>
+      <ReportExportPanel busy={running} />
     </div>
   );
 }

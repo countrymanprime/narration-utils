@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/countrymanprime/narration-utils/shell/internal/findings"
 	"github.com/countrymanprime/narration-utils/shell/internal/measure"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -31,13 +32,16 @@ const (
 )
 
 // MeasureFileResult is one file of a measurement. Report and Fingerprint are set once it is measured; a report's
-// unmeasurable values are null, never a number (ADR 0025). Error says why a failed file could not be measured.
+// unmeasurable values are null, never a number (ADR 0025). Error says why a failed file could not be measured. Findings
+// are the host's judgement of the report against the narrator's limits in force when the job is read (measure.Evaluate,
+// judgeMeasureJob): delivery_qc findings with the IDs an exported report carries, empty when nothing is outside a limit.
 type MeasureFileResult struct {
 	Path        string               `json:"path"`
 	Name        string               `json:"name"`
 	Status      string               `json:"status"`
 	Report      *measure.Report      `json:"report"`
 	Fingerprint *measure.Fingerprint `json:"fingerprint"`
+	Findings    []findings.Finding   `json:"findings"`
 	Error       string               `json:"error,omitempty"`
 }
 
@@ -54,6 +58,9 @@ type MeasureJob struct {
 	Elapsed float64             `json:"elapsed"`
 	Error   string              `json:"error,omitempty"`
 	Files   []MeasureFileResult `json:"files"`
+	// LimitsError says why the narrator's limits could not be read (a hand-edited settings file), so no file is judged.
+	// judgeMeasureJob sets it, never the job itself.
+	LimitsError string `json:"limitsError,omitempty"`
 }
 
 // MeasurePickResult is what the picker chose; empty when the narrator closed it.
