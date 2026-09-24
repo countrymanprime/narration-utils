@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { AudiobookEstimatePanel, rollupChapterStatuses } from './AudiobookEstimatePanel';
@@ -257,5 +257,104 @@ describe('AudiobookEstimatePanel', () => {
     expect(totals.finalized.count).toBe(previousFinalized.count + 1);
     expect(totals.finalized.words).toBe(previousFinalized.words + chapter.wordCount);
     expect(document.querySelectorAll('.progress-segment')).toHaveLength(5);
+  });
+});
+
+describe('credits rows in the chapter table (credits-in-chapter-table.prd.md Phase 2)', () => {
+  const openTable = async (overrides: Parameters<typeof createMockApi>[0] = {}, initial: Parameters<typeof createMockApi>[1] = {}) => {
+    const api = createMockApi(overrides, initial);
+    render(
+      <MemoryRouter>
+        <ApiProvider api={api}>
+          <AudiobookEstimatePanel notify={() => {}} goToManuscript={() => {}} />
+        </ApiProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByText('Audiobook estimate');
+    fireEvent.click(screen.getByRole('button', { name: /Show per-chapter breakdown/ }));
+    return api;
+  };
+  const tableRows = () => within(screen.getByRole('table', { name: 'Chapters' })).getAllByRole('row');
+
+  it('places Opening credits first and Closing credits last, leaving the narration total and count unchanged (CT1)', async () => {
+    await openTable();
+    const rows = tableRows();
+    expect(within(rows[1]).getByText('Opening credits')).toBeTruthy();
+    expect(within(rows[rows.length - 1]).getByText('Closing credits')).toBeTruthy();
+    // Header row + 12 narration chapters + 2 credits rows.
+    expect(rows.length).toBe(15);
+    expect(screen.getAllByText(/12 chapters/).length).toBeGreaterThan(0);
+  });
+
+  it('shows the template name and a disabled Check with a reason for a configured row, and a plain dash for Actual recorded (CT4, CT6)', async () => {
+    await openTable();
+    const openingRow = within(tableRows()[1]);
+    expect(openingRow.getByText('ACX minimum (opening)')).toBeTruthy();
+    const cells = openingRow.getAllByRole('cell');
+    expect(cells[3].textContent).toBe('—');
+    const check = screen.getByRole('button', { name: 'Check recording of Opening credits' }) as HTMLButtonElement;
+    expect(check.disabled).toBe(true);
+    // Both credits rows are disabled with the same reason.
+    expect(screen.getAllByLabelText('The recording check reads manuscript chapters; credits are not checked yet').length).toBe(2);
+  });
+
+  it('warns when a credits template has an unresolved token, without hiding or blocking the row (C6)', async () => {
+    // The default demo seeds no credit values (main.tsx's mockCreditsFilled is off by default), so every [Token] in the
+    // built-in templates is unresolved.
+    await openTable();
+    const openingRow = within(tableRows()[1]);
+    expect(openingRow.getByText(/not filled in/)).toBeTruthy();
+    expect(openingRow.getByLabelText('Opening credits status')).toBeTruthy();
+  });
+
+  it('shows no warning once every token is filled', async () => {
+    await openTable({}, { creditValues: { title: 'A Book', author: 'A. Author', narrator: 'A. Narrator' } });
+    const openingRow = within(tableRows()[1]);
+    expect(openingRow.queryByText(/not filled in/)).toBeNull();
+  });
+
+  it('shows "Not set up" with a link to Settings > Credits for a missing template, and no status or Check (CT5)', async () => {
+    await openTable({}, { creditsMissingClosing: true });
+    const rows = tableRows();
+    const closingRow = within(rows[rows.length - 1]);
+    expect(closingRow.getByText(/Not set up/)).toBeTruthy();
+    expect(closingRow.getByRole('link', { name: /Add a closing template in Settings/ })).toBeTruthy();
+    expect(closingRow.queryByLabelText('Closing credits status')).toBeNull();
+    expect(closingRow.queryByRole('button', { name: /Check/ })).toBeNull();
+  });
+
+  it('changes a row status through setCreditsStatus, never manuscriptSetChapterStatus or the stage engine, and updates the progress text (CT1, CT2, CT3)', async () => {
+    const setCreditsStatus = vi.fn(async (kind: string, status: string) => ({ [kind]: status }));
+    const manuscriptSetChapterStatus = vi.fn();
+    await openTable({ setCreditsStatus, manuscriptSetChapterStatus });
+    expect(screen.getByText(/credits 0 of 2/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Opening credits status'), { target: { value: 'finalized' } });
+    await waitFor(() => expect((screen.getByLabelText('Opening credits status') as HTMLSelectElement).value).toBe('finalized'));
+    expect(setCreditsStatus).toHaveBeenCalledWith('opening', 'finalized');
+    expect(manuscriptSetChapterStatus).not.toHaveBeenCalled();
+    expect(screen.getByText(/credits 1 of 2/)).toBeTruthy();
+  });
+
+  it('the rows sum to the same total as the headline Credits stat (Technical Risks: cannot disagree)', async () => {
+    const segment = 'word '.repeat(155).trim();
+    await openTable({
+      creditsTemplates: async () => [
+        { id: 'o', kind: 'opening', name: 'Opening', body: segment },
+        { id: 'c', kind: 'closing', name: 'Closing', body: segment },
+      ],
+      creditsPreview: async (body: string) => ({ text: body, words: body.split(/\s+/).filter(Boolean).length, unresolved: [] }),
+    });
+    // Matches the Credits stat's own test: two 155-word segments at 155 wpm read 60s ("1m") each, no room tone by
+    // default, so the stat (2m) is exactly the sum of the two rows.
+    await waitFor(() => expect(screen.getByText('Credits').nextElementSibling?.textContent).toBe('2m'));
+    const rows = tableRows();
+    expect(within(rows[1]).getAllByText('1m').length).toBeGreaterThan(0);
+    expect(within(rows[rows.length - 1]).getAllByText('1m').length).toBeGreaterThan(0);
+  });
+
+  it('never sends a credits id to manuscriptChapters, stages or coverage', async () => {
+    const api = await openTable();
+    const chapters = await api.manuscriptChapters();
+    expect(chapters.some((chapter) => chapter.id.startsWith('credits-'))).toBe(false);
   });
 });

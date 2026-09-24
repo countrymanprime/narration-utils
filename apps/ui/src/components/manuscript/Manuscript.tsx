@@ -314,6 +314,26 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
       return;
     }
     if (handledHash.current === hash) return;
+    // "#credits-opening"/"#credits-closing" (Home's credits rows, credits-in-chapter-table.prd.md Phase 2, CT7): open
+    // the matching pseudo-entry and scroll to it, matching "#c<id>"'s open-and-scroll for a chapter. Checked before the
+    // generic "#c" prefix below, which would otherwise swallow it (both start with "#c").
+    if (hash === '#credits-opening' || hash === '#credits-closing') {
+      const kind = hash === '#credits-opening' ? 'opening' : 'closing';
+      handledHash.current = hash;
+      setCreditsExpanded((current) => ({ ...current, [kind]: true }));
+      const deadline = Date.now() + 2000;
+      const attempt = () => {
+        const target = document.querySelector<HTMLElement>(`[data-credits-entry="${kind}"]`);
+        if (target) {
+          target.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+          return;
+        }
+        if (Date.now() < deadline) requestAnimationFrame(attempt);
+      };
+      requestAnimationFrame(attempt);
+      routerNavigate('/manuscript', { replace: true });
+      return;
+    }
     let chapter: string | undefined;
     let paragraph: number | undefined;
     if (hash.startsWith('#p')) {
@@ -333,7 +353,7 @@ export function Manuscript({ notify, focusStoryBibleEntity }: { notify: Notify; 
     // this hash link, a search result, Story Bible "Go to line" - gets the same behavior for free.
     showChapter(chapter, paragraph);
     routerNavigate('/manuscript', { replace: true });
-  }, [location.hash, chapters, routerNavigate, showChapter]);
+  }, [location.hash, chapters, routerNavigate, showChapter, setCreditsExpanded]);
   const toggleManualChapter = (chapter: string) => {
     const expanded = new Set(readerState.expandedChapters || []);
     if (expanded.has(chapter)) expanded.delete(chapter);

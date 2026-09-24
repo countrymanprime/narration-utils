@@ -545,6 +545,16 @@ describe('Manuscript page (integration, driven through the mock NarrationApi)', 
       expect(screen.queryByRole('heading', { name: 'Opening credits' })).toBeNull();
       expect(screen.queryByRole('heading', { name: 'Closing credits' })).toBeNull();
     });
+
+    it('a "#credits-opening"/"#credits-closing" deep link (Home\'s credits rows, credits-in-chapter-table.prd.md Phase 2, CT7) opens the matching entry', async () => {
+      renderManuscript({}, vi.fn(), ['/manuscript#credits-closing']);
+      await waitFor(() => screen.getByRole('heading', { name: 'Chapter 1 — Down the Rabbit-Hole' }));
+      // Collapsed entries show no unresolved-token count (asserted above); the closing entry opening on its own,
+      // with the opening entry left collapsed, proves the hash targeted the right one.
+      await waitFor(() => expect(screen.getByText(/3 unresolved tokens: Title, Author, Narrator/)).toBeTruthy());
+      const opening = screen.getByRole('heading', { name: 'Opening credits' }).closest('[data-credits-entry]')!;
+      expect(within(opening as HTMLElement).queryByText(/unresolved token/)).toBeNull();
+    });
   });
 
   describe('retail sample marker (PRD audiobook-credits-templates.prd.md, Phase 5, C10)', () => {

@@ -566,6 +566,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
     'chapter-table-expanded': async (page) => {
       await clickVisible(page, 'button', /Show per-chapter breakdown/);
     },
+    'chapter-table-credits-missing': async (page) => {
+      await page.goto('/?mockCreditsMissing=1');
+      await settlePage(page);
+      await homeLoaded(page);
+      await clickVisible(page, 'button', /Show per-chapter breakdown/);
+    },
     'hint-chips': async (page) => {
       await goToPage(page, 'Proofing');
       await clickVisible(page, 'button', /Suggest from manuscript/);

@@ -30,6 +30,17 @@ the chapter's status or from a recording check's word share, so changing the sta
 column unchanged. The headline **Actual recorded** stat above the table sums the real times of
 linked chapters only, and its tooltip says how many of the book's chapters that covers.
 
+The table's first row is **Opening credits** and its last row is **Closing credits**: not
+chapters, but the same first opening and first closing template the Credits stat and the
+Manuscript page use, each with its own status, word count and estimated length (including room
+tone). The row's title links to the matching entry on the Manuscript page. A template with an
+unresolved token (`[Author]` never filled in) shows a warning next to its name without blocking
+anything; a missing template reads "Not set up" with a link to [Settings, Credits](settings.md#credits).
+Their **Check** is disabled for now (a recording check reads manuscript chapters only), and their
+**Actual recorded** is always a dash until a later phase can measure them. The progress line adds
+"· credits N of 2" once a credits row is finalized; the header count, **Est. finished audio**, the
+progress bar and the rest of the row totals stay narration-only, as before.
+
 ### Checking a chapter's recording
 
 **Check** at the end of a row opens the chapter's recording check. Nothing runs until you ask:

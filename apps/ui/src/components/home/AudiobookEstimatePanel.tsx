@@ -2,10 +2,11 @@ import { describeApiError } from '../../api/errorMessage';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
+import { faChevronDown, faChevronUp, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import type { ChapterStatus, CoverageState, ManuscriptChapter, RecordedUnavailable } from '../../types';
 import { estimateFinishedHours } from '../../state';
 import { useCreditsSeconds } from './useCreditsSeconds';
+import { useCreditsRows, type CreditsKind } from './useCreditsRows';
 import { useApi } from '../../api/ApiContext';
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from '../primitives/Collapsible';
 import { MeterBar } from '../primitives/MeterBar';
@@ -48,6 +49,19 @@ const RECORDED_UNAVAILABLE_REASON: Record<RecordedUnavailable, string> = {
   no_project: 'No REAPER project is open',
 };
 
+// Credits rows (credits-in-chapter-table.prd.md Phase 2): Opening credits first, Closing credits last (CT6), not
+// manuscript chapters, so they are never in narrationChapters and never touch stages, coverage or manuscriptSetChapterStatus.
+const CREDITS_LABEL: Record<CreditsKind, string> = { opening: 'Opening credits', closing: 'Closing credits' };
+const CREDITS_CHECK_DISABLED_REASON = 'The recording check reads manuscript chapters; credits are not checked yet';
+
+// A single unresolved token reads as its own name (matching the mockup, 04-unresolved-token-warning.webp); several
+// fall back to the count-and-list wording CreditsEntry/CreditsPanel already use elsewhere.
+const unresolvedWarning = (unresolved: string[]): string | undefined => {
+  if (unresolved.length === 0) return undefined;
+  if (unresolved.length === 1) return `${unresolved[0]} not filled in`;
+  return `${unresolved.length} tokens not filled in: ${unresolved.join(', ')}`;
+};
+
 export type StatusTotal = { count: number; hours: number; words: number };
 
 // Keep the progress bar's domain model independent from its rendering.  This
@@ -81,6 +95,8 @@ export function AudiobookEstimatePanel({
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   // Credits stat (Phases 2 and 5): undefined while loading or on failure, in which case the row is simply left out.
   const creditsSeconds = useCreditsSeconds(api, refreshKey);
+  // Credits table rows (credits-in-chapter-table.prd.md Phase 2): Opening credits first, Closing credits last.
+  const { rows: creditsRows, setStatus: setCreditsStatus } = useCreditsRows(api, refreshKey, (error) => notify(describeApiError(error), 'error'));
   // Recording coverage (docs/utilities/recording-coverage.md, ADR 0130): the live state of the one check the host runs at a time, so a row
   // shows its percent even after its dialog was sent to the background, and the chapter whose check dialog is open.
   const [coverage, setCoverage] = useState<CoverageState>({ phase: 'idle', percent: 0, message: '' });
@@ -117,6 +133,82 @@ export function AudiobookEstimatePanel({
       }
     })();
   }, [api, notify, refreshKey, measuredRun]);
+
+  const creditsTableRow = (kind: CreditsKind) => {
+    const row = creditsRows![kind];
+    const label = CREDITS_LABEL[kind];
+    if (!row.template) {
+      return (
+        <TableRow key={`credits-${kind}`}>
+          <TableCell>
+            <div className="font-medium">{label}</div>
+            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              Not set up ·{' '}
+              <Link className="hover:underline" to="/settings#credits">
+                Add {kind === 'opening' ? 'an opening' : 'a closing'} template in Settings › Credits
+              </Link>
+            </div>
+          </TableCell>
+          <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+            —
+          </TableCell>
+          <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+            —
+          </TableCell>
+          <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+            —
+          </TableCell>
+          <TableCell />
+          <TableCell />
+        </TableRow>
+      );
+    }
+    const warning = unresolvedWarning(row.unresolved);
+    return (
+      <TableRow key={`credits-${kind}`}>
+        <TableCell>
+          <div>
+            <Link className="font-medium hover:underline" to={`/manuscript#credits-${kind}`}>
+              {label}
+            </Link>
+          </div>
+          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            <span>{row.template.name}</span>
+            {warning && (
+              <>
+                {' · '}
+                <FontAwesomeIcon icon={faTriangleExclamation} aria-hidden="true" style={{ color: 'var(--danger-text)' }} /> <span>{warning}</span>
+              </>
+            )}
+          </div>
+        </TableCell>
+        <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+          {(row.words ?? 0).toLocaleString()}
+        </TableCell>
+        <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+          {fmtCreditsSeconds(row.estimatedSeconds ?? 0)}
+        </TableCell>
+        <TableCell align="right" className="font-['IBM_Plex_Mono',ui-monospace,monospace]">
+          —
+        </TableCell>
+        <TableCell>
+          <Select
+            label={`${label} status`}
+            value={row.status}
+            options={STATUS_ORDER.map((status) => ({ value: status, label: STATUS_LABELS[status] }))}
+            onChange={(value) => void setCreditsStatus(kind, value as ChapterStatus)}
+          />
+        </TableCell>
+        <TableCell align="right">
+          <TooltipTarget text={CREDITS_CHECK_DISABLED_REASON}>
+            <Button variant="ghost" className="px-3 py-1 whitespace-nowrap" disabled aria-label={`Check recording of ${label}`}>
+              Check
+            </Button>
+          </TooltipTarget>
+        </TableCell>
+      </TableRow>
+    );
+  };
 
   if (!chapters) return null;
   const narrationChapters = chapters.filter((chapter) => (chapter.contentKind ?? 'narration') === 'narration');
@@ -183,6 +275,7 @@ export function AudiobookEstimatePanel({
             </span>
             <span className="font-['IBM_Plex_Mono',ui-monospace,monospace]" style={{ color: 'var(--text-muted)' }}>
               {finalizedCount} of {narrationChapters.length} chapters finalized
+              {creditsRows && ` · credits ${[creditsRows.opening, creditsRows.closing].filter((row) => row.status === 'finalized').length} of 2`}
             </span>
           </div>
           <MeterBar
@@ -225,6 +318,7 @@ export function AudiobookEstimatePanel({
               </TableRow>
             </TableHead>
             <TableBody>
+              {creditsRows && creditsTableRow('opening')}
               {narrationChapters.map((chapter) => {
                 const finished = estimateFinishedHours(chapter.wordCount);
                 const running = coverage.phase === 'running' && coverage.chapterId === chapter.id;
@@ -328,6 +422,7 @@ export function AudiobookEstimatePanel({
                   </TableRow>
                 );
               })}
+              {creditsRows && creditsTableRow('closing')}
             </TableBody>
           </Table>
         </CollapsiblePanel>
