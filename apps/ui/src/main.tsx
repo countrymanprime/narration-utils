@@ -40,6 +40,9 @@ const mockNoDaw = mockParams.has('mockNoDaw');
 // `?mockDawNotDetected=1` makes the DAW catalog panel (Settings > DAW Integration, docs/architecture/
 // daw-integration.md) report REAPER as not detected, so its "Get REAPER" button can be seen without a host.
 const mockDawNotDetected = mockParams.has('mockDawNotDetected');
+// `?mockCreditsMissing=1` drops the closing credit templates (credits-in-chapter-table.prd.md Phase 2, CT5): Home's
+// chapter table shows the Closing credits row as "Not set up" with a link to Settings > Credits.
+const mockCreditsMissing = mockParams.has('mockCreditsMissing');
 // `?mockNoManuscript=1` boots a project with no manuscript imported yet, so
 // Home shows its manuscript-not-found banner and Proofing/Story Bible are locked.
 const mockNoManuscript = mockParams.has('mockNoManuscript');
@@ -50,8 +53,8 @@ const mockManuscriptCandidate = mockParams.has('mockManuscriptCandidate');
 // through the first chapter, as a session the host kept running (`flagged`: further in, with suspected flags raised);
 // `ended` boots one that already stopped itself at the end of the chapter (the host's auto-stop).
 const mockTeleprompter = (['listening', 'waiting', 'done', 'ended', 'flagged'] as const).find((seed) => seed === mockParams.get('mockTeleprompter'));
-// `?mockResume=low_confidence|not_found|ambiguous|none|no_recording|source_missing|source_unsupported|error` makes the
-// read-aloud dialog's resume card (teleprompter-manuscript-integration.prd.md Phase 10) show that state for any chapter,
+// `?mockResume=low_confidence|complete|not_found|ambiguous|none|no_recording|source_missing|source_unsupported|error`
+// makes the read-aloud dialog's resume prompt (read-aloud-resume-from-daw.prd.md Phase 1) show that state for any chapter,
 // so each can be seen without a REAPER project, a recording or a Whisper run.
 const mockResume = MOCK_RESUME_SEEDS.find((seed) => seed === mockParams.get('mockResume'));
 // `?mockNoDevices=1` boots the teleprompter with an empty device listing, so the
@@ -193,6 +196,7 @@ const mockInitial = {
   ...(mockNoManuscript ? { noManuscript: true } : {}),
   ...(mockNoDaw ? { dawFileLinked: false } : {}),
   ...(mockDawNotDetected ? { dawCatalogInstalled: false } : {}),
+  ...(mockCreditsMissing ? { creditsMissingClosing: true } : {}),
   ...(mockPreviewError ? { previewError: mockPreviewError } : {}),
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),

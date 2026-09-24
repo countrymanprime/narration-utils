@@ -17,7 +17,7 @@ Save the REAPER project, then press **Check** on a chapter's row of the Home bre
 check reads the chapter's confirmed REAPER track from the saved project file. It transcribes each item's played range
 that it has not transcribed before, and then aligns the chapter's text to the words in order. The result reads "Text
 present: N of M words" and lists each missing region: which paragraphs, how many words, the first and last missing
-words, and where the gap sits in the audio. The recorded column then says **measured**. When every paragraph passes the
+words, and where the gap sits in the audio. When every paragraph passes the
 two thresholds, the chapter's `recording` signal is `met`, and the stage recommendations can suggest moving it on. The
 narrator always confirms. See [Using the app: Home](../guides/using-the-app/home.md#checking-a-chapters-recording) for
 the screens and [Settings](../guides/using-the-app/settings.md) for the four numbers.
@@ -70,8 +70,10 @@ flowchart LR
   chapter's text, the equivalences, the vocabulary hints or an alignment setting changes. A different Whisper model or
   language keeps it current and labelled with the model (Q13).
 - **Three readers.** The Home dialog (`RecordingCheck.tsx`) shows the stored report. `recordedFraction` on the chapter
-  payload is the present share of a current complete check only, so the Home recorded column reads **measured** or
-  **estimated from status**. `coverage.RecordingSignal` gives the stage recommendations engine the tri-state
+  payload is the present share of a current complete check only; it no longer feeds Home's **Actual recorded** column,
+  which instead reads `recordedSeconds`, a real duration from the chapter's linked track in the saved project, unrelated
+  to any check ([Actual Recorded](../prds/actual-recorded-column.prd.md) Phase 3, superseding Q12 below).
+  `coverage.RecordingSignal` gives the stage recommendations engine the tri-state
   `recording.text_present` signal
   ([ADR 0131](../adr/0131-the-recording-signal-is-read-from-stored-checks-with-thresholds-applied-on-read-and-alignment-from-settings.md),
   [stage recommendations](../architecture/stage-recommendations.md)).
@@ -139,7 +141,7 @@ docs/prds/recording-coverage-analysis.prd.md` finds it).
 | Q8 | The live teleprompter tracker is not reused: its "done" is a cursor position |
 | Q10 | Muted items are skipped and listed |
 | Q11 | A spoken title or subtitle is optional, and never counted as missing or extra |
-| Q12 | An unmeasured chapter keeps the status estimate, labelled "estimated from status" |
+| Q12 | *Superseded* by [Actual Recorded](../prds/actual-recorded-column.prd.md) Phase 3: an unmeasured chapter kept the status estimate, labelled "estimated from status"; the column now reads a real recorded length or a plain dash, never a guess |
 | Q13 | Another model or language keeps a result current (labelled). Another alignment setting makes it stale |
 | Q14 | On demand only: Home reads stored results and never starts a check |
 | Q15 | Synthetic fixtures now, with `NARRATION_COVERAGE_CORPUS` for a real permissioned corpus later ([ADR 0125](../adr/0125-recording-coverage-ground-truth-is-scripted-recordings-with-paragraph-labels-and-a-corpus-directory-variable.md)) |
