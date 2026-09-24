@@ -8,9 +8,11 @@ import "sync"
 // survives the managers being rebuilt when a project is attached.
 var (
 	sessionMu sync.Mutex
-	verified  = map[string]bool{}
+	// +checklocks:sessionMu
+	verified = map[string]bool{}
 	// locks serialise the readers and writers of one install directory: a Verify that is hashing, the swap that replaces the install, and
 	// the manifest records they leave, so a Verify of the old copy cannot mark a freshly installed one damaged.
+	// +checklocks:sessionMu
 	locks = map[string]*sync.Mutex{}
 )
 

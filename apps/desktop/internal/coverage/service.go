@@ -105,10 +105,13 @@ type Service struct {
 	mapping *evidence.MappingStore
 	results resultStore
 
-	mu    sync.Mutex
-	busy  bool
+	mu sync.Mutex
+	// +checklocks:mu
+	busy bool
+	// +checklocks:mu
 	state State
-	job   *job
+	// +checklocks:mu
+	job *job
 }
 
 // New builds the service for one project. changed, when not nil, hears every

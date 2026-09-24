@@ -28,22 +28,30 @@ import (
 
 type Config struct{ Project, SessionDir, Python, Backend string }
 type Service struct {
-	mu                sync.RWMutex
-	config            Config
-	bridge            dawadapter.Review // the DAW, the REAPER bridge today (nil with no DAW session); see NewWithReview
-	settings          *settings.Store
-	sidecars          *process.Supervisor
-	changed           func(map[string]any)
-	state             map[string]any
-	child             *process.Child
-	progress, logPath string
-	logAt             int64
-	files             atomic.Pointer[persist.Reporter]
+	mu       sync.RWMutex
+	config   Config
+	bridge   dawadapter.Review // the DAW, the REAPER bridge today (nil with no DAW session); see NewWithReview
+	settings *settings.Store
+	sidecars *process.Supervisor
+	changed  func(map[string]any)
+	// +checklocks:mu
+	state map[string]any
+	// +checklocks:mu
+	child *process.Child
+	// +checklocks:mu
+	progress string
+	// +checklocks:mu
+	logPath string
+	// +checklocks:mu
+	logAt int64
+	files atomic.Pointer[persist.Reporter]
 	// findingsStore and manuscriptLookup are nil until app.go opts in with
 	// SetFindings (review-dashboard-and-findings-adoption.prd.md Phase 2);
 	// every existing caller, including every test in this package, leaves
 	// them nil and saveFindings is then a no-op.
-	findingsStore    *findings.Store
+	// +checklocks:mu
+	findingsStore *findings.Store
+	// +checklocks:mu
 	manuscriptLookup ManuscriptLookup
 }
 
@@ -126,6 +134,8 @@ func clone(value map[string]any) map[string]any {
 	_ = json.Unmarshal(bytes, &result)
 	return result
 }
+
+// +checklocksread:s.mu
 func (s *Service) snapshotLocked() map[string]any {
 	result := clone(s.state)
 	if start, ok := s.state["startedAt"].(time.Time); ok {
@@ -524,6 +534,7 @@ func (s *Service) saveFindings() {
 // argument and is ignored when that is not this run's. An ERROR is ERROR|run|message; with an empty run (a
 // session-level problem, such as an unsupported protocol) it belongs to whatever run is in progress, and an ERROR
 // without a message is the older, unattributed shape and is ignored.
+// +checklocksread:s.mu
 func (s *Service) acceptsLocked(fields []string) bool {
 	runID, _ := s.state["runId"].(string)
 	if fields[0] == "ERROR" {

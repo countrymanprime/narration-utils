@@ -5,7 +5,8 @@ What `pnpm check` and CI verify beyond "it lints and the example tests pass", ho
 | Check | Runs in | Run it alone |
 | --- | --- | --- |
 | Formatting: ruff (Python, the only Python formatter), Prettier (UI), gofmt, StyLua | `lint` and `format` targets | `pnpm exec nx run <project>:lint` |
-| Go lint: golangci-lint v2 (errcheck, staticcheck, govet, unused, gosec, depguard) | `narration-utils-shell:lint` | `pnpm exec nx run narration-utils-shell:lint` |
+| Go lint: golangci-lint v2 (errcheck, staticcheck, govet, unused, gosec, depguard) and checklocks | `narration-utils-shell:lint` | `pnpm exec nx run narration-utils-shell:lint` |
+| Go race detector, on the packages with concurrency | `narration-utils-shell:test:ci` (CI only; it needs cgo) | `CGO_ENABLED=1 go -C apps/desktop test -race ./...` |
 | Coverage ratchet on logic directories | the `test` targets of the projects with logic directories | `node scripts/ci/coverage-gate.mjs <go\|vitest\|pytest> <projectRoot>` |
 | Property tests (Hypothesis, fast-check) and Go fuzz seed corpora | the same `test` targets | see below |
 | Dead code: Knip | `narration-utils:knip` | `pnpm knip` |
@@ -17,9 +18,13 @@ What `pnpm check` and CI verify beyond "it lints and the example tests pass", ho
 | Axe on every app state, with a declared, capped debt list | `ui-visual` (the visual suite) | `pnpm --dir apps/ui screenshots`, or `UI_AXE=1` to measure |
 | Aria snapshots: the role trees of the dialogs, the slide-over and the navigation | `ui-visual`, after the screenshots | `pnpm --dir apps/ui run aria` |
 
-## Go lint
+## Go lint and the race detector
 
 `apps/desktop/.golangci.yml` runs the `standard` set plus gosec and depguard and reports every finding (the defaults cap identical ones at three). The binary is pinned in `scripts/toolchain.json` and built with the repo's Go (`go install`, or `pnpm bootstrap`). Each exclusion in the file says why. A finding is fixed, or given a `//nolint:gosec // <reason>` comment. The two depguard rules are `no-network-outside-the-download-flow` and `analyzers-report-they-do-not-write` ([ADR 0046](../adr/0046-architecture-rules-taken-from-adrs-are-lint-and-test-rules.md)); to add a rule, copy one and name the ADR in its `desc`.
+
+The lint target also runs gVisor's [checklocks](https://github.com/google/gvisor/tree/master/tools/checklocks) on the product code (`checklocks -test=false ./...`, about three seconds; pinned in `scripts/toolchain.json`). A field only touched under a lock says so with `// +checklocks:mu`, and a helper its caller holds the lock for says so with `// +checklocks:s.mu` (or `+checklocksread:s.mu` for a read lock); any access without the lock fails lint. A field checklocks sees used under a lock every time is reported until it is annotated, or given a trailing `// +checklocksignore: <reason>` when the lock is incidental (an atomic, read-only data). Declare one field per line in an annotated struct: checklocks pairs annotations with fields by position, so `a, b string` moves every later annotation onto the wrong field ([ADR 0171](../adr/0171-the-race-detector-runs-only-where-there-is-concurrency-and-checklocks-guards-the-locks.md)).
+
+The race detector runs in CI only (`-race` needs cgo), and only on the packages it can find something in: `scripts/ci/coverage-gate.mjs` races every package whose source takes a lock, uses an atomic, starts a goroutine or makes a channel, or whose tests start goroutines, and runs the rest without it, printing which. `internal/measure` took 454 s under the detector and 4 s without it.
 
 ## Coverage ratchet
 

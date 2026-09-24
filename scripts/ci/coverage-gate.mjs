@@ -39,6 +39,34 @@ export function parseGoCover(output, modulePath) {
   return packages;
 }
 
+const SYNC_IMPORTS = new Set(['sync', 'sync/atomic', 'golang.org/x/sync/errgroup', 'golang.org/x/sync/semaphore', 'golang.org/x/sync/singleflight']);
+// Comments are not stripped: a `//` inside a string would hide the code after it, and a goroutine-shaped comment
+// only costs a raced package that did not need it.
+const GOROUTINE = /(^|[^\w.])go\s+(func\b|[\w.]+\s*[([])/m;
+const CHANNEL = /\bchan\b/;
+
+/**
+ * Splits `go list -json` packages into those the race detector can find something in and those it
+ * cannot. A package is raced when its source takes a lock, uses an atomic, starts a goroutine or
+ * makes a channel, or when its tests start goroutines or synchronise (a stress test of an
+ * otherwise plain package). `t.Parallel` alone does not count: parallel subtests racing on their
+ * own fixtures is not a product bug. The detector costs 10 to 100 times on tight numeric loops
+ * (internal/measure took 454 s under it and 4 s without), so the rest run without it.
+ */
+export function splitRacePackages(packages, readFile = (path) => readFileSync(path, 'utf8')) {
+  const text = (pkg, files) => (files ?? []).map((file) => readFile(join(pkg.Dir, file))).join('\n');
+  const race = [];
+  const plain = [];
+  for (const pkg of packages) {
+    const source = text(pkg, pkg.GoFiles);
+    const tests = text(pkg, [...(pkg.TestGoFiles ?? []), ...(pkg.XTestGoFiles ?? [])]);
+    const imports = [...(pkg.Imports ?? []), ...(pkg.TestImports ?? []), ...(pkg.XTestImports ?? [])];
+    const concurrent = imports.some((path) => SYNC_IMPORTS.has(path)) || GOROUTINE.test(source) || CHANNEL.test(source) || GOROUTINE.test(tests) || CHANNEL.test(tests);
+    (concurrent ? race : plain).push(pkg.ImportPath);
+  }
+  return { race, plain };
+}
+
 function relativeTo(root, file) {
   const base = slash(root).replace(/\/+$/, '');
   const path = slash(file);
@@ -152,13 +180,39 @@ function run(command, args, options = {}) {
   return result;
 }
 
+function listGoPackages(projectRoot) {
+  const fields = 'ImportPath,Dir,GoFiles,TestGoFiles,XTestGoFiles,Imports,TestImports,XTestImports';
+  const result = run('go', ['-C', projectRoot, 'list', `-json=${fields}`, './...'], { stdio: ['inherit', 'pipe', 'inherit'] });
+  if (result.status !== 0) process.exit(result.status ?? 1);
+  // One indented object per package, each opening with `{` at the start of a line.
+  return result.stdout.split(/\r?\n(?=\{)/).filter((chunk) => chunk.trim()).map((chunk) => JSON.parse(chunk));
+}
+
+/** `-race` runs only on the packages splitRacePackages picks; every package is still tested and measured. */
+function goTestRuns(projectRoot, extra) {
+  if (!extra.includes('-race')) return [{ args: extra, packages: ['./...'] }];
+  const { race, plain } = splitRacePackages(listGoPackages(projectRoot));
+  if (plain.length) console.log(`coverage: ${plain.length} packages with no concurrency run without -race: ${plain.join(', ')}`);
+  return [
+    { args: extra, packages: race },
+    { args: extra.filter((arg) => arg !== '-race'), packages: plain },
+  ].filter((group) => group.packages.length > 0);
+}
+
 function runGo(projectRoot, extra) {
   const goMod = readFileSync(join(projectRoot, 'go.mod'), 'utf8');
   const modulePath = /^module\s+(\S+)/m.exec(goMod)?.[1];
-  const result = run('go', ['-C', projectRoot, 'test', '-cover', ...extra, './...'], { stdio: ['inherit', 'pipe', 'inherit'] });
-  process.stdout.write(result.stdout ?? '');
-  if (result.status !== 0) process.exit(result.status ?? 1);
-  const packages = parseGoCover(result.stdout, modulePath);
+  let output = '';
+  let failed = 0;
+  // Both groups run even when the first fails, so one failure does not hide another.
+  for (const { args, packages } of goTestRuns(projectRoot, extra)) {
+    const result = run('go', ['-C', projectRoot, 'test', '-cover', ...args, ...packages], { stdio: ['inherit', 'pipe', 'inherit'] });
+    process.stdout.write(result.stdout ?? '');
+    output += result.stdout ?? '';
+    if (result.status !== 0) failed = result.status ?? 1;
+  }
+  if (failed) process.exit(failed);
+  const packages = parseGoCover(output, modulePath);
   return (entry) => aggregatePackages(packages, entry.path);
 }
 

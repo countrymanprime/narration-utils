@@ -66,22 +66,33 @@ func diagnosticThresholds() measure.DiagnosticOptions {
 }
 
 type diagnosticsJob struct {
-	mu         sync.RWMutex
-	id         string
-	phase      string
-	message    string
-	errorText  string
-	percent    int
-	logs       []string
+	mu sync.RWMutex
+	// +checklocks:mu
+	id string
+	// +checklocks:mu
+	phase string
+	// +checklocks:mu
+	message string
+	// +checklocks:mu
+	errorText string
+	// +checklocks:mu
+	percent int
+	// +checklocks:mu
+	logs []string
+	// +checklocks:mu
 	started    time.Time
 	sourceKind measure.SourceKind
 	thresholds measure.DiagnosticOptions
-	files      []DiagnosticsFileResult
+	// +checklocks:mu
+	files []DiagnosticsFileResult
 	// weights are the files' sizes when the check started (at least 1), so the percent is the share of all bytes read.
-	weights     []int64
+	// +checklocks:mu
+	weights []int64
+	// +checklocks:mu
 	totalWeight int64
-	doneWeight  int64
-	cancel      context.CancelFunc
+	// +checklocks:mu
+	doneWeight int64
+	cancel     context.CancelFunc
 }
 
 func (j *diagnosticsJob) running() bool {

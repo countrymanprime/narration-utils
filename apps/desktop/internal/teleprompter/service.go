@@ -72,26 +72,35 @@ type Service struct {
 	sidecars *process.Supervisor
 	emit     func(json.RawMessage)
 	changed  func(map[string]any)
-	report   func(kind, message string)
-	grace    time.Duration
-	dropped  int
+	// +checklocks:mu
+	report func(kind, message string)
+	// +checklocks:mu
+	grace time.Duration
+	// +checklocks:mu
+	dropped int
 
-	state       map[string]any
-	script      json.RawMessage
-	position    json.RawMessage
-	child       *process.StreamChild
-	stopFile    string
+	state    map[string]any
+	script   json.RawMessage
+	position json.RawMessage
+	// +checklocks:mu
+	child *process.StreamChild
+	// +checklocks:mu
+	stopFile string
+	// +checklocks:mu
 	controlFile string
-	scriptFile  string
-	stopping    bool
+	// +checklocks:mu
+	scriptFile string
+	stopping   bool
 	// afterFunc schedules the auto-stop (time.AfterFunc outside tests); autoStop is the pending one, autoStopRound
 	// tells a stale callback from the current one, and autoStopped records that the session ended itself at Done.
 	afterFunc     func(time.Duration, func()) stoppable
 	autoStop      stoppable
 	autoStopRound int
-	autoStopped   bool
+	// +checklocks:mu
+	autoStopped bool
 	// finished is closed by the watcher once it has recorded the session's
 	// final state, which is later than the child process exiting.
+	// +checklocks:mu
 	finished chan struct{}
 }
 

@@ -54,8 +54,10 @@ const hostAPIVersion = 47
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
 type Host struct {
-	mu         sync.RWMutex
-	ctx        context.Context
+	mu sync.RWMutex
+	// +checklocks:mu
+	ctx context.Context
+	// +checklocks:mu
 	cancel     context.CancelFunc
 	diagnostic string
 	version    string
@@ -65,10 +67,12 @@ type Host struct {
 	settings   *settings.Store
 	// assets is the registry of everything that can be downloaded (assetregistry.go). It is set once, in Startup, and never replaced: a project
 	// switch does not touch it, so it is read with registry() and needs no snapshot.
+	// +checklocks:mu
 	assets *assetRegistry
 	// installJobs are the asset downloads, voices and models alike (installjobs.go); h.mu guards the map and each job its own fields.
 	installJobs map[string]*installJob
 	// removing holds the assets (kind/id) that are being removed, so a download of the same asset cannot start under the removal (h.mu).
+	// +checklocks:mu
 	removing map[string]bool
 	guide    *guide.Service
 	guideJob *workJob
@@ -78,7 +82,8 @@ type Host struct {
 	takeComparisonJob *takeComparisonJob
 	// measureJob measures the narrator's picked audio files (measure_job.go); measurePicked is every path the picker
 	// chose this session, the only paths MeasureAnalyze accepts (ADR 0156). h.mu guards both; neither is per project.
-	measureJob    *measureJob
+	measureJob *measureJob
+	// +checklocks:mu
 	measurePicked map[string]bool
 	// diagnosticsJob runs the windowed diagnostics over picked files (diagnostics_job.go, the Diagnostics view); it
 	// accepts the same picked paths as measureJob. h.mu guards the pointer; it is not per project.
@@ -133,22 +138,28 @@ type Host struct {
 	pickAudioFiles func() ([]string, error)
 	measureFile    measureFileFunc
 	// diagnoseFile is the same seam for the diagnostics job: nil means measure.DiagnoseFile.
+	// +checklocks:mu
 	diagnoseFile diagnoseFileFunc
 	// updates asks GitHub for a newer release and remembers the answer (ADR 0072). It is set once in NewHost and never swapped, so it is
 	// read directly, like recents.
 	updates *update.Checker
 	// stager downloads and unpacks an update into the per-user cache; updateJob is the download in progress or the last one (h.mu).
+	// +checklocks:mu
 	stager    *update.Stager
 	updateJob *updateJob
 	// platform is a seam for tests: the GOOS the host acts as for the live engines it offers and launches (empty means this
 	// process's own, teleprompter.PlatformOrCurrent). Set only when the Host is built, never changed after.
 	platform string
 	// updateDelay is a seam for tests: how long Startup waits before the automatic update check; zero means startupUpdateDelay.
+	// +checklocks:mu
 	updateDelay time.Duration
 	// updateEvents and openURL are seams for tests: nil means the Wails runtime.
+	// +checklocks:mu
 	updateEvents func(updateStatus)
-	openURL      func(ctx context.Context, address string)
+	// +checklocks:mu
+	openURL func(ctx context.Context, address string)
 	// jobEvents is a seam for tests: nil means the Wails runtime (jobs.go). transcriptRuns turns transcript states into job ends.
+	// +checklocks:mu
 	jobEvents      func(jobEnded)
 	transcriptRuns transcriptWatch
 	// coverageRuns turns recording check states into job ends (bindings_coverage.go).
@@ -171,10 +182,13 @@ type Host struct {
 	dawCatalogDetectors map[string]dawcatalog.Detector
 	confirmUpdate       sync.Once
 	// writable* remember whether the install folder can be written to, for a short while (see writable).
-	writableMu  sync.Mutex
+	writableMu sync.Mutex
+	// +checklocks:writableMu
 	writableDir string
-	writableAt  time.Time
-	writableOK  bool
+	// +checklocks:writableMu
+	writableAt time.Time
+	// +checklocks:writableMu
+	writableOK bool
 	// persist reports a file that cannot be read: to the host log and, for the narrator's own data, to the narrator (ADR 0069).
 	persist *persist.Reporter
 	// notifySender is a seam for tests: nil means the real Wails notification API. notifyInitOnce guards the lazy
@@ -184,11 +198,23 @@ type Host struct {
 }
 
 type workJob struct {
-	mu                                  sync.RWMutex
-	id, kind, phase, message, errorText string
-	percent                             int
-	logs                                []string
-	started                             time.Time
+	mu sync.RWMutex
+	// id is set when the job is made and never changes, so it is read without mu.
+	id string
+	// +checklocks:mu
+	kind string
+	// +checklocks:mu
+	phase string
+	// +checklocks:mu
+	message string
+	// +checklocks:mu
+	errorText string
+	// +checklocks:mu
+	percent int
+	// +checklocks:mu
+	logs []string
+	// +checklocks:mu
+	started time.Time
 	// report writes to the host log; badProgress is set once a malformed progress line was reported, so a stuck line is not repeated.
 	report      func(kind, message string)
 	badProgress bool

@@ -18,6 +18,7 @@ import {
   raiseFloors,
   RAISE_MARGIN,
   report,
+  splitRacePackages,
   TARGET,
   validateFloors,
 } from './coverage-gate.mjs';
@@ -38,6 +39,54 @@ test('parses per-package statement coverage from `go test -cover` output', () =>
     { path: 'cmd/tool', pct: 0 },
     { path: 'internal/importer', pct: 85.1 },
   ]);
+});
+
+// A `go list -json` package, with its files' text in `files` instead of on disk.
+const goPackage = (name, { imports = [], testImports = [], source = 'package p\n', tests = null } = {}) => ({
+  ImportPath: `example.com/app/${name}`,
+  Dir: `/app/${name}`,
+  GoFiles: ['p.go'],
+  TestGoFiles: tests === null ? [] : ['p_test.go'],
+  Imports: imports,
+  TestImports: testImports,
+  files: { [`/app/${name}/p.go`]: source, [`/app/${name}/p_test.go`]: tests ?? '' },
+});
+const split = (packages) => splitRacePackages(packages, (path) => packages.flatMap((pkg) => Object.entries(pkg.files)).find(([file]) => file === path.replaceAll('\\', '/'))[1]);
+
+test('races a package whose source takes a lock, uses an atomic, starts a goroutine or makes a channel', () => {
+  const { race, plain } = split([
+    goPackage('mutex', { imports: ['sync'] }),
+    goPackage('atomic', { imports: ['sync/atomic'] }),
+    goPackage('goroutine', { source: 'package p\nfunc f() { go s.run(ctx) }\n' }),
+    goPackage('closure', { source: 'package p\nfunc f() {\n\tgo func() {}()\n}\n' }),
+    goPackage('channel', { source: 'package p\nvar done = make(chan struct{})\n' }),
+    goPackage('math', { imports: ['math'], source: 'package p\nfunc gain(x float64) float64 { return x * 2 }\n' }),
+  ]);
+  assert.deepEqual(race, ['example.com/app/mutex', 'example.com/app/atomic', 'example.com/app/goroutine', 'example.com/app/closure', 'example.com/app/channel']);
+  assert.deepEqual(plain, ['example.com/app/math']);
+});
+
+test('races a package whose tests start goroutines or synchronise, but not one whose tests only call t.Parallel', () => {
+  const { race, plain } = split([
+    goPackage('stress', { tests: 'package p\nfunc TestX(t *testing.T) { go read() }\n' }),
+    goPackage('waitgroup', { testImports: ['sync', 'testing'], tests: 'package p\n' }),
+    goPackage('parallel', { testImports: ['testing'], tests: 'package p\nfunc TestX(t *testing.T) { t.Parallel() }\n' }),
+  ]);
+  assert.deepEqual(race, ['example.com/app/stress', 'example.com/app/waitgroup']);
+  assert.deepEqual(plain, ['example.com/app/parallel']);
+});
+
+test('races a package that starts goroutines through errgroup or behind a string holding //', () => {
+  const { race } = split([
+    goPackage('errgroup', { imports: ['golang.org/x/sync/errgroup'], source: 'package p\nfunc f() { g.Go(work) }\n' }),
+    goPackage('url', { source: 'package p\nfunc f() { client := "https://example.com"; go worker.run(client) }\n' }),
+  ]);
+  assert.deepEqual(race, ['example.com/app/errgroup', 'example.com/app/url']);
+});
+
+test('does not mistake the word go in a comment or a go test command line for a goroutine', () => {
+  const { plain } = split([goPackage('docs', { source: 'package p\n// Run go test ./... to go over it; go\n' })]);
+  assert.deepEqual(plain, ['example.com/app/docs']);
 });
 
 test('aggregates files under a directory or a single file, never a sibling with the same prefix', () => {
