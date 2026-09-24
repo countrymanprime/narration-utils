@@ -269,6 +269,7 @@ func (f *fakeSidecar) run(args []string) int {
 		return 1
 	}
 	var items []string
+	var last *ManifestItem // the last analyzed item
 	done := 0
 	for _, item := range manifest.Items {
 		if item.Muted {
@@ -299,6 +300,7 @@ func (f *fakeSidecar) run(args []string) int {
 				<-f.resume
 			}
 		}
+		last = &item
 		items = append(items, fmt.Sprintf(`COVERAGE_ITEM|{"index":%d,"itemGuid":%q,"status":"analyzed","words":%q,"playedSeconds":%g,"wordCount":1,"model":%q,"language":"en"}`, item.Index, item.ItemGUID, source, item.Length, values["--model"]))
 	}
 	if f.during != nil {
@@ -321,7 +323,13 @@ func (f *fakeSidecar) run(args []string) int {
 		results += strings.Join(items, "\n") + "\n"
 		results += fmt.Sprintf(`COVERAGE_PARAGRAPH|{"id":"p-000001","tokens":10,"present":%d,"longestMissingRun":%d}`+"\n", present, 10-present)
 		if present < 10 {
-			results += fmt.Sprintf(`COVERAGE_REGION|{"kind":"tail","paragraphIds":["p-000001"],"tokenCount":%d,"firstWord":"very","lastWord":"tired.","position":null}`+"\n", 10-present)
+			// A tail sits after, and is bounded by, the end of the last item's one word, "alice".
+			end := "null"
+			if last != nil {
+				end = fmt.Sprintf(`{"itemIndex":%d,"itemGuid":%q,"sourceTime":%g}`, last.Index, last.ItemGUID, last.StartOffset+0.3)
+			}
+			results += fmt.Sprintf(`COVERAGE_REGION|{"kind":"tail","paragraphIds":["p-000001"],"tokenCount":%d,"firstWord":"very","lastWord":"tired.","position":%s,"before":%s,"after":null}`+"\n",
+				10-present, end, end)
 		}
 	}
 	if err := writeAtomically(values["--out"], []byte(results)); err != nil {

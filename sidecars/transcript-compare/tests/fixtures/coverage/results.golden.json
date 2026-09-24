@@ -58,7 +58,7 @@
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000003\",\"longestMissingRun\":35,\"present\":0,\"tokens\":35}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000004\",\"longestMissingRun\":0,\"present\":21,\"tokens\":21}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000005\",\"longestMissingRun\":0,\"present\":40,\"tokens\":40}",
-    "COVERAGE_REGION|{\"firstWord\":\"There\",\"kind\":\"skip\",\"lastWord\":\"late!\\\"\",\"paragraphIds\":[\"p-000003\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":44.8},\"tokenCount\":35}"
+    "COVERAGE_REGION|{\"after\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":44.8},\"before\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":44.8},\"firstWord\":\"There\",\"kind\":\"skip\",\"lastWord\":\"late!\\\"\",\"paragraphIds\":[\"p-000003\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":44.8},\"tokenCount\":35}"
    ],
    "split": "tune",
    "textComplete": false
@@ -91,7 +91,7 @@
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000003\",\"longestMissingRun\":35,\"present\":0,\"tokens\":35}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000004\",\"longestMissingRun\":0,\"present\":21,\"tokens\":21}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000005\",\"longestMissingRun\":0,\"present\":40,\"tokens\":40}",
-    "COVERAGE_REGION|{\"firstWord\":\"There\",\"kind\":\"skip\",\"lastWord\":\"late!\\\"\",\"paragraphIds\":[\"p-000003\"],\"position\":{\"itemGuid\":\"item-2\",\"itemIndex\":1,\"sourceTime\":0.5},\"tokenCount\":35}"
+    "COVERAGE_REGION|{\"after\":{\"itemGuid\":\"item-3\",\"itemIndex\":2,\"sourceTime\":0.0},\"before\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":44.8},\"firstWord\":\"There\",\"kind\":\"skip\",\"lastWord\":\"late!\\\"\",\"paragraphIds\":[\"p-000003\"],\"position\":{\"itemGuid\":\"item-2\",\"itemIndex\":1,\"sourceTime\":0.5},\"tokenCount\":35}"
    ],
    "split": "tune",
    "textComplete": false
@@ -107,7 +107,7 @@
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000003\",\"longestMissingRun\":0,\"present\":35,\"tokens\":35}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000004\",\"longestMissingRun\":61,\"present\":0,\"tokens\":21}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000005\",\"longestMissingRun\":61,\"present\":0,\"tokens\":40}",
-    "COVERAGE_REGION|{\"firstWord\":\"In\",\"kind\":\"tail\",\"lastWord\":\"well.\",\"paragraphIds\":[\"p-000004\",\"p-000005\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":58.8},\"tokenCount\":61}"
+    "COVERAGE_REGION|{\"after\":null,\"before\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":58.8},\"firstWord\":\"In\",\"kind\":\"tail\",\"lastWord\":\"well.\",\"paragraphIds\":[\"p-000004\",\"p-000005\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":58.8},\"tokenCount\":61}"
    ],
    "split": "tune",
    "textComplete": false
@@ -122,7 +122,7 @@
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000007\",\"longestMissingRun\":0,\"present\":37,\"tokens\":37}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000008\",\"longestMissingRun\":0,\"present\":41,\"tokens\":41}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000009\",\"longestMissingRun\":0,\"present\":32,\"tokens\":32}",
-    "COVERAGE_REGION|{\"firstWord\":\"\\\"Curiouser\",\"kind\":\"head\",\"lastWord\":\"feet!\\\"\",\"paragraphIds\":[\"p-000006\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":0.0},\"tokenCount\":36}"
+    "COVERAGE_REGION|{\"after\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":1.8},\"before\":null,\"firstWord\":\"\\\"Curiouser\",\"kind\":\"head\",\"lastWord\":\"feet!\\\"\",\"paragraphIds\":[\"p-000006\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":0.0},\"tokenCount\":36}"
    ],
    "split": "held_out",
    "textComplete": false
@@ -137,7 +137,7 @@
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000007\",\"longestMissingRun\":37,\"present\":0,\"tokens\":37}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000008\",\"longestMissingRun\":0,\"present\":41,\"tokens\":41}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000009\",\"longestMissingRun\":0,\"present\":32,\"tokens\":32}",
-    "COVERAGE_REGION|{\"firstWord\":\"Just\",\"kind\":\"skip\",\"lastWord\":\"door.\",\"paragraphIds\":[\"p-000007\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":14.0},\"tokenCount\":37}"
+    "COVERAGE_REGION|{\"after\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":14.0},\"before\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":14.0},\"firstWord\":\"Just\",\"kind\":\"skip\",\"lastWord\":\"door.\",\"paragraphIds\":[\"p-000007\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":14.0},\"tokenCount\":37}"
    ],
    "split": "tune",
    "textComplete": false
@@ -152,7 +152,7 @@
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000007\",\"longestMissingRun\":16,\"present\":21,\"tokens\":37}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000008\",\"longestMissingRun\":0,\"present\":41,\"tokens\":41}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000009\",\"longestMissingRun\":0,\"present\":32,\"tokens\":32}",
-    "COVERAGE_REGION|{\"firstWord\":\"She\",\"kind\":\"skip\",\"lastWord\":\"door.\",\"paragraphIds\":[\"p-000007\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":22.4},\"tokenCount\":16}"
+    "COVERAGE_REGION|{\"after\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":22.4},\"before\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":22.4},\"firstWord\":\"She\",\"kind\":\"skip\",\"lastWord\":\"door.\",\"paragraphIds\":[\"p-000007\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":22.4},\"tokenCount\":16}"
    ],
    "split": "held_out",
    "textComplete": false
@@ -197,7 +197,7 @@
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000012\",\"longestMissingRun\":0,\"present\":25,\"tokens\":25}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000013\",\"longestMissingRun\":26,\"present\":0,\"tokens\":26}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000014\",\"longestMissingRun\":0,\"present\":20,\"tokens\":20}",
-    "COVERAGE_REGION|{\"firstWord\":\"Will\",\"kind\":\"skip\",\"lastWord\":\"dance?\",\"paragraphIds\":[\"p-000013\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":30.0},\"tokenCount\":26}"
+    "COVERAGE_REGION|{\"after\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":30.0},\"before\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":30.0},\"firstWord\":\"Will\",\"kind\":\"skip\",\"lastWord\":\"dance?\",\"paragraphIds\":[\"p-000013\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":30.0},\"tokenCount\":26}"
    ],
    "split": "held_out",
    "textComplete": false
@@ -237,7 +237,7 @@
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000015\",\"longestMissingRun\":0,\"present\":17,\"tokens\":17}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000016\",\"longestMissingRun\":24,\"present\":0,\"tokens\":24}",
     "COVERAGE_PARAGRAPH|{\"id\":\"p-000017\",\"longestMissingRun\":0,\"present\":20,\"tokens\":20}",
-    "COVERAGE_REGION|{\"firstWord\":\"Her\",\"kind\":\"different_text\",\"lastWord\":\"astrolabe.\",\"paragraphIds\":[\"p-000016\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":6.8},\"tokenCount\":24}"
+    "COVERAGE_REGION|{\"after\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":16.4},\"before\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":6.8},\"firstWord\":\"Her\",\"kind\":\"different_text\",\"lastWord\":\"astrolabe.\",\"paragraphIds\":[\"p-000016\"],\"position\":{\"itemGuid\":\"item-1\",\"itemIndex\":0,\"sourceTime\":6.8},\"tokenCount\":24}"
    ],
    "split": "held_out",
    "textComplete": false

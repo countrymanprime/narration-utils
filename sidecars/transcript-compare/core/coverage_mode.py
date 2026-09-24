@@ -362,6 +362,7 @@ class _Timeline:
 
     words: list[Word]
     starts: list[tuple[float, ManifestItem]]  # (joined time the item starts at, item)
+    word_items: list[tuple[float, ManifestItem]]  # per word: (joined time its item starts at, its item)
 
     def position(self, joined_time: float) -> dict:
         start, item = self.starts[0]
@@ -370,10 +371,17 @@ class _Timeline:
                 start, item = candidate_start, candidate
         return {"itemIndex": item.index, "itemGuid": item.item_guid, "sourceTime": round(item.start_offset + joined_time - start, 3)}
 
+    def word_edge(self, word_index: int, edge: int) -> dict:
+        """A word's start (`edge` 1) or end (2) in its own item's source: unlike `position`, a word
+        ending exactly where the next item starts stays in its own item."""
+        start, item = self.word_items[word_index]
+        return {"itemIndex": item.index, "itemGuid": item.item_guid, "sourceTime": round(item.start_offset + self.words[word_index][edge] - start, 3)}
+
 
 def _timeline(results: Sequence[_ItemResult]) -> _Timeline:
     words: list[Word] = []
     starts: list[tuple[float, ManifestItem]] = []
+    word_items: list[tuple[float, ManifestItem]] = []
     offset = 0.0
     for result in results:
         if result.source is None:
@@ -381,8 +389,9 @@ def _timeline(results: Sequence[_ItemResult]) -> _Timeline:
         starts.append((offset, result.item))
         shift = offset - result.item.start_offset
         words.extend((text, start + shift, end + shift) for text, start, end in result.played)
+        word_items.extend([(offset, result.item)] * len(result.played))
         offset += result.item.length
-    return _Timeline(words, starts)
+    return _Timeline(words, starts, word_items)
 
 
 def _region_position(region: coverage_model.Region, alignment: dict, timeline: _Timeline) -> dict | None:
@@ -394,6 +403,16 @@ def _region_position(region: coverage_model.Region, alignment: dict, timeline: _
     if region.audio_index < len(index_map):
         return timeline.position(timeline.words[index_map[region.audio_index]][1])
     return timeline.position(timeline.words[-1][2])
+
+
+def _region_bounds(region: coverage_model.Region, alignment: dict, timeline: _Timeline) -> tuple[dict | None, dict | None]:
+    """Where the missing text is bounded in the audio: the end of the last matched word before the
+    region and the start of the first matched word after it, each in its own item's source seconds,
+    or None where the region has no matched word on that side (a head, a tail, nothing said)."""
+    index_map = alignment["index_map"]
+    before = timeline.word_edge(index_map[region.audio_before], 2) if region.audio_before is not None else None
+    after = timeline.word_edge(index_map[region.audio_after], 1) if region.audio_after is not None else None
+    return before, after
 
 
 def _line(tag: str, payload: dict) -> str:
@@ -443,6 +462,7 @@ def _report(
         for p in coverage.paragraphs
     ]
     for region in coverage.regions:
+        before, after = _region_bounds(region, alignment, timeline)
         payload = {
             "kind": region.kind,
             "paragraphIds": list(region.paragraph_ids),
@@ -450,6 +470,8 @@ def _report(
             "firstWord": region.first_word,
             "lastWord": region.last_word,
             "position": _region_position(region, alignment, timeline),
+            "before": before,
+            "after": after,
         }
         lines.append(_line("COVERAGE_REGION", payload))
     return "".join(lines)

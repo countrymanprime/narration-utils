@@ -90,7 +90,7 @@ export type CoverageParagraph = { id: string; tokens: number; present: number; l
 
 export type CoverageRegionKind = 'head' | 'tail' | 'skip' | 'short_read' | 'different_text';
 
-/** Where missing text would sit in the audio. */
+/** A point in the audio: an item and a time in its source file. */
 export type CoverageRegionPosition = { itemIndex: number; itemGuid: string; sourceTime: number };
 
 export type CoverageRegion = {
@@ -99,7 +99,12 @@ export type CoverageRegion = {
   tokenCount: number;
   firstWord: string;
   lastWord: string;
+  /** Where the missing text would sit. */
   position?: CoverageRegionPosition;
+  /** The end of the last matched word before the region (ADR 0168); absent before a head, when nothing was said, and in an older result. */
+  before?: CoverageRegionPosition;
+  /** The start of the first matched word after the region; absent after a tail, when nothing was said, and in an older result. */
+  after?: CoverageRegionPosition;
 };
 
 /** A stored report: counts, never a verdict (the thresholds are applied on read, Phase 7). */

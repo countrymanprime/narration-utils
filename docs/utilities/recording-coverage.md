@@ -50,7 +50,14 @@ flowchart LR
   ([ADR 0126](../adr/0126-recording-coverage-reads-the-take-markers-sequencematcher-alignment-and-folds-chance-matches-into-gaps.md),
   [the spike](../research/recording-coverage-alignment-spike.md)).
 - **The sidecar measures, the host judges.** `compare.py --coverage` writes counts only: `COVERAGE`, `COVERAGE_ITEM`,
-  `COVERAGE_PARAGRAPH` and `COVERAGE_REGION` lines, each with a JSON payload. Every run writes one ledger record
+  `COVERAGE_PARAGRAPH` and `COVERAGE_REGION` lines, each with a JSON payload. A region names its kind, paragraphs,
+  word count and first and last words, and three points in the audio, each `{itemIndex, itemGuid, sourceTime}` in
+  source seconds: `position`, where the missing text would sit; `before`, the end of the last matched word before it;
+  and `after`, the start of the first matched word after it. A read title never bounds a region, so `before` is `null`
+  for a head and `after` for a tail, and all three are `null` when nothing was said. A result stored before the bounds
+  existed reads with none, and is still current
+  ([ADR 0168](../adr/0168-a-coverage-region-carries-its-bounds-as-optional-before-and-after-points-with-no-version-bump.md)).
+  Every run writes one ledger record
   (`complete`, `partial` on cancel, or `failed`). A complete run's report is stored under
   `narration-utils/analysis/coverage/results/` with a hash of the chapter's text. The host applies the thresholds when
   it reads a report, so a threshold change never transcribes or aligns again.

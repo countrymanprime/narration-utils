@@ -1,6 +1,6 @@
 # 0127. The coverage sidecar mode reads a JSON manifest, keeps one words file per item, and writes tagged JSON lines
 
-**Status:** Proposed
+**Status:** Proposed (amended by [ADR 0168](0168-a-coverage-region-carries-its-bounds-as-optional-before-and-after-points-with-no-version-bump.md), which adds a region's `before` and `after` bounds; the rest stands)
 **Date:** 2026-09-23
 
 ## Context

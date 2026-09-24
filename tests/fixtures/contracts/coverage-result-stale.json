@@ -58,13 +58,23 @@
     "presentTokens": 8,
     "regions": [
       {
+        "after": null,
+        "before": {
+          "itemGuid": "{ITEM-B}",
+          "itemIndex": 1,
+          "sourceTime": 0.3
+        },
         "firstWord": "very",
         "kind": "tail",
         "lastWord": "tired.",
         "paragraphIds": [
           "p-000001"
         ],
-        "position": null,
+        "position": {
+          "itemGuid": "{ITEM-B}",
+          "itemIndex": 1,
+          "sourceTime": 0.3
+        },
         "tokenCount": 2
       }
     ]
