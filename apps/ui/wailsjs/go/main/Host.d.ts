@@ -67,6 +67,10 @@ export function CreditsSaveRetailSample(arg1:string,arg2:string):Promise<string>
 
 export function CreditsSaveTemplate(arg1:string,arg2:string,arg3:string,arg4:string):Promise<string>;
 
+export function CreditsSetStatus(arg1:string,arg2:string):Promise<string>;
+
+export function CreditsStatuses():Promise<string>;
+
 export function CreditsTemplates():Promise<string>;
 
 export function DawCatalogList():Promise<string>;

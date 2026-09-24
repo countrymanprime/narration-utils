@@ -130,6 +130,14 @@ export function CreditsSaveTemplate(arg1, arg2, arg3, arg4) {
   return window['go']['main']['Host']['CreditsSaveTemplate'](arg1, arg2, arg3, arg4);
 }
 
+export function CreditsSetStatus(arg1, arg2) {
+  return window['go']['main']['Host']['CreditsSetStatus'](arg1, arg2);
+}
+
+export function CreditsStatuses() {
+  return window['go']['main']['Host']['CreditsStatuses']();
+}
+
 export function CreditsTemplates() {
   return window['go']['main']['Host']['CreditsTemplates']();
 }

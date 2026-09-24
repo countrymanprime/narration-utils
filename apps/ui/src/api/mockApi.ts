@@ -9,6 +9,7 @@ import type {
   ChapterTagsPreview,
   CreditsAnnouncement,
   CreditsRenderResult,
+  CreditsStatuses,
   CreditTemplate,
   CreditValues,
   DawCatalogEntry,
@@ -546,6 +547,7 @@ export function createMockApi(
     creditTemplates.push({ id: 'mock-chapter-announcement', kind: 'chapter_announcement', name: 'Chapter announcement', body: initial.chapterAnnouncement });
   let nextCreditTemplateId = 1;
   let creditValues: CreditValues = wireClone(initial.creditValues ?? {});
+  let creditsStatuses: CreditsStatuses = {};
   let retailSample: { startParagraphId: string; endParagraphId: string } | undefined;
   let seededSample = initial.retailSample;
   const readRetailSample = (): RetailSampleAnswer => {
@@ -1898,6 +1900,10 @@ export function createMockApi(
       values: wireClone(creditValues),
       narratorGlobal: settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '',
       suggestions: { Title: 'Alice’s Adventures in Wonderland', Author: 'Lewis Carroll' },
+      detected: [
+        { token: 'Title', value: 'Alice’s Adventures in Wonderland', source: 'the title page', confidence: 'high' },
+        { token: 'Author', value: 'Lewis Carroll', source: 'the byline', confidence: 'high' },
+      ],
     }),
     saveCreditsProjectValues: async (values) => {
       creditValues = wireClone(values);
@@ -1929,6 +1935,11 @@ export function createMockApi(
       const sample = measureMockRetailSample(paragraphs, startParagraphId, endParagraphId);
       retailSample = { startParagraphId, endParagraphId };
       return { sample, problem: '' };
+    },
+    creditsStatuses: async () => wireClone(creditsStatuses),
+    setCreditsStatus: async (kind, status) => {
+      creditsStatuses = { ...creditsStatuses, [kind]: status };
+      return wireClone(creditsStatuses);
     },
     dawCatalogList: async () => wireClone(DAW_CATALOG),
     dawCatalogOpenDownloadPage: async (id) => {

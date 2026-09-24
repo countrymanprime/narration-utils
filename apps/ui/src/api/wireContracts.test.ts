@@ -51,6 +51,7 @@ import {
   creditsAnnouncementsSchema,
   creditsProjectValuesResultSchema,
   creditsRenderResultSchema,
+  creditsStatusesSchema,
   creditTemplateSchema,
   creditTemplatesSchema,
   retailSampleAnswerSchema,
@@ -156,6 +157,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'credits-retail-sample.json': retailSampleAnswerSchema,
   'credits-retail-sample-none.json': retailSampleAnswerSchema,
   'credits-retail-sample-stale.json': retailSampleAnswerSchema,
+  'credits-status-empty.json': creditsStatusesSchema,
+  'credits-status-set.json': creditsStatusesSchema,
   'system-notice.json': noticeSchema,
   'job-ended-success.json': jobEndedSchema,
   'job-ended-error.json': jobEndedSchema,
@@ -716,6 +719,21 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expect(await api.creditsRetailSample()).toEqual(saved);
     await expect(api.saveCreditsRetailSample(first.id, 'p-9999')).rejects.toThrow(/pick the range again/);
     expectMatches(retailSampleAnswerSchema, await api.saveCreditsRetailSample('', ''), 'mock cleared retail sample');
+  });
+
+  it('the credits row statuses (credits-in-chapter-table.prd.md, Phase 1)', async () => {
+    const api = createMockApi();
+    expectMatches(creditsStatusesSchema, await api.creditsStatuses(), 'mock credits statuses, empty');
+    expect(await api.creditsStatuses()).toEqual({});
+
+    const afterOpening = await api.setCreditsStatus('opening', 'finalized');
+    expectMatches(creditsStatusesSchema, afterOpening, 'mock credits statuses, opening set');
+    expect(afterOpening).toEqual({ opening: 'finalized' });
+
+    const afterClosing = await api.setCreditsStatus('closing', 'recording');
+    expectMatches(creditsStatusesSchema, afterClosing, 'mock credits statuses, both set');
+    expect(afterClosing).toEqual({ opening: 'finalized', closing: 'recording' });
+    expect(await api.creditsStatuses()).toEqual(afterClosing);
   });
 
   it('the DAW catalog list and open-download-page answers, detected and not detected (Phase 2)', async () => {
@@ -1571,6 +1589,8 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'creditsChapterAnnouncements',
       'creditsRetailSample',
       'saveCreditsRetailSample',
+      'creditsStatuses',
+      'setCreditsStatus',
     ];
     const VOID = [
       'manuscriptImportCancel',
