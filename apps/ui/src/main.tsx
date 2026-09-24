@@ -128,6 +128,23 @@ const mockChapterTagsEmbedError = mockParams.has('mockChapterTagsEmbedError');
 // with that refusal (docs/utilities/recording-coverage.md, ADR 0130).
 const mockCoverage = (['hold', 'stale'] as const).find((seed) => seed === mockParams.get('mockCoverage'));
 const mockCoverageRefusal = COVERAGE_REFUSAL_REASONS.find((reason) => reason === mockParams.get('mockCoverageRefusal'));
+// `?mockStages=mixed|error` puts the Home breakdown's stage suggestions (chapter-stage-recommendations.prd.md Phase 5) in every state at
+// once, or makes reading them fail. `mixed`: Chapter 4 read in full (suggested: Editing), Chapter 5 with no track linked (can't tell),
+// Chapter 6 as the fixture has it (not ready), Chapter 7 confirmed into Editing and since found short (evidence changed), Chapter 8
+// confirmed into Editing on evidence that still holds.
+const mockStages = (['mixed', 'error'] as const).find((seed) => seed === mockParams.get('mockStages'));
+const MOCK_STAGES_MEASURED = { [WIRE_CHAPTERS[3].id]: 1 };
+const MOCK_STAGES_SEEDS = {
+  mixed: {
+    recording: {
+      [WIRE_CHAPTERS[4].id]: { unknown: 'unmapped_track' as const },
+      [WIRE_CHAPTERS[6].id]: 'not_met' as const,
+      [WIRE_CHAPTERS[7].id]: 'met' as const,
+    },
+    confirmed: [WIRE_CHAPTERS[6].id, WIRE_CHAPTERS[7].id],
+  },
+  error: { unavailable: 'the saved REAPER project could not be read' },
+};
 // `?mockChapterSuggestion=matched|ambiguous` arms tracks in the mock .rpp (teleprompter-engines-and-input-devices PRD
 // Phase 11, ADR 0113): the "Chapter 2" track alone, so the Teleprompter preselects Chapter 2 from it, or both chapter
 // tracks, so it offers the two chapters as a choice instead.
@@ -204,9 +221,10 @@ const mockInitial = {
   ...(mockRetakeLanes ? { retakeLanes: mockRetakeLanes } : {}),
   ...(mockChapterTags ? { chapterTags: mockChapterTags } : {}),
   ...(mockChapterTagsEmbedError ? { chapterTagsEmbedAlwaysErrors: true } : {}),
-  ...(mockCoverage || mockCoverageRefusal
+  ...(mockCoverage || mockCoverageRefusal || mockStages === 'mixed'
     ? {
         coverage: {
+          ...(mockStages === 'mixed' ? { measured: MOCK_STAGES_MEASURED } : {}),
           ...(mockCoverage === 'hold' ? { hold: true } : {}),
           ...(mockCoverage === 'stale' ? { stale: [WIRE_CHAPTERS[3].id] } : {}),
           ...(mockCoverageRefusal ? { refusal: mockCoverageRefusal } : {}),
@@ -214,6 +232,7 @@ const mockInitial = {
       }
     : {}),
   ...(mockChapterSuggestion ? { armedTracks: MOCK_ARMED_TRACKS[mockChapterSuggestion] } : {}),
+  ...(mockStages ? { stages: MOCK_STAGES_SEEDS[mockStages] } : {}),
 };
 const api = import.meta.env.VITE_USE_MOCK_API === '1' ? createMockApi(window.__NARRATION_MOCK_OVERRIDES__, mockInitial) : wailsClient;
 

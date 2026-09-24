@@ -29,6 +29,8 @@ export type StagesSeed = {
   confirmed?: string[];
   /** Chapters whose all-read recording check the narrator dismissed. */
   dismissed?: string[];
+  /** Every read of the recommendations fails with this message, so the error state can be seen without a host. */
+  unavailable?: string;
 };
 
 /** One stage's verdict, the part of an assessment the engine computes. */
@@ -175,6 +177,7 @@ export function createStagesMock(deps: Deps): StagesApi {
   return {
     stageRecommendations: async (): Promise<StageRecommendations> => {
       await deps.ready;
+      if (deps.seed?.unavailable) throw new Error(deps.seed.unavailable);
       return { chapters: deps.chapters().filter(narration).map(assess) };
     },
     stageConfirm: async (chapterId, target, basisKey) => {

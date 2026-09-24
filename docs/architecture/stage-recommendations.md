@@ -11,7 +11,7 @@ The decision store and the service that composes the providers, the engine and t
 [ADR 0161](../adr/0161-stage-decisions-live-in-their-own-sidecar-and-confirm-writes-the-record-before-the-status.md)).
 `coverage.Service.EvidenceView` builds the view every provider shares (`stages.Config.View`), and a test runs the
 service over the recording-coverage corpus (Phase 3). The host builds the service for each project and four bindings reach
-it (Phase 4, `apps/desktop/bindings_stages.go`, see [The bindings](#the-bindings)); the Home surface is Phase 5. The
+it (Phase 4, `apps/desktop/bindings_stages.go`, see [The bindings](#the-bindings)); the Home surface is Phase 5 (see [On Home](#on-home)). The
 contract's decision is
 [ADR 0160](../adr/0160-stage-recommendations-are-computed-from-tri-state-signals-by-a-pure-engine.md).
 
@@ -193,3 +193,18 @@ about 0.35 s with the project's own links (1 chapter linked) and 1.1 to 1.5 s wi
 time is the saved project's parse, once per read, and each linked chapter's fingerprint, which hashes part of every
 source file it plays (`evidence.Identify`); no audio is decoded. `stages_timing_test.go` repeats the measurement on any
 project copy (`STAGES_TIMING_PROJECT`).
+
+## On Home
+
+Phase 5 shows the recommendations in the Home estimate card (`apps/ui/src/components/stages/`, wired into
+`components/home/AudiobookEstimatePanel.tsx`). `useStageRecommendations` reads `StageRecommendations()` when Home opens,
+after a manuscript import, after a recording check ends or its dialog closes, after a status is changed by hand and on
+Check now; nothing is cached across reads (D1, Q5). `StageSuggestion` sits under each chapter's status select, which stays
+the narrator's override: the verdict in a few words, Confirm and Dismiss for `recommended`, Revert for a live
+confirmation, and the "evidence changed since you confirmed" notice with Revert for a `contradiction`. `StageEvidence` is
+the evidence view in the existing `SlideOver` (Q11): each signal's state, reason and evidence (a paragraph it names links
+to the manuscript), the saved project's modified time and its age, and for an unknown cause what resolves it
+(`stageText.ts`, `CAUSE_TEXT`: the recording check dialog, the Tracks page, or Check now). `StageSummary` holds the chips
+on the collapsed card and the Check now line above the table. Confirm is one click, reversible by Revert (Q13). A refusal
+is shown as an error toast and the recommendations are read again; a failed read shows "Couldn't check" in every row.
+The mock's `?mockStages=mixed|error` seeds (`apps/ui/src/main.tsx`) drive the visual states `home/stage-*`.

@@ -17,6 +17,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import type { Notify } from '../primitives/Toast';
 import { Button } from '../primitives/Button';
 import { RecordingCheck } from './RecordingCheck';
+import { useStageRecommendations } from '../stages/useStageRecommendations';
+import { StageSuggestion } from '../stages/StageSuggestion';
+import { StageEvidence } from '../stages/StageEvidence';
+import { StageCheckLine, StageSummaryChips } from '../stages/StageSummary';
 
 const fmtHours = (hours: number) => {
   const whole = Math.floor(hours);
@@ -73,6 +77,15 @@ export function AudiobookEstimatePanel({
   const [measuredRun, setMeasuredRun] = useState<string>();
   const lastCompleted = useRef<string>(undefined);
 
+  // Stage suggestions (chapter-stage-recommendations.prd.md Phase 5), read again after an import and after a recording check ends. `why`
+  // is the chapter whose evidence view is open; it is kept while the view slides shut, so the content does not vanish mid-animation.
+  const stages = useStageRecommendations({
+    refreshKey: `${refreshKey ?? ''}:${measuredRun ?? ''}`,
+    notify,
+    onStatus: (chapterId, status) => setChapters((current) => current?.map((c) => (c.id === chapterId ? { ...c, status } : c))),
+  });
+  const [why, setWhy] = useState<{ chapterId: string; open: boolean }>();
+
   useEffect(() => api.subscribeCoverage(setCoverage), [api]);
 
   useEffect(() => {
@@ -127,6 +140,7 @@ export function AudiobookEstimatePanel({
             {totalWords.toLocaleString()} words · {narrationChapters.length} chapters · ~155 words/min narrated{' '}
             <Tooltip text="Fixed industry rule of thumb (~9,300 words per finished hour). Record, edit, and proof use standard multipliers of that finished length." />
           </div>
+          <StageSummaryChips state={stages.state} onShow={() => setBreakdownOpen(true)} />
         </div>
         <TooltipTarget text={breakdownOpen ? 'Hide per-chapter breakdown' : 'Show per-chapter breakdown'}>
           <CollapsibleTrigger label={breakdownOpen ? 'Hide per-chapter breakdown' : 'Show per-chapter breakdown'}>
@@ -176,6 +190,7 @@ export function AudiobookEstimatePanel({
           </div>
         </div>
         <CollapsiblePanel className="overflow-x-auto border-t border-[var(--border)] pt-1">
+          <StageCheckLine state={stages.state} onCheckNow={() => void stages.refresh()} />
           <Table label="Chapters">
             <TableHead>
               <TableRow>
@@ -246,10 +261,24 @@ export function AudiobookEstimatePanel({
                                   : c,
                               ),
                             );
+                            // A status changed by hand retires a confirmation and changes which stage is evaluated.
+                            void stages.refresh();
                           } catch (error) {
                             notify(describeApiError(error), 'error');
                           }
                         }}
+                      />
+                      <StageSuggestion
+                        title={chapter.title}
+                        recommendation={stages.state.byChapter.get(chapter.id)}
+                        phase={stages.state.phase}
+                        isPending={(decision) => stages.isPending(decision, chapter.id)}
+                        busy={stages.busy}
+                        onDecide={(decision) => {
+                          const recommendation = stages.state.byChapter.get(chapter.id);
+                          if (recommendation) void stages.decide(decision, recommendation);
+                        }}
+                        onWhy={() => setWhy({ chapterId: chapter.id, open: true })}
                       />
                     </TableCell>
                     <TableCell align="right">
@@ -278,8 +307,35 @@ export function AudiobookEstimatePanel({
           chapter={checking}
           coverage={coverage}
           notify={notify}
-          close={() => setChecking(undefined)}
+          close={() => {
+            setChecking(undefined);
+            // Linking a track in the dialog changes the evidence without a finished check, so the suggestions are read again.
+            void stages.refresh();
+          }}
           goToParagraph={(paragraph) => goToManuscript(checking.id, paragraph)}
+        />
+      )}
+      {why && (
+        <StageEvidence
+          open={why.open}
+          chapter={narrationChapters.find((chapter) => chapter.id === why.chapterId)}
+          recommendation={stages.state.byChapter.get(why.chapterId)}
+          phase={stages.state.phase}
+          error={stages.state.error}
+          isPending={(decision) => stages.isPending(decision, why.chapterId)}
+          busy={stages.busy}
+          onDecide={(decision) => {
+            const recommendation = stages.state.byChapter.get(why.chapterId);
+            if (recommendation) void stages.decide(decision, recommendation);
+          }}
+          onClose={() => setWhy({ ...why, open: false })}
+          onCheckNow={() => void stages.refresh()}
+          onOpenCheck={() => {
+            const chapter = narrationChapters.find((item) => item.id === why.chapterId);
+            setWhy({ ...why, open: false });
+            if (chapter) setChecking(chapter);
+          }}
+          goToParagraph={(paragraph) => goToManuscript(why.chapterId, paragraph)}
         />
       )}
     </Collapsible>

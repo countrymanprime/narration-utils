@@ -161,6 +161,57 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'recording-check-model-required',
     description: 'Home, a recording check that needs the Whisper model first (?mockAssets=missing): the first-use download question, never a silent download',
   },
+  // Stage suggestions (docs/prds/chapter-stage-recommendations.prd.md Phase 5, ADR 0160 and 0161), on `?mockStages=mixed`: Chapter 4 read in
+  // full (suggested), Chapter 5 with no track linked (can't tell), Chapter 6 short (not ready), Chapter 7 confirmed into Editing and since
+  // found short (evidence changed), Chapter 8 confirmed on evidence that still holds.
+  {
+    page: 'home',
+    state: 'stage-summary-chips',
+    description: 'Home, the collapsed estimate card with its stage suggestion chips: one chapter has a suggestion, one chapter’s evidence changed',
+  },
+  {
+    page: 'home',
+    state: 'stage-suggestions',
+    description:
+      'Home, the breakdown with a stage suggestion under each status: Suggested with Confirm, Dismiss and Why; can’t tell with its cause; not ready; evidence changed with Revert; confirmed with Revert',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'home',
+    state: 'stage-dismissed',
+    description:
+      'Home, the breakdown after Dismiss on Chapter 4: the row reads the suggestion as dismissed, its status unchanged, and the suggestion chip is gone',
+    ...KEEPS_DESKTOP_SCROLL,
+  },
+  {
+    page: 'home',
+    state: 'stage-error',
+    description:
+      'Home, the stage suggestions could not be read (?mockStages=error): the error chip, the reason above the table with Check now, and "Couldn’t check" in every row',
+  },
+  {
+    page: 'home',
+    state: 'stage-evidence-recommended',
+    description:
+      'Home, the evidence of a suggestion in its slide-over: the verdict, Confirm and Dismiss, the recording check met with its evidence, the saved-project basis and its age, Check now',
+  },
+  {
+    page: 'home',
+    state: 'stage-evidence-not-ready',
+    description: 'Home, the evidence of a chapter not ready: the check not met, its reason, the missing region with Go to paragraph',
+  },
+  {
+    page: 'home',
+    state: 'stage-evidence-unknown',
+    description: 'Home, the evidence of a chapter that can’t tell yet: the cause (no track linked), what resolves it and Open recording check',
+  },
+  {
+    page: 'home',
+    state: 'stage-evidence-changed',
+    description:
+      'Home, "Evidence changed since you confirmed": when it was confirmed, the check now not met, and Revert to Recording; nothing moved on its own',
+  },
+
   // Manuscript
   { page: 'manuscript', state: 'reader-text-small', description: 'Manuscript, small text size' },
   { page: 'manuscript', state: 'reader-text-medium', description: 'Manuscript, medium text size' },

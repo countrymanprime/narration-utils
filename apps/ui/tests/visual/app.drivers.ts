@@ -350,6 +350,32 @@ async function openRecordingCheck(page: Page, chapter: string, seed?: string) {
   return dialog;
 }
 
+// Home booted with a stage suggestions seed (`?mockStages=`, main.tsx), once the first read has answered: the chips on the collapsed
+// card (`mixed`) or its error chip (`error`) are on screen (chapter-stage-recommendations.prd.md Phase 5).
+async function openStageSuggestions(page: Page, seed: 'mixed' | 'error', expand = true) {
+  await page.goto(`/?mockStages=${seed}`);
+  await settlePage(page);
+  await homeLoaded(page);
+  await page.getByRole('button', { name: seed === 'mixed' ? '1 chapter has a suggestion' : 'Couldn’t check stage suggestions' }).waitFor();
+  if (expand) await clickVisible(page, 'button', /Show per-chapter breakdown/);
+}
+
+// Scrolls the breakdown so Chapter 4, the first chapter with a suggestion, is at the top: the rows below the fold are the state.
+async function scrollToStageRows(page: Page) {
+  const row = page.getByRole('row').filter({ has: page.getByRole('link', { name: /^Chapter 4 —/ }) });
+  await row.evaluate((element) => element.scrollIntoView({ block: 'start' }));
+  await settlePage(page);
+}
+
+// A chapter's evidence view from its row's Why, on the `mixed` seed. Returns the slide-over.
+async function openStageEvidence(page: Page, chapter: string) {
+  await openStageSuggestions(page, 'mixed');
+  await clickVisible(page, 'button', `Why: ${chapter}`);
+  const view = page.getByRole('dialog', { name: `Stage suggestion: ${chapter}` });
+  await view.getByRole('button', { name: 'Check now' }).waitFor();
+  return view;
+}
+
 // Settings' own category rail (.settings-nav, a tab list) reuses the same labels as the
 // primary app nav ("Proofing", "Story Bible") - an unscoped role/name query
 // matches both and .first() can silently click the wrong one (navigating
@@ -622,6 +648,43 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const dialog = await openRecordingCheck(page, 'Chapter 7', 'mockAssets=missing');
       await dialog.getByRole('button', { name: 'Check recording' }).click();
       await confirmDialog(page, 'Download local Whisper model?').waitFor();
+    },
+    'stage-summary-chips': async (page) => {
+      await openStageSuggestions(page, 'mixed', false);
+    },
+    'stage-suggestions': async (page) => {
+      await openStageSuggestions(page, 'mixed');
+      await page.getByText('Evidence changed since you confirmed').waitFor();
+      await scrollToStageRows(page);
+    },
+    'stage-dismissed': async (page) => {
+      await openStageSuggestions(page, 'mixed');
+      await clickVisible(page, 'button', 'Dismiss the suggestion for Chapter 4');
+      await page.getByText('Suggestion dismissed (Editing)').waitFor();
+      // The dismissal's toast removes itself on a real timer, which would race the shots of the other viewports.
+      await page.getByRole('button', { name: 'Dismiss message' }).click();
+      await page.getByRole('button', { name: 'Dismiss message' }).waitFor({ state: 'detached' });
+      await scrollToStageRows(page);
+    },
+    'stage-error': async (page) => {
+      await openStageSuggestions(page, 'error');
+      await page.getByText('Couldn’t check stage suggestions: the saved REAPER project could not be read').waitFor();
+    },
+    'stage-evidence-recommended': async (page) => {
+      const view = await openStageEvidence(page, 'Chapter 4');
+      await view.getByRole('button', { name: 'Confirm Editing' }).waitFor();
+    },
+    'stage-evidence-not-ready': async (page) => {
+      const view = await openStageEvidence(page, 'Chapter 6');
+      await view.getByText('Not met.').waitFor();
+    },
+    'stage-evidence-unknown': async (page) => {
+      const view = await openStageEvidence(page, 'Chapter 5');
+      await view.getByRole('button', { name: 'Open recording check' }).waitFor();
+    },
+    'stage-evidence-changed': async (page) => {
+      const view = await openStageEvidence(page, 'Chapter 7');
+      await view.getByRole('button', { name: 'Revert to Recording' }).waitFor();
     },
     'import-review-subtitles-off': async (page) => {
       const review = await openImportReview(page);
