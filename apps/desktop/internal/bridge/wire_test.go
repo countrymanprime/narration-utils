@@ -39,6 +39,11 @@ var realEvents = map[string][]string{
 	"FINDING_STALE": {"FINDING_STALE", "n1", "{FFFFFFFF-0000-4000-8000-00000000FFFF}", "item"},
 	// integrations/reaper/tests/finding_marker_test.lua (review-dashboard PRD Phase 8).
 	"FINDING_MARKER": {"FINDING_MARKER", "m1", "added", "{AAAAAAAA-0000-4000-8000-0000000000A1}", "12.500000", "MISREAD: 'pink eyes' as 'pink ice'"},
+	// integrations/reaper/tests/track_state_test.lua (chapter_track_state).
+	"TRACK_STATE":     {"TRACK_STATE", "t1", "{00000001-0000-4000-8000-000000000001}", "0", "2.500000", "1.250000", "C:/p/Book.rpp", "0", "7", "1", "2", "1024", ""},
+	"TRACK_ITEM":      {"TRACK_ITEM", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}", "{00000004-0000-4000-8000-000000000004}", "0.000000", "4.000000", "0.000000", "1.000000", "C:\\Audio\\ch1|take 1.wav"},
+	"TRACK_STATE_END": {"TRACK_STATE_END", "t1", "2", "2"},
+	"TRACK_STALE":     {"TRACK_STALE", "t1", "{FFFFFFFF-0000-4000-8000-00000000FFFF}"},
 }
 
 func TestEveryRealEventPassesItsTable(t *testing.T) {

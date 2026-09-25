@@ -1154,7 +1154,10 @@ var fieldSchemas = map[string][]fieldSchema{
 	// NarrationUtils_Launcher.lua as REAPER's trailing script argument when it starts REAPER (Phase 8, ADR 0092
 	// W12), so the bridge is live without the narrator running the action by hand - but only when this is on, and
 	// it defaults off.
-	"DAW": {{"reaper_path", "REAPER executable (override)", "text", nil}, {"auto_start_launcher", "Start the launcher script automatically", "bool", nil}},
+	// DAW.experimental_reaper_actions is owner decision D38: the REAPER bridge commands built before the owner's
+	// verification pass (docs/operations/reaper-verification-pass.md) are refused by the host while it is off, and it
+	// defaults off (bridge.ExperimentalSettingTool/Key, internal/bridge/actions.go).
+	"DAW": {{"reaper_path", "REAPER executable (override)", "text", nil}, {"auto_start_launcher", "Start the launcher script automatically", "bool", nil}, {"experimental_reaper_actions", "Experimental REAPER actions", "bool", nil}},
 	// RecordingCoverage is the recording check's four settings (docs/utilities/recording-coverage.md Q3, ADR 0131),
 	// read by coverage.ResolveSettings. The two thresholds judge a stored result on read; the two alignment settings are
 	// in a result's parameter hash, so changing one makes older results stale (Q13 B). Their defaults are Proposed and

@@ -31,7 +31,8 @@
     "model": "tiny"
   },
   "DAW": {
-    "auto_start_launcher": "false"
+    "auto_start_launcher": "false",
+    "experimental_reaper_actions": "false"
   },
   "RecordingCoverage": {
     "min_paragraph_present": "0.8",
