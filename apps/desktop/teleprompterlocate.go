@@ -37,14 +37,19 @@ type tailRange struct {
 
 // teleprompterLocate is TeleprompterLocate's payload. Match is the chapter's track match as ChapterTrackMatch reports
 // it (the picker and the "as of last save" time come from it); Track and RecordedEnd are the track that was read,
-// which is the narrator's pick when they made one; Tail and Located are set once the sidecar ran.
+// which is the narrator's pick when they made one; Tail and Located are set once the sidecar ran. LastReading is
+// where the prompter last stopped in the chapter (ADR 0205), and Verdict reconciles it with Located
+// (read-aloud-resume-from-daw PRD Phase 3): it is set on every status, so a chapter with no track still offers its
+// last reading.
 type teleprompterLocate struct {
-	Status      string                `json:"status"`
-	Match       chapterTrackMatch     `json:"match"`
-	Track       *trackOption          `json:"track"`
-	RecordedEnd *tracks.RecordedEnd   `json:"recordedEnd"`
-	Tail        *tailRange            `json:"tail"`
-	Located     *teleprompter.Located `json:"located"`
+	Status      string                     `json:"status"`
+	Match       chapterTrackMatch          `json:"match"`
+	Track       *trackOption               `json:"track"`
+	RecordedEnd *tracks.RecordedEnd        `json:"recordedEnd"`
+	Tail        *tailRange                 `json:"tail"`
+	Located     *teleprompter.Located      `json:"located"`
+	LastReading *teleprompter.Reading      `json:"lastReading"`
+	Verdict     teleprompter.ResumeVerdict `json:"verdict"`
 }
 
 // TeleprompterLocate finds where to resume reading chapterID from what is already recorded (teleprompter-manuscript-
@@ -52,7 +57,8 @@ type teleprompterLocate struct {
 // narrator picked one), where its audio ends as of the .rpp's last save (Phase 8), and the last
 // teleprompter.DefaultTailSeconds before that end transcribed and placed in the chapter by the sidecar. model is the
 // Whisper model id ("" for the teleprompter's default); like TeleprompterStart it answers asset_required instead of
-// downloading one, but only once there is audio to read. It only reads: nothing is recorded, moved or linked.
+// downloading one, but only once there is audio to read. Every other answer carries the prompter's last reading and the
+// reconciled verdict (PRD Phase 3). It only reads: nothing is recorded, moved or linked.
 func (h *Host) TeleprompterLocate(chapterID, trackGUID, model string) (string, error) {
 	return encodeBinding(h.teleprompterLocate(chapterID, trackGUID, model))
 }
@@ -66,6 +72,36 @@ func (h *Host) teleprompterLocate(chapterID, trackGUID, model string) (any, erro
 	if err != nil {
 		return nil, err
 	}
+	result, err := h.locateTail(svc, chapterID, trackGUID, model, match, project)
+	if err != nil {
+		return nil, err
+	}
+	if located, ok := result.(teleprompterLocate); ok {
+		return withResumeVerdict(svc.config.projectFolder, chapterID, located), nil
+	}
+	return result, nil // asset_required: the model gate is answered first
+}
+
+// withResumeVerdict adds the chapter's last reading and the reconciled verdict to a locate result. A reading that
+// cannot be read is treated as absent: it only ever narrows what is offered.
+func withResumeVerdict(projectFolder, chapterID string, result teleprompterLocate) teleprompterLocate {
+	script, ok := teleprompter.LoadChapterScript(projectFolder, chapterID)
+	if !ok {
+		result.Verdict = teleprompter.ResumeVerdict{Kind: teleprompter.VerdictNone}
+		return result
+	}
+	reading, err := teleprompter.LoadReading(projectFolder, chapterID)
+	if err != nil {
+		reading = nil
+	}
+	result.LastReading = reading
+	result.Verdict = teleprompter.Reconcile(result.Located, reading, script, teleprompter.ResumeTolerance)
+	return result
+}
+
+// locateTail reads the chapter's track and places its recorded tail: a teleprompterLocate, or the model gate's
+// asset_required answer.
+func (h *Host) locateTail(svc hostServices, chapterID, trackGUID, model string, match chapterTrackMatch, project tracks.Project) (any, error) {
 	result := teleprompterLocate{Match: match}
 	candidate, err := locateTrack(match, project, trackGUID)
 	if err != nil {
@@ -91,8 +127,11 @@ func (h *Host) teleprompterLocate(chapterID, trackGUID, model string) (any, erro
 		return result, nil
 	}
 	modelID, modelDir, required, err := h.teleprompterModel(model)
-	if err != nil || required != nil {
-		return required, err
+	if err != nil {
+		return nil, err
+	}
+	if required != nil {
+		return required, nil
 	}
 	tail := tailRange{From: math.Max(end.SourceStart, end.SourceTime-teleprompter.DefaultTailSeconds), To: end.SourceTime}
 	result.Tail = &tail

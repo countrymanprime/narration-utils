@@ -118,6 +118,10 @@ const GOLDEN: Record<string, z.ZodType> = {
   'teleprompter-locate-no-track.json': teleprompterLocateResultSchema,
   'teleprompter-locate-no-recording.json': teleprompterLocateResultSchema,
   'teleprompter-locate-source-missing.json': teleprompterLocateResultSchema,
+  'teleprompter-locate-agree.json': teleprompterLocateResultSchema,
+  'teleprompter-locate-disagree.json': teleprompterLocateResultSchema,
+  'teleprompter-locate-complete.json': teleprompterLocateResultSchema,
+  'teleprompter-locate-prompter-only.json': teleprompterLocateResultSchema,
   'teleprompter-save-flags.json': teleprompterFlagFindingsSchema,
   // The per-chapter reading file the host writes at session end and reads back (ADR 0205).
   'teleprompter-reading.json': teleprompterReadingSchema,

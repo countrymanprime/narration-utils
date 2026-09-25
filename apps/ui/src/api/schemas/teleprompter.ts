@@ -11,6 +11,8 @@ import type {
   TeleprompterLocated,
   TeleprompterPosition,
   TeleprompterReading,
+  TeleprompterResumePlace,
+  TeleprompterResumeVerdict,
   TeleprompterScript,
   TeleprompterStartResult,
   TeleprompterState,
@@ -125,6 +127,45 @@ export const teleprompterLocatedSchema = z.object({
   heardText: z.string(),
 }) satisfies z.ZodType<TeleprompterLocated>;
 
+/** The host's per-chapter reading file (`<project>/narration-utils/teleprompter/<chapter>.reading.json`, ADR 0205). */
+export const teleprompterReadingSchema = z
+  .object({
+    version: z.literal(1),
+    chapterId: z.string().min(1),
+    read: z.number().int().nonnegative(),
+    tokens: z.number().int().positive(),
+    scriptHash: z.string().regex(/^[0-9a-f]{64}$/),
+    status: z.enum(['listening', 'waiting', 'done']),
+    endedAt: z.string(),
+  })
+  .refine((reading) => reading.read <= reading.tokens, { message: 'read is past the last word', path: ['read'] }) satisfies z.ZodType<TeleprompterReading>;
+
+const sentenceSchema = z.object({ start: z.number().int().nonnegative(), end: z.number().int().nonnegative(), text: z.string() });
+
+const teleprompterResumePlaceSchema = z.object({
+  word: z.number().int().nonnegative(),
+  number: z.number().int().positive(),
+  sentence: sentenceSchema.nullable(),
+  confident: z.boolean(),
+  source: z.literal('saved').optional(),
+}) satisfies z.ZodType<TeleprompterResumePlace>;
+
+/** `teleprompter.Reconcile`'s verdict on the locate result (read-aloud-resume-from-daw PRD Phase 3). */
+export const teleprompterResumeVerdictSchema = z
+  .object({
+    kind: z.enum(['agree', 'disagree', 'complete', 'daw_only', 'prompter_only', 'none']),
+    start: z.number().int().nonnegative().nullable(),
+    confirmedBy: z.literal('prompter').optional(),
+    daw: teleprompterResumePlaceSchema.nullable(),
+    prompter: teleprompterResumePlaceSchema.nullable(),
+    tokens: z.number().int().nonnegative(),
+  })
+  .refine((verdict) => (verdict.kind === 'agree') === (verdict.start !== null), { message: 'only agree presets a start word', path: ['start'] })
+  .refine((verdict) => verdict.kind !== 'disagree' || (verdict.daw !== null && verdict.prompter !== null), {
+    message: 'a disagreement has both places',
+    path: ['kind'],
+  }) satisfies z.ZodType<TeleprompterResumeVerdict>;
+
 /** `TeleprompterLocate` (`apps/desktop/teleprompterlocate.go`): a status with the track match and what was read, or the first-use gate. */
 export const teleprompterLocateResultSchema = z.union([
   modelAssetRequiredSchema,
@@ -135,6 +176,8 @@ export const teleprompterLocateResultSchema = z.union([
     recordedEnd: recordedEndSchema.nullable(),
     tail: z.object({ from: z.number(), to: z.number() }).nullable(),
     located: teleprompterLocatedSchema.nullable(),
+    lastReading: teleprompterReadingSchema.nullable(),
+    verdict: teleprompterResumeVerdictSchema,
   }),
 ]) satisfies z.ZodType<TeleprompterLocateResult>;
 
@@ -186,16 +229,3 @@ const teleprompterFlagFindingSchema = z.object({
 
 /** `TeleprompterSaveFlags`: one finding per flag sent, in order. */
 export const teleprompterFlagFindingsSchema = z.array(teleprompterFlagFindingSchema);
-
-/** The host's per-chapter reading file (`<project>/narration-utils/teleprompter/<chapter>.reading.json`, ADR 0205). */
-export const teleprompterReadingSchema = z
-  .object({
-    version: z.literal(1),
-    chapterId: z.string().min(1),
-    read: z.number().int().nonnegative(),
-    tokens: z.number().int().positive(),
-    scriptHash: z.string().regex(/^[0-9a-f]{64}$/),
-    status: z.enum(['listening', 'waiting', 'done']),
-    endedAt: z.string(),
-  })
-  .refine((reading) => reading.read <= reading.tokens, { message: 'read is past the last word', path: ['read'] }) satisfies z.ZodType<TeleprompterReading>;

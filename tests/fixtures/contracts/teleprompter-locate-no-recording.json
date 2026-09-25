@@ -1,4 +1,5 @@
 {
+  "lastReading": null,
   "located": null,
   "match": {
     "candidates": [
@@ -52,5 +53,12 @@
     "guid": "{33333333-3333-4333-8333-333333333333}",
     "index": 2,
     "name": "Chapter II"
+  },
+  "verdict": {
+    "daw": null,
+    "kind": "none",
+    "prompter": null,
+    "start": null,
+    "tokens": 2099
   }
 }
