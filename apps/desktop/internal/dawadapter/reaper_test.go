@@ -41,7 +41,8 @@ func TestReaperAdapterSendsTheExactBridgeCommandForEachReviewOperation(t *testin
 		call func(*Reaper) error
 		want string
 	}{
-		{"prepare", func(r *Reaper) error { return r.PrepareReview("run-1") }, "1|prepare_compare|run-1\n"},
+		{"prepare", func(r *Reaper) error { return r.PrepareReview("run-1", "") }, "1|prepare_compare|run-1\n"},
+		{"prepare in the app's folder", func(r *Reaper) error { return r.PrepareReview("run-1", "C:/Books/Alice") }, "1|prepare_compare|run-1|C%3A%2FBooks%2FAlice\n"},
 		{"inspect", func(r *Reaper) error { return r.InspectFindings("run-1", `C:\p\out.tsv`) }, "1|inspect_compare_results|run-1|C%3A%5Cp%5Cout.tsv\n"},
 		{"navigate", func(r *Reaper) error { return r.NavigateToFinding("run-1", "row 7") }, "1|jump_to_compare_marker|run-1|row%207\n"},
 		{"export", func(r *Reaper) error {

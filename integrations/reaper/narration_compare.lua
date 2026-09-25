@@ -5,13 +5,19 @@ local core = ...
 local join, dirname, file_exists, safe_name, color, pipe_fields, event =
   core.join, core.dirname, core.file_exists, core.safe_name, core.color, core.pipe_fields, core.event
 
-local function prepare_compare(session_dir, runs, run_id)
+-- app_folder is the app's own project folder when the host passes one (project-workspace PRD Phase 5, W4): the .rpp may
+-- live elsewhere, so the manuscript is read and the diffs are written there, never beside the .rpp. An older host passes
+-- none, and the .rpp's folder is used as before.
+local function prepare_compare(session_dir, runs, run_id, app_folder)
   if not reaper.APIExists('SetTakeMarker') then
     event(session_dir, 'ERROR', run_id, 'This REAPER version cannot add take markers.')
     return
   end
   local _, rpp = reaper.EnumProjects(-1, '')
   local project_folder = rpp and dirname(rpp) or ''
+  if (app_folder or '') ~= '' then
+    project_folder = app_folder
+  end
   if project_folder == '' then
     event(session_dir, 'ERROR', run_id, 'Save the REAPER project before starting Transcript Compare.')
     return
@@ -224,7 +230,7 @@ end
 return function(registry)
   local runs = {}
   registry.register('prepare_compare', function(ctx, args)
-    prepare_compare(ctx.session_dir, runs, args[1] or '')
+    prepare_compare(ctx.session_dir, runs, args[1] or '', args[2] or '')
   end)
   registry.register('inspect_compare_results', function(ctx, args)
     inspect_results(ctx.session_dir, runs, args[1] or '', args[2] or '')

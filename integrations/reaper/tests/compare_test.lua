@@ -130,6 +130,50 @@ H.test('prepare_compare from a selected track uses every item on it, skipping MI
   H.eq(event[7], '2')
 end)
 
+-- The app's project folder when the .rpp lives elsewhere (project-workspace PRD Phase 5, W4): the host passes its own folder,
+-- and the manuscript and the diffs are found and written there, never beside the .rpp.
+local function app_folder(options)
+  options = options or {}
+  local folder = H.join(host.tmpdir(), 'App project')
+  host.makedirs(H.join(H.join(folder, 'narration-utils'), 'manuscript'))
+  if options.manuscript ~= false then
+    H.write_file(H.join(H.join(H.join(folder, 'narration-utils'), 'manuscript'), 'manuscript.json'), '{"version":1}')
+  end
+  return folder
+end
+
+H.test('prepare_compare uses the project folder the app passes, not the .rpp folder', function()
+  local s, rpp_folder = project_session({ manuscript = false })
+  local folder = app_folder()
+  local track = audio_track(s, 'Narrator')
+  s.fake:add_item(track, { selected = true, position = 0, length = 10, source = 'a.wav' })
+  s:send('prepare_compare', 'r1', folder)
+  local event = first_event(s)
+  H.eq(event[1], 'COMPARE_PREPARED')
+  H.eq(event[4], H.join(H.join(H.join(folder, 'narration-utils'), 'manuscript'), 'manuscript.json'))
+  H.eq(event[6], H.join(H.join(H.join(folder, 'TranscriptCompare'), 'diffs'), 'Narrator_r1.diff'))
+  H.eq(host.listdir(H.join(H.join(folder, 'TranscriptCompare'), 'diffs')), {}, 'the diffs directory is made in the app folder')
+  H.eq(host.listsubdirs(rpp_folder), { 'narration-utils' }, 'nothing is written beside the .rpp')
+end)
+
+H.test('prepare_compare refuses a passed folder without a manuscript rather than falling back to the .rpp folder', function()
+  local s = project_session()
+  local folder = app_folder({ manuscript = false })
+  local track = audio_track(s)
+  s.fake:add_item(track, { selected = true, position = 0, length = 10, source = 'a.wav' })
+  s:send('prepare_compare', 'r1', folder)
+  H.eq(s:events(), { { 'ERROR', 'r1', 'Import a manuscript in Narration Utils before starting Transcript Compare.' } })
+end)
+
+H.test('prepare_compare with a passed folder works for a project REAPER has not saved', function()
+  local s = project_session({ saved = false })
+  local folder = app_folder()
+  local track = audio_track(s)
+  s.fake:add_item(track, { selected = true, position = 0, length = 10, source = 'a.wav' })
+  s:send('prepare_compare', 'r1', folder)
+  H.eq(first_event(s)[1], 'COMPARE_PREPARED')
+end)
+
 -- inspect_compare_results and export ---------------------------------------------------------------------------------
 
 -- Prepares a run with two items and returns the session plus a helper that writes a results file.
