@@ -236,11 +236,12 @@
         "label": "MP3 format",
         "scope": "file",
         "metric": "mp3_format",
-        "min": null,
+        "unit": "kbps",
+        "min": 192,
         "max": null,
         "bound": "192 kbps+ CBR",
         "level": "required",
-        "checked_by": "not_yet",
+        "checked_by": "measured",
         "requirement": "Each file is an MP3 at 192 kbps or higher, constant bit rate (CBR).",
         "quoted": false,
         "source_url": "https://help.acx.com/s/article/what-are-the-acx-audio-submission-requirements",
@@ -527,7 +528,7 @@
             "rule": "acx.format",
             "status": "not_checked",
             "value": null,
-            "why": "This is a WAV render; check the MP3 you upload."
+            "why": "This is a WAV render; measure the MP3 you upload to check its format."
           }
         ]
       },
@@ -621,7 +622,7 @@
             "rule": "acx.format",
             "status": "not_checked",
             "value": null,
-            "why": "This is a WAV render; check the MP3 you upload."
+            "why": "This is a WAV render; measure the MP3 you upload to check its format."
           }
         ]
       },
