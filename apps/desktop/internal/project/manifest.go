@@ -50,6 +50,10 @@ type Manifest struct {
 	// (credits-token-setup-and-front-matter-detection.prd.md CS2, ADR 0208), additive like Credits. A Replace manuscript
 	// gives a new document id, so the prompt asks again. Nil: never dismissed.
 	CreditsSetup *CreditsSetup `json:"creditsSetup,omitempty"`
+	// ChapterSync is the narrator's answer to "Sync chapters to tracks?" (daw-chapter-track-auto-sync.prd.md S1, S2,
+	// ADR 0209), additive like Credits. It lives on the manifest because it is a project decision that survives Replace
+	// manuscript. Nil: not asked yet.
+	ChapterSync *ChapterSync `json:"chapterSync,omitempty"`
 	// DeliveryProfile is the delivery profile this project is judged against (delivery-platform-profiles.prd.md P1,
 	// ADR 0179), additive like Credits. Nil: the Global default.
 	DeliveryProfile *DeliveryProfileRef `json:"deliveryProfile,omitempty"`
@@ -59,6 +63,12 @@ type Manifest struct {
 type CreditsSetup struct {
 	DismissedFor string    `json:"dismissedFor"`
 	DismissedAt  time.Time `json:"dismissedAt"`
+}
+
+// ChapterSync is the stored consent: Enabled is Sync (true) or Not now (false), and DecidedAt when the narrator chose.
+type ChapterSync struct {
+	Enabled   bool      `json:"enabled"`
+	DecidedAt time.Time `json:"decidedAt"`
 }
 
 // DeliveryProfileRef names a delivery profile: a built-in's id and version, or a custom profile's id.

@@ -92,6 +92,9 @@ func (h *Host) importJobEnded(job manuscript.ImportJob) {
 	if event, ok := endedJob(job.ID, jobKindManuscriptImport, job.Phase, job.Message, time.Now().Add(-time.Duration(job.Elapsed*float64(time.Second)))); ok {
 		h.publishJobEnded(event)
 	}
+	if job.Phase == "success" {
+		h.chapterSyncTrigger(syncTriggerImport) // a manuscript arrived: ask, or sync (chaptersync.go)
+	}
 }
 
 // transcriptWatch turns the transcript's state changes into one jobEnded per run: it notices the state leaving an active phase for

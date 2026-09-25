@@ -1,0 +1,20 @@
+{
+  "ask": true,
+  "batch": null,
+  "consent": "undecided",
+  "counts": {
+    "linked": 1,
+    "needsYou": 1,
+    "noTrack": 1,
+    "pickupTracks": 0,
+    "unmatched": 0
+  },
+  "dawLinked": true,
+  "decidedAt": null,
+  "lastSync": null,
+  "manuscript": true,
+  "message": "",
+  "project": "ready",
+  "projectFile": "C:/Projects/Alice/Alice.rpp",
+  "savedAt": "2026-09-21T10:00:00Z"
+}

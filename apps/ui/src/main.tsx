@@ -65,6 +65,8 @@ const mockTeleprompter = (['listening', 'waiting', 'done', 'ended', 'flagged'] a
 const mockResume = MOCK_RESUME_SEEDS.find((seed) => seed === mockParams.get('mockResume'));
 // `?mockRemoved=1`: the last narration chapter boots removed from recording (chapter-track-link-control.prd.md Phase 3).
 const mockRemoved = mockParams.get('mockRemoved') === '1';
+// `?mockChapterSync=ask|off|linked`: chapter sync's consent at boot (daw-chapter-track-auto-sync.prd.md Phase 3).
+const mockChapterSync = (['ask', 'off', 'linked'] as const).find((seed) => seed === mockParams.get('mockChapterSync'));
 // `?mockNoDevices=1` boots the teleprompter with an empty device listing, so the
 // blocked "No microphone found" state (no typed fallback) can be seen without a host.
 const mockNoDevices = mockParams.has('mockNoDevices');
@@ -224,6 +226,7 @@ const mockInitial = {
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
   ...(mockResume ? { resume: mockResume } : {}),
   ...(mockRemoved ? { removedChapter: true } : {}),
+  ...(mockChapterSync ? { chapterSync: mockChapterSync } : {}),
   ...(mockCreditsFilled ? { creditValues: { title: 'Alice’s Adventures in Wonderland', author: 'Lewis Carroll', narrator: 'Ada Finch' } } : {}),
   ...(mockCreditsExtras ? { chapterAnnouncement: '[Chapter]{: [Chapter Title]}.', retailSample: { chapterIndex: 2, startLine: 1, endLine: 3 } } : {}),
   ...(mockNoProject ? { projectFolder: '' } : {}),

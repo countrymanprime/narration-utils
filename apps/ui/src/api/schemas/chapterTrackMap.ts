@@ -29,7 +29,7 @@ export const chapterTrackMappingSchema = z.object({
   mappings: listFromNull(trackMappingSchema),
 }) satisfies z.ZodType<ChapterTrackMapping>;
 
-const chapterTrackCandidateSchema = z.object({
+export const chapterTrackCandidateSchema = z.object({
   trackGuid: z.string(),
   trackName: z.string(),
   trackIndex: z.number().int(),

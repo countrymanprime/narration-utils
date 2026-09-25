@@ -39,6 +39,9 @@ func (h *Host) ProjectLinkDawFile() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if linked, _ := result["linked"].(bool); linked {
+		go h.chapterSyncTrigger(syncTriggerDawLink) // the DAW is hooked up: ask, or sync (chaptersync.go)
+	}
 	return encodeBinding(result, nil)
 }
 

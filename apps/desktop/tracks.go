@@ -80,6 +80,7 @@ func (h *Host) tracksSelect(path string) (map[string]any, error) {
 	if err := svc.settings.Save("Tracks", "project", map[string]*string{"selectedRpp": &value}); err != nil {
 		return nil, err
 	}
+	go h.chapterSyncTrigger(syncTriggerDawLink) // the .rpp chapter sync reads changed (chaptersync.go)
 	return map[string]any{"candidates": candidates, "selected": path}, nil
 }
 

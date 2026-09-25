@@ -49,7 +49,7 @@ import (
 // Keep this in lockstep with apps/ui/src/hostApi.ts.  The frontend rejects
 // an older host before bootstrapping so a partial update cannot run against a
 // binding contract it does not understand.
-const hostAPIVersion = 52
+const hostAPIVersion = 53
 
 // Host is the Wails binding boundary. The frontend invokes only this bound
 // object; it never receives a loopback port or an HTTP capability.
@@ -165,8 +165,13 @@ type Host struct {
 	openURL func(ctx context.Context, address string)
 	// jobEvents is a seam for tests: nil means the Wails runtime (jobs.go). transcriptRuns turns transcript states into job ends.
 	// +checklocks:mu
-	jobEvents      func(jobEnded)
-	transcriptRuns transcriptWatch
+	jobEvents func(jobEnded)
+	// chapterSyncEvents is a seam for tests: nil means the Wails runtime (chaptersync.go).
+	// +checklocks:mu
+	chapterSyncEvents func(chapterSyncState)
+	// chapterSyncRuns serialises chapter syncs (chaptersync.go).
+	chapterSyncRuns chapterSyncRuns
+	transcriptRuns  transcriptWatch
 	// coverageRuns turns recording check states into job ends (bindings_coverage.go).
 	coverageRuns coverageWatch
 	// coverageLauncher is a seam for tests: nil means the recording check's sidecar starts under h.sidecars.
@@ -378,6 +383,9 @@ func (h *Host) configureLocked(next config) {
 	}
 	h.manuscript = manuscript.New(h.config.projectFolder)
 	h.manuscript.SetPersist(h.persist)
+	// The service is rebuilt per project, so its import-end callback must be too: without it an attached project's
+	// imports never report job:ended (ADR 0076) and never reach chapter sync (chaptersync.go).
+	h.manuscript.SetOnJobEnd(h.importJobEnded)
 	h.findings = findings.NewStore(h.config.projectFolder)
 	h.findings.SetPersist(h.persist)
 	h.settings.SetProject(h.config.projectFolder)
@@ -801,6 +809,7 @@ func (h *Host) onSecondInstance(instance application.SecondInstanceData) {
 	if ctx != nil {
 		bringWindowForward()
 		if attached {
+			go h.chapterSyncTrigger(syncTriggerAttach) // chapter sync's attach path (chaptersync.go)
 			emitEvent("system:attached", map[string]any{"attached": true})
 		} else if reason != "" {
 			emitEvent("system:attached", map[string]any{"attached": false, "reason": reason})

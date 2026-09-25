@@ -9,6 +9,10 @@ import type {
   ChapterTagsPreview,
   CreditsAnnouncement,
   CreditsRenderResult,
+  ChapterSyncBatch,
+  ChapterSyncConsent,
+  ChapterSyncState,
+  ChapterSyncTrigger,
   CreditsSetupField,
   CreditsSetupState,
   CreditsStatuses,
@@ -91,7 +95,7 @@ import {
   wireSettings,
 } from './mockFixtures';
 import { loadAliceManuscript } from './aliceManuscript';
-import { mockChapterTrackLinks, mockChapterTrackMatch, mockRecordedLength } from './chapterTrackMatchMock';
+import { mockChapterSyncPreview, mockChapterTrackLinks, mockChapterTrackMatch, mockRecordedLength } from './chapterTrackMatchMock';
 import { mockChapterSuggestion } from './chapterSuggestionMock';
 import { mockImportPreview, mockImportPreviewLog, type MockImportKind } from './mockImportPreview';
 import { createTeleprompterMock, type TeleprompterSeed } from './teleprompterMock';
@@ -507,6 +511,11 @@ export function createMockApi(
     /** Boots with the manuscript's last narration chapter already removed from recording (chapter-track-link-control PRD
      * Phase 3), so the "Removed from recording" list and its Restore can be seen without driving a removal. */
     removedChapter?: boolean;
+    /** Chapter sync's consent at boot (daw-chapter-track-auto-sync PRD Phase 3): `ask` has not been asked yet (the consent
+     * dialog shows), `off` answered Not now, and `linked` is on and, once something subscribes, runs a sync that links the
+     * confident chapters and sends the batch for the toast. Unset, sync is on and has run before with nothing new, so no
+     * dialog or toast covers the other states. */
+    chapterSync?: 'ask' | 'off' | 'linked';
     /** Whether the mock project boots with a linked DAW project file (PRD W13/W14). Defaults to true. */
     dawFileLinked?: boolean;
     /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
@@ -875,6 +884,60 @@ export function createMockApi(
   // a real session import_pickups/next_pickup/etc. would if the script itself is what's wrong.
   const pickupsAlwaysErrors = initial.pickups === 'error';
   const pickupsSubscribers = new Set<(state: PickupsState) => void>();
+  // Chapter sync (apps/desktop/chaptersync.go): the consent, the pairs the narrator undid, and who listens.
+  let chapterSyncConsent: ChapterSyncConsent = initial.chapterSync === 'ask' ? 'undecided' : initial.chapterSync === 'off' ? 'off' : 'on';
+  let chapterSyncDecidedAt: string | null = chapterSyncConsent === 'undecided' ? null : '2026-09-24T09:00:00Z';
+  let chapterSyncLastSync: string | null = chapterSyncConsent === 'on' && initial.chapterSync !== 'linked' ? '2026-09-24T09:00:00Z' : null;
+  const chapterSyncRejected = new Set<string>();
+  const chapterSyncSubscribers = new Set<(state: ChapterSyncState) => void>();
+  const mockLinksRead = () => {
+    const state = tracksDiscovery.candidates.length === 0 ? 'none' : tracksDiscovery.selected ? 'ready' : 'choose';
+    return mockChapterTrackLinks(chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings, state);
+  };
+  const mockChapterSyncState = (batch: ChapterSyncBatch | null): ChapterSyncState => {
+    const links = mockLinksRead();
+    const plan = mockChapterSyncPreview(links, chapterSyncRejected);
+    const manuscript = !initial.noManuscript && chapters.length > 0;
+    return {
+      consent: chapterSyncConsent,
+      decidedAt: chapterSyncDecidedAt,
+      ask: chapterSyncConsent === 'undecided' && manuscript && dawFileLinked,
+      manuscript,
+      dawLinked: dawFileLinked,
+      project: links.project,
+      message: links.message,
+      projectFile: links.projectFile,
+      savedAt: links.savedAt,
+      lastSync: chapterSyncLastSync,
+      counts: {
+        linked: plan.kept.length + plan.autoLink.length,
+        needsYou: plan.needsYou.length,
+        noTrack: plan.noTrack.length,
+        unmatched: plan.unmatched.length,
+        pickupTracks: plan.pickupTracks.length,
+      },
+      batch,
+    };
+  };
+  const publishChapterSync = (state: ChapterSyncState) => chapterSyncSubscribers.forEach((fn) => fn(wireClone(state)));
+  // One sync, as the host's runChapterSync does it: the confident links written as auto, the batch when anything was linked.
+  const runMockChapterSync = (trigger: ChapterSyncTrigger): ChapterSyncState => {
+    const plan = mockChapterSyncPreview(mockLinksRead(), chapterSyncRejected);
+    const at = new Date().toISOString();
+    const linked: TrackMapping[] = plan.autoLink.map((link) => ({
+      trackGuid: link.trackGuid,
+      chapterId: link.chapterId,
+      chapterTitle: link.chapterTitle,
+      confirmedAt: at,
+      origin: 'auto',
+      match: link.match,
+    }));
+    chapterTrackMappings = [...chapterTrackMappings, ...linked];
+    chapterSyncLastSync = at;
+    const state = mockChapterSyncState(linked.length > 0 ? { at, trigger, linked, newTracks: [] } : null);
+    publishChapterSync(state);
+    return state;
+  };
   const publishPickups = () => pickupsSubscribers.forEach((fn) => fn(wireClone(pickups)));
   // Mirrors the Go service's begin(): every new run starts from a clean state (no stale next/resolved/importReport/csv
   // from a previous run), except remaining/total, which survive so the count does not flash back to zero.
@@ -2197,6 +2260,43 @@ export function createMockApi(
       await manuscriptReady;
       const state = tracksDiscovery.candidates.length === 0 ? 'none' : tracksDiscovery.selected ? 'ready' : 'choose';
       return wireClone(mockChapterTrackLinks(chapters, WIRE_TRACKS_PROJECT, chapterTrackMappings, state));
+    },
+    chapterSyncState: async () => {
+      await manuscriptReady;
+      return wireClone(mockChapterSyncState(null));
+    },
+    chapterSyncPreview: async () => {
+      await manuscriptReady;
+      return wireClone(mockChapterSyncPreview(mockLinksRead(), chapterSyncRejected));
+    },
+    chapterSyncSetEnabled: async (on) => {
+      await manuscriptReady;
+      chapterSyncConsent = on ? 'on' : 'off';
+      chapterSyncDecidedAt = new Date().toISOString();
+      if (on) return wireClone(runMockChapterSync('consent'));
+      const state = mockChapterSyncState(null);
+      publishChapterSync(state);
+      return wireClone(state);
+    },
+    chapterSyncUndo: async (trackGuid) => {
+      await manuscriptReady;
+      const link = chapterTrackMappings.find((mapping) => mapping.trackGuid === trackGuid);
+      if (!link) throw new Error('that track has no link to undo');
+      if (link.origin !== 'auto') throw new Error('only an automatic link can be undone; unlink this track instead');
+      chapterTrackMappings = chapterTrackMappings.filter((mapping) => mapping !== link);
+      chapterSyncRejected.add(`${link.trackGuid}\u0000${link.chapterTitle}`);
+      const state = mockChapterSyncState(null);
+      publishChapterSync(state);
+      return wireClone(state);
+    },
+    subscribeChapterSync: (onUpdate) => {
+      chapterSyncSubscribers.add(onUpdate);
+      if (initial.chapterSync === 'linked' && chapterSyncLastSync === null) {
+        void manuscriptReady.then(() => {
+          if (chapterSyncSubscribers.has(onUpdate) && chapterSyncLastSync === null) runMockChapterSync('daw-link');
+        });
+      }
+      return () => chapterSyncSubscribers.delete(onUpdate);
     },
     chapterTrackMatch: async (chapterId) => {
       await manuscriptReady;
