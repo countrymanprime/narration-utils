@@ -58,6 +58,7 @@ import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchem
 import {
   creditsAnnouncementsSchema,
   creditsProjectValuesResultSchema,
+  creditsSetupStateSchema,
   creditsRenderResultSchema,
   creditsStatusesSchema,
   creditTemplateSchema,
@@ -169,6 +170,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'daw-launch.json': dawLaunchResultSchema,
   'credits-templates.json': creditTemplatesSchema,
   'credits-project-values-empty.json': creditsProjectValuesResultSchema,
+  'credits-setup-state-needed.json': creditsSetupStateSchema,
+  'credits-setup-state-dismissed.json': creditsSetupStateSchema,
   'credits-preview-unresolved.json': creditsRenderResultSchema,
   'credits-chapter-announcements.json': creditsAnnouncementsSchema,
   'credits-retail-sample.json': retailSampleAnswerSchema,
@@ -764,6 +767,28 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(creditsRenderResultSchema, preview, 'mock credits preview');
     expect(preview.text).toBe('Neon, written by A. Writer, narrated by [Narrator].');
     expect(preview.unresolved).toEqual(['Narrator']);
+  });
+
+  // credits-token-setup-and-front-matter-detection.prd.md Phase 2: the prompt asks, "Not now", and a save that only fills.
+  it('the credits setup prompt answers', async () => {
+    const quiet = await createMockApi().creditsSetupState();
+    expectMatches(creditsSetupStateSchema, quiet, 'mock credits setup, answered before');
+    expect(quiet).toMatchObject({ needed: false, banner: false, dismissed: 'project' });
+
+    const api = createMockApi({}, { creditsSetup: true });
+    const asked = await api.creditsSetupState();
+    expectMatches(creditsSetupStateSchema, asked, 'mock credits setup, asking');
+    expect(asked.needed).toBe(true);
+    expect(asked.fields.map((field) => field.token)).toEqual(['Title', 'Author', 'Narrator']);
+    expect(asked.fields[0].candidate?.value).toBe('Alice’s Adventures in Wonderland');
+    const notNow = await api.creditsSetupDismiss('session');
+    expectMatches(creditsSetupStateSchema, notNow, 'mock credits setup, not now');
+    expect(notNow).toMatchObject({ needed: false, banner: true, dismissed: 'session' });
+    await api.saveCreditsProjectValues({ title: 'My Own Title' });
+    const saved = await api.creditsSetupSave({ title: 'Alice', author: 'Lewis Carroll', narrator: 'Ada Finch' });
+    expectMatches(creditsSetupStateSchema, saved, 'mock credits setup, saved');
+    expect(saved).toMatchObject({ needed: false, banner: false, fields: [] });
+    expect((await api.creditsProjectValues()).values.title).toBe('My Own Title');
   });
 
   it('the chapter announcements and retail sample answers (audiobook-credits-templates.prd.md, Phase 5)', async () => {
@@ -1760,6 +1785,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'duplicateCreditsTemplate',
       'creditsProjectValues',
       'saveCreditsProjectValues',
+      'creditsSetupState',
+      'creditsSetupDismiss',
+      'creditsSetupSave',
       'creditsPreview',
       'creditsChapterAnnouncements',
       'creditsRetailSample',

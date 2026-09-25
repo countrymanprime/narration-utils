@@ -1,0 +1,83 @@
+{
+  "banner": false,
+  "candidates": [
+    {
+      "confidence": "high",
+      "lines": [
+        "AFTER",
+        "THE",
+        "APPLAUSE"
+      ],
+      "source": "the title page",
+      "token": "Title",
+      "value": "After the Applause"
+    },
+    {
+      "confidence": "high",
+      "lines": [
+        "Adrian Crow"
+      ],
+      "source": "the byline and the copyright line",
+      "token": "Author",
+      "value": "Adrian Crow"
+    },
+    {
+      "confidence": "medium",
+      "lines": [
+        "Copyright © 2026 Adrian Crow"
+      ],
+      "source": "the copyright line",
+      "token": "Year",
+      "value": "2026"
+    },
+    {
+      "confidence": "high",
+      "lines": [
+        "Copyright © 2026 Adrian Crow"
+      ],
+      "source": "the copyright line, matching the byline",
+      "token": "CopyrightHolder",
+      "value": "Adrian Crow"
+    }
+  ],
+  "dismissed": "project",
+  "dismissedAt": "2026-09-25T12:00:00Z",
+  "documentId": "doc-after-the-applause",
+  "fields": [
+    {
+      "candidate": {
+        "confidence": "high",
+        "lines": [
+          "AFTER",
+          "THE",
+          "APPLAUSE"
+        ],
+        "source": "the title page",
+        "token": "Title",
+        "value": "After the Applause"
+      },
+      "field": "title",
+      "token": "Title"
+    },
+    {
+      "candidate": {
+        "confidence": "high",
+        "lines": [
+          "Adrian Crow"
+        ],
+        "source": "the byline and the copyright line",
+        "token": "Author",
+        "value": "Adrian Crow"
+      },
+      "field": "author",
+      "token": "Author"
+    },
+    {
+      "candidate": null,
+      "field": "narrator",
+      "token": "Narrator"
+    }
+  ],
+  "narratorGlobal": "",
+  "needed": false
+}
