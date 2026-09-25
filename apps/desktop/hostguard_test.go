@@ -22,6 +22,7 @@ var swappableHostFields = map[string]bool{
 	"manuscript":   true,
 	"pickups":      true,
 	"projectState": true,
+	"actions":      true,
 	"renderConfig": true,
 	"cleanupTools": true,
 	"retakeLanes":  true,

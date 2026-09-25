@@ -122,7 +122,10 @@ type Host struct {
 	// without a REAPER session directory); take-review's create-take action
 	// (takereview.go) is its first direct consumer outside transcript.Service,
 	// which is handed the same client rather than building its own.
-	bridge  *bridge.Client
+	bridge *bridge.Client
+	// actions is the S28 commands' client on the same bridge (chapter regions, chapterregions.go); swappable like
+	// transcript, and it reads the experimental switch on every request.
+	actions *bridge.Actions
 	recents *recents.Store
 	// creditTemplates is the narrator's own credit-template library (audiobook-credits-templates.prd.md, Phase 1):
 	// user-level like recents, set once in NewHost and never swapped by a project switch.
@@ -418,6 +421,12 @@ func (h *Host) configureLocked(next config) {
 	// The Review page's Go to, Loop and Stop (review dashboard PRD Phase 7, bindings_navigation.go) are one more
 	// consumer of the same client: the navigator's answers arrive through the same Drain the transcript loop pumps.
 	h.navigation = newFindingNavigation(client)
+	// The S28 commands (internal/bridge/actions.go) are one more consumer of the same client. Each is refused before
+	// anything is written while DAW.experimental_reaper_actions is off (owner decision D38, ADR 0230).
+	h.actions = bridge.NewActions(client, func() bool {
+		value, _ := settingsStore.Effective(bridge.ExperimentalSettingTool, bridge.ExperimentalSettingKey, "false")
+		return value == "true"
+	})
 	// The line-identity service is the second consumer of the same bridge client (bridge.Client fans events
 	// out by tag and run, ADR 0068), so pollTranscript's Drain call already pumps its events too. Phase 7
 	// (reaper-automation-follow-through PRD) is the UI trigger, so it now emits h.emitLineIdentity the way
@@ -696,8 +705,8 @@ func (h *Host) emitCleanupTools(state map[string]any) {
 }
 
 // emitProjectState relays a projectstate.Service snapshot to the frontend (Phase 13's live "project changed
-// since this check" hint), the same simple relay emitRenderConfig uses. Nothing subscribes to it yet: the
-// binding is available for a future UI phase, or for a staleness evaluator, to poll or watch.
+// since this check" hint), the same simple relay emitRenderConfig uses. The UI's subscribeProjectState reads it and
+// compares the count with the comparison's baseline (TranscriptState.projectChangeCount).
 func (h *Host) emitProjectState(state map[string]any) {
 	h.mu.RLock()
 	ctx := h.ctx

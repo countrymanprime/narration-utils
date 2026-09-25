@@ -44,6 +44,9 @@ export type TranscriptState = {
   trackName?: string;
   audioItemCount?: number;
   completedAt?: string;
+  /** REAPER's change count when the audio was listed (follow-through PRD Phase 13): the baseline for "changed since
+   * comparison". Absent from an older REAPER script or host. */
+  projectChangeCount?: number;
   phase: 'idle' | 'preparing' | 'running' | 'inspecting' | 'need_chapter' | 'success' | 'cancelled' | 'error';
   percent: number;
   message: string;
