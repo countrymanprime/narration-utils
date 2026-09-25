@@ -22,6 +22,7 @@ const TOOLTIP_CLOSES_ON_RESIZE = { reloadPerViewport: true } as const;
 const KEEPS_DESKTOP_SCROLL = { reloadPerViewport: true } as const;
 const POPUP_ANCHORED_AT_FIRST_WIDTH = { reloadPerViewport: true } as const;
 const LIVE_PROGRESS_MOVES_ON = { reloadPerViewport: true } as const;
+const TOAST_FADES_OUT = { reloadPerViewport: true } as const;
 const FREEZES_THE_CLOCK = { reloadPerViewport: true } as const;
 
 export const STATE_CATALOG: StateEntry[] = [
@@ -88,6 +89,13 @@ export const STATE_CATALOG: StateEntry[] = [
     state: 'chapter-track-no-project',
     description:
       'Home, chapter table expanded with no REAPER project found: the Track column is absent and its place names why (TL7, ?mockNoRpp=1, mockups/chapter-track-link-control/08-no-project-line.webp)',
+  },
+  {
+    page: 'home',
+    state: 'chapter-sync-toast-undo',
+    description:
+      'Home, the toast for a chapter-sync batch that just linked a track, with Undo (?mockChapterSync=linked, daw-chapter-track-auto-sync.prd.md Phase 3, S12, mockups/daw-chapter-track-auto-sync/03-auto-linked-toast-undo.webp)',
+    ...TOAST_FADES_OUT,
   },
   {
     page: 'home',
