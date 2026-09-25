@@ -44,6 +44,12 @@ var realEvents = map[string][]string{
 	"TRACK_ITEM":      {"TRACK_ITEM", "t1", "{AAAAAAAA-0000-4000-8000-000000000001}", "{00000004-0000-4000-8000-000000000004}", "0.000000", "4.000000", "0.000000", "1.000000", "C:\\Audio\\ch1|take 1.wav"},
 	"TRACK_STATE_END": {"TRACK_STATE_END", "t1", "2", "2"},
 	"TRACK_STALE":     {"TRACK_STALE", "t1", "{FFFFFFFF-0000-4000-8000-00000000FFFF}"},
+	// integrations/reaper/tests/transport_test.lua (arm_only, record_start, record_stop).
+	"ARMED":           {"ARMED", "a1", "{00000001-0000-4000-8000-000000000001}", "2", "1"},
+	"RECORD_STARTED":  {"RECORD_STARTED", "r1", "{00000001-0000-4000-8000-000000000001}", "42.500000"},
+	"RECORD_STOPPED":  {"RECORD_STOPPED", "s1", "3", "0"},
+	"RECORD_ENDED":    {"RECORD_ENDED", "r1", "2", "0"},
+	"RECORD_NOT_OURS": {"RECORD_NOT_OURS", "s1"},
 }
 
 func TestEveryRealEventPassesItsTable(t *testing.T) {
