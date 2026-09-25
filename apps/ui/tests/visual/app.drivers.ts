@@ -2206,6 +2206,17 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Credits');
     },
+    // Every empty field with a manuscript-detected candidate shows its own source caption (credits-token-setup-and-
+    // front-matter-detection.prd.md Phase 1), not just Title and Author.
+    'project-credits-detected': async (page) => {
+      await page.goto('/?mockCredits=detected');
+      await settlePage(page);
+      await goToPage(page, 'Settings');
+      await clickVisible(page, 'tab', 'This Project');
+      await clickSettingsCategory(page, 'Credits');
+      await page.getByText('Detected from the copyright line: “1865”.').waitFor();
+      await page.getByText(/Detected from a line ending in .Publishers.: “Macmillan” \(check this\)\./).waitFor();
+    },
     // Credits PRD Phase 5: the chapter announcement template ?mockCredits=extras adds, previewed for Chapter 1.
     'project-credits-chapter-announcement': async (page) => {
       await page.goto('/?mockCredits=extras');

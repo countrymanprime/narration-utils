@@ -438,6 +438,11 @@ export function createMockApi(
     /** Drops the closing credit templates from the seeded library (credits-in-chapter-table.prd.md Phase 2, CT5): the
      * Home table's Closing credits row then shows "Not set up" with a link to Settings > Credits. */
     creditsMissingClosing?: boolean;
+    /** Widens `creditsProjectValues().detected` past Title/Author to every token the front matter parser can find
+     * (credits-token-setup-and-front-matter-detection.prd.md Phase 1), including one low-confidence candidate, so
+     * Settings > Credits' per-field source caption can be seen on every field, not just the two the default mock
+     * always detects. */
+    creditsDetected?: boolean;
     /** The project's retail sample at boot (Phase 5): by paragraph id, or by lines of the chapter at this index in the
      * manuscript once it has loaded (the bundled text replaces the seed's paragraph ids). */
     retailSample?: { startParagraphId: string; endParagraphId: string } | { chapterIndex: number; startLine: number; endLine: number };
@@ -1977,10 +1982,18 @@ export function createMockApi(
       values: wireClone(creditValues),
       narratorGlobal: settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '',
       suggestions: { Title: 'Alice’s Adventures in Wonderland', Author: 'Lewis Carroll' },
-      detected: [
-        { token: 'Title', value: 'Alice’s Adventures in Wonderland', source: 'the title page', confidence: 'high' },
-        { token: 'Author', value: 'Lewis Carroll', source: 'the byline', confidence: 'high' },
-      ],
+      detected: initial.creditsDetected
+        ? [
+            { token: 'Title', value: 'Alice’s Adventures in Wonderland', source: 'the title page', confidence: 'high' },
+            { token: 'Author', value: 'Lewis Carroll', source: 'the byline and the copyright line', confidence: 'high' },
+            { token: 'Year', value: '1865', source: 'the copyright line', confidence: 'high' },
+            { token: 'CopyrightHolder', value: 'Lewis Carroll', source: 'the copyright line', confidence: 'high' },
+            { token: 'Publisher', value: 'Macmillan', source: 'a line ending in "Publishers"', confidence: 'low' },
+          ]
+        : [
+            { token: 'Title', value: 'Alice’s Adventures in Wonderland', source: 'the title page', confidence: 'high' },
+            { token: 'Author', value: 'Lewis Carroll', source: 'the byline', confidence: 'high' },
+          ],
     }),
     saveCreditsProjectValues: async (values) => {
       creditValues = wireClone(values);

@@ -1286,6 +1286,13 @@ export const STATE_CATALOG: StateEntry[] = [
   },
   {
     page: 'settings',
+    state: 'project-credits-detected',
+    description:
+      'Settings, Project scope / Credits, every empty field with a manuscript-detected candidate captioned with its source (?mockCredits=detected): Title and Author from the title page, Year and Copyright holder from the copyright line, and a low-confidence Publisher marked "(check this)" (credits-token-setup-and-front-matter-detection.prd.md Phase 1)',
+    ...REFLOW,
+  },
+  {
+    page: 'settings',
     state: 'project-credits-chapter-announcement',
     description:
       'Settings, Project scope / Credits, a chapter announcement template selected (Phase 5): its body "[Chapter]{: [Chapter Title]}." previews as "Chapter 1: Down the Rabbit-Hole." with "Shown for Chapter 1, one of 12 chapters", and the kind hint names [Chapter] and [Chapter Title]',

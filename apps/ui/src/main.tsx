@@ -72,6 +72,10 @@ const mockNoDevices = mockParams.has('mockNoDevices');
 // Chapter 3 (credits PRD Phase 5), so the announcement preview and the sample marker can be seen without picking them.
 const mockCreditsExtras = mockParams.get('mockCredits') === 'extras';
 const mockCreditsFilled = mockParams.get('mockCredits') === 'filled' || mockCreditsExtras;
+// `?mockCredits=detected` widens the manuscript-detected candidates past Title/Author to every token the front matter
+// parser can find - Year, Copyright holder, a low-confidence Publisher - so Settings > Credits' per-field source
+// caption can be seen on every field (credits-token-setup-and-front-matter-detection.prd.md Phase 1).
+const mockCreditsDetected = mockParams.get('mockCredits') === 'detected';
 // `?mockPreviewError=<text>` makes the Story Bible preview fail with that text once the
 // preview voice is installed, so the failure toast can be seen without a real host.
 const mockPreviewError = mockParams.get('mockPreviewError');
@@ -203,6 +207,7 @@ const mockInitial = {
   ...(mockNoDaw ? { dawFileLinked: false } : {}),
   ...(mockDawNotDetected ? { dawCatalogInstalled: false } : {}),
   ...(mockCreditsMissing ? { creditsMissingClosing: true } : {}),
+  ...(mockCreditsDetected ? { creditsDetected: true } : {}),
   ...(mockPreviewError ? { previewError: mockPreviewError } : {}),
   ...(mockTeleprompter ? { teleprompter: mockTeleprompter } : {}),
   ...(mockNoDevices ? { teleprompterDevices: [] } : {}),
