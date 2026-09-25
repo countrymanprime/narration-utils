@@ -2258,8 +2258,12 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       await goToPage(page, 'Settings');
       await clickVisible(page, 'tab', 'This Project');
       await clickSettingsCategory(page, 'Credits');
-      await page.getByText('Detected from the copyright line: “1865”.').waitFor();
+      const detected = page.getByText('Detected from the copyright line: “1865”.');
+      await detected.waitFor();
       await page.getByText(/Detected from a line ending in .Publishers.: “Macmillan” \(check this\)\./).waitFor();
+      // Scrolled into view: at the desktop viewport's own scroll position (single load, no reloadPerViewport) this
+      // caption sits below the fold, making the desktop capture pixel-identical to plain project-credits otherwise.
+      await detected.scrollIntoViewIfNeeded();
     },
     // Credits PRD Phase 5: the chapter announcement template ?mockCredits=extras adds, previewed for Chapter 1.
     'project-credits-chapter-announcement': async (page) => {
