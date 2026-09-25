@@ -8,7 +8,7 @@ import { recordedStreamSchema } from './schemas/teleprompter';
 import { parseWire } from './wire/parseWire';
 import { CREDITS_LABEL, creditsParagraphs, tokenize, wordOffsets, type CreditsKind } from '../components/teleprompter/readerModel';
 import { mockRecordedEnd } from './chapterTrackMatchMock';
-import { seedLocateResult, seedTrackMatch, type MockResumeSeed } from './resumeMockSeed';
+import { seedLastReading, seedLocateResult, seedTrackMatch, type LocateDraft, type MockResumeSeed } from './resumeMockSeed';
 import type {
   ChapterTrackMatch,
   ManuscriptChapter,
@@ -25,6 +25,8 @@ import type {
   TeleprompterModelRequired,
   TeleprompterPosition,
   TeleprompterReading,
+  TeleprompterResumePlace,
+  TeleprompterResumeVerdict,
   TeleprompterScript,
   TeleprompterStartResult,
   TeleprompterState,
@@ -118,7 +120,7 @@ function mockLocate(
   { script, words }: { script: TeleprompterScript; words: string[] },
   trackGuid: string | undefined,
   modelRequired: TeleprompterModelRequired | undefined,
-): TeleprompterLocateResult {
+): LocateDraft {
   const picked = trackGuid ?? match.track?.trackGuid;
   const track = picked === undefined ? undefined : project.tracks.find((entry) => entry.guid === picked);
   if (picked !== undefined && !track) throw new Error('that track is not in the selected REAPER project');
@@ -145,6 +147,57 @@ function mockLocate(
   };
   const tail = { from: Math.max(recordedEnd.sourceStart, recordedEnd.sourceTime - MOCK_TAIL_SECONDS), to: recordedEnd.sourceTime };
   return { ...base, recordedEnd, tail, located, status: 'found' };
+}
+
+// The host's teleprompter.ResumeTolerance: how many words apart the two places may be and still agree.
+const RESUME_TOLERANCE = 10;
+const WORD_CHAR = /[\p{L}\p{N}_']/u;
+
+/**
+ * The mock's stand-in for teleprompter.Reconcile (apps/desktop/internal/teleprompter/reconcile.go), so every verdict the
+ * resume prompt renders can be seen without a host. The Go function is the one that is tested; this follows its rules.
+ */
+function mockReconcile(
+  located: TeleprompterLocated | null,
+  reading: TeleprompterReading | null,
+  words: string[],
+  breaks: Set<number>,
+): TeleprompterResumeVerdict {
+  const tokens = words.length;
+  const wordsLeft = (from: number) => words.slice(Math.max(0, from)).some((word) => WORD_CHAR.test(word));
+  const sentenceStart = (word: number) => sentenceAround(words, Math.min(Math.max(word - 1, 0), tokens - 1), breaks).start;
+  const place = (word: number, confident: boolean): TeleprompterResumePlace => ({
+    word,
+    number: word + 1,
+    sentence: tokens > 0 ? sentenceAround(words, Math.min(Math.max(word - 1, 0), tokens - 1), breaks) : null,
+    confident,
+  });
+  const daw = located?.word != null && located.tokens === tokens ? { ...place(located.word, located.confident), source: 'saved' as const } : null;
+  const prompter = reading && reading.tokens === tokens && reading.read > 0 ? place(reading.read, true) : null;
+  const verdict: TeleprompterResumeVerdict = { kind: 'none', start: null, daw, prompter, tokens };
+  if (!daw && !prompter) return verdict;
+  if (!daw) return prompter && wordsLeft(prompter.word) ? { ...verdict, kind: 'prompter_only' } : verdict;
+  if (!prompter) return { ...verdict, kind: wordsLeft(daw.word) ? 'daw_only' : 'complete' };
+  const near = Math.abs(daw.word - prompter.word) <= RESUME_TOLERANCE || sentenceStart(daw.word) === sentenceStart(prompter.word);
+  if (!wordsLeft(daw.word)) {
+    if (daw.confident) return { ...verdict, kind: 'complete' };
+    return near ? { ...verdict, kind: 'complete', confirmedBy: 'prompter' } : { ...verdict, kind: 'disagree' };
+  }
+  if (!near) return { ...verdict, kind: 'disagree' };
+  return { ...verdict, kind: 'agree', start: daw.word, ...(daw.confident ? {} : { confirmedBy: 'prompter' as const }) };
+}
+
+/** The locate draft with the chapter's seeded last reading and the verdict, as the host's `withResumeVerdict` adds them. */
+function withMockVerdict(
+  draft: LocateDraft,
+  seed: MockResumeSeed | undefined,
+  chapterId: string,
+  { script, words }: { script: TeleprompterScript; words: string[] },
+): TeleprompterLocateResult {
+  if (draft.status === 'asset_required') return draft;
+  const lastReading = seedLastReading(seed, chapterId, draft.located?.word ?? null, words.length);
+  const breaks = new Set(script.spans.map((span) => span.start));
+  return { ...draft, lastReading, verdict: mockReconcile(draft.located, lastReading, words, breaks) };
 }
 
 /** The mock of the sidecar's `text_script` for the credits (ADR 0150): one paragraph span per line with words, no title span. */
@@ -388,14 +441,9 @@ export function createTeleprompterMock(deps: Deps): TeleprompterApi {
       const match = seedTrackMatch(deps.trackMatch(chapterId), deps.resume);
       const chapter = findChapter(chapterId);
       if (!chapter) throw new Error('that chapter is not part of the current manuscript');
-      const result = mockLocate(
-        match,
-        deps.tracksProject,
-        buildScript(chapter, deps.paragraphs()),
-        options?.trackGuid,
-        whisperModelRequired(deps.assetRequired('whisper')),
-      );
-      return structuredClone(seedLocateResult(result, deps.resume));
+      const script = buildScript(chapter, deps.paragraphs());
+      const result = mockLocate(match, deps.tracksProject, script, options?.trackGuid, whisperModelRequired(deps.assetRequired('whisper')));
+      return structuredClone(withMockVerdict(seedLocateResult(result, deps.resume), deps.resume, chapterId, script));
     },
     subscribeTeleprompterEvent: (onEvent) => {
       eventSubscribers.add(onEvent);

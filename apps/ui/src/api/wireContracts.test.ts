@@ -16,6 +16,7 @@ import { MOCK_ACX, evaluateMockFile, mockCustomProfile } from './deliveryProfile
 import { diagnosticsJobSchema } from './schemas/diagnostics';
 import {
   bookmarkSchema,
+  chapterKindResultSchema,
   chapterSchema,
   chaptersSchema,
   fileSelectionSchema,
@@ -57,6 +58,7 @@ import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchem
 import {
   creditsAnnouncementsSchema,
   creditsProjectValuesResultSchema,
+  creditsSetupStateSchema,
   creditsRenderResultSchema,
   creditsStatusesSchema,
   creditTemplateSchema,
@@ -122,6 +124,10 @@ const GOLDEN: Record<string, z.ZodType> = {
   'teleprompter-locate-no-track.json': teleprompterLocateResultSchema,
   'teleprompter-locate-no-recording.json': teleprompterLocateResultSchema,
   'teleprompter-locate-source-missing.json': teleprompterLocateResultSchema,
+  'teleprompter-locate-agree.json': teleprompterLocateResultSchema,
+  'teleprompter-locate-disagree.json': teleprompterLocateResultSchema,
+  'teleprompter-locate-complete.json': teleprompterLocateResultSchema,
+  'teleprompter-locate-prompter-only.json': teleprompterLocateResultSchema,
   'teleprompter-save-flags.json': teleprompterFlagFindingsSchema,
   // The per-chapter reading file the host writes at session end and reads back (ADR 0205).
   'teleprompter-reading.json': teleprompterReadingSchema,
@@ -132,6 +138,7 @@ const GOLDEN: Record<string, z.ZodType> = {
   'manuscript-import-success.json': workJobSchema,
   'manuscript-chapters.json': chaptersSchema,
   'manuscript-chapter-status.json': chapterSchema,
+  'manuscript-chapter-kind-removed.json': chapterKindResultSchema,
   'manuscript-paragraphs.json': paragraphsSchema,
   'manuscript-search.json': searchHitsSchema,
   'manuscript-note.json': noteSchema,
@@ -163,6 +170,8 @@ const GOLDEN: Record<string, z.ZodType> = {
   'daw-launch.json': dawLaunchResultSchema,
   'credits-templates.json': creditTemplatesSchema,
   'credits-project-values-empty.json': creditsProjectValuesResultSchema,
+  'credits-setup-state-needed.json': creditsSetupStateSchema,
+  'credits-setup-state-dismissed.json': creditsSetupStateSchema,
   'credits-preview-unresolved.json': creditsRenderResultSchema,
   'credits-chapter-announcements.json': creditsAnnouncementsSchema,
   'credits-retail-sample.json': retailSampleAnswerSchema,
@@ -622,6 +631,24 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(chapterSchema, await api.manuscriptSetChapterStatus(chapters[0]?.id ?? '', 'recording'), 'mock chapter status');
   });
 
+  // chapter-track-link-control.prd.md Phase 3: Remove from recording clears the chapter's links, and Restore brings it back.
+  it('a chapter removed from recording and restored', async () => {
+    const api = createMockApi();
+    const [first] = await api.manuscriptChapters();
+    const tracks = await api.chapterTrackLinks();
+    const guid = tracks.tracks[0]?.guid ?? '';
+    await api.chapterTrackSet(first.id, guid);
+    const removed = await api.manuscriptSetChapterKind(first.id, 'reference');
+    expectMatches(chapterKindResultSchema, removed, 'mock chapter removed');
+    expect(removed).toMatchObject({ previousKind: 'narration', chapter: { contentKind: 'reference', removedFromRecording: true } });
+    expect(removed.clearedLinks.map((link) => link.trackGuid)).toEqual([guid]);
+    const restored = await api.manuscriptSetChapterKind(first.id, 'narration');
+    expectMatches(chapterKindResultSchema, restored, 'mock chapter restored');
+    expect(restored.chapter.removedFromRecording).toBeUndefined();
+    expect(restored.clearedLinks).toEqual([]);
+    await expect(api.manuscriptSetChapterKind('no-such-chapter', 'reference')).rejects.toThrow('unknown manuscript chapter');
+  });
+
   it('a created note and bookmark', async () => {
     const api = createMockApi();
     const chapter = (await api.manuscriptChapters())[0];
@@ -740,6 +767,28 @@ describe('answers of the mock client for the manuscript, Story Bible and project
     expectMatches(creditsRenderResultSchema, preview, 'mock credits preview');
     expect(preview.text).toBe('Neon, written by A. Writer, narrated by [Narrator].');
     expect(preview.unresolved).toEqual(['Narrator']);
+  });
+
+  // credits-token-setup-and-front-matter-detection.prd.md Phase 2: the prompt asks, "Not now", and a save that only fills.
+  it('the credits setup prompt answers', async () => {
+    const quiet = await createMockApi().creditsSetupState();
+    expectMatches(creditsSetupStateSchema, quiet, 'mock credits setup, answered before');
+    expect(quiet).toMatchObject({ needed: false, banner: false, dismissed: 'project' });
+
+    const api = createMockApi({}, { creditsSetup: true });
+    const asked = await api.creditsSetupState();
+    expectMatches(creditsSetupStateSchema, asked, 'mock credits setup, asking');
+    expect(asked.needed).toBe(true);
+    expect(asked.fields.map((field) => field.token)).toEqual(['Title', 'Author', 'Narrator']);
+    expect(asked.fields[0].candidate?.value).toBe('Alice’s Adventures in Wonderland');
+    const notNow = await api.creditsSetupDismiss('session');
+    expectMatches(creditsSetupStateSchema, notNow, 'mock credits setup, not now');
+    expect(notNow).toMatchObject({ needed: false, banner: true, dismissed: 'session' });
+    await api.saveCreditsProjectValues({ title: 'My Own Title' });
+    const saved = await api.creditsSetupSave({ title: 'Alice', author: 'Lewis Carroll', narrator: 'Ada Finch' });
+    expectMatches(creditsSetupStateSchema, saved, 'mock credits setup, saved');
+    expect(saved).toMatchObject({ needed: false, banner: false, fields: [] });
+    expect((await api.creditsProjectValues()).values.title).toBe('My Own Title');
   });
 
   it('the chapter announcements and retail sample answers (audiobook-credits-templates.prd.md, Phase 5)', async () => {
@@ -1609,6 +1658,7 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'manuscriptParagraphs',
       'manuscriptSearch',
       'manuscriptSetChapterStatus',
+      'manuscriptSetChapterKind',
       'noteList',
       'noteCreate',
       'manuscriptReader',
@@ -1735,6 +1785,9 @@ describe('answers of the mock client for the settings, voice, model, transcript 
       'duplicateCreditsTemplate',
       'creditsProjectValues',
       'saveCreditsProjectValues',
+      'creditsSetupState',
+      'creditsSetupDismiss',
+      'creditsSetupSave',
       'creditsPreview',
       'creditsChapterAnnouncements',
       'creditsRetailSample',

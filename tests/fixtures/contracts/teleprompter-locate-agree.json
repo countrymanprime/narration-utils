@@ -1,5 +1,13 @@
 {
-  "lastReading": null,
+  "lastReading": {
+    "chapterId": "c-0001",
+    "endedAt": "2026-09-21T10:00:00Z",
+    "read": 58,
+    "scriptHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "status": "listening",
+    "tokens": 2186,
+    "version": 1
+  },
   "located": {
     "confidence": 0.812,
     "confident": true,
@@ -103,9 +111,18 @@
       "source": "saved",
       "word": 52
     },
-    "kind": "daw_only",
-    "prompter": null,
-    "start": null,
+    "kind": "agree",
+    "prompter": {
+      "confident": true,
+      "number": 59,
+      "sentence": {
+        "end": 62,
+        "start": 5,
+        "text": "Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”"
+      },
+      "word": 58
+    },
+    "start": 52,
     "tokens": 2186
   }
 }

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/countrymanprime/narration-utils/shell/internal/contractfile"
 	"github.com/countrymanprime/narration-utils/shell/internal/process"
@@ -19,8 +20,16 @@ import (
 // fakeLocateArgsEnv names a file the fake sidecar writes its `--locate` arguments to, one per line.
 const fakeLocateArgsEnv = "SHELL_FAKE_TELEPROMPTER_LOCATE_ARGS"
 
+// fakeLocateWordEnv, when set, is the word the fake sidecar places the tail at ("end" for the chapter's token count),
+// and fakeLocateUnsureEnv makes it a low-confidence placement.
+const (
+	fakeLocateWordEnv   = "SHELL_FAKE_TELEPROMPTER_LOCATE_WORD"
+	fakeLocateUnsureEnv = "SHELL_FAKE_TELEPROMPTER_LOCATE_UNSURE"
+)
+
 // runFakeTeleprompterLocate stands in for the sidecar's `--locate` mode (locate.py): it records its arguments and
-// prints one `locate` line, the shape the Python contract test pins (teleprompter-locate.json).
+// prints one `locate` line, the shape the Python contract test pins (teleprompter-locate.json). Its token count is the
+// chapter's as the host tokenises it, so the resume verdict compares like with like.
 func runFakeTeleprompterLocate() bool {
 	if len(os.Args) < 2 || os.Args[1] != "--locate" {
 		return false
@@ -28,8 +37,37 @@ func runFakeTeleprompterLocate() bool {
 	if path := os.Getenv(fakeLocateArgsEnv); path != "" {
 		_ = os.WriteFile(path, []byte(strings.Join(os.Args[1:], "\n")), 0o600)
 	}
-	fmt.Println(`{"type":"locate","word":52,"last":51,"sentence":{"start":23,"end":59,"text":"Once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, and what is the use of a book, thought Alice, without pictures or conversations?"},"confidence":0.812,"confident":true,"matched":30,"heard":32,"runnerUp":4,"tokens":2196,"heardText":"do once or twice she had peeped into the book her sister was reading but it had no pictures or conversations in it and what is the use of a"}`)
+	tokens := 2196
+	if manuscript, chapter := fakeArg("--manuscript"), fakeArg("--chapter"); manuscript != "" {
+		project := filepath.Dir(filepath.Dir(filepath.Dir(manuscript)))
+		if script, ok := teleprompter.LoadChapterScript(project, chapter); ok {
+			tokens = len(script.Tokens)
+		}
+	}
+	word := 52
+	switch value := os.Getenv(fakeLocateWordEnv); value {
+	case "":
+	case "end":
+		word = tokens
+	default:
+		_, _ = fmt.Sscan(value, &word)
+	}
+	confident, confidence := true, 0.812
+	if os.Getenv(fakeLocateUnsureEnv) != "" {
+		confident, confidence = false, 0.31
+	}
+	fmt.Printf(`{"type":"locate","word":%d,"last":%d,"sentence":{"start":23,"end":59,"text":"Once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, and what is the use of a book, thought Alice, without pictures or conversations?"},"confidence":%g,"confident":%t,"matched":30,"heard":32,"runnerUp":4,"tokens":%d,"heardText":"do once or twice she had peeped into the book her sister was reading but it had no pictures or conversations in it and what is the use of a"}`+"\n", word, word-1, confidence, confident, tokens)
 	return true
+}
+
+// fakeArg is the value after flag in the fake sidecar's arguments.
+func fakeArg(flag string) string {
+	for i := 1; i+1 < len(os.Args); i++ {
+		if os.Args[i] == flag {
+			return os.Args[i+1]
+		}
+	}
+	return ""
 }
 
 type locateHost struct {
@@ -287,4 +325,142 @@ func TestContractTeleprompterLocate(t *testing.T) {
 		t.Fatal(err)
 	}
 	contractfile.Check(t, "teleprompter-locate-source-missing", stable)
+}
+
+// writeLastReading stores that the prompter stopped at word read of chapterID (ADR 0205), as a session end does.
+func (f locateHost) writeLastReading(t *testing.T, chapterID string, read int) {
+	t.Helper()
+	folder := f.host.config.projectFolder
+	script, ok := teleprompter.LoadChapterScript(folder, chapterID)
+	if !ok {
+		t.Fatalf("chapter %s has no script", chapterID)
+	}
+	if err := teleprompter.WriteReading(folder, chapterID, read, len(script.Tokens), "listening", time.Date(2026, 9, 24, 21, 4, 0, 0, time.UTC)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func verdictOf(t *testing.T, result map[string]any) map[string]any {
+	t.Helper()
+	verdict, ok := result["verdict"].(map[string]any)
+	if !ok {
+		t.Fatalf("result has no verdict: %v", result)
+	}
+	return verdict
+}
+
+// Resume reconciles the recorded tail with the prompter's last reading (read-aloud-resume-from-daw PRD Phase 3).
+func TestTeleprompterLocateReconcilesTheTailWithTheLastReading(t *testing.T) {
+	for _, c := range []struct {
+		name   string
+		read   int
+		word   string
+		unsure bool
+		kind   string
+		start  any
+	}{
+		{"no reading: the recording is only offered", 0, "", false, "daw_only", nil},
+		{"agree: Start reading is preset to the DAW word", 58, "", false, "agree", float64(52)},
+		{"disagree: both places are offered", 400, "", false, "disagree", nil},
+		{"a low-confidence tail the reading confirms", 50, "", true, "agree", float64(52)},
+		{"recorded to the end: nothing to resume", 0, "end", false, "complete", nil},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			f := newTestHostForLocate(t, true)
+			if c.read > 0 {
+				f.writeLastReading(t, f.chapters[0], c.read)
+			}
+			t.Setenv(fakeLocateWordEnv, c.word)
+			if c.unsure {
+				t.Setenv(fakeLocateUnsureEnv, "1")
+			}
+
+			result := f.locate(t, f.chapters[0], "")
+
+			verdict := verdictOf(t, result)
+			if verdict["kind"] != c.kind || verdict["start"] != c.start {
+				t.Fatalf("verdict = %v", verdict)
+			}
+			daw, _ := verdict["daw"].(map[string]any)
+			if daw == nil || daw["source"] != "saved" || daw["sentence"] == nil {
+				t.Fatalf("daw = %v", daw)
+			}
+			if (c.read > 0) != (result["lastReading"] != nil) {
+				t.Fatalf("lastReading = %v", result["lastReading"])
+			}
+		})
+	}
+}
+
+func TestTeleprompterLocateOffersTheLastReadingOfAChapterWithNoTrack(t *testing.T) {
+	f := newTestHostForLocate(t, false)
+	f.writeLastReading(t, f.chapters[2], 30)
+
+	result := f.locate(t, f.chapters[2], "")
+
+	verdict := verdictOf(t, result)
+	prompter, _ := verdict["prompter"].(map[string]any)
+	if result["status"] != "no_track" || verdict["kind"] != "prompter_only" || verdict["daw"] != nil || prompter["word"] != float64(30) || prompter["number"] != float64(31) {
+		t.Fatalf("result = %v", result)
+	}
+}
+
+func TestTeleprompterLocateDropsALastReadingOfAnEditedChapter(t *testing.T) {
+	f := newTestHostForLocate(t, true)
+	f.writeLastReading(t, f.chapters[0], 58)
+	path := filepath.Join(f.host.config.projectFolder, "narration-utils", "manuscript", "manuscript.json")
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(strings.Replace(string(bytes), "Alice", "Alicia", 1)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	result := f.locate(t, f.chapters[0], "")
+
+	if result["lastReading"] != nil || verdictOf(t, result)["kind"] != "daw_only" {
+		t.Fatalf("result = %v", result)
+	}
+}
+
+// The resume verdicts lane C renders (PRD Phase 3): agree, disagree, complete and prompter-only, beside
+// teleprompter-locate-found (the recording alone).
+func TestContractTeleprompterLocateVerdicts(t *testing.T) {
+	cases := []struct {
+		name, word string
+		chapter    int
+		read       int
+	}{
+		{"teleprompter-locate-agree", "", 0, 58},
+		{"teleprompter-locate-disagree", "", 0, 400},
+		{"teleprompter-locate-complete", "end", 0, 0},
+		{"teleprompter-locate-prompter-only", "", 2, 30},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			f := newTestHostForLocate(t, true)
+			if c.read > 0 {
+				f.writeLastReading(t, f.chapters[c.chapter], c.read)
+			}
+			t.Setenv(fakeLocateWordEnv, c.word)
+			raw, err := f.host.TeleprompterLocate(f.chapters[c.chapter], "", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			var payload map[string]any
+			if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+				t.Fatal(err)
+			}
+			// The script hash covers the import's own document id, which differs per test run.
+			if reading, ok := payload["lastReading"].(map[string]any); ok {
+				reading["scriptHash"] = strings.Repeat("0", 64)
+			}
+			stable, err := contractfile.PortablePaths(payload, f.host.config.projectFolder, "C:/Projects/Alice")
+			if err != nil {
+				t.Fatal(err)
+			}
+			contractfile.Check(t, c.name, stable)
+		})
+	}
 }

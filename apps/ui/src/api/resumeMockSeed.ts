@@ -1,16 +1,32 @@
 import type { ChapterTrackMatch } from './contracts/chapterTrackMap';
-import type { TeleprompterLocateResult } from './contracts/teleprompter';
+import type { TeleprompterLocateResult, TeleprompterModelRequired, TeleprompterReading } from './contracts/teleprompter';
 
 /**
- * `?mockResume=` (main.tsx): which resume card state (teleprompter-manuscript-integration.prd.md Phase 10) the mock's
- * TeleprompterLocate answers for any chapter, so each can be seen on the first chapter without a real REAPER project,
- * recording or Whisper run. Unset, the mock project's own tracks decide (Chapter 1 found, Chapter 2's source missing, the
- * last chapter no track).
+ * `?mockResume=` (main.tsx): which resume state (teleprompter-manuscript-integration.prd.md Phase 10,
+ * read-aloud-resume-from-daw.prd.md Phase 3) the mock's TeleprompterLocate answers for any chapter, so each can be seen on
+ * the first chapter without a real REAPER project, recording or Whisper run. Unset, the mock project's own tracks decide
+ * (Chapter 1 found, Chapter 2's source missing, the last chapter no track) and no last reading is stored, so the verdict is
+ * `daw_only`. `agree` and `disagree` add a last reading near to or far from the recording; `prompter_only` has no track and
+ * a last reading.
  */
 export type MockResumeSeed =
-  'low_confidence' | 'complete' | 'not_found' | 'ambiguous' | 'none' | 'no_recording' | 'source_missing' | 'source_unsupported' | 'error';
+  | 'agree'
+  | 'disagree'
+  | 'prompter_only'
+  | 'low_confidence'
+  | 'complete'
+  | 'not_found'
+  | 'ambiguous'
+  | 'none'
+  | 'no_recording'
+  | 'source_missing'
+  | 'source_unsupported'
+  | 'error';
 
 export const MOCK_RESUME_SEEDS: readonly MockResumeSeed[] = [
+  'agree',
+  'disagree',
+  'prompter_only',
   'low_confidence',
   'complete',
   'not_found',
@@ -22,6 +38,26 @@ export const MOCK_RESUME_SEEDS: readonly MockResumeSeed[] = [
   'error',
 ];
 
+/** The locate result before the host adds the last reading and the verdict (`withResumeVerdict` in teleprompterlocate.go). */
+export type LocateDraft = Omit<Extract<TeleprompterLocateResult, { match: unknown }>, 'lastReading' | 'verdict'> | TeleprompterModelRequired;
+
+// When the seeded last reading ended (a fixed time, so captures are stable).
+const READING_ENDED_AT = '2026-09-24T21:04:00Z';
+
+/**
+ * The last reading the seed stores for a chapter of `tokens` words whose recording ends at `dawWord` (null when nothing was
+ * placed): three words past the recording for `agree`, far from it for `disagree`, a third of the way in for
+ * `prompter_only`, and none otherwise.
+ */
+export function seedLastReading(seed: MockResumeSeed | undefined, chapterId: string, dawWord: number | null, tokens: number): TeleprompterReading | null {
+  let read: number | null = null;
+  if (seed === 'agree' && dawWord !== null) read = Math.min(tokens, dawWord + 3);
+  if (seed === 'disagree' && dawWord !== null) read = dawWord > tokens / 2 ? Math.round(tokens * 0.2) : Math.round(tokens * 0.9);
+  if (seed === 'prompter_only') read = Math.round(tokens * 0.3);
+  if (read === null || read < 1 || tokens < 1) return null;
+  return { version: 1, chapterId, read, tokens, scriptHash: '0'.repeat(64), status: 'listening', endedAt: READING_ENDED_AT };
+}
+
 // What the seeded low-confidence tail scores: it also fits a passage the chapter repeats (ADR 0111, "fit times distinctness").
 const LOW_CONFIDENCE = 0.31;
 // What the seeded not-found tail heard: a sign-off after the reading, which is no part of the chapter.
@@ -32,7 +68,7 @@ const NOT_FOUND_HEARD = 'okay that is where I will stop for today, the next sess
  * as the host's matcher never does below `matched` (ADR 0110).
  */
 export function seedTrackMatch(match: ChapterTrackMatch, seed: MockResumeSeed | undefined): ChapterTrackMatch {
-  if (seed === 'none') return { ...match, status: 'none', track: null, candidates: [], recordedEnd: null };
+  if (seed === 'none' || seed === 'prompter_only') return { ...match, status: 'none', track: null, candidates: [], recordedEnd: null };
   if (seed !== 'ambiguous') return match;
   const candidates = match.tracks.slice(0, 2).map((track) => ({
     trackGuid: track.guid,
@@ -49,7 +85,7 @@ export function seedTrackMatch(match: ChapterTrackMatch, seed: MockResumeSeed | 
  * Turns the mock's answer for a readable track into the seeded status, keeping every field one the host could send: the
  * statuses that stop before the sidecar runs carry no tail or placement, and `not_found` carries a placement with no word.
  */
-export function seedLocateResult(result: TeleprompterLocateResult, seed: MockResumeSeed | undefined): TeleprompterLocateResult {
+export function seedLocateResult(result: LocateDraft, seed: MockResumeSeed | undefined): LocateDraft {
   if (result.status === 'asset_required' || !result.recordedEnd) return result;
   const unread = { ...result, tail: null, located: null };
   switch (seed) {

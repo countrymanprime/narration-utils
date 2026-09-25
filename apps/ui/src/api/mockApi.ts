@@ -9,9 +9,12 @@ import type {
   ChapterTagsPreview,
   CreditsAnnouncement,
   CreditsRenderResult,
+  CreditsSetupField,
+  CreditsSetupState,
   CreditsStatuses,
   CreditTemplate,
   CreditValues,
+  DetectedCandidate,
   DawCatalogEntry,
   GuideEntity,
   GuideEvidence,
@@ -19,6 +22,7 @@ import type {
   GuidePronunciation,
   LineIdentityState,
   ManuscriptChapter,
+  ManuscriptContentKind,
   ManuscriptNote,
   ManuscriptParagraph,
   NarrationApi,
@@ -280,6 +284,28 @@ function renderMockCredits(template: string, values: Record<string, string>): Cr
   return { text, words, unresolved };
 }
 
+// The host's credits.setupTokenFields: each render token a narrator can set, and the CreditValues key it fills.
+const SETUP_TOKEN_FIELDS: Record<string, keyof CreditValues> = {
+  Title: 'title',
+  Subtitle: 'subtitle',
+  Author: 'author',
+  Series: 'series',
+  'Book Number': 'bookNumber',
+  Copyright: 'copyright',
+  Year: 'year',
+  'Copyright Holder': 'copyrightHolder',
+  Publisher: 'publisher',
+  Narrator: 'narrator',
+};
+const SETUP_FIELDS: ReadonlyArray<keyof CreditValues> = Object.values(SETUP_TOKEN_FIELDS);
+const isSetupField = (key: string): key is keyof CreditValues => SETUP_FIELDS.some((field) => field === key);
+
+/** A detected candidate's token ("CopyrightHolder") as the CreditValues key it fills ("copyrightHolder"), if it is one. */
+const setupFieldOf = (token: string): keyof CreditValues | undefined => {
+  const key = token.charAt(0).toLowerCase() + token.slice(1);
+  return isSetupField(key) ? key : undefined;
+};
+
 function resolveMockCreditValues(values: CreditValues, narratorGlobal: string): Record<string, string> {
   return {
     Title: values.title ?? '',
@@ -446,6 +472,10 @@ export function createMockApi(
      * Settings > Credits' per-field source caption can be seen on every field, not just the two the default mock
      * always detects. */
     creditsDetected?: boolean;
+    /** Boots a project whose credits setup prompt asks (credits-token-setup-and-front-matter-detection.prd.md Phase 2,
+     * `?mockCredits=setup`). Without it the mock boots as if the narrator already chose "Don't ask", so the prompt never
+     * covers the other states. */
+    creditsSetup?: boolean;
     /** The project's retail sample at boot (Phase 5): by paragraph id, or by lines of the chapter at this index in the
      * manuscript once it has loaded (the bundled text replaces the seed's paragraph ids). */
     retailSample?: { startParagraphId: string; endParagraphId: string } | { chapterIndex: number; startLine: number; endLine: number };
@@ -477,6 +507,9 @@ export function createMockApi(
     teleprompterDevices?: TeleprompterDevice[];
     /** Which resume card state `teleprompterLocate` answers for every chapter (see `MockResumeSeed`). */
     resume?: MockResumeSeed;
+    /** Boots with the manuscript's last narration chapter already removed from recording (chapter-track-link-control PRD
+     * Phase 3), so the "Removed from recording" list and its Restore can be seen without driving a removal. */
+    removedChapter?: boolean;
     /** Whether the mock project boots with a linked DAW project file (PRD W13/W14). Defaults to true. */
     dawFileLinked?: boolean;
     /** Makes the next `linkDawFile()` call behave like a chosen file outside the project folder (PRD W15): refused, not linked. */
@@ -568,6 +601,8 @@ export function createMockApi(
   });
   let entities = wireClone(WIRE_ENTITIES);
   let chapters = wireClone(WIRE_CHAPTERS);
+  // The kind each reclassified chapter was imported as (the host's `importedKind`), so Restore knows it was removed.
+  const importedKinds = new Map<string, ManuscriptContentKind>();
   let paragraphs = wireClone(WIRE_PARAGRAPHS);
   let notes = wireClone(WIRE_NOTES);
   let readerState: ReaderState = wireClone(WIRE_READER_STATE);
@@ -657,6 +692,55 @@ export function createMockApi(
     }
   };
   const mockNarratorGlobal = () => settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '';
+  const mockDetectedCandidates = (): DetectedCandidate[] =>
+    initial.creditsDetected || initial.creditsSetup
+      ? [
+          {
+            token: 'Title',
+            value: 'Alice’s Adventures in Wonderland',
+            source: 'the title page',
+            confidence: 'high',
+            lines: ['ALICE’S ADVENTURES', 'IN WONDERLAND'],
+          },
+          { token: 'Author', value: 'Lewis Carroll', source: 'the byline and the copyright line', confidence: 'high', lines: ['Lewis Carroll'] },
+          { token: 'Year', value: '1865', source: 'the copyright line', confidence: 'high' },
+          { token: 'CopyrightHolder', value: 'Lewis Carroll', source: 'the copyright line', confidence: 'high' },
+          { token: 'Publisher', value: 'Macmillan', source: 'a line ending in "Publishers"', confidence: 'low' },
+        ]
+      : [
+          { token: 'Title', value: 'Alice’s Adventures in Wonderland', source: 'the title page', confidence: 'high' },
+          { token: 'Author', value: 'Lewis Carroll', source: 'the byline', confidence: 'high' },
+        ];
+  // The credits setup prompt's dismissal (the host keeps "Not now" in memory and "Don't ask" on the manifest).
+  let creditsSetupDismissed: CreditsSetupState['dismissed'] = initial.creditsSetup ? '' : 'project';
+  // The host's credits.SetupFields over the mock's library, values and detected candidates (apps/desktop/creditsetup.go).
+  const mockCreditsSetupState = (): CreditsSetupState => {
+    const detected = mockDetectedCandidates().filter((candidate) => {
+      const field = setupFieldOf(candidate.token);
+      return field !== undefined && !creditValues[field];
+    });
+    const tokens = resolveMockCreditValues(creditValues, mockNarratorGlobal());
+    const fields: CreditsSetupField[] = [];
+    for (const kind of ['opening', 'closing'] as const) {
+      const template = creditTemplates.find((item) => item.kind === kind);
+      for (const token of template ? renderMockCredits(template.body, tokens).unresolved : []) {
+        const field = SETUP_TOKEN_FIELDS[token];
+        if (!field || fields.some((known) => known.token === token)) continue;
+        fields.push({ token, field, candidate: detected.find((candidate) => setupFieldOf(candidate.token) === field) ?? null });
+      }
+    }
+    const unresolved = fields.length > 0;
+    return {
+      needed: unresolved && creditsSetupDismissed === '',
+      banner: unresolved && creditsSetupDismissed !== 'project',
+      dismissed: creditsSetupDismissed,
+      dismissedAt: creditsSetupDismissed === 'project' ? '2026-09-25T12:00:00Z' : null,
+      documentId: mockDocumentId,
+      narratorGlobal: mockNarratorGlobal(),
+      fields,
+      candidates: detected,
+    };
+  };
   // The credits text a teleprompter session reads (Phase 4, ADR 0150): the first template of the kind (ADR 0093), rendered
   // as `creditsPreview` renders it, as the host's creditsScript does.
   const mockCreditsText = (kind: 'opening' | 'closing') => {
@@ -696,6 +780,15 @@ export function createMockApi(
       const mixed = applyMixedManuscriptMock(chapters, paragraphs);
       chapters = mixed.chapters;
       paragraphs = mixed.paragraphs;
+    }
+    if (initial.removedChapter) {
+      const last = [...chapters].reverse().find((chapter) => (chapter.contentKind ?? 'narration') === 'narration');
+      if (last) {
+        importedKinds.set(last.id, 'narration');
+        chapters = chapters.map((chapter) =>
+          chapter.id === last.id ? { ...chapter, contentKind: 'reference', kindChangedAt: '2026-09-25T12:00:00Z', removedFromRecording: true } : chapter,
+        );
+      }
     }
     // WIRE_ENTITIES' occurrence paragraph numbers are computed against the
     // small local seed fixture, not the real manuscript text just loaded
@@ -1612,6 +1705,28 @@ export function createMockApi(
           })),
       );
     },
+    // The host's ManuscriptSetChapterKind (apps/desktop/chapterkind.go): only the kind changes, and a removal clears the
+    // chapter's links (chapter-track-link-control PRD Phase 3, TL5 A).
+    manuscriptSetChapterKind: async (chapterId, kind) => {
+      await manuscriptReady;
+      const found = chapters.find((item) => item.id === chapterId);
+      if (!found) throw new Error('unknown manuscript chapter');
+      const previousKind = found.contentKind ?? 'narration';
+      if (previousKind !== kind) {
+        const narration = chapters.filter((item) => (item.contentKind ?? 'narration') === 'narration').length;
+        if (previousKind === 'narration' && narration <= 1) throw new Error('the last narration chapter cannot be removed from recording');
+        const importedKind = importedKinds.get(chapterId) ?? previousKind;
+        importedKinds.set(chapterId, importedKind);
+        const changed: ManuscriptChapter = { ...found, contentKind: kind, kindChangedAt: new Date().toISOString() };
+        delete changed.removedFromRecording;
+        const next = importedKind === 'narration' && kind !== 'narration' ? { ...changed, removedFromRecording: true as const } : changed;
+        chapters = chapters.map((item) => (item.id === chapterId ? next : item));
+      }
+      const clearedLinks = kind === 'narration' ? [] : chapterTrackMappings.filter((link) => link.chapterId === chapterId);
+      chapterTrackMappings = chapterTrackMappings.filter((link) => !clearedLinks.includes(link));
+      const chapter = chapters.find((item) => item.id === chapterId) ?? found;
+      return wireClone({ chapter: withMeasurement(chapter), previousKind, clearedLinks });
+    },
     manuscriptSetChapterStatus: async (chapter, status) => {
       await manuscriptReady;
       const found = chapters.find((item) => item.id === chapter || item.title === chapter);
@@ -2012,19 +2127,24 @@ export function createMockApi(
       values: wireClone(creditValues),
       narratorGlobal: settings.global.General.find((field) => field.key === 'narrator_name')?.effectiveValue ?? '',
       suggestions: { Title: 'Alice’s Adventures in Wonderland', Author: 'Lewis Carroll' },
-      detected: initial.creditsDetected
-        ? [
-            { token: 'Title', value: 'Alice’s Adventures in Wonderland', source: 'the title page', confidence: 'high' },
-            { token: 'Author', value: 'Lewis Carroll', source: 'the byline and the copyright line', confidence: 'high' },
-            { token: 'Year', value: '1865', source: 'the copyright line', confidence: 'high' },
-            { token: 'CopyrightHolder', value: 'Lewis Carroll', source: 'the copyright line', confidence: 'high' },
-            { token: 'Publisher', value: 'Macmillan', source: 'a line ending in "Publishers"', confidence: 'low' },
-          ]
-        : [
-            { token: 'Title', value: 'Alice’s Adventures in Wonderland', source: 'the title page', confidence: 'high' },
-            { token: 'Author', value: 'Lewis Carroll', source: 'the byline', confidence: 'high' },
-          ],
+      detected: mockDetectedCandidates(),
     }),
+    creditsSetupState: async () => wireClone(mockCreditsSetupState()),
+    creditsSetupDismiss: async (scope) => {
+      if (scope !== 'session' && scope !== 'project') throw new Error(`unknown dismissal scope "${String(scope)}": use session or project`);
+      creditsSetupDismissed = scope;
+      return wireClone(mockCreditsSetupState());
+    },
+    // The host fills only empty values and never replaces a set one (CreditsSetupSave).
+    creditsSetupSave: async (values) => {
+      const next: CreditValues = { ...creditValues };
+      for (const [field, value] of Object.entries(values)) {
+        if (!isSetupField(field)) throw new Error(`unknown credits field "${field}"`);
+        if (typeof value === 'string' && value.trim() !== '' && !next[field]) next[field] = value.trim();
+      }
+      creditValues = next;
+      return wireClone(mockCreditsSetupState());
+    },
     saveCreditsProjectValues: async (values) => {
       creditValues = wireClone(values);
       return wireClone(creditValues);

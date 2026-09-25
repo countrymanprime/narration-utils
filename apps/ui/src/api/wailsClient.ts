@@ -9,6 +9,7 @@ import {
   fileSelectionSchema,
   noteSchema,
   notesSchema,
+  chapterKindResultSchema,
   chapterSchema,
   paragraphsSchema,
   readerSchema,
@@ -20,6 +21,7 @@ import { dawLaunchResultSchema, dawLinkResultSchema, projectFolderSelectionSchem
 import {
   creditsAnnouncementsSchema,
   creditsProjectValuesResultSchema,
+  creditsSetupStateSchema,
   creditsRenderResultSchema,
   creditsStatusesSchema,
   creditTemplateSchema,
@@ -289,6 +291,7 @@ export const wailsClient: NarrationApi = {
   manuscriptParagraphs: (chapter) => decode(paragraphsSchema, 'ManuscriptParagraphs', host.ManuscriptParagraphs(chapter)),
   manuscriptSearch: (query) => decode(searchHitsSchema, 'ManuscriptSearch', host.ManuscriptSearch(query)),
   manuscriptSetChapterStatus: (chapter, status) => decode(chapterSchema, 'ManuscriptSetChapterStatus', host.ManuscriptSetChapterStatus(chapter, status)),
+  manuscriptSetChapterKind: (chapterId, kind) => decode(chapterKindResultSchema, 'ManuscriptSetChapterKind', host.ManuscriptSetChapterKind(chapterId, kind)),
   noteList: (chapter) => decode(notesSchema, 'ManuscriptNotes', host.ManuscriptNotes(chapter ?? '')),
   noteCreate: (chapterId, paragraphId, text, anchorStart, anchorEnd, anchorText) =>
     decode(
@@ -348,6 +351,14 @@ export const wailsClient: NarrationApi = {
   duplicateCreditsTemplate: (id) => decode(creditTemplateSchema, 'CreditsDuplicateTemplate', host.CreditsDuplicateTemplate(id)),
   deleteCreditsTemplate: (id) => decode(voidResult, 'CreditsDeleteTemplate', host.CreditsDeleteTemplate(id)),
   creditsProjectValues: () => decode(creditsProjectValuesResultSchema, 'CreditsProjectValues', host.CreditsProjectValues()),
+  creditsSetupState: () => decode(creditsSetupStateSchema, 'CreditsSetupState', host.CreditsSetupState()),
+  creditsSetupDismiss: (scope) => decode(creditsSetupStateSchema, 'CreditsSetupDismiss', host.CreditsSetupDismiss(scope)),
+  creditsSetupSave: (values) =>
+    decode(
+      creditsSetupStateSchema,
+      'CreditsSetupSave',
+      host.CreditsSetupSave(Object.fromEntries(Object.entries(values).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))),
+    ),
   saveCreditsProjectValues: (values) =>
     decode(
       creditsProjectValuesResultSchema.shape.values,

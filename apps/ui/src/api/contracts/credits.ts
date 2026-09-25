@@ -79,6 +79,30 @@ export type CreditsStatus = string;
  * UI treats that as "not_started", the same default a manuscript chapter with no note has. */
 export type CreditsStatuses = Record<string, CreditsStatus>;
 
+/** One token the credits setup prompt asks for (credits-token-setup-and-front-matter-detection PRD Phase 2): `token` is its
+ * render name ("Copyright Holder"), `field` the `CreditValues` key to fill ("copyrightHolder"), and `candidate` the value
+ * detected from the manuscript to prefill (show its `source` and `lines` as the caption; `low` confidence means "check this"). */
+export type CreditsSetupField = { token: string; field: keyof CreditValues; candidate: DetectedCandidate | null };
+
+/**
+ * `CreditsSetupState` (credits-token-setup-and-front-matter-detection PRD Phase 2, ADR 0208): whether to ask for the credits
+ * values and what to ask for. `needed`: show the "Set up the credits" dialog. `banner`: show the banner (tokens are still
+ * unresolved and the narrator did not choose "Don't ask"). `dismissed`: '' (never), 'session' ("Not now") or 'project'
+ * ("Don't ask for this project", stored for this manuscript). `fields`: the unresolved tokens of the first opening and
+ * closing templates, in order, with what was detected. `candidates`: every detected value for a token the project has not
+ * set. `narratorGlobal`: General's narrator name ('' when not set: offer "Use for all my projects").
+ */
+export type CreditsSetupState = {
+  needed: boolean;
+  banner: boolean;
+  dismissed: '' | 'session' | 'project';
+  dismissedAt: string | null;
+  documentId: string;
+  narratorGlobal: string;
+  fields: CreditsSetupField[];
+  candidates: DetectedCandidate[];
+};
+
 export interface CreditsApi {
   /** Lists the narrator's credit template library, seeding shipped defaults on first use. */
   creditsTemplates(): Promise<CreditTemplate[]>;
@@ -92,6 +116,13 @@ export interface CreditsApi {
   creditsProjectValues(): Promise<CreditsProjectValuesResult>;
   /** Saves the current project's own credit token values onto the project manifest. */
   saveCreditsProjectValues(values: CreditValues): Promise<CreditValues>;
+  /** Whether to ask for the credits values, and what to ask for (PRD Phase 2). Only reads. */
+  creditsSetupState(): Promise<CreditsSetupState>;
+  /** "Not now" (`session`) or "Don't ask for this project" (`project`); answers the new state. */
+  creditsSetupDismiss(scope: 'session' | 'project'): Promise<CreditsSetupState>;
+  /** Fills the project's empty values from the prompt (never replaces a set one); answers the new state. For "Use for all my
+   * projects", save the narrator through `saveSettings` (General.narrator_name) and leave `narrator` out here. */
+  creditsSetupSave(values: Partial<Record<keyof CreditValues, string>>): Promise<CreditsSetupState>;
   /** Renders body with the current project's values (falling back to the global narrator default), the same renderer
    * every credits surface uses. */
   creditsPreview(body: string): Promise<CreditsRenderResult>;

@@ -296,6 +296,31 @@ export function CreditsSetStatus(kind: string, status: string): $CancellableProm
 }
 
 /**
+ * CreditsSetupDismiss records the narrator's answer to the prompt: "session" for "Not now" (this run of the app only)
+ * or "project" for "Don't ask for this project" (stored on the manifest for this manuscript). It returns the new state.
+ */
+export function CreditsSetupDismiss(scope: string): $CancellablePromise<string> {
+    return $Call.ByID(2480637187, scope);
+}
+
+/**
+ * CreditsSetupSave fills the project's empty credits values from the prompt's fields (Values JSON keys to values)
+ * and never replaces one already set, so an empty or stale prompt field cannot clear or overwrite the narrator's
+ * own value. It returns the new state. "Use for all my projects" saves the global narrator through the settings
+ * binding instead, with no narrator field here.
+ */
+export function CreditsSetupSave(fields: { [_ in string]?: string }): $CancellablePromise<string> {
+    return $Call.ByID(829535288, fields);
+}
+
+/**
+ * CreditsSetupState says whether to ask for the credits values and what to ask for. It only reads.
+ */
+export function CreditsSetupState(): $CancellablePromise<string> {
+    return $Call.ByID(2742126118);
+}
+
+/**
  * CreditsStatuses reads this project's credits row statuses. A kind never set is simply absent from the map; the UI
  * treats that the same way it treats a manuscript chapter with no note: "not_started".
  */
@@ -676,6 +701,15 @@ export function ManuscriptSelectFile(): $CancellablePromise<string> {
     return $Call.ByID(258840892);
 }
 
+/**
+ * ManuscriptSetChapterKind reclassifies a chapter after import (chapter-track-link-control PRD Phase 3):
+ * "reference" or "opening" removes it from recording, "narration" restores it. A removal clears the chapter's
+ * track links (TL5 A). See manuscriptSetChapterKind.
+ */
+export function ManuscriptSetChapterKind(chapterID: string, kind: string): $CancellablePromise<string> {
+    return $Call.ByID(3035504737, chapterID, kind);
+}
+
 export function ManuscriptSetChapterStatus(chapter: string, status: string): $CancellablePromise<string> {
     return $Call.ByID(2496889981, chapter, status);
 }
@@ -1020,7 +1054,8 @@ export function TeleprompterDevices(): $CancellablePromise<string> {
  * narrator picked one), where its audio ends as of the .rpp's last save (Phase 8), and the last
  * teleprompter.DefaultTailSeconds before that end transcribed and placed in the chapter by the sidecar. model is the
  * Whisper model id ("" for the teleprompter's default); like TeleprompterStart it answers asset_required instead of
- * downloading one, but only once there is audio to read. It only reads: nothing is recorded, moved or linked.
+ * downloading one, but only once there is audio to read. Every other answer carries the prompter's last reading and the
+ * reconciled verdict (PRD Phase 3). It only reads: nothing is recorded, moved or linked.
  */
 export function TeleprompterLocate(chapterID: string, trackGUID: string, model: string): $CancellablePromise<string> {
     return $Call.ByID(379348061, chapterID, trackGUID, model);
