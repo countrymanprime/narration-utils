@@ -64,6 +64,11 @@ const MODALS: { name: string; state: [string, string]; snapshot: string }[] = [
     state: ['home', 'chapter-track-panel-linked'],
     snapshot: 'slide-over-chapter-track.aria.yml',
   },
+  {
+    name: 'the remove-from-recording confirm is an alert dialog with the What-is-it radio group and both actions',
+    state: ['home', 'chapter-remove-confirm'],
+    snapshot: 'confirm-remove-from-recording.aria.yml',
+  },
 ];
 
 for (const modal of MODALS) {

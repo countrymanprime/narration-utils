@@ -659,6 +659,20 @@ export const APP_DRIVERS: Record<string, Record<string, Driver>> = {
       const dialog = await openTrackPanel(page, 'Chapter 1', 'mockChapterLink=missing');
       await dialog.getByText('Track missing').waitFor();
     },
+    'chapter-remove-confirm': async (page) => {
+      await openTrackPanel(page, 'Chapter 1', 'mockChapterLink=confirmed');
+      await clickVisible(page, 'button', 'Remove from recording…');
+      await page.getByRole('alertdialog', { name: 'Remove Chapter 1 from recording?' }).waitFor();
+    },
+    'chapter-removed-list': async (page) => {
+      await page.goto('/?mockRemoved=1');
+      await settlePage(page);
+      await homeLoaded(page);
+      await clickVisible(page, 'button', /Show per-chapter breakdown/);
+      const removed = page.getByText(/Removed from recording/);
+      await removed.waitFor();
+      await removed.scrollIntoViewIfNeeded();
+    },
     'chapter-track-no-project': async (page) => {
       await page.goto('/?mockNoRpp=1');
       await settlePage(page);
