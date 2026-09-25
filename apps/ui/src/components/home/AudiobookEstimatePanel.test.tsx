@@ -291,7 +291,9 @@ describe('credits rows in the chapter table (credits-in-chapter-table.prd.md Pha
     const openingRow = within(tableRows()[1]);
     expect(openingRow.getByText('ACX minimum (opening)')).toBeTruthy();
     const cells = openingRow.getAllByRole('cell');
-    expect(cells[3].textContent).toBe('—');
+    // Cell 1 is the Track column (chapter-track-link-control.prd.md Phase 2), empty for a credits row; Actual
+    // recorded is cell 4.
+    expect(cells[4].textContent).toBe('—');
     const check = screen.getByRole('button', { name: 'Check recording of Opening credits' }) as HTMLButtonElement;
     expect(check.disabled).toBe(true);
     // Both credits rows are disabled with the same reason.

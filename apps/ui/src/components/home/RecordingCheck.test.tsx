@@ -44,10 +44,10 @@ describe('recording check on Home', () => {
     expect(within(row('Chapter 1')).queryByText('measured')).toBeNull();
     expect(within(row('Chapter 4')).queryByText('measured')).toBeNull();
     expect(within(row('Chapter 7')).queryByText('estimated from status')).toBeNull();
-    // Scoped to the Actual recorded cell (4th column): a row's Chapter cell can also contain a bare "—" as
-    // TitleSubtitle's title/subtitle separator (chapter-title-display-consistency.prd.md), which a row-wide
-    // getByText('—') would otherwise match too.
-    for (const title of ['Chapter 1', 'Chapter 4', 'Chapter 7']) expect(within(row(title)).getByText('—', { selector: 'td:nth-child(4) *' })).toBeTruthy();
+    // Scoped to the Actual recorded cell (5th column, after Chapter, Track, Words and Est. finished length): a row's
+    // Chapter cell can also contain a bare "—" as TitleSubtitle's title/subtitle separator
+    // (chapter-title-display-consistency.prd.md), which a row-wide getByText('—') would otherwise match too.
+    for (const title of ['Chapter 1', 'Chapter 4', 'Chapter 7']) expect(within(row(title)).getByText('—', { selector: 'td:nth-child(5) *' })).toBeTruthy();
   });
 
   it('says a stale check no longer measures the chapter', async () => {
@@ -114,7 +114,7 @@ describe('recording check on Home', () => {
     const result = await screen.findByRole('dialog', { name: 'Recording check: Chapter 7' }, { timeout: 3000 });
     expect(await within(result).findByText('All the text is recorded')).toBeTruthy();
     fireEvent.click(within(result).getByRole('button', { name: 'Close' }));
-    await waitFor(() => expect(within(row('Chapter 7')).getByText('—', { selector: 'td:nth-child(4) *' })).toBeTruthy());
+    await waitFor(() => expect(within(row('Chapter 7')).getByText('—', { selector: 'td:nth-child(5) *' })).toBeTruthy());
   });
 
   it('cancels a running check and keeps the dialog until it is closed', async () => {
