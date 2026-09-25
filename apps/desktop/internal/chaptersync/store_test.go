@@ -43,6 +43,40 @@ func TestACorruptOrNewerSnapshotReadsAsAFirstSync(t *testing.T) {
 	}
 }
 
+func TestTheActivityListKeepsTheNewestEntriesAndSurvivesASnapshotWrite(t *testing.T) {
+	project := t.TempDir()
+	store := NewStore(project)
+	if got := store.Activity(); len(got) != 0 {
+		t.Fatalf("a project with no file has activity %#v", got)
+	}
+	base := time.Date(2026, 9, 25, 10, 0, 0, 0, time.UTC)
+	for i := 0; i < ActivityLimit+3; i++ {
+		entry := Activity{At: base.Add(time.Duration(i) * time.Minute), Trigger: "watch", NewTracks: []TrackRef{{GUID: "{n}", Name: "Room tone"}}}
+		if err := store.Write(Snapshot{SyncedAt: entry.At}, entry); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// A sync that did nothing writes its snapshot and keeps the list.
+	if err := store.Write(Snapshot{SyncedAt: base.Add(time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
+
+	got := NewStore(project).Activity()
+
+	if len(got) != ActivityLimit {
+		t.Fatalf("kept %d entries, want %d", len(got), ActivityLimit)
+	}
+	if newest := base.Add(time.Duration(ActivityLimit+2) * time.Minute); !got[0].At.Equal(newest) {
+		t.Fatalf("first entry is %v, want the newest %v", got[0].At, newest)
+	}
+	if got[0].Linked == nil || got[0].NewTracks == nil {
+		t.Fatalf("lists must read as empty, never null: %#v", got[0])
+	}
+	if snapshot := NewStore(project).Read(); !snapshot.SyncedAt.Equal(base.Add(time.Hour)) {
+		t.Fatalf("snapshot = %v", snapshot.SyncedAt)
+	}
+}
+
 func TestTheFingerprintIgnoresTheNameAndFollowsTheItems(t *testing.T) {
 	a := track("{1}", "Chapter 1", item("{i}", 0, 60, "one.wav"))
 	renamed := track("{1}", "Chapter One", item("{i}", 0, 60, "one.wav"))
