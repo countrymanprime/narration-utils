@@ -57,6 +57,15 @@ flowchart LR
   for a head and `after` for a tail, and all three are `null` when nothing was said. A result stored before the bounds
   existed reads with none, and is still current
   ([ADR 0168](../adr/0168-a-coverage-region-carries-its-bounds-as-optional-before-and-after-points-with-no-version-bump.md)).
+  After those lines comes the word alignment the edit and proof workspace reads
+  ([ADR 0242](../adr/0242-the-recording-check-writes-the-chapters-word-alignment-as-additive-lines-and-align-again-never-transcribes.md)):
+  - one `COVERAGE_TOKEN` per chapter token: its paragraph, the ordinal of its word in the paragraph's text, and its status,
+    which is `read`, `misread`, `heading` or the region kind the check counted it as; plus the item and source seconds
+    where it was heard;
+  - one `COVERAGE_EXTRA` per run of heard words the chapter does not account for.
+
+  `--align-only` re-aligns from the cached words files and never transcribes. The host does not read these lines yet
+  (the stored alignment and its binding are the PRD's Phase 1 host side).
   Every run writes one ledger record
   (`complete`, `partial` on cancel, or `failed`). A complete run's report is stored under
   `narration-utils/analysis/coverage/results/` with a hash of the chapter's text. The host applies the thresholds when

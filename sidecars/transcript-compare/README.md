@@ -15,7 +15,9 @@ actually said.
   `docs/research/recording-coverage-alignment-spike.md`.
 - `core/coverage_mode.py` — `compare.py --coverage`: reads a JSON manifest of a chapter's items,
   reuses or writes one words file per item, and writes `COVERAGE` lines with JSON payloads
-  (measurements only; the host applies the thresholds). Its module docstring and ADR 0127 give
+  (measurements only; the host applies the thresholds), then the word alignment
+  (`COVERAGE_TOKEN`, `COVERAGE_EXTRA`, ADR 0242). `--align-only` re-aligns from cached words and
+  never transcribes. Its module docstring and ADR 0127 give
   the manifest, words-file and output formats and the exit codes. The Go service that starts it
   is `apps/desktop/internal/coverage` (ADR 0128, docs/utilities/recording-coverage.md).
 - `tests/` — the pytest suite for the backend, plus the recording-coverage ground-truth harness

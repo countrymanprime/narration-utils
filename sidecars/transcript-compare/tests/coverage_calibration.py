@@ -141,7 +141,8 @@ def read_results(path: Path, seconds: float = 0.0) -> SidecarResult:
     lines: dict[str, list[dict]] = {"COVERAGE": [], "COVERAGE_ITEM": [], "COVERAGE_PARAGRAPH": [], "COVERAGE_REGION": []}
     for line in path.read_text(encoding="utf-8").splitlines():
         tag, _, payload = line.partition("|")
-        lines[tag].append(json.loads(payload))
+        if tag in lines:  # the format is additive (ADR 0127): the word alignment's lines are not measurements
+            lines[tag].append(json.loads(payload))
     (summary,) = lines["COVERAGE"]
     return SidecarResult(summary, tuple(lines["COVERAGE_PARAGRAPH"]), tuple(lines["COVERAGE_REGION"]), tuple(lines["COVERAGE_ITEM"]), seconds)
 

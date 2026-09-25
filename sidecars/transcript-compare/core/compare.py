@@ -1956,6 +1956,11 @@ def main():
     ap.add_argument("--words-dir", default=None, help="With --coverage: the directory holding the per-item words files the manifest names")
     ap.add_argument("--max-misread-run", type=int, default=None, help="With --coverage: the largest gap of body words that counts as a misread (default 8)")
     ap.add_argument("--min-anchor-run", type=int, default=None, help="With --coverage: the shortest run of matching words that counts as read (default 3)")
+    ap.add_argument(
+        "--align-only",
+        action="store_true",
+        help="With --coverage: re-align from the cached words files only; never transcribe, and fail when an item's words are not cached",
+    )
     args = ap.parse_args()
 
     if args.log:
@@ -1986,6 +1991,8 @@ def main():
     if args.coverage:
         _main_coverage(ap, args)
         return
+    if args.align_only:
+        ap.error("--align-only can only be used with --coverage")
 
     required = [("--manifest", args.manifest), ("--track-name", args.track_name), ("--out", args.out)]
     if not args.find_repeats:

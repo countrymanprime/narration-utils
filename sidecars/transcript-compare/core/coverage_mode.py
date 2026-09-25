@@ -12,8 +12,14 @@ skipped, Q5 and Q10), this mode:
    heading tokens (Q11);
 3. writes the measurements, never a verdict (the narrator's thresholds are applied later, on
    read, by the host), as tagged lines with one JSON object each: `COVERAGE|` (the chapter),
-   `COVERAGE_ITEM|` (one per manifest item), `COVERAGE_PARAGRAPH|` and `COVERAGE_REGION|`. The
-   results file is written atomically, so it exists only when the run finished.
+   `COVERAGE_ITEM|` (one per manifest item), `COVERAGE_PARAGRAPH|` and `COVERAGE_REGION|`; then
+   the word alignment the edit and proof workspace reads (PRD Phase 1, ADR 0242): one
+   `COVERAGE_TOKEN|` per chapter token and one `COVERAGE_EXTRA|` per run of words heard that the
+   chapter does not account for. The results file is written atomically, so it exists only when
+   the run finished.
+
+With `--align-only` the mode never transcribes: it re-aligns from the words files alone and fails
+before decoding anything when an item's words do not cover its played range (EP3 C).
 
 Progress is `stage|pct|message` in the usual file (START, DECODE, LOAD, TRANSCRIBE, ALIGN, WRITE,
 DONE), and TRANSCRIBE moves with the seconds transcribed over the seconds that need transcribing
@@ -62,6 +68,10 @@ Word = tuple[str, float, float]
 
 class ManifestError(ValueError):
     """The manifest is not the shape this mode reads; nothing has been read or written yet."""
+
+
+class AlignOnlyError(ValueError):
+    """Align-only was asked for, but an item's words are not cached for its played range."""
 
 
 @dataclass(frozen=True)
@@ -477,6 +487,75 @@ def _report(
     return "".join(lines)
 
 
+def _token_words(engine: ModuleType, heading: str, paragraphs: Sequence[str]) -> list[tuple[int, int]]:
+    """Per chapter token, in `build_chapter_units`' order: its paragraph index (HEADING for the
+    title and subtitle) and the ordinal of the whitespace word it came from in that paragraph's
+    text (or the heading's), so a screen finds the word with `text.split()[w]`, never re-tokenizing.
+    A word with no token (a lone dash) still counts; a word with several tokens repeats."""
+    out = [(coverage_model.HEADING, n) for n, raw in enumerate(heading.split()) for _ in engine.tokenize(raw)]
+    counters: dict[int, int] = {}
+    for sentence, paragraph in engine.build_sentence_units(paragraphs):
+        for raw in sentence.split():
+            ordinal = counters.get(paragraph, 0)
+            counters[paragraph] = ordinal + 1
+            out.extend((paragraph, ordinal) for _ in engine.tokenize(raw))
+    return out
+
+
+def _alignment_lines(aligned: coverage_model.AlignedChapter, alignment: dict, timeline: _Timeline, words: Sequence[tuple[int, int]], params) -> list[str]:
+    """The COVERAGE_TOKEN and COVERAGE_EXTRA lines: each token's word, status and where it was heard
+    (item index and source seconds), and each run of extra words with the token it follows."""
+    tokens, extras = coverage_model.align_tokens(aligned, params)
+    index_map = alignment["index_map"]
+    original = alignment["chapter_index_map"]
+    lines = []
+    for i, token in enumerate(tokens):
+        paragraph, ordinal = words[original[i]]
+        payload = {
+            "i": i,
+            "p": None if paragraph == coverage_model.HEADING else aligned.paragraph_ids[paragraph],
+            "w": ordinal,
+            "text": aligned.doc_words[i],
+            "status": token.status,
+            "heard": None,
+            "item": None,
+            "start": None,
+            "end": None,
+        }
+        if token.audio is not None:
+            word = index_map[token.audio]
+            start, end = timeline.word_edge(word, 1), timeline.word_edge(word, 2)
+            payload.update(item=start["itemIndex"], start=start["sourceTime"], end=end["sourceTime"])
+            if token.status == coverage_model.MISREAD:
+                payload["heard"] = timeline.words[word][0]
+        lines.append(_line("COVERAGE_TOKEN", payload))
+    heard_at = [(token.audio, i) for i, token in enumerate(tokens) if token.audio is not None]
+    for start, end in extras:
+        first, last = index_map[start], index_map[end - 1]
+        before = [i for audio, i in heard_at if audio < start]
+        payload = {
+            "text": " ".join(timeline.words[k][0] for k in range(first, last + 1)),
+            "tokens": end - start,
+            "start": timeline.word_edge(first, 1),
+            "end": timeline.word_edge(last, 2),
+            "afterToken": before[-1] if before else None,
+        }
+        lines.append(_line("COVERAGE_EXTRA", payload))
+    return lines
+
+
+def _require_cached(items: Sequence[ManifestItem], words_dir: Path) -> None:
+    missing = [item for item in items if not item.muted and not _is_covered(words_dir, item)]
+    if missing:
+        raise AlignOnlyError(
+            f"Align again needs every item's words, but item {missing[0].index} has none cached for the part it plays. Run the recording check to transcribe it."
+        )
+
+
+def _refuse_transcription(item: ManifestItem, on_seconds: Callable[[float], None]) -> ItemWords:
+    raise AlignOnlyError(f"Align again never transcribes, and item {item.index}'s words are not cached for the part it plays.")
+
+
 def _default_transcriber(engine: ModuleType, args) -> Transcriber:
     progress_path = args.progress
 
@@ -499,6 +578,9 @@ def run(args, engine: ModuleType, transcriber: Transcriber | None = None) -> Non
     items = read_manifest(args.manifest)
     equivalences = engine.register_project_equivalences(args.manuscript)
     chapter = _chapter(engine, args.manuscript, args.chapter_id)
+    if getattr(args, "align_only", False):
+        _require_cached(items, Path(args.words_dir))
+        transcriber = _refuse_transcription
 
     results = _collect_words(items, Path(args.words_dir), transcriber or _default_transcriber(engine, args), engine, args)
 
@@ -506,11 +588,16 @@ def run(args, engine: ModuleType, transcriber: Transcriber | None = None) -> Non
     heading = " ".join(part for part in (chapter["title"], chapter.get("subtitle") or "") if part)
     sentence_units, tokens, unit_idx, raw_words = engine.build_chapter_units({"title": heading, "paragraphs": chapter["paragraphs"]})
     _markers, _covered, alignment = engine.diff_and_build_markers(tokens, unit_idx, raw_words, timeline.words, 1)
-    coverage = coverage_model.compute_coverage(coverage_model.aligned_chapter_from_markers(alignment, sentence_units, chapter["paragraph_ids"]), params)
+    aligned = coverage_model.aligned_chapter_from_markers(alignment, sentence_units, chapter["paragraph_ids"])
+    coverage = coverage_model.compute_coverage(aligned, params)
+    words = _token_words(engine, heading, chapter["paragraphs"])
+    if len(words) != len(raw_words):
+        raise ValueError(f"The chapter's words could not be matched to its tokens ({len(words)} against {len(raw_words)}).")
 
     engine.check_cancelled(args.progress)
     engine.write_progress(args.progress, "WRITE", WRITE_PCT, "Writing results...")
     analysis = {"model": args.model, "language": args.language, "equivalencesHash": _file_hash(equivalences) if equivalences else None}
-    _write_atomically(out, _report(chapter, coverage, results, alignment, timeline, analysis))
+    report = _report(chapter, coverage, results, alignment, timeline, analysis) + "".join(_alignment_lines(aligned, alignment, timeline, words, params))
+    _write_atomically(out, report)
     engine.log(f"Wrote the coverage of chapter {chapter['id']} to {out}")
     engine.write_progress(args.progress, "DONE", 100, "Finished")
