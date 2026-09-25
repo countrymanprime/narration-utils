@@ -33,7 +33,7 @@ export function readRunRecords(dir: string = RUN_DIR): CaptureRecord[] {
 const captureKey = (viewport: string, page: string, state: string): string => `${page}/${state} at ${viewport}`;
 
 // Every capture a full run writes a record for: each catalog row that has a driver, at each of its viewports.
-export function missingCaptures(records: readonly CaptureRecord[]): string[] {
+function missingCaptures(records: readonly CaptureRecord[]): string[] {
   const have = new Set(records.map((record) => captureKey(record.viewport, record.page, record.state)));
   return STATE_CATALOG.filter((entry) => appDrivers.APP_DRIVERS[entry.page]?.[entry.state])
     .flatMap((entry) => [...VIEWPORTS, ...(entry.extraViewports ?? [])].map((viewport) => captureKey(viewport.name, entry.page, entry.state)))
