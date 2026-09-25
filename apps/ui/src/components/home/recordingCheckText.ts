@@ -60,7 +60,7 @@ export const REGION_LABEL: Record<CoverageRegionKind, string> = {
   different_text: 'Different text read',
 };
 
-const plural = (count: number, one: string, many = `${one}s`) => `${count.toLocaleString()} ${count === 1 ? one : many}`;
+export const plural = (count: number, one: string, many = `${one}s`) => `${count.toLocaleString()} ${count === 1 ? one : many}`;
 
 /** "0:07", "3:05", "1:02:09": a position in an audio file. */
 export function formatAudioTime(seconds: number): string {
@@ -79,6 +79,29 @@ export function verdict(report: CoverageReport): { complete: boolean; headline: 
     headline: complete ? 'All the text is recorded' : `${plural(report.missingTokens, 'word')} not recorded`,
     detail: `Text present: ${report.presentTokens.toLocaleString()} of ${plural(report.bodyTokens, 'word')}.`,
   };
+}
+
+/** RS2 A (recording-check-summary.prd.md): an unread start or end is unfinished recording, not a pickup - stated in the
+ * summary as "Recorded to paragraph N of M" or "Start not read: paragraphs 1 to K", never listed with the interior
+ * gaps (skip, short_read, different_text). undefined when the chapter has no head or tail region (every gap, if any,
+ * is interior). A tail wins over a head if somehow both are present (a chapter this sparse needs the "unfinished"
+ * framing regardless of which end is missing). */
+export function recordedTo(
+  report: CoverageReport,
+  chapter: ManuscriptChapter,
+): { kind: 'head' | 'tail'; paragraph: number; total: number; wordsLeft: number } | undefined {
+  const total = report.paragraphs.length;
+  const tail = report.regions.find((region) => region.kind === 'tail');
+  if (tail) {
+    const numbers = paragraphRefs(chapter, tail.paragraphIds).map((ref) => ref.number);
+    return { kind: 'tail', paragraph: Math.max(0, Math.min(...numbers) - 1), total, wordsLeft: tail.tokenCount };
+  }
+  const head = report.regions.find((region) => region.kind === 'head');
+  if (head) {
+    const numbers = paragraphRefs(chapter, head.paragraphIds).map((ref) => ref.number);
+    return { kind: 'head', paragraph: Math.max(...numbers), total, wordsLeft: head.tokenCount };
+  }
+  return undefined;
 }
 
 /** A paragraph's number within its chapter (1 is the chapter's first paragraph) and its index in the whole manuscript, for a link. */

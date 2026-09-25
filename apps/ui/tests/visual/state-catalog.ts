@@ -149,13 +149,20 @@ export const STATE_CATALOG: StateEntry[] = [
   {
     page: 'home',
     state: 'recording-check-complete',
-    description: 'Home, recording check result for a chapter read in full: all the text is recorded, the paragraph list folded',
+    description:
+      'Home, recording check result for a chapter read in full: the chapter summary (text present, paragraphs, audio checked), no pickups, the paragraph detail folded (recording-check-summary.prd.md Phase 1)',
   },
   {
     page: 'home',
     state: 'recording-check-incomplete',
     description:
-      'Home, recording check result with text missing: the count, the missing region with its paragraphs, first and last words and audio position, and every paragraph',
+      'Home, recording check result for a chapter not finished: the summary states "Recorded to paragraph N of M" rather than listing the unread end as a pickup (RS2), with no pickups from this check (recording-check-summary.prd.md Phase 1)',
+  },
+  {
+    page: 'home',
+    state: 'recording-check-pickups',
+    description:
+      'Home, recording check result with interior gaps (?mockCoverage=pickups): a skip and a short read listed one per line under Pickups, each with Go to paragraph, alongside a small unread tail stated in the summary, not listed (recording-check-summary.prd.md Phase 1, RS2/RS8)',
   },
   {
     page: 'home',

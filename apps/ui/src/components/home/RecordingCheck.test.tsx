@@ -69,29 +69,39 @@ describe('recording check on Home', () => {
     expect(coverageStart).not.toHaveBeenCalled();
   });
 
-  it('lists what is missing with its paragraphs, words and audio position, and links to the paragraph', async () => {
-    const { goToManuscript } = await openBreakdown();
+  it('states an unfinished chapter as "recorded to", not as a pickup (recording-check-summary.prd.md RS2)', async () => {
+    await openBreakdown();
     const dialog = await openCheck('Chapter 4');
     expect(await within(dialog).findByText(/words not recorded$/)).toBeTruthy();
-    expect(within(dialog).getByText('End not read')).toBeTruthy();
-    expect(within(dialog).getByText(/Item 1 of the track, at \d+:\d\d in its audio file/)).toBeTruthy();
-    // Only the paragraphs with missing words are listed, so they are read without scrolling past the rest.
-    const table = within(dialog).getByRole('table', { name: 'Paragraphs' });
-    expect(within(dialog).getByText(/^The paragraphs with missing words\. The other \d+ are fully recorded\.$/)).toBeTruthy();
-    expect(within(table).queryByText('—', { selector: 'td:nth-child(3)' })).toBeNull();
-    const go = within(dialog).getByRole('button', { name: /^Go to paragraph \d+$/ });
+    expect(within(dialog).getByText(/^Recorded to paragraph \d+ of \d+ \(.*words? left\)\.$/)).toBeTruthy();
+    expect(within(dialog).getByText('Pickups (0)')).toBeTruthy();
+    expect(within(dialog).queryByText('End not read')).toBeNull();
+    // The paragraph table stays folded even with text missing (RS6 A): every pickup already names its own paragraphs.
+    expect(within(dialog).queryByRole('table', { name: 'Paragraphs' })).toBeNull();
+  });
+
+  it("lists the check's own interior gaps as pickups, one per line, and links to the paragraph (?mockCoverage=pickups)", async () => {
+    const { goToManuscript } = await openBreakdown({ coverage: { pickups: [WIRE_CHAPTERS[3].id] } });
+    const dialog = await openCheck('Chapter 4');
+    expect(await within(dialog).findByText('Pickups (2)')).toBeTruthy();
+    expect(within(dialog).getByText('Skipped')).toBeTruthy();
+    expect(within(dialog).getByText('Read short')).toBeTruthy();
+    // The small remaining tail still reads as "recorded to", not as a third pickup.
+    expect(within(dialog).getByText(/^Recorded to paragraph \d+ of \d+/)).toBeTruthy();
+    const go = within(dialog).getAllByRole('button', { name: /^Go to paragraph \d+$/ })[0];
     fireEvent.click(go);
     const number = Number(go.textContent?.match(/\d+/)?.[0]);
     const chapter = WIRE_CHAPTERS[3];
     expect(goToManuscript).toHaveBeenCalledWith(chapter.id, chapter.paragraphIds![number - 1].index);
   });
 
-  it('reads a complete chapter as all recorded, with its paragraphs folded', async () => {
+  it('reads a complete chapter as all recorded, with no pickups and its paragraph detail folded', async () => {
     await openBreakdown();
     const dialog = await openCheck('Chapter 1');
     expect(await within(dialog).findByText('All the text is recorded')).toBeTruthy();
+    expect(within(dialog).getByText('Pickups (0)')).toBeTruthy();
     expect(within(dialog).queryByRole('table', { name: 'Paragraphs' })).toBeNull();
-    expect(within(dialog).getByRole('button', { name: /^Paragraphs/ })).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: /^Paragraph detail/ })).toBeTruthy();
   });
 
   it('runs a check with real progress and shows its result, leaving the recorded length column untouched', async () => {

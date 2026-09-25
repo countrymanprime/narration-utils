@@ -136,10 +136,13 @@ const mockRetakeLanes = (['picked', 'error', 'none'] as const).find((seed) => se
 // `?mockChapterTagsEmbedError=1` makes the embed action always fail, so the error state can be seen too.
 const mockChapterTags = (['ready', 'not-rendered'] as const).find((seed) => seed === mockParams.get('mockChapterTags'));
 const mockChapterTagsEmbedError = mockParams.has('mockChapterTagsEmbedError');
-// `?mockCoverage=hold|stale` holds a started recording check at its last transcribing step (so the running dialog can be seen), or
-// makes Chapter 4's stored check read stale (an item was trimmed since), and `?mockCoverageRefusal=<reason>` answers every start
-// with that refusal (docs/utilities/recording-coverage.md, ADR 0130).
-const mockCoverage = (['hold', 'stale'] as const).find((seed) => seed === mockParams.get('mockCoverage'));
+// `?mockCoverage=hold|stale|pickups` holds a started recording check at its last transcribing step (so the running
+// dialog can be seen), makes Chapter 4's stored check read stale (an item was trimmed since), or gives Chapter 4 two
+// interior pickups (a skip and a short read) plus a small tail instead of its default tail-only split, so the
+// recording check summary's headline, "Recorded to" line and Pickups list can all be seen together
+// (recording-check-summary.prd.md Phase 1). `?mockCoverageRefusal=<reason>` answers every start with that refusal
+// (docs/utilities/recording-coverage.md, ADR 0130).
+const mockCoverage = (['hold', 'stale', 'pickups'] as const).find((seed) => seed === mockParams.get('mockCoverage'));
 const mockCoverageRefusal = COVERAGE_REFUSAL_REASONS.find((reason) => reason === mockParams.get('mockCoverageRefusal'));
 // `?mockStages=mixed|error` puts the Home breakdown's stage suggestions (chapter-stage-recommendations.prd.md Phase 5) in every state at
 // once, or makes reading them fail. `mixed`: Chapter 4 read in full (suggested: Editing), Chapter 5 with no track linked (can't tell),
@@ -239,6 +242,7 @@ const mockInitial = {
           ...(mockStages === 'mixed' ? { measured: MOCK_STAGES_MEASURED } : {}),
           ...(mockCoverage === 'hold' ? { hold: true } : {}),
           ...(mockCoverage === 'stale' ? { stale: [WIRE_CHAPTERS[3].id] } : {}),
+          ...(mockCoverage === 'pickups' ? { pickups: [WIRE_CHAPTERS[3].id] } : {}),
           ...(mockCoverageRefusal ? { refusal: mockCoverageRefusal } : {}),
         },
       }
